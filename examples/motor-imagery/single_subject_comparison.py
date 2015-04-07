@@ -14,7 +14,7 @@ from mne.decoding import CSP
 
 #pyriemann import
 sys.path.append('../../')
-from pyriemann.classification import MDM
+from pyriemann.classification import MDM, FgMDM
 from pyriemann.tangentspace import TangentSpace
 from pyriemann.estimation import Covariances
 
@@ -31,7 +31,7 @@ from sklearn.lda import LDA
 # cue onset.
 tmin, tmax = 1., 2.
 event_id = dict(hands=2, feet=3)
-subjects = range(1,109)
+subjects = range(1,110)
 # There is subject where MNE can read the file
 subject_to_remove = [88,89,92,100]
 
@@ -44,6 +44,7 @@ runs = [6, 10, 14]  # motor imagery: hands vs feet
 
 classifiers = {
                 'mdm'  : make_pipeline(Covariances(),MDM(metric='riemann')),
+                'fgmdm'  : make_pipeline(Covariances(),FgMDM(metric='riemann')),
                 'tsLR' : make_pipeline(Covariances(),TangentSpace(),LogisticRegression()),
                 'csp'  : make_pipeline(CSP(n_components=4, reg=None, log=True),LDA())       
                 }
