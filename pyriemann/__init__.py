@@ -1,3 +1,6 @@
-from utils import *
-from MDM import *
-from TangentSpace import *
+import classification
+import tangentspace
+import channelselection
+import estimation 
+import permutations 
+import spatialfilters
