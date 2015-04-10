@@ -205,12 +205,12 @@ def cospectrum(X,window=128,overlap=0.75,fmin=None,fmax=None,fs = None,phase_cor
     
     Ne,Ns = X.shape
     number_freqs = int(window / 2)
-    if(overlap == 0):
-        number_windows = numpy.floor(Ns / window)
-    else:
-        nbFullWin = numpy.floor(Ns / window) 
-        number_windows = int(1.0 + (nbFullWin-1.0)/(1.0-overlap) + numpy.floor((Ns-((nbFullWin)*window))/((1.0-overlap)*window)))
     
+    step = int((1.0-overlap)*window)
+    step = max(1,step)
+    
+    
+    number_windows = (Ns-window)/step + 1
     # pre-allocation of memory 
     fdata = numpy.zeros((number_windows,Ne,number_freqs),dtype=complex)
     win = numpy.hanning(window)
@@ -218,11 +218,10 @@ def cospectrum(X,window=128,overlap=0.75,fmin=None,fmax=None,fs = None,phase_cor
     ## Loop on all frequencies
     for window_ix in range(int(number_windows)):
     
-    
+        
         # time markers to select the data
-        t1 = int(numpy.floor((window_ix) * (1.0-overlap) * window))  # marker of the beginning of the time window
+        t1 = int(window_ix*step)  # marker of the beginning of the time window
         t2 = int(t1 + window)                           # marker of the end of the time window
-
         # select current window and apodize it   
         cdata = X[:,t1:t2] * win
 

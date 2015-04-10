@@ -166,10 +166,10 @@ class PermutationTest(BaseEstimator):
     def test(self,X,y):
         numpy.random.seed(self.random_state)
         self.SepIndex.fit(X)
-        
         self.F = numpy.zeros(self.n_perms+1)
         for i in range(self.n_perms):
-            self.F[i+1] = self.SepIndex.score(numpy.random.permutation(y))
+            perms = numpy.random.permutation(y)
+            self.F[i+1] = self.SepIndex.score(perms)
         
         self.F[0] = self.SepIndex.score(y)
         
@@ -205,9 +205,9 @@ class PermutationTest(BaseEstimator):
         res = pandas.DataFrame(data,index=index,columns=cols)
         return res
     
-    def plot(self):
+    def plot(self,nbins=100,range=None):
         plt.plot([self.F[0],self.F[0]],[0,100],'--r',lw=2)
-        h = hist(self.F,100)
+        h = hist(self.F,nbins,range)
         plt.xlabel('F-value')
         plt.ylabel('Count')
         plt.grid()
