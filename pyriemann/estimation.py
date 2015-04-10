@@ -13,7 +13,7 @@ class Covariances(BaseEstimator,TransformerMixin):
     def __init__(self):
         pass
         
-    def fit(self,X,y):
+    def fit(self,X,y=None):
         pass
     
     def transform(self,X):
@@ -21,7 +21,7 @@ class Covariances(BaseEstimator,TransformerMixin):
         covmats = covariances(X)
         return covmats
     
-    def fit_transform(self,X,y):
+    def fit_transform(self,X,y=None):
         return self.transform(X)
 
 ###############################################################################
@@ -98,7 +98,7 @@ class CospCovariances(BaseEstimator,TransformerMixin):
         
         self._phase_corr = phase_correction
         
-    def fit(self,X,y):
+    def fit(self,X,y=None):
         pass
     
     def transform(self,X):
@@ -112,5 +112,5 @@ class CospCovariances(BaseEstimator,TransformerMixin):
         
         return numpy.array(out)
     
-    def fit_transform(self,X,y):
+    def fit_transform(self,X,y=None):
         return self.transform(X)
