@@ -1,6 +1,6 @@
 import numpy
 
-from .utils import covariances, cospectrum,nextpow2
+from .utils import covariances,covariances_EP, cospectrum,nextpow2
 from .spatialfilters import Xdawn
 from sklearn.base  import BaseEstimator, TransformerMixin
 
@@ -65,15 +65,16 @@ class XdawnCovariances(BaseEstimator,TransformerMixin):
     Compute xdawn, project the signal and compute the covariances
 
     """    
-    def __init__(self,nfilter=4,applyfilters=True):
-        self.Xd = Xdawn(nfilter=nfilter,applyfilters=applyfilters)
+    def __init__(self,nfilter=4,applyfilters=True,classes=None):
+        self.Xd = Xdawn(nfilter=nfilter,classes=classes)
+        self.applyfilters=applyfilters
         
     def fit(self,X,y):
         self.Xd.fit(X,y)
         
-    
     def transform(self,X):
-        X = self.Xd.transform(X)
+        if self.applyfilters:
+             X = self.Xd.transform(X)
             
         covmats = covariances_EP(X,self.Xd.P)
         return covmats

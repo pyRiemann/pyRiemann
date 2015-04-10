@@ -47,7 +47,7 @@ class FGDA(BaseEstimator, TransformerMixin):
         self._lda.fit(ts,y)
         
         W = self._lda.coef_.copy()
-        self._W = numpy.dot(numpy.dot(W.T,numpy.linalg.inv(numpy.dot(W,W.T))),W)
+        self._W = numpy.dot(numpy.dot(W.T,numpy.linalg.pinv(numpy.dot(W,W.T))),W)
         
     def transform(self,X):
        ts = self._ts.transform(X)
@@ -63,7 +63,7 @@ class FGDA(BaseEstimator, TransformerMixin):
        self._lda.fit(ts,y)
        
        W = self._lda.coef_
-       self._W = numpy.dot(numpy.dot(W.T,numpy.linalg.inv(numpy.dot(W,W.T))),W)
+       self._W = numpy.dot(numpy.dot(W.T,numpy.linalg.pinv(numpy.dot(W,W.T))),W)
        ts = numpy.dot(ts,self._W)
        cov = self._ts.inverse_transform(ts)
        return cov
