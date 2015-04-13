@@ -33,8 +33,8 @@ picks = pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False,
                    exclude='bads')
 
 raw.filter(7., 35., method='iir',picks=picks)
-# Read epochs (train will be done only between 1 and 2s)
-# Testing will be done with a running classifier
+
+
 epochs = Epochs(raw, events, event_id, tmin, tmax, proj=True, picks=picks,
                 baseline=None, preload=True, add_eeg_ref=False,verbose=False)
 labels = epochs.events[:, -1] - 2
@@ -47,7 +47,7 @@ epochs_data = epochs.get_data()
 covest = Covariances()
 
 Fs = 160
-window = 1*Fs
+window = 2*Fs
 Nwindow = 20
 Ns = epochs_data.shape[2]
 step = int((Ns-window)/Nwindow )
@@ -57,7 +57,7 @@ pv = []
 Fv = []
 # For each frequency bin, estimate the stats
 for t in time_bins:
-    covmats = covest.fit_transform(epochs_data[:,::2,t:(t+window)])
+    covmats = covest.fit_transform(epochs_data[:,::1,t:(t+window)])
     p_test = PermutationTest(5000)
     p,F = p_test.test(covmats,labels)
     print p_test.summary()

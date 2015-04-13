@@ -1,8 +1,125 @@
 import numpy
 
-from .utils import covariances,covariances_EP, cospectrum,nextpow2
 from .spatialfilters import Xdawn
 from sklearn.base  import BaseEstimator, TransformerMixin
+
+from sklearn.covariance import oas,ledoit_wolf,fast_mcd,empirical_covariance
+
+### Mapping different estimator on the sklearn toolbox
+def _lwf(X):
+    C,_ = ledoit_wolf(X.T)
+    return C
+
+def _oas(X):
+    C,_ = oas(X.T)
+    return C
+
+def _scm(X):
+    return empirical_covariance(X.T)
+
+def _mcd(X):
+    _,C,_,_ = fast_mcd(X.T)
+    return C
+
+def covariances(X,est='cov'):
+    estimators = {
+         'cov' : numpy.cov,
+         'scm' : _scm,
+         'lwf' : _lwf,
+         'oas' : _oas,
+         'mcd' : _mcd
+    }
+    if not callable(est):
+        est = estimators[est]
+         
+    Nt,Ne,Ns = X.shape
+    covmats = numpy.zeros((Nt,Ne,Ne))
+    for i in range(Nt):
+        covmats[i,:,:] = est(X[i,:,:])
+    return covmats
+
+def covariances_EP(X,P,est = 'cov'):
+    estimators = {
+        'cov' : numpy.cov,
+        'scm' : scm,
+        'lwf' : lwf,
+        'oas' : oas
+    }
+    if not callable(est):
+        est = estimators[est]
+    
+    Nt,Ne,Ns = X.shape
+    Np,Ns = P.shape
+    covmats = numpy.zeros((Nt,Ne+Np,Ne+Np))
+    for i in range(Nt):
+        covmats[i,:,:] = est(numpy.concatenate((P,X[i,:,:]),axis=0))
+    return covmats
+    
+
+def eegtocov(sig,window=128,overlapp=0.5,padding = True):
+    X = []
+    if padding:
+        padd = numpy.zeros((int(window/2),sig.shape[1]))
+        sig = numpy.concatenate((padd,sig,padd),axis=0)
+        
+    Ns,Ne = sig.shape
+    jump = int(window*overlapp)
+    ix = 0
+    while (ix+window<Ns):
+        X.append(cov(sig[ix:ix+window,:].T))
+        ix = ix+jump
+        
+    return numpy.array(X)
+
+def nextpow2(i):
+    n = 1
+    while n < i: n *= 2
+    return n
+
+def cospectrum(X,window=128,overlap=0.75,fmin=None,fmax=None,fs = None,phase_correction=False):
+    
+    Ne,Ns = X.shape
+    number_freqs = int(window / 2)
+    
+    step = int((1.0-overlap)*window)
+    step = max(1,step)
+    
+    
+    number_windows = (Ns-window)/step + 1
+    # pre-allocation of memory 
+    fdata = numpy.zeros((number_windows,Ne,number_freqs),dtype=complex)
+    win = numpy.hanning(window)
+    
+    ## Loop on all frequencies
+    for window_ix in range(int(number_windows)):
+    
+        
+        # time markers to select the data
+        t1 = int(window_ix*step)  # marker of the beginning of the time window
+        t2 = int(t1 + window)                           # marker of the end of the time window
+        # select current window and apodize it   
+        cdata = X[:,t1:t2] * win
+
+        # FFT calculation
+        fdata[window_ix,:,:] = numpy.fft.fft(cdata,n=window,axis=1)[:,0:number_freqs] 
+        
+        #if(phase_correction):
+        #    fdata = fdata.*(exp(-sqrt(-1)*t1*( numpy.range(window) ).T/window*2*pi)*numpy.ones((1,Ne))
+    
+    # Adjust Frequency range to specified range (in case it is a parameter)
+    if fmin is not None:        
+        f = numpy.arange(0,1,1.0/number_freqs)*(fs/2.0)
+        Fix = (f>=fmin) & (f<=fmax)
+        fdata = fdata[:,:,Fix]
+    
+    #fdata = fdata.real
+    Nf = fdata.shape[2]
+    S = numpy.zeros((Ne,Ne,Nf),dtype=complex)
+    
+    for i in range(Nf):
+        S[:,:,i] = numpy.dot(fdata[:,:,i].conj().T,fdata[:,:,i])/number_windows
+    
+    return S
 
 ###############################################################################
 class Covariances(BaseEstimator,TransformerMixin):
@@ -10,15 +127,15 @@ class Covariances(BaseEstimator,TransformerMixin):
     compute the covariances matrices
 
     """    
-    def __init__(self):
-        pass
+    def __init__(self,estimator = 'scm'):
+        self.estimator = estimator
         
     def fit(self,X,y=None):
         pass
     
     def transform(self,X):
             
-        covmats = covariances(X)
+        covmats = covariances(X,est=self.estimator)
         return covmats
     
     def fit_transform(self,X,y=None):
@@ -30,8 +147,9 @@ class ERPCovariances(BaseEstimator,TransformerMixin):
     Compute xdawn, project the signal and compute the covariances
 
     """    
-    def __init__(self,classes=None):
+    def __init__(self,classes=None,estimator = 'scm'):
         self.classes = classes
+        self.estimator = estimator
         
     def fit(self,X,y):
         
@@ -52,7 +170,7 @@ class ERPCovariances(BaseEstimator,TransformerMixin):
     
     def transform(self,X):
             
-        covmats = covariances_EP(X,self.P)
+        covmats = covariances_EP(X,self.P,est=self.estimator)
         return covmats
     
     def fit_transform(self,X,y):
@@ -65,9 +183,10 @@ class XdawnCovariances(BaseEstimator,TransformerMixin):
     Compute xdawn, project the signal and compute the covariances
 
     """    
-    def __init__(self,nfilter=4,applyfilters=True,classes=None):
+    def __init__(self,nfilter=4,applyfilters=True,classes=None,estimator = 'scm'):
         self.Xd = Xdawn(nfilter=nfilter,classes=classes)
         self.applyfilters=applyfilters
+        self.estimator = estimator
         
     def fit(self,X,y):
         self.Xd.fit(X,y)
@@ -76,7 +195,7 @@ class XdawnCovariances(BaseEstimator,TransformerMixin):
         if self.applyfilters:
              X = self.Xd.transform(X)
             
-        covmats = covariances_EP(X,self.Xd.P)
+        covmats = covariances_EP(X,self.Xd.P,est=self.estimator)
         return covmats
     
     def fit_transform(self,X,y):
