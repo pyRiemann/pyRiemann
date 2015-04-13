@@ -21,17 +21,31 @@ def _mcd(X):
     _,C,_,_ = fast_mcd(X.T)
     return C
 
-def covariances(X,est='cov'):
+def _check_est(est):
+    # Check estimator exist and return the correct function
     estimators = {
          'cov' : numpy.cov,
          'scm' : _scm,
          'lwf' : _lwf,
          'oas' : _oas,
-         'mcd' : _mcd
+         'mcd' : _mcd,
+         'corr' : numpy.corrcoef
     }
-    if not callable(est):
+    
+    if callable(est):
+        # All good (cross your fingers)
+        pass
+    elif est in estimators.keys():
+        # Map the corresponding estimator
         est = estimators[est]
-         
+    else:
+        # raise an error
+        raise ValueError('%s is not an valid estimator ! Valid estimators are : %s or a callable function' % (est,(' , ').join(estimators.keys())))
+    return est
+
+def covariances(X,est='cov'):
+    
+    est = _check_est(est)
     Nt,Ne,Ns = X.shape
     covmats = numpy.zeros((Nt,Ne,Ne))
     for i in range(Nt):
@@ -39,15 +53,7 @@ def covariances(X,est='cov'):
     return covmats
 
 def covariances_EP(X,P,est = 'cov'):
-    estimators = {
-        'cov' : numpy.cov,
-        'scm' : scm,
-        'lwf' : lwf,
-        'oas' : oas
-    }
-    if not callable(est):
-        est = estimators[est]
-    
+    est = _check_est(est)
     Nt,Ne,Ns = X.shape
     Np,Ns = P.shape
     covmats = numpy.zeros((Nt,Ne+Np,Ne+Np))
@@ -144,7 +150,7 @@ class Covariances(BaseEstimator,TransformerMixin):
 ###############################################################################
 class ERPCovariances(BaseEstimator,TransformerMixin):
     """ 
-    Compute xdawn, project the signal and compute the covariances
+    Compute special form ERP cov mat
 
     """    
     def __init__(self,classes=None,estimator = 'scm'):
