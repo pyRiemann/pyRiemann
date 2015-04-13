@@ -14,7 +14,7 @@ from mne.decoding import CSP
 sys.path.append('../../')
 from pyriemann.classification import MDM,FgMDM
 from pyriemann.tangentspace import TangentSpace
-from pyriemann.utils import covariances
+from pyriemann.estimation import covariances
 
 #sklearn imports
 from sklearn.cross_validation import cross_val_score, KFold
@@ -51,7 +51,7 @@ events = find_events(raw, shortest_event=0, stim_channel='STI 014')
 # Read epochs (train will be done only between 1 and 2s)
 # Testing will be done with a running classifier
 epochs = Epochs(raw, events, event_id, tmin, tmax, proj=True, picks=picks,
-                baseline=None, preload=True, add_eeg_ref=False)
+                baseline=None, preload=True, add_eeg_ref=False,verbose = False)
 labels = epochs.events[:, -1] - 2
 
 
@@ -65,7 +65,7 @@ cov_data_train = covariances(epochs_data_train)
 
 ###############################################################################
 # Classification with Minimum distance to mean
-mdm = FgMDM()
+mdm = MDM()
 
 # Use scikit-learn Pipeline with cross_val_score function
 scores = cross_val_score(mdm, cov_data_train, labels, cv=cv, n_jobs=1)
