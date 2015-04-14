@@ -72,7 +72,7 @@ def eegtocov(sig,window=128,overlapp=0.5,padding = True):
     jump = int(window*overlapp)
     ix = 0
     while (ix+window<Ns):
-        X.append(cov(sig[ix:ix+window,:].T))
+        X.append(numpy.cov(sig[ix:ix+window,:].T))
         ix = ix+jump
         
     return numpy.array(X)
