@@ -8,4 +8,5 @@ setup(name='pyriemann',
       author_email='alexandre.barachant@gmail.com',
       license='GPLv3',
       packages=['pyriemann'],
+      install_requires=['numpy','scipy','scikit-learn'],
       zip_safe=False)
