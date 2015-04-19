@@ -161,19 +161,62 @@ def mean_covariance(covmats,metric='riemann',*args):
 ###############################################################	
 
 def distance_euclid(A,B):
-    """Return the Euclidean distance between A and B """
+    """Return the Euclidean distance (Froebenius norm) between 
+    two covariance matrices A and B :
+    
+    .. math::
+            d = \Vert A - B \Vert_F
+    
+    :param A: First covariance matrix
+    :param B: Second covariance matrix
+    :returns: Eclidean distance between A and B 
+    
+    """
     return norm(A-B,ord='fro')
    
 def distance_logeuclid(A,B):
-    """Return the log-euclidean distance between A and B"""
+    """Return the Log Euclidean distance between 
+    two covariance matrices A and B :
+    
+    .. math::
+            d = \Vert \log(A) - \log(B) \Vert_F
+    
+    :param A: First covariance matrix
+    :param B: Second covariance matrix
+    :returns: Log-Eclidean distance between A and B 
+    
+    """
     return distance_euclid(logm(A),logm(B))
     
 def distance_riemann(A,B):
-    """Return the Riemannian distance between A and B"""
+    """Return the Riemannian distance between 
+    two covariance matrices A and B :
+    
+    .. math::
+            d = {\left( \sum_i \log(\lambda_i)^2 \\right)}^{-1/2}
+    
+    where :math:`\lambda_i` are the joint eigenvalues of A and B 
+    
+    :param A: First covariance matrix
+    :param B: Second covariance matrix
+    :returns: Riemannian distance between A and B 
+    
+    """
     return sqrt((log(eigvalsh(A,B))**2).sum())
     
 def distance_logdet(A,B):
-    """Return the log-det distance between A and B"""
+    """Return the Log-det distance between 
+    two covariance matrices A and B :
+    
+    .. math::
+            d = \sqrt{\log(\det(\\frac{A+B}{2}))} - 0.5 \\times \log(\det(A \\times B))
+    
+    
+    :param A: First covariance matrix
+    :param B: Second covariance matrix
+    :returns: Log-Euclid distance between A and B 
+    
+    """
     return sqrt(log(det((A+B)/2))-0.5*log(det(numpy.dot(A,B))))
     
 distance_methods = {'riemann' : distance_riemann,
