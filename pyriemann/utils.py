@@ -146,7 +146,7 @@ def geodesic_euclid(A,B,alpha=0.5):
     """Return the matrix at the position alpha on the euclidean geodesic between A and B  :
     
     .. math::
-            \mathbf{C} = (1-\\alpha) \mathbf{A} + \alpha \mathbf{B} 
+            \mathbf{C} = (1-\\alpha) \mathbf{A} + \\alpha \mathbf{B} 
     
     C is equal to A if alpha = 0 and B if alpha = 1
     
@@ -162,7 +162,7 @@ def geodesic_logeuclid(A,B,alpha=0.5):
     """Return the matrix at the position alpha on the log euclidean geodesic between A and B  :
     
     .. math::
-            \mathbf{C} =  \exp \left( (1-\\alpha) \log(\mathbf{A}) + \alpha \log(\mathbf{B}) \\right)
+            \mathbf{C} =  \exp \left( (1-\\alpha) \log(\mathbf{A}) + \\alpha \log(\mathbf{B}) \\right)
     
     C is equal to A if alpha = 0 and B if alpha = 1
     
