@@ -9,11 +9,10 @@ Welcome to pyRiemann's documentation!
 Contents:
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 4
 
-.. automodule:: pyriemann.utils
-   :members:
-
+    pyriemann
+    
 Indices and tables
 ==================
 
