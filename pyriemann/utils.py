@@ -1,6 +1,6 @@
 import numpy
 from numpy import matrix, sqrt, diag, log, exp, mean, eye, triu_indices_from, zeros, cov, concatenate, triu
-from numpy.linalg import norm, inv, eigvals
+from numpy.linalg import norm, inv, eigvals, det
 from numpy.linalg import eigh as eig
 from scipy.linalg import eigvalsh
 from sklearn.covariance import LedoitWolf
@@ -36,11 +36,7 @@ def powm(Ci,alpha):
 	V = matrix(V)
 	Out = matrix(V*D*V.T)
 	return Out		
-	
-	
-def distance(C0,C1):
-    return sqrt((log(eigvalsh(C0,C1))**2).sum())
-	
+
 def geodesic(C0,C1,alpha):
     A = matrix(sqrtm(C0))
     B = matrix(invsqrtm(C0))
@@ -159,4 +155,33 @@ def mean_covariance(covmats,metric='riemann',*args):
     C = options[metric](covmats,*args)
     return C
     
+
+###############################################################
+# distances 	
+###############################################################	
+
+def distance_euclid(A,B):
+    """Return the Euclidean distance between A and B """
+    return norm(A-B,ord='fro')
+   
+def distance_logeuclid(A,B):
+    """Return the log-euclidean distance between A and B"""
+    return distance_euclid(logm(A),logm(B))
     
+def distance_riemann(A,B):
+    """Return the Riemannian distance between A and B"""
+    return sqrt((log(eigvalsh(A,B))**2).sum())
+    
+def distance_logdet(A,B):
+    """Return the log-det distance between A and B"""
+    return sqrt(log(det((A+B)/2))-0.5*log(det(numpy.dot(A,B))))
+    
+distance_methods = {'riemann' : distance_riemann,
+                   'logeuclid': distance_logeuclid,
+                    'euclid' : distance_euclid,
+                    'logdet' : distance_logdet}
+                        
+def distance(A,B,metric='riemann'):
+    d = distance_methods[metric](A,B)
+    return d
+	
