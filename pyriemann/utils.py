@@ -3,52 +3,190 @@ from numpy import matrix, sqrt, diag, log, exp, mean, eye, triu_indices_from, ze
 from numpy.linalg import norm, inv, eigvals, det
 from numpy.linalg import eigh as eig
 from scipy.linalg import eigvalsh
-from sklearn.covariance import LedoitWolf
+
+
+###############################################################
+# Basic Functions	
+###############################################################	
 def sqrtm(Ci):
-	D,V = eig(Ci)
-	D = matrix(diag(sqrt(D)))
-	V = matrix(V)
-	Out = matrix(V*D*V.T)
-	return Out
+    """Return the matrix square root of a covariance matrix defined by :
+    
+    .. math::
+            \mathbf{C} = \mathbf{V} \left( \mathbf{\Lambda} \\right)^{1/2} \mathbf{V}^T
+            
+    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
+    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{Ci}`
+   
+    :param Ci: the coavriance matrix
+    :returns: the matrix square root
+    
+    """
+    D,V = eig(Ci)
+    D = matrix(diag(sqrt(D)))
+    V = matrix(V)
+    Out = matrix(V*D*V.T)
+    return Out
 
 def logm(Ci):
+    """Return the matrix logarithm of a covariance matrix defined by :
+    
+    .. math::
+            \mathbf{C} = \mathbf{V} \log{(\mathbf{\Lambda})} \mathbf{V}^T
+            
+    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
+    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{Ci}`
+   
+    :param Ci: the coavriance matrix
+    :returns: the matrix logarithm
+    
+    """
     D,V = eig(Ci)
     Out = numpy.dot(numpy.multiply(V,log(D)),V.T)
     return Out
 	
 def expm(Ci):
-	D,V = eig(Ci)
-	D = matrix(diag(exp(D)))
-	V = matrix(V)
-	Out = matrix(V*D*V.T)
-	return Out
+    """Return the matrix exponential of a covariance matrix defined by :
+    
+    .. math::
+            \mathbf{C} = \mathbf{V} \exp{(\mathbf{\Lambda})} \mathbf{V}^T
+            
+    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
+    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{Ci}`
+   
+    :param Ci: the coavriance matrix
+    :returns: the matrix exponential
+    
+    """
+    D,V = eig(Ci)
+    D = matrix(diag(exp(D)))
+    V = matrix(V)
+    Out = matrix(V*D*V.T)
+    return Out
 
 def invsqrtm(Ci):
-	D,V = eig(Ci)
-	D = matrix(diag(1.0/sqrt(D)))
-	V = matrix(V)
-	Out = matrix(V*D*V.T)
-	return Out
+    """Return the inverse matrix square root of a covariance matrix defined by :
+    
+    .. math::
+            \mathbf{C} = \mathbf{V} \left( \mathbf{\Lambda} \\right)^{-1/2} \mathbf{V}^T
+            
+    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
+    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{Ci}`
+   
+    :param Ci: the coavriance matrix
+    :returns: the inverse matrix square root
+    
+    """
+    D,V = eig(Ci)
+    D = matrix(diag(1.0/sqrt(D)))
+    V = matrix(V)
+    Out = matrix(V*D*V.T)
+    return Out
 
 def powm(Ci,alpha):
-	D,V = eig(Ci)
-	D = matrix(diag(D**alpha))
-	V = matrix(V)
-	Out = matrix(V*D*V.T)
-	return Out		
+    """Return the matrix power :math:`\\alpha` of a covariance matrix defined by :
+    
+    .. math::
+            \mathbf{C} = \mathbf{V} \left( \mathbf{\Lambda} \\right)^{\\alpha} \mathbf{V}^T
+            
+    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
+    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{Ci}`
+   
+    :param Ci: the coavriance matrix
+    :param alpha: the power to apply 
+    :returns: the matrix power
+    
+    """
+    D,V = eig(Ci)
+    D = matrix(diag(D**alpha))
+    V = matrix(V)
+    Out = matrix(V*D*V.T)
+    return Out		
+###############################################################
+# geodesic 	
+###############################################################	
+def geodesic(A,B,alpha,metric='riemann'):
+    """Return the matrix at the position alpha on the geodesic between A and B according to the metric :
+    
+   
+    :param A: the first coavriance matrix
+    :param B: the second coavriance matrix
+    :param alpha: the position on the geodesic
+    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid'
+    :returns: the covariance matrix on the geodesic
+    
+    """
+    options = {'riemann' : geodesic_riemann,
+               'logeuclid': geodesic_logeuclid,
+               'euclid' : geodesic_euclid}
+    C = options[metric](covmats,*args)
+    return C
 
-def geodesic(C0,C1,alpha):
+def geodesic_riemann(A,B,alpha=0.5):
+    """Return the matrix at the position alpha on the riemannian geodesic between A and B  :
+    
+    .. math::
+            \mathbf{C} = \mathbf{A}^{1/2} \left( \mathbf{A}^{-1/2} \mathbf{B} \mathbf{A}^{-1/2} \\right)^\\alpha \mathbf{A}^{1/2}
+    
+    C is equal to A if alpha = 0 and B if alpha = 1
+    
+    :param A: the first coavriance matrix
+    :param B: the second coavriance matrix
+    :param alpha: the position on the geodesic
+    :returns: the covariance matrix
+    
+    """
     A = matrix(sqrtm(C0))
     B = matrix(invsqrtm(C0))
     C = B*C1*B
     D = matrix(powm(C,alpha))
     E = matrix(A*D*A)
     return E
-	
-def tangent_space(covmats,ref):
+    
+def geodesic_euclid(A,B,alpha=0.5):
+    """Return the matrix at the position alpha on the euclidean geodesic between A and B  :
+    
+    .. math::
+            \mathbf{C} = (1-\\alpha) \mathbf{A} + \alpha \mathbf{B} 
+    
+    C is equal to A if alpha = 0 and B if alpha = 1
+    
+    :param A: the first coavriance matrix
+    :param B: the second coavriance matrix
+    :param alpha: the position on the geodesic
+    :returns: the covariance matrix
+    
+    """
+    return (1-alpha)*A + alpha*B
+    
+def geodesic_logeuclid(A,B,alpha=0.5):
+    """Return the matrix at the position alpha on the log euclidean geodesic between A and B  :
+    
+    .. math::
+            \mathbf{C} =  \exp \left( (1-\\alpha) \log(\mathbf{A}) + \alpha \log(\mathbf{B}) \\right)
+    
+    C is equal to A if alpha = 0 and B if alpha = 1
+    
+    :param A: the first coavriance matrix
+    :param B: the second coavriance matrix
+    :param alpha: the position on the geodesic
+    :returns: the covariance matrix
+    
+    """
+    return expm( (1-alpha)*logm(A) + alpha*logm(B))
+###############################################################
+# Tangent Space	
+###############################################################		
+def tangent_space(covmats,Cref):
+    """Project a set of covariance matrices in the tangent space according to the given reference point Cref
+    
+    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels 
+    :param Cref: The reference covariance matrix
+    :returns: the Tangent space , a matrix of Ntrials X (Nchannels*(Nchannels+1)/2)
+    
+    """
     Nt,Ne,Ne = covmats.shape
-    Cm12 = invsqrtm(ref)
-    idx = triu_indices_from(ref)
+    Cm12 = invsqrtm(Cref)
+    idx = triu_indices_from(Cref)
     T = zeros((Nt,Ne*(Ne+1)/2))
     coeffs = (sqrt(2)*triu(numpy.ones((Ne,Ne)),1) + numpy.eye(Ne))[idx]
     for index in range(Nt):
@@ -57,12 +195,19 @@ def tangent_space(covmats,ref):
         T[index,:] = numpy.multiply(coeffs,tmp[idx])
     return T
  
-def untangent_space(T,ref):
+def untangent_space(T,Cref):
+    """Project a set of Tangent space vectors in the manifold according to the given reference point Cref
+    
+    :param T: the Tangent space , a matrix of Ntrials X (Nchannels*(Nchannels+1)/2)
+    :param Cref: The reference covariance matrix
+    :returns: A set of Covariance matrix, Ntrials X Nchannels X Nchannels 
+    
+    """
     Nt,Nd = T.shape
     Ne = int((sqrt(1+8*Nd)-1)/2)
-    C12 = sqrtm(ref)
+    C12 = sqrtm(Cref)
     
-    idx = triu_indices_from(ref)
+    idx = triu_indices_from(Cref)
     covmats = zeros((Nt,Ne,Ne))
     covmats[:,idx[0],idx[1]] = T
     for i in range(Nt):
@@ -71,11 +216,32 @@ def untangent_space(T,ref):
         covmats[i] = numpy.dot(numpy.dot(C12,covmats[i]),C12)
         
     return covmats
- 
-def riemann_mean(covmats,tol=10e-9,maxiter=50):
+
+###############################################################
+# Means 	
+###############################################################	
+
+def mean_riemann(covmats,tol=10e-9,maxiter=50,init=None):
+    """Return the mean covariance matrix according to the Riemannian metric.
+    The procedure is similar to a gradient descent minimizing the sum of 
+    riemannian distance to the mean.
+    
+    .. math::
+            \mathbf{C} = \\arg\min{(\sum_i \delta_R ( \mathbf{C} , \mathbf{C}_i)^2)} 
+   
+    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels 
+    :param tol: the tolerance to stop the gradient descent
+    :param maxiter: The maximum number of iteration, default 50
+    :param init: A covariance matrix used to initialize the gradient descent. If None the Arithmetic mean is used
+    :returns: the mean covariance matrix
+    
+    """
     #init 
     Nt,Ne,Ne = covmats.shape
-    C = numpy.mean(covmats,axis=0)
+    if init is None:
+        C = numpy.mean(covmats,axis=0)
+    else:
+        C = init
     k=0
     J = eye(2)
     nu = 1.0
@@ -105,7 +271,16 @@ def riemann_mean(covmats,tol=10e-9,maxiter=50):
         
     return C	
     
-def logeuclid_mean(covmats):
+def mean_logeuclid(covmats):
+    """Return the mean covariance matrix according to the log-euclidean metric :
+    
+    .. math::
+            \mathbf{C} = \exp{(\\frac{1}{N} \sum_i \log{\mathbf{C}_i})}
+   
+    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels 
+    :returns: the mean covariance matrix
+    
+    """
     Nt,Ne,Ne = covmats.shape 
     T = zeros((Ne,Ne))
     for index in range(Nt):
@@ -114,10 +289,25 @@ def logeuclid_mean(covmats):
     
     return C    
 
-def logdet_mean(covmats,tol=10e-5,maxiter=50):
-    #init 
+def mean_logdet(covmats,tol=10e-5,maxiter=50,init=None):
+    """Return the mean covariance matrix according to the logdet metric.
+    This is an iterative procedure where the update is:
+    
+    .. math::
+            \mathbf{C} = \left(\sum_i \left( 0.5 \mathbf{C} + 0.5 \mathbf{C}_i \\right)^{-1} \\right)^{-1}
+   
+    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels 
+    :param tol: the tolerance to stop the gradient descent
+    :param maxiter: The maximum number of iteration, default 50
+    :param init: A covariance matrix used to initialize the iterative procedure. If None the Arithmetic mean is used
+    :returns: the mean covariance matrix
+    
+    """
     Nt,Ne,Ne = covmats.shape
-    C = mean(covmats,axis=0)
+    if init is None:
+        C = mean(covmats,axis=0)
+    else:
+        C = init
     k=0
     J = eye(2)
     crit = norm(J,ord='fro')
@@ -139,19 +329,46 @@ def logdet_mean(covmats,tol=10e-5,maxiter=50):
         print 'Max iter reach'
     return C	
 
-def euclid_mean(covmats):
+def mean_euclid(covmats):
+    """Return the mean covariance matrix according to the euclidean metric :
+    
+    .. math::
+            \mathbf{C} = \\frac{1}{N} \sum_i \mathbf{C}_i
+   
+    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels 
+    :returns: the mean covariance matrix
+    
+    """
     return mean(covmats,axis=0)    
     
-def identity(covmats):    
+def mean_identity(covmats): 
+    """Return the identity matrix corresponding to the covmats sit size
+    
+    .. math::
+            \mathbf{C} = \mathbf{I}_d
+   
+    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels 
+    :returns: the identity matrix of size Nchannels
+    
+    """
     C = eye(covmats.shape[1])
     return C
     
 def mean_covariance(covmats,metric='riemann',*args):
-    options = {'riemann' : riemann_mean,
-               'logeuclid': logeuclid_mean,
-               'euclid' : euclid_mean,
-               'identity' : identity,
-               'logdet' : logdet_mean}
+    """Return the mean covariance matrix according to the metric
+    
+   
+    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels 
+    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'indentity'
+    :param args: the argument passed to the sub function 
+    :returns: the mean covariance matrix
+    
+    """
+    options = {'riemann' : mean_riemann,
+               'logeuclid': mean_logeuclid,
+               'euclid' : mean_euclid,
+               'identity' : mean_identity,
+               'logdet' : mean_logdet}
     C = options[metric](covmats,*args)
     return C
     
@@ -165,7 +382,7 @@ def distance_euclid(A,B):
     two covariance matrices A and B :
     
     .. math::
-            d = \Vert A - B \Vert_F
+            d = \Vert \mathbf{A} - \mathbf{B} \Vert_F
     
     :param A: First covariance matrix
     :param B: Second covariance matrix
@@ -179,7 +396,7 @@ def distance_logeuclid(A,B):
     two covariance matrices A and B :
     
     .. math::
-            d = \Vert \log(A) - \log(B) \Vert_F
+            d = \Vert \log(\mathbf{A}) - \log(\mathbf{B}) \Vert_F
     
     :param A: First covariance matrix
     :param B: Second covariance matrix
@@ -209,7 +426,7 @@ def distance_logdet(A,B):
     two covariance matrices A and B :
     
     .. math::
-            d = \sqrt{\log(\det(\\frac{A+B}{2}))} - 0.5 \\times \log(\det(A \\times B))
+            d = \sqrt{\log(\det(\\frac{\mathbf{A}+\mathbf{B}}{2}))} - 0.5 \\times \log(\det(\mathbf{A} \\times \mathbf{B}))
     
     
     :param A: First covariance matrix
@@ -225,6 +442,16 @@ distance_methods = {'riemann' : distance_riemann,
                     'logdet' : distance_logdet}
                         
 def distance(A,B,metric='riemann'):
+    """Return the distance between 
+    two covariance matrices A and B according to the metric :
+    
+   
+    :param A: First covariance matrix
+    :param B: Second covariance matrix
+    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet' 
+    :returns: the distance between A and B 
+    
+    """
     d = distance_methods[metric](A,B)
     return d
 	

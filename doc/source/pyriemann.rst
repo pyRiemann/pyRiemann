@@ -1,8 +1,6 @@
 pyriemann package
 =================
 
-Submodules
-----------
 
 pyriemann.utils module
 ----------------------

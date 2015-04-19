@@ -10,8 +10,8 @@ Contents:
 
 .. toctree::
    :maxdepth: 4
-
-    pyriemann
+   
+   pyriemann
     
 Indices and tables
 ==================
