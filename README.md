@@ -6,6 +6,7 @@ The primary target is classification of multivariate biosignals, like EEG, MEG o
 
 This is work in progress ... stay tuned.
 
+This code is licenced under the GPLv3 licence.
 
 ## Install
 
