@@ -8,6 +8,10 @@ This is work in progress ... stay tuned.
 
 This code is licenced under the GPLv3 licence.
 
+## Documentation
+
+The documentation is available on http://pythonhosted.org/pyriemann
+
 ## Install
 
 #### Using PyPI
