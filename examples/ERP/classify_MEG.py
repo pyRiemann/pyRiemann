@@ -3,6 +3,13 @@
 Decoding in sensor space data using Riemannian Geometry and XDAWN
 ====================================================================
 
+Decoding applied to MEG data in sensor space decomposed using Xdawn.
+After spatial filtering, covariances matrices are estimated and
+classified by the MDM algorithm (Nearest centroid).
+
+4 Xdawn spatial patterns (2 for each class) are displayed, as per the
+two mean-covariance matrices used by the classification algorithm.
+
 """
 # Authors: Alexandre Gramfort <alexandre.gramfort@telecom-paristech.fr>
 #          Romain Trachel <romain.trachel@inria.fr>

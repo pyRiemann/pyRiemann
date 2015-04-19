@@ -3,8 +3,9 @@
 Decoding in sensor space data using Riemannian Geometry and XDAWN
 ====================================================================
 
-Decoding applied to MEG data in sensor space decomposed using CSP.
-Here the classifier is applied to features extracted on CSP filtered signals.
+Decoding applied to EEG data in sensor space decomposed using Xdawn.
+After spatial filtering, covariances matrices are estimated and
+classified by the MDM algorithm (Nearest centroid).
 
 """
 # Authors: Alexandre Gramfort <alexandre.gramfort@telecom-paristech.fr>
