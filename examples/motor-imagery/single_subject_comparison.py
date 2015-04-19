@@ -13,7 +13,6 @@ from mne.event import find_events
 from mne.decoding import CSP
 
 #pyriemann import
-sys.path.append('../../')
 from pyriemann.classification import MDM, FgMDM
 from pyriemann.tangentspace import TangentSpace
 from pyriemann.estimation import Covariances
