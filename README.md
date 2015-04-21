@@ -76,7 +76,7 @@ svc = SVC(kernel='linear')
 
 clf = make_pipeline(covest,ts,svc)
 # cross validation
-accuracy = cross_val_score(clf,cov,y)
+accuracy = cross_val_score(clf,X,y)
 
 print(accuracy.mean())
 
