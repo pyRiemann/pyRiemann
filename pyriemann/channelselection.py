@@ -1,8 +1,9 @@
 from .utils import mean_covariance, distance
-
+from .classification import MDM
 import numpy
 from sklearn.base  import BaseEstimator, TransformerMixin
 
+##########################################################
 class ElectrodeSelection(BaseEstimator, TransformerMixin):
 
     def __init__(self,nelec = 16,metric='riemann'):
@@ -12,10 +13,9 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         self.dist = []
     
     def fit(self,X,y=None):
-        self.classes= numpy.unique(y)
-        self.covmeans = []
-        for l in self.classes:
-            self.covmeans.append(mean_covariance(X[y==l,:,:],metric=self.metric))
+        mdm = MDM(self.metric)
+        mdm.fit(X,y)
+        self.covmeans = mdm.covmeans
         
         Ne,_ = self.covmeans[0].shape
         
@@ -33,11 +33,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
             torm = di.argmax()
             self.dist.append(di.max())
             self.subelec.pop(torm)        
-        #print self.subelec
+        return self
         
     def transform(self,X):
        return X[:,self.subelec,:][:,:,self.subelec]
-
-    def fit_transform(self,X,y=None):
-        self.fit(X,y)
-        return self.transform(X)

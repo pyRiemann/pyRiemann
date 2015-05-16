@@ -1,5 +1,5 @@
 import numpy
-from sklearn.base  import BaseEstimator, ClassifierMixin,TransformerMixin
+from sklearn.base  import BaseEstimator, ClassifierMixin,TransformerMixin,ClusterMixin
 from sklearn.cluster.k_means_ import _init_centroids
 from sklearn.externals.joblib import Parallel
 from sklearn.externals.joblib import delayed
@@ -32,7 +32,7 @@ def _fit_single(X,y=None,n_clusters=2,init='random',random_state = None,metric='
 
 
 #######################################################################
-class Kmeans(BaseEstimator, ClassifierMixin):
+class Kmeans(BaseEstimator, ClassifierMixin,ClusterMixin):
     
     def __init__(self,n_clusters=2,max_iter=100,metric='riemann',random_state = None,init='random',n_init=10,n_jobs=1,tol=1e-4):
         self.metric = metric
@@ -66,26 +66,20 @@ class Kmeans(BaseEstimator, ClassifierMixin):
             
             best = numpy.argmin(inertia)
             mdm = mdm[best]
+            labels = labels[best]
             inertial= inertia[best]
+            
         self.mdm = mdm
         self.inertia = inertia
+        self.labels_ = labels
+        
+        return self
         
     def predict(self,X):
         return self.mdm.predict(X)
     
     def transform(self,X):
         return self.mdm.transform(X)
-    
-    def fit_transform(self,X,y=None):
-        self.fit(X,y)
-        return self.mdm.transform(X)
-    
-    def fit_predict(self,X,y=None):
-        self.fit(X,y)
-        return self.predict(X)
-        
-    def predict_proba(self,X):
-        return self.mdm.predict_proba(X)
         
     def covmeans(self):
         return self.mdm.covmeans
@@ -111,12 +105,9 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
         for c in self.classes:
             km.fit(X[y==c])
             self.covmeans.extend(km.covmeans())
+        return self
 
     def transform(self,X):        
         mdm = MDM(metric=self.metric)
         mdm.covmeans = self.covmeans
         return mdm._predict_distances(X)
-        
-    def fit_transform(self,X,y=None):
-        self.fit(X,y)
-        return self.transform(X)

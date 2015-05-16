@@ -18,6 +18,8 @@ class MDM(BaseEstimator, ClassifierMixin,TransformerMixin):
         
         for l in self.classes:
             self.covmeans.append(mean_covariance(X[y==l,:,:],metric=self.metric))
+            
+        return self
         
     def _predict_distances(self,covtest):
         Nt = covtest.shape[0]
@@ -36,10 +38,6 @@ class MDM(BaseEstimator, ClassifierMixin,TransformerMixin):
     def transform(self,X):
         return self._predict_distances(X)
     
-    def fit_transform(self,X,y=None):
-        self.fit(X,y)
-        return self.transform(X)
-    
     def fit_predict(self,X,y):
         self.fit(X,y)
         return self.predict(X)
@@ -48,14 +46,16 @@ class MDM(BaseEstimator, ClassifierMixin,TransformerMixin):
 class FgMDM(BaseEstimator, ClassifierMixin):
     
     def __init__(self,metric='riemann',tsupdate = False):
-        self._mdm = MDM()
-        self._fgda = FGDA(metric=metric,tsupdate=tsupdate)
+        self.metric = metric
+        self.tsupdate = tsupdate
+        self._mdm = MDM(metric=self.metric)
+        self._fgda = FGDA(tsupdate=self.tsupdate)
         
     def fit(self,X,y):
         cov = self._fgda.fit_transform(X,y)
         self._mdm.fit(cov,y)        
-        
-        
+        return self
+            
     def predict(self,X):
         cov = self._fgda.transform(X)
         return self._mdm.predict(cov)

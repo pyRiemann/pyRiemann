@@ -15,6 +15,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
     def fit(self,X,y=None):
         # compute mean covariance
         self.Cr = mean_covariance(X,metric=self.metric)
+        return self
         
     def transform(self,X):
        
@@ -35,35 +36,34 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 ########################################################################        
 class FGDA(BaseEstimator, TransformerMixin):
 
-    def __init__(self,metric='riemann',tsupdate = False):
+    def __init__(self,tsupdate = False):
 
         self._ts = TangentSpace(tsupdate=tsupdate)
         
-    def fit(self,X,y=None):
+    
+    def _fit_lda(self,X,y):
         self.classes= numpy.unique(y)
-        self._lda = LDA(n_components=len(self.classes)-1,solver='eigen', shrinkage='auto')
+        self._lda = LDA(n_components=len(self.classes)-1,solver='lsqr', shrinkage='auto')
         
         ts = self._ts.fit_transform(X)
         self._lda.fit(ts,y)
         
         W = self._lda.coef_.copy()
         self._W = numpy.dot(numpy.dot(W.T,numpy.linalg.pinv(numpy.dot(W,W.T))),W)
+        return ts
+    
+    def _retro_project(self,ts):
+        ts = numpy.dot(ts,self._W)
+        return self._ts.inverse_transform(ts)
+    
+    def fit(self,X,y=None):
+        self._fit_lda(X,y)
+        return self
         
     def transform(self,X):
-       ts = self._ts.transform(X)
-       ts = numpy.dot(ts,self._W)
-       cov = self._ts.inverse_transform(ts)
-       return cov
+        ts = self._ts.transform(X)
+        return self._retro_project(ts)
 
     def fit_transform(self,X,y=None):
-       self.classes= numpy.unique(y)
-       self._lda = LDA(n_components=len(self.classes)-1,solver='lsqr', shrinkage='auto')
-       
-       ts = self._ts.fit_transform(X)
-       self._lda.fit(ts,y)
-       
-       W = self._lda.coef_
-       self._W = numpy.dot(numpy.dot(W.T,numpy.linalg.pinv(numpy.dot(W,W.T))),W)
-       ts = numpy.dot(ts,self._W)
-       cov = self._ts.inverse_transform(ts)
-       return cov
+        ts = self._fit_lda(X,y)
+        return self._retro_project(ts)
