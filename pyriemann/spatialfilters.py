@@ -3,16 +3,24 @@ import numpy
 from scipy.linalg import eigh
 from sklearn.base  import BaseEstimator, TransformerMixin
 
+from sklearn.covariance import oas,ledoit_wolf,fast_mcd,empirical_covariance
+
+### Mapping different estimator on the sklearn toolbox
+def _lwf(X):
+    C,_ = ledoit_wolf(X.T)
+    return C
+
 ###############################################################################
 class Xdawn(BaseEstimator,TransformerMixin):
     """ 
     Compute double xdawn, project the signal
 
     """    
-    def __init__(self,nfilter=4,applyfilters=True,classes=None):
+    def __init__(self,nfilter=4,applyfilters=True,classes=None,estimator='scm'):
         self.nfilter = nfilter
         self.applyfilters = applyfilters
         self.classes = classes
+        self.estimator = estimator
     
     def fit(self,X,y):
         Nt,Ne,Ns = X.shape
@@ -22,7 +30,7 @@ class Xdawn(BaseEstimator,TransformerMixin):
                     
         #FIXME : too many reshape operation         
         tmp = X.transpose((1,2,0))
-        Cx = numpy.matrix(numpy.cov(tmp.reshape(Ne,Ns*Nt)))
+        Cx = numpy.matrix(_lwf(tmp.reshape(Ne,Ns*Nt)))
         
         self.P = []
         self.V = []
@@ -32,7 +40,7 @@ class Xdawn(BaseEstimator,TransformerMixin):
             P = numpy.mean(X[y==c,:,:],axis=0)
         
             # Covariance matrix of the prototyper response & signal
-            C = numpy.matrix(numpy.cov(P))
+            C = numpy.matrix(_lwf(P))
 
             # Spatial filters
             evals, evecs = eigh(C, Cx)

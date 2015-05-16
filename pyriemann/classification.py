@@ -1,11 +1,11 @@
 import numpy
-from sklearn.base  import BaseEstimator, ClassifierMixin
+from sklearn.base  import BaseEstimator, ClassifierMixin, TransformerMixin
 
 from .utils import mean_covariance, distance
 from .tangentspace import TangentSpace,FGDA
 
 #######################################################################
-class MDM(BaseEstimator, ClassifierMixin):
+class MDM(BaseEstimator, ClassifierMixin,TransformerMixin):
     
     def __init__(self,metric='riemann'):
         self.metric = metric
@@ -19,27 +19,30 @@ class MDM(BaseEstimator, ClassifierMixin):
         for l in self.classes:
             self.covmeans.append(mean_covariance(X[y==l,:,:],metric=self.metric))
         
+    def _predict_distances(self,covtest):
+        Nt = covtest.shape[0]
+        Nc = len(self.covmeans)
+        dist = numpy.empty((Nt,Nc))
+
+        for m in range(Nc):
+            for k in range(Nt):
+                dist[k,m] = distance(covtest[k,:,:],self.covmeans[m])
+        return dist
+        
     def predict(self,covtest):
-        Nt = covtest.shape[0]
-        Nc = len(self.classes)
-        dist = numpy.zeros((Nc,Nt))
-        
-        for m in range(Nc):
-            for k in range(Nt):
-                dist[m,k] = distance(covtest[k,:,:],self.covmeans[m])
-                
-        return self.classes[dist.argmin(axis=0)]
-        
-    def predict_proba(self,covtest):
-        Nt = covtest.shape[0]
-        Nc = len(self.classes)
-        dist = numpy.zeros((Nc,Nt))
-        
-        for m in range(Nc):
-            for k in range(Nt):
-                dist[m,k] = distance(covtest[k,:,:],self.covmeans[m])
-                
-        return -numpy.diff(dist,axis=0).T
+        dist = self._predict_distances(covtest)        
+        return self.classes[dist.argmin(axis=1)]
+    
+    def transform(self,X):
+        return self._predict_distances(X)
+    
+    def fit_transform(self,X,y=None):
+        self.fit(X,y)
+        return self.transform(X)
+    
+    def fit_predict(self,X,y):
+        self.fit(X,y)
+        return self.predict(X)
         
 #######################################################################
 class FgMDM(BaseEstimator, ClassifierMixin):
@@ -56,7 +59,3 @@ class FgMDM(BaseEstimator, ClassifierMixin):
     def predict(self,X):
         cov = self._fgda.transform(X)
         return self._mdm.predict(cov)
-        
-    def predict_proba(self,X):
-        cov = self._fgda.transform(X)
-        return self._mdm.predict_proba(cov)

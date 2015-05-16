@@ -4,6 +4,7 @@ from numpy.linalg import norm, inv, eigvals, det
 from numpy.linalg import eigh as eig
 from scipy.linalg import eigvalsh
 
+import jadeR
 
 ###############################################################
 # Basic Functions	
@@ -339,7 +340,22 @@ def mean_euclid(covmats):
     :returns: the mean covariance matrix
     
     """
-    return mean(covmats,axis=0)    
+    return mean(covmats,axis=0)
+
+def mean_ale(covmats):
+    """Return the mean covariance matrix according using the ALE algorithme
+    described in :
+    
+    M. Congedo, B. Afsari, A. Barachant, M. Moakher, 'Approximate Joint Diagonalization and Geometric Mean of Symmetric Positive Definite Matrices', PLoS ONE, 2015
+    
+    The implementation is not done yet.
+   
+    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels 
+    :returns: the mean covariance matrix
+    
+    """
+    
+    return covmats[0]
     
 def mean_identity(covmats): 
     """Return the identity matrix corresponding to the covmats sit size

@@ -52,9 +52,9 @@ class RiemannDistanceMetric(DistanceMetric):
         else:
             Ntx,_,_ = X.shape
             Nty,_,_ = Y.shape
-            dist = numpy.zeros((Ntx,Nty))
+            dist = numpy.empty((Ntx,Nty))
             for i in range(Ntx):
-                for j in range(i,Nty):
+                for j in range(Nty):
                     dist[i,j] = distance(X[i],Y[j])
         return dist
         
@@ -63,11 +63,14 @@ class RiemannDistanceMetric(DistanceMetric):
 
 #######################################################################
 class SeparabilityIndex(BaseEstimator):
-    def __init__(self,method='',metric='riemann'):
+    def __init__(self,method='',metric='riemann',estimator=None):
         self.method = method
         self.metric = 'riemann'
+        self.estimator = estimator
     
     def fit(self,X,y=None):
+        if self.estimator is not None:
+            X = self.estimator.fit_transform(X,y)
         self.pairs = RiemannDistanceMetric(self.metric).pairwise(X)
         
     def score(self,y):
@@ -156,19 +159,25 @@ class SeparabilityIndexTwoFactor(BaseEstimator):
         return self._F1,self._F2,self._F12        
 #######################################################################
 class PermutationTest(BaseEstimator):
-    def __init__(self,n_perms = 100,sep_index = SeparabilityIndex(),random_state=42):
+    def __init__(self,n_perms = 100,sep_index = SeparabilityIndex(),random_state=42,fit_perms=False):
 
         self.n_perms = n_perms
         self.random_state = random_state
         self.SepIndex = sep_index
+        self.fit_perms = fit_perms
     
 
     def test(self,X,y):
         numpy.random.seed(self.random_state)
-        self.SepIndex.fit(X)
+        if self.fit_perms is False:
+		    self.SepIndex.fit(X,y)
         self.F = numpy.zeros(self.n_perms+1)
         for i in range(self.n_perms):
             perms = numpy.random.permutation(y)
+			
+			#if fit_perms is true
+            if self.fit_perms is True:
+                self.SepIndex.fit(X,y)
             self.F[i+1] = self.SepIndex.score(perms)
         
         self.F[0] = self.SepIndex.score(y)
