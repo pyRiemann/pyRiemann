@@ -32,7 +32,7 @@ def _fit_single(X,y=None,n_clusters=2,init='random',random_state = None,metric='
 
 
 #######################################################################
-class Kmeans(BaseEstimator, ClassifierMixin,ClusterMixin):
+class Kmeans(BaseEstimator, ClassifierMixin,ClusterMixin,TransformerMixin):
     
     def __init__(self,n_clusters=2,max_iter=100,metric='riemann',random_state = None,init='random',n_init=10,n_jobs=1,tol=1e-4):
         self.metric = metric
@@ -48,19 +48,37 @@ class Kmeans(BaseEstimator, ClassifierMixin,ClusterMixin):
     def fit(self,X,y=None):
         if (self.init is not 'random') | (self.n_init==1):
             # no need to iterate if init is not random
-            labels,inertia,mdm = _fit_single(X,y,n_clusters=self.n_clusters,init=self.init,random_state = self.seed,metric=self.metric,max_iter=self.max_iter,tol=self.tol)
+            labels,inertia,mdm = _fit_single(X,y,
+                            n_clusters=self.n_clusters,
+                            init=self.init,
+                            random_state = self.seed,
+                            metric=self.metric,
+                            max_iter=self.max_iter,
+                            tol=self.tol)
         else:
             numpy.random.seed(self.seed)
             seeds = numpy.random.randint(numpy.iinfo(numpy.int32).max, size=self.n_init)
             if self.n_jobs==1:
                 res = []
                 for i in range(self.n_init):
-                    res = _fit_single(X,y,n_clusters=self.n_clusters,init=self.init,random_state = seeds[i],metric=self.metric,max_iter=self.max_iter,tol=self.tol)
+                    res = _fit_single(X,y,
+                        n_clusters=self.n_clusters,
+                        init=self.init,
+                        random_state = seeds[i],
+                        metric=self.metric,
+                        max_iter=self.max_iter,
+                        tol=self.tol)
                 labels,inertia,mdm = zip(res)
             else:
                 
                 res = Parallel(n_jobs=self.n_jobs, verbose=0)(
-                    delayed(_fit_single)(X,y,n_clusters=self.n_clusters,init=self.init,random_state = seed,metric=self.metric,max_iter=self.max_iter,tol=self.tol)
+                    delayed(_fit_single)(X,y,
+                        n_clusters=self.n_clusters,
+                        init=self.init,
+                        random_state = seed,
+                        metric=self.metric,
+                        max_iter=self.max_iter,
+                        tol=self.tol)
                     for seed in seeds)
                 labels,inertia,mdm = zip(*res)
             
@@ -87,24 +105,18 @@ class Kmeans(BaseEstimator, ClassifierMixin,ClusterMixin):
 #######################################################################
 class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
     
-    def __init__(self,n_clusters=2,max_iter=100,metric='riemann',random_state = None,init='random',n_init=10,n_jobs=1,tol=1e-4):
-        self.metric = metric
-        self.n_clusters = n_clusters
-        self.max_iter = max_iter
-        self.seed = random_state
-        self.init = init
-        self.n_init = n_init 
-        self.tol = tol
-        self.n_jobs = n_jobs
+    def __init__(self,n_clusters=2,**params):
+        params['n_clusters'] = n_clusters
+        self.km = Kmeans(**params)
+        self.metric = self.km.metric
         self.covmeans = []
     
     def fit(self,X,y):
         self.classes = numpy.unique(y)
         nclasses = len(self.classes)
-        km = Kmeans(n_clusters=self.n_clusters,max_iter=self.max_iter,metric=self.metric,random_state = self.seed,init=self.init,n_init=self.n_init,n_jobs=self.n_jobs,tol=self.tol)
         for c in self.classes:
-            km.fit(X[y==c])
-            self.covmeans.extend(km.covmeans())
+            self.km.fit(X[y==c])
+            self.covmeans.extend(self.km.covmeans())
         return self
 
     def transform(self,X):        
