@@ -3,6 +3,8 @@ python:
   - "2.7"
   - "3.4"
 # command to install dependencies
-install: "pip install ."
+install: 
+  - "apt-get install python-numpy python-scipy"
+  - "pip install ."
 # command to run tests
 script: nosetests
