@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='pyriemann',
-      version='0.1',
+      version='0.2',
       description='Riemannian Geometry for python',
       url='',
       author='Alexandre Barachant',

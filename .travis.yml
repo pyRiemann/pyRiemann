@@ -10,7 +10,7 @@ install:
   # Create a new virtualenv using system site packages for numpy and scipy
   - virtualenv --system-site-packages testvenv
   - source testvenv/bin/activate
-  - pip install -U coveralls nose scikit-learn 
+  - pip install coverage coveralls nose scikit-learn 
   - python setup.py build install
 # command to run tests
 script: nosetests  --with-coverage --cover-package=pyriemann
