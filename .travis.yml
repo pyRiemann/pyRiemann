@@ -4,7 +4,7 @@ python:
   - "3.4"
 # command to install dependencies
 install: 
-  - "apt-get install python-numpy python-scipy"
+  - "sudo apt-get install python-numpy python-scipy"
   - "pip install ."
 # command to run tests
 script: nosetests
