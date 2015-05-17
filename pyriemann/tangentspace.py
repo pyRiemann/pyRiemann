@@ -37,9 +37,10 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 ########################################################################        
 class FGDA(BaseEstimator, TransformerMixin):
 
-    def __init__(self,tsupdate = False):
-
-        self._ts = TangentSpace(tsupdate=tsupdate)
+    def __init__(self,metric='riemann',tsupdate = False):
+        self.metric = metric
+        self.tsupdate = tsupdate
+        self._ts = TangentSpace(metric=metric,tsupdate=tsupdate)
         
     
     def _fit_lda(self,X,y):

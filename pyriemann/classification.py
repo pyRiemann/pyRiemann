@@ -50,7 +50,7 @@ class FgMDM(BaseEstimator, ClassifierMixin):
         self.metric = metric
         self.tsupdate = tsupdate
         self._mdm = MDM(metric=self.metric)
-        self._fgda = FGDA(tsupdate=self.tsupdate)
+        self._fgda = FGDA(metric=self.metric,tsupdate=self.tsupdate)
         
     def fit(self,X,y):
         cov = self._fgda.fit_transform(X,y)
