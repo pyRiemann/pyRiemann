@@ -3,13 +3,9 @@ python:
   - "2.7"
   - "3.4"
 # command to install dependencies
-sudo : false
-cache:
-  directories: 
-    - $PWD/wheelhouse
 install: 
-script:
-  - pip wheel -r requirements.txt
-  - pip install -r requirements.txt
+  - sudo apt-get install python-numpy python-scipy libatlas-dev libatlas3gf-base
+  - pip install -q scikit-learn
+  - python setup.py install
 # command to run tests
 script: nosetests
