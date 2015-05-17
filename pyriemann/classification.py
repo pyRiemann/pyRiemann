@@ -1,7 +1,8 @@
 import numpy
 from sklearn.base  import BaseEstimator, ClassifierMixin, TransformerMixin
 
-from .utils import mean_covariance, distance
+from .utils.mean import mean_covariance
+from .utils.distance import distance
 from .tangentspace import TangentSpace,FGDA
 
 #######################################################################

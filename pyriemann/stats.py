@@ -1,5 +1,5 @@
 from sklearn.neighbors import DistanceMetric
-from .utils import distance
+from .utils.distance import distance
 
 import numpy
 import pandas

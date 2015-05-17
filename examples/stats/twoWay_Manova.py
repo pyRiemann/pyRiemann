@@ -7,7 +7,7 @@ from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
 from mne.event import find_events
 
-from pyriemann.permutations import PermutationTestTwoWay
+from pyriemann.stats import PermutationTestTwoWay
 from pyriemann.estimation import Covariances
 
 ###############################################################################

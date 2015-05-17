@@ -1,4 +1,5 @@
-from .utils import mean_covariance, distance
+from .utils.mean import mean_covariance
+from .utils.distance import distance
 from .classification import MDM
 import numpy
 from sklearn.base  import BaseEstimator, TransformerMixin
@@ -13,7 +14,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         self.dist = []
     
     def fit(self,X,y=None):
-        mdm = MDM(self.metric)
+        mdm = MDM(metric=self.metric)
         mdm.fit(X,y)
         self.covmeans = mdm.covmeans
         

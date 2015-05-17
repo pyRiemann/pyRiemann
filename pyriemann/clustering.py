@@ -4,7 +4,8 @@ from sklearn.cluster.k_means_ import _init_centroids
 from sklearn.externals.joblib import Parallel
 from sklearn.externals.joblib import delayed
 
-from .utils import mean_covariance, distance
+from .utils.mean import mean_covariance
+from .utils.distance import distance
 from .classification import MDM
 
 #######################################################################

@@ -1,4 +1,5 @@
-from .utils import mean_covariance, tangent_space, untangent_space
+from .utils.mean import mean_covariance
+from .utils.tangentspace import tangent_space, untangent_space
 
 import numpy
 from sklearn.base  import BaseEstimator, TransformerMixin

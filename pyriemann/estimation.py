@@ -7,21 +7,27 @@ from sklearn.covariance import oas,ledoit_wolf,fast_mcd,empirical_covariance
 
 ### Mapping different estimator on the sklearn toolbox
 def _lwf(X):
+    """Wrapper for sklearn ledoit wolf covariance estimator"""
     C,_ = ledoit_wolf(X.T)
     return C
 
 def _oas(X):
+    """Wrapper for sklearn oas covariance estimator"""
     C,_ = oas(X.T)
     return C
 
 def _scm(X):
+    """Wrapper for sklearn sample covariance estimator"""
     return empirical_covariance(X.T)
 
 def _mcd(X):
+    """Wrapper for sklearn mcd covariance estimator"""
     _,C,_,_ = fast_mcd(X.T)
     return C
 
 def _check_est(est):
+    """Check if a given estimator is valid"""
+    
     # Check estimator exist and return the correct function
     estimators = {
          'cov' : numpy.cov,
@@ -44,7 +50,6 @@ def _check_est(est):
     return est
 
 def covariances(X,est='cov'):
-    
     est = _check_est(est)
     Nt,Ne,Ns = X.shape
     covmats = numpy.zeros((Nt,Ne,Ne))

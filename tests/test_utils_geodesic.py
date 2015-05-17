@@ -1,5 +1,4 @@
-from numpy.testing import assert_equal, assert_array_equal, assert_array_almost_equal
-from nose.tools import assert_true, assert_raises, assert_not_equal
+from numpy.testing import assert_array_almost_equal
 import numpy as np
 
 from pyriemann.utils.geodesic import (geodesic_riemann,geodesic_euclid,geodesic_logeuclid,geodesic)
