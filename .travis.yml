@@ -8,8 +8,9 @@ virtualenv:
   system_site_packages: true
 install:
   - sudo apt-get update -qq
-  - sudo apt-get install python-numpy python-scipy libatlas-dev libatlas3gf-base python-sklearn libblas-dev liblapack-dev
+  - sudo apt-get install python-numpy python-scipy libatlas-dev libatlas3gf-base libblas-dev liblapack-dev
   - pip install coveralls
+  - pip install scikit-learn
   - python setup.py build install
 # command to run tests
 script: nosetests  --with-coverage --cover-package=pyriemann

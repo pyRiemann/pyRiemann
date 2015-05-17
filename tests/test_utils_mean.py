@@ -32,10 +32,10 @@ def test_logdet_mean():
     covmats = generate_cov(100,3)
     C = mean_logdet(covmats)
 
-def test_ald_mean():
-    """Test the Ale mean"""
-    covmats = generate_cov(100,3)
-    C = mean_ale(covmats)
+#def test_ald_mean():
+#    """Test the Ale mean"""
+#    covmats = generate_cov(100,3)
+#    C = mean_ale(covmats)
     
 def test_mean_covariance_riemann():
     """Test mean_covariance for riemannian metric"""
