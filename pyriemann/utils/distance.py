@@ -1,5 +1,5 @@
 import numpy
-from numpy.linalg import eigvalsh
+from scipy.linalg import eigvalsh
 
 from .base import sqrtm,invsqrtm,powm,logm,expm
 ###############################################################

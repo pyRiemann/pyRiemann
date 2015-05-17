@@ -4,8 +4,6 @@ python:
   - "3.4"
 # command to install dependencies
 install: 
-  - sudo apt-get install python-numpy python-scipy libatlas-dev libatlas3gf-base
-  - pip install -q scikit-learn
-  - python setup.py install
+  - sudo apt-get install python-numpy python-scipy libatlas-dev libatlas3gf-base python-sklearn
 # command to run tests
 script: nosetests
