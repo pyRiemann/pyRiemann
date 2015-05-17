@@ -8,32 +8,6 @@ from sklearn.base  import BaseEstimator
 from math import factorial
 from sklearn.metrics import pairwise_distances
 
-
-def space_perms(N,B=0,connected=0):
-    
-    if (numpy.max(N)>10)&(B==0):
-        print('Warning, to many perms')
-        B=1000
-    SPACE = None
-    for j in range(len(N)):
-        n=N[j]
-        if (j==0) | (connected==0):
-            if B==0:
-                Space=numpy.random.permutation(range(n))
-                Space=Space[::-1,::-1]
-            else:
-                Space=numpy.zeros((B+1,n))
-                for i in range(B):
-                    Space[i,:] = numpy.random.permutation(n)
-                Space[B,:] = range(n)
-        
-        if SPACE is None:
-            SPACE = Space
-        else:
-            SPACE = numpy.concatenate((SPACE,Space+SPACE.shape[1]),axis=1)
-
-    return SPACE
- 
 #######################################################################
 class RiemannDistanceMetric(DistanceMetric):
 
@@ -41,16 +15,15 @@ class RiemannDistanceMetric(DistanceMetric):
         self.metric = metric
     
     def pairwise(self,X,Y=None):
-        
+        Ntx,_,_ = X.shape
+
         if Y is None:
-            Ntx,_,_ = X.shape
-            dist = numpy.zeros((Ntx,Ntx))
+            dist = numpy.empty((Ntx,Ntx))
             for i in range(Ntx):
                 for j in range(i+1,Ntx):
                     dist[i,j] = distance(X[i],X[j])
             dist += dist.T
         else:
-            Ntx,_,_ = X.shape
             Nty,_,_ = Y.shape
             dist = numpy.empty((Ntx,Nty))
             for i in range(Ntx):
@@ -72,6 +45,7 @@ class SeparabilityIndex(BaseEstimator):
         if self.estimator is not None:
             X = self.estimator.fit_transform(X,y)
         self.pairs = RiemannDistanceMetric(self.metric).pairwise(X)
+        return self
         
     def score(self,y):
         groups = numpy.unique(y)
@@ -100,7 +74,8 @@ class SeparabilityIndexTwoFactor(BaseEstimator):
     
     def fit(self,X,y=None):
         self.pairs = RiemannDistanceMetric(self.metric).pairwise(X)
-        #self.pairs = pairwise_distances(X,X)
+        return self
+
     def score(self,fact1,fact2):
         groups1 = numpy.unique(fact1)
         groups2 = numpy.unique(fact2)
