@@ -3,8 +3,13 @@ python:
   - "2.7"
   - "3.4"
 # command to install dependencies
+sudo : false
+cache:
+  directories: 
+    - $PWD/wheelhouse
 install: 
-  - "sudo apt-get install gcc gfortran python-dev libblas-dev liblapack-dev cython"
-  - "pip install ."
+script:
+  - pip wheel .
+  - pip install .
 # command to run tests
 script: nosetests

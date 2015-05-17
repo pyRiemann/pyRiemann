@@ -10,7 +10,7 @@ def generate_cov(Nt,Ne):
     return covmats
 
 def test_MDM_init():
-    """Test if creation of MDM"""
+    """Test init of MDM"""
     mdm = MDM(metric='riemann')
 
 def test_MDM_fit():
@@ -38,7 +38,7 @@ def test_MDM_transform():
 
 
 def test_FgMDM_init():
-    """Test if creation of FgMDM"""
+    """Test init of FgMDM"""
     mdm = FgMDM(metric='riemann')
 
 def test_FgMDM_fit():
