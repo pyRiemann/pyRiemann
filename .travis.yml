@@ -1,10 +1,16 @@
 language: python
 python:
   - "2.7"
-  - "3.4"
-# command to install dependencies
-install: 
+#  - "3.4"
+# command to install dependencies\
+#cache: pip
+virtualenv:
+  system_site_packages: true
+install:
+  - sudo apt-get update -qq
   - sudo apt-get install python-numpy python-scipy libatlas-dev libatlas3gf-base python-sklearn libblas-dev liblapack-dev
-  - python setup.py install
+  - pip install coveralls
+  - python setup.py build install
 # command to run tests
-script: nosetests
+script: nosetests  --with-coverage --cover-package=pyriemann
+after_success: coveralls
