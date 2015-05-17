@@ -4,13 +4,13 @@ python:
 #  - "3.4"
 # command to install dependencies\
 cache: pip
-virtualenv:
-  system_site_packages: true
 install:
-  - sudo apt-get update -qq
-  - sudo apt-get install python-scipy libatlas-dev libatlas3gf-base libblas-dev liblapack-dev
-  - pip install -U numpy --upgrade
-  - pip install -U coveralls scikit-learn 
+  - sudo apt-get install -qq python-scipy python-numpy libatlas-dev libatlas3gf-base libblas-dev liblapack-dev
+  - deactivate
+  # Create a new virtualenv using system site packages for numpy and scipy
+  - virtualenv --system-site-packages testvenv
+  - source testvenv/bin/activate
+  - pip install -U coveralls nose scikit-learn 
   - python setup.py build install
 # command to run tests
 script: nosetests  --with-coverage --cover-package=pyriemann
