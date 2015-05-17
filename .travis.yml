@@ -9,7 +9,8 @@ virtualenv:
 install:
   - sudo apt-get update -qq
   - sudo apt-get install python-scipy libatlas-dev libatlas3gf-base libblas-dev liblapack-dev
-  - pip install coveralls scikit-learn numpy
+  - pip install -U numpy --upgrade
+  - pip install -U coveralls scikit-learn 
   - python setup.py build install
 # command to run tests
 script: nosetests  --with-coverage --cover-package=pyriemann
