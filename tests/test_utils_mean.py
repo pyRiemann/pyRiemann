@@ -16,6 +16,11 @@ def test_riemann_mean():
     covmats = generate_cov(100,3)
     C = mean_riemann(covmats)
 
+def test_riemann_mean_with_init():
+    """Test the riemannian mean with init"""
+    covmats = generate_cov(100,3)
+    C = mean_riemann(covmats,init=covmats[0])
+
 def test_logeuclid_mean():
     """Test the logeuclidean mean"""
     covmats = generate_cov(100,3)
@@ -27,10 +32,21 @@ def test_euclid_mean():
     C = mean_euclid(covmats)
     assert_array_almost_equal(C,covmats.mean(axis=0))
 
+def test_identity_mean():
+    """Test the logdet mean"""
+    covmats = generate_cov(100,3)
+    C = mean_identity(covmats)
+    assert_array_equal(C,eye(3))
+
 def test_logdet_mean():
     """Test the logdet mean"""
     covmats = generate_cov(100,3)
     C = mean_logdet(covmats)
+
+def test_logdet_mean_with_init():
+    """Test the logdet mean"""
+    covmats = generate_cov(100,3)
+    C = mean_logdet(covmats,init=covmats[0])
 
 #def test_ald_mean():
 #    """Test the Ale mean"""
