@@ -18,27 +18,27 @@ class RiemannDistanceMetric(DistanceMetric):
         Ntx,_,_ = X.shape
 
         if Y is None:
-            dist = numpy.empty((Ntx,Ntx))
+            dist = numpy.zeros((Ntx,Ntx))
             for i in range(Ntx):
                 for j in range(i+1,Ntx):
-                    dist[i,j] = distance(X[i],X[j])
+                    dist[i,j] = distance(X[i],X[j],self.metric)
             dist += dist.T
         else:
             Nty,_,_ = Y.shape
             dist = numpy.empty((Ntx,Nty))
             for i in range(Ntx):
                 for j in range(Nty):
-                    dist[i,j] = distance(X[i],Y[j])
+                    dist[i,j] = distance(X[i],Y[j],self.metric)
         return dist
         
     def get_metric(self):
-        return "riemann"
+        return self.metric
 
 #######################################################################
 class SeparabilityIndex(BaseEstimator):
     def __init__(self,method='',metric='riemann',estimator=None):
         self.method = method
-        self.metric = 'riemann'
+        self.metric = metric
         self.estimator = estimator
     
     def fit(self,X,y=None):
