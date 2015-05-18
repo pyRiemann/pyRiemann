@@ -57,14 +57,11 @@ class Xdawn(BaseEstimator,TransformerMixin):
         self.P = numpy.concatenate(self.P,axis=0)
         self.V = numpy.concatenate(self.V,axis=0)
         self._patterns = numpy.concatenate(self._patterns,axis=0)
+        return self
         
     
     def transform(self,X):
         X = numpy.dot(self.V,X)
         X = X.transpose((1,0,2))
         return X
-    
-    def fit_transform(self,X,y):
-        self.fit(X,y)
-        return self.transform(X)   
         
