@@ -28,6 +28,13 @@ def test_MDM_predict():
     mdm.fit(covset,labels)
     mdm.predict(covset)
     
+def test_MDM_fit_predict():
+    """Test Fit & predict of MDM"""
+    covset = generate_cov(100,3)
+    labels = np.array([0,1]).repeat(50)
+    mdm = MDM(metric='riemann')
+    mdm.fit_predict(covset,labels)
+    
 def test_MDM_transform():
     """Test transform of MDM"""
     covset = generate_cov(100,3)

@@ -1,7 +1,7 @@
 from numpy.testing import assert_array_almost_equal,assert_array_equal
 import numpy as np
 
-from pyriemann.utils.mean import (mean_riemann,mean_euclid,mean_logeuclid,mean_logdet,mean_ale,mean_covariance)
+from pyriemann.utils.mean import (mean_riemann,mean_euclid,mean_logeuclid,mean_logdet,mean_ale,mean_identity,mean_covariance)
 
 def generate_cov(Nt,Ne):
     """Generate a set of cavariances matrices for test purpose"""
@@ -36,7 +36,7 @@ def test_identity_mean():
     """Test the logdet mean"""
     covmats = generate_cov(100,3)
     C = mean_identity(covmats)
-    assert_array_equal(C,eye(3))
+    assert_array_equal(C,np.eye(3))
 
 def test_logdet_mean():
     """Test the logdet mean"""

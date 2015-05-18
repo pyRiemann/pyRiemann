@@ -147,7 +147,7 @@ def mean_identity(covmats):
     :returns: the identity matrix of size Nchannels
     
     """
-    C = eye(covmats.shape[1])
+    C = numpy.eye(covmats.shape[1])
     return C
     
 def mean_covariance(covmats,metric='riemann',*args):

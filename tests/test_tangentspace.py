@@ -27,6 +27,13 @@ def test_TangentSpace_transform():
     ts.fit(covset)
     ts.transform(covset)
     
+def test_TangentSpace_transform_with_ts_update():
+    """Test transform of Tangent Space with TSupdate"""
+    covset = generate_cov(100,3)
+    ts = TangentSpace(metric='riemann',tsupdate=True)
+    ts.fit(covset)
+    ts.transform(covset)
+    
 def test_TangentSpace_inversetransform():
     """Test inverse transform of Tangent Space"""
     covset = generate_cov(100,3)
