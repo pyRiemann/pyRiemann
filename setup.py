@@ -1,4 +1,4 @@
-from setuptools import setup
+from setuptools import setup,find_packages
 
 setup(name='pyriemann',
       version='0.2',
@@ -7,6 +7,6 @@ setup(name='pyriemann',
       author='Alexandre Barachant',
       author_email='alexandre.barachant@gmail.com',
       license='GPLv3',
-      packages=['pyriemann'],
+      packages=find_packages(),
       install_requires=['numpy','scipy','scikit-learn'],
       zip_safe=False)
