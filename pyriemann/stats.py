@@ -161,14 +161,6 @@ class PermutationTest(BaseEstimator):
 
         return self.p_value,self.F
     
-    def n_combinaisons(self,y):
-        a = len(numpy.unique(y))
-        n = len(y)/a
-        factorial(a*n)/(factorial(a)*(factorial(n))**a)
-    
-    def generate_perms(self,y,n_perms):
-        pass
-        
     
     def summary(self):
         sep = self.SepIndex
