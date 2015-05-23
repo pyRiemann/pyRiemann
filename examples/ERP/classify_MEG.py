@@ -3,7 +3,8 @@
 Decoding in sensor space data using Riemannian Geometry and XDAWN
 ====================================================================
 
-Decoding applied to MEG data in sensor space decomposed using Xdawn.
+Decoding applied to MEG data in sensor space decomposed using Xdawn
+And Riemannian Geometry.
 After spatial filtering, covariances matrices are estimated and
 classified by the MDM algorithm (Nearest centroid).
 
@@ -59,7 +60,7 @@ labels = epochs.events[:, -1]
 evoked = epochs.average()
 
 ###############################################################################
-# Decoding in sensor space using a linear SVM
+# Decoding in sensor space using a MDM
 
 
 n_components = 3  # pick some components
