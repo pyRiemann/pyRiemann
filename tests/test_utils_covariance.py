@@ -1,5 +1,5 @@
 from numpy.testing import assert_array_almost_equal,assert_array_equal
-from nose.tools import assert_equal
+from nose.tools import assert_equal, assert_raises
 import numpy as np
 
 from pyriemann.utils.covariance import (covariances, covariances_EP,
@@ -14,6 +14,8 @@ def test_covariances():
     cov = covariances(x, estimator='scm')
     cov = covariances(x, estimator='corr')
     cov = covariances(x, estimator='mcd')
+    cov = covariances(x, estimator=np.cov)
+    assert_raises(ValueError,covariances, x, estimator='truc')
 
 def test_covariances_EP():
     """Test covariance_EP for multiple estimator"""
@@ -36,6 +38,7 @@ def test_covariances_cospectrum():
     """Test eegtocov"""
     x = np.random.randn(3, 1000)
     cov = cospectrum(x)
+    cov = cospectrum(x,fs=128,fmin=2,fmax=40)
     
     
     
