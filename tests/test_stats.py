@@ -15,7 +15,7 @@ def test_permutation_test():
     labels = np.array([0,1]).repeat(5)
     p = PermutationTest(10)
     p.test(covset,labels)
-    p.summary()
+    #p.summary()
     
 def test_permutation2way_test():
     """Test two way permutation test"""
@@ -23,4 +23,4 @@ def test_permutation2way_test():
     labels = np.array([0,1]).repeat(5)
     p = PermutationTestTwoWay(10)
     p.test(covset,labels,labels)
-    p.summary()
+    #p.summary()

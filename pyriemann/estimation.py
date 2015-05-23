@@ -23,7 +23,7 @@ class Covariances(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
 
-        covmats = covariances(X, est=self.estimator)
+        covmats = covariances(X, estimator=self.estimator)
         return covmats
 
     def fit_transform(self, X, y=None):
@@ -60,7 +60,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
 
-        covmats = covariances_EP(X, self.P, est=self.estimator)
+        covmats = covariances_EP(X, self.P, estimator=self.estimator)
         return covmats
 
     def fit_transform(self, X, y):
@@ -94,7 +94,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         if self.applyfilters:
             X = self.Xd.transform(X)
 
-        covmats = covariances_EP(X, self.Xd.P, est=self.estimator)
+        covmats = covariances_EP(X, self.Xd.P, estimator=self.estimator)
         return covmats
 
     def fit_transform(self, X, y):

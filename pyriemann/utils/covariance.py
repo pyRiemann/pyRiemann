@@ -56,8 +56,8 @@ def _check_est(est):
     return est
 
 
-def covariances(X, est='cov'):
-    est = _check_est(est)
+def covariances(X, estimator='cov'):
+    est = _check_est(estimator)
     Nt, Ne, Ns = X.shape
     covmats = numpy.zeros((Nt, Ne, Ne))
     for i in range(Nt):
@@ -65,8 +65,8 @@ def covariances(X, est='cov'):
     return covmats
 
 
-def covariances_EP(X, P, est='cov'):
-    est = _check_est(est)
+def covariances_EP(X, P, estimator='cov'):
+    est = _check_est(estimator)
     Nt, Ne, Ns = X.shape
     Np, Ns = P.shape
     covmats = numpy.zeros((Nt, Ne + Np, Ne + Np))
@@ -75,7 +75,8 @@ def covariances_EP(X, P, est='cov'):
     return covmats
 
 
-def eegtocov(sig, window=128, overlapp=0.5, padding=True):
+def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
+    est = _check_est(estimator)
     X = []
     if padding:
         padd = numpy.zeros((int(window / 2), sig.shape[1]))
@@ -85,7 +86,7 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True):
     jump = int(window * overlapp)
     ix = 0
     while (ix + window < Ns):
-        X.append(numpy.cov(sig[ix:ix + window, :].T))
+        X.append(est(sig[ix:ix + window, :].T))
         ix = ix + jump
 
     return numpy.array(X)
