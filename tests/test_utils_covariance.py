@@ -32,7 +32,7 @@ def test_covariances_eegtocov():
     cov = eegtocov(x)
     assert_equal(cov.shape[1],3)
     
-def test_covariances_eegtocov():
+def test_covariances_cospectrum():
     """Test eegtocov"""
     x = np.random.randn(3, 1000)
     cov = cospectrum(x)
