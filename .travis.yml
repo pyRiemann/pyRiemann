@@ -19,4 +19,6 @@ install:
 # command to run tests
 script: nosetests  --with-coverage --cover-package=pyriemann
 after_success:
-  - coveralls
+  - pip install distribute --upgrade
+  - pip install coveralls --upgrade
+  - coveralls --verbose
