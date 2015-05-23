@@ -11,7 +11,6 @@ install:
   - virtualenv --system-site-packages testvenv
   - source testvenv/bin/activate
   - pip install pip --upgrade
-  - pip install requests --upgrade
   - pip install coverage coveralls
   - pip install nose scikit-learn --upgrade
   - python setup.py build install
@@ -19,5 +18,5 @@ install:
 script: nosetests  --with-coverage --cover-package=pyriemann
 after_success:
   - deactivate
-  - pip install coveralls --upgrade
+  - sudo pip install coveralls --upgrade
   - coveralls --verbose
