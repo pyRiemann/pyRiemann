@@ -3,7 +3,7 @@ from .utils.distance import distance
 
 import numpy
 import pandas
-from pylab import hist, plt
+import matplotlib.pyplot as plt
 from sklearn.base import BaseEstimator
 
 #######################################################################
@@ -197,7 +197,7 @@ class PermutationTest(BaseEstimator):
 
     def plot(self, nbins=100, range=None):
         plt.plot([self.F[0], self.F[0]], [0, 100], '--r', lw=2)
-        h = hist(self.F, nbins, range)
+        h = plt.hist(self.F, nbins, range)
         plt.xlabel('F-value')
         plt.ylabel('Count')
         plt.grid()
@@ -266,7 +266,7 @@ class PermutationTestTwoWay(BaseEstimator):
         for i in range(3):
             plt.subplot(3, 1, i + 1)
             plt.plot([self.F[0, i], self.F[0, i]], [0, 100], '--r', lw=2)
-            h = hist(self.F[:, i], 100)
+            h = plt.hist(self.F[:, i], 100)
             plt.xlabel('F-value')
             plt.ylabel('Count')
             plt.grid()
