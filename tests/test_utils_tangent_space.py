@@ -13,17 +13,17 @@ def generate_cov(Nt,Ne):
     
 def test_tangent_space():
     """Test tangent space projection"""
-    C = generate_cov(100,3)
+    C = generate_cov(10,3)
     T = tangent_space(C,np.eye(3))
     
 def test_untangent_space():
     """Test untangent space projection"""
-    T = np.random.randn(100,6)
+    T = np.random.randn(10,6)
     covmats = untangent_space(T,np.eye(3))
     
 def test_tangent_and_untangent_space():
     """Test tangent space projection and retro-projection should be the same"""
-    C = generate_cov(100,3)
+    C = generate_cov(10,3)
     T = tangent_space(C,np.eye(3))
     covmats = untangent_space(T,np.eye(3))
     assert_array_equal(C,covmats)
