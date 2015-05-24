@@ -17,7 +17,7 @@ def test_permutation_test():
     p = PermutationTest(10)
     p.test(covset,labels)
     p.summary()
-    p.plot(nbins=2)
+    #p.plot(nbins=2)
     
 def test_permutation2way_test():
     """Test two way permutation test"""
@@ -27,4 +27,4 @@ def test_permutation2way_test():
     p = PermutationTestTwoWay(200)
     p.test(covset,labels2,labels)
     p.summary()
-    p.plot(nbins=2)
+    #p.plot(nbins=2)
