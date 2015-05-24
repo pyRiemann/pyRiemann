@@ -262,12 +262,14 @@ class PermutationTestTwoWay(BaseEstimator):
         res = pandas.DataFrame(data, index=index, columns=cols)
         return res
 
-    def plot(self):
+    def plot(self,nbins=100,plt_range=None):
+        h = None
         for i in range(3):
             plt.subplot(3, 1, i + 1)
-            plt.plot([self.F[0, i], self.F[0, i]], [0, 100], '--r', lw=2)
-            h = plt.hist(self.F[:, i], 100)
-            plt.xlabel('F-value')
-            plt.ylabel('Count')
-            plt.grid()
-            return h
+            if not numpy.isnan(self.F[0, i]):
+                h = plt.hist(self.F[:, i], nbins,plt_range)
+                plt.plot([self.F[0, i], self.F[0, i]], [0, 100], '--r', lw=2)
+                plt.xlabel('F-value')
+                plt.ylabel('Count')
+                plt.grid()
+        return h
