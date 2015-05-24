@@ -1,4 +1,9 @@
 [report]
+source = pyriemann
+include = */pyriemann/*
 omit =
     */python?.?/*
     */site-packages/nose/*
+    */setup.py
+    */tests/*
+    */examples/*
