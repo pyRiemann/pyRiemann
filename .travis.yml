@@ -19,4 +19,4 @@ script: nosetests  --with-coverage --cover-package=pyriemann
 after_success:
   - deactivate
   - sudo pip install python-coveralls --upgrade
-  - coveralls --verbose
+  - coveralls
