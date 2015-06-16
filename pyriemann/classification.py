@@ -11,7 +11,22 @@ from .tangentspace import FGDA
 class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     def __init__(self, metric='riemann'):
-        self.metric = metric
+
+        if isinstance(metric, str):
+            self.metric_mean = metric
+            self.metric_dist = metric
+
+        elif isinstance(metric, dict):
+            # check keys
+            for key in ['mean', 'distance']:
+                if key not in metric.keys():
+                    raise KeyError('metric must contain "mean" and "distance"')
+
+            self.metric_mean = metric['mean']
+            self.metric_dist = metric['distance']
+
+        else:
+            raise TypeError('metric must be dict or str')
 
     def fit(self, X, y):
 
@@ -21,7 +36,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         for l in self.classes:
             self.covmeans.append(
-                mean_covariance(X[y == l, :, :], metric=self.metric))
+                mean_covariance(X[y == l, :, :], metric=self.metric_mean))
 
         return self
 
@@ -32,7 +47,8 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         for m in range(Nc):
             for k in range(Nt):
-                dist[k, m] = distance(covtest[k, :, :], self.covmeans[m])
+                dist[k, m] = distance(covtest[k, :, :], self.covmeans[m],
+                                      metric=self.metric_dist)
         return dist
 
     def predict(self, covtest):

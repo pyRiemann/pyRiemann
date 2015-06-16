@@ -1,4 +1,5 @@
 import numpy as np
+from nose.tools import assert_raises
 from pyriemann.classification import MDM,FgMDM
 
 def generate_cov(Nt,Ne):
@@ -12,6 +13,15 @@ def generate_cov(Nt,Ne):
 def test_MDM_init():
     """Test init of MDM"""
     mdm = MDM(metric='riemann')
+
+    # Should raise if metric not string or dict
+    assert_raises(TypeError,MDM,metric=42)
+
+    # Should raise if metric is not contain bad keys
+    assert_raises(KeyError,MDM,metric={'universe' : 42})
+
+    #should works with correct dict
+    mdm = MDM(metric={'mean' : 'riemann', 'distance' : 'logeuclid'})
 
 def test_MDM_fit():
     """Test Fit of MDM"""
@@ -27,14 +37,14 @@ def test_MDM_predict():
     mdm = MDM(metric='riemann')
     mdm.fit(covset,labels)
     mdm.predict(covset)
-    
+
 def test_MDM_fit_predict():
     """Test Fit & predict of MDM"""
     covset = generate_cov(100,3)
     labels = np.array([0,1]).repeat(50)
     mdm = MDM(metric='riemann')
     mdm.fit_predict(covset,labels)
-    
+
 def test_MDM_transform():
     """Test transform of MDM"""
     covset = generate_cov(100,3)
@@ -62,6 +72,3 @@ def test_FgMDM_predict():
     mdm = FgMDM(metric='riemann')
     mdm.fit(covset,labels)
     mdm.predict(covset)
-    
-
-    
