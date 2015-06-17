@@ -42,12 +42,11 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     def __init__(self, classes=None, estimator='scm', svd=None):
         self.classes = classes
         self.estimator = estimator
+        self.svd = svd
 
         if svd is not None:
             if not isinstance(svd,int):
                 raise TypeError('svd must be None or int')
-
-        self.svd = svd
 
     def fit(self, X, y):
 

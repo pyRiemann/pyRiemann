@@ -12,6 +12,9 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     def __init__(self, metric='riemann'):
 
+        # store params for cloning purpose 
+        self.metric = metric
+
         if isinstance(metric, str):
             self.metric_mean = metric
             self.metric_dist = metric
