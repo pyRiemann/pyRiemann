@@ -19,7 +19,7 @@ class Covariances(BaseEstimator, TransformerMixin):
         self.estimator = estimator
 
     def fit(self, X, y=None):
-        pass
+        return self
 
     def transform(self, X):
 
@@ -69,6 +69,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
             self.P.append(P)
 
         self.P = numpy.concatenate(self.P, axis=0)
+        return self
 
     def transform(self, X):
 
@@ -101,6 +102,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y):
         self.Xd.fit(X, y)
+        return self
 
     def transform(self, X):
         if self.applyfilters:
@@ -140,7 +142,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
         self._phase_corr = phase_correction
 
     def fit(self, X, y=None):
-        pass
+        return self
 
     def transform(self, X):
 
