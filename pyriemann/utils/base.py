@@ -1,4 +1,5 @@
 import numpy
+import scipy
 
 ###############################################################
 # Basic Functions
@@ -18,7 +19,7 @@ def sqrtm(Ci):
     :returns: the matrix square root
 
     """
-    D, V = numpy.linalg.eigh(Ci)
+    D, V = scipy.linalg.eigh(Ci)
     D = numpy.matrix(numpy.diag(numpy.sqrt(D)))
     V = numpy.matrix(V)
     Out = numpy.matrix(V * D * V.T)
