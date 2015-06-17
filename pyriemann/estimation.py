@@ -39,9 +39,15 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(self, classes=None, estimator='scm'):
+    def __init__(self, classes=None, estimator='scm', svd=None):
         self.classes = classes
         self.estimator = estimator
+
+        if svd is not None:
+            if not isinstance(svd,int):
+                raise TypeError('svd must be None or int')
+
+        self.svd = svd
 
     def fit(self, X, y):
 
@@ -54,6 +60,12 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         for c in classes:
             # Prototyped responce for each class
             P = numpy.mean(X[y == c, :, :], axis=0)
+
+            # Apply svd if requested
+            if self.svd is not None:
+                U, s, V = numpy.linalg.svd(P)
+                P = numpy.dot(U[:, 0:self.svd].T,P)
+
             self.P.append(P)
 
         self.P = numpy.concatenate(self.P, axis=0)
