@@ -82,10 +82,15 @@ def distance(A, B, metric='riemann'):
     :returns: the distance between A and B
 
     """
-
     distance_methods = {'riemann': distance_riemann,
                         'logeuclid': distance_logeuclid,
                         'euclid': distance_euclid,
                         'logdet': distance_logdet}
-    d = distance_methods[metric](A, B)
+    if len(A.shape) == 3:
+        d = numpy.empty((len(A), 1))
+        for i in range(len(A)):
+            d[i] = distance_methods[metric](A[i], B)
+    else:
+        d = distance_methods[metric](A, B)
+
     return d

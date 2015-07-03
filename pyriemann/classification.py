@@ -1,5 +1,6 @@
 import numpy
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
+from joblib import Parallel, delayed
 
 from .utils.mean import mean_covariance
 from .utils.distance import distance
@@ -7,13 +8,13 @@ from .tangentspace import FGDA
 
 #######################################################################
 
-
 class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
-    def __init__(self, metric='riemann'):
+    def __init__(self, metric='riemann',n_jobs=1):
 
-        # store params for cloning purpose 
+        # store params for cloning purpose
         self.metric = metric
+        self.n_jobs = n_jobs
 
         if isinstance(metric, str):
             self.metric_mean = metric
@@ -37,22 +38,28 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         self.covmeans = []
 
-        for l in self.classes:
-            self.covmeans.append(
-                mean_covariance(X[y == l, :, :], metric=self.metric_mean))
+        if self.n_jobs == 1:
+            for l in self.classes:
+                self.covmeans.append(
+                    mean_covariance(X[y == l, :, :], metric=self.metric_mean))
+        else:
+            self.covmeans = Parallel(n_jobs=self.n_jobs)(delayed(mean_covariance)(X[y == l, :, :],metric=self.metric_mean) for l in self.classes)
 
         return self
 
     def _predict_distances(self, covtest):
-        Nt = covtest.shape[0]
         Nc = len(self.covmeans)
-        dist = numpy.empty((Nt, Nc))
 
-        for m in range(Nc):
-            for k in range(Nt):
-                dist[k, m] = distance(covtest[k, :, :], self.covmeans[m],
-                                      metric=self.metric_dist)
+        if self.n_jobs == 1:
+            dist = [distance(covtest, self.covmeans[m], self.metric_dist)
+                    for m in range(Nc)]
+        else:
+            dist = Parallel(n_jobs=self.n_jobs)(delayed(distance)(covtest, self.covmeans[m], self.metric_dist) for m in range(Nc))
+
+        dist = numpy.concatenate(dist, axis=1)
         return dist
+
+
 
     def predict(self, covtest):
         dist = self._predict_distances(covtest)
