@@ -6,6 +6,30 @@ from .base import logm
 # distances
 ###############################################################
 
+def distance_kullback(A,B):
+    """Return the Kullback leibler divergence between
+    two covariance matrices A and B :
+
+    :param A: First covariance matrix
+    :param B: Second covariance matrix
+    :returns: Kullback leibler divergence between A and B
+
+    """
+    dim = A.shape[0]
+    logdet = numpy.log(numpy.linalg.det(B) / numpy.linalg.det(A))
+    kl = numpy.trace(numpy.dot(numpy.linalg.inv(B), A)) - dim + logdet
+    return 0.5 * kl
+
+
+def distance_kullback_right(A, B):
+    """wrapper for right kullblack leibler div."""
+    return distance_kullback(B, A)
+
+
+def distance_kullback_sym(A, B):
+    """Symetrized kullback leibler divergence."""
+    return distance_kullback(A, B) + distance_kullback_right(A, B)
+
 
 def distance_euclid(A, B):
     """Return the Euclidean distance (Froebenius norm) between
@@ -78,14 +102,19 @@ def distance(A, B, metric='riemann'):
 
     :param A: First covariance matrix
     :param B: Second covariance matrix
-    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet'
+    :param metric: the metric (Default value 'riemann'), can be : 'riemann' ,
+    'logeuclid' , 'euclid' , 'logdet', 'kullback', 'kullback_right',
+    'kullback_sym'.
     :returns: the distance between A and B
 
     """
     distance_methods = {'riemann': distance_riemann,
                         'logeuclid': distance_logeuclid,
                         'euclid': distance_euclid,
-                        'logdet': distance_logdet}
+                        'logdet': distance_logdet,
+                        'kullback': distance_kullback,
+                        'kullback_right': distance_kullback_right,
+                        'kullback_sym': distance_kullback_sym}
     if len(A.shape) == 3:
         d = numpy.empty((len(A), 1))
         for i in range(len(A)):
