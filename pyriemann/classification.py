@@ -41,9 +41,9 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         if self.n_jobs == 1:
             for l in self.classes:
                 self.covmeans.append(
-                    mean_covariance(X[y == l, :, :], metric=self.metric_mean))
+                    mean_covariance(X[y == l], metric=self.metric_mean))
         else:
-            self.covmeans = Parallel(n_jobs=self.n_jobs)(delayed(mean_covariance)(X[y == l, :, :],metric=self.metric_mean) for l in self.classes)
+            self.covmeans = Parallel(n_jobs=self.n_jobs)(delayed(mean_covariance)(X[y == l],metric=self.metric_mean) for l in self.classes)
 
         return self
 
