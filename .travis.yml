@@ -4,10 +4,19 @@ python:
 #  - "3.4"
 # command to install dependencies\
 cache: pip
+sudo: false
+addons:
+  apt:
+    packages:
+      - python-scipy
+      - python-numpy
+      - libatlas-dev
+      - libatlas3gf-base
+      - libblas-dev
+      - liblapack-dev
+      - python-matplotlib
+      - python-pandas
 install:
-  - sudo apt-get install -qq python-scipy python-numpy libatlas-dev libatlas3gf-base libblas-dev liblapack-dev python-matplotlib python-pandas
-  #- deactivate
-  # Create a new virtualenv using system site packages for numpy and scipy
   - virtualenv --system-site-packages testvenv
   - source testvenv/bin/activate
   - pip install pip --upgrade
@@ -18,5 +27,5 @@ install:
 script: nosetests  --with-coverage --cover-package=pyriemann
 after_success:
   - deactivate
-  - sudo pip install python-coveralls --upgrade
+  - pip install python-coveralls --upgrade
   - coveralls
