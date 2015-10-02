@@ -149,3 +149,53 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
         mdm = MDM(metric=self.metric)
         mdm.covmeans = self.covmeans
         return mdm._predict_distances(X)
+
+
+class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
+
+    """Artefact detection with Riemannian potato."""
+
+    def __init__(self, metric='riemann', threshold=3, n_iter_max=100):
+        """Init."""
+        self.metric = metric
+        self.threshold = threshold
+        self.n_iter_max = n_iter_max
+
+    def fit(self, X, y=None):
+        """fit."""
+        self._mdm = MDM(metric=self.metric)
+
+        if y is None:
+            y_old = numpy.ones(len(X))
+        # start loop
+        for n_iter in range(self.n_iter_max):
+            ix = (y_old == 1)
+            self._mdm.fit(X[ix], y_old[ix])
+            y = numpy.zeros(len(X))
+            d = numpy.squeeze(numpy.log(self._mdm.transform(X[ix])))
+            self._mean = numpy.mean(d)
+            self._std = numpy.std(d)
+            y[ix] = self._get_z_score(d) < self.threshold
+
+            if numpy.array_equal(y, y_old):
+                break
+            else:
+                y_old = y
+        return self
+
+    def transform(self, X):
+        """transform."""
+        d = numpy.squeeze(numpy.log(self._mdm.transform(X)))
+        z = self._get_z_score(d)
+        return z
+
+    def predict(self, X):
+        """predict artefacts."""
+        z = self.transform(X)
+        pred = z < self.threshold
+        return pred
+
+    def _get_z_score(self, d):
+        """get z score from distance."""
+        z = (d - self._mean) / self._std
+        return z
