@@ -153,7 +153,37 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
 
 class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
-    """Artefact detection with Riemannian potato."""
+    """Artefact detection with the Riemannian Potato.
+
+    The Riemannian Potato [1] is a clustering method used to detect artifact in
+    EEG signals. The algorithm iteratively estimate the centroid of clean
+    signal by rejecting every trial that have a distance greater than several
+    standard deviation from it.
+
+    Parameters
+    ----------
+    metric : string (default 'riemann')
+        The type of metric used for centroid and distance estimation.
+    threshold : int (default 3)
+        The number of standard deviation to reject artifacts.
+    n_iter_max : int (default 100)
+        The maximum number of iteration to reach convergence.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.3
+
+    See Also
+    --------
+    Kmeans
+
+    References
+    ----------
+    [1] A. Barachant, A. Andreev and M. Congedo, "The Riemannian Potato: an
+    automatic and adaptive artifact detection method for online experiments
+    using Riemannian geometry", in Proceedings of TOBI Workshop IV, p. 19-20,
+    2013.
+    """
 
     def __init__(self, metric='riemann', threshold=3, n_iter_max=100):
         """Init."""
@@ -162,7 +192,20 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         self.n_iter_max = n_iter_max
 
     def fit(self, X, y=None):
-        """fit."""
+        """Fit the potato from covariance matrices.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+        y : ndarray | None (default None)
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        self : Potato instance
+            The Potato instance.
+        """
         self._mdm = MDM(metric=self.metric)
 
         if y is None:
@@ -184,13 +227,36 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         return self
 
     def transform(self, X):
-        """transform."""
+        """return the normalized log-distance to the centroid (z-score).
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        z : ndarray, shape (n_epochs, 1)
+            the normalized log-distance to the centroid.
+        """
         d = numpy.squeeze(numpy.log(self._mdm.transform(X)))
         z = self._get_z_score(d)
         return z
 
     def predict(self, X):
-        """predict artefacts."""
+        """predict artefact from data.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        pred : ndarray of bool, shape (n_epochs, 1)
+            the artefact detection. True if the trial is clean, and False if
+            the trial contain an artefact.
+        """
         z = self.transform(X)
         pred = z < self.threshold
         return pred
