@@ -16,16 +16,17 @@ addons:
       - liblapack-dev
       - python-matplotlib
       - python-pandas
+      - python-sklearn
 install:
-  - virtualenv --system-site-packages testvenv
-  - source testvenv/bin/activate
+  #- virtualenv --system-site-packages testvenv
+  #- source testvenv/bin/activate
   - pip install pip --upgrade
   - pip install coverage python-coveralls joblib
-  - pip install nose scikit-learn --upgrade
+  - pip install nose --upgrade
   - python setup.py build install
 # command to run tests
 script: nosetests  --with-coverage --cover-package=pyriemann
 after_success:
-  - deactivate
-  - pip install python-coveralls --upgrade
+  #- deactivate
+  #- pip install python-coveralls --upgrade
   - coveralls

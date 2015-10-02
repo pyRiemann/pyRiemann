@@ -1,5 +1,4 @@
 [report]
-source = pyriemann
 include = */pyriemann/*
 omit =
     */python?.?/*
