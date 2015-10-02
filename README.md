@@ -26,7 +26,7 @@ The documentation is available on http://pythonhosted.org/pyriemann
 pip install pyriemann
 ```
 
-#### From sources 
+#### From sources
 
 For the latest version, you can install the package from the sources using the setup.py script
 
@@ -96,7 +96,7 @@ nosetests
 ```
 
 
-# References 
+# References
 
 > [1] A. Barachant, M. Congedo ,"A Plug&Play P300 BCI Using Information Geometry", arXiv:1409.0107. [link](http://arxiv.org/abs/1409.0107)
 >
@@ -108,3 +108,9 @@ nosetests
 >
 > [5] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, “Classification of covariance matrices using a Riemannian-based kernel for BCI applications“, in NeuroComputing, vol. 112, p. 172-178, 2013. [pdf](http://hal.archives-ouvertes.fr/docs/00/82/04/75/PDF/BARACHANT_Neurocomputing_ForHal.pdf)
 
+# changelog
+
+### v0.2.3
+ - Added multiprocessing for MDM with joblib
+ - Added kullback-leibler divergence
+ - Added Riemannian Potato
