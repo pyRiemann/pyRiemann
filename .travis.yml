@@ -20,10 +20,10 @@ addons:
 install:
   #- virtualenv --system-site-packages testvenv
   #- source testvenv/bin/activate
-  - pip install pip --upgrade
+  #- pip install pip --upgrade
   - pip install coverage python-coveralls joblib
   - pip install nose --upgrade
-  - python setup.py build install
+  - python setup.py install
 # command to run tests
 script: nosetests  --with-coverage --cover-package=pyriemann
 after_success:
