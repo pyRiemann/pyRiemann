@@ -21,8 +21,7 @@ install:
   #- virtualenv --system-site-packages testvenv
   #- source testvenv/bin/activate
   #- pip install pip --upgrade
-  - pip install coverage python-coveralls joblib
-  - pip install nose --upgrade
+  - pip install coverage python-coveralls nose
   - python setup.py install
 # command to run tests
 script: nosetests  --with-coverage --cover-package=pyriemann
