@@ -104,10 +104,10 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
             best = numpy.argmin(inertia)
             mdm = mdm[best]
             labels = labels[best]
-            inertial = inertia[best]
+            inertia = inertia[best]
 
         self.mdm = mdm
-        self.inertia = inertial
+        self.inertia = inertia
         self.labels_ = labels
 
         return self
