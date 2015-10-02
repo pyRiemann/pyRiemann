@@ -1,6 +1,11 @@
 pyriemann package
 =================
 
+.. automodule:: pyriemann.clustering
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 pyriemann.utils
 -------------------------------
 
@@ -30,15 +35,15 @@ pyriemann.utils.geodesic module
 
 pyriemann.utils.tangentspace module
 -----------------------------------
-    
+
 .. automodule:: pyriemann.utils.tangentspace
     :members:
     :undoc-members:
     :show-inheritance:
-    
+
 pyriemann.utils.base module
 ---------------------------
-    
+
 .. automodule:: pyriemann.utils.base
     :members:
     :undoc-members:
