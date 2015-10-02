@@ -5,6 +5,8 @@ python:
 # command to install dependencies\
 cache: pip
 sudo: false
+virtualenv:
+  system_site_packages: true
 addons:
   apt:
     packages:
@@ -18,6 +20,7 @@ addons:
       - python-pandas
       - python-sklearn
       - gfortran
+      - python-tk
 install:
   - virtualenv --system-site-packages testvenv
   - source testvenv/bin/activate
