@@ -17,10 +17,11 @@ addons:
       - python-matplotlib
       - python-pandas
       - python-sklearn
+      - gfortran
 install:
   #- virtualenv --system-site-packages testvenv
   #- source testvenv/bin/activate
-  #- pip install pip --upgrade
+  - pip install pip --upgrade
   - pip install coverage python-coveralls nose
   - python setup.py install
 # command to run tests
