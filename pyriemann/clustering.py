@@ -11,15 +11,9 @@ from .classification import MDM
 #######################################################################
 
 
-def _fit_single(
-        X,
-        y=None,
-        n_clusters=2,
-        init='random',
-        random_state=None,
-        metric='riemann',
-        max_iter=100,
-        tol=1e-4):
+def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
+                metric='riemann', max_iter=100, tol=1e-4):
+    """helper to fit a single run of centroid."""
     # init random state if provided
     mdm = MDM(metric=metric)
     mdm.covmeans = _init_centroids(
@@ -46,7 +40,66 @@ def _fit_single(
 
 class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
 
-    """Kmeans unsupervised clustering."""
+    """Kmean clustering using Riemannian geometry.
+
+    Find clusters that minimize the sum of squared distance to their centroid.
+    This is a direct implementation of the kmean algorithm with a riemanian
+    metric.
+
+    Parameters
+    ----------
+    n_cluster: int (default: 2)
+        number of clusters.
+    max_iter : int (default: 100)
+        The maximum number of iteration to reach convergence.
+    metric : string (default: 'riemann')
+        The type of metric used for centroid and distance estimation.
+    random_state : integer or numpy.RandomState, optional
+        The generator used to initialize the centers. If an integer is
+        given, it fixes the seed. Defaults to the global numpy random
+        number generator.
+    init : 'k-means++', 'random' or an ndarray (default 'random')
+        Method for initialization of centers.
+        'k-means++' : selects initial cluster centers for k-mean
+        clustering in a smart way to speed up convergence. See section
+        Notes in k_init for more details.
+        'random': choose k observations (rows) at random from data for
+        the initial centroids.
+        If an ndarray is passed, it should be of shape (n_clusters, n_features)
+        and gives the initial centers.
+    n_init : int, (default: 10)
+        Number of time the k-means algorithm will be run with different
+        centroid seeds. The final results will be the best output of
+        n_init consecutive runs in terms of inertia.
+    n_jobs : int, (default: 1)
+        The number of jobs to use for the computation. This works by computing
+        each of the n_init runs in parallel.
+        If -1 all CPUs are used. If 1 is given, no parallel computing code is
+        used at all, which is useful for debugging. For n_jobs below -1,
+        (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
+        are used.
+    tol: float, (default: 1e-4)
+        the stopping criterion to stop convergence, representing the minimum
+        amount of change in labels between two iterations.
+
+    Attributes
+    ----------
+    mdm : MDM instance.
+        MDM instance containing the centroids.
+    labels :
+        Labels of each point
+    inertia : float
+        Sum of distances of samples to their closest cluster center.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.2
+
+    See Also
+    --------
+    Kmeans
+    MDM
+    """
 
     def __init__(self, n_clusters=2, max_iter=100, metric='riemann',
                  random_state=None, init='random', n_init=10, n_jobs=1,
@@ -63,7 +116,20 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         self.n_jobs = n_jobs
 
     def fit(self, X, y=None):
-        """Fit."""
+        """Fit (estimates) the clusters.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+        y : ndarray | None (default None)
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        self : Kmeans instance
+            The Kmean instance.
+        """
         if (self.init is not 'random') | (self.n_init == 1):
             # no need to iterate if init is not random
             labels, inertia, mdm = _fit_single(X, y,
@@ -108,20 +174,48 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
 
         self.mdm = mdm
         self.inertia = inertia
-        self.labels_ = labels
+        self.labels = labels
 
         return self
 
     def predict(self, X):
-        """predict."""
+        """get the predictions.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        pred : ndarray of int, shape (n_trials, 1)
+            the prediction for each trials according to the closest centroid.
+        """
         return self.mdm.predict(X)
 
     def transform(self, X):
-        """transform."""
+        """get the distance to each centroid.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        dist : ndarray, shape (n_trials, n_cluster)
+            the distance to each centroid according to the metric.
+        """
         return self.mdm.transform(X)
 
-    def covmeans(self):
-        """return centroid."""
+    def centroids(self):
+        """helper for fast access to the centroid.
+
+        Returns
+        -------
+        centroids : list of SPD matrices, len (n_cluster)
+            Return a list containing the centroid of each cluster.
+        """
         return self.mdm.covmeans
 
 
@@ -141,7 +235,7 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
         self.classes = numpy.unique(y)
         for c in self.classes:
             self.km.fit(X[y == c])
-            self.covmeans.extend(self.km.covmeans())
+            self.covmeans.extend(self.km.centroids())
         return self
 
     def transform(self, X):
@@ -176,6 +270,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
     See Also
     --------
     Kmeans
+    MDM
 
     References
     ----------
