@@ -1,0 +1,2 @@
+Classification of motor imagery
+---------------
