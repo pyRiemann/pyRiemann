@@ -251,7 +251,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         return self
 
     def predict(self, X):
-        """get the predictions.
+        """get the predictions after FDA filtering.
 
         Parameters
         ----------
@@ -267,7 +267,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         return self._mdm.predict(cov)
 
     def transform(self, X):
-        """get the distance to each centroid.
+        """get the distance to each centroid after FGDA filtering.
 
         Parameters
         ----------

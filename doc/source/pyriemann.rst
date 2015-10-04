@@ -2,16 +2,23 @@ pyriemann package
 =================
 
 pyriemann.classification
--------------------------------
+------------------------
 
 .. automodule:: pyriemann.classification
     :members:
     :undoc-members:
 
 pyriemann.clustering
--------------------------------
+--------------------
 
 .. automodule:: pyriemann.clustering
+    :members:
+    :undoc-members:
+
+pyriemann.tangentspace
+----------------------
+
+.. automodule:: pyriemann.tangentspace
     :members:
     :undoc-members:
 
