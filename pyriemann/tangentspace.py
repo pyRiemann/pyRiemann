@@ -72,7 +72,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         self.tsupdate = tsupdate
         self.Cr = None
 
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, sample_weight=None):
         """Fit (estimates) the reference point.
 
         Parameters
@@ -81,6 +81,8 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             ndarray of SPD matrices.
         y : ndarray | None (default None)
             Not used, here for compatibility with sklearn API.
+        sample_weight : ndarray | None (default None)
+            weight of each sample.
 
         Returns
         -------
@@ -88,7 +90,8 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             The TangentSpace instance.
         """
         # compute mean covariance
-        self.Cr = mean_covariance(X, metric=self.metric)
+        self.Cr = mean_covariance(X, metric=self.metric,
+                                  sample_weight=sample_weight)
         return self
 
     def _check_data_dim(self, X):
@@ -137,7 +140,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             Cr = self.Cr
         return tangent_space(X, Cr)
 
-    def fit_transform(self, X, y=None):
+    def fit_transform(self, X, y=None, sample_weight=None):
         """Fit and transform in a single function.
 
         Parameters
@@ -146,6 +149,8 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             ndarray of SPD matrices.
         y : ndarray | None (default None)
             Not used, here for compatibility with sklearn API.
+        sample_weight : ndarray | None (default None)
+            weight of each sample.
 
         Returns
         -------
@@ -154,7 +159,8 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         """
         # compute mean covariance
         self._check_reference_points(X)
-        self.Cr = mean_covariance(X, metric=self.metric)
+        self.Cr = mean_covariance(X, metric=self.metric,
+                                  sample_weight=sample_weight)
         return tangent_space(X, self.Cr)
 
     def inverse_transform(self, X, y=None):
