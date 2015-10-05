@@ -36,14 +36,9 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    metric : string | dict (default: 'riemann')
-        The type of metric used for centroid and distance estimation.
+    metric : string (default: 'riemann')
+        The type of metric used for reference point mean estimation.
         see `mean_covariance` for the list of supported metric.
-        the metric could be a dict with two keys, `mean` and `distance` in
-        order to pass different metric for the centroid estimation and the
-        distance estimation. Typical usecase is to pass 'logeuclid' metric for
-        the mean in order to boost the computional speed and 'riemann' for the
-        distance in order to keep the good sensitivity for the classification.
     tsupdate : bool (default False)
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]. This is not compatible with
@@ -183,17 +178,52 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         self._check_reference_points(X)
         return untangent_space(X, self.Cr)
 
-########################################################################
-
 
 class FGDA(BaseEstimator, TransformerMixin):
 
+    """Fisher Geodesic Discriminant analysis.
+
+    Project data in Tangent space, apply a FLDA to reduce dimention, and
+    project filtered data back in the manifold.
+    For a complete description of the algorithm, see [1]
+
+    Parameters
+    ----------
+    metric : string (default: 'riemann')
+        The type of metric used for reference point mean estimation.
+        see `mean_covariance` for the list of supported metric.
+    tsupdate : bool (default False)
+        Activate tangent space update for covariante shift correction between
+        training and test, as described in [2]. This is not compatible with
+        online implementation. Performance are better when the number of trials
+        for prediction is higher.
+
+    See Also
+    --------
+    FgMDM
+    TangentSpace
+
+    References
+    ----------
+    [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian geometry
+    applied to BCI classification", 9th International Conference Latent
+    Variable Analysis and Signal Separation (LVA/ICA 2010), LNCS vol. 6365,
+    2010, p. 629-636.
+
+    [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification of
+    covariance matrices using a Riemannian-based kernel for BCI applications",
+    in NeuroComputing, vol. 112, p. 172-178, 2013.
+    """
+
     def __init__(self, metric='riemann', tsupdate=False):
+        """Init."""
         self.metric = metric
         self.tsupdate = tsupdate
-        self._ts = TangentSpace(metric=metric, tsupdate=tsupdate)
+        self._ts = None
+        self._lda = None
 
-    def _fit_lda(self, X, y):
+    def _fit_lda(self, X, y, sample_weight=None):
+        """Helper to fit LDA."""
         self.classes = numpy.unique(y)
         self._lda = LDA(
             n_components=len(
@@ -201,7 +231,7 @@ class FGDA(BaseEstimator, TransformerMixin):
             solver='lsqr',
             shrinkage='auto')
 
-        ts = self._ts.fit_transform(X)
+        ts = self._ts.fit_transform(X, sample_weight=sample_weight)
         self._lda.fit(ts, y)
 
         W = self._lda.coef_.copy()
@@ -210,17 +240,64 @@ class FGDA(BaseEstimator, TransformerMixin):
         return ts
 
     def _retro_project(self, ts):
+        """Helper to project back in the manifold."""
         ts = numpy.dot(ts, self._W)
         return self._ts.inverse_transform(ts)
 
-    def fit(self, X, y=None):
-        self._fit_lda(X, y)
+    def fit(self, X, y=None, sample_weight=None):
+        """Fit (estimates) the reference point and the FLDA.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+        y : ndarray | None (default None)
+            Not used, here for compatibility with sklearn API.
+        sample_weight : ndarray | None (default None)
+            weight of each sample.
+
+        Returns
+        -------
+        self : FGDA instance
+            The FGDA instance.
+        """
+        self._ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
+        self._fit_lda(X, y, sample_weight=sample_weight)
         return self
 
     def transform(self, X):
+        """Filtering operation.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        covs : ndarray, shape (n_trials, n_channels, n_channels)
+            covariances matrices after filtering.
+        """
         ts = self._ts.transform(X)
         return self._retro_project(ts)
 
-    def fit_transform(self, X, y=None):
-        ts = self._fit_lda(X, y)
+    def fit_transform(self, X, y=None, sample_weight=None):
+        """Fit and transform in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+        y : ndarray | None (default None)
+            Not used, here for compatibility with sklearn API.
+        sample_weight : ndarray | None (default None)
+            weight of each sample.
+
+        Returns
+        -------
+        covs : ndarray, shape (n_trials, n_channels, n_channels)
+            covariances matrices after filtering.
+        """
+        self._ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
+        ts = self._fit_lda(X, y, sample_weight=sample_weight)
         return self._retro_project(ts)
