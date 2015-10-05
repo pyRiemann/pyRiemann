@@ -114,3 +114,4 @@ nosetests
  - Added multiprocessing for MDM with joblib
  - Added kullback-leibler divergence
  - Added Riemannian Potato
+ - Added sample_weight for mean estimation and MDM

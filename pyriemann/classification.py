@@ -80,7 +80,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         else:
             raise TypeError('metric must be dict or str')
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         """Fit (estimates) the centroids.
 
         Parameters
@@ -89,6 +89,9 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
             ndarray of SPD matrices.
         y : ndarray shape (n_trials, 1)
             labels corresponding to each trial.
+        sample_weight : None | ndarray shape (n_trials, 1)
+            the weights of each sample. if None, each sample is treated with
+            equal weights.
 
         Returns
         -------
@@ -99,12 +102,16 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         self.covmeans = []
 
+        if sample_weight is None:
+            sample_weight = numpy.ones(X.shape[0])
+
         if self.n_jobs == 1:
             for l in self.classes:
                 self.covmeans.append(
-                    mean_covariance(X[y == l], metric=self.metric_mean))
+                    mean_covariance(X[y == l], metric=self.metric_mean,
+                                    sample_weight=sample_weight[y == l]))
         else:
-            self.covmeans = Parallel(n_jobs=self.n_jobs)(delayed(mean_covariance)(X[y == l],metric=self.metric_mean) for l in self.classes)
+            self.covmeans = Parallel(n_jobs=self.n_jobs)(delayed(mean_covariance)(X[y == l],metric=self.metric_mean, sample_weight=sample_weight[y == l]) for l in self.classes)
 
         return self
 
