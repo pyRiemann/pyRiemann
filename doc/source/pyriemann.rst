@@ -22,6 +22,13 @@ pyriemann.tangentspace
     :members:
     :undoc-members:
 
+pyriemann.estimation
+----------------------
+
+.. automodule:: pyriemann.estimation
+    :members:
+    :undoc-members:
+
 pyriemann.utils
 -------------------------------
 
