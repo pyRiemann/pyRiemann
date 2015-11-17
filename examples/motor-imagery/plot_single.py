@@ -1,3 +1,10 @@
+"""
+====================================================================
+Motor imagery classification
+====================================================================
+
+Classify Motor imagery data with Riemannian Geometry.
+"""
 #generic import
 import numpy as np
 import sys
@@ -73,7 +80,7 @@ scores = cross_val_score(mdm, cov_data_train, labels, cv=cv, n_jobs=1)
 class_balance = np.mean(labels == labels[0])
 class_balance = max(class_balance, 1. - class_balance)
 print("MDM Classification accuracy:       %f / Chance level: %f" % (np.mean(scores),
-                                                          class_balance))                                                    
+                                                          class_balance))
 
 ###############################################################################
 # Classification with Tangent Space Logistic Regression
@@ -88,7 +95,7 @@ scores = cross_val_score(clf, cov_data_train, labels, cv=cv, n_jobs=1)
 class_balance = np.mean(labels == labels[0])
 class_balance = max(class_balance, 1. - class_balance)
 print("TS + LR Classification accuracy:   %f / Chance level: %f" % (np.mean(scores),
-                                                          class_balance))                                                          
+                                                          class_balance))
 ###############################################################################
 # Classification with CSP + linear discrimant analysis
 
@@ -104,4 +111,4 @@ scores = cross_val_score(clf, epochs_data_train, labels, cv=cv, n_jobs=1)
 class_balance = np.mean(labels == labels[0])
 class_balance = max(class_balance, 1. - class_balance)
 print("CSP + LDA Classification accuracy: %f / Chance level: %f" % (np.mean(scores),
-                                                          class_balance))                                                          
+                                                          class_balance))

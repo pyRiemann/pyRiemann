@@ -15,7 +15,7 @@
 import sys
 import os
 import shlex
-import sphinxgallery
+import sphinx_gallery
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -42,9 +42,11 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
-    'sphinxgallery.gen_gallery',
+    'sphinx_gallery.gen_gallery',
 ]
 
+sphinx_gallery_conf = {
+    'examples_dirs' : 'examples'}
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 

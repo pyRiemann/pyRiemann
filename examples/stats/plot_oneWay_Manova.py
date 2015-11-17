@@ -1,3 +1,10 @@
+"""
+====================================================================
+One Way manova
+====================================================================
+
+One way manova to compare Left vs Right.
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -43,13 +50,11 @@ labels = epochs.events[:, -1] - 2
 epochs_data = epochs.get_data()
 
 # compute covariance matrices
-covmats = Covariances().fit_transform(epochs_data) 
+covmats = Covariances().fit_transform(epochs_data)
 
 p_test = PermutationTest(5000)
-p,F = p_test.test(covmats,labels)
+p, F = p_test.test(covmats, labels)
 p_test.plot()
-print p_test.summary()
+print(p_test.summary())
 
 plt.show()
-
-

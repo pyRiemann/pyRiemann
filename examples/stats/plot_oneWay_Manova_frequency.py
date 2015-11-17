@@ -1,3 +1,10 @@
+"""
+====================================================================
+One Way manova with Frequenty
+====================================================================
+
+One way manova to compare Left vs Right for each frequency.
+"""
 import numpy as np
 from pylab import *
 
@@ -44,7 +51,7 @@ epochs_data = epochs.get_data()
 fmin = 2.0
 fmax = 40.0
 cosp = CospCovariances(window=128,overlap=0.98,fmin=fmin,fmax=fmax,fs = 160.0)
-covmats = cosp.fit_transform(epochs_data[:,::4,:]) 
+covmats = cosp.fit_transform(epochs_data[:,::4,:])
 
 fr = np.fft.fftfreq(128)[0:64]*160
 fr = fr[(fr>=fmin) & (fr<=fmax)]
@@ -54,20 +61,17 @@ Fv = []
 # For each frequency bin, estimate the stats
 for i in range(covmats.shape[3]):
     p_test = PermutationTest(5000)
-    p,F = p_test.test(covmats[:,:,:,i],labels)
-    print p_test.summary()
+    p,F = p_test.test(covmats[:, :, :, i], labels)
+    print(p_test.summary())
     pv.append(p)
     Fv.append(F[0])
-    
+
 plot(fr,Fv,lw=2)
 plt.xlabel('Frequency')
 plt.ylabel('F-value')
 
 significant = np.array(pv)<0.001
-plot(fr,significant,'r',lw=2)
-plt.legend(['F-value','p<0.001'])
+plot(fr, significant, 'r', lw=2)
+plt.legend(['F-value', 'p<0.001'])
 plt.grid()
 plt.show()
-
-
-

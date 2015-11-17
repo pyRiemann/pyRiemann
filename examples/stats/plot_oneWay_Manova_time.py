@@ -1,3 +1,10 @@
+"""
+====================================================================
+One Way manova time
+====================================================================
+
+One way manova to compare Left vs Right in time.
+"""
 import numpy as np
 from pylab import *
 
@@ -60,7 +67,7 @@ for t in time_bins:
     covmats = covest.fit_transform(epochs_data[:,::1,t:(t+window)])
     p_test = PermutationTest(5000)
     p,F = p_test.test(covmats,labels)
-    print p_test.summary()
+    print(p_test.summary())
     pv.append(p)
     Fv.append(F[0])
 
@@ -74,6 +81,3 @@ plot(time,significant,'r',lw=2)
 plt.legend(['F-value','p<0.001'])
 plt.grid()
 plt.show()
-
-
-
