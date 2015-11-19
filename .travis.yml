@@ -24,7 +24,7 @@ install:
   - virtualenv --system-site-packages testvenv
   - source testvenv/bin/activate
   - pip install pip --upgrade
-  - pip install coverage python-coveralls nose scikit-learn
+  - pip install coverage python-coveralls nose scikit-learn==0.16.1
   - python setup.py build install
 # command to run tests
 script: nosetests  --with-coverage --cover-package=pyriemann
