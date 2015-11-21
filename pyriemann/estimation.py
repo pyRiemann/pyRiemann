@@ -86,13 +86,12 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     and a super trial is build using the concatenation of P and the trial X :
 
     .. math::
-        :nowrap:
         \mathbf{\\tilde{X}}_i =  \left[
-                                \\begin{array}{c}
-                                \mathbf{P} \\\\
-                                \mathbf{X}_i
-                                \end{array}
-                                \\right]
+                                 \\begin{array}{c}
+                                 \mathbf{P} \\\\
+                                 \mathbf{X}_i
+                                 \end{array}
+                                 \\right]
 
     This super trial :math:`\mathbf{\\tilde{X}}_i` will be used for covariance
     estimation.
