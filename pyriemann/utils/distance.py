@@ -1,12 +1,11 @@
+"""Distance utils."""
 import numpy
 from scipy.linalg import eigvalsh
 
 from .base import logm
-###############################################################
-# distances
-###############################################################
 
-def distance_kullback(A,B):
+
+def distance_kullback(A, B):
     """Return the Kullback leibler divergence between
     two covariance matrices A and B :
 

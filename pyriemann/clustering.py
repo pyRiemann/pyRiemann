@@ -16,8 +16,10 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
     """helper to fit a single run of centroid."""
     # init random state if provided
     mdm = MDM(metric=metric)
-    mdm.covmeans = _init_centroids(
-        X, n_clusters, init, random_state=random_state)
+    squared_nomrs = [numpy.linalg.norm(x, ord='fro')**2 for x in X]
+    mdm.covmeans = _init_centroids(X, n_clusters, init,
+                                   random_state=random_state,
+                                   x_squared_norms=squared_nomrs)
     if y is not None:
         mdm.classes = numpy.unique(y)
     else:
