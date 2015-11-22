@@ -12,6 +12,8 @@ v0.2.4 (Unreleased)
 
 - Improved documentation
 
+- Added TSclassifier for out-of the box tangent space classification.
+
 v0.2.4 (November 2015)
 ----------------------
 

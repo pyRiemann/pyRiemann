@@ -1,30 +1,32 @@
 """
 ====================================================================
-Decoding in sensor space data using Riemannian Geometry and XDAWN
+ERP EEG decoding in Tangent space.
 ====================================================================
 
 Decoding applied to EEG data in sensor space decomposed using Xdawn.
-After spatial filtering, covariances matrices are estimated and
-classified by the MDM algorithm (Nearest centroid).
+After spatial filtering, covariances matrices are estimated, then projected in
+the tangent space and classified with a logistic regression.
 
 """
-# Authors: Alexandre Gramfort <alexandre.gramfort@telecom-paristech.fr>
-#          Romain Trachel <romain.trachel@inria.fr>
-#          Alexandre Barachant <alexandre.barachant@gmail.com>
+# Authors: Alexandre Barachant <alexandre.barachant@gmail.com>
 #
 # License: BSD (3-clause)
 
 import numpy as np
 
 from pyriemann.estimation import XdawnCovariances
-from pyriemann.classification import MDM
+from pyriemann.tangentspace import TangentSpace
+from pyriemann.utils.viz import plot_confusion_matrix
 
 import mne
 from mne import io
 from mne.datasets import sample
 
-from sklearn.pipeline import Pipeline  # noqa
-from sklearn.cross_validation import ShuffleSplit  
+from sklearn.pipeline import make_pipeline
+from sklearn.cross_validation import KFold
+from sklearn.linear_model import LogisticRegression
+
+from matplotlib import pyplot as plt
 
 print(__doc__)
 
@@ -35,10 +37,10 @@ data_path = sample.data_path()
 raw_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw.fif'
 event_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif'
 tmin, tmax = -0., 1
-event_id = dict(aud_l=1, vis_l=3)
+event_id = dict(aud_l=1, aud_r=2, vis_l=3, vis_r=4)
 
 # Setup for reading the raw data
-raw = io.Raw(raw_fname, preload=True)
+raw = io.Raw(raw_fname, preload=True, verbose=False)
 raw.filter(2, None, method='iir')  # replace baselining with high-pass
 events = mne.read_events(event_fname)
 
@@ -48,7 +50,7 @@ picks = mne.pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False,
 
 # Read epochs
 epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=False,
-                    picks=picks, baseline=None, preload=True)
+                    picks=picks, baseline=None, preload=True, verbose=False)
 
 labels = epochs.events[:, -1]
 evoked = epochs.average()
@@ -56,25 +58,29 @@ evoked = epochs.average()
 ###############################################################################
 # Decoding in sensor space using a linear SVM
 
-
-n_components = 3  # pick some components
+n_components = 2  # pick some components
 
 # Define a monte-carlo cross-validation generator (reduce variance):
-cv = ShuffleSplit(len(labels), 10, test_size=0.2, random_state=42)
-scores = []
+cv = KFold(len(labels), 10, shuffle=True, random_state=42)
 epochs_data = epochs.get_data()
 
 
-clf = Pipeline([('COV',XdawnCovariances(n_components)),('MDM',MDM())])
+clf = make_pipeline(XdawnCovariances(n_components),
+                    TangentSpace(metric='riemann'),
+                    LogisticRegression())
+
+preds = np.zeros(len(labels))
 
 for train_idx, test_idx in cv:
     y_train, y_test = labels[train_idx], labels[test_idx]
-    
+
     clf.fit(epochs_data[train_idx], y_train)
-    scores.append(clf.score(epochs_data[test_idx], y_test))
+    preds[test_idx] = clf.predict(epochs_data[test_idx])
 
 # Printing the results
-class_balance = np.mean(labels == labels[0])
-class_balance = max(class_balance, 1. - class_balance)
-print("Classification accuracy: %f / Chance level: %f" % (np.mean(scores),
-                                                          class_balance))
+acc = np.mean(preds == labels)
+print("Classification accuracy: %f " % (acc))
+
+names = ['audio left', 'audio right', 'vis left', 'vis right']
+plot_confusion_matrix(preds, labels, names)
+plt.show()

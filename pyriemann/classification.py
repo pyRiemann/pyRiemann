@@ -1,11 +1,13 @@
 """Module for classification function."""
 import numpy
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
+from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
 from joblib import Parallel, delayed
 
 from .utils.mean import mean_covariance
 from .utils.distance import distance
-from .tangentspace import FGDA
+from .tangentspace import FGDA, TangentSpace
 
 
 class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
@@ -111,7 +113,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
                     mean_covariance(X[y == l], metric=self.metric_mean,
                                     sample_weight=sample_weight[y == l]))
         else:
-            self.covmeans = Parallel(n_jobs=self.n_jobs)(delayed(mean_covariance)(X[y == l],metric=self.metric_mean, sample_weight=sample_weight[y == l]) for l in self.classes)
+            self.covmeans = Parallel(n_jobs=self.n_jobs)(delayed(mean_covariance)(X[y == l], metric=self.metric_mean, sample_weight=sample_weight[y == l]) for l in self.classes)
 
         return self
 
@@ -288,3 +290,101 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         """
         cov = self._fgda.transform(X)
         return self._mdm.transform(cov)
+
+
+class TSclassifier(BaseEstimator, ClassifierMixin):
+
+    """Classification in the tangent space.
+
+    Project data in the tangent space and apply a classifier on the projected
+    data. This is a simple helper to pipeline the tangent space projection and
+    a classifier. Default classifier is LogisticRegression
+
+    Parameters
+    ----------
+    metric : string | dict (default: 'riemann')
+        The type of metric used for centroid and distance estimation.
+        see `mean_covariance` for the list of supported metric.
+        the metric could be a dict with two keys, `mean` and `distance` in
+        order to pass different metric for the centroid estimation and the
+        distance estimation. Typical usecase is to pass 'logeuclid' metric for
+        the mean in order to boost the computional speed and 'riemann' for the
+        distance in order to keep the good sensitivity for the classification.
+    tsupdate : bool (default False)
+        Activate tangent space update for covariante shift correction between
+        training and test, as described in [2]. This is not compatible with
+        online implementation. Performance are better when the number of trials
+        for prediction is higher.
+    clf: sklearn classifier (default LogisticRegression)
+        The classifier to apply in the tangent space
+
+    See Also
+    --------
+    TangentSpace
+
+    Notes
+    -----
+    .. versionadded:: 0.2.4
+    """
+
+    def __init__(self, metric='riemann', tsupdate=False,
+                 clf=LogisticRegression()):
+        """Init."""
+        self.metric = metric
+        self.tsupdate = tsupdate
+        self.clf = clf
+
+        if not isinstance(clf, ClassifierMixin):
+            raise TypeError('clf must be a ClassifierMixin')
+
+        TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
+
+    def fit(self, X, y):
+        """Fit TSclassifier.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+        y : ndarray shape (n_trials, 1)
+            labels corresponding to each trial.
+
+        Returns
+        -------
+        self : TSclassifier. instance
+            The TSclassifier. instance.
+        """
+        ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
+        self._pipe = make_pipeline(ts, self.clf)
+        self._pipe.fit(X, y)
+        return self
+
+    def predict(self, X):
+        """get the predictions.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        pred : ndarray of int, shape (n_trials, 1)
+            the prediction for each trials according to the closest centroid.
+        """
+        return self._pipe.predict(X)
+
+    def predict_proba(self, X):
+        """get the probability.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        pred : ndarray of ifloat, shape (n_trials, n_classes)
+            the prediction for each trials according to the closest centroid.
+        """
+        return self._pipe.predict_proba(X)

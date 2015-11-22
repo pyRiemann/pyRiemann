@@ -1,0 +1,4 @@
+.. _installing:
+
+Installing pyRiemann
+====================
