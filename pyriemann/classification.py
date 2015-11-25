@@ -1,5 +1,8 @@
 """Module for classification function."""
 import numpy
+
+from scipy import stats
+
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
@@ -47,6 +50,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
     --------
     Kmeans
     FgMDM
+    KNearestNeighbor
 
     References
     ----------
@@ -388,3 +392,89 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
             the prediction for each trials according to the closest centroid.
         """
         return self._pipe.predict_proba(X)
+
+
+class KNearestNeighbor(MDM):
+
+    """Classification by K-NearestNeighbor.
+
+    Classification by nearest Neighbors. For each point of the test set, the
+    pairwise distance to each element of the training set is estimated. The
+    class is affected according to the majority class of the k nearest
+    neighbors.
+
+    Parameters
+    ----------
+    n_neighbors : int, (default: 5)
+        Number of neighbors.
+    metric : string | dict (default: 'riemann')
+        The type of metric used for centroid and distance estimation.
+        see `mean_covariance` for the list of supported metric.
+        the metric could be a dict with two keys, `mean` and `distance` in
+        order to pass different metric for the centroid estimation and the
+        distance estimation. Typical usecase is to pass 'logeuclid' metric for
+        the mean in order to boost the computional speed and 'riemann' for the
+        distance in order to keep the good sensitivity for the classification.
+    n_jobs : int, (default: 1)
+        The number of jobs to use for the computation. This works by computing
+        each of the distance to the training set in parallel.
+        If -1 all CPUs are used. If 1 is given, no parallel computing code is
+        used at all, which is useful for debugging. For n_jobs below -1,
+        (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
+        are used.
+
+    Attributes
+    ----------
+    classes : list
+        list of classes.
+
+    See Also
+    --------
+    Kmeans
+    MDM
+
+    """
+
+    def __init__(self, n_neighbors=5, metric='riemann', n_jobs=1):
+        """Init."""
+        # store params for cloning purpose
+        self.n_neighbors = n_neighbors
+        MDM.__init__(self, metric=metric, n_jobs=n_jobs)
+
+    def fit(self, X, y):
+        """Fit (store the training data).
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+        y : ndarray shape (n_trials, 1)
+            labels corresponding to each trial.
+
+        Returns
+        -------
+        self : NearestNeighbor instance
+            The NearestNeighbor instance.
+        """
+        self.classes = y
+        self.covmeans = X
+
+        return self
+
+    def predict(self, covtest):
+        """get the predictions.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        pred : ndarray of int, shape (n_trials, 1)
+            the prediction for each trials according to the closest centroid.
+        """
+        dist = self._predict_distances(covtest)
+        neighbors_classes = self.classes[numpy.argsort(dist)]
+        out, _ = stats.mode(neighbors_classes[:, 0:self.n_neighbors], axis=1)
+        return out.ravel()

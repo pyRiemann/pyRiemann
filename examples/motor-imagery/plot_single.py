@@ -64,14 +64,14 @@ labels = epochs.events[:, -1] - 2
 # cross validation
 cv = KFold(len(labels), 10, shuffle=True, random_state=42)
 # get epochs
-epochs_data_train = epochs.get_data()
+epochs_data_train = 1e6*epochs.get_data()
 
 # compute covariance matrices
 cov_data_train = covariances(epochs_data_train)
 
 ###############################################################################
 # Classification with Minimum distance to mean
-mdm = MDM()
+mdm = MDM(metric=dict(mean='riemann', distance='riemann'))
 
 # Use scikit-learn Pipeline with cross_val_score function
 scores = cross_val_score(mdm, cov_data_train, labels, cv=cv, n_jobs=1)

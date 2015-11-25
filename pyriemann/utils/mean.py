@@ -134,6 +134,59 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     return C
 
 
+def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
+                     sample_weight=None):
+    """Return the mean covariance matrix according to the wasserstein metric.
+
+    This is an iterative procedure where the update is [1]:
+
+    .. math::
+            \mathbf{K} = \left(\sum_i \left( \mathbf{K} \mathbf{C}_i \mathbf{K} \\right)^{1/2} \\right)^{1/2}
+
+    with :math:`\mathbf{K} = \mathbf{C}^{1/2}`.
+
+    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param tol: the tolerance to stop the gradient descent
+    :param maxiter: The maximum number of iteration, default 50
+    :param init: A covariance matrix used to initialize the iterative procedure. If None the Arithmetic mean is used
+    :param sample_weight: the weight of each sample
+
+    :returns: the mean covariance matrix
+
+    References
+    ----------
+    [1] Barbaresco, F. "Geometric Radar Processing based on Frechet distance:
+    Information geometry versus Optimal Transport Theory", Radar Symposium
+    (IRS), 2011 Proceedings International.
+    """
+    sample_weight = _get_sample_weight(sample_weight, covmats)
+    Nt, Ne, Ne = covmats.shape
+    if init is None:
+        C = numpy.mean(covmats, axis=0)
+    else:
+        C = init
+    k = 0
+    K = sqrtm(C)
+    crit = numpy.finfo(numpy.float64).max
+    # stop when J<10^-9 or max iteration = 50
+    while (crit > tol) and (k < maxiter):
+        k = k + 1
+
+        J = numpy.zeros((Ne, Ne))
+
+        for index, Ci in enumerate(covmats):
+            tmp = numpy.dot(numpy.dot(K, Ci), K)
+            J += sample_weight[index] * sqrtm(tmp)
+
+        Knew = sqrtm(J)
+        crit = numpy.linalg.norm(Knew - K, ord='fro')
+        K = Knew
+    if k == maxiter:
+        print 'Max iter reach'
+    C = numpy.dot(K, K)
+    return C
+
+
 def mean_euclid(covmats, sample_weight=None):
     """Return the mean covariance matrix according to the euclidean metric :
 
@@ -183,7 +236,7 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
 
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
-    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'indentity'
+    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'indentity', 'wasserstein'
     :param sample_weight: the weight of each sample
     :param args: the argument passed to the sub function
     :returns: the mean covariance matrix
@@ -193,6 +246,7 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
                'logeuclid': mean_logeuclid,
                'euclid': mean_euclid,
                'identity': mean_identity,
-               'logdet': mean_logdet}
+               'logdet': mean_logdet,
+               'wasserstein': mean_wasserstein}
     C = options[metric](covmats, sample_weight=sample_weight, *args)
     return C

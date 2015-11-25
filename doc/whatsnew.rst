@@ -14,6 +14,10 @@ v0.2.4 (Unreleased)
 
 - Added TSclassifier for out-of the box tangent space classification.
 
+- Added Wasserstein distance and mean.
+
+- Added NearestNeighbor classifier.
+
 v0.2.4 (November 2015)
 ----------------------
 

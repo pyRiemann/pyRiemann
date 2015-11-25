@@ -31,6 +31,7 @@ Classification
     MDM
     FgMDM
     TSclassifier
+    KNearestNeighbor
 
 Clustering
 ------------------
@@ -116,6 +117,7 @@ Distances
     distance_logdet
     distance_kullback
     distance_kullback_sym
+    distance_wasserstein
 
 
 Mean
@@ -131,6 +133,7 @@ Mean
     mean_riemann
     mean_logeuclid
     mean_logdet
+    mean_wasserstein
 
 
 Geodesic

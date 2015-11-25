@@ -1,5 +1,6 @@
 import numpy
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
+from matplotlib import mlab
 
 # Mapping different estimator on the sklearn toolbox
 
@@ -91,15 +92,26 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
 
     return numpy.array(X)
 
-def cospectrum(
-        X,
-        window=128,
-        overlap=0.75,
-        fmin=None,
-        fmax=None,
-        fs=None,
-        phase_correction=False):
 
+def coherence(X, nfft=256, fs=2, noverlap=0):
+    """Compute coherence."""
+    n_chan = X.shape[0]
+    ij = []
+    for i in range(n_chan):
+        for j in range(i+1, n_chan):
+            ij.append((i, j))
+    Cxy, Phase, freqs = mlab.cohere_pairs(X, ij, NFFT=nfft, Fs=fs,
+                                          noverlap=noverlap)
+    coh = numpy.zeros((n_chan, n_chan, len(freqs)))
+    for i in range(n_chan):
+        coh[i, i] = 1
+        for j in range(i+1, n_chan):
+            coh[i, j] = coh[j, i] = Cxy[(i, j)]
+    return coh
+
+
+def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
+               phase_correction=False):
     Ne, Ns = X.shape
     number_freqs = int(window / 2)
 
@@ -136,7 +148,7 @@ def cospectrum(
         Fix = (f >= fmin) & (f <= fmax)
         fdata = fdata[:, :, Fix]
 
-    #fdata = fdata.real
+    # fdata = fdata.real
     Nf = fdata.shape[2]
     S = numpy.zeros((Ne, Ne, Nf), dtype=complex)
 

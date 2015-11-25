@@ -2,7 +2,7 @@
 import numpy
 from scipy.linalg import eigvalsh
 
-from .base import logm
+from .base import logm, sqrtm
 
 
 def distance_kullback(A, B):
@@ -80,8 +80,7 @@ def distance_logdet(A, B):
     """Log-det distance between two covariance matrices A and B.
 
     .. math::
-            d = \sqrt{\log(\det(\\frac{\mathbf{A}+\mathbf{B}}{2}))} - 0.5 \\times \log(\det(\mathbf{A} \\times \mathbf{B}))
-
+            d = \sqrt{\left(\log(\det(\\frac{\mathbf{A}+\mathbf{B}}{2})) - 0.5 \\times \log(\det(\mathbf{A}) \det(\mathbf{B}))\\right)}
 
     :param A: First covariance matrix
     :param B: Second covariance matrix
@@ -89,7 +88,23 @@ def distance_logdet(A, B):
 
     """
     return numpy.sqrt(numpy.log(numpy.linalg.det(
-        (A + B) / 2)) - 0.5 * numpy.log(numpy.linalg.det(numpy.dot(A, B))))
+        (A + B) / 2.0)) - 0.5 * numpy.log(numpy.linalg.det(A)*numpy.linalg.det(B)))
+
+
+def distance_wasserstein(A, B):
+    """Wasserstein distance between two covariances matrices.
+
+    .. math::
+        d = \left( {tr(A + B - 2(A^{1/2}BA^{1/2})^{1/2})}\\right )^{1/2}
+
+    :param A: First covariance matrix
+    :param B: Second covariance matrix
+    :returns: Wasserstein distance between A and B
+
+    """
+    B12 = sqrtm(B)
+    C = sqrtm(numpy.dot(numpy.dot(B12, A), B12))
+    return numpy.sqrt(numpy.trace(A + B - 2*C))
 
 
 def distance(A, B, metric='riemann'):
@@ -109,7 +124,8 @@ def distance(A, B, metric='riemann'):
                         'logdet': distance_logdet,
                         'kullback': distance_kullback,
                         'kullback_right': distance_kullback_right,
-                        'kullback_sym': distance_kullback_sym}
+                        'kullback_sym': distance_kullback_sym,
+                        'wasserstein': distance_wasserstein}
     if len(A.shape) == 3:
         d = numpy.empty((len(A), 1))
         for i in range(len(A)):

@@ -56,7 +56,7 @@ labels = epochs.events[:, -1]
 evoked = epochs.average()
 
 ###############################################################################
-# Decoding in sensor space using a linear SVM
+# Decoding in tangent space with a logistic regression
 
 n_components = 2  # pick some components
 
