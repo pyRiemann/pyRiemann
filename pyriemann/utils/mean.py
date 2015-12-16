@@ -130,7 +130,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
 
         C = Cnew
     if k == maxiter:
-        print 'Max iter reach'
+        print('Max iter reach')
     return C
 
 
@@ -182,7 +182,7 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
         crit = numpy.linalg.norm(Knew - K, ord='fro')
         K = Knew
     if k == maxiter:
-        print 'Max iter reach'
+        print('Max iter reach')
     C = numpy.dot(K, K)
     return C
 
