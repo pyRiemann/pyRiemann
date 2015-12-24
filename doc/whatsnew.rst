@@ -18,6 +18,8 @@ v0.2.4 (Unreleased)
 
 - Added NearestNeighbor classifier.
 
+- Added Softmax probabilities for MDM
+
 v0.2.4 (November 2015)
 ----------------------
 

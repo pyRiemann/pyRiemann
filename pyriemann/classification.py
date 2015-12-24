@@ -4,6 +4,7 @@ import numpy
 from scipy import stats
 
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
+from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from joblib import Parallel, delayed
@@ -160,7 +161,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         Returns
         -------
-        dist : ndarray, shape (n_trials, n_cluster)
+        dist : ndarray, shape (n_trials, n_classes)
             the distance to each centroid according to the metric.
         """
         return self._predict_distances(X)
@@ -169,6 +170,21 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         """Fit and predict in one function."""
         self.fit(X, y)
         return self.predict(X)
+
+    def predict_proba(self, X):
+        """Predict proba using softmax.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        prob : ndarray, shape (n_trials, n_classes)
+            the softmax probabilities for each class.
+        """
+        return softmax(-self._predict_distances(X))
 
 
 class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
