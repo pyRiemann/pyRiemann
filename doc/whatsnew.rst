@@ -20,7 +20,7 @@ v0.2.4 (Unreleased)
 
 - Added Softmax probabilities for MDM
 
-v0.2.4 (November 2015)
+v0.2.3 (November 2015)
 ----------------------
 
 - Added multiprocessing for MDM with joblib

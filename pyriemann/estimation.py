@@ -135,6 +135,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         self.classes = classes
         self.estimator = estimator
         self.svd = svd
+        self.P = None
 
         if svd is not None:
             if not isinstance(svd, int):
