@@ -20,6 +20,8 @@ v0.2.4 (Unreleased)
 
 - Added Softmax probabilities for MDM
 
+- Added CSP for covariance matrices.
+
 v0.2.3 (November 2015)
 ----------------------
 

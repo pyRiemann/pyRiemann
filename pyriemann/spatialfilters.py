@@ -5,6 +5,7 @@ from scipy.linalg import eigh
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from .utils.covariance import _check_est
+from .utils.mean import mean_covariance
 
 
 class Xdawn(BaseEstimator, TransformerMixin):
@@ -126,3 +127,103 @@ class Xdawn(BaseEstimator, TransformerMixin):
         X = numpy.dot(self.filters_, X)
         X = X.transpose((1, 0, 2))
         return X
+
+
+class CSP(BaseEstimator, TransformerMixin):
+    """Implementation of the CSP spatial Filtering with Covariance as input.
+
+    Implementation of the famous Common Spatial Pattern Algorithm, but with
+    covariance matrices as input. In addition, the implementation allow
+    different metric for the estimation of the class-related mean covariance
+    matrices, as described in [3].
+
+    Parameters
+    ----------
+    nfilter : int (default 4)
+        The number of components to decompose M/EEG signals.
+    metric : str (default "euclid")
+        The metric for the estimation of mean covariance matrices
+
+    Attributes
+    ----------
+    filters_ : ndarray
+        If fit, the CSP spatial filters, else None.
+    patterns_ : ndarray
+        If fit, the CSP spatial patterns, else None.
+
+
+    See Also
+    --------
+    MDM
+
+    References
+    ----------
+    [1] Zoltan J. Koles, Michael S. Lazar, Steven Z. Zhou. Spatial Patterns
+        Underlying Population Differences in the Background EEG. Brain
+        Topography 2(4), 275-284, 1990.
+    [2] Benjamin Blankertz, Ryota Tomioka, Steven Lemm, Motoaki Kawanabe,
+        Klaus-Robert Müller. Optimizing Spatial Filters for Robust EEG
+        Single-Trial Analysis. IEEE Signal Processing Magazine 25(1), 41-56,
+        2008.
+    [3] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, Common Spatial
+        Pattern revisited by Riemannian geometry, IEEE International Workshop
+        on Multimedia Signal Processing (MMSP), p. 472-476, 2010.
+    """
+
+    def __init__(self, nfilter=4, metric='euclid'):
+        """Init."""
+        self.nfilter = nfilter
+        self.metric = metric
+        self.filters_ = None
+        self.patterns_ = None
+
+    def fit(self, X, y):
+        """Train CSP spatial filters.
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of covariance.
+        y : ndarray shape (n_trials, 1)
+            labels corresponding to each trial.
+        Returns
+        -------
+        self : CSP instance
+            The CSP instance.
+        """
+        Nt, Ne, Ns = X.shape
+        classes = numpy.unique(y)
+
+        C0 = mean_covariance(X[y == classes[0]], self.metric)
+        C1 = mean_covariance(X[y == classes[1]], self.metric)
+
+        evals, evecs = eigh(C1, C0 + C1)
+
+        # sort eigenvectors
+        evecs = evecs[:, numpy.argsort(numpy.abs(evals - 0.5))[::-1]]
+        # evecs /= numpy.apply_along_axis(numpy.linalg.norm, 0, evecs)
+
+        # spatial patterns
+        A = numpy.linalg.pinv(evecs.T)
+
+        self.filters_ = evecs[:, 0:self.nfilter].T
+        self.patterns_ = A[:, 0:self.nfilter].T
+
+        return self
+
+    def transform(self, X):
+        """Apply spatial filters.
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of covariance.
+        Returns
+        -------
+        Xf : ndarray, shape (n_trials, n_filters)
+            ndarray of spatialy filtered log-variance.
+        """
+
+        out = numpy.zeros((len(X), len(self.filters_)))
+        for i, x in enumerate(X):
+            tmp = numpy.dot(numpy.dot(self.filters_, x), self.filters_.T)
+            out[i] = numpy.log(numpy.diag(tmp))
+        return out
