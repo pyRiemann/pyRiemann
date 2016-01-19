@@ -162,7 +162,7 @@ class CSP(BaseEstimator, TransformerMixin):
         Underlying Population Differences in the Background EEG. Brain
         Topography 2(4), 275-284, 1990.
     [2] Benjamin Blankertz, Ryota Tomioka, Steven Lemm, Motoaki Kawanabe,
-        Klaus-Robert Müller. Optimizing Spatial Filters for Robust EEG
+        Klaus-Robert Muller. Optimizing Spatial Filters for Robust EEG
         Single-Trial Analysis. IEEE Signal Processing Magazine 25(1), 41-56,
         2008.
     [3] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, Common Spatial

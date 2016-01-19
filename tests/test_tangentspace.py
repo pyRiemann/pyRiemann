@@ -6,8 +6,8 @@ from numpy.testing import assert_array_almost_equal
 
 def generate_cov(Nt, Ne):
     """Generate a set of cavariances matrices for test purpose."""
-    np.random.seed(123)
-    diags = 1.0+0.1*np.random.randn(Nt, Ne)
+    np.random.seed(1234)
+    diags = 2.0+0.1*np.random.randn(Nt, Ne)
     covmats = np.empty((Nt, Ne, Ne))
     for i in range(Nt):
         covmats[i] = np.diag(diags[i])
