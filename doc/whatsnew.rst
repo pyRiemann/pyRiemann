@@ -22,6 +22,10 @@ v0.2.4 (Unreleased)
 
 - Added CSP for covariance matrices.
 
+- Added Approximate Joint diagonalization algorithm (JADE)
+
+- Added ALE mean 
+
 v0.2.3 (November 2015)
 ----------------------
 

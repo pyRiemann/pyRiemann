@@ -2,6 +2,8 @@
 import numpy
 
 from .base import sqrtm, invsqrtm, logm, expm
+from .ajd import rjd
+from .distance import distance_riemann
 
 
 def _get_sample_weight(sample_weight, data):
@@ -202,20 +204,57 @@ def mean_euclid(covmats, sample_weight=None):
     return numpy.average(covmats, axis=0, weights=sample_weight)
 
 
-def mean_ale(covmats, sample_weight=None):
-    """Return the mean covariance matrix according using the ALE algorithme
-    described in :
-
-    M. Congedo, B. Afsari, A. Barachant, M. Moakher, 'Approximate Joint Diagonalization and Geometric Mean of Symmetric Positive Definite Matrices', PLoS ONE, 2015
-
-    The implementation is not done yet.
+def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
+    """Return the mean covariance matrix according using the AJD-based
+    log-Euclidean Mean (ALE). See [1].
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param tol: the tolerance to stop the gradient descent
+    :param maxiter: The maximum number of iteration, default 50
+    :param sample_weight: the weight of each sample
+
     :returns: the mean covariance matrix
 
-    """
-    raise NotImplementedError
+    Notes
+    -----
+    .. versionadded:: 0.2.4
 
+    References
+    ----------
+    [1] M. Congedo, B. Afsari, A. Barachant, M. Moakher, 'Approximate Joint
+    Diagonalization and Geometric Mean of Symmetric Positive Definite
+    Matrices', PLoS ONE, 2015
+
+    """
+    sample_weight = _get_sample_weight(sample_weight, covmats)
+    Nt, Ne, Ne = covmats.shape
+    crit = numpy.inf
+    k = 0
+
+    # init with AJD
+    B, _ = rjd(covmats)
+    while (crit > tol) and (k < maxiter):
+        k += 1
+        J = numpy.zeros((Ne, Ne))
+
+        for index, Ci in enumerate(covmats):
+            tmp = logm(numpy.dot(numpy.dot(B.T, Ci), B))
+            J += sample_weight[index] * tmp
+
+        update = numpy.diag(numpy.diag(expm(J)))
+        B = numpy.dot(B, invsqrtm(update))
+
+        crit = distance_riemann(numpy.eye(Ne), update)
+
+    A = numpy.linalg.inv(B)
+
+    J = numpy.zeros((Ne, Ne))
+    for index, Ci in enumerate(covmats):
+        tmp = logm(numpy.dot(numpy.dot(B.T, Ci), B))
+        J += sample_weight[index] * tmp
+
+    C = numpy.dot(numpy.dot(A.T, expm(J)), A)
+    return C
 
 def mean_identity(covmats, sample_weight=None):
     """Return the identity matrix corresponding to the covmats sit size
@@ -247,6 +286,7 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
                'euclid': mean_euclid,
                'identity': mean_identity,
                'logdet': mean_logdet,
-               'wasserstein': mean_wasserstein}
+               'wasserstein': mean_wasserstein,
+               'ale': mean_ale}
     C = options[metric](covmats, sample_weight=sample_weight, *args)
     return C
