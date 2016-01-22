@@ -69,6 +69,7 @@ Spatial Filtering
     :template: class.rst
 
     Xdawn
+    CSP
 
 Channel selection
 ------------------
@@ -134,6 +135,7 @@ Mean
     mean_logeuclid
     mean_logdet
     mean_wasserstein
+    mean_ale
 
 
 Geodesic
@@ -174,3 +176,13 @@ Base
     expm
     logm
     powm
+
+Aproximate Joint Diagonalization
+~~~~~~~~~~~~~~~~~~~~~~
+.. _ajd_api:
+.. currentmodule:: pyriemann.utils.ajd
+
+.. autosummary::
+    :toctree: generated/
+
+    rjd
