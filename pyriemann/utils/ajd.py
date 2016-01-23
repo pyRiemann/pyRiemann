@@ -2,7 +2,7 @@
 import numpy as np
 
 
-def rjd(X, threshold=1e-8, n_iter_max=1000):
+def rjd(X, eps=1e-8, n_iter_max=1000):
     """Approximate joint diagonalization based on jacobi angle.
 
     This is a direct implementation of the Cardoso AJD algorithm [1] used in
@@ -13,8 +13,8 @@ def rjd(X, threshold=1e-8, n_iter_max=1000):
     ----------
     X : ndarray, shape (n_trials, n_channels, n_channels)
         A set of covariance matrices to diagonalize
-    threshold : float (default 1e-8)
-        The number of standard deviation to reject artifacts.
+    eps : float (default 1e-8)
+        Tolerance for stopping criterion.
     n_iter_max : int (default 1000)
         The maximum number of iteration to reach convergence.
 
@@ -32,6 +32,7 @@ def rjd(X, threshold=1e-8, n_iter_max=1000):
     See Also
     --------
     ajd_pham
+    uwedge
 
     References
     ----------
@@ -71,8 +72,8 @@ def rjd(X, threshold=1e-8, n_iter_max=1000):
                                          np.sqrt(ton * ton + toff * toff))
                 c = np.cos(theta)
                 s = np.sin(theta)
-                encore = encore | (np.abs(s) > threshold)
-                if (np.abs(s) > threshold):
+                encore = encore | (np.abs(s) > eps)
+                if (np.abs(s) > eps):
                     tmp = A[:, Ip].copy()
                     A[:, Ip] = c * A[:, Ip] + s * A[:, Iq]
                     A[:, Iq] = c * A[:, Iq] - s * tmp
@@ -89,7 +90,7 @@ def rjd(X, threshold=1e-8, n_iter_max=1000):
     return V, D
 
 
-def ajd_pham(X, threshold=1e-6, n_iter_max=15):
+def ajd_pham(X, eps=1e-6, n_iter_max=15):
     """Approximate joint diagonalization based on pham's algorithm.
 
     This is a direct implementation of the PHAM's AJD algorithm [1].
@@ -98,8 +99,8 @@ def ajd_pham(X, threshold=1e-6, n_iter_max=15):
     ----------
     X : ndarray, shape (n_trials, n_channels, n_channels)
         A set of covariance matrices to diagonalize
-    threshold : float (default 1e-6)
-        The number of standard deviation to reject artifacts.
+    eps : float (default 1e-6)
+        tolerance for stoping criterion.
     n_iter_max : int (default 1000)
         The maximum number of iteration to reach convergence.
 
@@ -117,6 +118,7 @@ def ajd_pham(X, threshold=1e-6, n_iter_max=15):
     See Also
     --------
     rjd
+    uwedge
 
     References
     ----------
@@ -133,7 +135,7 @@ def ajd_pham(X, threshold=1e-6, n_iter_max=15):
     # init variables
     m, nm = A.shape
     V = np.eye(m)
-    epsi = m * (m - 1)*threshold
+    epsi = m * (m - 1) * eps
 
     for it in range(n_iter_max):
         decr = 0
@@ -177,3 +179,106 @@ def ajd_pham(X, threshold=1e-6, n_iter_max=15):
             break
     D = np.reshape(A, (m, nm/m, m)).transpose(1, 0, 2)
     return V, D
+
+import scipy as sp
+
+
+def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
+    """Approximate joint diagonalization algorithm UWEDGE.
+
+    Uniformly Weighted Exhaustive Diagonalization using Gauss iteration
+    (U-WEDGE). Implementation of the AJD algorithm by Tichavsky and Yeredor.
+    This is a translation from the matlab code provided by the authors.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_trials, n_channels, n_channels)
+        A set of covariance matrices to diagonalize
+    init: None | ndarray, shape (n_channels, n_channels) (default None)
+        Initialization for the diagonalizer.
+    eps : float (default 1e-7)
+        tolerance for stoping criterion.
+    n_iter_max : int (default 1000)
+        The maximum number of iteration to reach convergence.
+
+    Returns
+    -------
+    V : ndarray, shape (n_channels, n_channels)
+        the diagonalizer
+    D : ndarray, shape (n_trials, n_channels, n_channels)
+        the set of quasi diagonal matrices
+
+    Notes
+    -----
+    .. versionadded:: 0.2.4
+
+    See Also
+    --------
+    rjd
+    ajd_pham
+
+    References
+    ----------
+    [1] P. Tichavsky, A. Yeredor and J. Nielsen,
+        "A Fast Approximate Joint Diagonalization Algorithm
+        Using a Criterion with a Block Diagonal Weight Matrix",
+        ICASSP 2008, Las Vegas
+    [2] P. Tichavsky and A. Yeredor, "Fast Approximate Joint Diagonalization
+        Incorporating Weight Matrices" IEEE Transactions of Signal Processing,
+        2009.
+    """
+    L, d, _ = X.shape
+
+    # reshape input matrix
+    M = np.concatenate(X, 0).T
+
+    # init variables
+    d, Md = M.shape
+    iteration = 0
+    improve = 10
+
+    if init is None:
+        E, H = sp.linalg.eig(M[:, 0:d])
+        W_est = np.dot(np.diag(1. / np.sqrt(np.abs(E))), H.T)
+    else:
+        W_est = init
+
+    Ms = np.array(M)
+    Rs = np.zeros((d, L))
+
+    for k in range(L):
+        ini = k*d
+        Il = np.arange(ini, ini + d)
+        M[:, Il] = 0.5*(M[:, Il] + M[:, Il].T)
+        Ms[:, Il] = np.dot(np.dot(W_est, M[:, Il]), W_est.T)
+        Rs[:, k] = np.diag(Ms[:, Il])
+
+    crit = np.sum(Ms**2) - np.sum(Rs**2)
+    while (improve > eps) & (iteration < n_iter_max):
+        B = np.dot(Rs, Rs.T)
+        C1 = np.zeros((d, d))
+        for i in range(d):
+            C1[:, i] = np.sum(Ms[:, i:Md:d]*Rs, axis=1)
+
+        D0 = B*B.T - np.outer(np.diag(B), np.diag(B))
+        A0 = (C1 * B - np.dot(np.diag(np.diag(B)), C1.T)) / (D0 + np.eye(d))
+        A0 += np.eye(d)
+        W_est = sp.linalg.solve(A0, W_est)
+
+        Raux = np.dot(np.dot(W_est, M[:, 0:d]), W_est.T)
+        aux = 1./np.sqrt(np.abs(np.diag(Raux)))
+        W_est = np.dot(np.diag(aux), W_est)
+
+        for k in range(L):
+            ini = k*d
+            Il = np.arange(ini, ini + d)
+            Ms[:, Il] = np.dot(np.dot(W_est, M[:, Il]), W_est.T)
+            Rs[:, k] = np.diag(Ms[:, Il])
+
+        crit_new = np.sum(Ms**2) - np.sum(Rs**2)
+        improve = np.abs(crit_new - crit)
+        crit = crit_new
+        iteration += 1
+
+    D = np.reshape(Ms, (d, L, d)).transpose(1, 0, 2)
+    return W_est, D

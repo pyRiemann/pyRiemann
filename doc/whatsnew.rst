@@ -22,7 +22,7 @@ v0.2.4 (Unreleased)
 
 - Added CSP for covariance matrices.
 
-- Added Approximate Joint diagonalization algorithm (JADE, PHAM).
+- Added Approximate Joint diagonalization algorithms (JADE, PHAM, UWEDGE).
 
 - Added ALE mean.
 

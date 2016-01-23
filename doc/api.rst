@@ -187,3 +187,4 @@ Aproximate Joint Diagonalization
 
     rjd
     ajd_pham
+    uwedge
