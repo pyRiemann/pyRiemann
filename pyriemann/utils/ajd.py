@@ -92,13 +92,13 @@ def rjd(X, threshold=1e-8, n_iter_max=1000):
 def ajd_pham(X, threshold=1e-6, n_iter_max=15):
     """Approximate joint diagonalization based on pham's algorithm.
 
-    This is a direct implementation of the PHAM's AJD algorithm.
+    This is a direct implementation of the PHAM's AJD algorithm [1].
 
     Parameters
     ----------
     X : ndarray, shape (n_trials, n_channels, n_channels)
         A set of covariance matrices to diagonalize
-    threshold : float (default 1e-8)
+    threshold : float (default 1e-6)
         The number of standard deviation to reject artifacts.
     n_iter_max : int (default 1000)
         The maximum number of iteration to reach convergence.
@@ -117,6 +117,12 @@ def ajd_pham(X, threshold=1e-6, n_iter_max=15):
     See Also
     --------
     rjd
+
+    References
+    ----------
+    [1] Pham, Dinh Tuan. "Joint approximate diagonalization of positive
+    definite Hermitian matrices." SIAM Journal on Matrix Analysis and
+    Applications 22, no. 4 (2001): 1136-1152.
 
     """
     nmat = X.shape[0]

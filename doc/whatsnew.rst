@@ -18,21 +18,23 @@ v0.2.4 (Unreleased)
 
 - Added NearestNeighbor classifier.
 
-- Added Softmax probabilities for MDM
+- Added Softmax probabilities for MDM.
 
 - Added CSP for covariance matrices.
 
-- Added Approximate Joint diagonalization algorithm (JADE, PHAM)
+- Added Approximate Joint diagonalization algorithm (JADE, PHAM).
 
-- Added ALE mean
+- Added ALE mean.
+
+- Added Multiclass CSP.
 
 v0.2.3 (November 2015)
 ----------------------
 
-- Added multiprocessing for MDM with joblib
+- Added multiprocessing for MDM with joblib.
 
-- Added kullback-leibler divergence
+- Added kullback-leibler divergence.
 
-- Added Riemannian Potato
+- Added Riemannian Potato.
 
-- Added sample_weight for mean estimation and MDM
+- Added sample_weight for mean estimation and MDM.

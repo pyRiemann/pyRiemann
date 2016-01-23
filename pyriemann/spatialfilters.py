@@ -6,6 +6,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 from .utils.covariance import _check_est
 from .utils.mean import mean_covariance
+from .utils.ajd import ajd_pham
 
 
 class Xdawn(BaseEstimator, TransformerMixin):
@@ -137,6 +138,10 @@ class CSP(BaseEstimator, TransformerMixin):
     different metric for the estimation of the class-related mean covariance
     matrices, as described in [3].
 
+    This implementation support multiclass CSP by means of approximate joint
+    diagonalization. In this case, the spatial filter selection is achieved
+    according to [4].
+
     Parameters
     ----------
     nfilter : int (default 4)
@@ -168,6 +173,9 @@ class CSP(BaseEstimator, TransformerMixin):
     [3] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, Common Spatial
         Pattern revisited by Riemannian geometry, IEEE International Workshop
         on Multimedia Signal Processing (MMSP), p. 472-476, 2010.
+    [4] Grosse-Wentrup, Moritz, and Martin Buss. "Multiclass common spatial
+        patterns and information theoretic feature extraction." Biomedical
+        Engineering, IEEE Transactions on 55, no. 8 (2008): 1991-2000.
     """
 
     def __init__(self, nfilter=4, metric='euclid'):
@@ -193,14 +201,46 @@ class CSP(BaseEstimator, TransformerMixin):
         Nt, Ne, Ns = X.shape
         classes = numpy.unique(y)
 
-        C0 = mean_covariance(X[y == classes[0]], self.metric)
-        C1 = mean_covariance(X[y == classes[1]], self.metric)
+        # estimate class means
+        C = []
+        for c in classes:
+            C.append(mean_covariance(X[y == c], self.metric))
+        C = numpy.array(C)
 
-        evals, evecs = eigh(C1, C0 + C1)
+        # Switch between binary and multiclass
+        if len(classes) == 2:
+            evals, evecs = eigh(C[1], C[0] + C[1])
+            # sort eigenvectors
+            ix = numpy.argsort(numpy.abs(evals - 0.5))[::-1]
+        elif len(classes) > 2:
+            evecs, D = ajd_pham(C)
+            Ctot = numpy.array(mean_covariance(C, self.metric))
+            evecs = evecs.T
+
+            # normalize
+            for i in range(evecs.shape[1]):
+                tmp = numpy.dot(numpy.dot(evecs[:, i].T, Ctot), evecs[:, i])
+                evecs[:, i] /= numpy.sqrt(tmp)
+
+            mutual_info = []
+            # class probability
+            Pc = [numpy.mean(y == c) for c in classes]
+            for j in range(evecs.shape[1]):
+                a = 0
+                b = 0
+                for i, c in enumerate(classes):
+                    tmp = numpy.dot(numpy.dot(evecs[:, j].T, C[i]),
+                                    evecs[:, j])
+                    a += Pc[i] * numpy.log(numpy.sqrt(tmp))
+                    b += Pc[i] * (tmp ** 2 - 1)
+                mi = - (a + (3.0 / 16) * (b ** 2))
+                mutual_info.append(mi)
+            ix = numpy.argsort(mutual_info)[::-1]
+        else:
+            ValueError("Number of classes must be superior or equal at 2.")
 
         # sort eigenvectors
-        evecs = evecs[:, numpy.argsort(numpy.abs(evals - 0.5))[::-1]]
-        # evecs /= numpy.apply_along_axis(numpy.linalg.norm, 0, evecs)
+        evecs = evecs[:, ix]
 
         # spatial patterns
         A = numpy.linalg.pinv(evecs.T)
