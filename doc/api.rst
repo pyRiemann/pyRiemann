@@ -186,3 +186,4 @@ Aproximate Joint Diagonalization
     :toctree: generated/
 
     rjd
+    ajd_pham

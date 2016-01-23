@@ -2,7 +2,7 @@
 import numpy
 
 from .base import sqrtm, invsqrtm, logm, expm
-from .ajd import rjd
+from .ajd import ajd_pham
 from .distance import distance_riemann
 
 
@@ -232,7 +232,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
     k = 0
 
     # init with AJD
-    B, _ = rjd(covmats)
+    B, _ = ajd_pham(covmats)
     while (crit > tol) and (k < maxiter):
         k += 1
         J = numpy.zeros((Ne, Ne))
@@ -255,6 +255,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
 
     C = numpy.dot(numpy.dot(A.T, expm(J)), A)
     return C
+
 
 def mean_identity(covmats, sample_weight=None):
     """Return the identity matrix corresponding to the covmats sit size
