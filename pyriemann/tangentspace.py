@@ -96,11 +96,11 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             Ne = (numpy.sqrt(1 + 8 * shape_X[1]) - 1) / 2
             if Ne != int(Ne):
                 raise ValueError("Shape of Tangent space vector does not correspond to a square matrix.")
-            return Ne
+            return int(Ne)
         elif len(X.shape) == 3:
             if shape_X[1] != shape_X[2]:
                 raise ValueError("Matrices must be square")
-            return shape_X[1]
+            return int(shape_X[1])
         else:
             raise ValueError("Shape must be of len 2 or 3.")
 
