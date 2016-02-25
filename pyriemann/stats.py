@@ -2,11 +2,31 @@ from sklearn.neighbors import DistanceMetric
 from .utils.distance import distance
 
 import numpy
+import math
 import pandas
 import matplotlib.pyplot as plt
 from sklearn.base import BaseEstimator
 
-#######################################################################
+
+def multiset_perm_number(y):
+    """return the number of unique permutation in a multiset."""
+    pr = 1
+    for i in numpy.unique(y):
+        pr *= math.factorial(numpy.sum(y == i))
+    return math.factorial(len(y))/pr
+
+
+def unique_permutations(elements):
+    """Return le list of unique permutations."""
+    if len(elements) == 1:
+        yield (elements[0],)
+    else:
+        unique_elements = set(elements)
+        for first_element in unique_elements:
+            remaining_elements = list(elements)
+            remaining_elements.remove(first_element)
+            for sub_permutation in unique_permutations(remaining_elements):
+                yield (first_element,) + sub_permutation
 
 
 class RiemannDistanceMetric(DistanceMetric):
@@ -161,18 +181,28 @@ class PermutationTest(BaseEstimator):
         numpy.random.seed(self.random_state)
         if self.fit_perms is False:
             self.SepIndex.fit(X, y)
-        self.F = numpy.zeros(self.n_perms + 1)
-        for i in range(self.n_perms):
-            perms = numpy.random.permutation(y)
+        Npe = multiset_perm_number(y)
+        self.F = numpy.zeros(numpy.min([self.n_perms, Npe]) + 1)
+        if Npe <= self.n_perms:
+            print("Warning, number of unique permutations : %d" % Npe)
+            perms = unique_permutations(y)
+            for i, p in enumerate(perms):
+                # if fit_perms is true
+                if self.fit_perms is True:
+                    self.SepIndex.fit(X, y)
+                self.F[i + 1] = self.SepIndex.score(p)
+        else:
+            for i in range(self.n_perms):
+                perms = numpy.random.permutation(y)
 
-            # if fit_perms is true
-            if self.fit_perms is True:
-                self.SepIndex.fit(X, y)
-            self.F[i + 1] = self.SepIndex.score(perms)
+                # if fit_perms is true
+                if self.fit_perms is True:
+                    self.SepIndex.fit(X, y)
+                self.F[i + 1] = self.SepIndex.score(perms)
 
         self.F[0] = self.SepIndex.score(y)
 
-        self.p_value = (self.F[0] <= self.F).sum() / numpy.float(self.n_perms)
+        self.p_value = (self.F[0] <= self.F).sum() / numpy.float(len(self.F))
 
         return self.p_value, self.F
 
