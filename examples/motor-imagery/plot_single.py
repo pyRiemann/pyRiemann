@@ -21,14 +21,12 @@ from mne.decoding import CSP
 
 # pyriemann import
 from pyriemann.classification import MDM, TSclassifier
-from pyriemann.tangentspace import TangentSpace
 from pyriemann.estimation import covariances
 
 # sklearn imports
 from sklearn.cross_validation import cross_val_score, KFold
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
-from sklearn.lda import LDA  # XXX has changed since v.17
 
 ###############################################################################
 # Set parameters and read data
@@ -94,14 +92,14 @@ class_balance = max(class_balance, 1. - class_balance)
 print("Tangent space Classification accuracy: %f / Chance level: %f" %
       (np.mean(scores), class_balance))
 ###############################################################################
-# Classification with CSP + linear discrimant analysis
+# Classification with CSP + logistic regression
 
 # Assemble a classifier
-lda = LDA()
+lr = LogisticRegression()
 csp = CSP(n_components=4, reg='ledoit_wolf', log=True)
 
 
-clf = Pipeline([('CSP', csp), ('LDA', lda)])
+clf = Pipeline([('CSP', csp), ('LogisticRegression', lr)])
 scores = cross_val_score(clf, epochs_data_train, labels, cv=cv, n_jobs=1)
 
 # Printing the results
