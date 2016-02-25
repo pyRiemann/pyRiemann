@@ -28,7 +28,7 @@ from pyriemann.estimation import covariances
 from sklearn.cross_validation import cross_val_score, KFold
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
-from sklearn.lda import LDA
+from sklearn.lda import LDA  # XXX has changed since v.17
 
 ###############################################################################
 # Set parameters and read data
