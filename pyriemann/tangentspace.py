@@ -1,10 +1,15 @@
 """Tangent space functions."""
 from .utils.mean import mean_covariance
 from .utils.tangentspace import tangent_space, untangent_space
+from .utils.base import check_version
 
 import numpy
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.lda import LDA
+if check_version('sklearn', '0.17'):
+    from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+else:
+    from sklearn.lda import LDA
+
 
 
 class TangentSpace(BaseEstimator, TransformerMixin):
