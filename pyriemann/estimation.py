@@ -24,7 +24,7 @@ class Covariances(BaseEstimator, TransformerMixin):
     ----------
     estimator : string (default: 'scm')
         covariance matrix estimator. For regularization consider 'lwf' or 'oas'
-        For a complete list of estimator, see `utils.covariances`.
+        For a complete list of estimator, see `utils.covariance`.
 
     See Also
     --------
@@ -105,7 +105,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         If None (default), all classes will be accounted.
     estimator : string (default: 'scm')
         covariance matrix estimator. For regularization consider 'lwf' or 'oas'
-        For a complete list of estimator, see `utils.covariances`.
+        For a complete list of estimator, see `utils.covariance`.
     svd : int | None (default None)
         if not none, the prototype responses will be reduce using a svd using
         the number of components passed in svd.
