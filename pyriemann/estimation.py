@@ -241,16 +241,14 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(self, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
-                 phase_correction=False):
+    def __init__(self, window=128, overlap=0.75, fmin=None, fmax=None,
+                 fs=None):
         """Init."""
-        self._window = _nextpow2(window)
-        self._overlap = overlap
-        self._fmin = fmin
-        self._fmax = fmax
-        self._fs = fs
-
-        self._phase_corr = phase_correction
+        self.window = _nextpow2(window)
+        self.overlap = overlap
+        self.fmin = fmin
+        self.fmax = fmax
+        self.fs = fs
 
     def fit(self, X, y=None):
         return self
@@ -261,8 +259,8 @@ class CospCovariances(BaseEstimator, TransformerMixin):
         out = []
 
         for i in range(Nt):
-            S = cospectrum(X[i], window=self._window, overlap=self._overlap,
-                           fmin=self._fmin, fmax=self._fmax, fs=self._fs)
+            S = cospectrum(X[i], window=self.window, overlap=self.overlap,
+                           fmin=self.fmin, fmax=self.fmax, fs=self.fs)
             out.append(S.real)
 
         return numpy.array(out)
