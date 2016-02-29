@@ -241,15 +241,14 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(self, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
-                 phase_correction=False):
+    def __init__(self, window=128, overlap=0.75, fmin=None, fmax=None,
+                 fs=None):
         """Init."""
         self.window = _nextpow2(window)
         self.overlap = overlap
         self.fmin = fmin
         self.fmax = fmax
         self.fs = fs
-        self.phase_correction = phase_correction  # XXX never used?
 
     def fit(self, X, y=None):
         return self

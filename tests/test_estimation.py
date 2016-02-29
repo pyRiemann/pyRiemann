@@ -46,5 +46,4 @@ def test_Cospcovariances():
     cov.fit(x)
     cov.fit_transform(x)
     assert_equal(cov.get_params(), dict(window=128, overlap=0.75, fmin=None,
-                                        fmax=None, fs=None,
-                                        phase_correction=False))
+                                        fmax=None, fs=None))
