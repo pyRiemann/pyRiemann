@@ -249,8 +249,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
         self.fmin = fmin
         self.fmax = fmax
         self.fs = fs
-
-        self._phase_corr = phase_correction
+        self.phase_correction = phase_correction
 
     def fit(self, X, y=None):
         return self
