@@ -42,9 +42,9 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     Attributes
     ----------
-    covmeans : list
+    covmeans_ : list
         the class centroids.
-    classes : list
+    classes_ : list
         list of classes.
 
     See Also
@@ -105,32 +105,37 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : MDM instance
             The MDM instance.
         """
-        self.classes = numpy.unique(y)
+        self.classes_ = numpy.unique(y)
 
-        self.covmeans = []
+        self.covmeans_ = []
 
         if sample_weight is None:
             sample_weight = numpy.ones(X.shape[0])
 
         if self.n_jobs == 1:
-            for l in self.classes:
-                self.covmeans.append(
+            for l in self.classes_:
+                self.covmeans_.append(
                     mean_covariance(X[y == l], metric=self.metric_mean,
                                     sample_weight=sample_weight[y == l]))
         else:
-            self.covmeans = Parallel(n_jobs=self.n_jobs)(delayed(mean_covariance)(X[y == l], metric=self.metric_mean, sample_weight=sample_weight[y == l]) for l in self.classes)
+            self.covmeans_ = Parallel(n_jobs=self.n_jobs)(
+                delayed(mean_covariance)(X[y == l], metric=self.metric_mean,
+                                         sample_weight=sample_weight[y == l])
+                for l in self.classes_)
 
         return self
 
     def _predict_distances(self, covtest):
         """Helper to predict the distance. equivalent to transform."""
-        Nc = len(self.covmeans)
+        Nc = len(self.covmeans_)
 
         if self.n_jobs == 1:
-            dist = [distance(covtest, self.covmeans[m], self.metric_dist)
+            dist = [distance(covtest, self.covmeans_[m], self.metric_dist)
                     for m in range(Nc)]
         else:
-            dist = Parallel(n_jobs=self.n_jobs)(delayed(distance)(covtest, self.covmeans[m], self.metric_dist) for m in range(Nc))
+            dist = Parallel(n_jobs=self.n_jobs)(delayed(distance)(
+                covtest, self.covmeans_[m], self.metric_dist)
+                for m in range(Nc))
 
         dist = numpy.concatenate(dist, axis=1)
         return dist
@@ -149,7 +154,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
             the prediction for each trials according to the closest centroid.
         """
         dist = self._predict_distances(covtest)
-        return self.classes[dist.argmin(axis=1)]
+        return self.classes_[dist.argmin(axis=1)]
 
     def transform(self, X):
         """get the distance to each centroid.
@@ -441,7 +446,7 @@ class KNearestNeighbor(MDM):
 
     Attributes
     ----------
-    classes : list
+    classes_ : list
         list of classes.
 
     See Also
@@ -472,8 +477,8 @@ class KNearestNeighbor(MDM):
         self : NearestNeighbor instance
             The NearestNeighbor instance.
         """
-        self.classes = y
-        self.covmeans = X
+        self.classes_ = y
+        self.covmeans_ = X
 
         return self
 
@@ -491,6 +496,6 @@ class KNearestNeighbor(MDM):
             the prediction for each trials according to the closest centroid.
         """
         dist = self._predict_distances(covtest)
-        neighbors_classes = self.classes[numpy.argsort(dist)]
+        neighbors_classes = self.classes_[numpy.argsort(dist)]
         out, _ = stats.mode(neighbors_classes[:, 0:self.n_neighbors], axis=1)
         return out.ravel()

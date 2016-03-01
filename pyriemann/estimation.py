@@ -135,7 +135,6 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         self.classes = classes
         self.estimator = estimator
         self.svd = svd
-        self.P = None
 
         if svd is not None:
             if not isinstance(svd, int):
@@ -163,7 +162,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         else:
             classes = numpy.unique(y)
 
-        self.P = []
+        self.P_ = []
         for c in classes:
             # Prototyped responce for each class
             P = numpy.mean(X[y == c, :, :], axis=0)
@@ -173,9 +172,9 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
                 U, s, V = numpy.linalg.svd(P)
                 P = numpy.dot(U[:, 0:self.svd].T, P)
 
-            self.P.append(P)
+            self.P_.append(P)
 
-        self.P = numpy.concatenate(self.P, axis=0)
+        self.P_ = numpy.concatenate(self.P_, axis=0)
         return self
 
     def transform(self, X):
@@ -193,7 +192,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
             of covmats equal to n_channels * (n_classes + 1) in case svd is
             None and equal to n_channels + n_classes * svd otherwise.
         """
-        covmats = covariances_EP(X, self.P, estimator=self.estimator)
+        covmats = covariances_EP(X, self.P_, estimator=self.estimator)
         return covmats
 
 
@@ -214,17 +213,17 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         self.nfilter = nfilter
 
     def fit(self, X, y):
-        self.Xd = Xdawn(nfilter=self.nfilter, classes=self.classes,
-                        estimator=self.xdawn_estimator)
-        self.Xd.fit(X, y)
-        self.P = self.Xd.evokeds_
+        self.Xd_ = Xdawn(nfilter=self.nfilter, classes=self.classes,
+                         estimator=self.xdawn_estimator)
+        self.Xd_.fit(X, y)
+        self.P_ = self.Xd_.evokeds_
         return self
 
     def transform(self, X):
         if self.applyfilters:
-            X = self.Xd.transform(X)
+            X = self.Xd_.transform(X)
 
-        covmats = covariances_EP(X, self.P, estimator=self.estimator)
+        covmats = covariances_EP(X, self.P_, estimator=self.estimator)
         return covmats
 
     def fit_transform(self, X, y):
