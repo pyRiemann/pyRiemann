@@ -117,12 +117,12 @@ mdm.fit(cov_data_train, labels)
 fig, axes = plt.subplots(1, 2, figsize=[8, 4])
 ch_names = [ch.replace('.', '') for ch in epochs.ch_names]
 
-df = pd.DataFrame(data=mdm.covmeans[0], index=ch_names, columns=ch_names)
+df = pd.DataFrame(data=mdm.covmeans_[0], index=ch_names, columns=ch_names)
 g = sns.heatmap(df, ax=axes[0], square=True, cbar=False, xticklabels=2,
                 yticklabels=2)
 g.set_title('Mean covariance - hands')
 
-df = pd.DataFrame(data=mdm.covmeans[1], index=ch_names, columns=ch_names)
+df = pd.DataFrame(data=mdm.covmeans_[1], index=ch_names, columns=ch_names)
 g = sns.heatmap(df, ax=axes[1], square=True, cbar=False, xticklabels=2,
                 yticklabels=2)
 plt.xticks(rotation='vertical')

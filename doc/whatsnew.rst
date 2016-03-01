@@ -30,6 +30,8 @@ v0.2.4 (Unreleased)
 
 - API: param name changes in `estimations.CospCovariances` to comply to Scikit-Learn.
 
+- API: attributes name changes in most modules to comply to the Scikit-Learn naming convention.
+
 v0.2.3 (November 2015)
 ----------------------
 

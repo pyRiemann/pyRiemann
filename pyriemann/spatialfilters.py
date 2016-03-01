@@ -79,8 +79,8 @@ class Xdawn(BaseEstimator, TransformerMixin):
         """
         Nt, Ne, Ns = X.shape
 
-        if self.classes is None:
-            self.classes = numpy.unique(y)
+        self.classes_ = (numpy.unique(y) if self.classes is None else
+                         self.classes)
 
         # FIXME : too many reshape operation
         tmp = X.transpose((1, 2, 0))
@@ -89,7 +89,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
         self.evokeds_ = []
         self.filters_ = []
         self.patterns_ = []
-        for c in self.classes:
+        for c in self.classes_:
             # Prototyped responce for each class
             P = numpy.mean(X[y == c, :, :], axis=0)
 
@@ -182,8 +182,6 @@ class CSP(BaseEstimator, TransformerMixin):
         """Init."""
         self.nfilter = nfilter
         self.metric = metric
-        self.filters_ = None
-        self.patterns_ = None
 
     def fit(self, X, y):
         """Train CSP spatial filters.
