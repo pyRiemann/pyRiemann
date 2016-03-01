@@ -30,6 +30,7 @@ runs = [6, 10, 14]  # motor imagery: hands vs feet
 raw_files = [read_raw_edf(f, preload=True, verbose=False)
              for f in eegbci.load_data(subject, runs)]
 raw = concatenate_raws(raw_files)
+
 events = find_events(raw, shortest_event=0, stim_channel='STI 014')
 picks = pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False,
                    exclude='bads')

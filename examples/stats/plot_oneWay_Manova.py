@@ -30,9 +30,6 @@ raw_files = [read_raw_edf(f, preload=True, verbose=False)
              for f in eegbci.load_data(subject, runs)]
 raw = concatenate_raws(raw_files)
 
-# strip channel names
-raw.info['ch_names'] = [chn.strip('.') for chn in raw.info['ch_names']]
-
 # Apply band-pass filter
 raw.filter(7., 35., method='iir')
 
