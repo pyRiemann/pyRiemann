@@ -96,7 +96,7 @@ class SeparabilityIndexTwoFactor(BaseEstimator):
 
     def __init__(self, method='', metric='riemann'):
         self.method = method
-        self.metric = 'riemann'
+        self.metric = metric
 
     def fit(self, X, y=None):
         self.pairs_ = RiemannDistanceMetric(self.metric).pairwise(X)
