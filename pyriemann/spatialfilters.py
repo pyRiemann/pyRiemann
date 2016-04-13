@@ -1,5 +1,8 @@
 """Spatial filtering function."""
-import numpy
+import numpy as np
+from numpy import abs, apply_along_axis, array, argsort, concatenate, \
+     log, unique, sqrt, zeros
+from numpy.linalg import norm, pinv
 
 from scipy.linalg import eigh
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -79,37 +82,37 @@ class Xdawn(BaseEstimator, TransformerMixin):
         """
         Nt, Ne, Ns = X.shape
 
-        self.classes_ = (numpy.unique(y) if self.classes is None else
+        self.classes_ = (unique(y) if self.classes is None else
                          self.classes)
 
         # FIXME : too many reshape operation
         tmp = X.transpose((1, 2, 0))
-        Cx = numpy.matrix(self.estimator(tmp.reshape(Ne, Ns * Nt)))
+        Cx = self.estimator(tmp.reshape(Ne, Ns * Nt))
 
         self.evokeds_ = []
         self.filters_ = []
         self.patterns_ = []
         for c in self.classes_:
             # Prototyped responce for each class
-            P = numpy.mean(X[y == c, :, :], axis=0)
+            P = X[y == c, :, :].mean(axis=0)
 
             # Covariance matrix of the prototyper response & signal
-            C = numpy.matrix(self.estimator(P))
+            C = self.estimator(P)
 
             # Spatial filters
             evals, evecs = eigh(C, Cx)
-            evecs = evecs[:, numpy.argsort(evals)[::-1]]  # sort eigenvectors
-            evecs /= numpy.apply_along_axis(numpy.linalg.norm, 0, evecs)
+            evecs = evecs[:, argsort(evals)[::-1]]  # sort eigenvectors
+            evecs /= apply_along_axis(norm, 0, evecs)
             V = evecs
-            A = numpy.linalg.pinv(V.T)
+            A = pinv(V.T)
             # create the reduced prototyped response
             self.filters_.append(V[:, 0:self.nfilter].T)
             self.patterns_.append(A[:, 0:self.nfilter].T)
-            self.evokeds_.append(numpy.dot(V[:, 0:self.nfilter].T, P))
+            self.evokeds_.append(V[:, 0:self.nfilter].T.dot(P))
 
-        self.evokeds_ = numpy.concatenate(self.evokeds_, axis=0)
-        self.filters_ = numpy.concatenate(self.filters_, axis=0)
-        self.patterns_ = numpy.concatenate(self.patterns_, axis=0)
+        self.evokeds_ = concatenate(self.evokeds_, axis=0)
+        self.filters_ = concatenate(self.filters_, axis=0)
+        self.patterns_ = concatenate(self.patterns_, axis=0)
         return self
 
     def transform(self, X):
@@ -125,7 +128,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
         Xf : ndarray, shape (n_trials, n_filters * n_classes, n_samples)
             ndarray of spatialy filtered trials.
         """
-        X = numpy.dot(self.filters_, X)
+        X = self.filters_.dot(X)
         X = X.transpose((1, 0, 2))
         return X
 
@@ -197,7 +200,7 @@ class CSP(BaseEstimator, TransformerMixin):
             The CSP instance.
         """
         Nt, Ne, Ns = X.shape
-        classes = numpy.unique(y)
+        classes = unique(y)
 
         # estimate class means
         C = []
@@ -209,16 +212,16 @@ class CSP(BaseEstimator, TransformerMixin):
         if len(classes) == 2:
             evals, evecs = eigh(C[1], C[0] + C[1])
             # sort eigenvectors
-            ix = numpy.argsort(numpy.abs(evals - 0.5))[::-1]
+            ix = argsort(abs(evals - 0.5))[::-1]
         elif len(classes) > 2:
             evecs, D = ajd_pham(C)
-            Ctot = numpy.array(mean_covariance(C, self.metric))
+            Ctot = array(mean_covariance(C, self.metric))
             evecs = evecs.T
 
             # normalize
             for i in range(evecs.shape[1]):
-                tmp = numpy.dot(numpy.dot(evecs[:, i].T, Ctot), evecs[:, i])
-                evecs[:, i] /= numpy.sqrt(tmp)
+                tmp = evecs[:, i].T.dot(Ctot).dot(evecs[:, i])
+                evecs[:, i] /= sqrt(tmp)
 
             mutual_info = []
             # class probability
@@ -227,13 +230,12 @@ class CSP(BaseEstimator, TransformerMixin):
                 a = 0
                 b = 0
                 for i, c in enumerate(classes):
-                    tmp = numpy.dot(numpy.dot(evecs[:, j].T, C[i]),
-                                    evecs[:, j])
-                    a += Pc[i] * numpy.log(numpy.sqrt(tmp))
+                    tmp = numpyevecs[:, j].T.dot(C[i]).dot(evecs[:, j])
+                    a += Pc[i] * log(sqrt(tmp))
                     b += Pc[i] * (tmp ** 2 - 1)
                 mi = - (a + (3.0 / 16) * (b ** 2))
                 mutual_info.append(mi)
-            ix = numpy.argsort(mutual_info)[::-1]
+            ix = argsort(mutual_info)[::-1]
         else:
             ValueError("Number of classes must be superior or equal at 2.")
 
@@ -241,7 +243,7 @@ class CSP(BaseEstimator, TransformerMixin):
         evecs = evecs[:, ix]
 
         # spatial patterns
-        A = numpy.linalg.pinv(evecs.T)
+        A = pinv(evecs.T)
 
         self.filters_ = evecs[:, 0:self.nfilter].T
         self.patterns_ = A[:, 0:self.nfilter].T
@@ -260,8 +262,8 @@ class CSP(BaseEstimator, TransformerMixin):
             ndarray of spatialy filtered log-variance.
         """
 
-        out = numpy.zeros((len(X), len(self.filters_)))
+        out = zeros(shape=(len(X), len(self.filters_)))
         for i, x in enumerate(X):
-            tmp = numpy.dot(numpy.dot(self.filters_, x), self.filters_.T)
-            out[i] = numpy.log(numpy.diag(tmp))
+            tmp = self.filters_.dot(x).dot(self.filters_.T)
+            out[i] = log(diag(tmp))
         return out
