@@ -104,8 +104,8 @@ def distance_wasserstein(A, B):
 
     """
     B12 = sqrtm(B)
-    C = sqrtm(numpy.dot(numpy.dot(B12, A), B12))
-    return numpy.sqrt(numpy.trace(A + B - 2*C))
+    C = sqrtm(B12.dot(A).dot(B12))
+    return sqrt(trace(A + B - 2*C))
 
 
 def distance(A, B, metric='riemann'):
