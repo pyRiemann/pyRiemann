@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 
 from .base import sqrtm, invsqrtm, powm, logm, expm
 
@@ -41,9 +41,9 @@ def geodesic_riemann(A, B, alpha=0.5):
     """
     sA = sqrtm(A)
     isA = invsqrtm(A)
-    C = isA * B * isA
+    C = isA.dot(B).dot(isA)
     D = powm(C, alpha)
-    E = numpy.matrix(sA * D * sA)
+    E = sA.dot(D).dot(sA)
     return E
 
 
