@@ -1,7 +1,8 @@
 """Code for channel selection."""
 from .utils.distance import distance
 from .classification import MDM
-import numpy
+import numpy as np
+from numpy import zeros
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
@@ -87,7 +88,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         self.dist_ = []
         self.subelec_ = range(0, Ne, 1)
         while (len(self.subelec_)) > self.nelec:
-            di = numpy.zeros((len(self.subelec_), 1))
+            di = zeros(shape=(len(self.subelec_), 1))
             for idx in range(len(self.subelec_)):
                 sub = self.subelec_[:]
                 sub.pop(idx)
