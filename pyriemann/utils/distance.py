@@ -1,5 +1,7 @@
 """Distance utils."""
 import numpy
+from numpy import log, sqrt, trace
+from numpy.linalg import det, inv, norm
 from scipy.linalg import eigvalsh
 
 from .base import logm, sqrtm
@@ -14,8 +16,8 @@ def distance_kullback(A, B):
 
     """
     dim = A.shape[0]
-    logdet = numpy.log(numpy.linalg.det(B) / numpy.linalg.det(A))
-    kl = numpy.trace(numpy.dot(numpy.linalg.inv(B), A)) - dim + logdet
+    logdet = log(det(B) / det(A))
+    kl = trace(inv(B).dot(A)) - dim + logdet
     return 0.5 * kl
 
 
@@ -43,7 +45,7 @@ def distance_euclid(A, B):
     :returns: Eclidean distance between A and B
 
     """
-    return numpy.linalg.norm(A - B, ord='fro')
+    return norm(A - B, ord='fro')
 
 
 def distance_logeuclid(A, B):
@@ -73,7 +75,7 @@ def distance_riemann(A, B):
     :returns: Riemannian distance between A and B
 
     """
-    return numpy.sqrt((numpy.log(eigvalsh(A, B))**2).sum())
+    return sqrt((log(eigvalsh(A, B))**2).sum())
 
 
 def distance_logdet(A, B):
@@ -87,8 +89,7 @@ def distance_logdet(A, B):
     :returns: Log-Euclid distance between A and B
 
     """
-    return numpy.sqrt(numpy.log(numpy.linalg.det(
-        (A + B) / 2.0)) - 0.5 * numpy.log(numpy.linalg.det(A)*numpy.linalg.det(B)))
+    return sqrt(log(det((A + B) / 2.0)) - 0.5 * log(det(A)*(Bs)))
 
 
 def distance_wasserstein(A, B):
