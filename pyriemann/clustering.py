@@ -1,5 +1,9 @@
 """Clustering functions."""
-import numpy
+import numpy as np
+from numpy import arange, argmin, iinfo, unique
+from numpy.linalg import norm
+from numpy.random import randint, seed
+
 from sklearn.base import (BaseEstimator, ClassifierMixin, TransformerMixin,
                           ClusterMixin)
 from sklearn.cluster.k_means_ import _init_centroids
@@ -16,14 +20,14 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
     """helper to fit a single run of centroid."""
     # init random state if provided
     mdm = MDM(metric=metric)
-    squared_nomrs = [numpy.linalg.norm(x, ord='fro')**2 for x in X]
+    squared_nomrs = [norm(x, ord='fro')**2 for x in X]
     mdm.covmeans_ = _init_centroids(X, n_clusters, init,
                                     random_state=random_state,
                                     x_squared_norms=squared_nomrs)
     if y is not None:
-        mdm.classes_ = numpy.unique(y)
+        mdm.classes_ = unique(y)
     else:
-        mdm.classes_ = numpy.arange(n_clusters)
+        mdm.classes_ = arange(n_clusters)
 
     labels = mdm.predict(X)
     k = 0
@@ -33,7 +37,7 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
         dist = mdm._predict_distances(X)
         labels = mdm.classes_[dist.argmin(axis=1)]
         k += 1
-        if (k > max_iter) | (numpy.mean(labels == old_labels) > (1 - tol)):
+        if (k > max_iter) | ((labels == old_labels).mean() > (1 - tol)):
             break
     inertia = sum([sum(dist[labels == mdm.classes_[i], i])
                    for i in range(len(mdm.classes_))])
@@ -143,7 +147,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         else:
             numpy.random.seed(self.seed)
             seeds = numpy.random.randint(
-                numpy.iinfo(numpy.int32).max, size=self.n_init)
+                iinfo(np.int32).max, size=self.n_init)
             if self.n_jobs == 1:
                 res = []
                 for i in range(self.n_init):
@@ -168,7 +172,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
                     for seed in seeds)
                 labels, inertia, mdm = zip(*res)
 
-            best = numpy.argmin(inertia)
+            best = argmin(inertia)
             mdm = mdm[best]
             labels = labels[best]
             inertia = inertia[best]

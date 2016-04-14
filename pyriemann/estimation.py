@@ -1,5 +1,7 @@
 """Estimation of covariance matrices."""
-import numpy
+import numpy as np
+from numpy import array, concatenate
+from numpy.linalg import svd
 
 from .spatialfilters import Xdawn
 from .utils.covariance import covariances, covariances_EP, cospectrum
@@ -165,16 +167,16 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         self.P_ = []
         for c in classes:
             # Prototyped responce for each class
-            P = numpy.mean(X[y == c, :, :], axis=0)
+            P = X[y == c, :, :].mean(axis=0)
 
             # Apply svd if requested
             if self.svd is not None:
-                U, s, V = numpy.linalg.svd(P)
-                P = numpy.dot(U[:, 0:self.svd].T, P)
+                U, s, V = svd(P)
+                P = U[:, 0:self.svd].T.dot(P)
 
             self.P_.append(P)
 
-        self.P_ = numpy.concatenate(self.P_, axis=0)
+        self.P_ = concatenate(self.P_, axis=0)
         return self
 
     def transform(self, X):
@@ -262,7 +264,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
                            fmin=self.fmin, fmax=self.fmax, fs=self.fs)
             out.append(S.real)
 
-        return numpy.array(out)
+        return array(out)
 
     def fit_transform(self, X, y=None):
         return self.transform(X)
