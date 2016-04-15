@@ -1,4 +1,6 @@
-import numpy
+import numpy as np
+from numpy import arange, zeros, concatenate, hanning
+from numpy.fft import fft
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
 from matplotlib import mlab
 
@@ -60,7 +62,7 @@ def _check_est(est):
 def covariances(X, estimator='cov'):
     est = _check_est(estimator)
     Nt, Ne, Ns = X.shape
-    covmats = numpy.zeros((Nt, Ne, Ne))
+    covmats = zeros((Nt, Ne, Ne))
     for i in range(Nt):
         covmats[i, :, :] = est(X[i, :, :])
     return covmats
@@ -70,7 +72,7 @@ def covariances_EP(X, P, estimator='cov'):
     est = _check_est(estimator)
     Nt, Ne, Ns = X.shape
     Np, Ns = P.shape
-    covmats = numpy.zeros((Nt, Ne + Np, Ne + Np))
+    covmats = zeros((Nt, Ne + Np, Ne + Np))
     for i in range(Nt):
         covmats[i, :, :] = est(numpy.concatenate((P, X[i, :, :]), axis=0))
     return covmats
@@ -80,8 +82,8 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
     est = _check_est(estimator)
     X = []
     if padding:
-        padd = numpy.zeros((int(window / 2), sig.shape[1]))
-        sig = numpy.concatenate((padd, sig, padd), axis=0)
+        padd = zeros((int(window / 2), sig.shape[1]))
+        sig = concatenate((padd, sig, padd), axis=0)
 
     Ns, Ne = sig.shape
     jump = int(window * overlapp)
@@ -90,7 +92,7 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
         X.append(est(sig[ix:ix + window, :].T))
         ix = ix + jump
 
-    return numpy.array(X)
+    return array(X)
 
 
 def coherence(X, nfft=256, fs=2, noverlap=0):
@@ -102,7 +104,7 @@ def coherence(X, nfft=256, fs=2, noverlap=0):
             ij.append((i, j))
     Cxy, Phase, freqs = mlab.cohere_pairs(X, ij, NFFT=nfft, Fs=fs,
                                           noverlap=noverlap)
-    coh = numpy.zeros((n_chan, n_chan, len(freqs)))
+    coh = zeros((n_chan, n_chan, len(freqs)))
     for i in range(n_chan):
         coh[i, i] = 1
         for j in range(i+1, n_chan):
@@ -120,8 +122,8 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
 
     number_windows = (Ns - window) / step + 1
     # pre-allocation of memory
-    fdata = numpy.zeros((number_windows, Ne, number_freqs), dtype=complex)
-    win = numpy.hanning(window)
+    fdata = zeros((number_windows, Ne, number_freqs), dtype=complex)
+    win = hanning(window)
 
     # Loop on all frequencies
     for window_ix in range(int(number_windows)):
@@ -135,25 +137,19 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         cdata = X[:, t1:t2] * win
 
         # FFT calculation
-        fdata[window_ix, :, :] = numpy.fft.fft(
-            cdata, n=window, axis=1)[:, 0:number_freqs]
-
-        # if(phase_correction):
-        # fdata = fdata.*(exp(-sqrt(-1)*t1*( numpy.range(window)
-        # ).T/window*2*pi)*numpy.ones((1,Ne))
+        fdata[window_ix, :, :] = fft(cdata, n=window, axis=1)[:, 0:number_freqs]
 
     # Adjust Frequency range to specified range (in case it is a parameter)
     if fmin is not None:
-        f = numpy.arange(0, 1, 1.0 / number_freqs) * (fs / 2.0)
+        f = arange(0, 1, 1.0 / number_freqs) * (fs / 2.0)
         Fix = (f >= fmin) & (f <= fmax)
         fdata = fdata[:, :, Fix]
 
     # fdata = fdata.real
     Nf = fdata.shape[2]
-    S = numpy.zeros((Ne, Ne, Nf), dtype=complex)
+    S = zeros((Ne, Ne, Nf), dtype=complex)
 
     for i in range(Nf):
-        S[:, :, i] = numpy.dot(
-            fdata[:, :, i].conj().T, fdata[:, :, i]) / number_windows
+        S[:, :, i] = fdata[:,:,i].conj().T.dot(fdata[:,:,i]) / number_windows
 
     return S
