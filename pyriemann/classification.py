@@ -1,5 +1,6 @@
 """Module for classification function."""
-import numpy
+import numpy as np
+from numpy import concatenate, ones, unique
 
 from scipy import stats
 
@@ -105,12 +106,12 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : MDM instance
             The MDM instance.
         """
-        self.classes_ = numpy.unique(y)
+        self.classes_ = unique(y)
 
         self.covmeans_ = []
 
         if sample_weight is None:
-            sample_weight = numpy.ones(X.shape[0])
+            sample_weight = ones(X.shape[0])
 
         if self.n_jobs == 1:
             for l in self.classes_:
@@ -137,7 +138,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
                 covtest, self.covmeans_[m], self.metric_dist)
                 for m in range(Nc))
 
-        dist = numpy.concatenate(dist, axis=1)
+        dist = concatenate(dist, axis=1)
         return dist
 
     def predict(self, covtest):

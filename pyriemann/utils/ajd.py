@@ -1,6 +1,8 @@
 """Aproximate joint diagonalization algorithm."""
 import numpy as np
-
+from scipy.linalg import eig, solve
+from numpy import array, arange, reshape, arctan2, cos, sin, sqrt, \
+     conj, imag, concatenate, eye, zeros, diag, outer
 
 def rjd(X, eps=1e-8, n_iter_max=1000):
     """Approximate joint diagonalization based on jacobi angle.
@@ -44,11 +46,11 @@ def rjd(X, eps=1e-8, n_iter_max=1000):
     """
 
     # reshape input matrix
-    A = np.concatenate(X, 0).T
+    A = concatenate(X, 0).T
 
     # init variables
     m, nm = A.shape
-    V = np.eye(m)
+    V = eye(m)
     encore = True
     k = 0
 
@@ -60,18 +62,18 @@ def rjd(X, eps=1e-8, n_iter_max=1000):
         for p in range(m - 1):
             for q in range(p + 1, m):
 
-                Ip = np.arange(p, nm, m)
-                Iq = np.arange(q, nm, m)
+                Ip = arange(p, nm, m)
+                Iq = arange(q, nm, m)
 
                 # computation of Givens angle
-                g = np.array([A[p, Ip] - A[q, Iq], A[p, Iq] + A[q, Ip]])
-                gg = np.dot(g, g.T)
+                g = array([A[p, Ip] - A[q, Iq], A[p, Iq] + A[q, Ip]])
+                gg = g.dot(g.T)
                 ton = gg[0, 0] - gg[1, 1]
                 toff = gg[0, 1] + gg[1, 0]
-                theta = 0.5 * np.arctan2(toff, ton +
-                                         np.sqrt(ton * ton + toff * toff))
-                c = np.cos(theta)
-                s = np.sin(theta)
+                theta = 0.5 * arctan2(toff, ton +
+                                      sqrt(ton * ton + toff * toff))
+                c = cos(theta)
+                s = sin(theta)
                 encore = encore | (np.abs(s) > eps)
                 if (np.abs(s) > eps):
                     tmp = A[:, Ip].copy()
@@ -86,7 +88,7 @@ def rjd(X, eps=1e-8, n_iter_max=1000):
                     V[:, p] = c * V[:, p] + s * V[:, q]
                     V[:, q] = c * V[:, q] - s * tmp
 
-    D = np.reshape(A, (m, nm/m, m)).transpose(1, 0, 2)
+    D = reshape(A, (m, nm/m, m)).transpose(1, 0, 2)
     return V, D
 
 
@@ -130,19 +132,19 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15):
     nmat = X.shape[0]
 
     # reshape input matrix
-    A = np.concatenate(X, 0).T
+    A = concatenate(X, 0).T
 
     # init variables
     m, nm = A.shape
-    V = np.eye(m)
+    V = eye(m)
     epsi = m * (m - 1) * eps
 
     for it in range(n_iter_max):
         decr = 0
         for i in range(1, m):
             for j in range(i):
-                Ii = np.arange(i, nm, m)
-                Ij = np.arange(j, nm, m)
+                Ii = arange(i, nm, m)
+                Ij = arange(j, nm, m)
 
                 c1 = A[i, Ii]
                 c2 = A[j, Ij]
@@ -152,32 +154,32 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15):
 
                 omega21 = np.mean(c1 / c2)
                 omega12 = np.mean(c2 / c1)
-                omega = np.sqrt(omega12*omega21)
+                omega = sqrt(omega12*omega21)
 
-                tmp = np.sqrt(omega21/omega12)
+                tmp = sqrt(omega21/omega12)
                 tmp1 = (tmp*g12 + g21)/(omega + 1)
                 tmp2 = (tmp*g12 - g21)/np.max(omega - 1, 1e-9)
 
                 h12 = tmp1 + tmp2
-                h21 = np.conj((tmp1 - tmp2)/tmp)
+                h21 = conj((tmp1 - tmp2)/tmp)
 
                 decr = decr + nmat*(g12 * np.conj(h12) + g21 * h21) / 2.0
 
-                tmp = 1 + 1.j * 0.5 * np.imag(h12 * h21)
-                tmp = np.real(tmp + np.sqrt(tmp ** 2 - h12 * h21))
-                T = np.array([[1, -h12/tmp], [-h21/tmp, 1]])
+                tmp = 1 + 1.j * 0.5 * imag(h12 * h21)
+                tmp = np.real(tmp + sqrt(tmp ** 2 - h12 * h21))
+                T = array([[1, -h12/tmp], [-h21/tmp, 1]])
 
-                A[[i, j], :] = np.dot(T, A[[i, j], :])
+                A[[i, j], :] = T.dot(A[[i, j], :])
                 tmp = np.c_[A[:, Ii], A[:, Ij]]
-                tmp = np.dot(np.reshape(tmp, (m * nmat, 2), order='F'), T.T)
+                tmp = reshape(tmp, (m * nmat, 2), order='F').dot(T.T)
 
-                tmp = np.reshape(tmp, (m, nmat * 2), order='F')
+                tmp = reshape(tmp, (m, nmat * 2), order='F')
                 A[:, Ii] = tmp[:, :nmat]
                 A[:, Ij] = tmp[:, nmat:]
-                V[[i, j], :] = np.dot(T, V[[i, j], :])
+                V[[i, j], :] = T.dot(V[[i, j], :])
         if decr < epsi:
             break
-    D = np.reshape(A, (m, nm/m, m)).transpose(1, 0, 2)
+    D = reshape(A, (m, nm/m, m)).transpose(1, 0, 2)
     return V, D
 
 import scipy as sp
@@ -230,7 +232,7 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
     L, d, _ = X.shape
 
     # reshape input matrix
-    M = np.concatenate(X, 0).T
+    M = concatenate(X, 0).T
 
     # init variables
     d, Md = M.shape
@@ -238,47 +240,47 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
     improve = 10
 
     if init is None:
-        E, H = sp.linalg.eig(M[:, 0:d])
-        W_est = np.dot(np.diag(1. / np.sqrt(np.abs(E))), H.T)
+        E, H = eig(M[:, 0:d])
+        W_est = diag(1. / np.sqrt(np.abs(E))).dot(H.T)
     else:
         W_est = init
 
-    Ms = np.array(M)
-    Rs = np.zeros((d, L))
+    Ms = array(M)
+    Rs = zeros((d, L))
 
     for k in range(L):
         ini = k*d
-        Il = np.arange(ini, ini + d)
+        Il = arange(ini, ini + d)
         M[:, Il] = 0.5*(M[:, Il] + M[:, Il].T)
-        Ms[:, Il] = np.dot(np.dot(W_est, M[:, Il]), W_est.T)
-        Rs[:, k] = np.diag(Ms[:, Il])
+        Ms[:, Il] = W_est.dot(M[:, Il]).dot(W_est.T)
+        Rs[:, k] = diag(Ms[:, Il])
 
-    crit = np.sum(Ms**2) - np.sum(Rs**2)
+    crit = (Ms**2).sum() - (Rs**2).sum()
     while (improve > eps) & (iteration < n_iter_max):
-        B = np.dot(Rs, Rs.T)
-        C1 = np.zeros((d, d))
+        B = Rs.dot(Rs.T)
+        C1 = zeros((d, d))
         for i in range(d):
             C1[:, i] = np.sum(Ms[:, i:Md:d]*Rs, axis=1)
 
-        D0 = B*B.T - np.outer(np.diag(B), np.diag(B))
-        A0 = (C1 * B - np.dot(np.diag(np.diag(B)), C1.T)) / (D0 + np.eye(d))
+        D0 = B*B.T - outer(diag(B), diag(B))
+        A0 = (C1 * B - diag(diag(B)).dot(C1.T)) / (D0 + eye(d))
         A0 += np.eye(d)
-        W_est = sp.linalg.solve(A0, W_est)
+        W_est = solve(A0, W_est)
 
-        Raux = np.dot(np.dot(W_est, M[:, 0:d]), W_est.T)
-        aux = 1./np.sqrt(np.abs(np.diag(Raux)))
-        W_est = np.dot(np.diag(aux), W_est)
+        Raux = W_est.dot(M[:, 0:d]).dot(W_est.T)
+        aux = 1./sqrt(np.abs(diag(Raux)))
+        W_est = diag(aux).dot(W_est)
 
         for k in range(L):
             ini = k*d
-            Il = np.arange(ini, ini + d)
-            Ms[:, Il] = np.dot(np.dot(W_est, M[:, Il]), W_est.T)
-            Rs[:, k] = np.diag(Ms[:, Il])
+            Il = arange(ini, ini + d)
+            Ms[:, Il] = W_est.dot(M[:, Il]).dot(W_est.T)
+            Rs[:, k] = diag(Ms[:, Il])
 
-        crit_new = np.sum(Ms**2) - np.sum(Rs**2)
+        crit_new = (Ms**2).sum() - (Rs**2).sum()
         improve = np.abs(crit_new - crit)
         crit = crit_new
         iteration += 1
 
-    D = np.reshape(Ms, (d, L, d)).transpose(1, 0, 2)
+    D = reshape(Ms, (d, L, d)).transpose(1, 0, 2)
     return W_est, D
