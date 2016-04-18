@@ -1,5 +1,5 @@
 import numpy as np
-from numpy import arange, zeros, concatenate, hanning
+from numpy import array, arange, zeros, concatenate, hanning
 from numpy.fft import fft
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
 from matplotlib import mlab
@@ -35,12 +35,12 @@ def _check_est(est):
 
     # Check estimator exist and return the correct function
     estimators = {
-        'cov': numpy.cov,
+        'cov': np.cov,
         'scm': _scm,
         'lwf': _lwf,
         'oas': _oas,
         'mcd': _mcd,
-        'corr': numpy.corrcoef
+        'corr': np.corrcoef
     }
 
     if callable(est):
@@ -74,7 +74,7 @@ def covariances_EP(X, P, estimator='cov'):
     Np, Ns = P.shape
     covmats = zeros((Nt, Ne + Np, Ne + Np))
     for i in range(Nt):
-        covmats[i, :, :] = est(numpy.concatenate((P, X[i, :, :]), axis=0))
+        covmats[i, :, :] = est(concatenate((P, X[i, :, :]), axis=0))
     return covmats
 
 

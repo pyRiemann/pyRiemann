@@ -1,6 +1,6 @@
 """Module for classification function."""
 import numpy as np
-from numpy import concatenate, ones
+from numpy import concatenate, ones, unique
 
 from scipy import stats
 
@@ -106,7 +106,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : MDM instance
             The MDM instance.
         """
-        self.classes_ = numpy.unique(y)
+        self.classes_ = unique(y)
 
         self.covmeans_ = []
 

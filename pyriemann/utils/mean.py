@@ -123,7 +123,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     while (crit > tol) and (k < maxiter):
         k = k + 1
 
-        J = numpy.zeros(shape=(Ne, Ne))
+        J = zeros(shape=(Ne, Ne))
 
         for index, Ci in enumerate(covmats):
             J += sample_weight[index] * inv(0.5 * Ci + 0.5 * C)
@@ -178,7 +178,7 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
         J = zeros(shape=(Ne, Ne))
 
         for index, Ci in enumerate(covmats):
-            tmp = dot(K.dot(Ci).dot(K)
+            tmp = K.dot(Ci).dot(K)
             J += sample_weight[index] * sqrtm(tmp)
 
         Knew = sqrtm(J)

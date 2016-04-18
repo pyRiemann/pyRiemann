@@ -89,7 +89,7 @@ def distance_logdet(A, B):
     :returns: Log-Euclid distance between A and B
 
     """
-    return sqrt(log(det((A + B) / 2.0)) - 0.5 * log(det(A)*(Bs)))
+    return sqrt(log(det((A + B) / 2.0)) - 0.5 * log(det(A)*det(B)))
 
 
 def distance_wasserstein(A, B):

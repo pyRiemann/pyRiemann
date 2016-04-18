@@ -1,6 +1,7 @@
 """Clustering functions."""
 import numpy as np
-from numpy import arange, argmin, iinfo, unique
+from numpy import arange, argmin, iinfo, unique, ones, zeros, squeeze, \
+     log, mean, std, array_equal
 from numpy.linalg import norm
 from numpy.random import randint, seed
 
@@ -145,9 +146,8 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
                                                max_iter=self.max_iter,
                                                tol=self.tol)
         else:
-            numpy.random.seed(self.seed)
-            seeds = numpy.random.randint(
-                iinfo(np.int32).max, size=self.n_init)
+            seed(self.seed)
+            seeds = randint(iinfo(np.int32).max, size=self.n_init)
             if self.n_jobs == 1:
                 res = []
                 for i in range(self.n_init):
@@ -237,7 +237,7 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
     def fit(self, X, y):
         """fit."""
         self.covmeans_ = []
-        self.classes_ = numpy.unique(y)
+        self.classes_ = unique(y)
         for c in self.classes_:
             self.km.fit(X[y == c])
             self.covmeans_.extend(self.km.centroids())
@@ -309,18 +309,18 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         self._mdm = MDM(metric=self.metric)
 
         if y is None:
-            y_old = numpy.ones(len(X))
+            y_old = ones(len(X))
         # start loop
         for n_iter in range(self.n_iter_max):
             ix = (y_old == 1)
             self._mdm.fit(X[ix], y_old[ix])
-            y = numpy.zeros(len(X))
-            d = numpy.squeeze(numpy.log(self._mdm.transform(X[ix])))
-            self._mean = numpy.mean(d)
-            self._std = numpy.std(d)
+            y = zeros(len(X))
+            d = squeeze(log(self._mdm.transform(X[ix])))
+            self._mean = mean(d)
+            self._std = std(d)
             y[ix] = self._get_z_score(d) < self.threshold
 
-            if numpy.array_equal(y, y_old):
+            if array_equal(y, y_old):
                 break
             else:
                 y_old = y
@@ -339,7 +339,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         z : ndarray, shape (n_epochs, 1)
             the normalized log-distance to the centroid.
         """
-        d = numpy.squeeze(numpy.log(self._mdm.transform(X)))
+        d = squeeze(log(self._mdm.transform(X)))
         z = self._get_z_score(d)
         return z
 

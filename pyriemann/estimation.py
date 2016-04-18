@@ -1,6 +1,6 @@
 """Estimation of covariance matrices."""
 import numpy as np
-from numpy import array, concatenate
+from numpy import array, concatenate, unique
 from numpy.linalg import svd
 
 from .spatialfilters import Xdawn
@@ -162,7 +162,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         if self.classes is not None:
             classes = self.classes
         else:
-            classes = numpy.unique(y)
+            classes = unique(y)
 
         self.P_ = []
         for c in classes:

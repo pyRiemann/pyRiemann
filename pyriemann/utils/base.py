@@ -21,7 +21,7 @@ def sqrtm(Ci):
 
     """
     D, V = eigh(Ci)
-    D = diag(sqrt(D)))
+    D = diag(sqrt(D))
     Out = V.dot(D.dot(V.T))
     return Out
 
@@ -58,7 +58,7 @@ def expm(Ci):
 
     """
     D, V = eigh(Ci)
-    D = diag(exp(D)))
+    D = diag(exp(D))
     Out = V.dot(D.dot(V.T))
     return Out
 

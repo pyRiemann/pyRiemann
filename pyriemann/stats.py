@@ -73,7 +73,7 @@ class SeparabilityIndex(BaseEstimator):
         return self
 
     def score(self, y):
-        groups = numpy.unique(y)
+        groups = unique(y)
         a = len(groups)
         Ntx = len(y)
         self.a_ = a

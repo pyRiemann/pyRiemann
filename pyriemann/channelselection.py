@@ -117,6 +117,6 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         covs : ndarray, shape (n_trials, n_elec, n_elec)
             The covariances matrices after reduction of the number of channels.
         """
-        if self.subelec_ is None:
-            self.subelec_ = range(0, X.shape[1], 1)
+        # if self.subelec_ is None:
+        #     self.subelec_ = range(0, X.shape[1], 1)
         return X[:, self.subelec_, :][:, :, self.subelec_]
