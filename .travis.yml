@@ -2,6 +2,9 @@ language: python
 python:
   - "2.7"
 
+notifications:
+  slack: lisvai:SgdQxglgGWYCyiAAWa3aU5Pg
+
 # command to install dependencies\
 cache: pip
 sudo: false
