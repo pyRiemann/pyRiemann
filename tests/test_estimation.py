@@ -22,10 +22,11 @@ def test_ERPcovariances():
     cov = ERPCovariances(classes=[0])
     cov.fit_transform(x, labels)
     # assert raise svd
-    assert_raises(TypeError, ERPCovariances, svd='42')
-    cov = ERPCovariances(svd=1)
+    assert_raises(TypeError, ERPCovariances, svd_components='42')
+    cov = ERPCovariances(svd_components=1)
     assert_equal(cov.get_params(), dict(classes=None, estimator='scm',
-                                        svd=1))
+                                        svd_components=1))
+    cov.fit_transform(x, labels)
 
 
 def test_Xdawncovariances():

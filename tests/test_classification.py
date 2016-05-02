@@ -1,6 +1,6 @@
 import numpy as np
 from nose.tools import assert_raises
-from pyriemann.classification import MDM, FgMDM
+from pyriemann.classification import MDM, FgMDM, TSclassifier, KNearestNeighbor
 
 
 def generate_cov(Nt, Ne):
@@ -99,20 +99,11 @@ def test_TSc_init():
     assert_raises(TypeError, TSclassifier, clf=42)
 
 
-def test_TSc_fit_transform():
-    """Test fit and transform of TSClassifier"""
-    covset = generate_cov(100, 3)
-    labels = np.array([0, 1]).repeat(50)
-    tsc = TSclassifier(metric='riemann')
-    tsc.fit(covset, labels)
-    tsc.transform(covset)
-
-
 def test_TSc_predict():
     """Test prediction of TSClassifier"""
     covset = generate_cov(100, 3)
     labels = np.array([0, 1]).repeat(50)
-    ts = TSclassifier(metric='riemann')
+    tsc = TSclassifier(metric='riemann')
     tsc.fit(covset, labels)
     tsc.predict(covset)
     tsc.predict_proba(covset)
@@ -135,6 +126,6 @@ def test_kNN_predict():
     """Test prediction of KNearestNeighbor"""
     covset = generate_cov(100, 3)
     labels = np.array([0, 1]).repeat(50)
-    ts = KNearestNeighbor(metric='riemann')
+    knn = KNearestNeighbor(metric='riemann')
     knn.fit(covset, labels)
     knn.predict(covset)

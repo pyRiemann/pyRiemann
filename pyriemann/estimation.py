@@ -108,8 +108,8 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     estimator : string (default: 'scm')
         covariance matrix estimator. For regularization consider 'lwf' or 'oas'
         For a complete list of estimator, see `utils.covariance`.
-    svd : int | None (default None)
-        if not none, the prototype responses will be reduce using a svd using
+    svd_components : int | None (default None)
+        if not none, the prototype responses will be reduced using a svd using
         the number of components passed in svd.
 
     See Also
@@ -132,15 +132,14 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     cerveau-machine EEG", 24eme colloque GRETSI, 2013.
     """
 
-    def __init__(self, classes=None, estimator='scm', svd=None):
+    def __init__(self, classes=None, estimator='scm', svd_components=None):
         """Init."""
         self.classes = classes
         self.estimator = estimator
-        self.svd = svd
-
-        if svd is not None:
-            if not isinstance(svd, int):
+        if svd_components is not None:
+            if not isinstance(svd_components, int):
                 raise TypeError('svd must be None or int')
+        self.svd_components = svd_components
 
     def fit(self, X, y):
         """Fit.
@@ -170,9 +169,9 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
             P = X[y == c, :, :].mean(axis=0)
 
             # Apply svd if requested
-            if self.svd is not None:
+            if self.svd_components is not None:
                 U, s, V = svd(P)
-                P = U[:, 0:self.svd].T.dot(P)
+                P = U[:, 0:self.svd_components].T.dot(P)
 
             self.P_.append(P)
 
