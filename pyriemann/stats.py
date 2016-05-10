@@ -179,30 +179,37 @@ class PermutationTest(BaseEstimator):
 
     def test(self, X, y):
         numpy.random.seed(self.random_state)
-        if self.fit_perms is False:
+        if not self.fit_perms:
             self.SepIndex.fit(X, y)
+
         Npe = multiset_perm_number(y)
-        self.F = numpy.zeros(numpy.min([self.n_perms, Npe]) + 1)
+        self.F = numpy.zeros(numpy.min([self.n_perms, Npe]))
+
         if Npe <= self.n_perms:
             print("Warning, number of unique permutations : %d" % Npe)
             perms = unique_permutations(y)
-            for i, p in enumerate(perms):
+            i = 0
+            for p in perms:
                 # if fit_perms is true
-                if self.fit_perms is True:
-                    self.SepIndex.fit(X, y)
-                self.F[i + 1] = self.SepIndex.score(p)
+                if not numpy.array_equal(p, y):
+                    if self.fit_perms is True:
+                        self.SepIndex.fit(X, p)
+                    self.F[i + 1] = self.SepIndex.score(p)
+                    i += 1
         else:
-            for i in range(self.n_perms):
+            for i in range(self.n_perms - 1):
                 perms = numpy.random.permutation(y)
 
                 # if fit_perms is true
                 if self.fit_perms is True:
-                    self.SepIndex.fit(X, y)
+                    self.SepIndex.fit(X, perms)
                 self.F[i + 1] = self.SepIndex.score(perms)
 
+        if self.fit_perms:
+            self.SepIndex.fit(X, y)
         self.F[0] = self.SepIndex.score(y)
 
-        self.p_value = (self.F[0] <= self.F).sum() / numpy.float(len(self.F))
+        self.p_value = (self.F[0] <= self.F).mean()
 
         return self.p_value, self.F
 
