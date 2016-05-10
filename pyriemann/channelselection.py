@@ -37,9 +37,9 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
 
     Attributes
     ----------
-    covmeans : list
+    covmeans_ : list
         the class centroids.
-    dist : list
+    dist_ : list
         list of distance at each interation.
 
     See Also
@@ -58,9 +58,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         """Init."""
         self.nelec = nelec
         self.metric = metric
-        self.subelec = None
         self.n_jobs = n_jobs
-        self.dist = []
 
     def fit(self, X, y=None, sample_weight=None):
         """Find the optimal subset of electrodes.
@@ -82,26 +80,27 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         """
         mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
         mdm.fit(X, y, sample_weight=sample_weight)
-        self.covmeans = mdm.covmeans
+        self.covmeans_ = mdm.covmeans_
 
-        Ne, _ = self.covmeans[0].shape
+        Ne, _ = self.covmeans_[0].shape
 
-        self.subelec = range(0, Ne, 1)
-        while (len(self.subelec)) > self.nelec:
-            di = numpy.zeros((len(self.subelec), 1))
-            for idx in range(len(self.subelec)):
-                sub = self.subelec[:]
+        self.dist_ = []
+        self.subelec_ = range(0, Ne, 1)
+        while (len(self.subelec_)) > self.nelec:
+            di = numpy.zeros((len(self.subelec_), 1))
+            for idx in range(len(self.subelec_)):
+                sub = self.subelec_[:]
                 sub.pop(idx)
                 di[idx] = 0
-                for i in range(len(self.covmeans)):
-                    for j in range(i + 1, len(self.covmeans)):
-                        di[idx] += distance(self.covmeans[i][:, sub][sub, :],
-                                            self.covmeans[j][:, sub][sub, :],
+                for i in range(len(self.covmeans_)):
+                    for j in range(i + 1, len(self.covmeans_)):
+                        di[idx] += distance(self.covmeans_[i][:, sub][sub, :],
+                                            self.covmeans_[j][:, sub][sub, :],
                                             metric=mdm.metric_dist)
             # print di
             torm = di.argmax()
-            self.dist.append(di.max())
-            self.subelec.pop(torm)
+            self.dist_.append(di.max())
+            self.subelec_.pop(torm)
         return self
 
     def transform(self, X):
@@ -117,6 +116,6 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         covs : ndarray, shape (n_trials, n_elec, n_elec)
             The covariances matrices after reduction of the number of channels.
         """
-        if self.subelec is None:
-            self.subelec = range(0, X.shape[1], 1)
-        return X[:, self.subelec, :][:, :, self.subelec]
+        if self.subelec_ is None:
+            self.subelec_ = range(0, X.shape[1], 1)
+        return X[:, self.subelec_, :][:, :, self.subelec_]

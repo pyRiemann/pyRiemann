@@ -34,7 +34,7 @@ For the latest version, you can install the package from the sources using the s
 python setup.py install
 ```
 
-## how to use it
+## How to use it
 
 Most of the functions mimic the scikit-learn API, and therefore can be directly used with sklearn. For example, for cross-validation classification of EEG signal using the MDM algorithm described in [4] , it is easy as :
 
@@ -89,11 +89,15 @@ print(accuracy.mean())
 
 # Testing
 
-If you make a modification, run the test suite before submiting a pull request
+If you make a modification, run the test suite before submitting a pull request
 
 ```
 nosetests
 ```
+
+# Contribution Guidelines
+
+The package aims at adopting the [Scikit-Learn](http://scikit-learn.org/stable/developers/contributing.html#contributing-code) and [MNE-Python](http://martinos.org/mne/stable/contributing.html#general-code-guidelines) conventions as much as possible. See their contribution guidelines before contributing to the repository.
 
 
 # References

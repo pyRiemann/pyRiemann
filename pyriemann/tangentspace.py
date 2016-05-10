@@ -11,7 +11,6 @@ else:
     from sklearn.lda import LDA
 
 
-
 class TangentSpace(BaseEstimator, TransformerMixin):
 
     """Tangent space project TransformerMixin.
@@ -70,7 +69,6 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         """Init."""
         self.metric = metric
         self.tsupdate = tsupdate
-        self.Cr = None
 
     def fit(self, X, y=None, sample_weight=None):
         """Fit (estimates) the reference point.
@@ -90,8 +88,8 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             The TangentSpace instance.
         """
         # compute mean covariance
-        self.Cr = mean_covariance(X, metric=self.metric,
-                                  sample_weight=sample_weight)
+        self.Cr_ = mean_covariance(X, metric=self.metric,
+                                   sample_weight=sample_weight)
         return self
 
     def _check_data_dim(self, X):
@@ -100,7 +98,8 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         if len(X.shape) == 2:
             Ne = (numpy.sqrt(1 + 8 * shape_X[1]) - 1) / 2
             if Ne != int(Ne):
-                raise ValueError("Shape of Tangent space vector does not correspond to a square matrix.")
+                raise ValueError("Shape of Tangent space vector does not"
+                                 " correspond to a square matrix.")
             return int(Ne)
         elif len(X.shape) == 3:
             if shape_X[1] != shape_X[2]:
@@ -111,10 +110,10 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
     def _check_reference_points(self, X):
         """Check reference point status, and force it to identity if not."""
-        if self.Cr is None:
-            self.Cr = numpy.eye(self._check_data_dim(X))
+        if not hasattr(self, 'Cr_'):
+            self.Cr_ = numpy.eye(self._check_data_dim(X))
         else:
-            shape_cr = self.Cr.shape[0]
+            shape_cr = self.Cr_.shape[0]
             shape_X = self._check_data_dim(X)
 
             if shape_cr != shape_X:
@@ -137,7 +136,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         if self.tsupdate:
             Cr = mean_covariance(X, metric=self.metric)
         else:
-            Cr = self.Cr
+            Cr = self.Cr_
         return tangent_space(X, Cr)
 
     def fit_transform(self, X, y=None, sample_weight=None):
@@ -159,9 +158,9 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         """
         # compute mean covariance
         self._check_reference_points(X)
-        self.Cr = mean_covariance(X, metric=self.metric,
-                                  sample_weight=sample_weight)
-        return tangent_space(X, self.Cr)
+        self.Cr_ = mean_covariance(X, metric=self.metric,
+                                   sample_weight=sample_weight)
+        return tangent_space(X, self.Cr_)
 
     def inverse_transform(self, X, y=None):
         """Inverse transform.
@@ -181,7 +180,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             the covariance matrices corresponding to each of tangent vector.
         """
         self._check_reference_points(X)
-        return untangent_space(X, self.Cr)
+        return untangent_space(X, self.Cr_)
 
 
 class FGDA(BaseEstimator, TransformerMixin):
@@ -224,17 +223,13 @@ class FGDA(BaseEstimator, TransformerMixin):
         """Init."""
         self.metric = metric
         self.tsupdate = tsupdate
-        self._ts = None
-        self._lda = None
 
     def _fit_lda(self, X, y, sample_weight=None):
         """Helper to fit LDA."""
-        self.classes = numpy.unique(y)
-        self._lda = LDA(
-            n_components=len(
-                self.classes) - 1,
-            solver='lsqr',
-            shrinkage='auto')
+        self.classes_ = numpy.unique(y)
+        self._lda = LDA(n_components=len(self.classes_) - 1,
+                        solver='lsqr',
+                        shrinkage='auto')
 
         ts = self._ts.fit_transform(X, sample_weight=sample_weight)
         self._lda.fit(ts, y)

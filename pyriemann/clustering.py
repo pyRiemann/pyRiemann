@@ -17,13 +17,13 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
     # init random state if provided
     mdm = MDM(metric=metric)
     squared_nomrs = [numpy.linalg.norm(x, ord='fro')**2 for x in X]
-    mdm.covmeans = _init_centroids(X, n_clusters, init,
-                                   random_state=random_state,
-                                   x_squared_norms=squared_nomrs)
+    mdm.covmeans_ = _init_centroids(X, n_clusters, init,
+                                    random_state=random_state,
+                                    x_squared_norms=squared_nomrs)
     if y is not None:
-        mdm.classes = numpy.unique(y)
+        mdm.classes_ = numpy.unique(y)
     else:
-        mdm.classes = numpy.arange(n_clusters)
+        mdm.classes_ = numpy.arange(n_clusters)
 
     labels = mdm.predict(X)
     k = 0
@@ -31,12 +31,12 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
         old_labels = labels.copy()
         mdm.fit(X, old_labels)
         dist = mdm._predict_distances(X)
-        labels = mdm.classes[dist.argmin(axis=1)]
+        labels = mdm.classes_[dist.argmin(axis=1)]
         k += 1
         if (k > max_iter) | (numpy.mean(labels == old_labels) > (1 - tol)):
             break
-    inertia = sum([sum(dist[labels == mdm.classes[i], i])
-                   for i in range(len(mdm.classes))])
+    inertia = sum([sum(dist[labels == mdm.classes_[i], i])
+                   for i in range(len(mdm.classes_))])
     return labels, inertia, mdm
 
 
@@ -86,11 +86,11 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
 
     Attributes
     ----------
-    mdm : MDM instance.
+    mdm_ : MDM instance.
         MDM instance containing the centroids.
-    labels :
+    labels_ :
         Labels of each point
-    inertia : float
+    inertia_ : float
         Sum of distances of samples to their closest cluster center.
 
     Notes
@@ -110,7 +110,6 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         self.metric = metric
         self.n_clusters = n_clusters
         self.max_iter = max_iter
-        self.mdm = None
         self.seed = random_state
         self.init = init
         self.n_init = n_init
@@ -174,9 +173,9 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
             labels = labels[best]
             inertia = inertia[best]
 
-        self.mdm = mdm
-        self.inertia = inertia
-        self.labels = labels
+        self.mdm_ = mdm
+        self.inertia_ = inertia
+        self.labels_ = labels
 
         return self
 
@@ -193,7 +192,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         pred : ndarray of int, shape (n_trials, 1)
             the prediction for each trials according to the closest centroid.
         """
-        return self.mdm.predict(X)
+        return self.mdm_.predict(X)
 
     def transform(self, X):
         """get the distance to each centroid.
@@ -208,7 +207,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         dist : ndarray, shape (n_trials, n_cluster)
             the distance to each centroid according to the metric.
         """
-        return self.mdm.transform(X)
+        return self.mdm_.transform(X)
 
     def centroids(self):
         """helper for fast access to the centroid.
@@ -218,7 +217,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         centroids : list of SPD matrices, len (n_cluster)
             Return a list containing the centroid of each cluster.
         """
-        return self.mdm.covmeans
+        return self.mdm_.covmeans_
 
 
 class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
@@ -230,20 +229,20 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
         params['n_clusters'] = n_clusters
         self.km = Kmeans(**params)
         self.metric = self.km.metric
-        self.covmeans = []
 
     def fit(self, X, y):
         """fit."""
-        self.classes = numpy.unique(y)
-        for c in self.classes:
+        self.covmeans_ = []
+        self.classes_ = numpy.unique(y)
+        for c in self.classes_:
             self.km.fit(X[y == c])
-            self.covmeans.extend(self.km.centroids())
+            self.covmeans_.extend(self.km.centroids())
         return self
 
     def transform(self, X):
         """transform."""
         mdm = MDM(metric=self.metric)
-        mdm.covmeans = self.covmeans
+        mdm.covmeans_ = self.covmeans_
         return mdm._predict_distances(X)
 
 

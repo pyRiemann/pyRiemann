@@ -67,22 +67,22 @@ class SeparabilityIndex(BaseEstimator):
     def fit(self, X, y=None):
         if self.estimator is not None:
             X = self.estimator.fit_transform(X, y)
-        self.pairs = RiemannDistanceMetric(self.metric).pairwise(X)
+        self.pairs_ = RiemannDistanceMetric(self.metric).pairwise(X)
         return self
 
     def score(self, y):
         groups = numpy.unique(y)
         a = len(groups)
         Ntx = len(y)
-        self.a = a
-        self.Ntx = Ntx
-        self._SST = (self.pairs**2).sum() / (2 * Ntx)
+        self.a_ = a
+        self.Ntx_ = Ntx
+        self._SST = (self.pairs_**2).sum() / (2 * Ntx)
         pattern = numpy.zeros((Ntx, Ntx))
         for g in groups:
             pattern += numpy.outer(y == g, y == g) / \
                 (numpy.float(numpy.sum(y == g)))
 
-        self._SSW = ((self.pairs**2) * (pattern)).sum() / 2
+        self._SSW = ((self.pairs_**2) * (pattern)).sum() / 2
 
         self._SSA = self._SST - self._SSW
 
@@ -96,10 +96,10 @@ class SeparabilityIndexTwoFactor(BaseEstimator):
 
     def __init__(self, method='', metric='riemann'):
         self.method = method
-        self.metric = 'riemann'
+        self.metric = metric
 
     def fit(self, X, y=None):
-        self.pairs = RiemannDistanceMetric(self.metric).pairwise(X)
+        self.pairs_ = RiemannDistanceMetric(self.metric).pairwise(X)
         return self
 
     def score(self, fact1, fact2):
@@ -109,10 +109,10 @@ class SeparabilityIndexTwoFactor(BaseEstimator):
         a1 = len(groups1)
         a2 = len(groups2)
         Ntx = len(fact1)
-        self.a1 = a1
-        self.a2 = a2
-        self.Ntx = Ntx
-        self._SST = (self.pairs**2).sum() / (2 * Ntx)
+        self.a1_ = a1
+        self.a2_ = a2
+        self.Ntx_ = Ntx
+        self._SST = (self.pairs_**2).sum() / (2 * Ntx)
 
         # first factor
         pattern = numpy.zeros((Ntx, Ntx))
@@ -121,7 +121,7 @@ class SeparabilityIndexTwoFactor(BaseEstimator):
             pattern += numpy.outer(y == g, y == g) / \
                 (numpy.float(numpy.sum(y == g)))
 
-        self._SSW1 = ((self.pairs**2) * (pattern)).sum() / 2
+        self._SSW1 = ((self.pairs_**2) * (pattern)).sum() / 2
 
         # second factor
         pattern = numpy.zeros((Ntx, Ntx))
@@ -130,7 +130,7 @@ class SeparabilityIndexTwoFactor(BaseEstimator):
             pattern += numpy.outer(y == g, y == g) / \
                 (numpy.float(numpy.sum(y == g)))
 
-        self._SSW2 = ((self.pairs**2) * (pattern)).sum() / 2
+        self._SSW2 = ((self.pairs_**2) * (pattern)).sum() / 2
 
         # Co factor
         pattern = numpy.zeros((Ntx, Ntx))
@@ -140,19 +140,19 @@ class SeparabilityIndexTwoFactor(BaseEstimator):
                 pattern += numpy.outer(truc, truc) / \
                     (numpy.float(numpy.sum(truc)))
 
-        self._SSi = ((self.pairs**2) * (pattern)).sum() / 2
+        self._SSi = ((self.pairs_**2) * (pattern)).sum() / 2
 
-        #self._SS1 =  self._SSW2 - self._SSi
-        #self._SS2 =  self._SSW1 - self._SSi
+        # self._SS1 =  self._SSW2 - self._SSi
+        # self._SS2 =  self._SSW1 - self._SSi
 
         self._SS1 = self._SST - self._SSW1
         self._SS2 = self._SST - self._SSW2
 
-        #self._SSR = self._SST - self._SS1 - self._SS2
+        # self._SSR = self._SST - self._SS1 - self._SS2
         self._SSR = self._SSi
 
         self._SS12 = self._SST - self._SS1 - self._SS2 - self._SSR
-        #self._SS12 = self._SST -self._SSW2  -(self._SSR - self._SSi)
+        # self._SS12 = self._SST -self._SSW2  -(self._SSR - self._SSi)
 
         self._F1 = (self._SS1 / (a1 - 1)) / (self._SSR / (Ntx - a1 * a2))
         self._F2 = (self._SS2 / (a2 - 1)) / (self._SSR / (Ntx - a1 * a2))
@@ -183,7 +183,7 @@ class PermutationTest(BaseEstimator):
             self.SepIndex.fit(X, y)
 
         Npe = multiset_perm_number(y)
-        self.F = numpy.zeros(numpy.min([self.n_perms, Npe]))
+        self.F_ = numpy.zeros(numpy.min([self.n_perms, Npe]))
 
         if Npe <= self.n_perms:
             print("Warning, number of unique permutations : %d" % Npe)
@@ -194,8 +194,9 @@ class PermutationTest(BaseEstimator):
                 if not numpy.array_equal(p, y):
                     if self.fit_perms is True:
                         self.SepIndex.fit(X, p)
-                    self.F[i + 1] = self.SepIndex.score(p)
+                    self.F_[i + 1] = self.SepIndex.score(p)
                     i += 1
+
         else:
             for i in range(self.n_perms - 1):
                 perms = numpy.random.permutation(y)
@@ -203,26 +204,26 @@ class PermutationTest(BaseEstimator):
                 # if fit_perms is true
                 if self.fit_perms is True:
                     self.SepIndex.fit(X, perms)
-                self.F[i + 1] = self.SepIndex.score(perms)
+                self.F_[i + 1] = self.SepIndex.score(perms)
 
         if self.fit_perms:
             self.SepIndex.fit(X, y)
-        self.F[0] = self.SepIndex.score(y)
+        self.F_[0] = self.SepIndex.score(y)
 
-        self.p_value = (self.F[0] <= self.F).mean()
+        self.p_value = (self.F_[0] <= self.F).mean()
 
-        return self.p_value, self.F
+        return self.p_value_, self.F_
 
     def summary(self):
         sep = self.SepIndex
-        a = sep.a
-        Ntx = sep.Ntx
+        a = sep.a_
+        Ntx = sep.Ntx_
 
         df = [(a - 1), Ntx - a, Ntx - 1]
         SS = [sep._SSA, sep._SSW, sep._SST]
         MS = numpy.array(SS) / numpy.array(df)
-        F = [self.F[0], numpy.nan, numpy.nan]
-        p = [self.p_value, numpy.nan, numpy.nan]
+        F = [self.F_[0], numpy.nan, numpy.nan]
+        p = [self.p_value_, numpy.nan, numpy.nan]
 
         cols = ['df', 'SS', 'MS', 'F', 'p-value']
         index = ['Labels', 'Residual', 'Total']
@@ -233,8 +234,8 @@ class PermutationTest(BaseEstimator):
         return res
 
     def plot(self, nbins=100, range=None):
-        plt.plot([self.F[0], self.F[0]], [0, 100], '--r', lw=2)
-        h = plt.hist(self.F, nbins, range)
+        plt.plot([self.F_[0], self.F_[0]], [0, 100], '--r', lw=2)
+        h = plt.hist(self.F_, nbins, range)
         plt.xlabel('F-value')
         plt.ylabel('Count')
         plt.grid()
@@ -258,39 +259,39 @@ class PermutationTestTwoWay(BaseEstimator):
     def test(self, X, factor1, factor2, names=None):
         numpy.random.seed(self.random_state)
         self.SepIndex.fit(X)
-        self.names = names
+        self.names_ = names
 
-        self.F = numpy.zeros((self.n_perms + 1, 3))
+        self.F_ = numpy.zeros((self.n_perms + 1, 3))
         for i in range(self.n_perms):
-            self.F[
+            self.F_[
                 i + 1,
                 :] = self.SepIndex.score(
                 numpy.random.permutation(factor1),
                 numpy.random.permutation(factor2))
 
-        self.F[0, :] = self.SepIndex.score(factor1, factor2)
+        self.F_[0, :] = self.SepIndex.score(factor1, factor2)
 
-        self.p_value = (self.F[0, :] <= self.F).sum(
+        self.p_value_ = (self.F_[0, :] <= self.F_).sum(
             axis=0) / numpy.float(self.n_perms)
 
-        return self.p_value, self.F
+        return self.p_value_, self.F_
 
     def summary(self):
         sep = self.SepIndex
-        Ntx = sep.Ntx
+        Ntx = sep.Ntx_
 
-        df = [sep.a1 - 1, sep.a2 - 1,
-              (sep.a1 - 1) * (sep.a2 - 1), Ntx - sep.a1 * sep.a2, Ntx - 1]
+        df = [sep.a1_ - 1, sep.a2_ - 1,
+              (sep.a1_ - 1) * (sep.a2_ - 1), Ntx - sep.a1_ * sep.a2_, Ntx - 1]
         SS = [sep._SS1, sep._SS2, sep._SS12, sep._SSR, sep._SST]
         MS = numpy.array(SS) / numpy.array(df)
-        F = [self.F[0, 0], self.F[0, 1], self.F[0, 2], numpy.nan, numpy.nan]
-        p = [self.p_value[0], self.p_value[1],
-             self.p_value[2], numpy.nan, numpy.nan]
+        F = [self.F_[0, 0], self.F_[0, 1], self.F_[0, 2], numpy.nan, numpy.nan]
+        p = [self.p_value_[0], self.p_value_[1],
+             self.p_value_[2], numpy.nan, numpy.nan]
 
         cols = ['df', 'sum_sq', 'mean_sq', 'F', 'PR(>F)']
-        if self.names is not None:
-            index = [self.names[0], self.names[1], self.names[
-                0] + ':' + self.names[1], 'Residual', 'Total']
+        if self.names_ is not None:
+            index = [self.names_[0], self.names_[1], self.names_[
+                0] + ':' + self.names_[1], 'Residual', 'Total']
         else:
             index = ['Fact1', 'Fact2', 'Fact1:Fact2', 'Residual', 'Total']
 
@@ -299,13 +300,13 @@ class PermutationTestTwoWay(BaseEstimator):
         res = pandas.DataFrame(data, index=index, columns=cols)
         return res
 
-    def plot(self,nbins=100,plt_range=None):
+    def plot(self, nbins=100, plt_range=None):
         h = None
         for i in range(3):
             plt.subplot(3, 1, i + 1)
-            if not numpy.isnan(self.F[0, i]):
-                h = plt.hist(self.F[:, i], nbins,plt_range)
-                plt.plot([self.F[0, i], self.F[0, i]], [0, 100], '--r', lw=2)
+            if not numpy.isnan(self.F_[0, i]):
+                h = plt.hist(self.F_[:, i], nbins, plt_range)
+                plt.plot([self.F_[0, i], self.F_[0, i]], [0, 100], '--r', lw=2)
                 plt.xlabel('F-value')
                 plt.ylabel('Count')
                 plt.grid()
