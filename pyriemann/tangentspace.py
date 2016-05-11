@@ -49,6 +49,12 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         online implementation. Performance are better when the number of trials
         for prediction is higher.
 
+
+    Attributes
+    ----------
+    reference_ : ndarray
+        If fit, the reference point for tangent space mapping.
+
     See Also
     --------
     FgMDM
@@ -88,8 +94,8 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             The TangentSpace instance.
         """
         # compute mean covariance
-        self.Cr_ = mean_covariance(X, metric=self.metric,
-                                   sample_weight=sample_weight)
+        self.reference_ = mean_covariance(X, metric=self.metric,
+                                          sample_weight=sample_weight)
         return self
 
     def _check_data_dim(self, X):
@@ -110,10 +116,10 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
     def _check_reference_points(self, X):
         """Check reference point status, and force it to identity if not."""
-        if not hasattr(self, 'Cr_'):
-            self.Cr_ = numpy.eye(self._check_data_dim(X))
+        if not hasattr(self, 'reference_'):
+            self.reference_ = numpy.eye(self._check_data_dim(X))
         else:
-            shape_cr = self.Cr_.shape[0]
+            shape_cr = self.reference_.shape[0]
             shape_X = self._check_data_dim(X)
 
             if shape_cr != shape_X:
@@ -136,7 +142,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         if self.tsupdate:
             Cr = mean_covariance(X, metric=self.metric)
         else:
-            Cr = self.Cr_
+            Cr = self.reference_
         return tangent_space(X, Cr)
 
     def fit_transform(self, X, y=None, sample_weight=None):
@@ -158,9 +164,9 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         """
         # compute mean covariance
         self._check_reference_points(X)
-        self.Cr_ = mean_covariance(X, metric=self.metric,
-                                   sample_weight=sample_weight)
-        return tangent_space(X, self.Cr_)
+        self.reference_ = mean_covariance(X, metric=self.metric,
+                                          sample_weight=sample_weight)
+        return tangent_space(X, self.reference_)
 
     def inverse_transform(self, X, y=None):
         """Inverse transform.
@@ -180,7 +186,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             the covariance matrices corresponding to each of tangent vector.
         """
         self._check_reference_points(X)
-        return untangent_space(X, self.Cr_)
+        return untangent_space(X, self.reference_)
 
 
 class FGDA(BaseEstimator, TransformerMixin):

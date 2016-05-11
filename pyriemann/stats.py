@@ -210,7 +210,7 @@ class PermutationTest(BaseEstimator):
             self.SepIndex.fit(X, y)
         self.F_[0] = self.SepIndex.score(y)
 
-        self.p_value = (self.F_[0] <= self.F).mean()
+        self.p_value_ = (self.F_[0] <= self.F_).mean()
 
         return self.p_value_, self.F_
 

@@ -41,9 +41,9 @@ def geodesic_riemann(A, B, alpha=0.5):
     """
     sA = sqrtm(A)
     isA = invsqrtm(A)
-    C = isA * B * isA
+    C = numpy.dot(numpy.dot(isA, B), isA)
     D = powm(C, alpha)
-    E = numpy.matrix(sA * D * sA)
+    E = numpy.dot(numpy.dot(sA, D), sA)
     return E
 
 

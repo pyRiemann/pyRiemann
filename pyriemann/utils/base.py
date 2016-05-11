@@ -20,9 +20,8 @@ def sqrtm(Ci):
 
     """
     D, V = scipy.linalg.eigh(Ci)
-    D = numpy.matrix(numpy.diag(numpy.sqrt(D)))
-    V = numpy.matrix(V)
-    Out = numpy.matrix(V * D * V.T)
+    D = numpy.diag(numpy.sqrt(D))
+    Out = numpy.dot(numpy.dot(V, D), V.T)
     return Out
 
 
@@ -40,7 +39,8 @@ def logm(Ci):
 
     """
     D, V = scipy.linalg.eigh(Ci)
-    Out = numpy.dot(numpy.multiply(V, numpy.log(D)), V.T)
+    D = numpy.diag(numpy.log(D))
+    Out = numpy.dot(numpy.dot(V, D), V.T)
     return Out
 
 
@@ -58,9 +58,8 @@ def expm(Ci):
 
     """
     D, V = scipy.linalg.eigh(Ci)
-    D = numpy.matrix(numpy.diag(numpy.exp(D)))
-    V = numpy.matrix(V)
-    Out = numpy.matrix(V * D * V.T)
+    D = numpy.diag(numpy.exp(D))
+    Out = numpy.dot(numpy.dot(V, D), V.T)
     return Out
 
 
@@ -78,9 +77,8 @@ def invsqrtm(Ci):
 
     """
     D, V = scipy.linalg.eigh(Ci)
-    D = numpy.matrix(numpy.diag(1.0 / numpy.sqrt(D)))
-    V = numpy.matrix(V)
-    Out = numpy.matrix(V * D * V.T)
+    D = numpy.diag(1.0 / numpy.sqrt(D))
+    Out = numpy.dot(numpy.dot(V, D), V.T)
     return Out
 
 
@@ -99,9 +97,8 @@ def powm(Ci, alpha):
 
     """
     D, V = scipy.linalg.eigh(Ci)
-    D = numpy.matrix(numpy.diag(D**alpha))
-    V = numpy.matrix(V)
-    Out = numpy.matrix(V * D * V.T)
+    D = numpy.diag(D**alpha)
+    Out = numpy.dot(numpy.dot(V, D), V.T)
     return Out
 
 

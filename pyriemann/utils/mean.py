@@ -61,7 +61,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
 
         crit = numpy.linalg.norm(J, ord='fro')
         h = nu * crit
-        C = numpy.matrix(C12 * expm(nu * J) * C12)
+        C = numpy.dot(numpy.dot(C12, expm(nu * J)), C12)
         if h < tau:
             nu = 0.95 * nu
             tau = h
@@ -87,7 +87,7 @@ def mean_logeuclid(covmats, sample_weight=None):
     Nt, Ne, Ne = covmats.shape
     T = numpy.zeros((Ne, Ne))
     for index in range(Nt):
-        T += sample_weight[index] * logm(numpy.matrix(covmats[index, :, :]))
+        T += sample_weight[index] * logm(covmats[index, :, :])
     C = expm(T)
 
     return C
