@@ -114,14 +114,6 @@ def test_kNN_init():
     knn = KNearestNeighbor(metric='riemann')
 
 
-def test_kNN_fit_transform():
-    """Test fit of KNearestNeighbor"""
-    covset = generate_cov(100, 3)
-    labels = np.array([0, 1]).repeat(50)
-    knn = KNearestNeighbor(metric='riemann')
-    knn.fit(covset, labels)
-
-
 def test_kNN_predict():
     """Test prediction of KNearestNeighbor"""
     covset = generate_cov(100, 3)
@@ -129,3 +121,4 @@ def test_kNN_predict():
     knn = KNearestNeighbor(metric='riemann')
     knn.fit(covset, labels)
     knn.predict(covset)
+

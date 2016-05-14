@@ -1,6 +1,6 @@
 """Module for classification function."""
 import numpy as np
-from numpy import concatenate, ones, unique
+from numpy import concatenate, ones, unique, argsort
 
 from scipy import stats
 
@@ -497,6 +497,6 @@ class KNearestNeighbor(MDM):
             the prediction for each trials according to the closest centroid.
         """
         dist = self._predict_distances(covtest)
-        neighbors_classes = self.classes_[numpy.argsort(dist)]
+        neighbors_classes = self.classes_[argsort(dist)]
         out, _ = stats.mode(neighbors_classes[:, 0:self.n_neighbors], axis=1)
         return out.ravel()
