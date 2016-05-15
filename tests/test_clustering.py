@@ -1,5 +1,5 @@
 import numpy as np
-from pyriemann.clustering import Kmeans, KmeansPerClassTransform
+from pyriemann.clustering import Kmeans, KmeansPerClassTransform, Potato
 
 
 def generate_cov(Nt, Ne):
@@ -81,3 +81,21 @@ def test_KmeansPCT_transform():
     km = KmeansPerClassTransform(2)
     km.fit(covset, labels)
     km.transform(covset)
+
+def test_Potato_transform():
+    """Test transform of Riemannian Potato"""
+    covset = generate_cov(20, 3)
+    rp = Potato(2)
+    rp.fit(covset)
+    rp.transform(covset)
+
+    y = np.array([0, 1]).repeat(10)
+    rp.fit(covset, y)
+    rp.transform(covset)
+    
+def test_Potato_predict():
+    """Test transform of Riemannian Potato"""
+    covset = generate_cov(20, 3)
+    rp = Potato(2)
+    rp.fit(covset)
+    rp.predict(covset)
