@@ -1,37 +1,67 @@
 language: python
+
 python:
-  - "2.7"
+  - 2.7
+
+sudo: false
 
 notifications:
   slack: lisvai:SgdQxglgGWYCyiAAWa3aU5Pg
 
-# command to install dependencies\
-cache: pip
-sudo: false
-virtualenv:
-  system_site_packages: true
-addons:
-  apt:
-    packages:
-      - python-scipy
-      - python-numpy
-      - libatlas-dev
-      - libatlas3gf-base
-      - libblas-dev
-      - liblapack-dev
-      - python-matplotlib
-      - python-pandas
-      - gfortran
-      - python-tk
+before_install:
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+    else
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+    fi
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
+  - conda info -a
+
 install:
-  - virtualenv --system-site-packages testvenv
-  - source testvenv/bin/activate
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION nose numpy scipy scikit-learn
+  - source activate test-environment
   - pip install pip --upgrade
   - pip install coverage python-coveralls nose scikit-learn
   - python setup.py build install
-# command to run tests
-script: nosetests  --with-coverage --cover-package=pyriemann
+
+script:
+  - nosetests --with-coverage --cover-package pyriemann --logging-level=INFO
+
 after_success:
-  - deactivate
-  - pip install python-coveralls --upgrade
-  - coveralls
+  - coveralls --config_file .coveragerc
+
+# command to install dependencies\
+# cache: pip
+# sudo: false
+# virtualenv:
+#   system_site_packages: true
+# addons:
+#   apt:
+#     packages:
+#       - python-scipy
+#       - python-numpy
+#       - libatlas-dev
+#       - libatlas3gf-base
+#       - libblas-dev
+#       - liblapack-dev
+#       - python-matplotlib
+#       - python-pandas
+#       - gfortran
+#       - python-tk
+# install:
+#   - virtualenv --system-site-packages testvenv
+#   - source testvenv/bin/activate
+#   - pip install pip --upgrade
+#   - pip install coverage python-coveralls nose scikit-learn
+#   - python setup.py build install
+# # command to run tests
+# script: nosetests  --with-coverage --cover-package=pyriemann
+# after_success:
+#   - deactivate
+#   - pip install python-coveralls --upgrade
+#   - coveralls
+
