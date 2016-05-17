@@ -59,8 +59,9 @@ def test_wasserstein_mean():
     C = mean_covariance(covmats, metric='wasserstein')
     Ctrue = mean_wasserstein(covmats)
     assert_array_equal(C, Ctrue)
-    
-    C = mean_wasserstein(covmats, covmats.mean(axis=0))
+
+    C = mean_wasserstein(covmats, init=covmats.mean(axis=0))
+
 
 def test_ale_mean():
     """Test the ALE mean"""

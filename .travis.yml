@@ -22,10 +22,10 @@ before_install:
   - conda info -a
 
 install:
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION nose numpy scipy scikit-learn
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION nose numpy scipy scikit-learn panda matplotlib
   - source activate test-environment
   - pip install pip --upgrade
-  - pip install coverage python-coveralls nose scikit-learn
+  - pip install coverage python-coveralls 
   - python setup.py build install
 
 script:
