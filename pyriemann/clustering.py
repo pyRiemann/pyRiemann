@@ -308,8 +308,8 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         """
         self._mdm = MDM(metric=self.metric)
 
-        if y is None:
-            y_old = ones(len(X))
+        # if y is None:
+        y_old = ones(len(X))
         # start loop
         for n_iter in range(self.n_iter_max):
             ix = (y_old == 1)

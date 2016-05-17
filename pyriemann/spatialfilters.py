@@ -1,7 +1,7 @@
 """Spatial filtering function."""
 import numpy as np
 from numpy import abs, apply_along_axis, array, argsort, concatenate, \
-     log, unique, sqrt, zeros
+     log, unique, sqrt, zeros, diag, mean
 from numpy.linalg import norm, pinv
 
 from scipy.linalg import eigh
@@ -59,9 +59,9 @@ class Xdawn(BaseEstimator, TransformerMixin):
     2011 19th European (pp. 1382-1386). IEEE.
     """
 
-    def __init__(self, nfilter=4, classes=None, estimator='scm'):
+    def __init__(self, n_filters=4, classes=None, estimator='scm'):
         """Init."""
-        self.nfilter = nfilter
+        self.n_filters = n_filters
         self.classes = classes
         self.estimator = _check_est(estimator)
 
@@ -106,9 +106,9 @@ class Xdawn(BaseEstimator, TransformerMixin):
             V = evecs
             A = pinv(V.T)
             # create the reduced prototyped response
-            self.filters_.append(V[:, 0:self.nfilter].T)
-            self.patterns_.append(A[:, 0:self.nfilter].T)
-            self.evokeds_.append(V[:, 0:self.nfilter].T.dot(P))
+            self.filters_.append(V[:, 0:self.n_filters].T)
+            self.patterns_.append(A[:, 0:self.n_filters].T)
+            self.evokeds_.append(V[:, 0:self.n_filters].T.dot(P))
 
         self.evokeds_ = concatenate(self.evokeds_, axis=0)
         self.filters_ = concatenate(self.filters_, axis=0)
@@ -147,7 +147,7 @@ class CSP(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    nfilter : int (default 4)
+    n_filters : int (default 4)
         The number of components to decompose M/EEG signals.
     metric : str (default "euclid")
         The metric for the estimation of mean covariance matrices
@@ -181,9 +181,9 @@ class CSP(BaseEstimator, TransformerMixin):
         Engineering, IEEE Transactions on 55, no. 8 (2008): 1991-2000.
     """
 
-    def __init__(self, nfilter=4, metric='euclid'):
+    def __init__(self, n_filters=4, metric='euclid'):
         """Init."""
-        self.nfilter = nfilter
+        self.n_filters = n_filters
         self.metric = metric
 
     def fit(self, X, y):
@@ -206,7 +206,7 @@ class CSP(BaseEstimator, TransformerMixin):
         C = []
         for c in classes:
             C.append(mean_covariance(X[y == c], self.metric))
-        C = numpy.array(C)
+        C = array(C)
 
         # Switch between binary and multiclass
         if len(classes) == 2:
@@ -225,19 +225,19 @@ class CSP(BaseEstimator, TransformerMixin):
 
             mutual_info = []
             # class probability
-            Pc = [numpy.mean(y == c) for c in classes]
+            Pc = [mean(y == c) for c in classes]
             for j in range(evecs.shape[1]):
                 a = 0
                 b = 0
                 for i, c in enumerate(classes):
-                    tmp = numpyevecs[:, j].T.dot(C[i]).dot(evecs[:, j])
+                    tmp = evecs[:, j].T.dot(C[i]).dot(evecs[:, j])
                     a += Pc[i] * log(sqrt(tmp))
                     b += Pc[i] * (tmp ** 2 - 1)
                 mi = - (a + (3.0 / 16) * (b ** 2))
                 mutual_info.append(mi)
             ix = argsort(mutual_info)[::-1]
         else:
-            ValueError("Number of classes must be superior or equal at 2.")
+            raise(ValueError, "Number of classes must be superior or equal at 2.")
 
         # sort eigenvectors
         evecs = evecs[:, ix]
@@ -245,8 +245,8 @@ class CSP(BaseEstimator, TransformerMixin):
         # spatial patterns
         A = pinv(evecs.T)
 
-        self.filters_ = evecs[:, 0:self.nfilter].T
-        self.patterns_ = A[:, 0:self.nfilter].T
+        self.filters_ = evecs[:, 0:self.n_filters].T
+        self.patterns_ = A[:, 0:self.n_filters].T
 
         return self
 

@@ -204,17 +204,17 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(self, nfilter=4, applyfilters=True, classes=None,
+    def __init__(self, n_filters=4, applyfilters=True, classes=None,
                  estimator='scm', xdawn_estimator='scm'):
         """Init."""
         self.applyfilters = applyfilters
         self.estimator = estimator
         self.xdawn_estimator = xdawn_estimator
         self.classes = classes
-        self.nfilter = nfilter
+        self.n_filters = n_filters
 
     def fit(self, X, y):
-        self.Xd_ = Xdawn(nfilter=self.nfilter, classes=self.classes,
+        self.Xd_ = Xdawn(n_filters=self.n_filters, classes=self.classes,
                          estimator=self.xdawn_estimator)
         self.Xd_.fit(X, y)
         self.P_ = self.Xd_.evokeds_

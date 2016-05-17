@@ -2,9 +2,10 @@ import numpy as np
 from pyriemann.clustering import Kmeans, KmeansPerClassTransform, Potato
 
 
-def generate_cov(Nt, Ne):
-    """Generate a set of cavariances matrices for test purpose"""
-    diags = 1.0+0.1*np.random.randn(Nt, Ne)
+def generate_cov(Nt, Ne, s=0.1):
+    """Generate a set of covariances matrices for test purpose"""
+    np.random.seed(0)
+    diags = 1.0+s*np.random.randn(Nt, Ne)
     covmats = np.empty((Nt, Ne, Ne))
     for i in range(Nt):
         covmats[i] = np.diag(diags[i])
@@ -82,20 +83,23 @@ def test_KmeansPCT_transform():
     km.fit(covset, labels)
     km.transform(covset)
 
+
 def test_Potato_transform():
     """Test transform of Riemannian Potato"""
     covset = generate_cov(20, 3)
-    rp = Potato(2)
+    rp = Potato()
     rp.fit(covset)
     rp.transform(covset)
 
-    y = np.array([0, 1]).repeat(10)
-    rp.fit(covset, y)
+    covset = generate_cov(20, 3)
+    rp = Potato(metric='logeuclid', threshold=1, n_iter_max=50)
+    rp.fit(covset)
     rp.transform(covset)
-    
+
+
 def test_Potato_predict():
     """Test transform of Riemannian Potato"""
     covset = generate_cov(20, 3)
-    rp = Potato(2)
-    rp.fit(covset)
+    rp = Potato()
+    rp.fit(covset, y=None)
     rp.predict(covset)

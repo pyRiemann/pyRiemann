@@ -19,7 +19,7 @@ def multiset_perm_number(y):
 
 
 def unique_permutations(elements):
-    """Return le list of unique permutations."""
+    """Return a list of unique permutations."""
     if len(elements) == 1:
         yield (elements[0],)
     else:

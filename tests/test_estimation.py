@@ -35,7 +35,7 @@ def test_Xdawncovariances():
     labels = np.array([0, 1]).repeat(5)
     cov = XdawnCovariances()
     cov.fit_transform(x, labels)
-    assert_equal(cov.get_params(), dict(nfilter=4, applyfilters=True,
+    assert_equal(cov.get_params(), dict(n_filters=4, applyfilters=True,
                                         classes=None, estimator='scm',
                                         xdawn_estimator='scm'))
 
