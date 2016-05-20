@@ -1,6 +1,7 @@
 import numpy as np
-from scipy.linalg import eigh
-from numpy import diag, exp, log, multiply, sqrt
+from scipy.linalg import eigh, norm, eig
+from numpy import diag, exp, log, multiply, sqrt, eye, zeros, real
+from numpy.random import randn, rand
 
 ###############################################################
 # Basic Functions
@@ -131,3 +132,60 @@ def check_version(library, min_version):
         if this_version < min_version:
             ok = False
     return ok
+
+
+def generate_spd_matrices(n_samples=10, ndim=3, constraint=None,
+                          condition_number=1e1):
+    """Return random SPD matrices, with different constraints.
+
+    Symmetric Positive Definite real matrices belongs to :math:`Sym^+_d`
+    
+    .. math::
+             Sym^+_d = \{ C in R^{d \times d} | C^t = C and z^t C z > 0 for all z \in R^{d} \backslash 0 \}
+
+    When constraint is None, return n_samples SPD matrices.
+    When it is 'unit_norm', return SPD matrices with norm(C) = 1
+    When 'condition_number', return matrices with specified condition number
+    
+    Parameters
+    ----------
+    ndim : int
+        Dimension of the SPD matrices
+    n_samples : int
+        Number of SPD matrices to return
+    constraint: str
+        Either None, 'unit_norm' or 'condition_number'
+    condition_number: int
+        Parameter used when constraint='condition_number'
+
+    Returns
+    -------
+    covmats : array, shape(n_samples, ndim, ndim)
+        The generated SPD matrices
+
+    This is the adaptation of the Matlab code proposed by Dario Bini and
+    Bruno Iannazzo, http://bezout.dm.unipi.it/software/mmtoolbox/
+    """
+    covmats = zeros(shape=(n_samples, ndim, ndim))
+    if constraint is None:
+        for i in range(n_samples):
+            W = randn(ndim, ndim)
+            A = sqrtm(W.dot(W.T))
+            covmats[i, :, :] = (A + A.T) / 2.
+    elif constraint is 'unit_norm':
+        for i in range(n_samples):
+            W = randn(ndim, ndim) - rand(ndim, ndim)
+            W = W.T.dot(W)
+            A = W/norm(W)
+            covmats[i, :, :] = (A + A.T) / 2.
+    elif constraint is 'condition_number':
+        for i in range(n_samples):
+            W = rand(ndim, ndim) - rand(ndim, ndim)
+            W = W.T.dot(W)
+            W -= eye(ndim)*min(real(eig(W, right=False)))
+            W /= norm(W)
+            W += eye(ndim)/(condition_number-1)
+            covmats[i, :, :] = W /norm(W)
+    else:
+        raise (ValueError, "Unknown constraint")
+    return covmats
