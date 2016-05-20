@@ -2,7 +2,7 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal
 import numpy as np
 from pyriemann.utils.mean import (mean_riemann, mean_euclid,
                                   mean_logeuclid, mean_logdet,
-                                  mean_ale, mean_identity,
+                                  mean_ale, mean_identity, mean_karcher,
                                   mean_wasserstein, mean_covariance)
 
 
@@ -19,6 +19,17 @@ def test_riemann_mean():
     """Test the riemannian mean"""
     covmats = generate_cov(100, 3)
     C = mean_riemann(covmats)
+
+
+def test_karcher_mean():
+    """Test the Karcher mean"""
+    covmats = generate_cov(100, 3)
+    C = mean_karcher(covmats)
+
+    C = mean_karcher(covmats, init=covmats[1, :, :])
+
+    C = mean_karcher(covmats, theta=0.1, tol=10e-10,
+                     maxiter=100, init=np.eye(3))
 
 
 def test_riemann_mean_with_init():
@@ -87,6 +98,14 @@ def test_mean_covariance_riemann():
     covmats = generate_cov(100, 3)
     C = mean_covariance(covmats, metric='riemann')
     Ctrue = mean_riemann(covmats)
+    assert_array_equal(C, Ctrue)
+
+
+def test_mean_covariance_karcher():
+    """Test mean_covariance for riemannian metric"""
+    covmats = generate_cov(100, 3)
+    C = mean_covariance(covmats, metric='karcher')
+    Ctrue = mean_karcher(covmats)
     assert_array_equal(C, Ctrue)
 
 

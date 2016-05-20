@@ -1,8 +1,8 @@
 """Mean covariance estimation."""
 import numpy as np
-from numpy import average, diag, eye, finfo, ones, zeros
+from numpy import average, diag, eye, finfo, ones, zeros, log, log1p, exp, min, max
 from numpy.linalg import inv, norm
-
+from scipy.linalg import cholesky, schur
 from .base import sqrtm, invsqrtm, logm, expm
 from .ajd import ajd_pham
 from .distance import distance_riemann
@@ -20,6 +20,132 @@ def _get_sample_weight(sample_weight, data):
     sample_weight /= sample_weight.sum()
     return sample_weight
 
+
+def mean_karcher(covmats, theta=None, tol=10e-9, maxiter=50, init=None,
+                 sample_weight=None):
+    """Return Karcher mean using a Richardson-like iteration
+
+    This iterative approach relies on Riemannian metric where the parameter
+    theta may be chosen automatically, and the initial value is the
+    arithmetic mean.    
+    
+    .. math::
+            \mathbf{C} = \\arg\min{(\sum_i \delta_R ( \mathbf{C} , \mathbf{C}_i)^2)}
+
+    This is the adaptation of the Matlab code proposed by Dario Bini and
+    Bruno Iannazzo, http://bezout.dm.unipi.it/software/mmtoolbox/
+    At least 3 times slower than mean_riemann, possible improvments.
+            
+    :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
+    :param theta: parameter of the iteration
+    :param tol: the tolerance to stop the gradient descent
+    :param maxiter: maximum number of iteration, default 50
+    :param init: covariance matrix used to initialize the iterative procedure. If None the Arithmetic mean is used
+    :param sample_weight: the weight of each sample
+
+    :returns: Karcher mean covariance matrix
+
+    References
+    ----------
+    [1] D. A. Bini and B. Iannazzo, Computing the Karcher mean of symmetric
+    positive definite matrices, to appear in Linear Algebra Appl., 2012.
+    """
+    sample_weight = _get_sample_weight(sample_weight, covmats)
+    Nt, Ne, Ne = covmats.shape
+    ni, ni_prev = 0., finfo(np.float64).max
+    if init is None:
+        C = covmats.mean(axis=0)
+    else:
+        C = init
+    R = zeros(shape=(Nt, Ne, Ne))
+    U = zeros(shape=(Nt, Ne, Ne))
+    V = zeros(shape=(Nt, Ne))
+    # X = C
+    for h in range(Nt):
+        R[h, :, :] = cholesky(covmats[h, :, :])
+
+    for k in range(maxiter):
+        try:
+            Rc = cholesky(C)
+        except ValueError:
+            print ("[iteration %d] array must not contain infs or NaNs"%k)
+            print (C)
+            raise (ValueError, "Convergence error")
+                
+        iRc = inv(Rc)
+        for h in range(Nt):
+            Z = R[h, :, :].dot(iRc)
+            Vz, U[h, :, :] = schur(Z.T.dot(Z))
+            V[h, :] = diag(Vz)
+        if theta == None:
+            beta, gamma = 0., 0.
+            for h in range(Nt):
+                if np.isnan(beta):
+                    print ('dh[%d]:'%h, dh)
+                ch = max(V[h, :])/min(V[h, :])
+                if ch == 1.:
+                    dh = 0.
+                elif abs(ch-1.) < 0.5:
+                    dh = log1p(ch-1)/(ch-1)
+                else:
+                    dh = log(ch) / (ch-1)
+                beta += dh
+                gamma += ch*dh
+                
+            theta = 2/(gamma+beta)                
+
+        S=zeros(shape=(Ne, Ne))
+        for h in range(Nt):
+            Sh = U[h, :, :].dot(diag(log(V[h, :]))).dot(U[h, :, :].T)
+            S += (Sh + Sh.T)/2
+        Vs, Us = schur(S)
+        Z = diag(exp(diag(Vs*theta/2))).dot(Us.T).dot(Rc)
+        C = Z.T.dot(Z)
+
+        ni = max(abs(diag(Vs)))
+        if (ni < norm(C)*tol) or ni > ni_prev:
+            it = k
+            break
+        ni_prev = ni
+
+        if k == maxiter:
+            print ("Max iterations reached")
+            it = k
+    # return C, it, theta
+    return C
+
+
+def mean_alm():
+    """Return Ando-Li-Mathias mean 
+
+    Find the geometric mean recursively [1], generalizing from:
+    
+    .. math::
+            \mathbf{C} = A^{\frac{1}{2}}(A^{-\frac{1}{2}}B^{\frac{1}{2}}A^{-\frac{1}{2}})^{\frac{1}{2}}A^{\frac{1}{2}}
+
+    require a number of iterations.
+
+    This is the adaptation of the Matlab code proposed by Dario Bini and
+    Bruno Iannazzo, http://bezout.dm.unipi.it/software/mmtoolbox/
+    At least 3 times slower than mean_riemann, possible improvments.
+            
+    :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
+    :param tol: the tolerance to stop the gradient descent
+    :param maxiter: maximum number of iteration, default 50
+    :param init: covariance matrix used to initialize the iterative procedure. If None the Arithmetic mean is used
+    :param sample_weight: the weight of each sample
+
+    :returns: Karcher mean covariance matrix
+
+    References
+    ----------
+    [1] T. Ando, C.-K. Li and R. Mathias, "Geometric Means", Linear Algebra
+    Appl. 385 (2004), 305-334.
+    """
+    sample_weight = _get_sample_weight(sample_weight, covmats)
+    Nt, Ne, Ne = covmats.shape
+    
+  
 
 def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
                  sample_weight=None):
@@ -289,6 +415,7 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
                'identity': mean_identity,
                'logdet': mean_logdet,
                'wasserstein': mean_wasserstein,
-               'ale': mean_ale}
+               'ale': mean_ale,
+               'karcher': mean_karcher}
     C = options[metric](covmats, sample_weight=sample_weight, *args)
     return C
