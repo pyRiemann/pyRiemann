@@ -266,3 +266,82 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
     def fit_transform(self, X, y=None):
         return self.transform(X)
+
+
+class HankelCovariances(BaseEstimator, TransformerMixin):
+
+    """Estimation of covariance matrix with time delayed hankel matrices.
+
+    This estimation is usefull to catch spectral dynamics of the signal,
+    similarly to the CSSP method.
+
+    Parameters
+    ----------
+    delays: int, list of int (default, 2)
+        the delays to apply for the hankel matrices. if Int, it use a rangen of
+        delays up to the given value. A list of int can be given.
+    estimator : string (default: 'scm')
+        covariance matrix estimator. For regularization consider 'lwf' or 'oas'
+        For a complete list of estimator, see `utils.covariance`.
+
+    See Also
+    --------
+    Covariances
+    ERPCovariances
+    XdawnCovariances
+    CospCovariances
+    """
+
+    def __init__(self, delays=4, estimator='scm'):
+        """Init."""
+        self.delays = delays
+        self.estimator = estimator
+
+    def fit(self, X, y=None):
+        """Fit.
+
+        Do nothing. For compatibility purpose.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_samples)
+            ndarray of trials.
+        y : ndarray shape (n_trials, 1)
+            labels corresponding to each trial, not used.
+
+        Returns
+        -------
+        self : Covariances instance
+            The Covariances instance.
+        """
+        return self
+
+    def transform(self, X):
+        """Estimate the hankel covariance matrices.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_samples)
+            ndarray of trials.
+
+        Returns
+        -------
+        covmats : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of covariance matrices for each trials.
+        """
+
+        if isinstance(self.delays, int):
+            delays = range(1, self.delays)
+        else:
+            delays = self.delays
+
+        X2 = []
+
+        for x in X:
+            tmp = x
+            for d in delays:
+                tmp = numpy.r_[tmp, numpy.roll(x, d, axis=-1)]
+            X2.append(tmp)
+        X2 = numpy.array(X2)
+        covmats = covariances(X2, estimator=self.estimator)
+        return covmats
