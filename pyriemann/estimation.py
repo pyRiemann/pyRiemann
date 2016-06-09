@@ -31,6 +31,7 @@ class Covariances(BaseEstimator, TransformerMixin):
     ERPCovariances
     XdawnCovariances
     CospCovariances
+    HankelCovariances
     """
 
     def __init__(self, estimator='scm'):
@@ -115,6 +116,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     Covariances
     XdawnCovariances
     CospCovariances
+    HankelCovariances
 
     References
     ----------

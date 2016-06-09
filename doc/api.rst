@@ -70,6 +70,7 @@ Spatial Filtering
 
     Xdawn
     CSP
+    SPoC
 
 Channel selection
 ------------------

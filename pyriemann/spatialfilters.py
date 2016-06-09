@@ -189,12 +189,14 @@ class CSP(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y):
         """Train CSP spatial filters.
+
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
             ndarray of covariance.
         y : ndarray shape (n_trials, 1)
             labels corresponding to each trial.
+
         Returns
         -------
         self : CSP instance
@@ -254,14 +256,17 @@ class CSP(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         """Apply spatial filters.
+
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
             ndarray of covariance.
+
         Returns
         -------
         Xf : ndarray, shape (n_trials, n_filters)
-            ndarray of spatialy filtered log-variance.
+             ndarray of spatialy filtered log-variance or covariance depending
+             on the 'log' input paramter.
         """
         X_filt = numpy.dot(numpy.dot(self.filters_, X), self.filters_.T)
         X_filt = X_filt.transpose((1, 0, 2))
@@ -320,18 +325,19 @@ class SPoC(CSP):
     """
 
     def fit(self, X, y):
-        """Train CSP spatial filters.
+        """Train spatial filters.
+
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
             ndarray of covariance.
-
         y : ndarray shape (n_trials, 1)
             target variable corresponding to each trial.
+
         Returns
         -------
-        self : CSP instance
-            The CSP instance.
+        self : SPoC instance
+            The SPoC instance.
         """
 
         # Normalize target variable

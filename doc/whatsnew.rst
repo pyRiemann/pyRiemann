@@ -32,6 +32,10 @@ v0.2.4 (Unreleased)
 
 - API: attributes name changes in most modules to comply to the Scikit-Learn naming convention.
 
+- Added `estimations.HankelCovariances` estimation
+
+- Added `spatialfilters.SPoC` spatial filtering
+
 v0.2.3 (November 2015)
 ----------------------
 
