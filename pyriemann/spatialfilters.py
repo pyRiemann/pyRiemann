@@ -148,6 +148,9 @@ class CSP(BaseEstimator, TransformerMixin):
         The number of components to decompose M/EEG signals.
     metric : str (default "euclid")
         The metric for the estimation of mean covariance matrices
+    log : bool (default True)
+        If true, return the log variance, otherwise return the spatially
+        filtered covariance matrices.
 
     Attributes
     ----------
@@ -159,7 +162,7 @@ class CSP(BaseEstimator, TransformerMixin):
 
     See Also
     --------
-    MDM
+    MDM, SPoC
 
     References
     ----------
@@ -178,10 +181,11 @@ class CSP(BaseEstimator, TransformerMixin):
         Engineering, IEEE Transactions on 55, no. 8 (2008): 1991-2000.
     """
 
-    def __init__(self, nfilter=4, metric='euclid'):
+    def __init__(self, nfilter=4, metric='euclid', log=True):
         """Init."""
         self.nfilter = nfilter
         self.metric = metric
+        self.log = log
 
     def fit(self, X, y):
         """Train CSP spatial filters.
@@ -259,9 +263,102 @@ class CSP(BaseEstimator, TransformerMixin):
         Xf : ndarray, shape (n_trials, n_filters)
             ndarray of spatialy filtered log-variance.
         """
+        X_filt = numpy.dot(numpy.dot(self.filters_, X), self.filters_.T)
+        X_filt = X_filt.transpose((1, 0, 2))
 
-        out = numpy.zeros((len(X), len(self.filters_)))
-        for i, x in enumerate(X):
-            tmp = numpy.dot(numpy.dot(self.filters_, x), self.filters_.T)
-            out[i] = numpy.log(numpy.diag(tmp))
-        return out
+        # if logvariance
+        if self.log:
+            out = numpy.zeros((len(X_filt), len(self.filters_)))
+            for i, x in enumerate(X_filt):
+                out[i] = numpy.log(numpy.diag(x))
+            return out
+        else:
+            return X_filt
+
+
+class SPoC(CSP):
+    """Implementation of the SPoC spatial filtering with Covariance as input.
+
+    Source Power Comodulation (SPoC) [1] allow to extract spatial filters and
+    patterns by using a target (continuous) variable in the decomposition
+    process in order to give preference to components whose power comodulates
+    with the target variable.
+
+    SPoC can be seen as an extension of the `CSP` driven by a continuous
+    variable rather than a discrete (often binary) variable. Typical
+    applications include extraction of motor patterns using EMG power or audio
+    paterns using sound envelope.
+
+    Parameters
+    ----------
+    nfilter : int (default 4)
+        The number of components to decompose M/EEG signals.
+    metric : str (default "euclid")
+        The metric for the estimation of mean covariance matrices
+    log : bool (default True)
+        If true, return the log variance, otherwise return the spatially
+        filtered covariance matrices.
+
+    Attributes
+    ----------
+    filters_ : ndarray
+        If fit, the SPoC spatial filters, else None.
+    patterns_ : ndarray
+        If fit, the SPoC spatial patterns, else None.
+
+
+    See Also
+    --------
+    CSP, SPoC
+
+    References
+    ----------
+    [1] Dahne, S., Meinecke, F. C., Haufe, S., Hohne, J., Tangermann, M.,
+        Muller, K. R., & Nikulin, V. V. (2014). SPoC: a novel framework for
+        relating the amplitude of neuronal oscillations to behaviorally
+        relevant parameters. NeuroImage, 86, 111-122.
+    """
+
+    def fit(self, X, y):
+        """Train CSP spatial filters.
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of covariance.
+
+        y : ndarray shape (n_trials, 1)
+            target variable corresponding to each trial.
+        Returns
+        -------
+        self : CSP instance
+            The CSP instance.
+        """
+
+        # Normalize target variable
+        target = numpy.float64(y.copy())
+        target -= target.mean()
+        target /= target.std()
+
+        C = mean_covariance(X, self.metric)
+        Ce = numpy.zeros_like(X)
+        for i in range(Ce.shape[0]):
+            Ce[i] = X[i] * target[i]
+        Cz = mean_covariance(Ce, self.metric)
+
+        # solve eigenvalue decomposition
+        evals, evecs = eigh(Cz, C)
+        evals = evals.real
+        evecs = evecs.real
+        # sort vectors
+        ix = numpy.argsort(numpy.abs(evals))[::-1]
+
+        # sort eigenvectors
+        evecs = evecs[:, ix]
+
+        # spatial patterns
+        A = numpy.linalg.pinv(evecs.T)
+
+        self.filters_ = evecs[:, 0:self.nfilter].T
+        self.patterns_ = A[:, 0:self.nfilter].T
+
+        return self
