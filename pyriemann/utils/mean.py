@@ -4,6 +4,7 @@ import numpy
 from .base import sqrtm, invsqrtm, logm, expm
 from .ajd import ajd_pham
 from .distance import distance_riemann
+from .geodesic import geodesic_riemann
 
 
 def _get_sample_weight(sample_weight, data):
@@ -89,6 +90,50 @@ def mean_logeuclid(covmats, sample_weight=None):
     for index in range(Nt):
         T += sample_weight[index] * logm(covmats[index, :, :])
     C = expm(T)
+
+    return C
+
+
+def mean_kullback_sym(covmats, sample_weight=None):
+    """Return the mean covariance matrix according to KL divergence.
+
+    This mean is the geometric mean between the Arithmetic and the Harmonic
+    mean, as shown in Moakher, Maher, and Philipp G. Batchelor. "Symmetric
+    positive-definite matrices: From geometry to applications and
+    visualization." In Visualization and Processing of Tensor Fields, pp.
+    285-298. Springer Berlin Heidelberg, 2006.
+
+    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param sample_weight: the weight of each sample
+
+    :returns: the mean covariance matrix
+
+    """
+    C_Arithmetic = mean_euclid(covmats, sample_weight)
+    C_Harmonic = mean_harmonic(covmats, sample_weight)
+    C = geodesic_riemann(C_Arithmetic, C_Harmonic, 0.5)
+
+    return C
+
+
+def mean_harmonic(covmats, sample_weight=None):
+    """Return the harmonic mean of a set of covariance matrices.
+
+    .. math::
+            \mathbf{C} = (\\frac{1}{N} \sum_i {\mathbf{C}_i}^{-1})^{-1}
+
+    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param sample_weight: the weight of each sample
+
+    :returns: the mean covariance matrix
+
+    """
+    sample_weight = _get_sample_weight(sample_weight, covmats)
+    Nt, Ne, Ne = covmats.shape
+    T = numpy.zeros((Ne, Ne))
+    for index in range(Nt):
+        T += sample_weight[index] * numpy.linalg.inv(covmats[index, :, :])
+    C = numpy.linalg.inv(T)
 
     return C
 
@@ -276,7 +321,8 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
 
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
-    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'indentity', 'wasserstein'
+    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'indentity', 'wasserstein', 'ale',
+    'harmonic', 'kullback_sym'
     :param sample_weight: the weight of each sample
     :param args: the argument passed to the sub function
     :returns: the mean covariance matrix
@@ -288,6 +334,8 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
                'identity': mean_identity,
                'logdet': mean_logdet,
                'wasserstein': mean_wasserstein,
-               'ale': mean_ale}
+               'ale': mean_ale,
+               'harmonic': mean_harmonic,
+               'kullback_sym': mean_kullback_sym}
     C = options[metric](covmats, sample_weight=sample_weight, *args)
     return C

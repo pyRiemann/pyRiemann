@@ -36,6 +36,10 @@ v0.2.4 (Unreleased)
 
 - Added `spatialfilters.SPoC` spatial filtering
 
+- Added Harmonic mean
+
+- Added Kullbacl leibler mean
+
 v0.2.3 (November 2015)
 ----------------------
 
