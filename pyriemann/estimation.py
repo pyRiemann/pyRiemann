@@ -275,12 +275,13 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
     """Estimation of covariance matrix with time delayed hankel matrices.
 
     This estimation is usefull to catch spectral dynamics of the signal,
-    similarly to the CSSP method.
+    similarly to the CSSP method. It is done by concatenating time delayed
+    version of the signal before covariance estimation.
 
     Parameters
     ----------
     delays: int, list of int (default, 2)
-        the delays to apply for the hankel matrices. if Int, it use a rangen of
+        the delays to apply for the hankel matrices. if Int, it use a range of
         delays up to the given value. A list of int can be given.
     estimator : string (default: 'scm')
         covariance matrix estimator. For regularization consider 'lwf' or 'oas'

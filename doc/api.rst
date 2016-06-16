@@ -17,7 +17,7 @@ Covariance Estimation
     ERPCovariances
     XdawnCovariances
     CospCovariances
-
+    HankelCovariances
 
 Classification
 ------------------

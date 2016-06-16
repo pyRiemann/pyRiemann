@@ -28,17 +28,17 @@ v0.2.4 (Unreleased)
 
 - Added Multiclass CSP.
 
-- API: param name changes in `estimations.CospCovariances` to comply to Scikit-Learn.
+- API: param name changes in `CospCovariances` to comply to Scikit-Learn.
 
 - API: attributes name changes in most modules to comply to the Scikit-Learn naming convention.
 
-- Added `estimations.HankelCovariances` estimation
+- Added `HankelCovariances` estimation
 
 - Added `spatialfilters.SPoC` spatial filtering
 
 - Added Harmonic mean
 
-- Added Kullbacl leibler mean
+- Added Kullback leibler mean
 
 v0.2.3 (November 2015)
 ----------------------
