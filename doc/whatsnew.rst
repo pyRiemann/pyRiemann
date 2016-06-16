@@ -7,7 +7,7 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.2.4 (Unreleased)
+v0.2.4 (June 2016)
 -------------------
 
 - Improved documentation
@@ -34,7 +34,7 @@ v0.2.4 (Unreleased)
 
 - Added `HankelCovariances` estimation
 
-- Added `spatialfilters.SPoC` spatial filtering
+- Added `SPoC` spatial filtering
 
 - Added Harmonic mean
 
