@@ -311,6 +311,9 @@ class SPoC(CSP):
     patterns_ : ndarray
         If fit, the SPoC spatial patterns, else None.
 
+    Notes
+    -----
+    .. versionadded:: 0.2.4
 
     See Also
     --------

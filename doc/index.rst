@@ -64,7 +64,7 @@ pyRiemann: Biosignals classification with Riemannian Geometry
 
 pyRiemann is a Python machine learning library based on scikit-learn API. It provides a high-level interface for classification and manipulation of multivariate signal through Riemannian Geometry of covariance matrices.
 
-pyRiemann aim at being a generic package for multivariate signal classification but has been designed around applications of biosignal (M/EEG, EMG, etc) classification.
+pyRiemann aims at being a generic package for multivariate signal classification but has been designed around applications of biosignal (M/EEG, EMG, etc) classification.
 
 For a brief introduction to the ideas behind the package, you can read the
 :ref:`introductory notes <introduction>`. More practical information is on the

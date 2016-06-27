@@ -126,11 +126,16 @@ def distance(A, B, metric='riemann'):
                         'kullback_right': distance_kullback_right,
                         'kullback_sym': distance_kullback_sym,
                         'wasserstein': distance_wasserstein}
+    if callable(metric):
+        distance_function = metric
+    else:
+        distance_function = distance_methods[metric]
+
     if len(A.shape) == 3:
         d = numpy.empty((len(A), 1))
         for i in range(len(A)):
-            d[i] = distance_methods[metric](A[i], B)
+            d[i] = distance_function(A[i], B)
     else:
-        d = distance_methods[metric](A, B)
+        d = distance_function(A, B)
 
     return d
