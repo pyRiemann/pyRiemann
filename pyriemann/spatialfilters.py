@@ -28,8 +28,9 @@ class Xdawn(BaseEstimator, TransformerMixin):
         classes will be accounted.
     estimator : str (default 'scm')
         covariance matrix estimator. For regularization consider 'lwf' or 'oas'
-    Cx : array, shape(n_chan, n_chan)
-        Precomputed covariance matrix.
+    baseline_cov : array, shape(n_chan, n_chan) | None (default)
+        Covariance matrix to which the average signals are compared. If None,
+        the baseline covariance is computed across all trials and time samples.
     Attributes
     ----------
     filters_ : ndarray
@@ -57,12 +58,13 @@ class Xdawn(BaseEstimator, TransformerMixin):
     2011 19th European (pp. 1382-1386). IEEE.
     """
 
-    def __init__(self, nfilter=4, classes=None, estimator='scm', Cx=None):
+    def __init__(self, nfilter=4, classes=None, estimator='scm',
+                 baseline_cov=None):
         """Init."""
         self.nfilter = nfilter
         self.classes = classes
         self.estimator = _check_est(estimator)
-        self.Cx = Cx
+        self.baseline_cov = baseline_cov
 
     def fit(self, X, y):
         """Train xdawn spatial filters.
@@ -84,9 +86,9 @@ class Xdawn(BaseEstimator, TransformerMixin):
         self.classes_ = (numpy.unique(y) if self.classes is None else
                          self.classes)
 
-        # FIXME : too many reshape operation
-        Cx = self.Cx
+        Cx = self.baseline_cov
         if Cx is None:
+            # FIXME : too many reshape operation
             tmp = X.transpose((1, 2, 0))
             Cx = numpy.matrix(self.estimator(tmp.reshape(Ne, Ns * Nt)))
 

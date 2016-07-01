@@ -24,11 +24,11 @@ def test_Xdawn_transform():
     xd.transform(x)
 
 
-def test_Xdawn_Cx():
+def test_Xdawn_baselinecov():
     """Test cov precomputation"""
     x = np.random.randn(100, 3, 10)
     labels = np.array([0, 1]).repeat(50)
-    Cx = np.identity(3)
-    xd = Xdawn(Cx=Cx)
+    baseline_cov = np.identity(3)
+    xd = Xdawn(baseline_cov=baseline_cov)
     xd.fit(x, labels)
     xd.transform(x)
