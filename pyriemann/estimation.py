@@ -216,8 +216,6 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         self.baseline_cov = baseline_cov
 
     def fit(self, X, y):
-        # FIXME self.Xd should be init at XdawnCovariances.__init__ and be
-        # replaced as param not attribute
         self.Xd_ = Xdawn(nfilter=self.nfilter, classes=self.classes,
                          estimator=self.xdawn_estimator,
                          baseline_cov=self.baseline_cov)
