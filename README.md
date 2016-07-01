@@ -114,6 +114,23 @@ The package aims at adopting the [Scikit-Learn](http://scikit-learn.org/stable/d
 
 # changelog
 
+### v0.2.4 
+- Improved documentation
+- Added TSclassifier for out-of the box tangent space classification.
+- Added Wasserstein distance and mean.
+- Added NearestNeighbor classifier.
+- Added Softmax probabilities for MDM.
+- Added CSP for covariance matrices.
+- Added Approximate Joint diagonalization algorithms (JADE, PHAM, UWEDGE).
+- Added ALE mean.
+- Added Multiclass CSP.
+- API: param name changes in `CospCovariances` to comply to Scikit-Learn.
+- API: attributes name changes in most modules to comply to the Scikit-Learn naming convention.
+- Added `HankelCovariances` estimation
+- Added `SPoC` spatial filtering
+- Added Harmonic mean
+- Added Kullback leibler mean
+
 ### v0.2.3
  - Added multiprocessing for MDM with joblib
  - Added kullback-leibler divergence
