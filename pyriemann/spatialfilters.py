@@ -81,7 +81,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
         self : Xdawn instance
             The Xdawn instance.
         """
-        Nt, Ne, Ns = X.shape
+        n_trials, n_channels, n_times = X.shape
 
         self.classes_ = (numpy.unique(y) if self.classes is None else
                          self.classes)
@@ -90,14 +90,15 @@ class Xdawn(BaseEstimator, TransformerMixin):
         if Cx is None:
             # FIXME : too many reshape operation
             tmp = X.transpose((1, 2, 0))
-            Cx = numpy.matrix(self.estimator(tmp.reshape(Ne, Ns * Nt)))
+            tmp = tmp.reshape(n_channels, n_times * n_trials)
+            Cx = numpy.matrix(self.estimator(tmp))
 
-        self.evokeds_ = []
-        self.filters_ = []
-        self.patterns_ = []
-        for c in self.classes_:
+        self.filters_ = list()
+        self.patterns_ = list()
+        self.evokeds_ = list()
+        for this_class in self.classes_:
             # Prototyped responce for each class
-            P = numpy.mean(X[y == c, :, :], axis=0)
+            P = numpy.mean(X[y == this_class, :, :], axis=0)
 
             # Covariance matrix of the prototyper response & signal
             C = numpy.matrix(self.estimator(P))
@@ -108,11 +109,12 @@ class Xdawn(BaseEstimator, TransformerMixin):
             evecs /= numpy.apply_along_axis(numpy.linalg.norm, 0, evecs)
             V = evecs
             A = numpy.linalg.pinv(V.T)
-            # create the reduced prototyped response
-            self.filters_.append(V[:, 0:self.nfilter].T)
-            self.patterns_.append(A[:, 0:self.nfilter].T)
-            self.evokeds_.append(numpy.dot(V[:, 0:self.nfilter].T, P))
+            # Create the reduced prototyped response
+            self.filters_.append(V[:, :self.nfilter].T)
+            self.patterns_.append(A[:, :self.nfilter].T)
+            self.evokeds_.append(numpy.dot(V[:, :self.nfilter].T, P))
 
+        # Stack classes and components into one axis
         self.evokeds_ = numpy.concatenate(self.evokeds_, axis=0)
         self.filters_ = numpy.concatenate(self.filters_, axis=0)
         self.patterns_ = numpy.concatenate(self.patterns_, axis=0)
@@ -208,7 +210,7 @@ class CSP(BaseEstimator, TransformerMixin):
         self : CSP instance
             The CSP instance.
         """
-        Nt, Ne, Ns = X.shape
+        n_trials, n_channels, n_times = X.shape
         classes = numpy.unique(y)
 
         # estimate class means
