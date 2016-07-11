@@ -82,6 +82,7 @@ Channel selection
     :template: class.rst
 
     ElectrodeSelection
+    FlatChannelRemover
 
 Stats
 ------------------

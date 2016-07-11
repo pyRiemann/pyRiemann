@@ -7,6 +7,11 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
+v0.2.5 (Future release)
+-------------------
+
+- Added FlatChannelRemover
+
 v0.2.4 (June 2016)
 -------------------
 
