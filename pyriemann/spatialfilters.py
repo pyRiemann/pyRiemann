@@ -41,7 +41,9 @@ class Xdawn(BaseEstimator, TransformerMixin):
         type, concatenated, else empty.
     evokeds_ : ndarray
         If fit, the evoked response for each event type, concatenated.
-
+    picks_ : ndarray
+        Channels indices used in the computation. Can be different from
+        range(n_channels) if some channels do not vary over time.
 
     See Also
     --------
@@ -65,6 +67,10 @@ class Xdawn(BaseEstimator, TransformerMixin):
         self.classes = classes
         self.estimator = _check_est(estimator)
         self.baseline_cov = baseline_cov
+        if (baseline_cov is not None) and (
+            numpy.ndim(baseline_cov) != 2 or
+                (baseline_cov.shape[0] != baseline_cov.shape[1])):
+            raise ValueError('baseline_cov must be a square matrix.')
 
     def fit(self, X, y):
         """Train xdawn spatial filters.
@@ -81,6 +87,12 @@ class Xdawn(BaseEstimator, TransformerMixin):
         self : Xdawn instance
             The Xdawn instance.
         """
+
+        # Only consider channels that vary in time
+        n_chans_orig = X.shape[1]
+        self.picks_ = numpy.where(numpy.mean(numpy.std(X, axis=2) ** 2, 0))[0]
+        X = X[:, self.picks_, :]
+
         n_trials, n_channels, n_times = X.shape
 
         self.classes_ = (numpy.unique(y) if self.classes is None else
@@ -92,6 +104,12 @@ class Xdawn(BaseEstimator, TransformerMixin):
             tmp = X.transpose((1, 2, 0))
             tmp = tmp.reshape(n_channels, n_times * n_trials)
             Cx = numpy.matrix(self.estimator(tmp))
+        else:
+            # Only keep channels that vary over time
+            if len(numpy.unique(numpy.r_[Cx.shape, n_chans_orig])) != 1:
+                raise ValueError('Shape of baseline_cov must be '
+                                 'n_channels * n_channels')
+            Cx = Cx[self.picks_, :][:, self.picks_]
 
         self.filters_ = list()
         self.patterns_ = list()
@@ -133,6 +151,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
         Xf : ndarray, shape (n_trials, n_filters * n_classes, n_samples)
             ndarray of spatialy filtered trials.
         """
+        X = X[:, self.picks_, :]
         X = numpy.dot(self.filters_, X)
         X = X.transpose((1, 0, 2))
         return X
