@@ -41,7 +41,9 @@ class Xdawn(BaseEstimator, TransformerMixin):
         type, concatenated, else empty.
     evokeds_ : ndarray
         If fit, the evoked response for each event type, concatenated.
-
+    picks_ : ndarray
+        Channels indices used in the computation. Can be different from
+        range(n_channels) if some channels do not vary over time.
 
     See Also
     --------
@@ -65,6 +67,10 @@ class Xdawn(BaseEstimator, TransformerMixin):
         self.classes = classes
         self.estimator = _check_est(estimator)
         self.baseline_cov = baseline_cov
+        if (baseline_cov is not None) and (
+            numpy.ndim(baseline_cov) != 2 or
+                (baseline_cov.shape[0] != baseline_cov.shape[1])):
+            raise ValueError('baseline_cov must be a square matrix.')
 
     def fit(self, X, y):
         """Train xdawn spatial filters.
@@ -81,7 +87,13 @@ class Xdawn(BaseEstimator, TransformerMixin):
         self : Xdawn instance
             The Xdawn instance.
         """
-        Nt, Ne, Ns = X.shape
+
+        # Only consider channels that vary in time
+        n_chans_orig = X.shape[1]
+        self.picks_ = numpy.where(numpy.mean(numpy.std(X, axis=2) ** 2, 0))[0]
+        X = X[:, self.picks_, :]
+
+        n_trials, n_channels, n_times = X.shape
 
         self.classes_ = (numpy.unique(y) if self.classes is None else
                          self.classes)
@@ -90,14 +102,21 @@ class Xdawn(BaseEstimator, TransformerMixin):
         if Cx is None:
             # FIXME : too many reshape operation
             tmp = X.transpose((1, 2, 0))
-            Cx = numpy.matrix(self.estimator(tmp.reshape(Ne, Ns * Nt)))
+            tmp = tmp.reshape(n_channels, n_times * n_trials)
+            Cx = numpy.matrix(self.estimator(tmp))
+        else:
+            # Only keep channels that vary over time
+            if len(numpy.unique(numpy.r_[Cx.shape, n_chans_orig])) != 1:
+                raise ValueError('Shape of baseline_cov must be '
+                                 'n_channels * n_channels')
+            Cx = Cx[self.picks_, :][:, self.picks_]
 
-        self.evokeds_ = []
-        self.filters_ = []
-        self.patterns_ = []
-        for c in self.classes_:
+        self.filters_ = list()
+        self.patterns_ = list()
+        self.evokeds_ = list()
+        for this_class in self.classes_:
             # Prototyped responce for each class
-            P = numpy.mean(X[y == c, :, :], axis=0)
+            P = numpy.mean(X[y == this_class, :, :], axis=0)
 
             # Covariance matrix of the prototyper response & signal
             C = numpy.matrix(self.estimator(P))
@@ -108,11 +127,12 @@ class Xdawn(BaseEstimator, TransformerMixin):
             evecs /= numpy.apply_along_axis(numpy.linalg.norm, 0, evecs)
             V = evecs
             A = numpy.linalg.pinv(V.T)
-            # create the reduced prototyped response
-            self.filters_.append(V[:, 0:self.nfilter].T)
-            self.patterns_.append(A[:, 0:self.nfilter].T)
-            self.evokeds_.append(numpy.dot(V[:, 0:self.nfilter].T, P))
+            # Create the reduced prototyped response
+            self.filters_.append(V[:, :self.nfilter].T)
+            self.patterns_.append(A[:, :self.nfilter].T)
+            self.evokeds_.append(numpy.dot(V[:, :self.nfilter].T, P))
 
+        # Stack classes and components into one axis
         self.evokeds_ = numpy.concatenate(self.evokeds_, axis=0)
         self.filters_ = numpy.concatenate(self.filters_, axis=0)
         self.patterns_ = numpy.concatenate(self.patterns_, axis=0)
@@ -131,6 +151,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
         Xf : ndarray, shape (n_trials, n_filters * n_classes, n_samples)
             ndarray of spatialy filtered trials.
         """
+        X = X[:, self.picks_, :]
         X = numpy.dot(self.filters_, X)
         X = X.transpose((1, 0, 2))
         return X
@@ -208,7 +229,7 @@ class CSP(BaseEstimator, TransformerMixin):
         self : CSP instance
             The CSP instance.
         """
-        Nt, Ne, Ns = X.shape
+        n_trials, n_channels, n_times = X.shape
         classes = numpy.unique(y)
 
         # estimate class means
