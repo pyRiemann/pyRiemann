@@ -85,7 +85,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         Ne, _ = self.covmeans_[0].shape
 
         self.dist_ = []
-        self.subelec_ = range(0, Ne, 1)
+        self.subelec_ = list(range(0, Ne, 1))
         while (len(self.subelec_)) > self.nelec:
             di = numpy.zeros((len(self.subelec_), 1))
             for idx in range(len(self.subelec_)):
@@ -117,5 +117,5 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
             The covariances matrices after reduction of the number of channels.
         """
         if self.subelec_ is None:
-            self.subelec_ = range(0, X.shape[1], 1)
+            self.subelec_ = list(range(0, X.shape[1], 1))
         return X[:, self.subelec_, :][:, :, self.subelec_]
