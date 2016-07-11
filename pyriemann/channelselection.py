@@ -119,3 +119,65 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         if self.subelec_ is None:
             self.subelec_ = list(range(0, X.shape[1], 1))
         return X[:, self.subelec_, :][:, :, self.subelec_]
+
+
+class FlatChannelRemover(BaseEstimator, TransformerMixin):
+    """Finds and removes flat channels.
+
+    Attributes
+    ----------
+    channels : ndarray, shape (n_good_channels)
+        The indices of the non-flat channels.
+    """
+
+    def fit(self, X, y=None):
+        """Find flat channels.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_times)
+            Training data.
+        y : ndarray, shape (n_trials, n_dims) | None, optional
+            The regressor(s). Defaults to None.
+
+        Returns
+        -------
+        X : ndarray, shape (n_trials, n_good_channels, n_times)
+            The data without flat channels.
+        """
+        std = numpy.mean(numpy.std(X, axis=2) ** 2, 0)
+        self.channels_ = numpy.where(std)[0]
+        return self
+
+    def transform(self, X):
+        """Remove flat channels.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_times)
+            Training data.
+
+        Returns
+        -------
+        X : ndarray, shape (n_trials, n_good_channels, n_times)
+            The data without flat channels.
+        """
+        return X[:, self.channels_, :]
+
+    def fit_transform(self, X, y=None):
+        """Find and remove flat channels.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_times)
+            Training data.
+        y : ndarray, shape (n_trials, n_dims) | None, optional
+            The regressor(s). Defaults to None.
+
+        Returns
+        -------
+        X : ndarray, shape (n_trials, n_good_channels, n_times)
+            The data without flat channels.
+        """
+        self.fit(X, y)
+        return self.transform(X)
