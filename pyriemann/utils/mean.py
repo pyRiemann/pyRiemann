@@ -58,7 +58,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
 
         for index in range(Nt):
             tmp = numpy.dot(numpy.dot(Cm12, covmats[index, :, :]), Cm12)
-            J += sample_weight[index] * logm(numpy.matrix(tmp))
+            J += sample_weight[index] * logm(tmp)
 
         crit = numpy.linalg.norm(J, ord='fro')
         h = nu * crit
