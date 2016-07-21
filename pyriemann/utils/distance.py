@@ -118,14 +118,6 @@ def distance(A, B, metric='riemann'):
     :returns: the distance between A and B
 
     """
-    distance_methods = {'riemann': distance_riemann,
-                        'logeuclid': distance_logeuclid,
-                        'euclid': distance_euclid,
-                        'logdet': distance_logdet,
-                        'kullback': distance_kullback,
-                        'kullback_right': distance_kullback_right,
-                        'kullback_sym': distance_kullback_sym,
-                        'wasserstein': distance_wasserstein}
     if callable(metric):
         distance_function = metric
     else:
@@ -139,3 +131,13 @@ def distance(A, B, metric='riemann'):
         d = distance_function(A, B)
 
     return d
+
+
+distance_methods = {'riemann': distance_riemann,
+                    'logeuclid': distance_logeuclid,
+                    'euclid': distance_euclid,
+                    'logdet': distance_logdet,
+                    'kullback': distance_kullback,
+                    'kullback_right': distance_kullback_right,
+                    'kullback_sym': distance_kullback_sym,
+                    'wasserstein': distance_wasserstein}
