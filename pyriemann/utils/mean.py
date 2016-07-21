@@ -343,3 +343,15 @@ mean_methods = {'riemann': mean_riemann,
                 'ale': mean_ale,
                 'harmonic': mean_harmonic,
                 'kullback_sym': mean_kullback_sym}
+
+
+def _check_mean_method(method):
+    """checks methods """
+    if isinstance(method, str):
+        if method not in mean_methods.keys():
+            raise ValueError('Unknown mean method')
+        else:
+            method = mean_methods[method]
+    elif not hasattr(method, '__call__'):
+        raise ValueError('mean method must be a function or a string.')
+    return method

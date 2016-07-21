@@ -142,3 +142,15 @@ distance_methods = {'riemann': distance_riemann,
                     'kullback_right': distance_kullback_right,
                     'kullback_sym': distance_kullback_sym,
                     'wasserstein': distance_wasserstein}
+
+
+def _check_distance_method(method):
+    """checks methods """
+    if isinstance(method, str):
+        if method not in distance_methods.keys():
+            raise ValueError('Unknown mean method')
+        else:
+            method = distance_methods[method]
+    elif not hasattr(method, '__call__'):
+        raise ValueError('distance method must be a function or a string.')
+    return method
