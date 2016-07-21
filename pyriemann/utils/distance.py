@@ -80,7 +80,7 @@ def distance_logdet(A, B):
     """Log-det distance between two covariance matrices A and B.
 
     .. math::
-            d = \sqrt{\left(\log(\det(\\frac{\mathbf{A}+\mathbf{B}}{2})) - 0.5 \\times \log(\det(\mathbf{A}) \det(\mathbf{B}))\\right)}
+            d = \sqrt{\left(\log(\det(\\frac{\mathbf{A}+\mathbf{B}}{2})) - 0.5 \\times \log(\det(\mathbf{A}) \det(\mathbf{B}))\\right)}  # noqa
 
     :param A: First covariance matrix
     :param B: Second covariance matrix
@@ -88,7 +88,8 @@ def distance_logdet(A, B):
 
     """
     return numpy.sqrt(numpy.log(numpy.linalg.det(
-        (A + B) / 2.0)) - 0.5 * numpy.log(numpy.linalg.det(A)*numpy.linalg.det(B)))
+        (A + B) / 2.0)) - 0.5 *
+        numpy.log(numpy.linalg.det(A)*numpy.linalg.det(B)))
 
 
 def distance_wasserstein(A, B):
