@@ -80,7 +80,7 @@ def distance_logdet(A, B):
     """Log-det distance between two covariance matrices A and B.
 
     .. math::
-            d = \sqrt{\left(\log(\det(\\frac{\mathbf{A}+\mathbf{B}}{2})) - 0.5 \\times \log(\det(\mathbf{A}) \det(\mathbf{B}))\\right)}
+            d = \sqrt{\left(\log(\det(\\frac{\mathbf{A}+\mathbf{B}}{2})) - 0.5 \\times \log(\det(\mathbf{A}) \det(\mathbf{B}))\\right)}  # noqa
 
     :param A: First covariance matrix
     :param B: Second covariance matrix
@@ -88,7 +88,8 @@ def distance_logdet(A, B):
 
     """
     return numpy.sqrt(numpy.log(numpy.linalg.det(
-        (A + B) / 2.0)) - 0.5 * numpy.log(numpy.linalg.det(A)*numpy.linalg.det(B)))
+        (A + B) / 2.0)) - 0.5 *
+        numpy.log(numpy.linalg.det(A)*numpy.linalg.det(B)))
 
 
 def distance_wasserstein(A, B):
@@ -118,14 +119,6 @@ def distance(A, B, metric='riemann'):
     :returns: the distance between A and B
 
     """
-    distance_methods = {'riemann': distance_riemann,
-                        'logeuclid': distance_logeuclid,
-                        'euclid': distance_euclid,
-                        'logdet': distance_logdet,
-                        'kullback': distance_kullback,
-                        'kullback_right': distance_kullback_right,
-                        'kullback_sym': distance_kullback_sym,
-                        'wasserstein': distance_wasserstein}
     if callable(metric):
         distance_function = metric
     else:
@@ -139,3 +132,25 @@ def distance(A, B, metric='riemann'):
         d = distance_function(A, B)
 
     return d
+
+
+distance_methods = {'riemann': distance_riemann,
+                    'logeuclid': distance_logeuclid,
+                    'euclid': distance_euclid,
+                    'logdet': distance_logdet,
+                    'kullback': distance_kullback,
+                    'kullback_right': distance_kullback_right,
+                    'kullback_sym': distance_kullback_sym,
+                    'wasserstein': distance_wasserstein}
+
+
+def _check_distance_method(method):
+    """checks methods """
+    if isinstance(method, str):
+        if method not in distance_methods.keys():
+            raise ValueError('Unknown mean method')
+        else:
+            method = distance_methods[method]
+    elif not hasattr(method, '__call__'):
+        raise ValueError('distance method must be a function or a string.')
+    return method
