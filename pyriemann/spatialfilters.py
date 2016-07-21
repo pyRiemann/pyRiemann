@@ -7,7 +7,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from .utils.covariance import _check_est
 from .utils.mean import mean_covariance
 from .utils.ajd import ajd_pham
-from .utils.distance import distance_methods
+from .utils.mean import mean_methods
 
 
 class Xdawn(BaseEstimator, TransformerMixin):
@@ -193,9 +193,9 @@ class CSP(BaseEstimator, TransformerMixin):
         if not isinstance(nfilter, int):
             raise TypeError('nfilter must be an integer')
         self.nfilter = nfilter
-        if metric not in distance_methods.keys():
+        if metric not in mean_methods.keys():
             raise ValueError(
-                'metric must be in %s' % distance_methods.keys())
+                'metric must be in %s' % mean_methods.keys())
         self.metric = metric
         if not isinstance(log, bool):
             raise TypeError('log must be a boolean')
