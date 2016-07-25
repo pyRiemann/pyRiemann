@@ -1,9 +1,8 @@
 # pyRiemann
 
 [![Code Climate](https://codeclimate.com/github/alexandrebarachant/pyRiemann/badges/gpa.svg)](https://codeclimate.com/github/alexandrebarachant/pyRiemann)
-[![Latest Version](https://pypip.in/version/pyriemann/badge.svg)](https://pypi.python.org/pypi/pyriemann/)
 [![Build Status](https://travis-ci.org/alexandrebarachant/pyRiemann.svg?branch=master)](https://travis-ci.org/alexandrebarachant/pyRiemann)
-[![Coverage Status](https://coveralls.io/repos/alexandrebarachant/pyRiemann/badge.svg?branch=master)](https://coveralls.io/r/alexandrebarachant/pyRiemann?branch=master)
+[![codecov](https://codecov.io/gh/alexandrebarachant/pyRiemann/branch/master/graph/badge.svg)](https://codecov.io/gh/alexandrebarachant/pyRiemann)
 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.18982.svg)](http://dx.doi.org/10.5281/zenodo.18982)
 
 pyriemann is a python package for covariance matrices manipulation and classification through riemannian geometry.
@@ -114,7 +113,7 @@ The package aims at adopting the [Scikit-Learn](http://scikit-learn.org/stable/d
 
 # changelog
 
-### v0.2.4 
+### v0.2.4
 - Improved documentation
 - Added TSclassifier for out-of the box tangent space classification.
 - Added Wasserstein distance and mean.
