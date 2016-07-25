@@ -16,7 +16,8 @@ def test_check_metric():
     """Test _check_distance_method"""
     _check_distance_method('riemann')
     _check_distance_method(distance_riemann)
-    assert_raises(ValueError, _check_distance_method, 42)
+    assert_raises(ValueError, _check_distance_method, 666)
+    assert_raises(ValueError, _check_distance_method, '666')
 
 
 def test_distance_riemann():
