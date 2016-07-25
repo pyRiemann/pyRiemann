@@ -1,6 +1,9 @@
 import numpy as np
+from numpy.testing import assert_array_equal
 from nose.tools import assert_raises
-from pyriemann.classification import MDM,FgMDM
+from pyriemann.classification import (MDM, FgMDM, KNearestNeighbor,
+                                      TSclassifier)
+
 
 def generate_cov(Nt, Ne):
     """Generate a set of cavariances matrices for test purpose."""
@@ -13,65 +16,95 @@ def generate_cov(Nt, Ne):
         covmats[i] = np.dot(np.dot(A, np.diag(diags[i])), A.T)
     return covmats
 
+
 def test_MDM_init():
     """Test init of MDM"""
-    mdm = MDM(metric='riemann')
+    MDM(metric='riemann')
 
     # Should raise if metric not string or dict
-    assert_raises(TypeError,MDM,metric=42)
+    assert_raises(TypeError, MDM, metric=42)
 
     # Should raise if metric is not contain bad keys
-    assert_raises(KeyError,MDM,metric={'universe' : 42})
+    assert_raises(KeyError, MDM, metric={'universe': 42})
 
-    #should works with correct dict
-    mdm = MDM(metric={'mean' : 'riemann', 'distance' : 'logeuclid'})
+    # should works with correct dict
+    MDM(metric={'mean': 'riemann', 'distance': 'logeuclid'})
+
 
 def test_MDM_fit():
     """Test Fit of MDM"""
-    covset = generate_cov(100,3)
-    labels = np.array([0,1]).repeat(50)
+    covset = generate_cov(100, 3)
+    labels = np.array([0, 1]).repeat(50)
     mdm = MDM(metric='riemann')
-    mdm.fit(covset,labels)
+    mdm.fit(covset, labels)
+
 
 def test_MDM_predict():
     """Test prediction of MDM"""
-    covset = generate_cov(100,3)
-    labels = np.array([0,1]).repeat(50)
+    covset = generate_cov(100, 3)
+    labels = np.array([0, 1]).repeat(50)
     mdm = MDM(metric='riemann')
-    mdm.fit(covset,labels)
+    mdm.fit(covset, labels)
     mdm.predict(covset)
 
-def test_MDM_fit_predict():
-    """Test Fit & predict of MDM"""
-    covset = generate_cov(100,3)
-    labels = np.array([0,1]).repeat(50)
+    # test fit_predict
     mdm = MDM(metric='riemann')
-    mdm.fit_predict(covset,labels)
+    mdm.fit_predict(covset, labels)
 
-def test_MDM_transform():
-    """Test transform of MDM"""
-    covset = generate_cov(100,3)
-    labels = np.array([0,1]).repeat(50)
-    mdm = MDM(metric='riemann')
-    mdm.fit(covset,labels)
+    # test transform
     mdm.transform(covset)
+
+    # predict proba
+    mdm.predict_proba(covset)
+
+    # test n_jobs
+    mdm = MDM(metric='riemann', n_jobs=2)
+    mdm.fit(covset, labels)
+    mdm.predict(covset)
+
+
+def test_KNN():
+    """Test KNearestNeighbor"""
+    covset = generate_cov(30, 3)
+    labels = np.array([0, 1, 2]).repeat(10)
+
+    knn = KNearestNeighbor(1, metric='riemann')
+    knn.fit(covset, labels)
+    preds = knn.predict(covset)
+    assert_array_equal(labels, preds)
+
+
+def test_TSclassifier():
+    """Test TS Classifier"""
+    covset = generate_cov(40, 3)
+    labels = np.array([0, 1]).repeat(20)
+
+    assert_raises(TypeError, TSclassifier, clf='666')
+    clf = TSclassifier()
+    clf.fit(covset, labels)
+    clf.predict(covset)
+    clf.predict_proba(covset)
 
 
 def test_FgMDM_init():
     """Test init of FgMDM"""
-    mdm = FgMDM(metric='riemann')
+    FgMDM(metric='riemann')
 
-def test_FgMDM_fit():
-    """Test Fit of FgMDM"""
-    covset = generate_cov(100,3)
-    labels = np.array([0,1]).repeat(50)
-    mdm = FgMDM(metric='riemann')
-    mdm.fit(covset,labels)
+    # Should raise if metric not string or dict
+    assert_raises(TypeError, FgMDM, metric=42)
+
+    # Should raise if metric is not contain bad keys
+    assert_raises(KeyError, FgMDM, metric={'universe': 42})
+
+    # should works with correct dict
+    FgMDM(metric={'mean': 'riemann', 'distance': 'logeuclid'})
+
 
 def test_FgMDM_predict():
     """Test prediction of FgMDM"""
-    covset = generate_cov(100,3)
-    labels = np.array([0,1]).repeat(50)
-    mdm = FgMDM(metric='riemann')
-    mdm.fit(covset,labels)
-    mdm.predict(covset)
+    covset = generate_cov(100, 3)
+    labels = np.array([0, 1]).repeat(50)
+    fgmdm = FgMDM(metric='riemann')
+    fgmdm.fit(covset, labels)
+    fgmdm.predict(covset)
+    fgmdm.transform(covset)
