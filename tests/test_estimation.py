@@ -43,7 +43,6 @@ def test_ERPcovariances():
     cov.fit_transform(x, labels)
 
 
-
 def test_Xdawncovariances():
     """Test fit ERPCovariances"""
     x = np.random.randn(10, 3, 100)
