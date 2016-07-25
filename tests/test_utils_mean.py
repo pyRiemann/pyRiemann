@@ -3,7 +3,8 @@ import numpy as np
 
 from pyriemann.utils.mean import (mean_riemann, mean_euclid, mean_logeuclid,
                                   mean_logdet, mean_ale, mean_identity,
-                                  mean_covariance)
+                                  mean_covariance, mean_kullback_sym,
+                                  mean_harmonic, mean_wasserstein)
 
 
 def generate_cov(Nt, Ne):
@@ -72,6 +73,24 @@ def test_ald_mean():
     """Test the Ale mean"""
     covmats, diags, A = generate_cov(100, 3)
     C = mean_ale(covmats)
+
+
+def test_kullback_mean():
+    """Test the kullback mean"""
+    covmats, diags, A = generate_cov(100, 3)
+    C = mean_kullback_sym(covmats)
+
+
+def test_harmonic_mean():
+    """Test the harmonic mean"""
+    covmats, diags, A = generate_cov(100, 3)
+    C = mean_harmonic(covmats)
+
+
+def test_wasserstein_mean():
+    """Test the wasserstein mean"""
+    covmats, diags, A = generate_cov(100, 3)
+    C = mean_wasserstein(covmats)
 
 
 def test_mean_covariance_riemann():
