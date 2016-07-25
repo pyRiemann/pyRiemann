@@ -1,7 +1,19 @@
 import numpy as np
 from numpy.testing import assert_array_equal
 from nose.tools import assert_true, assert_raises
-from pyriemann.spatialfilters import Xdawn, CSP
+from pyriemann.spatialfilters import Xdawn, CSP, SPoC
+
+
+def generate_cov(Nt, Ne):
+    """Generate a set of cavariances matrices for test purpose"""
+    rs = np.random.RandomState(1234)
+    diags = 2.0 + 0.1 * rs.randn(Nt, Ne)
+    A = 2*rs.rand(Ne, Ne) - 1
+    A /= np.atleast_2d(np.sqrt(np.sum(A**2, 1))).T
+    covmats = np.empty((Nt, Ne, Ne))
+    for i in range(Nt):
+        covmats[i] = np.dot(np.dot(A, np.diag(diags[i])), A.T)
+    return covmats
 
 
 def test_Xdawn_init():
@@ -38,9 +50,9 @@ def test_Xdawn_baselinecov():
 
 def test_CSP():
     """Test CSP"""
-    n_trials = 100
-    X = np.array([np.identity(3)] * n_trials)
-    labels = np.array([0, 1]).repeat(n_trials // 2)
+    n_trials = 90
+    X = generate_cov(n_trials, 3)
+    labels = np.array([0, 1, 2]).repeat(n_trials // 3)
 
     # Test Init
     csp = CSP()
@@ -53,6 +65,7 @@ def test_CSP():
     assert_true(not csp.log)
     assert_raises(TypeError, CSP, 'foo')
     assert_raises(ValueError, CSP, metric='foo')
+    assert_raises(TypeError, CSP, log='foo')
 
     # Test fit
     csp = CSP()
@@ -69,3 +82,16 @@ def test_CSP():
     assert_array_equal(Xt.shape, [len(X), X.shape[1]])
     assert_raises(TypeError, csp.transform, 'foo')
     assert_raises(ValueError, csp.transform, X[:, 1:, :])  # unequal # of chans
+
+
+def test_Spoc():
+    """Test Spoc"""
+    n_trials = 90
+    X = generate_cov(n_trials, 3)
+    labels = np.random.randn(n_trials)
+
+    # Test Init
+    spoc = SPoC()
+
+    # Test fit
+    spoc.fit(X, labels)

@@ -1,5 +1,5 @@
 from numpy.testing import assert_array_almost_equal, assert_array_equal
-from nose.tools import assert_equal, assert_raises
+from nose.tools import assert_equal
 import numpy as np
 
 from pyriemann.utils.distance import (distance_riemann,
@@ -9,15 +9,8 @@ from pyriemann.utils.distance import (distance_riemann,
                                       distance_kullback,
                                       distance_kullback_right,
                                       distance_kullback_sym,
-                                      distance, _check_distance_method)
-
-
-def test_check_metric():
-    """Test _check_distance_method"""
-    _check_distance_method('riemann')
-    _check_distance_method(distance_riemann)
-    assert_raises(ValueError, _check_distance_method, 666)
-    assert_raises(ValueError, _check_distance_method, '666')
+                                      distance_wasserstein,
+                                      distance)
 
 
 def test_distance_riemann():
@@ -48,6 +41,13 @@ def test_distance_logeuclid():
     A = 2*np.eye(3)
     B = 2*np.eye(3)
     assert_equal(distance_logeuclid(A, B), 0)
+
+
+def test_distance_wasserstein():
+    """Test wasserstein distance"""
+    A = 2*np.eye(3)
+    B = 2*np.eye(3)
+    assert_equal(distance_wasserstein(A, B), 0)
 
 
 def test_distance_logdet():

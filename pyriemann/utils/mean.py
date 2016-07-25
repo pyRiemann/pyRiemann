@@ -176,8 +176,6 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         crit = numpy.linalg.norm(Cnew - C, ord='fro')
 
         C = Cnew
-    if k == maxiter:
-        print('Max iter reach')
     return C
 
 
