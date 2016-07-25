@@ -1,72 +1,87 @@
 import numpy as np
-from pyriemann.clustering import Kmeans,KmeansPerClassTransform
+from nose.tools import assert_raises
+from pyriemann.clustering import Kmeans, KmeansPerClassTransform, Potato
 
-def generate_cov(Nt,Ne):
-    """Generate a set of cavariances matrices for test purpose"""
-    diags = 1.0+0.1*np.random.randn(Nt,Ne)
-    covmats = np.empty((Nt,Ne,Ne))
+
+def generate_cov(Nt, Ne):
+    """Generate a set of cavariances matrices for test purpose."""
+    rs = np.random.RandomState(1234)
+    diags = 2.0 + 0.1 * rs.randn(Nt, Ne)
+    A = 2*rs.rand(Ne, Ne) - 1
+    A /= np.atleast_2d(np.sqrt(np.sum(A**2, 1))).T
+    covmats = np.empty((Nt, Ne, Ne))
     for i in range(Nt):
-        covmats[i] = np.diag(diags[i])
+        covmats[i] = np.dot(np.dot(A, np.diag(diags[i])), A.T)
     return covmats
 
+
 def test_Kmeans_init():
-    """Test init of Kmeans"""
+    """Test Kmeans"""
+    covset = generate_cov(20, 3)
+    labels = np.array([0, 1]).repeat(10)
+
+    # init
     km = Kmeans(2)
-    
-def test_Kmeans_fit():
-    """Test Fit of Kmeans"""
-    covset = generate_cov(20,3)
-    km = Kmeans(2)
-    km.fit(covset)
-    
-def test_Kmeans_fit_with_init():
-    """Test Fit of Kmeans wit matric initialization"""
-    covset = generate_cov(20,3)
-    km = Kmeans(2,init=covset[0:2])
+
+    # fit
     km.fit(covset)
 
-def test_Kmeans_fit_with_y():
-    """Test Fit of Kmeans with a given y"""
-    covset = generate_cov(20,3)
-    labels = np.array([0,1]).repeat(10)
-    km = Kmeans(2)
-    km.fit(covset,y=labels)
-
-def test_Kmeans_fit_parallel():
-    """Test Fit of Kmeans using paralell"""
-    covset = generate_cov(20,3)
-    km = Kmeans(2,n_jobs=2)
+    # fit with init
+    km = Kmeans(2, init=covset[0:2])
     km.fit(covset)
 
-def test_Kmeans_predict():
-    """Test prediction of Kmeans"""
-    covset = generate_cov(20,3)
-    km = Kmeans(2)
-    km.fit(covset)
+    # fit with labels
+    km.fit(covset, y=labels)
+
+    # predict
     km.predict(covset)
-    
-def test_Kmeans_transform():
-    """Test transform of Kmeans"""
-    covset = generate_cov(20,3)
-    km = Kmeans(2)
+
+    # transform
+    km.transform(covset)
+
+    # n_jobs
+    km = Kmeans(2, n_jobs=2)
     km.fit(covset)
-    km.transform(covset)
-    
+
+
 def test_KmeansPCT_init():
-    """Test init of Kmeans PCT"""
+    """Test Kmeans PCT"""
+    covset = generate_cov(20, 3)
+    labels = np.array([0, 1]).repeat(10)
+
+    # init
     km = KmeansPerClassTransform(2)
-    
-def test_KmeansPCT_fit():
-    """Test Fit of Kmeans PCT"""
-    covset = generate_cov(20,3)
-    labels = np.array([0,1]).repeat(10)
-    km = KmeansPerClassTransform(2)
-    km.fit(covset,labels)
-    
-def test_KmeansPCT_transform():
-    """Test Transform of Kmeans PCT"""
-    covset = generate_cov(20,3)
-    labels = np.array([0,1]).repeat(10)
-    km = KmeansPerClassTransform(2)
-    km.fit(covset,labels)
+
+    # fit
+    km.fit(covset, labels)
+
+    # transform
     km.transform(covset)
+
+
+def test_Potato_init():
+    """Test Potato"""
+    covset = generate_cov(20, 3)
+    labels = np.array([0, 1]).repeat(10)
+
+    # init
+    pt = Potato()
+
+    # fit no labels
+    pt.fit(covset)
+
+    # fit with labels
+    assert_raises(ValueError, pt.fit, covset, y=[1])
+    assert_raises(ValueError, pt.fit, covset, y=[0] * 20)
+    assert_raises(ValueError, pt.fit, covset, y=[0, 2, 3] + [1] * 17)
+    pt.fit(covset, labels)
+
+    # transform
+    pt.transform(covset)
+
+    # transform
+    pt.predict(covset)
+
+    # lower threshold
+    pt = Potato(threshold=1)
+    pt.fit(covset)

@@ -304,7 +304,20 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         """
         self._mdm = MDM(metric=self.metric)
 
-        if y is None:
+        if y is not None:
+            if len(y) != len(X):
+                raise ValueError('y must be the same lenght of X')
+
+            classes = numpy.unique(y)
+
+            if len(classes) > 2:
+                raise ValueError('number of classes must be maximum 2')
+
+            if 1 not in classes:
+                raise ValueError('y must contain a positive class')
+
+            y_old = numpy.array(y)
+        else:
             y_old = numpy.ones(len(X))
         # start loop
         for n_iter in range(self.n_iter_max):
