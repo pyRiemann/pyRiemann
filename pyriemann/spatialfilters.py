@@ -7,6 +7,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from .utils.covariance import _check_est
 from .utils.mean import mean_covariance
 from .utils.ajd import ajd_pham
+from .utils.mean import _check_mean_method
 
 
 class Xdawn(BaseEstimator, TransformerMixin):
@@ -189,8 +190,13 @@ class CSP(BaseEstimator, TransformerMixin):
 
     def __init__(self, nfilter=4, metric='euclid', log=True):
         """Init."""
+        if not isinstance(nfilter, int):
+            raise TypeError('nfilter must be an integer')
         self.nfilter = nfilter
+        _check_mean_method(metric)
         self.metric = metric
+        if not isinstance(log, bool):
+            raise TypeError('log must be a boolean')
         self.log = log
 
     def fit(self, X, y):
@@ -210,6 +216,17 @@ class CSP(BaseEstimator, TransformerMixin):
         """
         Nt, Ne, Ns = X.shape
         classes = numpy.unique(y)
+        if not isinstance(X, (numpy.ndarray, list)):
+            raise TypeError('X must be an array.')
+        if not isinstance(y, (numpy.ndarray, list)):
+            raise TypeError('y must be an array.')
+        X, y = numpy.asarray(X), numpy.asarray(y)
+        if X.ndim != 3:
+            raise ValueError('X must be n_trials * n_channels * n_channels')
+        if len(y) != len(X):
+            raise ValueError('X and y must have the same length.')
+        if numpy.squeeze(y).ndim != 1:
+            raise ValueError('y must be of shape (n_trials,).')
 
         # estimate class means
         C = []
@@ -247,7 +264,7 @@ class CSP(BaseEstimator, TransformerMixin):
                 mutual_info.append(mi)
             ix = numpy.argsort(mutual_info)[::-1]
         else:
-            ValueError("Number of classes must be superior or equal at 2.")
+            raise ValueError("Number of classes must be >= 2.")
 
         # sort eigenvectors
         evecs = evecs[:, ix]

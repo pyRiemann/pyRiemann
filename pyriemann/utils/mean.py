@@ -28,7 +28,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     riemannian distance to the mean.
 
     .. math::
-            \mathbf{C} = \\arg\min{(\sum_i \delta_R ( \mathbf{C} , \mathbf{C}_i)^2)}
+            \mathbf{C} = \\arg\min{(\sum_i \delta_R ( \mathbf{C} , \mathbf{C}_i)^2)}  # noqa
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param tol: the tolerance to stop the gradient descent
@@ -58,7 +58,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
 
         for index in range(Nt):
             tmp = numpy.dot(numpy.dot(Cm12, covmats[index, :, :]), Cm12)
-            J += sample_weight[index] * logm(numpy.matrix(tmp))
+            J += sample_weight[index] * logm(tmp)
 
         crit = numpy.linalg.norm(J, ord='fro')
         h = nu * crit
@@ -144,7 +144,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     This is an iterative procedure where the update is:
 
     .. math::
-            \mathbf{C} = \left(\sum_i \left( 0.5 \mathbf{C} + 0.5 \mathbf{C}_i \\right)^{-1} \\right)^{-1}
+            \mathbf{C} = \left(\sum_i \left( 0.5 \mathbf{C} + 0.5 \mathbf{C}_i \\right)^{-1} \\right)^{-1}  # noqa
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param tol: the tolerance to stop the gradient descent
@@ -188,7 +188,7 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
     This is an iterative procedure where the update is [1]:
 
     .. math::
-            \mathbf{K} = \left(\sum_i \left( \mathbf{K} \mathbf{C}_i \mathbf{K} \\right)^{1/2} \\right)^{1/2}
+            \mathbf{K} = \left(\sum_i \left( \mathbf{K} \mathbf{C}_i \mathbf{K} \\right)^{1/2} \\right)^{1/2}  # noqa
 
     with :math:`\mathbf{K} = \mathbf{C}^{1/2}`.
 
@@ -321,24 +321,37 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
 
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
-    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'indentity', 'wasserstein', 'ale',
+    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'indentity', 'wasserstein', 'ale',  # noqa
     'harmonic', 'kullback_sym' or a callable function
     :param sample_weight: the weight of each sample
     :param args: the argument passed to the sub function
     :returns: the mean covariance matrix
 
     """
-    options = {'riemann': mean_riemann,
-               'logeuclid': mean_logeuclid,
-               'euclid': mean_euclid,
-               'identity': mean_identity,
-               'logdet': mean_logdet,
-               'wasserstein': mean_wasserstein,
-               'ale': mean_ale,
-               'harmonic': mean_harmonic,
-               'kullback_sym': mean_kullback_sym}
     if callable(metric):
         C = metric(covmats, sample_weight=sample_weight, *args)
     else:
-        C = options[metric](covmats, sample_weight=sample_weight, *args)
+        C = mean_methods[metric](covmats, sample_weight=sample_weight, *args)
     return C
+
+mean_methods = {'riemann': mean_riemann,
+                'logeuclid': mean_logeuclid,
+                'euclid': mean_euclid,
+                'identity': mean_identity,
+                'logdet': mean_logdet,
+                'wasserstein': mean_wasserstein,
+                'ale': mean_ale,
+                'harmonic': mean_harmonic,
+                'kullback_sym': mean_kullback_sym}
+
+
+def _check_mean_method(method):
+    """checks methods """
+    if isinstance(method, str):
+        if method not in mean_methods.keys():
+            raise ValueError('Unknown mean method')
+        else:
+            method = mean_methods[method]
+    elif not hasattr(method, '__call__'):
+        raise ValueError('mean method must be a function or a string.')
+    return method
