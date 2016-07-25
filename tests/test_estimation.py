@@ -1,16 +1,26 @@
 import numpy as np
 from pyriemann.estimation import (Covariances, ERPCovariances,
-                                  XdawnCovariances, CospCovariances)
+                                  XdawnCovariances, CospCovariances,
+                                  HankelCovariances)
 from nose.tools import assert_raises, assert_equal
 
 
 def test_covariances():
-    """Test fit Covariances"""
+    """Test Covariances"""
     x = np.random.randn(2, 3, 100)
     cov = Covariances()
     cov.fit(x)
     cov.fit_transform(x)
     assert_equal(cov.get_params(), dict(estimator='scm'))
+
+
+def test_Hankelcovariances():
+    """Test Hankel Covariances"""
+    x = np.random.randn(2, 3, 100)
+    cov = HankelCovariances()
+    cov.fit(x)
+    cov.fit_transform(x)
+    assert_equal(cov.get_params(), dict(estimator='scm', delays=4))
 
 
 def test_ERPcovariances():
@@ -23,9 +33,11 @@ def test_ERPcovariances():
     cov.fit_transform(x, labels)
     # assert raise svd
     assert_raises(TypeError, ERPCovariances, svd='42')
-    cov = ERPCovariances(svd=1)
+    cov = ERPCovariances(svd=2)
     assert_equal(cov.get_params(), dict(classes=None, estimator='scm',
-                                        svd=1))
+                                        svd=2))
+    cov.fit_transform(x, labels)
+
 
 
 def test_Xdawncovariances():
