@@ -10,8 +10,6 @@ virtualenv:
 addons:
   apt:
     packages:
-      - python-scipy
-      - python-numpy
       - libatlas-dev
       - libatlas3gf-base
       - libblas-dev
@@ -23,7 +21,7 @@ install:
   - virtualenv --system-site-packages testvenv
   - source testvenv/bin/activate
   - pip install pip --upgrade
-  - pip install coverage codecov nose scikit-learn seaborn six pandas
+  - pip install scipy numpy scikit-learn seaborn six pandas nose coverage codecov
   - python setup.py build install
 
 before_script:
