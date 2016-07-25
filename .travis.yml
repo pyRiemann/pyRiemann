@@ -17,14 +17,13 @@ addons:
       - libblas-dev
       - liblapack-dev
       - python-matplotlib
-      - python-pandas
       - gfortran
       - python-tk
 install:
   - virtualenv --system-site-packages testvenv
   - source testvenv/bin/activate
   - pip install pip --upgrade
-  - pip install coverage codecov nose scikit-learn seaborn six
+  - pip install coverage codecov nose scikit-learn seaborn six pandas
   - python setup.py build install
 
 before_script:
