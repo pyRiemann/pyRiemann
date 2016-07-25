@@ -2,13 +2,15 @@ import numpy as np
 from nose.tools import assert_raises
 from pyriemann.classification import MDM,FgMDM
 
-def generate_cov(Nt,Ne):
-    """Generate a set of cavariances matrices for test purpose"""
-    np.random.seed(1234)
-    diags = 2.0+0.1*np.random.randn(Nt,Ne)
-    covmats = np.empty((Nt,Ne,Ne))
+def generate_cov(Nt, Ne):
+    """Generate a set of cavariances matrices for test purpose."""
+    rs = np.random.RandomState(1234)
+    diags = 2.0 + 0.1 * rs.randn(Nt, Ne)
+    A = 2*rs.rand(Ne, Ne) - 1
+    A /= np.atleast_2d(np.sqrt(np.sum(A**2, 1))).T
+    covmats = np.empty((Nt, Ne, Ne))
     for i in range(Nt):
-        covmats[i] = np.diag(diags[i])
+        covmats[i] = np.dot(np.dot(A, np.diag(diags[i])), A.T)
     return covmats
 
 def test_MDM_init():
