@@ -22,6 +22,10 @@ def test_Hankelcovariances():
     cov.fit_transform(x)
     assert_equal(cov.get_params(), dict(estimator='scm', delays=4))
 
+    cov = HankelCovariances(delays=[1, 2])
+    cov.fit(x)
+    cov.fit_transform(x)
+
 
 def test_ERPcovariances():
     """Test fit ERPCovariances"""
