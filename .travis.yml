@@ -30,5 +30,5 @@ install:
 script: nosetests  --with-coverage --cover-package=pyriemann
 after_success:
   - deactivate
-  - pip install python-coveralls --upgrade
-  - coveralls
+  - pip install codecov
+  - codecov
