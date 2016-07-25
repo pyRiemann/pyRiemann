@@ -23,16 +23,22 @@ def test_metric():
     rm.pairwise(X, X)
     rm.get_metric()
 
+
 def test_permutation_test():
     """Test one way permutation test"""
     covset = generate_cov(10, 30)
     labels = np.array([0, 1]).repeat(5)
+    # base
     p = PermutationTest(10)
     p.test(covset, labels)
-    p = PermutationTest(100)
+    # fit perm
+    p = PermutationTest(10, fit_perms=True)
+    p.test(covset, labels)
+    # unique perms
+    p = PermutationTest(1000)
     p.test(covset, labels)
     p.summary()
-    # p.plot(nbins=2)
+    p.plot(nbins=2)
 
 
 def test_permutation2way_test():
@@ -43,4 +49,7 @@ def test_permutation2way_test():
     p = PermutationTestTwoWay(200)
     p.test(covset, labels2, labels)
     p.summary()
-    # p.plot(nbins=2)
+    p.test(covset, labels2, labels, names=['a', 'b'])
+    p.summary()
+
+    p.plot(nbins=2)

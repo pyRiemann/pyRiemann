@@ -24,8 +24,14 @@ install:
   - virtualenv --system-site-packages testvenv
   - source testvenv/bin/activate
   - pip install pip --upgrade
-  - pip install coverage codecov nose scikit-learn
+  - pip install coverage codecov nose scikit-learn seaborn
   - python setup.py build install
+
+before_script:
+  - "export DISPLAY=:99.0"
+  - "sh -e /etc/init.d/xvfb start"
+  - sleep 3 # give xvfb some time to start
+
 # command to run tests
 script: nosetests  --with-coverage --cover-package=pyriemann
 after_success:
