@@ -180,8 +180,6 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15):
     D = np.reshape(A, (m, nm/m, m)).transpose(1, 0, 2)
     return V, D
 
-import scipy as sp
-
 
 def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
     """Approximate joint diagonalization algorithm UWEDGE.
@@ -238,7 +236,7 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
     improve = 10
 
     if init is None:
-        E, H = sp.linalg.eig(M[:, 0:d])
+        E, H = np.linalg.eig(M[:, 0:d])
         W_est = np.dot(np.diag(1. / np.sqrt(np.abs(E))), H.T)
     else:
         W_est = init
@@ -263,7 +261,7 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
         D0 = B*B.T - np.outer(np.diag(B), np.diag(B))
         A0 = (C1 * B - np.dot(np.diag(np.diag(B)), C1.T)) / (D0 + np.eye(d))
         A0 += np.eye(d)
-        W_est = sp.linalg.solve(A0, W_est)
+        W_est = np.linalg.solve(A0, W_est)
 
         Raux = np.dot(np.dot(W_est, M[:, 0:d]), W_est.T)
         aux = 1./np.sqrt(np.abs(np.diag(Raux)))
