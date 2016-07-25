@@ -6,11 +6,13 @@ from numpy.testing import assert_array_almost_equal
 
 def generate_cov(Nt, Ne):
     """Generate a set of cavariances matrices for test purpose."""
-    np.random.seed(1234)
-    diags = 2.0+0.1*np.random.randn(Nt, Ne)
+    rs = np.random.RandomState(1234)
+    diags = 2.0 + 0.1 * rs.randn(Nt, Ne)
+    A = 2*rs.rand(Ne, Ne) - 1
+    A /= np.atleast_2d(np.sqrt(np.sum(A**2, 1))).T
     covmats = np.empty((Nt, Ne, Ne))
     for i in range(Nt):
-        covmats[i] = np.diag(diags[i])
+        covmats[i] = np.dot(np.dot(A, np.diag(diags[i])), A.T)
     return covmats
 
 
@@ -61,11 +63,12 @@ def test_TangentSpace_inversetransform():
 
 def test_TangentSpace_inversetransform_without_fit():
     """Test inverse transform of Tangent Space without fit."""
-    Nt = 10
-    Ne = 3 * 4 / 2
-    tsv = np.random.randn(Nt, Ne)
+    covset = generate_cov(10, 3)
+    ts = TangentSpace(metric='identity')
+    tsv = ts.fit_transform(covset)
     ts = TangentSpace(metric='riemann')
-    ts.inverse_transform(tsv)
+    cov = ts.inverse_transform(tsv)
+    assert_array_almost_equal(covset, cov)
 
 
 def test_FGDA_init():
