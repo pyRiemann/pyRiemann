@@ -18,11 +18,10 @@ addons:
       - gfortran
       - python-tk
 install:
-  - conda update conda --yes
   - conda create -n testenv --yes pip python=$PYTHON
-  - conda update conda --yes
   - source activate testenv
-  - conda install numpy scipy scikit-learn seaborn six pandas nose coverage codecov
+  - conda install --yes --quiet numpy scipy scikit-learn seaborn six pandas nose coverage
+  - pip install codecov
   - python setup.py build install
 
 # Setup anaconda
