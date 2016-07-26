@@ -43,13 +43,12 @@ def test_permutation_test():
 
 def test_permutation2way_test():
     """Test two way permutation test"""
-    covset = generate_cov(40, 2)
+    covset = generate_cov(40, 3)
     labels = np.array([0, 1]).repeat(20)
-    labels2 = np.array([4, 5, 2, 3]).repeat(10)
+    labels2 = np.array([0, 1, 2, 3]).repeat(10)
     p = PermutationTestTwoWay(200)
     p.test(covset, labels2, labels)
+    p.plot(nbins=10)
     p.summary()
     p.test(covset, labels2, labels, names=['a', 'b'])
     p.summary()
-
-    p.plot(nbins=2)

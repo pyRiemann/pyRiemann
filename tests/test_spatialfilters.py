@@ -73,7 +73,11 @@ def test_CSP():
     csp.fit(X, labels)  # 3 classes
     assert_raises(ValueError, csp.fit, X, labels * 0.)  # 1 class
     assert_raises(ValueError, csp.fit, X, labels[:1])  # unequal # of samples
-    assert_raises(TypeError, csp.fit, X, 'foo')
+    assert_raises(TypeError, csp.fit, X, 'foo')  # y must be an array
+    assert_raises(TypeError, csp.fit, 'foo', labels)  # X must be an array
+    assert_raises(ValueError, csp.fit, X[:, 0], labels)
+    assert_raises(ValueError, csp.fit, X, X)
+
     assert_array_equal(csp.filters_.shape, [X.shape[1], X.shape[1]])
     assert_array_equal(csp.patterns_.shape, [X.shape[1], X.shape[1]])
 
@@ -82,6 +86,8 @@ def test_CSP():
     assert_array_equal(Xt.shape, [len(X), X.shape[1]])
     assert_raises(TypeError, csp.transform, 'foo')
     assert_raises(ValueError, csp.transform, X[:, 1:, :])  # unequal # of chans
+    csp.log = False
+    Xt = csp.transform(X)
 
 
 def test_Spoc():

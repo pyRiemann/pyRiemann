@@ -214,8 +214,6 @@ class CSP(BaseEstimator, TransformerMixin):
         self : CSP instance
             The CSP instance.
         """
-        Nt, Ne, Ns = X.shape
-        classes = numpy.unique(y)
         if not isinstance(X, (numpy.ndarray, list)):
             raise TypeError('X must be an array.')
         if not isinstance(y, (numpy.ndarray, list)):
@@ -228,6 +226,8 @@ class CSP(BaseEstimator, TransformerMixin):
         if numpy.squeeze(y).ndim != 1:
             raise ValueError('y must be of shape (n_trials,).')
 
+        Nt, Ne, Ns = X.shape
+        classes = numpy.unique(y)
         # estimate class means
         C = []
         for c in classes:
