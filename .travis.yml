@@ -18,16 +18,24 @@ addons:
       - gfortran
       - python-tk
 install:
-  - virtualenv --system-site-packages testvenv
-  - source testvenv/bin/activate
-  - pip install pip --upgrade
-  - pip install scipy numpy scikit-learn seaborn six pandas nose coverage codecov
+  - conda update conda --yes
+  - conda create -n testenv --yes pip python=$PYTHON
+  - conda update conda --yes
+  - source activate testenv
+  - conda install numpy scipy scikit-learn seaborn six pandas nose coverage codecov
   - python setup.py build install
 
-before_script:
-  - "export DISPLAY=:99.0"
-  - "sh -e /etc/init.d/xvfb start"
-  - sleep 3 # give xvfb some time to start
+# Setup anaconda
+before_install:
+  - wget -q http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - ./miniconda.sh -b -p /home/travis/miniconda
+  - export PATH=/home/travis/miniconda/bin:$PATH
+  - conda update --yes --quiet conda
+  # We need to create a (fake) display on Travis (allows Mayavi tests to run)
+  - export DISPLAY=:99.0
+  - /sbin/start-stop-daemon --start --quiet --pidfile /tmp/custom_xvfb_99.pid --make-pidfile --background --exec /usr/bin/Xvfb -- :99 -screen 0 1400x900x24 -ac +extension GLX +render -noreset
+
 
 # command to run tests
 script: nosetests  --with-coverage --cover-package=pyriemann
