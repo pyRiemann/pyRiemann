@@ -18,7 +18,7 @@ class Covariances(BaseEstimator, TransformerMixin):
 
     """Estimation of covariance matrix.
 
-    Perform a simple covariance matrix estimation for each givent trial.
+    Perform a simple covariance matrix estimation for each given trial.
 
     Parameters
     ----------
@@ -216,6 +216,22 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         self.baseline_cov = baseline_cov
 
     def fit(self, X, y):
+        """Fit.
+
+        Estimate spatial filters and prototyped response for each classes.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_samples)
+            ndarray of trials.
+        y : ndarray shape (n_trials, 1)
+            labels corresponding to each trial.
+
+        Returns
+        -------
+        self : XdawnCovariances instance
+            The XdawnCovariances instance.
+        """
         self.Xd_ = Xdawn(nfilter=self.nfilter, classes=self.classes,
                          estimator=self.xdawn_estimator,
                          baseline_cov=self.baseline_cov)
@@ -224,24 +240,52 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
+        """Estimate xdawn covariance matrices.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_samples)
+            ndarray of trials.
+
+        Returns
+        -------
+        covmats : ndarray, shape (n_trials, n_c, n_c)
+            ndarray of covariance matrices for each trials.
+        """
         if self.applyfilters:
             X = self.Xd_.transform(X)
 
         covmats = covariances_EP(X, self.P_, estimator=self.estimator)
         return covmats
 
-    def fit_transform(self, X, y):
-        self.fit(X, y)
-        return self.transform(X)
-
 ###############################################################################
 
 
 class CospCovariances(BaseEstimator, TransformerMixin):
 
-    """
-    compute the cospectral covariance matrices
+    """Estimation of cospectral covariance matrix.
 
+    Covariance estimation in the frequency domain. this method will return a
+    4-d array with a covariance matrice estimation for each trial and in each
+    frequency bin of the FFT.
+
+    Parameters
+    ----------
+    window : int (default 128)
+        The lengt of the FFT window used for spectral estimation.
+    overlap : float (default 0.75)
+        The percentage of overlap between window.
+    fmin : float | None , (default None)
+        the minimal frequency to be returned.
+    fmax : float | None , (default None)
+        The maximal frequency to be returned.
+    fs : float | None, (default None)
+        The sampling frequency of the signal.
+
+    See Also
+    --------
+    Covariances
+    HankelCovariances
     """
 
     def __init__(self, window=128, overlap=0.75, fmin=None, fmax=None,
@@ -254,10 +298,38 @@ class CospCovariances(BaseEstimator, TransformerMixin):
         self.fs = fs
 
     def fit(self, X, y=None):
+        """Fit.
+
+        Do nothing. For compatibility purpose.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_samples)
+            ndarray of trials.
+        y : ndarray shape (n_trials, 1)
+            labels corresponding to each trial, not used.
+
+        Returns
+        -------
+        self : CospCovariances instance
+            The CospCovariances instance.
+        """
         return self
 
     def transform(self, X):
+        """Estimate the cospectral covariance matrices.
 
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_samples)
+            ndarray of trials.
+
+        Returns
+        -------
+        covmats : ndarray, shape (n_trials, n_channels, n_channels, n_freq)
+            ndarray of covariance matrices for each trials and for each
+            frequency bin.
+        """
         Nt, Ne, _ = X.shape
         out = []
 
@@ -267,9 +339,6 @@ class CospCovariances(BaseEstimator, TransformerMixin):
             out.append(S.real)
 
         return numpy.array(out)
-
-    def fit_transform(self, X, y=None):
-        return self.transform(X)
 
 
 class HankelCovariances(BaseEstimator, TransformerMixin):
