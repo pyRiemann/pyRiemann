@@ -17,7 +17,8 @@ def tangent_space(covmats, Cref):
     Nt, Ne, Ne = covmats.shape
     Cm12 = invsqrtm(Cref)
     idx = numpy.triu_indices_from(Cref)
-    T = numpy.empty((Nt, Ne * (Ne + 1) / 2))
+    Nf = int(Ne * (Ne + 1) / 2)
+    T = numpy.empty((Nt, Nf))
     coeffs = (numpy.sqrt(2) * numpy.triu(numpy.ones((Ne, Ne)), 1) +
               numpy.eye(Ne))[idx]
     for index in range(Nt):

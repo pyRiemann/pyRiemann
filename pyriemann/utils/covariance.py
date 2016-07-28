@@ -118,7 +118,7 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
     step = int((1.0 - overlap) * window)
     step = max(1, step)
 
-    number_windows = (Ns - window) / step + 1
+    number_windows = int((Ns - window) / step + 1)
     # pre-allocation of memory
     fdata = numpy.zeros((number_windows, Ne, number_freqs), dtype=complex)
     win = numpy.hanning(window)
