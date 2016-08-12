@@ -4,3 +4,4 @@ import channelselection
 import estimation
 # import permutations
 import spatialfilters
+import clustering
