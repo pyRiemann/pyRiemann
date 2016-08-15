@@ -33,11 +33,6 @@ def unique_permutations(elements):
 class BasePermutation():
     """Base object for permutations test"""
 
-    def __init__(self, n_perms=100, random_state=42):
-        """Init."""
-        self.n_perms = n_perms
-        self.random_state = random_state
-
     def test(self, X, y):
         """Test"""
         Npe = multiset_perm_number(y)
