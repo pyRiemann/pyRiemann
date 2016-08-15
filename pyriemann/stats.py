@@ -183,7 +183,7 @@ class PermutationTest(BaseEstimator):
             self.SepIndex.fit(X, y)
 
         Npe = multiset_perm_number(y)
-        self.F_ = numpy.zeros(numpy.min([self.n_perms, Npe]))
+        self.F_ = numpy.zeros(numpy.min([self.n_perms, int(Npe)]))
 
         if Npe <= self.n_perms:
             print("Warning, number of unique permutations : %d" % Npe)

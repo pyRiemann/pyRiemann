@@ -12,6 +12,8 @@ v0.2.5 (Future release)
 
 - Added FlatChannelRemover
 
+- Support for python 3.4 in travis
+
 v0.2.4 (June 2016)
 -------------------
 
