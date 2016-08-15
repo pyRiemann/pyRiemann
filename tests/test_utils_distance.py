@@ -10,7 +10,8 @@ from pyriemann.utils.distance import (distance_riemann,
                                       distance_kullback_right,
                                       distance_kullback_sym,
                                       distance_wasserstein,
-                                      distance, _check_distance_method)
+                                      distance, pairwise_distance,
+                                      _check_distance_method)
 
 
 def test_check_distance_methd():
@@ -110,3 +111,10 @@ def test_distance_generic_custom():
     B = 2*np.eye(3)
     assert_equal(distance(A, B, metric=distance_logeuclid),
                  distance_logeuclid(A, B))
+
+
+def test_pairwise_distance_matrix():
+    """Test pairwise distance"""
+    A = np.array([2*np.eye(3), 3*np.eye(3)])
+    B = np.array([2*np.eye(3), 3*np.eye(3)])
+    pairwise_distance(A, B)

@@ -1,6 +1,5 @@
 import numpy as np
-from pyriemann.stats import (PermutationTest, PermutationTestTwoWay,
-                             RiemannDistanceMetric)
+from pyriemann.stats import PermutationDistance, PermutationModel
 
 
 def generate_cov(Nt, Ne):
@@ -15,40 +14,29 @@ def generate_cov(Nt, Ne):
     return covmats
 
 
-def test_metric():
-    """Test one way permutation test"""
-    X = generate_cov(10, 3)
-    rm = RiemannDistanceMetric()
-    rm.pairwise(X)
-    rm.pairwise(X, X)
-    rm.get_metric()
-
-
-def test_permutation_test():
+def test_permutation_distance():
     """Test one way permutation test"""
     covset = generate_cov(10, 30)
     labels = np.array([0, 1]).repeat(5)
-    # base
-    p = PermutationTest(10)
+    # pairwise
+    p = PermutationDistance(100, mode='pairwise')
     p.test(covset, labels)
-    # fit perm
-    p = PermutationTest(10, fit_perms=True)
+    # t-test
+    p = PermutationDistance(100, mode='ttest')
+    p.test(covset, labels)
+    # f-test
+    p = PermutationDistance(100, mode='ftest')
     p.test(covset, labels)
     # unique perms
-    p = PermutationTest(1000)
+    p = PermutationDistance(1000)
     p.test(covset, labels)
-    p.summary()
     p.plot(nbins=2)
 
 
-def test_permutation2way_test():
-    """Test two way permutation test"""
-    covset = generate_cov(40, 3)
-    labels = np.array([0, 1]).repeat(20)
-    labels2 = np.array([0, 1, 2, 3]).repeat(10)
-    p = PermutationTestTwoWay(200)
-    p.test(covset, labels2, labels)
-    p.plot(nbins=10)
-    p.summary()
-    p.test(covset, labels2, labels, names=['a', 'b'])
-    p.summary()
+def test_permutation_model():
+    """Test one way permutation test"""
+    covset = generate_cov(10, 30)
+    labels = np.array([0, 1]).repeat(5)
+    # pairwise
+    p = PermutationModel(10)
+    p.test(covset, labels)

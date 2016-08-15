@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 
 from sklearn.cross_validation import cross_val_score
 
-from .utils.distance import distance
+from .utils.distance import distance, pairwise_distance
 from .utils.mean import mean_covariance
 from .classification import MDM
 
@@ -28,25 +28,6 @@ def unique_permutations(elements):
             remaining_elements.remove(first_element)
             for sub_permutation in unique_permutations(remaining_elements):
                 yield (first_element,) + sub_permutation
-
-
-def pairwise_distance(X, Y=None, metric='riemann'):
-    """Pairwise distances"""
-    Ntx, _, _ = X.shape
-
-    if Y is None:
-        dist = numpy.zeros((Ntx, Ntx))
-        for i in range(Ntx):
-            for j in range(i + 1, Ntx):
-                dist[i, j] = distance(X[i], X[j], metric)
-        dist += dist.T
-    else:
-        Nty, _, _ = Y.shape
-        dist = numpy.empty((Ntx, Nty))
-        for i in range(Ntx):
-            for j in range(Nty):
-                dist[i, j] = distance(X[i], Y[j], metric)
-    return dist
 
 
 class BasePermutation():
@@ -93,14 +74,18 @@ class BasePermutation():
         """Initial transformation. By default return X."""
         return X
 
-    def plot(self, nbins=20, range=None):
-        plt.plot([self.scores_[0], self.scores_[0]],
-                 [0, self.n_perms], '--r', lw=2)
-        h = plt.hist(self.scores_, nbins, range)
-        plt.xlabel('Score')
-        plt.ylabel('Count')
-        plt.grid()
-        return h
+    def plot(self, nbins=10, range=None, axes=None):
+        if axes is None:
+            fig, axes = plt.subplots(1, 1)
+        axes.hist(self.scores_[1:], nbins, range)
+        x_val = self.scores_[0]
+        y_max = axes.get_ylim()[1]
+        axes.plot([x_val, x_val], [0, y_max], '--r', lw=2)
+        x_max = axes.get_xlim()[1]
+        axes.text(x_max * 0.5, y_max * 0.8, 'p-value: %.3f' % self.p_value_)
+        axes.set_xlabel('Score')
+        axes.set_ylabel('Count')
+        return axes
 
 
 class PermutationModel(BasePermutation):
@@ -132,8 +117,8 @@ class PermutationDistance(BasePermutation):
     Permutation test using a normalized distance to mean.
     """
 
-    def __init__(self, n_perms=100, metric='riemann', mode='ttest', n_jobs=1,
-                 random_state=42):
+    def __init__(self, n_perms=100, metric='riemann', mode='pairwise',
+                 n_jobs=1, random_state=42):
         """Init."""
         self.n_perms = n_perms
         self.mode = mode

@@ -10,6 +10,12 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.2.5 (Future release)
 -------------------
 
+- Added a permutation test for generic scikit-learn estimator
+
+- Stats module refactoring, with distance based t-test and f-test
+
+- Removed two way permutation test
+
 - Added FlatChannelRemover
 
 - Support for python 3.4 in travis

@@ -6,17 +6,20 @@ One Way manova with Frequenty
 One way manova to compare Left vs Right for each frequency.
 """
 import numpy as np
-from pylab import *
+import seaborn as sns
 
+from time import time
+from pylab import plt
 from mne import Epochs, pick_types
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
 from mne.event import find_events
 
-from pyriemann.stats import PermutationTest
+from pyriemann.stats import PermutationDistance
 from pyriemann.estimation import CospCovariances
 
+sns.set_style('whitegrid')
 ###############################################################################
 # Set parameters and read data
 
@@ -54,22 +57,35 @@ covmats = cosp.fit_transform(epochs_data[:, ::4, :])
 fr = np.fft.fftfreq(128)[0:64]*160
 fr = fr[(fr >= fmin) & (fr <= fmax)]
 
+###############################################################################
+# Pairwise distance based permutation test
+###############################################################################
 pv = []
 Fv = []
 # For each frequency bin, estimate the stats
+t_init = time()
 for i in range(covmats.shape[3]):
-    p_test = PermutationTest(5000)
+    p_test = PermutationDistance(1000, metric='riemann', mode='pairwise')
     p, F = p_test.test(covmats[:, :, :, i], labels)
-    print(p_test.summary())
     pv.append(p)
     Fv.append(F[0])
+duration = time() - t_init
 
-plot(fr, Fv, lw=2)
-plt.xlabel('Frequency')
-plt.ylabel('F-value')
+# plot result
+fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
+sig = 0.05
+axes.plot(fr, Fv, lw=2, c='k')
+plt.xlabel('Frequency (Hz)')
+plt.ylabel('Score')
 
-significant = np.array(pv) < 0.001
-plot(fr, significant, 'r', lw=2)
-plt.legend(['F-value', 'p<0.001'])
-plt.grid()
+a = np.where(np.diff(np.array(pv) < sig))[0]
+a = a.reshape(len(a)/2, 2)
+st = (fr[1]-fr[0])/2.0
+for p in a:
+    axes.axvspan(fr[p[0]]-st, fr[p[1]]+st, facecolor='g', alpha=0.5)
+axes.legend(['Score', 'p<%.2f' % sig])
+axes.set_title('Pairwise distance - %.1f sec.' % duration)
+
+sns.despine()
+plt.tight_layout()
 plt.show()

@@ -6,7 +6,10 @@ One Way manova time
 One way manova to compare Left vs Right in time.
 """
 import numpy as np
-from pylab import *
+import seaborn as sns
+
+from time import time
+from pylab import plt
 
 from mne import Epochs, pick_types
 from mne.io import concatenate_raws
@@ -14,8 +17,10 @@ from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
 from mne.event import find_events
 
-from pyriemann.stats import PermutationTest
+from pyriemann.stats import PermutationDistance
 from pyriemann.estimation import Covariances
+
+sns.set_style('whitegrid')
 
 ###############################################################################
 # Set parameters and read data
@@ -59,21 +64,31 @@ time_bins = range(0, Ns-window, step)
 pv = []
 Fv = []
 # For each frequency bin, estimate the stats
+t_init = time()
 for t in time_bins:
     covmats = covest.fit_transform(epochs_data[:, ::1, t:(t+window)])
-    p_test = PermutationTest(5000)
+    p_test = PermutationDistance(1000, metric='riemann', mode='pairwise')
     p, F = p_test.test(covmats, labels)
-    print(p_test.summary())
     pv.append(p)
     Fv.append(F[0])
+duration = time() - t_init
+# plot result
+fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
+sig = 0.05
+times = np.array(time_bins)/float(Fs) + tmin
 
-time = np.array(time_bins)/float(Fs) + tmin
-plot(time, Fv, lw=2)
-plt.xlabel('Time')
-plt.ylabel('F-value')
+axes.plot(times, Fv, lw=2, c='k')
+plt.xlabel('Time (sec)')
+plt.ylabel('Score')
 
-significant = np.array(pv) < 0.001
-plot(time, significant, 'r', lw=2)
-plt.legend(['F-value', 'p<0.001'])
-plt.grid()
+a = np.where(np.diff(np.array(pv) < sig))[0]
+a = a.reshape(len(a)/2, 2)
+st = (times[1] - times[0])/2.0
+for p in a:
+    axes.axvspan(times[p[0]]-st, times[p[1]]+st, facecolor='g', alpha=0.5)
+axes.legend(['Score', 'p<%.2f' % sig])
+axes.set_title('Pairwise distance - %.1f sec.' % duration)
+
+sns.despine()
+plt.tight_layout()
 plt.show()
