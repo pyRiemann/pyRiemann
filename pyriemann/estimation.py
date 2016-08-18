@@ -48,7 +48,7 @@ class Covariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
             ndarray of trials.
-        y : ndarray shape (n_trials, 1)
+        y : ndarray shape (n_trials,)
             labels corresponding to each trial, not used.
 
         Returns
@@ -152,7 +152,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
             ndarray of trials.
-        y : ndarray shape (n_trials, 1)
+        y : ndarray shape (n_trials,)
             labels corresponding to each trial.
 
         Returns
@@ -225,7 +225,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
             ndarray of trials.
-        y : ndarray shape (n_trials, 1)
+        y : ndarray shape (n_trials,)
             labels corresponding to each trial.
 
         Returns
@@ -307,7 +307,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
             ndarray of trials.
-        y : ndarray shape (n_trials, 1)
+        y : ndarray shape (n_trials,)
             labels corresponding to each trial, not used.
 
         Returns
@@ -381,7 +381,7 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
             ndarray of trials.
-        y : ndarray shape (n_trials, 1)
+        y : ndarray shape (n_trials,)
             labels corresponding to each trial, not used.
 
         Returns
@@ -453,9 +453,9 @@ class Shrinkage(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
-            ndarray of trials.
-        y : ndarray shape (n_trials, 1)
-            labels corresponding to each trial, not used.
+            ndarray of Target data.
+        y : ndarray shape (n_trials,)
+            Labels corresponding to each trial, not used.
 
         Returns
         -------
@@ -480,7 +480,7 @@ class Shrinkage(BaseEstimator, TransformerMixin):
 
         covmats = numpy.zeros_like(X)
 
-        for i, x in enumerate(X):
-            covmats[i] = shrunk_covariance(x, self.shrinkage)
+        for ii, x in enumerate(X):
+            covmats[ii] = shrunk_covariance(x, self.shrinkage)
 
         return covmats
