@@ -18,6 +18,7 @@ Covariance Estimation
     XdawnCovariances
     CospCovariances
     HankelCovariances
+    Shrinkage
 
 Classification
 ------------------
