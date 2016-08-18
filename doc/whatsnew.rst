@@ -14,6 +14,8 @@ v0.2.5 (Future release)
 
 - Support for python 3.4 in travis
 
+- Added Shrinkage transformer
+
 v0.2.4 (June 2016)
 -------------------
 
