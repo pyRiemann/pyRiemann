@@ -1,9 +1,13 @@
 import numpy
 import scipy
 
-###############################################################
-# Basic Functions
-###############################################################
+
+def _matrix_operator(Ci, operator):
+    """matrix equivalent of an operator."""
+    eigvals, eigvects = scipy.linalg.eigh(Ci)
+    eigvals = numpy.diag(operator(eigvals))
+    Out = numpy.dot(numpy.dot(eigvects, eigvals), eigvects.T)
+    return Out
 
 
 def sqrtm(Ci):
@@ -19,10 +23,7 @@ def sqrtm(Ci):
     :returns: the matrix square root
 
     """
-    D, V = scipy.linalg.eigh(Ci)
-    D = numpy.diag(numpy.sqrt(D))
-    Out = numpy.dot(numpy.dot(V, D), V.T)
-    return Out
+    return _matrix_operator(Ci, numpy.sqrt)
 
 
 def logm(Ci):
@@ -38,10 +39,7 @@ def logm(Ci):
     :returns: the matrix logarithm
 
     """
-    D, V = scipy.linalg.eigh(Ci)
-    D = numpy.diag(numpy.log(D))
-    Out = numpy.dot(numpy.dot(V, D), V.T)
-    return Out
+    return _matrix_operator(Ci, numpy.log)
 
 
 def expm(Ci):
@@ -57,10 +55,7 @@ def expm(Ci):
     :returns: the matrix exponential
 
     """
-    D, V = scipy.linalg.eigh(Ci)
-    D = numpy.diag(numpy.exp(D))
-    Out = numpy.dot(numpy.dot(V, D), V.T)
-    return Out
+    return _matrix_operator(Ci, numpy.exp)
 
 
 def invsqrtm(Ci):
@@ -76,10 +71,8 @@ def invsqrtm(Ci):
     :returns: the inverse matrix square root
 
     """
-    D, V = scipy.linalg.eigh(Ci)
-    D = numpy.diag(1.0 / numpy.sqrt(D))
-    Out = numpy.dot(numpy.dot(V, D), V.T)
-    return Out
+    isqrt = lambda x: 1. / numpy.sqrt(x)
+    return _matrix_operator(Ci, isqrt)
 
 
 def powm(Ci, alpha):
@@ -96,10 +89,8 @@ def powm(Ci, alpha):
     :returns: the matrix power
 
     """
-    D, V = scipy.linalg.eigh(Ci)
-    D = numpy.diag(D**alpha)
-    Out = numpy.dot(numpy.dot(V, D), V.T)
-    return Out
+    power = lambda x: x**alpha
+    return _matrix_operator(Ci, power)
 
 
 def check_version(library, min_version):
