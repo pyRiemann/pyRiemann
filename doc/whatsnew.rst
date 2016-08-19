@@ -16,6 +16,8 @@ v0.2.5 (Future release)
 
 - Added Shrinkage transformer
 
+- Added Coherences transformer
+
 v0.2.4 (June 2016)
 -------------------
 

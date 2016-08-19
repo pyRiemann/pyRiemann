@@ -2,7 +2,8 @@
 import numpy
 
 from .spatialfilters import Xdawn
-from .utils.covariance import covariances, covariances_EP, cospectrum
+from .utils.covariance import (covariances, covariances_EP, cospectrum,
+                               coherence)
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.covariance import shrunk_covariance
 
@@ -287,6 +288,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
     --------
     Covariances
     HankelCovariances
+    Coherences
     """
 
     def __init__(self, window=128, overlap=0.75, fmin=None, fmax=None,
@@ -338,6 +340,89 @@ class CospCovariances(BaseEstimator, TransformerMixin):
             S = cospectrum(X[i], window=self.window, overlap=self.overlap,
                            fmin=self.fmin, fmax=self.fmax, fs=self.fs)
             out.append(S.real)
+
+        return numpy.array(out)
+
+
+class Coherences(BaseEstimator, TransformerMixin):
+
+    """Estimation of coherences matrix.
+
+    Coherence matrix estimation. this method will return a
+    4-d array with a coherence matrice estimation for each trial and in each
+    frequency bin of the FFT.
+
+    The estimation of coherence matrix is done with matplotlib cohere function.
+
+    Parameters
+    ----------
+    window : int (default 128)
+        The lengt of the FFT window used for spectral estimation.
+    overlap : float (default 0.75)
+        The percentage of overlap between window.
+    fmin : float | None , (default None)
+        the minimal frequency to be returned.
+    fmax : float | None , (default None)
+        The maximal frequency to be returned.
+    fs : float | None, (default None)
+        The sampling frequency of the signal.
+
+    See Also
+    --------
+    Covariances
+    HankelCovariances
+    CospCovariances
+    """
+
+    def __init__(self, window=128, overlap=0.75, fmin=None, fmax=None,
+                 fs=None):
+        """Init."""
+        self.window = _nextpow2(window)
+        self.overlap = overlap
+        self.fmin = fmin
+        self.fmax = fmax
+        self.fs = fs
+
+    def fit(self, X, y=None):
+        """Fit.
+
+        Do nothing. For compatibility purpose.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_samples)
+            ndarray of trials.
+        y : ndarray shape (n_trials,)
+            labels corresponding to each trial, not used.
+
+        Returns
+        -------
+        self : Coherence instance
+            The Coherence instance.
+        """
+        return self
+
+    def transform(self, X):
+        """Estimate the coherences matrices.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_samples)
+            ndarray of trials.
+
+        Returns
+        -------
+        covmats : ndarray, shape (n_trials, n_channels, n_channels, n_freq)
+            ndarray of coherence matrices for each trials and for each
+            frequency bin.
+        """
+        Nt, Ne, _ = X.shape
+        out = []
+
+        for i in range(Nt):
+            S = coherence(X[i], window=self.window, overlap=self.overlap,
+                          fmin=self.fmin, fmax=self.fmax, fs=self.fs)
+            out.append(S)
 
         return numpy.array(out)
 
