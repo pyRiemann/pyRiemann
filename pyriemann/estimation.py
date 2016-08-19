@@ -344,7 +344,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
         return numpy.array(out)
 
 
-class Coherences(BaseEstimator, TransformerMixin):
+class Coherences(CospCovariances):
 
     """Estimation of coherences matrix.
 
@@ -373,34 +373,6 @@ class Coherences(BaseEstimator, TransformerMixin):
     HankelCovariances
     CospCovariances
     """
-
-    def __init__(self, window=128, overlap=0.75, fmin=None, fmax=None,
-                 fs=None):
-        """Init."""
-        self.window = _nextpow2(window)
-        self.overlap = overlap
-        self.fmin = fmin
-        self.fmax = fmax
-        self.fs = fs
-
-    def fit(self, X, y=None):
-        """Fit.
-
-        Do nothing. For compatibility purpose.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
-            ndarray of trials.
-        y : ndarray shape (n_trials,)
-            labels corresponding to each trial, not used.
-
-        Returns
-        -------
-        self : Coherence instance
-            The Coherence instance.
-        """
-        return self
 
     def transform(self, X):
         """Estimate the coherences matrices.

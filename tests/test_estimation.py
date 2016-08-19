@@ -1,7 +1,7 @@
 import numpy as np
 from pyriemann.estimation import (Covariances, ERPCovariances,
                                   XdawnCovariances, CospCovariances,
-                                  HankelCovariances, Shrinkage)
+                                  HankelCovariances, Coherences, Shrinkage)
 from nose.tools import assert_raises, assert_equal
 
 
@@ -59,6 +59,16 @@ def test_Cospcovariances():
     """Test fit CospCovariances"""
     x = np.random.randn(2, 3, 1000)
     cov = CospCovariances()
+    cov.fit(x)
+    cov.fit_transform(x)
+    assert_equal(cov.get_params(), dict(window=128, overlap=0.75, fmin=None,
+                                        fmax=None, fs=None))
+
+
+def test_Coherences():
+    """Test fit CospCovariances"""
+    x = np.random.randn(2, 3, 1000)
+    cov = Coherences()
     cov.fit(x)
     cov.fit_transform(x)
     assert_equal(cov.get_params(), dict(window=128, overlap=0.75, fmin=None,

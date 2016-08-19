@@ -98,6 +98,8 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     n_chan = X.shape[0]
     overlap = int(overlap * window)
     ij = []
+    if fs is None:
+        fs = window
     for i in range(n_chan):
         for j in range(i+1, n_chan):
             ij.append((i, j))
