@@ -28,7 +28,8 @@ def _sharp(A, B, t):
 
     References
     ----------
-    [1] ?
+    [1] Bhatia, R. (2009). Positive definite matrices. Princeton
+    university press.
     """
     # return sqrtm(A).dot(sqrtm(invsqrtm(A).dot(B).dot(invsqrtm(A)))).dot(sqrtm(A))
     return sqrtm(A).dot(powm(invsqrtm(A).dot(B).dot(invsqrtm(A)),
