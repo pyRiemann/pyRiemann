@@ -1,6 +1,6 @@
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 import numpy as np
-from pyriemann.utils.mean import (mean_riemann, mean_euclid,
+from pyriemann.utils.mean import (mean_riemann, mean_euclid, mean_alm,
                                   mean_logeuclid, mean_logdet,
                                   mean_ale, mean_identity, mean_karcher,
                                   mean_wasserstein, mean_covariance)
@@ -30,6 +30,14 @@ def test_karcher_mean():
 
     C = mean_karcher(covmats, theta=0.1, tol=10e-10,
                      maxiter=100, init=np.eye(3))
+
+
+def test_alm_mean():
+    """Test ALM Mean"""
+    covmats = generate_cov(3, 3)
+    C = mean_alm(covmats)
+
+    C = mean_alm(covmats, tol=10e-10, maxiter=100)
 
 
 def test_riemann_mean_with_init():

@@ -1,11 +1,90 @@
 """Mean covariance estimation."""
+from __future__ import print_function
 import numpy as np
-from numpy import average, diag, eye, finfo, ones, zeros, log, log1p, exp, min, max
-from numpy.linalg import inv, norm
-from scipy.linalg import cholesky, schur
-from .base import sqrtm, invsqrtm, logm, expm
+from numpy import average, diag, eye, finfo, ones, zeros, log, log1p, exp, min, max, isnan, zeros_like, mod,  arange
+from numpy.linalg import inv, norm, cond, eig, LinAlgError, lstsq, solve
+from scipy.linalg import cholesky, schur, inv, solve_triangular
+import copy
+
+from .base import sqrtm, invsqrtm, logm, expm, powm
 from .ajd import ajd_pham
 from .distance import distance_riemann
+
+
+def _sharp(A, B, t):
+    """Computes the point G=g(t) of the geodesic between A and B [1]
+
+    .. math::
+            A^{1/2} (A^{-1/2} B A^{-1/2})^t A^{1/2}
+
+    :param A: array, shape=(n_channels, n_channels)
+              positive definite matrix
+    :param B: array, shape=(n_channels, n_channels)
+              positive definite matrix
+    :param t: real
+
+    :returns G: array, shape=(n_channels, n_channels)
+                point of the geodesic
+
+    References
+    ----------
+    [1] ?
+    """
+    # return sqrtm(A).dot(sqrtm(invsqrtm(A).dot(B).dot(invsqrtm(A)))).dot(sqrtm(A))
+    return sqrtm(A).dot(powm(invsqrtm(A).dot(B).dot(invsqrtm(A)),
+                             t)).dot(sqrtm(A))
+
+
+def _sharp_not_functional(A, B, t):
+    """Computes the point G=g(t) of the geodesic between A and B [1]
+
+    .. math::
+            G=g(t),\text{ subject to }g(0)=A, g(1)=B \\
+            A(A^{-1}B)^t = B(B^{-1}A)^{1-t}
+
+    :param A: array, shape=(n_channels, n_channels)
+              positive definite matrix
+    :param B: array, shape=(n_channels, n_channels)
+              positive definite matrix
+    :param t: real
+
+    :returns G: array, shape=(n_channels, n_channels)
+                point of the geodesic
+    :returns mA, mB: real, condition numbers
+
+    References
+    ----------
+    [1] B. Iannazzo, The geometric mean of two matrices from a computational
+    viewpoint, arXiv preprint arXiv:1201.0101, 2011.
+    """
+    mA, mB = cond(A), cond(B)
+    if mA > mB:
+        C = A.copy()
+        A = B.copy()
+        B = C.copy()
+        t = 1-t
+    try:
+        RA, RB = cholesky(A), cholesky(B)
+    except LinAlgError:
+        print ("error in cholesky A")
+        print (A)
+        raise
+    # Z = lstsq(RA.T, RB.T)[0].T
+    # Z = RA.T.dot(inv(RB.T))
+    # Z = solve(RA.T, RB.T).T
+    
+    # How to reproduce the behavior of matlab mrdivide? The algorithm shown
+    # http://fr.mathworks.com/help/matlab/ref/mldivide.html#bt4jslc-6
+    # indicates that it is a triangular solver, but 
+    # opts.UT=true; linsolve(RA, RB, opts) and
+    # Python solve_triangular(RA, RB) produce a different result from
+    # Matlab's mrdivide RB/RA.
+    Z = solve_triangular(RA, RB)
+    # Z[isnan(Z)] = 0.
+    U, V = eig(Z.T.dot(Z))
+    D = diag(U**(t/2)).dot(V.T).dot(RA)
+    G = D.T.dot(D)
+    return G
 
 
 def _get_sample_weight(sample_weight, data):
@@ -21,7 +100,7 @@ def _get_sample_weight(sample_weight, data):
     return sample_weight
 
 
-def mean_karcher(covmats, theta=None, tol=10e-9, maxiter=50, init=None,
+def mean_karcher(covmats, theta=None, tol=10e-9, maxiter=1000, init=None,
                  sample_weight=None):
     """Return Karcher mean using a Richardson-like iteration
 
@@ -80,7 +159,7 @@ def mean_karcher(covmats, theta=None, tol=10e-9, maxiter=50, init=None,
         if theta == None:
             beta, gamma = 0., 0.
             for h in range(Nt):
-                if np.isnan(beta):
+                if isnan(beta):
                     print ('dh[%d]:'%h, dh)
                 ch = max(V[h, :])/min(V[h, :])
                 if ch == 1.:
@@ -115,7 +194,8 @@ def mean_karcher(covmats, theta=None, tol=10e-9, maxiter=50, init=None,
     return C
 
 
-def mean_alm():
+def mean_alm(covmats, tol=1e-14, maxiter=1000,
+             verbose=False, sample_weight=None):
     """Return Ando-Li-Mathias mean 
 
     Find the geometric mean recursively [1], generalizing from:
@@ -131,8 +211,8 @@ def mean_alm():
             
     :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
     :param tol: the tolerance to stop the gradient descent
-    :param maxiter: maximum number of iteration, default 50
-    :param init: covariance matrix used to initialize the iterative procedure. If None the Arithmetic mean is used
+    :param maxiter: maximum number of iteration, default 100
+    :param verbose: indicate when reaching maxiter
     :param sample_weight: the weight of each sample
 
     :returns: Karcher mean covariance matrix
@@ -143,9 +223,34 @@ def mean_alm():
     Appl. 385 (2004), 305-334.
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
+    C = covmats.copy()
+    C_iter = zeros_like(C)
     Nt, Ne, Ne = covmats.shape
-    
-  
+    if Nt == 2:
+        X = _sharp(covmats[0], covmats[1], 0.5)
+        return X
+    else:
+        for k in range(maxiter):
+            for h in range(Nt):
+                s = mod(arange(h, h+Nt-1)+1, Nt)
+                C_iter[h, :, :] = mean_alm(C[s])
+
+            ni=norm(C_iter[0]-C[0], 2)/norm(C[0], 2)
+            # if Nt == 4:
+            #     print ("[", k, "] ni is", ni)
+            #     # print (C[0])
+            #     # print (C_iter[0])
+            #     # print (C_iter[0]-C[0])
+            #     print (norm(C_iter[0]-C[0], 2))
+            #     print (norm(C[0], 2))
+                
+            if ni < tol: break
+            C = copy.deepcopy(C_iter)
+        else:
+            if verbose: print ('Max number of iterations reached')
+        # The arithmetic mean trick
+        return C_iter.mean(axis=0)
+
 
 def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
                  sample_weight=None):
