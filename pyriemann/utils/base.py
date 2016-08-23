@@ -1,10 +1,14 @@
 import numpy
 import scipy
 
+from numpy.core.numerictypes import typecodes
+
 
 def _matrix_operator(Ci, operator):
     """matrix equivalent of an operator."""
-    eigvals, eigvects = scipy.linalg.eigh(Ci)
+    if Ci.dtype.char in typecodes['AllFloat'] and not numpy.isfinite(Ci).all():
+        raise ValueError("Covariance matrices must be positive definite. Add regularization to avoid this error.")
+    eigvals, eigvects = scipy.linalg.eigh(Ci, check_finite=False)
     eigvals = numpy.diag(operator(eigvals))
     Out = numpy.dot(numpy.dot(eigvects, eigvals), eigvects.T)
     return Out
