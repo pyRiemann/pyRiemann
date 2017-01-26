@@ -3,3 +3,4 @@
 .coverage
 .coveralls.yml
 /doc/build
+.idea
