@@ -21,9 +21,9 @@ from pyriemann.classification import (MDM, FgMDM, KNearestNeighbor,
                                       TSclassifier)
 
 
-def generate_cov(Nt, Ne):
+def generate_cov(Nt, Ne, rs=0):
     """Generate a set of cavariances matrices for test purpose."""
-    rs = np.random.RandomState(1234)
+    rs = np.random.RandomState(1234 + rs)
     diags = 2.0 + 0.1 * rs.randn(Nt, Ne)
     A = 2*rs.rand(Ne, Ne) - 1
     A /= np.atleast_2d(np.sqrt(np.sum(A**2, 1))).T
@@ -41,7 +41,7 @@ mdm = MDM(metric='riemann')
 mdm.fit(generate_cov(100, 3), labels)
 estimators = []
 for i in range(0, 10):
-    estimators.append(('mdm%i' % i, MDM(metric='riemann').fit(generate_cov(100, 3), labels)))
+    estimators.append(('mdm%i' % i, MDM(metric='riemann').fit(generate_cov(100, 3, rs=i), labels)))
 
 
 def test_estimator_init():
@@ -68,11 +68,16 @@ def test_predict():
 
     expected_shape = (expected_sml_limit,) + covset[0].shape
 
-    eclf.predict(covset[:12])
+    # when num x is less then estimators or `sml_threshold`
+    num_xs = len(estimators) - 2
+    actual_preds = eclf.predict(covset[:num_xs])
+    assert_equal(actual_preds.shape[0], np.ones((num_xs,)).shape[0], "should make internal x_ a buffer of len sml_limit")
 
-    actual_shape = eclf.x_.shape
-    assert_equal(expected_shape, actual_shape, "should make internal x_ a buffer of len sml_limit")
-    assert_array_equal(eclf.x_[-1], covset[0], "should insert covset[0] to last elem of _x")
+    # when num x is less then estimators or `sml_threshold`
+    num_xs_1 = len(estimators)
+    actual_preds = eclf.predict(covset[num_xs:num_xs + num_xs_1])
+    assert_equal(actual_preds.shape[0], np.ones((num_xs_1,)).shape[0], "should make internal x_ a buffer of len sml_limit")
+
 
 
 

@@ -107,6 +107,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.estimators = estimators
         self.n_jobs = n_jobs
         self.named_estimators = dict(estimators)
+        self.pred_labels_ = None
         self.sml_limit = sml_limit
         self.sml_threshold = len(estimators)
         self.weights_ = weights
@@ -165,7 +166,17 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     def _collect_probas(self, X):
         """Collect results from clf.predict calls. """
-        return np.asarray([clf.predict_proba(X) for clf in self.estimators_])
+        out = []
+        nt, _, _ = X.shape
+
+        for i in range(0, nt):
+            preds = []
+            for clf in self.estimators_:
+                preds.append(clf.predict_proba(np.array([X[i]]))[0])
+            out.append(np.array(preds))
+
+        return np.array(out)
+        # return np.asarray([clf.predict_proba(X) for clf in self.estimators_])
 
     def _predict_proba(self, X):
         """Predict class probabilities for X in 'soft' voting """
@@ -226,6 +237,11 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
     def _append_x(self):
         pass
 
+    def _apply_sml(self, tmp_score):
+        # need to make an [n_clf, self.x_in_]
+
+        return None
+
     def _predict(self, X):
         """Collect results from clf.predict calls. """
 
@@ -233,25 +249,31 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             new_shape = X[0].shape
             new_shape = (self.sml_limit,) + new_shape
             self.x_ = np.zeros(new_shape)
+            self.pred_labels_ = np.zeros((self.sml_limit,), dtype=int)
 
         # Append the new x
         n, _, _ = X.shape
         if n > self.sml_limit:
-            pass
+            raise ValueError('Number of X must be less then or equal to '
+                             '; got %d trials'
+                             % n)
         else:
             self.x_in = self.x_in + n
             self.x_in = self.x_in if self.x_in < self.sml_limit else self.sml_limit
-            self.x_[:-n] = self.x_[n:]
-            for i in range(1, n + 1):
-                self.x_[-i] = X[i - 1]
+            if self.sml_limit <= n:
+                X = X[-self.sml_limit:]
+                n = len(X)
+            else:
+                self.x_[:-n] = self.x_[n:]
+            self.x_[-n:] = X
 
         # loop through X and get probas
-        tmpScore = self._collect_probas(self.x_[-self.x_in:])
-        # tmpScore shape is (nb_estimators, self.x_in, 2) 2 because this is a binary classifier
-        # get second column of first classifier tmpScore[0][:][:, 1]
+        tmp_score = self._collect_probas(self.x_[-self.x_in:])
+        # tmp_score shape is (nb_estimators, self.x_in, 2) 2 because this is a binary classifier
+        # get second column of first classifier tmp_score[0][:][:, 1]
         idx = []
         for i in range(0, self.x_in):
-            vals = tmpScore[i][:][:, 1]
+            vals = tmp_score[i][:][:, 1]
             upper_dist = vals.max() - 0.5
             lower_dist = 0.5 - vals.min()
             if upper_dist > lower_dist:
@@ -259,8 +281,42 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             else:
                 idx.append(np.argmax(vals))
 
-
-        # We want to do index abs(pred[1] - 0.5)
+        # idx is [nEpochs]
+        # get the largest score
+        # In python land, we get index of abs(pred[1] - 0.5), where pred = clf.pred_proba() for each epoch
         # we want the index of the classifier with the largest distance from 0.5 for each epoch
-        print 'hi'
+        ensemble_score = []
+        k = 0
+        for index in idx:
+            ensemble_score.append(tmp_score[k][index][1])
+
+        # ensemble_score is [nEpochs, 1]
+        # for each score, calculate score - 0.5
+        ensemble_label = []
+        for score in ensemble_score:
+            sign = score - 0.5
+            class_label = 0 if sign < 0 else 1
+            ensemble_label.append(class_label)
+        # ensemble_label is [nEpochs, 1]
+        ensemble_label = np.array(ensemble_label)
+
+        # if self.sml_limit <= n:
+        #     ensemble_label = ensemble_label[-self.sml_limit:]
+        # else:
+        #     self.pred_labels_[:-n] = self.pred_labels_[n:]
+        self.pred_labels_[-len(ensemble_label):] = ensemble_label
+
+        if self.x_in > self.sml_threshold:
+            # Apply sml
+            sml_weight = self._apply_sml(tmp_score)
+
+            score = sml_weight.T * ensemble_label
+
+            return score
+        else:
+            weight = (1.0 / self.x_in) * np.ones((self.x_in,))
+
+            score = weight.T * ensemble_label
+
+            return score
         # return np.asarray([clf.predict(X) for clf in self.estimators]).T
