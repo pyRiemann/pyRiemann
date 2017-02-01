@@ -243,10 +243,12 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
     def _apply_sml(self, probas):
         # need to make an [n_clf, self.x_in_]
 
+        # These lines remove classifiers who make only positive predictions or
+        # only negative predictions; it causes issues with the
+        # eigendecomposition if they are not removed; we assign a weighting of
+        # zero to these classifiers
         nTrials, nClfs, _ = probas.shape
-
         hard_preds = np.zeros((nClfs, nTrials,), dtype=int)
-
         for i in range(0, nClfs):
             for j in range(0, nTrials):
                 hard_preds[i][j] = 0 if probas[j][i][0] > 0.5 else 1
@@ -261,10 +263,10 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         v, _ = eig(Q)
 
         weight = np.zeros((nClfs,))
-
         weight[indexes] = v
         weight[np.logical_not(indexes)] = 1.0 / nClfs
         weight /= np.sum(weight)
+
         return weight
 
     def _predict(self, X):
@@ -274,6 +276,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             new_shape = X[0].shape
             new_shape = (self.sml_limit,) + new_shape
             self.x_ = np.zeros(new_shape)
+            self.pred_label_ = np.zeros((self.sml_limit,), dtype=int)
             self.pred_labels_ = np.zeros((self.sml_limit,), dtype=int)
             self.tmp_scores_ = np.zeros((self.sml_limit, len(self.estimators_), 2))
 
@@ -332,17 +335,24 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.tmp_scores_[:-n] = self.tmp_scores_[n:]
         self.tmp_scores_[-n:] = tmp_score
 
+        score = None
         if self.x_in > self.sml_threshold:
             # Apply sml
             sml_weight = self._apply_sml(self.tmp_scores_[-self.x_in:])
 
             score = sml_weight.T * ensemble_label
 
-            return score
         else:
             weight = (1.0 / self.x_in) * np.ones((self.x_in,))
 
             score = weight.T * ensemble_label
 
-            return score
-        # return np.asarray([clf.predict(X) for clf in self.estimators]).T
+        score_label = []
+        for scr in score:
+            class_label = 0 if scr <= 0.0 else 1
+            score_label.append(class_label)
+
+        self.pred_label_[:-n] = self.pred_label_[n:]
+        self.pred_label_[-n:] = np.array(score_label)
+
+        return score
