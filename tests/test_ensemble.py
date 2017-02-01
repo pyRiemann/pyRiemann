@@ -71,12 +71,12 @@ def test_predict():
 
     # when num x is less then estimators or `sml_threshold`
     num_xs = len(estimators) - 2
-    actual_preds = eclf.predict(covset[:num_xs])
+    actual_preds = eclf.predict(covset[10:10 + num_xs])
     assert_equal(actual_preds.shape[0], np.ones((num_xs,)).shape[0], "should make internal x_ a buffer of len sml_limit")
 
     # when num x is less then estimators or `sml_threshold`
     num_xs_1 = len(estimators)
-    actual_preds = eclf.predict(covset[num_xs:num_xs + num_xs_1])
+    actual_preds = eclf.predict(covset[10 + num_xs:10 + num_xs + num_xs_1])
     assert_equal(actual_preds.shape[0], np.ones((num_xs_1,)).shape[0],
                  "should make internal x_ a buffer of len sml_limit")
 

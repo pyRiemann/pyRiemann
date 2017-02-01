@@ -113,6 +113,8 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.sml_limit = sml_limit
         self.sml_threshold = len(estimators)
         self.tmp_scores_ = None
+        self.tmp_hard_scores_ = None
+        self.v_ = None
         self.weights_ = weights
         self.x_ = None
         self.x_in = 0
@@ -240,19 +242,19 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
     def _append_x(self):
         pass
 
-    def _apply_sml(self, probas):
+    def _get_principal_eig(self, hard_preds):
+        Q = np.cov(hard_preds)
+        v, _ = eig(Q)
+        return v
+
+    def _apply_sml(self, hard_preds):
         # need to make an [n_clf, self.x_in_]
 
         # These lines remove classifiers who make only positive predictions or
         # only negative predictions; it causes issues with the
         # eigendecomposition if they are not removed; we assign a weighting of
         # zero to these classifiers
-        nTrials, nClfs, _ = probas.shape
-        hard_preds = np.zeros((nClfs, nTrials,), dtype=int)
-        for i in range(0, nClfs):
-            for j in range(0, nTrials):
-                hard_preds[i][j] = 0 if probas[j][i][0] > 0.5 else 1
-
+        nClfs = len(self.estimators_)
         indexes = np.ones((nClfs,), dtype=bool)
         for i in range(0, nClfs):
             indexes[i] = np.unique(hard_preds[i]).size != 1
@@ -269,6 +271,21 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         return weight
 
+    def _balenced_accuracy(self, pseudo_labels, true_labels):
+        psi = []
+        eta = []
+        pi = []
+        index = true_labels == 1
+        for i in range(0, len(self.estimators_)):
+            _psi = np.sum(pseudo_labels[i] == 1, dtype=float) / np.sum(index, dtype=float)
+            _eta = np.sum(pseudo_labels[i] == 0, dtype=float) / np.sum(np.logical_not(index), dtype=float)
+            _pi = 0.5 * (_psi + _eta)
+            psi.append(_psi)
+            eta.append(_eta)
+            pi.append(_pi)
+
+        return np.array(psi), np.array(eta), np.array(pi)
+
     def _predict(self, X):
         """Collect results from clf.predict calls. """
 
@@ -279,6 +296,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             self.pred_label_ = np.zeros((self.sml_limit,), dtype=int)
             self.pred_labels_ = np.zeros((self.sml_limit,), dtype=int)
             self.tmp_scores_ = np.zeros((self.sml_limit, len(self.estimators_), 2))
+            self.tmp_hard_scores_ = np.zeros((self.sml_limit, len(self.estimators_),), dtype=int)
 
         # Append the new x
         n, _, _ = X.shape
@@ -332,16 +350,22 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.pred_labels_[:-n] = self.pred_labels_[n:]
         self.pred_labels_[-n:] = ensemble_label
 
+        hard_preds = np.zeros((len(self.estimators_), n,), dtype=int)
+        for i in range(0, len(self.estimators_)):
+            for j in range(0, n):
+                hard_preds[i][j] = 0 if tmp_score[j][i][0] > 0.5 else 1
+
         self.tmp_scores_[:-n] = self.tmp_scores_[n:]
         self.tmp_scores_[-n:] = tmp_score
 
-        score = None
+        self.tmp_hard_scores_[:-n] = self.tmp_hard_scores_[n:]
+        self.tmp_hard_scores_[-n:] = hard_preds.T
+
         if self.x_in > self.sml_threshold:
             # Apply sml
-            sml_weight = self._apply_sml(self.tmp_scores_[-self.x_in:])
+            sml_weight = self._apply_sml(self.tmp_hard_scores_[-self.x_in:].T)
 
             score = sml_weight.T * ensemble_label
-
         else:
             weight = (1.0 / self.x_in) * np.ones((self.x_in,))
 
@@ -354,5 +378,13 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         self.pred_label_[:-n] = self.pred_label_[n:]
         self.pred_label_[-n:] = np.array(score_label)
+
+        if self.x_in >= self.sml_threshold and self.v_ is None:
+            v = self._get_principal_eig(self.tmp_hard_scores_[-self.x_in:].T)
+
+            psi, eta, pi = self._balenced_accuracy(self.tmp_hard_scores_[-self.x_in:].T,
+                                                   self.pred_label_[-self.x_in:])
+
+
 
         return score
