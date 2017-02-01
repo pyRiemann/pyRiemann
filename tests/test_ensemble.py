@@ -21,9 +21,9 @@ from pyriemann.classification import (MDM, FgMDM, KNearestNeighbor,
                                       TSclassifier)
 
 
-def generate_cov(Nt, Ne, rs=0):
+def generate_cov(Nt, Ne):
     """Generate a set of cavariances matrices for test purpose."""
-    rs = np.random.RandomState(1234 + rs)
+    rs = np.random.RandomState(1234)
     diags = 2.0 + 0.1 * rs.randn(Nt, Ne)
     A = 2*rs.rand(Ne, Ne) - 1
     A /= np.atleast_2d(np.sqrt(np.sum(A**2, 1))).T
@@ -41,7 +41,8 @@ mdm = MDM(metric='riemann')
 mdm.fit(generate_cov(100, 3), labels)
 estimators = []
 for i in range(0, 10):
-    estimators.append(('mdm%i' % i, MDM(metric='riemann').fit(generate_cov(100, 3, rs=i), labels)))
+    _covset = covset + (i * 0.01 * (1 if i % 2 == 0 else -1))
+    estimators.append(('mdm%i' % i, MDM(metric='riemann').fit(_covset, labels)))
 
 
 def test_estimator_init():

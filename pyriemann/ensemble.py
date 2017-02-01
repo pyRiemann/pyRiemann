@@ -9,6 +9,8 @@ Ensemble Classificatiers
 
 import numpy as np
 
+from scipy.linalg import eig
+
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin, clone
 from sklearn.preprocessing import LabelEncoder
 from sklearn.externals import six
@@ -110,6 +112,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.pred_labels_ = None
         self.sml_limit = sml_limit
         self.sml_threshold = len(estimators)
+        self.tmp_scores_ = None
         self.weights_ = weights
         self.x_ = None
         self.x_in = 0
@@ -237,10 +240,23 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
     def _append_x(self):
         pass
 
-    def _apply_sml(self, tmp_score):
+    def _apply_sml(self, probas):
         # need to make an [n_clf, self.x_in_]
 
-        return None
+        nTrials, nClfs, _ = probas.shape
+
+        hard_preds = np.zeros((nClfs, nTrials,), dtype=int)
+
+        for i in range(0, nClfs):
+            for j in range(0, nTrials):
+                hard_preds[i][j] = 0 if probas[j][i][0] > 0.5 else 1
+
+        Q = np.cov(hard_preds)
+
+        # solve for v, the principal eigen-vector of Q
+        v, _ = eig(Q)
+
+        return np.array([])
 
     def _predict(self, X):
         """Collect results from clf.predict calls. """
@@ -250,6 +266,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             new_shape = (self.sml_limit,) + new_shape
             self.x_ = np.zeros(new_shape)
             self.pred_labels_ = np.zeros((self.sml_limit,), dtype=int)
+            self.tmp_scores_ = np.zeros((self.sml_limit, len(self.estimators_), 2))
 
         # Append the new x
         n, _, _ = X.shape
@@ -268,11 +285,11 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             self.x_[-n:] = X
 
         # loop through X and get probas
-        tmp_score = self._collect_probas(self.x_[-self.x_in:])
+        tmp_score = self._collect_probas(self.x_[-n:])
         # tmp_score shape is (nb_estimators, self.x_in, 2) 2 because this is a binary classifier
         # get second column of first classifier tmp_score[0][:][:, 1]
         idx = []
-        for i in range(0, self.x_in):
+        for i in range(0, n):
             vals = tmp_score[i][:][:, 1]
             upper_dist = vals.max() - 0.5
             lower_dist = 0.5 - vals.min()
@@ -300,15 +317,15 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         # ensemble_label is [nEpochs, 1]
         ensemble_label = np.array(ensemble_label)
 
-        # if self.sml_limit <= n:
-        #     ensemble_label = ensemble_label[-self.sml_limit:]
-        # else:
-        #     self.pred_labels_[:-n] = self.pred_labels_[n:]
-        self.pred_labels_[-len(ensemble_label):] = ensemble_label
+        self.pred_labels_[:-n] = self.pred_labels_[n:]
+        self.pred_labels_[-n:] = ensemble_label
+
+        self.tmp_scores_[:-n] = self.tmp_scores_[n:]
+        self.tmp_scores_[-n:] = tmp_score
 
         if self.x_in > self.sml_threshold:
             # Apply sml
-            sml_weight = self._apply_sml(tmp_score)
+            sml_weight = self._apply_sml(self.tmp_scores_[-self.x_in:])
 
             score = sml_weight.T * ensemble_label
 
