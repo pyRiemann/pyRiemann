@@ -251,12 +251,21 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             for j in range(0, nTrials):
                 hard_preds[i][j] = 0 if probas[j][i][0] > 0.5 else 1
 
-        Q = np.cov(hard_preds)
+        indexes = np.ones((nClfs,), dtype=bool)
+        for i in range(0, nClfs):
+            indexes[i] = np.unique(hard_preds[i]).size != 1
+
+        Q = np.cov(hard_preds[indexes])
 
         # solve for v, the principal eigen-vector of Q
         v, _ = eig(Q)
 
-        return np.array([])
+        weight = np.zeros((nClfs,))
+
+        weight[indexes] = v
+        weight[np.logical_not(indexes)] = 1.0 / nClfs
+        weight /= np.sum(weight)
+        return weight
 
     def _predict(self, X):
         """Collect results from clf.predict calls. """
