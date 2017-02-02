@@ -6,15 +6,17 @@ Ensemble Classificatiers
 # Authors: AJ Keller <aj@pushtheworld.us>
 #
 # License: BSD 3 clause
+from __future__ import division
 
 import numpy as np
 
 from scipy.linalg import eig
 
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin, clone
-from sklearn.preprocessing import LabelEncoder
 from sklearn.externals import six
 from sklearn.externals.joblib import Parallel, delayed
+from sklearn.metrics import confusion_matrix
+from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.validation import has_fit_parameter, check_is_fitted
 
 
@@ -113,7 +115,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.sml_limit = sml_limit
         self.sml_threshold = len(estimators)
         self.tmp_scores_ = None
-        self.tmp_hard_scores_ = None
+        self.tmp_hard_preds_ = None
         self.v_ = None
         self.weights_ = weights
         self.x_ = None
@@ -265,7 +267,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         v, _ = eig(Q)
 
         weight = np.zeros((nClfs,))
-        weight[indexes] = v
+        weight[indexes] = np.real(v)
         weight[np.logical_not(indexes)] = 1.0 / nClfs
         weight /= np.sum(weight)
 
@@ -277,14 +279,49 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         pi = []
         index = true_labels == 1
         for i in range(0, len(self.estimators_)):
-            _psi = np.sum(pseudo_labels[i] == 1, dtype=float) / np.sum(index, dtype=float)
-            _eta = np.sum(pseudo_labels[i] == 0, dtype=float) / np.sum(np.logical_not(index), dtype=float)
+            _psi, _eta = 0.0, 0.0
+            cnf_mat = confusion_matrix(true_labels, pseudo_labels[i])
+            _psi = cnf_mat[1][1] / (cnf_mat[1][1] + cnf_mat[0][1])
+            _eta = cnf_mat[0][0] / (cnf_mat[0][0] + cnf_mat[1][0])
             _pi = 0.5 * (_psi + _eta)
             psi.append(_psi)
             eta.append(_eta)
             pi.append(_pi)
 
         return np.array(psi), np.array(eta), np.array(pi)
+
+    def _estimation_maximization(self, principal_eig_v, hard_preds, pred_label, max_iters=100):
+        q = 0
+        y_ = [pred_label]
+
+        converged = False
+
+        k = len(pred_label)
+        m = len(self.estimators_)
+        # we consider the pred_label to be pred 0
+        q = 1
+        prev_y = pred_label
+        pi = np.zeros((m,))
+        while not converged and q < max_iters:
+            psi, eta, pi = self._balenced_accuracy(hard_preds,
+                                                   prev_y)
+            y = np.zeros((k,), dtype=int)
+            for i in range(0, k):
+                sum = 0.0
+                for j in range(0, m):
+                    log_1 = np.log((psi[j] * eta[j]) / ((1 - psi[j]) * (1 - eta[j])))
+                    log_2 = np.log((psi[j] * (1 - psi[j])) / (eta[j] * (1 - eta[j])))
+                    log_sum = log_1 + log_2
+                    res = hard_preds[j][i] * log_sum
+                    sum += res
+                y[i] = np.sign(sum)
+
+            # Converged?
+            q += 1
+
+        new_v = 2*pi - 1
+
+        return new_v
 
     def _predict(self, X):
         """Collect results from clf.predict calls. """
@@ -296,7 +333,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             self.pred_label_ = np.zeros((self.sml_limit,), dtype=int)
             self.pred_labels_ = np.zeros((self.sml_limit,), dtype=int)
             self.tmp_scores_ = np.zeros((self.sml_limit, len(self.estimators_), 2))
-            self.tmp_hard_scores_ = np.zeros((self.sml_limit, len(self.estimators_),), dtype=int)
+            self.tmp_hard_preds_ = np.zeros((self.sml_limit, len(self.estimators_),), dtype=int)
 
         # Append the new x
         n, _, _ = X.shape
@@ -358,12 +395,12 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.tmp_scores_[:-n] = self.tmp_scores_[n:]
         self.tmp_scores_[-n:] = tmp_score
 
-        self.tmp_hard_scores_[:-n] = self.tmp_hard_scores_[n:]
-        self.tmp_hard_scores_[-n:] = hard_preds.T
+        self.tmp_hard_preds_[:-n] = self.tmp_hard_preds_[n:]
+        self.tmp_hard_preds_[-n:] = hard_preds.T
 
         if self.x_in > self.sml_threshold:
             # Apply sml
-            sml_weight = self._apply_sml(self.tmp_hard_scores_[-self.x_in:].T)
+            sml_weight = self._apply_sml(self.tmp_hard_preds_[-self.x_in:].T)
 
             score = sml_weight.T * ensemble_label
         else:
@@ -380,11 +417,9 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.pred_label_[-n:] = np.array(score_label)
 
         if self.x_in >= self.sml_threshold and self.v_ is None:
-            v = self._get_principal_eig(self.tmp_hard_scores_[-self.x_in:].T)
-
-            psi, eta, pi = self._balenced_accuracy(self.tmp_hard_scores_[-self.x_in:].T,
-                                                   self.pred_label_[-self.x_in:])
-
-
+            v = self._get_principal_eig(hard_preds)
+            self.v_ = self._estimation_maximization(principal_eig_v=v,
+                                                    hard_preds=self.tmp_hard_preds_[-self.x_in:].T,
+                                                    pred_label=self.pred_label_[-self.x_in:])
 
         return score
