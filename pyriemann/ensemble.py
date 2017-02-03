@@ -271,7 +271,11 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         weight[np.logical_not(indexes)] = 1.0 / nClfs
         weight /= np.sum(weight)
 
-        return weight
+        n_weight = np.zeros((1, nClfs))
+
+        n_weight[:] = weight[:]
+
+        return n_weight
 
     def _balenced_accuracy(self, pseudo_labels, true_labels):
         psi = []
@@ -332,7 +336,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             self.x_ = np.zeros(new_shape)
             self.pred_label_ = np.zeros((self.sml_limit,), dtype=int)
             self.pred_labels_ = np.zeros((self.sml_limit,), dtype=int)
-            self.tmp_scores_ = np.zeros((self.sml_limit, len(self.estimators_), 2))
+            self.tmp_scores_ = np.zeros((len(self.estimators_), self.sml_limit,))
             self.tmp_hard_preds_ = np.zeros((self.sml_limit, len(self.estimators_),), dtype=int)
 
         # Append the new x
@@ -356,8 +360,10 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         # tmp_score shape is (nb_estimators, self.x_in, 2) 2 because this is a binary classifier
         # get second column of first classifier tmp_score[0][:][:, 1]
         idx = []
+        temp_tmp_score = np.zeros((n, len(self.estimators_)))
         for i in range(0, n):
             vals = tmp_score[i][:][:, 1]
+            temp_tmp_score[i] = vals
             upper_dist = vals.max() - 0.5
             lower_dist = 0.5 - vals.min()
             if upper_dist > lower_dist:
@@ -366,6 +372,10 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
                 idx.append(np.argmax(vals))
 
         # idx is [nEpochs]
+
+        self.tmp_scores_[:-n] = self.tmp_scores_[n:]
+        self.tmp_scores_[:, -n:] = temp_tmp_score.T
+
         # get the largest score
         # In python land, we get index of abs(pred[1] - 0.5), where pred = clf.pred_proba() for each epoch
         # we want the index of the classifier with the largest distance from 0.5 for each epoch
@@ -392,9 +402,6 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             for j in range(0, n):
                 hard_preds[i][j] = 0 if tmp_score[j][i][0] > 0.5 else 1
 
-        self.tmp_scores_[:-n] = self.tmp_scores_[n:]
-        self.tmp_scores_[-n:] = tmp_score
-
         self.tmp_hard_preds_[:-n] = self.tmp_hard_preds_[n:]
         self.tmp_hard_preds_[-n:] = hard_preds.T
 
@@ -402,15 +409,22 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             # Apply sml
             sml_weight = self._apply_sml(self.tmp_hard_preds_[-self.x_in:].T)
 
-            score = sml_weight.T * ensemble_label
+            need_sum = sml_weight * temp_tmp_score
         else:
-            weight = (1.0 / self.x_in) * np.ones((self.x_in,))
+            weight = (1.0 / len(self.estimators_)) * np.ones((1, len(self.estimators_)))
 
-            score = weight.T * ensemble_label
+            need_sum = weight * temp_tmp_score
+
+        score = []
+
+        for i in range(0, n):
+            score.append(np.sum(need_sum[i]))
+
+        score = np.array(score)
 
         score_label = []
         for scr in score:
-            class_label = 0 if scr <= 0.0 else 1
+            class_label = 0 if scr <= 0.5 else 1
             score_label.append(class_label)
 
         self.pred_label_[:-n] = self.pred_label_[n:]
