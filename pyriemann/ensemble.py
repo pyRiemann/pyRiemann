@@ -284,7 +284,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         index = true_labels == 1
         for i in range(0, len(self.estimators_)):
             _psi, _eta = 0.0, 0.0
-            cnf_mat = confusion_matrix(true_labels, pseudo_labels[i])
+            cnf_mat = confusion_matrix(true_labels, pseudo_labels[i]).astype(float)
             _psi = cnf_mat[1][1] / (cnf_mat[1][1] + cnf_mat[0][1])
             _eta = cnf_mat[0][0] / (cnf_mat[0][0] + cnf_mat[1][0])
             _pi = 0.5 * (_psi + _eta)
@@ -415,12 +415,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
             need_sum = weight * temp_tmp_score
 
-        score = []
-
-        for i in range(0, n):
-            score.append(np.sum(need_sum[i]))
-
-        score = np.array(score)
+        score = np.sum(need_sum, axis=1)
 
         score_label = []
         for scr in score:

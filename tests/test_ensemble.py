@@ -61,6 +61,10 @@ def test_estimator_init():
     assert_raise_message(ValueError, msg, eclf.fit, X, y)
 
 
+def test__balenced_accuracy():
+    pass
+
+
 def test_predict():
     expected_sml_limit = 50
 
