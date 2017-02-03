@@ -2,7 +2,7 @@
 
 import numpy as np
 from sklearn.utils.testing import assert_almost_equal, assert_array_equal
-from sklearn.utils.testing import assert_equal
+from sklearn.utils.testing import assert_equal, assert_true, assert_false
 from sklearn.utils.testing import assert_raise_message
 from sklearn.exceptions import NotFittedError
 from sklearn.linear_model import LogisticRegression
@@ -61,7 +61,80 @@ def test_estimator_init():
     assert_raise_message(ValueError, msg, eclf.fit, X, y)
 
 
-def test__balenced_accuracy():
+def test_balanced_accuracy():
+    nTrials = 10
+    nClfs = 1
+    eclf = StigClassifier(estimators=[])
+
+    # all TP
+    pseudo_labels = np.ones((nClfs, nTrials), dtype=int)
+    true_labels = np.ones((nTrials,), dtype=int)
+
+    psi, eta, pi = eclf._balanced_accuracy(pseudo_labels, true_labels)
+
+    assert_equal(psi[0], 1, "psy should be 1.")
+    assert_true(np.isnan(eta[0]), "eta should be nan")
+    assert_true(np.isnan(pi[0]), "pi should be nan")
+
+    # all TN
+    pseudo_labels = np.zeros((nClfs, nTrials), dtype=int)
+    true_labels = np.zeros((nTrials,), dtype=int)
+
+    psi, eta, pi = eclf._balanced_accuracy(pseudo_labels, true_labels)
+
+    assert_equal(eta[0], 1, "eta should be 1.")
+    assert_true(np.isnan(psi[0]), "psi should be nan")
+    assert_true(np.isnan(pi[0]), "pi should be nan")
+
+    # all FP
+    pseudo_labels = np.ones((nClfs, nTrials), dtype=int)
+    true_labels = np.ones((nTrials,), dtype=int)
+
+    pseudo_labels[0] = 0
+
+    psi, eta, pi = eclf._balanced_accuracy(pseudo_labels, true_labels)
+
+    assert_equal(eta[0], 0.0, "eta should be 0.0 but was %f" % eta[0])
+    assert_true(np.isnan(psi[0]), "psi should be nan")
+    assert_true(np.isnan(pi[0]), "pi should be nan")
+
+    # all FN
+    pseudo_labels = np.ones((nClfs, nTrials), dtype=int)
+    true_labels = np.zeros((nTrials,), dtype=int)
+
+    psi, eta, pi = eclf._balanced_accuracy(pseudo_labels, true_labels)
+
+    assert_equal(psi[0], 0.0, "psi should be 0.0 but was %f" % eta[0])
+    assert_true(np.isnan(eta[0]), "eta should be nan")
+    assert_true(np.isnan(pi[0]), "pi should be nan")
+
+    # onr fn
+    pseudo_labels = np.ones((nClfs, nTrials), dtype=int)
+    true_labels = np.ones((nTrials,), dtype=int)
+
+    pseudo_labels[0][0] = 0
+
+    psi, eta, pi = eclf._balanced_accuracy(pseudo_labels, true_labels)
+
+    assert_equal(psi[0], 1, "psy should be 1.")
+    assert_equal(eta[0], 0.0, "eta should be 0.")
+    assert_equal(pi[0], 0.5, "pi should be 0.5")
+
+    # one fp
+    pseudo_labels = np.ones((nClfs, nTrials), dtype=int)
+    true_labels = np.ones((nTrials,), dtype=int)
+
+    pseudo_labels[1][0] = 0
+
+    psi, eta, pi = eclf._balanced_accuracy(pseudo_labels, true_labels)
+
+    assert_equal(psi[0], 0.9, "psy should be 1.")
+    assert_equal(eta[0], 0.0, "eta should be 0.")
+    assert_equal(pi[0], 0.0, "pi should be 1.")
+
+
+
+
     pass
 
 
@@ -78,12 +151,25 @@ def test_predict():
     actual_preds = eclf.predict(covset[10:10 + num_xs])
     assert_equal(actual_preds.shape[0], np.ones((num_xs,)).shape[0], "should make internal x_ a buffer of len sml_limit")
 
-    # when num x is less then estimators or `sml_threshold`
+    # too good converges fast.
     num_xs_1 = len(estimators)
     actual_preds = eclf.predict(covset[10 + num_xs:10 + num_xs + 40])
     assert_equal(actual_preds.shape[0], np.ones((num_xs_1,)).shape[0],
                  "should make internal x_ a buffer of len sml_limit")
 
+    estimators_bad = []
+    for i in range(0, 10):
+        _covset = covset + (i * 0.02 * (1 if i % 2 == 0 else -1))
+        estimators_bad.append(('mdm%i' % i, MDM(metric='riemann').fit(_covset, labels)))
+
+    eclf_bad = StigClassifier(estimators=estimators_bad,
+                              sml_limit=expected_sml_limit)
+
+    # worse data not fast converge
+    num_xs_1 = len(estimators)
+    actual_preds = eclf_bad.predict(covset[10 + num_xs:10 + num_xs + 40])
+    assert_equal(actual_preds.shape[0], np.ones((num_xs_1,)).shape[0],
+                 "should make internal x_ a buffer of len sml_limit")
 
 def test_majority_label_iris():
     """Check classification by majority label on dataset iris."""

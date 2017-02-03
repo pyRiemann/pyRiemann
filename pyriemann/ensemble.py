@@ -277,22 +277,39 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         return n_weight
 
-    def _balenced_accuracy(self, pseudo_labels, true_labels):
-        psi = []
-        eta = []
-        pi = []
-        index = true_labels == 1
-        for i in range(0, len(self.estimators_)):
-            _psi, _eta = 0.0, 0.0
-            cnf_mat = confusion_matrix(true_labels, pseudo_labels[i]).astype(float)
-            _psi = cnf_mat[1][1] / (cnf_mat[1][1] + cnf_mat[0][1])
-            _eta = cnf_mat[0][0] / (cnf_mat[0][0] + cnf_mat[1][0])
-            _pi = 0.5 * (_psi + _eta)
-            psi.append(_psi)
-            eta.append(_eta)
-            pi.append(_pi)
+    def _balanced_accuracy(self, pseudo_labels, true_labels):
+        """
 
-        return np.array(psi), np.array(eta), np.array(pi)
+        :param pseudo_labels:
+        :param true_labels:
+        :return: tuple (psi, eta, pi)
+            psi: nd.array shape: (pseudo_labels.shape[0],) sensitivity
+            eta: nd.array shape: (pseudo_labels.shape[0],) specificity
+            pi: nd.array shape: (pseudo_labels.shape[0],) balanced accuracy
+        """
+        nClfs, _ = pseudo_labels.shape
+        psi = np.zeros((nClfs,))
+        eta = np.zeros((nClfs,))
+        pi = np.zeros((nClfs,))
+        for i in range(0, nClfs):
+            cnf_mat = confusion_matrix(true_labels, pseudo_labels[i], labels=[0,1]).astype(float)
+
+            # There seems to be a lac of documentation but cnf_mat returns
+            #   np.ndarray:
+            #       ---------
+            #      | TN | FN |
+            #       ---------
+            #      | FP | TP |
+            #       ---------
+            psi[i] = cnf_mat[1][1] / (cnf_mat[1][1] + cnf_mat[0][1])
+            # psi[i] = 1.0 if np.isinf(psi[i]) or np.isnan(psi[i]) else psi[i]
+            eta[i] = cnf_mat[0][0] / (cnf_mat[0][0] + cnf_mat[1][0])
+
+            # eta[i] = 0.0 if np.isinf(eta[i]) or np.isnan(eta[i]) else eta[i]
+
+            pi[i] = 0.5 * (psi[i] + eta[i])
+
+        return psi, eta, pi
 
     def _estimation_maximization(self, principal_eig_v, hard_preds, pred_label, max_iters=100):
         q = 0
@@ -307,7 +324,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         prev_y = pred_label
         pi = np.zeros((m,))
         while not converged and q < max_iters:
-            psi, eta, pi = self._balenced_accuracy(hard_preds,
+            psi, eta, pi = self._balanced_accuracy(hard_preds,
                                                    prev_y)
             y = np.zeros((k,), dtype=int)
             for i in range(0, k):
