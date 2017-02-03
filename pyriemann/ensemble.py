@@ -15,7 +15,7 @@ from scipy.linalg import eig
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin, clone
 from sklearn.externals import six
 from sklearn.externals.joblib import Parallel, delayed
-from sklearn.metrics import confusion_matrix
+from sklearn.metrics import confusion_matrix, precision_score
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.validation import has_fit_parameter, check_is_fitted
 
@@ -301,12 +301,11 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             #       ---------
             #      | FP | TP |
             #       ---------
-            psi[i] = cnf_mat[1][1] / (cnf_mat[1][1] + cnf_mat[0][1])
-            # psi[i] = 1.0 if np.isinf(psi[i]) or np.isnan(psi[i]) else psi[i]
-            eta[i] = cnf_mat[0][0] / (cnf_mat[0][0] + cnf_mat[1][0])
-
-            # eta[i] = 0.0 if np.isinf(eta[i]) or np.isnan(eta[i]) else eta[i]
-
+            psi[i] = precision_score(true_labels, pseudo_labels[i], labels=[0,1])
+            if cnf_mat[0][0] + cnf_mat[1][0] < 0.1:
+                eta[i] = 0.
+            else:
+                eta[i] = cnf_mat[0][0] / (cnf_mat[0][0] + cnf_mat[1][0])
             pi[i] = 0.5 * (psi[i] + eta[i])
 
         return psi, eta, pi

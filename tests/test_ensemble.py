@@ -73,8 +73,8 @@ def test_balanced_accuracy():
     psi, eta, pi = eclf._balanced_accuracy(pseudo_labels, true_labels)
 
     assert_equal(psi[0], 1, "psy should be 1.")
-    assert_true(np.isnan(eta[0]), "eta should be nan")
-    assert_true(np.isnan(pi[0]), "pi should be nan")
+    assert_equal(eta[0], 0, "eta should be 0.")
+    assert_equal(pi[0], 0.5, "pi should be 0.")
 
     # all TN
     pseudo_labels = np.zeros((nClfs, nTrials), dtype=int)
@@ -82,9 +82,9 @@ def test_balanced_accuracy():
 
     psi, eta, pi = eclf._balanced_accuracy(pseudo_labels, true_labels)
 
-    assert_equal(eta[0], 1, "eta should be 1.")
-    assert_true(np.isnan(psi[0]), "psi should be nan")
-    assert_true(np.isnan(pi[0]), "pi should be nan")
+    assert_equal(eta[0], 1.0, "eta should be 1.")
+    assert_equal(psi[0], 0., "psi should be 1.")
+    assert_equal(pi[0], 0.5, "pi should be 1.")
 
     # all FP
     pseudo_labels = np.ones((nClfs, nTrials), dtype=int)
@@ -95,8 +95,8 @@ def test_balanced_accuracy():
     psi, eta, pi = eclf._balanced_accuracy(pseudo_labels, true_labels)
 
     assert_equal(eta[0], 0.0, "eta should be 0.0 but was %f" % eta[0])
-    assert_true(np.isnan(psi[0]), "psi should be nan")
-    assert_true(np.isnan(pi[0]), "pi should be nan")
+    assert_equal(psi[0], 0.0, "psi should be 0.0 but was %f" % eta[0])
+    assert_equal(pi[0], 0.0, "pi should be 0.0 but was %f" % eta[0])
 
     # all FN
     pseudo_labels = np.ones((nClfs, nTrials), dtype=int)
@@ -105,8 +105,8 @@ def test_balanced_accuracy():
     psi, eta, pi = eclf._balanced_accuracy(pseudo_labels, true_labels)
 
     assert_equal(psi[0], 0.0, "psi should be 0.0 but was %f" % eta[0])
-    assert_true(np.isnan(eta[0]), "eta should be nan")
-    assert_true(np.isnan(pi[0]), "pi should be nan")
+    assert_equal(eta[0], 0.0, "eta should be 0.0 but was %f" % eta[0])
+    assert_equal(pi[0], 0.0, "pi should be 0.0 but was %f" % eta[0])
 
     # onr fn
     pseudo_labels = np.ones((nClfs, nTrials), dtype=int)
@@ -124,18 +124,13 @@ def test_balanced_accuracy():
     pseudo_labels = np.ones((nClfs, nTrials), dtype=int)
     true_labels = np.ones((nTrials,), dtype=int)
 
-    pseudo_labels[1][0] = 0
+    true_labels[0] = 0
 
     psi, eta, pi = eclf._balanced_accuracy(pseudo_labels, true_labels)
 
     assert_equal(psi[0], 0.9, "psy should be 1.")
     assert_equal(eta[0], 0.0, "eta should be 0.")
-    assert_equal(pi[0], 0.0, "pi should be 1.")
-
-
-
-
-    pass
+    assert_equal(pi[0], 0.45, "pi should be 1.")
 
 
 def test_predict():
