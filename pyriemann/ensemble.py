@@ -144,7 +144,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         -------
         self : object
         """
-        self._predict(X)
+        self.__predict_and_proba(X)
 
     def predict(self, X):
         """ Predict class labels for X.
@@ -156,20 +156,10 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         Returns
         ----------
-        maj : array-like, shape = [n_trials]
+        sml : array-like, shape = [n_trials]
             Predicted class labels.
         """
-        return self._predict(X)
-        # predictions = self._predict(X)
-        # maj = np.apply_along_axis(lambda x:
-        #                           np.argmax(np.bincount(x,
-        #                                     weights=self.weights_)),
-        #                           axis=1,
-        #                           arr=predictions.astype('int'))
-        #
-        # maj = self.le_.inverse_transform(maj)
-        #
-        # return maj
+        return self.__predict_and_proba(X)[0]
 
     def _collect_predicts(self, X):
         """Collect results from clf.predict calls. """
@@ -179,14 +169,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         """Collect results from clf.predict_probas calls. """
         return np.asarray([clf.predict_proba(X)[:, 1] for clf in self.estimators_])
 
-    def _predict_proba(self, X):
-        """Predict class probabilities for X in 'soft' voting """
-        check_is_fitted(self, 'estimators_')
-        avg = np.average(self._collect_probas(X), axis=0, weights=self.weights)
-        return avg
-
-    @property
-    def predict_proba(self):
+    def predict_proba(self, X):
         """Compute probabilities of possible outcomes for samples in X.
 
         Parameters
@@ -197,10 +180,18 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         Returns
         ----------
-        avg : array-like, shape = [n_samples, n_classes]
+        sml : array-like, shape = [n_samples, n_classes]
             Weighted average probability for each class per sample.
         """
-        return self._predict_proba
+        _, soft_scores = self.__predict_and_proba(X)
+
+        out = np.zeros((len(soft_scores), 2))
+
+        for score, index in soft_scores:
+            out[index][0] = 1. - score
+            out[index][1] = score
+
+        return out
 
     def transform(self, X):
         """Return class labels or probabilities for X for each estimator.
@@ -446,18 +437,27 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         return new_v
 
-    def _predict(self, X):
-        """Collect results from clf.predict calls. """
+    def _init_arrays(self, X):
+        """ Initialize internal arrays to size dependent on input data
 
+        Parameters
+        ----------
+        X : {array-like, sparse matrix}, shape = [n_samples, n_features]
+            Training vectors, where n_samples is the number of samples and
+            n_features is the number of features.
+
+        """
+        new_shape = X[0].shape
+        new_shape = (self.sml_limit,) + new_shape
+        self.x_ = np.zeros(new_shape)
+        self.pred_label_ = np.zeros((self.sml_limit,), dtype=int)
+        self.pred_labels_ = np.zeros((self.sml_limit,), dtype=int)
+        self.tmp_scores_ = np.zeros((len(self.estimators_), self.sml_limit,))
+        self.tmp_hard_preds_ = np.zeros((self.sml_limit, len(self.estimators_),), dtype=int)
+
+    def __predict_and_proba(self, X):
         if self.x_ is None:
-            new_shape = X[0].shape
-            new_shape = (self.sml_limit,) + new_shape
-            self.x_ = np.zeros(new_shape)
-            self.pred_label_ = np.zeros((self.sml_limit,), dtype=int)
-            self.pred_labels_ = np.zeros((self.sml_limit,), dtype=int)
-            self.tmp_scores_ = np.zeros((len(self.estimators_), self.sml_limit,))
-            self.tmp_hard_preds_ = np.zeros((self.sml_limit, len(self.estimators_),), dtype=int)
-
+            self._init_arrays(X)
         # Append the new x
         n = X.shape[0]
         if n > self.sml_limit:
@@ -474,28 +474,18 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
                 self.x_[:-n] = self.x_[n:]
             self.x_[-n:] = X
 
-        # loop through X and get probas
-        tmp_scores = self._collect_probas(self.x_[-n:])
-
-        # tmp_score shape is (nb_estimators, self.x_in, 2) 2 because this is a binary classifier
-        # get second column of first classifier tmp_score[0][:][:, 1]
-
-        indexes = self._find_indexes_of_maxes(tmp_scores)
-
-        self.tmp_scores_[:-n] = self.tmp_scores_[n:]
-        self.tmp_scores_[:, -n:] = tmp_scores
-
-        # get the largest score
-        # In python land, we get index of abs(pred[1] - 0.5), where pred = clf.pred_proba() for each epoch
-        # we want the index of the classifier with the largest distance from 0.5 for each epoch
-        ensemble_scores, ensemble_labels = self._get_ensemble_scores_labels(tmp_scores, indexes)
-
+        # Shift array by n
         self.pred_labels_[:-n] = self.pred_labels_[n:]
-        self.pred_labels_[-n:] = ensemble_labels
+        self.tmp_hard_preds_[:-n] = self.tmp_hard_preds_[n:]
+        self.tmp_scores_[:-n] = self.tmp_scores_[n:]
 
+        tmp_scores = self._collect_probas(self.x_[-n:])
+        indexes = self._find_indexes_of_maxes(tmp_scores)
+        ensemble_scores, ensemble_labels = self._get_ensemble_scores_labels(tmp_scores, indexes)
         hard_preds = self._collect_predicts(self.x_[-n:])
 
-        self.tmp_hard_preds_[:-n] = self.tmp_hard_preds_[n:]
+        self.tmp_scores_[:, -n:] = tmp_scores
+        self.pred_labels_[-n:] = ensemble_labels
         self.tmp_hard_preds_[-n:] = hard_preds.T
 
         if self.x_in > self.sml_threshold:
@@ -508,10 +498,12 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
             need_sum = weight * tmp_scores.T
 
-        score_label = np.asarray([0 if score < 0.5 else 1 for score in np.sum(need_sum, axis=1)])
+        scores_proba = np.sum(need_sum, axis=1)
+
+        scores_predict = np.asarray([0 if score < 0.5 else 1 for score in np.sum(need_sum, axis=1)])
 
         self.pred_label_[:-n] = self.pred_label_[n:]
-        self.pred_label_[-n:] = score_label
+        self.pred_label_[-n:] = scores_predict
 
         if self.x_in > self.sml_threshold:
             v = self._get_principal_eig(hard_preds)
@@ -521,4 +513,4 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
             v_em /= np.sum(v_em)
 
-        return score_label
+        return scores_predict, scores_proba
