@@ -250,8 +250,24 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         return v
 
     def _apply_sml(self, hard_preds):
-        # need to make an [n_clf, self.x_in_]
+        """ Apply sml to hard label predictions of each x for each classifier.
+        Adapted from [1].
 
+        Parameters
+        ----------
+        hard_preds : ndarray, shape (len(self.estimators_), n_trials)
+            ndarray of class labels for each x for each classifier.
+
+        Returns
+        ----------
+        weight : array-like, shape = [1, n_trials]
+            Weight for each classifier
+
+        References
+        ----------
+        [1] N. Waytowich, github.com/nwayt001/Transfer_Learning_Project, "Code for
+        designing and implementing transfer learning for machine learning applications", 2016
+        """
         # These lines remove classifiers who make only positive predictions or
         # only negative predictions; it causes issues with the
         # eigendecomposition if they are not removed; we assign a weighting of
@@ -261,10 +277,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         for i in range(0, nClfs):
             indexes[i] = np.unique(hard_preds[i]).size != 1
 
-        Q = np.cov(hard_preds[indexes])
-
-        # solve for v, the principal eigen-vector of Q
-        v, _ = eig(Q)
+        v = self._get_principal_eig(hard_preds[indexes])
 
         weight = np.zeros((nClfs,))
         weight[indexes] = np.real(v)
@@ -294,8 +307,8 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         for i in range(0, nClfs):
             tn, fp, fn, tp = confusion_matrix(true_labels, pseudo_labels[i], labels=[0, 1]).astype(float).ravel()
 
-            psi[i] = tp / (fp + tp)
-            eta[i] = tn / (tn + fn)
+            psi[i] = tp / (fp + tp) if (fp + tp) > 0 else 0.
+            eta[i] = tn / (tn + fn) if (tn + fn) > 0 else 0.
 
             # There seems to be a lac of documentation but cnf_mat returns
             #   np.ndarray:
