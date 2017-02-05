@@ -171,19 +171,13 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         #
         # return maj
 
-    def _collect_probas(self, X):
+    def _collect_predicts(self, X):
         """Collect results from clf.predict calls. """
-        out = []
-        nt = X.shape[0]
+        return np.asarray([clf.predict(X) for clf in self.estimators_])
 
-        for i in range(0, nt):
-            preds = []
-            for clf in self.estimators_:
-                preds.append(clf.predict_proba(np.array([X[i]]))[0])
-            out.append(np.array(preds))
-
-        return np.array(out)
-        # return np.asarray([clf.predict_proba(X) for clf in self.estimators_])
+    def _collect_probas(self, X):
+        """Collect results from clf.predict_probas calls. """
+        return np.asarray([clf.predict_proba(X)[:, 1] for clf in self.estimators_])
 
     def _predict_proba(self, X):
         """Predict class probabilities for X in 'soft' voting """
@@ -248,6 +242,81 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         Q = np.cov(hard_preds)
         v, _ = eig(Q)
         return v
+
+    def _extract_class_one_scores(self, tmp_scores):
+        """ Extract just the active probability
+
+        Parameters
+        ----------
+        tmp_scores : ndarray, shape (len(self.estimators_), n_trials, n_classes)
+            ndarray predictions for each classifier of each epoch. n_classes is
+            always 2 because this is a binary classifier
+
+        Returns
+        ----------
+        indexes : ndarray, shape (len(self.estimators_), n_trials)
+            Soft score for each clf for each trial
+        """
+        nClfs, nTrials, _ = tmp_scores.shape
+        extracted_tmp_score = np.zeros((nClfs, nTrials))
+        for i in range(nClfs):
+            for j in range(nTrials):
+                extracted_tmp_score[i][j] = tmp_scores[i][j][1]
+        return extracted_tmp_score
+
+    def _find_indexes_of_maxes(self, tmp_scores):
+        """ Get the index of the max (farthest from 0.5) classifer for each
+            trial, epoch, etc...
+
+        Parameters
+        ----------
+        tmp_scores : ndarray, shape (len(self.estimators_), n_trials, n_classes)
+            ndarray predictions for each classifier of each epoch. n_classes is
+            always 2 because this is a binary classifier
+
+        Returns
+        ----------
+        indexes : ndarray, shape (n_trials,)
+            Soft score for each clf for each trial
+        """
+        nClfs, nTrials = tmp_scores.shape
+        idx = np.zeros((nTrials,), dtype=int)
+        for i in range(0, nTrials):
+            val = tmp_scores[:, i].view()
+            upper_dist = val.max() - 0.5
+            lower_dist = 0.5 - val.min()
+            if upper_dist > lower_dist:
+                idx[i] = np.argmax(val)
+            else:
+                idx[i] = np.argmin(val)
+        return idx
+
+    def _get_ensemble_scores_labels(self, tmp_scores, indexes):
+        """ Get the (farthest from 0.5) score and label for each trial, epoch, etc...
+
+        Parameters
+        ----------
+        tmp_scores : ndarray, shape (len(self.estimators_), n_trials, n_classes)
+            ndarray predictions for each classifier of each epoch. n_classes is
+            always 2 because this is a binary classifier
+        indexes : ndarray, shape (n_trials,)
+            Soft score for each clf for each trial
+
+        Returns
+        ----------
+        ensemble_scores: ndarray, shape (n_trials,) dtype=float
+            Soft scores of the max classifier for each trial
+        ensemble_labels: ndarray, shape (n_trials,) dtype=int
+            Hard scores (labels) of the max classifier for each trial
+        """
+        _, n_trials = tmp_scores.shape
+        ensemble_scores = np.zeros((n_trials,), dtype=float)
+        ensemble_labels = np.zeros((n_trials,), dtype=int)
+        for i in range(n_trials):
+            ind = indexes[i]
+            ensemble_scores[i] = tmp_scores[ind][i]
+            ensemble_labels[i] = 0 if tmp_scores[ind][i] < 0.5 else 1
+        return ensemble_scores, ensemble_labels
 
     def _apply_sml(self, hard_preds):
         """ Apply sml to hard label predictions of each x for each classifier.
@@ -406,51 +475,25 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             self.x_[-n:] = X
 
         # loop through X and get probas
-        tmp_score = self._collect_probas(self.x_[-n:])
+        tmp_scores = self._collect_probas(self.x_[-n:])
+
         # tmp_score shape is (nb_estimators, self.x_in, 2) 2 because this is a binary classifier
         # get second column of first classifier tmp_score[0][:][:, 1]
-        idx = []
-        temp_tmp_score = np.zeros((n, len(self.estimators_)))
-        for i in range(0, n):
-            vals = tmp_score[i][:][:, 1]
-            temp_tmp_score[i] = vals
-            upper_dist = vals.max() - 0.5
-            lower_dist = 0.5 - vals.min()
-            if upper_dist > lower_dist:
-                idx.append(np.argmin(vals))
-            else:
-                idx.append(np.argmax(vals))
 
-        # idx is [nEpochs]
+        indexes = self._find_indexes_of_maxes(tmp_scores)
 
         self.tmp_scores_[:-n] = self.tmp_scores_[n:]
-        self.tmp_scores_[:, -n:] = temp_tmp_score.T
+        self.tmp_scores_[:, -n:] = tmp_scores
 
         # get the largest score
         # In python land, we get index of abs(pred[1] - 0.5), where pred = clf.pred_proba() for each epoch
         # we want the index of the classifier with the largest distance from 0.5 for each epoch
-        ensemble_score = []
-        k = 0
-        for index in idx:
-            ensemble_score.append(tmp_score[k][index][1])
-
-        # ensemble_score is [nEpochs, 1]
-        # for each score, calculate score - 0.5
-        ensemble_label = []
-        for score in ensemble_score:
-            sign = score - 0.5
-            class_label = 0 if sign < 0 else 1
-            ensemble_label.append(class_label)
-        # ensemble_label is [nEpochs, 1]
-        ensemble_label = np.array(ensemble_label)
+        ensemble_scores, ensemble_labels = self._get_ensemble_scores_labels(tmp_scores, indexes)
 
         self.pred_labels_[:-n] = self.pred_labels_[n:]
-        self.pred_labels_[-n:] = ensemble_label
+        self.pred_labels_[-n:] = ensemble_labels
 
-        hard_preds = np.zeros((len(self.estimators_), n,), dtype=int)
-        for i in range(0, len(self.estimators_)):
-            for j in range(0, n):
-                hard_preds[i][j] = 0 if tmp_score[j][i][0] > 0.5 else 1
+        hard_preds = self._collect_predicts(self.x_[-n:])
 
         self.tmp_hard_preds_[:-n] = self.tmp_hard_preds_[n:]
         self.tmp_hard_preds_[-n:] = hard_preds.T
@@ -459,21 +502,16 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             # Apply sml
             sml_weight = self._apply_sml(self.tmp_hard_preds_[-self.x_in:].T)
 
-            need_sum = sml_weight * temp_tmp_score
+            need_sum = sml_weight * tmp_scores.T
         else:
             weight = (1.0 / len(self.estimators_)) * np.ones((1, len(self.estimators_)))
 
-            need_sum = weight * temp_tmp_score
+            need_sum = weight * tmp_scores.T
 
-        score = np.sum(need_sum, axis=1)
-
-        score_label = []
-        for scr in score:
-            class_label = 0 if scr <= 0.5 else 1
-            score_label.append(class_label)
+        score_label = np.asarray([0 if score < 0.5 else 1 for score in np.sum(need_sum, axis=1)])
 
         self.pred_label_[:-n] = self.pred_label_[n:]
-        self.pred_label_[-n:] = np.array(score_label)
+        self.pred_label_[-n:] = score_label
 
         if self.x_in > self.sml_threshold:
             v = self._get_principal_eig(hard_preds)
@@ -483,4 +521,4 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
             v_em /= np.sum(v_em)
 
-        return score
+        return score_label

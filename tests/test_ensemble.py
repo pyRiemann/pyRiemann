@@ -167,6 +167,98 @@ def test_balanced_accuracy():
     assert_equal(pi[0], 1.0, "pi should be 1.")
 
 
+def test__collect_probas():
+    expected_sml_limit = 50
+
+    eclf = StigClassifier(estimators=estimators,
+                          sml_limit=expected_sml_limit)
+
+    # when num x is less then estimators or `sml_threshold`
+    num_xs = len(estimators) + 2
+    num_classes = 2
+    probas = eclf._collect_probas(covset[:num_xs])
+    assert_equal(probas.shape, np.empty((len(estimators), num_xs)).shape,
+                 "should make internal x_ a buffer of len sml_limit")
+    assert_true(probas.dtype == float)
+
+
+def test__collect_predicts():
+    expected_sml_limit = 50
+
+    eclf = StigClassifier(estimators=estimators,
+                          sml_limit=expected_sml_limit)
+
+    # when num x is less then estimators or `sml_threshold`
+    num_xs = len(estimators) + 2
+    num_classes = 2
+    probas = eclf._collect_predicts(covset[:num_xs])
+    assert_equal(probas.shape, np.empty((len(estimators), num_xs)).shape,
+                 "should make internal x_ a buffer of len sml_limit")
+    assert_true(probas.dtype == int)
+
+
+def test__get_ensemble_scores_labels():
+    eclf = StigClassifier(estimators=estimators)
+
+    expected_nClfs = 2
+    expected_nTrials = 3
+
+    tmp_scores = np.zeros((expected_nClfs, expected_nTrials))
+
+    rs = np.random.RandomState(1234)
+
+    for i in range(expected_nClfs):
+        for j in range(expected_nTrials):
+            tmp_scores[i][j] = rs.rand()
+
+    max_list = eclf._find_indexes_of_maxes(tmp_scores)
+
+    expected_ensemble_scores = np.zeros((expected_nTrials,), dtype=float)
+    expected_ensemble_labels = np.zeros((expected_nTrials,), dtype=float)
+
+    for i in range(expected_nTrials):
+        ind = max_list[i]
+        expected_ensemble_scores[i] = tmp_scores[ind][i]
+        class_label = 0 if tmp_scores[ind][i] < 0.5 else 1
+        expected_ensemble_labels[i] = class_label
+
+    actual_ensemble_scores, actual_ensemble_labels = eclf._get_ensemble_scores_labels(tmp_scores, max_list)
+
+    assert_almost_equal(actual_ensemble_scores, expected_ensemble_scores)
+    assert_array_equal(actual_ensemble_labels, expected_ensemble_labels)
+
+
+def test__find_indexes_of_maxes():
+
+    eclf = StigClassifier(estimators=estimators)
+
+    expected_nClfs = 2
+    expected_nTrials = 3
+
+    tmp_scores = np.zeros((expected_nClfs, expected_nTrials))
+
+    rs = np.random.RandomState(1234)
+
+    for i in range(expected_nClfs):
+        for j in range(expected_nTrials):
+            tmp_scores[i][j] = rs.rand()
+
+    expected_max_list = np.zeros((expected_nTrials,), dtype=int)
+
+    for trial in range(expected_nTrials):
+        max_ = 0.
+        for clf in range(expected_nClfs):
+            diff = tmp_scores[clf][trial] - 0.5
+            if abs(diff) > max_:
+                max_ = abs(diff)
+                expected_max_list[trial] = clf
+
+    actual_max_list = eclf._find_indexes_of_maxes(tmp_scores)
+
+    assert_array_equal(actual_max_list, expected_max_list,
+                       "expected max list of %s but got %s" % (expected_max_list, actual_max_list))
+
+
 def test_predict():
     expected_sml_limit = 50
 
