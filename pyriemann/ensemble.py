@@ -174,7 +174,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
     def _collect_probas(self, X):
         """Collect results from clf.predict calls. """
         out = []
-        nt, _, _ = X.shape
+        nt = X.shape[0]
 
         for i in range(0, nt):
             preds = []
@@ -292,20 +292,23 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         eta = np.zeros((nClfs,))
         pi = np.zeros((nClfs,))
         for i in range(0, nClfs):
-            cnf_mat = confusion_matrix(true_labels, pseudo_labels[i], labels=[0,1]).astype(float)
+            tn, fp, fn, tp = confusion_matrix(true_labels, pseudo_labels[i], labels=[0, 1]).astype(float).ravel()
+
+            psi[i] = tp / (fp + tp)
+            eta[i] = tn / (tn + fn)
 
             # There seems to be a lac of documentation but cnf_mat returns
             #   np.ndarray:
             #       ---------
-            #      | TN | FN |
+            #      | TN | FP |
             #       ---------
-            #      | FP | TP |
+            #      | FN | TP |
             #       ---------
-            psi[i] = precision_score(true_labels, pseudo_labels[i], labels=[0,1])
-            if cnf_mat[0][0] + cnf_mat[1][0] < 0.1:
-                eta[i] = 0.
-            else:
-                eta[i] = cnf_mat[0][0] / (cnf_mat[0][0] + cnf_mat[1][0])
+            # psi[i] = precision_score(true_labels, pseudo_labels[i], labels=[0,1])
+            # if cnf_mat[0][0] + cnf_mat[1][0] < 0.1:
+            #     eta[i] = 0.
+            # else:
+            #     eta[i] = cnf_mat[0][0] / (cnf_mat[0][0] + cnf_mat[1][0])
             pi[i] = 0.5 * (psi[i] + eta[i])
 
         return psi, eta, pi
@@ -319,7 +322,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         k = len(pred_label)
         m = len(self.estimators_)
         # we consider the pred_label to be pred 0
-        q = 1
+        # q = 1
         prev_y = pred_label
         pi = np.zeros((m,))
         while not converged and q < max_iters:
@@ -328,15 +331,33 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             y = np.zeros((k,), dtype=int)
             for i in range(0, k):
                 sum = 0.0
-                for j in range(0, m):
-                    log_1 = np.log((psi[j] * eta[j]) / ((1 - psi[j]) * (1 - eta[j])))
-                    log_2 = np.log((psi[j] * (1 - psi[j])) / (eta[j] * (1 - eta[j])))
-                    log_sum = log_1 + log_2
-                    res = hard_preds[j][i] * log_sum
-                    sum += res
-                y[i] = np.sign(sum)
+                if psi.max() > 0.9999:
+                    indx = np.argmax(psi)
+                    y[i] = hard_preds[indx][i]
+                elif eta.max() > 0.9999:
+                    indx = np.argmax(eta)
+                    y[i] = hard_preds[indx][i]
+                else:
+                    for j in range(0, m):
+                        if eta[j] < 0.001:
+                            continue
+                        log_1 = np.log((psi[j] * eta[j]) / ((1 - psi[j]) * (1 - eta[j])))
+                        log_2 = np.log((psi[j] * (1 - psi[j])) / (eta[j] * (1 - eta[j])))
+                        log_sum = log_1 + log_2
+                        res = hard_preds[j][i] * log_sum if hard_preds[j][i] > 0 else -1. * log_sum
+                        sum += res
+                    y[i] = 1 if np.sign(sum) >= 0 else 0
+
+            # Store current value
+            y_.append(y)
 
             # Converged?
+            if np.array_equal(y_[q], y_[q + 1]):
+                converged = True
+                break
+
+            prev_y = y
+            # Increment counter
             q += 1
 
         new_v = 2*pi - 1
@@ -356,7 +377,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             self.tmp_hard_preds_ = np.zeros((self.sml_limit, len(self.estimators_),), dtype=int)
 
         # Append the new x
-        n, _, _ = X.shape
+        n = X.shape[0]
         if n > self.sml_limit:
             raise ValueError('Number of X must be less then or equal to '
                              '; got %d trials'
@@ -441,10 +462,12 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.pred_label_[:-n] = self.pred_label_[n:]
         self.pred_label_[-n:] = np.array(score_label)
 
-        if self.x_in >= self.sml_threshold and self.v_ is None:
+        if self.x_in > self.sml_threshold:
             v = self._get_principal_eig(hard_preds)
-            self.v_ = self._estimation_maximization(principal_eig_v=v,
-                                                    hard_preds=self.tmp_hard_preds_[-self.x_in:].T,
-                                                    pred_label=self.pred_label_[-self.x_in:])
+            v_em = self._estimation_maximization(principal_eig_v=v,
+                                                 hard_preds=self.tmp_hard_preds_[-self.x_in:].T,
+                                                 pred_label=self.pred_label_[-self.x_in:])
+
+            v_em /= np.sum(v_em)
 
         return score
