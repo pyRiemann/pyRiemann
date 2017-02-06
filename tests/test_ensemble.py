@@ -259,6 +259,15 @@ def test__find_indexes_of_maxes():
                        "expected max list of %s but got %s" % (expected_max_list, actual_max_list))
 
 
+def test__get_principal_eig():
+
+    eclf = StigClassifier(estimators=estimators_lr)
+
+    none_return = eclf._get_principal_eig(np.array([]))
+
+    assert_equal(none_return, None, "should be none")
+
+
 def test_predict():
     expected_sml_limit = 50
 

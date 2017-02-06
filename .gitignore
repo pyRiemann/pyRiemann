@@ -4,3 +4,7 @@
 .coveralls.yml
 /doc/build
 .idea
+pyriemann.egg-info
+dist
+build
+build/*

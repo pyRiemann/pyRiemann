@@ -231,8 +231,11 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     def _get_principal_eig(self, hard_preds):
         Q = np.cov(hard_preds)
-        v, _ = eig(Q)
-        return v
+        if Q.size > 0 and not np.isnan(Q):
+            v, _ = eig(Q)
+            return v
+        else:
+            return None
 
     def _extract_class_one_scores(self, tmp_scores):
         """ Extract just the active probability
