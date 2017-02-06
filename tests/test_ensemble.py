@@ -75,17 +75,27 @@ for i in range(0, 10):
 
 def test_estimator_init():
 
-    clf = LogisticRegression(random_state=1)
+    clf = LogisticRegression(random_state=1).fit(X, y)
+    msg = 'StigClassifier only works with 2 classes, input estimator has 3 classes'
+    assert_raise_message(ValueError, msg, StigClassifier, [('lr', clf)])
 
-    eclf = StigClassifier(estimators=[('lr', clf)], weights=[1, 2])
-    msg = "Call fit before predict"
-    assert_raise_message(ValueError, msg, eclf.fit, X, y)
+    clf = LogisticRegression(random_state=1)
+    msg = 'Estimator does not have property _classes. Fit classifier first.'
+    assert_raise_message(AttributeError, msg, StigClassifier, [('lr', clf)])
+
+    msg = 'Must use at least one estimator'
+    assert_raise_message(ValueError, msg, StigClassifier, [])
+
+    msg = 'Estimator does not have property _classes. Fit classifier first.'
+    assert_raise_message(AttributeError, msg, StigClassifier, [('lr', 'taco')])
 
 
 def test_balanced_accuracy():
     nTrials = 10
     nClfs = 1
-    eclf = StigClassifier(estimators=[])
+    point_list, label_list = generate_points(num_points)
+    clf = LogisticRegression(random_state=1).fit(point_list, label_list)
+    eclf = StigClassifier(estimators=[('lr', clf)])
 
     # all TP
     pseudo_labels = np.ones((nClfs, nTrials), dtype=int)

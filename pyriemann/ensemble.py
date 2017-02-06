@@ -104,7 +104,9 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
     """
 
     def __init__(self, estimators, sml_limit=200, sml_threshold=32, n_jobs=1):
+        self.classes_ = []
         self.estimators = estimators
+        self.le_ = None
         self.n_jobs = n_jobs
         self.named_estimators = dict(estimators)
         self.pred_labels_ = None
@@ -116,12 +118,22 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.x_ = None
         self.x_in = 0
 
-        check_is_fitted(self, 'estimators')
-
         self.estimators_ = []
 
         for _, clf in self.estimators:
             self.estimators_.append(clf)
+
+        check_is_fitted(self, 'estimators_')
+
+        if len(self.estimators_) == 0:
+            raise ValueError('Must use at least one estimator')
+        else:
+            try:
+                self.classes_ = self.estimators_[0].classes_
+                if len(self.classes_) != 2:
+                    raise ValueError('StigClassifier only works with 2 classes, input estimator has %i classes' % len(self.classes_))
+            except AttributeError:
+                raise AttributeError('Estimator does not have property _classes. Fit classifier first.')
 
     def fit(self, X, y):
         """ Fit the estimators.
@@ -227,7 +239,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     def _get_principal_eig(self, hard_preds):
         Q = np.cov(hard_preds)
-        if Q.size > 0 and not np.isnan(Q):
+        if Q.size > 1:
             v, _ = eig(Q)
             return v
         else:
@@ -305,7 +317,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         for i in range(n_trials):
             ind = indexes[i]
             ensemble_scores[i] = tmp_scores[ind][i]
-            ensemble_labels[i] = 0 if tmp_scores[ind][i] < 0.5 else 1
+            ensemble_labels[i] = self.classes_[0] if tmp_scores[ind][i] < 0.5 else self.classes_[1]
         return ensemble_scores, ensemble_labels
 
     def _apply_sml(self, hard_preds):
@@ -418,7 +430,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
                         log_sum = log_1 + log_2
                         res = hard_preds[j][i] * log_sum if hard_preds[j][i] > 0 else -1. * log_sum
                         sum += res
-                    y[i] = 1 if np.sign(sum) >= 0 else 0
+                    y[i] = self.classes_[0] if np.sign(sum) < 0 else self.classes_[1]
 
             # Store current value
             y_.append(y)
@@ -499,7 +511,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         scores_proba = np.sum(need_sum, axis=1)
 
-        scores_predict = np.asarray([0 if score < 0.5 else 1 for score in np.sum(need_sum, axis=1)])
+        scores_predict = np.asarray([self.classes_[0] if score < 0.5 else self.classes_[0] for score in scores_proba])
 
         self.pred_label_[:-n] = self.pred_label_[n:]
         self.pred_label_[-n:] = scores_predict
