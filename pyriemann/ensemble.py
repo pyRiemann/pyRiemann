@@ -133,7 +133,12 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
                 if len(self.classes_) != 2:
                     raise ValueError('StigClassifier only works with 2 classes, input estimator has %i classes' % len(self.classes_))
             except AttributeError:
-                raise AttributeError('Estimator does not have property _classes. Fit classifier first.')
+                try:
+                    self.classes_ = self.estimators_[0].clf.classes_
+                except AttributeError:
+                    raise AttributeError('Estimator does not have property _classes. Fit classifier first.')
+                except BaseException as e:
+                    raise e
 
     def fit(self, X, y):
         """ Fit the estimators.
@@ -193,11 +198,13 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         """
         _, soft_scores = self.__predict_and_proba(X)
 
-        out = np.zeros((len(soft_scores), 2))
+        out = np.zeros((len(soft_scores), len(self.classes_)))
 
-        for score, index in soft_scores:
+        index = 0
+        for score in soft_scores:
             out[index][0] = 1. - score
             out[index][1] = score
+            index += 1
 
         return out
 

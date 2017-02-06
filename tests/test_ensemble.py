@@ -305,3 +305,32 @@ def test_predict():
     actual_preds = eclf.predict(bad_point_list[:num_xs])
     assert_equal(actual_preds.shape[0], np.ones((num_xs,)).shape[0],
                  "should make preds of len number x's")
+
+def test_predict_proba():
+    expected_sml_limit = 50
+
+    eclf = StigClassifier(estimators=estimators_lr,
+                          sml_limit=expected_sml_limit)
+
+    point_list, label_list = generate_points(num_points)
+
+    expected_shape = (expected_sml_limit,) + point_list[0].shape
+
+    # when num x is less then estimators or `sml_threshold`
+    num_xs = len(estimators) - 2
+    actual_soft_preds = eclf.predict_proba(point_list[:num_xs])
+    assert_equal(actual_soft_preds.shape[0], np.ones((num_xs,)).shape[0], "should produce num_xs predictions")
+    assert_equal(actual_soft_preds.shape[1], 2, "should return a probability for each class")
+
+    # too good converges fast.
+    num_xs_1 = 40
+    actual_soft_preds = eclf.predict_proba(point_list[num_xs:num_xs + num_xs_1])
+    assert_equal(actual_soft_preds.shape[0], np.ones((num_xs_1,)).shape[0], "should produce num_xs_1 predictions")
+    assert_equal(actual_soft_preds.shape[1], 2, "should return a probability for each class")
+
+    # bad data
+    num_xs = 40
+    bad_point_list, _ = generate_points(r=6, Nt=num_points)
+    actual_preds_soft_bad = eclf.predict_proba(bad_point_list[:num_xs])
+    assert_equal(actual_preds_soft_bad.shape[0], np.ones((num_xs,)).shape[0], "should produce num_xs_1 predictions")
+    assert_equal(actual_preds_soft_bad.shape[1], 2, "should return a probability for each class")
