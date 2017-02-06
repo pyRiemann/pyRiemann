@@ -30,30 +30,28 @@ def _parallel_fit_estimator(estimator, X, y, sample_weight):
 
 
 class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
-    """Soft Voting/Majority Rule classifier for unfitted estimators.
+    """Spectral Meta-Learning Classifier for real-time classifier selection of fit estimators.
 
     .. versionadded:: 2.5
-
-    Read more in the :ref:`User Guide <voting_classifier>`.
 
     Parameters
     ----------
     estimators : list of (string, estimator) tuples
-        Invoking the ``fit`` method on the ``VotingClassifier`` will fit clones
-        of those original estimators that will be stored in the class attribute
-        `self.estimators_`.
+        List of independent estimators.
+        "STIG, which is based on the spectral-meta learning approach from Parisi et al 2014,
+        requires that the classifiers in the ensemble make independent errors. It's a common
+        assumption with EEG that data from different subjects trained using the same
+        classifier will produce independent errors. Similarly, different classifiers
+        trained on the same data will produce independent errors (for the most part).
+        So using either classifiers trained on different data or using different classifiers
+        on the same data (or some combination of both) to build you're ensemble should
+        work fine for STIG." He also said six is a good minimum number of estimators.
 
-    voting : str, {'hard', 'soft'} (default='hard')
-        If 'hard', uses predicted class labels for majority rule voting.
-        Else if 'soft', predicts the class label based on the argmax of
-        the sums of the predicted probabilities, which is recommended for
-        an ensemble of well-calibrated classifiers.
-
-    weights : array-like, shape = [n_classifiers], optional (default=`None`)
-        Sequence of weights (`float` or `int`) to weight the occurrences of
-        predicted class labels (`hard` voting) or class probabilities
-        before averaging (`soft` voting). Uses uniform weights if `None`.
-
+        Nick Waytowich - https://github.com/alexandrebarachant/pyRiemann/issues/46#issuecomment-276787910
+    sml_limit : int
+        The number of trials you want to keep in the buffer.
+    sml_threshold : int
+        The minimum number of trials to have in the buffer before applying sml. Nick said 32...
     n_jobs : int, optional (default=1)
         The number of jobs to run in parallel for ``fit``.
         If -1, then the number of jobs is set to the number of cores.
@@ -79,20 +77,18 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
     >>> X = np.array([[-1, -1], [-2, -1], [-3, -2], [1, 1], [2, 1], [3, 2]])
     >>> y = np.array([1, 1, 1, 2, 2, 2])
     >>> eclf1 = StigClassifier(estimators=[
-    ...         ('lr', clf1), ('rf', clf2), ('gnb', clf3)], voting='hard')
-    >>> eclf1 = eclf1.fit(X, y)
+    ...         ('lr', clf1), ('rf', clf2), ('gnb', clf3)])
+    >>> eclf1 = eclf1.fit(X)
     >>> print(eclf1.predict(X))
     [1 1 1 2 2 2]
     >>> eclf2 = StigClassifier(estimators=[
-    ...         ('lr', clf1), ('rf', clf2), ('gnb', clf3)],
-    ...         voting='soft')
-    >>> eclf2 = eclf2.fit(X, y)
+    ...         ('lr', clf1), ('rf', clf2), ('gnb', clf3)])
+    >>> eclf2 = eclf2.fit(X)
     >>> print(eclf2.predict(X))
     [1 1 1 2 2 2]
     >>> eclf3 = StigClassifier(estimators=[
-    ...        ('lr', clf1), ('rf', clf2), ('gnb', clf3)],
-    ...        voting='soft', weights=[2,1,1])
-    >>> eclf3 = eclf3.fit(X, y)
+    ...        ('lr', clf1), ('rf', clf2), ('gnb', clf3)])
+    >>> eclf3 = eclf3.fit(X)
     >>> print(eclf3.predict(X))
     [1 1 1 2 2 2]
     >>>
@@ -107,17 +103,16 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     """
 
-    def __init__(self, estimators, weights=None, n_jobs=1, sml_limit=200):
+    def __init__(self, estimators, sml_limit=200, sml_threshold=32, n_jobs=1):
         self.estimators = estimators
         self.n_jobs = n_jobs
         self.named_estimators = dict(estimators)
         self.pred_labels_ = None
         self.sml_limit = sml_limit
-        self.sml_threshold = len(estimators)
+        self.sml_threshold = sml_threshold
         self.tmp_scores_ = None
         self.tmp_hard_preds_ = None
         self.v_ = None
-        self.weights_ = weights
         self.x_ = None
         self.x_in = 0
 
@@ -145,6 +140,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : object
         """
         self.__predict_and_proba(X)
+        return self
 
     def predict(self, X):
         """ Predict class labels for X.
