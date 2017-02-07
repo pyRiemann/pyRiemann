@@ -333,7 +333,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         Parameters
         ----------
-        hard_preds : ndarray, shape (len(self.estimators_), n_trials)
+        hard_preds : ndarray, dtype=int shape (len(self.estimators_), n_trials)
             ndarray of class labels for each x for each classifier.
 
         Returns
@@ -354,6 +354,9 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         indexes = np.ones((nClfs,), dtype=bool)
         for i in range(0, nClfs):
             indexes[i] = np.unique(hard_preds[i]).size != 1
+
+        if np.sum(indexes) == 1:
+            indexes = np.ones((nClfs,), dtype=bool)
 
         v = self._get_principal_eig(hard_preds[indexes])
 

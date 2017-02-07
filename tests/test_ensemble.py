@@ -1,6 +1,7 @@
 """Testing for the Ensemble"""
 
 import numpy as np
+import mock
 from sklearn.utils.testing import assert_almost_equal, assert_array_equal
 from sklearn.utils.testing import assert_equal, assert_true, assert_false
 from sklearn.utils.testing import assert_raise_message
@@ -176,6 +177,40 @@ def test_balanced_accuracy():
     assert_equal(eta[0], 1.0, "eta should be 0.")
     assert_equal(pi[0], 1.0, "pi should be 1.")
 
+
+@mock.patch('pyriemann.ensemble.StigClassifier._get_principal_eig')
+def test__apply_sml(mock__get_principal_eig):
+    eclf = StigClassifier(estimators=estimators)
+
+    expected_nClfs = len(estimators)
+    expected_nTrials = 32
+
+    rs = np.random.RandomState(1234)
+
+    hard_preds = np.random.randint(0, 2, size=(expected_nClfs, expected_nTrials), dtype=int)
+
+    expected_weight = np.zeros((1, expected_nClfs))
+    expected_weight += 1./expected_nClfs
+
+    mock__get_principal_eig.return_value = np.ones((expected_nClfs,))
+
+    actual_weight = eclf._apply_sml(hard_preds)
+
+    assert_almost_equal(actual_weight, expected_weight, err_msg="expected %s but got %s" % (expected_weight, actual_weight))
+
+    # All the same but one
+    mock__get_principal_eig.reset()
+    hard_preds = np.ones((expected_nClfs, expected_nTrials), dtype=int)
+
+    hard_preds[0][1] = False
+
+    actual_weight = eclf._apply_sml(hard_preds)
+
+    expected_weight = np.zeros((1, expected_nClfs))
+    expected_weight += 1. / expected_nClfs
+    assert_almost_equal(actual_weight, expected_weight, err_msg="expected %s but got %s" % (expected_weight, actual_weight))
+
+    mock__get_principal_eig.assert_called_with(hard_preds)
 
 def test__collect_probas():
     expected_sml_limit = 50
