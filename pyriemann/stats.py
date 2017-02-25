@@ -99,7 +99,7 @@ class BasePermutation():
 
         Parameters
         ----------
-        nbins : integer or array_like or ‘auto’, optional
+        nbins : integer or array_like or 'auto', optional
             If an integer is given, bins + 1 bin edges are returned,
             consistently with numpy.histogram() for numpy version >= 1.3.
             Unequally spaced bins are supported if bins is a sequence.
