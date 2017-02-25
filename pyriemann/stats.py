@@ -274,8 +274,8 @@ class PermutationDistance(BasePermutation):
 
     References
     --------
-    [1] Anderson, Marti J. "A new method for non‐parametric multivariate
-        analysis of variance." Austral ecology 26.1 (2001): 32-46.
+    [1] Anderson, J. "A new method for non-parametric multivariate analysis of
+        variance." Austral ecology. 2001.
     """
 
     def __init__(self, n_perms=100, metric='riemann', mode='pairwise',
