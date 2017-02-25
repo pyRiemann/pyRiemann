@@ -12,10 +12,10 @@ from .classification import MDM
 
 
 def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
-                metric='riemann', max_iter=100, tol=1e-4):
+                metric='riemann', max_iter=100, tol=1e-4, n_jobs=1):
     """helper to fit a single run of centroid."""
     # init random state if provided
-    mdm = MDM(metric=metric)
+    mdm = MDM(metric=metric, n_jobs=n_jobs)
     squared_nomrs = [numpy.linalg.norm(x, ord='fro')**2 for x in X]
     mdm.covmeans_ = _init_centroids(X, n_clusters, init,
                                     random_state=random_state,
@@ -139,7 +139,8 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
                                                random_state=self.seed,
                                                metric=self.metric,
                                                max_iter=self.max_iter,
-                                               tol=self.tol)
+                                               tol=self.tol,
+                                               n_jobs=self.n_jobs)
         else:
             numpy.random.seed(self.seed)
             seeds = numpy.random.randint(
@@ -164,7 +165,8 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
                                          random_state=seed,
                                          metric=self.metric,
                                          max_iter=self.max_iter,
-                                         tol=self.tol)
+                                         tol=self.tol,
+                                         n_jobs=1)
                     for seed in seeds)
                 labels, inertia, mdm = zip(*res)
 
@@ -241,7 +243,7 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         """transform."""
-        mdm = MDM(metric=self.metric)
+        mdm = MDM(metric=self.metric, n_jobs=self.km.n_jobs)
         mdm.covmeans_ = self.covmeans_
         return mdm._predict_distances(X)
 
