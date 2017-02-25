@@ -21,7 +21,7 @@ from mne.decoding import CSP
 
 # pyriemann import
 from pyriemann.classification import MDM, TSclassifier
-from pyriemann.estimation import covariances
+from pyriemann.estimation import Covariances
 
 # sklearn imports
 from sklearn.cross_validation import cross_val_score, KFold
@@ -65,7 +65,7 @@ cv = KFold(len(labels), 10, shuffle=True, random_state=42)
 epochs_data_train = 1e6*epochs.get_data()
 
 # compute covariance matrices
-cov_data_train = covariances(epochs_data_train)
+cov_data_train = Covariances().transform(epochs_data_train)
 
 ###############################################################################
 # Classification with Minimum distance to mean

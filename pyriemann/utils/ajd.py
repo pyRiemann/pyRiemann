@@ -86,7 +86,7 @@ def rjd(X, eps=1e-8, n_iter_max=1000):
                     V[:, p] = c * V[:, p] + s * V[:, q]
                     V[:, q] = c * V[:, q] - s * tmp
 
-    D = np.reshape(A, (m, nm/m, m)).transpose(1, 0, 2)
+    D = np.reshape(A, (m, int(nm / m), m)).transpose(1, 0, 2)
     return V, D
 
 
@@ -135,7 +135,7 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15):
     # init variables
     m, nm = A.shape
     V = np.eye(m)
-    epsi = m * (m - 1) * eps
+    epsi = m * (m - 1.) * eps
 
     for it in range(n_iter_max):
         decr = 0
@@ -155,17 +155,17 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15):
                 omega = np.sqrt(omega12*omega21)
 
                 tmp = np.sqrt(omega21/omega12)
-                tmp1 = (tmp*g12 + g21)/(omega + 1)
-                tmp2 = (tmp*g12 - g21)/np.max(omega - 1, 1e-9)
+                tmp1 = (tmp*g12 + g21) // (omega + 1.)
+                tmp2 = (tmp*g12 - g21) // np.max([omega - 1., 1e-9])
 
                 h12 = tmp1 + tmp2
                 h21 = np.conj((tmp1 - tmp2)/tmp)
 
                 decr = decr + nmat*(g12 * np.conj(h12) + g21 * h21) / 2.0
 
-                tmp = 1 + 1.j * 0.5 * np.imag(h12 * h21)
+                tmp = 1. + 1.j * 0.5 * np.imag(h12 * h21)
                 tmp = np.real(tmp + np.sqrt(tmp ** 2 - h12 * h21))
-                T = np.array([[1, -h12/tmp], [-h21/tmp, 1]])
+                T = np.array([[1., -h12/tmp], [-h21/tmp, 1.]])
 
                 A[[i, j], :] = np.dot(T, A[[i, j], :])
                 tmp = np.c_[A[:, Ii], A[:, Ij]]
@@ -177,7 +177,7 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15):
                 V[[i, j], :] = np.dot(T, V[[i, j], :])
         if decr < epsi:
             break
-    D = np.reshape(A, (m, nm/m, m)).transpose(1, 0, 2)
+    D = np.reshape(A, (m, int(nm / m), m)).transpose(1, 0, 2)
     return V, D
 
 

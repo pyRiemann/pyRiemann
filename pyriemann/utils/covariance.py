@@ -50,14 +50,13 @@ def _check_est(est):
     else:
         # raise an error
         raise ValueError(
-            '%s is not an valid estimator ! Valid estimators are : %s or a callable function' %
-            (est,
-             (' , ').join(
-                 estimators.keys())))
+            """%s is not an valid estimator ! Valid estimators are : %s or a
+             callable function""" % (est, (' , ').join(estimators.keys())))
     return est
 
 
 def covariances(X, estimator='cov'):
+    """Estimation of covariance matrix."""
     est = _check_est(estimator)
     Nt, Ne, Ns = X.shape
     covmats = numpy.zeros((Nt, Ne, Ne))
@@ -67,6 +66,7 @@ def covariances(X, estimator='cov'):
 
 
 def covariances_EP(X, P, estimator='cov'):
+    """Special form covariance matrix."""
     est = _check_est(estimator)
     Nt, Ne, Ns = X.shape
     Np, Ns = P.shape
@@ -93,25 +93,38 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
     return numpy.array(X)
 
 
-def coherence(X, nfft=256, fs=2, noverlap=0):
+def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     """Compute coherence."""
     n_chan = X.shape[0]
+    overlap = int(overlap * window)
     ij = []
+    if fs is None:
+        fs = window
     for i in range(n_chan):
         for j in range(i+1, n_chan):
             ij.append((i, j))
-    Cxy, Phase, freqs = mlab.cohere_pairs(X, ij, NFFT=nfft, Fs=fs,
-                                          noverlap=noverlap)
+    Cxy, Phase, freqs = mlab.cohere_pairs(X.T, ij, NFFT=window, Fs=fs,
+                                          noverlap=overlap)
+
+    if fmin is None:
+        fmin = freqs[0]
+    if fmax is None:
+        fmax = freqs[-1]
+
+    index_f = (freqs >= fmin) & (freqs <= fmax)
+    freqs = freqs[index_f]
+
+    # reshape coherence
     coh = numpy.zeros((n_chan, n_chan, len(freqs)))
     for i in range(n_chan):
         coh[i, i] = 1
-        for j in range(i+1, n_chan):
-            coh[i, j] = coh[j, i] = Cxy[(i, j)]
+        for j in range(i + 1, n_chan):
+            coh[i, j] = coh[j, i] = Cxy[(i, j)][index_f]
     return coh
 
 
-def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
-               phase_correction=False):
+def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
+    """Compute Cospectrum."""
     Ne, Ns = X.shape
     number_freqs = int(window / 2)
 
@@ -137,10 +150,6 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         # FFT calculation
         fdata[window_ix, :, :] = numpy.fft.fft(
             cdata, n=window, axis=1)[:, 0:number_freqs]
-
-        # if(phase_correction):
-        # fdata = fdata.*(exp(-sqrt(-1)*t1*( numpy.range(window)
-        # ).T/window*2*pi)*numpy.ones((1,Ne))
 
     # Adjust Frequency range to specified range (in case it is a parameter)
     if fmin is not None:

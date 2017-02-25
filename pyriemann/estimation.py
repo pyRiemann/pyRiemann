@@ -2,8 +2,10 @@
 import numpy
 
 from .spatialfilters import Xdawn
-from .utils.covariance import covariances, covariances_EP, cospectrum
+from .utils.covariance import (covariances, covariances_EP, cospectrum,
+                               coherence)
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.covariance import shrunk_covariance
 
 
 def _nextpow2(i):
@@ -47,7 +49,7 @@ class Covariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
             ndarray of trials.
-        y : ndarray shape (n_trials, 1)
+        y : ndarray shape (n_trials,)
             labels corresponding to each trial, not used.
 
         Returns
@@ -151,7 +153,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
             ndarray of trials.
-        y : ndarray shape (n_trials, 1)
+        y : ndarray shape (n_trials,)
             labels corresponding to each trial.
 
         Returns
@@ -224,7 +226,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
             ndarray of trials.
-        y : ndarray shape (n_trials, 1)
+        y : ndarray shape (n_trials,)
             labels corresponding to each trial.
 
         Returns
@@ -286,6 +288,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
     --------
     Covariances
     HankelCovariances
+    Coherences
     """
 
     def __init__(self, window=128, overlap=0.75, fmin=None, fmax=None,
@@ -306,7 +309,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
             ndarray of trials.
-        y : ndarray shape (n_trials, 1)
+        y : ndarray shape (n_trials,)
             labels corresponding to each trial, not used.
 
         Returns
@@ -337,6 +340,61 @@ class CospCovariances(BaseEstimator, TransformerMixin):
             S = cospectrum(X[i], window=self.window, overlap=self.overlap,
                            fmin=self.fmin, fmax=self.fmax, fs=self.fs)
             out.append(S.real)
+
+        return numpy.array(out)
+
+
+class Coherences(CospCovariances):
+
+    """Estimation of coherences matrix.
+
+    Coherence matrix estimation. this method will return a
+    4-d array with a coherence matrice estimation for each trial and in each
+    frequency bin of the FFT.
+
+    The estimation of coherence matrix is done with matplotlib cohere function.
+
+    Parameters
+    ----------
+    window : int (default 128)
+        The lengt of the FFT window used for spectral estimation.
+    overlap : float (default 0.75)
+        The percentage of overlap between window.
+    fmin : float | None , (default None)
+        the minimal frequency to be returned.
+    fmax : float | None , (default None)
+        The maximal frequency to be returned.
+    fs : float | None, (default None)
+        The sampling frequency of the signal.
+
+    See Also
+    --------
+    Covariances
+    HankelCovariances
+    CospCovariances
+    """
+
+    def transform(self, X):
+        """Estimate the coherences matrices.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_samples)
+            ndarray of trials.
+
+        Returns
+        -------
+        covmats : ndarray, shape (n_trials, n_channels, n_channels, n_freq)
+            ndarray of coherence matrices for each trials and for each
+            frequency bin.
+        """
+        Nt, Ne, _ = X.shape
+        out = []
+
+        for i in range(Nt):
+            S = coherence(X[i], window=self.window, overlap=self.overlap,
+                          fmin=self.fmin, fmax=self.fmax, fs=self.fs)
+            out.append(S)
 
         return numpy.array(out)
 
@@ -380,7 +438,7 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
             ndarray of trials.
-        y : ndarray shape (n_trials, 1)
+        y : ndarray shape (n_trials,)
             labels corresponding to each trial, not used.
 
         Returns
@@ -418,4 +476,68 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
             X2.append(tmp)
         X2 = numpy.array(X2)
         covmats = covariances(X2, estimator=self.estimator)
+        return covmats
+
+
+class Shrinkage(BaseEstimator, TransformerMixin):
+
+    """Regularization of covariance matrices by shrinkage
+
+    This transformer apply a shrinkage regularization to any covariance matrix.
+    It directly use the `shrunk_covariance` function from scikit learn, applied
+    on each trial.
+
+    Parameters
+    ----------
+    shrinkage: float, (default, 0.1)
+        Coefficient in the convex combination used for the computation of the
+        shrunk estimate. must be between 0 and 1
+
+    Notes
+    -----
+    .. versionadded:: 0.2.5
+    """
+
+    def __init__(self, shrinkage=0.1):
+        """Init."""
+        self.shrinkage = shrinkage
+
+    def fit(self, X, y=None):
+        """Fit.
+
+        Do nothing. For compatibility purpose.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_samples)
+            ndarray of Target data.
+        y : ndarray shape (n_trials,)
+            Labels corresponding to each trial, not used.
+
+        Returns
+        -------
+        self : Shrinkage instance
+            The Shrinkage instance.
+        """
+        return self
+
+    def transform(self, X):
+        """Shrink and return the covariance matrices.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of covariances matrices
+
+        Returns
+        -------
+        covmats : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of covariance matrices for each trials.
+        """
+
+        covmats = numpy.zeros_like(X)
+
+        for ii, x in enumerate(X):
+            covmats[ii] = shrunk_covariance(x, self.shrinkage)
+
         return covmats

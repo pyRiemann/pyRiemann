@@ -48,4 +48,4 @@ def test_covariances_cospectrum():
 def test_covariances_coherence():
     """Test coherence"""
     x = np.random.randn(3, 512)
-    coherence(x, fs=128, nfft=256)
+    coherence(x, fs=128, window=256)
