@@ -293,6 +293,8 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         self.metric = metric
         self.threshold = threshold
         self.n_iter_max = n_iter_max
+        if pos_label == neg_label:
+            raise(ValueError("Positive and Negative labels must be different"))
         self.pos_label = pos_label
         self.neg_label = neg_label
 

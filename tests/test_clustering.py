@@ -94,3 +94,6 @@ def test_Potato_init():
 
     # test with custom positive label
     pt.fit(covset, y=[2]*20)
+
+    # different positive and neg label
+    assert_raises(ValueError, Potato, pos_label=0)
