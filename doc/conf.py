@@ -14,6 +14,8 @@
 
 import sys
 import os
+import matplotlib
+matplotlib.use('Agg')
 import shlex
 import sphinx_gallery
 import sphinx_bootstrap_theme

@@ -1,4 +1,5 @@
 import numpy
+import sys
 import math
 import matplotlib.pyplot as plt
 
@@ -49,21 +50,29 @@ class BasePermutation():
         if Npe <= self.n_perms:
             print("Warning, number of unique permutations : %d" % Npe)
             perms = unique_permutations(y)
-            i = 0
+            ii = 0
             for perm in perms:
                 if not numpy.array_equal(perm, y):
-                    self.scores_[i + 1] = self.score(X, perm)
-                    i += 1
+                    self.scores_[ii + 1] = self.score(X, perm)
+                    ii += 1
+                    self._print_progress(ii)
 
         else:
             rs = numpy.random.RandomState(self.random_state)
-            for i in range(self.n_perms - 1):
+            for ii in range(self.n_perms - 1):
                 perm = rs.permutation(y)
-                self.scores_[i + 1] = self.score(X, perm)
-
+                self.scores_[ii + 1] = self.score(X, perm)
+                self._print_progress(ii)
+        print("")
         self.p_value_ = (self.scores_[0] <= self.scores_).mean()
 
         return self.p_value_, self.scores_
+
+    def _print_progress(self, ii):
+        """Print permutation progress"""
+        sys.stdout.write("Performing permutations : [%.1f%%]\r"
+                         % ((100. * (ii + 1)) / self.n_perms))
+        sys.stdout.flush()
 
     def initial_transform(self, X):
         """Initial transformation. By default return X."""

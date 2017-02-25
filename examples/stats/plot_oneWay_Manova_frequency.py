@@ -79,7 +79,7 @@ plt.xlabel('Frequency (Hz)')
 plt.ylabel('Score')
 
 a = np.where(np.diff(np.array(pv) < sig))[0]
-a = a.reshape(len(a)/2, 2)
+a = a.reshape(int(len(a)/2), 2)
 st = (fr[1]-fr[0])/2.0
 for p in a:
     axes.axvspan(fr[p[0]]-st, fr[p[1]]+st, facecolor='g', alpha=0.5)

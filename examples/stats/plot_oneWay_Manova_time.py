@@ -82,7 +82,7 @@ plt.xlabel('Time (sec)')
 plt.ylabel('Score')
 
 a = np.where(np.diff(np.array(pv) < sig))[0]
-a = a.reshape(len(a)/2, 2)
+a = a.reshape(int(len(a)/2), 2)
 st = (times[1] - times[0])/2.0
 for p in a:
     axes.axvspan(times[p[0]]-st, times[p[1]]+st, facecolor='g', alpha=0.5)
