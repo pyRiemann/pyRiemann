@@ -95,11 +95,8 @@ Stats
     :toctree: generated/
     :template: class.rst
 
-    PermutationTest
-    PermutationTestTwoWay
-    DistanceMetric
-    SeparabilityIndex
-    SeparabilityIndexTwoFactor
+    PermutationDistance
+    PermutationModel
 
 
 Utils function

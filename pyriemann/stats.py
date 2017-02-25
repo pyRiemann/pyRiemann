@@ -34,15 +34,29 @@ def unique_permutations(elements):
 class BasePermutation():
     """Base object for permutations test"""
 
-    def test(self, X, y):
-        """Test"""
+    def test(self, X, y, verbose=True):
+        """Performs the permutation test
+
+        Parameters
+        ----------
+        X : array-like
+            The data to fit. Can be, for example a list, or an array at
+            least 2d.
+
+        y : array-like, optional, default: None
+            The target variable to try to predict in the case of
+            supervised learning.
+
+        verbose: bool
+            if true, print progress.
+        """
         Npe = multiset_perm_number(y)
         self.scores_ = numpy.zeros(numpy.min([self.n_perms, int(Npe)]))
 
         # initial fit. This is usefull for transform data or for estimating
         # parameter that does not change across permutation, like the mean of
         # all data, the pairwise distance matrix, etc.
-        X = self.initial_transform(X)
+        X = self._initial_transform(X)
 
         # get the non permuted score
         self.scores_[0] = self.score(X, y)
@@ -55,14 +69,16 @@ class BasePermutation():
                 if not numpy.array_equal(perm, y):
                     self.scores_[ii + 1] = self.score(X, perm)
                     ii += 1
-                    self._print_progress(ii)
+                    if verbose:
+                        self._print_progress(ii)
 
         else:
             rs = numpy.random.RandomState(self.random_state)
             for ii in range(self.n_perms - 1):
                 perm = rs.permutation(y)
                 self.scores_[ii + 1] = self.score(X, perm)
-                self._print_progress(ii)
+                if verbose:
+                    self._print_progress(ii)
         print("")
         self.p_value_ = (self.scores_[0] <= self.scores_).mean()
 
@@ -74,11 +90,30 @@ class BasePermutation():
                          % ((100. * (ii + 1)) / self.n_perms))
         sys.stdout.flush()
 
-    def initial_transform(self, X):
+    def _initial_transform(self, X):
         """Initial transformation. By default return X."""
         return X
 
     def plot(self, nbins=10, range=None, axes=None):
+        """Plot results of the permutation test.
+
+        Parameters
+        ----------
+        nbins : integer or array_like or ‘auto’, optional
+            If an integer is given, bins + 1 bin edges are returned,
+            consistently with numpy.histogram() for numpy version >= 1.3.
+            Unequally spaced bins are supported if bins is a sequence.
+
+        range : tuple or None, optional
+            The lower and upper range of the bins. Lower and upper outliers are
+            ignored. If not provided, range is (x.min(), x.max()).
+            Range has no effect if bins is a sequence.
+            If bins is a sequence or range is specified, autoscaling is based
+            on the specified bin range instead of the range of x.
+
+        axes : axes handle (default None)
+            Axes handle for matplotlib. if None a new figure will be created.
+        """
         if axes is None:
             fig, axes = plt.subplots(1, 1)
         axes.hist(self.scores_[1:], nbins, range)
@@ -96,6 +131,54 @@ class PermutationModel(BasePermutation):
 
     """
     Permutation test using any scikit-learn model for scoring.
+
+    Perform a permutation test using the cross-validation score of any
+    scikit-learn compatible model. Score is obtained with `cross_val_score`
+    from scikit-learn. The score should be a "higer is better" metric.
+
+    Parameters
+    ----------
+    n_perms : int  (default: 100)
+        The number of permutation. The minimum should be 20 for a resolution of
+        0.05 p-value.
+
+    model : sklearn compatible model, (default: MDM())
+        The model for scoring.
+
+    cv : int, (default 3) cross-validation generator or an iterable, optional
+        Determines the cross-validation splitting strategy.
+        Possible inputs for cv are:
+          - None, to use the default 3-fold cross validation,
+          - integer, to specify the number of folds in a `(Stratified)KFold`,
+          - An object to be used as a cross-validation generator.
+          - An iterable yielding train, test splits.
+        For integer/None inputs, if the estimator is a classifier and ``y`` is
+        either binary or multiclass, :class:`StratifiedKFold` is used. In all
+        other cases, :class:`KFold` is used.
+
+    scoring : string, callable or None, optional, default: None
+        A string (see model evaluation documentation) or
+        a scorer callable object / function with signature
+        ``scorer(estimator, X, y)``.
+
+    n_jobs : integer, optional
+        The number of CPUs to use to do the computation. -1 means
+        'all CPUs'.
+
+    random_state : int (default 42)
+        random state for the permutation test.
+
+    Attributes
+    ----------
+    p_value_ : float
+        the p-value of the test
+    scores_ : list
+        contain all scores for all permutations. The fist element is the
+        non-permuted score.
+
+    See Also
+    --------
+    PermutationDistance
     """
 
     def __init__(self, n_perms=100, model=MDM(), cv=3, scoring='roc_auc',
@@ -109,7 +192,18 @@ class PermutationModel(BasePermutation):
         self.random_state = random_state
 
     def score(self, X, y):
-        """Get the score"""
+        """Score one permutation.
+
+        Parameters
+        ----------
+        X : array-like
+            The data to fit. Can be, for example a list, or an array at
+            least 2d.
+
+        y : array-like, optional, default: None
+            The target variable to try to predict in the case of
+            supervised learning.
+        """
         score = cross_val_score(self.model, X, y, cv=self.cv,
                                 n_jobs=self.n_jobs, scoring=self.scoring)
         return score.mean()
@@ -118,37 +212,123 @@ class PermutationModel(BasePermutation):
 class PermutationDistance(BasePermutation):
 
     """
-    Permutation test using a normalized distance to mean.
+    Permutation test based on distance.
+
+    Perform a permutation test based on distance. You have the choice of 3
+    different statistic :
+        * 'pairwise' : the statistic is based on paiwire distance as
+        descibed in [1]. This is the fastest option for low sample size since
+        the pairwise distance matrix does not need to be estimated for each
+        permutation.
+
+        * 'ttest' : t-test based statistic obtained by the ration of the
+        distance between each riemannian centroid and the group dispersion.
+        The means have to be estimated for each permutation, leading to a
+        slower procedure. However, this can be used for high sample size.
+
+        * 'ftest': f-test based statistic estimated using the between and
+        within group variability. As for the 'ttest' stats, group centroid
+        are estimated for each permutation.
+
+    Parameters
+    ----------
+    n_perms : int  (default: 100)
+        The number of permutation. The minimum should be 20 for a resolution of
+        0.05 p-value.
+
+    metric : string | dict (default: 'riemann')
+        The type of metric used for centroid and distance estimation.
+        see `distance` anb `mean_covariance` for the list of supported metric.
+        the metric could be a dict with two keys, `mean` and `distance` in
+        order to pass different metric for the centroid estimation and the
+        distance estimation. Typical usecase is to pass 'logeuclid' metric for
+        the mean in order to boost the computional speed and 'riemann' for the
+        distance in order to keep the good sensitivity for the classification.
+
+    mode : string (default: 'pairwise')
+        Type of statistic to use. could be 'pairwise', 'ttest' of 'ftest'
+
+    n_jobs : integer, optional
+        The number of CPUs to use to do the computation. -1 means
+        'all CPUs'.
+
+    random_state : int (default 42)
+        random state for the permutation test.
+
+    estimator : sklearn compatible estimator
+        if provided, data are transformed before every permutation. should
+        not be used unless a supervised opperation must be applied on the data.
+        This would be the case for ERP covariance.
+
+    Attributes
+    ----------
+    p_value_ : float
+        the p-value of the test
+    scores_ : list
+        contain all scores for all permutations. The fist element is the
+        non-permuted score.
+
+    See Also
+    --------
+    PermutationModel
+
+    References
+    --------
+    [1] Anderson, Marti J. "A new method for non‐parametric multivariate
+        analysis of variance." Austral ecology 26.1 (2001): 32-46.
     """
 
     def __init__(self, n_perms=100, metric='riemann', mode='pairwise',
-                 n_jobs=1, random_state=42):
+                 n_jobs=1, random_state=42, estimator=None):
         """Init."""
         self.n_perms = n_perms
+        if mode not in ['pairwise', 'ttest', 'ftest']:
+            raise(ValueError("mode must be 'pairwise', 'ttest' or 'ftest'"))
         self.mode = mode
         self.metric = metric
         self.n_jobs = n_jobs
         self.random_state = random_state
+        self.estimator = estimator
 
     def score(self, X, y):
+        """Score of a permutation.
+
+        Parameters
+        ----------
+        X : array-like
+            The data to fit. Can be, for example a list, or an array at
+            least 2d.
+
+        y : array-like, optional, default: None
+            The target variable to try to predict in the case of
+            supervised learning.
+        """
+        if self.estimator:
+            X = self.estimator.fit_transform(X, y)
+            X = self.__init_transform(X)
+
         if self.mode == 'ttest':
-            score = self._score_ttest(X, y)
+            return self._score_ttest(X, y)
         elif self.mode == 'ftest':
-            score = self._score_ftest(X, y)
+            return self._score_ftest(X, y)
         elif self.mode == 'pairwise':
-            score = self._score_pairwise(X, y)
+            return self._score_pairwise(X, y)
 
-        return score
-
-    def initial_transform(self, X):
+    def _initial_transform(self, X):
         """Initial transform"""
-        self.mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
+        # if an estimator provided, then transform w
+        if self.estimator:
+            return X
 
+        return self.__init_transform(X)
+
+    def __init_transform(self, X):
+        """Init tr"""
+        self.mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
         if self.mode == 'ftest':
             self.global_mean = mean_covariance(X, metric=self.mdm.metric_mean)
         elif self.mode == 'pairwise':
             X = pairwise_distance(X, metric=self.mdm.metric_dist) ** 2
-
         return X
 
     def _score_ftest(self, X, y):

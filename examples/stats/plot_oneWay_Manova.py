@@ -8,7 +8,7 @@ One way manova to compare Left vs Right.
 import seaborn as sns
 
 from time import time
-from pylab import plt
+from matplotlib import pyplot as plt
 
 from mne import Epochs, pick_types
 from mne.io import concatenate_raws
@@ -114,6 +114,6 @@ p_test.plot(axes=axes[1, 1], nbins=20)
 axes[1, 1].set_title('Classification - %.2f sec.' % duration)
 print('p-value: %.3f' % p)
 
-sns.despine()
-#plt.tight_layout()
+#sns.despine()
+plt.tight_layout()
 plt.show()
