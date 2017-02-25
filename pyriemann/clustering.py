@@ -265,6 +265,10 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         The number of standard deviation to reject artifacts.
     n_iter_max : int (default 100)
         The maximum number of iteration to reach convergence.
+    pos_label: int (default 1)
+        The positive label corresponding to clean data
+    neg_label: int (default 0)
+        The negative label corresponding to artifact data
 
     Notes
     -----
@@ -283,11 +287,14 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
     2013.
     """
 
-    def __init__(self, metric='riemann', threshold=3, n_iter_max=100):
+    def __init__(self, metric='riemann', threshold=3, n_iter_max=100,
+                 pos_label=1, neg_label=0):
         """Init."""
         self.metric = metric
         self.threshold = threshold
         self.n_iter_max = n_iter_max
+        self.pos_label = pos_label
+        self.neg_label = neg_label
 
     def fit(self, X, y=None):
         """Fit the potato from covariance matrices.
@@ -310,15 +317,15 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
             if len(y) != len(X):
                 raise ValueError('y must be the same lenght of X')
 
-            classes = numpy.unique(y)
+            classes = numpy.int32(numpy.unique(y))
 
             if len(classes) > 2:
                 raise ValueError('number of classes must be maximum 2')
 
-            if 1 not in classes:
+            if self.pos_label not in classes:
                 raise ValueError('y must contain a positive class')
 
-            y_old = numpy.array(y)
+            y_old = numpy.int32(numpy.array(y) == self.pos_label)
         else:
             y_old = numpy.ones(len(X))
         # start loop
@@ -370,7 +377,9 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         """
         z = self.transform(X)
         pred = z < self.threshold
-        return pred
+        out = numpy.zeros_like(z) + self.neg_label
+        out[pred] = self.pos_label
+        return out
 
     def _get_z_score(self, d):
         """get z score from distance."""
