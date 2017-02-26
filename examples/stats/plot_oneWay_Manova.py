@@ -57,47 +57,58 @@ epochs_data = epochs.get_data()
 
 # compute covariance matrices
 covmats = Covariances().fit_transform(epochs_data)
-fig, axes = plt.subplots(2, 2, figsize=[12, 6], sharey=True)
 
+n_perms = 500
 ###############################################################################
 # Pairwise distance based permutation test
 ###############################################################################
 
 t_init = time()
-p_test = PermutationDistance(500, metric='riemann', mode='pairwise')
+p_test = PermutationDistance(n_perms, metric='riemann', mode='pairwise')
 p, F = p_test.test(covmats, labels)
 duration = time() - t_init
 
-p_test.plot(axes=axes[0, 0], nbins=20)
-axes[0, 0].set_title('Pairwise distance - %.2f sec.' % duration)
+fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
+p_test.plot(nbins=10, axes=axes)
+plt.title('Pairwise distance - %.2f sec.' % duration)
 print('p-value: %.3f' % p)
+sns.despine()
+plt.tight_layout()
+plt.show()
 
 ###############################################################################
 # t-test distance based permutation test
 ###############################################################################
 
 t_init = time()
-p_test = PermutationDistance(500, metric='riemann', mode='ttest')
+p_test = PermutationDistance(n_perms, metric='riemann', mode='ttest')
 p, F = p_test.test(covmats, labels)
 duration = time() - t_init
 
-p_test.plot(axes=axes[0, 1], nbins=20)
-axes[0, 1].set_title('t-test distance - %.2f sec.' % duration)
+fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
+p_test.plot(nbins=10, axes=axes)
+plt.title('t-test distance - %.2f sec.' % duration)
 print('p-value: %.3f' % p)
+sns.despine()
+plt.tight_layout()
+plt.show()
 
 ###############################################################################
 # F-test distance based permutation test
 ###############################################################################
 
 t_init = time()
-p_test = PermutationDistance(500, metric='riemann', mode='ftest')
+p_test = PermutationDistance(n_perms, metric='riemann', mode='ftest')
 p, F = p_test.test(covmats, labels)
 duration = time() - t_init
 
-p_test.plot(axes=axes[1, 0], nbins=20)
-axes[1, 0].set_title('F-test distance - %.2f sec.' % duration)
+fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
+p_test.plot(nbins=10, axes=axes)
+plt.title('F-test distance - %.2f sec.' % duration)
 print('p-value: %.3f' % p)
-
+sns.despine()
+plt.tight_layout()
+plt.show()
 
 ###############################################################################
 # Classification based permutation test
@@ -106,14 +117,14 @@ print('p-value: %.3f' % p)
 clf = make_pipeline(CSP(4), LogisticRegression())
 
 t_init = time()
-p_test = PermutationModel(500, model=clf, cv=3)
+p_test = PermutationModel(n_perms, model=clf, cv=3, scoring='roc_auc')
 p, F = p_test.test(covmats, labels)
 duration = time() - t_init
 
-p_test.plot(axes=axes[1, 1], nbins=20)
-axes[1, 1].set_title('Classification - %.2f sec.' % duration)
+fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
+p_test.plot(nbins=10, axes=axes)
+plt.title('Classification - %.2f sec.' % duration)
 print('p-value: %.3f' % p)
-
-#sns.despine()
+sns.despine()
 plt.tight_layout()
 plt.show()

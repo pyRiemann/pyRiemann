@@ -3,7 +3,12 @@ import sys
 import math
 import matplotlib.pyplot as plt
 
-from sklearn.cross_validation import cross_val_score
+from .utils.utils import check_version
+
+if check_version('sklearn', '0.18'):
+    from sklearn.model_selection import cross_val_score
+else:
+    from sklearn.cross_validation import cross_val_score
 
 from .utils.distance import distance, pairwise_distance
 from .utils.mean import mean_covariance
@@ -79,7 +84,8 @@ class BasePermutation():
                 self.scores_[ii + 1] = self.score(X, perm)
                 if verbose:
                     self._print_progress(ii)
-        print("")
+        if verbose:
+            print("")
         self.p_value_ = (self.scores_[0] <= self.scores_).mean()
 
         return self.p_value_, self.scores_
@@ -152,14 +158,14 @@ class PermutationModel(BasePermutation):
           - integer, to specify the number of folds in a `(Stratified)KFold`,
           - An object to be used as a cross-validation generator.
           - An iterable yielding train, test splits.
-        For integer/None inputs, if the estimator is a classifier and ``y`` is
+        For integer/None inputs, if the estimator is a classifier and `y` is
         either binary or multiclass, :class:`StratifiedKFold` is used. In all
-        other cases, :class:`KFold` is used.
+        other cases, `KFold` is used.
 
     scoring : string, callable or None, optional, default: None
         A string (see model evaluation documentation) or
         a scorer callable object / function with signature
-        ``scorer(estimator, X, y)``.
+        `scorer(estimator, X, y)`.
 
     n_jobs : integer, optional
         The number of CPUs to use to do the computation. -1 means
@@ -181,7 +187,7 @@ class PermutationModel(BasePermutation):
     PermutationDistance
     """
 
-    def __init__(self, n_perms=100, model=MDM(), cv=3, scoring='roc_auc',
+    def __init__(self, n_perms=100, model=MDM(), cv=3, scoring=None,
                  n_jobs=1, random_state=42):
         """Init."""
         self.n_perms = n_perms
@@ -216,17 +222,21 @@ class PermutationDistance(BasePermutation):
 
     Perform a permutation test based on distance. You have the choice of 3
     different statistic :
-        * 'pairwise' : the statistic is based on paiwire distance as
+
+    - 'pairwise' :
+        the statistic is based on paiwire distance as
         descibed in [1]. This is the fastest option for low sample size since
         the pairwise distance matrix does not need to be estimated for each
         permutation.
 
-        * 'ttest' : t-test based statistic obtained by the ration of the
+    - 'ttest' :
+        t-test based statistic obtained by the ration of the
         distance between each riemannian centroid and the group dispersion.
         The means have to be estimated for each permutation, leading to a
         slower procedure. However, this can be used for high sample size.
 
-        * 'ftest': f-test based statistic estimated using the between and
+    - 'ftest':
+        f-test based statistic estimated using the between and
         within group variability. As for the 'ttest' stats, group centroid
         are estimated for each permutation.
 
@@ -274,7 +284,7 @@ class PermutationDistance(BasePermutation):
 
     References
     --------
-    [1] Anderson, J. "A new method for non-parametric multivariate analysis of
+        [1] Anderson, J. "A new method for non-parametric multivariate analysis of
         variance." Austral ecology. 2001.
     """
 

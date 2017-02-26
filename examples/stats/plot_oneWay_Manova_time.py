@@ -24,6 +24,7 @@ sns.set_style('whitegrid')
 
 ###############################################################################
 # Set parameters and read data
+###############################################################################
 
 # avoid classification of evoked responses by using epochs that start 1s after
 # cue onset.
@@ -50,7 +51,9 @@ labels = epochs.events[:, -1] - 2
 # get epochs
 epochs_data = epochs.get_data()
 
-# compute cospectral covariance matrices
+###############################################################################
+# Pairwise distance based permutation test
+###############################################################################
 
 covest = Covariances()
 
@@ -68,7 +71,7 @@ t_init = time()
 for t in time_bins:
     covmats = covest.fit_transform(epochs_data[:, ::1, t:(t+window)])
     p_test = PermutationDistance(1000, metric='riemann', mode='pairwise')
-    p, F = p_test.test(covmats, labels)
+    p, F = p_test.test(covmats, labels, verbose=False)
     pv.append(p)
     Fv.append(F[0])
 duration = time() - t_init

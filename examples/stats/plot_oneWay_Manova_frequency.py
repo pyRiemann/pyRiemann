@@ -22,6 +22,7 @@ from pyriemann.estimation import CospCovariances
 sns.set_style('whitegrid')
 ###############################################################################
 # Set parameters and read data
+###############################################################################
 
 # avoid classification of evoked responses by using epochs that start 1s after
 # cue onset.
@@ -66,7 +67,7 @@ Fv = []
 t_init = time()
 for i in range(covmats.shape[3]):
     p_test = PermutationDistance(1000, metric='riemann', mode='pairwise')
-    p, F = p_test.test(covmats[:, :, :, i], labels)
+    p, F = p_test.test(covmats[:, :, :, i], labels, verbose=False)
     pv.append(p)
     Fv.append(F[0])
 duration = time() - t_init

@@ -48,9 +48,9 @@ pyRiemann: Biosignals classification with Riemannian Geometry
            <img src="_images/sphx_glr_plot_classify_EEG_tangentspace_thumb.png">
          </div>
        </a>
-       <a href="auto_examples/stats/plot_twoWay_Manova.html">
+       <a href="auto_examples/stats/plot_oneWay_Manova_frequency.html">
          <div class="col-md-3 thumbnail">
-           <img src="_images/sphx_glr_plot_twoWay_Manova_thumb.png">
+           <img src="_images/sphx_glr_plot_oneWay_Manova_frequency_thumb.png">
          </div>
        </a>
      </div>

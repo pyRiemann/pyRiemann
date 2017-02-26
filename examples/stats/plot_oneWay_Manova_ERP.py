@@ -8,7 +8,6 @@ Manova for ERP data
 #
 # License: BSD (3-clause)
 
-import numpy as np
 import seaborn as sns
 
 from time import time
@@ -20,18 +19,18 @@ from mne.datasets import sample
 
 from pyriemann.stats import PermutationDistance, PermutationModel
 from pyriemann.estimation import XdawnCovariances
-from pyriemann.estimation import Covariances
-from pyriemann.spatialfilters import CSP
+from pyriemann.tangentspace import TangentSpace
 
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LogisticRegression
 
 print(__doc__)
-
+sns.set_style('whitegrid')
 data_path = sample.data_path()
 
 ###############################################################################
 # Set parameters and read data
+###############################################################################
 raw_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw.fif'
 event_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif'
 tmin, tmax = -0., 1
@@ -55,50 +54,77 @@ labels = epochs.events[::10, -1]
 # get epochs
 epochs_data = epochs.get_data()[::10]
 
-fig, axes = plt.subplots(2, 2, figsize=[12, 6], sharey=True)
-
+n_perms = 100
 ###############################################################################
 # Pairwise distance based permutation test
 ###############################################################################
 print(epochs_data.shape)
 t_init = time()
-p_test = PermutationDistance(50, metric='riemann', mode='pairwise',
+p_test = PermutationDistance(n_perms, metric='riemann', mode='pairwise',
                              estimator=XdawnCovariances(2))
 p, F = p_test.test(epochs_data, labels)
 duration = time() - t_init
 
-p_test.plot(axes=axes[0, 0], nbins=20)
-axes[0, 0].set_title('Pairwise distance - %.2f sec.' % duration)
+fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
+p_test.plot(nbins=10, axes=axes)
+plt.title('Pairwise distance - %.2f sec.' % duration)
 print('p-value: %.3f' % p)
+sns.despine()
+plt.tight_layout()
+plt.show()
 
 ###############################################################################
 # t-test distance based permutation test
 ###############################################################################
 
 t_init = time()
-p_test = PermutationDistance(50, metric='riemann', mode='ttest',
+p_test = PermutationDistance(n_perms, metric='riemann', mode='ttest',
                              estimator=XdawnCovariances(2))
 p, F = p_test.test(epochs_data, labels)
 duration = time() - t_init
 
-p_test.plot(axes=axes[0, 1], nbins=20)
-axes[0, 1].set_title('t-test distance - %.2f sec.' % duration)
+fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
+p_test.plot(nbins=10, axes=axes)
+plt.title('Pairwise distance - %.2f sec.' % duration)
 print('p-value: %.3f' % p)
+sns.despine()
+plt.tight_layout()
+plt.show()
 
 ###############################################################################
 # F-test distance based permutation test
 ###############################################################################
 
 t_init = time()
-p_test = PermutationDistance(50, metric='riemann', mode='ftest',
+p_test = PermutationDistance(n_perms, metric='riemann', mode='ftest',
                              estimator=XdawnCovariances(2))
 p, F = p_test.test(epochs_data, labels)
 duration = time() - t_init
 
-p_test.plot(axes=axes[1, 0], nbins=20)
-axes[1, 0].set_title('F-test distance - %.2f sec.' % duration)
+fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
+p_test.plot(nbins=10, axes=axes)
+plt.title('Pairwise distance - %.2f sec.' % duration)
 print('p-value: %.3f' % p)
+sns.despine()
+plt.tight_layout()
+plt.show()
 
+###############################################################################
+# Classification based permutation test
+###############################################################################
+
+clf = make_pipeline(XdawnCovariances(2), TangentSpace('logeuclid'),
+                    LogisticRegression())
+
+t_init = time()
+p_test = PermutationModel(n_perms, model=clf, cv=3)
+p, F = p_test.test(epochs_data, labels)
+duration = time() - t_init
+
+fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
+p_test.plot(nbins=10, axes=axes)
+plt.title('Classification - %.2f sec.' % duration)
+print('p-value: %.3f' % p)
 sns.despine()
 plt.tight_layout()
 plt.show()

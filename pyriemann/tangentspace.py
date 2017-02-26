@@ -1,7 +1,7 @@
 """Tangent space functions."""
 from .utils.mean import mean_covariance
 from .utils.tangentspace import tangent_space, untangent_space
-from .utils.base import check_version
+from .utils.utils import check_version
 
 import numpy
 from sklearn.base import BaseEstimator, TransformerMixin

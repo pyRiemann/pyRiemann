@@ -127,57 +127,59 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15):
     Applications 22, no. 4 (2001): 1136-1152.
 
     """
-    nmat = X.shape[0]
+     # Adapted from http://github.com/alexandrebarachant/pyRiemann
+    n_epochs = X.shape[0]
 
-    # reshape input matrix
-    A = np.concatenate(X, 0).T
+    # Reshape input matrix
+    A = np.concatenate(X, axis=0).T
 
-    # init variables
-    m, nm = A.shape
-    V = np.eye(m)
-    epsi = m * (m - 1.) * eps
+    # Init variables
+    n_times, n_m = A.shape
+    V = np.eye(n_times)
+    epsilon = n_times * (n_times - 1) * eps
 
     for it in range(n_iter_max):
         decr = 0
-        for i in range(1, m):
-            for j in range(i):
-                Ii = np.arange(i, nm, m)
-                Ij = np.arange(j, nm, m)
+        for ii in range(1, n_times):
+            for jj in range(ii):
+                Ii = np.arange(ii, n_m, n_times)
+                Ij = np.arange(jj, n_m, n_times)
 
-                c1 = A[i, Ii]
-                c2 = A[j, Ij]
+                c1 = A[ii, Ii]
+                c2 = A[jj, Ij]
 
-                g12 = np.mean(A[i, Ij] / c1)
-                g21 = np.mean(A[i, Ij] / c2)
+                g12 = np.mean(A[ii, Ij] / c1)
+                g21 = np.mean(A[ii, Ij] / c2)
 
                 omega21 = np.mean(c1 / c2)
                 omega12 = np.mean(c2 / c1)
-                omega = np.sqrt(omega12*omega21)
+                omega = np.sqrt(omega12 * omega21)
 
-                tmp = np.sqrt(omega21/omega12)
-                tmp1 = (tmp*g12 + g21) // (omega + 1.)
-                tmp2 = (tmp*g12 - g21) // np.max([omega - 1., 1e-9])
+                tmp = np.sqrt(omega21 / omega12)
+                tmp1 = (tmp * g12 + g21) / (omega + 1)
+                tmp2 = (tmp * g12 - g21) / max(omega - 1, 1e-9)
 
                 h12 = tmp1 + tmp2
-                h21 = np.conj((tmp1 - tmp2)/tmp)
+                h21 = np.conj((tmp1 - tmp2) / tmp)
 
-                decr = decr + nmat*(g12 * np.conj(h12) + g21 * h21) / 2.0
+                decr += n_epochs * (g12 * np.conj(h12) + g21 * h21) / 2.0
 
-                tmp = 1. + 1.j * 0.5 * np.imag(h12 * h21)
+                tmp = 1 + 1.j * 0.5 * np.imag(h12 * h21)
                 tmp = np.real(tmp + np.sqrt(tmp ** 2 - h12 * h21))
-                T = np.array([[1., -h12/tmp], [-h21/tmp, 1.]])
+                tau = np.array([[1, -h12 / tmp], [-h21 / tmp, 1]])
 
-                A[[i, j], :] = np.dot(T, A[[i, j], :])
+                A[[ii, jj], :] = np.dot(tau, A[[ii, jj], :])
                 tmp = np.c_[A[:, Ii], A[:, Ij]]
-                tmp = np.dot(np.reshape(tmp, (m * nmat, 2), order='F'), T.T)
+                tmp = np.reshape(tmp, (n_times * n_epochs, 2), order='F')
+                tmp = np.dot(tmp, tau.T)
 
-                tmp = np.reshape(tmp, (m, nmat * 2), order='F')
-                A[:, Ii] = tmp[:, :nmat]
-                A[:, Ij] = tmp[:, nmat:]
-                V[[i, j], :] = np.dot(T, V[[i, j], :])
-        if decr < epsi:
+                tmp = np.reshape(tmp, (n_times, n_epochs * 2), order='F')
+                A[:, Ii] = tmp[:, :n_epochs]
+                A[:, Ij] = tmp[:, n_epochs:]
+                V[[ii, jj], :] = np.dot(tau, V[[ii, jj], :])
+        if decr < epsilon:
             break
-    D = np.reshape(A, (m, int(nm / m), m)).transpose(1, 0, 2)
+    D = np.reshape(A, (n_times, -1, n_times)).transpose(1, 0, 2)
     return V, D
 
 
