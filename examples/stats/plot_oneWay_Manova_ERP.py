@@ -49,16 +49,15 @@ picks = mne.pick_types(raw.info, meg='grad', eeg=False, stim=False, eog=False,
 epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=False,
                     picks=picks, baseline=None, preload=True, verbose=False)
 
-labels = epochs.events[::10, -1]
+labels = epochs.events[::5, -1]
 
 # get epochs
-epochs_data = epochs.get_data()[::10]
+epochs_data = epochs.get_data()[::5]
 
 n_perms = 100
 ###############################################################################
 # Pairwise distance based permutation test
 ###############################################################################
-print(epochs_data.shape)
 t_init = time()
 p_test = PermutationDistance(n_perms, metric='riemann', mode='pairwise',
                              estimator=XdawnCovariances(2))
