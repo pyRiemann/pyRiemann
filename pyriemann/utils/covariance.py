@@ -77,6 +77,7 @@ def covariances_EP(X, P, estimator='cov'):
 
 
 def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
+    """Convert EEG signal to covariance using sliding window"""
     est = _check_est(estimator)
     X = []
     if padding:

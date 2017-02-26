@@ -202,9 +202,47 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
 class XdawnCovariances(BaseEstimator, TransformerMixin):
 
-    """
-    Compute xdawn, project the signal and compute the covariances
+    """Estimate special form covariance matrix for ERP combined with Xdawn.
 
+    Estimation of special form covariance matrix dedicated to ERP processing
+    combined with Xdawn spatial filtering. This is similar to `ERPCovariances`
+    but data are spatially filtered with `Xdawn`. A complete descrition of the
+    method is available in [1].
+
+    The advantage of this estimation is to reduce dimensionality of the
+    covariance matrices efficiently.
+
+    Parameters
+    ----------
+    nfilter: int (default 4)
+        number of Xdawn filter per classes.
+    applyfilters: bool (default True)
+        if set to true, spatial filter are applied to the prototypes and the
+        signals. When set to False, filters are applied only to the ERP prototypes
+        allowing for a better generalization across subject and session at the
+        expense of dimensionality increase. In that case, the estimation is
+        similar to ERPCovariances with `svd=nfilter` but with more compact
+        prototype reduction.
+    classes : list of int | None (default None)
+        list of classes to take into account for prototype estimation.
+        If None (default), all classes will be accounted.
+    estimator : string (default: 'scm')
+        covariance matrix estimator. For regularization consider 'lwf' or 'oas'
+        For a complete list of estimator, see `utils.covariance`.
+    xdawn_estimator : string (default: 'scm')
+        covariance matrix estimator for xdawn spatial filtering.
+    baseline_cov : baseline_cov : array, shape(n_chan, n_chan) | None (default)
+        baseline_covariance for xdawn. see `Xdawn`.
+
+    See Also
+    --------
+    ERPCovariances
+    Xdawn
+
+    References
+    ----------
+    [1] Barachant, A. "MEG decoding using Riemannian Geometry and Unsupervised
+        classification."
     """
 
     def __init__(self, nfilter=4, applyfilters=True, classes=None,
