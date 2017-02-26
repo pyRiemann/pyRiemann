@@ -137,7 +137,97 @@ class Xdawn(BaseEstimator, TransformerMixin):
         return X
 
 
-class CSP(BaseEstimator, TransformerMixin):
+class BilinearFilter(BaseEstimator, TransformerMixin):
+    """ Bilinear spatial filter.
+
+    Bilinear spatial filter for covariance matrices.
+    allow to define a custom spatial filter for bilinear projection of the
+    data :
+
+    .. math::
+        \mathbf{Cf}_i = \mathbf{V} \mathbf{C}_i \mathbf{V}^T
+
+    if log parameter is set to true, will return the log of the diagonal :
+
+    .. math::
+        \mathbf{cf}_i = \log \left[ \diag (\mathbf{Cf}_i) \\right]
+
+    Parameters
+    ----------
+    filters: ndarray of shape (Nfilters x Nchannels)
+        the filters for bilinear transform
+    log : bool (default False)
+        If true, return the log variance, otherwise return the spatially
+        filtered covariance matrices.
+
+    Attributes
+    ----------
+    filters_ : ndarray
+        If fit, the Xdawn components used to decompose the data for each event
+        type, concatenated, else empty.
+    """
+
+    def __init__(self, filters, log=False):
+        """Init."""
+        if not isinstance(filters, numpy.ndarray):
+            raise TypeError('filters must be an array.')
+        self.filters_ = filters
+        self.filters = filters
+        if not isinstance(log, bool):
+            raise TypeError('log must be a boolean')
+        self.log = log
+
+    def fit(self, X, y):
+        """Train CSP spatial filters.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of covariance.
+        y : ndarray shape (n_trials, 1)
+            labels corresponding to each trial.
+
+        Returns
+        -------
+        self : CSP instance
+            The CSP instance.
+        """
+        self.filters_ = self.filters
+        return self
+
+    def transform(self, X):
+        """Apply spatial filters.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of covariance.
+
+        Returns
+        -------
+        Xf : ndarray, shape (n_trials, n_filters)
+             ndarray of spatialy filtered log-variance or covariance depending
+             on the 'log' input paramter.
+        """
+        if not isinstance(X, (numpy.ndarray, list)):
+            raise TypeError('X must be an array.')
+        if X[0].shape[1] != self.filters_.shape[1]:
+            raise ValueError("Data and filters dimension must be compatible.")
+
+        X_filt = numpy.dot(numpy.dot(self.filters_, X), self.filters_.T)
+        X_filt = X_filt.transpose((1, 0, 2))
+
+        # if logvariance
+        if self.log:
+            out = numpy.zeros((len(X_filt), len(self.filters_)))
+            for i, x in enumerate(X_filt):
+                out[i] = numpy.log(numpy.diag(x))
+            return out
+        else:
+            return X_filt
+
+
+class CSP(BilinearFilter):
     """Implementation of the CSP spatial Filtering with Covariance as input.
 
     Implementation of the famous Common Spatial Pattern Algorithm, but with
@@ -276,32 +366,6 @@ class CSP(BaseEstimator, TransformerMixin):
         self.patterns_ = A[:, 0:self.nfilter].T
 
         return self
-
-    def transform(self, X):
-        """Apply spatial filters.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of covariance.
-
-        Returns
-        -------
-        Xf : ndarray, shape (n_trials, n_filters)
-             ndarray of spatialy filtered log-variance or covariance depending
-             on the 'log' input paramter.
-        """
-        X_filt = numpy.dot(numpy.dot(self.filters_, X), self.filters_.T)
-        X_filt = X_filt.transpose((1, 0, 2))
-
-        # if logvariance
-        if self.log:
-            out = numpy.zeros((len(X_filt), len(self.filters_)))
-            for i, x in enumerate(X_filt):
-                out[i] = numpy.log(numpy.diag(x))
-            return out
-        else:
-            return X_filt
 
 
 class SPoC(CSP):

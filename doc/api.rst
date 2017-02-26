@@ -73,6 +73,7 @@ Spatial Filtering
     Xdawn
     CSP
     SPoC
+    BilinearFilter
 
 Channel selection
 ------------------

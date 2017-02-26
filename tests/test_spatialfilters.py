@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import assert_array_equal
-from nose.tools import assert_true, assert_raises
-from pyriemann.spatialfilters import Xdawn, CSP, SPoC
+from nose.tools import assert_true, assert_raises, assert_false
+from pyriemann.spatialfilters import Xdawn, CSP, SPoC, BilinearFilter
 
 
 def generate_cov(Nt, Ne):
@@ -101,3 +101,34 @@ def test_Spoc():
 
     # Test fit
     spoc.fit(X, labels)
+
+
+def test_BilinearFilter():
+    """Test Bilinear filter"""
+    n_trials = 90
+    X = generate_cov(n_trials, 3)
+    labels = np.array([0, 1, 2]).repeat(n_trials // 3)
+    filters = np.eye(3)
+    # Test Init
+    bf = BilinearFilter(filters)
+    assert_false(bf.log)
+    assert_raises(TypeError, BilinearFilter, 'foo')
+    assert_raises(TypeError, BilinearFilter, np.eye(3), log='foo')
+
+    # test fit
+    bf = BilinearFilter(filters)
+    bf.fit(X, labels % 2)
+
+    # Test transform
+    Xt = bf.transform(X)
+    assert_array_equal(Xt.shape, [len(X), filters.shape[0], filters.shape[0]])
+    assert_raises(TypeError, bf.transform, 'foo')
+    assert_raises(ValueError, bf.transform, X[:, 1:, :])  # unequal # of chans
+    bf.log = True
+    Xt = bf.transform(X)
+    assert_array_equal(Xt.shape, [len(X), filters.shape[0]])
+
+    filters = filters[0:2, :]
+    bf = BilinearFilter(filters)
+    Xt = bf.transform(X)
+    assert_array_equal(Xt.shape, [len(X), filters.shape[0], filters.shape[0]])
