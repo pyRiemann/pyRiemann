@@ -35,13 +35,19 @@ For the latest version, you can install the package from the sources using the s
 python setup.py install
 ```
 
+or in developer mode to be able to modify the sources.
+
+```
+python setup.py develop
+```
+
 ## How to use it
 
 Most of the functions mimic the scikit-learn API, and therefore can be directly used with sklearn. For example, for cross-validation classification of EEG signal using the MDM algorithm described in [4] , it is easy as :
 
 ```python
 import pyriemann
-from sklearn.cross_validation import cross_val_score
+from sklearn.model_selection import cross_val_score
 
 # load your data
 X = ... # your EEG data, in format Ntrials x Nchannels X Nsamples
@@ -53,7 +59,7 @@ cov = pyriemann.estimation.Covariances().fit_transform(X)
 # cross validation
 mdm = pyriemann.classification.MDM()
 
-accuracy = cross_val_score(mdm,cov,y)
+accuracy = cross_val_score(mdm, cov, y)
 
 print(accuracy.mean())
 
@@ -67,7 +73,7 @@ from pyriemann.tangentspace import TangentSpace
 
 from sklearn.pipeline import make_pipeline
 from sklearn.svm import SVC
-from sklearn.cross_validation import cross_val_score
+from sklearn.model_selection import cross_val_score
 
 # load your data
 X = ... # your EEG data, in format Ntrials x Nchannels X Nsamples
@@ -80,7 +86,7 @@ svc = SVC(kernel='linear')
 
 clf = make_pipeline(covest,ts,svc)
 # cross validation
-accuracy = cross_val_score(clf,X,y)
+accuracy = cross_val_score(clf, X, y)
 
 print(accuracy.mean())
 

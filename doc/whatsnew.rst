@@ -18,7 +18,7 @@ v0.2.5 (Future release)
 
 - Added FlatChannelRemover
 
-- Support for python 3.4 in travis
+- Support for python 3.5 in travis
 
 - Added Shrinkage transformer
 

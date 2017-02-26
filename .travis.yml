@@ -1,7 +1,7 @@
 language: python
 env:
     - PYTHON=2.7
-    - PYTHON=3.4
+    - PYTHON=3.5
 # command to install dependencies\
 cache: pip
 sudo: false
