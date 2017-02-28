@@ -8,5 +8,5 @@ setup(name='pyriemann',
       author_email='alexandre.barachant@gmail.com',
       license='BSD (3-clause)',
       packages=find_packages(),
-      install_requires=['numpy', 'scipy', 'scikit-learn',  'joblib', 'pandas'],
+      install_requires=['numpy', 'scipy', 'scikit-learn',  'joblib', 'pandas', 'mock'],
       zip_safe=False)
