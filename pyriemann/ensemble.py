@@ -157,8 +157,12 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         -------
         self : object
         """
-        self._init_arrays(X)
-        self._fit(X, y)
+        if check_is_fitted(self, 'estimators_'):
+            self._init_arrays(X)
+            self._fit(X, y)
+        else:
+            for clf in self.estimators_:
+                clf.fit(X, y)
         return self
 
     def partial_fit(self, X, y=None):

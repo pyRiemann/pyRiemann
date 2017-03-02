@@ -199,7 +199,7 @@ def test__apply_sml(mock__get_principal_eig):
     assert_almost_equal(actual_weight, expected_weight, err_msg="expected %s but got %s" % (expected_weight, actual_weight))
 
     # All the same but one
-    mock__get_principal_eig.reset()
+    mock__get_principal_eig.reset_mock()
     hard_preds = np.ones((expected_nClfs, expected_nTrials), dtype=int)
 
     hard_preds[0][1] = False
@@ -210,7 +210,9 @@ def test__apply_sml(mock__get_principal_eig):
     expected_weight += 1. / expected_nClfs
     assert_almost_equal(actual_weight, expected_weight, err_msg="expected %s but got %s" % (expected_weight, actual_weight))
 
-    mock__get_principal_eig.assert_called_with(hard_preds)
+    # Can't do with numpy
+    # mock__get_principal_eig.assert_called_with(hard_preds)
+    assert_array_equal(mock__get_principal_eig.call_args[0][0], hard_preds)
 
 def test__collect_probas():
     expected_sml_limit = 50
