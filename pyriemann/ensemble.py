@@ -124,8 +124,6 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         for _, clf in self.estimators:
             self.estimators_.append(clf)
 
-        check_is_fitted(self, 'estimators_')
-
         if len(self.estimators_) == 0:
             raise ValueError('Must use at least one estimator')
         else:
@@ -157,7 +155,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         -------
         self : object
         """
-        if check_is_fitted(self, 'estimators_'):
+        if check_is_fitted(self, 'estimators_') is None:
             self._init_arrays(X)
             self._fit(X, y)
         else:
@@ -502,6 +500,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             n_features is the number of features.
 
         """
+        self.x_in = 0
         new_shape = X[0].shape
         new_shape = (self.sml_limit,) + new_shape
         self.x_ = np.zeros(new_shape)

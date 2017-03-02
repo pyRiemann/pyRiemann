@@ -214,6 +214,7 @@ def test__apply_sml(mock__get_principal_eig):
     # mock__get_principal_eig.assert_called_with(hard_preds)
     assert_array_equal(mock__get_principal_eig.call_args[0][0], hard_preds)
 
+
 def test__collect_probas():
     expected_sml_limit = 50
 
@@ -343,6 +344,7 @@ def test_predict():
     assert_equal(actual_preds.shape[0], np.ones((num_xs,)).shape[0],
                  "should make preds of len number x's")
 
+
 def test_predict_proba():
     expected_sml_limit = 50
 
@@ -371,3 +373,75 @@ def test_predict_proba():
     actual_preds_soft_bad = eclf.predict_proba(bad_point_list[:num_xs])
     assert_equal(actual_preds_soft_bad.shape[0], np.ones((num_xs,)).shape[0], "should produce num_xs_1 predictions")
     assert_equal(actual_preds_soft_bad.shape[1], 2, "should return a probability for each class")
+
+
+def test_fit():
+    expected_sml_limit = 50
+
+    eclf = StigClassifier(estimators=estimators_lr,
+                          sml_limit=expected_sml_limit)
+
+    point_list, label_list = generate_points(num_points)
+
+    expected_shape = (expected_sml_limit,) + point_list[0].shape
+
+    # when num x is less then estimators or `sml_threshold`
+    num_xs = len(estimators) - 2
+    eclf.fit(point_list[:num_xs], label_list[:num_xs])
+    actual_preds = eclf.predict(point_list[:num_xs])
+    assert_equal(actual_preds.shape[0], np.ones((num_xs,)).shape[0], "should make internal x_ a buffer of len sml_limit")
+    assert_equal(eclf.x_in, num_xs)
+
+    # too good converges fast.
+    num_xs_1 = 40
+    eclf.fit(point_list[num_xs:num_xs + num_xs_1], label_list[num_xs:num_xs + num_xs_1])
+    actual_preds = eclf.predict(point_list[num_xs:num_xs + num_xs_1])
+    assert_equal(actual_preds.shape[0], np.ones((num_xs_1,)).shape[0],
+                 "should make internal x_ a buffer of len sml_limit")
+    assert_equal(eclf.x_in, num_xs_1)
+
+
+    # bad data
+    num_xs = 40
+    bad_point_list, bad_label_list = generate_points(r=6, Nt=num_points)
+    eclf.fit(bad_point_list[:num_xs], bad_label_list[:num_xs])
+    actual_preds = eclf.predict(bad_point_list[:num_xs])
+    assert_equal(actual_preds.shape[0], np.ones((num_xs,)).shape[0],
+                 "should make preds of len number x's")
+    assert_equal(eclf.x_in, num_xs)
+
+
+def test_partial_fit():
+    expected_sml_limit = 50
+
+    eclf = StigClassifier(estimators=estimators_lr,
+                          sml_limit=expected_sml_limit)
+
+    point_list, label_list = generate_points(num_points)
+
+    expected_shape = (expected_sml_limit,) + point_list[0].shape
+
+    # when num x is less then estimators or `sml_threshold`
+    num_xs = len(estimators) - 2
+    eclf.partial_fit(point_list[:num_xs], label_list[:num_xs])
+    actual_preds = eclf.predict(point_list[:num_xs])
+    assert_equal(actual_preds.shape[0], np.ones((num_xs,)).shape[0], "should make internal x_ a buffer of len sml_limit")
+    assert_equal(eclf.x_in, num_xs)
+
+    # too good converges fast.
+    num_xs_1 = 40
+    eclf.partial_fit(point_list[num_xs:num_xs + num_xs_1], label_list[num_xs:num_xs + num_xs_1])
+    actual_preds = eclf.predict(point_list[num_xs:num_xs + num_xs_1])
+    assert_equal(actual_preds.shape[0], np.ones((num_xs_1,)).shape[0],
+                 "should make internal x_ a buffer of len sml_limit")
+    assert_equal(eclf.x_in, num_xs + num_xs_1)
+
+
+    # bad data
+    num_xs_2 = 40
+    bad_point_list, bad_label_list = generate_points(r=6, Nt=num_points)
+    eclf.partial_fit(bad_point_list[:num_xs_2], bad_label_list[:num_xs_2])
+    actual_preds = eclf.predict(bad_point_list[:num_xs_2])
+    assert_equal(actual_preds.shape[0], np.ones((num_xs_2,)).shape[0],
+                 "should make preds of len number x's")
+    assert_equal(eclf.x_in, expected_sml_limit)
