@@ -83,6 +83,9 @@ def test_Potato_init():
     # predict
     pt.predict(covset)
 
+    # predict_proba
+    pt.predict_proba(covset)
+
     # lower threshold
     pt = Potato(threshold=1)
     pt.fit(covset)

@@ -383,6 +383,24 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         out[pred] = self.pos_label
         return out
 
+    def predict_proba(self, X):
+        """predict artefact from data.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        pred : ndarray of float, shape (n_epochs, 1)
+            the artefact detection. 0.0 if the trial is clean, and 1.0 if
+            the trial contain an artefact.
+        """
+        z = self.transform(X)
+        pred = 0.0 if z < self.threshold else 1.0
+        return pred
+
     def _get_z_score(self, d):
         """get z score from distance."""
         z = (d - self._mean) / self._std
