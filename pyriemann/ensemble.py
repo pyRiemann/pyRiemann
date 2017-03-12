@@ -508,6 +508,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.pred_labels_ = np.zeros((self.sml_limit,), dtype=int)
         self.tmp_scores_ = np.zeros((len(self.estimators_), self.sml_limit,))
         self.tmp_hard_preds_ = np.zeros((self.sml_limit, len(self.estimators_),), dtype=int)
+        self.weights_ = None
 
     def _fit(self, X, y=None):
         # Append the new x
@@ -527,42 +528,41 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             self.x_[-n:] = X
 
         # Shift array by n
-        self.pred_labels_[:-n] = self.pred_labels_[n:]
-        self.tmp_hard_preds_[:-n] = self.tmp_hard_preds_[n:]
         self.tmp_scores_[:-n] = self.tmp_scores_[n:]
 
         tmp_scores = self._collect_probas(self.x_[-n:])
-        indexes = self._find_indexes_of_maxes(tmp_scores)
-        ensemble_scores, ensemble_labels = self._get_ensemble_scores_labels(tmp_scores, indexes)
-        hard_preds = self._collect_predicts(self.x_[-n:])
 
         self.tmp_scores_[:, -n:] = tmp_scores
-        self.pred_labels_[-n:] = ensemble_labels
-        self.tmp_hard_preds_[-n:] = hard_preds.T
 
         if self.x_in > self.sml_threshold:
+            if self.weights_ is None:
+                n = self.x_in
+
+            # Shift array by n
+            self.pred_labels_[:-n] = self.pred_labels_[n:]
+            self.tmp_hard_preds_[:-n] = self.tmp_hard_preds_[n:]
+
+            indexes = self._find_indexes_of_maxes(tmp_scores)
+            ensemble_scores, ensemble_labels = self._get_ensemble_scores_labels(tmp_scores, indexes)
+            hard_preds = self._collect_predicts(self.x_[-n:])
+
+            self.pred_labels_[-n:] = ensemble_labels
+            self.tmp_hard_preds_[-n:] = hard_preds.T
+
             # Apply sml
-            sml_weight = self._apply_sml(self.tmp_hard_preds_[-self.x_in:].T)
+            self.weights_ = self._apply_sml(self.tmp_hard_preds_[-self.x_in:].T)
 
-            need_sum = sml_weight * tmp_scores.T
-        else:
-            weight = (1.0 / len(self.estimators_)) * np.ones((1, len(self.estimators_)))
-
-            need_sum = weight * tmp_scores.T
-
-        scores_proba = np.sum(need_sum, axis=1)
-
-        scores_predict = np.asarray([self.classes_[0] if score < 0.5 else self.classes_[0] for score in scores_proba])
-
-        self.pred_label_[:-n] = self.pred_label_[n:]
-        self.pred_label_[-n:] = scores_predict
-
-        if self.x_in > self.sml_threshold:
+            # Need to implement estimation maximization
+            """
+            scores_proba = np.sum(need_sum, axis=1)
+            scores_predict = np.asarray([self.classes_[0] if score < 0.5 else self.classes_[0] for score in scores_proba])
+            self.pred_label_[:-n] = self.pred_label_[n:]
+            self.pred_label_[-n:] = scores_predict
             v = self._get_principal_eig(hard_preds)
             v_em = self._estimation_maximization(principal_eig_v=v,
                                                  hard_preds=self.tmp_hard_preds_[-self.x_in:].T,
                                                  pred_label=self.pred_label_[-self.x_in:])
 
             v_em /= np.sum(v_em)
-
-        return scores_predict, scores_proba
+            """
+        return self
