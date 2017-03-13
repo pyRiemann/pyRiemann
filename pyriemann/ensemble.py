@@ -193,7 +193,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         scores_proba = np.sum(need_sum, axis=1)
 
-        scores_predict = np.asarray([self.classes_[0] if score < 0.5 else self.classes_[0] for score in scores_proba])
+        scores_predict = np.asarray([self.classes_[0] if score < 0.5 else self.classes_[1] for score in scores_proba])
 
         return scores_predict
 
@@ -356,7 +356,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         for i in range(n_trials):
             ind = indexes[i]
             ensemble_scores[i] = tmp_scores[ind][i]
-            ensemble_labels[i] = self.classes_[0] if tmp_scores[ind][i] < 0.5 else self.classes_[1]
+            ensemble_labels[i] = int(self.classes_[0]) if tmp_scores[ind][i] < 0.5 else int(self.classes_[1])
         return ensemble_scores, ensemble_labels
 
     def _apply_sml(self, hard_preds):
@@ -528,7 +528,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             self.x_[-n:] = X
 
         # Shift array by n
-        self.tmp_scores_[:-n] = self.tmp_scores_[n:]
+        self.tmp_scores_[:, :-n] = self.tmp_scores_[:, n:]
 
         tmp_scores = self._collect_probas(self.x_[-n:])
 
@@ -542,8 +542,8 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             self.pred_labels_[:-n] = self.pred_labels_[n:]
             self.tmp_hard_preds_[:-n] = self.tmp_hard_preds_[n:]
 
-            indexes = self._find_indexes_of_maxes(tmp_scores)
-            ensemble_scores, ensemble_labels = self._get_ensemble_scores_labels(tmp_scores, indexes)
+            indexes = self._find_indexes_of_maxes(self.tmp_scores_[:, -n:])
+            ensemble_scores, ensemble_labels = self._get_ensemble_scores_labels(self.tmp_scores_[:, -n:], indexes)
             hard_preds = self._collect_predicts(self.x_[-n:])
 
             self.pred_labels_[-n:] = ensemble_labels
@@ -553,9 +553,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             self.weights_ = self._apply_sml(self.tmp_hard_preds_[-self.x_in:].T)
 
             # Need to implement estimation maximization
-            """
-            scores_proba = np.sum(need_sum, axis=1)
-            scores_predict = np.asarray([self.classes_[0] if score < 0.5 else self.classes_[0] for score in scores_proba])
+            scores_predict = self.predict(self.x_[-n:])
             self.pred_label_[:-n] = self.pred_label_[n:]
             self.pred_label_[-n:] = scores_predict
             v = self._get_principal_eig(hard_preds)
@@ -564,5 +562,5 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
                                                  pred_label=self.pred_label_[-self.x_in:])
 
             v_em /= np.sum(v_em)
-            """
+
         return self
