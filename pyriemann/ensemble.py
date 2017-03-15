@@ -514,9 +514,8 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         # Append the new x
         n = X.shape[0]
         if n > self.sml_limit:
-            raise ValueError('Number of X must be less then or equal to '
-                             '; got %d trials'
-                             % n)
+            raise ValueError('Number of X must be less then or equal to %d got %d trials'
+                             % (n, self.sml_limit))
         else:
             self.x_in = self.x_in + n
             self.x_in = self.x_in if self.x_in < self.sml_limit else self.sml_limit
@@ -553,6 +552,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             self.weights_ = self._apply_sml(self.tmp_hard_preds_[-self.x_in:].T)
 
             # Need to implement estimation maximization
+            """
             scores_predict = self.predict(self.x_[-n:])
             self.pred_label_[:-n] = self.pred_label_[n:]
             self.pred_label_[-n:] = scores_predict
@@ -562,5 +562,5 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
                                                  pred_label=self.pred_label_[-self.x_in:])
 
             v_em /= np.sum(v_em)
-
+            """
         return self
