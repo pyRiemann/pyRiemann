@@ -10,7 +10,7 @@ from __future__ import division
 
 import numpy as np
 
-from scipy.linalg import eig
+from scipy.linalg import eigh
 
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin, clone
 from sklearn.externals import six
@@ -18,6 +18,9 @@ from sklearn.externals.joblib import Parallel, delayed
 from sklearn.metrics import confusion_matrix, precision_score
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.validation import has_fit_parameter, check_is_fitted
+from .utils.covariance import _check_est
+from numpy.core.numerictypes import typecodes
+
 
 
 def _parallel_fit_estimator(estimator, X, y, sample_weight):
@@ -48,10 +51,11 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         work fine for STIG." He also said six is a good minimum number of estimators.
 
         Nick Waytowich - https://github.com/alexandrebarachant/pyRiemann/issues/46#issuecomment-276787910
-    sml_limit : int
-        The number of trials you want to keep in the buffer.
-    sml_threshold : int
-        The minimum number of trials to have in the buffer before applying sml. Nick said 32...
+
+    cov_estimator : string (default: 'scm')
+        covariance matrix estimator. For regularization consider 'lwf' or 'oas'
+        For a complete list of estimator, see `utils.covariance`.
+
     n_jobs : int, optional (default=1)
         The number of jobs to run in parallel for ``fit``.
         If -1, then the number of jobs is set to the number of cores.
@@ -103,21 +107,14 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     """
 
-    def __init__(self, estimators, sml_limit=200, sml_threshold=32, n_jobs=1):
+    def __init__(self, estimators, cov_estimator='scm', n_jobs=1):
         self.classes_ = []
+        self.cov_estimator = cov_estimator
         self.estimators = estimators
         self.le_ = None
         self.n_jobs = n_jobs
         self.named_estimators = dict(estimators)
-        self.pred_labels_ = None
-        self.sml_limit = sml_limit
-        self.sml_threshold = sml_threshold
-        self.tmp_scores_ = None
-        self.tmp_hard_preds_ = None
-        self.v_ = None
         self.weights_ = None
-        self.x_ = None
-        self.x_in = 0
 
         self.estimators_ = []
 
@@ -155,16 +152,6 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         -------
         self : object
         """
-        # if check_is_fitted(self, 'estimators_') is not None:
-        #     for clf in self.estimators_:
-        #         clf.fit(X, y)
-        self._init_arrays(X)
-        self._fit(X, y)
-        return self
-
-    def partial_fit(self, X, y=None):
-        if self.x_ is None:
-            self._init_arrays(X)
         self._fit(X, y)
         return self
 
@@ -240,7 +227,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         return out
 
     def transform(self, X):
-        """Return class labels or probabilities for X for each estimator.
+        """Return probabilities for X for each estimator.
 
         Parameters
         ----------
@@ -250,15 +237,11 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         Returns
         -------
-        If `voting='soft'`:
-          array-like = [n_classifiers, n_samples, n_classes]
+        array-like = [n_classifiers, n_samples, n_classes]
             Class probabilities calculated by each classifier.
-        If `voting='hard'`:
-          array-like = [n_samples, n_classifiers]
-            Class labels predicted by each classifier.
         """
         check_is_fitted(self, 'estimators_')
-        return self._predict(X)
+        return self._collect_probas(X)
 
     def get_params(self, deep=True):
         """Return estimator parameter names for GridSearch support"""
@@ -272,91 +255,26 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
                     out['%s__%s' % (name, key)] = value
             return out
 
-    def _append_x(self):
-        pass
-
     def _get_principal_eig(self, hard_preds):
-        Q = np.cov(hard_preds)
-        if Q.size > 1:
-            _, v = eig(Q)
-            return v[:, 0]
-        else:
-            return None
-
-    def _extract_class_one_scores(self, tmp_scores):
-        """ Extract just the active probability
+        """
+        Used to get the principal eigen vector for the given hard_preds
 
         Parameters
         ----------
-        tmp_scores : ndarray, shape (len(self.estimators_), n_trials, n_classes)
-            ndarray predictions for each classifier of each epoch. n_classes is
-            always 2 because this is a binary classifier
+        hard_preds : ndarray, dtype=int shape (len(self.estimators_), n_trials)
+            ndarray of class labels for each x for each classifier.
 
         Returns
-        ----------
-        indexes : ndarray, shape (len(self.estimators_), n_trials)
-            Soft score for each clf for each trial
+        -------
+        v : ndarray, dtype=complex shape (len(self.estimators_),)
+            The principal eigenvector for the covariance matrix calculated from hard_preds
         """
-        nClfs, nTrials, _ = tmp_scores.shape
-        extracted_tmp_score = np.zeros((nClfs, nTrials))
-        for i in range(nClfs):
-            for j in range(nTrials):
-                extracted_tmp_score[i][j] = tmp_scores[i][j][1]
-        return extracted_tmp_score
-
-    def _find_indexes_of_maxes(self, tmp_scores):
-        """ Get the index of the max (farthest from 0.5) classifer for each
-            trial, epoch, etc...
-
-        Parameters
-        ----------
-        tmp_scores : ndarray, shape (len(self.estimators_), n_trials, n_classes)
-            ndarray predictions for each classifier of each epoch. n_classes is
-            always 2 because this is a binary classifier
-
-        Returns
-        ----------
-        indexes : ndarray, shape (n_trials,)
-            Soft score for each clf for each trial
-        """
-        nClfs, nTrials = tmp_scores.shape
-        idx = np.zeros((nTrials,), dtype=int)
-        for i in range(0, nTrials):
-            val = tmp_scores[:, i].view()
-            upper_dist = val.max() - 0.5
-            lower_dist = 0.5 - val.min()
-            if upper_dist > lower_dist:
-                idx[i] = np.argmax(val)
-            else:
-                idx[i] = np.argmin(val)
-        return idx
-
-    def _get_ensemble_scores_labels(self, tmp_scores, indexes):
-        """ Get the (farthest from 0.5) score and label for each trial, epoch, etc...
-
-        Parameters
-        ----------
-        tmp_scores : ndarray, shape (len(self.estimators_), n_trials, n_classes)
-            ndarray predictions for each classifier of each epoch. n_classes is
-            always 2 because this is a binary classifier
-        indexes : ndarray, shape (n_trials,)
-            Soft score for each clf for each trial
-
-        Returns
-        ----------
-        ensemble_scores: ndarray, shape (n_trials,) dtype=float
-            Soft scores of the max classifier for each trial
-        ensemble_labels: ndarray, shape (n_trials,) dtype=int
-            Hard scores (labels) of the max classifier for each trial
-        """
-        _, n_trials = tmp_scores.shape
-        ensemble_scores = np.zeros((n_trials,), dtype=float)
-        ensemble_labels = np.zeros((n_trials,), dtype=int)
-        for i in range(n_trials):
-            ind = indexes[i]
-            ensemble_scores[i] = tmp_scores[ind][i]
-            ensemble_labels[i] = int(self.classes_[0]) if tmp_scores[ind][i] < 0.5 else int(self.classes_[1])
-        return ensemble_scores, ensemble_labels
+        est = _check_est(self.cov_estimator)
+        Q = est(hard_preds)
+        if Q.dtype.char in typecodes['AllFloat'] and not np.isfinite(Q).all():
+            raise ValueError("Covariance matrices must be positive definite. Add regularization to avoid this error with cov_estimator='lwf'")
+        _, vs = eigh(Q)
+        return vs[:, -1]
 
     def _apply_sml(self, hard_preds):
         """ Apply sml to hard label predictions of each x for each classifier.
@@ -377,25 +295,8 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         [1] N. Waytowich, github.com/nwayt001/Transfer_Learning_Project, "Code for
         designing and implementing transfer learning for machine learning applications", 2016
         """
-        # These lines remove classifiers who make only positive predictions or
-        # only negative predictions; it causes issues with the
-        # eigendecomposition if they are not removed; we assign a weighting of
-        # zero to these classifiers
-        nClfs = len(self.estimators_)
-        indexes = np.ones((nClfs,), dtype=bool)
-        for i in range(0, nClfs):
-            indexes[i] = np.unique(hard_preds[i]).size != 1
-
-        if np.sum(indexes) == 1:
-            indexes = np.ones((nClfs,), dtype=bool)
-
-        v = self._get_principal_eig(hard_preds[indexes])
-
-        weight = np.zeros((nClfs,))
-        weight[indexes] = np.real(v)
-        weight[np.logical_not(indexes)] = 1.0 / nClfs
+        weight = self._get_principal_eig(hard_preds)
         weight /= np.sum(weight)
-
         return np.atleast_2d(weight)
 
     def _balanced_accuracy(self, pseudo_labels, true_labels):
@@ -479,76 +380,19 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         return new_v
 
-    def _init_arrays(self, X):
-        """ Initialize internal arrays to size dependent on input data
-
-        Parameters
-        ----------
-        X : {array-like, sparse matrix}, shape = [n_samples, n_features]
-            Training vectors, where n_samples is the number of samples and
-            n_features is the number of features.
-
-        """
-        self.x_in = 0
-        new_shape = X[0].shape
-        new_shape = (self.sml_limit,) + new_shape
-        self.x_ = np.zeros(new_shape)
-        self.pred_label_ = np.zeros((self.sml_limit,), dtype=int)
-        self.pred_labels_ = np.zeros((self.sml_limit,), dtype=int)
-        self.tmp_scores_ = np.zeros((len(self.estimators_), self.sml_limit,))
-        self.tmp_hard_preds_ = np.zeros((self.sml_limit, len(self.estimators_),), dtype=int)
-        self.weights_ = None
-
     def _fit(self, X, y=None):
-        # Append the new x
-        n = X.shape[0]
-        if n > self.sml_limit:
-            raise ValueError('Number of X must be less then or equal to %d got %d trials'
-                             % (n, self.sml_limit))
-        else:
-            self.x_in = self.x_in + n
-            self.x_in = self.x_in if self.x_in < self.sml_limit else self.sml_limit
-            if self.sml_limit <= n:
-                X = X[-self.sml_limit:]
-                n = len(X)
-            else:
-                self.x_[:-n] = self.x_[n:]
-            self.x_[-n:] = X
+        hard_preds = self._collect_predicts(X)
 
-        # Shift array by n
-        self.tmp_scores_[:, :-n] = self.tmp_scores_[:, n:]
+        # Apply sml
+        self.weights_ = self._apply_sml(hard_preds)
 
-        tmp_scores = self._collect_probas(self.x_[-n:])
+        # Estimation maximization
+        scores_predict = self.predict(X)
+        v_em = self._estimation_maximization(hard_preds=hard_preds,
+                                             pred_label=scores_predict)
 
-        self.tmp_scores_[:, -n:] = tmp_scores
+        v_em /= np.sum(v_em)
 
-        if self.x_in > self.sml_threshold:
-            if self.weights_ is None:
-                n = self.x_in
+        self.weights_ = np.atleast_2d(v_em)
 
-            # Shift array by n
-            self.pred_labels_[:-n] = self.pred_labels_[n:]
-            self.tmp_hard_preds_[:-n] = self.tmp_hard_preds_[n:]
-
-            indexes = self._find_indexes_of_maxes(self.tmp_scores_[:, -n:])
-            ensemble_scores, ensemble_labels = self._get_ensemble_scores_labels(self.tmp_scores_[:, -n:], indexes)
-            hard_preds = self._collect_predicts(self.x_[-n:])
-
-            self.pred_labels_[-n:] = ensemble_labels
-            self.tmp_hard_preds_[-n:] = hard_preds.T
-
-            # Apply sml
-            self.weights_ = self._apply_sml(self.tmp_hard_preds_[-self.x_in:].T)
-
-            # Need to implement estimation maximization
-            scores_predict = self.predict(self.x_[-n:])
-            self.pred_label_[:-n] = self.pred_label_[n:]
-            self.pred_label_[-n:] = scores_predict
-            v = self._get_principal_eig(hard_preds)
-            v_em = self._estimation_maximization(hard_preds=self.tmp_hard_preds_[-self.x_in:].T,
-                                                 pred_label=self.pred_label_[-self.x_in:])
-
-            v_em /= np.sum(v_em)
-
-            self.weights_ = np.atleast_2d(v_em)
         return self

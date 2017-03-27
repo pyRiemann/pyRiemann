@@ -84,7 +84,7 @@ def generate_random_covariances(N=10, K=20, snr=1, random_state=42, alpha=1e-6,
     :param random_state:
     :param alpha:
     :param return_signal:
-    :param effect_size: int
+    :param effect_size:
         As effect inincreases, clf acc goes up, discriminatory info in covs goes up
     :param L:
     :return:
@@ -261,6 +261,26 @@ def test_balanced_accuracy():
     assert_equal(pi[0], 1.0, "pi should be 1.")
 
 
+def test_get_params():
+    eclf = StigClassifier(estimators=estimators)
+
+    params_deep_true = eclf.get_params(deep=True)
+    assert_true(params_deep_true is not None)
+
+    params_deep_false = eclf.get_params(deep=False)
+    assert_true(params_deep_false is not None)
+
+
+@mock.patch('pyriemann.ensemble.StigClassifier._collect_probas')
+def test_transform(mock__collect_probas):
+    eclf = StigClassifier(estimators=estimators)
+
+    expected_X = 'tacos'
+    eclf.transform(expected_X)
+
+    mock__collect_probas.assert_called_with(expected_X)
+
+
 @mock.patch('pyriemann.ensemble.StigClassifier._get_principal_eig')
 def test__apply_sml(mock__get_principal_eig):
     eclf = StigClassifier(estimators=estimators)
@@ -301,8 +321,7 @@ def test__apply_sml(mock__get_principal_eig):
 def test__collect_probas():
     expected_sml_limit = 50
 
-    eclf = StigClassifier(estimators=estimators,
-                          sml_limit=expected_sml_limit)
+    eclf = StigClassifier(estimators=estimators)
 
     # when num x is less then estimators or `sml_threshold`
     num_xs = len(estimators) + 2
@@ -316,8 +335,7 @@ def test__collect_probas():
 def test__collect_predicts():
     expected_sml_limit = 50
 
-    eclf = StigClassifier(estimators=estimators,
-                          sml_limit=expected_sml_limit)
+    eclf = StigClassifier(estimators=estimators)
 
     # when num x is less then estimators or `sml_threshold`
     num_xs = len(estimators) + 2
@@ -328,82 +346,10 @@ def test__collect_predicts():
     assert_true(probas.dtype == int)
 
 
-def test__get_ensemble_scores_labels():
-    eclf = StigClassifier(estimators=estimators)
-
-    expected_nClfs = 2
-    expected_nTrials = 3
-
-    tmp_scores = np.zeros((expected_nClfs, expected_nTrials))
-
-    rs = np.random.RandomState(1234)
-
-    for i in range(expected_nClfs):
-        for j in range(expected_nTrials):
-            tmp_scores[i][j] = rs.rand()
-
-    max_list = eclf._find_indexes_of_maxes(tmp_scores)
-
-    expected_ensemble_scores = np.zeros((expected_nTrials,), dtype=float)
-    expected_ensemble_labels = np.zeros((expected_nTrials,), dtype=float)
-
-    for i in range(expected_nTrials):
-        ind = max_list[i]
-        expected_ensemble_scores[i] = tmp_scores[ind][i]
-        class_label = 0 if tmp_scores[ind][i] < 0.5 else 1
-        expected_ensemble_labels[i] = class_label
-
-    actual_ensemble_scores, actual_ensemble_labels = eclf._get_ensemble_scores_labels(tmp_scores, max_list)
-
-    assert_almost_equal(actual_ensemble_scores, expected_ensemble_scores)
-    assert_array_equal(actual_ensemble_labels, expected_ensemble_labels)
-
-
-def test__find_indexes_of_maxes():
-
-    eclf = StigClassifier(estimators=estimators)
-
-    expected_nClfs = 2
-    expected_nTrials = 3
-
-    tmp_scores = np.zeros((expected_nClfs, expected_nTrials))
-
-    rs = np.random.RandomState(1234)
-
-    for i in range(expected_nClfs):
-        for j in range(expected_nTrials):
-            tmp_scores[i][j] = rs.rand()
-
-    expected_max_list = np.zeros((expected_nTrials,), dtype=int)
-
-    for trial in range(expected_nTrials):
-        max_ = 0.
-        for clf in range(expected_nClfs):
-            diff = tmp_scores[clf][trial] - 0.5
-            if abs(diff) > max_:
-                max_ = abs(diff)
-                expected_max_list[trial] = clf
-
-    actual_max_list = eclf._find_indexes_of_maxes(tmp_scores)
-
-    assert_array_equal(actual_max_list, expected_max_list,
-                       "expected max list of %s but got %s" % (expected_max_list, actual_max_list))
-
-
-def test__get_principal_eig():
-
-    eclf = StigClassifier(estimators=estimators_lr)
-
-    none_return = eclf._get_principal_eig(np.array([]))
-
-    assert_equal(none_return, None, "should be none")
-
-
 def test_predict():
     expected_sml_limit = 50
 
-    eclf = StigClassifier(estimators=estimators_lr,
-                          sml_limit=expected_sml_limit)
+    eclf = StigClassifier(estimators=estimators_lr)
 
     point_list, label_list = generate_points(num_points)
 
@@ -431,8 +377,7 @@ def test_predict():
 def test_predict_proba():
     expected_sml_limit = 50
 
-    eclf = StigClassifier(estimators=estimators_lr,
-                          sml_limit=expected_sml_limit)
+    eclf = StigClassifier(estimators=estimators_lr)
 
     point_list, label_list = generate_points(num_points)
 
@@ -461,19 +406,17 @@ def test_predict_proba():
 def test_fit():
     expected_sml_limit = 50
 
-    eclf = StigClassifier(estimators=estimators_lr,
-                          sml_limit=expected_sml_limit)
+    eclf = StigClassifier(estimators=estimators_lr)
 
     point_list, label_list = generate_points(num_points)
 
     expected_shape = (expected_sml_limit,) + point_list[0].shape
 
-    # when num x is less then estimators or `sml_threshold`
-    num_xs = len(estimators) - 2
+    # when num x is less then estimators
+    num_xs = 2
     eclf.fit(point_list[:num_xs], label_list[:num_xs])
     actual_preds = eclf.predict(point_list[:num_xs])
     assert_equal(actual_preds.shape[0], np.ones((num_xs,)).shape[0], "should make internal x_ a buffer of len sml_limit")
-    assert_equal(eclf.x_in, num_xs)
 
     # too good converges fast.
     num_xs_1 = 40
@@ -481,7 +424,6 @@ def test_fit():
     actual_preds = eclf.predict(point_list[num_xs:num_xs + num_xs_1])
     assert_equal(actual_preds.shape[0], np.ones((num_xs_1,)).shape[0],
                  "should make internal x_ a buffer of len sml_limit")
-    assert_equal(eclf.x_in, num_xs_1)
 
     # bad data
     num_xs = 40
@@ -490,56 +432,17 @@ def test_fit():
     actual_preds = eclf.predict(bad_point_list[:num_xs])
     assert_equal(actual_preds.shape[0], np.ones((num_xs,)).shape[0],
                  "should make preds of len number x's")
-    assert_equal(eclf.x_in, num_xs)
 
     # calling fit without y
     num_xs = len(estimators) - 2
     eclf.fit(point_list[:num_xs])
     actual_preds = eclf.predict(point_list[:num_xs])
     assert_equal(actual_preds.shape[0], np.ones((num_xs,)).shape[0], "should make internal x_ a buffer of len sml_limit")
-    assert_equal(eclf.x_in, num_xs)
-
-
-def test_partial_fit():
-    expected_sml_limit = 50
-
-    eclf = StigClassifier(estimators=estimators_lr,
-                          sml_limit=expected_sml_limit)
-
-    point_list, label_list = generate_points(num_points)
-
-    expected_shape = (expected_sml_limit,) + point_list[0].shape
-
-    # when num x is less then estimators or `sml_threshold`
-    num_xs = len(estimators) - 2
-    eclf.partial_fit(point_list[:num_xs], label_list[:num_xs])
-    actual_preds = eclf.predict(point_list[:num_xs])
-    assert_equal(actual_preds.shape[0], np.ones((num_xs,)).shape[0], "should make internal x_ a buffer of len sml_limit")
-    assert_equal(eclf.x_in, num_xs)
-
-    # too good converges fast.
-    num_xs_1 = 40
-    eclf.partial_fit(point_list[num_xs:num_xs + num_xs_1], label_list[num_xs:num_xs + num_xs_1])
-    actual_preds = eclf.predict(point_list[num_xs:num_xs + num_xs_1])
-    assert_equal(actual_preds.shape[0], np.ones((num_xs_1,)).shape[0],
-                 "should make internal x_ a buffer of len sml_limit")
-    assert_equal(eclf.x_in, num_xs + num_xs_1)
-
-
-    # bad data
-    num_xs_2 = 40
-    bad_point_list, bad_label_list = generate_points(r=6, Nt=num_points)
-    eclf.partial_fit(bad_point_list[:num_xs_2], bad_label_list[:num_xs_2])
-    actual_preds = eclf.predict(bad_point_list[:num_xs_2])
-    assert_equal(actual_preds.shape[0], np.ones((num_xs_2,)).shape[0],
-                 "should make preds of len number x's")
-    assert_equal(eclf.x_in, expected_sml_limit)
 
 
 def test__estimation_maximization():
     expected_nb_chan = 8
     expected_nb_matricies = 100
-    expected_nb_clfs = 10
 
     estimators = []
     snrs = [0.01, 0.1, 1, 10]
