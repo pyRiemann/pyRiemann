@@ -469,7 +469,6 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             # Converged?
             if np.array_equal(y, prev_y):
                 converged = True
-                print 'num iterations (q): %i' % q
                 break
 
             prev_y = y
