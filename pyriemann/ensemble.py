@@ -22,16 +22,6 @@ from .utils.covariance import _check_est
 from numpy.core.numerictypes import typecodes
 
 
-
-def _parallel_fit_estimator(estimator, X, y, sample_weight):
-    """Private function used to fit an estimator within a job."""
-    if sample_weight is not None:
-        estimator.fit(X, y, sample_weight)
-    else:
-        estimator.fit(X, y)
-    return estimator
-
-
 class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
     """Spectral Meta-Learning Classifier for real-time classifier selection of fit estimators.
 
