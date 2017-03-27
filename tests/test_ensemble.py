@@ -74,6 +74,97 @@ for i in range(0, 10):
     estimators_lr.append(('lr%i' % i, LogisticRegression().fit(point_list, label_list)))
 
 
+def generate_random_covariances(N=10, K=20, snr=1, random_state=42, alpha=1e-6,
+                                return_signal=False, effect_size=1, L=1):
+    """
+
+    :param N:
+    :param K:
+    :param snr:
+    :param random_state:
+    :param alpha:
+    :param return_signal:
+    :param effect_size: int
+        As effect inincreases, clf acc goes up, discriminatory info in covs goes up
+    :param L:
+    :return:
+    """
+    """Generate random covariance matrices according to marcos white paper"""
+    rs = np.random.RandomState(random_state)
+
+    # scale sd in order to have signal + noise = 1
+    # this keep the ratio signal / noise = snr
+    noise_sd = (1. / (1 + snr))
+    signal_sd = 1 - noise_sd
+    # signal_sd = snr
+
+    ########## signal
+    # generate mixin matrix for the signal
+    # check if it is inversible (it usually is)
+    A = 2 * rs.rand(N, N) - 1
+    while np.linalg.det(A) < 1e-9:
+        A = 2 * rs.rand(N, N) - 1
+
+    A /= np.atleast_2d(np.sqrt(np.sum(A ** 2, 1))).T
+    # generate permutation
+    perms = rs.permutation(N)
+
+    labels = np.array([0] * K + [1] * K)
+    # draw random diagonal elements
+    # L = 10
+
+    diags = rs.randn(N, 2 * K)
+    diags = np.exp(diags)
+    diags[L] += labels * effect_size
+    diags *= np.atleast_2d([0.5 ** p for p in range(1, N + 1)]).T
+
+    # diags = diags[perms]
+
+    # Mix and permute cov mats
+    Csignal = np.zeros((2 * K, N, N))
+    for k in range(2 * K):
+        Csignal[k] = np.dot(np.dot(A, np.diag(diags[:, k])), A.T)
+
+    ############ noise
+
+    Cnoise = np.zeros((2 * K, N, N))
+    diags_noise = rs.randn(N, 2 * K)
+    diags_noise = np.exp(diags_noise)
+    diags_noise *= np.atleast_2d([0.5 ** p for p in range(1, N + 1)]).T
+
+    for k in range(2 * K):
+        # generate random mixin matrix
+        An = 2 * rs.rand(N, N) - 1
+        while np.linalg.det(An) < 1e-9:
+            An = 2 * rs.rand(N, N) - 1
+        # generate random permutation
+        An /= np.atleast_2d(np.sqrt(np.sum(An ** 2, 1))).T
+        Noise_k = np.dot(np.dot(An, np.diag(diags_noise[:, k])), An.T)
+        # Noise_k = An + An.T
+        # noise_sd = np.trace(Noise_k)/np.trace(Csignal[k])
+        # alpha_k = alpha * np.trace(Csignal[k]) / (N)
+        # mix
+        Cnoise[k] = Noise_k
+
+    trs = np.trace(np.sum(Csignal, 0))
+    trn = np.trace(np.sum(Cnoise, 0))
+
+    # print trs
+    # print trn
+    # signal_sd = (trn/trs)*snr
+    # noise_sd =  1. / signal_sd
+    # signal_sd = 1.0
+    # noise_sd = trs / (snr*(trn + alpha*N*K))
+    # noise_sd=0
+    # print noise_sd
+
+    C = signal_sd * Csignal + noise_sd * Cnoise + alpha * np.eye(N)
+
+    if return_signal:
+        return C, diags, A, labels
+    else:
+        return C, labels
+
 def test_estimator_init():
 
     clf = LogisticRegression(random_state=1).fit(X, y)
@@ -400,7 +491,6 @@ def test_fit():
                  "should make internal x_ a buffer of len sml_limit")
     assert_equal(eclf.x_in, num_xs_1)
 
-
     # bad data
     num_xs = 40
     bad_point_list, bad_label_list = generate_points(r=6, Nt=num_points)
@@ -408,6 +498,13 @@ def test_fit():
     actual_preds = eclf.predict(bad_point_list[:num_xs])
     assert_equal(actual_preds.shape[0], np.ones((num_xs,)).shape[0],
                  "should make preds of len number x's")
+    assert_equal(eclf.x_in, num_xs)
+
+    # calling fit without y
+    num_xs = len(estimators) - 2
+    eclf.fit(point_list[:num_xs])
+    actual_preds = eclf.predict(point_list[:num_xs])
+    assert_equal(actual_preds.shape[0], np.ones((num_xs,)).shape[0], "should make internal x_ a buffer of len sml_limit")
     assert_equal(eclf.x_in, num_xs)
 
 
@@ -445,3 +542,49 @@ def test_partial_fit():
     assert_equal(actual_preds.shape[0], np.ones((num_xs_2,)).shape[0],
                  "should make preds of len number x's")
     assert_equal(eclf.x_in, expected_sml_limit)
+
+
+def test__estimation_maximization():
+    expected_nb_chan = 8
+    expected_nb_matricies = 100
+    expected_nb_clfs = 10
+
+    estimators = []
+    snrs = [0.01, 0.1, 1, 10]
+    effect_sizes = [1, 2, 3]
+    for snr in snrs:
+        for effect_size in effect_sizes:
+            X_, labels_ = generate_random_covariances(N=expected_nb_chan,
+                                                      effect_size=effect_size,
+                                                      K=expected_nb_matricies,
+                                                      snr=snr,
+                                                      return_signal=False,
+                                                      random_state=42,
+                                                      L=2)
+            i = len(estimators)
+            estimators.append(('mdm%i' % i, MDM(metric='riemann').fit(X_, labels_)))
+
+    eclf = StigClassifier(estimators=estimators)
+
+    X_test, labels_test = generate_random_covariances(N=expected_nb_chan,
+                                                      effect_size=2.5,
+                                                      K=expected_nb_matricies,
+                                                      snr=5,
+                                                      return_signal=False,
+                                                      random_state=42,
+                                                      L=2)
+    for i in range(len(estimators)):
+        _, clf = estimators[i]
+        acc = clf.score(X_test, labels_test)
+        print acc
+
+    eclf.fit(X_test)
+
+
+
+
+
+
+
+
+

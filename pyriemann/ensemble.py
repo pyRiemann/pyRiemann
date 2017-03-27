@@ -139,7 +139,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
                 except BaseException as e:
                     raise e
 
-    def fit(self, X, y):
+    def fit(self, X, y=None):
         """ Fit the estimators.
 
         Parameters
@@ -155,12 +155,11 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         -------
         self : object
         """
-        if check_is_fitted(self, 'estimators_') is None:
-            self._init_arrays(X)
-            self._fit(X, y)
-        else:
-            for clf in self.estimators_:
-                clf.fit(X, y)
+        # if check_is_fitted(self, 'estimators_') is not None:
+        #     for clf in self.estimators_:
+        #         clf.fit(X, y)
+        self._init_arrays(X)
+        self._fit(X, y)
         return self
 
     def partial_fit(self, X, y=None):
@@ -279,8 +278,8 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
     def _get_principal_eig(self, hard_preds):
         Q = np.cov(hard_preds)
         if Q.size > 1:
-            v, _ = eig(Q)
-            return v
+            _, v = eig(Q)
+            return v[:, 0]
         else:
             return None
 
@@ -441,7 +440,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     def _estimation_maximization(self, principal_eig_v, hard_preds, pred_label, max_iters=100):
         q = 0
-        y_ = [pred_label]
+        y_ = pred_label.tolist()
 
         converged = False
 
@@ -552,15 +551,13 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             self.weights_ = self._apply_sml(self.tmp_hard_preds_[-self.x_in:].T)
 
             # Need to implement estimation maximization
-            """
-            scores_predict = self.predict(self.x_[-n:])
-            self.pred_label_[:-n] = self.pred_label_[n:]
-            self.pred_label_[-n:] = scores_predict
-            v = self._get_principal_eig(hard_preds)
-            v_em = self._estimation_maximization(principal_eig_v=v,
-                                                 hard_preds=self.tmp_hard_preds_[-self.x_in:].T,
-                                                 pred_label=self.pred_label_[-self.x_in:])
-
-            v_em /= np.sum(v_em)
-            """
+            # scores_predict = self.predict(self.x_[-n:])
+            # self.pred_label_[:-n] = self.pred_label_[n:]
+            # self.pred_label_[-n:] = scores_predict
+            # v = self._get_principal_eig(hard_preds)
+            # v_em = self._estimation_maximization(principal_eig_v=v,
+            #                                      hard_preds=self.tmp_hard_preds_[-self.x_in:].T,
+            #                                      pred_label=self.pred_label_[-self.x_in:])
+            #
+            # v_em /= np.sum(v_em)
         return self
