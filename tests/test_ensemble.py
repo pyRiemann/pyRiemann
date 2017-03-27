@@ -149,21 +149,13 @@ def generate_random_covariances(N=10, K=20, snr=1, random_state=42, alpha=1e-6,
     trs = np.trace(np.sum(Csignal, 0))
     trn = np.trace(np.sum(Cnoise, 0))
 
-    # print trs
-    # print trn
-    # signal_sd = (trn/trs)*snr
-    # noise_sd =  1. / signal_sd
-    # signal_sd = 1.0
-    # noise_sd = trs / (snr*(trn + alpha*N*K))
-    # noise_sd=0
-    # print noise_sd
-
     C = signal_sd * Csignal + noise_sd * Cnoise + alpha * np.eye(N)
 
     if return_signal:
         return C, diags, A, labels
     else:
         return C, labels
+
 
 def test_estimator_init():
 
@@ -576,7 +568,6 @@ def test__estimation_maximization():
     for i in range(len(estimators)):
         _, clf = estimators[i]
         acc = clf.score(X_test, labels_test)
-        print acc
 
     eclf.fit(X_test)
 
