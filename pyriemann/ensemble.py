@@ -396,11 +396,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         weight[np.logical_not(indexes)] = 1.0 / nClfs
         weight /= np.sum(weight)
 
-        n_weight = np.zeros((1, nClfs))
-
-        n_weight[:] = weight[:]
-
-        return n_weight
+        return np.atleast_2d(weight)
 
     def _balanced_accuracy(self, pseudo_labels, true_labels):
         """
@@ -417,30 +413,24 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         eta = np.zeros((nClfs,))
         pi = np.zeros((nClfs,))
         for i in range(0, nClfs):
-            tn, fp, fn, tp = confusion_matrix(true_labels, pseudo_labels[i], labels=[0, 1]).astype(float).ravel()
+            pos = pseudo_labels[i][true_labels == 1]
+            if len(pos) > 0:
+                psi[i] = np.mean(pos == 1)
+            else:
+                psi[i] = 0.
 
-            psi[i] = tp / (fp + tp) if (fp + tp) > 0 else 0.
-            eta[i] = tn / (tn + fn) if (tn + fn) > 0 else 0.
+            neg = pseudo_labels[i][true_labels == 0]
+            if len(neg) > 0:
+                eta[i] = np.mean(neg == 0)
+            else:
+                eta[i] = 0.
 
-            # There seems to be a lac of documentation but cnf_mat returns
-            #   np.ndarray:
-            #       ---------
-            #      | TN | FP |
-            #       ---------
-            #      | FN | TP |
-            #       ---------
-            # psi[i] = precision_score(true_labels, pseudo_labels[i], labels=[0,1])
-            # if cnf_mat[0][0] + cnf_mat[1][0] < 0.1:
-            #     eta[i] = 0.
-            # else:
-            #     eta[i] = cnf_mat[0][0] / (cnf_mat[0][0] + cnf_mat[1][0])
             pi[i] = 0.5 * (psi[i] + eta[i])
 
         return psi, eta, pi
 
-    def _estimation_maximization(self, principal_eig_v, hard_preds, pred_label, max_iters=100):
+    def _estimation_maximization(self, hard_preds, pred_label, max_iters=100):
         q = 0
-        y_ = pred_label.tolist()
 
         converged = False
 
@@ -456,29 +446,30 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             y = np.zeros((k,), dtype=int)
             for i in range(0, k):
                 sum = 0.0
-                if psi.max() > 0.9999:
-                    indx = np.argmax(psi)
-                    y[i] = hard_preds[indx][i]
-                elif eta.max() > 0.9999:
-                    indx = np.argmax(eta)
-                    y[i] = hard_preds[indx][i]
-                else:
-                    for j in range(0, m):
-                        if eta[j] < 0.001:
-                            continue
-                        log_1 = np.log((psi[j] * eta[j]) / ((1 - psi[j]) * (1 - eta[j])))
-                        log_2 = np.log((psi[j] * (1 - psi[j])) / (eta[j] * (1 - eta[j])))
-                        log_sum = log_1 + log_2
-                        res = hard_preds[j][i] * log_sum if hard_preds[j][i] > 0 else -1. * log_sum
-                        sum += res
-                    y[i] = self.classes_[0] if np.sign(sum) < 0 else self.classes_[1]
+                for j in range(0, m):
+                    if eta[j] > 0.999999:
+                        eta[j] = 0.999999
+                    if psi[j] > 0.999999:
+                        psi[j] = 0.999999
+                    if eta[j] < 0.000001:
+                        eta[j] = 0.000001
+                    if psi[j] < 0.000001:
+                        psi[j] = 0.000001
+
+                    log_1 = np.log((psi[j] * eta[j]) / ((1 - psi[j]) * (1 - eta[j])))
+                    log_2 = np.log((psi[j] * (1 - psi[j])) / (eta[j] * (1 - eta[j])))
+                    log_sum = log_1 + log_2
+                    res = log_sum if hard_preds[j][i] > 0 else -1. * log_sum
+                    sum += res
+                y[i] = self.classes_[0] if np.sign(sum) < 0 else self.classes_[1]
 
             # Store current value
-            y_.append(y)
+            # y_.append(y)
 
             # Converged?
-            if np.array_equal(y_[q], y_[q + 1]):
+            if np.array_equal(y, prev_y):
                 converged = True
+                print 'num iterations (q): %i' % q
                 break
 
             prev_y = y
@@ -551,13 +542,14 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
             self.weights_ = self._apply_sml(self.tmp_hard_preds_[-self.x_in:].T)
 
             # Need to implement estimation maximization
-            # scores_predict = self.predict(self.x_[-n:])
-            # self.pred_label_[:-n] = self.pred_label_[n:]
-            # self.pred_label_[-n:] = scores_predict
-            # v = self._get_principal_eig(hard_preds)
-            # v_em = self._estimation_maximization(principal_eig_v=v,
-            #                                      hard_preds=self.tmp_hard_preds_[-self.x_in:].T,
-            #                                      pred_label=self.pred_label_[-self.x_in:])
-            #
-            # v_em /= np.sum(v_em)
+            scores_predict = self.predict(self.x_[-n:])
+            self.pred_label_[:-n] = self.pred_label_[n:]
+            self.pred_label_[-n:] = scores_predict
+            v = self._get_principal_eig(hard_preds)
+            v_em = self._estimation_maximization(hard_preds=self.tmp_hard_preds_[-self.x_in:].T,
+                                                 pred_label=self.pred_label_[-self.x_in:])
+
+            v_em /= np.sum(v_em)
+
+            self.weights_ = np.atleast_2d(v_em)
         return self

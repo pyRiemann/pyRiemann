@@ -239,9 +239,9 @@ def test_balanced_accuracy():
 
     psi, eta, pi = eclf._balanced_accuracy(pseudo_labels, true_labels)
 
-    assert_equal(psi[0], 1, "psy should be 1.")
+    assert_almost_equal(psi[0], 0.9, err_msg="psy should be 0.9")
     assert_equal(eta[0], 0.0, "eta should be 0.")
-    assert_equal(pi[0], 0.5, "pi should be 0.5")
+    assert_equal(pi[0], 0.45, "pi should be 0.45")
 
     # one fp
     pseudo_labels = np.ones((nClfs, nTrials), dtype=int)
@@ -251,9 +251,9 @@ def test_balanced_accuracy():
 
     psi, eta, pi = eclf._balanced_accuracy(pseudo_labels, true_labels)
 
-    assert_equal(psi[0], 0.9, "psy should be 1.")
+    assert_equal(psi[0], 1.0, "psy should be 1.")
     assert_equal(eta[0], 0.0, "eta should be 0.")
-    assert_equal(pi[0], 0.45, "pi should be 1.")
+    assert_equal(pi[0], 0.5, "pi should be 1.")
 
     # one tp
     pseudo_labels = np.zeros((nClfs, nTrials), dtype=int)
