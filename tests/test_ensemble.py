@@ -474,6 +474,21 @@ def test__estimation_maximization():
 
     eclf.fit(X_test)
 
+    eclf = StigClassifier(estimators=estimators)
+
+    X_test, labels_test = generate_random_covariances(N=expected_nb_chan,
+                                                      effect_size=10,
+                                                      K=expected_nb_matricies,
+                                                      snr=0.001,
+                                                      return_signal=False,
+                                                      random_state=42,
+                                                      L=2)
+    for i in range(len(estimators)):
+        _, clf = estimators[i]
+        acc = clf.score(X_test, labels_test)
+
+    eclf.fit(X_test)
+
 
 
 

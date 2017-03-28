@@ -1,3 +1,4 @@
+# coding=utf-8
 """
 Ensemble Classificatiers
 
@@ -14,9 +15,6 @@ from scipy.linalg import eigh
 
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin, clone
 from sklearn.externals import six
-from sklearn.externals.joblib import Parallel, delayed
-from sklearn.metrics import confusion_matrix, precision_score
-from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.validation import has_fit_parameter, check_is_fitted
 from .utils.covariance import _check_est
 from numpy.core.numerictypes import typecodes
@@ -87,8 +85,8 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
     [1 1 1 2 2 2]
     >>>
 
-    Refernces
-    ---------
+    References
+    ----------
 
     [1] Waytowich NR, Lawhern VJ, Bohannon AW, Ball KR and Lance BJ (2016)
     Spectral Transfer Learning Using Information Geometry for a
@@ -142,8 +140,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         -------
         self : object
         """
-        self._fit(X, y)
-        return self
+        return self._fit(X, y)
 
     def predict(self, X):
         """ Predict class labels for X.
@@ -321,6 +318,27 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         return psi, eta, pi
 
     def _estimation_maximization(self, hard_preds, pred_label, max_iters=100):
+        """ Apply estimation and maximization for rank 1 update to Q see [1] to optimize and replace self.weights_
+
+        Parameters
+        ----------
+        hard_preds : ndarray, dtype=int shape (len(self.estimators_), n_trials)
+            ndarray of class labels for each x for each classifier.
+        pred_label : array-like, shape = [n_trials]
+            Predicted class labels.
+        max_iters : int
+            The maximum number of iterations for solution to reach local minimum
+
+        Returns
+        ----------
+        weight : array-like, shape = [1, n_trials]
+            Weight for each classifier
+
+        References
+        ----------
+        [1] Parisi, F., Strino, F., Nadler, B., and Kluger, Y. (2014). Ranking and combining multiple predictors
+        without labeled data. Proc. Natl. Acad. Sci. U.S.A. 111, 1253–1258. doi: 10.1073/pnas.1219097111
+        """
         q = 0
 
         converged = False
@@ -368,9 +386,26 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         new_v = 2*pi - 1
 
+        new_v /= np.sum(new_v)
+
         return new_v
 
     def _fit(self, X, y=None):
+        """ Fit the estimators.
+
+        Parameters
+        ----------
+        X : {array-like, sparse matrix}, shape = [n_samples, n_features]
+            Training vectors, where n_samples is the number of samples and
+            n_features is the number of features.
+
+        y : array-like, shape = [n_samples]
+            Target values.
+
+        Returns
+        -------
+        self : object
+        """
         hard_preds = self._collect_predicts(X)
 
         # Apply sml
@@ -378,11 +413,8 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         # Estimation maximization
         scores_predict = self.predict(X)
-        v_em = self._estimation_maximization(hard_preds=hard_preds,
-                                             pred_label=scores_predict)
+        new_weights = self._estimation_maximization(hard_preds=hard_preds,
+                                                    pred_label=scores_predict)
 
-        v_em /= np.sum(v_em)
-
-        self.weights_ = np.atleast_2d(v_em)
-
+        self.weights_ = np.atleast_2d(new_weights)
         return self
