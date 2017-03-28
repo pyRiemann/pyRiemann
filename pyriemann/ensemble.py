@@ -121,8 +121,6 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
                     self.classes_ = self.estimators_[0].clf.classes_
                 except AttributeError:
                     raise AttributeError('Estimator does not have property _classes. Fit classifier first.')
-                except BaseException as e:
-                    raise e
 
     def fit(self, X, y=None):
         """ Fit the estimators.
@@ -138,7 +136,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         Returns
         -------
-        self : object
+        self : StigClassifier
         """
         return self._fit(X, y)
 
@@ -340,16 +338,12 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
         without labeled data. Proc. Natl. Acad. Sci. U.S.A. 111, 1253–1258. doi: 10.1073/pnas.1219097111
         """
         q = 0
-
-        converged = False
-
         k = len(pred_label)
         m = len(self.estimators_)
         # we consider the pred_label to be pred 0
-        # q = 1
         prev_y = pred_label
         pi = np.zeros((m,))
-        while not converged and q < max_iters:
+        while q < max_iters:
             psi, eta, pi = self._balanced_accuracy(hard_preds,
                                                    prev_y)
             y = np.zeros((k,), dtype=int)
@@ -372,19 +366,15 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
                     sum += res
                 y[i] = self.classes_[0] if np.sign(sum) < 0 else self.classes_[1]
 
-            # Store current value
-            # y_.append(y)
-
             # Converged?
             if np.array_equal(y, prev_y):
-                converged = True
                 break
 
             prev_y = y
             # Increment counter
             q += 1
 
-        new_v = 2*pi - 1
+        new_v = 2*pi - 1  # Parisi proof says we can do this
 
         new_v /= np.sum(new_v)
 
@@ -404,7 +394,7 @@ class StigClassifier(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         Returns
         -------
-        self : object
+        self : StigClassifier
         """
         hard_preds = self._collect_predicts(X)
 

@@ -383,22 +383,29 @@ def test_predict_proba():
 
     expected_shape = (expected_sml_limit,) + point_list[0].shape
 
+    num_xs_1 = 40
+    actual_soft_preds = eclf.predict_proba(point_list[:num_xs_1])
+    assert_equal(actual_soft_preds.shape[0], np.ones((num_xs_1,)).shape[0], "should produce num_xs_1 predictions")
+    assert_equal(actual_soft_preds.shape[1], 2, "should return a probability for each class")
+
+
     # when num x is less then estimators or `sml_threshold`
+
+    eclf = StigClassifier(estimators=estimators_lr)
     num_xs = len(estimators) - 2
-    actual_soft_preds = eclf.predict_proba(point_list[:num_xs])
+    actual_soft_preds = eclf.fit(point_list[num_xs:]).predict_proba(point_list[:num_xs])
     assert_equal(actual_soft_preds.shape[0], np.ones((num_xs,)).shape[0], "should produce num_xs predictions")
     assert_equal(actual_soft_preds.shape[1], 2, "should return a probability for each class")
 
-    # too good converges fast.
     num_xs_1 = 40
-    actual_soft_preds = eclf.predict_proba(point_list[num_xs:num_xs + num_xs_1])
+    actual_soft_preds = eclf.fit(point_list[:num_xs_1]).predict_proba(point_list[:num_xs_1])
     assert_equal(actual_soft_preds.shape[0], np.ones((num_xs_1,)).shape[0], "should produce num_xs_1 predictions")
     assert_equal(actual_soft_preds.shape[1], 2, "should return a probability for each class")
 
     # bad data
     num_xs = 40
     bad_point_list, _ = generate_points(r=6, Nt=num_points)
-    actual_preds_soft_bad = eclf.predict_proba(bad_point_list[:num_xs])
+    actual_preds_soft_bad = eclf.fit(bad_point_list[num_xs:]).predict_proba(bad_point_list[:num_xs])
     assert_equal(actual_preds_soft_bad.shape[0], np.ones((num_xs,)).shape[0], "should produce num_xs_1 predictions")
     assert_equal(actual_preds_soft_bad.shape[1], 2, "should return a probability for each class")
 
@@ -440,12 +447,13 @@ def test_fit():
     assert_equal(actual_preds.shape[0], np.ones((num_xs,)).shape[0], "should make internal x_ a buffer of len sml_limit")
 
 
-def test__estimation_maximization():
+def test_estimation_maximization():
     expected_nb_chan = 8
     expected_nb_matricies = 100
 
     estimators = []
-    snrs = [0.01, 0.1, 1, 10]
+    # snrs = [0.01, 0.1, 1, 10]
+    snrs = [0.01, 10]
     effect_sizes = [1, 2, 3]
     for snr in snrs:
         for effect_size in effect_sizes:
@@ -468,9 +476,18 @@ def test__estimation_maximization():
                                                       return_signal=False,
                                                       random_state=42,
                                                       L=2)
-    for i in range(len(estimators)):
-        _, clf = estimators[i]
-        acc = clf.score(X_test, labels_test)
+
+    eclf.fit(X_test)
+
+    eclf = StigClassifier(estimators=estimators)
+
+    X_test, labels_test = generate_random_covariances(N=expected_nb_chan,
+                                                      effect_size=-1,
+                                                      K=expected_nb_matricies,
+                                                      snr=0.001,
+                                                      return_signal=False,
+                                                      random_state=42,
+                                                      L=2)
 
     eclf.fit(X_test)
 
@@ -479,15 +496,30 @@ def test__estimation_maximization():
     X_test, labels_test = generate_random_covariances(N=expected_nb_chan,
                                                       effect_size=10,
                                                       K=expected_nb_matricies,
-                                                      snr=0.001,
+                                                      snr=0.005,
                                                       return_signal=False,
                                                       random_state=42,
                                                       L=2)
-    for i in range(len(estimators)):
-        _, clf = estimators[i]
-        acc = clf.score(X_test, labels_test)
-
     eclf.fit(X_test)
+
+
+@mock.patch('pyriemann.ensemble.np.isfinite')
+def test__get_principal_eig(mock_isfinite):
+    eclf = StigClassifier(estimators=estimators)
+
+    expected_nclfs = 9
+    expected_ntrials = 10
+    hard_preds = np.random.rand(expected_nclfs, expected_ntrials)
+
+    mock_isfinite.return_value = hard_preds > 0.5
+
+    # expected_message
+    # mock_isfinite.side_effect = ValueError()
+    assert_raise_message(ValueError,
+                         "Covariance matrices must be positive definite. Add regularization to avoid this error with cov_estimator='lwf'",
+                         eclf._get_principal_eig,
+                         hard_preds)
+
 
 
 
