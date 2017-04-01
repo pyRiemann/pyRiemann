@@ -1,6 +1,6 @@
 """
 ====================================================================
-Embedding ERP EEG data in 2D Euclidean space with Diffusion maps
+Embedding ERP EEG data in 3D Euclidean space with Diffusion maps
 ====================================================================
 
 """

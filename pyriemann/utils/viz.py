@@ -33,7 +33,6 @@ def plot_embedding_diffmaps(X, y=None, metric='riemann', eps=None, tdiff=0):
     fig = plt.figure(figsize=(6.24,5.63))
     for label in np.unique(y):
         idx = (y == label)
-        print label
         plt.scatter(u[1,idx], u[2,idx])
     plt.xlabel(r'$\varphi_1$', fontsize=18)        
     plt.ylabel(r'$\varphi_2$', fontsize=18)        
