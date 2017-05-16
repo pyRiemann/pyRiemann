@@ -31,7 +31,6 @@ def _sharp(A, B, t):
     [1] Bhatia, R. (2009). Positive definite matrices. Princeton
     university press.
     """
-    # return sqrtm(A).dot(sqrtm(invsqrtm(A).dot(B).dot(invsqrtm(A)))).dot(sqrtm(A))
     return sqrtm(A).dot(powm(invsqrtm(A).dot(B).dot(invsqrtm(A)),
                              t)).dot(sqrtm(A))
 
@@ -237,14 +236,6 @@ def mean_alm(covmats, tol=1e-14, maxiter=1000,
                 C_iter[h, :, :] = mean_alm(C[s])
 
             ni=norm(C_iter[0]-C[0], 2)/norm(C[0], 2)
-            # if Nt == 4:
-            #     print ("[", k, "] ni is", ni)
-            #     # print (C[0])
-            #     # print (C_iter[0])
-            #     # print (C_iter[0]-C[0])
-            #     print (norm(C_iter[0]-C[0], 2))
-            #     print (norm(C[0], 2))
-                
             if ni < tol: break
             C = copy.deepcopy(C_iter)
         else:
