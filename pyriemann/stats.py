@@ -4,7 +4,7 @@ from .utils.distance import distance
 import numpy
 import math
 import pandas
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 from sklearn.base import BaseEstimator
 
 
@@ -234,12 +234,13 @@ class PermutationTest(BaseEstimator):
         return res
 
     def plot(self, nbins=100, range=None):
-        plt.plot([self.F_[0], self.F_[0]], [0, 100], '--r', lw=2)
-        h = plt.hist(self.F_, nbins, range)
-        plt.xlabel('F-value')
-        plt.ylabel('Count')
-        plt.grid()
-        return h
+        # plt.plot([self.F_[0], self.F_[0]], [0, 100], '--r', lw=2)
+        # h = plt.hist(self.F_, nbins, range)
+        # plt.xlabel('F-value')
+        # plt.ylabel('Count')
+        # plt.grid()
+        # return h
+        pass
 
 #######################################################################
 

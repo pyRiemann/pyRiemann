@@ -1,6 +1,6 @@
 import numpy
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
-from matplotlib import mlab
+# from matplotlib import mlab
 
 # Mapping different estimator on the sklearn toolbox
 
@@ -98,28 +98,28 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     n_chan = X.shape[0]
     overlap = int(overlap * window)
     ij = []
-    if fs is None:
-        fs = window
-    for i in range(n_chan):
-        for j in range(i+1, n_chan):
-            ij.append((i, j))
-    Cxy, Phase, freqs = mlab.cohere_pairs(X.T, ij, NFFT=window, Fs=fs,
-                                          noverlap=overlap)
-
-    if fmin is None:
-        fmin = freqs[0]
-    if fmax is None:
-        fmax = freqs[-1]
-
-    index_f = (freqs >= fmin) & (freqs <= fmax)
-    freqs = freqs[index_f]
+    # if fs is None:
+    #     fs = window
+    # for i in range(n_chan):
+    #     for j in range(i+1, n_chan):
+    #         ij.append((i, j))
+    # Cxy, Phase, freqs = mlab.cohere_pairs(X.T, ij, NFFT=window, Fs=fs,
+    #                                       noverlap=overlap)
+    #
+    # if fmin is None:
+    #     fmin = freqs[0]
+    # if fmax is None:
+    #     fmax = freqs[-1]
+    #
+    # index_f = (freqs >= fmin) & (freqs <= fmax)
+    # freqs = freqs[index_f]
 
     # reshape coherence
     coh = numpy.zeros((n_chan, n_chan, len(freqs)))
-    for i in range(n_chan):
-        coh[i, i] = 1
-        for j in range(i + 1, n_chan):
-            coh[i, j] = coh[j, i] = Cxy[(i, j)][index_f]
+    # for i in range(n_chan):
+    #     coh[i, i] = 1
+    #     for j in range(i + 1, n_chan):
+    #         coh[i, j] = coh[j, i] = Cxy[(i, j)][index_f]
     return coh
 
 
