@@ -397,8 +397,8 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
 
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
-    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'identity', 'wasserstein', 'ale',  # noqa
-    'harmonic', 'kullback_sym' or a callable function
+    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'identity', 'wasserstein', 'ale', # noqa
+    'harmonic', 'kullback_sym', 'alm' or a callable function
     :param sample_weight: the weight of each sample
     :param args: the argument passed to the sub function
     :returns: the mean covariance matrix
@@ -418,7 +418,8 @@ mean_methods = {'riemann': mean_riemann,
                 'wasserstein': mean_wasserstein,
                 'ale': mean_ale,
                 'harmonic': mean_harmonic,
-                'kullback_sym': mean_kullback_sym}
+                'kullback_sym': mean_kullback_sym,
+                'alm': mean_alm}
 
 
 def _check_mean_method(method):
