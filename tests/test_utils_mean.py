@@ -4,7 +4,7 @@ import numpy as np
 from pyriemann.utils.mean import (mean_riemann, mean_euclid, mean_logeuclid,
                                   mean_logdet, mean_ale, mean_identity,
                                   mean_covariance, mean_kullback_sym,
-                                  mean_harmonic, mean_wasserstein)
+                                  mean_harmonic, mean_wasserstein, mean_alm)
 
 
 def generate_cov(Nt, Ne):
@@ -123,3 +123,21 @@ def test_mean_covariance_euclid():
     C = mean_covariance(covmats, metric='euclid')
     Ctrue = mean_euclid(covmats)
     assert_array_equal(C, Ctrue)
+
+
+def test_alm_mean():
+    """Test the ALM mean"""
+    covmats, _, _ = generate_cov(3, 3)
+    C_alm = mean_alm(covmats)
+    C_riem = mean_riemann(covmats)
+    assert_array_almost_equal(C_alm, C_riem)
+
+
+def test_mean_covariance_alm():
+    """Test mean_covariance for ALM"""
+    covmats, diags, A = generate_cov(3, 3)
+    C = mean_covariance(covmats, metric='alm')
+    Ctrue = mean_alm(covmats)
+    assert_array_equal(C, Ctrue)
+
+
