@@ -300,6 +300,79 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
     return C
 
 
+def _sharp(A, B, t):
+    """Computes the point G=g(t) of the geodesic between A and B [1]
+
+    .. math::
+            A^{1/2} (A^{-1/2} B A^{-1/2})^t A^{1/2}
+
+    :param A: array, shape=(n_channels, n_channels)
+              positive definite matrix
+    :param B: array, shape=(n_channels, n_channels)
+              positive definite matrix
+    :param t: real
+
+    :returns G: array, shape=(n_channels, n_channels)
+                point of the geodesic
+
+    References
+    ----------
+    [1] Bhatia, R. (2009). Positive definite matrices. Princeton
+    university press.
+    """
+    return sqrtm(A).dot(powm(invsqrtm(A).dot(B).dot(invsqrtm(A)),
+                             t)).dot(sqrtm(A))
+
+
+def mean_alm(covmats, tol=1e-14, maxiter=1000,
+             verbose=False, sample_weight=None):
+    """Return Ando-Li-Mathias mean 
+
+    Find the geometric mean recursively [1], generalizing from:
+    
+    .. math::
+            \mathbf{C} = A^{\frac{1}{2}}(A^{-\frac{1}{2}}B^{\frac{1}{2}}A^{-\frac{1}{2}})^{\frac{1}{2}}A^{\frac{1}{2}}
+
+    require a number of iterations.
+
+    This is the adaptation of the Matlab code proposed by Dario Bini and
+    Bruno Iannazzo, http://bezout.dm.unipi.it/software/mmtoolbox/
+    At least 3 times slower than mean_riemann, possible improvments.
+            
+    :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
+    :param tol: the tolerance to stop the gradient descent
+    :param maxiter: maximum number of iteration, default 100
+    :param verbose: indicate when reaching maxiter
+    :param sample_weight: the weight of each sample
+
+    :returns: Karcher mean covariance matrix
+
+    References
+    ----------
+    [1] T. Ando, C.-K. Li and R. Mathias, "Geometric Means", Linear Algebra
+    Appl. 385 (2004), 305-334.
+    """
+    sample_weight = _get_sample_weight(sample_weight, covmats)
+    C = covmats.copy()
+    C_iter = zeros_like(C)
+    Nt, Ne, Ne = covmats.shape
+    if Nt == 2:
+        X = _sharp(covmats[0], covmats[1], 0.5)
+        return X
+    else:
+        for k in range(maxiter):
+            for h in range(Nt):
+                s = mod(arange(h, h+Nt-1)+1, Nt)
+                C_iter[h, :, :] = mean_alm(C[s])
+
+            ni=norm(C_iter[0]-C[0], 2)/norm(C[0], 2)
+            if ni < tol: break
+            C = copy.deepcopy(C_iter)
+        else:
+            if verbose: print ('Max number of iterations reached')
+        return C_iter.mean(axis=0)
+
+
 def mean_identity(covmats, sample_weight=None):
     """Return the identity matrix corresponding to the covmats sit size
 
