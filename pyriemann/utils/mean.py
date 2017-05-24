@@ -320,8 +320,13 @@ def _sharp(A, B, t):
     [1] Bhatia, R. (2009). Positive definite matrices. Princeton
     university press.
     """
-    return sqrtm(A).dot(powm(invsqrtm(A).dot(B).dot(invsqrtm(A)),
-                             t)).dot(sqrtm(A))
+    Ra = cholesky(A)
+    Rb = cholesky(B)
+    Z = Rb.dot(inv(Ra))
+    U, V = eigh(Z.T.dot(Z))
+    D = diag(U**(t/2)).dot(V.T).dot(Ra)
+    G = D.T.dot(D)
+    return G   
 
 
 def mean_alm(covmats, tol=1e-14, maxiter=1000,
