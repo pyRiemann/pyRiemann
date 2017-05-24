@@ -1,7 +1,8 @@
 """Mean covariance estimation."""
 import numpy
+import copy
 
-from .base import sqrtm, invsqrtm, logm, expm
+from .base import sqrtm, invsqrtm, logm, expm, powm
 from .ajd import ajd_pham
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann
@@ -320,13 +321,8 @@ def _sharp(A, B, t):
     [1] Bhatia, R. (2009). Positive definite matrices. Princeton
     university press.
     """
-    Ra = cholesky(A)
-    Rb = cholesky(B)
-    Z = Rb.dot(inv(Ra))
-    U, V = eigh(Z.T.dot(Z))
-    D = diag(U**(t/2)).dot(V.T).dot(Ra)
-    G = D.T.dot(D)
-    return G   
+    return sqrtm(A).dot(powm(invsqrtm(A).dot(B).dot(invsqrtm(A)),
+                             t)).dot(sqrtm(A))
 
 
 def mean_alm(covmats, tol=1e-14, maxiter=1000,
@@ -359,7 +355,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=1000,
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
     C = covmats.copy()
-    C_iter = zeros_like(C)
+    C_iter = numpy.zeros_like(C)
     Nt, Ne, Ne = covmats.shape
     if Nt == 2:
         X = _sharp(covmats[0], covmats[1], 0.5)
@@ -367,10 +363,10 @@ def mean_alm(covmats, tol=1e-14, maxiter=1000,
     else:
         for k in range(maxiter):
             for h in range(Nt):
-                s = mod(arange(h, h+Nt-1)+1, Nt)
+                s = numpy.mod(numpy.arange(h, h+Nt-1)+1, Nt)
                 C_iter[h, :, :] = mean_alm(C[s])
 
-            ni=norm(C_iter[0]-C[0], 2)/norm(C[0], 2)
+            ni=numpy.linalg.norm(C_iter[0]-C[0], 2)/numpy.linalg.norm(C[0], 2)
             if ni < tol: break
             C = copy.deepcopy(C_iter)
         else:
