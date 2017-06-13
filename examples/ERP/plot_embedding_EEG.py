@@ -63,22 +63,19 @@ y = epochs.events[:, -1]
 
 #covs = XdawnCovariances(nfilter=4).fit_transform(X,y)
 covs = ERPCovariances(estimator='oas', classes=[3,4]).fit_transform(X,y)
-diff = CovEmbedding(metric='riemann', n_components=3)
-
-#%%
-
-u = diff.fit_transform(covs)
+lapl = CovEmbedding(metric='riemann', n_components=3)
+embd = lapl.fit_transform(covs)
 
 #%%
 
 ###############################################################################
 # Plot the three first components of the embedded points
 
-fig,ax = plt.subplots(figsize=(6.54, 5.66), facecolor='white')
+fig,ax = plt.subplots(figsize=(7,8), facecolor='white')
       
 for label in np.unique(y):
     idx = (y==label)
-    ax.scatter(u[idx,0], u[idx,1], s=36)      
+    ax.scatter(embd[idx,0], embd[idx,1], s=36)      
     
 ax.set_xlabel(r'$\varphi_1$', fontsize=16)        
 ax.set_ylabel(r'$\varphi_2$', fontsize=16)        

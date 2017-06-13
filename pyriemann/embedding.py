@@ -17,8 +17,7 @@ class CovEmbedding(BaseEstimator):
     Parameters
     ----------
     n_components : integer, default: 2
-        The dimension of the projected subspace.
-        
+        The dimension of the projected subspace.        
     metric : string | dict (default: 'riemann')
         The type of metric to be used for defining pairwise distance between 
         covariance matrices. 
@@ -38,11 +37,7 @@ class CovEmbedding(BaseEstimator):
     def _get_affinity_matrix(self, X, eps):
         
         # make matrix with pairwise distances between points
-        Npoints = X.shape[0]
-        distmatrix = np.zeros((Npoints, Npoints))
-        for ii,pi in enumerate(X):
-            for jj,pj in enumerate(X):
-                distmatrix[ii,jj] = distance(pi, pj, metric=self.metric)                                 
+        distmatrix = pairwise_distance(X, metric='riemann')                           
         
         # determine which scale for the gaussian kernel
         if self.eps is None:
