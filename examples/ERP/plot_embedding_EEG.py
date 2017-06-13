@@ -12,7 +12,7 @@ import numpy as np
 
 from pyriemann.estimation import ERPCovariances, XdawnCovariances
 from pyriemann.tangentspace import TangentSpace
-from pyriemann.embedding import CovEmbedding
+from pyriemann.embedding import Embedding
 
 import mne
 from mne import io
@@ -21,7 +21,6 @@ from mne.datasets import sample
 from sklearn.pipeline import make_pipeline
 from sklearn.cross_validation import KFold
 from sklearn.linear_model import LogisticRegression
-
 from matplotlib import pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
@@ -62,8 +61,8 @@ y = epochs.events[:, -1]
 # Embedding the Xdawn covariance matrices with Diffusion maps
 
 #covs = XdawnCovariances(nfilter=4).fit_transform(X,y)
-covs = ERPCovariances(estimator='oas', classes=[3,4]).fit_transform(X,y)
-lapl = CovEmbedding(metric='riemann', n_components=3)
+covs = ERPCovariances(estimator='oas', classes=[3, 4]).fit_transform(X, y)
+lapl = Embedding(metric='riemann', n_components=3)
 embd = lapl.fit_transform(covs)
 
 #%%
@@ -71,19 +70,11 @@ embd = lapl.fit_transform(covs)
 ###############################################################################
 # Plot the three first components of the embedded points
 
-fig,ax = plt.subplots(figsize=(7,8), facecolor='white')
-      
+fig, ax = plt.subplots(figsize=(7, 8), facecolor='white')
+
 for label in np.unique(y):
-    idx = (y==label)
-    ax.scatter(embd[idx,0], embd[idx,1], s=36)      
-    
-ax.set_xlabel(r'$\varphi_1$', fontsize=16)        
-ax.set_ylabel(r'$\varphi_2$', fontsize=16)        
+    idx = (y == label)
+    ax.scatter(embd[idx, 0], embd[idx, 1], s=36)
 
-
-
-
-
-
-
- 
+ax.set_xlabel(r'$\varphi_1$', fontsize=16)
+ax.set_ylabel(r'$\varphi_2$', fontsize=16)
