@@ -10,9 +10,9 @@ Embedding ERP EEG data in 3D Euclidean space with Diffusion maps
 
 import numpy as np
 
-from pyriemann.estimation import XdawnCovariances
+from pyriemann.estimation import ERPCovariances, XdawnCovariances
 from pyriemann.tangentspace import TangentSpace
-from pyriemann.embedding import Embedding
+from pyriemann.embedding import CovEmbedding
 
 import mne
 from mne import io
@@ -36,6 +36,8 @@ event_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif'
 tmin, tmax = -0., 1
 event_id = dict(vis_l=3, vis_r=4)
 
+#%%
+
 # Setup for reading the raw data
 raw = io.Raw(raw_fname, preload=True, verbose=False)
 raw.filter(2, None, method='iir')  # replace baselining with high-pass
@@ -45,6 +47,8 @@ raw.info['bads'] = ['MEG 2443']  # set bad channels
 picks = mne.pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False,
                        exclude='bads')
 
+#%%
+
 # Read epochs
 epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=False,
                     picks=picks, baseline=None, preload=True, verbose=False)
@@ -52,28 +56,32 @@ epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=False,
 X = epochs.get_data()
 y = epochs.events[:, -1]
 
+#%%
+
 ###############################################################################
 # Embedding the Xdawn covariance matrices with Diffusion maps
 
-n_components = 4  # pick some components 
-covs = XdawnCovariances(n_components).fit_transform(X, y)
-u,l = Embedding(metric='riemann').fit_transform(covs)
+#covs = XdawnCovariances(nfilter=4).fit_transform(X,y)
+covs = ERPCovariances(estimator='oas', classes=[3,4]).fit_transform(X,y)
+diff = CovEmbedding(metric='riemann', n_components=3)
+
+#%%
+
+u = diff.fit_transform(covs)
+
+#%%
 
 ###############################################################################
 # Plot the three first components of the embedded points
 
-fig = plt.figure(figsize=(6.54, 5.66), facecolor='white')
-ax  = fig.add_subplot(111, projection='3d')
-ax.grid(False)
+fig,ax = plt.subplots(figsize=(6.54, 5.66), facecolor='white')
       
 for label in np.unique(y):
     idx = (y==label)
-    ax.scatter(u[idx,1], u[idx,2], u[idx,3], s=36)      
+    ax.scatter(u[idx,0], u[idx,1], s=36)      
     
-ax.set_xlabel(r'$\varphi_1$', fontsize=18)        
-ax.set_ylabel(r'$\varphi_2$', fontsize=18)        
-ax.set_zlabel(r'$\varphi_3$', fontsize=18)        
-plt.title('3D embedding via Diffusion Maps', fontsize=16, position=(0.5, 1.10)) 
+ax.set_xlabel(r'$\varphi_1$', fontsize=16)        
+ax.set_ylabel(r'$\varphi_2$', fontsize=16)        
 
 
 
