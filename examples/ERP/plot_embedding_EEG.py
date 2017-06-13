@@ -1,7 +1,9 @@
 """
 ====================================================================
-Embedding ERP EEG data in 3D Euclidean space with Diffusion maps
+Embedding ERP EEG data in 2D Euclidean space with Laplacian Eigenmaps
 ====================================================================
+
+Spectral embedding via Laplacian Eigenmaps of a set of ERP data.
 
 """
 # Authors: Pedro Rodrigues <pedro.rodrigues01@gmail.com>
@@ -10,19 +12,14 @@ Embedding ERP EEG data in 3D Euclidean space with Diffusion maps
 
 import numpy as np
 
-from pyriemann.estimation import ERPCovariances, XdawnCovariances
-from pyriemann.tangentspace import TangentSpace
+from pyriemann.estimation import ERPCovariances
 from pyriemann.embedding import Embedding
 
 import mne
 from mne import io
 from mne.datasets import sample
 
-from sklearn.pipeline import make_pipeline
-from sklearn.cross_validation import KFold
-from sklearn.linear_model import LogisticRegression
 from matplotlib import pyplot as plt
-from mpl_toolkits.mplot3d import Axes3D
 
 print(__doc__)
 
@@ -35,8 +32,6 @@ event_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif'
 tmin, tmax = -0., 1
 event_id = dict(vis_l=3, vis_r=4)
 
-#%%
-
 # Setup for reading the raw data
 raw = io.Raw(raw_fname, preload=True, verbose=False)
 raw.filter(2, None, method='iir')  # replace baselining with high-pass
@@ -46,8 +41,6 @@ raw.info['bads'] = ['MEG 2443']  # set bad channels
 picks = mne.pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False,
                        exclude='bads')
 
-#%%
-
 # Read epochs
 epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=False,
                     picks=picks, baseline=None, preload=True, verbose=False)
@@ -55,17 +48,12 @@ epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=False,
 X = epochs.get_data()
 y = epochs.events[:, -1]
 
-#%%
-
 ###############################################################################
 # Embedding the Xdawn covariance matrices with Diffusion maps
 
-#covs = XdawnCovariances(nfilter=4).fit_transform(X,y)
 covs = ERPCovariances(estimator='oas', classes=[3, 4]).fit_transform(X, y)
 lapl = Embedding(metric='riemann', n_components=3)
 embd = lapl.fit_transform(covs)
-
-#%%
 
 ###############################################################################
 # Plot the three first components of the embedded points

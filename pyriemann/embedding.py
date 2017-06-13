@@ -1,39 +1,39 @@
 """Embedding covariance matrices via manifold learning techniques."""
 
 import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator
 from sklearn.manifold import spectral_embedding
-from pyriemann.utils.distance import distance, pairwise_distance
+from pyriemann.utils.distance import pairwise_distance
 
 
 class Embedding(BaseEstimator):
-
     """Embed SPD matrices into an Euclidean space of smaller dimension.
 
-    It uses Laplacian Eigenmaps [1] to embed SPD matrices into an Euclidean 
-    space. The basic hypothesis is that high-dimensional data lives in a 
-    low-dimensional manifold, whose intrinsic geometry can be described 
-    via the Laplacian matrix of a graph. The vertices of this graph are 
+    It uses Laplacian Eigenmaps [1] to embed SPD matrices into an Euclidean
+    space. The basic hypothesis is that high-dimensional data lives in a
+    low-dimensional manifold, whose intrinsic geometry can be described
+    via the Laplacian matrix of a graph. The vertices of this graph are
     the SPD matrices and the weights of the links are determined by the
-    Riemannian distance between each pair of them. 
+    Riemannian distance between each pair of them.
 
     Parameters
     ----------
     n_components : integer, default: 2
-        The dimension of the projected subspace.        
+        The dimension of the projected subspace.
     metric : string | dict (default: 'riemann')
-        The type of metric to be used for defining pairwise distance between 
-        covariance matrices. 
+        The type of metric to be used for defining pairwise distance between
+        covariance matrices.
     eps:  float (default: None)
         The scaling of the Gaussian kernel. If none is given
         it will use the square of the median of pairwise distances between
-        points.   
+        points.
 
     References
     ----------
-    [1] M. Belkin and P. Niyogi, "Laplacian Eigenmaps for dimensionality 
-    reduction and data representation,"" in Journal Neural Computation, 
-    vol. 15, no. 6, p. 1373-1396 , 2003                       
+    [1] M. Belkin and P. Niyogi, "Laplacian Eigenmaps for dimensionality
+    reduction and data representation,"" in Journal Neural Computation,
+    vol. 15, no. 6, p. 1373-1396 , 2003
+
     """
 
     def __init__(self, n_components=2, metric='riemann', eps=None):
@@ -62,7 +62,7 @@ class Embedding(BaseEstimator):
         return self.affinity_matrix_
 
     def fit(self, X, y=None):
-        """Fit the model from data in X.        
+        """Fit the model from data in X.
 
         Parameters
         ----------
@@ -73,8 +73,8 @@ class Embedding(BaseEstimator):
         -------
         self : object
             Returns the instance itself.
-        """
 
+        """
         affinity_matrix = self._get_affinity_matrix(X, self.eps)
         self.embedding_ = spectral_embedding(adjacency=affinity_matrix,
                                              n_components=self.n_components,
@@ -83,7 +83,7 @@ class Embedding(BaseEstimator):
         return self
 
     def fit_transform(self, X, y=None):
-        """Calculates the coordinates of the embedded points.
+        """Calculate the coordinates of the embedded points.
 
         Parameters
         ----------
@@ -92,8 +92,8 @@ class Embedding(BaseEstimator):
 
         Returns
         -------
-        X_new: array-like, shape (n_samples, n_components)           
-        """
+        X_new: array-like, shape (n_samples, n_components)
 
+        """
         self.fit(X)
         return self.embedding_

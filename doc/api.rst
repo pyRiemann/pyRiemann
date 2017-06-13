@@ -21,6 +21,17 @@ Covariance Estimation
     HankelCovariances
     Shrinkage
 
+Embedding
+------------------
+.. _embedding_api
+.. currentmodule:: pyriemann.embedding
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    Embedding
+
 Classification
 ------------------
 .. _classification_api:

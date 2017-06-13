@@ -18,6 +18,8 @@ v0.2.5 (Future release)
 
 - Added Coherences transformer
 
+- Added Embedding class.
+
 v0.2.4 (June 2016)
 -------------------
 
