@@ -133,6 +133,33 @@ def distance(A, B, metric='riemann'):
 
     return d
 
+def pairwise_distance(X, Y=None, metric='riemann'):
+    """Pairwise distance matrix
+
+    :param A: fist Covariances instance
+    :param B: second Covariances instance (optional)
+    :param metric: the metric (Default value 'riemann'), can be : 'riemann' ,
+    'logeuclid' , 'euclid' , 'logdet', 'kullback', 'kullback_right',
+    'kullback_sym'.
+    :returns: the distances between pairs of elements of X or between elements
+    of X and Y.
+
+    """
+    Ntx, _, _ = X.shape
+
+    if Y is None:
+        dist = numpy.zeros((Ntx, Ntx))
+        for i in range(Ntx):
+            for j in range(i + 1, Ntx):
+                dist[i, j] = distance(X[i], X[j], metric)
+        dist += dist.T
+    else:
+        Nty, _, _ = Y.shape
+        dist = numpy.empty((Ntx, Nty))
+        for i in range(Ntx):
+            for j in range(Nty):
+                dist[i, j] = distance(X[i], Y[j], metric)
+    return dist
 
 def pairwise_distance(X, Y=None, metric='riemann'):
     """Pairwise distance matrix"""
