@@ -22,6 +22,7 @@ from mne.datasets import sample
 from sklearn.model_selection import train_test_split
 
 from matplotlib import pyplot as plt
+import seaborn as sns
 
 print(__doc__)
 
@@ -76,4 +77,9 @@ ax.set_ylabel(r'$\varphi_2$', fontsize=16)
 ax.set_title('Spectral embedding of ERP recordings', fontsize=16)
 ax.set_xticks([-1.0, -0.5, 0.0, +0.5, 1.0])
 ax.set_yticks([-1.0, -0.5, 0.0, +0.5, 1.0])
+ax.grid(False)
 ax.legend()
+
+
+
+

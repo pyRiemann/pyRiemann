@@ -21,27 +21,25 @@ def plot_confusion_matrix(targets, predictions, target_names,
     g.set_xlabel('Predicted label')
     return g
 
-def plot_embedding_diffmaps(X, y=None, metric='riemann', eps=None, tdiff=0):
-    """Plot 2D embedding of covariance matrices using Diffusion maps"""
-    
-    diffmaps = Embedding(metric)
-    u,l = diffmaps.fit_transform(X)
+
+def plot_embedding(X, y=None, metric='riemann'):
+    """Plot 2D embedding of covariance matrices using Diffusion maps."""
+    lapl = Embedding(n_components=2, metric=metric)
+    embd = lapl.fit_transform(X)
 
     if y is None:
-        y = np.ones(u.shape[0])
+        y = np.ones(embd.shape[0])
 
-    fig = plt.figure(figsize=(6.24,5.63))
+    fig, ax = plt.subplots(figsize=(7, 8), facecolor='white')
     for label in np.unique(y):
         idx = (y == label)
-        plt.scatter(u[1,idx], u[2,idx])
-    plt.xlabel(r'$\varphi_1$', fontsize=18)        
-    plt.ylabel(r'$\varphi_2$', fontsize=18)        
-    plt.title('2D embedding via Diffusion Maps', fontsize=20)    
-        
-    return fig       
+        ax.scatter(embd[idx, 0], embd[idx, 1], s=36)
 
+    ax.set_xlabel(r'$\varphi_1$', fontsize=16)
+    ax.set_ylabel(r'$\varphi_2$', fontsize=16)
+    ax.set_title('Spectral embedding of ERP recordings', fontsize=16)
+    ax.grid(False)
+    ax.set_xticks([-1.0, -0.5, 0.0, +0.5, 1.0])
+    ax.set_yticks([-1.0, -0.5, 0.0, +0.5, 1.0])
 
-
-
-
-
+    return fig
