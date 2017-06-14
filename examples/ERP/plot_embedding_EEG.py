@@ -33,7 +33,7 @@ data_path = sample.data_path()
 raw_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw.fif'
 event_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif'
 tmin, tmax = -0., 1
-event_id = dict(vis_l=3, vis_r=4)
+event_id = dict(aud_l=1, aud_r=2, vis_l=3, vis_r=4)
 
 # Setup for reading the raw data
 raw = io.Raw(raw_fname, preload=True, verbose=False)
@@ -41,7 +41,7 @@ raw.filter(2, None, method='iir')  # replace baselining with high-pass
 events = mne.read_events(event_fname)
 
 raw.info['bads'] = ['MEG 2443']  # set bad channels
-picks = mne.pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False,
+picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False, eog=False,
                        exclude='bads')
 
 # Read epochs
@@ -55,8 +55,8 @@ y = epochs.events[:, -1]
 # Embedding the Xdawn covariance matrices with Laplacian Eigenmaps
 
 nfilter = 4
-xdwn = XdawnCovariances(estimator='oas', nfilter=nfilter)
-split = train_test_split(X, y, train_size=0.5, random_state=42)
+xdwn = XdawnCovariances(estimator='scm', nfilter=nfilter)
+split = train_test_split(X, y, train_size=0.25, random_state=42)
 Xtrain, Xtest, ytrain, ytest = split
 covs = xdwn.fit(Xtrain, ytrain).transform(Xtest)
 
@@ -68,7 +68,7 @@ embd = lapl.fit_transform(covs)
 
 fig, ax = plt.subplots(figsize=(7, 8), facecolor='white')
 
-for label, cond in zip(np.unique(y), event_id.keys()):
+for cond, label in event_id.items():
     idx = (ytest == label)
     ax.scatter(embd[idx, 0], embd[idx, 1], s=36, label=cond)
 
@@ -79,7 +79,4 @@ ax.set_xticks([-1.0, -0.5, 0.0, +0.5, 1.0])
 ax.set_yticks([-1.0, -0.5, 0.0, +0.5, 1.0])
 ax.grid(False)
 ax.legend()
-
-
-
-
+plt.show()
