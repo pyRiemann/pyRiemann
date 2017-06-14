@@ -7,6 +7,7 @@ from sklearn.metrics import confusion_matrix
 from pyriemann.embedding import Embedding
 import matplotlib.pyplot as plt
 
+
 def plot_confusion_matrix(targets, predictions, target_names,
                           title='Confusion matrix', cmap="Blues"):
     """Plot Confusion Matrix."""
