@@ -30,7 +30,7 @@ def plot_embedding(X, y=None, metric='riemann'):
     if y is None:
         y = np.ones(embd.shape[0])
 
-    fig, ax = plt.subplots(figsize=(7, 8), facecolor='white')
+    fig, ax = plt.subplots(figsize=(7, 7), facecolor='white')
     for label in np.unique(y):
         idx = (y == label)
         ax.scatter(embd[idx, 0], embd[idx, 1], s=36)
