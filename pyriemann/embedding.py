@@ -31,7 +31,7 @@ class Embedding(BaseEstimator):
     References
     ----------
     [1] M. Belkin and P. Niyogi, "Laplacian Eigenmaps for dimensionality
-    reduction and data representation,"" in Journal Neural Computation,
+    reduction and data representation," in Journal Neural Computation,
     vol. 15, no. 6, p. 1373-1396 , 2003
 
     """
@@ -45,7 +45,7 @@ class Embedding(BaseEstimator):
     def _get_affinity_matrix(self, X, eps):
 
         # make matrix with pairwise distances between points
-        distmatrix = pairwise_distance(X, metric='riemann')
+        distmatrix = pairwise_distance(X, metric=self.metric)
 
         # determine which scale for the gaussian kernel
         if self.eps is None:
@@ -58,8 +58,7 @@ class Embedding(BaseEstimator):
         q = np.dot(kernel, np.ones(len(kernel)))
         kernel_n = np.divide(kernel, np.outer(q, q))
 
-        self.affinity_matrix_ = kernel_n
-        return self.affinity_matrix_
+        return kernel_n
 
     def fit(self, X, y=None):
         """Fit the model from data in X.
@@ -76,9 +75,14 @@ class Embedding(BaseEstimator):
 
         """
         affinity_matrix = self._get_affinity_matrix(X, self.eps)
-        self.embedding_ = spectral_embedding(adjacency=affinity_matrix,
-                                             n_components=self.n_components,
-                                             norm_laplacian=True)
+        embd = spectral_embedding(adjacency=affinity_matrix,
+                                  n_components=self.n_components,
+                                  norm_laplacian=True)
+
+        # normalize the embedding between -1 and +1
+        embdn = 2*(embd - embd.min(0)) / embd.ptp(0) - 1
+
+        self.embedding_ = embdn
 
         return self
 

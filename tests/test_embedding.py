@@ -1,7 +1,7 @@
 import numpy as np
 
 from pyriemann.embedding import Embedding
-from numpy.testing import assert_array_equal, assert_almost_equal
+from numpy.testing import assert_array_equal
 
 
 def generate_cov(Nt, Ne):
@@ -15,10 +15,8 @@ def generate_cov(Nt, Ne):
         covmats[i] = np.dot(np.dot(A, np.diag(diags[i])), A.T)
     return covmats, diags, A
 
-
-def test_embedding_firstcomponent():
+def test_embedding():
     """Test Embedding."""
     covmats, diags, A = generate_cov(100, 3)
-    u, l = Embedding(metric='riemann').fit_transform(covmats)
-    assert_almost_equal(l[0], 1.0)
-    assert_array_equal(u[:, 0], np.ones(100))
+    embd = Embedding(metric='riemann', n_components=2).fit_transform(covmats)
+    assert_array_equal(embd.shape[1], 2)
