@@ -39,7 +39,7 @@ def unique_permutations(elements):
 class BasePermutation():
     """Base object for permutations test"""
 
-    def test(self, X, y, verbose=True):
+    def test(self, X, y, groups=None, verbose=True):
         """Performs the permutation test
 
         Parameters
@@ -48,7 +48,7 @@ class BasePermutation():
             The data to fit. Can be, for example a list, or an array at
             least 2d.
 
-        y : array-like, optional, default: None
+        y : array-like
             The target variable to try to predict in the case of
             supervised learning.
 
@@ -64,7 +64,7 @@ class BasePermutation():
         X = self._initial_transform(X)
 
         # get the non permuted score
-        self.scores_[0] = self.score(X, y)
+        self.scores_[0] = self.score(X, y, groups=groups)
 
         if Npe <= self.n_perms:
             print("Warning, number of unique permutations : %d" % Npe)
@@ -72,7 +72,7 @@ class BasePermutation():
             ii = 0
             for perm in perms:
                 if not numpy.array_equal(perm, y):
-                    self.scores_[ii + 1] = self.score(X, perm)
+                    self.scores_[ii + 1] = self.score(X, perm, groups=groups)
                     ii += 1
                     if verbose:
                         self._print_progress(ii)
@@ -81,7 +81,7 @@ class BasePermutation():
             rs = numpy.random.RandomState(self.random_state)
             for ii in range(self.n_perms - 1):
                 perm = rs.permutation(y)
-                self.scores_[ii + 1] = self.score(X, perm)
+                self.scores_[ii + 1] = self.score(X, perm, groups=groups)
                 if verbose:
                     self._print_progress(ii)
         if verbose:
@@ -127,7 +127,9 @@ class BasePermutation():
         y_max = axes.get_ylim()[1]
         axes.plot([x_val, x_val], [0, y_max], '--r', lw=2)
         x_max = axes.get_xlim()[1]
-        axes.text(x_max * 0.5, y_max * 0.8, 'p-value: %.3f' % self.p_value_)
+        x_min = axes.get_xlim()[0]
+        x_pos = x_min + ((x_max - x_min) * 0.25)
+        axes.text(x_pos, y_max * 0.8, 'p-value: %.3f' % self.p_value_)
         axes.set_xlabel('Score')
         axes.set_ylabel('Count')
         return axes
@@ -197,7 +199,7 @@ class PermutationModel(BasePermutation):
         self.n_jobs = n_jobs
         self.random_state = random_state
 
-    def score(self, X, y):
+    def score(self, X, y, groups=None):
         """Score one permutation.
 
         Parameters
@@ -206,12 +208,13 @@ class PermutationModel(BasePermutation):
             The data to fit. Can be, for example a list, or an array at
             least 2d.
 
-        y : array-like, optional, default: None
+        y : array-like
             The target variable to try to predict in the case of
             supervised learning.
         """
         score = cross_val_score(self.model, X, y, cv=self.cv,
-                                n_jobs=self.n_jobs, scoring=self.scoring)
+                                n_jobs=self.n_jobs, scoring=self.scoring,
+                                groups=groups)
         return score.mean()
 
 
@@ -300,7 +303,7 @@ class PermutationDistance(BasePermutation):
         self.random_state = random_state
         self.estimator = estimator
 
-    def score(self, X, y):
+    def score(self, X, y, groups=None):
         """Score of a permutation.
 
         Parameters
@@ -309,7 +312,7 @@ class PermutationDistance(BasePermutation):
             The data to fit. Can be, for example a list, or an array at
             least 2d.
 
-        y : array-like, optional, default: None
+        y : array-like
             The target variable to try to predict in the case of
             supervised learning.
         """
