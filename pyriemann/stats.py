@@ -100,6 +100,17 @@ class BasePermutation():
         """Initial transformation. By default return X."""
         return X
 
+    def _shuffle(self, y, groups, rs):
+        """Return a shuffled copy of y eventually shuffle among same groups."""
+        if groups is None:
+            indices = rs.permutation(len(y))
+        else:
+            indices = numpy.arange(len(groups))
+            for group in numpy.unique(groups):
+                this_mask = (groups == group)
+                indices[this_mask] = rs.permutation(indices[this_mask])
+        return y[indices]
+
     def plot(self, nbins=10, range=None, axes=None):
         """Plot results of the permutation test.
 

@@ -19,10 +19,13 @@ def test_permutation_distance():
     """Test one way permutation test"""
     covset = generate_cov(10, 5)
     labels = np.array([0, 1]).repeat(5)
+    groups = np.array([0] * 5 + [1] * 5)
     assert_raises(ValueError, PermutationDistance, mode='badmode')
     # pairwise
     p = PermutationDistance(100, mode='pairwise')
     p.test(covset, labels)
+    # with group
+    p.test(covset, labels, groups=groups)
     # t-test
     p = PermutationDistance(100, mode='ttest')
     p.test(covset, labels)
