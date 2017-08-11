@@ -330,7 +330,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=1000,
     Appl. 385 (2004), 305-334.
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    C = covmats.copy()
+    C = covmats
     C_iter = numpy.zeros_like(C)
     Nt, Ne, Ne = covmats.shape
     if Nt == 2:
@@ -339,10 +339,10 @@ def mean_alm(covmats, tol=1e-14, maxiter=1000,
     else:
         for k in range(maxiter):
             for h in range(Nt):
-                s = numpy.mod(numpy.arange(h, h+Nt-1)+1, Nt)
+                s = numpy.mod(numpy.arange(h, h + Nt - 1) + 1, Nt)
                 C_iter[h, :, :] = mean_alm(C[s])
 
-            ni=numpy.linalg.norm(C_iter[0]-C[0], 2)/numpy.linalg.norm(C[0], 2)
+            ni=numpy.linalg.norm(C_iter[0] - C[0], 2)/numpy.linalg.norm(C[0], 2)
             if ni < tol: break
             C = copy.deepcopy(C_iter)
         else:
