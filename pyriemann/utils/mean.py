@@ -34,7 +34,8 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param tol: the tolerance to stop the gradient descent
     :param maxiter: The maximum number of iteration, default 50
-    :param init: A covariance matrix used to initialize the gradient descent. If None the Arithmetic mean is used
+    :param init: A covariance matrix used to initia
+lize the gradient descent. If None the Arithmetic mean is used
     :param sample_weight: the weight of each sample
     :returns: the mean covariance matrix
 
@@ -310,11 +311,11 @@ def mean_alm(covmats, tol=1e-14, maxiter=1000,
     .. math::
             \mathbf{C} = A^{\frac{1}{2}}(A^{-\frac{1}{2}}B^{\frac{1}{2}}A^{-\frac{1}{2}})^{\frac{1}{2}}A^{\frac{1}{2}}
 
-    require a number of iterations.
+    require a high number of iterations.
 
     This is the adaptation of the Matlab code proposed by Dario Bini and
     Bruno Iannazzo, http://bezout.dm.unipi.it/software/mmtoolbox/
-    At least 3 times slower than mean_riemann, possible improvments.
+    Extremely slow, due to the recursive formulation.
             
     :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
     :param tol: the tolerance to stop the gradient descent
