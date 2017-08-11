@@ -358,7 +358,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=1000,
     C_iter = numpy.zeros_like(C)
     Nt, Ne, Ne = covmats.shape
     if Nt == 2:
-        X = _sharp(covmats[0], covmats[1], 0.5)
+        X = geodesic_riemann(covmats[0], covmats[1], alpha=0.5) 
         return X
     else:
         for k in range(maxiter):
