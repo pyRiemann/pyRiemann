@@ -28,6 +28,48 @@ def _mcd(X):
     return C
 
 
+def schaefer_strimmer_cov(X):
+    """Schaefer-Strimmer covariance estimator
+
+    Shrinkage estimator using method from [1]:
+    .. math::
+            \hat{\Sigma} = (1 - \gamma)\Sigma_{scm} + \gamma T
+
+    where :math:`T` is the diagonal target matrix:
+    .. math::
+            T_{i,j} = \{ \Sigma_{scm}^{ii} \text{if} i = j, 0 \text{otherwise} \}
+    Note that the optimal :math:`\gamma` is estimate by the authors' method.
+
+    :param X: Signal matrix, Nchannels X Nsamples
+
+    :returns: Schaefer-Strimmer shrinkage covariance matrix, Nchannels X Nchannels
+
+    References
+    ----------
+    [1] Schafer, J., and K. Strimmer. 2005. A shrinkage approach to
+    large-scale covariance estimation and implications for functional
+    genomics. Statist. Appl. Genet. Mol. Biol. 4:32.
+    http://doi.org/10.2202/1544-6115.1175
+    """
+    Ne, Ns = X.shape[0], X.shape[1]
+    C_scm = numpy.cov(X, ddof=0)
+    X_c = X - numpy.tile(X.mean(axis=1), [Ns, 1]).T
+
+    # Compute optimal gamma, the weigthing between SCM and srinkage estimator
+    R = Ns / (Ns - 1.0) * numpy.corrcoef(X)
+    var_R = numpy.zeros(shape=(Ne, Ne))
+    for s in range(Ns):
+        for i in range(Ne):
+            for j in range(Ne):
+                var_R[i, j] += (X_c[i, s] * X_c[j, s] - C_scm[i, j]) ** 2
+    var_R = Ns/((Ns-1)**3 * numpy.outer(X.var(axis=1), X.var(axis=1))) * var_R
+    R -= numpy.diag(numpy.diag(R))
+    var_R -= numpy.diag(numpy.diag(var_R))
+    gamma =  max(0, min(1, var_R.sum() / (R**2).sum()))
+
+    return (1. - gamma) * (Ns / (Ns - 1.)) * C_scm + gamma * (Ns / (Ns - 1.)) * numpy.diag(numpy.diag(C_scm))
+
+    
 def _check_est(est):
     """Check if a given estimator is valid"""
 
@@ -38,6 +80,7 @@ def _check_est(est):
         'lwf': _lwf,
         'oas': _oas,
         'mcd': _mcd,
+        'sch': schaefer_strimmer_cov,
         'corr': numpy.corrcoef
     }
 

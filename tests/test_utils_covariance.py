@@ -15,6 +15,7 @@ def test_covariances():
     cov = covariances(x, estimator='scm')
     cov = covariances(x, estimator='corr')
     cov = covariances(x, estimator='mcd')
+    cov = covariances(x, estimator='sch')
     cov = covariances(x, estimator=np.cov)
     assert_raises(ValueError, covariances, x, estimator='truc')
 
@@ -29,6 +30,7 @@ def test_covariances_EP():
     cov = covariances_EP(x, p, estimator='scm')
     cov = covariances_EP(x, p, estimator='corr')
     cov = covariances_EP(x, p, estimator='mcd')
+    cov = covariances_EP(x, p, estimator='sch')
 
 
 def test_covariances_eegtocov():
