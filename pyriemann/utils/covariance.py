@@ -57,11 +57,7 @@ def schaefer_strimmer_cov(X):
 
     # Compute optimal gamma, the weigthing between SCM and srinkage estimator
     R = Ns / (Ns - 1.0) * numpy.corrcoef(X)
-    var_R = numpy.zeros(shape=(Ne, Ne))
-    for s in range(Ns):
-        for i in range(Ne):
-            for j in range(Ne):
-                var_R[i, j] += (X_c[i, s] * X_c[j, s] - C_scm[i, j]) ** 2
+    var_R = (X_c ** 2).dot((X_c ** 2).T) - 2 * C_scm * X_c.dot(X_c.T) + Ns * C_scm ** 2
     var_R = Ns/((Ns-1)**3 * numpy.outer(X.var(axis=1), X.var(axis=1))) * var_R
     R -= numpy.diag(numpy.diag(R))
     var_R -= numpy.diag(numpy.diag(var_R))
@@ -69,7 +65,7 @@ def schaefer_strimmer_cov(X):
 
     return (1. - gamma) * (Ns / (Ns - 1.)) * C_scm + gamma * (Ns / (Ns - 1.)) * numpy.diag(numpy.diag(C_scm))
 
-    
+
 def _check_est(est):
     """Check if a given estimator is valid"""
 
