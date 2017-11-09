@@ -24,7 +24,7 @@ The documentation is available on http://pythonhosted.org/pyriemann
 ```
 pip install pyriemann
 ```
-or using for the most up-to-date code :
+or using pip+git for the latest version of the code :
 
 ```
 pip install git+https://github.com/alexandrebarachant/pyRiemann
