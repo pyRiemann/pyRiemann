@@ -24,6 +24,11 @@ The documentation is available on http://pythonhosted.org/pyriemann
 ```
 pip install pyriemann
 ```
+or using for the most up-to-date code :
+
+```
+pip install git+https://github.com/alexandrebarachant/pyRiemann
+```
 
 Anaconda is not currently supported, if you want to use anaconda, you need to create a virtual environment in anaconda, activate it and use the above command to install it.
 
