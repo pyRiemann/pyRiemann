@@ -45,7 +45,7 @@ raw.filter(7., 35., method='iir', picks=picks)
 
 
 epochs = Epochs(raw, events, event_id, tmin, tmax, proj=True, picks=picks,
-                baseline=None, preload=True, add_eeg_ref=False, verbose=False)
+                baseline=None, preload=True, verbose=False)
 labels = epochs.events[:, -1] - 2
 
 # get epochs

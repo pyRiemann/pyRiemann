@@ -54,7 +54,7 @@ plot_html_show_source_link = False
 
 sphinx_gallery_conf = {
     'examples_dirs'   : ['../examples', '../tutorials'],
-    'gallery_dirs'    : ['auto_examples', 'auto_tutorials']}
+    'gallery_dirs'    : ['auto_examples']}
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 autodoc_default_flags = ['inherited-members']

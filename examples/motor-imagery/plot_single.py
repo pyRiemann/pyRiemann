@@ -55,7 +55,7 @@ events = find_events(raw, shortest_event=0, stim_channel='STI 014')
 # Read epochs (train will be done only between 1 and 2s)
 # Testing will be done with a running classifier
 epochs = Epochs(raw, events, event_id, tmin, tmax, proj=True, picks=picks,
-                baseline=None, preload=True, add_eeg_ref=False, verbose=False)
+                baseline=None, preload=True, verbose=False)
 labels = epochs.events[:, -1] - 2
 
 

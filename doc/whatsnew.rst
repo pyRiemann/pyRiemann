@@ -7,7 +7,7 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.2.5 (Future release)
+v0.2.5 (January 2018)
 -------------------
 
 - Added BilinearFilter

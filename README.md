@@ -126,6 +126,17 @@ The package aims at adopting the [Scikit-Learn](http://scikit-learn.org/stable/d
 
 # changelog
 
+### v0.2.5
+- Added `BilinearFilter`
+- Added a permutation test for generic scikit-learn estimator
+- Stats module refactoring, with distance based t-test and f-test
+- Removed two way permutation test
+- Added `FlatChannelRemover`
+- Support for python 3.5 and 3.6
+- Added `Shrinkage` transformer
+- Added `Coherences` transformer
+- Added `Embedding` class.
+
 ### v0.2.4
 - Improved documentation
 - Added TSclassifier for out-of the box tangent space classification.
