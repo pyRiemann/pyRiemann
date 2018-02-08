@@ -45,16 +45,16 @@ extensions = [
     'sphinx.ext.ifconfig',
     'sphinx.ext.viewcode',
     'sphinx.ext.autosummary',
-    'sphinx_gallery.gen_gallery',
+    #'sphinx_gallery.gen_gallery',
 ]
 plot_include_source = True
 plot_formats = [("png", 90)]
 plot_html_show_formats = False
 plot_html_show_source_link = False
 
-sphinx_gallery_conf = {
-    'examples_dirs'   : ['../examples', '../tutorials'],
-    'gallery_dirs'    : ['auto_examples']}
+#sphinx_gallery_conf = {
+#    'examples_dirs'   : ['../examples', '../tutorials'],
+#    'gallery_dirs'    : ['auto_examples']}
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 autodoc_default_flags = ['inherited-members']

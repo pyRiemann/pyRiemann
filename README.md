@@ -4,6 +4,7 @@
 [![Build Status](https://travis-ci.org/alexandrebarachant/pyRiemann.svg?branch=master)](https://travis-ci.org/alexandrebarachant/pyRiemann)
 [![codecov](https://codecov.io/gh/alexandrebarachant/pyRiemann/branch/master/graph/badge.svg)](https://codecov.io/gh/alexandrebarachant/pyRiemann)
 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.18982.svg)](http://dx.doi.org/10.5281/zenodo.18982)
+[![Documentation Status](https://readthedocs.org/projects/pyriemann/badge/?version=latest)](http://pyriemann.readthedocs.io/en/latest/?badge=latest)
 
 pyriemann is a python package for covariance matrices manipulation and classification through riemannian geometry.
 
@@ -15,7 +16,7 @@ This code is BSD-licenced (3 clause).
 
 ## Documentation
 
-The documentation is available on http://pythonhosted.org/pyriemann
+The documentation is available on http://pyriemann.readthedocs.io/en/latest/
 
 ## Install
 
