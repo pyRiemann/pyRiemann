@@ -2,3 +2,6 @@ sphinx-gallery
 sphinx-bootstrap_theme
 numpydoc
 mne
+scikit-learn
+seaborn
+pandas
