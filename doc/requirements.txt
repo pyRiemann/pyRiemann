@@ -5,3 +5,4 @@ mne
 scikit-learn
 seaborn
 pandas
+joblib
