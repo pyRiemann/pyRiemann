@@ -80,7 +80,7 @@ class BasePermutation():
         else:
             rs = numpy.random.RandomState(self.random_state)
             for ii in range(self.n_perms - 1):
-                perm = rs.permutation(y)
+                perm = self._shuffle(y, groups, rs)
                 self.scores_[ii + 1] = self.score(X, perm, groups=groups)
                 if verbose:
                     self._print_progress(ii)
