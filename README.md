@@ -1,10 +1,10 @@
 # pyRiemann
 
 [![Code Climate](https://codeclimate.com/github/alexandrebarachant/pyRiemann/badges/gpa.svg)](https://codeclimate.com/github/alexandrebarachant/pyRiemann)
-[![Latest Version](https://pypip.in/version/pyriemann/badge.svg)](https://pypi.python.org/pypi/pyriemann/)
 [![Build Status](https://travis-ci.org/alexandrebarachant/pyRiemann.svg?branch=master)](https://travis-ci.org/alexandrebarachant/pyRiemann)
-[![Coverage Status](https://coveralls.io/repos/alexandrebarachant/pyRiemann/badge.svg?branch=master)](https://coveralls.io/r/alexandrebarachant/pyRiemann?branch=master)
+[![codecov](https://codecov.io/gh/alexandrebarachant/pyRiemann/branch/master/graph/badge.svg)](https://codecov.io/gh/alexandrebarachant/pyRiemann)
 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.18982.svg)](http://dx.doi.org/10.5281/zenodo.18982)
+[![Documentation Status](https://readthedocs.org/projects/pyriemann/badge/?version=latest)](http://pyriemann.readthedocs.io/en/latest/?badge=latest)
 
 pyriemann is a python package for covariance matrices manipulation and classification through riemannian geometry.
 
@@ -16,7 +16,7 @@ This code is BSD-licenced (3 clause).
 
 ## Documentation
 
-The documentation is available on http://pythonhosted.org/pyriemann
+The documentation is available on http://pyriemann.readthedocs.io/en/latest/
 
 ## Install
 
@@ -25,6 +25,13 @@ The documentation is available on http://pythonhosted.org/pyriemann
 ```
 pip install pyriemann
 ```
+or using pip+git for the latest version of the code :
+
+```
+pip install git+https://github.com/alexandrebarachant/pyRiemann
+```
+
+Anaconda is not currently supported, if you want to use anaconda, you need to create a virtual environment in anaconda, activate it and use the above command to install it.
 
 #### From sources
 
@@ -34,13 +41,19 @@ For the latest version, you can install the package from the sources using the s
 python setup.py install
 ```
 
+or in developer mode to be able to modify the sources.
+
+```
+python setup.py develop
+```
+
 ## How to use it
 
 Most of the functions mimic the scikit-learn API, and therefore can be directly used with sklearn. For example, for cross-validation classification of EEG signal using the MDM algorithm described in [4] , it is easy as :
 
 ```python
 import pyriemann
-from sklearn.cross_validation import cross_val_score
+from sklearn.model_selection import cross_val_score
 
 # load your data
 X = ... # your EEG data, in format Ntrials x Nchannels X Nsamples
@@ -52,7 +65,7 @@ cov = pyriemann.estimation.Covariances().fit_transform(X)
 # cross validation
 mdm = pyriemann.classification.MDM()
 
-accuracy = cross_val_score(mdm,cov,y)
+accuracy = cross_val_score(mdm, cov, y)
 
 print(accuracy.mean())
 
@@ -66,7 +79,7 @@ from pyriemann.tangentspace import TangentSpace
 
 from sklearn.pipeline import make_pipeline
 from sklearn.svm import SVC
-from sklearn.cross_validation import cross_val_score
+from sklearn.model_selection import cross_val_score
 
 # load your data
 X = ... # your EEG data, in format Ntrials x Nchannels X Nsamples
@@ -79,7 +92,7 @@ svc = SVC(kernel='linear')
 
 clf = make_pipeline(covest,ts,svc)
 # cross validation
-accuracy = cross_val_score(clf,X,y)
+accuracy = cross_val_score(clf, X, y)
 
 print(accuracy.mean())
 
@@ -113,6 +126,34 @@ The package aims at adopting the [Scikit-Learn](http://scikit-learn.org/stable/d
 > [5] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, “Classification of covariance matrices using a Riemannian-based kernel for BCI applications“, in NeuroComputing, vol. 112, p. 172-178, 2013. [pdf](http://hal.archives-ouvertes.fr/docs/00/82/04/75/PDF/BARACHANT_Neurocomputing_ForHal.pdf)
 
 # changelog
+
+### v0.2.5
+- Added `BilinearFilter`
+- Added a permutation test for generic scikit-learn estimator
+- Stats module refactoring, with distance based t-test and f-test
+- Removed two way permutation test
+- Added `FlatChannelRemover`
+- Support for python 3.5 and 3.6
+- Added `Shrinkage` transformer
+- Added `Coherences` transformer
+- Added `Embedding` class.
+
+### v0.2.4
+- Improved documentation
+- Added TSclassifier for out-of the box tangent space classification.
+- Added Wasserstein distance and mean.
+- Added NearestNeighbor classifier.
+- Added Softmax probabilities for MDM.
+- Added CSP for covariance matrices.
+- Added Approximate Joint diagonalization algorithms (JADE, PHAM, UWEDGE).
+- Added ALE mean.
+- Added Multiclass CSP.
+- API: param name changes in `CospCovariances` to comply to Scikit-Learn.
+- API: attributes name changes in most modules to comply to the Scikit-Learn naming convention.
+- Added `HankelCovariances` estimation
+- Added `SPoC` spatial filtering
+- Added Harmonic mean
+- Added Kullback leibler mean
 
 ### v0.2.3
  - Added multiprocessing for MDM with joblib

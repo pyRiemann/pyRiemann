@@ -3,7 +3,8 @@ from nose.tools import assert_equal, assert_raises
 import numpy as np
 
 from pyriemann.utils.covariance import (covariances, covariances_EP,
-                                        eegtocov, cospectrum)
+                                        eegtocov, cospectrum, coherence)
+
 
 def test_covariances():
     """Test covariance for multiple estimator"""
@@ -15,7 +16,8 @@ def test_covariances():
     cov = covariances(x, estimator='corr')
     cov = covariances(x, estimator='mcd')
     cov = covariances(x, estimator=np.cov)
-    assert_raises(ValueError,covariances, x, estimator='truc')
+    assert_raises(ValueError, covariances, x, estimator='truc')
+
 
 def test_covariances_EP():
     """Test covariance_EP for multiple estimator"""
@@ -27,18 +29,23 @@ def test_covariances_EP():
     cov = covariances_EP(x, p, estimator='scm')
     cov = covariances_EP(x, p, estimator='corr')
     cov = covariances_EP(x, p, estimator='mcd')
-    
+
+
 def test_covariances_eegtocov():
     """Test eegtocov"""
-    x = np.random.randn(1000,3)
+    x = np.random.randn(1000, 3)
     cov = eegtocov(x)
-    assert_equal(cov.shape[1],3)
-    
+    assert_equal(cov.shape[1], 3)
+
+
 def test_covariances_cospectrum():
-    """Test eegtocov"""
+    """Test cospectrum"""
     x = np.random.randn(3, 1000)
-    cov = cospectrum(x)
-    cov = cospectrum(x,fs=128,fmin=2,fmax=40)
-    
-    
-    
+    cospectrum(x)
+    cospectrum(x, fs=128, fmin=2, fmax=40)
+
+
+def test_covariances_coherence():
+    """Test coherence"""
+    x = np.random.randn(3, 512)
+    coherence(x, fs=128, window=256)

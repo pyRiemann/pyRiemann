@@ -1,25 +1,30 @@
-from sklearn.neighbors import DistanceMetric
-from .utils.distance import distance
-
-import numpy as np
-from numpy import array, empty, zeros, outer, unique, isnan
-from numpy.random import seed, permutation
-from math import factorial
-from pandas import DataFrame
+import numpy
+import sys
+import math
 import matplotlib.pyplot as plt
-from sklearn.base import BaseEstimator
+
+from .utils.utils import check_version
+
+if check_version('sklearn', '0.18'):
+    from sklearn.model_selection import cross_val_score
+else:
+    from sklearn.cross_validation import cross_val_score
+
+from .utils.distance import distance, pairwise_distance
+from .utils.mean import mean_covariance
+from .classification import MDM
 
 
 def multiset_perm_number(y):
     """return the number of unique permutation in a multiset."""
     pr = 1
-    for i in unique(y):
-        pr *= factorial(np.sum(y == i))
-    return factorial(len(y))/pr
+    for i in numpy.unique(y):
+        pr *= math.factorial(numpy.sum(y == i))
+    return math.factorial(len(y))/pr
 
 
 def unique_permutations(elements):
-    """Return a list of unique permutations."""
+    """Return the list of unique permutations."""
     if len(elements) == 1:
         yield (elements[0],)
     else:
@@ -31,266 +36,384 @@ def unique_permutations(elements):
                 yield (first_element,) + sub_permutation
 
 
-class RiemannDistanceMetric(DistanceMetric):
+class BasePermutation():
+    """Base object for permutations test"""
 
-    def __init__(self, metric='riemann'):
-        self.metric = metric
+    def test(self, X, y, groups=None, verbose=True):
+        """Performs the permutation test
 
-    def pairwise(self, X, Y=None):
-        Ntx, _, _ = X.shape
+        Parameters
+        ----------
+        X : array-like
+            The data to fit. Can be, for example a list, or an array at
+            least 2d.
 
-        if Y is None:
-            dist = zeros((Ntx, Ntx))
-            for i in range(Ntx):
-                for j in range(i + 1, Ntx):
-                    dist[i, j] = distance(X[i], X[j], self.metric)
-            dist += dist.T
-        else:
-            Nty, _, _ = Y.shape
-            dist = empty((Ntx, Nty))
-            for i in range(Ntx):
-                for j in range(Nty):
-                    dist[i, j] = distance(X[i], Y[j], self.metric)
-        return dist
+        y : array-like
+            The target variable to try to predict in the case of
+            supervised learning.
 
-    def get_metric(self):
-        return self.metric
-
-#######################################################################
-
-
-class SeparabilityIndex(BaseEstimator):
-
-    def __init__(self, method='', metric='riemann', estimator=None):
-        self.method = method
-        self.metric = metric
-        self.estimator = estimator
-
-    def fit(self, X, y=None):
-        if self.estimator is not None:
-            X = self.estimator.fit_transform(X, y)
-        self.pairs_ = RiemannDistanceMetric(self.metric).pairwise(X)
-        return self
-
-    def score(self, y):
-        groups = unique(y)
-        a = len(groups)
-        Ntx = len(y)
-        self.a_ = a
-        self.Ntx_ = Ntx
-        self._SST = (self.pairs_**2).sum() / (2 * Ntx)
-        pattern = zeros((Ntx, Ntx))
-        for g in groups:
-            pattern += outer(y == g, y == g) / (np.float(np.sum(y == g)))
-
-        self._SSW = ((self.pairs_**2) * (pattern)).sum() / 2
-
-        self._SSA = self._SST - self._SSW
-
-        self._F = (self._SSA / (a - 1)) / (self._SSW / (Ntx - a))
-
-        return self._F
-#######################################################################
-
-
-class SeparabilityIndexTwoFactor(BaseEstimator):
-
-    def __init__(self, method='', metric='riemann'):
-        self.method = method
-        self.metric = metric
-
-    def fit(self, X, y=None):
-        self.pairs_ = RiemannDistanceMetric(self.metric).pairwise(X)
-        return self
-
-    def score(self, fact1, fact2):
-        groups1 = unique(fact1)
-        groups2 = unique(fact2)
-
-        a1 = len(groups1)
-        a2 = len(groups2)
-        Ntx = len(fact1)
-        self.a1_ = a1
-        self.a2_ = a2
-        self.Ntx_ = Ntx
-        self._SST = (self.pairs_**2).sum() / (2 * Ntx)
-
-        # first factor
-        pattern = zeros((Ntx, Ntx))
-        y = fact1
-        for g in groups1:
-            pattern += outer(y == g, y == g) / (np.float(np.sum(y == g)))
-
-        self._SSW1 = ((self.pairs_**2) * (pattern)).sum() / 2
-
-        # second factor
-        pattern = zeros((Ntx, Ntx))
-        y = fact2
-        for g in groups2:
-            pattern += outer(y == g, y == g) / (np.float(np.sum(y == g)))
-
-        self._SSW2 = ((self.pairs_**2) * (pattern)).sum() / 2
-
-        # Co factor
-        pattern = zeros((Ntx, Ntx))
-        for g1 in groups1:
-            for g2 in groups2:
-                truc = (fact1 == g1) & (fact2 == g2)
-                pattern += outer(truc, truc) / (np.float(np.sum(truc)))
-
-        self._SSi = ((self.pairs_**2) * (pattern)).sum() / 2
-        self._SS1 = self._SST - self._SSW1
-        self._SS2 = self._SST - self._SSW2
-        self._SSR = self._SSi
-        self._SS12 = self._SST - self._SS1 - self._SS2 - self._SSR
-
-        self._F1 = (self._SS1 / (a1 - 1)) / (self._SSR / (Ntx - a1 * a2))
-        self._F2 = (self._SS2 / (a2 - 1)) / (self._SSR / (Ntx - a1 * a2))
-        self._F12 = (self._SS12 / ((a1 - 1) * (a2 - 1))) / \
-            (self._SSR / (Ntx - a1 * a2))
-
-        return self._F1, self._F2, self._F12
-#######################################################################
-
-
-class PermutationTest(BaseEstimator):
-
-    def __init__(
-            self,
-            n_perms=100,
-            sep_index=SeparabilityIndex(),
-            random_state=42,
-            fit_perms=False):
-
-        self.n_perms = n_perms
-        self.random_state = random_state
-        self.SepIndex = sep_index
-        self.fit_perms = fit_perms
-
-    def test(self, X, y):
-        seed(self.random_state)
-        if self.fit_perms is False:
-            self.SepIndex.fit(X, y)
+        verbose: bool
+            if true, print progress.
+        """
         Npe = multiset_perm_number(y)
-        self.F_ = zeros(np.min([self.n_perms, Npe]) + 1)
+        self.scores_ = numpy.zeros(numpy.min([self.n_perms, int(Npe)]))
+
+        # initial fit. This is usefull for transform data or for estimating
+        # parameter that does not change across permutation, like the mean of
+        # all data, the pairwise distance matrix, etc.
+        X = self._initial_transform(X)
+
+        # get the non permuted score
+        self.scores_[0] = self.score(X, y, groups=groups)
+
         if Npe <= self.n_perms:
             print("Warning, number of unique permutations : %d" % Npe)
             perms = unique_permutations(y)
-            for i, p in enumerate(perms):
-                # if fit_perms is true
-                if self.fit_perms is True:
-                    self.SepIndex.fit(X, y)
-                self.F_[i + 1] = self.SepIndex.score(p)
+            ii = 0
+            for perm in perms:
+                if not numpy.array_equal(perm, y):
+                    self.scores_[ii + 1] = self.score(X, perm, groups=groups)
+                    ii += 1
+                    if verbose:
+                        self._print_progress(ii)
+
         else:
-            for i in range(self.n_perms):
-                perms = permutation(y)
+            rs = numpy.random.RandomState(self.random_state)
+            for ii in range(self.n_perms - 1):
+                perm = self._shuffle(y, groups, rs)
+                self.scores_[ii + 1] = self.score(X, perm, groups=groups)
+                if verbose:
+                    self._print_progress(ii)
+        if verbose:
+            print("")
+        self.p_value_ = (self.scores_[0] <= self.scores_).mean()
 
-                # if fit_perms is true
-                if self.fit_perms is True:
-                    self.SepIndex.fit(X, y)
-                self.F_[i + 1] = self.SepIndex.score(perms)
+        return self.p_value_, self.scores_
 
-        self.F_[0] = self.SepIndex.score(y)
+    def _print_progress(self, ii):
+        """Print permutation progress"""
+        sys.stdout.write("Performing permutations : [%.1f%%]\r"
+                         % ((100. * (ii + 1)) / self.n_perms))
+        sys.stdout.flush()
 
-        self.p_value_ = ((self.F_[0] <= self.F_).sum() /
-                         np.float(len(self.F_)))
+    def _initial_transform(self, X):
+        """Initial transformation. By default return X."""
+        return X
 
-        return self.p_value_, self.F_
+    def _shuffle(self, y, groups, rs):
+        """Return a shuffled copy of y eventually shuffle among same groups."""
+        if groups is None:
+            indices = rs.permutation(len(y))
+        else:
+            indices = numpy.arange(len(groups))
+            for group in numpy.unique(groups):
+                this_mask = (groups == group)
+                indices[this_mask] = rs.permutation(indices[this_mask])
+        return y[indices]
 
-    def summary(self):
-        sep = self.SepIndex
-        a = sep.a_
-        Ntx = sep.Ntx_
+    def plot(self, nbins=10, range=None, axes=None):
+        """Plot results of the permutation test.
 
-        df = [(a - 1), Ntx - a, Ntx - 1]
-        SS = [sep._SSA, sep._SSW, sep._SST]
-        MS = array(SS) / array(df)
-        F = [self.F_[0], np.nan, np.nan]
-        p = [self.p_value_, np.nan, np.nan]
+        Parameters
+        ----------
+        nbins : integer or array_like or 'auto', optional
+            If an integer is given, bins + 1 bin edges are returned,
+            consistently with numpy.histogram() for numpy version >= 1.3.
+            Unequally spaced bins are supported if bins is a sequence.
 
-        cols = ['df', 'SS', 'MS', 'F', 'p-value']
-        index = ['Labels', 'Residual', 'Total']
+        range : tuple or None, optional
+            The lower and upper range of the bins. Lower and upper outliers are
+            ignored. If not provided, range is (x.min(), x.max()).
+            Range has no effect if bins is a sequence.
+            If bins is a sequence or range is specified, autoscaling is based
+            on the specified bin range instead of the range of x.
 
-        data = array([df, SS, MS, F, p]).T
+        axes : axes handle (default None)
+            Axes handle for matplotlib. if None a new figure will be created.
+        """
+        if axes is None:
+            fig, axes = plt.subplots(1, 1)
+        axes.hist(self.scores_[1:], nbins, range)
+        x_val = self.scores_[0]
+        y_max = axes.get_ylim()[1]
+        axes.plot([x_val, x_val], [0, y_max], '--r', lw=2)
+        x_max = axes.get_xlim()[1]
+        x_min = axes.get_xlim()[0]
+        x_pos = x_min + ((x_max - x_min) * 0.25)
+        axes.text(x_pos, y_max * 0.8, 'p-value: %.3f' % self.p_value_)
+        axes.set_xlabel('Score')
+        axes.set_ylabel('Count')
+        return axes
 
-        res = DataFrame(data, index=index, columns=cols)
-        return res
 
-    def plot(self, nbins=100, range=None):
-        plt.plot([self.F_[0], self.F_[0]], [0, 100], '--r', lw=2)
-        h = plt.hist(self.F_, nbins, range)
-        plt.xlabel('F-value')
-        plt.ylabel('Count')
-        plt.grid()
-        return h
+class PermutationModel(BasePermutation):
 
-#######################################################################
+    """
+    Permutation test using any scikit-learn model for scoring.
 
+    Perform a permutation test using the cross-validation score of any
+    scikit-learn compatible model. Score is obtained with `cross_val_score`
+    from scikit-learn. The score should be a "higer is better" metric.
 
-class PermutationTestTwoWay(BaseEstimator):
+    Parameters
+    ----------
+    n_perms : int  (default: 100)
+        The number of permutation. The minimum should be 20 for a resolution of
+        0.05 p-value.
 
-    def __init__(
-            self,
-            n_perms=100,
-            sep_index=SeparabilityIndexTwoFactor(),
-            random_state=42):
+    model : sklearn compatible model, (default: MDM())
+        The model for scoring.
 
+    cv : int, (default 3) cross-validation generator or an iterable, optional
+        Determines the cross-validation splitting strategy.
+        Possible inputs for cv are:
+          - None, to use the default 3-fold cross validation,
+          - integer, to specify the number of folds in a `(Stratified)KFold`,
+          - An object to be used as a cross-validation generator.
+          - An iterable yielding train, test splits.
+        For integer/None inputs, if the estimator is a classifier and `y` is
+        either binary or multiclass, :class:`StratifiedKFold` is used. In all
+        other cases, `KFold` is used.
+
+    scoring : string, callable or None, optional, default: None
+        A string (see model evaluation documentation) or
+        a scorer callable object / function with signature
+        `scorer(estimator, X, y)`.
+
+    n_jobs : integer, optional
+        The number of CPUs to use to do the computation. -1 means
+        'all CPUs'.
+
+    random_state : int (default 42)
+        random state for the permutation test.
+
+    Attributes
+    ----------
+    p_value_ : float
+        the p-value of the test
+    scores_ : list
+        contain all scores for all permutations. The fist element is the
+        non-permuted score.
+
+    See Also
+    --------
+    PermutationDistance
+    """
+
+    def __init__(self, n_perms=100, model=MDM(), cv=3, scoring=None,
+                 n_jobs=1, random_state=42):
+        """Init."""
         self.n_perms = n_perms
+        self.model = model
+        self.cv = cv
+        self.scoring = scoring
+        self.n_jobs = n_jobs
         self.random_state = random_state
-        self.SepIndex = sep_index
 
-    def test(self, X, factor1, factor2, names=None):
-        seed(self.random_state)
-        self.SepIndex.fit(X)
-        self.names_ = names
+    def score(self, X, y, groups=None):
+        """Score one permutation.
 
-        self.F_ = zeros((self.n_perms + 1, 3))
-        for i in range(self.n_perms):
-            self.F_[
-                i + 1,
-                :] = self.SepIndex.score(
-                permutation(factor1),
-                permutation(factor2))
+        Parameters
+        ----------
+        X : array-like
+            The data to fit. Can be, for example a list, or an array at
+            least 2d.
 
-        self.F_[0, :] = self.SepIndex.score(factor1, factor2)
+        y : array-like
+            The target variable to try to predict in the case of
+            supervised learning.
+        """
+        score = cross_val_score(self.model, X, y, cv=self.cv,
+                                n_jobs=self.n_jobs, scoring=self.scoring,
+                                groups=groups)
+        return score.mean()
 
-        self.p_value_ = (self.F_[0, :] <= self.F_).sum(
-            axis=0) / np.float(self.n_perms)
 
-        return self.p_value_, self.F_
+class PermutationDistance(BasePermutation):
 
-    def summary(self):
-        sep = self.SepIndex
-        Ntx = sep.Ntx_
+    """
+    Permutation test based on distance.
 
-        df = [sep.a1_ - 1, sep.a2_ - 1,
-              (sep.a1_ - 1) * (sep.a2_ - 1), Ntx - sep.a1_ * sep.a2_, Ntx - 1]
-        SS = [sep._SS1, sep._SS2, sep._SS12, sep._SSR, sep._SST]
-        MS = array(SS) / array(df)
-        F = [self.F_[0, 0], self.F_[0, 1], self.F_[0, 2], np.nan, np.nan]
-        p = [self.p_value_[0], self.p_value_[1],
-             self.p_value_[2], np.nan, np.nan]
+    Perform a permutation test based on distance. You have the choice of 3
+    different statistic :
 
-        cols = ['df', 'sum_sq', 'mean_sq', 'F', 'PR(>F)']
-        if self.names_ is not None:
-            index = [self.names_[0], self.names_[1], self.names_[
-                0] + ':' + self.names_[1], 'Residual', 'Total']
-        else:
-            index = ['Fact1', 'Fact2', 'Fact1:Fact2', 'Residual', 'Total']
+    - 'pairwise' :
+        the statistic is based on paiwire distance as
+        descibed in [1]. This is the fastest option for low sample size since
+        the pairwise distance matrix does not need to be estimated for each
+        permutation.
 
-        data = np.array([df, SS, MS, F, p]).T
+    - 'ttest' :
+        t-test based statistic obtained by the ration of the
+        distance between each riemannian centroid and the group dispersion.
+        The means have to be estimated for each permutation, leading to a
+        slower procedure. However, this can be used for high sample size.
 
-        res = DataFrame(data, index=index, columns=cols)
-        return res
+    - 'ftest':
+        f-test based statistic estimated using the between and
+        within group variability. As for the 'ttest' stats, group centroid
+        are estimated for each permutation.
 
-    def plot(self, nbins=100, plt_range=None):
-        h = None
-        for i in range(3):
-            plt.subplot(3, 1, i + 1)
-            if not isnan(self.F_[0, i]):
-                h = plt.hist(self.F_[:, i], nbins, plt_range)
-                plt.plot([self.F_[0, i], self.F_[0, i]], [0, 100], '--r', lw=2)
-                plt.xlabel('F-value')
-                plt.ylabel('Count')
-                plt.grid()
-        return h
+    Parameters
+    ----------
+    n_perms : int  (default: 100)
+        The number of permutation. The minimum should be 20 for a resolution of
+        0.05 p-value.
+
+    metric : string | dict (default: 'riemann')
+        The type of metric used for centroid and distance estimation.
+        see `distance` anb `mean_covariance` for the list of supported metric.
+        the metric could be a dict with two keys, `mean` and `distance` in
+        order to pass different metric for the centroid estimation and the
+        distance estimation. Typical usecase is to pass 'logeuclid' metric for
+        the mean in order to boost the computional speed and 'riemann' for the
+        distance in order to keep the good sensitivity for the classification.
+
+    mode : string (default: 'pairwise')
+        Type of statistic to use. could be 'pairwise', 'ttest' of 'ftest'
+
+    n_jobs : integer, optional
+        The number of CPUs to use to do the computation. -1 means
+        'all CPUs'.
+
+    random_state : int (default 42)
+        random state for the permutation test.
+
+    estimator : sklearn compatible estimator
+        if provided, data are transformed before every permutation. should
+        not be used unless a supervised opperation must be applied on the data.
+        This would be the case for ERP covariance.
+
+    Attributes
+    ----------
+    p_value_ : float
+        the p-value of the test
+    scores_ : list
+        contain all scores for all permutations. The fist element is the
+        non-permuted score.
+
+    See Also
+    --------
+    PermutationModel
+
+    References
+    --------
+        [1] Anderson, J. "A new method for non-parametric multivariate analysis of
+        variance." Austral ecology. 2001.
+    """
+
+    def __init__(self, n_perms=100, metric='riemann', mode='pairwise',
+                 n_jobs=1, random_state=42, estimator=None):
+        """Init."""
+        self.n_perms = n_perms
+        if mode not in ['pairwise', 'ttest', 'ftest']:
+            raise(ValueError("mode must be 'pairwise', 'ttest' or 'ftest'"))
+        self.mode = mode
+        self.metric = metric
+        self.n_jobs = n_jobs
+        self.random_state = random_state
+        self.estimator = estimator
+
+    def score(self, X, y, groups=None):
+        """Score of a permutation.
+
+        Parameters
+        ----------
+        X : array-like
+            The data to fit. Can be, for example a list, or an array at
+            least 2d.
+
+        y : array-like
+            The target variable to try to predict in the case of
+            supervised learning.
+        """
+        if self.estimator:
+            X = self.estimator.fit_transform(X, y)
+            X = self.__init_transform(X)
+
+        if self.mode == 'ttest':
+            return self._score_ttest(X, y)
+        elif self.mode == 'ftest':
+            return self._score_ftest(X, y)
+        elif self.mode == 'pairwise':
+            return self._score_pairwise(X, y)
+
+    def _initial_transform(self, X):
+        """Initial transform"""
+        # if an estimator provided, then transform w
+        if self.estimator:
+            return X
+
+        return self.__init_transform(X)
+
+    def __init_transform(self, X):
+        """Init tr"""
+        self.mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
+        if self.mode == 'ftest':
+            self.global_mean = mean_covariance(X, metric=self.mdm.metric_mean)
+        elif self.mode == 'pairwise':
+            X = pairwise_distance(X, metric=self.mdm.metric_dist) ** 2
+        return X
+
+    def _score_ftest(self, X, y):
+        """Get the score"""
+        mdm = self.mdm.fit(X, y)
+        covmeans = numpy.array(mdm.covmeans_)
+
+        # estimates between classes variability
+        n_classes = len(covmeans)
+        between = 0
+        for ix, classe in enumerate(mdm.classes_):
+            di = distance(covmeans[ix], self.global_mean,
+                          metric=mdm.metric_dist)**2
+            between += numpy.sum(y == classe) * di
+        between /= (n_classes - 1)
+
+        # estimates within class variability
+        within = 0
+        for ix, classe in enumerate(mdm.classes_):
+            within += (distance(X[y == classe], covmeans[ix],
+                                metric=mdm.metric_dist)**2).sum()
+        within /= (len(y) - n_classes)
+
+        score = between / within
+        return score
+
+    def _score_ttest(self, X, y):
+        """Get the score"""
+        mdm = self.mdm.fit(X, y)
+        covmeans = numpy.array(mdm.covmeans_)
+
+        # estimates distances between means
+        n_classes = len(covmeans)
+        pairs = pairwise_distance(covmeans, metric=mdm.metric_dist)
+        mean_dist = numpy.triu(pairs).sum()
+        mean_dist /= (n_classes * (n_classes - 1))/2.0
+
+        dist = 0
+        for ix, classe in enumerate(mdm.classes_):
+            di = (distance(X[y == classe], covmeans[ix],
+                           metric=mdm.metric_dist)**2).mean()
+            dist += (di / numpy.sum(y == classe))
+        score = mean_dist / numpy.sqrt(dist)
+        return score
+
+    def _score_pairwise(self, X, y):
+        """Score for the pairwise distance test."""
+        classes = numpy.unique(y)
+        n_classes = len(classes)
+        n_samples = len(y)
+        total_ss = X.sum() / (2 * n_samples)
+        pattern = numpy.zeros((n_samples, n_samples))
+        for classe in classes:
+            ix = (y == classe)
+            pattern += (numpy.outer(ix, ix) / numpy.float(ix.sum()))
+
+        within_ss = (X * pattern).sum() / 2
+
+        between_ss = total_ss - within_ss
+
+        score = ((between_ss / (n_classes - 1)) /
+                 (within_ss / (n_samples - n_classes)))
+
+        return score

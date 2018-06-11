@@ -21,7 +21,7 @@ from mne.decoding import CSP
 
 # pyriemann import
 from pyriemann.classification import MDM, TSclassifier
-from pyriemann.estimation import covariances
+from pyriemann.estimation import Covariances
 
 # sklearn imports
 from sklearn.cross_validation import cross_val_score, KFold
@@ -55,7 +55,7 @@ events = find_events(raw, shortest_event=0, stim_channel='STI 014')
 # Read epochs (train will be done only between 1 and 2s)
 # Testing will be done with a running classifier
 epochs = Epochs(raw, events, event_id, tmin, tmax, proj=True, picks=picks,
-                baseline=None, preload=True, add_eeg_ref=False, verbose=False)
+                baseline=None, preload=True, verbose=False)
 labels = epochs.events[:, -1] - 2
 
 
@@ -65,7 +65,7 @@ cv = KFold(len(labels), 10, shuffle=True, random_state=42)
 epochs_data_train = 1e6*epochs.get_data()
 
 # compute covariance matrices
-cov_data_train = covariances(epochs_data_train)
+cov_data_train = Covariances().transform(epochs_data_train)
 
 ###############################################################################
 # Classification with Minimum distance to mean

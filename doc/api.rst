@@ -17,7 +17,20 @@ Covariance Estimation
     ERPCovariances
     XdawnCovariances
     CospCovariances
+    Coherences
+    HankelCovariances
+    Shrinkage
 
+Embedding
+------------------
+.. _embedding_api
+.. currentmodule:: pyriemann.embedding
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    Embedding
 
 Classification
 ------------------
@@ -70,6 +83,8 @@ Spatial Filtering
 
     Xdawn
     CSP
+    SPoC
+    BilinearFilter
 
 Channel selection
 ------------------
@@ -81,6 +96,7 @@ Channel selection
     :template: class.rst
 
     ElectrodeSelection
+    FlatChannelRemover
 
 Stats
 ------------------
@@ -91,11 +107,8 @@ Stats
     :toctree: generated/
     :template: class.rst
 
-    PermutationTest
-    PermutationTestTwoWay
-    DistanceMetric
-    SeparabilityIndex
-    SeparabilityIndexTwoFactor
+    PermutationDistance
+    PermutationModel
 
 
 Utils function
@@ -136,6 +149,8 @@ Mean
     mean_logdet
     mean_wasserstein
     mean_ale
+    mean_harmonic
+    mean_kullback_sym
 
 
 Geodesic

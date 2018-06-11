@@ -1,71 +1,67 @@
 """
 ====================================================================
-One Way manova
+Manova for ERP data
 ====================================================================
 
-One way manova to compare Left vs Right.
 """
+# Authors: Alexandre Barachant <alexandre.barachant@gmail.com>
+#
+# License: BSD (3-clause)
+
 import seaborn as sns
 
 from time import time
 from matplotlib import pyplot as plt
 
-from mne import Epochs, pick_types
-from mne.io import concatenate_raws
-from mne.io.edf import read_raw_edf
-from mne.datasets import eegbci
-from mne.event import find_events
+import mne
+from mne import io
+from mne.datasets import sample
 
 from pyriemann.stats import PermutationDistance, PermutationModel
-from pyriemann.estimation import Covariances
-from pyriemann.spatialfilters import CSP
+from pyriemann.estimation import XdawnCovariances
+from pyriemann.tangentspace import TangentSpace
 
 from sklearn.pipeline import make_pipeline
 from sklearn.linear_model import LogisticRegression
 
+print(__doc__)
 sns.set_style('whitegrid')
+data_path = sample.data_path()
+
 ###############################################################################
 # Set parameters and read data
+###############################################################################
+raw_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw.fif'
+event_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif'
+tmin, tmax = -0., 1
+event_id = dict(aud_l=1, aud_r=2, vis_l=3, vis_r=4)
 
-# avoid classification of evoked responses by using epochs that start 1s after
-# cue onset.
-tmin, tmax = 1., 3.
-event_id = dict(hands=2, feet=3)
-subject = 1
-runs = [6, 10, 14]  # motor imagery: hands vs feet
+# Setup for reading the raw data
+raw = io.Raw(raw_fname, preload=True)
+raw.filter(2, None, method='iir')  # replace baselining with high-pass
+events = mne.read_events(event_fname)
 
-raw_files = [read_raw_edf(f, preload=True, verbose=False)
-             for f in eegbci.load_data(subject, runs)]
-raw = concatenate_raws(raw_files)
+raw.info['bads'] = ['MEG 2443']  # set bad channels
+picks = mne.pick_types(raw.info, meg='grad', eeg=False, stim=False, eog=False,
+                       exclude='bads')
 
-# Apply band-pass filter
-raw.filter(7., 35., method='iir')
+# Read epochs
+epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=False,
+                    picks=picks, baseline=None, preload=True, verbose=False)
 
-events = find_events(raw, shortest_event=0, stim_channel='STI 014')
-picks = pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False,
-                   exclude='bads')
-picks = picks[::4]
-
-# Read epochs (train will be done only between 1 and 2s)
-# Testing will be done with a running classifier
-epochs = Epochs(raw, events, event_id, tmin, tmax, proj=True, picks=picks,
-                baseline=None, preload=True, verbose=False)
-labels = epochs.events[:, -1] - 2
+labels = epochs.events[::5, -1]
 
 # get epochs
-epochs_data = epochs.get_data()
+epochs_data = epochs.get_data()[::5]
 
-# compute covariance matrices
-covmats = Covariances().fit_transform(epochs_data)
-
-n_perms = 500
+n_perms = 100
 ###############################################################################
 # Pairwise distance based permutation test
 ###############################################################################
-
 t_init = time()
-p_test = PermutationDistance(n_perms, metric='riemann', mode='pairwise')
-p, F = p_test.test(covmats, labels)
+p_test = PermutationDistance(n_perms, metric='riemann', mode='pairwise',
+                             estimator=XdawnCovariances(2))
+p, F = p_test.test(epochs_data, labels)
 duration = time() - t_init
 
 fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
@@ -81,13 +77,14 @@ plt.show()
 ###############################################################################
 
 t_init = time()
-p_test = PermutationDistance(n_perms, metric='riemann', mode='ttest')
-p, F = p_test.test(covmats, labels)
+p_test = PermutationDistance(n_perms, metric='riemann', mode='ttest',
+                             estimator=XdawnCovariances(2))
+p, F = p_test.test(epochs_data, labels)
 duration = time() - t_init
 
 fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
 p_test.plot(nbins=10, axes=axes)
-plt.title('t-test distance - %.2f sec.' % duration)
+plt.title('Pairwise distance - %.2f sec.' % duration)
 print('p-value: %.3f' % p)
 sns.despine()
 plt.tight_layout()
@@ -98,13 +95,14 @@ plt.show()
 ###############################################################################
 
 t_init = time()
-p_test = PermutationDistance(n_perms, metric='riemann', mode='ftest')
-p, F = p_test.test(covmats, labels)
+p_test = PermutationDistance(n_perms, metric='riemann', mode='ftest',
+                             estimator=XdawnCovariances(2))
+p, F = p_test.test(epochs_data, labels)
 duration = time() - t_init
 
 fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
 p_test.plot(nbins=10, axes=axes)
-plt.title('F-test distance - %.2f sec.' % duration)
+plt.title('Pairwise distance - %.2f sec.' % duration)
 print('p-value: %.3f' % p)
 sns.despine()
 plt.tight_layout()
@@ -114,11 +112,12 @@ plt.show()
 # Classification based permutation test
 ###############################################################################
 
-clf = make_pipeline(CSP(4), LogisticRegression())
+clf = make_pipeline(XdawnCovariances(2), TangentSpace('logeuclid'),
+                    LogisticRegression())
 
 t_init = time()
-p_test = PermutationModel(n_perms, model=clf, cv=3, scoring='roc_auc')
-p, F = p_test.test(covmats, labels)
+p_test = PermutationModel(n_perms, model=clf, cv=3)
+p, F = p_test.test(epochs_data, labels)
 duration = time() - t_init
 
 fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)

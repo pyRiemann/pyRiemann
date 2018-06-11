@@ -1,11 +1,9 @@
 """Tangent space functions."""
 from .utils.mean import mean_covariance
 from .utils.tangentspace import tangent_space, untangent_space
-from .utils.base import check_version
+from .utils.utils import check_version
 
-import numpy as np
-from numpy import sqrt, unique, eye
-from numpy.linalg import pinv
+import numpy
 from sklearn.base import BaseEstimator, TransformerMixin
 if check_version('sklearn', '0.17'):
     from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
@@ -51,6 +49,12 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         online implementation. Performance are better when the number of trials
         for prediction is higher.
 
+
+    Attributes
+    ----------
+    reference_ : ndarray
+        If fit, the reference point for tangent space mapping.
+
     See Also
     --------
     FgMDM
@@ -90,15 +94,15 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             The TangentSpace instance.
         """
         # compute mean covariance
-        self.Cr_ = mean_covariance(X, metric=self.metric,
-                                   sample_weight=sample_weight)
+        self.reference_ = mean_covariance(X, metric=self.metric,
+                                          sample_weight=sample_weight)
         return self
 
     def _check_data_dim(self, X):
         """Check data shape and return the size of cov mat."""
         shape_X = X.shape
         if len(X.shape) == 2:
-            Ne = (sqrt(1 + 8 * shape_X[1]) - 1) / 2
+            Ne = (numpy.sqrt(1 + 8 * shape_X[1]) - 1) / 2
             if Ne != int(Ne):
                 raise ValueError("Shape of Tangent space vector does not"
                                  " correspond to a square matrix.")
@@ -112,10 +116,10 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
     def _check_reference_points(self, X):
         """Check reference point status, and force it to identity if not."""
-        if not hasattr(self, 'Cr_'):
-            self.Cr_ = eye(self._check_data_dim(X))
+        if not hasattr(self, 'reference_'):
+            self.reference_ = numpy.eye(self._check_data_dim(X))
         else:
-            shape_cr = self.Cr_.shape[0]
+            shape_cr = self.reference_.shape[0]
             shape_X = self._check_data_dim(X)
 
             if shape_cr != shape_X:
@@ -138,7 +142,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         if self.tsupdate:
             Cr = mean_covariance(X, metric=self.metric)
         else:
-            Cr = self.Cr_
+            Cr = self.reference_
         return tangent_space(X, Cr)
 
     def fit_transform(self, X, y=None, sample_weight=None):
@@ -160,9 +164,9 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         """
         # compute mean covariance
         self._check_reference_points(X)
-        self.Cr_ = mean_covariance(X, metric=self.metric,
-                                   sample_weight=sample_weight)
-        return tangent_space(X, self.Cr_)
+        self.reference_ = mean_covariance(X, metric=self.metric,
+                                          sample_weight=sample_weight)
+        return tangent_space(X, self.reference_)
 
     def inverse_transform(self, X, y=None):
         """Inverse transform.
@@ -182,7 +186,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             the covariance matrices corresponding to each of tangent vector.
         """
         self._check_reference_points(X)
-        return untangent_space(X, self.Cr_)
+        return untangent_space(X, self.reference_)
 
 
 class FGDA(BaseEstimator, TransformerMixin):
@@ -228,7 +232,7 @@ class FGDA(BaseEstimator, TransformerMixin):
 
     def _fit_lda(self, X, y, sample_weight=None):
         """Helper to fit LDA."""
-        self.classes_ = unique(y)
+        self.classes_ = numpy.unique(y)
         self._lda = LDA(n_components=len(self.classes_) - 1,
                         solver='lsqr',
                         shrinkage='auto')
@@ -237,12 +241,13 @@ class FGDA(BaseEstimator, TransformerMixin):
         self._lda.fit(ts, y)
 
         W = self._lda.coef_.copy()
-        self._W = W.T.dot(pinv(W.dot(W.T))).dot(W)
+        self._W = numpy.dot(
+            numpy.dot(W.T, numpy.linalg.pinv(numpy.dot(W, W.T))), W)
         return ts
 
     def _retro_project(self, ts):
         """Helper to project back in the manifold."""
-        ts = ts.dot(self._W)
+        ts = numpy.dot(ts, self._W)
         return self._ts.inverse_transform(ts)
 
     def fit(self, X, y=None, sample_weight=None):

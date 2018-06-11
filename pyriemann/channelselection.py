@@ -1,8 +1,7 @@
 """Code for channel selection."""
 from .utils.distance import distance
 from .classification import MDM
-import numpy as np
-from numpy import zeros
+import numpy
 from sklearn.base import BaseEstimator, TransformerMixin
 
 
@@ -86,9 +85,9 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         Ne, _ = self.covmeans_[0].shape
 
         self.dist_ = []
-        self.subelec_ = range(0, Ne, 1)
+        self.subelec_ = list(range(0, Ne, 1))
         while (len(self.subelec_)) > self.nelec:
-            di = zeros(shape=(len(self.subelec_), 1))
+            di = numpy.zeros((len(self.subelec_), 1))
             for idx in range(len(self.subelec_)):
                 sub = self.subelec_[:]
                 sub.pop(idx)
@@ -117,6 +116,66 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         covs : ndarray, shape (n_trials, n_elec, n_elec)
             The covariances matrices after reduction of the number of channels.
         """
-        # if self.subelec_ is None:
-        #     self.subelec_ = range(0, X.shape[1], 1)
         return X[:, self.subelec_, :][:, :, self.subelec_]
+
+
+class FlatChannelRemover(BaseEstimator, TransformerMixin):
+    """Finds and removes flat channels.
+
+    Attributes
+    ----------
+    channels : ndarray, shape (n_good_channels)
+        The indices of the non-flat channels.
+    """
+
+    def fit(self, X, y=None):
+        """Find flat channels.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_times)
+            Training data.
+        y : ndarray, shape (n_trials, n_dims) | None, optional
+            The regressor(s). Defaults to None.
+
+        Returns
+        -------
+        X : ndarray, shape (n_trials, n_good_channels, n_times)
+            The data without flat channels.
+        """
+        std = numpy.mean(numpy.std(X, axis=2) ** 2, 0)
+        self.channels_ = numpy.where(std)[0]
+        return self
+
+    def transform(self, X):
+        """Remove flat channels.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_times)
+            Training data.
+
+        Returns
+        -------
+        X : ndarray, shape (n_trials, n_good_channels, n_times)
+            The data without flat channels.
+        """
+        return X[:, self.channels_, :]
+
+    def fit_transform(self, X, y=None):
+        """Find and remove flat channels.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_times)
+            Training data.
+        y : ndarray, shape (n_trials, n_dims) | None, optional
+            The regressor(s). Defaults to None.
+
+        Returns
+        -------
+        X : ndarray, shape (n_trials, n_good_channels, n_times)
+            The data without flat channels.
+        """
+        self.fit(X, y)
+        return self.transform(X)

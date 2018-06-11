@@ -1,90 +1,10 @@
 """Mean covariance estimation."""
-from __future__ import print_function
-import numpy as np
-from numpy import average, diag, eye, finfo, ones, zeros, log, log1p, exp, min, max, isnan, zeros_like, mod,  arange
-from numpy.linalg import inv, norm, cond, eig, LinAlgError, lstsq, solve
-from scipy.linalg import cholesky, schur, inv, solve_triangular
-import copy
+import numpy
 
-from .base import sqrtm, invsqrtm, logm, expm, powm
+from .base import sqrtm, invsqrtm, logm, expm
 from .ajd import ajd_pham
 from .distance import distance_riemann
-
-
-def _sharp(A, B, t):
-    """Computes the point G=g(t) of the geodesic between A and B [1]
-
-    .. math::
-            A^{1/2} (A^{-1/2} B A^{-1/2})^t A^{1/2}
-
-    :param A: array, shape=(n_channels, n_channels)
-              positive definite matrix
-    :param B: array, shape=(n_channels, n_channels)
-              positive definite matrix
-    :param t: real
-
-    :returns G: array, shape=(n_channels, n_channels)
-                point of the geodesic
-
-    References
-    ----------
-    [1] Bhatia, R. (2009). Positive definite matrices. Princeton
-    university press.
-    """
-    return sqrtm(A).dot(powm(invsqrtm(A).dot(B).dot(invsqrtm(A)),
-                             t)).dot(sqrtm(A))
-
-
-def _sharp_not_functional(A, B, t):
-    """Computes the point G=g(t) of the geodesic between A and B [1]
-
-    .. math::
-            G=g(t),\text{ subject to }g(0)=A, g(1)=B \\
-            A(A^{-1}B)^t = B(B^{-1}A)^{1-t}
-
-    :param A: array, shape=(n_channels, n_channels)
-              positive definite matrix
-    :param B: array, shape=(n_channels, n_channels)
-              positive definite matrix
-    :param t: real
-
-    :returns G: array, shape=(n_channels, n_channels)
-                point of the geodesic
-    :returns mA, mB: real, condition numbers
-
-    References
-    ----------
-    [1] B. Iannazzo, The geometric mean of two matrices from a computational
-    viewpoint, arXiv preprint arXiv:1201.0101, 2011.
-    """
-    mA, mB = cond(A), cond(B)
-    if mA > mB:
-        C = A.copy()
-        A = B.copy()
-        B = C.copy()
-        t = 1-t
-    try:
-        RA, RB = cholesky(A), cholesky(B)
-    except LinAlgError:
-        print ("error in cholesky A")
-        print (A)
-        raise
-    # Z = lstsq(RA.T, RB.T)[0].T
-    # Z = RA.T.dot(inv(RB.T))
-    # Z = solve(RA.T, RB.T).T
-    
-    # How to reproduce the behavior of matlab mrdivide? The algorithm shown
-    # http://fr.mathworks.com/help/matlab/ref/mldivide.html#bt4jslc-6
-    # indicates that it is a triangular solver, but 
-    # opts.UT=true; linsolve(RA, RB, opts) and
-    # Python solve_triangular(RA, RB) produce a different result from
-    # Matlab's mrdivide RB/RA.
-    Z = solve_triangular(RA, RB)
-    # Z[isnan(Z)] = 0.
-    U, V = eig(Z.T.dot(Z))
-    D = diag(U**(t/2)).dot(V.T).dot(RA)
-    G = D.T.dot(D)
-    return G
+from .geodesic import geodesic_riemann
 
 
 def _get_sample_weight(sample_weight, data):
@@ -93,155 +13,11 @@ def _get_sample_weight(sample_weight, data):
     If none provided, weights init to 1. otherwise, weights are normalized.
     """
     if sample_weight is None:
-        sample_weight = ones(data.shape[0])
+        sample_weight = numpy.ones(data.shape[0])
     if len(sample_weight) != data.shape[0]:
         raise ValueError("len of sample_weight must be equal to len of data.")
-    sample_weight /= sample_weight.sum()
+    sample_weight /= numpy.sum(sample_weight)
     return sample_weight
-
-
-def mean_karcher(covmats, theta=None, tol=10e-9, maxiter=1000, init=None,
-                 sample_weight=None):
-    """Return Karcher mean using a Richardson-like iteration
-
-    This iterative approach relies on Riemannian metric where the parameter
-    theta may be chosen automatically, and the initial value is the
-    arithmetic mean.    
-    
-    .. math::
-            \mathbf{C} = \\arg\min{(\sum_i \delta_R ( \mathbf{C} , \mathbf{C}_i)^2)}
-
-    This is the adaptation of the Matlab code proposed by Dario Bini and
-    Bruno Iannazzo, http://bezout.dm.unipi.it/software/mmtoolbox/
-    At least 3 times slower than mean_riemann, possible improvments.
-            
-    :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
-    :param theta: parameter of the iteration
-    :param tol: the tolerance to stop the gradient descent
-    :param maxiter: maximum number of iteration, default 50
-    :param init: covariance matrix used to initialize the iterative procedure. If None the Arithmetic mean is used
-    :param sample_weight: the weight of each sample
-
-    :returns: Karcher mean covariance matrix
-
-    References
-    ----------
-    [1] D. A. Bini and B. Iannazzo, Computing the Karcher mean of symmetric
-    positive definite matrices, to appear in Linear Algebra Appl., 2012.
-    """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
-    Nt, Ne, Ne = covmats.shape
-    ni, ni_prev = 0., finfo(np.float64).max
-    if init is None:
-        C = covmats.mean(axis=0)
-    else:
-        C = init
-    R = zeros(shape=(Nt, Ne, Ne))
-    U = zeros(shape=(Nt, Ne, Ne))
-    V = zeros(shape=(Nt, Ne))
-    # X = C
-    for h in range(Nt):
-        R[h, :, :] = cholesky(covmats[h, :, :])
-
-    for k in range(maxiter):
-        try:
-            Rc = cholesky(C)
-        except ValueError:
-            print ("[iteration %d] array must not contain infs or NaNs"%k)
-            print (C)
-            raise (ValueError, "Convergence error")
-                
-        iRc = inv(Rc)
-        for h in range(Nt):
-            Z = R[h, :, :].dot(iRc)
-            Vz, U[h, :, :] = schur(Z.T.dot(Z))
-            V[h, :] = diag(Vz)
-        if theta == None:
-            beta, gamma = 0., 0.
-            for h in range(Nt):
-                if isnan(beta):
-                    print ('dh[%d]:'%h, dh)
-                ch = max(V[h, :])/min(V[h, :])
-                if ch == 1.:
-                    dh = 0.
-                elif abs(ch-1.) < 0.5:
-                    dh = log1p(ch-1)/(ch-1)
-                else:
-                    dh = log(ch) / (ch-1)
-                beta += dh
-                gamma += ch*dh
-                
-            theta = 2/(gamma+beta)                
-
-        S=zeros(shape=(Ne, Ne))
-        for h in range(Nt):
-            Sh = U[h, :, :].dot(diag(log(V[h, :]))).dot(U[h, :, :].T)
-            S += (Sh + Sh.T)/2
-        Vs, Us = schur(S)
-        Z = diag(exp(diag(Vs*theta/2))).dot(Us.T).dot(Rc)
-        C = Z.T.dot(Z)
-
-        ni = max(abs(diag(Vs)))
-        if (ni < norm(C)*tol) or ni > ni_prev:
-            it = k
-            break
-        ni_prev = ni
-
-        if k == maxiter:
-            print ("Max iterations reached")
-            it = k
-    # return C, it, theta
-    return C
-
-
-def mean_alm(covmats, tol=1e-14, maxiter=1000,
-             verbose=False, sample_weight=None):
-    """Return Ando-Li-Mathias mean 
-
-    Find the geometric mean recursively [1], generalizing from:
-    
-    .. math::
-            \mathbf{C} = A^{\frac{1}{2}}(A^{-\frac{1}{2}}B^{\frac{1}{2}}A^{-\frac{1}{2}})^{\frac{1}{2}}A^{\frac{1}{2}}
-
-    require a number of iterations.
-
-    This is the adaptation of the Matlab code proposed by Dario Bini and
-    Bruno Iannazzo, http://bezout.dm.unipi.it/software/mmtoolbox/
-    At least 3 times slower than mean_riemann, possible improvments.
-            
-    :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
-    :param tol: the tolerance to stop the gradient descent
-    :param maxiter: maximum number of iteration, default 100
-    :param verbose: indicate when reaching maxiter
-    :param sample_weight: the weight of each sample
-
-    :returns: Karcher mean covariance matrix
-
-    References
-    ----------
-    [1] T. Ando, C.-K. Li and R. Mathias, "Geometric Means", Linear Algebra
-    Appl. 385 (2004), 305-334.
-    """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
-    C = covmats.copy()
-    C_iter = zeros_like(C)
-    Nt, Ne, Ne = covmats.shape
-    if Nt == 2:
-        X = _sharp(covmats[0], covmats[1], 0.5)
-        return X
-    else:
-        for k in range(maxiter):
-            for h in range(Nt):
-                s = mod(arange(h, h+Nt-1)+1, Nt)
-                C_iter[h, :, :] = mean_alm(C[s])
-
-            ni=norm(C_iter[0]-C[0], 2)/norm(C[0], 2)
-            if ni < tol: break
-            C = copy.deepcopy(C_iter)
-        else:
-            if verbose: print ('Max number of iterations reached')
-        # The arithmetic mean trick
-        return C_iter.mean(axis=0)
 
 
 def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
@@ -252,7 +28,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     riemannian distance to the mean.
 
     .. math::
-            \mathbf{C} = \\arg\min{(\sum_i \delta_R ( \mathbf{C} , \mathbf{C}_i)^2)}
+            \mathbf{C} = \\arg\min{(\sum_i \delta_R ( \mathbf{C} , \mathbf{C}_i)^2)}  # noqa
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param tol: the tolerance to stop the gradient descent
@@ -266,26 +42,27 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
     if init is None:
-        C = covmats.mean(axis=0)
+        C = numpy.mean(covmats, axis=0)
     else:
         C = init
-    k, nu = 0, 1.0
-    tau = finfo(np.float64).max
-    crit = finfo(np.float64).max
+    k = 0
+    nu = 1.0
+    tau = numpy.finfo(numpy.float64).max
+    crit = numpy.finfo(numpy.float64).max
     # stop when J<10^-9 or max iteration = 50
     while (crit > tol) and (k < maxiter) and (nu > tol):
         k = k + 1
         C12 = sqrtm(C)
         Cm12 = invsqrtm(C)
-        J = zeros(shape=(Ne, Ne))
+        J = numpy.zeros((Ne, Ne))
 
         for index in range(Nt):
-            tmp = Cm12.dot(covmats[index, :, :]).dot(Cm12)
+            tmp = numpy.dot(numpy.dot(Cm12, covmats[index, :, :]), Cm12)
             J += sample_weight[index] * logm(tmp)
 
-        crit = norm(J, ord='fro')
+        crit = numpy.linalg.norm(J, ord='fro')
         h = nu * crit
-        C = C12.dot(expm(nu * J)).dot(C12)
+        C = numpy.dot(numpy.dot(C12, expm(nu * J)), C12)
         if h < tau:
             nu = 0.95 * nu
             tau = h
@@ -309,10 +86,54 @@ def mean_logeuclid(covmats, sample_weight=None):
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
-    T = zeros(shape=(Ne, Ne))
+    T = numpy.zeros((Ne, Ne))
     for index in range(Nt):
         T += sample_weight[index] * logm(covmats[index, :, :])
     C = expm(T)
+
+    return C
+
+
+def mean_kullback_sym(covmats, sample_weight=None):
+    """Return the mean covariance matrix according to KL divergence.
+
+    This mean is the geometric mean between the Arithmetic and the Harmonic
+    mean, as shown in Moakher, Maher, and Philipp G. Batchelor. "Symmetric
+    positive-definite matrices: From geometry to applications and
+    visualization." In Visualization and Processing of Tensor Fields, pp.
+    285-298. Springer Berlin Heidelberg, 2006.
+
+    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param sample_weight: the weight of each sample
+
+    :returns: the mean covariance matrix
+
+    """
+    C_Arithmetic = mean_euclid(covmats, sample_weight)
+    C_Harmonic = mean_harmonic(covmats, sample_weight)
+    C = geodesic_riemann(C_Arithmetic, C_Harmonic, 0.5)
+
+    return C
+
+
+def mean_harmonic(covmats, sample_weight=None):
+    """Return the harmonic mean of a set of covariance matrices.
+
+    .. math::
+            \mathbf{C} = (\\frac{1}{N} \sum_i {\mathbf{C}_i}^{-1})^{-1}
+
+    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param sample_weight: the weight of each sample
+
+    :returns: the mean covariance matrix
+
+    """
+    sample_weight = _get_sample_weight(sample_weight, covmats)
+    Nt, Ne, Ne = covmats.shape
+    T = numpy.zeros((Ne, Ne))
+    for index in range(Nt):
+        T += sample_weight[index] * numpy.linalg.inv(covmats[index, :, :])
+    C = numpy.linalg.inv(T)
 
     return C
 
@@ -323,7 +144,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     This is an iterative procedure where the update is:
 
     .. math::
-            \mathbf{C} = \left(\sum_i \left( 0.5 \mathbf{C} + 0.5 \mathbf{C}_i \\right)^{-1} \\right)^{-1}
+            \mathbf{C} = \left(\sum_i \left( 0.5 \mathbf{C} + 0.5 \mathbf{C}_i \\right)^{-1} \\right)^{-1}  # noqa
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param tol: the tolerance to stop the gradient descent
@@ -337,26 +158,24 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
     if init is None:
-        C = covmats.mean(axis=0)
+        C = numpy.mean(covmats, axis=0)
     else:
         C = init
     k = 0
-    crit = finfo(np.float64).max
+    crit = numpy.finfo(numpy.float64).max
     # stop when J<10^-9 or max iteration = 50
     while (crit > tol) and (k < maxiter):
         k = k + 1
 
-        J = zeros(shape=(Ne, Ne))
+        J = numpy.zeros((Ne, Ne))
 
         for index, Ci in enumerate(covmats):
-            J += sample_weight[index] * inv(0.5 * Ci + 0.5 * C)
+            J += sample_weight[index] * numpy.linalg.inv(0.5 * Ci + 0.5 * C)
 
-        Cnew = inv(J)
-        crit = norm(Cnew - C, ord='fro')
+        Cnew = numpy.linalg.inv(J)
+        crit = numpy.linalg.norm(Cnew - C, ord='fro')
 
         C = Cnew
-    if k == maxiter:
-        print('Max iter reach')
     return C
 
 
@@ -367,7 +186,7 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
     This is an iterative procedure where the update is [1]:
 
     .. math::
-            \mathbf{K} = \left(\sum_i \left( \mathbf{K} \mathbf{C}_i \mathbf{K} \\right)^{1/2} \\right)^{1/2}
+            \mathbf{K} = \left(\sum_i \left( \mathbf{K} \mathbf{C}_i \mathbf{K} \\right)^{1/2} \\right)^{1/2}  # noqa
 
     with :math:`\mathbf{K} = \mathbf{C}^{1/2}`.
 
@@ -388,28 +207,28 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
     if init is None:
-        C = covmats.mean(axis=0)
+        C = numpy.mean(covmats, axis=0)
     else:
         C = init
     k = 0
     K = sqrtm(C)
-    crit = finfo(np.float64).max
+    crit = numpy.finfo(numpy.float64).max
     # stop when J<10^-9 or max iteration = 50
     while (crit > tol) and (k < maxiter):
         k = k + 1
 
-        J = zeros(shape=(Ne, Ne))
+        J = numpy.zeros((Ne, Ne))
 
         for index, Ci in enumerate(covmats):
-            tmp = K.dot(Ci).dot(K)
+            tmp = numpy.dot(numpy.dot(K, Ci), K)
             J += sample_weight[index] * sqrtm(tmp)
 
         Knew = sqrtm(J)
-        crit = norm(Knew - K, ord='fro')
+        crit = numpy.linalg.norm(Knew - K, ord='fro')
         K = Knew
     if k == maxiter:
         print('Max iter reach')
-    C = K.dot(K)
+    C = numpy.dot(K, K)
     return C
 
 
@@ -425,7 +244,7 @@ def mean_euclid(covmats, sample_weight=None):
     :returns: the mean covariance matrix
 
     """
-    return average(covmats, axis=0, weights=sample_weight)
+    return numpy.average(covmats, axis=0, weights=sample_weight)
 
 
 def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
@@ -452,32 +271,32 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
-    crit = np.inf
+    crit = numpy.inf
     k = 0
 
     # init with AJD
     B, _ = ajd_pham(covmats)
     while (crit > tol) and (k < maxiter):
         k += 1
-        J = zeros(shape=(Ne, Ne))
+        J = numpy.zeros((Ne, Ne))
 
         for index, Ci in enumerate(covmats):
-            tmp = logm(B.T.dot(Ci).dot(B))
+            tmp = logm(numpy.dot(numpy.dot(B.T, Ci), B))
             J += sample_weight[index] * tmp
 
-        update = diag(diag(expm(J)))
-        B = B.dot(invsqrtm(update))
+        update = numpy.diag(numpy.diag(expm(J)))
+        B = numpy.dot(B, invsqrtm(update))
 
-        crit = distance_riemann(eye(Ne), update)
+        crit = distance_riemann(numpy.eye(Ne), update)
 
-    A = inv(B)
+    A = numpy.linalg.inv(B)
 
-    J = zeros(shape=(Ne, Ne))
+    J = numpy.zeros((Ne, Ne))
     for index, Ci in enumerate(covmats):
-        tmp = logm(B.T.dot(Ci).dot(B))
+        tmp = logm(numpy.dot(numpy.dot(B.T, Ci), B))
         J += sample_weight[index] * tmp
 
-    C = A.T.dot(expm(J)).dot(A)
+    C = numpy.dot(numpy.dot(A.T, expm(J)), A)
     return C
 
 
@@ -491,7 +310,7 @@ def mean_identity(covmats, sample_weight=None):
     :returns: the identity matrix of size Nchannels
 
     """
-    C = eye(covmats.shape[1])
+    C = numpy.eye(covmats.shape[1])
     return C
 
 
@@ -500,19 +319,37 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
 
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
-    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'indentity', 'wasserstein'
+    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'identity', 'wasserstein', 'ale',  # noqa
+    'harmonic', 'kullback_sym' or a callable function
     :param sample_weight: the weight of each sample
     :param args: the argument passed to the sub function
     :returns: the mean covariance matrix
 
     """
-    options = {'riemann': mean_riemann,
-               'logeuclid': mean_logeuclid,
-               'euclid': mean_euclid,
-               'identity': mean_identity,
-               'logdet': mean_logdet,
-               'wasserstein': mean_wasserstein,
-               'ale': mean_ale,
-               'karcher': mean_karcher}
-    C = options[metric](covmats, sample_weight=sample_weight, *args)
+    if callable(metric):
+        C = metric(covmats, sample_weight=sample_weight, *args)
+    else:
+        C = mean_methods[metric](covmats, sample_weight=sample_weight, *args)
     return C
+
+mean_methods = {'riemann': mean_riemann,
+                'logeuclid': mean_logeuclid,
+                'euclid': mean_euclid,
+                'identity': mean_identity,
+                'logdet': mean_logdet,
+                'wasserstein': mean_wasserstein,
+                'ale': mean_ale,
+                'harmonic': mean_harmonic,
+                'kullback_sym': mean_kullback_sym}
+
+
+def _check_mean_method(method):
+    """checks methods """
+    if isinstance(method, str):
+        if method not in mean_methods.keys():
+            raise ValueError('Unknown mean method')
+        else:
+            method = mean_methods[method]
+    elif not hasattr(method, '__call__'):
+        raise ValueError('mean method must be a function or a string.')
+    return method
