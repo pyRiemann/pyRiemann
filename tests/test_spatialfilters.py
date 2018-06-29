@@ -1,35 +1,11 @@
 import numpy as np
-<<<<<<< HEAD
-from pyriemann.spatialfilters import Xdawn, CSP
-from nose.tools import assert_raises
-=======
 from numpy.testing import assert_array_equal
 from nose.tools import assert_true, assert_raises, assert_false
 from pyriemann.spatialfilters import Xdawn, CSP, SPoC, BilinearFilter
->>>>>>> upstream/master
 
 
 def generate_cov(Nt, Ne):
     """Generate a set of cavariances matrices for test purpose"""
-<<<<<<< HEAD
-    diags = 1.0+0.1*np.random.randn(Nt, Ne)
-    covmats = np.empty((Nt, Ne, Ne))
-    for i in range(Nt):
-        covmats[i] = np.diag(diags[i])
-    return covmats
-
-
-def test_Xdawn_fit():
-    """Test Fit of Xdawn"""
-    X = np.random.randn(100, 3, 10)
-    y = np.array([0, 1]).repeat(50)
-    xd = Xdawn()
-    xd.fit(X, y)
-
-    xd = Xdawn(n_filters=2, classes=[0, 1], estimator='lwf')
-    y = np.array([0, 1, 2, 3]).repeat(25)
-    xd.fit(X, y)
-=======
     rs = np.random.RandomState(1234)
     diags = 2.0 + 0.1 * rs.randn(Nt, Ne)
     A = 2*rs.rand(Ne, Ne) - 1
@@ -51,44 +27,10 @@ def test_Xdawn_fit():
     labels = np.array([0, 1]).repeat(50)
     xd = Xdawn()
     xd.fit(x, labels)
->>>>>>> upstream/master
 
 
 def test_Xdawn_transform():
     """Test transform of Xdawn"""
-<<<<<<< HEAD
-    X = np.random.randn(100, 3, 10)
-    y = np.array([0, 1]).repeat(50)
-    xd = Xdawn()
-    xd.fit(X, y)
-    xd.transform(X)
-
-
-def test_CSP():
-    """Test methods of CSP"""
-    csp = CSP()
-    X = covset = generate_cov(100, 3)
-    y = np.array([0, 1]).repeat(50)
-    csp.fit(X, y)
-    csp.transform(X)
-
-    csp = CSP(n_filters=2, metric='logeuclid')
-    csp.fit(X, y)
-    csp.transform(X)
-
-    csp = CSP()
-    y = np.zeros(shape=(100,))
-    assert_raises(ValueError, csp.fit, X, y)
-    
-
-def test_CSP_multiclass():
-    """Test multiclass CSP"""
-    csp = CSP()
-    X = covset = generate_cov(100, 3)
-    y = np.array([0, 1, 2, 3]).repeat(25)
-    csp.fit(X, y)
-    csp.transform(X)
-=======
     x = np.random.randn(100, 3, 10)
     labels = np.array([0, 1]).repeat(50)
     xd = Xdawn()
@@ -190,4 +132,3 @@ def test_BilinearFilter():
     bf = BilinearFilter(filters)
     Xt = bf.transform(X)
     assert_array_equal(Xt.shape, [len(X), filters.shape[0], filters.shape[0]])
->>>>>>> upstream/master
