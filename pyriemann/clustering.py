@@ -148,14 +148,14 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
             if self.n_jobs == 1:
                 res = []
                 for i in range(self.n_init):
-                    res = _fit_single(X, y,
+                    res.append(_fit_single(X, y,
                                       n_clusters=self.n_clusters,
                                       init=self.init,
                                       random_state=seeds[i],
                                       metric=self.metric,
                                       max_iter=self.max_iter,
-                                      tol=self.tol)
-                labels, inertia, mdm = zip(res)
+                                      tol=self.tol))
+                labels, inertia, mdm = zip(*res)
             else:
 
                 res = Parallel(n_jobs=self.n_jobs, verbose=0)(
