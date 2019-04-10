@@ -108,16 +108,19 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         """
         self.classes_ = unique(y)
 
-        self.covmeans_ = []
-
         if sample_weight is None:
             sample_weight = ones(X.shape[0])
 
         if self.n_jobs == 1:
+            self.covmeans_ = [mean_covariance(X[y == l], metric=self.metric_mean,
+                                    sample_weight=sample_weight[y == l])
+                                        for l in self.classes_]
+            """
             for l in self.classes_:
                 self.covmeans_.append(
                     mean_covariance(X[y == l], metric=self.metric_mean,
                                     sample_weight=sample_weight[y == l]))
+            """
         else:
             self.covmeans_ = Parallel(n_jobs=self.n_jobs)(
                 delayed(mean_covariance)(X[y == l], metric=self.metric_mean,
@@ -286,7 +289,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         return self
 
     def predict(self, X):
-        """get the predictions after FDA filtering.
+        """get the predictions after FGDA filtering.
 
         Parameters
         ----------
@@ -300,7 +303,23 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         """
         cov = self._fgda.transform(X)
         return self._mdm.predict(cov)
+    
+    def predict_proba(self, X):
+        """Predict proba using softmax after FGDA filtering.
 
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        prob : ndarray, shape (n_trials, n_classes)
+            the softmax probabilities for each class.
+        """
+        cov = self._fgda.transform(X)
+        return self._mdm.predict_proba(cov)
+    
     def transform(self, X):
         """get the distance to each centroid after FGDA filtering.
 
@@ -363,8 +382,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         if not isinstance(clf, ClassifierMixin):
             raise TypeError('clf must be a ClassifierMixin')
 
-        TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
-
+            
     def fit(self, X, y):
         """Fit TSclassifier.
 
