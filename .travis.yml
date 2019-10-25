@@ -11,7 +11,7 @@ addons:
   apt:
     packages:
       - libatlas-dev
-      - libatlas3gf-base
+      - libatlas3-base
       - libblas-dev
       - liblapack-dev
       - python-matplotlib
