@@ -23,7 +23,7 @@ from mne import io
 from mne.datasets import sample
 
 from sklearn.pipeline import make_pipeline
-from sklearn.cross_validation import KFold
+from sklearn.model_selection import KFold
 from sklearn.linear_model import LogisticRegression
 
 from matplotlib import pyplot as plt
