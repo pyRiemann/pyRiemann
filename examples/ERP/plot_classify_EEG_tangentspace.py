@@ -61,7 +61,7 @@ evoked = epochs.average()
 n_components = 2  # pick some components
 
 # Define a monte-carlo cross-validation generator (reduce variance):
-cv = KFold(len(labels), 10, shuffle=True, random_state=42)
+cv = KFold(n_splits=10, shuffle=True, random_state=42)
 epochs_data = epochs.get_data()
 
 
@@ -71,7 +71,7 @@ clf = make_pipeline(XdawnCovariances(n_components),
 
 preds = np.zeros(len(labels))
 
-for train_idx, test_idx in cv:
+for train_idx, test_idx in cv.split(epochs_data):
     y_train, y_test = labels[train_idx], labels[test_idx]
 
     clf.fit(epochs_data[train_idx], y_train)
