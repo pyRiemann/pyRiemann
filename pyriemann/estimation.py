@@ -17,7 +17,6 @@ def _nextpow2(i):
 
 
 class Covariances(BaseEstimator, TransformerMixin):
-
     """Estimation of covariance matrix.
 
     Perform a simple covariance matrix estimation for each given trial.
@@ -77,7 +76,6 @@ class Covariances(BaseEstimator, TransformerMixin):
 
 
 class ERPCovariances(BaseEstimator, TransformerMixin):
-
     """Estimate special form covariance matrix for ERP.
 
     Estimation of special form covariance matrix dedicated to ERP processing.
@@ -201,7 +199,6 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
 
 class XdawnCovariances(BaseEstimator, TransformerMixin):
-
     """Estimate special form covariance matrix for ERP combined with Xdawn.
 
     Estimation of special form covariance matrix dedicated to ERP processing
@@ -245,8 +242,13 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         classification."
     """
 
-    def __init__(self, nfilter=4, applyfilters=True, classes=None,
-                 estimator='scm', xdawn_estimator='scm', baseline_cov=None):
+    def __init__(self,
+                 nfilter=4,
+                 applyfilters=True,
+                 classes=None,
+                 estimator='scm',
+                 xdawn_estimator='scm',
+                 baseline_cov=None):
         """Init."""
         self.applyfilters = applyfilters
         self.estimator = estimator
@@ -272,9 +274,11 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         self : XdawnCovariances instance
             The XdawnCovariances instance.
         """
-        self.Xd_ = Xdawn(nfilter=self.nfilter, classes=self.classes,
-                         estimator=self.xdawn_estimator,
-                         baseline_cov=self.baseline_cov)
+        self.Xd_ = Xdawn(
+            nfilter=self.nfilter,
+            classes=self.classes,
+            estimator=self.xdawn_estimator,
+            baseline_cov=self.baseline_cov)
         self.Xd_.fit(X, y)
         self.P_ = self.Xd_.evokeds_
         return self
@@ -298,11 +302,11 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         covmats = covariances_EP(X, self.P_, estimator=self.estimator)
         return covmats
 
+
 ###############################################################################
 
 
 class CospCovariances(BaseEstimator, TransformerMixin):
-
     """Estimation of cospectral covariance matrix.
 
     Covariance estimation in the frequency domain. this method will return a
@@ -375,15 +379,19 @@ class CospCovariances(BaseEstimator, TransformerMixin):
         out = []
 
         for i in range(Nt):
-            S = cospectrum(X[i], window=self.window, overlap=self.overlap,
-                           fmin=self.fmin, fmax=self.fmax, fs=self.fs)
-            out.append(S.real)
+            S = cospectrum(
+                X[i],
+                window=self.window,
+                overlap=self.overlap,
+                fmin=self.fmin,
+                fmax=self.fmax,
+                fs=self.fs)
+            out.append(S)
 
         return numpy.array(out)
 
 
 class Coherences(CospCovariances):
-
     """Estimation of coherences matrix.
 
     Coherence matrix estimation. this method will return a
@@ -430,15 +438,19 @@ class Coherences(CospCovariances):
         out = []
 
         for i in range(Nt):
-            S = coherence(X[i], window=self.window, overlap=self.overlap,
-                          fmin=self.fmin, fmax=self.fmax, fs=self.fs)
+            S = coherence(
+                X[i],
+                window=self.window,
+                overlap=self.overlap,
+                fmin=self.fmin,
+                fmax=self.fmax,
+                fs=self.fs)
             out.append(S)
 
         return numpy.array(out)
 
 
 class HankelCovariances(BaseEstimator, TransformerMixin):
-
     """Estimation of covariance matrix with time delayed hankel matrices.
 
     This estimation is usefull to catch spectral dynamics of the signal,
@@ -518,7 +530,6 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
 
 class Shrinkage(BaseEstimator, TransformerMixin):
-
     """Regularization of covariance matrices by shrinkage
 
     This transformer apply a shrinkage regularization to any covariance matrix.

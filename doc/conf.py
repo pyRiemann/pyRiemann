@@ -59,15 +59,15 @@ plot_html_show_formats = False
 plot_html_show_source_link = False
 
 sphinx_gallery_conf = {
-   'examples_dirs'   : ['../examples', '../tutorials'],
-   'gallery_dirs'    : ['auto_examples']}
+    'examples_dirs': ['../examples', '../tutorials'],
+    'gallery_dirs': ['auto_examples']
+}
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 autodoc_default_flags = ['inherited-members']
 
 autosummary_generate = True
 numpydoc_show_class_members = False
-
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
@@ -140,7 +140,6 @@ pygments_style = 'sphinx'
 # If true, `todo` and `todoList` produce output, else they produce nothing.
 todo_include_todos = True
 
-
 # -- Options for HTML output ----------------------------------------------
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
@@ -151,19 +150,20 @@ html_theme = 'bootstrap'
 # further.  For a list of options available for each theme, see the
 # documentation.
 html_theme_options = {
-    'source_link_position': "footer",
-    'bootswatch_theme': "flatly",
-    'navbar_sidebarrel': False,
-    'bootstrap_version': "3",
-    'navbar_links': [("API", "api"),
-                     ("Gallery", "auto_examples/index"),
+    'source_link_position':
+    "footer",
+    'bootswatch_theme':
+    "flatly",
+    'navbar_sidebarrel':
+    False,
+    'bootstrap_version':
+    "3",
+    'navbar_links': [("API", "api"), ("Gallery", "auto_examples/index"),
                      ("Tutorials", "auto_tutorials/index")],
-
-    }
+}
 
 # Add any paths that contain custom themes here, relative to this directory.
 html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
-
 
 # The name for this set of Sphinx documents.  If None, it defaults to
 # "<project> v<release> documentation".
@@ -252,25 +252,25 @@ htmlhelp_basename = 'pyRiemanndoc'
 # -- Options for LaTeX output ---------------------------------------------
 
 latex_elements = {
-# The paper size ('letterpaper' or 'a4paper').
-#'papersize': 'letterpaper',
+    # The paper size ('letterpaper' or 'a4paper').
+    #'papersize': 'letterpaper',
 
-# The font size ('10pt', '11pt' or '12pt').
-#'pointsize': '10pt',
+    # The font size ('10pt', '11pt' or '12pt').
+    #'pointsize': '10pt',
 
-# Additional stuff for the LaTeX preamble.
-#'preamble': '',
+    # Additional stuff for the LaTeX preamble.
+    #'preamble': '',
 
-# Latex figure (float) alignment
-#'figure_align': 'htbp',
+    # Latex figure (float) alignment
+    #'figure_align': 'htbp',
 }
 
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-  (master_doc, 'pyRiemann.tex', u'pyRiemann Documentation',
-   u'Alexandre Barachant', 'manual'),
+    (master_doc, 'pyRiemann.tex', u'pyRiemann Documentation',
+     u'Alexandre Barachant', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of
@@ -293,19 +293,15 @@ latex_documents = [
 # If false, no module index is generated.
 #latex_domain_indices = True
 
-
 # -- Options for manual page output ---------------------------------------
 
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
-man_pages = [
-    (master_doc, 'pyriemann', u'pyRiemann Documentation',
-     [author], 1)
-]
+man_pages = [(master_doc, 'pyriemann', u'pyRiemann Documentation', [author],
+              1)]
 
 # If true, show URL addresses after external links.
 #man_show_urls = False
-
 
 # -- Options for Texinfo output -------------------------------------------
 
@@ -313,9 +309,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-  (master_doc, 'pyriemann', u'pyRiemann Documentation',
-   author, 'pyriemann', 'One line description of project.',
-   'Miscellaneous'),
+    (master_doc, 'pyriemann', u'pyRiemann Documentation', author, 'pyriemann',
+     'One line description of project.', 'Miscellaneous'),
 ]
 
 # Documents to append as an appendix to all manuals.
@@ -330,9 +325,9 @@ texinfo_documents = [
 # If true, do not generate a @detailmenu in the "Top" node's menu.
 #texinfo_no_detailmenu = False
 
-
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {'https://docs.python.org/': None}
+
 
 def setup(app):
     app.add_javascript('copybutton.js')

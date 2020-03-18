@@ -10,11 +10,10 @@ import seaborn as sns
 
 from time import time
 from pylab import plt
-from mne import Epochs, pick_types
+from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
-from mne.event import find_events
 
 from pyriemann.stats import PermutationDistance
 from pyriemann.estimation import CospCovariances
@@ -31,18 +30,29 @@ event_id = dict(hands=2, feet=3)
 subject = 1
 runs = [6, 10, 14]  # motor imagery: hands vs feet
 
-raw_files = [read_raw_edf(f, preload=True, verbose=False)
-             for f in eegbci.load_data(subject, runs)]
+raw_files = [
+    read_raw_edf(f, preload=True, verbose=False)
+    for f in eegbci.load_data(subject, runs)
+]
 raw = concatenate_raws(raw_files)
 
-events = find_events(raw, shortest_event=0, stim_channel='STI 014')
-picks = pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False,
-                   exclude='bads')
+events, _ = events_from_annotations(raw, event_id=dict(T1=2, T2=3))
+picks = pick_types(
+    raw.info, meg=False, eeg=True, stim=False, eog=False, exclude='bads')
 
 # Read epochs (train will be done only between 1 and 2s)
 # Testing will be done with a running classifier
-epochs = Epochs(raw, events, event_id, tmin, tmax, proj=True, picks=picks,
-                baseline=None, preload=True, verbose=False)
+epochs = Epochs(
+    raw,
+    events,
+    event_id,
+    tmin,
+    tmax,
+    proj=True,
+    picks=picks,
+    baseline=None,
+    preload=True,
+    verbose=False)
 labels = epochs.events[:, -1] - 2
 
 # get epochs
@@ -51,11 +61,11 @@ epochs_data = epochs.get_data()
 # compute cospectral covariance matrices
 fmin = 2.0
 fmax = 40.0
-cosp = CospCovariances(window=128, overlap=0.98, fmin=fmin, fmax=fmax,
-                       fs=160.0)
+cosp = CospCovariances(
+    window=128, overlap=0.98, fmin=fmin, fmax=fmax, fs=160.0)
 covmats = cosp.fit_transform(epochs_data[:, ::4, :])
 
-fr = np.fft.fftfreq(128)[0:64]*160
+fr = np.fft.fftfreq(128)[0:64] * 160
 fr = fr[(fr >= fmin) & (fr <= fmax)]
 
 ###############################################################################
@@ -80,10 +90,10 @@ plt.xlabel('Frequency (Hz)')
 plt.ylabel('Score')
 
 a = np.where(np.diff(np.array(pv) < sig))[0]
-a = a.reshape(int(len(a)/2), 2)
-st = (fr[1]-fr[0])/2.0
+a = a.reshape(int(len(a) / 2), 2)
+st = (fr[1] - fr[0]) / 2.0
 for p in a:
-    axes.axvspan(fr[p[0]]-st, fr[p[1]]+st, facecolor='g', alpha=0.5)
+    axes.axvspan(fr[p[0]] - st, fr[p[1]] + st, facecolor='g', alpha=0.5)
 axes.legend(['Score', 'p<%.2f' % sig])
 axes.set_title('Pairwise distance - %.1f sec.' % duration)
 

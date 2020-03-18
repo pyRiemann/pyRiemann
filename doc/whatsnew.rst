@@ -7,6 +7,11 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
+v0.2.6 (March 2020)
+-------------------
+
+- Updated for better Scikit-Learn v0.22 support
+
 v0.2.5 (January 2018)
 -------------------
 

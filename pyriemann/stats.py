@@ -4,15 +4,14 @@ import math
 import matplotlib.pyplot as plt
 
 from .utils.utils import check_version
+from .utils.distance import distance, pairwise_distance
+from .utils.mean import mean_covariance
+from .classification import MDM
 
 if check_version('sklearn', '0.18'):
     from sklearn.model_selection import cross_val_score
 else:
     from sklearn.cross_validation import cross_val_score
-
-from .utils.distance import distance, pairwise_distance
-from .utils.mean import mean_covariance
-from .classification import MDM
 
 
 def multiset_perm_number(y):
@@ -20,20 +19,20 @@ def multiset_perm_number(y):
     pr = 1
     for i in numpy.unique(y):
         pr *= math.factorial(numpy.sum(y == i))
-    return math.factorial(len(y))/pr
+    return math.factorial(len(y)) / pr
 
 
 def unique_permutations(elements):
     """Return the list of unique permutations."""
     if len(elements) == 1:
-        yield (elements[0],)
+        yield (elements[0], )
     else:
         unique_elements = set(elements)
         for first_element in unique_elements:
             remaining_elements = list(elements)
             remaining_elements.remove(first_element)
             for sub_permutation in unique_permutations(remaining_elements):
-                yield (first_element,) + sub_permutation
+                yield (first_element, ) + sub_permutation
 
 
 class BasePermutation():
@@ -92,8 +91,8 @@ class BasePermutation():
 
     def _print_progress(self, ii):
         """Print permutation progress"""
-        sys.stdout.write("Performing permutations : [%.1f%%]\r"
-                         % ((100. * (ii + 1)) / self.n_perms))
+        sys.stdout.write("Performing permutations : [%.1f%%]\r" %
+                         ((100. * (ii + 1)) / self.n_perms))
         sys.stdout.flush()
 
     def _initial_transform(self, X):
@@ -147,7 +146,6 @@ class BasePermutation():
 
 
 class PermutationModel(BasePermutation):
-
     """
     Permutation test using any scikit-learn model for scoring.
 
@@ -200,8 +198,13 @@ class PermutationModel(BasePermutation):
     PermutationDistance
     """
 
-    def __init__(self, n_perms=100, model=MDM(), cv=3, scoring=None,
-                 n_jobs=1, random_state=42):
+    def __init__(self,
+                 n_perms=100,
+                 model=MDM(),
+                 cv=3,
+                 scoring=None,
+                 n_jobs=1,
+                 random_state=42):
         """Init."""
         self.n_perms = n_perms
         self.model = model
@@ -223,14 +226,18 @@ class PermutationModel(BasePermutation):
             The target variable to try to predict in the case of
             supervised learning.
         """
-        score = cross_val_score(self.model, X, y, cv=self.cv,
-                                n_jobs=self.n_jobs, scoring=self.scoring,
-                                groups=groups)
+        score = cross_val_score(
+            self.model,
+            X,
+            y,
+            cv=self.cv,
+            n_jobs=self.n_jobs,
+            scoring=self.scoring,
+            groups=groups)
         return score.mean()
 
 
 class PermutationDistance(BasePermutation):
-
     """
     Permutation test based on distance.
 
@@ -302,12 +309,17 @@ class PermutationDistance(BasePermutation):
         variance." Austral ecology. 2001.
     """
 
-    def __init__(self, n_perms=100, metric='riemann', mode='pairwise',
-                 n_jobs=1, random_state=42, estimator=None):
+    def __init__(self,
+                 n_perms=100,
+                 metric='riemann',
+                 mode='pairwise',
+                 n_jobs=1,
+                 random_state=42,
+                 estimator=None):
         """Init."""
         self.n_perms = n_perms
         if mode not in ['pairwise', 'ttest', 'ftest']:
-            raise(ValueError("mode must be 'pairwise', 'ttest' or 'ftest'"))
+            raise (ValueError("mode must be 'pairwise', 'ttest' or 'ftest'"))
         self.mode = mode
         self.metric = metric
         self.n_jobs = n_jobs
@@ -352,7 +364,7 @@ class PermutationDistance(BasePermutation):
         if self.mode == 'ftest':
             self.global_mean = mean_covariance(X, metric=self.mdm.metric_mean)
         elif self.mode == 'pairwise':
-            X = pairwise_distance(X, metric=self.mdm.metric_dist) ** 2
+            X = pairwise_distance(X, metric=self.mdm.metric_dist)**2
         return X
 
     def _score_ftest(self, X, y):
@@ -364,16 +376,17 @@ class PermutationDistance(BasePermutation):
         n_classes = len(covmeans)
         between = 0
         for ix, classe in enumerate(mdm.classes_):
-            di = distance(covmeans[ix], self.global_mean,
-                          metric=mdm.metric_dist)**2
+            di = distance(
+                covmeans[ix], self.global_mean, metric=mdm.metric_dist)**2
             between += numpy.sum(y == classe) * di
         between /= (n_classes - 1)
 
         # estimates within class variability
         within = 0
         for ix, classe in enumerate(mdm.classes_):
-            within += (distance(X[y == classe], covmeans[ix],
-                                metric=mdm.metric_dist)**2).sum()
+            within += (distance(
+                X[y == classe], covmeans[ix], metric=mdm.metric_dist)
+                       **2).sum()
         within /= (len(y) - n_classes)
 
         score = between / within
@@ -388,12 +401,13 @@ class PermutationDistance(BasePermutation):
         n_classes = len(covmeans)
         pairs = pairwise_distance(covmeans, metric=mdm.metric_dist)
         mean_dist = numpy.triu(pairs).sum()
-        mean_dist /= (n_classes * (n_classes - 1))/2.0
+        mean_dist /= (n_classes * (n_classes - 1)) / 2.0
 
         dist = 0
         for ix, classe in enumerate(mdm.classes_):
-            di = (distance(X[y == classe], covmeans[ix],
-                           metric=mdm.metric_dist)**2).mean()
+            di = (distance(
+                X[y == classe], covmeans[ix], metric=mdm.metric_dist)
+                  **2).mean()
             dist += (di / numpy.sum(y == classe))
         score = mean_dist / numpy.sqrt(dist)
         return score
@@ -413,7 +427,7 @@ class PermutationDistance(BasePermutation):
 
         between_ss = total_ss - within_ss
 
-        score = ((between_ss / (n_classes - 1)) /
-                 (within_ss / (n_samples - n_classes)))
+        score = ((between_ss / (n_classes - 1)) / (within_ss /
+                                                   (n_samples - n_classes)))
 
         return score
