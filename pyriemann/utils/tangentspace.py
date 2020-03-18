@@ -1,17 +1,21 @@
 import numpy
 from .base import sqrtm, invsqrtm, logm, expm
-
+from .mean import mean_covariance
 ###############################################################
 # Tangent Space
 ###############################################################
 
 
 def tangent_space(covmats, Cref):
-    """Project a set of covariance matrices in the tangent space according to the given reference point Cref
+    """Project a set of covariance matrices in the tangent space. according to
+    the reference point Cref
 
-    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
-    :param Cref: The reference covariance matrix
-    :returns: the Tangent space , a matrix of Ntrials X (Nchannels*(Nchannels+1)/2)
+    :param covmats: np.ndarray
+        Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param Cref: np.ndarray
+        The reference covariance matrix
+    :returns: np.ndarray
+        the Tangent space , a matrix of Ntrials X (Nchannels*(Nchannels+1)/2)
 
     """
     Nt, Ne, Ne = covmats.shape
@@ -29,11 +33,14 @@ def tangent_space(covmats, Cref):
 
 
 def untangent_space(T, Cref):
-    """Project a set of Tangent space vectors in the manifold according to the given reference point Cref
+    """Project a set of Tangent space vectors back to the manifold.
 
-    :param T: the Tangent space , a matrix of Ntrials X (Nchannels * (Nchannels + 1)/2)
-    :param Cref: The reference covariance matrix
-    :returns: A set of Covariance matrix, Ntrials X Nchannels X Nchannels
+    :param T: np.ndarray
+        the Tangent space , a matrix of Ntrials X (channels * (channels + 1)/2)
+    :param Cref: np.ndarray
+        The reference covariance matrix
+    :returns: np.ndarray
+        A set of Covariance matrix, Ntrials X Nchannels X Nchannels
 
     """
     Nt, Nd = T.shape
@@ -50,3 +57,14 @@ def untangent_space(T, Cref):
         covmats[i] = numpy.dot(numpy.dot(C12, covmats[i]), C12)
 
     return covmats
+
+
+def transport(Covs, Cref, metric='riemann'):
+    """Parallel transport of two set of covariance matrix.
+
+    """
+    C = mean_covariance(Covs, metric=metric)
+    iC = invsqrtm(C)
+    E = sqrtm(numpy.dot(numpy.dot(iC, Cref), iC))
+    out = numpy.array([numpy.dot(numpy.dot(E, c), E.T) for c in Covs])
+    return out
