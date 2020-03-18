@@ -129,6 +129,7 @@ The package aims at adopting the [Scikit-Learn](http://scikit-learn.org/stable/d
 
 ### v0.2.6
 - Updated for scikit-learn v0.22
+- Remove support for python 2.7
 
 ### v0.2.5
 - Added `BilinearFilter`
