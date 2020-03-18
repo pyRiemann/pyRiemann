@@ -26,7 +26,7 @@ from mne import io
 from mne.datasets import sample
 
 from sklearn.pipeline import make_pipeline
-from sklearn.cross_validation import KFold
+from sklearn.model_selection import KFold
 from sklearn.metrics import classification_report
 
 print(__doc__)
@@ -62,7 +62,7 @@ evoked = epochs.average()
 n_components = 3  # pick some components
 
 # Define a monte-carlo cross-validation generator (reduce variance):
-cv = KFold(len(labels), 10, shuffle=True, random_state=42)
+cv = KFold(n_splits=10, shuffle=True, random_state=42)
 pr = np.zeros(len(labels))
 epochs_data = epochs.get_data()
 
@@ -70,7 +70,7 @@ print('Multiclass classification with XDAWN + MDM')
 
 clf = make_pipeline(XdawnCovariances(n_components), MDM())
 
-for train_idx, test_idx in cv:
+for train_idx, test_idx in cv.split(epochs_data):
     y_train, y_test = labels[train_idx], labels[test_idx]
 
     clf.fit(epochs_data[train_idx], y_train)
