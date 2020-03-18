@@ -1,9 +1,10 @@
-from numpy.testing import assert_array_almost_equal,assert_array_equal
+from numpy.testing import assert_array_almost_equal, assert_array_equal
 from nose.tools import assert_equal, assert_raises
 import numpy as np
+from scipy.signal import coherence as coh_sp
 
-from pyriemann.utils.covariance import (covariances, covariances_EP,
-                                        eegtocov, cospectrum, coherence)
+from pyriemann.utils.covariance import (covariances, covariances_EP, eegtocov,
+                                        cospectrum, coherence)
 
 
 def test_covariances():
@@ -47,5 +48,15 @@ def test_covariances_cospectrum():
 
 def test_covariances_coherence():
     """Test coherence"""
-    x = np.random.randn(3, 512)
-    coherence(x, fs=128, window=256)
+    x = np.random.randn(2, 2048)
+    coh = coherence(x, fs=128, window=256)
+
+    _, coh2 = coh_sp(
+        x[0],
+        x[1],
+        fs=128,
+        nperseg=256,
+        noverlap=int(0.75 * 256),
+        window='hanning',
+        detrend=False)
+    assert_array_almost_equal(coh[0, 1], coh2[:-1], 0.1)
