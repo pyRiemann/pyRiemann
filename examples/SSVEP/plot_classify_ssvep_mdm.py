@@ -8,7 +8,7 @@ obtained matrices are shown. A Minimum Distance to Mean classifier
 is trained to predict a 4-class problem for an offline setup.
 """
 # Authors: Sylvain Chevallier <sylvain.chevallier@uvsq.fr> ,
-# Emmanuel Kalunga , Quentin Barthélemy
+# Emmanuel Kalunga , Quentin Barthélemy, David Ojeda
 #
 # License: BSD (3-clause)
 
@@ -71,7 +71,8 @@ eeg_data = raw.get_data()
 # Plot few seconds of signal from the `Oz` electrode using matplotlib
 
 n_seconds = 2
-time = np.linspace(0, n_seconds, n_seconds*sfreq).reshape((1, n_seconds*sfreq))
+time = np.linspace(0, n_seconds, n_seconds * sfreq,
+                   endpoint=False)[np.newaxis, :]
 plt.figure(figsize=(10, 4))
 plt.plot(time.T, eeg_data[np.array(raw.ch_names) == 'Oz', :n_seconds*sfreq].T,
          color='C0', lw=0.5)
@@ -79,12 +80,12 @@ plt.xlabel("Time (s)")
 _ = plt.ylabel(r"Oz ($\mu$V)")
 
 ###############################################################################
-# And a fewer seconds of all electrodes:
+# And of all electrodes:
 
-time = np.linspace(0, n_seconds, n_seconds*sfreq).reshape((1, n_seconds*sfreq))
 plt.figure(figsize=(10, 4))
 for ch_idx, ch_name in enumerate(raw.ch_names):
-    plt.plot(time.T, eeg_data[ch_idx, :n_seconds*sfreq].T, lw=0.5, label=ch_name)
+    plt.plot(time.T, eeg_data[ch_idx, :n_seconds*sfreq].T, lw=0.5,
+             label=ch_name)
 plt.xlabel("Time (s)")
 plt.ylabel(r"EEG ($\mu$V)")
 plt.legend(loc='upper right')
@@ -104,10 +105,7 @@ raw.plot(duration=n_seconds, start=0, n_channels=8, scalings={'eeg': 4e-2},
 
 def _butter_bandpass(signal, lowcut, highcut, fs, order=4):
     """ Bilateral Butterworth filter for offline filtering """
-    nyq = 0.5 * fs
-    low = lowcut / nyq
-    high = highcut / nyq
-    b, a = butter(order, [low, high], btype='band')
+    b, a = butter(order, (lowcut, highcut), btype='bandpass', fs=fs)
     filtered = filtfilt(b, a, signal, axis=-1)
     return filtered
 
@@ -115,14 +113,10 @@ def _butter_bandpass(signal, lowcut, highcut, fs, order=4):
 # we stack the filtered signals to build an extended signal
 frequencies = [13., 17., 21.]
 freq_band = 0.1
-ext_signal = np.empty_like(eeg_data[0, :])
-for f in frequencies:
-    ext_signal = np.vstack((ext_signal,
-                            _butter_bandpass(eeg_data,
-                                             lowcut=f-freq_band,
-                                             highcut=f+freq_band,
-                                             fs=sfreq)))
-ext_signal = ext_signal[1:, :]
+ext_signal = np.vstack([_butter_bandpass(eeg_data, fs=sfreq,
+                                         lowcut=f-freq_band,
+                                         highcut=f+freq_band)
+                        for f in frequencies])
 
 # and we build an array with the signal for each trial
 ext_trials = list()
@@ -131,7 +125,6 @@ for t in events[:, 0]:
     stop = t + 5 * sfreq
     ext_trials.append(ext_signal[:, start:stop])
 ext_trials = np.array(ext_trials)
-n, c, t = ext_trials.shape
 
 ###############################################################################
 # We plot 3 seconds of the signal from electrode Oz for a trial
