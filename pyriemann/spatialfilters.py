@@ -64,8 +64,12 @@ class Xdawn(BaseEstimator, TransformerMixin):
         """Init."""
         self.nfilter = nfilter
         self.classes = classes
-        self.estimator = _check_est(estimator)
+        self.estimator = estimator
         self.baseline_cov = baseline_cov
+
+    @property
+    def estimator_fn(self):
+        return _check_est(self.estimator)
 
     def fit(self, X, y):
         """Train xdawn spatial filters.
@@ -91,7 +95,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
         if Cx is None:
             # FIXME : too many reshape operation
             tmp = X.transpose((1, 2, 0))
-            Cx = numpy.matrix(self.estimator(tmp.reshape(Ne, Ns * Nt)))
+            Cx = numpy.matrix(self.estimator_fn(tmp.reshape(Ne, Ns * Nt)))
 
         self.evokeds_ = []
         self.filters_ = []
@@ -101,7 +105,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
             P = numpy.mean(X[y == c, :, :], axis=0)
 
             # Covariance matrix of the prototyper response & signal
-            C = numpy.matrix(self.estimator(P))
+            C = numpy.matrix(self.estimator_fn(P))
 
             # Spatial filters
             evals, evecs = eigh(C, Cx)
