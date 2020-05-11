@@ -214,13 +214,15 @@ for i, l in enumerate(event_id):
         plt.yticks([])
 
 ###############################################################################
-# Minimum distance to mean is a simple and robust algorithm for BCI decoding
+# Minimum distance to mean is a simple and robust algorithm for BCI decoding.
 
 cv = RepeatedKFold(n_splits=2, n_repeats=10, random_state=42)
 mdm = MDM(metric=dict(mean='riemann', distance='riemann'))
 scores = cross_val_score(mdm, cov_ext_trials, events[:, 2], cv=cv, n_jobs=1)
 print("MDM accuracy: {:.2f}% +/- {:.2f}".format(np.mean(scores)*100, 
                                                 np.std(scores)*100))
+# The obtained results are 80.62% +/- 16.29 for this session, with a repeated
+# k-fold validation.
 
 ###############################################################################
 # References
