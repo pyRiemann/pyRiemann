@@ -19,7 +19,7 @@ from scipy.signal import butter, lfilter, filtfilt
 import matplotlib.pyplot as plt
 
 # mne import
-from mne import get_config, set_config, find_events, create_info
+from mne import get_config, set_config, find_events, create_info, Epochs
 from mne.datasets.utils import _get_path
 from mne.utils import _fetch_file, _url_to_local_path
 from mne.io import Raw, RawArray
@@ -58,9 +58,9 @@ def download_sample_data(dataset="ssvep", subject=1, session=1):
         Path to downloaded data
     """
     if dataset == "ssvep":
-        DATASET_URL =  'https://zenodo.org/record/2392979/files/'
+        DATASET_URL = 'https://zenodo.org/record/2392979/files/'
         url = '{:s}subject{:02d}_run{:d}_raw.fif'.format(DATASET_URL,
-                                                 subject, session + 1)
+                                                         subject, session + 1)
         sign = 'SSVEPEXO'
         key, key_dest = 'MNE_DATASETS_SSVEPEXO_PATH', 'MNE-ssvepexo-data'
     elif dataset == "p300" or dataset == "imagery":
@@ -75,6 +75,7 @@ def download_sample_data(dataset="ssvep", subject=1, session=1):
     if not os.path.exists(destination):
         _fetch_file(url, destination, print_destination=False)
     return destination
+
 
 # Download data
 destination = download_sample_data(dataset="ssvep", subject=12, session=1)
@@ -116,52 +117,30 @@ plt.legend(loc='upper right')
 ###############################################################################
 # With MNE, it is much easier to visualize the data
 
-raw.plot(duration=n_seconds, start=0, n_channels=8, scalings={'eeg': 4e-2}, 
+raw.plot(duration=n_seconds, start=0, n_channels=8, scalings={'eeg': 4e-2},
          color={'eeg': 'steelblue'})
 
 ###############################################################################
 # Extended signals for spatial covariance
 # ---------------------------------------
 # Using the approach proposed by [1]_, the SSVEP signal is extended to include
-# the filtered signals for each stimulation frequency. We define a function to
-# filter the signal:
+# the filtered signals for each stimulation frequency. We stack the filtered
+# signals to build an extended signal
 
-def _butter_bandpass(signal, lowcut, highcut, fs, order=4):
-    """ Bilateral Butterworth filter for offline filtering """
-    b, a = butter(order, (lowcut, highcut), btype='bandpass', fs=fs)
-    filtered = filtfilt(b, a, signal, axis=-1)
-    return filtered
+
+def _bandpass_filter(signal, lowcut, highcut):
+    """ Bilateral bandpass filter for offline filtering """
+    return signal.copy().filter(l_freq=lowcut, h_freq=highcut,
+                                method="iir").get_data()
 
 
 # we stack the filtered signals to build an extended signal
 frequencies = [13., 17., 21.]
 freq_band = 0.1
-ext_signal = np.vstack([_butter_bandpass(eeg_data, fs=sfreq,
+ext_signal = np.vstack([_bandpass_filter(raw,
                                          lowcut=f-freq_band,
                                          highcut=f+freq_band)
                         for f in frequencies])
-
-# and we build an array with the signal for each trial
-ext_trials = list()
-for t in events[:, 0]:
-    start = t + 2 * sfreq
-    stop = t + 5 * sfreq
-    ext_trials.append(ext_signal[:, start:stop])
-ext_trials = np.array(ext_trials)
-
-###############################################################################
-# We plot 3 seconds of the signal from electrode Oz for a trial
-
-n_seconds = 3
-time = np.linspace(0, n_seconds, n_seconds*sfreq).reshape((1, n_seconds*sfreq))
-
-plt.figure(figsize=(7, 5))
-plt.plot(time.T, ext_trials[5, 0, :].T, label=str(int(frequencies[0]))+' Hz')
-plt.plot(time.T, ext_trials[5, 8, :].T, label=str(int(frequencies[1]))+' Hz')
-plt.plot(time.T, ext_trials[5, 16, :].T, label=str(int(frequencies[2]))+' Hz')
-plt.xlabel("Time (s)")
-plt.ylabel(r"Oz after filtering ($\mu$V)")
-plt.legend(loc='upper right')
 
 ###############################################################################
 # Creating an MNE Raw object from the extended signal and plot it
@@ -177,6 +156,22 @@ raw_ext.plot(duration=n_seconds, start=14, n_channels=24,
              scalings={'eeg': 5e-4}, color={'eeg': 'steelblue'})
 
 ###############################################################################
+# Building Epochs and plotting 3 s of the signal from electrode Oz for a trial
+
+epochs = Epochs(raw_ext, events, event_id, tmin=2, tmax=5, baseline=None)
+
+n_seconds = 3
+time = np.linspace(0, n_seconds, n_seconds * sfreq,
+                   endpoint=False)[np.newaxis, :]
+channels = range(0, len(raw_ext.ch_names), len(raw.ch_names))
+plt.figure(figsize=(7, 5))
+for f, c in zip(frequencies, channels):
+    plt.plot(epochs.get_data()[5, c, :].T, label=str(int(f))+' Hz')
+plt.xlabel("Time (s)")
+plt.ylabel(r"Oz after filtering ($\mu$V)")
+plt.legend(loc='upper right')
+
+###############################################################################
 # As it can be seen on this example, the subject is watching the 13Hz
 # stimulation and the EEG activity is showing an increase activity in this
 # frequency band while other frequency have a lower amplitude.
@@ -187,7 +182,7 @@ raw_ext.plot(duration=n_seconds, start=14, n_channels=24,
 # The covariance matrices will be estimated using the Ledoit-Wolf shrinkage
 # estimator on the extended signal.
 
-cov_ext_trials = Covariances(estimator='lwf').transform(ext_trials)
+cov_ext_trials = Covariances(estimator='lwf').transform(epochs.get_data())
 
 # This plot shows an example of a covariance matrix observed for each class:
 
@@ -200,7 +195,7 @@ for i, l in enumerate(event_id):
     plt.title('Cov for class: '+l)
     plt.xticks([])
     if i == 0 or i == 2:
-        plt.yticks(np.arange(len(info['ch_names'])),info['ch_names'])
+        plt.yticks(np.arange(len(info['ch_names'])), info['ch_names'])
         ax.tick_params(axis='both', which='major', labelsize=7)
     else:
         plt.yticks([])
@@ -231,7 +226,7 @@ for i, l in enumerate(event_id):
     plt.title('Cov mean for class: '+l)
     plt.xticks([])
     if i == 0 or i == 2:
-        plt.yticks(np.arange(len(info['ch_names'])),info['ch_names'])
+        plt.yticks(np.arange(len(info['ch_names'])), info['ch_names'])
         ax.tick_params(axis='both', which='major', labelsize=7)
     else:
         plt.yticks([])
@@ -242,7 +237,7 @@ for i, l in enumerate(event_id):
 cv = RepeatedKFold(n_splits=2, n_repeats=10, random_state=42)
 mdm = MDM(metric=dict(mean='riemann', distance='riemann'))
 scores = cross_val_score(mdm, cov_ext_trials, events[:, 2], cv=cv, n_jobs=1)
-print("MDM accuracy: {:.2f}% +/- {:.2f}".format(np.mean(scores)*100, 
+print("MDM accuracy: {:.2f}% +/- {:.2f}".format(np.mean(scores)*100,
                                                 np.std(scores)*100))
 # The obtained results are 80.62% +/- 16.29 for this session, with a repeated
 # k-fold validation.
@@ -250,8 +245,8 @@ print("MDM accuracy: {:.2f}% +/- {:.2f}".format(np.mean(scores)*100,
 ###############################################################################
 # References
 # ----------
-# [1] M. Congedo, A. Barachant, A. Andreev ,"A New generation of Brain-Computer 
+# [1] M. Congedo, A. Barachant, A. Andreev ,"A New generation of Brain-Computer
 # Interface Based on Riemannian Geometry", arXiv: 1310.8115, 2013.
-# [2] E. K. Kalunga, S. Chevallier, Q. Barthélemy, K. Djouani, E. Monacelli, 
-# Y. Hamam, "Online SSVEP-based BCI using Riemannian geometry", Neurocomputing, 
+# [2] E. K. Kalunga, S. Chevallier, Q. Barthélemy, K. Djouani, E. Monacelli,
+# Y. Hamam, "Online SSVEP-based BCI using Riemannian geometry", Neurocomputing,
 # vol. 191, p. 55-68, 2016.
