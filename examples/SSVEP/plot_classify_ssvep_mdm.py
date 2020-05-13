@@ -39,22 +39,45 @@ from sklearn.model_selection import cross_val_score, RepeatedKFold
 #
 # The data are loaded through a MNE loader
 
-SSVEPEXO_URL = 'https://zenodo.org/record/2392979/files/'
-subject, run = 12, 1
-url = '{:s}subject{:02d}_run{:d}_raw.fif'.format(SSVEPEXO_URL,
-                                                 subject, run + 1)
-sign = 'SSVEPEXO'
-key, key_dest = 'MNE_DATASETS_SSVEPEXO_PATH', 'MNE-ssvepexo-data'
+def download_sample_data(dataset="ssvep", subject=1, session=1):
+    """Download BCI data for example purpose
 
-# Use MNE _fetch_file to download EEG file
-if get_config(key) is None:
-    set_config(key, os.path.join(os.path.expanduser("~"), "mne_data"))
-path = _get_path(None, key, sign)
-destination = _url_to_local_path(url, os.path.join(path, key_dest))
-os.makedirs(os.path.dirname(destination), exist_ok=True)
-if not os.path.exists(destination):
-    _fetch_file(url, destination, print_destination=False)
+    Parameters
+    ----------
+    dataset : str
+        type of the dataset, could be "ssvep", "p300" or "imagery"
+        Default is "ssvep", as other are not implemented
+    subject : int
+        Subject id, dataset specific (default: 1)
+    session : int, default 1
+        Session number%load , dataset specific (default: 1)
 
+    Returns
+    -------
+    destination : str
+        Path to downloaded data
+    """
+    if dataset == "ssvep":
+        DATASET_URL =  'https://zenodo.org/record/2392979/files/'
+        url = '{:s}subject{:02d}_run{:d}_raw.fif'.format(DATASET_URL,
+                                                 subject, session + 1)
+        sign = 'SSVEPEXO'
+        key, key_dest = 'MNE_DATASETS_SSVEPEXO_PATH', 'MNE-ssvepexo-data'
+    elif dataset == "p300" or dataset == "imagery":
+        raise NotImplementedError("Not yet implemented")
+
+    # Use MNE _fetch_file to download EEG file
+    if get_config(key) is None:
+        set_config(key, os.path.join(os.path.expanduser("~"), "mne_data"))
+    path = _get_path(None, key, sign)
+    destination = _url_to_local_path(url, os.path.join(path, key_dest))
+    os.makedirs(os.path.dirname(destination), exist_ok=True)
+    if not os.path.exists(destination):
+        _fetch_file(url, destination, print_destination=False)
+    return destination
+
+# Download data
+destination = download_sample_data(dataset="ssvep", subject=12, session=1)
 # Read data in MNE Raw and numpy format
 raw = Raw(destination, preload=True, verbose='ERROR')
 events = find_events(raw, shortest_event=0, verbose=False)
