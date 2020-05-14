@@ -100,6 +100,7 @@ plt.plot(time.T, eeg_data[np.array(raw.ch_names) == 'Oz', :n_seconds*sfreq].T,
          color='C0', lw=0.5)
 plt.xlabel("Time (s)")
 plt.ylabel(r"Oz ($\mu$V)")
+plt.show()
 
 ###############################################################################
 # And of all electrodes:
@@ -111,6 +112,7 @@ for ch_idx, ch_name in enumerate(raw.ch_names):
 plt.xlabel("Time (s)")
 plt.ylabel(r"EEG ($\mu$V)")
 plt.legend(loc='upper right')
+plt.show()
 
 ###############################################################################
 # With MNE, it is much easier to visualize the data
@@ -166,6 +168,7 @@ for f, c in zip(frequencies, channels):
 plt.xlabel("Time (s)")
 plt.ylabel(r"Oz after filtering ($\mu$V)")
 plt.legend(loc='upper right')
+plt.show()
 
 ###############################################################################
 # As it can be seen on this example, the subject is watching the 13Hz
@@ -194,6 +197,7 @@ for i, l in enumerate(event_id):
         ax.tick_params(axis='both', which='major', labelsize=7)
     else:
         plt.yticks([])
+plt.show()
 
 ###############################################################################
 # It appears clearly that each class yields a different structure of the
@@ -223,6 +227,7 @@ for i, l in enumerate(event_id):
         ax.tick_params(axis='both', which='major', labelsize=7)
     else:
         plt.yticks([])
+plt.show()
 
 ###############################################################################
 # Minimum distance to mean is a simple and robust algorithm for BCI decoding.
