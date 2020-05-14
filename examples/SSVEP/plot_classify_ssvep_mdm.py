@@ -7,15 +7,14 @@ Building extended covariance matrices for SSVEP-based BCI. The
 obtained matrices are shown. A Minimum Distance to Mean classifier
 is trained to predict a 4-class problem for an offline setup.
 """
-# Authors: Sylvain Chevallier <sylvain.chevallier@uvsq.fr> ,
-# Emmanuel Kalunga , Quentin Barthélemy, David Ojeda
+# Authors: Sylvain Chevallier <sylvain.chevallier@uvsq.fr>,
+# Emmanuel Kalunga, Quentin Barthélemy, David Ojeda
 #
 # License: BSD (3-clause)
 
 # generic import
 import os
 import numpy as np
-from scipy.signal import butter, lfilter, filtfilt
 import matplotlib.pyplot as plt
 
 # mne import
@@ -76,7 +75,6 @@ def download_sample_data(dataset="ssvep", subject=1, session=1):
         _fetch_file(url, destination, print_destination=False)
     return destination
 
-
 # Download data
 destination = download_sample_data(dataset="ssvep", subject=12, session=1)
 # Read data in MNE Raw and numpy format
@@ -101,7 +99,7 @@ plt.figure(figsize=(10, 4))
 plt.plot(time.T, eeg_data[np.array(raw.ch_names) == 'Oz', :n_seconds*sfreq].T,
          color='C0', lw=0.5)
 plt.xlabel("Time (s)")
-_ = plt.ylabel(r"Oz ($\mu$V)")
+plt.ylabel(r"Oz ($\mu$V)")
 
 ###############################################################################
 # And of all electrodes:
@@ -123,18 +121,16 @@ raw.plot(duration=n_seconds, start=0, n_channels=8, scalings={'eeg': 4e-2},
 ###############################################################################
 # Extended signals for spatial covariance
 # ---------------------------------------
-# Using the approach proposed by [1]_, the SSVEP signal is extended to include
+# Using the approach proposed by [1], the SSVEP signal is extended to include
 # the filtered signals for each stimulation frequency. We stack the filtered
 # signals to build an extended signal
 
-
 def _bandpass_filter(signal, lowcut, highcut):
-    """ Bilateral bandpass filter for offline filtering """
+    """ Bandpass filter using MNE """
     return signal.copy().filter(l_freq=lowcut, h_freq=highcut,
                                 method="iir").get_data()
 
-
-# we stack the filtered signals to build an extended signal
+# We stack the filtered signals to build an extended signal
 frequencies = [13., 17., 21.]
 freq_band = 0.1
 ext_signal = np.vstack([_bandpass_filter(raw,
@@ -174,7 +170,7 @@ plt.legend(loc='upper right')
 ###############################################################################
 # As it can be seen on this example, the subject is watching the 13Hz
 # stimulation and the EEG activity is showing an increase activity in this
-# frequency band while other frequency have a lower amplitude.
+# frequency band while other frequencies have lower amplitudes.
 #
 # Spatial covariance for SSVEP
 # ----------------------------
@@ -190,8 +186,7 @@ plt.figure(figsize=(7, 7))
 for i, l in enumerate(event_id):
     ax = plt.subplot(2, 2, i+1)
     plt.imshow(cov_ext_trials[events[:, 2] == event_id[l]][0],
-               cmap=plt.get_cmap('RdBu_r'),
-               interpolation='nearest')
+               cmap=plt.get_cmap('RdBu_r'))
     plt.title('Cov for class: '+l)
     plt.xticks([])
     if i == 0 or i == 2:
@@ -204,10 +199,10 @@ for i, l in enumerate(event_id):
 # It appears clearly that each class yields a different structure of the
 # covariance matrix. Each stimulation (13, 17 and 21 Hz) generating higher
 # covariance values for EEG signal filtered at the proper bandwith and no
-# activation at all for the other bandwith. The resting state, where the
+# activation at all for the other bandwiths. The resting state, where the
 # subject focus on the center of the display and far from all blinking
 # stimulus, shows an activity with higher correlation in the 13Hz frequency
-# and lower but still visible activity in the other bandwith.
+# and lower but still visible activity in the other bandwiths.
 #
 # Classify with MDM
 # -----------------
@@ -220,9 +215,7 @@ for i, l in enumerate(event_id):
 plt.figure(figsize=(7, 7))
 for i, l in enumerate(event_id):
     ax = plt.subplot(2, 2, i+1)
-    plt.imshow(cov_centers[i],
-               cmap=plt.get_cmap('RdBu_r'),
-               interpolation='nearest')
+    plt.imshow(cov_centers[i], cmap=plt.get_cmap('RdBu_r'))
     plt.title('Cov mean for class: '+l)
     plt.xticks([])
     if i == 0 or i == 2:
@@ -247,6 +240,6 @@ print("MDM accuracy: {:.2f}% +/- {:.2f}".format(np.mean(scores)*100,
 # ----------
 # [1] M. Congedo, A. Barachant, A. Andreev ,"A New generation of Brain-Computer
 # Interface Based on Riemannian Geometry", arXiv: 1310.8115, 2013.
-# [2] E. K. Kalunga, S. Chevallier, Q. Barthélemy, K. Djouani, E. Monacelli,
-# Y. Hamam, "Online SSVEP-based BCI using Riemannian geometry", Neurocomputing,
-# vol. 191, p. 55-68, 2016.
+# [2] E. K. Kalunga, S. Chevallier, Q. Barthélemy, E. Monacelli,
+# "Review of Riemannian distances and divergences, applied to SSVEP-based BCI", 
+# Neuroinformatics, 2020.
