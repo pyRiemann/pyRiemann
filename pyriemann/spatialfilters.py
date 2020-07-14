@@ -1,13 +1,15 @@
 """Spatial filtering function."""
 import numpy
 
-from scipy.linalg import eigh
+from scipy.linalg import eigh, inv
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.utils.extmath import stable_cumsum
 
 from .utils.covariance import _check_est
 from .utils.mean import mean_covariance
 from .utils.ajd import ajd_pham
 from .utils.mean import _check_mean_method
+from .estimation import CospCovariances
 
 
 class Xdawn(BaseEstimator, TransformerMixin):
@@ -462,3 +464,175 @@ class SPoC(CSP):
         self.patterns_ = A[:, 0:self.nfilter].T
 
         return self
+
+
+class AJDC(BaseEstimator, TransformerMixin):
+    """Implementation of the AJDC.
+
+    Approximate joint diagonalization of Fourier cospectra (AJDC) [1][2] for
+    blind source separation (BSS). It estimates Fourier cospectral matrices by
+    the Welch's method, and concatenates them along experimental conditions if
+    necessary. A dimension reduction and a whitening are applied on cospectra.
+    An approximate joint diagonalization (AJD) is applied on cospectra. The
+    joint diagonalizer, not constrained to be orthogonal, allows to estimate
+    the forward and backward filters.
+
+    Parameters
+    ----------
+    window : int (default 128)
+        The lengt of the FFT window used for spectral estimation.
+    overlap : float (default 0.5)
+        The percentage of overlap between window.
+    fmin : float | None , (default None)
+        the minimal frequency to be returned.
+    fmax : float | None , (default None)
+        The maximal frequency to be returned.
+    fs : float | None, (default None)
+        The sampling frequency of the signal.
+    expl_var : float (default 0.999)
+        Explained variance for dimension reduction in [0, 1], because Pham's
+        AJD is sensitive to matrices conditioning.
+    verbose : bool (default True)
+        Verbose flag.
+
+    Attributes
+    ----------
+    n_channels_ : int
+        If fit, the number of channels of the signal.
+    n_sources_ : int
+        If fit, the number of components of the source.
+    forward_filters_ : ndarray (n_sources_, n_channels_)
+        If fit, the AJDC filters used to transform signal into source, also 
+        called deximing or separating matrix.
+    backward_filters_ : ndarray (n_channels_, n_sources_)
+        If fit, the AJDC filters used to transform source into signal, also
+        called mixing matrix.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.7
+
+    See Also
+    --------
+    CospCovariances
+
+    References
+    ----------
+    [1] M. Congedo, C. Gouy-Pailler, C. Jutten, "On the blind source separation
+    of human electroencephalogram by approximate joint diagonalization of 
+    second order statistics", Clin Neurophysiol, 2008
+    [2] Q. Barthélemy, L. Mayaud, Y. Renard, D. Kim, S.-W. Kang, J. Gunkelman 
+    and M. Congedo, "Online denoising of eye-blinks in electroencephalography",
+    Neurophysiol Clin, 2017
+    """
+
+    def __init__(self, window=128, overlap=0.5, fmin=None, fmax=None, fs=None,
+                 expl_var=0.999, verbose=True):
+        """Init."""
+        self.window = window
+        self.overlap = overlap
+        self.fmin = fmin
+        self.fmax = fmax
+        self.fs = fs
+        self.expl_var = expl_var
+        self.verbose = verbose
+
+    def fit(self, X, y=None):
+        """Fit.
+
+        Compute and diagonalize cospectra, to estimate forward and backward 
+        filters.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_conditions, n_channels, n_samples)
+            ndarray of signal under several experimental conditions (baseline 
+            versus task).
+        y : ndarray shape (n_conditions,)
+            labels corresponding to each condition, not used.
+
+        Returns
+        -------
+        self : AJDC instance
+            The AJDC instance.
+        """
+        self.n_channels_ = X.shape[1]
+        # cospectra
+        cosp = CospCovariances(window=self.window, overlap=self.overlap, 
+                               fmin=self.fmin, fmax=self.fmax, 
+                               fs=self.fs).transform(X)
+        # concatenation along conditions
+        self._cosp = numpy.concatenate(cosp, axis=2).T
+        #TODO: estimate non-diagonality weights for Pham's algo
+        
+        # dimension reduction
+        eigvals, eigvecs = eigh(self._cosp.mean(axis=0), eigvals_only=False)
+        eigvals = eigvals[::-1] # sorted in descending order
+        eigvecs = numpy.fliplr(eigvecs)
+        cum_expl_var = stable_cumsum(eigvals/eigvals.sum())
+        self.n_sources_ = numpy.searchsorted(cum_expl_var, self.expl_var,
+                                             side='right') + 1
+        if self.verbose:
+            print("Fitting AJDC to data using {} components "
+                  "(be unpatient, this is fast)".format(self.n_sources_))
+        pca_filters = eigvecs[:, :self.n_sources_]
+        pca_vals = eigvals[:self.n_sources_]
+        # whitening
+        whit_filters = pca_filters @ numpy.diag(1. / numpy.sqrt(pca_vals))
+        whit_inv_filters = pca_filters @ numpy.diag(numpy.sqrt(pca_vals))
+        red_cosp = numpy.zeros((self._cosp.shape[0], self.n_sources_, 
+                                self.n_sources_))
+        # apply dimension reduction and whitening on raw cospectra
+        for c in range(red_cosp.shape[0]):
+            red_cosp[c] = whit_filters.T @ self._cosp[c] @ whit_filters
+        
+        # joint diagonalization
+        diag_filters, self._diag_cosp = ajd_pham(red_cosp)
+        # forward and bakcward filters
+        self.forward_filters_ = diag_filters @ whit_filters.T
+        self.backward_filters_ = whit_inv_filters @ inv(diag_filters)
+        return self
+
+    def transform(self, X):
+        """Estimate the source space from signal.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_channels, n_samples)
+            ndarray of signal.
+
+        Returns
+        -------
+        source : ndarray, shape (n_sources, n_samples)
+            ndarray of source.
+        """
+        if X.shape[0] != self.n_channels_:
+            raise ValueError('X has not the good number of channels')
+        source = self.forward_filters_ @ X
+        return source
+
+    def transform_back(self, X, idx=None):
+        """Estimate the signal space from source, with possibility to suppress
+        some sources.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_sources, n_samples)
+            ndarray of source.
+        idx : list | None
+            List indices of sources to suppress.
+
+        Returns
+        -------
+        source : ndarray, shape (n_channels, n_samples)
+            ndarray of signal.
+        """
+        if X.shape[0] != self.n_sources_:
+            raise ValueError('X has not the good number of sources')
+        denois = numpy.eye(self.n_sources_)
+        if isinstance(idx, list):
+            for i in idx:
+                denois[i, i] = 0
+                
+        signal = self.backward_filters_ @ denois @ X
+        return signal

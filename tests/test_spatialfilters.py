@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.testing import assert_array_equal
-from pyriemann.spatialfilters import Xdawn, CSP, SPoC, BilinearFilter
+from pyriemann.spatialfilters import Xdawn, CSP, SPoC, BilinearFilter, AJDC
 import pytest
 
 
@@ -156,3 +156,32 @@ def test_BilinearFilter():
     bf = BilinearFilter(filters)
     Xt = bf.transform(X)
     assert_array_equal(Xt.shape, [len(X), filters.shape[0], filters.shape[0]])
+
+
+def test_AJDC():
+    """Test AJDC"""
+    n_conditions, n_channels, n_samples = 2, 8, 512
+    X = np.random.randn(n_conditions, n_channels, n_samples)
+
+    # Test Init
+    ajdc = AJDC(fmin=1, fmax=32, fs=64)
+    assert_true(ajdc.window == 128)
+    assert_true(ajdc.overlap == 0.5)
+    assert_true(ajdc.expl_var == 0.999)
+    assert_true(ajdc.verbose)
+
+    # Test fit
+    ajdc.fit(X)
+    assert_true(ajdc.n_channels_ == n_channels)
+    assert_true(ajdc.n_sources_ <= n_channels)
+    assert_array_equal(ajdc.forward_filters_.shape, [ajdc.n_sources_, n_channels])
+    assert_array_equal(ajdc.backward_filters_.shape, [n_channels, ajdc.n_sources_])
+
+    # Test transform
+    Xt = ajdc.transform(X[0])
+    assert_array_equal(Xt.shape, [ajdc.n_sources_, n_samples])
+    
+    # Test transform back
+    Xtb = ajdc.transform_back(Xt)
+    assert_array_equal(Xtb.shape, [n_channels, n_samples])
+
