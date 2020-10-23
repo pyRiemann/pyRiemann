@@ -1,7 +1,7 @@
 """
-=================================================================
-Offline Artifact Correction by AJDC-based Blind Source Separation
-=================================================================
+=========================================================
+Artifact Correction by AJDC-based Blind Source Separation
+=========================================================
 
 Blind source separation (BSS) based on approximate joint diagonalization of 
 Fourier cospectra (AJDC), applied to artifact correction of EEG [1].
@@ -18,6 +18,12 @@ from mne.time_frequency import psd_welch
 from mne.preprocessing import ICA
 from pyriemann.spatialfilters import AJDC
 from matplotlib import pyplot as plt
+
+import warnings
+from mne import __version__ as v
+if v != '0.18.2':
+    warnings.warn('This example has only been tested with mne version 0.18.2',
+                  UserWarning)
 
 
 ###############################################################################
@@ -84,7 +90,7 @@ ajdc.fit(signal_raw[np.newaxis, ...])
 plot_cospectra(ajdc._cosp, 'Raw cospectra, in signal space',
                ch_names=info['ch_names'])
 
-# Plot diagonalized cospectra
+# Plot diagonalized reduced cospectra
 plot_cospectra(ajdc._diag_cosp,
                'Diagonalized reduced cospectra, in source space')
 
@@ -110,7 +116,7 @@ source.plot(duration=duration, start=0, n_channels=sr_count,
 # Artifact correction
 # -------------------
 
-# Blinks are well separated in source S0, while S9 and S10 capture EMG
+# Identify artifact: blinks are well separated in source S0
 blink_idx = 0
 
 # Plot topographic map and spectrum of the blink source
@@ -136,9 +142,10 @@ denoised_signal.plot(duration=duration, start=0, n_channels=ch_count,
 
 
 ###############################################################################
-# Comparison with HOS-based BSS, using ICA (Infomax)
-# --------------------------------------------------
+# Comparison with ICA
+# -------------------
 
+# Infomax-based ICA is a HOS-based BSS, minimizing mutual information
 ica = ICA(n_components=ajdc.n_sources_, method='infomax', random_state=42)
 ica.fit(signal, picks='eeg')
 

@@ -9,7 +9,6 @@ from .utils.covariance import _check_est
 from .utils.mean import mean_covariance
 from .utils.ajd import ajd_pham
 from .utils.mean import _check_mean_method
-from .estimation import CospCovariances
 
 
 class Xdawn(BaseEstimator, TransformerMixin):
@@ -556,6 +555,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         self : AJDC instance
             The AJDC instance.
         """
+        from .estimation import CospCovariances
         self.n_channels_ = X.shape[1]
         # cospectra
         cosp = CospCovariances(window=self.window, overlap=self.overlap, 
@@ -563,8 +563,8 @@ class AJDC(BaseEstimator, TransformerMixin):
                                fs=self.fs).transform(X)
         # concatenation along conditions
         self._cosp = numpy.concatenate(cosp, axis=2).T
-        #TODO: estimate non-diagonality weights for Pham's algo
-        
+        #TODO: non-diagonality weights estimation (Eq(B.1) in [1]),
+        #      when Pham's algorithm ajd_pham() will be able to process them
         # dimension reduction
         eigvals, eigvecs = eigh(self._cosp.mean(axis=0), eigvals_only=False)
         eigvals = eigvals[::-1] # sorted in descending order
@@ -585,7 +585,6 @@ class AJDC(BaseEstimator, TransformerMixin):
         # apply dimension reduction and whitening on raw cospectra
         for c in range(red_cosp.shape[0]):
             red_cosp[c] = whit_filters.T @ self._cosp[c] @ whit_filters
-        
         # joint diagonalization
         diag_filters, self._diag_cosp = ajd_pham(red_cosp)
         # forward and bakcward filters
