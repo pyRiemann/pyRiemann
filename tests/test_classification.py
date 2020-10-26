@@ -82,7 +82,7 @@ def test_TSclassifier():
     assert_raises(TypeError, TSclassifier, clf='666')
     clf = TSclassifier()
     clf.fit(covset, labels)
-    np.array_equal(clf.classes_, np.array([0, 1]))
+    assert np.array_equal(clf.classes_, np.array([0, 1]))
     clf.predict(covset)
     clf.predict_proba(covset)
 
