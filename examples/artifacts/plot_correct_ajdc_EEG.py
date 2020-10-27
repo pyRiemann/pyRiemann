@@ -6,7 +6,8 @@ Artifact Correction by AJDC-based Blind Source Separation
 Blind source separation (BSS) based on approximate joint diagonalization of 
 Fourier cospectra (AJDC), applied to artifact correction of EEG [1].
 """
-# Authors: Quentin Barthélemy & David Ojeda
+# Authors: Quentin Barthélemy & David Ojeda.
+# EEG signal kindly shared by Marco Congedo.
 #
 # License: BSD (3-clause)
 
@@ -125,7 +126,7 @@ axs[0].set_title('Topographic map of the blink source estimated by AJDC')
 axs[1].set(title='Spectrum of the blink source estimated by AJDC',
            xlabel='Frequency (Hz)', ylabel='Spectrum power (mV²)')
 spectrum, freqs = psd_welch(source, n_fft=window, n_overlap=window * overlap,
-                            fmin=fmin, fmax=fmax, picks='S' + str(blink_idx), 
+                            fmin=fmin, fmax=fmax, picks='S' + str(blink_idx),
                             verbose=False)
 axs[1].plot(freqs, spectrum[0])
 plot_topomap(ajdc.backward_filters_[:, blink_idx], pos=info, axes=axs[0])
@@ -157,6 +158,6 @@ ica.plot_components(title='Topographic maps of EEG sources estimated by ICA')
 ###############################################################################
 # References
 # ----------
-# [1] Q. Barthélemy, L. Mayaud, Y. Renard, D. Kim, S.-W. Kang, J. Gunkelman and 
+# [1] Q. Barthélemy, L. Mayaud, Y. Renard, D. Kim, S.-W. Kang, J. Gunkelman and
 # M. Congedo, "Online denoising of eye-blinks in electroencephalography",
 # Neurophysiol Clin, 2017

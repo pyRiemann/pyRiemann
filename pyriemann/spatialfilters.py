@@ -9,6 +9,7 @@ from .utils.covariance import _check_est
 from .utils.mean import mean_covariance
 from .utils.ajd import ajd_pham
 from .utils.mean import _check_mean_method
+from . import estimation as est
 
 
 class Xdawn(BaseEstimator, TransformerMixin):
@@ -486,7 +487,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         the minimal frequency to be returned.
     fmax : float | None , (default None)
         The maximal frequency to be returned.
-    fs : float | None, (default None)
+    fs : float | None , (default None)
         The sampling frequency of the signal.
     expl_var : float (default 0.999)
         Explained variance for dimension reduction in [0, 1], because Pham's
@@ -545,7 +546,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_conditions, n_channels, n_samples)
-            ndarray of signal under several experimental conditions (baseline 
+            ndarray of signal, under several experimental conditions (baseline 
             versus task).
         y : ndarray shape (n_conditions,)
             labels corresponding to each condition, not used.
@@ -555,16 +556,16 @@ class AJDC(BaseEstimator, TransformerMixin):
         self : AJDC instance
             The AJDC instance.
         """
-        from .estimation import CospCovariances
         self.n_channels_ = X.shape[1]
-        # cospectra
-        cosp = CospCovariances(window=self.window, overlap=self.overlap, 
-                               fmin=self.fmin, fmax=self.fmax, 
-                               fs=self.fs).transform(X)
-        # concatenation along conditions
+        # estimation of cospectra
+        cosp = est.CospCovariances(window=self.window, overlap=self.overlap,
+                                   fmin=self.fmin, fmax=self.fmax,
+                                   fs=self.fs).transform(X)
+        # concatenation of cospectra along conditions
         self._cosp = numpy.concatenate(cosp, axis=2).T
         #TODO: non-diagonality weights estimation (Eq(B.1) in [1]),
         #      when Pham's algorithm ajd_pham() will be able to process them
+
         # dimension reduction
         eigvals, eigvecs = eigh(self._cosp.mean(axis=0), eigvals_only=False)
         eigvals = eigvals[::-1] # sorted in descending order
@@ -577,15 +578,18 @@ class AJDC(BaseEstimator, TransformerMixin):
                   "(be unpatient, this is fast)".format(self.n_sources_))
         pca_filters = eigvecs[:, :self.n_sources_]
         pca_vals = eigvals[:self.n_sources_]
+
         # whitening
         whit_filters = pca_filters @ numpy.diag(1. / numpy.sqrt(pca_vals))
         whit_inv_filters = pca_filters @ numpy.diag(numpy.sqrt(pca_vals))
-        red_cosp = numpy.zeros((self._cosp.shape[0], self.n_sources_, 
-                                self.n_sources_))
+
         # apply dimension reduction and whitening on raw cospectra
+        red_cosp = numpy.zeros((self._cosp.shape[0], self.n_sources_,
+                                self.n_sources_))
         for c in range(red_cosp.shape[0]):
             red_cosp[c] = whit_filters.T @ self._cosp[c] @ whit_filters
-        # joint diagonalization
+
+        # approximate joint diagonalization, using Pham's algorithm
         diag_filters, self._diag_cosp = ajd_pham(red_cosp)
         # forward and bakcward filters
         self.forward_filters_ = diag_filters @ whit_filters.T
@@ -607,6 +611,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         """
         if X.shape[0] != self.n_channels_:
             raise ValueError('X has not the good number of channels')
+
         source = self.forward_filters_ @ X
         return source
 
@@ -632,6 +637,6 @@ class AJDC(BaseEstimator, TransformerMixin):
         if isinstance(idx, list):
             for i in idx:
                 denois[i, i] = 0
-                
+
         signal = self.backward_filters_ @ denois @ X
         return signal
