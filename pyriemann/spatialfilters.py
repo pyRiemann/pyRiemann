@@ -566,10 +566,10 @@ class AJDC(BaseEstimator, TransformerMixin):
         #TODO: non-diagonality weights estimation (Eq(B.1) in [1]),
         #      when Pham's algorithm ajd_pham() will be able to process them
 
-        # dimension reduction
+        # dimension reduction, estimated on averaged cospectrum
         eigvals, eigvecs = eigh(self._cosp.mean(axis=0), eigvals_only=False)
-        eigvals = eigvals[::-1] # sorted in descending order
-        eigvecs = numpy.fliplr(eigvecs)
+        eigvals = eigvals[::-1]         # sorted in descending order
+        eigvecs = numpy.fliplr(eigvecs) # idem
         cum_expl_var = stable_cumsum(eigvals/eigvals.sum())
         self.n_sources_ = numpy.searchsorted(cum_expl_var, self.expl_var,
                                              side='right') + 1
@@ -597,7 +597,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """Estimate the source space from signal.
+        """Estimate the source space from channel space.
 
         Parameters
         ----------
@@ -616,14 +616,14 @@ class AJDC(BaseEstimator, TransformerMixin):
         return source
 
     def transform_back(self, X, idx=None):
-        """Estimate the signal space from source, with possibility to suppress
-        some sources.
+        """Estimate the channel space from source space, with possibility to
+        suppress some sources.
 
         Parameters
         ----------
         X : ndarray, shape (n_sources, n_samples)
             ndarray of source.
-        idx : list | None
+        idx : list | None , (default None)
             List indices of sources to suppress.
 
         Returns

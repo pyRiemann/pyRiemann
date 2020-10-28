@@ -3,7 +3,7 @@
 Artifact Correction by AJDC-based Blind Source Separation
 =========================================================
 
-Blind source separation (BSS) based on approximate joint diagonalization of 
+Blind source separation (BSS) based on approximate joint diagonalization of
 Fourier cospectra (AJDC), applied to artifact correction of EEG [1].
 """
 # Authors: Quentin Barthélemy & David Ojeda.
@@ -12,19 +12,13 @@ Fourier cospectra (AJDC), applied to artifact correction of EEG [1].
 # License: BSD (3-clause)
 
 import numpy as np
-from mne import create_info
+from mne import create_info              # tested with mne 0.21
 from mne.io import RawArray
 from mne.viz import plot_topomap
 from mne.time_frequency import psd_welch
 from mne.preprocessing import ICA
 from pyriemann.spatialfilters import AJDC
 from matplotlib import pyplot as plt
-
-import warnings
-from mne import __version__ as v
-if v != '0.18.2':
-    warnings.warn('This example has only been tested with mne version 0.18.2',
-                  UserWarning)
 
 
 ###############################################################################
@@ -37,16 +31,19 @@ def read_header(fname):
         return content[:-1], int(content[-1])
 
 
-def plot_cospectra(cosp, title, ch_names=None):
+def plot_cospectra(cosp, title, ylabels=None):
     fig = plt.figure(figsize=(12, 7))
     fig.suptitle(title)
     for f in range(cosp.shape[0]):
         ax = plt.subplot(4, 8, f+1)
-        plt.imshow(cosp[f,: , :], cmap=plt.get_cmap('YlGnBu'))
+        plt.imshow(cosp[f], cmap=plt.get_cmap('Reds'))
         plt.title('{} Hz'.format(f+1))
         plt.xticks([])
-        if ch_names and f == 0:
-            plt.yticks(np.arange(len(ch_names)), ch_names)
+        if ylabels and f == 0:
+            plt.yticks(np.arange(0, len(ylabels), 2), ylabels[::2])
+            ax.tick_params(axis='both', which='major', labelsize=7)
+        elif ylabels and f == 8:
+            plt.yticks(np.arange(1, len(ylabels), 2), ylabels[1::2])
             ax.tick_params(axis='both', which='major', labelsize=7)
         else:
             plt.yticks([])
@@ -65,16 +62,16 @@ duration = signal_raw.shape[1] / sfreq
 
 
 ###############################################################################
-# Signal space
-# ------------
+# Channel space
+# -------------
 
 # Plot signal
-info = create_info(ch_names=ch_names, ch_types=['eeg'] * ch_count, sfreq=sfreq,
-                   montage='standard_1020')
+info = create_info(ch_names=ch_names, ch_types=['eeg'] * ch_count, sfreq=sfreq)
+info.set_montage('standard_1020')
 signal = RawArray(signal_raw, info, verbose=False)
 signal.plot(duration=duration, start=0, n_channels=ch_count,
-            scalings={'eeg': 1e2}, color={'eeg': 'steelblue'},
-            title='Original EEG signal')
+            scalings={'eeg': 3e1}, color={'eeg': 'steelblue'},
+            title='Original EEG signal', show_scalebars=False)
 
 
 ###############################################################################
@@ -87,13 +84,12 @@ fmin, fmax = 1, 32
 ajdc = AJDC(window=window, overlap=overlap, fmin=fmin, fmax=fmax, fs=sfreq)
 ajdc.fit(signal_raw[np.newaxis, ...])
 
-# Plot cospectra
-plot_cospectra(ajdc._cosp, 'Raw cospectra, in signal space',
-               ch_names=info['ch_names'])
+# Plot raw cospectra
+plot_cospectra(ajdc._cosp, 'Raw cospectra, in channel space', ylabels=ch_names)
 
 # Plot diagonalized reduced cospectra
-plot_cospectra(ajdc._diag_cosp,
-               'Diagonalized reduced cospectra, in source space')
+plot_cospectra(ajdc._diag_cosp, 'Diagonalized cospectra, in source space',
+               ylabels=['S' + str(s) for s in range(ajdc.n_sources_)])
 
 
 ###############################################################################
@@ -109,8 +105,8 @@ sr_info = create_info(ch_names=['S'+str(s) for s in range(sr_count)],
                       ch_types=['eeg'] * sr_count, sfreq=sfreq)
 source = RawArray(source_raw, sr_info, verbose=False)
 source.plot(duration=duration, start=0, n_channels=sr_count,
-            scalings={'eeg': 5e-1}, color={'eeg': 'steelblue'},
-            title='EEG sources estimated by AJDC')
+            scalings={'eeg': 2}, color={'eeg': 'steelblue'},
+            title='EEG sources estimated by AJDC', show_scalebars=False)
 
 
 ###############################################################################
@@ -138,8 +134,8 @@ denoised_signal_raw = ajdc.transform_back(source_raw, idx=[blink_idx])
 # Plot denoised signal
 denoised_signal = RawArray(denoised_signal_raw, info, verbose=False)
 denoised_signal.plot(duration=duration, start=0, n_channels=ch_count,
-                     scalings={'eeg': 1e2}, color={'eeg': 'steelblue'},
-                     title='Denoised EEG signal by AJDC')
+                     scalings={'eeg': 3e1}, color={'eeg': 'steelblue'},
+                     title='Denoised EEG signal by AJDC', show_scalebars=False)
 
 
 ###############################################################################
