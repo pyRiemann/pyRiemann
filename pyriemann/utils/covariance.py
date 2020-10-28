@@ -95,16 +95,16 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
 
 def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     """Compute coherence."""
-    cosp = cospectrum(X, window, overlap, fmin, fmax, fs)
-    coh = numpy.zeros_like(cosp)
-    for f in range(cosp.shape[-1]):
-        psd = numpy.sqrt(numpy.diag(cosp[..., f]))
-        coh[..., f] = cosp[..., f] / numpy.outer(psd, psd)
+    crosp = numpy.abs(cross_spectrum(X, window, overlap, fmin, fmax, fs))**2
+    coh = numpy.zeros_like(crosp)
+    for f in range(crosp.shape[-1]):
+        psd = numpy.sqrt(numpy.diag(crosp[..., f]))
+        coh[..., f] = crosp[..., f] / numpy.outer(psd, psd)
     return coh
 
 
-def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
-    """Compute Cospectrum."""
+def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
+    """Compute Cross-spectrum."""
     Ne, Ns = X.shape
     number_freqs = int(window / 2)
 
@@ -145,4 +145,10 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         S[:, :, i] = numpy.dot(fdata[:, :, i].conj().T, fdata[:, :, i]) / (
             number_windows * normval)
 
-    return numpy.abs(S)**2
+    return S
+
+
+def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
+    """Compute Cospectrum, real part of Cross-spectrum."""
+
+    return cross_spectrum(X, window, overlap, fmin, fmax, fs).real

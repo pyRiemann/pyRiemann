@@ -4,7 +4,7 @@ from scipy.signal import coherence as coh_sp
 import pytest
 
 from pyriemann.utils.covariance import (covariances, covariances_EP, eegtocov,
-                                        cospectrum, coherence)
+                                        cross_spectrum, cospectrum, coherence)
 
 
 def test_covariances():
@@ -39,6 +39,13 @@ def test_covariances_eegtocov():
     x = np.random.randn(1000, 3)
     cov = eegtocov(x)
     assert cov.shape[1] == 3
+
+
+def test_covariances_cross_spectrum():
+    """Test cross_spectrum"""
+    x = np.random.randn(3, 1000)
+    cross_spectrum(x)
+    cross_spectrum(x, fs=128, fmin=2, fmax=40)
 
 
 def test_covariances_cospectrum():
