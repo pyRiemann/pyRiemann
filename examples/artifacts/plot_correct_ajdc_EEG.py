@@ -15,7 +15,6 @@ import numpy as np
 from mne import create_info              # tested with mne 0.21
 from mne.io import RawArray
 from mne.viz import plot_topomap
-from mne.time_frequency import psd_welch
 from mne.preprocessing import ICA
 from pyriemann.spatialfilters import AJDC
 from matplotlib import pyplot as plt
@@ -31,13 +30,14 @@ def read_header(fname):
         return content[:-1], int(content[-1])
 
 
-def plot_cospectra(cosp, title, ylabels=None):
+def plot_cospectra(cosp, freqs, ylabels=None, title=None):
     fig = plt.figure(figsize=(12, 7))
     fig.suptitle(title)
-    for f in range(cosp.shape[0]):
-        ax = plt.subplot(4, 8, f+1)
+    fdim = cosp.shape[0]
+    for f in range(fdim):
+        ax = plt.subplot((fdim - 1)//8 + 1, 8, f+1)
         plt.imshow(cosp[f], cmap=plt.get_cmap('Reds'))
-        plt.title('{} Hz'.format(f+1))
+        plt.title('{} Hz'.format(freqs[f]))
         plt.xticks([])
         if ylabels and f == 0:
             plt.yticks(np.arange(0, len(ylabels), 2), ylabels[::2])
@@ -83,13 +83,16 @@ window, overlap = sfreq, 0.5
 fmin, fmax = 1, 32
 ajdc = AJDC(window=window, overlap=overlap, fmin=fmin, fmax=fmax, fs=sfreq)
 ajdc.fit(signal_raw[np.newaxis, ...])
+freqs = ajdc.freqs_
 
 # Plot raw cospectra
-plot_cospectra(ajdc._cosp, 'Raw cospectra, in channel space', ylabels=ch_names)
+plot_cospectra(ajdc._cosp, freqs, ylabels=ch_names,
+               title='Raw cospectra, in channel space')
 
 # Plot diagonalized reduced cospectra
-plot_cospectra(ajdc._diag_cosp, 'Diagonalized cospectra, in source space',
-               ylabels=['S' + str(s) for s in range(ajdc.n_sources_)])
+plot_cospectra(ajdc._diag_cosp, freqs,
+               ylabels=['S' + str(s) for s in range(ajdc.n_sources_)],
+               title='Diagonalized cospectra, in source space')
 
 
 ###############################################################################
@@ -121,11 +124,10 @@ fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12, 5))
 axs[0].set_title('Topographic map of the blink source estimated by AJDC')
 axs[1].set(title='Spectrum of the blink source estimated by AJDC',
            xlabel='Frequency (Hz)', ylabel='Spectrum power (mV²)')
-spectrum, freqs = psd_welch(source, n_fft=window, n_overlap=window * overlap,
-                            fmin=fmin, fmax=fmax, picks='S' + str(blink_idx),
-                            verbose=False)
-axs[1].plot(freqs, spectrum[0])
-plot_topomap(ajdc.backward_filters_[:, blink_idx], pos=info, axes=axs[0])
+blink_spectrum = ajdc._diag_cosp[:, blink_idx, blink_idx]
+axs[1].plot(freqs, blink_spectrum)
+plot_topomap(ajdc.backward_filters_[:, blink_idx], pos=info, axes=axs[0],
+             extrapolate='box')
 plt.show()
 
 # Suppress blink source and apply backward filters
