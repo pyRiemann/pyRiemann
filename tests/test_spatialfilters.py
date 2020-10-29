@@ -163,6 +163,9 @@ def test_AJDC():
     n_conditions, n_channels, n_samples = 2, 8, 512
     X = np.random.randn(n_conditions, n_channels, n_samples)
 
+    assert_raises(ValueError, AJDC, expl_var=0)
+    assert_raises(ValueError, AJDC, expl_var=1.1)
+
     # Test Init
     ajdc = AJDC(fmin=1, fmax=32, fs=64)
     assert_true(ajdc.window == 128)
@@ -184,4 +187,3 @@ def test_AJDC():
     # Test transform back
     Xtb = ajdc.transform_back(Xt)
     assert_array_equal(Xtb.shape, [n_channels, n_samples])
-

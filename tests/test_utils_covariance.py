@@ -42,17 +42,25 @@ def test_covariances_eegtocov():
 
 
 def test_covariances_cross_spectrum():
-    """Test cross_spectrum"""
+    """Test cross_spectrum, symmetric real part and skew-symmetric imag part"""
     x = np.random.randn(3, 1000)
-    cross_spectrum(x)
-    cross_spectrum(x, fs=128, fmin=2, fmax=40)
+    c, f = cross_spectrum(x)
+    assert_array_almost_equal(c.real, np.transpose(c.real, (1, 0, 2)), 6)
+    assert_array_almost_equal(c.imag, -np.transpose(c.imag, (1, 0, 2)), 6)
+    c, f = cross_spectrum(x, fs=128, fmin=2, fmax=40)
+    assert_array_almost_equal(c.real, np.transpose(c.real, (1, 0, 2)), 6)
+    assert_array_almost_equal(c.imag, -np.transpose(c.imag, (1, 0, 2)), 6)
+    assert_raises(ValueError, cross_spectrum, x, fmin=10, fmax=5, fs=32)
+    assert_raises(ValueError, cross_spectrum, x, fmin=5, fmax=10, fs=16)
 
 
 def test_covariances_cospectrum():
-    """Test cospectrum"""
+    """Test cospectrum, symmetric real part"""
     x = np.random.randn(3, 1000)
-    cospectrum(x)
-    cospectrum(x, fs=128, fmin=2, fmax=40)
+    c, f = cospectrum(x)
+    assert_array_almost_equal(c, np.transpose(c, (1, 0, 2)), 6)
+    c, f = cospectrum(x, fs=128, fmin=2, fmax=40)
+    assert_array_almost_equal(c, np.transpose(c, (1, 0, 2)), 6)
 
 
 def test_covariances_coherence():
@@ -68,4 +76,4 @@ def test_covariances_coherence():
         noverlap=int(0.75 * 256),
         window='hanning',
         detrend=False)
-    assert_array_almost_equal(coh[0, 1], coh2[:-1], 0.1)
+    assert_array_almost_equal(coh[0, 1], coh2[:-1], 2)

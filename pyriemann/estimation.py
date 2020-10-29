@@ -379,7 +379,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
         out = []
 
         for i in range(Nt):
-            S = cospectrum(
+            S, freqs = cospectrum(
                 X[i],
                 window=self.window,
                 overlap=self.overlap,
@@ -387,6 +387,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
                 fmax=self.fmax,
                 fs=self.fs)
             out.append(S)
+        self.freqs_ = freqs
 
         return numpy.array(out)
 

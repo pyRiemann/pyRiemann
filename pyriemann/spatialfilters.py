@@ -469,11 +469,11 @@ class SPoC(CSP):
 class AJDC(BaseEstimator, TransformerMixin):
     """Implementation of the AJDC.
 
-    Approximate joint diagonalization of Fourier cospectra (AJDC) [1][2] for
+    Approximate joint diagonalization of Fourier cospectra (AJDC) [1] for
     blind source separation (BSS). It estimates Fourier cospectral matrices by
     the Welch's method, and concatenates them along experimental conditions if
     necessary. A dimension reduction and a whitening are applied on cospectra.
-    An approximate joint diagonalization (AJD) is applied on cospectra. The
+    An approximate joint diagonalization (AJD) [2] is applied on cospectra. The
     joint diagonalizer, not constrained to be orthogonal, allows to estimate
     the forward and backward filters.
 
@@ -490,7 +490,7 @@ class AJDC(BaseEstimator, TransformerMixin):
     fs : float | None , (default None)
         The sampling frequency of the signal.
     expl_var : float (default 0.999)
-        Explained variance for dimension reduction in [0, 1], because Pham's
+        Explained variance for dimension reduction in ]0, 1], because Pham's
         AJD is sensitive to matrices conditioning.
     verbose : bool (default True)
         Verbose flag.
@@ -521,14 +521,16 @@ class AJDC(BaseEstimator, TransformerMixin):
     [1] M. Congedo, C. Gouy-Pailler, C. Jutten, "On the blind source separation
     of human electroencephalogram by approximate joint diagonalization of 
     second order statistics", Clin Neurophysiol, 2008
-    [2] Q. Barthélemy, L. Mayaud, Y. Renard, D. Kim, S.-W. Kang, J. Gunkelman 
-    and M. Congedo, "Online denoising of eye-blinks in electroencephalography",
-    Neurophysiol Clin, 2017
+    [2] D.-T. Pham, "Joint approximate diagonalization of positive definite 
+    matrices", SIAM J Matrix Anal Appl, 2000
     """
 
     def __init__(self, window=128, overlap=0.5, fmin=None, fmax=None, fs=None,
                  expl_var=0.999, verbose=True):
         """Init."""
+        if not 0 < expl_var <= 1:
+            raise ValueError('Parameter expl_var must be included in ]0, 1]')
+
         self.window = window
         self.overlap = overlap
         self.fmin = fmin
@@ -540,15 +542,15 @@ class AJDC(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         """Fit.
 
-        Compute and diagonalize cospectra, to estimate forward and backward 
+        Compute and diagonalize cospectra, to estimate forward and backward
         filters.
 
         Parameters
         ----------
         X : ndarray, shape (n_conditions, n_channels, n_samples)
-            ndarray of signal, under several experimental conditions (baseline 
-            versus task).
-        y : ndarray shape (n_conditions,)
+            ndarray of signal, acquired under different experimental conditions
+            (for eg, baseline versus task).
+        y : ndarray, shape (n_conditions,)
             labels corresponding to each condition, not used.
 
         Returns
@@ -558,9 +560,11 @@ class AJDC(BaseEstimator, TransformerMixin):
         """
         self.n_channels_ = X.shape[1]
         # estimation of cospectra
-        cosp = est.CospCovariances(window=self.window, overlap=self.overlap,
-                                   fmin=self.fmin, fmax=self.fmax,
-                                   fs=self.fs).transform(X)
+        cospcov = est.CospCovariances(window=self.window, overlap=self.overlap,
+                                     fmin=self.fmin, fmax=self.fmax,
+                                     fs=self.fs)
+        cosp = cospcov.transform(X)
+        self.freqs_ = cospcov.freqs_
         # concatenation of cospectra along conditions
         self._cosp = numpy.concatenate(cosp, axis=2).T
         #TODO: non-diagonality weights estimation (Eq(B.1) in [1]),
@@ -623,16 +627,17 @@ class AJDC(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_sources, n_samples)
             ndarray of source.
-        idx : list | None , (default None)
-            List indices of sources to suppress.
+        idx : list of int | None , (default None)
+            List of indices of sources to suppress.
 
         Returns
         -------
-        source : ndarray, shape (n_channels, n_samples)
+        signal : ndarray, shape (n_channels, n_samples)
             ndarray of signal.
         """
         if X.shape[0] != self.n_sources_:
             raise ValueError('X has not the good number of sources')
+
         denois = numpy.eye(self.n_sources_)
         if isinstance(idx, list):
             for i in idx:

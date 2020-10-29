@@ -95,11 +95,12 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
 
 def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     """Compute coherence."""
-    crosp = numpy.abs(cross_spectrum(X, window, overlap, fmin, fmax, fs))**2
-    coh = numpy.zeros_like(crosp)
-    for f in range(crosp.shape[-1]):
-        psd = numpy.sqrt(numpy.diag(crosp[..., f]))
-        coh[..., f] = crosp[..., f] / numpy.outer(psd, psd)
+    S, _ = cross_spectrum(X, window, overlap, fmin, fmax, fs)
+    S2 = numpy.abs(S)**2
+    coh = numpy.zeros_like(S2)
+    for f in range(S2.shape[-1]):
+        psd = numpy.sqrt(numpy.diag(S2[..., f]))
+        coh[..., f] = S2[..., f] / numpy.outer(psd, psd)
     return coh
 
 
@@ -132,12 +133,18 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             cdata, n=window, axis=1)[:, 0:number_freqs]
 
     # Adjust Frequency range to specified range (in case it is a parameter)
-    if fmin is not None:
+    if all(f is not None for f in [fmin, fmax, fs]):
+        if fmax <= fmin:
+            raise ValueError('Parameter fmax must be superior to fmin')
+        if 2.0 * fmax > fs: # check Nyquist-Shannon
+            raise ValueError('Parameter fmax must be inferior to fs/2')
         f = numpy.arange(0, 1, 1.0 / number_freqs) * (fs / 2.0)
         Fix = (f >= fmin) & (f <= fmax)
         fdata = fdata[:, :, Fix]
+        freqs = f[Fix]
+    else:
+        freqs = None
 
-    # fdata = fdata.real
     Nf = fdata.shape[2]
     S = numpy.zeros((Ne, Ne, Nf), dtype=complex)
     normval = numpy.linalg.norm(win)**2
@@ -145,10 +152,11 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         S[:, :, i] = numpy.dot(fdata[:, :, i].conj().T, fdata[:, :, i]) / (
             number_windows * normval)
 
-    return S
+    return S, freqs
 
 
 def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     """Compute Cospectrum, real part of Cross-spectrum."""
+    S, freqs = cross_spectrum(X, window, overlap, fmin, fmax, fs)
 
-    return cross_spectrum(X, window, overlap, fmin, fmax, fs).real
+    return S.real, freqs
