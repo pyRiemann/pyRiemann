@@ -521,8 +521,8 @@ class AJDC(BaseEstimator, TransformerMixin):
     [1] M. Congedo, C. Gouy-Pailler, C. Jutten, "On the blind source separation
     of human electroencephalogram by approximate joint diagonalization of 
     second order statistics", Clin Neurophysiol, 2008
-    [2] D.-T. Pham, "Joint approximate diagonalization of positive definite 
-    matrices", SIAM J Matrix Anal Appl, 2000
+    [2] D.-T. Pham, "Joint approximate diagonalization of positive definite
+    matrices", SIAM J Matrix Anal Appl, 2001
     """
 
     def __init__(self, window=128, overlap=0.5, fmin=None, fmax=None, fs=None,
@@ -538,6 +538,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         self.fs = fs
         self.expl_var = expl_var
         self.verbose = verbose
+        #TODO: add an argument to choose AJD algo: pham2001 or ablin2019
 
     def fit(self, X, y=None):
         """Fit.

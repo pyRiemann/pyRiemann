@@ -66,9 +66,10 @@ duration = signal_raw.shape[1] / sfreq
 # -------------
 
 # Plot signal
-info = create_info(ch_names=ch_names, ch_types=['eeg'] * ch_count, sfreq=sfreq)
-info.set_montage('standard_1020')
-signal = RawArray(signal_raw, info, verbose=False)
+ch_info = create_info(ch_names=ch_names, ch_types=['eeg'] * ch_count,
+                      sfreq=sfreq)
+ch_info.set_montage('standard_1020')
+signal = RawArray(signal_raw, ch_info, verbose=False)
 signal.plot(duration=duration, start=0, n_channels=ch_count,
             scalings={'eeg': 3e1}, color={'eeg': 'steelblue'},
             title='Original EEG signal', show_scalebars=False)
@@ -90,8 +91,9 @@ plot_cospectra(ajdc._cosp, freqs, ylabels=ch_names,
                title='Raw cospectra, in channel space')
 
 # Plot diagonalized reduced cospectra
-plot_cospectra(ajdc._diag_cosp, freqs,
-               ylabels=['S' + str(s) for s in range(ajdc.n_sources_)],
+sr_count = ajdc.n_sources_
+sr_names = ['S' + str(s).zfill(2) for s in range(sr_count)]
+plot_cospectra(ajdc._diag_cosp, freqs, ylabels=sr_names,
                title='Diagonalized cospectra, in source space')
 
 
@@ -103,13 +105,12 @@ plot_cospectra(ajdc._diag_cosp, freqs,
 source_raw = ajdc.transform(signal_raw)
 
 # Plot sources
-sr_count = source_raw.shape[0]
-sr_info = create_info(ch_names=['S'+str(s) for s in range(sr_count)],
-                      ch_types=['eeg'] * sr_count, sfreq=sfreq)
+sr_info = create_info(ch_names=sr_names, ch_types=['misc'] * sr_count,
+                      sfreq=sfreq)
 source = RawArray(source_raw, sr_info, verbose=False)
 source.plot(duration=duration, start=0, n_channels=sr_count,
-            scalings={'eeg': 2}, color={'eeg': 'steelblue'},
-            title='EEG sources estimated by AJDC', show_scalebars=False)
+            scalings={'misc': 1.5}, title='EEG sources estimated by AJDC',
+            show_scalebars=False)
 
 
 ###############################################################################
@@ -118,23 +119,23 @@ source.plot(duration=duration, start=0, n_channels=sr_count,
 
 # Identify artifact: blinks are well separated in source S0
 blink_idx = 0
+blink_bck_filter = ajdc.backward_filters_[:, blink_idx]
+blink_spectrum = ajdc._diag_cosp[:, blink_idx, blink_idx]
 
 # Plot topographic map and spectrum of the blink source
 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12, 5))
 axs[0].set_title('Topographic map of the blink source estimated by AJDC')
 axs[1].set(title='Spectrum of the blink source estimated by AJDC',
-           xlabel='Frequency (Hz)', ylabel='Spectrum power (mV²)')
-blink_spectrum = ajdc._diag_cosp[:, blink_idx, blink_idx]
+           xlabel='Frequency (Hz)', ylabel='Spectrum power')
 axs[1].plot(freqs, blink_spectrum)
-plot_topomap(ajdc.backward_filters_[:, blink_idx], pos=info, axes=axs[0],
-             extrapolate='box')
+plot_topomap(blink_bck_filter, pos=ch_info, axes=axs[0], extrapolate='box')
 plt.show()
 
 # Suppress blink source and apply backward filters
 denoised_signal_raw = ajdc.transform_back(source_raw, idx=[blink_idx])
 
 # Plot denoised signal
-denoised_signal = RawArray(denoised_signal_raw, info, verbose=False)
+denoised_signal = RawArray(denoised_signal_raw, ch_info, verbose=False)
 denoised_signal.plot(duration=duration, start=0, n_channels=ch_count,
                      scalings={'eeg': 3e1}, color={'eeg': 'steelblue'},
                      title='Denoised EEG signal by AJDC', show_scalebars=False)
