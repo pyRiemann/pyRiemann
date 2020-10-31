@@ -87,13 +87,13 @@ ajdc.fit(signal_raw[np.newaxis, ...])
 freqs = ajdc.freqs_
 
 # Plot raw cospectra
-plot_cospectra(ajdc._cosp, freqs, ylabels=ch_names,
+plot_cospectra(ajdc.cosp_, freqs, ylabels=ch_names,
                title='Raw cospectra, in channel space')
 
 # Plot diagonalized reduced cospectra
 sr_count = ajdc.n_sources_
 sr_names = ['S' + str(s).zfill(2) for s in range(sr_count)]
-plot_cospectra(ajdc._diag_cosp, freqs, ylabels=sr_names,
+plot_cospectra(ajdc.diag_cosp_, freqs, ylabels=sr_names,
                title='Diagonalized cospectra, in source space')
 
 
@@ -120,7 +120,7 @@ source.plot(duration=duration, start=0, n_channels=sr_count,
 # Identify artifact: blinks are well separated in source S0
 blink_idx = 0
 blink_bck_filter = ajdc.backward_filters_[:, blink_idx]
-blink_spectrum = ajdc._diag_cosp[:, blink_idx, blink_idx]
+blink_spectrum = ajdc.diag_cosp_[:, blink_idx, blink_idx]
 
 # Plot topographic map and spectrum of the blink source
 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12, 5))

@@ -499,12 +499,18 @@ class AJDC(BaseEstimator, TransformerMixin):
     ----------
     n_channels_ : int
         If fit, the number of channels of the signal.
+    freqs_ : ndarray , shape (number of frequencies,)
+        If fit, the frequencies associated to cospectra.
+    cosp_ : ndarray , shape (number of frequencies, n_channels_, n_channels_)
+        If fit, the cospectra of the signal.
     n_sources_ : int
-        If fit, the number of components of the source.
-    forward_filters_ : ndarray (n_sources_, n_channels_)
-        If fit, the AJDC filters used to transform signal into source, also 
+        If fit, the number of components of the source space.
+    diag_cosp_ : ndarray , shape (number of frequencies, n_sources_, n_sources_)
+        If fit, the cospectra of the sources.
+    forward_filters_ : ndarray , shape (n_sources_, n_channels_)
+        If fit, the AJDC filters used to transform signal into source, also
         called deximing or separating matrix.
-    backward_filters_ : ndarray (n_channels_, n_sources_)
+    backward_filters_ : ndarray , shape (n_channels_, n_sources_)
         If fit, the AJDC filters used to transform source into signal, also
         called mixing matrix.
 
@@ -567,12 +573,12 @@ class AJDC(BaseEstimator, TransformerMixin):
         cosp = cospcov.transform(X)
         self.freqs_ = cospcov.freqs_
         # concatenation of cospectra along conditions
-        self._cosp = numpy.concatenate(cosp, axis=2).T
+        self.cosp_ = numpy.concatenate(cosp, axis=2).T
         #TODO: non-diagonality weights estimation (Eq(B.1) in [1]),
         #      when Pham's algorithm ajd_pham() will be able to process them
 
         # dimension reduction, estimated on averaged cospectrum
-        eigvals, eigvecs = eigh(self._cosp.mean(axis=0), eigvals_only=False)
+        eigvals, eigvecs = eigh(self.cosp_.mean(axis=0), eigvals_only=False)
         eigvals = eigvals[::-1]         # sorted in descending order
         eigvecs = numpy.fliplr(eigvecs) # idem
         cum_expl_var = stable_cumsum(eigvals/eigvals.sum())
@@ -589,13 +595,13 @@ class AJDC(BaseEstimator, TransformerMixin):
         whit_inv_filters = pca_filters @ numpy.diag(numpy.sqrt(pca_vals))
 
         # apply dimension reduction and whitening on raw cospectra
-        red_cosp = numpy.zeros((self._cosp.shape[0], self.n_sources_,
+        red_cosp = numpy.zeros((self.cosp_.shape[0], self.n_sources_,
                                 self.n_sources_))
         for c in range(red_cosp.shape[0]):
-            red_cosp[c] = whit_filters.T @ self._cosp[c] @ whit_filters
+            red_cosp[c] = whit_filters.T @ self.cosp_[c] @ whit_filters
 
         # approximate joint diagonalization, using Pham's algorithm
-        diag_filters, self._diag_cosp = ajd_pham(red_cosp)
+        diag_filters, self.diag_cosp_ = ajd_pham(red_cosp)
         # forward and bakcward filters
         self.forward_filters_ = diag_filters @ whit_filters.T
         self.backward_filters_ = whit_inv_filters @ inv(diag_filters)

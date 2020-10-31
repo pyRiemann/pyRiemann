@@ -316,15 +316,20 @@ class CospCovariances(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     window : int (default 128)
-        The lengt of the FFT window used for spectral estimation.
+        The length of the FFT window used for spectral estimation.
     overlap : float (default 0.75)
         The percentage of overlap between window.
     fmin : float | None , (default None)
         the minimal frequency to be returned.
     fmax : float | None , (default None)
         The maximal frequency to be returned.
-    fs : float | None, (default None)
+    fs : float | None , (default None)
         The sampling frequency of the signal.
+
+    Attributes
+    ----------
+    freqs_ : ndarray , shape (number of frequencies,)
+        If transformed, the frequencies associated to cospectra.
 
     See Also
     --------
@@ -351,7 +356,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
             ndarray of trials.
-        y : ndarray shape (n_trials,)
+        y : ndarray, shape (n_trials,)
             labels corresponding to each trial, not used.
 
         Returns
