@@ -177,13 +177,23 @@ def test_AJDC():
     ajdc.fit(X)
     assert_true(ajdc.n_channels_ == n_channels)
     assert_true(ajdc.n_sources_ <= n_channels)
-    assert_array_equal(ajdc.forward_filters_.shape, [ajdc.n_sources_, n_channels])
-    assert_array_equal(ajdc.backward_filters_.shape, [n_channels, ajdc.n_sources_])
+    assert_array_equal(ajdc.forward_filters_.shape,
+                       [ajdc.n_sources_, n_channels])
+    assert_array_equal(ajdc.backward_filters_.shape,
+                       [n_channels, ajdc.n_sources_])
+    assert_raises(ValueError, ajdc._normalize_trace,
+                  np.random.randn(n_conditions, n_channels, n_channels+2))
 
     # Test transform
     Xt = ajdc.transform(X[0])
     assert_array_equal(Xt.shape, [ajdc.n_sources_, n_samples])
+    assert_raises(ValueError, ajdc.transform, np.random.randn(n_channels+1, 1))
     
     # Test transform back
     Xtb = ajdc.transform_back(Xt)
     assert_array_equal(Xtb.shape, [n_channels, n_samples])
+    assert_raises(ValueError, ajdc.transform_back,
+                  np.random.randn(ajdc.n_sources_+1, 1))
+    Xtb = ajdc.transform_back(Xt, [ajdc.n_sources_-1])
+    assert_array_equal(Xtb.shape, [n_channels, n_samples])
+    assert_raises(ValueError, ajdc.transform_back, X, 1)

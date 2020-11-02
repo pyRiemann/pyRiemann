@@ -320,7 +320,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
     overlap : float (default 0.75)
         The percentage of overlap between window.
     fmin : float | None , (default None)
-        the minimal frequency to be returned.
+        The minimal frequency to be returned.
     fmax : float | None , (default None)
         The maximal frequency to be returned.
     fs : float | None , (default None)
@@ -409,14 +409,14 @@ class Coherences(CospCovariances):
     Parameters
     ----------
     window : int (default 128)
-        The lengt of the FFT window used for spectral estimation.
+        The length of the FFT window used for spectral estimation.
     overlap : float (default 0.75)
         The percentage of overlap between window.
     fmin : float | None , (default None)
-        the minimal frequency to be returned.
+        The minimal frequency to be returned.
     fmax : float | None , (default None)
         The maximal frequency to be returned.
-    fs : float | None, (default None)
+    fs : float | None , (default None)
         The sampling frequency of the signal.
 
     See Also

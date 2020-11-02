@@ -472,26 +472,27 @@ class AJDC(BaseEstimator, TransformerMixin):
     Approximate joint diagonalization of Fourier cospectra (AJDC) [1] for
     blind source separation (BSS). It estimates Fourier cospectral matrices by
     the Welch's method, and concatenates them along experimental conditions if
-    necessary. A dimension reduction and a whitening are applied on cospectra.
-    An approximate joint diagonalization (AJD) [2] is applied on cospectra. The
-    joint diagonalizer, not constrained to be orthogonal, allows to estimate
-    the forward and backward filters.
+    necessary. A trace-normalization, a dimension reduction and a whitening are
+    applied on cospectra. An approximate joint diagonalization (AJD) [2] allows
+    to estimate the joint diagonalizer, not constrained to be orthogonal.
+    Finally, forward and backward filters are computed.
 
     Parameters
     ----------
     window : int (default 128)
-        The lengt of the FFT window used for spectral estimation.
+        The length of the FFT window used for spectral estimation.
     overlap : float (default 0.5)
         The percentage of overlap between window.
     fmin : float | None , (default None)
-        the minimal frequency to be returned.
+        The minimal frequency to be returned. Since BSS models assume zero-mean
+        processes, the first cospectrum (0 Hz) must be excluded.
     fmax : float | None , (default None)
         The maximal frequency to be returned.
     fs : float | None , (default None)
         The sampling frequency of the signal.
     expl_var : float (default 0.999)
-        Explained variance for dimension reduction in ]0, 1], because Pham's
-        AJD is sensitive to matrices conditioning.
+        The percentage of explained variance for dimension reduction in ]0, 1],
+        because Pham's AJD is sensitive to matrices conditioning.
     verbose : bool (default True)
         Verbose flag.
 
@@ -501,12 +502,8 @@ class AJDC(BaseEstimator, TransformerMixin):
         If fit, the number of channels of the signal.
     freqs_ : ndarray , shape (number of frequencies,)
         If fit, the frequencies associated to cospectra.
-    cosp_ : ndarray , shape (number of frequencies, n_channels_, n_channels_)
-        If fit, the cospectra of the signal.
     n_sources_ : int
         If fit, the number of components of the source space.
-    diag_cosp_ : ndarray , shape (number of frequencies, n_sources_, n_sources_)
-        If fit, the cospectra of the sources.
     forward_filters_ : ndarray , shape (n_sources_, n_channels_)
         If fit, the AJDC filters used to transform signal into source, also
         called deximing or separating matrix.
@@ -525,7 +522,7 @@ class AJDC(BaseEstimator, TransformerMixin):
     References
     ----------
     [1] M. Congedo, C. Gouy-Pailler, C. Jutten, "On the blind source separation
-    of human electroencephalogram by approximate joint diagonalization of 
+    of human electroencephalogram by approximate joint diagonalization of
     second order statistics", Clin Neurophysiol, 2008
     [2] D.-T. Pham, "Joint approximate diagonalization of positive definite
     matrices", SIAM J Matrix Anal Appl, 2001
@@ -573,15 +570,18 @@ class AJDC(BaseEstimator, TransformerMixin):
         cosp = cospcov.transform(X)
         self.freqs_ = cospcov.freqs_
         # concatenation of cospectra along conditions
-        self.cosp_ = numpy.concatenate(cosp, axis=2).T
+        cosp = numpy.concatenate(cosp, axis=2).T
+        # trace-normalization of cospectra
+        self._cosp_channels = self._normalize_trace(cosp)
         #TODO: non-diagonality weights estimation (Eq(B.1) in [1]),
-        #      when Pham's algorithm ajd_pham() will be able to process them
+        #      when AJD algorithm will be able to process them
 
         # dimension reduction, estimated on averaged cospectrum
-        eigvals, eigvecs = eigh(self.cosp_.mean(axis=0), eigvals_only=False)
+        cosp_av = self._cosp_channels.mean(axis=0) #TODO: weighted mean
+        eigvals, eigvecs = eigh(cosp_av, eigvals_only=False)
         eigvals = eigvals[::-1]         # sorted in descending order
         eigvecs = numpy.fliplr(eigvecs) # idem
-        cum_expl_var = stable_cumsum(eigvals/eigvals.sum())
+        cum_expl_var = stable_cumsum(eigvals / eigvals.sum())
         self.n_sources_ = numpy.searchsorted(cum_expl_var, self.expl_var,
                                              side='right') + 1
         if self.verbose:
@@ -594,15 +594,17 @@ class AJDC(BaseEstimator, TransformerMixin):
         whit_filters = pca_filters @ numpy.diag(1. / numpy.sqrt(pca_vals))
         whit_inv_filters = pca_filters @ numpy.diag(numpy.sqrt(pca_vals))
 
-        # apply dimension reduction and whitening on raw cospectra
-        red_cosp = numpy.zeros((self.cosp_.shape[0], self.n_sources_,
-                                self.n_sources_))
-        for c in range(red_cosp.shape[0]):
-            red_cosp[c] = whit_filters.T @ self.cosp_[c] @ whit_filters
+        # apply dimension reduction and whitening on cospectra
+        cosp_rw = numpy.zeros((self._cosp_channels.shape[0], self.n_sources_,
+                               self.n_sources_))
+        for c in range(cosp_rw.shape[0]):
+            cosp_rw[c] = (
+                whit_filters.T @ self._cosp_channels[c] @ whit_filters )
 
         # approximate joint diagonalization, using Pham's algorithm
-        diag_filters, self.diag_cosp_ = ajd_pham(red_cosp)
-        # forward and bakcward filters
+        diag_filters, self._cosp_sources = ajd_pham(cosp_rw, n_iter_max=100)
+
+        # computation of forward and backward filters
         self.forward_filters_ = diag_filters @ whit_filters.T
         self.backward_filters_ = whit_inv_filters @ inv(diag_filters)
         return self
@@ -626,7 +628,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         source = self.forward_filters_ @ X
         return source
 
-    def transform_back(self, X, idx=None):
+    def transform_back(self, X, suppress=None):
         """Estimate the channel space from source space, with possibility to
         suppress some sources.
 
@@ -634,7 +636,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_sources, n_samples)
             ndarray of source.
-        idx : list of int | None , (default None)
+        suppress : list of int | None , (default None)
             List of indices of sources to suppress.
 
         Returns
@@ -646,9 +648,34 @@ class AJDC(BaseEstimator, TransformerMixin):
             raise ValueError('X has not the good number of sources')
 
         denois = numpy.eye(self.n_sources_)
-        if isinstance(idx, list):
-            for i in idx:
-                denois[i, i] = 0
+        if suppress is not None:
+            if isinstance(suppress, list):
+                for i in suppress:
+                    denois[i, i] = 0
+            else:
+                raise ValueError('Parameter suppress must be a list of int')
 
         signal = self.backward_filters_ @ denois @ X
         return signal
+
+    def _normalize_trace(self, matrices):
+        # TODO: this function could be moved into module utils
+        """Trace-normalize sets of square matrices.
+
+        Parameters
+        ----------
+        matrices : ndarray, shape (..., n, n)
+            The sets of square matrices.
+
+        Returns
+        -------
+        matrices : ndarray, shape (..., n, n)
+            The sets of trace-normalized square matrices.
+        """
+        if matrices.shape[-2] != matrices.shape[-1]:
+            raise ValueError('Input matrices are not square')
+
+        traces = numpy.trace(matrices, axis1=-2, axis2=-1)
+        while traces.ndim != matrices.ndim:
+            traces = traces[..., numpy.newaxis]
+        return matrices / traces

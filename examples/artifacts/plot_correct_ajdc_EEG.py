@@ -12,6 +12,7 @@ Fourier cospectra (AJDC), applied to artifact correction of EEG [1].
 # License: BSD (3-clause)
 
 import numpy as np
+from scipy.signal import welch
 from mne import create_info              # tested with mne 0.21
 from mne.io import RawArray
 from mne.viz import plot_topomap
@@ -24,6 +25,7 @@ from matplotlib import pyplot as plt
 
 
 def read_header(fname):
+    """Read the header of blink.txt"""
     with open(fname, "r") as f:
         line = f.readline()
         content = line.split()
@@ -31,11 +33,12 @@ def read_header(fname):
 
 
 def plot_cospectra(cosp, freqs, ylabels=None, title=None):
+    """Plot cospectra, ndarray of shape (n_freqs, n, n)"""
     fig = plt.figure(figsize=(12, 7))
     fig.suptitle(title)
-    fdim = cosp.shape[0]
-    for f in range(fdim):
-        ax = plt.subplot((fdim - 1)//8 + 1, 8, f+1)
+    n_freqs = cosp.shape[0]
+    for f in range(n_freqs):
+        ax = plt.subplot((n_freqs - 1)//8 + 1, 8, f+1)
         plt.imshow(cosp[f], cmap=plt.get_cmap('Reds'))
         plt.title('{} Hz'.format(freqs[f]))
         plt.xticks([])
@@ -82,18 +85,19 @@ signal.plot(duration=duration, start=0, n_channels=ch_count,
 # Compute and diagonalize cospectra between 1 and 32 Hz
 window, overlap = sfreq, 0.5
 fmin, fmax = 1, 32
-ajdc = AJDC(window=window, overlap=overlap, fmin=fmin, fmax=fmax, fs=sfreq)
+ajdc = AJDC(window=window, overlap=overlap, fmin=fmin, fmax=fmax, fs=sfreq,
+            expl_var=0.99)
 ajdc.fit(signal_raw[np.newaxis, ...])
 freqs = ajdc.freqs_
 
-# Plot raw cospectra
-plot_cospectra(ajdc.cosp_, freqs, ylabels=ch_names,
-               title='Raw cospectra, in channel space')
+# Plot cospectra in channel space, after trace-normalization by frequency
+plot_cospectra(ajdc._cosp_channels, freqs, ylabels=ch_names,
+               title='Cospectra, in channel space')
 
-# Plot diagonalized reduced cospectra
+# Plot diagonalized cospectra in source space
 sr_count = ajdc.n_sources_
 sr_names = ['S' + str(s).zfill(2) for s in range(sr_count)]
-plot_cospectra(ajdc.diag_cosp_, freqs, ylabels=sr_names,
+plot_cospectra(ajdc._cosp_sources, freqs, ylabels=sr_names,
                title='Diagonalized cospectra, in source space')
 
 
@@ -109,7 +113,7 @@ sr_info = create_info(ch_names=sr_names, ch_types=['misc'] * sr_count,
                       sfreq=sfreq)
 source = RawArray(source_raw, sr_info, verbose=False)
 source.plot(duration=duration, start=0, n_channels=sr_count,
-            scalings={'misc': 1.5}, title='EEG sources estimated by AJDC',
+            scalings={'misc': 2e2}, title='EEG sources estimated by AJDC',
             show_scalebars=False)
 
 
@@ -119,20 +123,33 @@ source.plot(duration=duration, start=0, n_channels=sr_count,
 
 # Identify artifact: blinks are well separated in source S0
 blink_idx = 0
-blink_bck_filter = ajdc.backward_filters_[:, blink_idx]
-blink_spectrum = ajdc.diag_cosp_[:, blink_idx, blink_idx]
 
-# Plot topographic map and spectrum of the blink source
+# Get normal spectrum, ie power spectrum after trace-normalization
+blink_spectrum_norm = ajdc._cosp_sources[:, blink_idx, blink_idx]
+blink_spectrum_norm = blink_spectrum_norm / np.linalg.norm(blink_spectrum_norm)
+
+# Get absolute spectrum, ie raw power spectrum of the source
+f, spectrum = welch(source.get_data(picks=[blink_idx]), fs=sfreq,
+                    nperseg=window, noverlap=int(window * overlap))
+blink_spectrum_abs = spectrum[0, (f >= fmin) & (f <= fmax)]
+blink_spectrum_abs = blink_spectrum_abs / np.linalg.norm(blink_spectrum_abs)
+
+# Get topographic map
+blink_filter = ajdc.backward_filters_[:, blink_idx]
+
+# Plot spectrum and topographic map of the blink source
 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12, 5))
-axs[0].set_title('Topographic map of the blink source estimated by AJDC')
-axs[1].set(title='Spectrum of the blink source estimated by AJDC',
-           xlabel='Frequency (Hz)', ylabel='Spectrum power')
-axs[1].plot(freqs, blink_spectrum)
-plot_topomap(blink_bck_filter, pos=ch_info, axes=axs[0], extrapolate='box')
+axs[0].set(title='Power spectrum of the blink source estimated by AJDC',
+           xlabel='Frequency (Hz)', ylabel='Power spectral density')
+axs[0].plot(freqs, blink_spectrum_abs, label='Absolute power')
+axs[0].plot(freqs, blink_spectrum_norm, label='Normal power')
+axs[0].legend()
+axs[1].set_title('Topographic map of the blink source estimated by AJDC')
+plot_topomap(blink_filter, pos=ch_info, axes=axs[1], extrapolate='box')
 plt.show()
 
-# Suppress blink source and apply backward filters
-denoised_signal_raw = ajdc.transform_back(source_raw, idx=[blink_idx])
+# BSS denoising: suppress blink source and apply backward filters
+denoised_signal_raw = ajdc.transform_back(source_raw, suppress=[blink_idx])
 
 # Plot denoised signal
 denoised_signal = RawArray(denoised_signal_raw, ch_info, verbose=False)
