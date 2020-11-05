@@ -79,10 +79,10 @@ signal.plot(duration=duration, start=0, n_channels=ch_count,
 
 
 ###############################################################################
-# SOS-based BSS, diagonalizing cospectra
-# --------------------------------------
+# AJDC: Second-Order Statistics (SOS)-based BSS, diagonalizing cospectra
+# ----------------------------------------------------------------------
 
-# Compute and diagonalize cospectra between 1 and 32 Hz
+# Compute and diagonalize Fourier cospectral matrices between 1 and 32 Hz
 window, overlap = sfreq, 0.5
 fmin, fmax = 1, 32
 ajdc = AJDC(window=window, overlap=overlap, fmin=fmin, fmax=fmax, fs=sfreq,
@@ -90,7 +90,8 @@ ajdc = AJDC(window=window, overlap=overlap, fmin=fmin, fmax=fmax, fs=sfreq,
 ajdc.fit(signal_raw[np.newaxis, ...])
 freqs = ajdc.freqs_
 
-# Plot cospectra in channel space, after trace-normalization by frequency
+# Plot cospectra in channel space, after trace-normalization by frequency: each
+# cospectrum, associated to a frequency, is a covariance matrix
 plot_cospectra(ajdc._cosp_channels, freqs, ylabels=ch_names,
                title='Cospectra, in channel space')
 
@@ -118,8 +119,8 @@ source.plot(duration=duration, start=0, n_channels=sr_count,
 
 
 ###############################################################################
-# Artifact correction
-# -------------------
+# Artifact correction by BSS denoising
+# ------------------------------------
 
 # Identify artifact: blinks are well separated in source S0
 blink_idx = 0
@@ -148,8 +149,9 @@ axs[1].set_title('Topographic map of the blink source estimated by AJDC')
 plot_topomap(blink_filter, pos=ch_info, axes=axs[1], extrapolate='box')
 plt.show()
 
-# BSS denoising: suppress blink source and apply backward filters
-denoised_signal_raw = ajdc.transform_back(source_raw, suppress=[blink_idx])
+# BSS denoising: suppress blink source in source space, and apply backward
+# filters to come back to channel space
+denoised_signal_raw = ajdc.transform_back(source_raw, supp=[blink_idx])
 
 # Plot denoised signal
 denoised_signal = RawArray(denoised_signal_raw, ch_info, verbose=False)
@@ -159,10 +161,11 @@ denoised_signal.plot(duration=duration, start=0, n_channels=ch_count,
 
 
 ###############################################################################
-# Comparison with ICA
-# -------------------
+# Comparison with Independent Component Analysis (ICA)
+# ----------------------------------------------------
 
-# Infomax-based ICA is a HOS-based BSS, minimizing mutual information
+# Infomax-based ICA is a Higher-Order Statistics (HOS)-based BSS, minimizing
+# mutual information
 ica = ICA(n_components=ajdc.n_sources_, method='infomax', random_state=42)
 ica.fit(signal, picks='eeg')
 

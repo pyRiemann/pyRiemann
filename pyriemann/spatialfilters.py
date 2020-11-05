@@ -525,7 +525,7 @@ class AJDC(BaseEstimator, TransformerMixin):
     of human electroencephalogram by approximate joint diagonalization of
     second order statistics", Clin Neurophysiol, 2008
     [2] D.-T. Pham, "Joint approximate diagonalization of positive definite
-    matrices", SIAM J Matrix Anal Appl, 2001
+    Hermitian matrices", SIAM J Matrix Anal Appl, 2001
     """
 
     def __init__(self, window=128, overlap=0.5, fmin=None, fmax=None, fs=None,
@@ -564,29 +564,35 @@ class AJDC(BaseEstimator, TransformerMixin):
         """
         self.n_channels_ = X.shape[1]
         # estimation of cospectra
-        cospcov = est.CospCovariances(window=self.window, overlap=self.overlap,
-                                     fmin=self.fmin, fmax=self.fmax,
-                                     fs=self.fs)
+        cospcov = est.CospCovariances(
+            window=self.window,
+            overlap=self.overlap,
+            fmin=self.fmin,
+            fmax=self.fmax,
+            fs=self.fs)
         cosp = cospcov.transform(X)
         self.freqs_ = cospcov.freqs_
         # concatenation of cospectra along conditions
         cosp = numpy.concatenate(cosp, axis=2).T
         # trace-normalization of cospectra
         self._cosp_channels = self._normalize_trace(cosp)
-        #TODO: non-diagonality weights estimation (Eq(B.1) in [1]),
-        #      when AJD algorithm will be able to process them
+        # estimation of non-diagonality weights
+        self._weights = self._get_nondiag_weight(self._cosp_channels)
 
-        # dimension reduction, estimated on averaged cospectrum
-        cosp_av = self._cosp_channels.mean(axis=0) #TODO: weighted mean
+        # dimension reduction, estimated on weighted mean of cospectra
+        cosp_av = numpy.average(
+            self._cosp_channels,
+            axis=0,
+            weights=self._weights)
         eigvals, eigvecs = eigh(cosp_av, eigvals_only=False)
         eigvals = eigvals[::-1]         # sorted in descending order
         eigvecs = numpy.fliplr(eigvecs) # idem
         cum_expl_var = stable_cumsum(eigvals / eigvals.sum())
-        self.n_sources_ = numpy.searchsorted(cum_expl_var, self.expl_var,
-                                             side='right') + 1
+        self.n_sources_ = numpy.searchsorted(
+            cum_expl_var, self.expl_var, side='right') + 1
         if self.verbose:
             print("Fitting AJDC to data using {} components "
-                  "(be unpatient, this is fast)".format(self.n_sources_))
+                "(be unpatient, this is fast)".format(self.n_sources_))
         pca_filters = eigvecs[:, :self.n_sources_]
         pca_vals = eigvals[:self.n_sources_]
 
@@ -595,14 +601,17 @@ class AJDC(BaseEstimator, TransformerMixin):
         whit_inv_filters = pca_filters @ numpy.diag(numpy.sqrt(pca_vals))
 
         # apply dimension reduction and whitening on cospectra
-        cosp_rw = numpy.zeros((self._cosp_channels.shape[0], self.n_sources_,
-                               self.n_sources_))
+        cosp_rw = numpy.zeros(
+            (self._cosp_channels.shape[0], self.n_sources_, self.n_sources_))
         for c in range(cosp_rw.shape[0]):
             cosp_rw[c] = (
                 whit_filters.T @ self._cosp_channels[c] @ whit_filters )
 
         # approximate joint diagonalization, using Pham's algorithm
-        diag_filters, self._cosp_sources = ajd_pham(cosp_rw, n_iter_max=100)
+        diag_filters, self._cosp_sources = ajd_pham(
+            cosp_rw,
+            n_iter_max=100,
+            sample_weight=self._weights)
 
         # computation of forward and backward filters
         self.forward_filters_ = diag_filters @ whit_filters.T
@@ -628,7 +637,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         source = self.forward_filters_ @ X
         return source
 
-    def transform_back(self, X, suppress=None):
+    def transform_back(self, X, supp=None):
         """Estimate the channel space from source space, with possibility to
         suppress some sources.
 
@@ -636,7 +645,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_sources, n_samples)
             ndarray of source.
-        suppress : list of int | None , (default None)
+        supp : list of int | None , (default None)
             List of indices of sources to suppress.
 
         Returns
@@ -648,12 +657,13 @@ class AJDC(BaseEstimator, TransformerMixin):
             raise ValueError('X has not the good number of sources')
 
         denois = numpy.eye(self.n_sources_)
-        if suppress is not None:
-            if isinstance(suppress, list):
-                for i in suppress:
-                    denois[i, i] = 0
-            else:
-                raise ValueError('Parameter suppress must be a list of int')
+        if supp is None:
+            pass
+        elif isinstance(supp, list):
+            for i in supp:
+                denois[i, i] = 0
+        else:
+            raise ValueError('Parameter supp must be a list of int, or None')
 
         signal = self.backward_filters_ @ denois @ X
         return signal
@@ -673,9 +683,32 @@ class AJDC(BaseEstimator, TransformerMixin):
             The sets of trace-normalized square matrices.
         """
         if matrices.shape[-2] != matrices.shape[-1]:
-            raise ValueError('Input matrices are not square')
+            raise ValueError('Input matrices must be square')
 
         traces = numpy.trace(matrices, axis1=-2, axis2=-1)
         while traces.ndim != matrices.ndim:
             traces = traces[..., numpy.newaxis]
         return matrices / traces
+
+    def _get_nondiag_weight(self, cosp):
+        """Compute non-diagonality weights for cospectra, cf Eq(B.1) in [1].
+
+        Parameters
+        ----------
+        cosp : ndarray, shape (n_freqs, n_channels, n_channels)
+            The sets of square matrices.
+
+        Returns
+        -------
+        weights : ndarray, shape (n_freqs,)
+            The non-diagonality weights for cospectra.
+        """
+        if cosp.shape[-1] <= 1:
+            raise ValueError('Cospectra must be at least 2x2')
+        if cosp.shape[-2] != cosp.shape[-1]:
+            raise ValueError('Cospectra must be square')
+
+        num = numpy.trace(cosp**2, axis1=-2, axis2=-1)  # sum of diag terms
+        denom = numpy.sum(cosp**2, axis=(-2, -1)) - num # sum of off-diag terms
+        weights = ( 1.0 / (cosp.shape[-1] - 1) ) * (num / denom)
+        return weights

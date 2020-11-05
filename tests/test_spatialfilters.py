@@ -163,7 +163,7 @@ def test_AJDC():
     n_conditions, n_channels, n_samples = 2, 8, 512
     X = np.random.randn(n_conditions, n_channels, n_samples)
 
-    assert_raises(ValueError, AJDC, expl_var=0)
+    assert_raises(ValueError, AJDC, expl_var=0) # value out of bounds
     assert_raises(ValueError, AJDC, expl_var=1.1)
 
     # Test Init
@@ -182,18 +182,23 @@ def test_AJDC():
     assert_array_equal(ajdc.backward_filters_.shape,
                        [n_channels, ajdc.n_sources_])
     assert_raises(ValueError, ajdc._normalize_trace,
-                  np.random.randn(n_conditions, n_channels, n_channels+2))
+        np.random.randn(n_conditions, n_channels, n_channels + 2)) # not square
+    assert_raises(ValueError, ajdc._get_nondiag_weight,
+        np.random.randn(n_conditions, 1, 1)) # less than 2 chans
+    assert_raises(ValueError, ajdc._get_nondiag_weight,
+        np.random.randn(n_conditions, n_channels, n_channels + 2)) # not square
 
     # Test transform
     Xt = ajdc.transform(X[0])
     assert_array_equal(Xt.shape, [ajdc.n_sources_, n_samples])
-    assert_raises(ValueError, ajdc.transform, np.random.randn(n_channels+1, 1))
+    assert_raises(ValueError, ajdc.transform, 
+        np.random.randn(n_channels + 1, 1)) # unequal # of chans
     
     # Test transform back
     Xtb = ajdc.transform_back(Xt)
     assert_array_equal(Xtb.shape, [n_channels, n_samples])
     assert_raises(ValueError, ajdc.transform_back,
-                  np.random.randn(ajdc.n_sources_+1, 1))
-    Xtb = ajdc.transform_back(Xt, [ajdc.n_sources_-1])
+        np.random.randn(ajdc.n_sources_ + 1, 1)) # unequal # of sources
+    Xtb = ajdc.transform_back(Xt, supp=[ajdc.n_sources_ - 1])
     assert_array_equal(Xtb.shape, [n_channels, n_samples])
-    assert_raises(ValueError, ajdc.transform_back, X, 1)
+    assert_raises(ValueError, ajdc.transform_back, Xt, supp=1) # supp not a list
