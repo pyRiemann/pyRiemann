@@ -5,7 +5,7 @@ from sklearn.base import (BaseEstimator, ClassifierMixin, TransformerMixin,
 
 try:
     from sklearn.cluster._kmeans import _init_centroids
-except ImportError:
+except ImportError: # pragma: no cover
     # Workaround for scikit-learn v0.24.0rc1+
     # See issue: https://github.com/alexandrebarachant/pyRiemann/issues/92
     from sklearn.cluster import KMeans

@@ -201,4 +201,4 @@ def test_AJDC():
         np.random.randn(ajdc.n_sources_ + 1, 1)) # unequal # of sources
     Xtb = ajdc.transform_back(Xt, supp=[ajdc.n_sources_ - 1])
     assert_array_equal(Xtb.shape, [n_channels, n_samples])
-    assert_raises(ValueError, ajdc.transform_back, Xt, supp=1) # supp not a list
+    assert_raises(ValueError, ajdc.transform_back, Xt, supp=1) # not a list

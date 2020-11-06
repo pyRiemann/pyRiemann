@@ -541,7 +541,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         self.fs = fs
         self.expl_var = expl_var
         self.verbose = verbose
-        #TODO: add an argument to choose AJD algo: pham2001 or ablin2019
+        #TODO: add an argument 'algo' to choose AJD: pham2001 or ablin2019
 
     def fit(self, X, y=None):
         """Fit.
@@ -603,9 +603,9 @@ class AJDC(BaseEstimator, TransformerMixin):
         # apply dimension reduction and whitening on cospectra
         cosp_rw = numpy.zeros(
             (self._cosp_channels.shape[0], self.n_sources_, self.n_sources_))
-        for c in range(cosp_rw.shape[0]):
-            cosp_rw[c] = (
-                whit_filters.T @ self._cosp_channels[c] @ whit_filters )
+        for f in range(cosp_rw.shape[0]):
+            cosp_rw[f] = (
+                whit_filters.T @ self._cosp_channels[f] @ whit_filters )
 
         # approximate joint diagonalization, using Pham's algorithm
         diag_filters, self._cosp_sources = ajd_pham(
@@ -660,8 +660,8 @@ class AJDC(BaseEstimator, TransformerMixin):
         if supp is None:
             pass
         elif isinstance(supp, list):
-            for i in supp:
-                denois[i, i] = 0
+            for s in supp:
+                denois[s, s] = 0
         else:
             raise ValueError('Parameter supp must be a list of int, or None')
 
@@ -690,25 +690,28 @@ class AJDC(BaseEstimator, TransformerMixin):
             traces = traces[..., numpy.newaxis]
         return matrices / traces
 
-    def _get_nondiag_weight(self, cosp):
-        """Compute non-diagonality weights for cospectra, cf Eq(B.1) in [1].
+    def _get_nondiag_weight(self, matrices):
+        # TODO: this function could be moved into module utils.ajd
+        """Compute non-diagonality weights for square matrices, Eq(B.1) in [1].
 
         Parameters
         ----------
-        cosp : ndarray, shape (n_freqs, n_channels, n_channels)
-            The sets of square matrices.
+        matrices : ndarray, shape (n_matrices, n_channels, n_channels)
+            The set of square matrices.
 
         Returns
         -------
-        weights : ndarray, shape (n_freqs,)
-            The non-diagonality weights for cospectra.
+        weights : ndarray, shape (n_matrices,)
+            The non-diagonality weights for matrices.
         """
-        if cosp.shape[-1] <= 1:
-            raise ValueError('Cospectra must be at least 2x2')
-        if cosp.shape[-2] != cosp.shape[-1]:
-            raise ValueError('Cospectra must be square')
+        if matrices.shape[-1] <= 1:
+            raise ValueError('Matrices must be at least 2x2')
+        if matrices.shape[-2] != matrices.shape[-1]:
+            raise ValueError('Matrices must be square')
 
-        num = numpy.trace(cosp**2, axis1=-2, axis2=-1)  # sum of diag terms
-        denom = numpy.sum(cosp**2, axis=(-2, -1)) - num # sum of off-diag terms
-        weights = ( 1.0 / (cosp.shape[-1] - 1) ) * (num / denom)
+        # sum of squared diagonal elements
+        denom = numpy.trace(matrices**2, axis1=-2, axis2=-1)
+        # sum of squared off-diagonal elements
+        num = numpy.sum(matrices**2, axis=(-2, -1)) - denom
+        weights = ( 1.0 / (matrices.shape[-1] - 1) ) * (num / denom)
         return weights

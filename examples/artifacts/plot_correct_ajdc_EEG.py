@@ -68,7 +68,7 @@ duration = signal_raw.shape[1] / sfreq
 # Channel space
 # -------------
 
-# Plot signal
+# Plot signal X
 ch_info = create_info(ch_names=ch_names, ch_types=['eeg'] * ch_count,
                       sfreq=sfreq)
 ch_info.set_montage('standard_1020')
@@ -106,10 +106,10 @@ plot_cospectra(ajdc._cosp_sources, freqs, ylabels=sr_names,
 # Source space
 # ------------
 
-# Estimate sources applying forward filters
+# Estimate sources S applying forward filters B to signal X: S = B X
 source_raw = ajdc.transform(signal_raw)
 
-# Plot sources
+# Plot sources S
 sr_info = create_info(ch_names=sr_names, ch_types=['misc'] * sr_count,
                       sfreq=sfreq)
 source = RawArray(source_raw, sr_info, verbose=False)
@@ -149,11 +149,12 @@ axs[1].set_title('Topographic map of the blink source estimated by AJDC')
 plot_topomap(blink_filter, pos=ch_info, axes=axs[1], extrapolate='box')
 plt.show()
 
-# BSS denoising: suppress blink source in source space, and apply backward
-# filters to come back to channel space
+# BSS denoising: blink source is suppressed in source space using activation
+# matrix D, and then applying backward filters A to come back to channel space
+# Denoised signal: Xd = A D S
 denoised_signal_raw = ajdc.transform_back(source_raw, supp=[blink_idx])
 
-# Plot denoised signal
+# Plot denoised signal Xd
 denoised_signal = RawArray(denoised_signal_raw, ch_info, verbose=False)
 denoised_signal.plot(duration=duration, start=0, n_channels=ch_count,
                      scalings={'eeg': 3e1}, color={'eeg': 'steelblue'},
