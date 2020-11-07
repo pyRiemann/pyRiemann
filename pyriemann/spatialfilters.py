@@ -491,8 +491,8 @@ class AJDC(BaseEstimator, TransformerMixin):
     fs : float | None , (default None)
         The sampling frequency of the signal.
     expl_var : float (default 0.999)
-        The percentage of explained variance for dimension reduction in ]0, 1],
-        because Pham's AJD is sensitive to matrices conditioning.
+        The percentage of explained variance in ]0, 1], for dimension reduction
+        of cospectra, because Pham's AJD is sensitive to matrices conditioning.
     verbose : bool (default True)
         Verbose flag.
 
@@ -667,6 +667,31 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         signal = self.backward_filters_ @ denois @ X
         return signal
+
+    def get_src_expl_var(self, X):
+        """Estimate explained variances of sources, Appendix D in [1].
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_channels, n_samples)
+            ndarray of signal.
+
+        Returns
+        -------
+        src_var : ndarray, shape (n_sources,)
+            ndarray of explained variance for each source.
+        """
+        if X.shape[0] != self.n_channels_:
+            raise ValueError('X has not the good number of channels')
+
+        cov = est.Covariances().transform(X[numpy.newaxis, ...])[0]
+
+        src_var = numpy.zeros((self.n_sources_))
+        for s in range (self.n_sources_):
+            src_var[s] = numpy.trace(
+                self.backward_filters_[:, s] * self.forward_filters_[s].T * cov
+                * self.forward_filters_[s] * self.backward_filters_[:, s].T)
+        return src_var
 
     def _normalize_trace(self, matrices):
         # TODO: this function could be moved into module utils

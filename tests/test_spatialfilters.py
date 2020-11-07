@@ -193,8 +193,8 @@ def test_AJDC():
     assert_array_equal(Xt.shape, [ajdc.n_sources_, n_samples])
     assert_raises(ValueError, ajdc.transform, 
         np.random.randn(n_channels + 1, 1)) # unequal # of chans
-    
-    # Test transform back
+
+    # Test transform_back
     Xtb = ajdc.transform_back(Xt)
     assert_array_equal(Xtb.shape, [n_channels, n_samples])
     assert_raises(ValueError, ajdc.transform_back,
@@ -202,3 +202,7 @@ def test_AJDC():
     Xtb = ajdc.transform_back(Xt, supp=[ajdc.n_sources_ - 1])
     assert_array_equal(Xtb.shape, [n_channels, n_samples])
     assert_raises(ValueError, ajdc.transform_back, Xt, supp=1) # not a list
+
+    # Test get_src_expl_var
+    assert_raises(ValueError, ajdc.get_src_expl_var,
+        np.random.randn(n_channels + 1, 1)) # unequal # of chans
