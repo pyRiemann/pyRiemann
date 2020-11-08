@@ -204,5 +204,6 @@ def test_AJDC():
     assert_raises(ValueError, ajdc.transform_back, Xt, supp=1) # not a list
 
     # Test get_src_expl_var
+    ajdc.get_src_expl_var(X[0])
     assert_raises(ValueError, ajdc.get_src_expl_var,
         np.random.randn(n_channels + 1, 1)) # unequal # of chans

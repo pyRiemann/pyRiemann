@@ -145,7 +145,7 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
     Applications 22, no. 4 (2001): 1136-1152.
 
     """
-    sample_weight = _get_sample_weight(sample_weight, X)
+    normalized_weight = _get_sample_weight(sample_weight, X) # sum weights = 1
 
     n_epochs = X.shape[0]
 
@@ -167,11 +167,11 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
                 c1 = A[ii, Ii]
                 c2 = A[jj, Ij]
 
-                g12 = np.average(A[ii, Ij] / c1, weights=sample_weight)
-                g21 = np.average(A[ii, Ij] / c2, weights=sample_weight)
+                g12 = np.average(A[ii, Ij] / c1, weights=normalized_weight)
+                g21 = np.average(A[ii, Ij] / c2, weights=normalized_weight)
 
-                omega21 = np.average(c1 / c2, weights=sample_weight)
-                omega12 = np.average(c2 / c1, weights=sample_weight)
+                omega21 = np.average(c1 / c2, weights=normalized_weight)
+                omega12 = np.average(c2 / c1, weights=normalized_weight)
                 omega = np.sqrt(omega12 * omega21)
 
                 tmp = np.sqrt(omega21 / omega12)
