@@ -57,12 +57,23 @@ def test_Xdawncovariances():
 
 def test_Cospcovariances():
     """Test fit CospCovariances"""
-    x = np.random.randn(2, 3, 1000)
+    n_trials, n_channels, n_samples = 2, 3, 1000
+    x = np.random.randn(n_trials, n_channels, n_samples)
     cov = CospCovariances()
     cov.fit(x)
     cov.fit_transform(x)
     assert cov.get_params() == dict(window=128, overlap=0.75, fmin=None,
                                     fmax=None, fs=None)
+
+    cov = CospCovariances(fmin=1, fmax=32, fs=64)
+    cosp = cov.transform(x)
+    n_freqs = len(cov.freqs_)
+    assert_array_equal(cosp.shape, [n_trials, n_channels, n_channels, n_freqs])
+
+    x = [np.random.randn(n_channels, n_samples),
+         np.random.randn(n_channels, n_samples + 200)]
+    cosp = cov.transform(x)
+    assert_array_equal(cosp.shape, [n_trials, n_channels, n_channels, n_freqs])
 
 
 def test_Coherences():

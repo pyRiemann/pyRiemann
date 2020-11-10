@@ -160,13 +160,12 @@ def test_BilinearFilter():
 
 def test_AJDC():
     """Test AJDC"""
-    n_conditions, n_channels, n_samples = 2, 8, 512
+    n_conditions, n_channels, n_samples = 3, 8, 512
     X = np.random.randn(n_conditions, n_channels, n_samples)
 
+    # Test Init
     assert_raises(ValueError, AJDC, expl_var=0) # value out of bounds
     assert_raises(ValueError, AJDC, expl_var=1.1)
-
-    # Test Init
     ajdc = AJDC(fmin=1, fmax=32, fs=64)
     assert_true(ajdc.window == 128)
     assert_true(ajdc.overlap == 0.5)
@@ -184,26 +183,36 @@ def test_AJDC():
     assert_raises(ValueError, ajdc._normalize_trace,
         np.random.randn(n_conditions, n_channels, n_channels + 2)) # not square
     assert_raises(ValueError, ajdc._get_nondiag_weight,
-        np.random.randn(n_conditions, 1, 1)) # less than 2 chans
-    assert_raises(ValueError, ajdc._get_nondiag_weight,
         np.random.randn(n_conditions, n_channels, n_channels + 2)) # not square
 
+    X = [np.random.randn(n_channels, n_samples),
+         np.random.randn(n_channels, n_samples + 200)]
+    ajdc.fit(X)
+
+    n_trials = 4
+    X = np.random.randn(n_trials, n_channels, n_samples)
+
     # Test transform
-    Xt = ajdc.transform(X[0])
-    assert_array_equal(Xt.shape, [ajdc.n_sources_, n_samples])
-    assert_raises(ValueError, ajdc.transform, 
-        np.random.randn(n_channels + 1, 1)) # unequal # of chans
+    Xt = ajdc.transform(X)
+    assert_array_equal(Xt.shape, [n_trials, ajdc.n_sources_, n_samples])
+    assert_raises(ValueError, ajdc.transform, X[0]) # not 3 dims
+    assert_raises(ValueError, ajdc.transform,
+        np.random.randn(n_trials, n_channels + 1, 1)) # unequal # of chans
 
     # Test transform_back
     Xtb = ajdc.transform_back(Xt)
-    assert_array_equal(Xtb.shape, [n_channels, n_samples])
-    assert_raises(ValueError, ajdc.transform_back,
-        np.random.randn(ajdc.n_sources_ + 1, 1)) # unequal # of sources
+    assert_array_equal(Xtb.shape, [n_trials, n_channels, n_samples])
+    assert_raises(ValueError, ajdc.transform_back, Xt[0]) # not 3 dims
+    assert_raises(ValueError, ajdc.transform_back,  # unequal # of sources
+        np.random.randn(n_trials, ajdc.n_sources_ + 1, 1))
+
     Xtb = ajdc.transform_back(Xt, supp=[ajdc.n_sources_ - 1])
-    assert_array_equal(Xtb.shape, [n_channels, n_samples])
+    assert_array_equal(Xtb.shape, [n_trials, n_channels, n_samples])
     assert_raises(ValueError, ajdc.transform_back, Xt, supp=1) # not a list
 
     # Test get_src_expl_var
-    ajdc.get_src_expl_var(X[0])
+    v = ajdc.get_src_expl_var(X)
+    assert_array_equal(v.shape, [n_trials, ajdc.n_sources_])
+    assert_raises(ValueError, ajdc.get_src_expl_var, X[0]) # not 3 dims
     assert_raises(ValueError, ajdc.get_src_expl_var,
-        np.random.randn(n_channels + 1, 1)) # unequal # of chans
+        np.random.randn(n_trials, n_channels + 1, 1)) # unequal # of chans

@@ -380,7 +380,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
             ndarray of covariance matrices for each trials and for each
             frequency bin.
         """
-        Nt, Ne, _ = X.shape
+        Nt = len(X)
         out = []
 
         for i in range(Nt):

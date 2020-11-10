@@ -85,6 +85,7 @@ Spatial Filtering
     CSP
     SPoC
     BilinearFilter
+    AJDC
 
 Channel selection
 ------------------

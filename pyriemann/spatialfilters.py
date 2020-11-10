@@ -504,10 +504,10 @@ class AJDC(BaseEstimator, TransformerMixin):
         If fit, the frequencies associated to cospectra.
     n_sources_ : int
         If fit, the number of components of the source space.
-    forward_filters_ : ndarray , shape (n_sources_, n_channels_)
+    forward_filters_ : ndarray , shape ``(n_sources_, n_channels_)``
         If fit, the AJDC filters used to transform signal into source, also
         called deximing or separating matrix.
-    backward_filters_ : ndarray , shape (n_channels_, n_sources_)
+    backward_filters_ : ndarray , shape ``(n_channels_, n_sources_)``
         If fit, the AJDC filters used to transform source into signal, also
         called mixing matrix.
 
@@ -522,10 +522,10 @@ class AJDC(BaseEstimator, TransformerMixin):
     References
     ----------
     [1] M. Congedo, C. Gouy-Pailler, C. Jutten, "On the blind source separation
-    of human electroencephalogram by approximate joint diagonalization of
-    second order statistics", Clin Neurophysiol, 2008
+        of human electroencephalogram by approximate joint diagonalization of
+        second order statistics", Clin Neurophysiol, 2008
     [2] D.-T. Pham, "Joint approximate diagonalization of positive definite
-    Hermitian matrices", SIAM J Matrix Anal Appl, 2001
+        Hermitian matrices", SIAM J Matrix Anal Appl, 2001
     """
 
     def __init__(self, window=128, overlap=0.5, fmin=None, fmax=None, fs=None,
@@ -551,7 +551,7 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_conditions, n_channels, n_samples)
+        X : ndarray, shape (n_conditions, n_channels, n_samples) | list of n_conditions ndarray, shape (n_channels, n_samples) with same n_channels but different n_samples
             ndarray of signal, acquired under different experimental conditions
             (for eg, baseline versus task).
         y : ndarray, shape (n_conditions,)
@@ -562,7 +562,6 @@ class AJDC(BaseEstimator, TransformerMixin):
         self : AJDC instance
             The AJDC instance.
         """
-        self.n_channels_ = X.shape[1]
         # estimation of cospectra
         cospcov = est.CospCovariances(
             window=self.window,
@@ -571,6 +570,7 @@ class AJDC(BaseEstimator, TransformerMixin):
             fmax=self.fmax,
             fs=self.fs)
         cosp = cospcov.transform(X)
+        self.n_channels_ = cosp.shape[1]
         self.freqs_ = cospcov.freqs_
         # concatenation of cospectra along conditions
         cosp = numpy.concatenate(cosp, axis=2).T
@@ -601,11 +601,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         whit_inv_filters = pca_filters @ numpy.diag(numpy.sqrt(pca_vals))
 
         # apply dimension reduction and whitening on cospectra
-        cosp_rw = numpy.zeros(
-            (self._cosp_channels.shape[0], self.n_sources_, self.n_sources_))
-        for f in range(cosp_rw.shape[0]):
-            cosp_rw[f] = (
-                whit_filters.T @ self._cosp_channels[f] @ whit_filters )
+        cosp_rw = whit_filters.T @ self._cosp_channels @ whit_filters
 
         # approximate joint diagonalization, using Pham's algorithm
         diag_filters, self._cosp_sources = ajd_pham(
@@ -623,15 +619,17 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_channels, n_samples)
-            ndarray of signal.
+        X : ndarray, shape (n_trials, n_channels, n_samples)
+            ndarray of trials in channel space.
 
         Returns
         -------
-        source : ndarray, shape (n_sources, n_samples)
-            ndarray of source.
+        source : ndarray, shape (n_trials, n_sources, n_samples)
+            ndarray of trials in source space.
         """
-        if X.shape[0] != self.n_channels_:
+        if X.ndim != 3:
+            raise ValueError('X must have 3 dimensions')
+        if X.shape[1] != self.n_channels_:
             raise ValueError('X has not the good number of channels')
 
         source = self.forward_filters_ @ X
@@ -643,17 +641,19 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_sources, n_samples)
-            ndarray of source.
+        X : ndarray, shape (n_trials, n_sources, n_samples)
+            ndarray of trials in source space.
         supp : list of int | None , (default None)
             List of indices of sources to suppress.
 
         Returns
         -------
-        signal : ndarray, shape (n_channels, n_samples)
-            ndarray of signal.
+        signal : ndarray, shape (n_trials, n_channels, n_samples)
+            ndarray of trials in channel space.
         """
-        if X.shape[0] != self.n_sources_:
+        if X.ndim != 3:
+            raise ValueError('X must have 3 dimensions')
+        if X.shape[1] != self.n_sources_:
             raise ValueError('X has not the good number of sources')
 
         denois = numpy.eye(self.n_sources_)
@@ -673,24 +673,28 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_channels, n_samples)
-            ndarray of signal.
+        X : ndarray, shape (n_trials, n_channels, n_samples)
+            ndarray of trials in channel space.
 
         Returns
         -------
-        src_var : ndarray, shape (n_sources,)
+        src_var : ndarray, shape (n_trials, n_sources)
             ndarray of explained variance for each source.
         """
-        if X.shape[0] != self.n_channels_:
+        if X.ndim != 3:
+            raise ValueError('X must have 3 dimensions')
+        if X.shape[1] != self.n_channels_:
             raise ValueError('X has not the good number of channels')
 
-        cov = est.Covariances().transform(X[numpy.newaxis, ...])[0]
+        cov = est.Covariances().transform(X)
 
-        src_var = numpy.zeros((self.n_sources_))
+        src_var = numpy.zeros((X.shape[0], self.n_sources_))
         for s in range (self.n_sources_):
-            src_var[s] = numpy.trace(
+            src_var[:, s] = numpy.trace(
                 self.backward_filters_[:, s] * self.forward_filters_[s].T * cov
-                * self.forward_filters_[s] * self.backward_filters_[:, s].T)
+                * self.forward_filters_[s] * self.backward_filters_[:, s].T,
+                axis1=-2,
+                axis2=-1)
         return src_var
 
     def _normalize_trace(self, matrices):
@@ -708,7 +712,7 @@ class AJDC(BaseEstimator, TransformerMixin):
             The sets of trace-normalized square matrices.
         """
         if matrices.shape[-2] != matrices.shape[-1]:
-            raise ValueError('Input matrices must be square')
+            raise ValueError('Matrices must be square')
 
         traces = numpy.trace(matrices, axis1=-2, axis2=-1)
         while traces.ndim != matrices.ndim:
@@ -729,8 +733,6 @@ class AJDC(BaseEstimator, TransformerMixin):
         weights : ndarray, shape (n_matrices,)
             The non-diagonality weights for matrices.
         """
-        if matrices.shape[-1] <= 1:
-            raise ValueError('Matrices must be at least 2x2')
         if matrices.shape[-2] != matrices.shape[-1]:
             raise ValueError('Matrices must be square')
 

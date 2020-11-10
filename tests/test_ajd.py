@@ -2,7 +2,7 @@ from numpy.testing import assert_array_almost_equal, assert_array_equal
 from nose.tools import assert_raises
 import numpy as np
 
-from pyriemann.utils.ajd import _get_sample_weight, rjd, ajd_pham, uwedge
+from pyriemann.utils.ajd import _get_normalized_weight, rjd, ajd_pham, uwedge
 
 
 def generate_cov(Nt, Ne):
@@ -17,13 +17,14 @@ def generate_cov(Nt, Ne):
     return covmats, diags, A
 
 
-def test_get_sample_weight():
-    """Test get_sample_weight"""
+def test_get_normalized_weight():
+    """Test get_normalized_weight"""
     Nt = 100
     covmats, diags, A = generate_cov(Nt, 3)
-    w = np.random.randn(Nt)
-    assert_raises(ValueError, _get_sample_weight, w, covmats) # non-positive
-    assert_raises(ValueError, _get_sample_weight, w[:Nt//2], covmats)
+    w = _get_normalized_weight(None, covmats)
+    assert_raises(ValueError, _get_normalized_weight, w[:Nt//2], covmats)
+    w[0] = -1
+    assert_raises(ValueError, _get_normalized_weight, w, covmats) #negative val
 
 
 def test_rjd():

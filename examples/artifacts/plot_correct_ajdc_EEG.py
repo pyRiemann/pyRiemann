@@ -1,7 +1,7 @@
 """
-=========================================================
+===============================================================================
 Artifact Correction by AJDC-based Blind Source Separation
-=========================================================
+===============================================================================
 
 Blind source separation (BSS) based on approximate joint diagonalization of
 Fourier cospectra (AJDC), applied to artifact correction of EEG [1].
@@ -95,6 +95,8 @@ freqs = ajdc.freqs_
 plot_cospectra(ajdc._cosp_channels, freqs, ylabels=ch_names,
                title='Cospectra, in channel space')
 
+###############################################################################
+
 # Plot diagonalized cospectra in source space
 sr_count = ajdc.n_sources_
 sr_names = ['S' + str(s).zfill(2) for s in range(sr_count)]
@@ -107,7 +109,7 @@ plot_cospectra(ajdc._cosp_sources, freqs, ylabels=sr_names,
 # ------------
 
 # Estimate sources S applying forward filters B to signal X: S = B X
-source_raw = ajdc.transform(signal_raw)
+source_raw = ajdc.transform(signal_raw[np.newaxis, ...])[0]
 
 # Plot sources S
 sr_info = create_info(ch_names=sr_names, ch_types=['misc'] * sr_count,
@@ -119,26 +121,26 @@ source.plot(duration=duration, start=0, n_channels=sr_count,
 
 
 ###############################################################################
-# Artifact correction by BSS denoising
-# ------------------------------------
+# Artifact identification
+# -----------------------
 
-# Identify artifact: blinks are well separated in source S0
+# Identify artifact by eye: blinks are well separated in source S0
 blink_idx = 0
 
 # Get normal spectrum, ie power spectrum after trace-normalization
 blink_spectrum_norm = ajdc._cosp_sources[:, blink_idx, blink_idx]
-blink_spectrum_norm = blink_spectrum_norm / np.linalg.norm(blink_spectrum_norm)
+blink_spectrum_norm /= np.linalg.norm(blink_spectrum_norm)
 
 # Get absolute spectrum, ie raw power spectrum of the source
 f, spectrum = welch(source.get_data(picks=[blink_idx]), fs=sfreq,
                     nperseg=window, noverlap=int(window * overlap))
 blink_spectrum_abs = spectrum[0, (f >= fmin) & (f <= fmax)]
-blink_spectrum_abs = blink_spectrum_abs / np.linalg.norm(blink_spectrum_abs)
+blink_spectrum_abs /= np.linalg.norm(blink_spectrum_abs)
 
 # Get topographic map
 blink_filter = ajdc.backward_filters_[:, blink_idx]
 
-# Plot spectrum and topographic map of the blink source
+# Plot spectrum and topographic map of the blink source separated by AJDC
 fig, axs = plt.subplots(nrows=1, ncols=2, figsize=(12, 5))
 axs[0].set(title='Power spectrum of the blink source estimated by AJDC',
            xlabel='Frequency (Hz)', ylabel='Power spectral density')
@@ -149,16 +151,21 @@ axs[1].set_title('Topographic map of the blink source estimated by AJDC')
 plot_topomap(blink_filter, pos=ch_info, axes=axs[1], extrapolate='box')
 plt.show()
 
+###############################################################################
+# Artifact correction by BSS denoising
+# ------------------------------------
+
 # BSS denoising: blink source is suppressed in source space using activation
 # matrix D, and then applying backward filters A to come back to channel space
 # Denoised signal: Xd = A D S
-denoised_signal_raw = ajdc.transform_back(source_raw, supp=[blink_idx])
+signal_denois_raw = ajdc.transform_back(source_raw[np.newaxis, ...],
+                                        supp=[blink_idx])[0]
 
 # Plot denoised signal Xd
-denoised_signal = RawArray(denoised_signal_raw, ch_info, verbose=False)
-denoised_signal.plot(duration=duration, start=0, n_channels=ch_count,
-                     scalings={'eeg': 3e1}, color={'eeg': 'steelblue'},
-                     title='Denoised EEG signal by AJDC', show_scalebars=False)
+signal_denois = RawArray(signal_denois_raw, ch_info, verbose=False)
+signal_denois.plot(duration=duration, start=0, n_channels=ch_count,
+                   scalings={'eeg': 3e1}, color={'eeg': 'steelblue'},
+                   title='Denoised EEG signal by AJDC', show_scalebars=False)
 
 
 ###############################################################################
@@ -170,8 +177,14 @@ denoised_signal.plot(duration=duration, start=0, n_channels=ch_count,
 ica = ICA(n_components=ajdc.n_sources_, method='infomax', random_state=42)
 ica.fit(signal, picks='eeg')
 
-# Can you find the blink source?
+# Plot sources separated by ICA
 ica.plot_sources(signal, title='EEG sources estimated by ICA')
+
+# Can you find the blink source?
+
+###############################################################################
+
+# Plot topographic maps of sources separated by ICA
 ica.plot_components(title='Topographic maps of EEG sources estimated by ICA')
 
 

@@ -2,20 +2,21 @@
 import numpy as np
 
 
-def _get_sample_weight(sample_weight, data):
-    """Get the sample weights, strictly positive.
+def _get_normalized_weight(sample_weight, data):
+    """Get the normalized sample weights, strictly positive.
 
-    If none provided, weights init to 1. In any case, weights are normalized.
+    If None provided, weights are initialized to 1. In any case, weights are
+    normalized (sum equal to 1).
     """
     if sample_weight is None:
         sample_weight = np.ones(data.shape[0])
     else:
         if len(sample_weight) != data.shape[0]:
-            raise ValueError("len of sample_weight must be equal to len of data.")
+            raise ValueError("len of weight must be equal to len of data.")
         if any(sample_weight <= 0):
-            raise ValueError("values of sample_weight must be strictly positive.")
-    sample_weight /= np.sum(sample_weight)
-    return sample_weight
+            raise ValueError("values of weight must be strictly positive.")
+    normalized_weight = sample_weight / np.sum(sample_weight)
+    return normalized_weight
 
 
 def rjd(X, eps=1e-8, n_iter_max=1000):
@@ -145,7 +146,7 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
     Applications 22, no. 4 (2001): 1136-1152.
 
     """
-    normalized_weight = _get_sample_weight(sample_weight, X) # sum weights = 1
+    normalized_weight = _get_normalized_weight(sample_weight, X) # sum = 1
 
     n_epochs = X.shape[0]
 
