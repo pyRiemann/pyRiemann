@@ -2,7 +2,7 @@
 import numpy
 import copy
 
-from .base import sqrtm, invsqrtm, logm, expm, powm
+from .base import sqrtm, invsqrtm, logm, expm
 from .ajd import ajd_pham
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann
@@ -34,8 +34,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param tol: the tolerance to stop the gradient descent
     :param maxiter: The maximum number of iteration, default 50
-    :param init: A covariance matrix used to initia
-lize the gradient descent. If None the Arithmetic mean is used
+    :param init: A covariance matrix used to initialize the gradient descent. If None the Arithmetic mean is used
     :param sample_weight: the weight of each sample
     :returns: the mean covariance matrix
 
@@ -304,7 +303,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
 
 def mean_alm(covmats, tol=1e-14, maxiter=1000,
              verbose=False, sample_weight=None):
-    """Return Ando-Li-Mathias mean 
+    """Return Ando-Li-Mathias (ALM) mean
 
     Find the geometric mean recursively [1], generalizing from:
     
@@ -316,7 +315,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=1000,
     This is the adaptation of the Matlab code proposed by Dario Bini and
     Bruno Iannazzo, http://bezout.dm.unipi.it/software/mmtoolbox/
     Extremely slow, due to the recursive formulation.
-            
+
     :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
     :param tol: the tolerance to stop the gradient descent
     :param maxiter: maximum number of iteration, default 100
@@ -328,23 +327,24 @@ def mean_alm(covmats, tol=1e-14, maxiter=1000,
     References
     ----------
     [1] T. Ando, C.-K. Li and R. Mathias, "Geometric Means", Linear Algebra
-    Appl. 385 (2004), 305-334.
+        Appl. 385 (2004), 305-334.
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
     C = covmats
     C_iter = numpy.zeros_like(C)
-    Nt, Ne, Ne = covmats.shape
+    Nt = covmats.shape[0]
     if Nt == 2:
-        X = geodesic_riemann(covmats[0], covmats[1], alpha=0.5) 
+        X = geodesic_riemann(covmats[0], covmats[1], alpha=0.5)
         return X
     else:
         for k in range(maxiter):
             for h in range(Nt):
                 s = numpy.mod(numpy.arange(h, h + Nt - 1) + 1, Nt)
-                C_iter[h, :, :] = mean_alm(C[s])
+                C_iter[h] = mean_alm(C[s])
 
-            ni=numpy.linalg.norm(C_iter[0] - C[0], 2)/numpy.linalg.norm(C[0], 2)
-            if ni < tol: break
+            crit = numpy.linalg.norm(C_iter[0] - C[0], 2) / (
+                    numpy.linalg.norm(C[0], 2))
+            if crit < tol: break
             C = copy.deepcopy(C_iter)
         else:
             if verbose: print ('Max number of iterations reached')

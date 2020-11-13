@@ -132,10 +132,16 @@ def test_alm_mean():
     C_riem = mean_riemann(covmats)
     assert_array_almost_equal(C_alm, C_riem)
 
+    covmats, _, _ = generate_cov(10, 8)
+    mean_alm(covmats, maxiter=1, verbose=True) # maxiter reached
+
+    covmats, _, _ = generate_cov(2, 8)
+    mean_alm(covmats) # Nt=2
+
 
 def test_mean_covariance_alm():
     """Test mean_covariance for ALM"""
-    covmats, diags, A = generate_cov(3, 3)
+    covmats, _, _ = generate_cov(3, 3)
     C = mean_covariance(covmats, metric='alm')
     Ctrue = mean_alm(covmats)
     assert_array_equal(C, Ctrue)
