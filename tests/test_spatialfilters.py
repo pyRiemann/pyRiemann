@@ -160,8 +160,8 @@ def test_BilinearFilter():
 
 def test_AJDC():
     """Test AJDC"""
-    n_conditions, n_channels, n_samples = 3, 8, 512
-    X = np.random.randn(n_conditions, n_channels, n_samples)
+    n_subjects, n_conditions, n_channels, n_samples = 5, 3, 8, 512
+    X = np.random.randn(n_subjects, n_conditions, n_channels, n_samples)
 
     # Test Init
     assert_raises(ValueError, AJDC, expl_var=0) # value out of bounds
@@ -180,19 +180,31 @@ def test_AJDC():
                        [ajdc.n_sources_, n_channels])
     assert_array_equal(ajdc.backward_filters_.shape,
                        [n_channels, ajdc.n_sources_])
+    assert_raises(ValueError, ajdc.fit, # unequal # of conditions
+        [np.random.randn(n_conditions, n_channels, n_samples),
+         np.random.randn(n_conditions+1, n_channels, n_samples)])
+    assert_raises(ValueError, ajdc.fit, # unequal # of channels
+        [np.random.randn(n_conditions, n_channels, n_samples),
+         np.random.randn(n_conditions, n_channels+1, n_samples)])
     assert_raises(ValueError, ajdc._normalize_trace,
         np.random.randn(n_conditions, n_channels, n_channels + 2)) # not square
     assert_raises(ValueError, ajdc._get_nondiag_weight,
         np.random.randn(n_conditions, n_channels, n_channels + 2)) # not square
 
-    X = [np.random.randn(n_channels, n_samples),
-         np.random.randn(n_channels, n_samples + 200)]
+    X = [np.random.randn(n_conditions, n_channels, n_samples),
+         np.random.randn(n_conditions, n_channels, n_samples + 200),
+         np.random.randn(n_conditions, n_channels, n_samples + 500)]
     ajdc.fit(X)
 
-    n_trials = 4
-    X = np.random.randn(n_trials, n_channels, n_samples)
+    X = [[np.random.randn(n_channels, n_samples),
+          np.random.randn(n_channels, n_samples + 200)],
+         [np.random.randn(n_channels, n_samples + 500),
+          np.random.randn(n_channels, n_samples + 100)]]
+    ajdc.fit(X)
 
     # Test transform
+    n_trials = 4
+    X = np.random.randn(n_trials, n_channels, n_samples)
     Xt = ajdc.transform(X)
     assert_array_equal(Xt.shape, [n_trials, ajdc.n_sources_, n_samples])
     assert_raises(ValueError, ajdc.transform, X[0]) # not 3 dims

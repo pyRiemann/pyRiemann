@@ -87,7 +87,7 @@ window, overlap = sfreq, 0.5
 fmin, fmax = 1, 32
 ajdc = AJDC(window=window, overlap=overlap, fmin=fmin, fmax=fmax, fs=sfreq,
             expl_var=0.99)
-ajdc.fit(signal_raw[np.newaxis, ...])
+ajdc.fit(signal_raw[np.newaxis, np.newaxis, ...])
 freqs = ajdc.freqs_
 
 # Plot cospectra in channel space, after trace-normalization by frequency: each

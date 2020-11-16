@@ -469,13 +469,22 @@ class SPoC(CSP):
 class AJDC(BaseEstimator, TransformerMixin):
     """Implementation of the AJDC.
 
-    Approximate joint diagonalization of Fourier cospectra (AJDC) [1] for
-    blind source separation (BSS). It estimates Fourier cospectral matrices by
-    the Welch's method, and concatenates them along experimental conditions if
-    necessary. A trace-normalization, a dimension reduction and a whitening are
-    applied on cospectra. An approximate joint diagonalization (AJD) [2] allows
-    to estimate the joint diagonalizer, not constrained to be orthogonal.
-    Finally, forward and backward filters are computed.
+    The approximate joint diagonalization of Fourier cospectral matrices (AJDC)
+    [1] is a versatile tool for blind source separation (BSS) tasks based on
+    Second-Order Statistics (SOS), estimating spectrally uncorrelated sources.
+
+    It can be used:
+        - for a single subject, to solve the classical BSS problem [1],
+        - for several subjects, to solve the group BSS (gBSS) problem [2],
+        - for several experimental conditions (for eg, baseline versus task).
+
+    AJDC estimates Fourier cospectral matrices by the Welch's method, and
+    applies a trace-normalization. If necessary, it averages cospectra across
+    subjects, and concatenates them along experimental conditions.
+    Then, a dimension reduction and a whitening are applied on cospectra.
+    An approximate joint diagonalization (AJD) [3] allows to estimate the joint
+    diagonalizer, not constrained to be orthogonal. Finally, forward and
+    backward spatial filters are computed.
 
     Parameters
     ----------
@@ -505,11 +514,11 @@ class AJDC(BaseEstimator, TransformerMixin):
     n_sources_ : int
         If fit, the number of components of the source space.
     forward_filters_ : ndarray , shape ``(n_sources_, n_channels_)``
-        If fit, the AJDC filters used to transform signal into source, also
-        called deximing or separating matrix.
+        If fit, the spatial filters used to transform signal into source,
+        also called deximing or separating matrix.
     backward_filters_ : ndarray , shape ``(n_channels_, n_sources_)``
-        If fit, the AJDC filters used to transform source into signal, also
-        called mixing matrix.
+        If fit, the spatial filters used to transform source into signal,
+        also called mixing matrix.
 
     Notes
     -----
@@ -522,10 +531,15 @@ class AJDC(BaseEstimator, TransformerMixin):
     References
     ----------
     [1] M. Congedo, C. Gouy-Pailler, C. Jutten, "On the blind source separation
-        of human electroencephalogram by approximate joint diagonalization of
-        second order statistics", Clin Neurophysiol, 2008
-    [2] D.-T. Pham, "Joint approximate diagonalization of positive definite
-        Hermitian matrices", SIAM J Matrix Anal Appl, 2001
+    of human electroencephalogram by approximate joint diagonalization of
+    second order statistics", Clin Neurophysiol, 2008
+
+    [2] M. Congedo, R. John, D. De Ridder, L. Prichep, "Group indepedent
+    component analysis of resting state EEG in large normative samples",
+    Int J Psychophysiol, 2010
+
+    [3] D.-T. Pham, "Joint approximate diagonalization of positive definite
+    Hermitian matrices", SIAM J Matrix Anal Appl, 2001
     """
 
     def __init__(self, window=128, overlap=0.5, fmin=None, fmax=None, fs=None,
@@ -547,13 +561,13 @@ class AJDC(BaseEstimator, TransformerMixin):
         """Fit.
 
         Compute and diagonalize cospectra, to estimate forward and backward
-        filters.
+        spatial filters.
 
         Parameters
         ----------
-        X : ndarray, shape (n_conditions, n_channels, n_samples) | list of n_conditions ndarray, shape (n_channels, n_samples) with same n_channels but different n_samples
-            ndarray of signal, acquired under different experimental conditions
-            (for eg, baseline versus task).
+        X : ndarray, shape (n_subjects, n_conditions, n_channels, n_samples) | list of n_subjects of list of n_conditions ndarray of shape (n_channels, n_samples), with same n_conditions and n_channels but different n_samples
+            ndarray of signal in channel space, acquired for different subjects
+            and under different experimental conditions.
         y : ndarray, shape (n_conditions,)
             labels corresponding to each condition, not used.
 
@@ -562,24 +576,40 @@ class AJDC(BaseEstimator, TransformerMixin):
         self : AJDC instance
             The AJDC instance.
         """
-        # estimation of cospectra
+        # definition of params for Welch's method
         cospcov = est.CospCovariances(
             window=self.window,
             overlap=self.overlap,
             fmin=self.fmin,
             fmax=self.fmax,
             fs=self.fs)
-        cosp = cospcov.transform(X)
-        self.n_channels_ = cosp.shape[1]
-        self.freqs_ = cospcov.freqs_
+        # estimation of cospectra on subjects and conditions
+        cosp = []
+        for s in range(len(X)):
+            cosp_ = cospcov.transform(X[s])
+            if s == 0:
+                n_conditions = cosp_.shape[0]
+                self.n_channels_ = cosp_.shape[1]
+                self.freqs_ = cospcov.freqs_
+            else:
+                if n_conditions != cosp_.shape[0]:
+                    raise ValueError('Unequal number of conditions')
+                if self.n_channels_ != cosp_.shape[1]:
+                    raise ValueError('Unequal number of channels')
+            cosp.append(cosp_)
+        cosp = numpy.transpose(numpy.array(cosp), axes=(0, 1, 4, 2, 3))
+
+        # trace-normalization of cospectra, Eq(3) in [2]
+        cosp = self._normalize_trace(cosp)
+        # average of cospectra across subjects, Eq(7) in [2]
+        cosp = numpy.mean(cosp, axis=0, keepdims=False)
         # concatenation of cospectra along conditions
-        cosp = numpy.concatenate(cosp, axis=2).T
-        # trace-normalization of cospectra
-        self._cosp_channels = self._normalize_trace(cosp)
-        # estimation of non-diagonality weights
+        self._cosp_channels = numpy.concatenate(cosp, axis=0)
+        # estimation of non-diagonality weights, Eq(B.1) in [1]
         self._weights = self._get_nondiag_weight(self._cosp_channels)
 
-        # dimension reduction, estimated on weighted mean of cospectra
+        # dimension reduction, computed on the weighted mean of cospectra
+        # across frequencies (and conditions)
         cosp_av = numpy.average(
             self._cosp_channels,
             axis=0,
@@ -596,26 +626,27 @@ class AJDC(BaseEstimator, TransformerMixin):
         pca_filters = eigvecs[:, :self.n_sources_]
         pca_vals = eigvals[:self.n_sources_]
 
-        # whitening
+        # whitening, Eq.(8) in [2]
         whit_filters = pca_filters @ numpy.diag(1. / numpy.sqrt(pca_vals))
         whit_inv_filters = pca_filters @ numpy.diag(numpy.sqrt(pca_vals))
 
         # apply dimension reduction and whitening on cospectra
         cosp_rw = whit_filters.T @ self._cosp_channels @ whit_filters
 
-        # approximate joint diagonalization, using Pham's algorithm
+        # approximate joint diagonalization, currently by Pham's algorithm [3]
         diag_filters, self._cosp_sources = ajd_pham(
             cosp_rw,
             n_iter_max=100,
             sample_weight=self._weights)
 
-        # computation of forward and backward filters
+        # computation of forward and backward filters, Eq.(9) and (10) in [2]
         self.forward_filters_ = diag_filters @ whit_filters.T
         self.backward_filters_ = whit_inv_filters @ inv(diag_filters)
         return self
 
     def transform(self, X):
-        """Estimate the source space from channel space.
+        """Transform channel space to source space, applying forward spatial
+        filters.
 
         Parameters
         ----------
@@ -636,8 +667,8 @@ class AJDC(BaseEstimator, TransformerMixin):
         return source
 
     def transform_back(self, X, supp=None):
-        """Estimate the channel space from source space, with possibility to
-        suppress some sources.
+        """Transform source space to channel space, applying backward spatial
+        filters, with possibility to suppress some sources.
 
         Parameters
         ----------
