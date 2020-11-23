@@ -211,16 +211,16 @@ def test_AJDC():
     assert_raises(ValueError, ajdc.transform,
         np.random.randn(n_trials, n_channels + 1, 1)) # unequal # of chans
 
-    # Test transform_back
-    Xtb = ajdc.transform_back(Xt)
+    # Test inverse_transform
+    Xtb = ajdc.inverse_transform(Xt)
     assert_array_equal(Xtb.shape, [n_trials, n_channels, n_samples])
-    assert_raises(ValueError, ajdc.transform_back, Xt[0]) # not 3 dims
-    assert_raises(ValueError, ajdc.transform_back,  # unequal # of sources
+    assert_raises(ValueError, ajdc.inverse_transform, Xt[0]) # not 3 dims
+    assert_raises(ValueError, ajdc.inverse_transform,  # unequal # of sources
         np.random.randn(n_trials, ajdc.n_sources_ + 1, 1))
 
-    Xtb = ajdc.transform_back(Xt, supp=[ajdc.n_sources_ - 1])
+    Xtb = ajdc.inverse_transform(Xt, supp=[ajdc.n_sources_ - 1])
     assert_array_equal(Xtb.shape, [n_trials, n_channels, n_samples])
-    assert_raises(ValueError, ajdc.transform_back, Xt, supp=1) # not a list
+    assert_raises(ValueError, ajdc.inverse_transform, Xt, supp=1) # not a list
 
     # Test get_src_expl_var
     v = ajdc.get_src_expl_var(X)

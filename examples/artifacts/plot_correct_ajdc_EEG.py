@@ -36,7 +36,7 @@ def plot_cospectra(cosp, freqs, ylabels=None, title=None):
     """Plot cospectra, ndarray of shape (n_freqs, n, n)"""
     fig = plt.figure(figsize=(12, 7))
     fig.suptitle(title)
-    n_freqs = cosp.shape[0]
+    n_freqs = min(cosp.shape[0], freqs.shape[0])
     for f in range(n_freqs):
         ax = plt.subplot((n_freqs - 1)//8 + 1, 8, f+1)
         plt.imshow(cosp[f], cmap=plt.get_cmap('Reds'))
@@ -158,8 +158,8 @@ plt.show()
 # BSS denoising: blink source is suppressed in source space using activation
 # matrix D, and then applying backward filters A to come back to channel space
 # Denoised signal: Xd = A D S
-signal_denois_raw = ajdc.transform_back(source_raw[np.newaxis, ...],
-                                        supp=[blink_idx])[0]
+signal_denois_raw = ajdc.inverse_transform(source_raw[np.newaxis, ...],
+                                           supp=[blink_idx])[0]
 
 # Plot denoised signal Xd
 signal_denois = RawArray(signal_denois_raw, ch_info, verbose=False)

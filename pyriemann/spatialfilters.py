@@ -568,8 +568,8 @@ class AJDC(BaseEstimator, TransformerMixin):
         X : ndarray, shape (n_subjects, n_conditions, n_channels, n_samples) | list of n_subjects of list of n_conditions ndarray of shape (n_channels, n_samples), with same n_conditions and n_channels but different n_samples
             ndarray of signal in channel space, acquired for different subjects
             and under different experimental conditions.
-        y : ndarray, shape (n_conditions,)
-            labels corresponding to each condition, not used.
+        y : None
+            Currently not used, here for compatibility with sklearn API.
 
         Returns
         -------
@@ -666,9 +666,10 @@ class AJDC(BaseEstimator, TransformerMixin):
         source = self.forward_filters_ @ X
         return source
 
-    def transform_back(self, X, supp=None):
+    def inverse_transform(self, X, supp=None):
         """Transform source space to channel space, applying backward spatial
-        filters, with possibility to suppress some sources.
+        filters, with the possibility to suppress some sources, like in BSS
+        denoising.
 
         Parameters
         ----------
