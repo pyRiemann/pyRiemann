@@ -160,3 +160,25 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     S, freqs = cross_spectrum(X, window, overlap, fmin, fmax, fs)
 
     return S.real, freqs
+
+
+def normalize_trace(matrices):
+    """Trace-normalize sets of square matrices.
+
+    Parameters
+    ----------
+    matrices : ndarray, shape (..., n, n)
+        The sets of square matrices.
+
+    Returns
+    -------
+    matrices : ndarray, shape (..., n, n)
+        The sets of trace-normalized square matrices.
+    """
+    if matrices.shape[-2] != matrices.shape[-1]:
+        raise ValueError('Matrices must be square')
+
+    traces = numpy.trace(matrices, axis1=-2, axis2=-1)
+    while traces.ndim != matrices.ndim:
+        traces = traces[..., numpy.newaxis]
+    return matrices / traces

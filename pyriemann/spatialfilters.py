@@ -5,7 +5,7 @@ from scipy.linalg import eigh, inv
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.extmath import stable_cumsum
 
-from .utils.covariance import _check_est
+from .utils.covariance import _check_est, normalize_trace
 from .utils.mean import mean_covariance
 from .utils.ajd import ajd_pham
 from .utils.mean import _check_mean_method
@@ -600,7 +600,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         cosp = numpy.transpose(numpy.array(cosp), axes=(0, 1, 4, 2, 3))
 
         # trace-normalization of cospectra, Eq(3) in [2]
-        cosp = self._normalize_trace(cosp)
+        cosp = normalize_trace(cosp)
         # average of cospectra across subjects, Eq(7) in [2]
         cosp = numpy.mean(cosp, axis=0, keepdims=False)
         # concatenation of cospectra along conditions
@@ -728,28 +728,6 @@ class AJDC(BaseEstimator, TransformerMixin):
                 axis1=-2,
                 axis2=-1)
         return src_var
-
-    def _normalize_trace(self, matrices):
-        # TODO: this function could be moved into module utils
-        """Trace-normalize sets of square matrices.
-
-        Parameters
-        ----------
-        matrices : ndarray, shape (..., n, n)
-            The sets of square matrices.
-
-        Returns
-        -------
-        matrices : ndarray, shape (..., n, n)
-            The sets of trace-normalized square matrices.
-        """
-        if matrices.shape[-2] != matrices.shape[-1]:
-            raise ValueError('Matrices must be square')
-
-        traces = numpy.trace(matrices, axis1=-2, axis2=-1)
-        while traces.ndim != matrices.ndim:
-            traces = traces[..., numpy.newaxis]
-        return matrices / traces
 
     def _get_nondiag_weight(self, matrices):
         # TODO: this function could be moved into module utils.ajd

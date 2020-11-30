@@ -186,8 +186,6 @@ def test_AJDC():
     assert_raises(ValueError, ajdc.fit, # unequal # of channels
         [np.random.randn(n_conditions, n_channels, n_samples),
          np.random.randn(n_conditions, n_channels+1, n_samples)])
-    assert_raises(ValueError, ajdc._normalize_trace,
-        np.random.randn(n_conditions, n_channels, n_channels + 2)) # not square
     assert_raises(ValueError, ajdc._get_nondiag_weight,
         np.random.randn(n_conditions, n_channels, n_channels + 2)) # not square
 

@@ -4,7 +4,8 @@ from scipy.signal import coherence as coh_sp
 import pytest
 
 from pyriemann.utils.covariance import (covariances, covariances_EP, eegtocov,
-                                        cross_spectrum, cospectrum, coherence)
+                                        cross_spectrum, cospectrum, coherence,
+                                        normalize_trace)
 
 
 def test_covariances():
@@ -77,3 +78,16 @@ def test_covariances_coherence():
         window='hanning',
         detrend=False)
     assert_array_almost_equal(coh[0, 1], coh2[:-1], 2)
+
+
+def test_normalize_trace():
+    """Test normalize_trace"""
+    n_channels = 3
+    x = np.random.randn(1000, n_channels)
+    cov = eegtocov(x)
+    covn = normalize_trace(cov)
+    assert_array_equal(np.ones(covn.shape[0]),
+                       np.trace(covn, axis1=-2, axis2=-1))
+
+    assert_raises(ValueError, normalize_trace,
+        np.random.randn(10, n_channels, n_channels + 2)) # not square
