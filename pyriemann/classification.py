@@ -114,12 +114,6 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
             self.covmeans_ = [mean_covariance(X[y == l], metric=self.metric_mean,
                                     sample_weight=sample_weight[y == l])
                                         for l in self.classes_]
-            """
-            for l in self.classes_:
-                self.covmeans_.append(
-                    mean_covariance(X[y == l], metric=self.metric_mean,
-                                    sample_weight=sample_weight[y == l]))
-            """
         else:
             self.covmeans_ = Parallel(n_jobs=self.n_jobs)(
                 delayed(mean_covariance)(X[y == l], metric=self.metric_mean,
@@ -228,6 +222,11 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
         are used.
 
+    Attributes
+    ----------
+    classes_ : list
+        list of classes.
+
     See Also
     --------
     MDM
@@ -281,6 +280,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : FgMDM instance
             The FgMDM instance.
         """
+        self.classes_ = numpy.unique(y)
         self._mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
         self._fgda = FGDA(metric=self.metric_mean, tsupdate=self.tsupdate)
         cov = self._fgda.fit_transform(X, y)
