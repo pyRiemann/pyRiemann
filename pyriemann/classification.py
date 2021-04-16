@@ -186,7 +186,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         prob : ndarray, shape (n_trials, n_classes)
             the softmax probabilities for each class.
         """
-        return softmax(-self._predict_distances(X))
+        return softmax(-self._predict_distances(X)**2)
 
 
 class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
