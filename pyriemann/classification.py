@@ -512,3 +512,32 @@ class KNearestNeighbor(MDM):
         neighbors_classes = self.classes_[numpy.argsort(dist)]
         out, _ = stats.mode(neighbors_classes[:, 0:self.n_neighbors], axis=1)
         return out.ravel()
+
+class QSVM(BaseEstimator, ClassifierMixin):
+
+    def __init__(self):
+      self.training_input = {}
+     
+    def fit(self, X, y):
+      
+
+        return self
+
+    def predict(self, X):
+           
+        return self._pipe.predict(X)
+
+    def predict_proba(self, X):
+        """get the probability.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        pred : ndarray of ifloat, shape (n_trials, n_classes)
+            the prediction for each trials according to the closest centroid.
+        """
+        return self._pipe.predict_proba(X)
