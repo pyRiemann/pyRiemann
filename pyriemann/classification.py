@@ -13,6 +13,15 @@ from .utils.mean import mean_covariance
 from .utils.distance import distance
 from .tangentspace import FGDA, TangentSpace
 
+from qiskit import BasicAer, IBMQ
+from qiskit.circuit.library import ZZFeatureMap
+from qiskit.aqua import QuantumInstance, aqua_globals
+from qiskit.aqua.algorithms import QSVM
+from qiskit.aqua.utils import split_dataset_to_data_and_labels, map_label_to_class_name
+from qiskit.aqua.algorithms import SklearnSVM
+from qiskit.ml.datasets import ad_hoc_data, sample_ad_hoc_data
+from qiskit.providers.ibmq import least_busy
+
 
 class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
@@ -514,30 +523,72 @@ class KNearestNeighbor(MDM):
         return out.ravel()
 
 class QSVM(BaseEstimator, ClassifierMixin):
+  
+    def __init__(self, target, qAccountToken = None, bSimulator = True, quantum = True):
+        self.training_input = {}
+        self.onlyRealQuantumMachine = onlyRealQuantumMachine
+        self.target = target
+        self.quantum = quantum
+        if quantum:   
+          seed = 10599
+          aqua_globals.random_seed = seed
+          if qAccountToken:
+            IBMQ.save_account(qAccountToken)
+            IBMQ.load_account()
+            provider = IBMQ.get_provider(hub='ibm-q')
+            self.bSimulator = bSimulator
+          else:
+            self.backend = BasicAer.get_backend('qasm_simulator')
+            self.bSimulator = True
+    
+    def splitTargetAndNonTarget(X, y):
+        nbSensor = X[0]
+        nbSamples = X[0][0]
+        feature_dim = nbSensor*nbSamples
 
-    def __init__(self):
-      self.training_input = {}
-     
+        Xta = X[y == self.target]
+        nbXta = len(Xta)
+        Xnt = X[not y == self.target]
+        nbXnt = len(Xnt)
+        balanced = nbXnt == nbXta
+        if(not balanced):
+          Xnt = Xnt[range(nbXta)]
+
+        VectorizedXta = [x for x in Xta.reshape(nbXta, feature_dim)]
+        VectorizedXnt = [x for x in Xnt.reshape(nbXnt, feature_dim)]
+        return (VectorizedXta, VectorizedXnt)
+
     def fit(self, X, y):
-      
+    
+        X_train, X_test = sp
+        VectorizedXta, VectorizedXnt = splitTargetAndNonTarget(X, y)
 
+        self.training_input["Target"] = VectorizedXta
+        self.training_input["NonTarget"] = VectorizedXnt
+        self.feature_map = ZZFeatureMap(feature_dimension=feature_dim, reps=2, entanglement='linear')
+
+        if quantum:
+          if not self.backend:
+            devices = provider.backends(filters=lambda x: x.configuration().n_qubits >= feature_dim
+                                            and x.configuration().simulator == self.bSimulator
+                                            and x.status().operational==True)
+            self.backend = least_busy(devices)
+
+          self.quantum_instance = QuantumInstance(self.backend, shots=1024, seed_simulator=seed, seed_transpiler=seed)
         return self
 
-    def predict(self, X):
+    def score(self, X, y):
+        VectorizedXta, VectorizedXnt = splitTargetAndNonTarget(X, y)
+
+        test_input = {}
+        test_input["Target"] = VectorizedXta
+        test_input["NonTarget"] = VectorizedXnt
+        
+        result = None
+        if quantum:
+          qsvm = QSVM(self.feature_map, self.training_input, test_input)
+          result = qsvm.run(quantum_instance)
+        else:
+          result = SklearnSVM(self.training_input, test_input).run()
            
-        return self._pipe.predict(X)
-
-    def predict_proba(self, X):
-        """get the probability.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
-
-        Returns
-        -------
-        pred : ndarray of ifloat, shape (n_trials, n_classes)
-            the prediction for each trials according to the closest centroid.
-        """
-        return self._pipe.predict_proba(X)
+        return result["testing_accuracy"]
