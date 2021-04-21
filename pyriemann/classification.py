@@ -554,8 +554,12 @@ class QuanticSVM(BaseEstimator, ClassifierMixin):
       if self.verbose:
         print("[QSVM] ", *values)
 
+    def vectorize(self, X):
+      vector = X.reshape(len(X), self.feature_dim)
+      return [self.processVector(x) for x in vector]
+
     def splitTargetAndNonTarget(self, X, y):
-        self.log("Spitting target from non target. Only binary classification is supported.")
+        self.log("[Warning] Spitting target from non target. Only binary classification is supported.")
         nbSensor = len(X[0])
         nbSamples = len(X[0][0])
         self.feature_dim = nbSensor*nbSamples
@@ -570,8 +574,8 @@ class QuanticSVM(BaseEstimator, ClassifierMixin):
           self.log("Set is not balanced. Balancing...")
           Xnt = Xnt[range(nbXta)]
         
-        VectorizedXta = [self.processVector(x) for x in Xta.reshape(nbXta, self.feature_dim)]
-        VectorizedXnt = [self.processVector(x) for x in Xnt.reshape(nbXta, self.feature_dim)]
+        VectorizedXta = self.vectorize(Xta)
+        VectorizedXnt = self.vectorize(Xnt)
         
         self.log("Feature dimension after vector processing = ", len(VectorizedXta[0]))
 
@@ -614,9 +618,24 @@ class QuanticSVM(BaseEstimator, ClassifierMixin):
         return self
 
 
+    def predict(self, X):
+      result = None
+      predict_set = self.vectorize(X)
+      self.log("Prediction: ", X.shape)
+      if self.quantum:
+        qsvm = QSVM(self.feature_map, self.training_input, self.test_input, predict_set)
+        result = qsvm.run(self.quantum_instance)
+      else:
+        result = SklearnSVM(self.training_input, self.test_input, predict_set).run()
+
+      self.log("Prediction finished. Returning predicted labels")
+      return result["predicted_labels"]
+
     def predict_proba(self, X):
-      print(X.shape)
-      return numpy.zeros(X.shape)
+      self.log("[WARNING] SVM prediction probability are not available. Results from predict will be used instead")
+      predicted_labels = self.predict(X)
+      ret = [numpy.array([c == 0, c == 1]) for c in predicted_labels]
+      return numpy.array(ret)
 
     def score(self, X, y):
         self.log("Scoring: ", X.shape)
