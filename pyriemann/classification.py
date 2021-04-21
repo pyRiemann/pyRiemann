@@ -586,13 +586,15 @@ class QuanticSVM(BaseEstimator, ClassifierMixin):
         self.classes_ = numpy.unique(y)
         VectorizedXta, VectorizedXnt = self.splitTargetAndNonTarget(X, y)
 
+        vectorLen = len(VectorizedXta[0])
+
         self.training_input["Target"] = VectorizedXta
         self.training_input["NonTarget"] = VectorizedXnt
-        self.feature_map = ZZFeatureMap(feature_dimension=self.feature_dim, reps=2, entanglement='linear')
+        self.feature_map = ZZFeatureMap(feature_dimension=vectorLen, reps=2, entanglement='linear')
 
         if self.quantum:
           if not self.backend:
-            devices = provider.backends(filters=lambda x: x.configuration().n_qubits >= feature_dim
+            devices = provider.backends(filters=lambda x: x.configuration().n_qubits >= vectorLen
                                             and not x.configuration().simulator 
                                             and x.status().operational==True)
             self.backend = least_busy(devices)
@@ -617,22 +619,25 @@ class QuanticSVM(BaseEstimator, ClassifierMixin):
             setattr(self, parameter, value)
         return self
 
-
-    def predict(self, X):
-      result = None
-      predict_set = self.vectorize(X)
-      self.log("Prediction: ", X.shape)
+    def run(self, predict_set=None):
       if self.quantum:
         qsvm = QSVM(self.feature_map, self.training_input, self.test_input, predict_set)
         result = qsvm.run(self.quantum_instance)
       else:
         result = SklearnSVM(self.training_input, self.test_input, predict_set).run()
+      return result
+
+    def predict(self, X):
+      result = None
+      predict_set = self.vectorize(X)
+      self.log("Prediction: ", X.shape)
+      result = self.run(predict_set)
 
       self.log("Prediction finished. Returning predicted labels")
       return result["predicted_labels"]
 
     def predict_proba(self, X):
-      self.log("[WARNING] SVM prediction probability are not available. Results from predict will be used instead")
+      self.log("[WARNING] SVM prediction probabilities are not available. Results from predict will be used instead.")
       predicted_labels = self.predict(X)
       ret = [numpy.array([c == 0, c == 1]) for c in predicted_labels]
       return numpy.array(ret)
@@ -645,12 +650,7 @@ class QuanticSVM(BaseEstimator, ClassifierMixin):
         self.test_input["Target"] = VectorizedXta
         self.test_input["NonTarget"] = VectorizedXnt
         
-        result = None
-        if self.quantum:
-          qsvm = QSVM(self.feature_map, self.training_input, self.test_input)
-          result = qsvm.run(self.quantum_instance)
-        else:
-          result = SklearnSVM(self.training_input, self.test_input).run()
+        result = self.run()
 
         self.ba = result["testing_accuracy"]
         self.log("Balanced accuracy = ", self.ba)
