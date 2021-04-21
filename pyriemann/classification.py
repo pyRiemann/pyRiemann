@@ -22,6 +22,9 @@ from qiskit.aqua.algorithms import SklearnSVM
 from qiskit.ml.datasets import ad_hoc_data, sample_ad_hoc_data
 from qiskit.providers.ibmq import least_busy
 
+from datetime import datetime
+
+
 
 class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
@@ -522,73 +525,115 @@ class KNearestNeighbor(MDM):
         out, _ = stats.mode(neighbors_classes[:, 0:self.n_neighbors], axis=1)
         return out.ravel()
 
-class QSVM(BaseEstimator, ClassifierMixin):
+class QuanticSVM(BaseEstimator, ClassifierMixin):
   
-    def __init__(self, target, qAccountToken = None, bSimulator = True, quantum = True):
+    def __init__(self, target, qAccountToken = None, quantum = True, processVector=lambda v:v, verbose=True, **parameters):
+        self.verbose = verbose
+        self.log("Initializing Quantum SVM")
+        self.set_params(**parameters)
+        self.processVector = processVector
+        self.qAccountToken = qAccountToken
         self.training_input = {}
-        self.onlyRealQuantumMachine = onlyRealQuantumMachine
         self.target = target
         self.quantum = quantum
-        if quantum:   
-          seed = 10599
-          aqua_globals.random_seed = seed
+        if quantum: 
+          aqua_globals.random_seed = datetime.now().microsecond
+          self.log("seed = ", aqua_globals.random_seed)
           if qAccountToken:
+            self.log("Real quantum computation will be performed")
             IBMQ.save_account(qAccountToken)
             IBMQ.load_account()
             provider = IBMQ.get_provider(hub='ibm-q')
-            self.bSimulator = bSimulator
           else:
+            self.log("Quantum simulation will be performed")
             self.backend = BasicAer.get_backend('qasm_simulator')
-            self.bSimulator = True
+        else:
+          self.log("Classical SVM will be performed")
     
-    def splitTargetAndNonTarget(X, y):
-        nbSensor = X[0]
-        nbSamples = X[0][0]
-        feature_dim = nbSensor*nbSamples
+    def log(self, *values):
+      if self.verbose:
+        print("[QSVM] ", *values)
 
+    def splitTargetAndNonTarget(self, X, y):
+        self.log("Spitting target from non target. Only binary classification is supported.")
+        nbSensor = len(X[0])
+        nbSamples = len(X[0][0])
+        self.feature_dim = nbSensor*nbSamples
+        self.log("Feature dimension = ", self.feature_dim)
         Xta = X[y == self.target]
+        
         nbXta = len(Xta)
-        Xnt = X[not y == self.target]
+        Xnt = X[numpy.logical_not(y == self.target)]
         nbXnt = len(Xnt)
         balanced = nbXnt == nbXta
         if(not balanced):
+          self.log("Set is not balanced. Balancing...")
           Xnt = Xnt[range(nbXta)]
+        
+        VectorizedXta = [self.processVector(x) for x in Xta.reshape(nbXta, self.feature_dim)]
+        VectorizedXnt = [self.processVector(x) for x in Xnt.reshape(nbXta, self.feature_dim)]
+        
+        self.log("Feature dimension after vector processing = ", len(VectorizedXta[0]))
 
-        VectorizedXta = [x for x in Xta.reshape(nbXta, feature_dim)]
-        VectorizedXnt = [x for x in Xnt.reshape(nbXnt, feature_dim)]
         return (VectorizedXta, VectorizedXnt)
 
     def fit(self, X, y):
-    
-        X_train, X_test = sp
-        VectorizedXta, VectorizedXnt = splitTargetAndNonTarget(X, y)
+        self.log("Fitting: ", X.shape)
+        self.classes_ = numpy.unique(y)
+        VectorizedXta, VectorizedXnt = self.splitTargetAndNonTarget(X, y)
 
         self.training_input["Target"] = VectorizedXta
         self.training_input["NonTarget"] = VectorizedXnt
-        self.feature_map = ZZFeatureMap(feature_dimension=feature_dim, reps=2, entanglement='linear')
+        self.feature_map = ZZFeatureMap(feature_dimension=self.feature_dim, reps=2, entanglement='linear')
 
-        if quantum:
+        if self.quantum:
           if not self.backend:
             devices = provider.backends(filters=lambda x: x.configuration().n_qubits >= feature_dim
-                                            and x.configuration().simulator == self.bSimulator
+                                            and not x.configuration().simulator 
                                             and x.status().operational==True)
             self.backend = least_busy(devices)
+            self.log("Quantum backend = ", self.backend)
 
-          self.quantum_instance = QuantumInstance(self.backend, shots=1024, seed_simulator=seed, seed_transpiler=seed)
+          self.quantum_instance = QuantumInstance(self.backend, shots=1024, seed_simulator=aqua_globals.random_seed, seed_transpiler=aqua_globals.random_seed)
         return self
 
-    def score(self, X, y):
-        VectorizedXta, VectorizedXnt = splitTargetAndNonTarget(X, y)
+    def get_params(self, deep=True):
+      # suppose this estimator has parameters "alpha" and "recursive"
+      return {"target":self.target,
+       "qAccountToken":self.qAccountToken,
+        "quantum":self.quantum,
+        "processVector":self.processVector,
+        "verbose":self.verbose,
+         "ba":self.ba,
+         "test_input":self.test_input
+         }
 
-        test_input = {}
-        test_input["Target"] = VectorizedXta
-        test_input["NonTarget"] = VectorizedXnt
+    def set_params(self, **parameters):
+        for parameter, value in parameters.items():
+            setattr(self, parameter, value)
+        return self
+
+
+    def predict_proba(self, X):
+      print(X.shape)
+      return numpy.zeros(X.shape)
+
+    def score(self, X, y):
+        self.log("Scoring: ", X.shape)
+        VectorizedXta, VectorizedXnt = self.splitTargetAndNonTarget(X, y)
+
+        self.test_input = {}
+        self.test_input["Target"] = VectorizedXta
+        self.test_input["NonTarget"] = VectorizedXnt
         
         result = None
-        if quantum:
-          qsvm = QSVM(self.feature_map, self.training_input, test_input)
-          result = qsvm.run(quantum_instance)
+        if self.quantum:
+          qsvm = QSVM(self.feature_map, self.training_input, self.test_input)
+          result = qsvm.run(self.quantum_instance)
         else:
-          result = SklearnSVM(self.training_input, test_input).run()
+          result = SklearnSVM(self.training_input, self.test_input).run()
+
+        self.ba = result["testing_accuracy"]
+        self.log("Balanced accuracy = ", self.ba)
            
         return result["testing_accuracy"]
