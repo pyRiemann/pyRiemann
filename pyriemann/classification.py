@@ -7,6 +7,7 @@ from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import train_test_split
 from joblib import Parallel, delayed
 
 from .utils.mean import mean_covariance
@@ -14,17 +15,17 @@ from .utils.distance import distance
 from .tangentspace import FGDA, TangentSpace
 
 from qiskit import BasicAer, IBMQ
-from qiskit.circuit.library import ZZFeatureMap
+from qiskit.circuit.library import ZZFeatureMap, TwoLocal 
 from qiskit.aqua import QuantumInstance, aqua_globals
-from qiskit.aqua.algorithms import QSVM
+from qiskit.aqua.quantum_instance import logger
+from qiskit.aqua.algorithms import QSVM, SklearnSVM, VQC
 from qiskit.aqua.utils import split_dataset_to_data_and_labels, map_label_to_class_name
-from qiskit.aqua.algorithms import SklearnSVM
 from qiskit.ml.datasets import ad_hoc_data, sample_ad_hoc_data
 from qiskit.providers.ibmq import least_busy
-
+from qiskit.aqua.components.optimizers import SPSA
 from datetime import datetime
-
-
+import logging
+logger.level = logging.INFO
 
 class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
@@ -525,11 +526,12 @@ class KNearestNeighbor(MDM):
         out, _ = stats.mode(neighbors_classes[:, 0:self.n_neighbors], axis=1)
         return out.ravel()
 
-class QuanticSVM(BaseEstimator, ClassifierMixin):
+class QuanticBase(BaseEstimator, ClassifierMixin):
   
   def __init__(self, target, qAccountToken = None, quantum = True, processVector=lambda v:v, verbose=True, **parameters):
     self.verbose = verbose
-    self.log("Initializing Quantum SVM")
+    self.log("Initializing Quantum Classifier")
+    self.test_input = {}
     self.set_params(**parameters)
     self.processVector = processVector
     self.qAccountToken = qAccountToken
@@ -552,7 +554,7 @@ class QuanticSVM(BaseEstimator, ClassifierMixin):
     
   def log(self, *values):
     if self.verbose:
-      print("[QSVM] ", *values)
+      print("[QClass] ", *values)
 
   def vectorize(self, X):
     vector = X.reshape(len(X), self.feature_dim)
@@ -576,22 +578,24 @@ class QuanticSVM(BaseEstimator, ClassifierMixin):
         
     VectorizedXta = self.vectorize(Xta)
     VectorizedXnt = self.vectorize(Xnt)
-        
-    self.log("Feature dimension after vector processing = ", len(VectorizedXta[0]))
+    self.new_feature_dim = len(VectorizedXta[0])
+    self.log("Feature dimension after vector processing = ", self.new_feature_dim)
 
     return (VectorizedXta, VectorizedXnt)
 
+  def additionnal_setup(self):
+    self.log("There is no additional setup.")
+
   def fit(self, X, y):
     self.log("Fitting: ", X.shape)
+    self.prev_fit_params = {"X":X, "y":y}
     self.classes_ = numpy.unique(y)
     VectorizedXta, VectorizedXnt = self.splitTargetAndNonTarget(X, y)
 
-    vectorLen = len(VectorizedXta[0])
-
     self.training_input["Target"] = VectorizedXta
     self.training_input["NonTarget"] = VectorizedXnt
-    self.feature_map = ZZFeatureMap(feature_dimension=vectorLen, reps=2, entanglement='linear')
-
+    self.feature_map = ZZFeatureMap(feature_dimension=self.new_feature_dim, reps=2, entanglement='linear')
+    self.additionnal_setup()
     if self.quantum:
       if not self.backend:
         devices = provider.backends(filters=lambda x: x.configuration().n_qubits >= vectorLen
@@ -599,8 +603,9 @@ class QuanticSVM(BaseEstimator, ClassifierMixin):
                                             and x.status().operational==True)
         self.backend = least_busy(devices)
         self.log("Quantum backend = ", self.backend)
-        
-      self.quantum_instance = QuantumInstance(self.backend, shots=1024, seed_simulator=aqua_globals.random_seed, seed_transpiler=aqua_globals.random_seed)
+      monitor = lambda job_id, job_status, queue_position, job: print(job_id, job_status, queue_position, job)
+      self.quantum_instance = QuantumInstance(self.backend, shots=1024, seed_simulator=aqua_globals.random_seed,
+                                  seed_transpiler=aqua_globals.random_seed, job_callback="toto", wait=1)
     return self
 
   def get_params(self, deep=True):
@@ -619,14 +624,22 @@ class QuanticSVM(BaseEstimator, ClassifierMixin):
     return self
 
   def run(self, predict_set=None):
-    if self.quantum:
-      qsvm = QSVM(self.feature_map, self.training_input, self.test_input, predict_set)
-      result = qsvm.run(self.quantum_instance)
-    else:
-      result = SklearnSVM(self.training_input, self.test_input, predict_set).run()
-    return result
+    raise Exception("Run method was not implemented")
+
+  def self_calibration(self):
+    X = self.prev_fit_params["X"]
+    y = self.prev_fit_params["y"]
+    test_size = 0.33
+    self.log("Test size = ", test_size, " of previous fitting.")
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=test_size)
+    self.fit(X_train, y_train)
+    self.score(X_test, y_test)
 
   def predict(self, X):
+    if(len(self.test_input) == 0):
+      self.log("There is no test inputs. Self-calibrating...")
+      self.self_calibration()
+
     result = None
     predict_set = self.vectorize(X)
     self.log("Prediction: ", X.shape)
@@ -650,3 +663,28 @@ class QuanticSVM(BaseEstimator, ClassifierMixin):
     balanced_accuracy = result["testing_accuracy"]
     self.log("Balanced accuracy = ", balanced_accuracy)    
     return balanced_accuracy
+
+class QuanticSVM(QuanticBase):
+  def run(self, predict_set=None):
+    self.log("SVM classification running...")
+    if self.quantum:
+      qsvm = QSVM(self.feature_map, self.training_input, self.test_input, predict_set)
+      result = qsvm.run(self.quantum_instance)
+    else:
+      result = SklearnSVM(self.training_input, self.test_input, predict_set).run()
+    return result
+
+class QuanticVQC(QuanticBase):
+
+  def __init__(self, target, qAccountToken = None, processVector=lambda v:v, verbose=True, **parameters):
+    QuanticBase.__init__(self, target=target, qAccountToken=qAccountToken, processVector=processVector, verbose=verbose, **parameters)
+
+  def additionnal_setup(self):
+    self.optimizer = SPSA(maxiter=40, c0=4.0, skip_calibration=True)
+    self.var_form = TwoLocal(self.new_feature_dim, ['ry', 'rz'], 'cz', reps=3)  
+
+  def run(self, predict_set=None):
+    self.log("VQC classification running...")
+    vqc = VQC(self.optimizer, self.feature_map, self.var_form, self.training_input, self.test_input, predict_set)
+    result = vqc.run(self.quantum_instance)
+    return result
