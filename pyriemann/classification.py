@@ -302,7 +302,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         """
         cov = self._fgda.transform(X)
         return self._mdm.predict(cov)
-    
+
     def predict_proba(self, X):
         """Predict proba using softmax after FGDA filtering.
 
@@ -318,7 +318,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         """
         cov = self._fgda.transform(X)
         return self._mdm.predict_proba(cov)
-    
+
     def transform(self, X):
         """get the distance to each centroid after FGDA filtering.
 
@@ -381,7 +381,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         if not isinstance(clf, ClassifierMixin):
             raise TypeError('clf must be a ClassifierMixin')
 
-            
+
     def fit(self, X, y):
         """Fit TSclassifier.
 

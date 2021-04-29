@@ -246,5 +246,5 @@ print("MDM accuracy: {:.2f}% +/- {:.2f}".format(np.mean(scores)*100,
 # [1] M. Congedo, A. Barachant, A. Andreev ,"A New generation of Brain-Computer
 # Interface Based on Riemannian Geometry", arXiv: 1310.8115, 2013.
 # [2] E. K. Kalunga, S. Chevallier, Q. Barthélemy, E. Monacelli,
-# "Review of Riemannian distances and divergences, applied to SSVEP-based BCI", 
+# "Review of Riemannian distances and divergences, applied to SSVEP-based BCI",
 # Neuroinformatics, 2020.
