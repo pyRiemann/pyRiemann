@@ -7,6 +7,15 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
+v0.2.X (WIP)
+------------
+
+- Add example on SSVEP classification
+
+- Fix compatibility with scikit-learn v0.24
+
+- Correct probas of MDM
+
 v0.2.6 (March 2020)
 -------------------
 

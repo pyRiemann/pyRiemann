@@ -114,12 +114,6 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
             self.covmeans_ = [mean_covariance(X[y == l], metric=self.metric_mean,
                                     sample_weight=sample_weight[y == l])
                                         for l in self.classes_]
-            """
-            for l in self.classes_:
-                self.covmeans_.append(
-                    mean_covariance(X[y == l], metric=self.metric_mean,
-                                    sample_weight=sample_weight[y == l]))
-            """
         else:
             self.covmeans_ = Parallel(n_jobs=self.n_jobs)(
                 delayed(mean_covariance)(X[y == l], metric=self.metric_mean,
@@ -192,7 +186,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         prob : ndarray, shape (n_trials, n_classes)
             the softmax probabilities for each class.
         """
-        return softmax(-self._predict_distances(X))
+        return softmax(-self._predict_distances(X)**2)
 
 
 class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
@@ -227,6 +221,11 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         used at all, which is useful for debugging. For n_jobs below -1,
         (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
         are used.
+
+    Attributes
+    ----------
+    classes_ : list
+        list of classes.
 
     See Also
     --------
@@ -281,6 +280,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : FgMDM instance
             The FgMDM instance.
         """
+        self.classes_ = numpy.unique(y)
         self._mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
         self._fgda = FGDA(metric=self.metric_mean, tsupdate=self.tsupdate)
         cov = self._fgda.fit_transform(X, y)
@@ -302,7 +302,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         """
         cov = self._fgda.transform(X)
         return self._mdm.predict(cov)
-    
+
     def predict_proba(self, X):
         """Predict proba using softmax after FGDA filtering.
 
@@ -318,7 +318,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         """
         cov = self._fgda.transform(X)
         return self._mdm.predict_proba(cov)
-    
+
     def transform(self, X):
         """get the distance to each centroid after FGDA filtering.
 
@@ -381,7 +381,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         if not isinstance(clf, ClassifierMixin):
             raise TypeError('clf must be a ClassifierMixin')
 
-            
+
     def fit(self, X, y):
         """Fit TSclassifier.
 
@@ -397,6 +397,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         self : TSclassifier. instance
             The TSclassifier. instance.
         """
+        self.classes_ = numpy.unique(y)
         ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
         self._pipe = make_pipeline(ts, self.clf)
         self._pipe.fit(X, y)
