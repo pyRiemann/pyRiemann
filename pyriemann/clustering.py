@@ -148,7 +148,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         self : Kmeans instance
             The Kmean instance.
         """
-        if (self.init is not 'random') | (self.n_init == 1):
+        if (self.init != 'random') | (self.n_init == 1):
             # no need to iterate if init is not random
             labels, inertia, mdm = _fit_single(X, y,
                                                n_clusters=self.n_clusters,
