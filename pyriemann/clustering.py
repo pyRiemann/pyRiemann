@@ -2,7 +2,25 @@
 import numpy
 from sklearn.base import (BaseEstimator, ClassifierMixin, TransformerMixin,
                           ClusterMixin)
-from sklearn.cluster._kmeans import _init_centroids
+
+try:
+    from sklearn.cluster._kmeans import _init_centroids
+except ImportError:
+    # Workaround for scikit-learn v0.24.0rc1+
+    # See issue: https://github.com/alexandrebarachant/pyRiemann/issues/92
+    from sklearn.cluster import KMeans
+
+    def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
+        if random_state is not None:
+            random_state = numpy.random.RandomState(random_state)
+        return KMeans(n_clusters=n_clusters)._init_centroids(
+            X,
+            x_squared_norms,
+            init,
+            random_state,
+        )
+
+
 from joblib import Parallel, delayed
 
 from .classification import MDM
@@ -130,7 +148,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         self : Kmeans instance
             The Kmean instance.
         """
-        if (self.init is not 'random') | (self.n_init == 1):
+        if (self.init != 'random') | (self.n_init == 1):
             # no need to iterate if init is not random
             labels, inertia, mdm = _fit_single(X, y,
                                                n_clusters=self.n_clusters,
@@ -355,10 +373,10 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Returns
         -------
-        z : ndarray, shape (n_epochs, 1)
+        z : ndarray, shape (n_epochs,)
             the normalized log-distance to the centroid.
         """
-        d = numpy.squeeze(numpy.log(self._mdm.transform(X)))
+        d = numpy.squeeze(numpy.log(self._mdm.transform(X)), axis=1)
         z = self._get_z_score(d)
         return z
 
