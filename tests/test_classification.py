@@ -1,6 +1,6 @@
 import numpy as np
 from numpy.testing import assert_array_equal
-from nose.tools import assert_raises
+import pytest
 from pyriemann.classification import (MDM, FgMDM, KNearestNeighbor,
                                       TSclassifier)
 
@@ -22,10 +22,12 @@ def test_MDM_init():
     MDM(metric='riemann')
 
     # Should raise if metric not string or dict
-    assert_raises(TypeError, MDM, metric=42)
+    with pytest.raises(TypeError):
+        MDM(metric=42)
 
     # Should raise if metric is not contain bad keys
-    assert_raises(KeyError, MDM, metric={'universe': 42})
+    with pytest.raises(KeyError):
+        MDM(metric={'universe': 42})
 
     # should works with correct dict
     MDM(metric={'mean': 'riemann', 'distance': 'logeuclid'})
@@ -79,7 +81,9 @@ def test_TSclassifier():
     covset = generate_cov(40, 3)
     labels = np.array([0, 1]).repeat(20)
 
-    assert_raises(TypeError, TSclassifier, clf='666')
+    with pytest.raises(TypeError):
+        TSclassifier(clf='666')
+
     clf = TSclassifier()
     clf.fit(covset, labels)
     assert_array_equal(clf.classes_, np.array([0, 1]))
@@ -92,10 +96,12 @@ def test_FgMDM_init():
     FgMDM(metric='riemann')
 
     # Should raise if metric not string or dict
-    assert_raises(TypeError, FgMDM, metric=42)
+    with pytest.raises(TypeError):
+        FgMDM(metric=42)
 
     # Should raise if metric is not contain bad keys
-    assert_raises(KeyError, FgMDM, metric={'universe': 42})
+    with pytest.raises(KeyError):
+        FgMDM(metric={'universe': 42})
 
     # should works with correct dict
     FgMDM(metric={'mean': 'riemann', 'distance': 'logeuclid'})

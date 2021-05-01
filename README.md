@@ -105,7 +105,7 @@ print(accuracy.mean())
 If you make a modification, run the test suite before submitting a pull request
 
 ```
-nosetests
+pytest
 ```
 
 # Contribution Guidelines

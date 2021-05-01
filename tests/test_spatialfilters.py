@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import assert_array_equal
-from nose.tools import assert_true, assert_raises, assert_false
 from pyriemann.spatialfilters import Xdawn, CSP, SPoC, BilinearFilter
+import pytest
 
 
 def generate_cov(Nt, Ne):
@@ -56,27 +56,40 @@ def test_CSP():
 
     # Test Init
     csp = CSP()
-    assert_true(csp.nfilter == 4)
-    assert_true(csp.metric == 'euclid')
-    assert_true(csp.log)
+    assert csp.nfilter == 4
+    assert csp.metric == 'euclid'
+    assert csp.log
     csp = CSP(3, 'riemann', False)
-    assert_true(csp.nfilter == 3)
-    assert_true(csp.metric == 'riemann')
-    assert_true(not csp.log)
-    assert_raises(TypeError, CSP, 'foo')
-    assert_raises(ValueError, CSP, metric='foo')
-    assert_raises(TypeError, CSP, log='foo')
+    assert csp.nfilter == 3
+    assert csp.metric == 'riemann'
+    assert not csp.log
+
+    with pytest.raises(TypeError):
+        CSP('foo')
+
+    with pytest.raises(ValueError):
+        CSP(metric='foo')
+
+    with pytest.raises(TypeError):
+        CSP(log='foo')
 
     # Test fit
     csp = CSP()
     csp.fit(X, labels % 2)  # two classes
     csp.fit(X, labels)  # 3 classes
-    assert_raises(ValueError, csp.fit, X, labels * 0.)  # 1 class
-    assert_raises(ValueError, csp.fit, X, labels[:1])  # unequal # of samples
-    assert_raises(TypeError, csp.fit, X, 'foo')  # y must be an array
-    assert_raises(TypeError, csp.fit, 'foo', labels)  # X must be an array
-    assert_raises(ValueError, csp.fit, X[:, 0], labels)
-    assert_raises(ValueError, csp.fit, X, X)
+
+    with pytest.raises(ValueError):
+        csp.fit(X, labels * 0.)  # 1 class
+    with pytest.raises(ValueError):
+        csp.fit(X, labels[:1])  # unequal # of samples
+    with pytest.raises(TypeError):
+        csp.fit(X, 'foo')  # y must be an array
+    with pytest.raises(TypeError):
+        csp.fit('foo', labels)  # X must be an array
+    with pytest.raises(ValueError):
+        csp.fit(X[:, 0], labels)
+    with pytest.raises(ValueError):
+        csp.fit(X, X)
 
     assert_array_equal(csp.filters_.shape, [X.shape[1], X.shape[1]])
     assert_array_equal(csp.patterns_.shape, [X.shape[1], X.shape[1]])
@@ -84,8 +97,12 @@ def test_CSP():
     # Test transform
     Xt = csp.transform(X)
     assert_array_equal(Xt.shape, [len(X), X.shape[1]])
-    assert_raises(TypeError, csp.transform, 'foo')
-    assert_raises(ValueError, csp.transform, X[:, 1:, :])  # unequal # of chans
+
+    with pytest.raises(TypeError):
+        csp.transform('foo')
+    with pytest.raises(ValueError):
+        csp.transform(X[:, 1:, :])  # unequal # of chans
+
     csp.log = False
     Xt = csp.transform(X)
 
@@ -111,9 +128,12 @@ def test_BilinearFilter():
     filters = np.eye(3)
     # Test Init
     bf = BilinearFilter(filters)
-    assert_false(bf.log)
-    assert_raises(TypeError, BilinearFilter, 'foo')
-    assert_raises(TypeError, BilinearFilter, np.eye(3), log='foo')
+    assert not bf.log
+    with pytest.raises(TypeError):
+        BilinearFilter('foo')
+
+    with pytest.raises(TypeError):
+        BilinearFilter(np.eye(3), log='foo')
 
     # test fit
     bf = BilinearFilter(filters)
@@ -122,8 +142,12 @@ def test_BilinearFilter():
     # Test transform
     Xt = bf.transform(X)
     assert_array_equal(Xt.shape, [len(X), filters.shape[0], filters.shape[0]])
-    assert_raises(TypeError, bf.transform, 'foo')
-    assert_raises(ValueError, bf.transform, X[:, 1:, :])  # unequal # of chans
+
+    with pytest.raises(TypeError):
+        bf.transform('foo')
+    with pytest.raises(ValueError):
+        bf.transform(X[:, 1:, :])  # unequal # of chans
+
     bf.log = True
     Xt = bf.transform(X)
     assert_array_equal(Xt.shape, [len(X), filters.shape[0]])
