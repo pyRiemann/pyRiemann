@@ -373,10 +373,10 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Returns
         -------
-        z : ndarray, shape (n_epochs, 1)
+        z : ndarray, shape (n_epochs,)
             the normalized log-distance to the centroid.
         """
-        d = numpy.squeeze(numpy.log(self._mdm.transform(X)))
+        d = numpy.squeeze(numpy.log(self._mdm.transform(X)), axis=1)
         z = self._get_z_score(d)
         return z
 
