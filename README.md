@@ -1,10 +1,12 @@
 # pyRiemann
 
-[![Code Climate](https://codeclimate.com/github/alexandrebarachant/pyRiemann/badges/gpa.svg)](https://codeclimate.com/github/alexandrebarachant/pyRiemann)
-[![Build Status](https://travis-ci.org/alexandrebarachant/pyRiemann.svg?branch=master)](https://travis-ci.org/alexandrebarachant/pyRiemann)
-[![codecov](https://codecov.io/gh/alexandrebarachant/pyRiemann/branch/master/graph/badge.svg)](https://codecov.io/gh/alexandrebarachant/pyRiemann)
+[![PyPI version](https://badge.fury.io/py/pyriemann.svg)](https://badge.fury.io/py/pyriemann)
+[![Code Climate](https://codeclimate.com/github/pyRiemann/pyRiemann/badges/gpa.svg)](https://codeclimate.com/github/alexandrebarachant/pyRiemann)
+[![Build Status](https://github.com/pyRiemann/pyRiemann/workflows/testing/badge.svg?branch=master&event=push)](https://github.com/pyRiemann/pyRiemann/actions)
+[![codecov](https://codecov.io/gh/pyRiemann/pyRiemann/branch/master/graph/badge.svg)](https://codecov.io/gh/pyRiemann/pyRiemann)
 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.18982.svg)](http://dx.doi.org/10.5281/zenodo.18982)
 [![Documentation Status](https://readthedocs.org/projects/pyriemann/badge/?version=latest)](http://pyriemann.readthedocs.io/en/latest/?badge=latest)
+[![Downloads](https://pepy.tech/badge/pot)](https://pepy.tech/project/pyriemann)
 
 pyriemann is a python package for covariance matrices manipulation and classification through riemannian geometry.
 
