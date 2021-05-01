@@ -85,9 +85,11 @@ def test_Potato_init():
 
     # transform
     pt.transform(covset)
+    pt.transform(covset[0][np.newaxis, ...]) # transform a single trial
 
     # predict
     pt.predict(covset)
+    pt.predict(covset[0][np.newaxis, ...]) # predict a single trial
 
     # lower threshold
     pt = Potato(threshold=1)
