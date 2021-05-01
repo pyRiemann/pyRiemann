@@ -1,7 +1,7 @@
 from numpy.testing import assert_array_almost_equal, assert_array_equal
-from nose.tools import assert_equal, assert_raises
 import numpy as np
 from scipy.signal import coherence as coh_sp
+import pytest
 
 from pyriemann.utils.covariance import (covariances, covariances_EP, eegtocov,
                                         cospectrum, coherence)
@@ -17,7 +17,9 @@ def test_covariances():
     cov = covariances(x, estimator='corr')
     cov = covariances(x, estimator='mcd')
     cov = covariances(x, estimator=np.cov)
-    assert_raises(ValueError, covariances, x, estimator='truc')
+    
+    with pytest.raises(ValueError):
+        covariances(x, estimator='truc')
 
 
 def test_covariances_EP():
@@ -36,7 +38,7 @@ def test_covariances_eegtocov():
     """Test eegtocov"""
     x = np.random.randn(1000, 3)
     cov = eegtocov(x)
-    assert_equal(cov.shape[1], 3)
+    assert cov.shape[1] == 3
 
 
 def test_covariances_cospectrum():

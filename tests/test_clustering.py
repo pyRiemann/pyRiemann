@@ -1,6 +1,6 @@
 import numpy as np
-from nose.tools import assert_raises
 from numpy.testing import assert_array_equal
+import pytest
 from pyriemann.clustering import Kmeans, KmeansPerClassTransform, Potato
 
 
@@ -72,9 +72,15 @@ def test_Potato_init():
     pt.fit(covset)
 
     # fit with labels
-    assert_raises(ValueError, pt.fit, covset, y=[1])
-    assert_raises(ValueError, pt.fit, covset, y=[0] * 20)
-    assert_raises(ValueError, pt.fit, covset, y=[0, 2, 3] + [1] * 17)
+    with pytest.raises(ValueError):
+        pt.fit(covset, y=[1])
+
+    with pytest.raises(ValueError):
+        pt.fit(covset, y=[0] * 20)
+
+    with pytest.raises(ValueError):
+        pt.fit(covset, y=[0, 2, 3] + [1] * 17)
+
     pt.fit(covset, labels)
 
     # transform
@@ -96,4 +102,5 @@ def test_Potato_init():
     pt.fit(covset, y=[2]*20)
 
     # different positive and neg label
-    assert_raises(ValueError, Potato, pos_label=0)
+    with pytest.raises(ValueError):
+        Potato(pos_label=0)

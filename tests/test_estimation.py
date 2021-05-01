@@ -2,7 +2,7 @@ import numpy as np
 from pyriemann.estimation import (Covariances, ERPCovariances,
                                   XdawnCovariances, CospCovariances,
                                   HankelCovariances, Coherences, Shrinkage)
-from nose.tools import assert_raises, assert_equal
+import pytest
 
 
 def test_covariances():
@@ -11,7 +11,7 @@ def test_covariances():
     cov = Covariances()
     cov.fit(x)
     cov.fit_transform(x)
-    assert_equal(cov.get_params(), dict(estimator='scm'))
+    assert cov.get_params() == dict(estimator='scm')
 
 
 def test_Hankelcovariances():
@@ -20,7 +20,7 @@ def test_Hankelcovariances():
     cov = HankelCovariances()
     cov.fit(x)
     cov.fit_transform(x)
-    assert_equal(cov.get_params(), dict(estimator='scm', delays=4))
+    assert cov.get_params() == dict(estimator='scm', delays=4)
 
     cov = HankelCovariances(delays=[1, 2])
     cov.fit(x)
@@ -36,10 +36,10 @@ def test_ERPcovariances():
     cov = ERPCovariances(classes=[0])
     cov.fit_transform(x, labels)
     # assert raise svd
-    assert_raises(TypeError, ERPCovariances, svd='42')
+    with pytest.raises(TypeError):
+        ERPCovariances(svd='42')
     cov = ERPCovariances(svd=2)
-    assert_equal(cov.get_params(), dict(classes=None, estimator='scm',
-                                        svd=2))
+    assert cov.get_params() == dict(classes=None, estimator='scm', svd=2)
     cov.fit_transform(x, labels)
 
 
@@ -49,10 +49,10 @@ def test_Xdawncovariances():
     labels = np.array([0, 1]).repeat(5)
     cov = XdawnCovariances()
     cov.fit_transform(x, labels)
-    assert_equal(cov.get_params(), dict(nfilter=4, applyfilters=True,
-                                        classes=None, estimator='scm',
-                                        xdawn_estimator='scm',
-                                        baseline_cov=None))
+    assert cov.get_params() == dict(nfilter=4, applyfilters=True,
+                                    classes=None, estimator='scm',
+                                    xdawn_estimator='scm',
+                                    baseline_cov=None)
 
 
 def test_Cospcovariances():
@@ -61,8 +61,8 @@ def test_Cospcovariances():
     cov = CospCovariances()
     cov.fit(x)
     cov.fit_transform(x)
-    assert_equal(cov.get_params(), dict(window=128, overlap=0.75, fmin=None,
-                                        fmax=None, fs=None))
+    assert cov.get_params() == dict(window=128, overlap=0.75, fmin=None,
+                                    fmax=None, fs=None)
 
 
 def test_Coherences():
@@ -71,8 +71,8 @@ def test_Coherences():
     cov = Coherences()
     cov.fit(x)
     cov.fit_transform(x)
-    assert_equal(cov.get_params(), dict(window=128, overlap=0.75, fmin=None,
-                                        fmax=None, fs=None))
+    assert cov.get_params() == dict(window=128, overlap=0.75, fmin=None,
+                                    fmax=None, fs=None)
 
 
 def test_shrinkage():
@@ -83,4 +83,4 @@ def test_shrinkage():
     sh = Shrinkage()
     sh.fit(covs)
     sh.transform(covs)
-    assert_equal(sh.get_params(), dict(shrinkage=0.1))
+    assert sh.get_params() == dict(shrinkage=0.1)

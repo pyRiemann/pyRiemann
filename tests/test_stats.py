@@ -1,6 +1,6 @@
 import numpy as np
 from pyriemann.stats import PermutationDistance, PermutationModel
-from nose.tools import assert_raises
+import pytest
 from pyriemann.spatialfilters import CSP
 
 def generate_cov(Nt, Ne):
@@ -20,7 +20,10 @@ def test_permutation_distance():
     covset = generate_cov(10, 5)
     labels = np.array([0, 1]).repeat(5)
     groups = np.array([0] * 5 + [1] * 5)
-    assert_raises(ValueError, PermutationDistance, mode='badmode')
+    
+    with pytest.raises(ValueError):
+        PermutationDistance(mode='badmode')
+
     # pairwise
     p = PermutationDistance(100, mode='pairwise')
     p.test(covset, labels)
