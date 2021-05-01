@@ -1,7 +1,6 @@
 # pyRiemann
 
 [![PyPI version](https://badge.fury.io/py/pyriemann.svg)](https://badge.fury.io/py/pyriemann)
-[![Code Climate](https://codeclimate.com/github/pyRiemann/pyRiemann/badges/gpa.svg)](https://codeclimate.com/github/alexandrebarachant/pyRiemann)
 [![Build Status](https://github.com/pyRiemann/pyRiemann/workflows/testing/badge.svg?branch=master&event=push)](https://github.com/pyRiemann/pyRiemann/actions)
 [![codecov](https://codecov.io/gh/pyRiemann/pyRiemann/branch/master/graph/badge.svg)](https://codecov.io/gh/pyRiemann/pyRiemann)
 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.18982.svg)](http://dx.doi.org/10.5281/zenodo.18982)
