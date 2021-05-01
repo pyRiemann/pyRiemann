@@ -285,6 +285,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self._fgda = FGDA(metric=self.metric_mean, tsupdate=self.tsupdate)
         cov = self._fgda.fit_transform(X, y)
         self._mdm.fit(cov, y)
+        self.classes_ = self._mdm.classes_
         return self
 
     def predict(self, X):
