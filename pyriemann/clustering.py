@@ -1,5 +1,6 @@
 """Clustering functions."""
 import numpy
+from scipy.stats import norm
 from sklearn.base import (BaseEstimator, ClassifierMixin, TransformerMixin,
                           ClusterMixin)
 
@@ -270,22 +271,22 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
     """Artefact detection with the Riemannian Potato.
 
     The Riemannian Potato [1] is a clustering method used to detect artifact in
-    EEG signals. The algorithm iteratively estimate the centroid of clean
-    signal by rejecting every trial that have a distance greater than several
-    standard deviation from it.
+    EEG signals. The algorithm iteratively estimates the centroid of clean
+    signal by rejecting every trial that is too far from it.
 
     Parameters
     ----------
     metric : string (default 'riemann')
         The type of metric used for centroid and distance estimation.
-    threshold : int (default 3)
-        The number of standard deviation to reject artifacts.
+    threshold : float (default 3)
+        Threshold on z-score of distance to reject artifacts. It is the number
+        of standard deviations from the mean of distances to the centroid.
     n_iter_max : int (default 100)
         The maximum number of iteration to reach convergence.
-    pos_label: int (default 1)
-        The positive label corresponding to clean data
-    neg_label: int (default 0)
-        The negative label corresponding to artifact data
+    pos_label : int (default 1)
+        The positive label corresponding to clean data.
+    neg_label : int (default 0)
+        The negative label corresponding to artifact data.
 
     Notes
     -----
@@ -334,7 +335,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         if y is not None:
             if len(y) != len(X):
-                raise ValueError('y must be the same lenght of X')
+                raise ValueError('y must be the same length of X')
 
             classes = numpy.int32(numpy.unique(y))
 
@@ -373,7 +374,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Returns
         -------
-        z : ndarray, shape (n_epochs,)
+        z : ndarray, shape (n_trials,)
             the normalized log-distance to the centroid.
         """
         d = numpy.squeeze(numpy.log(self._mdm.transform(X)), axis=1)
@@ -390,7 +391,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Returns
         -------
-        pred : ndarray of bool, shape (n_epochs, 1)
+        pred : ndarray of bool, shape (n_trials,)
             the artefact detection. True if the trial is clean, and False if
             the trial contain an artefact.
         """
@@ -400,7 +401,32 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         out[pred] = self.pos_label
         return out
 
+    def predict_proba(self, X):
+        """probability of being clean / belonging to the potato.
+        It is the probability to reject the null hypothesis "clean data",
+        computing the right-tailed probability from z-score.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        proba : ndarray, shape (n_trials)
+            data is considered as normal/clean for high value of proba.
+            data is considered as abnormal/artifacted for low value of proba.
+        """
+        z = self.transform(X)
+        proba = self._get_proba(z)
+        return proba
+
     def _get_z_score(self, d):
-        """get z score from distance."""
+        """get z-score from distance."""
         z = (d - self._mean) / self._std
         return z
+
+    def _get_proba(self, z):
+        """get right-tailed proba from z-score."""
+        proba = 1 - norm.cdf(z)
+        return proba

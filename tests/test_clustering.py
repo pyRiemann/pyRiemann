@@ -91,6 +91,10 @@ def test_Potato_init():
     pt.predict(covset)
     pt.predict(covset[0][np.newaxis, ...]) # predict a single trial
 
+    # predict_proba
+    pt.predict_proba(covset)
+    pt.predict_proba(covset[0][np.newaxis, ...])
+
     # lower threshold
     pt = Potato(threshold=1)
     pt.fit(covset)
