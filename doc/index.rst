@@ -63,7 +63,8 @@ pyRiemann aims at being a generic package for multivariate signal classification
 For a brief introduction to the ideas behind the package, you can read the
 :ref:`introductory notes <introduction>`. More practical information is on the
 :ref:`installation page <installing>`. You may also want to browse the
-`example gallery <auto_examples/index.html>`_ to get a sense for what you can do with pyRiemann and then check out the `tutorial <auto_tutorials/index.html>`_ and :ref:`API reference <api_ref>` to find out how.
+`example gallery <auto_examples/index.html>`_ to get a sense for what you can do with pyRiemann
+and :ref:`API reference <api_ref>` to find out how.
 
 To see the code or report a bug, please visit the `github repository
 <https://github.com/alexandrebarachant/pyRiemann>`_.
@@ -85,7 +86,6 @@ To see the code or report a bug, please visit the `github repository
    Release notes <whatsnew>
    Installing <installing>
    Example gallery <auto_examples/index>
-   Tutorial <auto_tutorials/index>
    API reference <api>
 
 .. raw:: html

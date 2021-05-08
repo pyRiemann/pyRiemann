@@ -71,7 +71,7 @@ evoked = epochs.average()
 n_components = 3  # pick some components
 
 # Define a monte-carlo cross-validation generator (reduce variance):
-cv = KFold(n_splits=10, random_state=42)
+cv = KFold(n_splits=10, shuffle=True, random_state=42)
 pr = np.zeros(len(labels))
 epochs_data = epochs.get_data()
 
