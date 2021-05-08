@@ -158,8 +158,7 @@ html_theme_options = {
     False,
     'bootstrap_version':
     "3",
-    'navbar_links': [("API", "api"), ("Gallery", "auto_examples/index"),
-                     ("Tutorials", "auto_tutorials/index")],
+    'navbar_links': [("API", "api"), ("Gallery", "auto_examples/index")],
 }
 
 # Add any paths that contain custom themes here, relative to this directory.

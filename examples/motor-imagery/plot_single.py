@@ -68,7 +68,7 @@ epochs = Epochs(
 labels = epochs.events[:, -1] - 2
 
 # cross validation
-cv = KFold(n_splits=10, random_state=42)
+cv = KFold(n_splits=10, shuffle=True, random_state=42)
 # get epochs
 epochs_data_train = 1e6 * epochs.get_data()
 
