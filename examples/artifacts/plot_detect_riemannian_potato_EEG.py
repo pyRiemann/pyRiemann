@@ -23,8 +23,6 @@ from pyriemann.clustering import Potato
 from matplotlib import pyplot as plt
 from matplotlib.colors import to_rgb
 from matplotlib.animation import FuncAnimation
-import warnings
-warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 
 ###############################################################################
@@ -33,7 +31,9 @@ warnings.filterwarnings("ignore", category=RuntimeWarning)
 @partial(np.vectorize, excluded=['potato'])
 def get_zscores(cov_00, cov_01, cov_11, potato):
     cov = np.array([[cov_00, cov_01], [cov_01, cov_11]])
-    return potato.transform(cov[np.newaxis, ...])
+    with np.testing.suppress_warnings() as sup:
+        sup.filter(RuntimeWarning)
+        return potato.transform(cov[np.newaxis, ...])
 
 
 def plot_potato_2D(ax, cax, X, Y, p_zscores, p_center, covs, p_colors, clabel):
