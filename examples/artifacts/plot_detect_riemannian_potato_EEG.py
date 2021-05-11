@@ -3,9 +3,9 @@
 Artifact Detection with Riemannian Potato
 ===============================================================================
 
-Example of Riemannian Potato [1] applied on EEG time-series to detect artifacts
-in online processing. It is computed only for two channels to display intuitive
-visualizations.
+Example of Riemannian Potato [1]_ applied on EEG time-series to detect
+artifacts in online processing. It is computed only for two channels to display
+intuitive visualizations.
 """
 # Authors: Quentin Barthélemy & David Ojeda
 #
@@ -14,15 +14,18 @@ visualizations.
 from functools import partial
 
 import os
+
 import numpy as np
-from mne.datasets import sample                    # tested with mne 0.21
-from mne.io import read_raw_fif
-from mne import Epochs, make_fixed_length_events
-from pyriemann.estimation import Covariances
-from pyriemann.clustering import Potato
 from matplotlib import pyplot as plt
 from matplotlib.colors import to_rgb
 from matplotlib.animation import FuncAnimation
+
+from mne.datasets import sample
+from mne.io import read_raw_fif
+from mne import Epochs, make_fixed_length_events
+
+from pyriemann.estimation import Covariances
+from pyriemann.clustering import Potato
 
 
 ###############################################################################
@@ -83,15 +86,15 @@ sfreq = int(raw.info['sfreq'])
 raw.pick_types(meg=False, eeg=True).apply_proj()
 
 # Select two EEG channels for the example, preferably without artifact at the
-# beginning to have a reliable calibration
+# beginning, to have a reliable calibration
 ch_names = ['EEG 010', 'EEG 015']
 
-# Apply band-pass filter between 1 and 35 Hz
+# Apply IIR band-pass filter, between 1 and 35 Hz, to mimic online filtering
 raw.filter(1., 35., method='iir', picks=ch_names)
 
 # Epoch time-series with a sliding window
 duration = 2.5    # duration of epochs
-interval = 0.2    # interval between epochs
+interval = 0.2    # interval / overlap between successive epochs
 epochs = Epochs(raw, make_fixed_length_events(raw, id=1, duration=interval),
                 tmin=0., tmax=duration, baseline=None, verbose=False)
 epochs_data = 5e5 * epochs.get_data(picks=ch_names)
@@ -103,6 +106,11 @@ covs = Covariances(estimator='lwf').transform(epochs_data)
 ###############################################################################
 # Calibration of Potato
 # ---------------------
+#
+# 2D projection of the z-score map of the Riemannian potato, for 2x2 covariance
+# matrices (in blue if clean, in red if artifacted) and their reference matrix
+# (in black). The colormap defines the z-score and a chosen isocontour defines
+# the potato. It reproduces Fig 1 of reference [2]_.
 
 z_th = 2.5       # z-score threshold
 t = 40           # nb of matrices to train the potato
@@ -110,26 +118,23 @@ t = 40           # nb of matrices to train the potato
 # Calibrate potato by unsupervised training on first matrices: compute a
 # reference matrix, mean and standard deviation of distances to this reference.
 train_set = range(t)
-rp = Potato(metric='riemann', threshold=z_th).fit(covs[train_set])
-rp_center = rp._mdm.covmeans_[0]
-ep = Potato(metric='euclid', threshold=z_th).fit(covs[train_set])
-ep_center = ep._mdm.covmeans_[0]
+rpotato = Potato(metric='riemann', threshold=z_th).fit(covs[train_set])
+rp_center = rpotato._mdm.covmeans_[0]
+epotato = Potato(metric='euclid', threshold=z_th).fit(covs[train_set])
+ep_center = epotato._mdm.covmeans_[0]
 
-rp_labels = rp.predict(covs[train_set])
+rp_labels = rpotato.predict(covs[train_set])
 rp_colors = ['b' if l==1 else 'r' for l in rp_labels.tolist()]
-ep_labels = ep.predict(covs[train_set])
+ep_labels = epotato.predict(covs[train_set])
 ep_colors = ['b' if l==1 else 'r' for l in ep_labels.tolist()]
-
-# 2D projection of the z-score map of the Riemannian potato, for 2x2 covariance
-# matrices (in blue if clean, in red if artifacted) and their reference matrix
-# (in black). The colormap defines the z-score and a chosen isocontour defines
-# the potato. It reproduces Fig 1 of reference [2].
 
 # Zscores in the horizontal 2D plane going through the reference
 X, Y = np.meshgrid(np.linspace(1, 31, 100), np.linspace(1, 31, 100))
-rp_zscores = get_zscores(X, np.full_like(X, rp_center[0, 1]), Y, potato=rp)
+rp_zscores = get_zscores(X, np.full_like(X, rp_center[0, 1]), Y,
+                         potato=rpotato)
 rp_mzscores = np.ma.masked_where(~np.isfinite(rp_zscores), rp_zscores)
-ep_zscores = get_zscores(X, np.full_like(X, ep_center[0, 1]), Y, potato=ep)
+ep_zscores = get_zscores(X, np.full_like(X, ep_center[0, 1]), Y,
+                         potato=epotato)
 
 # Plot calibration
 xlabel = 'Cov({},{})'.format(ch_names[0], ch_names[0])
@@ -151,7 +156,7 @@ plt.show()
 ###############################################################################
 # Online Artifact Detection with Potato
 # -------------------------------------
-
+#
 # Detect artifacts/outliers on test set, with an animation to imitate an online
 # acquisition, processing and artifact detection of EEG time-series.
 # The potato is static: it is not updated when EEG is not artifacted, damaging
@@ -197,8 +202,8 @@ def online_update(self):
     global t, time, sig, covs_visu
 
     # Online artifact detection
-    rp_label = rp.predict(covs[t][np.newaxis, ...])
-    ep_label = ep.predict(covs[t][np.newaxis, ...])
+    rp_label = rpotato.predict(covs[t][np.newaxis, ...])
+    ep_label = epotato.predict(covs[t][np.newaxis, ...])
 
     # Update data
     time_start = t * interval + test_time_end
@@ -230,7 +235,7 @@ def online_update(self):
     p_ep.set_color(ep_colors_)
     return pl_sig0, pl_sig1, p_rp, p_ep
 
-# For a correct display, change the parameter interval_display
+# For a correct display, change the parameter 'interval_display'
 interval_display = 1.0
 potato = FuncAnimation(fig, online_update, frames=test_covs_max,
                        interval=interval_display, blit=False, repeat=False)
@@ -240,9 +245,9 @@ plt.show()
 ###############################################################################
 # References
 # ----------
-# [1] A. Barachant, A. Andreev, M. Congedo, "The Riemannian Potato: an
-# automatic and adaptive artifact detection method for online experiments using
-# Riemannian geometry", Proc. TOBI Workshop IV, 2013.
+# .. [1] A. Barachant, A. Andreev, M. Congedo, "The Riemannian Potato: an
+#    automatic and adaptive artifact detection method for online experiments
+#    using Riemannian geometry", Proc. TOBI Workshop IV, 2013.
 #
-# [2] Q. Barthélemy, L. Mayaud, D. Ojeda, M. Congedo, "The Riemannian potato
-# field: a tool for online signal quality index of EEG", IEEE TNSRE, 2019.
+# .. [2] Q. Barthélemy, L. Mayaud, D. Ojeda, M. Congedo, "The Riemannian potato
+#    field: a tool for online signal quality index of EEG", IEEE TNSRE, 2019.

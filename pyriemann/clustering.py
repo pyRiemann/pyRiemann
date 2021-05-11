@@ -402,7 +402,8 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         return out
 
     def predict_proba(self, X):
-        """probability of being clean / belonging to the potato.
+        """Probability of belonging to the potato / being clean.
+
         It is the probability to reject the null hypothesis "clean data",
         computing the right-tailed probability from z-score.
 
@@ -413,7 +414,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Returns
         -------
-        proba : ndarray, shape (n_trials)
+        proba : ndarray, shape (n_trials,)
             data is considered as normal/clean for high value of proba.
             data is considered as abnormal/artifacted for low value of proba.
         """
