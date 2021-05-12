@@ -22,7 +22,7 @@ from matplotlib.animation import FuncAnimation
 
 from mne.datasets import sample
 from mne.io import read_raw_fif
-from mne import Epochs, make_fixed_length_events
+from mne import make_fixed_length_epochs
 
 from pyriemann.estimation import Covariances
 from pyriemann.clustering import Potato
@@ -94,9 +94,9 @@ raw.filter(1., 35., method='iir', picks=ch_names)
 
 # Epoch time-series with a sliding window
 duration = 2.5    # duration of epochs
-interval = 0.2    # interval / overlap between successive epochs
-epochs = Epochs(raw, make_fixed_length_events(raw, id=1, duration=interval),
-                tmin=0., tmax=duration, baseline=None, verbose=False)
+interval = 0.2    # interval between successive epochs
+epochs = make_fixed_length_epochs(raw, duration=duration,
+                                  overlap=duration - interval, verbose=False)
 epochs_data = 5e5 * epochs.get_data(picks=ch_names)
 
 # Estimate spatial covariance matrices
