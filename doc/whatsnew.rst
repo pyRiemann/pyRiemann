@@ -16,6 +16,8 @@ v0.2.X (WIP)
 
 - Correct probas of MDM
 
+- Add predict_proba for Potato, and an example on artifact detection
+
 v0.2.6 (March 2020)
 -------------------
 
