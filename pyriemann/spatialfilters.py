@@ -154,11 +154,11 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
     if log parameter is set to true, will return the log of the diagonal :
 
     .. math::
-        \mathbf{cf}_i = \log \left[ \diag (\mathbf{Cf}_i) \\right]
+        \mathbf{cf}_i = \log [ \mathrm{diag} (\mathbf{Cf}_i) ]
 
     Parameters
     ----------
-    filters: ndarray of shape (Nfilters x Nchannels)
+    filters: ndarray of shape (n_filters x n_channels)
         the filters for bilinear transform
     log : bool (default False)
         If true, return the log variance, otherwise return the spatially

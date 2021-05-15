@@ -24,7 +24,7 @@ v0.2.6 (March 2020)
 - Updated for better Scikit-Learn v0.22 support
 
 v0.2.5 (January 2018)
--------------------
+---------------------
 
 - Added BilinearFilter
 
