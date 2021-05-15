@@ -42,15 +42,17 @@ import sphinx_bootstrap_theme
 
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.coverage',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
+    # 'sphinx.ext.linkcode',
+    # 'sphinx.ext.mathjax',
+    'sphinx.ext.imgmath',
     'sphinx.ext.todo',
     'numpydoc',
-    'sphinx.ext.coverage',
-    'sphinx.ext.mathjax',
-    'sphinx.ext.ifconfig',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.autosummary',
+    # 'sphinx.ext.ifconfig',
+    # 'sphinx.ext.viewcode',
     'sphinx_gallery.gen_gallery',
 ]
 plot_include_source = True
