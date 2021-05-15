@@ -39,7 +39,7 @@ def logm(Ci):
     where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
     and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{Ci}`
 
-    :param Ci: the coavriance matrix
+    :param Ci: the covariance matrix
     :returns: the matrix logarithm
 
     """

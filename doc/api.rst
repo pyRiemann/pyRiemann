@@ -5,7 +5,7 @@ API reference
 =============
 
 Covariance Estimation
-------------------
+---------------------
 .. _estimation_api:
 .. currentmodule:: pyriemann.estimation
 
@@ -22,8 +22,8 @@ Covariance Estimation
     Shrinkage
 
 Embedding
-------------------
-.. _embedding_api
+---------
+.. _embedding_api:
 .. currentmodule:: pyriemann.embedding
 
 .. autosummary::
@@ -33,7 +33,7 @@ Embedding
     Embedding
 
 Classification
-------------------
+--------------
 .. _classification_api:
 .. currentmodule:: pyriemann.classification
 
@@ -193,7 +193,7 @@ Base
     powm
 
 Aproximate Joint Diagonalization
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. _ajd_api:
 .. currentmodule:: pyriemann.utils.ajd
 
