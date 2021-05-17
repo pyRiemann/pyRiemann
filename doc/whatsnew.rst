@@ -7,8 +7,8 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.2.X (WIP)
-------------
+v0.2.7.dev
+----------
 
 - Add example on SSVEP classification
 
@@ -45,7 +45,7 @@ v0.2.5 (January 2018)
 - Added Embedding class.
 
 v0.2.4 (June 2016)
--------------------
+------------------
 
 - Improved documentation
 

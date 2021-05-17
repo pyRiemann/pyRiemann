@@ -29,7 +29,7 @@ pip install pyriemann
 or using pip+git for the latest version of the code :
 
 ```
-pip install git+https://github.com/alexandrebarachant/pyRiemann
+pip install git+https://github.com/pyRiemann/pyRiemann
 ```
 
 Anaconda is not currently supported, if you want to use anaconda, you need to create a virtual environment in anaconda, activate it and use the above command to install it.
@@ -128,7 +128,7 @@ The package aims at adopting the [Scikit-Learn](http://scikit-learn.org/stable/d
 
 # changelog
 
-### v0.2.X
+### v0.2.7.dev
 - Add example on SSVEP classification
 - Fix compatibility with scikit-learn v0.24
 - Correct probas of MDM
