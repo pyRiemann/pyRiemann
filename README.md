@@ -7,7 +7,7 @@
 [![Documentation Status](https://readthedocs.org/projects/pyriemann/badge/?version=latest)](http://pyriemann.readthedocs.io/en/latest/?badge=latest)
 [![Downloads](https://pepy.tech/badge/pot)](https://pepy.tech/project/pyriemann)
 
-pyriemann is a python package for covariance matrices manipulation and classification through riemannian geometry.
+pyRiemann is a python package for covariance matrices manipulation and classification through Riemannian geometry.
 
 The primary target is classification of multivariate biosignals, like EEG, MEG or EMG.
 

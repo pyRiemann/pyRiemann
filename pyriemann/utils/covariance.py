@@ -146,3 +146,38 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             number_windows * normval)
 
     return numpy.abs(S)**2
+
+
+def normalize(X, norm):
+    """Normalize a set of matrices, using trace or determinant.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        The set of matrices, at least 2D ndarray. Matrices must be square for
+        trace-normalization, and invertible for determinant-normalization.
+
+    norm : {"trace", "determinant"}
+        The type of normalization.
+
+    Returns
+    -------
+    Xn : ndarray, shape (..., n, n)
+        The set of normalized matrices, same dimensions as X.
+    """
+    if X.ndim < 2:
+        raise ValueError('Input must have at least 2 dimensions')
+    if X.shape[-2] != X.shape[-1]:
+        raise ValueError('Matrices must be square')
+
+    if norm == "trace":
+        num = numpy.trace(X, axis1=-2, axis2=-1)
+    elif norm  == "determinant":
+        num = numpy.abs(numpy.linalg.det(X)) ** (1 / X.shape[-1])
+    else:
+        raise ValueError("'%s' is not a supported normalization" % norm)
+
+    while num.ndim != X.ndim:
+        num = num[..., numpy.newaxis]
+    Xn = numpy.divide(X, num)
+    return Xn
