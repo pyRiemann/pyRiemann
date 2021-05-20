@@ -116,6 +116,17 @@ Utils function
 
 Utils functions are low level functions that implement most base components of Riemannian Geometry.
 
+Covariance preprocessing
+~~~~~~~~~~~~~~~~~~~~~~~~
+.. _covariance_api:
+.. currentmodule:: pyriemann.utils.covariance
+
+.. autosummary::
+    :toctree: generated/
+
+    normalize
+
+
 Distances
 ~~~~~~~~~~~~~~~~~~~~~~
 .. _distance_api:
