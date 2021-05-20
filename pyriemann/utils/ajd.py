@@ -120,7 +120,7 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
         tolerance for stoping criterion.
     n_iter_max : int (default 1000)
         The maximum number of iteration to reach convergence.
-    sample_weight : None | ndarray, shape (n_trials) (default None)
+    sample_weight : None | ndarray, shape (n_trials,) (default None)
         The weight of each covariance matrix, strictly positive.
 
     Returns
