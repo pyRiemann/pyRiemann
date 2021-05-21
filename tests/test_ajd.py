@@ -26,8 +26,8 @@ def test_get_normalized_weight():
 
     with pytest.raises(ValueError): # not same length
         _get_normalized_weight(w[:Nt//2], covmats)
-    with pytest.raises(ValueError): # negative weight
-        w[0] = -1
+    with pytest.raises(ValueError): # not strictly positive weight
+        w[0] = 0
         _get_normalized_weight(w, covmats)
 
 
@@ -45,8 +45,12 @@ def test_pham():
 
     w = 5 * np.ones(Nt)
     Vw, Dw = ajd_pham(covmats, sample_weight=w)
-    assert_array_equal(V, Vw)
+    assert_array_equal(V, Vw) # same result as ajd_pham without weight
     assert_array_equal(D, Dw)
+
+    with pytest.raises(ValueError): # not strictly positive weight
+        w[0] = 0
+        ajd_pham(covmats, sample_weight=w)
 
 
 def test_uwedge():
