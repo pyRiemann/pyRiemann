@@ -18,6 +18,8 @@ v0.2.7.dev
 
 - Add predict_proba for Potato, and an example on artifact detection
 
+- Add weights to Pham's AJD algorithm
+
 v0.2.6 (March 2020)
 -------------------
 

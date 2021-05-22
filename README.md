@@ -133,6 +133,7 @@ The package aims at adopting the [Scikit-Learn](http://scikit-learn.org/stable/d
 - Fix compatibility with scikit-learn v0.24
 - Correct probas of MDM
 - Add predict_proba for Potato, and an example on artifact detection
+- Add weights to Pham's AJD algorithm
 
 ### v0.2.6
 - Updated for scikit-learn v0.22

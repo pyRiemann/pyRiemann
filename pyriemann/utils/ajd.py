@@ -2,6 +2,23 @@
 import numpy as np
 
 
+def _get_normalized_weight(sample_weight, data):
+    """Get the normalized sample weights, strictly positive.
+
+    If None provided, weights are initialized to 1. In any case, weights are
+    normalized (sum equal to 1).
+    """
+    if sample_weight is None:
+        sample_weight = np.ones(data.shape[0])
+    else:
+        if len(sample_weight) != data.shape[0]:
+            raise ValueError("len of weight must be equal to len of data.")
+        if any(sample_weight <= 0):
+            raise ValueError("values of weight must be strictly positive.")
+    normalized_weight = sample_weight / np.sum(sample_weight)
+    return normalized_weight
+
+
 def rjd(X, eps=1e-8, n_iter_max=1000):
     """Approximate joint diagonalization based on jacobi angle.
 
@@ -90,10 +107,10 @@ def rjd(X, eps=1e-8, n_iter_max=1000):
     return V, D
 
 
-def ajd_pham(X, eps=1e-6, n_iter_max=15):
-    """Approximate joint diagonalization based on pham's algorithm.
+def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
+    """Approximate joint diagonalization based on Pham's algorithm.
 
-    This is a direct implementation of the PHAM's AJD algorithm [1].
+    This is a direct implementation of the Pham's AJD algorithm [1].
 
     Parameters
     ----------
@@ -103,6 +120,8 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15):
         tolerance for stoping criterion.
     n_iter_max : int (default 1000)
         The maximum number of iteration to reach convergence.
+    sample_weight : None | ndarray, shape (n_trials,) (default None)
+        The weight of each covariance matrix, strictly positive.
 
     Returns
     -------
@@ -127,7 +146,8 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15):
     Applications 22, no. 4 (2001): 1136-1152.
 
     """
-     # Adapted from http://github.com/alexandrebarachant/pyRiemann
+    normalized_weight = _get_normalized_weight(sample_weight, X) # sum = 1
+
     n_epochs = X.shape[0]
 
     # Reshape input matrix
@@ -148,11 +168,11 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15):
                 c1 = A[ii, Ii]
                 c2 = A[jj, Ij]
 
-                g12 = np.mean(A[ii, Ij] / c1)
-                g21 = np.mean(A[ii, Ij] / c2)
+                g12 = np.average(A[ii, Ij] / c1, weights=normalized_weight)
+                g21 = np.average(A[ii, Ij] / c2, weights=normalized_weight)
 
-                omega21 = np.mean(c1 / c2)
-                omega12 = np.mean(c2 / c1)
+                omega21 = np.average(c1 / c2, weights=normalized_weight)
+                omega12 = np.average(c2 / c1, weights=normalized_weight)
                 omega = np.sqrt(omega12 * omega21)
 
                 tmp = np.sqrt(omega21 / omega12)
