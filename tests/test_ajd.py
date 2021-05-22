@@ -1,5 +1,6 @@
 from numpy.testing import assert_array_equal
 import numpy as np
+from numpy.testing import assert_allclose, assert_array_almost_equal
 import pytest
 
 from pyriemann.utils.ajd import rjd, ajd_pham, uwedge, _get_normalized_weight
@@ -48,9 +49,19 @@ def test_pham():
     assert_array_equal(V, Vw) # same result as ajd_pham without weight
     assert_array_equal(D, Dw)
 
+    # Test that weight must be strictly positive
     with pytest.raises(ValueError): # not strictly positive weight
         w[0] = 0
         ajd_pham(covmats, sample_weight=w)
+
+    # now test that setting one weight to almost zero it's almost
+    # like not passing the matrix
+    V, D = ajd_pham(covmats[1:])
+    w[0] = 1e-12
+
+    Vw, Dw = ajd_pham(covmats, sample_weight=w)
+    assert_allclose(V, Vw, rtol=1e-4, atol=1e-8)
+    assert_allclose(D, Dw[1:], rtol=1e-4, atol=1e-8)
 
 
 def test_uwedge():
