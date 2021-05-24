@@ -206,7 +206,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
     Estimation of special form covariance matrix dedicated to ERP processing
     combined with Xdawn spatial filtering. This is similar to `ERPCovariances`
     but data are spatially filtered with `Xdawn`. A complete descrition of the
-    method is available in [1].
+    method is available in [1]_.
 
     The advantage of this estimation is to reduce dimensionality of the
     covariance matrices efficiently.
@@ -241,8 +241,8 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    [1] Barachant, A. "MEG decoding using Riemannian Geometry and Unsupervised
-    classification."
+    .. [1] Barachant, A. "MEG decoding using Riemannian Geometry and
+        Unsupervised classification", 2014
     """
 
     def __init__(self,
