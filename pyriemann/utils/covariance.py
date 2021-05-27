@@ -3,29 +3,24 @@ from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
 
 # Mapping different estimator on the sklearn toolbox
 
-
 def _lwf(X):
     """Wrapper for sklearn ledoit wolf covariance estimator"""
     C, _ = ledoit_wolf(X.T)
     return C
-
 
 def _oas(X):
     """Wrapper for sklearn oas covariance estimator"""
     C, _ = oas(X.T)
     return C
 
-
 def _scm(X):
     """Wrapper for sklearn sample covariance estimator"""
     return empirical_covariance(X.T)
-
 
 def _mcd(X):
     """Wrapper for sklearn mcd covariance estimator"""
     _, C, _, _ = fast_mcd(X.T)
     return C
-
 
 def _check_est(est):
     """Check if a given estimator is valid"""
@@ -55,7 +50,32 @@ def _check_est(est):
 
 
 def covariances(X, estimator='cov'):
-    """Estimation of covariance matrix."""
+    """Estimation of covariance matrix.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_trials, n_channels, n_samples)
+        ndarray of trials.
+
+    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'corr'} (default: 'scm')
+        covariance matrix estimator:
+
+        * 'cov' for numpy based covariance matrix, https://numpy.org/doc/stable/reference/generated/numpy.cov.html
+        * 'scm' for sample covariance matrix, https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
+        * 'lwf' for shrunk Ledoit-Wolf covariance matrix, https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
+        * 'oas' for oracle approximating shrunk covariance matrix, https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
+        * 'mcd' for minimum covariance determinant matrix, https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
+        * 'corr' for correlation coefficient matrix, https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
+
+    Returns
+    -------
+    covmats : ndarray, shape (n_trials, n_channels, n_channels)
+        ndarray of covariance matrices.
+
+    References
+    ----------
+    .. [1] https://scikit-learn.org/stable/modules/covariance.html
+    """
     est = _check_est(estimator)
     Nt, Ne, Ns = X.shape
     covmats = numpy.zeros((Nt, Ne, Ne))

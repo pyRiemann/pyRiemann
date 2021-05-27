@@ -124,6 +124,7 @@ Covariance preprocessing
 .. autosummary::
     :toctree: generated/
 
+    covariances
     normalize
 
 

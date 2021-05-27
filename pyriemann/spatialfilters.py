@@ -32,6 +32,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
     baseline_cov : array, shape(n_chan, n_chan) | None (default)
         Covariance matrix to which the average signals are compared. If None,
         the baseline covariance is computed across all trials and time samples.
+
     Attributes
     ----------
     filters_ : ndarray
@@ -53,6 +54,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
     [1] Rivet, B., Souloumiac, A., Attina, V., & Gibert, G. (2009). xDAWN
     algorithm to enhance evoked potentials: application to brain-computer
     interface. Biomedical Engineering, IEEE Transactions on, 56(8), 2035-2043.
+
     [2] Rivet, B., Cecotti, H., Souloumiac, A., Maby, E., & Mattout, J. (2011,
     August). Theoretical analysis of xDAWN algorithm: application to an
     efficient sensor selection in a P300 BCI. In Signal Processing Conference,
@@ -234,14 +236,14 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
 class CSP(BilinearFilter):
     """Implementation of the CSP spatial Filtering with Covariance as input.
 
-    Implementation of the famous Common Spatial Pattern Algorithm, but with
-    covariance matrices as input. In addition, the implementation allow
-    different metric for the estimation of the class-related mean covariance
-    matrices, as described in [3].
+    Implementation of the famous Common Spatial Pattern algorithm [1]_ [2]_,
+    but with covariance matrices as input. In addition, the implementation
+    allows different metric for the estimation of the class-related mean
+    covariance matrices, as described in [3]_.
 
     This implementation support multiclass CSP by means of approximate joint
     diagonalization. In this case, the spatial filter selection is achieved
-    according to [4].
+    according to [4]_.
 
     Parameters
     ----------
@@ -267,17 +269,20 @@ class CSP(BilinearFilter):
 
     References
     ----------
-    [1] Zoltan J. Koles, Michael S. Lazar, Steven Z. Zhou. Spatial Patterns
+    .. [1] Zoltan J. Koles, Michael S. Lazar, Steven Z. Zhou. Spatial Patterns
         Underlying Population Differences in the Background EEG. Brain
         Topography 2(4), 275-284, 1990.
-    [2] Benjamin Blankertz, Ryota Tomioka, Steven Lemm, Motoaki Kawanabe,
+
+    .. [2] Benjamin Blankertz, Ryota Tomioka, Steven Lemm, Motoaki Kawanabe,
         Klaus-Robert Muller. Optimizing Spatial Filters for Robust EEG
         Single-Trial Analysis. IEEE Signal Processing Magazine 25(1), 41-56,
         2008.
-    [3] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, Common Spatial
+
+    .. [3] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, Common Spatial
         Pattern revisited by Riemannian geometry, IEEE International Workshop
         on Multimedia Signal Processing (MMSP), p. 472-476, 2010.
-    [4] Grosse-Wentrup, Moritz, and Martin Buss. "Multiclass common spatial
+
+    .. [4] Grosse-Wentrup, Moritz, and Martin Buss. "Multiclass common spatial
         patterns and information theoretic feature extraction." Biomedical
         Engineering, IEEE Transactions on 55, no. 8 (2008): 1991-2000.
     """
@@ -375,7 +380,7 @@ class CSP(BilinearFilter):
 class SPoC(CSP):
     """Implementation of the SPoC spatial filtering with Covariance as input.
 
-    Source Power Comodulation (SPoC) [1] allow to extract spatial filters and
+    Source Power Comodulation (SPoC) [1]_ allows to extract spatial filters and
     patterns by using a target (continuous) variable in the decomposition
     process in order to give preference to components whose power comodulates
     with the target variable.
@@ -412,9 +417,9 @@ class SPoC(CSP):
 
     References
     ----------
-    [1] Dahne, S., Meinecke, F. C., Haufe, S., Hohne, J., Tangermann, M.,
+    .. [1] Dahne, S., Meinecke, F. C., Haufe, S., Hohne, J., Tangermann, M.,
         Muller, K. R., & Nikulin, V. V. (2014). SPoC: a novel framework for
-        relating the amplitude of neuronal oscillations to behaviorally
+        relating the amplitude of neuronal oscillations to behaviorally 
         relevant parameters. NeuroImage, 86, 111-122.
     """
 
