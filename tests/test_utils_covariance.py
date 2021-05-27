@@ -4,7 +4,8 @@ from scipy.signal import coherence as coh_sp
 import pytest
 
 from pyriemann.utils.covariance import (covariances, covariances_EP, eegtocov,
-                                        cospectrum, coherence, normalize)
+                                        cross_spectrum, cospectrum, coherence,
+                                        normalize)
 
 
 def test_covariances():
@@ -41,6 +42,27 @@ def test_covariances_eegtocov():
     assert cov.shape[1] == 3
 
 
+def test_covariances_cross_spectrum():
+    x = np.random.randn(3, 1000)
+    cross_spectrum(x)
+    cross_spectrum(x, fs=128, fmin=2, fmax=40)
+
+    with pytest.raises(ValueError): # fmin > fmax
+        cross_spectrum(x, fs=128, fmin=20, fmax=10)
+    with pytest.raises(ValueError): # fmax > fs/2
+        cross_spectrum(x, fs=128, fmin=20, fmax=65)
+    with pytest.raises(Warning): # fs is None
+        cross_spectrum(x, fmin=12)
+    with pytest.raises(Warning): # fs is None
+        cross_spectrum(x, fmax=12)
+
+    c, _ = cross_spectrum(x, fs=128, window=256, fmin=3, fmax=51)
+    # test if real part is symmetric
+    assert_array_almost_equal(c.real, np.transpose(c.real, (1, 0, 2)), 6)
+    # test if imag part is skew-symmetric
+    assert_array_almost_equal(c.imag, -np.transpose(c.imag, (1, 0, 2)), 6)
+
+
 def test_covariances_cospectrum():
     """Test cospectrum"""
     x = np.random.randn(3, 1000)
@@ -61,7 +83,7 @@ def test_covariances_coherence():
         noverlap=int(0.75 * 256),
         window='hanning',
         detrend=False)
-    assert_array_almost_equal(coh[0, 1], coh2[:-1], 0.1)
+    assert_array_almost_equal(coh[0, 1], coh2[:-1], 1)
 
 
 def test_normalize():

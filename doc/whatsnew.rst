@@ -20,6 +20,8 @@ v0.2.7.dev
 
 - Add weights to Pham's AJD algorithm
 
+- Add cross_spectrum, fix cospectrum; coherence output is kept unchanged
+
 v0.2.6 (March 2020)
 -------------------
 

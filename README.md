@@ -134,6 +134,7 @@ The package aims at adopting the [Scikit-Learn](http://scikit-learn.org/stable/d
 - Correct probas of MDM
 - Add predict_proba for Potato, and an example on artifact detection
 - Add weights to Pham's AJD algorithm
+- Add cross_spectrum, fix cospectrum; coherence output is kept unchanged
 
 ### v0.2.6
 - Updated for scikit-learn v0.22
