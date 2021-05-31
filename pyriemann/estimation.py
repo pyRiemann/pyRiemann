@@ -312,22 +312,29 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 class CospCovariances(BaseEstimator, TransformerMixin):
     """Estimation of cospectral covariance matrix.
 
-    Covariance estimation in the frequency domain. this method will return a
-    4-d array with a covariance matrice estimation for each trial and in each
+    Co-spectral matrices are the real part of complex cross-spectral matrices
+    (see :func:`pyriemann.utils.covariance.cross_spectrum`), estimated as the
+    spectrum covariance in the frequency domain. This method returns a 4-d
+    array with a cospectral covariance matrice for each trial and in each
     frequency bin of the FFT.
 
     Parameters
     ----------
     window : int (default 128)
-        The lengt of the FFT window used for spectral estimation.
+        The length of the FFT window used for spectral estimation.
     overlap : float (default 0.75)
         The percentage of overlap between window.
-    fmin : float | None , (default None)
-        the minimal frequency to be returned.
-    fmax : float | None , (default None)
+    fmin : float | None, (default None)
+        The minimal frequency to be returned.
+    fmax : float | None, (default None)
         The maximal frequency to be returned.
     fs : float | None, (default None)
         The sampling frequency of the signal.
+
+    Attributes
+    ----------
+    freqs_ : ndarray, shape (n_freqs,)
+        If transformed, the frequencies associated to cospectra.
 
     See Also
     --------
@@ -354,7 +361,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
             ndarray of trials.
-        y : ndarray shape (n_trials,)
+        y : ndarray, shape (n_trials,)
             labels corresponding to each trial, not used.
 
         Returns
@@ -374,7 +381,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        covmats : ndarray, shape (n_trials, n_channels, n_channels, n_freq)
+        covmats : ndarray, shape (n_trials, n_channels, n_channels, n_freqs)
             ndarray of covariance matrices for each trials and for each
             frequency bin.
         """
@@ -382,7 +389,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
         out = []
 
         for i in range(Nt):
-            S = cospectrum(
+            S, freqs = cospectrum(
                 X[i],
                 window=self.window,
                 overlap=self.overlap,
@@ -390,6 +397,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
                 fmax=self.fmax,
                 fs=self.fs)
             out.append(S)
+        self.freqs_ = freqs
 
         return numpy.array(out)
 
@@ -409,9 +417,9 @@ class Coherences(CospCovariances):
         The lengt of the FFT window used for spectral estimation.
     overlap : float (default 0.75)
         The percentage of overlap between window.
-    fmin : float | None , (default None)
+    fmin : float | None, (default None)
         the minimal frequency to be returned.
-    fmax : float | None , (default None)
+    fmax : float | None, (default None)
         The maximal frequency to be returned.
     fs : float | None, (default None)
         The sampling frequency of the signal.
@@ -433,7 +441,7 @@ class Coherences(CospCovariances):
 
         Returns
         -------
-        covmats : ndarray, shape (n_trials, n_channels, n_channels, n_freq)
+        covmats : ndarray, shape (n_trials, n_channels, n_channels, n_freqs)
             ndarray of coherence matrices for each trials and for each
             frequency bin.
         """

@@ -20,6 +20,8 @@ v0.2.7.dev
 
 - Add weights to Pham's AJD algorithm
 
+- Add :func:`pyriemann.utils.covariance.cross_spectrum`, fix :func:`pyriemann.utils.covariance.cospectrum`; :func:`pyriemann.utils.covariance.coherence` output is kept unchanged
+
 v0.2.6 (March 2020)
 -------------------
 
