@@ -5,7 +5,7 @@ import pytest
 
 from pyriemann.utils.covariance import (covariances, covariances_EP, eegtocov,
                                         cross_spectrum, cospectrum, coherence,
-                                        normalize)
+                                        normalize, get_nondiag_weight)
 
 
 def test_covariances():
@@ -105,3 +105,15 @@ def test_normalize():
 
     with pytest.raises(ValueError): # invalid normalization type
         normalize(cov, "abc")
+
+
+def test_get_nondiag_weight():
+    """Test get_nondiag_weight"""
+    n_channels = 3
+    cov = eegtocov(np.random.randn(1000, n_channels))
+    get_nondiag_weight(cov)
+
+    with pytest.raises(ValueError): # not 3 dims
+        get_nondiag_weight(np.random.randn(10, 10, n_channels, n_channels))
+    with pytest.raises(ValueError): # not square
+        get_nondiag_weight(np.random.randn(10, n_channels, n_channels + 2))
