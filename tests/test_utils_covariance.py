@@ -51,9 +51,9 @@ def test_covariances_cross_spectrum():
         cross_spectrum(x, fs=128, fmin=20, fmax=10)
     with pytest.raises(ValueError): # fmax > fs/2
         cross_spectrum(x, fs=128, fmin=20, fmax=65)
-    with pytest.raises(Warning): # fs is None
+    with pytest.warns(UserWarning): # fs is None
         cross_spectrum(x, fmin=12)
-    with pytest.raises(Warning): # fs is None
+    with pytest.warns(UserWarning): # fs is None
         cross_spectrum(x, fmax=12)
 
     c, _ = cross_spectrum(x, fs=128, window=256, fmin=3, fmax=51)

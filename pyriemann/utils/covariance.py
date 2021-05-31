@@ -1,5 +1,6 @@
 import numpy
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
+import warnings
 
 # Mapping different estimator on the sklearn toolbox
 
@@ -113,15 +114,7 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
     return numpy.array(X)
 
 
-def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
-    """Compute coherence."""
-    S, _ = cross_spectrum(X, window, overlap, fmin, fmax, fs)
-    S2 = numpy.abs(S)**2 # squared cross-spectral modulus
-    coh = numpy.zeros_like(S2)
-    for f in range(S2.shape[-1]):
-        psd = numpy.sqrt(numpy.diag(S2[..., f]))
-        coh[..., f] = S2[..., f] / numpy.outer(psd, psd)
-    return coh
+###############################################################################
 
 
 def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
@@ -196,9 +189,9 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         freqs = f[Fix]
     else:
         if fmin is not None:
-            raise Warning('Parameter fmin not used because fs is None')
+            warnings.warn('Parameter fmin not used because fs is None')
         if fmax is not None:
-            raise Warning('Parameter fmax not used because fs is None')
+            warnings.warn('Parameter fmax not used because fs is None')
         freqs = None
 
     Nf = fdata.shape[2]
@@ -211,7 +204,31 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
 
 def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
-    """Compute co-spectral matrices, the real part of cross-spectra."""
+    """Compute co-spectral matrices, the real part of cross-spectra.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_trials, n_channels, n_samples)
+        ndarray of trials.
+    window : int (default 128)
+        The length of the FFT window used for spectral estimation.
+    overlap : float (default 0.75)
+        The percentage of overlap between window.
+    fmin : float | None, (default None)
+        The minimal frequency to be returned.
+    fmax : float | None, (default None)
+        The maximal frequency to be returned.
+    fs : float | None, (default None)
+        The sampling frequency of the signal.
+
+    Returns
+    -------
+    S : ndarray, shape (n_trials, n_channels, n_channels, n_freqs)
+        ndarray of co-spectral matrices for each trials and for each
+        frequency bin.
+    freqs : ndarray, shape (n_freqs,)
+        The frequencies associated to cospectra.
+    """
     S, freqs = cross_spectrum(
         X=X,
         window=window,
@@ -221,6 +238,42 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         fs=fs)
 
     return S.real, freqs
+
+
+def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
+    """Compute coherence.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_trials, n_channels, n_samples)
+        ndarray of trials.
+    window : int (default 128)
+        The length of the FFT window used for spectral estimation.
+    overlap : float (default 0.75)
+        The percentage of overlap between window.
+    fmin : float | None, (default None)
+        The minimal frequency to be returned.
+    fmax : float | None, (default None)
+        The maximal frequency to be returned.
+    fs : float | None, (default None)
+        The sampling frequency of the signal.
+
+    Returns
+    -------
+    C : ndarray, shape (n_trials, n_channels, n_channels, n_freqs)
+        ndarray of coherence matrices for each trials and for each
+        frequency bin.
+    """
+    S, _ = cross_spectrum(X, window, overlap, fmin, fmax, fs)
+    S2 = numpy.abs(S)**2 # squared cross-spectral modulus
+    C = numpy.zeros_like(S2)
+    for f in range(S2.shape[-1]):
+        psd = numpy.sqrt(numpy.diag(S2[..., f]))
+        C[..., f] = S2[..., f] / numpy.outer(psd, psd)
+    return C
+
+
+###############################################################################
 
 
 def normalize(X, norm):
