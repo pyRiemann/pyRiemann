@@ -93,25 +93,32 @@ def test_normalize():
 
     covn = normalize(cov, "trace")
     assert_array_almost_equal(np.ones(covn.shape[0]),
-                              np.trace(covn, axis1=-2, axis2=-1),
-                              1e-10)
+                              np.trace(covn, axis1=-2, axis2=-1))
     covn = normalize(cov, "determinant")
-    assert_array_almost_equal(np.ones(covn.shape[0]),
-                              np.linalg.det(covn),
-                              1e-10)
+    assert_array_almost_equal(np.ones(covn.shape[0]), np.linalg.det(covn))
 
     with pytest.raises(ValueError): # not square
         normalize(np.random.randn(10, n_channels, n_channels + 2), "trace")
-
     with pytest.raises(ValueError): # invalid normalization type
         normalize(cov, "abc")
 
 
 def test_get_nondiag_weight():
     """Test get_nondiag_weight"""
-    n_channels = 3
-    cov = eegtocov(np.random.randn(1000, n_channels))
-    get_nondiag_weight(cov)
+    n_trials, n_channels = 20, 3
+    mats = np.random.randn(n_trials, n_channels, n_channels)
+    w = get_nondiag_weight(mats)
+    assert len(w) == n_trials
+
+    # 2x2 constant matrices => non-diag weights equal to 1
+    mats = np.random.randn(n_trials, 1, 1) * np.ones((n_trials, 2, 2))
+    w = get_nondiag_weight(mats)
+    assert_array_almost_equal(w, np.ones(n_trials))
+
+    # diagonal matrices => non-diag weights equal to 0
+    mats = np.random.randn(n_trials, 1, 1) * ([np.eye(n_channels)] * n_trials)
+    w = get_nondiag_weight(mats)
+    assert_array_almost_equal(w, np.zeros(n_trials))
 
     with pytest.raises(ValueError): # not 3 dims
         get_nondiag_weight(np.random.randn(10, 10, n_channels, n_channels))
