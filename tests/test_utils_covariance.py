@@ -5,7 +5,7 @@ import pytest
 
 from pyriemann.utils.covariance import (covariances, covariances_EP, eegtocov,
                                         cross_spectrum, cospectrum, coherence,
-                                        normalize)
+                                        normalize, get_nondiag_weight)
 
 
 def test_covariances():
@@ -88,20 +88,65 @@ def test_covariances_coherence():
 
 def test_normalize():
     """Test normalize"""
-    n_channels = 3
-    cov = eegtocov(np.random.randn(1000, n_channels))
+    rs = np.random.RandomState(42)
+    n_conds, n_trials, n_channels = 15, 20, 3
 
-    covn = normalize(cov, "trace")
-    assert_array_almost_equal(np.ones(covn.shape[0]),
-                              np.trace(covn, axis1=-2, axis2=-1),
-                              1e-10)
-    covn = normalize(cov, "determinant")
-    assert_array_almost_equal(np.ones(covn.shape[0]),
-                              np.linalg.det(covn),
-                              1e-10)
+    # test a 2d array, ie a single square matrix
+    mat = rs.randn(n_channels, n_channels)
+    mat_n = normalize(mat, "trace")
+    assert_array_equal(mat.shape, mat_n.shape)
+    # test a 3d array, ie a group of square matrices
+    mat = rs.randn(n_trials, n_channels, n_channels)
+    mat_n = normalize(mat, "determinant")
+    assert_array_equal(mat.shape, mat_n.shape)
+    # test a 4d array, ie a group of groups of square matrices
+    mat = rs.randn(n_conds, n_trials, n_channels, n_channels)
+    mat_n = normalize(mat, "trace")
+    assert_array_equal(mat.shape, mat_n.shape)
 
+    # after trace-normalization => trace equal to 1
+    mat = rs.randn(n_trials, n_channels, n_channels)
+    mat_tn = normalize(mat, "trace")
+    assert_array_almost_equal(np.ones(mat_tn.shape[0]),
+                              np.trace(mat_tn, axis1=-2, axis2=-1))
+    # after determinant-normalization => determinant equal to +/- 1
+    mat_dn = normalize(mat, "determinant")
+    assert_array_almost_equal(np.ones(mat_dn.shape[0]),
+                              np.abs(np.linalg.det(mat_dn)))
+
+    with pytest.raises(ValueError): # not at least 2d
+        normalize(rs.randn(n_channels), "trace")
     with pytest.raises(ValueError): # not square
-        normalize(np.random.randn(10, n_channels, n_channels + 2), "trace")
-
+        normalize(rs.randn(n_trials, n_channels, n_channels + 2), "trace")
     with pytest.raises(ValueError): # invalid normalization type
-        normalize(cov, "abc")
+        normalize(rs.randn(n_trials, n_channels, n_channels), "abc")
+
+
+def test_get_nondiag_weight():
+    """Test get_nondiag_weight"""
+    rs = np.random.RandomState(17)
+    n_conds, n_trials, n_channels = 10, 20, 3
+
+    # test a 2d array, ie a single square matrix
+    w = get_nondiag_weight(rs.randn(n_channels, n_channels))
+    assert np.isscalar(w)
+    # test a 3d array, ie a group of square matrices
+    w = get_nondiag_weight(rs.randn(n_trials, n_channels, n_channels))
+    assert_array_equal(w.shape, [n_trials])
+    # test a 4d array, ie a group of groups of square matrices
+    w = get_nondiag_weight(rs.randn(n_conds, n_trials, n_channels, n_channels))
+    assert_array_equal(w.shape, [n_conds, n_trials])
+
+    # 2x2 constant matrices => non-diag weights equal to 1
+    mats = rs.randn(n_trials, 1, 1) * np.ones((n_trials, 2, 2))
+    w = get_nondiag_weight(mats)
+    assert_array_almost_equal(w, np.ones(n_trials))
+    # diagonal matrices => non-diag weights equal to 0
+    mats = rs.randn(n_trials, 1, 1) * ([np.eye(n_channels)] * n_trials)
+    w = get_nondiag_weight(mats)
+    assert_array_almost_equal(w, np.zeros(n_trials))
+
+    with pytest.raises(ValueError): # not at least 2d
+        get_nondiag_weight(rs.randn(n_channels))
+    with pytest.raises(ValueError): # not square
+        get_nondiag_weight(rs.randn(n_trials, n_channels, n_channels + 2))

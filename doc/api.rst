@@ -129,6 +129,7 @@ Covariance preprocessing
     cospectrum
     coherence
     normalize
+    get_nondiag_weight
 
 
 Distances

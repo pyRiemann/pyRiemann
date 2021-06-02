@@ -309,3 +309,37 @@ def normalize(X, norm):
         denom = denom[..., numpy.newaxis]
     Xn = X / denom
     return Xn
+
+
+def get_nondiag_weight(X):
+    """Compute non-diagonality weights of a set of square matrices, following
+    Eq(B.1) in [1]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        The set of square matrices, at least 2D ndarray.
+
+    Returns
+    -------
+    weights : ndarray, shape (...,)
+        The non-diagonality weights for matrices.
+
+    References
+    ----------
+    .. [1] M. Congedo, C. Gouy-Pailler, C. Jutten, "On the blind source
+        separation of human electroencephalogram by approximate joint
+        diagonalization of second order statistics", Clin Neurophysiol, 2008
+    """
+    if X.ndim < 2:
+        raise ValueError('Input must have at least 2 dimensions')
+    if X.shape[-2] != X.shape[-1]:
+        raise ValueError('Matrices must be square')
+
+    X2 = X**2
+    # sum of squared diagonal elements
+    denom = numpy.trace(X2, axis1=-2, axis2=-1)
+    # sum of squared off-diagonal elements
+    num = numpy.sum(X2, axis=(-2, -1)) - denom
+    weights = ( 1.0 / (X.shape[-1] - 1) ) * (num / denom)
+    return weights
