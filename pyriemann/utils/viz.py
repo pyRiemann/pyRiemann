@@ -46,3 +46,33 @@ def plot_embedding(X, y=None, metric='riemann',
     ax.legend(list(np.unique(y)))
 
     return fig
+
+
+def plot_cospectra(cosp, freqs, ylabels=None, title='Cospectra'):
+    """Plot cospectral matrices
+
+    Parameters
+    ----------
+    cosp : ndarray, shape (n_freqs, n_channels, n_channels)
+        ndarray of cospectra.
+    freqs : ndarray, shape (n_freqs,)
+        The frequencies associated to cospectra.
+    """
+    fig = plt.figure(figsize=(12, 7))
+    fig.suptitle(title)
+    n_freqs = min(cosp.shape[0], freqs.shape[0])
+    for f in range(n_freqs):
+        ax = plt.subplot((n_freqs - 1)//8 + 1, 8, f+1)
+        plt.imshow(cosp[f], cmap=plt.get_cmap('Reds'))
+        plt.title('{} Hz'.format(freqs[f]))
+        plt.xticks([])
+        if ylabels and f == 0:
+            plt.yticks(np.arange(0, len(ylabels), 2), ylabels[::2])
+            ax.tick_params(axis='both', which='major', labelsize=7)
+        elif ylabels and f == 8:
+            plt.yticks(np.arange(1, len(ylabels), 2), ylabels[1::2])
+            ax.tick_params(axis='both', which='major', labelsize=7)
+        else:
+            plt.yticks([])
+
+    return fig
