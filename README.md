@@ -135,6 +135,7 @@ The package aims at adopting the [Scikit-Learn](http://scikit-learn.org/stable/d
 - Add predict_proba for Potato, and an example on artifact detection
 - Add weights to Pham's AJD algorithm
 - Add cross_spectrum, fix cospectrum; coherence output is kept unchanged
+- Add AJDC for BSS and gBSS, with an example on artifact correction
 
 ### v0.2.6
 - Updated for scikit-learn v0.22
