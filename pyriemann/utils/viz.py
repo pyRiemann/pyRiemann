@@ -57,6 +57,11 @@ def plot_cospectra(cosp, freqs, ylabels=None, title='Cospectra'):
         ndarray of cospectra.
     freqs : ndarray, shape (n_freqs,)
         The frequencies associated to cospectra.
+
+    Returns
+    -------
+    fig : matplotlib figure
+        Figure of cospectra.
     """
     fig = plt.figure(figsize=(12, 7))
     fig.suptitle(title)

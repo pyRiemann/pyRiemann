@@ -11,6 +11,7 @@ Fourier cospectra (AJDC), applied to artifact correction of EEG [1].
 #
 # License: BSD (3-clause)
 
+import gzip
 import numpy as np
 from scipy.signal import welch
 from matplotlib import pyplot as plt
@@ -29,7 +30,7 @@ from pyriemann.utils.viz import plot_cospectra
 
 def read_header(fname):
     """Read the header of sample-blinks.txt"""
-    with open(fname, "r") as f:
+    with gzip.open(fname, 'rt') as f:
         content = f.readline().split()
         return content[:-1], int(content[-1])
 
@@ -38,7 +39,7 @@ def read_header(fname):
 # Load EEG data
 # -------------
 
-fname = '../data/sample-blinks.txt'
+fname = '../data/sample-blinks.txt.gz'
 signal_raw = np.loadtxt(fname, skiprows=1).T
 ch_names, sfreq = read_header(fname)
 ch_count = len(ch_names)

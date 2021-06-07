@@ -475,20 +475,20 @@ class AJDC(BaseEstimator, TransformerMixin):
     """Implementation of the AJDC.
 
     The approximate joint diagonalization of Fourier cospectral matrices (AJDC)
-    [1] is a versatile tool for blind source separation (BSS) tasks based on
+    [1]_ is a versatile tool for blind source separation (BSS) tasks based on
     Second-Order Statistics (SOS), estimating spectrally uncorrelated sources.
 
-    It can be apply:
-        - on a single subject, to solve the classical BSS problem [1],
-        - on several subjects, to solve the group BSS (gBSS) problem [2],
+    It can be applied:
+        - on a single subject, to solve the classical BSS problem [1]_,
+        - on several subjects, to solve the group BSS (gBSS) problem [2]_,
         - on several experimental conditions (for eg, baseline versus task).
 
     AJDC estimates Fourier cospectral matrices by the Welch's method, and
     applies a trace-normalization. If necessary, it averages cospectra across
     subjects, and concatenates them along experimental conditions.
     Then, a dimension reduction and a whitening are applied on cospectra.
-    An approximate joint diagonalization (AJD) [3] allows to estimate the joint
-    diagonalizer, not constrained to be orthogonal. Finally, forward and
+    An approximate joint diagonalization (AJD) [3]_ allows to estimate the
+    joint diagonalizer, not constrained to be orthogonal. Finally, forward and
     backward spatial filters are computed.
 
     Parameters
@@ -497,15 +497,15 @@ class AJDC(BaseEstimator, TransformerMixin):
         The length of the FFT window used for spectral estimation.
     overlap : float (default 0.5)
         The percentage of overlap between window.
-    fmin : float | None , (default None)
+    fmin : float | None, (default None)
         The minimal frequency to be returned. Since BSS models assume zero-mean
         processes, the first cospectrum (0 Hz) must be excluded.
-    fmax : float | None , (default None)
+    fmax : float | None, (default None)
         The maximal frequency to be returned.
-    fs : float | None , (default None)
+    fs : float | None, (default None)
         The sampling frequency of the signal.
     expl_var : float (default 0.999)
-        The percentage of explained variance in ]0, 1], for dimension reduction
+        The percentage of explained variance in (0, 1], for dimension reduction
         of cospectra, because Pham's AJD is sensitive to matrices conditioning.
     verbose : bool (default True)
         Verbose flag.
@@ -535,23 +535,24 @@ class AJDC(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    [1] M. Congedo, C. Gouy-Pailler, C. Jutten, "On the blind source separation
-    of human electroencephalogram by approximate joint diagonalization of
-    second order statistics", Clin Neurophysiol, 2008
+    .. [1] M. Congedo, C. Gouy-Pailler, C. Jutten, "On the blind source
+        separation of human electroencephalogram by approximate joint
+        diagonalization of second order statistics", Clin Neurophysiol, 2008
 
-    [2] M. Congedo, R. John, D. De Ridder, L. Prichep, "Group indepedent
-    component analysis of resting state EEG in large normative samples",
-    Int J Psychophysiol, 2010
+    .. [2] M. Congedo, R. John, D. De Ridder, L. Prichep, "Group indepedent
+        component analysis of resting state EEG in large normative samples",
+        Int J Psychophysiol, 2010
 
-    [3] D.-T. Pham, "Joint approximate diagonalization of positive definite
-    Hermitian matrices", SIAM J Matrix Anal Appl, 2001
+    .. [3] D.-T. Pham, "Joint approximate diagonalization of positive definite
+        Hermitian matrices", SIAM J Matrix Anal Appl, 2001
+
     """
 
     def __init__(self, window=128, overlap=0.5, fmin=None, fmax=None, fs=None,
                  expl_var=0.999, verbose=True):
         """Init."""
         if not 0 < expl_var <= 1:
-            raise ValueError('Parameter expl_var must be included in ]0, 1]')
+            raise ValueError('Parameter expl_var must be included in (0, 1]')
 
         self.window = window
         self.overlap = overlap
@@ -570,8 +571,8 @@ class AJDC(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_subjects, n_conditions, n_channels, n_samples) | list of n_subjects of list of n_conditions ndarray of shape (n_channels, n_samples), with same n_conditions and n_channels but different n_samples
-            ndarray of signal in channel space, acquired for different subjects
-            and under different experimental conditions.
+            Signal in channel space, acquired for different subjects and under
+            different experimental conditions.
         y : None
             Currently not used, here for compatibility with sklearn API.
 
@@ -610,14 +611,14 @@ class AJDC(BaseEstimator, TransformerMixin):
         # concatenation of cospectra along conditions
         self._cosp_channels = numpy.concatenate(cosp, axis=0)
         # estimation of non-diagonality weights, Eq(B.1) in [1]
-        self._weights = get_nondiag_weight(self._cosp_channels)
+        weights = get_nondiag_weight(self._cosp_channels)
 
         # dimension reduction, computed on the weighted mean of cospectra
         # across frequencies (and conditions)
         cosp_av = numpy.average(
             self._cosp_channels,
             axis=0,
-            weights=self._weights)
+            weights=weights)
         eigvals, eigvecs = eigh(cosp_av, eigvals_only=False)
         eigvals = eigvals[::-1]         # sorted in descending order
         eigvecs = numpy.fliplr(eigvecs) # idem
@@ -641,7 +642,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         diag_filters, self._cosp_sources = ajd_pham(
             cosp_rw,
             n_iter_max=100,
-            sample_weight=self._weights)
+            sample_weight=weights)
 
         # computation of forward and backward filters, Eq.(9) and (10) in [2]
         self.forward_filters_ = diag_filters @ whit_filters.T
@@ -655,17 +656,19 @@ class AJDC(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
-            ndarray of trials in channel space.
+            Trials in channel space.
 
         Returns
         -------
         source : ndarray, shape (n_trials, n_sources, n_samples)
-            ndarray of trials in source space.
+            Trials in source space.
         """
         if X.ndim != 3:
-            raise ValueError('X must have 3 dimensions')
+            raise ValueError('X must have 3 dimensions (Got %d)' % X.ndim)
         if X.shape[1] != self.n_channels_:
-            raise ValueError('X has not the good number of channels')
+            raise ValueError(
+                'X does not have the good number of channels. Should be %d but'
+                ' got %d.' % (self.n_channels_, X.shape[1]))
 
         source = self.forward_filters_ @ X
         return source
@@ -678,19 +681,21 @@ class AJDC(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_sources, n_samples)
-            ndarray of trials in source space.
+            Trials in source space.
         supp : list of int | None, (default None)
-            List of indices of sources to suppress.
+            Indices of sources to suppress.
 
         Returns
         -------
         signal : ndarray, shape (n_trials, n_channels, n_samples)
-            ndarray of trials in channel space.
+            Trials in channel space.
         """
         if X.ndim != 3:
-            raise ValueError('X must have 3 dimensions')
+            raise ValueError('X must have 3 dimensions (Got %d)' % X.ndim)
         if X.shape[1] != self.n_sources_:
-            raise ValueError('X has not the good number of sources')
+            raise ValueError(
+                'X does not have the good number of sources. Should be %d but '
+                'got %d.' % (self.n_sources_, X.shape[1]))
 
         denois = numpy.eye(self.n_sources_)
         if supp is None:
@@ -710,17 +715,19 @@ class AJDC(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
-            ndarray of trials in channel space.
+            Trials in channel space.
 
         Returns
         -------
         src_var : ndarray, shape (n_trials, n_sources)
-            ndarray of explained variance for each source.
+            Explained variance for each source.
         """
         if X.ndim != 3:
-            raise ValueError('X must have 3 dimensions')
+            raise ValueError('X must have 3 dimensions (Got %d)' % X.ndim)
         if X.shape[1] != self.n_channels_:
-            raise ValueError('X has not the good number of channels')
+            raise ValueError(
+                'X does not have the good number of channels. Should be %d but'
+                ' got %d.' % (self.n_channels_, X.shape[1]))
 
         cov = est.Covariances().transform(X)
 
