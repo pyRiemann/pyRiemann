@@ -22,6 +22,8 @@ v0.2.7.dev
 
 - Add :func:`pyriemann.utils.covariance.cross_spectrum`, fix :func:`pyriemann.utils.covariance.cospectrum`; :func:`pyriemann.utils.covariance.coherence` output is kept unchanged
 
+- Add :class:`pyriemann.spatialfilters.AJDC` for BSS and gBSS, with an example on artifact correction
+
 v0.2.6 (March 2020)
 -------------------
 
