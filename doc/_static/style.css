@@ -62,7 +62,7 @@ ul.dropdown-menu {
 
 /* From https://github.com/twbs/bootstrap/issues/1768 */
 *[id]:before {
-  display: block;
+  /* display: block; */
   content: " ";
   margin-top: -60px;
   height: 60px;
