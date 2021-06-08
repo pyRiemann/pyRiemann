@@ -81,6 +81,7 @@ Spatial Filtering
     :toctree: generated/
     :template: class.rst
 
+    Whitening
     Xdawn
     CSP
     SPoC
