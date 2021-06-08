@@ -1,15 +1,201 @@
 """Spatial filtering function."""
-import numpy
+import numbers
 
+import numpy
 from scipy.linalg import eigh, inv
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.extmath import stable_cumsum
 
+from .utils.base import sqrtm, invsqrtm
 from .utils.covariance import _check_est, normalize, get_nondiag_weight
 from .utils.mean import mean_covariance
 from .utils.ajd import ajd_pham
 from .utils.mean import _check_mean_method
 from . import estimation as est
+
+
+class Whitening(BaseEstimator, TransformerMixin):
+
+    """Implementation of the whitening, and an optional unsupervised dimension
+    reduction, with Covariance as input.
+
+    Parameters
+    ----------
+    metric : str (default "euclid")
+        The metric for the estimation of mean covariance matrix used for
+        whitening and dimension reduction.
+    dim_red : None | dict, (default None)
+        If None :
+            no dimension reduction during whitening.
+        If ``{'n_components': val}`` : 
+            dimension reduction defining the number of components;
+            ``val`` must be an integer superior to 1.
+        If ``{'expl_var': val}`` :
+            dimension reduction selecting the number of components such that
+            the amount of variance that needs to be explained is greater than
+            the percentage specified by ``val``.
+            ``val`` must be a float in (0,1], typically 0,99.
+        If ``{'max_cond': val}`` :
+            dimension reduction selecting the number of components such that
+            the condition number of the mean covariance matrix is lower than
+            ``val``.
+            This threshold has a physiological interpretation, because it can
+            be viewed as the ratio between the power of the strongest component
+            (usually, blink source) and the power of the lowest component you
+            don't want to keep (acquisition sensor noise).
+            ``val`` must be a float strictly superior to 1, typically 100.
+    verbose : bool (default False)
+        Verbose flag.
+
+    Attributes
+    ----------
+    n_components_ : int
+        If fit, the number of components after dimension reduction.
+    filters_ : ndarray, shape ``(n_channels_, n_components_)``
+        If fit, the spatial filters to whiten covariance matrices.
+    inv_filters_ : ndarray, shape ``(n_components_, n_channels_)``
+        If fit, the spatial filters to unwhiten covariance matrices.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.7.dev
+
+    """
+
+    def __init__(self, metric='euclid', dim_red=None, verbose=False):
+        """Init."""
+        self.metric = metric
+
+        if dim_red is None:
+            pass
+        elif isinstance(dim_red, dict):
+            if len(dim_red) > 1:
+                raise ValueError(
+                    'Dictionary dim_red must contain only one element (Got %d)'
+                    % len(dim_red))
+
+            self._dr_key = next(iter(dim_red))
+            self._dr_val = dim_red.get(self._dr_key)
+            if self._dr_key == 'n_components':
+                if self._dr_val < 1:
+                    raise ValueError(
+                        'Value n_components must be superior to 1 (Got %d)'
+                        % self._dr_val)
+                if not isinstance(self._dr_val, numbers.Integral):
+                    raise ValueError(
+                        'n_components=%d must be of type int (Got %r)'
+                        % (self._dr_val, type(self._dr_val)))
+            elif self._dr_key == 'expl_var':
+                if not 0 < self._dr_val <= 1:
+                    raise ValueError(
+                        'Value expl_var must be included in (0, 1] (Got %d)'
+                        % self._dr_val)
+            elif self._dr_key == 'max_cond':
+                if self._dr_val <= 1:
+                    raise ValueError(
+                        'Value max_cond must be strictly superior to 1 '
+                        '(Got %d)' % self._dr_val)
+            else:
+                raise ValueError(
+                    'Unknown key in parameter dim_red: %r' % self._dr_key)
+        else:
+            raise ValueError('Unknown type for parameter dim_red')
+
+        self.dim_red = dim_red
+        self.verbose = verbose
+
+    def fit(self, X, y=None):
+        """Train whitening spatial filters.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            Covariance matrices.
+        y : None | ndarray, shape (n_trials,) (default None)
+            Weight of each matrix, to compute the weighted mean covariance
+            matrix used for whitening and dimension reduction. If None, uniform
+            weights.
+
+        Returns
+        -------
+        self : Whitening instance
+            The Whitening instance.
+        """
+        # weighted mean of input covariance matrices
+        Xm = mean_covariance(X, metric=self.metric, sample_weight=y)
+
+        # whitening without dimension reduction
+        if self.dim_red is None:
+            self.n_components_ = X.shape[-1]
+            self.filters_ = invsqrtm(Xm)
+            self.inv_filters_ = sqrtm(Xm)
+
+        # whitening with dimension reduction
+        else:
+            eigvals, eigvecs = eigh(Xm, eigvals_only=False)
+            eigvals = eigvals[::-1]         # eigvals in descending order
+            eigvecs = numpy.fliplr(eigvecs) # idem for eigvecs
+
+            if self._dr_key == 'n_components':
+                self.n_components_ = min(self._dr_val, X.shape[-1])
+            elif self._dr_key == 'expl_var':
+                cum_expl_var = stable_cumsum(eigvals / eigvals.sum())
+                if self.verbose:
+                    print('Cumulative explained variance: \n %r'
+                          % cum_expl_var)
+                self.n_components_ = numpy.searchsorted(
+                    cum_expl_var, self._dr_val, side='right') + 1
+            elif self._dr_key == 'max_cond':
+                conds = eigvals[0] / eigvals
+                if self.verbose:
+                    print('Condition numbers: \n %r'
+                          % conds)
+                self.n_components_ = numpy.searchsorted(
+                    conds, self._dr_val, side='left')
+
+            # dimension reduction
+            if self.verbose:
+                print('Dimension reduction of Whitening on %d components'
+                      % self.n_components_)
+            pca_filters = eigvecs[:, :self.n_components_]
+            pca_sqrtvals = numpy.sqrt(eigvals[:self.n_components_])
+            # whitening
+            self.filters_ = pca_filters @ numpy.diag(1. / pca_sqrtvals)
+            self.inv_filters_ = numpy.diag(pca_sqrtvals).T @ pca_filters.T
+
+        return self
+
+    def transform(self, X):
+        """Apply whitening spatial filters.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            Covariance matrices.
+
+        Returns
+        -------
+        Xw : ndarray, shape (n_trials, n_components, n_components)
+            Whitened, and optionally reduced, covariance matrices.
+        """
+        Xw = self.filters_.T @ X @ self.filters_
+        return Xw
+
+    def inverse_transform(self, X):
+        """Apply inverse whitening spatial filters.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_components, n_components)
+            Whitened, and optionally reduced, covariance matrices.
+
+        Returns
+        -------
+        Xiw : ndarray, shape (n_trials, n_channels, n_channels)
+            Unwhitened, and optionally unreduced, covariance matrices.
+        """
+        Xiw = self.inv_filters_.T @ X @ self.inv_filters_
+        return Xiw
 
 
 class Xdawn(BaseEstimator, TransformerMixin):
@@ -504,9 +690,10 @@ class AJDC(BaseEstimator, TransformerMixin):
         The maximal frequency to be returned.
     fs : float | None, (default None)
         The sampling frequency of the signal.
-    expl_var : float (default 0.999)
-        The percentage of explained variance in (0, 1], for dimension reduction
-        of cospectra, because Pham's AJD is sensitive to matrices conditioning.
+    dim_red : None | dict, (default {'max_cond': 100})
+        Parameter for dimension reduction of cospectra, because Pham's AJD is
+        sensitive to matrices conditioning. For more details, see parameter
+        ``dim_red`` of :class:`pyriemann.spatialfilters.Whitening`.
     verbose : bool (default True)
         Verbose flag.
 
@@ -549,17 +736,15 @@ class AJDC(BaseEstimator, TransformerMixin):
     """
 
     def __init__(self, window=128, overlap=0.5, fmin=None, fmax=None, fs=None,
-                 expl_var=0.999, verbose=True):
+                 dim_red={'max_cond': 100}, verbose=True):
         """Init."""
-        if not 0 < expl_var <= 1:
-            raise ValueError('Parameter expl_var must be included in (0, 1]')
 
         self.window = window
         self.overlap = overlap
         self.fmin = fmin
         self.fmax = fmax
         self.fs = fs
-        self.expl_var = expl_var
+        self.dim_red = dim_red
         self.verbose = verbose
 
     def fit(self, X, y=None):
@@ -603,7 +788,6 @@ class AJDC(BaseEstimator, TransformerMixin):
                     raise ValueError('Unequal number of channels')
             cosp.append(cosp_)
         cosp = numpy.transpose(numpy.array(cosp), axes=(0, 1, 4, 2, 3))
-
         # trace-normalization of cospectra, Eq(3) in [2]
         cosp = normalize(cosp, "trace")
         # average of cospectra across subjects, Eq(7) in [2]
@@ -612,41 +796,21 @@ class AJDC(BaseEstimator, TransformerMixin):
         self._cosp_channels = numpy.concatenate(cosp, axis=0)
         # estimation of non-diagonality weights, Eq(B.1) in [1]
         weights = get_nondiag_weight(self._cosp_channels)
-
-        # dimension reduction, computed on the weighted mean of cospectra
-        # across frequencies (and conditions)
-        cosp_av = numpy.average(
-            self._cosp_channels,
-            axis=0,
-            weights=weights)
-        eigvals, eigvecs = eigh(cosp_av, eigvals_only=False)
-        eigvals = eigvals[::-1]         # sorted in descending order
-        eigvecs = numpy.fliplr(eigvecs) # idem
-        cum_expl_var = stable_cumsum(eigvals / eigvals.sum())
-        self.n_sources_ = numpy.searchsorted(
-            cum_expl_var, self.expl_var, side='right') + 1
+        # dimension reduction and whitening, Eq.(8) in [2], computed on the
+        # weighted mean of cospectra across frequencies (and conditions)
+        whit = Whitening(metric='euclid', dim_red=self.dim_red)
+        cosp_rw = whit.fit_transform(self._cosp_channels, weights)
+        self.n_sources_ = whit.n_components_
         if self.verbose:
-            print("Fitting AJDC to data using {} components ".format(
-                self.n_sources_))
-        pca_filters = eigvecs[:, :self.n_sources_]
-        pca_vals = eigvals[:self.n_sources_]
-
-        # whitening, Eq.(8) in [2]
-        whit_filters = pca_filters @ numpy.diag(1. / numpy.sqrt(pca_vals))
-        whit_inv_filters = pca_filters @ numpy.diag(numpy.sqrt(pca_vals))
-
-        # apply dimension reduction and whitening on cospectra
-        cosp_rw = whit_filters.T @ self._cosp_channels @ whit_filters
-
+            print('Fitting AJDC to data using %d components' % self.n_sources_)
         # approximate joint diagonalization, currently by Pham's algorithm [3]
         diag_filters, self._cosp_sources = ajd_pham(
             cosp_rw,
             n_iter_max=100,
             sample_weight=weights)
-
         # computation of forward and backward filters, Eq.(9) and (10) in [2]
-        self.forward_filters_ = diag_filters @ whit_filters.T
-        self.backward_filters_ = whit_inv_filters @ inv(diag_filters)
+        self.forward_filters_ = diag_filters @ whit.filters_.T
+        self.backward_filters_ = whit.inv_filters_.T @ inv(diag_filters)
         return self
 
     def transform(self, X):
