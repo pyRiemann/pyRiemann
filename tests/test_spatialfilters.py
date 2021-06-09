@@ -29,24 +29,27 @@ def test_Whitening():
     assert whit.metric=='euclid'
     assert whit.dim_red==None
     assert whit.verbose==False
-    with pytest.raises(ValueError): # len dim_red not equal to 1
-        Whitening(dim_red={'n_components': 2, 'expl_var': 0.5})
-    with pytest.raises(ValueError): # n_components not superior to 1
-        Whitening(dim_red={'n_components': 0})
-    with pytest.raises(ValueError): # n_components not a int
-        Whitening(dim_red={'n_components': 2.5})
-    with pytest.raises(ValueError): # expl_var out of bound
-        Whitening(dim_red={'expl_var': 0})
-    with pytest.raises(ValueError): # expl_var out of bound
-        Whitening(dim_red={'expl_var': 1.1})
-    with pytest.raises(ValueError): # max_cond not strictly superior to 1
-        Whitening(dim_red={'max_cond': 1})
-    with pytest.raises(ValueError): # unknown type
-        Whitening(dim_red='max_cond')
-    with pytest.raises(ValueError): # unknown type
-        Whitening(dim_red=20)
 
     # Test Fit
+    with pytest.raises(ValueError): # len dim_red not equal to 1
+        Whitening(dim_red={'n_components': 2, 'expl_var': 0.5}).fit(cov)
+    with pytest.raises(ValueError): # n_components not superior to 1
+        Whitening(dim_red={'n_components': 0}).fit(cov)
+    with pytest.raises(ValueError): # n_components not a int
+        Whitening(dim_red={'n_components': 2.5}).fit(cov)
+    with pytest.raises(ValueError): # expl_var out of bound
+        Whitening(dim_red={'expl_var': 0}).fit(cov)
+    with pytest.raises(ValueError): # expl_var out of bound
+        Whitening(dim_red={'expl_var': 1.1}).fit(cov)
+    with pytest.raises(ValueError): # max_cond not strictly superior to 1
+        Whitening(dim_red={'max_cond': 1}).fit(cov)
+    with pytest.raises(ValueError): # unknown key
+        Whitening(dim_red={'abc': 42}).fit(cov)
+    with pytest.raises(ValueError): # unknown type
+        Whitening(dim_red='max_cond').fit(cov)
+    with pytest.raises(ValueError): # unknown type
+        Whitening(dim_red=20).fit(cov)
+
     whit = Whitening().fit(cov)
     assert whit.n_components_ == n_channels
     assert_array_equal(whit.filters_.shape, [n_channels, n_channels])
@@ -270,7 +273,7 @@ def test_AJDC():
     ajdc = AJDC(fmin=1, fmax=32, fs=64)
     assert ajdc.window == 128
     assert ajdc.overlap == 0.5
-    assert ajdc.dim_red == {'max_cond': 100}
+    assert ajdc.dim_red == None
     assert ajdc.verbose
 
     # Test fit

@@ -41,8 +41,8 @@ class Whitening(BaseEstimator, TransformerMixin):
             ``val``.
             This threshold has a physiological interpretation, because it can
             be viewed as the ratio between the power of the strongest component
-            (usually, blink source) and the power of the lowest component you
-            don't want to keep (acquisition sensor noise).
+            (usually, eye-blink source) and the power of the lowest component
+            you don't want to keep (acquisition sensor noise).
             ``val`` must be a float strictly superior to 1, typically 100.
     verbose : bool (default False)
         Verbose flag.
@@ -64,43 +64,8 @@ class Whitening(BaseEstimator, TransformerMixin):
 
     def __init__(self, metric='euclid', dim_red=None, verbose=False):
         """Init."""
+
         self.metric = metric
-
-        if dim_red is None:
-            pass
-        elif isinstance(dim_red, dict):
-            if len(dim_red) > 1:
-                raise ValueError(
-                    'Dictionary dim_red must contain only one element (Got %d)'
-                    % len(dim_red))
-
-            self._dr_key = next(iter(dim_red))
-            self._dr_val = dim_red.get(self._dr_key)
-            if self._dr_key == 'n_components':
-                if self._dr_val < 1:
-                    raise ValueError(
-                        'Value n_components must be superior to 1 (Got %d)'
-                        % self._dr_val)
-                if not isinstance(self._dr_val, numbers.Integral):
-                    raise ValueError(
-                        'n_components=%d must be of type int (Got %r)'
-                        % (self._dr_val, type(self._dr_val)))
-            elif self._dr_key == 'expl_var':
-                if not 0 < self._dr_val <= 1:
-                    raise ValueError(
-                        'Value expl_var must be included in (0, 1] (Got %d)'
-                        % self._dr_val)
-            elif self._dr_key == 'max_cond':
-                if self._dr_val <= 1:
-                    raise ValueError(
-                        'Value max_cond must be strictly superior to 1 '
-                        '(Got %d)' % self._dr_val)
-            else:
-                raise ValueError(
-                    'Unknown key in parameter dim_red: %r' % self._dr_key)
-        else:
-            raise ValueError('Unknown type for parameter dim_red')
-
         self.dim_red = dim_red
         self.verbose = verbose
 
@@ -131,27 +96,55 @@ class Whitening(BaseEstimator, TransformerMixin):
             self.inv_filters_ = sqrtm(Xm)
 
         # whitening with dimension reduction
-        else:
+        elif isinstance(self.dim_red, dict):
+            if len(self.dim_red) > 1:
+                raise ValueError(
+                    'Dictionary dim_red must contain only one element (Got %d)'
+                    % len(self.dim_red))
+            dim_red_key = next(iter(self.dim_red))
+            dim_red_val = self.dim_red.get(dim_red_key)
+
             eigvals, eigvecs = eigh(Xm, eigvals_only=False)
             eigvals = eigvals[::-1]         # eigvals in descending order
             eigvecs = numpy.fliplr(eigvecs) # idem for eigvecs
 
-            if self._dr_key == 'n_components':
-                self.n_components_ = min(self._dr_val, X.shape[-1])
-            elif self._dr_key == 'expl_var':
+            if dim_red_key == 'n_components':
+                if dim_red_val < 1:
+                    raise ValueError(
+                        'Value n_components must be superior to 1 (Got %d)'
+                        % dim_red_val)
+                if not isinstance(dim_red_val, numbers.Integral):
+                    raise ValueError(
+                        'n_components=%d must be of type int (Got %r)'
+                        % (dim_red_val, type(dim_red_val)))
+                self.n_components_ = min(dim_red_val, X.shape[-1])
+
+            elif dim_red_key == 'expl_var':
+                if not 0 < dim_red_val <= 1:
+                    raise ValueError(
+                        'Value expl_var must be included in (0, 1] (Got %d)'
+                        % dim_red_val)
                 cum_expl_var = stable_cumsum(eigvals / eigvals.sum())
                 if self.verbose:
                     print('Cumulative explained variance: \n %r'
                           % cum_expl_var)
                 self.n_components_ = numpy.searchsorted(
-                    cum_expl_var, self._dr_val, side='right') + 1
-            elif self._dr_key == 'max_cond':
+                    cum_expl_var, dim_red_val, side='right') + 1
+
+            elif dim_red_key == 'max_cond':
+                if dim_red_val <= 1:
+                    raise ValueError(
+                        'Value max_cond must be strictly superior to 1 '
+                        '(Got %d)' % dim_red_val)
                 conds = eigvals[0] / eigvals
                 if self.verbose:
-                    print('Condition numbers: \n %r'
-                          % conds)
+                    print('Condition numbers: \n %r' % conds)
                 self.n_components_ = numpy.searchsorted(
-                    conds, self._dr_val, side='left')
+                    conds, dim_red_val, side='left')
+
+            else:
+                raise ValueError(
+                    'Unknown key in parameter dim_red: %r' % dim_red_key)
 
             # dimension reduction
             if self.verbose:
@@ -162,6 +155,10 @@ class Whitening(BaseEstimator, TransformerMixin):
             # whitening
             self.filters_ = pca_filters @ numpy.diag(1. / pca_sqrtvals)
             self.inv_filters_ = numpy.diag(pca_sqrtvals).T @ pca_filters.T
+
+        else:
+            raise ValueError('Unknown type for parameter dim_red: %r'
+                             % type(self.dim_red))
 
         return self
 
@@ -690,7 +687,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         The maximal frequency to be returned.
     fs : float | None, (default None)
         The sampling frequency of the signal.
-    dim_red : None | dict, (default {'max_cond': 100})
+    dim_red : None | dict, (default None)
         Parameter for dimension reduction of cospectra, because Pham's AJD is
         sensitive to matrices conditioning. For more details, see parameter
         ``dim_red`` of :class:`pyriemann.spatialfilters.Whitening`.
@@ -736,7 +733,7 @@ class AJDC(BaseEstimator, TransformerMixin):
     """
 
     def __init__(self, window=128, overlap=0.5, fmin=None, fmax=None, fs=None,
-                 dim_red={'max_cond': 100}, verbose=True):
+                 dim_red=None, verbose=True):
         """Init."""
 
         self.window = window
@@ -788,6 +785,7 @@ class AJDC(BaseEstimator, TransformerMixin):
                     raise ValueError('Unequal number of channels')
             cosp.append(cosp_)
         cosp = numpy.transpose(numpy.array(cosp), axes=(0, 1, 4, 2, 3))
+
         # trace-normalization of cospectra, Eq(3) in [2]
         cosp = normalize(cosp, "trace")
         # average of cospectra across subjects, Eq(7) in [2]
@@ -796,18 +794,22 @@ class AJDC(BaseEstimator, TransformerMixin):
         self._cosp_channels = numpy.concatenate(cosp, axis=0)
         # estimation of non-diagonality weights, Eq(B.1) in [1]
         weights = get_nondiag_weight(self._cosp_channels)
+
         # dimension reduction and whitening, Eq.(8) in [2], computed on the
         # weighted mean of cospectra across frequencies (and conditions)
-        whit = Whitening(metric='euclid', dim_red=self.dim_red)
+        whit = Whitening(
+            metric='euclid',
+            dim_red=self.dim_red,
+            verbose=self.verbose)
         cosp_rw = whit.fit_transform(self._cosp_channels, weights)
         self.n_sources_ = whit.n_components_
-        if self.verbose:
-            print('Fitting AJDC to data using %d components' % self.n_sources_)
+
         # approximate joint diagonalization, currently by Pham's algorithm [3]
         diag_filters, self._cosp_sources = ajd_pham(
             cosp_rw,
             n_iter_max=100,
             sample_weight=weights)
+
         # computation of forward and backward filters, Eq.(9) and (10) in [2]
         self.forward_filters_ = diag_filters @ whit.filters_.T
         self.backward_filters_ = whit.inv_filters_.T @ inv(diag_filters)
