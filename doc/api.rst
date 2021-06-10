@@ -81,12 +81,22 @@ Spatial Filtering
     :toctree: generated/
     :template: class.rst
 
-    Whitening
     Xdawn
     CSP
     SPoC
     BilinearFilter
     AJDC
+
+Preprocessing
+-------------
+.. _spatialfilter_api:
+.. currentmodule:: pyriemann.preprocessing
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    Whitening
 
 Channel selection
 ------------------
