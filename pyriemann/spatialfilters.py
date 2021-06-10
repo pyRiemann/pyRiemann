@@ -34,7 +34,7 @@ class Whitening(BaseEstimator, TransformerMixin):
             dimension reduction selecting the number of components such that
             the amount of variance that needs to be explained is greater than
             the percentage specified by ``val``.
-            ``val`` must be a float in (0,1], typically 0,99.
+            ``val`` must be a float in (0,1], typically ``0.99``.
         If ``{'max_cond': val}`` :
             dimension reduction selecting the number of components such that
             the condition number of the mean covariance matrix is lower than
