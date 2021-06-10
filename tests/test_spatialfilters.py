@@ -17,7 +17,7 @@ def generate_cov(Nt, Ne):
     return covmats
 
 
-def test_Whitening():
+def test_whitening():
     """Test Whitening"""
     n_trials, n_channels, n_components = 20, 6, 3
     cov = generate_cov(n_trials, n_channels)
