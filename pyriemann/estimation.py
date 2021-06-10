@@ -83,17 +83,17 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     For each class, a prototyped response is obtained by average across trial :
 
     .. math::
-        \mathbf{P} = \\frac{1}{N} \sum_i^N \mathbf{X}_i
+        \mathbf{P} = \frac{1}{N} \sum_i^N \mathbf{X}_i
 
     and a super trial is build using the concatenation of P and the trial X :
 
     .. math::
-        \mathbf{\\tilde{X}}_i =  \left[
-                                 \\begin{array}{c}
-                                 \mathbf{P} \\\\
-                                 \mathbf{X}_i
-                                 \end{array}
-                                 \\right]
+        \mathbf{\tilde{X}}_i =  \left[
+                                \begin{array}{c}
+                                \mathbf{P} \\
+                                \mathbf{X}_i
+                                \end{array}
+                                \right]
 
     This super trial :math:`\mathbf{\\tilde{X}}_i` will be used for covariance
     estimation.

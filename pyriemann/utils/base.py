@@ -20,7 +20,7 @@ def sqrtm(Ci):
     r"""Return the matrix square root of a covariance matrix defined by :
 
     .. math::
-            \mathbf{C} = \mathbf{V} \left( \mathbf{\Lambda} \\right)^{1/2} \mathbf{V}^T
+        \mathbf{C} = \mathbf{V} \left( \mathbf{\Lambda} \right)^{1/2} \mathbf{V}^T
 
     where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
     and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{Ci}`
@@ -36,7 +36,7 @@ def logm(Ci):
     r"""Return the matrix logarithm of a covariance matrix defined by :
 
     .. math::
-            \mathbf{C} = \mathbf{V} \log{(\mathbf{\Lambda})} \mathbf{V}^T
+        \mathbf{C} = \mathbf{V} \log{(\mathbf{\Lambda})} \mathbf{V}^T
 
     where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
     and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{Ci}`
@@ -52,7 +52,7 @@ def expm(Ci):
     r"""Return the matrix exponential of a covariance matrix defined by :
 
     .. math::
-            \mathbf{C} = \mathbf{V} \exp{(\mathbf{\Lambda})} \mathbf{V}^T
+        \mathbf{C} = \mathbf{V} \exp{(\mathbf{\Lambda})} \mathbf{V}^T
 
     where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
     and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{Ci}`
@@ -68,7 +68,7 @@ def invsqrtm(Ci):
     r"""Return the inverse matrix square root of a covariance matrix defined by :
 
     .. math::
-            \mathbf{C} = \mathbf{V} \left( \mathbf{\Lambda} \\right)^{-1/2} \mathbf{V}^T
+        \mathbf{C} = \mathbf{V} \left( \mathbf{\Lambda} \right)^{-1/2} \mathbf{V}^T
 
     where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
     and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{Ci}`
@@ -82,10 +82,10 @@ def invsqrtm(Ci):
 
 
 def powm(Ci, alpha):
-    r"""Return the matrix power :math:`\\alpha` of a covariance matrix defined by :
+    r"""Return the matrix power :math:`\alpha` of a covariance matrix defined by :
 
     .. math::
-            \mathbf{C} = \mathbf{V} \left( \mathbf{\Lambda} \\right)^{\\alpha} \mathbf{V}^T
+        \mathbf{C} = \mathbf{V} \left( \mathbf{\Lambda} \right)^{\alpha} \mathbf{V}^T
 
     where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
     and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{Ci}`

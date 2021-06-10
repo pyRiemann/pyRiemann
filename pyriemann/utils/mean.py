@@ -28,7 +28,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     riemannian distance to the mean.
 
     .. math::
-            \mathbf{C} = \\arg\min{(\sum_i \delta_R ( \mathbf{C} , \mathbf{C}_i)^2)}  # noqa
+        \mathbf{C} = \arg\min{(\sum_i \delta_R ( \mathbf{C} , \mathbf{C}_i)^2)}
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param tol: the tolerance to stop the gradient descent
@@ -37,7 +37,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     :param sample_weight: the weight of each sample
     :returns: the mean covariance matrix
 
-    """
+    """  # noqa
     # init
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
@@ -77,7 +77,7 @@ def mean_logeuclid(covmats, sample_weight=None):
     metric.
 
     .. math::
-            \mathbf{C} = \exp{(\\frac{1}{N} \sum_i \log{\mathbf{C}_i})}
+        \mathbf{C} = \exp{(\frac{1}{N} \sum_i \log{\mathbf{C}_i})}
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param sample_weight: the weight of each sample
@@ -145,7 +145,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     This is an iterative procedure where the update is:
 
     .. math::
-        \mathbf{C} = \left(\sum_i \left( 0.5 \mathbf{C} + 0.5 \mathbf{C}_i \\right)^{-1} \\right)^{-1}  # noqa
+        \mathbf{C} = \left(\sum_i \left( 0.5 \mathbf{C} + 0.5 \mathbf{C}_i \right)^{-1} \right)^{-1}
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param tol: the tolerance to stop the gradient descent
@@ -155,7 +155,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
 
     :returns: the mean covariance matrix
 
-    """
+    """  # noqa
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
     if init is None:
@@ -184,10 +184,10 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
                      sample_weight=None):
     r"""Return the mean covariance matrix according to the wasserstein metric.
 
-    This is an iterative procedure where the update is [1]:
+    This is an iterative procedure where the update is [1]_:
 
     .. math::
-        \mathbf{K} = \left(\sum_i \left( \mathbf{K} \mathbf{C}_i \mathbf{K} \\right)^{1/2} \\right)^{1/2}  # noqa
+        \mathbf{K} = \left(\sum_i \left( \mathbf{K} \mathbf{C}_i \mathbf{K} \right)^{1/2} \right)^{1/2}
 
     with :math:`\mathbf{K} = \mathbf{C}^{1/2}`.
 
@@ -201,10 +201,10 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
 
     References
     ----------
-    [1] Barbaresco, F. "Geometric Radar Processing based on Frechet distance:
-    Information geometry versus Optimal Transport Theory", Radar Symposium
-    (IRS), 2011 Proceedings International.
-    """
+    .. [1] Barbaresco, F. "Geometric Radar Processing based on Frechet distance:
+        Information geometry versus Optimal Transport Theory", Radar Symposium
+        (IRS), 2011 Proceedings International.
+    """  # noqa
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
     if init is None:
@@ -237,7 +237,7 @@ def mean_euclid(covmats, sample_weight=None):
     r"""Return the mean covariance matrix according to the euclidean metric :
 
     .. math::
-        \mathbf{C} = \\frac{1}{N} \sum_i \mathbf{C}_i
+        \mathbf{C} = \frac{1}{N} \sum_i \mathbf{C}_i
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param sample_weight: the weight of each sample
@@ -318,10 +318,9 @@ def mean_identity(covmats, sample_weight=None):
 def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
     """Return the mean covariance matrix according to the metric
 
-
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'identity', 'wasserstein', 'ale',  # noqa
-    'harmonic', 'kullback_sym' or a callable function
+        'harmonic', 'kullback_sym' or a callable function
     :param sample_weight: the weight of each sample
     :param args: the argument passed to the sub function
     :returns: the mean covariance matrix

@@ -239,8 +239,7 @@ class PermutationModel(BasePermutation):
 
 
 class PermutationDistance(BasePermutation):
-    """
-    Permutation test based on distance.
+    """Permutation test based on distance.
 
     Perform a permutation test based on distance. You have the choice of 3
     different statistic:
@@ -305,9 +304,9 @@ class PermutationDistance(BasePermutation):
     PermutationModel
 
     References
-    --------
+    ----------
     .. [1] Anderson, J. "A new method for non-parametric multivariate analysis
-           of variance." Austral ecology. 2001.
+        of variance." Austral ecology. 2001.
     """
 
     def __init__(self,

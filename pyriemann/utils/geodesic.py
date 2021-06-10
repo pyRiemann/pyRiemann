@@ -30,7 +30,7 @@ def geodesic_riemann(A, B, alpha=0.5):
     between A and B:
 
     .. math::
-        \mathbf{C} = \mathbf{A}^{1/2} \left( \mathbf{A}^{-1/2} \mathbf{B} \mathbf{A}^{-1/2} \\right)^\\alpha \mathbf{A}^{1/2}
+        \mathbf{C} = \mathbf{A}^{1/2} \left( \mathbf{A}^{-1/2} \mathbf{B} \mathbf{A}^{-1/2} \right)^\alpha \mathbf{A}^{1/2}
 
     C is equal to A if alpha = 0 and B if alpha = 1
 
@@ -53,7 +53,7 @@ def geodesic_euclid(A, B, alpha=0.5):
     between A and B:
 
     .. math::
-            \mathbf{C} = (1-\\alpha) \mathbf{A} + \\alpha \mathbf{B}
+        \mathbf{C} = (1-\alpha) \mathbf{A} + \alpha \mathbf{B}
 
     C is equal to A if alpha = 0 and B if alpha = 1
 
@@ -71,7 +71,7 @@ def geodesic_logeuclid(A, B, alpha=0.5):
     between A and B  :
 
     .. math::
-            \mathbf{C} =  \exp \left( (1-\\alpha) \log(\mathbf{A}) + \\alpha \log(\mathbf{B}) \\right)
+        \mathbf{C} =  \exp \left( (1-\alpha) \log(\mathbf{A}) + \alpha \log(\mathbf{B}) \right)
 
     C is equal to A if alpha = 0 and B if alpha = 1
 
