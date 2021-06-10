@@ -530,7 +530,7 @@ class AJDC(BaseEstimator, TransformerMixin):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.2.7
 
     See Also
     --------

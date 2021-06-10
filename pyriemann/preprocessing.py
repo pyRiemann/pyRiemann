@@ -53,7 +53,7 @@ class Whitening(BaseEstimator, TransformerMixin):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.2.7
 
     """
     def __init__(self, metric='euclid', dim_red=None, verbose=False):
