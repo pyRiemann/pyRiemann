@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.testing import assert_array_equal
-from pyriemann.spatialfilters import Xdawn, CSP, SPoC, BilinearFilter, AJDC
+from pyriemann.spatialfilters import (Xdawn, CSP, SPoC,
+                                      BilinearFilter, AJDC)
 import pytest
 
 
@@ -165,14 +166,10 @@ def test_AJDC():
     X = rs.randn(n_subjects, n_conditions, n_channels, n_samples)
 
     # Test Init
-    with pytest.raises(ValueError): # value out of bounds
-        AJDC(expl_var=0)
-    with pytest.raises(ValueError): # value out of bounds
-        AJDC(expl_var=1.1)
     ajdc = AJDC(fmin=1, fmax=32, fs=64)
     assert ajdc.window == 128
     assert ajdc.overlap == 0.5
-    assert ajdc.expl_var == 0.999
+    assert ajdc.dim_red == None
     assert ajdc.verbose
 
     # Test fit

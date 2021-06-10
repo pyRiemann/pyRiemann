@@ -68,7 +68,7 @@ signal.plot(duration=duration, start=0, n_channels=ch_count,
 window, overlap = sfreq, 0.5
 fmin, fmax = 1, 32
 ajdc = AJDC(window=window, overlap=overlap, fmin=fmin, fmax=fmax, fs=sfreq,
-            expl_var=0.99)
+            dim_red={'max_cond': 100})
 ajdc.fit(signal_raw[np.newaxis, np.newaxis, ...])
 freqs = ajdc.freqs_
 

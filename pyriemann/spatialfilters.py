@@ -1,15 +1,14 @@
 """Spatial filtering function."""
 import numpy
-
 from scipy.linalg import eigh, inv
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.utils.extmath import stable_cumsum
 
 from .utils.covariance import _check_est, normalize, get_nondiag_weight
 from .utils.mean import mean_covariance
 from .utils.ajd import ajd_pham
 from .utils.mean import _check_mean_method
 from . import estimation as est
+from .preprocessing import Whitening
 
 
 class Xdawn(BaseEstimator, TransformerMixin):
@@ -479,9 +478,12 @@ class AJDC(BaseEstimator, TransformerMixin):
     Second-Order Statistics (SOS), estimating spectrally uncorrelated sources.
 
     It can be applied:
-        - on a single subject, to solve the classical BSS problem [1]_,
-        - on several subjects, to solve the group BSS (gBSS) problem [2]_,
-        - on several experimental conditions (for eg, baseline versus task).
+
+    * on a single subject, to solve the classical BSS problem [1]_,
+    * on several subjects, to solve the group BSS (gBSS) problem [2]_,
+    * on several experimental conditions (for eg, baseline versus task), to
+      exploit the diversity of source energy between conditions in addition
+      to generic coloration and time-varying energy [1]_.
 
     AJDC estimates Fourier cospectral matrices by the Welch's method, and
     applies a trace-normalization. If necessary, it averages cospectra across
@@ -504,9 +506,10 @@ class AJDC(BaseEstimator, TransformerMixin):
         The maximal frequency to be returned.
     fs : float | None, (default None)
         The sampling frequency of the signal.
-    expl_var : float (default 0.999)
-        The percentage of explained variance in (0, 1], for dimension reduction
-        of cospectra, because Pham's AJD is sensitive to matrices conditioning.
+    dim_red : None | dict, (default None)
+        Parameter for dimension reduction of cospectra, because Pham's AJD is
+        sensitive to matrices conditioning. For more details, see parameter
+        ``dim_red`` of :class:`pyriemann.spatialfilters.Whitening`.
     verbose : bool (default True)
         Verbose flag.
 
@@ -527,7 +530,7 @@ class AJDC(BaseEstimator, TransformerMixin):
 
     Notes
     -----
-    .. versionadded:: 0.2.7.dev
+    .. versionadded:: 0.2.8
 
     See Also
     --------
@@ -549,17 +552,15 @@ class AJDC(BaseEstimator, TransformerMixin):
     """
 
     def __init__(self, window=128, overlap=0.5, fmin=None, fmax=None, fs=None,
-                 expl_var=0.999, verbose=True):
+                 dim_red=None, verbose=True):
         """Init."""
-        if not 0 < expl_var <= 1:
-            raise ValueError('Parameter expl_var must be included in (0, 1]')
 
         self.window = window
         self.overlap = overlap
         self.fmin = fmin
         self.fmax = fmax
         self.fs = fs
-        self.expl_var = expl_var
+        self.dim_red = dim_red
         self.verbose = verbose
 
     def fit(self, X, y=None):
@@ -613,30 +614,14 @@ class AJDC(BaseEstimator, TransformerMixin):
         # estimation of non-diagonality weights, Eq(B.1) in [1]
         weights = get_nondiag_weight(self._cosp_channels)
 
-        # dimension reduction, computed on the weighted mean of cospectra
-        # across frequencies (and conditions)
-        cosp_av = numpy.average(
-            self._cosp_channels,
-            axis=0,
-            weights=weights)
-        eigvals, eigvecs = eigh(cosp_av, eigvals_only=False)
-        eigvals = eigvals[::-1]         # sorted in descending order
-        eigvecs = numpy.fliplr(eigvecs) # idem
-        cum_expl_var = stable_cumsum(eigvals / eigvals.sum())
-        self.n_sources_ = numpy.searchsorted(
-            cum_expl_var, self.expl_var, side='right') + 1
-        if self.verbose:
-            print("Fitting AJDC to data using {} components ".format(
-                self.n_sources_))
-        pca_filters = eigvecs[:, :self.n_sources_]
-        pca_vals = eigvals[:self.n_sources_]
-
-        # whitening, Eq.(8) in [2]
-        whit_filters = pca_filters @ numpy.diag(1. / numpy.sqrt(pca_vals))
-        whit_inv_filters = pca_filters @ numpy.diag(numpy.sqrt(pca_vals))
-
-        # apply dimension reduction and whitening on cospectra
-        cosp_rw = whit_filters.T @ self._cosp_channels @ whit_filters
+        # dimension reduction and whitening, Eq.(8) in [2], computed on the
+        # weighted mean of cospectra across frequencies (and conditions)
+        whit = Whitening(
+            metric='euclid',
+            dim_red=self.dim_red,
+            verbose=self.verbose)
+        cosp_rw = whit.fit_transform(self._cosp_channels, weights)
+        self.n_sources_ = whit.n_components_
 
         # approximate joint diagonalization, currently by Pham's algorithm [3]
         diag_filters, self._cosp_sources = ajd_pham(
@@ -645,8 +630,8 @@ class AJDC(BaseEstimator, TransformerMixin):
             sample_weight=weights)
 
         # computation of forward and backward filters, Eq.(9) and (10) in [2]
-        self.forward_filters_ = diag_filters @ whit_filters.T
-        self.backward_filters_ = whit_inv_filters @ inv(diag_filters)
+        self.forward_filters_ = diag_filters @ whit.filters_.T
+        self.backward_filters_ = whit.inv_filters_.T @ inv(diag_filters)
         return self
 
     def transform(self, X):

@@ -87,6 +87,17 @@ Spatial Filtering
     BilinearFilter
     AJDC
 
+Preprocessing
+-------------
+.. _preprocessing_api:
+.. currentmodule:: pyriemann.preprocessing
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    Whitening
+
 Channel selection
 ------------------
 .. _channelselection_api:
