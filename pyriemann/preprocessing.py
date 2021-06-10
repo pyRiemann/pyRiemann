@@ -82,7 +82,10 @@ class Whitening(BaseEstimator, TransformerMixin):
             The Whitening instance.
         """
         # weighted mean of input covariance matrices
-        Xm = mean_covariance(X, metric=self.metric, sample_weight=sample_weight)
+        Xm = mean_covariance(
+            X,
+            metric=self.metric,
+            sample_weight=sample_weight)
 
         # whitening without dimension reduction
         if self.dim_red is None:

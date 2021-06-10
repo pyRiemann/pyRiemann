@@ -23,7 +23,7 @@ def test_whitening():
     n_trials, n_channels, n_components = 20, 6, 3
     cov = generate_cov(n_trials, n_channels)
     rs = np.random.RandomState(1234)
-    weights = rs.rand(n_trials)
+    w = rs.rand(n_trials)
     max_cond = 10
 
     # Test Init
@@ -52,25 +52,25 @@ def test_whitening():
     with pytest.raises(ValueError): # unknown type
         Whitening(dim_red=20).fit(cov)
 
-    whit = Whitening().fit(cov)
+    whit = Whitening().fit(cov, sample_weight=w)
     assert whit.n_components_ == n_channels
     assert_array_equal(whit.filters_.shape, [n_channels, n_channels])
     assert_array_equal(whit.inv_filters_.shape, [n_channels, n_channels])
 
     whit = Whitening(
         dim_red={'n_components': n_components}
-    ).fit(cov, sample_weight=weights)
+    ).fit(cov, sample_weight=w)
     assert whit.n_components_ == n_components
     assert_array_equal(whit.filters_.shape, [n_channels, n_components])
     assert_array_equal(whit.inv_filters_.shape, [n_components, n_channels])
 
-    whit = Whitening(dim_red={'expl_var': 0.9}).fit(cov)
+    whit = Whitening(dim_red={'expl_var': 0.9}).fit(cov, sample_weight=w)
     assert whit.n_components_ <= n_channels
     assert_array_equal(whit.filters_.shape, [n_channels, whit.n_components_])
     assert_array_equal(whit.inv_filters_.shape,
                        [whit.n_components_, n_channels])
 
-    whit = Whitening(dim_red={'max_cond': max_cond}).fit(cov, weights)
+    whit = Whitening(dim_red={'max_cond': max_cond}).fit(cov, sample_weight=w)
     assert whit.n_components_ <= n_channels
     assert_array_equal(whit.filters_.shape, [n_channels, whit.n_components_])
     assert_array_equal(whit.inv_filters_.shape,

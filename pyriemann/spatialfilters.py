@@ -478,9 +478,12 @@ class AJDC(BaseEstimator, TransformerMixin):
     Second-Order Statistics (SOS), estimating spectrally uncorrelated sources.
 
     It can be applied:
-        - on a single subject, to solve the classical BSS problem [1]_,
-        - on several subjects, to solve the group BSS (gBSS) problem [2]_,
-        - on several experimental conditions (for eg, baseline versus task).
+
+    * on a single subject, to solve the classical BSS problem [1]_,
+    * on several subjects, to solve the group BSS (gBSS) problem [2]_,
+    * on several experimental conditions (for eg, baseline versus task), to
+      exploit the diversity of source energy between conditions in addition
+      to generic coloration and time-varying energy [1]_.
 
     AJDC estimates Fourier cospectral matrices by the Welch's method, and
     applies a trace-normalization. If necessary, it averages cospectra across
@@ -527,7 +530,7 @@ class AJDC(BaseEstimator, TransformerMixin):
 
     Notes
     -----
-    .. versionadded:: 0.2.7.dev
+    .. versionadded:: 0.2.8
 
     See Also
     --------

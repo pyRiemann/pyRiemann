@@ -24,7 +24,7 @@ v0.2.7.dev
 
 - Add :class:`pyriemann.spatialfilters.AJDC` for BSS and gBSS, with an example on artifact correction
 
-- Add :class:`pyriemann.spatialfilters.Whitening`, with optional dimension reduction
+- Add :class:`pyriemann.preprocessing.Whitening`, with optional dimension reduction
 
 v0.2.6 (March 2020)
 -------------------
