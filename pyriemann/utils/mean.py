@@ -1,5 +1,5 @@
 """Mean covariance estimation."""
-import numpy
+import numpy as np
 
 from .base import sqrtm, invsqrtm, logm, expm
 from .ajd import ajd_pham
@@ -13,10 +13,10 @@ def _get_sample_weight(sample_weight, data):
     If none provided, weights init to 1. otherwise, weights are normalized.
     """
     if sample_weight is None:
-        sample_weight = numpy.ones(data.shape[0])
+        sample_weight = np.ones(data.shape[0])
     if len(sample_weight) != data.shape[0]:
         raise ValueError("len of sample_weight must be equal to len of data.")
-    sample_weight /= numpy.sum(sample_weight)
+    sample_weight /= np.sum(sample_weight)
     return sample_weight
 
 
@@ -42,27 +42,27 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
     if init is None:
-        C = numpy.mean(covmats, axis=0)
+        C = np.mean(covmats, axis=0)
     else:
         C = init
     k = 0
     nu = 1.0
-    tau = numpy.finfo(numpy.float64).max
-    crit = numpy.finfo(numpy.float64).max
+    tau = np.finfo(np.float64).max
+    crit = np.finfo(np.float64).max
     # stop when J<10^-9 or max iteration = 50
     while (crit > tol) and (k < maxiter) and (nu > tol):
         k = k + 1
         C12 = sqrtm(C)
         Cm12 = invsqrtm(C)
-        J = numpy.zeros((Ne, Ne))
+        J = np.zeros((Ne, Ne))
 
         for index in range(Nt):
-            tmp = numpy.dot(numpy.dot(Cm12, covmats[index, :, :]), Cm12)
+            tmp = np.dot(np.dot(Cm12, covmats[index, :, :]), Cm12)
             J += sample_weight[index] * logm(tmp)
 
-        crit = numpy.linalg.norm(J, ord='fro')
+        crit = np.linalg.norm(J, ord='fro')
         h = nu * crit
-        C = numpy.dot(numpy.dot(C12, expm(nu * J)), C12)
+        C = np.dot(np.dot(C12, expm(nu * J)), C12)
         if h < tau:
             nu = 0.95 * nu
             tau = h
@@ -86,7 +86,7 @@ def mean_logeuclid(covmats, sample_weight=None):
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
-    T = numpy.zeros((Ne, Ne))
+    T = np.zeros((Ne, Ne))
     for index in range(Nt):
         T += sample_weight[index] * logm(covmats[index, :, :])
     C = expm(T)
@@ -130,10 +130,10 @@ def mean_harmonic(covmats, sample_weight=None):
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
-    T = numpy.zeros((Ne, Ne))
+    T = np.zeros((Ne, Ne))
     for index in range(Nt):
-        T += sample_weight[index] * numpy.linalg.inv(covmats[index, :, :])
-    C = numpy.linalg.inv(T)
+        T += sample_weight[index] * np.linalg.inv(covmats[index, :, :])
+    C = np.linalg.inv(T)
 
     return C
 
@@ -158,22 +158,22 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
     if init is None:
-        C = numpy.mean(covmats, axis=0)
+        C = np.mean(covmats, axis=0)
     else:
         C = init
     k = 0
-    crit = numpy.finfo(numpy.float64).max
+    crit = np.finfo(np.float64).max
     # stop when J<10^-9 or max iteration = 50
     while (crit > tol) and (k < maxiter):
         k = k + 1
 
-        J = numpy.zeros((Ne, Ne))
+        J = np.zeros((Ne, Ne))
 
         for index, Ci in enumerate(covmats):
-            J += sample_weight[index] * numpy.linalg.inv(0.5 * Ci + 0.5 * C)
+            J += sample_weight[index] * np.linalg.inv(0.5 * Ci + 0.5 * C)
 
-        Cnew = numpy.linalg.inv(J)
-        crit = numpy.linalg.norm(Cnew - C, ord='fro')
+        Cnew = np.linalg.inv(J)
+        crit = np.linalg.norm(Cnew - C, ord='fro')
 
         C = Cnew
     return C
@@ -207,28 +207,28 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
     if init is None:
-        C = numpy.mean(covmats, axis=0)
+        C = np.mean(covmats, axis=0)
     else:
         C = init
     k = 0
     K = sqrtm(C)
-    crit = numpy.finfo(numpy.float64).max
+    crit = np.finfo(np.float64).max
     # stop when J<10^-9 or max iteration = 50
     while (crit > tol) and (k < maxiter):
         k = k + 1
 
-        J = numpy.zeros((Ne, Ne))
+        J = np.zeros((Ne, Ne))
 
         for index, Ci in enumerate(covmats):
-            tmp = numpy.dot(numpy.dot(K, Ci), K)
+            tmp = np.dot(np.dot(K, Ci), K)
             J += sample_weight[index] * sqrtm(tmp)
 
         Knew = sqrtm(J)
-        crit = numpy.linalg.norm(Knew - K, ord='fro')
+        crit = np.linalg.norm(Knew - K, ord='fro')
         K = Knew
     if k == maxiter:
         print('Max iter reach')
-    C = numpy.dot(K, K)
+    C = np.dot(K, K)
     return C
 
 
@@ -244,7 +244,7 @@ def mean_euclid(covmats, sample_weight=None):
     :returns: the mean covariance matrix
 
     """
-    return numpy.average(covmats, axis=0, weights=sample_weight)
+    return np.average(covmats, axis=0, weights=sample_weight)
 
 
 def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
@@ -271,32 +271,32 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
-    crit = numpy.inf
+    crit = np.inf
     k = 0
 
     # init with AJD
     B, _ = ajd_pham(covmats)
     while (crit > tol) and (k < maxiter):
         k += 1
-        J = numpy.zeros((Ne, Ne))
+        J = np.zeros((Ne, Ne))
 
         for index, Ci in enumerate(covmats):
-            tmp = logm(numpy.dot(numpy.dot(B.T, Ci), B))
+            tmp = logm(np.dot(np.dot(B.T, Ci), B))
             J += sample_weight[index] * tmp
 
-        update = numpy.diag(numpy.diag(expm(J)))
-        B = numpy.dot(B, invsqrtm(update))
+        update = np.diag(np.diag(expm(J)))
+        B = np.dot(B, invsqrtm(update))
 
-        crit = distance_riemann(numpy.eye(Ne), update)
+        crit = distance_riemann(np.eye(Ne), update)
 
-    A = numpy.linalg.inv(B)
+    A = np.linalg.inv(B)
 
-    J = numpy.zeros((Ne, Ne))
+    J = np.zeros((Ne, Ne))
     for index, Ci in enumerate(covmats):
-        tmp = logm(numpy.dot(numpy.dot(B.T, Ci), B))
+        tmp = logm(np.dot(np.dot(B.T, Ci), B))
         J += sample_weight[index] * tmp
 
-    C = numpy.dot(numpy.dot(A.T, expm(J)), A)
+    C = np.dot(np.dot(A.T, expm(J)), A)
     return C
 
 
@@ -310,7 +310,7 @@ def mean_identity(covmats, sample_weight=None):
     :returns: the identity matrix of size Nchannels
 
     """
-    C = numpy.eye(covmats.shape[1])
+    C = np.eye(covmats.shape[1])
     return C
 
 

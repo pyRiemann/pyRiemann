@@ -1,8 +1,9 @@
+import pytest
 import numpy as np
 from numpy.testing import assert_array_equal
+
 from pyriemann.spatialfilters import (Xdawn, CSP, SPoC,
                                       BilinearFilter, AJDC)
-import pytest
 
 
 def generate_cov(Nt, Ne):

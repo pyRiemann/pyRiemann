@@ -1,6 +1,6 @@
-import numpy
 import sys
 import math
+import numpy as np
 import matplotlib.pyplot as plt
 
 from .utils.utils import check_version
@@ -17,8 +17,8 @@ else:
 def multiset_perm_number(y):
     """return the number of unique permutation in a multiset."""
     pr = 1
-    for i in numpy.unique(y):
-        pr *= math.factorial(numpy.sum(y == i))
+    for i in np.unique(y):
+        pr *= math.factorial(np.sum(y == i))
     return math.factorial(len(y)) / pr
 
 
@@ -55,7 +55,7 @@ class BasePermutation():
             if true, print progress.
         """
         Npe = multiset_perm_number(y)
-        self.scores_ = numpy.zeros(numpy.min([self.n_perms, int(Npe)]))
+        self.scores_ = np.zeros(np.min([self.n_perms, int(Npe)]))
 
         # initial fit. This is usefull for transform data or for estimating
         # parameter that does not change across permutation, like the mean of
@@ -70,14 +70,14 @@ class BasePermutation():
             perms = unique_permutations(y)
             ii = 0
             for perm in perms:
-                if not numpy.array_equal(perm, y):
+                if not np.array_equal(perm, y):
                     self.scores_[ii + 1] = self.score(X, perm, groups=groups)
                     ii += 1
                     if verbose:
                         self._print_progress(ii)
 
         else:
-            rs = numpy.random.RandomState(self.random_state)
+            rs = np.random.RandomState(self.random_state)
             for ii in range(self.n_perms - 1):
                 perm = self._shuffle(y, groups, rs)
                 self.scores_[ii + 1] = self.score(X, perm, groups=groups)
@@ -104,8 +104,8 @@ class BasePermutation():
         if groups is None:
             indices = rs.permutation(len(y))
         else:
-            indices = numpy.arange(len(groups))
-            for group in numpy.unique(groups):
+            indices = np.arange(len(groups))
+            for group in np.unique(groups):
                 this_mask = (groups == group)
                 indices[this_mask] = rs.permutation(indices[this_mask])
         return y[indices]
@@ -117,7 +117,7 @@ class BasePermutation():
         ----------
         nbins : integer or array_like or 'auto', optional
             If an integer is given, bins + 1 bin edges are returned,
-            consistently with numpy.histogram() for numpy version >= 1.3.
+            consistently with np.histogram() for numpy version >= 1.3.
             Unequally spaced bins are supported if bins is a sequence.
 
         range : tuple or None, optional
@@ -371,7 +371,7 @@ class PermutationDistance(BasePermutation):
     def _score_ftest(self, X, y):
         """Get the score"""
         mdm = self.mdm.fit(X, y)
-        covmeans = numpy.array(mdm.covmeans_)
+        covmeans = np.array(mdm.covmeans_)
 
         # estimates between classes variability
         n_classes = len(covmeans)
@@ -379,7 +379,7 @@ class PermutationDistance(BasePermutation):
         for ix, classe in enumerate(mdm.classes_):
             di = distance(
                 covmeans[ix], self.global_mean, metric=mdm.metric_dist)**2
-            between += numpy.sum(y == classe) * di
+            between += np.sum(y == classe) * di
         between /= (n_classes - 1)
 
         # estimates within class variability
@@ -396,12 +396,12 @@ class PermutationDistance(BasePermutation):
     def _score_ttest(self, X, y):
         """Get the score"""
         mdm = self.mdm.fit(X, y)
-        covmeans = numpy.array(mdm.covmeans_)
+        covmeans = np.array(mdm.covmeans_)
 
         # estimates distances between means
         n_classes = len(covmeans)
         pairs = pairwise_distance(covmeans, metric=mdm.metric_dist)
-        mean_dist = numpy.triu(pairs).sum()
+        mean_dist = np.triu(pairs).sum()
         mean_dist /= (n_classes * (n_classes - 1)) / 2.0
 
         dist = 0
@@ -409,20 +409,20 @@ class PermutationDistance(BasePermutation):
             di = (distance(
                 X[y == classe], covmeans[ix], metric=mdm.metric_dist)
                   **2).mean()
-            dist += (di / numpy.sum(y == classe))
-        score = mean_dist / numpy.sqrt(dist)
+            dist += (di / np.sum(y == classe))
+        score = mean_dist / np.sqrt(dist)
         return score
 
     def _score_pairwise(self, X, y):
         """Score for the pairwise distance test."""
-        classes = numpy.unique(y)
+        classes = np.unique(y)
         n_classes = len(classes)
         n_samples = len(y)
         total_ss = X.sum() / (2 * n_samples)
-        pattern = numpy.zeros((n_samples, n_samples))
+        pattern = np.zeros((n_samples, n_samples))
         for classe in classes:
             ix = (y == classe)
-            pattern += (numpy.outer(ix, ix) / numpy.float(ix.sum()))
+            pattern += (np.outer(ix, ix) / np.float(ix.sum()))
 
         within_ss = (X * pattern).sum() / 2
 

@@ -1,5 +1,5 @@
 """Module for classification function."""
-import numpy
+import numpy as np
 
 from scipy import stats
 
@@ -105,10 +105,10 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : MDM instance
             The MDM instance.
         """
-        self.classes_ = numpy.unique(y)
+        self.classes_ = np.unique(y)
 
         if sample_weight is None:
-            sample_weight = numpy.ones(X.shape[0])
+            sample_weight = np.ones(X.shape[0])
 
         if self.n_jobs == 1:
             self.covmeans_ = [mean_covariance(X[y == l], metric=self.metric_mean,
@@ -134,7 +134,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
                 covtest, self.covmeans_[m], self.metric_dist)
                 for m in range(Nc))
 
-        dist = numpy.concatenate(dist, axis=1)
+        dist = np.concatenate(dist, axis=1)
         return dist
 
     def predict(self, covtest):
@@ -280,7 +280,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : FgMDM instance
             The FgMDM instance.
         """
-        self.classes_ = numpy.unique(y)
+        self.classes_ = np.unique(y)
         self._mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
         self._fgda = FGDA(metric=self.metric_mean, tsupdate=self.tsupdate)
         cov = self._fgda.fit_transform(X, y)
@@ -398,7 +398,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         self : TSclassifier. instance
             The TSclassifier. instance.
         """
-        self.classes_ = numpy.unique(y)
+        self.classes_ = np.unique(y)
         ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
         self._pipe = make_pipeline(ts, self.clf)
         self._pipe.fit(X, y)
@@ -511,6 +511,6 @@ class KNearestNeighbor(MDM):
             the prediction for each trials according to the closest centroid.
         """
         dist = self._predict_distances(covtest)
-        neighbors_classes = self.classes_[numpy.argsort(dist)]
+        neighbors_classes = self.classes_[np.argsort(dist)]
         out, _ = stats.mode(neighbors_classes[:, 0:self.n_neighbors], axis=1)
         return out.ravel()

@@ -1,5 +1,5 @@
 """Distance utils."""
-import numpy
+import numpy as np
 from scipy.linalg import eigvalsh
 
 from .base import logm, sqrtm
@@ -14,8 +14,8 @@ def distance_kullback(A, B):
 
     """
     dim = A.shape[0]
-    logdet = numpy.log(numpy.linalg.det(B) / numpy.linalg.det(A))
-    kl = numpy.trace(numpy.dot(numpy.linalg.inv(B), A)) - dim + logdet
+    logdet = np.log(np.linalg.det(B) / np.linalg.det(A))
+    kl = np.trace(np.dot(np.linalg.inv(B), A)) - dim + logdet
     return 0.5 * kl
 
 
@@ -43,7 +43,7 @@ def distance_euclid(A, B):
     :returns: Eclidean distance between A and B
 
     """
-    return numpy.linalg.norm(A - B, ord='fro')
+    return np.linalg.norm(A - B, ord='fro')
 
 
 def distance_logeuclid(A, B):
@@ -73,7 +73,7 @@ def distance_riemann(A, B):
     :returns: Riemannian distance between A and B
 
     """
-    return numpy.sqrt((numpy.log(eigvalsh(A, B))**2).sum())
+    return np.sqrt((np.log(eigvalsh(A, B))**2).sum())
 
 
 def distance_logdet(A, B):
@@ -87,9 +87,9 @@ def distance_logdet(A, B):
     :returns: Log-Euclid distance between A and B
 
     """  # noqa
-    return numpy.sqrt(numpy.log(numpy.linalg.det(
+    return np.sqrt(np.log(np.linalg.det(
         (A + B) / 2.0)) - 0.5 *
-        numpy.log(numpy.linalg.det(A)*numpy.linalg.det(B)))
+        np.log(np.linalg.det(A)*np.linalg.det(B)))
 
 
 def distance_wasserstein(A, B):
@@ -104,8 +104,8 @@ def distance_wasserstein(A, B):
 
     """
     B12 = sqrtm(B)
-    C = sqrtm(numpy.dot(numpy.dot(B12, A), B12))
-    return numpy.sqrt(numpy.trace(A + B - 2*C))
+    C = sqrtm(np.dot(np.dot(B12, A), B12))
+    return np.sqrt(np.trace(A + B - 2*C))
 
 
 def distance(A, B, metric='riemann'):
@@ -125,7 +125,7 @@ def distance(A, B, metric='riemann'):
         distance_function = distance_methods[metric]
 
     if len(A.shape) == 3:
-        d = numpy.empty((len(A), 1))
+        d = np.empty((len(A), 1))
         for i in range(len(A)):
             d[i] = distance_function(A[i], B)
     else:
@@ -149,14 +149,14 @@ def pairwise_distance(X, Y=None, metric='riemann'):
     Ntx, _, _ = X.shape
 
     if Y is None:
-        dist = numpy.zeros((Ntx, Ntx))
+        dist = np.zeros((Ntx, Ntx))
         for i in range(Ntx):
             for j in range(i + 1, Ntx):
                 dist[i, j] = distance(X[i], X[j], metric)
         dist += dist.T
     else:
         Nty, _, _ = Y.shape
-        dist = numpy.empty((Ntx, Nty))
+        dist = np.empty((Ntx, Nty))
         for i in range(Ntx):
             for j in range(Nty):
                 dist[i, j] = distance(X[i], Y[j], metric)

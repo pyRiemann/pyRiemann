@@ -1,5 +1,5 @@
 """Estimation of covariance matrices."""
-import numpy
+import numpy as np
 
 from .spatialfilters import Xdawn
 from .utils.covariance import (covariances, covariances_EP, cospectrum,
@@ -164,21 +164,21 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         if self.classes is not None:
             classes = self.classes
         else:
-            classes = numpy.unique(y)
+            classes = np.unique(y)
 
         self.P_ = []
         for c in classes:
             # Prototyped responce for each class
-            P = numpy.mean(X[y == c, :, :], axis=0)
+            P = np.mean(X[y == c, :, :], axis=0)
 
             # Apply svd if requested
             if self.svd is not None:
-                U, s, V = numpy.linalg.svd(P)
-                P = numpy.dot(U[:, 0:self.svd].T, P)
+                U, s, V = np.linalg.svd(P)
+                P = np.dot(U[:, 0:self.svd].T, P)
 
             self.P_.append(P)
 
-        self.P_ = numpy.concatenate(self.P_, axis=0)
+        self.P_ = np.concatenate(self.P_, axis=0)
         return self
 
     def transform(self, X):
@@ -399,7 +399,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
             out.append(S)
         self.freqs_ = freqs
 
-        return numpy.array(out)
+        return np.array(out)
 
 
 class Coherences(CospCovariances):
@@ -458,7 +458,7 @@ class Coherences(CospCovariances):
                 fs=self.fs)
             out.append(S)
 
-        return numpy.array(out)
+        return np.array(out)
 
 
 class HankelCovariances(BaseEstimator, TransformerMixin):
@@ -534,9 +534,9 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
         for x in X:
             tmp = x
             for d in delays:
-                tmp = numpy.r_[tmp, numpy.roll(x, d, axis=-1)]
+                tmp = np.r_[tmp, np.roll(x, d, axis=-1)]
             X2.append(tmp)
-        X2 = numpy.array(X2)
+        X2 = np.array(X2)
         covmats = covariances(X2, estimator=self.estimator)
         return covmats
 
@@ -596,7 +596,7 @@ class Shrinkage(BaseEstimator, TransformerMixin):
             ndarray of covariance matrices for each trials.
         """
 
-        covmats = numpy.zeros_like(X)
+        covmats = np.zeros_like(X)
 
         for ii, x in enumerate(X):
             covmats[ii] = shrunk_covariance(x, self.shrinkage)

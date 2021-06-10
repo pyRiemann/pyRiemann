@@ -1,4 +1,5 @@
-import numpy
+import numpy as np
+
 from .base import sqrtm, invsqrtm, logm, expm
 from .mean import mean_covariance
 ###############################################################
@@ -20,15 +21,15 @@ def tangent_space(covmats, Cref):
     """
     Nt, Ne, Ne = covmats.shape
     Cm12 = invsqrtm(Cref)
-    idx = numpy.triu_indices_from(Cref)
+    idx = np.triu_indices_from(Cref)
     Nf = int(Ne * (Ne + 1) / 2)
-    T = numpy.empty((Nt, Nf))
-    coeffs = (numpy.sqrt(2) * numpy.triu(numpy.ones((Ne, Ne)), 1) +
-              numpy.eye(Ne))[idx]
+    T = np.empty((Nt, Nf))
+    coeffs = (np.sqrt(2) * np.triu(np.ones((Ne, Ne)), 1) +
+              np.eye(Ne))[idx]
     for index in range(Nt):
-        tmp = numpy.dot(numpy.dot(Cm12, covmats[index, :, :]), Cm12)
+        tmp = np.dot(np.dot(Cm12, covmats[index, :, :]), Cm12)
         tmp = logm(tmp)
-        T[index, :] = numpy.multiply(coeffs, tmp[idx])
+        T[index, :] = np.multiply(coeffs, tmp[idx])
     return T
 
 
@@ -44,17 +45,17 @@ def untangent_space(T, Cref):
 
     """
     Nt, Nd = T.shape
-    Ne = int((numpy.sqrt(1 + 8 * Nd) - 1) / 2)
+    Ne = int((np.sqrt(1 + 8 * Nd) - 1) / 2)
     C12 = sqrtm(Cref)
 
-    idx = numpy.triu_indices_from(Cref)
-    covmats = numpy.empty((Nt, Ne, Ne))
+    idx = np.triu_indices_from(Cref)
+    covmats = np.empty((Nt, Ne, Ne))
     covmats[:, idx[0], idx[1]] = T
     for i in range(Nt):
-        triuc = numpy.triu(covmats[i], 1) / numpy.sqrt(2)
-        covmats[i] = (numpy.diag(numpy.diag(covmats[i])) + triuc + triuc.T)
+        triuc = np.triu(covmats[i], 1) / np.sqrt(2)
+        covmats[i] = (np.diag(np.diag(covmats[i])) + triuc + triuc.T)
         covmats[i] = expm(covmats[i])
-        covmats[i] = numpy.dot(numpy.dot(C12, covmats[i]), C12)
+        covmats[i] = np.dot(np.dot(C12, covmats[i]), C12)
 
     return covmats
 
@@ -65,6 +66,6 @@ def transport(Covs, Cref, metric='riemann'):
     """
     C = mean_covariance(Covs, metric=metric)
     iC = invsqrtm(C)
-    E = sqrtm(numpy.dot(numpy.dot(iC, Cref), iC))
-    out = numpy.array([numpy.dot(numpy.dot(E, c), E.T) for c in Covs])
+    E = sqrtm(np.dot(np.dot(iC, Cref), iC))
+    out = np.array([np.dot(np.dot(E, c), E.T) for c in Covs])
     return out

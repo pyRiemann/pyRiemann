@@ -1,6 +1,7 @@
+import pytest
 import numpy as np
 from numpy.testing import assert_array_almost_equal
-import pytest
+
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.utils.base import (sqrtm, invsqrtm, logm, expm, powm)
 

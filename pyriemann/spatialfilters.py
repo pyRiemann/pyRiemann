@@ -1,5 +1,5 @@
 """Spatial filtering function."""
-import numpy
+import numpy as np
 from scipy.linalg import eigh, inv
 from sklearn.base import BaseEstimator, TransformerMixin
 
@@ -91,39 +91,39 @@ class Xdawn(BaseEstimator, TransformerMixin):
         """
         Nt, Ne, Ns = X.shape
 
-        self.classes_ = (numpy.unique(y) if self.classes is None else
+        self.classes_ = (np.unique(y) if self.classes is None else
                          self.classes)
 
         Cx = self.baseline_cov
         if Cx is None:
             # FIXME : too many reshape operation
             tmp = X.transpose((1, 2, 0))
-            Cx = numpy.matrix(self.estimator_fn(tmp.reshape(Ne, Ns * Nt)))
+            Cx = np.matrix(self.estimator_fn(tmp.reshape(Ne, Ns * Nt)))
 
         self.evokeds_ = []
         self.filters_ = []
         self.patterns_ = []
         for c in self.classes_:
             # Prototyped responce for each class
-            P = numpy.mean(X[y == c, :, :], axis=0)
+            P = np.mean(X[y == c, :, :], axis=0)
 
             # Covariance matrix of the prototyper response & signal
-            C = numpy.matrix(self.estimator_fn(P))
+            C = np.matrix(self.estimator_fn(P))
 
             # Spatial filters
             evals, evecs = eigh(C, Cx)
-            evecs = evecs[:, numpy.argsort(evals)[::-1]]  # sort eigenvectors
-            evecs /= numpy.apply_along_axis(numpy.linalg.norm, 0, evecs)
+            evecs = evecs[:, np.argsort(evals)[::-1]]  # sort eigenvectors
+            evecs /= np.apply_along_axis(np.linalg.norm, 0, evecs)
             V = evecs
-            A = numpy.linalg.pinv(V.T)
+            A = np.linalg.pinv(V.T)
             # create the reduced prototyped response
             self.filters_.append(V[:, 0:self.nfilter].T)
             self.patterns_.append(A[:, 0:self.nfilter].T)
-            self.evokeds_.append(numpy.dot(V[:, 0:self.nfilter].T, P))
+            self.evokeds_.append(np.dot(V[:, 0:self.nfilter].T, P))
 
-        self.evokeds_ = numpy.concatenate(self.evokeds_, axis=0)
-        self.filters_ = numpy.concatenate(self.filters_, axis=0)
-        self.patterns_ = numpy.concatenate(self.patterns_, axis=0)
+        self.evokeds_ = np.concatenate(self.evokeds_, axis=0)
+        self.filters_ = np.concatenate(self.filters_, axis=0)
+        self.patterns_ = np.concatenate(self.patterns_, axis=0)
         return self
 
     def transform(self, X):
@@ -139,7 +139,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
         Xf : ndarray, shape (n_trials, n_filters * n_classes, n_samples)
             ndarray of spatialy filtered trials.
         """
-        X = numpy.dot(self.filters_, X)
+        X = np.dot(self.filters_, X)
         X = X.transpose((1, 0, 2))
         return X
 
@@ -176,7 +176,7 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
 
     def __init__(self, filters, log=False):
         """Init."""
-        if not isinstance(filters, numpy.ndarray):
+        if not isinstance(filters, np.ndarray):
             raise TypeError('filters must be an array.')
         self.filters_ = filters
         self.filters = filters
@@ -216,19 +216,19 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
              ndarray of spatialy filtered log-variance or covariance depending
              on the 'log' input paramter.
         """
-        if not isinstance(X, (numpy.ndarray, list)):
+        if not isinstance(X, (np.ndarray, list)):
             raise TypeError('X must be an array.')
         if X[0].shape[1] != self.filters_.shape[1]:
             raise ValueError("Data and filters dimension must be compatible.")
 
-        X_filt = numpy.dot(numpy.dot(self.filters_, X), self.filters_.T)
+        X_filt = np.dot(np.dot(self.filters_, X), self.filters_.T)
         X_filt = X_filt.transpose((1, 0, 2))
 
         # if logvariance
         if self.log:
-            out = numpy.zeros((len(X_filt), len(self.filters_)))
+            out = np.zeros((len(X_filt), len(self.filters_)))
             for i, x in enumerate(X_filt):
-                out[i] = numpy.log(numpy.diag(x))
+                out[i] = np.log(np.diag(x))
             return out
         else:
             return X_filt
@@ -314,55 +314,55 @@ class CSP(BilinearFilter):
         self : CSP instance
             The CSP instance.
         """
-        if not isinstance(X, (numpy.ndarray, list)):
+        if not isinstance(X, (np.ndarray, list)):
             raise TypeError('X must be an array.')
-        if not isinstance(y, (numpy.ndarray, list)):
+        if not isinstance(y, (np.ndarray, list)):
             raise TypeError('y must be an array.')
-        X, y = numpy.asarray(X), numpy.asarray(y)
+        X, y = np.asarray(X), np.asarray(y)
         if X.ndim != 3:
             raise ValueError('X must be n_trials * n_channels * n_channels')
         if len(y) != len(X):
             raise ValueError('X and y must have the same length.')
-        if numpy.squeeze(y).ndim != 1:
+        if np.squeeze(y).ndim != 1:
             raise ValueError('y must be of shape (n_trials,).')
 
         Nt, Ne, Ns = X.shape
-        classes = numpy.unique(y)
+        classes = np.unique(y)
         # estimate class means
         C = []
         for c in classes:
             C.append(mean_covariance(X[y == c], self.metric))
-        C = numpy.array(C)
+        C = np.array(C)
 
         # Switch between binary and multiclass
         if len(classes) == 2:
             evals, evecs = eigh(C[1], C[0] + C[1])
             # sort eigenvectors
-            ix = numpy.argsort(numpy.abs(evals - 0.5))[::-1]
+            ix = np.argsort(np.abs(evals - 0.5))[::-1]
         elif len(classes) > 2:
             evecs, D = ajd_pham(C)
-            Ctot = numpy.array(mean_covariance(C, self.metric))
+            Ctot = np.array(mean_covariance(C, self.metric))
             evecs = evecs.T
 
             # normalize
             for i in range(evecs.shape[1]):
-                tmp = numpy.dot(numpy.dot(evecs[:, i].T, Ctot), evecs[:, i])
-                evecs[:, i] /= numpy.sqrt(tmp)
+                tmp = np.dot(np.dot(evecs[:, i].T, Ctot), evecs[:, i])
+                evecs[:, i] /= np.sqrt(tmp)
 
             mutual_info = []
             # class probability
-            Pc = [numpy.mean(y == c) for c in classes]
+            Pc = [np.mean(y == c) for c in classes]
             for j in range(evecs.shape[1]):
                 a = 0
                 b = 0
                 for i, c in enumerate(classes):
-                    tmp = numpy.dot(numpy.dot(evecs[:, j].T, C[i]),
+                    tmp = np.dot(np.dot(evecs[:, j].T, C[i]),
                                     evecs[:, j])
-                    a += Pc[i] * numpy.log(numpy.sqrt(tmp))
+                    a += Pc[i] * np.log(np.sqrt(tmp))
                     b += Pc[i] * (tmp ** 2 - 1)
                 mi = - (a + (3.0 / 16) * (b ** 2))
                 mutual_info.append(mi)
-            ix = numpy.argsort(mutual_info)[::-1]
+            ix = np.argsort(mutual_info)[::-1]
         else:
             raise ValueError("Number of classes must be >= 2.")
 
@@ -370,7 +370,7 @@ class CSP(BilinearFilter):
         evecs = evecs[:, ix]
 
         # spatial patterns
-        A = numpy.linalg.pinv(evecs.T)
+        A = np.linalg.pinv(evecs.T)
 
         self.filters_ = evecs[:, 0:self.nfilter].T
         self.patterns_ = A[:, 0:self.nfilter].T
@@ -441,12 +441,12 @@ class SPoC(CSP):
         """
 
         # Normalize target variable
-        target = numpy.float64(y.copy())
+        target = np.float64(y.copy())
         target -= target.mean()
         target /= target.std()
 
         C = mean_covariance(X, self.metric)
-        Ce = numpy.zeros_like(X)
+        Ce = np.zeros_like(X)
         for i in range(Ce.shape[0]):
             Ce[i] = X[i] * target[i]
         Cz = mean_covariance(Ce, self.metric)
@@ -456,13 +456,13 @@ class SPoC(CSP):
         evals = evals.real
         evecs = evecs.real
         # sort vectors
-        ix = numpy.argsort(numpy.abs(evals))[::-1]
+        ix = np.argsort(np.abs(evals))[::-1]
 
         # sort eigenvectors
         evecs = evecs[:, ix]
 
         # spatial patterns
-        A = numpy.linalg.pinv(evecs.T)
+        A = np.linalg.pinv(evecs.T)
 
         self.filters_ = evecs[:, 0:self.nfilter].T
         self.patterns_ = A[:, 0:self.nfilter].T
@@ -603,14 +603,14 @@ class AJDC(BaseEstimator, TransformerMixin):
                 if self.n_channels_ != cosp_.shape[1]:
                     raise ValueError('Unequal number of channels')
             cosp.append(cosp_)
-        cosp = numpy.transpose(numpy.array(cosp), axes=(0, 1, 4, 2, 3))
+        cosp = np.transpose(np.array(cosp), axes=(0, 1, 4, 2, 3))
 
         # trace-normalization of cospectra, Eq(3) in [2]
         cosp = normalize(cosp, "trace")
         # average of cospectra across subjects, Eq(7) in [2]
-        cosp = numpy.mean(cosp, axis=0, keepdims=False)
+        cosp = np.mean(cosp, axis=0, keepdims=False)
         # concatenation of cospectra along conditions
-        self._cosp_channels = numpy.concatenate(cosp, axis=0)
+        self._cosp_channels = np.concatenate(cosp, axis=0)
         # estimation of non-diagonality weights, Eq(B.1) in [1]
         weights = get_nondiag_weight(self._cosp_channels)
 
@@ -682,7 +682,7 @@ class AJDC(BaseEstimator, TransformerMixin):
                 'X does not have the good number of sources. Should be %d but '
                 'got %d.' % (self.n_sources_, X.shape[1]))
 
-        denois = numpy.eye(self.n_sources_)
+        denois = np.eye(self.n_sources_)
         if supp is None:
             pass
         elif isinstance(supp, list):
@@ -716,9 +716,9 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         cov = est.Covariances().transform(X)
 
-        src_var = numpy.zeros((X.shape[0], self.n_sources_))
+        src_var = np.zeros((X.shape[0], self.n_sources_))
         for s in range (self.n_sources_):
-            src_var[:, s] = numpy.trace(
+            src_var[:, s] = np.trace(
                 self.backward_filters_[:, s] * self.forward_filters_[s].T * cov
                 * self.forward_filters_[s] * self.backward_filters_[:, s].T,
                 axis1=-2,

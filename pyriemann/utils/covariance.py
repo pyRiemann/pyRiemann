@@ -1,6 +1,8 @@
-import numpy
-from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
 import warnings
+
+import numpy as np
+
+from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
 
 # Mapping different estimator on the sklearn toolbox
 
@@ -28,12 +30,12 @@ def _check_est(est):
 
     # Check estimator exist and return the correct function
     estimators = {
-        'cov': numpy.cov,
+        'cov': np.cov,
         'scm': _scm,
         'lwf': _lwf,
         'oas': _oas,
         'mcd': _mcd,
-        'corr': numpy.corrcoef
+        'corr': np.corrcoef
     }
 
     if callable(est):
@@ -79,7 +81,7 @@ def covariances(X, estimator='cov'):
     """
     est = _check_est(estimator)
     Nt, Ne, Ns = X.shape
-    covmats = numpy.zeros((Nt, Ne, Ne))
+    covmats = np.zeros((Nt, Ne, Ne))
     for i in range(Nt):
         covmats[i, :, :] = est(X[i, :, :])
     return covmats
@@ -90,9 +92,9 @@ def covariances_EP(X, P, estimator='cov'):
     est = _check_est(estimator)
     Nt, Ne, Ns = X.shape
     Np, Ns = P.shape
-    covmats = numpy.zeros((Nt, Ne + Np, Ne + Np))
+    covmats = np.zeros((Nt, Ne + Np, Ne + Np))
     for i in range(Nt):
-        covmats[i, :, :] = est(numpy.concatenate((P, X[i, :, :]), axis=0))
+        covmats[i, :, :] = est(np.concatenate((P, X[i, :, :]), axis=0))
     return covmats
 
 
@@ -101,8 +103,8 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
     est = _check_est(estimator)
     X = []
     if padding:
-        padd = numpy.zeros((int(window / 2), sig.shape[1]))
-        sig = numpy.concatenate((padd, sig, padd), axis=0)
+        padd = np.zeros((int(window / 2), sig.shape[1]))
+        sig = np.concatenate((padd, sig, padd), axis=0)
 
     Ns, Ne = sig.shape
     jump = int(window * overlapp)
@@ -111,7 +113,7 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
         X.append(est(sig[ix:ix + window, :].T))
         ix = ix + jump
 
-    return numpy.array(X)
+    return np.array(X)
 
 
 ###############################################################################
@@ -155,8 +157,8 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     number_windows = int((Ns - window) / step + 1)
     # pre-allocation of memory
-    fdata = numpy.zeros((number_windows, Ne, number_freqs), dtype=complex)
-    win = numpy.hanning(window)
+    fdata = np.zeros((number_windows, Ne, number_freqs), dtype=complex)
+    win = np.hanning(window)
 
     # Loop on all frequencies
     for window_ix in range(int(number_windows)):
@@ -170,7 +172,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         cdata = X[:, t1:t2] * win
 
         # FFT calculation
-        fdata[window_ix, :, :] = numpy.fft.fft(
+        fdata[window_ix, :, :] = np.fft.fft(
             cdata, n=window, axis=1)[:, 0:number_freqs]
 
     # adjust frequency range to specified range (in case it is a parameter)
@@ -183,7 +185,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             raise ValueError('Parameter fmax must be superior to fmin')
         if 2.0 * fmax > fs: # check Nyquist-Shannon
             raise ValueError('Parameter fmax must be inferior to fs/2')
-        f = numpy.arange(0, 1, 1.0 / number_freqs) * (fs / 2.0)
+        f = np.arange(0, 1, 1.0 / number_freqs) * (fs / 2.0)
         Fix = (f >= fmin) & (f <= fmax)
         fdata = fdata[:, :, Fix]
         freqs = f[Fix]
@@ -195,10 +197,10 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         freqs = None
 
     Nf = fdata.shape[2]
-    S = numpy.zeros((Ne, Ne, Nf), dtype=complex)
+    S = np.zeros((Ne, Ne, Nf), dtype=complex)
     for i in range(Nf):
-        S[:, :, i] = numpy.dot(fdata[:, :, i].conj().T, fdata[:, :, i])
-    S /= number_windows * numpy.linalg.norm(win)**2
+        S[:, :, i] = np.dot(fdata[:, :, i].conj().T, fdata[:, :, i])
+    S /= number_windows * np.linalg.norm(win)**2
 
     return S, freqs
 
@@ -265,11 +267,11 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         frequency bin.
     """
     S, _ = cross_spectrum(X, window, overlap, fmin, fmax, fs)
-    S2 = numpy.abs(S)**2 # squared cross-spectral modulus
-    C = numpy.zeros_like(S2)
+    S2 = np.abs(S)**2 # squared cross-spectral modulus
+    C = np.zeros_like(S2)
     for f in range(S2.shape[-1]):
-        psd = numpy.sqrt(numpy.diag(S2[..., f]))
-        C[..., f] = S2[..., f] / numpy.outer(psd, psd)
+        psd = np.sqrt(np.diag(S2[..., f]))
+        C[..., f] = S2[..., f] / np.outer(psd, psd)
     return C
 
 
@@ -299,14 +301,14 @@ def normalize(X, norm):
         raise ValueError('Matrices must be square')
 
     if norm == "trace":
-        denom = numpy.trace(X, axis1=-2, axis2=-1)
+        denom = np.trace(X, axis1=-2, axis2=-1)
     elif norm  == "determinant":
-        denom = numpy.abs(numpy.linalg.det(X)) ** (1 / X.shape[-1])
+        denom = np.abs(np.linalg.det(X)) ** (1 / X.shape[-1])
     else:
         raise ValueError("'%s' is not a supported normalization" % norm)
 
     while denom.ndim != X.ndim:
-        denom = denom[..., numpy.newaxis]
+        denom = denom[..., np.newaxis]
     Xn = X / denom
     return Xn
 
@@ -338,8 +340,8 @@ def get_nondiag_weight(X):
 
     X2 = X**2
     # sum of squared diagonal elements
-    denom = numpy.trace(X2, axis1=-2, axis2=-1)
+    denom = np.trace(X2, axis1=-2, axis2=-1)
     # sum of squared off-diagonal elements
-    num = numpy.sum(X2, axis=(-2, -1)) - denom
+    num = np.sum(X2, axis=(-2, -1)) - denom
     weights = ( 1.0 / (X.shape[-1] - 1) ) * (num / denom)
     return weights

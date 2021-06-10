@@ -1,6 +1,6 @@
 import numbers
 
-import numpy
+import numpy as np
 from scipy.linalg import eigh
 
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -104,7 +104,7 @@ class Whitening(BaseEstimator, TransformerMixin):
 
             eigvals, eigvecs = eigh(Xm, eigvals_only=False)
             eigvals = eigvals[::-1]         # eigvals in descending order
-            eigvecs = numpy.fliplr(eigvecs) # idem for eigvecs
+            eigvecs = np.fliplr(eigvecs) # idem for eigvecs
 
             if dim_red_key == 'n_components':
                 if dim_red_val < 1:
@@ -126,7 +126,7 @@ class Whitening(BaseEstimator, TransformerMixin):
                 if self.verbose:
                     print('Cumulative explained variance: \n %r'
                           % cum_expl_var)
-                self.n_components_ = numpy.searchsorted(
+                self.n_components_ = np.searchsorted(
                     cum_expl_var, dim_red_val, side='right') + 1
 
             elif dim_red_key == 'max_cond':
@@ -137,7 +137,7 @@ class Whitening(BaseEstimator, TransformerMixin):
                 conds = eigvals[0] / eigvals
                 if self.verbose:
                     print('Condition numbers: \n %r' % conds)
-                self.n_components_ = numpy.searchsorted(
+                self.n_components_ = np.searchsorted(
                     conds, dim_red_val, side='left')
 
             else:
@@ -149,10 +149,10 @@ class Whitening(BaseEstimator, TransformerMixin):
                 print('Dimension reduction of Whitening on %d components'
                       % self.n_components_)
             pca_filters = eigvecs[:, :self.n_components_]
-            pca_sqrtvals = numpy.sqrt(eigvals[:self.n_components_])
+            pca_sqrtvals = np.sqrt(eigvals[:self.n_components_])
             # whitening
-            self.filters_ = pca_filters @ numpy.diag(1. / pca_sqrtvals)
-            self.inv_filters_ = numpy.diag(pca_sqrtvals).T @ pca_filters.T
+            self.filters_ = pca_filters @ np.diag(1. / pca_sqrtvals)
+            self.inv_filters_ = np.diag(pca_sqrtvals).T @ pca_filters.T
 
         else:
             raise ValueError('Unknown type for parameter dim_red: %r'
