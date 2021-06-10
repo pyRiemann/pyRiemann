@@ -20,9 +20,9 @@ def _get_normalized_weight(sample_weight, data):
 
 
 def rjd(X, eps=1e-8, n_iter_max=1000):
-    """Approximate joint diagonalization based on jacobi angle.
+    """Approximate joint diagonalization based on Jacobi angle.
 
-    This is a direct implementation of the Cardoso AJD algorithm [1] used in
+    This is a direct implementation of the Cardoso AJD algorithm [1]_ used in
     JADE. The code is a translation of the matlab code provided in the author
     website.
 
@@ -53,11 +53,9 @@ def rjd(X, eps=1e-8, n_iter_max=1000):
 
     References
     ----------
-    [1] Cardoso, Jean-Francois, and Antoine Souloumiac. Jacobi angles for
-    simultaneous diagonalization. SIAM journal on matrix analysis and
-    applications 17.1 (1996): 161-164.
-
-
+    .. [1] Cardoso, Jean-Francois, and Antoine Souloumiac. Jacobi angles for
+        simultaneous diagonalization. SIAM journal on matrix analysis and
+        applications 17.1 (1996): 161-164.
     """
 
     # reshape input matrix
@@ -207,7 +205,7 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
     """Approximate joint diagonalization algorithm UWEDGE.
 
     Uniformly Weighted Exhaustive Diagonalization using Gauss iteration
-    (U-WEDGE). Implementation of the AJD algorithm by Tichavsky and Yeredor.
+    (U-WEDGE). Implementation of the AJD algorithm by Tichavsky and Yeredor [1]_ [2]_.
     This is a translation from the matlab code provided by the authors.
 
     Parameters
@@ -239,11 +237,11 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
 
     References
     ----------
-    [1] P. Tichavsky, A. Yeredor and J. Nielsen,
+    .. [1] P. Tichavsky, A. Yeredor and J. Nielsen,
         "A Fast Approximate Joint Diagonalization Algorithm
         Using a Criterion with a Block Diagonal Weight Matrix",
         ICASSP 2008, Las Vegas
-    [2] P. Tichavsky and A. Yeredor, "Fast Approximate Joint Diagonalization
+    .. [2] P. Tichavsky and A. Yeredor, "Fast Approximate Joint Diagonalization
         Incorporating Weight Matrices" IEEE Transactions of Signal Processing,
         2009.
     """
