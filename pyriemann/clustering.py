@@ -1,5 +1,5 @@
 """Clustering functions."""
-import numpy
+import numpy as np
 from scipy.stats import norm
 from sklearn.base import (BaseEstimator, ClassifierMixin, TransformerMixin,
                           ClusterMixin)
@@ -13,7 +13,7 @@ except ImportError:
 
     def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
         if random_state is not None:
-            random_state = numpy.random.RandomState(random_state)
+            random_state = np.random.RandomState(random_state)
         return KMeans(n_clusters=n_clusters)._init_centroids(
             X,
             x_squared_norms,
@@ -34,14 +34,14 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
     """helper to fit a single run of centroid."""
     # init random state if provided
     mdm = MDM(metric=metric, n_jobs=n_jobs)
-    squared_nomrs = [numpy.linalg.norm(x, ord='fro')**2 for x in X]
+    squared_nomrs = [np.linalg.norm(x, ord='fro')**2 for x in X]
     mdm.covmeans_ = _init_centroids(X, n_clusters, init,
                                     random_state=random_state,
                                     x_squared_norms=squared_nomrs)
     if y is not None:
-        mdm.classes_ = numpy.unique(y)
+        mdm.classes_ = np.unique(y)
     else:
-        mdm.classes_ = numpy.arange(n_clusters)
+        mdm.classes_ = np.arange(n_clusters)
 
     labels = mdm.predict(X)
     k = 0
@@ -51,7 +51,7 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
         dist = mdm._predict_distances(X)
         labels = mdm.classes_[dist.argmin(axis=1)]
         k += 1
-        if (k > max_iter) | (numpy.mean(labels == old_labels) > (1 - tol)):
+        if (k > max_iter) | (np.mean(labels == old_labels) > (1 - tol)):
             break
     inertia = sum([sum(dist[labels == mdm.classes_[i], i])
                    for i in range(len(mdm.classes_))])
@@ -74,7 +74,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         The maximum number of iteration to reach convergence.
     metric : string (default: 'riemann')
         The type of metric used for centroid and distance estimation.
-    random_state : integer or numpy.RandomState, optional
+    random_state : integer or np.RandomState, optional
         The generator used to initialize the centers. If an integer is
         given, it fixes the seed. Defaults to the global numpy random
         number generator.
@@ -160,9 +160,9 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
                                                tol=self.tol,
                                                n_jobs=self.n_jobs)
         else:
-            numpy.random.seed(self.seed)
-            seeds = numpy.random.randint(
-                numpy.iinfo(numpy.int32).max, size=self.n_init)
+            np.random.seed(self.seed)
+            seeds = np.random.randint(
+                np.iinfo(np.int32).max, size=self.n_init)
             if self.n_jobs == 1:
                 res = []
                 for i in range(self.n_init):
@@ -188,7 +188,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
                     for seed in seeds)
                 labels, inertia, mdm = zip(*res)
 
-            best = numpy.argmin(inertia)
+            best = np.argmin(inertia)
             mdm = mdm[best]
             labels = labels[best]
             inertia = inertia[best]
@@ -253,7 +253,7 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
     def fit(self, X, y):
         """fit."""
         self.covmeans_ = []
-        self.classes_ = numpy.unique(y)
+        self.classes_ = np.unique(y)
         for c in self.classes_:
             self.km.fit(X[y == c])
             self.covmeans_.extend(self.km.centroids())
@@ -337,7 +337,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
             if len(y) != len(X):
                 raise ValueError('y must be the same length of X')
 
-            classes = numpy.int32(numpy.unique(y))
+            classes = np.int32(np.unique(y))
 
             if len(classes) > 2:
                 raise ValueError('number of classes must be maximum 2')
@@ -345,20 +345,20 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
             if self.pos_label not in classes:
                 raise ValueError('y must contain a positive class')
 
-            y_old = numpy.int32(numpy.array(y) == self.pos_label)
+            y_old = np.int32(np.array(y) == self.pos_label)
         else:
-            y_old = numpy.ones(len(X))
+            y_old = np.ones(len(X))
         # start loop
         for n_iter in range(self.n_iter_max):
             ix = (y_old == 1)
             self._mdm.fit(X[ix], y_old[ix])
-            y = numpy.zeros(len(X))
-            d = numpy.squeeze(numpy.log(self._mdm.transform(X[ix])))
-            self._mean = numpy.mean(d)
-            self._std = numpy.std(d)
+            y = np.zeros(len(X))
+            d = np.squeeze(np.log(self._mdm.transform(X[ix])))
+            self._mean = np.mean(d)
+            self._std = np.std(d)
             y[ix] = self._get_z_score(d) < self.threshold
 
-            if numpy.array_equal(y, y_old):
+            if np.array_equal(y, y_old):
                 break
             else:
                 y_old = y
@@ -377,7 +377,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         z : ndarray, shape (n_trials,)
             the normalized log-distance to the centroid.
         """
-        d = numpy.squeeze(numpy.log(self._mdm.transform(X)), axis=1)
+        d = np.squeeze(np.log(self._mdm.transform(X)), axis=1)
         z = self._get_z_score(d)
         return z
 
@@ -397,7 +397,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         """
         z = self.transform(X)
         pred = z < self.threshold
-        out = numpy.zeros_like(z) + self.neg_label
+        out = np.zeros_like(z) + self.neg_label
         out[pred] = self.pos_label
         return out
 

@@ -1,8 +1,9 @@
 """Code for channel selection."""
+import numpy as np
+from sklearn.base import BaseEstimator, TransformerMixin
+
 from .utils.distance import distance
 from .classification import MDM
-import numpy
-from sklearn.base import BaseEstimator, TransformerMixin
 
 
 class ElectrodeSelection(BaseEstimator, TransformerMixin):
@@ -87,7 +88,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         self.dist_ = []
         self.subelec_ = list(range(0, Ne, 1))
         while (len(self.subelec_)) > self.nelec:
-            di = numpy.zeros((len(self.subelec_), 1))
+            di = np.zeros((len(self.subelec_), 1))
             for idx in range(len(self.subelec_)):
                 sub = self.subelec_[:]
                 sub.pop(idx)
@@ -143,8 +144,8 @@ class FlatChannelRemover(BaseEstimator, TransformerMixin):
         X : ndarray, shape (n_trials, n_good_channels, n_times)
             The data without flat channels.
         """
-        std = numpy.mean(numpy.std(X, axis=2) ** 2, 0)
-        self.channels_ = numpy.where(std)[0]
+        std = np.mean(np.std(X, axis=2) ** 2, 0)
+        self.channels_ = np.where(std)[0]
         return self
 
     def transform(self, X):

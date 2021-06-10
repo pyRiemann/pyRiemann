@@ -1,10 +1,11 @@
 """Tangent space functions."""
+import numpy as np
+from sklearn.base import BaseEstimator, TransformerMixin
+
+from .utils.utils import check_version
 from .utils.mean import mean_covariance
 from .utils.tangentspace import tangent_space, untangent_space
-from .utils.utils import check_version
 
-import numpy
-from sklearn.base import BaseEstimator, TransformerMixin
 if check_version('sklearn', '0.17'):
     from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 else:
@@ -102,7 +103,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         """Check data shape and return the size of cov mat."""
         shape_X = X.shape
         if len(X.shape) == 2:
-            Ne = (numpy.sqrt(1 + 8 * shape_X[1]) - 1) / 2
+            Ne = (np.sqrt(1 + 8 * shape_X[1]) - 1) / 2
             if Ne != int(Ne):
                 raise ValueError("Shape of Tangent space vector does not"
                                  " correspond to a square matrix.")
@@ -117,7 +118,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
     def _check_reference_points(self, X):
         """Check reference point status, and force it to identity if not."""
         if not hasattr(self, 'reference_'):
-            self.reference_ = numpy.eye(self._check_data_dim(X))
+            self.reference_ = np.eye(self._check_data_dim(X))
         else:
             shape_cr = self.reference_.shape[0]
             shape_X = self._check_data_dim(X)
@@ -232,7 +233,7 @@ class FGDA(BaseEstimator, TransformerMixin):
 
     def _fit_lda(self, X, y, sample_weight=None):
         """Helper to fit LDA."""
-        self.classes_ = numpy.unique(y)
+        self.classes_ = np.unique(y)
         self._lda = LDA(n_components=len(self.classes_) - 1,
                         solver='lsqr',
                         shrinkage='auto')
@@ -241,13 +242,13 @@ class FGDA(BaseEstimator, TransformerMixin):
         self._lda.fit(ts, y)
 
         W = self._lda.coef_.copy()
-        self._W = numpy.dot(
-            numpy.dot(W.T, numpy.linalg.pinv(numpy.dot(W, W.T))), W)
+        self._W = np.dot(
+            np.dot(W.T, np.linalg.pinv(np.dot(W, W.T))), W)
         return ts
 
     def _retro_project(self, ts):
         """Helper to project back in the manifold."""
-        ts = numpy.dot(ts, self._W)
+        ts = np.dot(ts, self._W)
         return self._ts.inverse_transform(ts)
 
     def fit(self, X, y=None, sample_weight=None):

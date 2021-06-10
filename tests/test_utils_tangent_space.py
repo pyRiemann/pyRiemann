@@ -1,5 +1,6 @@
-from numpy.testing import assert_array_almost_equal
 import numpy as np
+from numpy.testing import assert_array_almost_equal
+
 from pyriemann.utils.tangentspace import tangent_space, untangent_space
 
 
