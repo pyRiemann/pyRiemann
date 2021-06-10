@@ -124,8 +124,8 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Parameters
     ----------
-    X : ndarray, shape (n_trials, n_channels, n_samples)
-        ndarray of trials.
+    X : ndarray, shape (n_channels, n_samples)
+        Multi-channel time-series.
     window : int (default 128)
         The length of the FFT window used for spectral estimation.
     overlap : float (default 0.75)
@@ -139,11 +139,10 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Returns
     -------
-    S : ndarray, shape (n_trials, n_channels, n_channels, n_freqs)
-        ndarray of cross-spectral matrices for each trials and for each
-        frequency bin.
+    S : ndarray, shape (n_channels, n_channels, n_freqs)
+        Cross-spectral matrices, for each frequency bin.
     freqs : ndarray, shape (n_freqs,)
-        The frequencies associated to cospectra.
+        The frequencies associated to cross-spectra.
 
     References
     ----------
@@ -210,8 +209,8 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Parameters
     ----------
-    X : ndarray, shape (n_trials, n_channels, n_samples)
-        ndarray of trials.
+    X : ndarray, shape (n_channels, n_samples)
+        Multi-channel time-series.
     window : int (default 128)
         The length of the FFT window used for spectral estimation.
     overlap : float (default 0.75)
@@ -225,9 +224,8 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Returns
     -------
-    S : ndarray, shape (n_trials, n_channels, n_channels, n_freqs)
-        ndarray of co-spectral matrices for each trials and for each
-        frequency bin.
+    S : ndarray, shape (n_channels, n_channels, n_freqs)
+        Co-spectral matrices, for each frequency bin.
     freqs : ndarray, shape (n_freqs,)
         The frequencies associated to cospectra.
     """
@@ -247,8 +245,8 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Parameters
     ----------
-    X : ndarray, shape (n_trials, n_channels, n_samples)
-        ndarray of trials.
+    X : ndarray, shape (n_channels, n_samples)
+        Multi-channel time-series.
     window : int (default 128)
         The length of the FFT window used for spectral estimation.
     overlap : float (default 0.75)
@@ -262,9 +260,8 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Returns
     -------
-    C : ndarray, shape (n_trials, n_channels, n_channels, n_freqs)
-        ndarray of coherence matrices for each trials and for each
-        frequency bin.
+    C : ndarray, shape (n_channels, n_channels, n_freqs)
+        Coherence matrices, for each frequency bin.
     """
     S, _ = cross_spectrum(X, window, overlap, fmin, fmax, fs)
     S2 = np.abs(S)**2 # squared cross-spectral modulus
