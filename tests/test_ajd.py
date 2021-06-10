@@ -1,6 +1,6 @@
 from numpy.testing import assert_array_equal
 import numpy as np
-from numpy.testing import assert_allclose, assert_array_almost_equal
+from numpy.testing import assert_allclose
 import pytest
 
 from pyriemann.utils.ajd import rjd, ajd_pham, uwedge, _get_normalized_weight
@@ -34,8 +34,10 @@ def test_get_normalized_weight():
 
 def test_rjd():
     """Test rjd"""
-    covmats, diags, A = generate_cov(100, 3)
+    covmats, _, _ = generate_cov(100, 3)
     V, D = rjd(covmats)
+    assert V.shape == (3, 3)
+    assert D.shape == (100, 3, 3)
 
 
 def test_pham():
