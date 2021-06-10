@@ -20,7 +20,7 @@ def generate_cov(Nt, Ne):
 
 def test_Xdawn_init():
     """Test init of Xdawn"""
-    xd = Xdawn()
+    _ = Xdawn()
 
 
 def test_Xdawn_fit():
@@ -170,7 +170,7 @@ def test_AJDC():
     ajdc = AJDC(fmin=1, fmax=32, fs=64)
     assert ajdc.window == 128
     assert ajdc.overlap == 0.5
-    assert ajdc.dim_red == None
+    assert ajdc.dim_red is None
     assert ajdc.verbose
 
     # Test fit

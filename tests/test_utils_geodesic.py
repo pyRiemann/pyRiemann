@@ -76,7 +76,8 @@ def test_geodesic_logeuclid_middle():
     Ctrue = 1*np.eye(3)
     assert_array_almost_equal(geodesic_logeuclid(A, B, 0.5), Ctrue)
 
-### global geodesic
+########################
+# global geodesic
 
 
 def test_geodesic_riemann():

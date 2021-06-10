@@ -29,8 +29,8 @@ def test_whitening():
     # Test Init
     whit = Whitening()
     assert whit.metric == 'euclid'
-    assert whit.dim_red == None
-    assert whit.verbose == False
+    assert whit.dim_red is None
+    assert not whit.verbose
 
     # Test Fit
     with pytest.raises(ValueError):  # len dim_red not equal to 1
