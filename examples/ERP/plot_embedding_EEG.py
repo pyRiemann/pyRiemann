@@ -10,8 +10,6 @@ Spectral embedding via Laplacian Eigenmaps of a set of ERP data.
 #
 # License: BSD (3-clause)
 
-import numpy as np
-
 from pyriemann.estimation import XdawnCovariances
 from pyriemann.embedding import Embedding
 
@@ -22,7 +20,7 @@ from mne.datasets import sample
 from sklearn.model_selection import train_test_split
 
 from matplotlib import pyplot as plt
-import seaborn as sns
+
 
 print(__doc__)
 

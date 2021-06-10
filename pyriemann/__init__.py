@@ -8,3 +8,14 @@ from . import stats
 from . import embedding
 
 __version__ = "0.2.7.dev"
+
+__all__ = [
+    'classification',
+    'tangentspace',
+    'channelselection',
+    'estimation',
+    'spatialfilters',
+    'clustering',
+    'stats',
+    'embedding',
+]

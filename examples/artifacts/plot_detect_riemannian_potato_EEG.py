@@ -124,9 +124,9 @@ epotato = Potato(metric='euclid', threshold=z_th).fit(covs[train_set])
 ep_center = epotato._mdm.covmeans_[0]
 
 rp_labels = rpotato.predict(covs[train_set])
-rp_colors = ['b' if l==1 else 'r' for l in rp_labels.tolist()]
+rp_colors = ['b' if ll == 1 else 'r' for ll in rp_labels.tolist()]
 ep_labels = epotato.predict(covs[train_set])
-ep_colors = ['b' if l==1 else 'r' for l in ep_labels.tolist()]
+ep_colors = ['b' if ll == 1 else 'r' for ll in ep_labels.tolist()]
 
 # Zscores in the horizontal 2D plane going through the reference
 X, Y = np.meshgrid(np.linspace(1, 31, 100), np.linspace(1, 31, 100))
@@ -198,6 +198,8 @@ p_ep = plot_potato_2D(ax_ep, cax_ep, X, Y, ep_zscores, ep_center, covs_visu,
                       ep_colors, 'Z-score of Euclidean distance to reference')
 
 # Plot online detection (an interactive display is required)
+
+
 def online_update(self):
     global t, time, sig, covs_visu
 
@@ -214,8 +216,8 @@ def online_update(self):
     sig = np.hstack((sig[:, int(interval*sfreq):],
                      eeg_data[:, int(time_start*sfreq):int(time_end*sfreq)]))
     covs_visu = np.vstack((covs_visu, covs[t][np.newaxis, ...]))
-    rp_colors.append('b' if rp_label==1 else 'r')
-    ep_colors.append('b' if ep_label==1 else 'r')
+    rp_colors.append('b' if rp_label == 1 else 'r')
+    ep_colors.append('b' if ep_label == 1 else 'r')
     if len(covs_visu) > test_covs_visu:
         covs_visu = covs_visu[1:]
         rp_colors.pop(0)
@@ -234,6 +236,7 @@ def online_update(self):
     p_ep.set_offsets(np.c_[covs_visu[:, 0, 0], covs_visu[:, 1, 1]])
     p_ep.set_color(ep_colors_)
     return pl_sig0, pl_sig1, p_rp, p_ep
+
 
 # For a correct display, change the parameter 'interval_display'
 interval_display = 1.0

@@ -30,7 +30,7 @@ def distance_kullback_sym(A, B):
 
 
 def distance_euclid(A, B):
-    """Euclidean distance between two covariance matrices A and B.
+    r"""Euclidean distance between two covariance matrices A and B.
 
     The Euclidean distance is defined by the Froebenius norm between the two
     matrices.
@@ -47,7 +47,7 @@ def distance_euclid(A, B):
 
 
 def distance_logeuclid(A, B):
-    """Log Euclidean distance between two covariance matrices A and B.
+    r"""Log Euclidean distance between two covariance matrices A and B.
 
     .. math::
         d = \Vert \log(\mathbf{A}) - \log(\mathbf{B}) \Vert_F
@@ -61,10 +61,10 @@ def distance_logeuclid(A, B):
 
 
 def distance_riemann(A, B):
-    """Riemannian distance between two covariance matrices A and B.
+    r"""Riemannian distance between two covariance matrices A and B.
 
     .. math::
-            d = {\left( \sum_i \log(\lambda_i)^2 \\right)}^{-1/2}
+        d = {\left( \sum_i \log(\lambda_i)^2 \\right)}^{-1/2}
 
     where :math:`\lambda_i` are the joint eigenvalues of A and B
 
@@ -93,7 +93,7 @@ def distance_logdet(A, B):
 
 
 def distance_wasserstein(A, B):
-    """Wasserstein distance between two covariances matrices.
+    r"""Wasserstein distance between two covariances matrices.
 
     .. math::
         d = \left( {tr(A + B - 2(A^{1/2}BA^{1/2})^{1/2})}\\right )^{1/2}
@@ -109,7 +109,8 @@ def distance_wasserstein(A, B):
 
 
 def distance(A, B, metric='riemann'):
-    """Distance between two covariance matrices A and B according to the metric.
+    """Distance between two covariance matrices A and B according to the
+    metric.
 
     :param A: First covariance matrix
     :param B: Second covariance matrix

@@ -145,7 +145,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
 
 
 class BilinearFilter(BaseEstimator, TransformerMixin):
-    """ Bilinear spatial filter.
+    r""" Bilinear spatial filter.
 
     Bilinear spatial filter for covariance matrices.
     allow to define a custom spatial filter for bilinear projection of the
@@ -357,7 +357,7 @@ class CSP(BilinearFilter):
                 b = 0
                 for i, c in enumerate(classes):
                     tmp = np.dot(np.dot(evecs[:, j].T, C[i]),
-                                    evecs[:, j])
+                                 evecs[:, j])
                     a += Pc[i] * np.log(np.sqrt(tmp))
                     b += Pc[i] * (tmp ** 2 - 1)
                 mi = - (a + (3.0 / 16) * (b ** 2))
@@ -420,7 +420,7 @@ class SPoC(CSP):
     ----------
     .. [1] Dahne, S., Meinecke, F. C., Haufe, S., Hohne, J., Tangermann, M.,
         Muller, K. R., & Nikulin, V. V. (2014). SPoC: a novel framework for
-        relating the amplitude of neuronal oscillations to behaviorally 
+        relating the amplitude of neuronal oscillations to behaviorally
         relevant parameters. NeuroImage, 86, 111-122.
     """
 
@@ -571,7 +571,10 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_subjects, n_conditions, n_channels, n_samples) | list of n_subjects of list of n_conditions ndarray of shape (n_channels, n_samples), with same n_conditions and n_channels but different n_samples
+        X : ndarray, shape (n_subjects, n_conditions, n_channels, n_samples) |
+                list of n_subjects of list of n_conditions ndarray of shape
+                (n_channels, n_samples), with same n_conditions and n_channels
+                but different n_samples
             Signal in channel space, acquired for different subjects and under
             different experimental conditions.
         y : None
@@ -717,7 +720,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         cov = est.Covariances().transform(X)
 
         src_var = np.zeros((X.shape[0], self.n_sources_))
-        for s in range (self.n_sources_):
+        for s in range(self.n_sources_):
             src_var[:, s] = np.trace(
                 self.backward_filters_[:, s] * self.forward_filters_[s].T * cov
                 * self.forward_filters_[s] * self.backward_filters_[:, s].T,

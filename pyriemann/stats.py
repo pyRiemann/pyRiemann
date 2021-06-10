@@ -243,7 +243,7 @@ class PermutationDistance(BasePermutation):
     Permutation test based on distance.
 
     Perform a permutation test based on distance. You have the choice of 3
-    different statistic :
+    different statistic:
 
     - 'pairwise' :
         the statistic is based on paiwire distance as
@@ -306,8 +306,8 @@ class PermutationDistance(BasePermutation):
 
     References
     --------
-        [1] Anderson, J. "A new method for non-parametric multivariate analysis of
-        variance." Austral ecology. 2001.
+    .. [1] Anderson, J. "A new method for non-parametric multivariate analysis
+           of variance." Austral ecology. 2001.
     """
 
     def __init__(self,
@@ -387,7 +387,7 @@ class PermutationDistance(BasePermutation):
         for ix, classe in enumerate(mdm.classes_):
             within += (distance(
                 X[y == classe], covmeans[ix], metric=mdm.metric_dist)
-                       **2).sum()
+                ** 2).sum()
         within /= (len(y) - n_classes)
 
         score = between / within
@@ -408,7 +408,7 @@ class PermutationDistance(BasePermutation):
         for ix, classe in enumerate(mdm.classes_):
             di = (distance(
                 X[y == classe], covmeans[ix], metric=mdm.metric_dist)
-                  **2).mean()
+                ** 2).mean()
             dist += (di / np.sum(y == classe))
         score = mean_dist / np.sqrt(dist)
         return score

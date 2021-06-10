@@ -167,12 +167,12 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
                 res = []
                 for i in range(self.n_init):
                     res.append(_fit_single(X, y,
-                                      n_clusters=self.n_clusters,
-                                      init=self.init,
-                                      random_state=seeds[i],
-                                      metric=self.metric,
-                                      max_iter=self.max_iter,
-                                      tol=self.tol))
+                                           n_clusters=self.n_clusters,
+                                           init=self.init,
+                                           random_state=seeds[i],
+                                           metric=self.metric,
+                                           max_iter=self.max_iter,
+                                           tol=self.tol))
                 labels, inertia, mdm = zip(*res)
             else:
 

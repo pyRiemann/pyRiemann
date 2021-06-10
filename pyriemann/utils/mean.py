@@ -22,7 +22,7 @@ def _get_sample_weight(sample_weight, data):
 
 def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
                  sample_weight=None):
-    """Return the mean covariance matrix according to the Riemannian metric.
+    r"""Return the mean covariance matrix according to the Riemannian metric.
 
     The procedure is similar to a gradient descent minimizing the sum of
     riemannian distance to the mean.
@@ -73,7 +73,8 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
 
 
 def mean_logeuclid(covmats, sample_weight=None):
-    """Return the mean covariance matrix according to the log-euclidean metric.
+    r"""Return the mean covariance matrix according to the log-euclidean
+    metric.
 
     .. math::
             \mathbf{C} = \exp{(\\frac{1}{N} \sum_i \log{\mathbf{C}_i})}
@@ -117,7 +118,7 @@ def mean_kullback_sym(covmats, sample_weight=None):
 
 
 def mean_harmonic(covmats, sample_weight=None):
-    """Return the harmonic mean of a set of covariance matrices.
+    r"""Return the harmonic mean of a set of covariance matrices.
 
     .. math::
             \mathbf{C} = (\\frac{1}{N} \sum_i {\mathbf{C}_i}^{-1})^{-1}
@@ -139,12 +140,12 @@ def mean_harmonic(covmats, sample_weight=None):
 
 
 def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
-    """Return the mean covariance matrix according to the logdet metric.
+    r"""Return the mean covariance matrix according to the logdet metric.
 
     This is an iterative procedure where the update is:
 
     .. math::
-            \mathbf{C} = \left(\sum_i \left( 0.5 \mathbf{C} + 0.5 \mathbf{C}_i \\right)^{-1} \\right)^{-1}  # noqa
+        \mathbf{C} = \left(\sum_i \left( 0.5 \mathbf{C} + 0.5 \mathbf{C}_i \\right)^{-1} \\right)^{-1}  # noqa
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param tol: the tolerance to stop the gradient descent
@@ -181,12 +182,12 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
 
 def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
                      sample_weight=None):
-    """Return the mean covariance matrix according to the wasserstein metric.
+    r"""Return the mean covariance matrix according to the wasserstein metric.
 
     This is an iterative procedure where the update is [1]:
 
     .. math::
-            \mathbf{K} = \left(\sum_i \left( \mathbf{K} \mathbf{C}_i \mathbf{K} \\right)^{1/2} \\right)^{1/2}  # noqa
+        \mathbf{K} = \left(\sum_i \left( \mathbf{K} \mathbf{C}_i \mathbf{K} \\right)^{1/2} \\right)^{1/2}  # noqa
 
     with :math:`\mathbf{K} = \mathbf{C}^{1/2}`.
 
@@ -233,10 +234,10 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
 
 
 def mean_euclid(covmats, sample_weight=None):
-    """Return the mean covariance matrix according to the euclidean metric :
+    r"""Return the mean covariance matrix according to the euclidean metric :
 
     .. math::
-            \mathbf{C} = \\frac{1}{N} \sum_i \mathbf{C}_i
+        \mathbf{C} = \\frac{1}{N} \sum_i \mathbf{C}_i
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param sample_weight: the weight of each sample
@@ -301,10 +302,10 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
 
 
 def mean_identity(covmats, sample_weight=None):
-    """Return the identity matrix corresponding to the covmats sit size
+    r"""Return the identity matrix corresponding to the covmats sit size
 
     .. math::
-            \mathbf{C} = \mathbf{I}_d
+        \mathbf{C} = \mathbf{I}_d
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :returns: the identity matrix of size Nchannels
@@ -331,6 +332,7 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
     else:
         C = mean_methods[metric](covmats, sample_weight=sample_weight, *args)
     return C
+
 
 mean_methods = {'riemann': mean_riemann,
                 'logeuclid': mean_logeuclid,

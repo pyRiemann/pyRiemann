@@ -146,7 +146,7 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
     Applications 22, no. 4 (2001): 1136-1152.
 
     """
-    normalized_weight = _get_normalized_weight(sample_weight, X) # sum = 1
+    normalized_weight = _get_normalized_weight(sample_weight, X)  # sum = 1
 
     n_epochs = X.shape[0]
 

@@ -22,7 +22,7 @@ class Whitening(BaseEstimator, TransformerMixin):
     dim_red : None | dict, (default None)
         If None :
             no dimension reduction during whitening.
-        If ``{'n_components': val}`` : 
+        If ``{'n_components': val}`` :
             dimension reduction defining the number of components;
             ``val`` must be an integer superior to 1.
         If ``{'expl_var': val}`` :
@@ -56,6 +56,7 @@ class Whitening(BaseEstimator, TransformerMixin):
     .. versionadded:: 0.2.7
 
     """
+
     def __init__(self, metric='euclid', dim_red=None, verbose=False):
         """Init."""
         self.metric = metric
@@ -104,7 +105,7 @@ class Whitening(BaseEstimator, TransformerMixin):
 
             eigvals, eigvecs = eigh(Xm, eigvals_only=False)
             eigvals = eigvals[::-1]         # eigvals in descending order
-            eigvecs = np.fliplr(eigvecs) # idem for eigvecs
+            eigvecs = np.fliplr(eigvecs)  # idem for eigvecs
 
             if dim_red_key == 'n_components':
                 if dim_red_val < 1:
