@@ -8,31 +8,36 @@ from pyriemann.utils.covariance import (covariances, covariances_EP, eegtocov,
                                         normalize, get_nondiag_weight)
 
 
-def test_covariances():
+@pytest.mark.parametrize(
+    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd', np.cov, 'truc', None]
+)
+def test_covariances(estimator):
     """Test covariance for multiple estimator"""
     x = np.random.randn(2, 3, 100)
-    cov = covariances(x)
-    cov = covariances(x, estimator='oas')
-    cov = covariances(x, estimator='lwf')
-    cov = covariances(x, estimator='scm')
-    cov = covariances(x, estimator='corr')
-    cov = covariances(x, estimator='mcd')
-    cov = covariances(x, estimator=np.cov)
+    if estimator is None:
+        cov = covariances(x)
+        assert cov.shape == (2, 3, 3)
+    elif estimator == 'truc':
+        with pytest.raises(ValueError):
+            covariances(x, estimator=estimator)
+    else:
+        cov = covariances(x, estimator=estimator)
+        assert cov.shape == (2, 3, 3)
 
-    with pytest.raises(ValueError):
-        covariances(x, estimator='truc')
 
-
-def test_covariances_EP():
+@pytest.mark.parametrize(
+    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd', None]
+)
+def test_covariances_EP(estimator):
     """Test covariance_EP for multiple estimator"""
     x = np.random.randn(2, 3, 100)
     p = np.random.randn(3, 100)
-    cov = covariances_EP(x, p)
-    cov = covariances_EP(x, p, estimator='oas')
-    cov = covariances_EP(x, p, estimator='lwf')
-    cov = covariances_EP(x, p, estimator='scm')
-    cov = covariances_EP(x, p, estimator='corr')
-    cov = covariances_EP(x, p, estimator='mcd')
+
+    if estimator is None:
+        cov = covariances_EP(x, p)
+    else:
+        cov = covariances_EP(x, p, estimator=estimator)
+    assert cov.shape == (2, 6, 6)
 
 
 def test_covariances_eegtocov():
