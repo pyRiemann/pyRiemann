@@ -111,7 +111,8 @@ def test_distance_generic_custom():
     """Test custom distance for generic function"""
     A = 2*np.eye(3)
     B = 2*np.eye(3)
-    assert distance(A, B, metric=distance_logeuclid) == distance_logeuclid(A, B)
+    assert distance(
+        A, B, metric=distance_logeuclid) == distance_logeuclid(A, B)
 
 
 def test_pairwise_distance_matrix():

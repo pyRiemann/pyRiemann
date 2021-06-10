@@ -28,28 +28,28 @@ def test_whitening():
 
     # Test Init
     whit = Whitening()
-    assert whit.metric=='euclid'
-    assert whit.dim_red==None
-    assert whit.verbose==False
+    assert whit.metric == 'euclid'
+    assert whit.dim_red == None
+    assert whit.verbose == False
 
     # Test Fit
-    with pytest.raises(ValueError): # len dim_red not equal to 1
+    with pytest.raises(ValueError):  # len dim_red not equal to 1
         Whitening(dim_red={'n_components': 2, 'expl_var': 0.5}).fit(cov)
-    with pytest.raises(ValueError): # n_components not superior to 1
+    with pytest.raises(ValueError):  # n_components not superior to 1
         Whitening(dim_red={'n_components': 0}).fit(cov)
-    with pytest.raises(ValueError): # n_components not a int
+    with pytest.raises(ValueError):  # n_components not a int
         Whitening(dim_red={'n_components': 2.5}).fit(cov)
-    with pytest.raises(ValueError): # expl_var out of bound
+    with pytest.raises(ValueError):  # expl_var out of bound
         Whitening(dim_red={'expl_var': 0}).fit(cov)
-    with pytest.raises(ValueError): # expl_var out of bound
+    with pytest.raises(ValueError):  # expl_var out of bound
         Whitening(dim_red={'expl_var': 1.1}).fit(cov)
-    with pytest.raises(ValueError): # max_cond not strictly superior to 1
+    with pytest.raises(ValueError):  # max_cond not strictly superior to 1
         Whitening(dim_red={'max_cond': 1}).fit(cov)
-    with pytest.raises(ValueError): # unknown key
+    with pytest.raises(ValueError):  # unknown key
         Whitening(dim_red={'abc': 42}).fit(cov)
-    with pytest.raises(ValueError): # unknown type
+    with pytest.raises(ValueError):  # unknown type
         Whitening(dim_red='max_cond').fit(cov)
-    with pytest.raises(ValueError): # unknown type
+    with pytest.raises(ValueError):  # unknown type
         Whitening(dim_red=20).fit(cov)
 
     whit = Whitening().fit(cov, sample_weight=w)

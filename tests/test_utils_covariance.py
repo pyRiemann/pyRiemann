@@ -18,7 +18,7 @@ def test_covariances():
     cov = covariances(x, estimator='corr')
     cov = covariances(x, estimator='mcd')
     cov = covariances(x, estimator=np.cov)
-    
+
     with pytest.raises(ValueError):
         covariances(x, estimator='truc')
 
@@ -47,13 +47,13 @@ def test_covariances_cross_spectrum():
     cross_spectrum(x)
     cross_spectrum(x, fs=128, fmin=2, fmax=40)
 
-    with pytest.raises(ValueError): # fmin > fmax
+    with pytest.raises(ValueError):  # fmin > fmax
         cross_spectrum(x, fs=128, fmin=20, fmax=10)
-    with pytest.raises(ValueError): # fmax > fs/2
+    with pytest.raises(ValueError):  # fmax > fs/2
         cross_spectrum(x, fs=128, fmin=20, fmax=65)
-    with pytest.warns(UserWarning): # fs is None
+    with pytest.warns(UserWarning):  # fs is None
         cross_spectrum(x, fmin=12)
-    with pytest.warns(UserWarning): # fs is None
+    with pytest.warns(UserWarning):  # fs is None
         cross_spectrum(x, fmax=12)
 
     c, _ = cross_spectrum(x, fs=128, window=256, fmin=3, fmax=51)
@@ -114,11 +114,11 @@ def test_normalize():
     assert_array_almost_equal(np.ones(mat_dn.shape[0]),
                               np.abs(np.linalg.det(mat_dn)))
 
-    with pytest.raises(ValueError): # not at least 2d
+    with pytest.raises(ValueError):  # not at least 2d
         normalize(rs.randn(n_channels), "trace")
-    with pytest.raises(ValueError): # not square
+    with pytest.raises(ValueError):  # not square
         normalize(rs.randn(n_trials, n_channels, n_channels + 2), "trace")
-    with pytest.raises(ValueError): # invalid normalization type
+    with pytest.raises(ValueError):  # invalid normalization type
         normalize(rs.randn(n_trials, n_channels, n_channels), "abc")
 
 
@@ -146,7 +146,7 @@ def test_get_nondiag_weight():
     w = get_nondiag_weight(mats)
     assert_array_almost_equal(w, np.zeros(n_trials))
 
-    with pytest.raises(ValueError): # not at least 2d
+    with pytest.raises(ValueError):  # not at least 2d
         get_nondiag_weight(rs.randn(n_channels))
-    with pytest.raises(ValueError): # not square
+    with pytest.raises(ValueError):  # not square
         get_nondiag_weight(rs.randn(n_trials, n_channels, n_channels + 2))
