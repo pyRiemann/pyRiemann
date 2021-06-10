@@ -63,12 +63,12 @@ def covariances(X, estimator='cov'):
     estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'corr'} (default: 'scm')
         covariance matrix estimator:
 
-        * 'cov' for numpy based covariance matrix, https://np.org/doc/stable/reference/generated/np.cov.html
+        * 'cov' for numpy based covariance matrix, https://numpy.org/doc/stable/reference/generated/np.cov.html
         * 'scm' for sample covariance matrix, https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
         * 'lwf' for shrunk Ledoit-Wolf covariance matrix, https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
         * 'oas' for oracle approximating shrunk covariance matrix, https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
         * 'mcd' for minimum covariance determinant matrix, https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
-        * 'corr' for correlation coefficient matrix, https://np.org/doc/stable/reference/generated/np.corrcoef.html
+        * 'corr' for correlation coefficient matrix, https://numpy.org/doc/stable/reference/generated/np.corrcoef.html
 
     Returns
     -------
