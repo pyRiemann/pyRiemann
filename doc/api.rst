@@ -89,7 +89,7 @@ Spatial Filtering
 
 Preprocessing
 -------------
-.. _spatialfilter_api:
+.. _preprocessing_api:
 .. currentmodule:: pyriemann.preprocessing
 
 .. autosummary::
