@@ -25,9 +25,9 @@ def test_get_normalized_weight():
     w = _get_normalized_weight(None, covmats)
     assert np.isclose(np.sum(w), 1., atol=1e-10)
 
-    with pytest.raises(ValueError): # not same length
+    with pytest.raises(ValueError):  # not same length
         _get_normalized_weight(w[:Nt//2], covmats)
-    with pytest.raises(ValueError): # not strictly positive weight
+    with pytest.raises(ValueError):  # not strictly positive weight
         w[0] = 0
         _get_normalized_weight(w, covmats)
 
@@ -48,11 +48,11 @@ def test_pham():
 
     w = 5 * np.ones(Nt)
     Vw, Dw = ajd_pham(covmats, sample_weight=w)
-    assert_array_equal(V, Vw) # same result as ajd_pham without weight
+    assert_array_equal(V, Vw)  # same result as ajd_pham without weight
     assert_array_equal(D, Dw)
 
     # Test that weight must be strictly positive
-    with pytest.raises(ValueError): # not strictly positive weight
+    with pytest.raises(ValueError):  # not strictly positive weight
         w[0] = 0
         ajd_pham(covmats, sample_weight=w)
 
