@@ -99,16 +99,19 @@ def mean_kullback_sym(covmats, sample_weight=None):
     """Return the mean covariance matrix according to KL divergence.
 
     This mean is the geometric mean between the Arithmetic and the Harmonic
-    mean, as shown in Moakher, Maher, and Philipp G. Batchelor. "Symmetric
-    positive-definite matrices: From geometry to applications and
-    visualization." In Visualization and Processing of Tensor Fields, pp.
-    285-298. Springer Berlin Heidelberg, 2006.
+    mean, as shown in [1]_.
 
-    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param covmats: Covariance matrices set, n_trials X n_channels X n_channels
     :param sample_weight: the weight of each sample
 
     :returns: the mean covariance matrix
 
+    References
+    ----------
+    .. [1]  Moakher, Maher, and Philipp G. Batchelor. "Symmetric
+        positive-definite matrices: From geometry to applications and
+        visualization." In Visualization and Processing of Tensor Fields, pp.
+        285-298. Springer Berlin Heidelberg, 2006.
     """
     C_Arithmetic = mean_euclid(covmats, sample_weight)
     C_Harmonic = mean_harmonic(covmats, sample_weight)
@@ -121,7 +124,7 @@ def mean_harmonic(covmats, sample_weight=None):
     r"""Return the harmonic mean of a set of covariance matrices.
 
     .. math::
-            \mathbf{C} = (\\frac{1}{N} \sum_i {\mathbf{C}_i}^{-1})^{-1}
+        \mathbf{C} = \left(\frac{1}{N} \sum_i {\mathbf{C}_i}^{-1}\right)^{-1}
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param sample_weight: the weight of each sample
