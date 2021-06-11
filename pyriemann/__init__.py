@@ -6,6 +6,7 @@ from . import spatialfilters
 from . import clustering
 from . import stats
 from . import embedding
+from . import preprocessing
 
 __version__ = "0.2.7.dev"
 
@@ -18,4 +19,5 @@ __all__ = [
     'clustering',
     'stats',
     'embedding',
+    'preprocessing',
 ]
