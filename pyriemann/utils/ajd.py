@@ -205,8 +205,9 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
     """Approximate joint diagonalization algorithm UWEDGE.
 
     Uniformly Weighted Exhaustive Diagonalization using Gauss iteration
-    (U-WEDGE). Implementation of the AJD algorithm by Tichavsky and Yeredor [1]_ [2]_.
-    This is a translation from the matlab code provided by the authors.
+    (U-WEDGE). Implementation of the AJD algorithm by Tichavsky and
+    Yeredor [1]_ [2]_. This is a translation from the matlab code provided
+    by the authors.
 
     Parameters
     ----------
