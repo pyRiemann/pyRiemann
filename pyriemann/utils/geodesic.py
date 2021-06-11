@@ -26,7 +26,7 @@ def geodesic(A, B, alpha, metric='riemann'):
 
 
 def geodesic_riemann(A, B, alpha=0.5):
-    r"""Return the matrix at the position alpha on the riemannian geodesic
+    r"""Return the matrix at the position alpha on the Riemannian geodesic
     between A and B:
 
     .. math::
@@ -49,7 +49,7 @@ def geodesic_riemann(A, B, alpha=0.5):
 
 
 def geodesic_euclid(A, B, alpha=0.5):
-    r"""Return the matrix at the position alpha on the euclidean geodesic
+    r"""Return the matrix at the position alpha on the Euclidean geodesic
     between A and B:
 
     .. math::
@@ -67,7 +67,7 @@ def geodesic_euclid(A, B, alpha=0.5):
 
 
 def geodesic_logeuclid(A, B, alpha=0.5):
-    r"""Return the matrix at the position alpha on the log euclidean geodesic
+    r"""Return the matrix at the position alpha on the log-Euclidean geodesic
     between A and B  :
 
     .. math::

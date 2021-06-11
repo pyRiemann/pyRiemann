@@ -185,7 +185,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
 
 def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
                      sample_weight=None):
-    r"""Return the mean covariance matrix according to the wasserstein metric.
+    r"""Return the mean covariance matrix according to the Wasserstein metric.
 
     This is an iterative procedure where the update is [1]_:
 
