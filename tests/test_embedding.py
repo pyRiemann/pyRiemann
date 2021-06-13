@@ -15,6 +15,7 @@ def generate_cov(Nt, Ne):
         covmats[i] = np.dot(np.dot(A, np.diag(diags[i])), A.T)
     return covmats, diags, A
 
+
 def test_embedding():
     """Test Embedding."""
     covmats, diags, A = generate_cov(100, 3)

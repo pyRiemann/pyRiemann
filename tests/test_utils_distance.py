@@ -1,4 +1,4 @@
-from numpy.testing import assert_array_almost_equal, assert_array_equal
+from numpy.testing import assert_array_almost_equal
 import pytest
 import numpy as np
 
@@ -111,7 +111,8 @@ def test_distance_generic_custom():
     """Test custom distance for generic function"""
     A = 2*np.eye(3)
     B = 2*np.eye(3)
-    assert distance(A, B, metric=distance_logeuclid) == distance_logeuclid(A, B)
+    assert distance(
+        A, B, metric=distance_logeuclid) == distance_logeuclid(A, B)
 
 
 def test_pairwise_distance_matrix():

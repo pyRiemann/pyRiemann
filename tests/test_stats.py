@@ -3,6 +3,7 @@ from pyriemann.stats import PermutationDistance, PermutationModel
 import pytest
 from pyriemann.spatialfilters import CSP
 
+
 def generate_cov(Nt, Ne):
     """Generate a set of cavariances matrices for test purpose."""
     rs = np.random.RandomState(1234)
@@ -20,7 +21,7 @@ def test_permutation_distance():
     covset = generate_cov(10, 5)
     labels = np.array([0, 1]).repeat(5)
     groups = np.array([0] * 5 + [1] * 5)
-    
+
     with pytest.raises(ValueError):
         PermutationDistance(mode='badmode')
 

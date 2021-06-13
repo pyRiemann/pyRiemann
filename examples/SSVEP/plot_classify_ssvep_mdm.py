@@ -75,6 +75,7 @@ def download_sample_data(dataset="ssvep", subject=1, session=1):
         _fetch_file(url, destination, print_destination=False)
     return destination
 
+
 # Download data
 destination = download_sample_data(dataset="ssvep", subject=12, session=1)
 # Read data in MNE Raw and numpy format
@@ -127,10 +128,12 @@ raw.plot(duration=n_seconds, start=0, n_channels=8, scalings={'eeg': 4e-2},
 # the filtered signals for each stimulation frequency. We stack the filtered
 # signals to build an extended signal.
 
+
 def _bandpass_filter(signal, lowcut, highcut):
     """ Bandpass filter using MNE """
     return signal.copy().filter(l_freq=lowcut, h_freq=highcut,
                                 method="iir").get_data()
+
 
 # We stack the filtered signals to build an extended signal
 frequencies = [13., 17., 21.]

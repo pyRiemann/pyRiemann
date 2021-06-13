@@ -14,7 +14,7 @@ def test_covariances():
     assert cov.get_params() == dict(estimator='scm')
 
 
-def test_Hankelcovariances():
+def test_hankel_covariances():
     """Test Hankel Covariances"""
     x = np.random.randn(2, 3, 100)
     cov = HankelCovariances()
@@ -27,7 +27,7 @@ def test_Hankelcovariances():
     cov.fit_transform(x)
 
 
-def test_ERPcovariances():
+def test_erp_covariances():
     """Test fit ERPCovariances"""
     x = np.random.randn(10, 3, 100)
     labels = np.array([0, 1]).repeat(5)
@@ -43,8 +43,8 @@ def test_ERPcovariances():
     cov.fit_transform(x, labels)
 
 
-def test_Xdawncovariances():
-    """Test fit ERPCovariances"""
+def test_xdawn_covariances():
+    """Test fit XdawnCovariances"""
     x = np.random.randn(10, 3, 100)
     labels = np.array([0, 1]).repeat(5)
     cov = XdawnCovariances()
@@ -55,7 +55,7 @@ def test_Xdawncovariances():
                                     baseline_cov=None)
 
 
-def test_Cospcovariances():
+def test_cosp_covariances():
     """Test fit CospCovariances"""
     x = np.random.randn(2, 3, 1000)
     cov = CospCovariances()
@@ -65,8 +65,8 @@ def test_Cospcovariances():
                                     fmax=None, fs=None)
 
 
-def test_Coherences():
-    """Test fit CospCovariances"""
+def test_coherences():
+    """Test fit Coherences"""
     x = np.random.randn(2, 3, 1000)
     cov = Coherences()
     cov.fit(x)

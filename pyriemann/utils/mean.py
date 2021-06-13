@@ -22,13 +22,13 @@ def _get_sample_weight(sample_weight, data):
 
 def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
                  sample_weight=None):
-    """Return the mean covariance matrix according to the Riemannian metric.
+    r"""Return the mean covariance matrix according to the Riemannian metric.
 
     The procedure is similar to a gradient descent minimizing the sum of
     riemannian distance to the mean.
 
     .. math::
-            \mathbf{C} = \\arg\min{(\sum_i \delta_R ( \mathbf{C} , \mathbf{C}_i)^2)}  # noqa
+        \mathbf{C} = \arg\min{(\sum_i \delta_R ( \mathbf{C} , \mathbf{C}_i)^2)}
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param tol: the tolerance to stop the gradient descent
@@ -37,7 +37,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     :param sample_weight: the weight of each sample
     :returns: the mean covariance matrix
 
-    """
+    """  # noqa
     # init
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
@@ -73,10 +73,11 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
 
 
 def mean_logeuclid(covmats, sample_weight=None):
-    """Return the mean covariance matrix according to the log-euclidean metric.
+    r"""Return the mean covariance matrix according to the log-euclidean
+    metric.
 
     .. math::
-            \mathbf{C} = \exp{(\\frac{1}{N} \sum_i \log{\mathbf{C}_i})}
+        \mathbf{C} = \exp{(\frac{1}{N} \sum_i \log{\mathbf{C}_i})}
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param sample_weight: the weight of each sample
@@ -98,16 +99,19 @@ def mean_kullback_sym(covmats, sample_weight=None):
     """Return the mean covariance matrix according to KL divergence.
 
     This mean is the geometric mean between the Arithmetic and the Harmonic
-    mean, as shown in Moakher, Maher, and Philipp G. Batchelor. "Symmetric
-    positive-definite matrices: From geometry to applications and
-    visualization." In Visualization and Processing of Tensor Fields, pp.
-    285-298. Springer Berlin Heidelberg, 2006.
+    mean, as shown in [1]_.
 
-    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param covmats: Covariance matrices set, n_trials X n_channels X n_channels
     :param sample_weight: the weight of each sample
 
     :returns: the mean covariance matrix
 
+    References
+    ----------
+    .. [1]  Moakher, Maher, and Philipp G. Batchelor. "Symmetric
+        positive-definite matrices: From geometry to applications and
+        visualization." In Visualization and Processing of Tensor Fields, pp.
+        285-298. Springer Berlin Heidelberg, 2006.
     """
     C_Arithmetic = mean_euclid(covmats, sample_weight)
     C_Harmonic = mean_harmonic(covmats, sample_weight)
@@ -117,10 +121,10 @@ def mean_kullback_sym(covmats, sample_weight=None):
 
 
 def mean_harmonic(covmats, sample_weight=None):
-    """Return the harmonic mean of a set of covariance matrices.
+    r"""Return the harmonic mean of a set of covariance matrices.
 
     .. math::
-            \mathbf{C} = (\\frac{1}{N} \sum_i {\mathbf{C}_i}^{-1})^{-1}
+        \mathbf{C} = \left(\frac{1}{N} \sum_i {\mathbf{C}_i}^{-1}\right)^{-1}
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param sample_weight: the weight of each sample
@@ -139,12 +143,12 @@ def mean_harmonic(covmats, sample_weight=None):
 
 
 def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
-    """Return the mean covariance matrix according to the logdet metric.
+    r"""Return the mean covariance matrix according to the logdet metric.
 
     This is an iterative procedure where the update is:
 
     .. math::
-            \mathbf{C} = \left(\sum_i \left( 0.5 \mathbf{C} + 0.5 \mathbf{C}_i \\right)^{-1} \\right)^{-1}  # noqa
+        \mathbf{C} = \left(\sum_i \left( 0.5 \mathbf{C} + 0.5 \mathbf{C}_i \right)^{-1} \right)^{-1}
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param tol: the tolerance to stop the gradient descent
@@ -154,7 +158,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
 
     :returns: the mean covariance matrix
 
-    """
+    """  # noqa
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
     if init is None:
@@ -181,12 +185,12 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
 
 def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
                      sample_weight=None):
-    """Return the mean covariance matrix according to the wasserstein metric.
+    r"""Return the mean covariance matrix according to the Wasserstein metric.
 
-    This is an iterative procedure where the update is [1]:
+    This is an iterative procedure where the update is [1]_:
 
     .. math::
-            \mathbf{K} = \left(\sum_i \left( \mathbf{K} \mathbf{C}_i \mathbf{K} \\right)^{1/2} \\right)^{1/2}  # noqa
+        \mathbf{K} = \left(\sum_i \left( \mathbf{K} \mathbf{C}_i \mathbf{K} \right)^{1/2} \right)^{1/2}
 
     with :math:`\mathbf{K} = \mathbf{C}^{1/2}`.
 
@@ -200,10 +204,10 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
 
     References
     ----------
-    [1] Barbaresco, F. "Geometric Radar Processing based on Frechet distance:
-    Information geometry versus Optimal Transport Theory", Radar Symposium
-    (IRS), 2011 Proceedings International.
-    """
+    .. [1] Barbaresco, F. "Geometric Radar Processing based on Frechet distance:
+        Information geometry versus Optimal Transport Theory", Radar Symposium
+        (IRS), 2011 Proceedings International.
+    """  # noqa
     sample_weight = _get_sample_weight(sample_weight, covmats)
     Nt, Ne, Ne = covmats.shape
     if init is None:
@@ -233,10 +237,10 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
 
 
 def mean_euclid(covmats, sample_weight=None):
-    """Return the mean covariance matrix according to the euclidean metric :
+    r"""Return the mean covariance matrix according to the euclidean metric :
 
     .. math::
-            \mathbf{C} = \\frac{1}{N} \sum_i \mathbf{C}_i
+        \mathbf{C} = \frac{1}{N} \sum_i \mathbf{C}_i
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param sample_weight: the weight of each sample
@@ -301,10 +305,10 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
 
 
 def mean_identity(covmats, sample_weight=None):
-    """Return the identity matrix corresponding to the covmats sit size
+    r"""Return the identity matrix corresponding to the covmats sit size
 
     .. math::
-            \mathbf{C} = \mathbf{I}_d
+        \mathbf{C} = \mathbf{I}_d
 
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :returns: the identity matrix of size Nchannels
@@ -317,10 +321,9 @@ def mean_identity(covmats, sample_weight=None):
 def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
     """Return the mean covariance matrix according to the metric
 
-
     :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
     :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'identity', 'wasserstein', 'ale',  # noqa
-    'harmonic', 'kullback_sym' or a callable function
+        'harmonic', 'kullback_sym' or a callable function
     :param sample_weight: the weight of each sample
     :param args: the argument passed to the sub function
     :returns: the mean covariance matrix
@@ -331,6 +334,7 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
     else:
         C = mean_methods[metric](covmats, sample_weight=sample_weight, *args)
     return C
+
 
 mean_methods = {'riemann': mean_riemann,
                 'logeuclid': mean_logeuclid,

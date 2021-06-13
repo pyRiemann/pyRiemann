@@ -37,12 +37,13 @@ def untangent_space(T, Cref):
     """Project a set of Tangent space vectors back to the manifold.
 
     :param T: np.ndarray
-        the Tangent space , a matrix of Ntrials X (channels * (channels + 1)/2)
+        The Tangent space, a matrix of
+        n_trials X (n_channels * (n_channels + 1)/2)
     :param Cref: np.ndarray
         The reference covariance matrix
-    :returns: np.ndarray
-        A set of Covariance matrix, Ntrials X Nchannels X Nchannels
 
+    :returns: np.ndarray
+        A set of Covariance matrix, n_trials X n_channels X n_channels
     """
     Nt, Nd = T.shape
     Ne = int((np.sqrt(1 + 8 * Nd) - 1) / 2)

@@ -111,14 +111,15 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
             sample_weight = np.ones(X.shape[0])
 
         if self.n_jobs == 1:
-            self.covmeans_ = [mean_covariance(X[y == l], metric=self.metric_mean,
-                                    sample_weight=sample_weight[y == l])
-                                        for l in self.classes_]
+            self.covmeans_ = [
+                mean_covariance(X[y == ll], metric=self.metric_mean,
+                                sample_weight=sample_weight[y == ll])
+                for ll in self.classes_]
         else:
             self.covmeans_ = Parallel(n_jobs=self.n_jobs)(
-                delayed(mean_covariance)(X[y == l], metric=self.metric_mean,
-                                         sample_weight=sample_weight[y == l])
-                for l in self.classes_)
+                delayed(mean_covariance)(X[y == ll], metric=self.metric_mean,
+                                         sample_weight=sample_weight[y == ll])
+                for ll in self.classes_)
 
         return self
 
@@ -381,7 +382,6 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
 
         if not isinstance(clf, ClassifierMixin):
             raise TypeError('clf must be a ClassifierMixin')
-
 
     def fit(self, X, y):
         """Fit TSclassifier.

@@ -6,24 +6,29 @@ from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
 
 # Mapping different estimator on the sklearn toolbox
 
+
 def _lwf(X):
     """Wrapper for sklearn ledoit wolf covariance estimator"""
     C, _ = ledoit_wolf(X.T)
     return C
+
 
 def _oas(X):
     """Wrapper for sklearn oas covariance estimator"""
     C, _ = oas(X.T)
     return C
 
+
 def _scm(X):
     """Wrapper for sklearn sample covariance estimator"""
     return empirical_covariance(X.T)
+
 
 def _mcd(X):
     """Wrapper for sklearn mcd covariance estimator"""
     _, C, _, _ = fast_mcd(X.T)
     return C
+
 
 def _check_est(est):
     """Check if a given estimator is valid"""
@@ -78,7 +83,7 @@ def covariances(X, estimator='cov'):
     References
     ----------
     .. [1] https://scikit-learn.org/stable/modules/covariance.html
-    """
+    """  # noqa
     est = _check_est(estimator)
     Nt, Ne, Ns = X.shape
     covmats = np.zeros((Nt, Ne, Ne))
@@ -182,7 +187,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             fmax = fs / 2
         if fmax <= fmin:
             raise ValueError('Parameter fmax must be superior to fmin')
-        if 2.0 * fmax > fs: # check Nyquist-Shannon
+        if 2.0 * fmax > fs:  # check Nyquist-Shannon
             raise ValueError('Parameter fmax must be inferior to fs/2')
         f = np.arange(0, 1, 1.0 / number_freqs) * (fs / 2.0)
         Fix = (f >= fmin) & (f <= fmax)
@@ -264,7 +269,7 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         Coherence matrices, for each frequency bin.
     """
     S, _ = cross_spectrum(X, window, overlap, fmin, fmax, fs)
-    S2 = np.abs(S)**2 # squared cross-spectral modulus
+    S2 = np.abs(S)**2  # squared cross-spectral modulus
     C = np.zeros_like(S2)
     for f in range(S2.shape[-1]):
         psd = np.sqrt(np.diag(S2[..., f]))
@@ -299,7 +304,7 @@ def normalize(X, norm):
 
     if norm == "trace":
         denom = np.trace(X, axis1=-2, axis2=-1)
-    elif norm  == "determinant":
+    elif norm == "determinant":
         denom = np.abs(np.linalg.det(X)) ** (1 / X.shape[-1])
     else:
         raise ValueError("'%s' is not a supported normalization" % norm)
@@ -340,5 +345,5 @@ def get_nondiag_weight(X):
     denom = np.trace(X2, axis1=-2, axis2=-1)
     # sum of squared off-diagonal elements
     num = np.sum(X2, axis=(-2, -1)) - denom
-    weights = ( 1.0 / (X.shape[-1] - 1) ) * (num / denom)
+    weights = (1.0 / (X.shape[-1] - 1)) * (num / denom)
     return weights

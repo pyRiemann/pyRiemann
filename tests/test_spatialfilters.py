@@ -20,7 +20,7 @@ def generate_cov(Nt, Ne):
 
 def test_Xdawn_init():
     """Test init of Xdawn"""
-    xd = Xdawn()
+    _ = Xdawn()
 
 
 def test_Xdawn_fit():
@@ -170,7 +170,7 @@ def test_AJDC():
     ajdc = AJDC(fmin=1, fmax=32, fs=64)
     assert ajdc.window == 128
     assert ajdc.overlap == 0.5
-    assert ajdc.dim_red == None
+    assert ajdc.dim_red is None
     assert ajdc.verbose
 
     # Test fit
@@ -181,10 +181,10 @@ def test_AJDC():
                        [ajdc.n_sources_, n_channels])
     assert_array_equal(ajdc.backward_filters_.shape,
                        [n_channels, ajdc.n_sources_])
-    with pytest.raises(ValueError): # unequal # of conditions
+    with pytest.raises(ValueError):  # unequal # of conditions
         ajdc.fit([rs.randn(n_conditions, n_channels, n_samples),
                   rs.randn(n_conditions + 1, n_channels, n_samples)])
-    with pytest.raises(ValueError): # unequal # of channels
+    with pytest.raises(ValueError):  # unequal # of channels
         ajdc.fit([rs.randn(n_conditions, n_channels, n_samples),
                   rs.randn(n_conditions, n_channels + 1, n_samples)])
     # 3 subjects, same # conditions and channels, different # of samples
@@ -204,28 +204,28 @@ def test_AJDC():
     X = rs.randn(n_trials, n_channels, n_samples)
     Xt = ajdc.transform(X)
     assert_array_equal(Xt.shape, [n_trials, ajdc.n_sources_, n_samples])
-    with pytest.raises(ValueError): # not 3 dims
+    with pytest.raises(ValueError):  # not 3 dims
         ajdc.transform(X[0])
-    with pytest.raises(ValueError): # unequal # of chans
+    with pytest.raises(ValueError):  # unequal # of chans
         ajdc.transform(rs.randn(n_trials, n_channels + 1, 1))
 
     # Test inverse_transform
     Xtb = ajdc.inverse_transform(Xt)
     assert_array_equal(Xtb.shape, [n_trials, n_channels, n_samples])
-    with pytest.raises(ValueError): # not 3 dims
+    with pytest.raises(ValueError):  # not 3 dims
         ajdc.inverse_transform(Xt[0])
-    with pytest.raises(ValueError): # unequal # of sources
+    with pytest.raises(ValueError):  # unequal # of sources
         ajdc.inverse_transform(rs.randn(n_trials, ajdc.n_sources_ + 1, 1))
 
     Xtb = ajdc.inverse_transform(Xt, supp=[ajdc.n_sources_ - 1])
     assert_array_equal(Xtb.shape, [n_trials, n_channels, n_samples])
-    with pytest.raises(ValueError): # not a list
+    with pytest.raises(ValueError):  # not a list
         ajdc.inverse_transform(Xt, supp=1)
 
     # Test get_src_expl_var
     v = ajdc.get_src_expl_var(X)
     assert_array_equal(v.shape, [n_trials, ajdc.n_sources_])
-    with pytest.raises(ValueError): # not 3 dims
+    with pytest.raises(ValueError):  # not 3 dims
         ajdc.get_src_expl_var(X[0])
-    with pytest.raises(ValueError): # unequal # of chans
+    with pytest.raises(ValueError):  # unequal # of chans
         ajdc.get_src_expl_var(rs.randn(n_trials, n_channels + 1, 1))

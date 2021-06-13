@@ -77,23 +77,23 @@ class Covariances(BaseEstimator, TransformerMixin):
 
 
 class ERPCovariances(BaseEstimator, TransformerMixin):
-    """Estimate special form covariance matrix for ERP.
+    r"""Estimate special form covariance matrix for ERP.
 
     Estimation of special form covariance matrix dedicated to ERP processing.
     For each class, a prototyped response is obtained by average across trial :
 
     .. math::
-        \mathbf{P} = \\frac{1}{N} \sum_i^N \mathbf{X}_i
+        \mathbf{P} = \frac{1}{N} \sum_i^N \mathbf{X}_i
 
     and a super trial is build using the concatenation of P and the trial X :
 
     .. math::
-        \mathbf{\\tilde{X}}_i =  \left[
-                                 \\begin{array}{c}
-                                 \mathbf{P} \\\\
-                                 \mathbf{X}_i
-                                 \end{array}
-                                 \\right]
+        \mathbf{\tilde{X}}_i =  \left[
+                                \begin{array}{c}
+                                \mathbf{P} \\
+                                \mathbf{X}_i
+                                \end{array}
+                                \right]
 
     This super trial :math:`\mathbf{\\tilde{X}}_i` will be used for covariance
     estimation.
@@ -217,11 +217,11 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         number of Xdawn filter per classes.
     applyfilters: bool (default True)
         if set to true, spatial filter are applied to the prototypes and the
-        signals. When set to False, filters are applied only to the ERP prototypes
-        allowing for a better generalization across subject and session at the
-        expense of dimensionality increase. In that case, the estimation is
-        similar to ERPCovariances with `svd=nfilter` but with more compact
-        prototype reduction.
+        signals. When set to False, filters are applied only to the ERP
+        prototypes allowing for a better generalization across subject and
+        session at the expense of dimensionality increase. In that case, the
+        estimation is similar to ERPCovariances with `svd=nfilter` but with
+        more compact prototype reduction.
     classes : list of int | None (default None)
         list of classes to take into account for prototype estimation.
         If None (default), all classes will be accounted.

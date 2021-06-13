@@ -1,6 +1,6 @@
 from numpy.testing import assert_array_equal
 import numpy as np
-from numpy.testing import assert_allclose, assert_array_almost_equal
+from numpy.testing import assert_allclose
 import pytest
 
 from pyriemann.utils.ajd import rjd, ajd_pham, uwedge, _get_normalized_weight
@@ -25,17 +25,19 @@ def test_get_normalized_weight():
     w = _get_normalized_weight(None, covmats)
     assert np.isclose(np.sum(w), 1., atol=1e-10)
 
-    with pytest.raises(ValueError): # not same length
+    with pytest.raises(ValueError):  # not same length
         _get_normalized_weight(w[:Nt//2], covmats)
-    with pytest.raises(ValueError): # not strictly positive weight
+    with pytest.raises(ValueError):  # not strictly positive weight
         w[0] = 0
         _get_normalized_weight(w, covmats)
 
 
 def test_rjd():
     """Test rjd"""
-    covmats, diags, A = generate_cov(100, 3)
+    covmats, _, _ = generate_cov(100, 3)
     V, D = rjd(covmats)
+    assert V.shape == (3, 3)
+    assert D.shape == (100, 3, 3)
 
 
 def test_pham():
@@ -46,11 +48,11 @@ def test_pham():
 
     w = 5 * np.ones(Nt)
     Vw, Dw = ajd_pham(covmats, sample_weight=w)
-    assert_array_equal(V, Vw) # same result as ajd_pham without weight
+    assert_array_equal(V, Vw)  # same result as ajd_pham without weight
     assert_array_equal(D, Dw)
 
     # Test that weight must be strictly positive
-    with pytest.raises(ValueError): # not strictly positive weight
+    with pytest.raises(ValueError):  # not strictly positive weight
         w[0] = 0
         ajd_pham(covmats, sample_weight=w)
 

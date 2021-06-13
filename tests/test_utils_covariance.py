@@ -8,31 +8,36 @@ from pyriemann.utils.covariance import (covariances, covariances_EP, eegtocov,
                                         normalize, get_nondiag_weight)
 
 
-def test_covariances():
+@pytest.mark.parametrize(
+    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd', np.cov, 'truc', None]
+)
+def test_covariances(estimator):
     """Test covariance for multiple estimator"""
     x = np.random.randn(2, 3, 100)
-    cov = covariances(x)
-    cov = covariances(x, estimator='oas')
-    cov = covariances(x, estimator='lwf')
-    cov = covariances(x, estimator='scm')
-    cov = covariances(x, estimator='corr')
-    cov = covariances(x, estimator='mcd')
-    cov = covariances(x, estimator=np.cov)
-    
-    with pytest.raises(ValueError):
-        covariances(x, estimator='truc')
+    if estimator is None:
+        cov = covariances(x)
+        assert cov.shape == (2, 3, 3)
+    elif estimator == 'truc':
+        with pytest.raises(ValueError):
+            covariances(x, estimator=estimator)
+    else:
+        cov = covariances(x, estimator=estimator)
+        assert cov.shape == (2, 3, 3)
 
 
-def test_covariances_EP():
+@pytest.mark.parametrize(
+    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd', None]
+)
+def test_covariances_EP(estimator):
     """Test covariance_EP for multiple estimator"""
     x = np.random.randn(2, 3, 100)
     p = np.random.randn(3, 100)
-    cov = covariances_EP(x, p)
-    cov = covariances_EP(x, p, estimator='oas')
-    cov = covariances_EP(x, p, estimator='lwf')
-    cov = covariances_EP(x, p, estimator='scm')
-    cov = covariances_EP(x, p, estimator='corr')
-    cov = covariances_EP(x, p, estimator='mcd')
+
+    if estimator is None:
+        cov = covariances_EP(x, p)
+    else:
+        cov = covariances_EP(x, p, estimator=estimator)
+    assert cov.shape == (2, 6, 6)
 
 
 def test_covariances_eegtocov():
@@ -47,13 +52,13 @@ def test_covariances_cross_spectrum():
     cross_spectrum(x)
     cross_spectrum(x, fs=128, fmin=2, fmax=40)
 
-    with pytest.raises(ValueError): # fmin > fmax
+    with pytest.raises(ValueError):  # fmin > fmax
         cross_spectrum(x, fs=128, fmin=20, fmax=10)
-    with pytest.raises(ValueError): # fmax > fs/2
+    with pytest.raises(ValueError):  # fmax > fs/2
         cross_spectrum(x, fs=128, fmin=20, fmax=65)
-    with pytest.warns(UserWarning): # fs is None
+    with pytest.warns(UserWarning):  # fs is None
         cross_spectrum(x, fmin=12)
-    with pytest.warns(UserWarning): # fs is None
+    with pytest.warns(UserWarning):  # fs is None
         cross_spectrum(x, fmax=12)
 
     c, _ = cross_spectrum(x, fs=128, window=256, fmin=3, fmax=51)
@@ -114,11 +119,11 @@ def test_normalize():
     assert_array_almost_equal(np.ones(mat_dn.shape[0]),
                               np.abs(np.linalg.det(mat_dn)))
 
-    with pytest.raises(ValueError): # not at least 2d
+    with pytest.raises(ValueError):  # not at least 2d
         normalize(rs.randn(n_channels), "trace")
-    with pytest.raises(ValueError): # not square
+    with pytest.raises(ValueError):  # not square
         normalize(rs.randn(n_trials, n_channels, n_channels + 2), "trace")
-    with pytest.raises(ValueError): # invalid normalization type
+    with pytest.raises(ValueError):  # invalid normalization type
         normalize(rs.randn(n_trials, n_channels, n_channels), "abc")
 
 
@@ -146,7 +151,7 @@ def test_get_nondiag_weight():
     w = get_nondiag_weight(mats)
     assert_array_almost_equal(w, np.zeros(n_trials))
 
-    with pytest.raises(ValueError): # not at least 2d
+    with pytest.raises(ValueError):  # not at least 2d
         get_nondiag_weight(rs.randn(n_channels))
-    with pytest.raises(ValueError): # not square
+    with pytest.raises(ValueError):  # not square
         get_nondiag_weight(rs.randn(n_trials, n_channels, n_channels + 2))
