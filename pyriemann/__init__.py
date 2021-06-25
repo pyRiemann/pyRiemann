@@ -1,3 +1,4 @@
+from ._version import __version__
 from . import classification
 from . import tangentspace
 from . import channelselection
@@ -8,9 +9,9 @@ from . import stats
 from . import embedding
 from . import preprocessing
 
-__version__ = "0.2.7"
 
 __all__ = [
+    '__version__',
     'classification',
     'tangentspace',
     'channelselection',
