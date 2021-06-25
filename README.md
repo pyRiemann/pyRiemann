@@ -111,7 +111,7 @@ pytest
 
 # Contribution Guidelines
 
-The package aims at adopting the [Scikit-Learn](http://scikit-learn.org/stable/developers/contributing.html#contributing-code) and [MNE-Python](http://martinos.org/mne/stable/contributing.html#general-code-guidelines) conventions as much as possible. See their contribution guidelines before contributing to the repository.
+The package aims at adopting the [Scikit-Learn](http://scikit-learn.org/stable/developers/contributing.html#contributing-code) and [MNE-Python](https://mne.tools/stable/install/contributing.html) conventions as much as possible. See their contribution guidelines before contributing to the repository.
 
 
 # References
@@ -125,55 +125,3 @@ The package aims at adopting the [Scikit-Learn](http://scikit-learn.org/stable/d
 > [4] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, “Multiclass Brain-Computer Interface Classification by Riemannian Geometry,” in IEEE Transactions on Biomedical Engineering, vol. 59, no. 4, p. 920-928, 2012. [pdf](http://hal.archives-ouvertes.fr/docs/00/68/13/28/PDF/Barachant_tbme_final.pdf)
 >
 > [5] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, “Classification of covariance matrices using a Riemannian-based kernel for BCI applications“, in NeuroComputing, vol. 112, p. 172-178, 2013. [pdf](http://hal.archives-ouvertes.fr/docs/00/82/04/75/PDF/BARACHANT_Neurocomputing_ForHal.pdf)
-
-# changelog
-
-### v0.2.7.dev
-- Add example on SSVEP classification
-- Fix compatibility with scikit-learn v0.24
-- Correct probas of MDM
-- Add predict_proba for Potato, and an example on artifact detection
-- Add weights to Pham's AJD algorithm
-- Add cross_spectrum, fix cospectrum; coherence output is kept unchanged
-- Add AJDC for BSS and gBSS, with an example on artifact correction
-- Add Whitening, with optional dimension reduction
-
-### v0.2.6
-- Updated for scikit-learn v0.22
-- Remove support for python 2.7
-- Update the examples to take into account last version of MNE
-- Fix cospectrum and coherency estimation.
-
-### v0.2.5
-- Added `BilinearFilter`
-- Added a permutation test for generic scikit-learn estimator
-- Stats module refactoring, with distance based t-test and f-test
-- Removed two way permutation test
-- Added `FlatChannelRemover`
-- Support for python 3.5 and 3.6
-- Added `Shrinkage` transformer
-- Added `Coherences` transformer
-- Added `Embedding` class.
-
-### v0.2.4
-- Improved documentation
-- Added TSclassifier for out-of the box tangent space classification.
-- Added Wasserstein distance and mean.
-- Added NearestNeighbor classifier.
-- Added Softmax probabilities for MDM.
-- Added CSP for covariance matrices.
-- Added Approximate Joint diagonalization algorithms (JADE, PHAM, UWEDGE).
-- Added ALE mean.
-- Added Multiclass CSP.
-- API: param name changes in `CospCovariances` to comply to Scikit-Learn.
-- API: attributes name changes in most modules to comply to the Scikit-Learn naming convention.
-- Added `HankelCovariances` estimation
-- Added `SPoC` spatial filtering
-- Added Harmonic mean
-- Added Kullback leibler mean
-
-### v0.2.3
- - Added multiprocessing for MDM with joblib
- - Added kullback-leibler divergence
- - Added Riemannian Potato
- - Added sample_weight for mean estimation and MDM
