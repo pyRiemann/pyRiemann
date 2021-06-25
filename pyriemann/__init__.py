@@ -8,7 +8,7 @@ from . import stats
 from . import embedding
 from . import preprocessing
 
-__version__ = "0.2.7.dev"
+__version__ = "0.2.7"
 
 __all__ = [
     'classification',

@@ -7,8 +7,8 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.2.7.dev
-----------
+v0.2.7
+------
 
 - Add example on SSVEP classification
 
