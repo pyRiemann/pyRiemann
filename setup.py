@@ -13,7 +13,7 @@ with open(op.join('pyriemann', '_version.py'), 'r') as fid:
 if version is None:
     raise RuntimeError('Could not determine version')
 
-with open('README.md', 'r') as fid:
+with open('README.md', 'r', encoding="utf8") as fid:
     long_description = fid.read()
 
 setup(name='pyriemann',
