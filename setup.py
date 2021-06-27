@@ -32,6 +32,7 @@ setup(name='pyriemann',
           'Tracker': 'https://github.com/pyRiemann/pyRiemann/issues/',
       },
       platforms='any',
+      python_requires=">=3.6",
       install_requires=['numpy', 'scipy', 'scikit-learn',  'joblib', 'pandas'],
       zip_safe=False,
 )
