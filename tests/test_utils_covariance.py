@@ -92,8 +92,8 @@ def test_covariances_cross_spectrum():
         fs=fs,
         window=window,
         overlap=overlap)
-    spect_pr = np.diagonal(spect_pr.real).T # auto-spectra on diagonal
-    spect_pr = spect_pr / np.linalg.norm(spect_pr) # unit norm
+    spect_pr = np.diagonal(spect_pr.real).T  # auto-spectra on diagonal
+    spect_pr = spect_pr / np.linalg.norm(spect_pr)  # unit norm
     freqs_sp, spect_sp = welch(
         x,
         fs=fs,
@@ -102,7 +102,7 @@ def test_covariances_cross_spectrum():
         window=np.hanning(window),
         detrend=False,
         scaling='spectrum')
-    spect_sp /= np.linalg.norm(spect_sp) # unit norm
+    spect_sp /= np.linalg.norm(spect_sp)  # unit norm
     # compare frequencies
     assert_array_almost_equal(freqs_pr, freqs_sp, 6)
     # compare auto-spectra
@@ -116,7 +116,7 @@ def test_covariances_cross_spectrum():
         fs=fs,
         window=window,
         overlap=overlap)
-    cross_pr = cross_pr[0, 1] / np.linalg.norm(cross_pr[0, 1]) # unit norm
+    cross_pr = cross_pr[0, 1] / np.linalg.norm(cross_pr[0, 1])  # unit norm
     freqs_sp, cross_sp = csd(
         x[0],
         x[1],
@@ -126,7 +126,7 @@ def test_covariances_cross_spectrum():
         window=np.hanning(window),
         detrend=False,
         scaling='spectrum')
-    cross_sp /= np.linalg.norm(cross_sp) # unit norm
+    cross_sp /= np.linalg.norm(cross_sp)  # unit norm
     # compare frequencies
     assert_array_almost_equal(freqs_pr, freqs_sp, 6)
     # compare cross-spectra
@@ -143,7 +143,7 @@ def test_covariances_cospectrum():
     # test equivalence between pyriemann and scipy for cospectra
     fs, window, overlap = 128, 256, 0.75
     cosp_pr, freqs_pr = cospectrum(x, fs=fs, window=window, overlap=overlap)
-    cosp_pr = cosp_pr[0, 1] / np.linalg.norm(cosp_pr[0, 1]) # unit norm
+    cosp_pr = cosp_pr[0, 1] / np.linalg.norm(cosp_pr[0, 1])  # unit norm
     freqs_sp, cross_sp = csd(
         x[0],
         x[1],
@@ -153,7 +153,7 @@ def test_covariances_cospectrum():
         window=np.hanning(window),
         detrend=False,
         scaling='spectrum')
-    cosp_sp = cross_sp.real / np.linalg.norm(cross_sp.real) # unit norm
+    cosp_sp = cross_sp.real / np.linalg.norm(cross_sp.real)  # unit norm
     # compare frequencies
     assert_array_almost_equal(freqs_pr, freqs_sp, 6)
     # compare co-spectra

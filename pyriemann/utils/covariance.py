@@ -161,7 +161,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             'Value overlap must be included in (0, 1) (Got %d)' % overlap)
 
     n_channels, n_times = X.shape
-    n_freqs = int(window / 2) + 1 # X real signal => compute half-spectrum
+    n_freqs = int(window / 2) + 1  # X real signal => compute half-spectrum
     step = int((1.0 - overlap) * window)
     n_windows = int((n_times - window) / step + 1)
     win = np.hanning(window)
