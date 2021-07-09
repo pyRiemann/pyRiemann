@@ -1,6 +1,6 @@
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 import numpy as np
-from scipy.signal import coherence as coh_sp
+from scipy.signal import welch, csd, coherence as coherence_sp
 import pytest
 
 from pyriemann.utils.covariance import (covariances, covariances_EP, eegtocov,
@@ -48,10 +48,18 @@ def test_covariances_eegtocov():
 
 
 def test_covariances_cross_spectrum():
-    x = np.random.randn(3, 1000)
+    rs = np.random.RandomState(42)
+    n_channels, n_times = 3, 1000
+    x = rs.randn(n_channels, n_times)
     cross_spectrum(x)
     cross_spectrum(x, fs=128, fmin=2, fmax=40)
 
+    with pytest.raises(ValueError):  # window < 1
+        cross_spectrum(x, window=0)
+    with pytest.raises(ValueError):  # overlap <= 0
+        cross_spectrum(x, overlap=0)
+    with pytest.raises(ValueError):  # overlap >= 1
+        cross_spectrum(x, overlap=1)
     with pytest.raises(ValueError):  # fmin > fmax
         cross_spectrum(x, fs=128, fmin=20, fmax=10)
     with pytest.raises(ValueError):  # fmax > fs/2
@@ -61,34 +69,119 @@ def test_covariances_cross_spectrum():
     with pytest.warns(UserWarning):  # fs is None
         cross_spectrum(x, fmax=12)
 
-    c, _ = cross_spectrum(x, fs=128, window=256, fmin=3, fmax=51)
-    # test if real part is symmetric
+    c, freqs = cross_spectrum(x, fs=128, window=256)
+    assert c.shape[0] == c.shape[1] == n_channels
+    assert c.shape[-1] == freqs.shape[0]
+    # test if real parts are symmetric
     assert_array_almost_equal(c.real, np.transpose(c.real, (1, 0, 2)), 6)
-    # test if imag part is skew-symmetric
+    # test if imag parts are skew-symmetric
     assert_array_almost_equal(c.imag, -np.transpose(c.imag, (1, 0, 2)), 6)
+    # test if DC bins are real (always true)
+    assert_array_almost_equal(c[..., 0].imag, np.zeros_like(c[..., 0].imag))
+    # test if Nyquist bins are real (true when window is even)
+    assert_array_almost_equal(c[..., -1].imag, np.zeros_like(c[..., -1].imag))
+    # test if auto-spectra are real
+    assert_array_almost_equal(c.imag.diagonal(),
+                              np.zeros_like(c.imag.diagonal()))
+
+    # test equivalence between pyriemann and scipy for (auto-)spectra
+    x = rs.randn(5, n_times)
+    fs, window, overlap = 128, 256, 0.75
+    spect_pr, freqs_pr = cross_spectrum(
+        x,
+        fs=fs,
+        window=window,
+        overlap=overlap)
+    spect_pr = np.diagonal(spect_pr.real).T # auto-spectra on diagonal
+    spect_pr = spect_pr / np.linalg.norm(spect_pr) # unit norm
+    freqs_sp, spect_sp = welch(
+        x,
+        fs=fs,
+        nperseg=window,
+        noverlap=int(overlap * window),
+        window=np.hanning(window),
+        detrend=False,
+        scaling='spectrum')
+    spect_sp /= np.linalg.norm(spect_sp) # unit norm
+    # compare frequencies
+    assert_array_almost_equal(freqs_pr, freqs_sp, 6)
+    # compare auto-spectra
+    assert_array_almost_equal(spect_pr, spect_sp, 6)
+
+    # test equivalence between pyriemann and scipy for cross-spectra
+    x = rs.randn(2, n_times)
+    fs, window, overlap = 64, 128, 0.5
+    cross_pr, freqs_pr = cross_spectrum(
+        x,
+        fs=fs,
+        window=window,
+        overlap=overlap)
+    cross_pr = cross_pr[0, 1] / np.linalg.norm(cross_pr[0, 1]) # unit norm
+    freqs_sp, cross_sp = csd(
+        x[0],
+        x[1],
+        fs=fs,
+        nperseg=window,
+        noverlap=int(overlap * window),
+        window=np.hanning(window),
+        detrend=False,
+        scaling='spectrum')
+    cross_sp /= np.linalg.norm(cross_sp) # unit norm
+    # compare frequencies
+    assert_array_almost_equal(freqs_pr, freqs_sp, 6)
+    # compare cross-spectra
+    assert_array_almost_equal(cross_pr, cross_sp, 6)
 
 
 def test_covariances_cospectrum():
     """Test cospectrum"""
-    x = np.random.randn(3, 1000)
+    rs = np.random.RandomState(42)
+    x = rs.randn(3, 1000)
     cospectrum(x)
     cospectrum(x, fs=128, fmin=2, fmax=40)
+
+    # test equivalence between pyriemann and scipy for cospectra
+    fs, window, overlap = 128, 256, 0.75
+    cosp_pr, freqs_pr = cospectrum(x, fs=fs, window=window, overlap=overlap)
+    cosp_pr = cosp_pr[0, 1] / np.linalg.norm(cosp_pr[0, 1]) # unit norm
+    freqs_sp, cross_sp = csd(
+        x[0],
+        x[1],
+        fs=fs,
+        nperseg=window,
+        noverlap=int(overlap * window),
+        window=np.hanning(window),
+        detrend=False,
+        scaling='spectrum')
+    cosp_sp = cross_sp.real / np.linalg.norm(cross_sp.real) # unit norm
+    # compare frequencies
+    assert_array_almost_equal(freqs_pr, freqs_sp, 6)
+    # compare co-spectra
+    assert_array_almost_equal(cosp_pr, cosp_sp, 6)
 
 
 def test_covariances_coherence():
     """Test coherence"""
-    x = np.random.randn(2, 2048)
-    coh = coherence(x, fs=128, window=256)
+    rs = np.random.RandomState(42)
+    x = rs.randn(2, 2048)
+    coherence(x)
+    coherence(x, fs=128, fmin=2, fmax=40)
 
-    _, coh2 = coh_sp(
+    # test equivalence between pyriemann and scipy for squared coherence
+    fs, window, overlap = 128, 256, 0.75
+    coh_pr, freqs_pr = coherence(x, fs=fs, window=window, overlap=overlap)
+    freqs_sp, coh_sp = coherence_sp(
         x[0],
         x[1],
-        fs=128,
-        nperseg=256,
-        noverlap=int(0.75 * 256),
-        window='hanning',
+        fs=fs,
+        nperseg=window,
+        noverlap=int(overlap * window),
+        window=np.hanning(window),
         detrend=False)
-    assert_array_almost_equal(coh[0, 1], coh2[:-1], 1)
+    # compare frequencies
+    assert_array_almost_equal(freqs_pr, freqs_sp, 6)
+    # compare coherence
+    assert_array_almost_equal(coh_pr[0, 1], coh_sp, 6)
 
 
 def test_normalize():
