@@ -449,7 +449,7 @@ class Coherences(CospCovariances):
         out = []
 
         for i in range(Nt):
-            S = coherence(
+            S, _ = coherence(
                 X[i],
                 window=self.window,
                 overlap=self.overlap,

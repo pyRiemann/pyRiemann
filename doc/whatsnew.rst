@@ -7,8 +7,13 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.2.7
-------
+v0.2.8.dev
+----------
+
+- Correct spectral estimation in :func:`pyriemann.utils.covariance.cross_spectrum` to obtain equivalence with SciPy
+
+v0.2.7 (June 2021)
+------------------
 
 - Add example on SSVEP classification
 
