@@ -263,7 +263,8 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         The maximal frequency to be returned.
     fs : float | None, (default None)
         The sampling frequency of the signal.
-    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default 'ordinary')
+    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default
+            'ordinary')
         The coherence type, see :class:`pyriemann.estimation.Coherences`.
 
     Returns
@@ -286,13 +287,13 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
     for f in range(C.shape[-1]):
         psd = np.sqrt(np.diag(S2[..., f]))
         psd_prod = np.outer(psd, psd)
-        if coh=='ordinary':
+        if coh == 'ordinary':
             C[..., f] = S2[..., f] / psd_prod
-        elif coh=='instantaneous':
+        elif coh == 'instantaneous':
             C[..., f] = (S[..., f].real)**2 / psd_prod
-        elif coh=='lagged':
+        elif coh == 'lagged':
             C[..., f] = (S[..., f].imag)**2 / (psd_prod - (S[..., f].real)**2)
-        elif coh=='imaginary':
+        elif coh == 'imaginary':
             C[..., f] = (S[..., f].imag)**2 / psd_prod
         else:
             raise ValueError("'%s' is not a supported coherence" % coh)

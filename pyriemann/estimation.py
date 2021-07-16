@@ -422,10 +422,11 @@ class Coherences(CospCovariances):
         The maximal frequency to be returned.
     fs : float | None, (default None)
         The sampling frequency of the signal.
-    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default 'ordinary')
+    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default
+            'ordinary')
         The coherence type:
 
-        * 'ordinary' for the ordinary coherence, defined in Eq.(22) of [1]_; 
+        * 'ordinary' for the ordinary coherence, defined in Eq.(22) of [1]_;
           this normalization of cross-spectral matrices captures both in-phase
           and out-of-phase correlations. However it is inflated by the
           artificial in-phase (zero-lag) correlation engendered by volume
@@ -452,7 +453,7 @@ class Coherences(CospCovariances):
     References
     ----------
     .. [1] Pascual-Marqui R. "Instantaneous and lagged measurements of linear
-        and nonlinear dependence between groups of multivariate time series: 
+        and nonlinear dependence between groups of multivariate time series:
         frequency decomposition", arXiv, 2007
 
     .. [2] Congedo, M. "Non-Parametric Synchronization Measures used in EEG
