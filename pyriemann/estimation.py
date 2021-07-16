@@ -335,6 +335,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
     ----------
     freqs_ : ndarray, shape (n_freqs,)
         If transformed, the frequencies associated to cospectra.
+        None if ``fs`` is None.
 
     See Also
     --------
@@ -403,13 +404,11 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
 
 class Coherences(CospCovariances):
-    """Estimation of coherences matrix.
+    """Estimation of squared coherences matrix.
 
-    Coherence matrix estimation. this method will return a
-    4-d array with a coherence matrice estimation for each trial and in each
-    frequency bin of the FFT.
-
-    The estimation of coherence matrix is done with matplotlib cohere function.
+    Squared coherence matrix estimation [1]_. This method will return a 4-d
+    array with a squared coherence matrix estimation for each trial and in
+    each frequency bin of the FFT.
 
     Parameters
     ----------
@@ -423,40 +422,81 @@ class Coherences(CospCovariances):
         The maximal frequency to be returned.
     fs : float | None, (default None)
         The sampling frequency of the signal.
+    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default 'ordinary')
+        The coherence type:
+
+        * 'ordinary' for the ordinary coherence, defined in Eq.(22) of [1]_; 
+          this normalization of cross-spectral matrices captures both in-phase
+          and out-of-phase correlations. However it is inflated by the
+          artificial in-phase (zero-lag) correlation engendered by volume
+          conduction.
+        * 'instantaneous' for the instantaneous coherence, Eq.(26) of [1]_,
+          capturing only in-phase correlation.
+        * 'lagged' for the lagged-coherence, Eq.(28) of [1]_, capturing only
+          out-of-phase correlation.
+        * 'imaginary' for the imaginary coherence, Eq.(0.16) of [2]_, capturing
+          out-of-phase correlation but still affected by in-phase correlation.
+
+    Attributes
+    ----------
+    freqs_ : ndarray, shape (n_freqs,)
+        If transformed, the frequencies associated to cospectra.
+        None if ``fs`` is None.
 
     See Also
     --------
     Covariances
     HankelCovariances
     CospCovariances
+
+    References
+    ----------
+    .. [1] Pascual-Marqui R. "Instantaneous and lagged measurements of linear
+        and nonlinear dependence between groups of multivariate time series: 
+        frequency decomposition", arXiv, 2007
+
+    .. [2] Congedo, M. "Non-Parametric Synchronization Measures used in EEG
+        and MEG", TechReport, 2018
     """
 
+    def __init__(self, window=128, overlap=0.75, fmin=None, fmax=None,
+                 fs=None, coh='ordinary'):
+        """Init."""
+        self.window = _nextpow2(window)
+        self.overlap = overlap
+        self.fmin = fmin
+        self.fmax = fmax
+        self.fs = fs
+        self.coh = coh
+
     def transform(self, X):
-        """Estimate the coherences matrices.
+        """Estimate the squared coherences matrices.
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
 
         Returns
         -------
         covmats : ndarray, shape (n_trials, n_channels, n_channels, n_freqs)
-            ndarray of coherence matrices for each trials and for each
-            frequency bin.
+            Squared coherence matrices for each trial and for each frequency
+            bin.
         """
-        Nt, Ne, _ = X.shape
+        Nt = len(X)
         out = []
 
         for i in range(Nt):
-            S, _ = coherence(
+            S, freqs = coherence(
                 X[i],
                 window=self.window,
                 overlap=self.overlap,
                 fmin=self.fmin,
                 fmax=self.fmax,
-                fs=self.fs)
+                fs=self.fs,
+                coh=self.coh)
             out.append(S)
+        self.freqs_ = freqs
 
         return np.array(out)
 
