@@ -64,15 +64,18 @@ def test_cosp_covariances():
     assert cov.get_params() == dict(window=128, overlap=0.75, fmin=None,
                                     fmax=None, fs=None)
 
-
-def test_coherences():
+@pytest.mark.parametrize('coh', ['ordinary', 'instantaneous', 'lagged', 'imaginary'])
+def test_coherences(coh):
     """Test fit Coherences"""
-    x = np.random.randn(2, 3, 1000)
-    cov = Coherences()
+    rs = np.random.RandomState(42)
+    n_trials, n_channels, n_times = 10, 3, 1000
+    x = rs.randn(n_trials, n_channels, n_times)
+
+    cov = Coherences(coh=coh)
     cov.fit(x)
     cov.fit_transform(x)
     assert cov.get_params() == dict(window=128, overlap=0.75, fmin=None,
-                                    fmax=None, fs=None)
+                                    fmax=None, fs=None, coh=coh)
 
 
 def test_shrinkage():

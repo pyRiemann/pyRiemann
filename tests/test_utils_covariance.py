@@ -160,28 +160,39 @@ def test_covariances_cospectrum():
     assert_array_almost_equal(cosp_pr, cosp_sp, 6)
 
 
-def test_covariances_coherence():
+@pytest.mark.parametrize('coh', ['ordinary', 'instantaneous', 'lagged', 'imaginary', 'truc'])
+def test_covariances_coherence(coh):
     """Test coherence"""
     rs = np.random.RandomState(42)
-    x = rs.randn(2, 2048)
-    coherence(x)
-    coherence(x, fs=128, fmin=2, fmax=40)
+    n_channels, n_times = 3, 2048
+    x = rs.randn(n_channels, n_times)
 
-    # test equivalence between pyriemann and scipy for squared coherence
-    fs, window, overlap = 128, 256, 0.75
-    coh_pr, freqs_pr = coherence(x, fs=fs, window=window, overlap=overlap)
-    freqs_sp, coh_sp = coherence_sp(
-        x[0],
-        x[1],
-        fs=fs,
-        nperseg=window,
-        noverlap=int(overlap * window),
-        window=np.hanning(window),
-        detrend=False)
-    # compare frequencies
-    assert_array_almost_equal(freqs_pr, freqs_sp, 6)
-    # compare coherence
-    assert_array_almost_equal(coh_pr[0, 1], coh_sp, 6)
+    if coh == 'truc':
+        with pytest.raises(ValueError):  # unknown coh
+            coherence(x, coh=coh)
+    else:
+        coherence(x, coh=coh)
+        coherence(x, fs=128, fmin=2, fmax=40, coh=coh)
+        coh_pr, _ = coherence(x, fs=32, window=256, coh=coh)
+        # test if coherence in [0,1]
+        assert np.all((0.0 <= coh_pr) & (coh_pr <= 1.0))
+
+    # test equivalence between pyriemann and scipy for ordinary coherence
+    if coh == 'ordinary':
+        fs, window, overlap = 128, 256, 0.75
+        coh_pr, freqs_pr = coherence(x, fs=fs, window=window, overlap=overlap)
+        freqs_sp, coh_sp = coherence_sp(
+            x[0],
+            x[1],
+            fs=fs,
+            nperseg=window,
+            noverlap=int(overlap * window),
+            window=np.hanning(window),
+            detrend=False)
+        # compare frequencies
+        assert_array_almost_equal(freqs_pr, freqs_sp, 6)
+        # compare coherence
+        assert_array_almost_equal(coh_pr[0, 1], coh_sp, 6)
 
 
 def test_normalize():
