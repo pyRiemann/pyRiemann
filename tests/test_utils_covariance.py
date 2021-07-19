@@ -160,22 +160,26 @@ def test_covariances_cospectrum():
     assert_array_almost_equal(cosp_pr, cosp_sp, 6)
 
 
-@pytest.mark.parametrize('coh', ['ordinary', 'instantaneous', 'lagged', 'imaginary', 'truc'])
+@pytest.mark.parametrize(
+    'coh', ['ordinary', 'instantaneous', 'lagged', 'imaginary', 'foobar']
+)
 def test_covariances_coherence(coh):
     """Test coherence"""
     rs = np.random.RandomState(42)
     n_channels, n_times = 3, 2048
     x = rs.randn(n_channels, n_times)
 
-    if coh == 'truc':
+    if coh == 'foobar':
         with pytest.raises(ValueError):  # unknown coh
             coherence(x, coh=coh)
     else:
         coherence(x, coh=coh)
         coherence(x, fs=128, fmin=2, fmax=40, coh=coh)
-        coh_pr, _ = coherence(x, fs=32, window=256, coh=coh)
+        c, freqs = coherence(x, fs=32, window=256, coh=coh)
+        assert c.shape[0] == c.shape[1] == n_channels
+        assert c.shape[-1] == freqs.shape[0]
         # test if coherence in [0,1]
-        assert np.all((0.0 <= coh_pr) & (coh_pr <= 1.0))
+        assert np.all((0. <= c) & (c <= 1.))
 
     # test equivalence between pyriemann and scipy for ordinary coherence
     if coh == 'ordinary':

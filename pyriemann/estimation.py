@@ -404,9 +404,9 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
 
 class Coherences(CospCovariances):
-    """Estimation of squared coherences matrix.
+    """Estimation of squared coherence matrices.
 
-    Squared coherence matrix estimation [1]_. This method will return a 4-d
+    Squared coherence matrices estimation [1]_. This method will return a 4-d
     array with a squared coherence matrix estimation for each trial and in
     each frequency bin of the FFT.
 
@@ -435,8 +435,9 @@ class Coherences(CospCovariances):
           capturing only in-phase correlation.
         * 'lagged' for the lagged-coherence, Eq.(28) of [1]_, capturing only
           out-of-phase correlation.
-        * 'imaginary' for the imaginary coherence, Eq.(0.16) of [2]_, capturing
-          out-of-phase correlation but still affected by in-phase correlation.
+        * 'imaginary' for the imaginary coherence [2]_, Eq.(0.16) of [3]_,
+          capturing out-of-phase correlation but still affected by in-phase
+          correlation.
 
     Attributes
     ----------
@@ -452,12 +453,19 @@ class Coherences(CospCovariances):
 
     References
     ----------
-    .. [1] Pascual-Marqui R. "Instantaneous and lagged measurements of linear
+    .. [1] R. Pascual-Marqui, "Instantaneous and lagged measurements of linear
         and nonlinear dependence between groups of multivariate time series:
-        frequency decomposition", arXiv, 2007
+        frequency decomposition", arXiv, 2007.
+        https://arxiv.org/ftp/arxiv/papers/0711/0711.1455.pdf
 
-    .. [2] Congedo, M. "Non-Parametric Synchronization Measures used in EEG
-        and MEG", TechReport, 2018
+    .. [2] G. Nolte, O. Bai, L. Wheaton, Z. Mari, S. Vorbach, M. Hallett,
+        "Identifying true brain interaction from EEG data using the imaginary
+        part of coherency", Clin Neurophysiol, 2004.
+        https://doi.org/10.1016/j.clinph.2004.04.029
+
+    .. [3] Congedo, M. "Non-Parametric Synchronization Measures used in EEG
+        and MEG", TechReport, 2018.
+        https://hal.archives-ouvertes.fr/hal-01868538v2/document
     """
 
     def __init__(self, window=128, overlap=0.75, fmin=None, fmax=None,
