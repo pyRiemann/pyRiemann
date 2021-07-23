@@ -264,7 +264,7 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
     fs : float | None, (default None)
         The sampling frequency of the signal.
     coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default
-              'ordinary')
+            'ordinary')
         The coherence type, see :class:`pyriemann.estimation.Coherences`.
 
     Returns
@@ -285,12 +285,19 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
 
     C = np.zeros_like(S2)
     f_inds = np.arange(0, C.shape[-1], dtype=int)
-    # lagged coherence not computed for DC and Nyquist bins
+
+    # lagged coh not defined for DC and Nyquist bins, because S is real
     if coh == 'lagged':
         if freqs is None:
             f_inds = np.arange(1, C.shape[-1] - 1, dtype=int)
+            warnings.warn('DC and Nyquist bins are not defined for lagged-'
+                          'coherence: filled with zeros')
         else:
-            f_inds = f_inds[(freqs > 0) & (freqs < fs / 2)]
+            f_inds_ = f_inds[(freqs > 0) & (freqs < fs / 2)]
+            if not np.array_equal(f_inds_, f_inds):
+                warnings.warn('DC and Nyquist bins are not defined for lagged-'
+                              'coherence: filled with zeros')
+            f_inds = f_inds_
 
     for f in f_inds:
         psd = np.sqrt(np.diag(S2[..., f]))
@@ -300,7 +307,7 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         elif coh == 'instantaneous':
             C[..., f] = (S[..., f].real)**2 / psd_prod
         elif coh == 'lagged':
-            np.fill_diagonal(S[..., f].real, 0)  # prevent div by zero on diag
+            np.fill_diagonal(S[..., f].real, 0.)  # prevent div by zero on diag
             C[..., f] = (S[..., f].imag)**2 / (psd_prod - (S[..., f].real)**2)
         elif coh == 'imaginary':
             C[..., f] = (S[..., f].imag)**2 / psd_prod

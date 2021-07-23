@@ -423,7 +423,7 @@ class Coherences(CospCovariances):
     fs : float | None, (default None)
         The sampling frequency of the signal.
     coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default
-              'ordinary')
+            'ordinary')
         The coherence type:
 
         * 'ordinary' for the ordinary coherence, defined in Eq.(22) of [1]_;
@@ -434,7 +434,7 @@ class Coherences(CospCovariances):
         * 'instantaneous' for the instantaneous coherence, Eq.(26) of [1]_,
           capturing only in-phase correlation.
         * 'lagged' for the lagged-coherence, Eq.(28) of [1]_, capturing only
-          out-of-phase correlation.
+          out-of-phase correlation (not defined for DC and Nyquist bins).
         * 'imaginary' for the imaginary coherence [2]_, Eq.(0.16) of [3]_,
           capturing out-of-phase correlation but still affected by in-phase
           correlation.

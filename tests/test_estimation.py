@@ -64,7 +64,9 @@ def test_cosp_covariances():
     assert cov.get_params() == dict(window=128, overlap=0.75, fmin=None,
                                     fmax=None, fs=None)
 
-@pytest.mark.parametrize('coh', ['ordinary', 'instantaneous', 'lagged', 'imaginary'])
+@pytest.mark.parametrize('coh',
+    ['ordinary', 'instantaneous', 'lagged', 'imaginary']
+)
 def test_coherences(coh):
     """Test fit Coherences"""
     rs = np.random.RandomState(42)

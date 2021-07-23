@@ -199,6 +199,12 @@ def test_covariances_coherence(coh):
         # compare coherence
         assert_array_almost_equal(coh_pr[0, 1], coh_sp, 6)
 
+    if coh == 'lagged':
+        with pytest.warns(UserWarning):  # not defined for DC and Nyquist bins
+            coherence(x, coh=coh)
+        with pytest.warns(UserWarning):  # not defined for DC and Nyquist bins
+            coherence(x, fs=64, coh=coh)
+
     # test statistical properties of coherence between phase shifted channels
     if coh in ['ordinary', 'instantaneous', 'lagged', 'imaginary']:
         fs, ft, n_periods = 16, 4, 20
