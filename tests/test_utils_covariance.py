@@ -53,6 +53,7 @@ def test_covariances_cross_spectrum():
     x = rs.randn(n_channels, n_times)
     cross_spectrum(x)
     cross_spectrum(x, fs=128, fmin=2, fmax=40)
+    cross_spectrum(x, fs=129, window=37)
 
     with pytest.raises(ValueError):  # window < 1
         cross_spectrum(x, window=0)
@@ -174,8 +175,8 @@ def test_covariances_coherence(coh):
             coherence(x, coh=coh)
     else:
         coherence(x, coh=coh)
-        coherence(x, fs=128, fmin=2, fmax=40, coh=coh)
-        c, freqs = coherence(x, fs=32, window=256, coh=coh)
+        coherence(x, fs=32, window=256, coh=coh)
+        c, freqs = coherence(x, fs=128, fmin=3, fmax=40, coh=coh)
         assert c.shape[0] == c.shape[1] == n_channels
         assert c.shape[-1] == freqs.shape[0]
         # test if coherence in [0,1]
@@ -205,7 +206,7 @@ def test_covariances_coherence(coh):
         n_times = t.shape[0]
 
         x = np.zeros((4, len(t)))
-        noise = 1e-10
+        noise = 1e-9
         # reference channel: a pure sine + small noise (to avoid nan or inf)
         x[0] = np.sin(2 * np.pi * ft * t) + noise * rs.randn((n_times))
         # pi/4 shifted channel = pi/4 lagged phase
@@ -236,7 +237,7 @@ def test_covariances_coherence(coh):
             # lagged coh equal 1 between ref and quadrature phase channels
             assert c[0, 2, foi] == pytest.approx(1.0)
             # lagged coh equal 0 between ref and opposite phase channels
-            assert c[0, 3, foi] == pytest.approx(0.0, abs=1e-6)
+            assert c[0, 3, foi] == pytest.approx(0.0, abs=1e-4)
 
         elif coh == 'imaginary':
             # imag coh equal 0.5 between ref and pi/4 lagged phase channels

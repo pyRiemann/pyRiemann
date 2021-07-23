@@ -423,7 +423,7 @@ class Coherences(CospCovariances):
     fs : float | None, (default None)
         The sampling frequency of the signal.
     coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default
-            'ordinary')
+              'ordinary')
         The coherence type:
 
         * 'ordinary' for the ordinary coherence, defined in Eq.(22) of [1]_;
