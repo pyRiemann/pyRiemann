@@ -231,7 +231,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         :func:`pyriemann.utils.covariance.covariances`.
     xdawn_estimator : string (default: 'scm')
         covariance matrix estimator for xdawn spatial filtering.
-    baseline_cov : baseline_cov : array, shape(n_chan, n_chan) | None (default)
+    baseline_cov : array, shape (n_chan, n_chan) | None (default)
         baseline_covariance for xdawn. see `Xdawn`.
 
     See Also
