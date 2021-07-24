@@ -53,6 +53,7 @@ def test_covariances_cross_spectrum():
     x = rs.randn(n_channels, n_times)
     cross_spectrum(x)
     cross_spectrum(x, fs=128, fmin=2, fmax=40)
+    cross_spectrum(x, fs=129, window=37)
 
     with pytest.raises(ValueError):  # window < 1
         cross_spectrum(x, window=0)
@@ -160,28 +161,97 @@ def test_covariances_cospectrum():
     assert_array_almost_equal(cosp_pr, cosp_sp, 6)
 
 
-def test_covariances_coherence():
+@pytest.mark.parametrize(
+    'coh', ['ordinary', 'instantaneous', 'lagged', 'imaginary', 'foobar']
+)
+def test_covariances_coherence(coh):
     """Test coherence"""
     rs = np.random.RandomState(42)
-    x = rs.randn(2, 2048)
-    coherence(x)
-    coherence(x, fs=128, fmin=2, fmax=40)
+    n_channels, n_times = 3, 2048
+    x = rs.randn(n_channels, n_times)
 
-    # test equivalence between pyriemann and scipy for squared coherence
-    fs, window, overlap = 128, 256, 0.75
-    coh_pr, freqs_pr = coherence(x, fs=fs, window=window, overlap=overlap)
-    freqs_sp, coh_sp = coherence_sp(
-        x[0],
-        x[1],
-        fs=fs,
-        nperseg=window,
-        noverlap=int(overlap * window),
-        window=np.hanning(window),
-        detrend=False)
-    # compare frequencies
-    assert_array_almost_equal(freqs_pr, freqs_sp, 6)
-    # compare coherence
-    assert_array_almost_equal(coh_pr[0, 1], coh_sp, 6)
+    if coh == 'foobar':
+        with pytest.raises(ValueError):  # unknown coh
+            coherence(x, coh=coh)
+    else:
+        coherence(x, coh=coh)
+        coherence(x, fs=32, window=256, coh=coh)
+        c, freqs = coherence(x, fs=128, fmin=3, fmax=40, coh=coh)
+        assert c.shape[0] == c.shape[1] == n_channels
+        assert c.shape[-1] == freqs.shape[0]
+        # test if coherence in [0,1]
+        assert np.all((0. <= c) & (c <= 1.))
+
+    # test equivalence between pyriemann and scipy for ordinary coherence
+    if coh == 'ordinary':
+        fs, window, overlap = 128, 256, 0.75
+        coh_pr, freqs_pr = coherence(x, fs=fs, window=window, overlap=overlap)
+        freqs_sp, coh_sp = coherence_sp(
+            x[0],
+            x[1],
+            fs=fs,
+            nperseg=window,
+            noverlap=int(overlap * window),
+            window=np.hanning(window),
+            detrend=False)
+        # compare frequencies
+        assert_array_almost_equal(freqs_pr, freqs_sp, 6)
+        # compare coherence
+        assert_array_almost_equal(coh_pr[0, 1], coh_sp, 6)
+
+    if coh == 'lagged':
+        with pytest.warns(UserWarning):  # not defined for DC and Nyquist bins
+            coherence(x, coh=coh)
+        with pytest.warns(UserWarning):  # not defined for DC and Nyquist bins
+            coherence(x, fs=64, coh=coh)
+
+    # test statistical properties of coherence between phase shifted channels
+    if coh in ['ordinary', 'instantaneous', 'lagged', 'imaginary']:
+        fs, ft, n_periods = 16, 4, 20
+        t = np.arange(0, n_periods, 1 / fs)
+        n_times = t.shape[0]
+
+        x = np.zeros((4, len(t)))
+        noise = 1e-9
+        # reference channel: a pure sine + small noise (to avoid nan or inf)
+        x[0] = np.sin(2 * np.pi * ft * t) + noise * rs.randn((n_times))
+        # pi/4 shifted channel = pi/4 lagged phase
+        x[1] = np.sin(2 * np.pi * ft * t + np.pi / 4) \
+            + noise * rs.randn((n_times))
+        # pi/2 shifted channel = quadrature phase
+        x[2] = np.sin(2 * np.pi * ft * t + np.pi / 2) \
+            + noise * rs.randn((n_times))
+        # pi shifted channel = opposite phase
+        x[3] = np.sin(2 * np.pi * ft * t + np.pi) + noise * rs.randn((n_times))
+
+        c, freqs = coherence(x, fs=fs, window=fs, overlap=0.5, coh=coh)
+        foi = (freqs == ft)
+
+        if coh == 'ordinary':
+            # ord coh equal 1 between ref and all other channels
+            assert_array_almost_equal(c[..., foi], np.ones_like(c[..., foi]))
+
+        elif coh == 'instantaneous':
+            # inst coh equal 0.5 between ref and pi/4 lagged phase channels
+            assert c[0, 1, foi] == pytest.approx(0.5)
+            # inst coh equal 0 between ref and quadrature phase channels
+            assert c[0, 2, foi] == pytest.approx(0.0)
+            # inst coh equal 1 between ref and opposite phase channels
+            assert c[0, 3, foi] == pytest.approx(1.0)
+
+        elif coh == 'lagged':
+            # lagged coh equal 1 between ref and quadrature phase channels
+            assert c[0, 2, foi] == pytest.approx(1.0)
+            # lagged coh equal 0 between ref and opposite phase channels
+            assert c[0, 3, foi] == pytest.approx(0.0, abs=1e-4)
+
+        elif coh == 'imaginary':
+            # imag coh equal 0.5 between ref and pi/4 lagged phase channels
+            assert c[0, 1, foi] == pytest.approx(0.5)
+            # imag coh equal 1 between ref and quadrature phase channels
+            assert c[0, 2, foi] == pytest.approx(1.0)
+            # imag coh equal 0 between ref and opposite phase channels
+            assert c[0, 3, foi] == pytest.approx(0.0)
 
 
 def test_normalize():

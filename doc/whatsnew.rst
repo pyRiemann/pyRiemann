@@ -10,6 +10,8 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.2.8.dev
 ----------
 
+- Add instantaneous, lagged and imaginary coherences in :func:`pyriemann.utils.covariance.coherence` and :class:`pyriemann.estimation.Coherences`
+
 - Correct spectral estimation in :func:`pyriemann.utils.covariance.cross_spectrum` to obtain equivalence with SciPy
 
 v0.2.7 (June 2021)

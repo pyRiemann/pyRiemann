@@ -214,7 +214,7 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_samples)
+    X : ndarray, shape (n_channels, n_times)
         Multi-channel time-series.
     window : int (default 128)
         The length of the FFT window used for spectral estimation.
@@ -245,12 +245,13 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     return S.real, freqs
 
 
-def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
-    """Compute coherence.
+def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
+              coh='ordinary'):
+    """Compute squared coherence.
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_samples)
+    X : ndarray, shape (n_channels, n_times)
         Multi-channel time-series.
     window : int (default 128)
         The length of the FFT window used for spectral estimation.
@@ -262,20 +263,57 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         The maximal frequency to be returned.
     fs : float | None, (default None)
         The sampling frequency of the signal.
+    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default
+            'ordinary')
+        The coherence type, see :class:`pyriemann.estimation.Coherences`.
 
     Returns
     -------
     C : ndarray, shape (n_channels, n_channels, n_freqs)
-        Coherence matrices, for each frequency bin.
+        Squared coherence matrices, for each frequency bin.
     freqs : ndarray, shape (n_freqs,)
         The frequencies associated to coherence.
     """
-    S, freqs = cross_spectrum(X, window, overlap, fmin, fmax, fs)
+    S, freqs = cross_spectrum(
+        X,
+        window=window,
+        overlap=overlap,
+        fmin=fmin,
+        fmax=fmax,
+        fs=fs)
     S2 = np.abs(S)**2  # squared cross-spectral modulus
+
     C = np.zeros_like(S2)
-    for f in range(S2.shape[-1]):
+    f_inds = np.arange(0, C.shape[-1], dtype=int)
+
+    # lagged coh not defined for DC and Nyquist bins, because S is real
+    if coh == 'lagged':
+        if freqs is None:
+            f_inds = np.arange(1, C.shape[-1] - 1, dtype=int)
+            warnings.warn('DC and Nyquist bins are not defined for lagged-'
+                          'coherence: filled with zeros')
+        else:
+            f_inds_ = f_inds[(freqs > 0) & (freqs < fs / 2)]
+            if not np.array_equal(f_inds_, f_inds):
+                warnings.warn('DC and Nyquist bins are not defined for lagged-'
+                              'coherence: filled with zeros')
+            f_inds = f_inds_
+
+    for f in f_inds:
         psd = np.sqrt(np.diag(S2[..., f]))
-        C[..., f] = S2[..., f] / np.outer(psd, psd)
+        psd_prod = np.outer(psd, psd)
+        if coh == 'ordinary':
+            C[..., f] = S2[..., f] / psd_prod
+        elif coh == 'instantaneous':
+            C[..., f] = (S[..., f].real)**2 / psd_prod
+        elif coh == 'lagged':
+            np.fill_diagonal(S[..., f].real, 0.)  # prevent div by zero on diag
+            C[..., f] = (S[..., f].imag)**2 / (psd_prod - (S[..., f].real)**2)
+        elif coh == 'imaginary':
+            C[..., f] = (S[..., f].imag)**2 / psd_prod
+        else:
+            raise ValueError("'%s' is not a supported coherence" % coh)
+
     return C, freqs
 
 
