@@ -47,7 +47,7 @@ class Covariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
         y : ndarray shape (n_trials,)
             labels corresponding to each trial, not used.
@@ -64,7 +64,7 @@ class Covariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
 
         Returns
@@ -151,7 +151,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
         y : ndarray shape (n_trials,)
             labels corresponding to each trial.
@@ -186,7 +186,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
 
         Returns
@@ -231,7 +231,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         :func:`pyriemann.utils.covariance.covariances`.
     xdawn_estimator : string (default: 'scm')
         covariance matrix estimator for xdawn spatial filtering.
-    baseline_cov : array, shape (n_chan, n_chan) | None (default)
+    baseline_cov : array, shape (n_channels, n_channels) | None (default)
         baseline_covariance for xdawn. see `Xdawn`.
 
     See Also
@@ -267,7 +267,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
         y : ndarray shape (n_trials,)
             labels corresponding to each trial.
@@ -291,12 +291,12 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
 
         Returns
         -------
-        covmats : ndarray, shape (n_trials, n_c, n_c)
+        covmats : ndarray, shape (n_trials, n_channels, n_channels)
             ndarray of covariance matrices for each trials.
         """
         if self.applyfilters:
@@ -360,7 +360,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
         y : ndarray, shape (n_trials,)
             labels corresponding to each trial, not used.
@@ -377,7 +377,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
 
         Returns
@@ -547,7 +547,7 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
         y : ndarray shape (n_trials,)
             labels corresponding to each trial, not used.
@@ -564,7 +564,7 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
 
         Returns
@@ -619,7 +619,7 @@ class Shrinkage(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of Target data.
         y : ndarray shape (n_trials,)
             Labels corresponding to each trial, not used.
