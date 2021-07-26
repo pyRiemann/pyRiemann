@@ -270,8 +270,8 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     """Artefact detection with the Riemannian Potato.
 
-    The Riemannian Potato [1] is a clustering method used to detect artifact in
-    EEG signals. The algorithm iteratively estimates the centroid of clean
+    The Riemannian Potato [1]_ is a clustering method used to detect artifact
+    in EEG signals. The algorithm iteratively estimates the centroid of clean
     signal by rejecting every trial that is too far from it.
 
     Parameters
@@ -299,10 +299,10 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     References
     ----------
-    [1] A. Barachant, A. Andreev and M. Congedo, "The Riemannian Potato: an
-    automatic and adaptive artifact detection method for online experiments
-    using Riemannian geometry", in Proceedings of TOBI Workshop IV, p. 19-20,
-    2013.
+    .. [1] A. Barachant, A. Andreev and M. Congedo, "The Riemannian Potato: an
+        automatic and adaptive artifact detection method for online experiments
+        using Riemannian geometry", in Proceedings of TOBI Workshop IV,
+        p. 19-20, 2013.
     """
 
     def __init__(self, metric='riemann', threshold=3, n_iter_max=100,

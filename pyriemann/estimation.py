@@ -95,10 +95,10 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
                                 \end{array}
                                 \right]
 
-    This super trial :math:`\mathbf{\\tilde{X}}_i` will be used for covariance
+    This super trial :math:`\mathbf{\tilde{X}}_i` will be used for covariance
     estimation.
     This allows to take into account the spatial structure of the signal, as
-    described in [1].
+    described in [1]_.
 
     Parameters
     ----------
@@ -122,16 +122,16 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    [1] A. Barachant, M. Congedo ,"A Plug&Play P300 BCI Using Information
-    Geometry", arXiv:1409.0107, 2014.
+    .. [1] A. Barachant, M. Congedo ,"A Plug&Play P300 BCI Using Information
+        Geometry", arXiv:1409.0107, 2014.
 
-    [2] M. Congedo, A. Barachant, A. Andreev ,"A New generation of
-    Brain-Computer Interface Based on Riemannian Geometry", arXiv: 1310.8115.
-    2013.
+    .. [2] M. Congedo, A. Barachant, A. Andreev ,"A New generation of
+        Brain-Computer Interface Based on Riemannian Geometry",
+        arXiv:1310.8115, 2013.
 
-    [3] A. Barachant, M. Congedo, G. Van Veen, C. Jutten, "Classification de
-    potentiels evoques P300 par geometrie riemannienne pour les interfaces
-    cerveau-machine EEG", 24eme colloque GRETSI, 2013.
+    .. [3] A. Barachant, M. Congedo, G. Van Veen, C. Jutten, "Classification de
+        potentiels evoques P300 par geometrie riemannienne pour les interfaces
+        cerveau-machine EEG", 24eme colloque GRETSI, 2013.
     """
 
     def __init__(self, classes=None, estimator='scm', svd=None):
@@ -231,7 +231,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         :func:`pyriemann.utils.covariance.covariances`.
     xdawn_estimator : string (default: 'scm')
         covariance matrix estimator for xdawn spatial filtering.
-    baseline_cov : array, shape (n_channels, n_channels) | None (default)
+    baseline_cov : array, shape (n_chan, n_chan) | None (default)
         baseline_covariance for xdawn. see `Xdawn`.
 
     See Also
@@ -296,7 +296,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        covmats : ndarray, shape (n_trials, n_channels, n_channels)
+        covmats : ndarray, shape (n_trials, n_c, n_c)
             ndarray of covariance matrices for each trials.
         """
         if self.applyfilters:

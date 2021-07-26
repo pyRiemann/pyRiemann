@@ -17,8 +17,8 @@ class TangentSpace(BaseEstimator, TransformerMixin):
     """Tangent space project TransformerMixin.
 
     Tangent space projection map a set of covariance matrices to their
-    tangent space according to [1]. The Tangent space projection can be
-    seen as a kernel operation, cf [2]. After projection, each matrix is
+    tangent space according to [1]_. The Tangent space projection can be
+    seen as a kernel operation, cf [2]_. After projection, each matrix is
     represented as a vector of size :math:`N(N+1)/2` where N is the
     dimension of the covariance matrices.
 
@@ -46,7 +46,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         see `mean_covariance` for the list of supported metric.
     tsupdate : bool (default False)
         Activate tangent space update for covariante shift correction between
-        training and test, as described in [2]. This is not compatible with
+        training and test, as described in [2]_. This is not compatible with
         online implementation. Performance are better when the number of trials
         for prediction is higher.
 
@@ -63,13 +63,13 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Multiclass
-    Brain-Computer Interface Classification by Riemannian Geometry,"" in IEEE
-    Transactions on Biomedical Engineering, vol. 59, no. 4, p. 920-928, 2012
+    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Multiclass
+        Brain-Computer Interface Classification by Riemannian Geometry,"" in
+        IEEE Trans Biomed Eng, vol. 59, no. 4, p. 920-928, 2012
 
-    [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification of
-    covariance matrices using a Riemannian-based kernel for BCI applications",
-    in NeuroComputing, vol. 112, p. 172-178, 2013.
+    .. [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification
+        of covariance matrices using a Riemannian-based kernel for BCI
+        applications", in NeuroComputing, vol. 112, p. 172-178, 2013.
     """
 
     def __init__(self, metric='riemann', tsupdate=False):
@@ -196,7 +196,7 @@ class FGDA(BaseEstimator, TransformerMixin):
 
     Project data in Tangent space, apply a FLDA to reduce dimention, and
     project filtered data back in the manifold.
-    For a complete description of the algorithm, see [1]
+    For a complete description of the algorithm, see [1]_.
 
     Parameters
     ----------
@@ -205,7 +205,7 @@ class FGDA(BaseEstimator, TransformerMixin):
         see `mean_covariance` for the list of supported metric.
     tsupdate : bool (default False)
         Activate tangent space update for covariante shift correction between
-        training and test, as described in [2]. This is not compatible with
+        training and test, as described in [2]_. This is not compatible with
         online implementation. Performance are better when the number of trials
         for prediction is higher.
 
@@ -216,14 +216,14 @@ class FGDA(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian geometry
-    applied to BCI classification", 9th International Conference Latent
-    Variable Analysis and Signal Separation (LVA/ICA 2010), LNCS vol. 6365,
-    2010, p. 629-636.
+    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian
+        geometry applied to BCI classification", 9th International Conference
+        Latent Variable Analysis and Signal Separation (LVA/ICA 2010), LNCS
+        vol. 6365, 2010, p. 629-636.
 
-    [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification of
-    covariance matrices using a Riemannian-based kernel for BCI applications",
-    in NeuroComputing, vol. 112, p. 172-178, 2013.
+    .. [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification
+        of covariance matrices using a Riemannian-based kernel for BCI
+        applications", in NeuroComputing, vol. 112, p. 172-178, 2013.
     """
 
     def __init__(self, metric='riemann', tsupdate=False):
