@@ -62,10 +62,14 @@ def test_KmeansPCT_init():
 
 def test_Potato_init():
     """Test Potato"""
-    covset = generate_cov(20, 3)
-    labels = np.array([0, 1]).repeat(10)
+    n_trials, n_channels = 20, 3
+    covset = generate_cov(n_trials, n_channels)
+    cov = covset[0][np.newaxis, ...]  # to test potato with a single trial
+    labels = np.array([0, 1]).repeat(n_trials // 2)
 
     # init
+    with pytest.raises(ValueError):  # positive and neg labels equal
+        Potato(pos_label=0)
     pt = Potato()
 
     # fit no labels
@@ -74,26 +78,43 @@ def test_Potato_init():
     # fit with labels
     with pytest.raises(ValueError):
         pt.fit(covset, y=[1])
-
     with pytest.raises(ValueError):
         pt.fit(covset, y=[0] * 20)
-
     with pytest.raises(ValueError):
         pt.fit(covset, y=[0, 2, 3] + [1] * 17)
-
     pt.fit(covset, labels)
+
+    # partial_fit
+    with pytest.raises(ValueError):  # potato not fitted
+        Potato().partial_fit(covset)
+    with pytest.raises(ValueError):  # unequal # of chans
+        pt.partial_fit(generate_cov(2, n_channels + 1))
+    with pytest.raises(ValueError):  # alpha < 0
+        pt.partial_fit(covset, labels, alpha=-0.1)
+    with pytest.raises(ValueError):  # alpha > 1
+        pt.partial_fit(covset, labels, alpha=1.1)
+    with pytest.raises(ValueError):  # no positive labels
+        pt.partial_fit(covset, [0] * n_trials)
+    pt.partial_fit(covset, labels, alpha=0.6)
+    pt.partial_fit(cov, alpha=0.1)
 
     # transform
     pt.transform(covset)
-    pt.transform(covset[0][np.newaxis, ...])  # transform a single trial
+    pt.transform(cov)
 
     # predict
     pt.predict(covset)
-    pt.predict(covset[0][np.newaxis, ...])  # predict a single trial
+    pt.predict(cov)
 
     # predict_proba
     pt.predict_proba(covset)
-    pt.predict_proba(covset[0][np.newaxis, ...])
+    pt.predict_proba(cov)
+
+    # potato with a single channel
+    covset_1chan = generate_cov(n_trials, 1)
+    pt.fit_transform(covset_1chan)
+    pt.predict(covset_1chan)
+    pt.predict_proba(covset_1chan)
 
     # lower threshold
     pt = Potato(threshold=1)
@@ -103,10 +124,5 @@ def test_Potato_init():
     pt = Potato(threshold=1, pos_label=2, neg_label=7)
     pt.fit(covset)
     assert_array_equal(np.unique(pt.predict(covset)), [2, 7])
-
-    # test with custom positive label
-    pt.fit(covset, y=[2]*20)
-
-    # different positive and neg label
-    with pytest.raises(ValueError):
-        Potato(pos_label=0)
+    # fit with custom positive label
+    pt.fit(covset, y=[2]*n_trials)
