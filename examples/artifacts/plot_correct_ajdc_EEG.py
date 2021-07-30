@@ -4,7 +4,7 @@ Artifact Correction by AJDC-based Blind Source Separation
 ===============================================================================
 
 Blind source separation (BSS) based on approximate joint diagonalization of
-Fourier cospectra (AJDC), applied to artifact correction of EEG [1].
+Fourier cospectra (AJDC), applied to artifact correction of EEG [1]_.
 """
 # Authors: Quentin Barthélemy & David Ojeda.
 # EEG signal kindly shared by Marco Congedo.
@@ -175,6 +175,6 @@ ica.plot_components(title='Topographic maps of EEG sources estimated by ICA')
 ###############################################################################
 # References
 # ----------
-# [1] Q. Barthélemy, L. Mayaud, Y. Renard, D. Kim, S.-W. Kang, J. Gunkelman and
-# M. Congedo, "Online denoising of eye-blinks in electroencephalography",
-# Neurophysiol Clin, 2017
+# .. [1] Q. Barthélemy, L. Mayaud, Y. Renard, D. Kim, S.-W. Kang, J. Gunkelman
+#    and M. Congedo, "Online denoising of eye-blinks in electroencephalography"
+#    , Neurophysiol Clin, 2017.
