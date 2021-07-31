@@ -10,11 +10,11 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.2.8.dev
 ----------
 
-- Add `partial_fit` in :class:`pyriemann.clustering.Potato`, useful for an online update; and update example on artifact detection
+- Correct spectral estimation in :func:`pyriemann.utils.covariance.cross_spectrum` to obtain equivalence with SciPy
 
 - Add instantaneous, lagged and imaginary coherences in :func:`pyriemann.utils.covariance.coherence` and :class:`pyriemann.estimation.Coherences`
 
-- Correct spectral estimation in :func:`pyriemann.utils.covariance.cross_spectrum` to obtain equivalence with SciPy
+- Add `partial_fit` in :class:`pyriemann.clustering.Potato`, useful for an online update; and update example on artifact detection
 
 v0.2.7 (June 2021)
 ------------------

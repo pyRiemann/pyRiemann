@@ -354,7 +354,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     def partial_fit(self, X, y=None, alpha=0.1):
         """Update the potato from covariance matrices. Useful for dynamic or
-        semi-dymanic potatoes.
+        semi-dymanic online potatoes.
 
         Parameters
         ----------
