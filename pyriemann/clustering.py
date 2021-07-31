@@ -373,7 +373,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         """
         if not hasattr(self, '_mdm'):
             raise ValueError('Partial fit can be called only on an already '
-                              'fitted potato.')
+                             'fitted potato.')
 
         n_trials, n_channels, _ = X.shape
         if n_channels != self._mdm.covmeans_[0].shape[0]:
