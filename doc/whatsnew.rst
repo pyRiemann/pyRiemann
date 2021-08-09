@@ -14,7 +14,7 @@ v0.2.8.dev
 
 - Add instantaneous, lagged and imaginary coherences in :func:`pyriemann.utils.covariance.coherence` and :class:`pyriemann.estimation.Coherences`
 
-- Add `partial_fit` in :class:`pyriemann.clustering.Potato`, useful for an online update; and update example on artifact detection
+- Add ``partial_fit`` in :class:`pyriemann.clustering.Potato`, useful for an online update; and update example on artifact detection.
 
 v0.2.7 (June 2021)
 ------------------
@@ -23,11 +23,11 @@ v0.2.7 (June 2021)
 
 - Fix compatibility with scikit-learn v0.24
 
-- Correct probas of MDM
+- Correct probas of :class:`pyriemann.classification.MDM`
 
-- Add predict_proba for Potato, and an example on artifact detection
+- Add ``predict_proba`` for :class:`pyriemann.clustering.Potato`, and an example on artifact detection
 
-- Add weights to Pham's AJD algorithm
+- Add weights to Pham's AJD algorithm :func:`pyriemann.utils.ajd.ajd_pham`
 
 - Add :func:`pyriemann.utils.covariance.cross_spectrum`, fix :func:`pyriemann.utils.covariance.cospectrum`; :func:`pyriemann.utils.covariance.coherence` output is kept unchanged
 

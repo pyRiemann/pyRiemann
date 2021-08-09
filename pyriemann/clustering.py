@@ -305,6 +305,10 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         automatic and adaptive artifact detection method for online experiments
         using Riemannian geometry", in Proceedings of TOBI Workshop IV,
         p. 19-20, 2013.
+
+    .. [2] Q. Barthélemy, L. Mayaud, D. Ojeda, M. Congedo, "The Riemannian
+        potato field: a tool for online signal quality index of EEG", IEEE
+        TNSRE, 2019.
     """
 
     def __init__(self, metric='riemann', threshold=3, n_iter_max=100,
@@ -325,8 +329,8 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
             ndarray of SPD matrices.
-        y : ndarray | None (default None)
-            Not used, here for compatibility with sklearn API.
+        y : ndarray, shape (n_trials,) | None (default None)
+            Labels corresponding to each trial.
 
         Returns
         -------
@@ -353,18 +357,20 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         return self
 
     def partial_fit(self, X, y=None, alpha=0.1):
-        """Update the potato from covariance matrices. Useful for dynamic or
-        semi-dymanic online potatoes.
+        """Partially fit the potato from covariance matrices.
+
+        This partial fit can be used to update dynamic or semi-dymanic online
+        potatoes with clean EEG [2]_.
 
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
             ndarray of SPD matrices.
-        y : ndarray | None (default None)
-            Not used, here for compatibility with sklearn API.
+        y : ndarray, shape (n_trials,) | None (default None)
+            Labels corresponding to each trial.
         alpha : float (default 0.1)
             Update rate in [0, 1] for the centroid, and mean and standard
-            deviation of log-distances.
+            deviation of log-distances: 0 for no update, 1 for full update.
 
         Returns
         -------
