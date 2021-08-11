@@ -1,6 +1,0 @@
-languages:
-  Python: true
-exclude_paths:
-- "examples/*"
-- "doc/*"
-- "tests/*"

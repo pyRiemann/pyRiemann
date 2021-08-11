@@ -1,7 +1,9 @@
 """Test tangent space functions."""
 import numpy as np
-from pyriemann.tangentspace import TangentSpace, FGDA
 from numpy.testing import assert_array_almost_equal
+from nose.tools import assert_raises
+
+from pyriemann.tangentspace import TangentSpace, FGDA
 
 
 def generate_cov(Nt, Ne):
@@ -34,6 +36,18 @@ def test_TangentSpace_transform():
     ts = TangentSpace(metric='riemann')
     ts.fit(covset)
     ts.transform(covset)
+
+    X = np.zeros(shape=(10, 9))
+    assert_raises(ValueError, ts.transform, X)
+
+    X = np.zeros(shape=(10, 9, 8))
+    assert_raises(ValueError, ts.transform, X)
+
+    X = np.zeros(shape=(10))
+    assert_raises(ValueError, ts.transform, X)
+
+    X = np.zeros(shape=(12, 8, 8))
+    assert_raises(ValueError, ts.transform, X)
 
 
 def test_TangentSpace_transform_without_fit():

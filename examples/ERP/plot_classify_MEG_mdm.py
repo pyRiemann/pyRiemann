@@ -26,7 +26,7 @@ from mne import io
 from mne.datasets import sample
 
 from sklearn.pipeline import make_pipeline
-from sklearn.cross_validation import KFold
+from sklearn.model_selection import KFold
 from sklearn.metrics import classification_report
 
 print(__doc__)
@@ -46,12 +46,21 @@ raw.filter(2, None, method='iir')  # replace baselining with high-pass
 events = mne.read_events(event_fname)
 
 raw.info['bads'] = ['MEG 2443']  # set bad channels
-picks = mne.pick_types(raw.info, meg='grad', eeg=False, stim=False, eog=False,
-                       exclude='bads')
+picks = mne.pick_types(
+    raw.info, meg='grad', eeg=False, stim=False, eog=False, exclude='bads')
 
 # Read epochs
-epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=False,
-                    picks=picks, baseline=None, preload=True, verbose=False)
+epochs = mne.Epochs(
+    raw,
+    events,
+    event_id,
+    tmin,
+    tmax,
+    proj=False,
+    picks=picks,
+    baseline=None,
+    preload=True,
+    verbose=False)
 
 labels = epochs.events[:, -1]
 evoked = epochs.average()
@@ -62,7 +71,7 @@ evoked = epochs.average()
 n_components = 3  # pick some components
 
 # Define a monte-carlo cross-validation generator (reduce variance):
-cv = KFold(len(labels), 10, shuffle=True, random_state=42)
+cv = KFold(n_splits=10, shuffle=True, random_state=42)
 pr = np.zeros(len(labels))
 epochs_data = epochs.get_data()
 
@@ -70,7 +79,7 @@ print('Multiclass classification with XDAWN + MDM')
 
 clf = make_pipeline(XdawnCovariances(n_components), MDM())
 
-for train_idx, test_idx in cv:
+for train_idx, test_idx in cv.split(epochs_data):
     y_train, y_test = labels[train_idx], labels[test_idx]
 
     clf.fit(epochs_data[train_idx], y_train)
@@ -85,9 +94,11 @@ xd.fit(epochs_data, labels)
 
 evoked.data = xd.Xd_.patterns_.T
 evoked.times = np.arange(evoked.data.shape[0])
-evoked.plot_topomap(times=[0, n_components, 2 * n_components,
-                    3 * n_components], ch_type='grad', colorbar=False,
-                    size=1.5)
+evoked.plot_topomap(
+    times=[0, n_components, 2 * n_components, 3 * n_components],
+    ch_type='grad',
+    colorbar=False,
+    size=1.5)
 
 ###############################################################################
 # plot the confusion matrix
