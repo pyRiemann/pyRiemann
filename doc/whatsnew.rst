@@ -14,6 +14,8 @@ v0.2.8.dev
 
 - Correct spectral estimation in :func:`pyriemann.utils.covariance.cross_spectrum` to obtain equivalence with SciPy
 
+- Add Ando-Li-Mathias mean estimation in :func:`pyriemann.utils.mean`
+
 v0.2.7 (June 2021)
 ------------------
 
