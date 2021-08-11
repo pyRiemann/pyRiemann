@@ -338,17 +338,18 @@ def mean_alm(covmats, tol=1e-14, maxiter=1000,
     C_iter = np.zeros_like(C)
     Nt = covmats.shape[0]
     if Nt == 2:
-        X = geodesic_riemann(covmats[0], covmats[1], alpha=0.5)
+        alpha = sample_weight[1] / sample_weight[0] / 2
+        X = geodesic_riemann(covmats[0], covmats[1], alpha=alpha)
         return X
     else:
         for k in range(maxiter):
             for h in range(Nt):
                 s = np.mod(np.arange(h, h + Nt - 1) + 1, Nt)
-                C_iter[h] = mean_alm(C[s])
+                C_iter[h] = mean_alm(C[s], sample_weight=sample_weight[s])
 
-            crit = np.linalg.norm(C_iter[0] - C[0], 2) / (
-                np.linalg.norm(C[0], 2))
-            if crit < tol:
+            norm_iter = np.linalg.norm(C_iter[0] - C[0], 2)
+            norm_c = np.linalg.norm(C[0], 2)
+            if (norm_iter / norm_c) < tol:
                 break
             C = deepcopy(C_iter)
         else:
