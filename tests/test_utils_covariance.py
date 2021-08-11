@@ -9,7 +9,8 @@ from pyriemann.utils.covariance import (covariances, covariances_EP, eegtocov,
 
 
 @pytest.mark.parametrize(
-    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd', 'sch', np.cov, 'truc', None]
+    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd',
+                  'sch', np.cov, 'truc', None]
 )
 def test_covariances(estimator):
     """Test covariance for multiple estimator"""

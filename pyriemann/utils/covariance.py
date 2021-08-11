@@ -30,7 +30,7 @@ def _mcd(X):
     return C
 
 
-def schaefer_strimmer_cov(X):
+def _sch(X):
     """Schaefer-Strimmer covariance estimator
 
     Shrinkage estimator using method from [1]:
@@ -42,7 +42,7 @@ def schaefer_strimmer_cov(X):
             T_{i,j} = \{ \Sigma_{scm}^{ii} \text{if} i = j, 0 \text{otherwise} \}
     Note that the optimal :math:`\gamma` is estimate by the authors' method.
 
-    :param X: Signal matrix, Nchannels X Nsamples
+    :param X: Signal matrix, (n_channels, n_trials)
 
     :returns: Schaefer-Strimmer shrinkage covariance matrix, Nchannels X Nchannels
 
@@ -52,20 +52,22 @@ def schaefer_strimmer_cov(X):
     large-scale covariance estimation and implications for functional
     genomics. Statist. Appl. Genet. Mol. Biol. 4:32.
     http://doi.org/10.2202/1544-6115.1175
-    """
-    Ne, Ns = X.shape[0], X.shape[1]
-    C_scm = numpy.cov(X, ddof=0)
-    X_c = X - numpy.tile(X.mean(axis=1), [Ns, 1]).T
+    """  # noqa
+    Ns = X.shape[1]
+    C_scm = np.cov(X, ddof=0)
+    X_c = X - np.tile(X.mean(axis=1), [Ns, 1]).T
 
     # Compute optimal gamma, the weigthing between SCM and srinkage estimator
-    R = Ns / (Ns - 1.0) * numpy.corrcoef(X)
-    var_R = (X_c ** 2).dot((X_c ** 2).T) - 2 * C_scm * X_c.dot(X_c.T) + Ns * C_scm ** 2
-    var_R = Ns/((Ns-1)**3 * numpy.outer(X.var(axis=1), X.var(axis=1))) * var_R
-    R -= numpy.diag(numpy.diag(R))
-    var_R -= numpy.diag(numpy.diag(var_R))
-    gamma =  max(0, min(1, var_R.sum() / (R**2).sum()))
+    R = Ns / (Ns - 1.0) * np.corrcoef(X)
+    var_R = (X_c ** 2) @ (X_c ** 2).T - 2 * C_scm * X_c @ X_c.T
+    var_R += Ns * C_scm ** 2
+    var_R *= Ns / ((Ns - 1) ** 3 * np.outer(X.var(axis=1), X.var(axis=1)))
+    R -= np.diag(np.diag(R))
+    var_R -= np.diag(np.diag(var_R))
+    gamma = max(0, min(1, var_R.sum() / (R ** 2).sum()))
 
-    return (1. - gamma) * (Ns / (Ns - 1.)) * C_scm + gamma * (Ns / (Ns - 1.)) * numpy.diag(numpy.diag(C_scm))
+    C_scm *= (1. - gamma) * (Ns / (Ns - 1.))
+    return C_scm + gamma * (Ns / (Ns - 1.)) * np.diag(np.diag(C_scm))
 
 
 def _check_est(est):
@@ -78,7 +80,8 @@ def _check_est(est):
         'lwf': _lwf,
         'oas': _oas,
         'mcd': _mcd,
-        'sch': schaefer_strimmer_cov,
+        'sch': _sch,
+        'corr': np.corrcoef
     }
 
     if callable(est):
@@ -103,7 +106,7 @@ def covariances(X, estimator='cov'):
     X : ndarray, shape (n_trials, n_channels, n_times)
         ndarray of trials.
 
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'corr'} (default: 'scm')
+    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} (default: 'scm')
         covariance matrix estimator:
 
         * 'cov' for numpy based covariance matrix,
@@ -116,6 +119,8 @@ def covariances(X, estimator='cov'):
           https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
         * 'mcd' for minimum covariance determinant matrix,
           https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
+        * 'sch' for Schaefer-Strimmer covariance,
+          http://doi.org/10.2202/1544-6115.1175,
         * 'corr' for correlation coefficient matrix,
           https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
 
