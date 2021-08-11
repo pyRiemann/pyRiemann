@@ -1,7 +1,8 @@
 import numpy as np
 from pyriemann.stats import PermutationDistance, PermutationModel
-from nose.tools import assert_raises
+import pytest
 from pyriemann.spatialfilters import CSP
+
 
 def generate_cov(Nt, Ne):
     """Generate a set of cavariances matrices for test purpose."""
@@ -19,10 +20,16 @@ def test_permutation_distance():
     """Test one way permutation test"""
     covset = generate_cov(10, 5)
     labels = np.array([0, 1]).repeat(5)
-    assert_raises(ValueError, PermutationDistance, mode='badmode')
+    groups = np.array([0] * 5 + [1] * 5)
+
+    with pytest.raises(ValueError):
+        PermutationDistance(mode='badmode')
+
     # pairwise
     p = PermutationDistance(100, mode='pairwise')
     p.test(covset, labels)
+    # with group
+    p.test(covset, labels, groups=groups)
     # t-test
     p = PermutationDistance(100, mode='ttest')
     p.test(covset, labels)

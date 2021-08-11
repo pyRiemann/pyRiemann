@@ -1,45 +1,44 @@
-import numpy
 import sys
 import math
+import numpy as np
 import matplotlib.pyplot as plt
 
 from .utils.utils import check_version
+from .utils.distance import distance, pairwise_distance
+from .utils.mean import mean_covariance
+from .classification import MDM
 
 if check_version('sklearn', '0.18'):
     from sklearn.model_selection import cross_val_score
 else:
     from sklearn.cross_validation import cross_val_score
 
-from .utils.distance import distance, pairwise_distance
-from .utils.mean import mean_covariance
-from .classification import MDM
-
 
 def multiset_perm_number(y):
     """return the number of unique permutation in a multiset."""
     pr = 1
-    for i in numpy.unique(y):
-        pr *= math.factorial(numpy.sum(y == i))
-    return math.factorial(len(y))/pr
+    for i in np.unique(y):
+        pr *= math.factorial(np.sum(y == i))
+    return math.factorial(len(y)) / pr
 
 
 def unique_permutations(elements):
     """Return the list of unique permutations."""
     if len(elements) == 1:
-        yield (elements[0],)
+        yield (elements[0], )
     else:
         unique_elements = set(elements)
         for first_element in unique_elements:
             remaining_elements = list(elements)
             remaining_elements.remove(first_element)
             for sub_permutation in unique_permutations(remaining_elements):
-                yield (first_element,) + sub_permutation
+                yield (first_element, ) + sub_permutation
 
 
 class BasePermutation():
     """Base object for permutations test"""
 
-    def test(self, X, y, verbose=True):
+    def test(self, X, y, groups=None, verbose=True):
         """Performs the permutation test
 
         Parameters
@@ -48,7 +47,7 @@ class BasePermutation():
             The data to fit. Can be, for example a list, or an array at
             least 2d.
 
-        y : array-like, optional, default: None
+        y : array-like
             The target variable to try to predict in the case of
             supervised learning.
 
@@ -56,7 +55,7 @@ class BasePermutation():
             if true, print progress.
         """
         Npe = multiset_perm_number(y)
-        self.scores_ = numpy.zeros(numpy.min([self.n_perms, int(Npe)]))
+        self.scores_ = np.zeros(np.min([self.n_perms, int(Npe)]))
 
         # initial fit. This is usefull for transform data or for estimating
         # parameter that does not change across permutation, like the mean of
@@ -64,24 +63,24 @@ class BasePermutation():
         X = self._initial_transform(X)
 
         # get the non permuted score
-        self.scores_[0] = self.score(X, y)
+        self.scores_[0] = self.score(X, y, groups=groups)
 
         if Npe <= self.n_perms:
             print("Warning, number of unique permutations : %d" % Npe)
             perms = unique_permutations(y)
             ii = 0
             for perm in perms:
-                if not numpy.array_equal(perm, y):
-                    self.scores_[ii + 1] = self.score(X, perm)
+                if not np.array_equal(perm, y):
+                    self.scores_[ii + 1] = self.score(X, perm, groups=groups)
                     ii += 1
                     if verbose:
                         self._print_progress(ii)
 
         else:
-            rs = numpy.random.RandomState(self.random_state)
+            rs = np.random.RandomState(self.random_state)
             for ii in range(self.n_perms - 1):
-                perm = rs.permutation(y)
-                self.scores_[ii + 1] = self.score(X, perm)
+                perm = self._shuffle(y, groups, rs)
+                self.scores_[ii + 1] = self.score(X, perm, groups=groups)
                 if verbose:
                     self._print_progress(ii)
         if verbose:
@@ -92,13 +91,24 @@ class BasePermutation():
 
     def _print_progress(self, ii):
         """Print permutation progress"""
-        sys.stdout.write("Performing permutations : [%.1f%%]\r"
-                         % ((100. * (ii + 1)) / self.n_perms))
+        sys.stdout.write("Performing permutations : [%.1f%%]\r" %
+                         ((100. * (ii + 1)) / self.n_perms))
         sys.stdout.flush()
 
     def _initial_transform(self, X):
         """Initial transformation. By default return X."""
         return X
+
+    def _shuffle(self, y, groups, rs):
+        """Return a shuffled copy of y eventually shuffle among same groups."""
+        if groups is None:
+            indices = rs.permutation(len(y))
+        else:
+            indices = np.arange(len(groups))
+            for group in np.unique(groups):
+                this_mask = (groups == group)
+                indices[this_mask] = rs.permutation(indices[this_mask])
+        return y[indices]
 
     def plot(self, nbins=10, range=None, axes=None):
         """Plot results of the permutation test.
@@ -107,7 +117,7 @@ class BasePermutation():
         ----------
         nbins : integer or array_like or 'auto', optional
             If an integer is given, bins + 1 bin edges are returned,
-            consistently with numpy.histogram() for numpy version >= 1.3.
+            consistently with np.histogram() for numpy version >= 1.3.
             Unequally spaced bins are supported if bins is a sequence.
 
         range : tuple or None, optional
@@ -127,16 +137,16 @@ class BasePermutation():
         y_max = axes.get_ylim()[1]
         axes.plot([x_val, x_val], [0, y_max], '--r', lw=2)
         x_max = axes.get_xlim()[1]
-        axes.text(x_max * 0.5, y_max * 0.8, 'p-value: %.3f' % self.p_value_)
+        x_min = axes.get_xlim()[0]
+        x_pos = x_min + ((x_max - x_min) * 0.25)
+        axes.text(x_pos, y_max * 0.8, 'p-value: %.3f' % self.p_value_)
         axes.set_xlabel('Score')
         axes.set_ylabel('Count')
         return axes
 
 
 class PermutationModel(BasePermutation):
-
-    """
-    Permutation test using any scikit-learn model for scoring.
+    """Permutation test using any scikit-learn model for scoring.
 
     Perform a permutation test using the cross-validation score of any
     scikit-learn compatible model. Score is obtained with `cross_val_score`
@@ -154,10 +164,12 @@ class PermutationModel(BasePermutation):
     cv : int, (default 3) cross-validation generator or an iterable, optional
         Determines the cross-validation splitting strategy.
         Possible inputs for cv are:
+
           - None, to use the default 3-fold cross validation,
           - integer, to specify the number of folds in a `(Stratified)KFold`,
           - An object to be used as a cross-validation generator.
           - An iterable yielding train, test splits.
+
         For integer/None inputs, if the estimator is a classifier and `y` is
         either binary or multiclass, :class:`StratifiedKFold` is used. In all
         other cases, `KFold` is used.
@@ -187,8 +199,13 @@ class PermutationModel(BasePermutation):
     PermutationDistance
     """
 
-    def __init__(self, n_perms=100, model=MDM(), cv=3, scoring=None,
-                 n_jobs=1, random_state=42):
+    def __init__(self,
+                 n_perms=100,
+                 model=MDM(),
+                 cv=3,
+                 scoring=None,
+                 n_jobs=1,
+                 random_state=42):
         """Init."""
         self.n_perms = n_perms
         self.model = model
@@ -197,7 +214,7 @@ class PermutationModel(BasePermutation):
         self.n_jobs = n_jobs
         self.random_state = random_state
 
-    def score(self, X, y):
+    def score(self, X, y, groups=None):
         """Score one permutation.
 
         Parameters
@@ -206,22 +223,26 @@ class PermutationModel(BasePermutation):
             The data to fit. Can be, for example a list, or an array at
             least 2d.
 
-        y : array-like, optional, default: None
+        y : array-like
             The target variable to try to predict in the case of
             supervised learning.
         """
-        score = cross_val_score(self.model, X, y, cv=self.cv,
-                                n_jobs=self.n_jobs, scoring=self.scoring)
+        score = cross_val_score(
+            self.model,
+            X,
+            y,
+            cv=self.cv,
+            n_jobs=self.n_jobs,
+            scoring=self.scoring,
+            groups=groups)
         return score.mean()
 
 
 class PermutationDistance(BasePermutation):
-
-    """
-    Permutation test based on distance.
+    """Permutation test based on distance.
 
     Perform a permutation test based on distance. You have the choice of 3
-    different statistic :
+    different statistic:
 
     - 'pairwise' :
         the statistic is based on paiwire distance as
@@ -283,24 +304,29 @@ class PermutationDistance(BasePermutation):
     PermutationModel
 
     References
-    --------
-        [1] Anderson, J. "A new method for non-parametric multivariate analysis of
-        variance." Austral ecology. 2001.
+    ----------
+    .. [1] Anderson, J. "A new method for non-parametric multivariate analysis
+        of variance." Austral ecology. 2001.
     """
 
-    def __init__(self, n_perms=100, metric='riemann', mode='pairwise',
-                 n_jobs=1, random_state=42, estimator=None):
+    def __init__(self,
+                 n_perms=100,
+                 metric='riemann',
+                 mode='pairwise',
+                 n_jobs=1,
+                 random_state=42,
+                 estimator=None):
         """Init."""
         self.n_perms = n_perms
         if mode not in ['pairwise', 'ttest', 'ftest']:
-            raise(ValueError("mode must be 'pairwise', 'ttest' or 'ftest'"))
+            raise (ValueError("mode must be 'pairwise', 'ttest' or 'ftest'"))
         self.mode = mode
         self.metric = metric
         self.n_jobs = n_jobs
         self.random_state = random_state
         self.estimator = estimator
 
-    def score(self, X, y):
+    def score(self, X, y, groups=None):
         """Score of a permutation.
 
         Parameters
@@ -309,7 +335,7 @@ class PermutationDistance(BasePermutation):
             The data to fit. Can be, for example a list, or an array at
             least 2d.
 
-        y : array-like, optional, default: None
+        y : array-like
             The target variable to try to predict in the case of
             supervised learning.
         """
@@ -338,28 +364,29 @@ class PermutationDistance(BasePermutation):
         if self.mode == 'ftest':
             self.global_mean = mean_covariance(X, metric=self.mdm.metric_mean)
         elif self.mode == 'pairwise':
-            X = pairwise_distance(X, metric=self.mdm.metric_dist) ** 2
+            X = pairwise_distance(X, metric=self.mdm.metric_dist)**2
         return X
 
     def _score_ftest(self, X, y):
         """Get the score"""
         mdm = self.mdm.fit(X, y)
-        covmeans = numpy.array(mdm.covmeans_)
+        covmeans = np.array(mdm.covmeans_)
 
         # estimates between classes variability
         n_classes = len(covmeans)
         between = 0
         for ix, classe in enumerate(mdm.classes_):
-            di = distance(covmeans[ix], self.global_mean,
-                          metric=mdm.metric_dist)**2
-            between += numpy.sum(y == classe) * di
+            di = distance(
+                covmeans[ix], self.global_mean, metric=mdm.metric_dist)**2
+            between += np.sum(y == classe) * di
         between /= (n_classes - 1)
 
         # estimates within class variability
         within = 0
         for ix, classe in enumerate(mdm.classes_):
-            within += (distance(X[y == classe], covmeans[ix],
-                                metric=mdm.metric_dist)**2).sum()
+            within += (distance(
+                X[y == classe], covmeans[ix], metric=mdm.metric_dist)
+                ** 2).sum()
         within /= (len(y) - n_classes)
 
         score = between / within
@@ -368,38 +395,39 @@ class PermutationDistance(BasePermutation):
     def _score_ttest(self, X, y):
         """Get the score"""
         mdm = self.mdm.fit(X, y)
-        covmeans = numpy.array(mdm.covmeans_)
+        covmeans = np.array(mdm.covmeans_)
 
         # estimates distances between means
         n_classes = len(covmeans)
         pairs = pairwise_distance(covmeans, metric=mdm.metric_dist)
-        mean_dist = numpy.triu(pairs).sum()
-        mean_dist /= (n_classes * (n_classes - 1))/2.0
+        mean_dist = np.triu(pairs).sum()
+        mean_dist /= (n_classes * (n_classes - 1)) / 2.0
 
         dist = 0
         for ix, classe in enumerate(mdm.classes_):
-            di = (distance(X[y == classe], covmeans[ix],
-                           metric=mdm.metric_dist)**2).mean()
-            dist += (di / numpy.sum(y == classe))
-        score = mean_dist / numpy.sqrt(dist)
+            di = (distance(
+                X[y == classe], covmeans[ix], metric=mdm.metric_dist)
+                ** 2).mean()
+            dist += (di / np.sum(y == classe))
+        score = mean_dist / np.sqrt(dist)
         return score
 
     def _score_pairwise(self, X, y):
         """Score for the pairwise distance test."""
-        classes = numpy.unique(y)
+        classes = np.unique(y)
         n_classes = len(classes)
         n_samples = len(y)
         total_ss = X.sum() / (2 * n_samples)
-        pattern = numpy.zeros((n_samples, n_samples))
+        pattern = np.zeros((n_samples, n_samples))
         for classe in classes:
             ix = (y == classe)
-            pattern += (numpy.outer(ix, ix) / numpy.float(ix.sum()))
+            pattern += (np.outer(ix, ix) / np.float(ix.sum()))
 
         within_ss = (X * pattern).sum() / 2
 
         between_ss = total_ss - within_ss
 
-        score = ((between_ss / (n_classes - 1)) /
-                 (within_ss / (n_samples - n_classes)))
+        score = ((between_ss / (n_classes - 1)) / (within_ss /
+                                                   (n_samples - n_classes)))
 
         return score

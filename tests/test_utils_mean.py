@@ -39,63 +39,72 @@ def test_riemann_mean_with_init():
 
 def test_logeuclid_mean():
     """Test the logeuclidean mean"""
-    covmats, diags, A = generate_cov(100, 3)
+    covmats, _, A = generate_cov(100, 3)
     C = mean_logeuclid(covmats)
+    assert C.shape == (3, 3)
 
 
 def test_euclid_mean():
     """Test the euclidean mean"""
-    covmats, diags, A = generate_cov(100, 3)
+    covmats, _, _ = generate_cov(100, 3)
     C = mean_euclid(covmats)
+    assert C.shape == (3, 3)
     assert_array_almost_equal(C, covmats.mean(axis=0))
 
 
 def test_identity_mean():
     """Test the logdet mean"""
-    covmats, diags, A = generate_cov(100, 3)
+    covmats, _, _ = generate_cov(100, 3)
     C = mean_identity(covmats)
+    assert C.shape == (3, 3)
     assert_array_equal(C, np.eye(3))
 
 
 def test_logdet_mean():
     """Test the logdet mean"""
-    covmats, diags, A = generate_cov(100, 3)
+    covmats, _, _ = generate_cov(100, 3)
     C = mean_logdet(covmats)
+    assert C.shape == (3, 3)
 
 
 def test_logdet_mean_with_init():
     """Test the logdet mean"""
-    covmats, diags, A = generate_cov(100, 3)
+    covmats, _, _ = generate_cov(100, 3)
     C = mean_logdet(covmats, init=covmats[0])
+    assert C.shape == (3, 3)
 
 
 def test_ald_mean():
     """Test the Ale mean"""
-    covmats, diags, A = generate_cov(100, 3)
+    covmats, _, _ = generate_cov(100, 3)
     C = mean_ale(covmats)
+    assert C.shape == (3, 3)
 
 
 def test_kullback_mean():
     """Test the kullback mean"""
-    covmats, diags, A = generate_cov(100, 3)
+    covmats, _, _ = generate_cov(100, 3)
     C = mean_kullback_sym(covmats)
+    assert C.shape == (3, 3)
 
 
 def test_harmonic_mean():
     """Test the harmonic mean"""
-    covmats, diags, A = generate_cov(100, 3)
+    covmats, _, _ = generate_cov(100, 3)
     C = mean_harmonic(covmats)
+    assert C.shape == (3, 3)
 
 
 def test_wasserstein_mean():
     """Test the wasserstein mean"""
-    covmats, diags, A = generate_cov(100, 3)
+    covmats, _, _ = generate_cov(100, 3)
     C = mean_wasserstein(covmats)
+    assert C.shape == (3, 3)
 
 
 def test_mean_covariance_riemann():
     """Test mean_covariance for riemannian metric"""
-    covmats, diags, A = generate_cov(100, 3)
+    covmats, _, _ = generate_cov(100, 3)
     C = mean_covariance(covmats, metric='riemann')
     Ctrue = mean_riemann(covmats)
     assert_array_equal(C, Ctrue)
@@ -103,7 +112,7 @@ def test_mean_covariance_riemann():
 
 def test_mean_covariance_logdet():
     """Test mean_covariance for logdet metric"""
-    covmats, diags, A = generate_cov(100, 3)
+    covmats, _, _ = generate_cov(100, 3)
     C = mean_covariance(covmats, metric='logdet')
     Ctrue = mean_logdet(covmats)
     assert_array_equal(C, Ctrue)
@@ -111,7 +120,7 @@ def test_mean_covariance_logdet():
 
 def test_mean_covariance_logeuclid():
     """Test mean_covariance for logeuclid metric"""
-    covmats, diags, A = generate_cov(100, 3)
+    covmats, _, _ = generate_cov(100, 3)
     C = mean_covariance(covmats, metric='logeuclid')
     Ctrue = mean_logeuclid(covmats)
     assert_array_equal(C, Ctrue)

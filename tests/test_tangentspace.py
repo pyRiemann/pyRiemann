@@ -1,7 +1,8 @@
 """Test tangent space functions."""
 import numpy as np
-from pyriemann.tangentspace import TangentSpace, FGDA
 from numpy.testing import assert_array_almost_equal
+
+from pyriemann.tangentspace import TangentSpace, FGDA
 
 
 def generate_cov(Nt, Ne):
