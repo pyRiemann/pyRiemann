@@ -1,12 +1,13 @@
 # pyRiemann
 
-[![Code Climate](https://codeclimate.com/github/alexandrebarachant/pyRiemann/badges/gpa.svg)](https://codeclimate.com/github/alexandrebarachant/pyRiemann)
-[![Build Status](https://travis-ci.org/alexandrebarachant/pyRiemann.svg?branch=master)](https://travis-ci.org/alexandrebarachant/pyRiemann)
-[![codecov](https://codecov.io/gh/alexandrebarachant/pyRiemann/branch/master/graph/badge.svg)](https://codecov.io/gh/alexandrebarachant/pyRiemann)
+[![PyPI version](https://badge.fury.io/py/pyriemann.svg)](https://badge.fury.io/py/pyriemann)
+[![Build Status](https://github.com/pyRiemann/pyRiemann/workflows/testing/badge.svg?branch=master&event=push)](https://github.com/pyRiemann/pyRiemann/actions)
+[![codecov](https://codecov.io/gh/pyRiemann/pyRiemann/branch/master/graph/badge.svg)](https://codecov.io/gh/pyRiemann/pyRiemann)
 [![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.18982.svg)](http://dx.doi.org/10.5281/zenodo.18982)
 [![Documentation Status](https://readthedocs.org/projects/pyriemann/badge/?version=latest)](http://pyriemann.readthedocs.io/en/latest/?badge=latest)
+[![Downloads](https://pepy.tech/badge/pot)](https://pepy.tech/project/pyriemann)
 
-pyriemann is a python package for covariance matrices manipulation and classification through riemannian geometry.
+pyRiemann is a python package for covariance matrices manipulation and classification through Riemannian geometry.
 
 The primary target is classification of multivariate biosignals, like EEG, MEG or EMG.
 
@@ -28,7 +29,7 @@ pip install pyriemann
 or using pip+git for the latest version of the code :
 
 ```
-pip install git+https://github.com/alexandrebarachant/pyRiemann
+pip install git+https://github.com/pyRiemann/pyRiemann
 ```
 
 Anaconda is not currently supported, if you want to use anaconda, you need to create a virtual environment in anaconda, activate it and use the above command to install it.
@@ -105,12 +106,12 @@ print(accuracy.mean())
 If you make a modification, run the test suite before submitting a pull request
 
 ```
-nosetests
+pytest
 ```
 
 # Contribution Guidelines
 
-The package aims at adopting the [Scikit-Learn](http://scikit-learn.org/stable/developers/contributing.html#contributing-code) and [MNE-Python](http://martinos.org/mne/stable/contributing.html#general-code-guidelines) conventions as much as possible. See their contribution guidelines before contributing to the repository.
+The package aims at adopting the [Scikit-Learn](http://scikit-learn.org/stable/developers/contributing.html#contributing-code) and [MNE-Python](https://mne.tools/stable/install/contributing.html) conventions as much as possible. See their contribution guidelines before contributing to the repository.
 
 
 # References
@@ -121,42 +122,6 @@ The package aims at adopting the [Scikit-Learn](http://scikit-learn.org/stable/d
 >
 > [3] A. Barachant and S. Bonnet, "Channel selection procedure using riemannian distance for BCI applications," in 2011 5th International IEEE/EMBS Conference on Neural Engineering (NER), 2011, 348-351. [pdf](http://hal.archives-ouvertes.fr/docs/00/60/27/07/PDF/NER11_0016_FI.pdf)
 >
-> [4] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, “Multiclass Brain-Computer Interface Classification by Riemannian Geometry,” in IEEE Transactions on Biomedical Engineering, vol. 59, no. 4, p. 920-928, 2012. [pdf](http://hal.archives-ouvertes.fr/docs/00/68/13/28/PDF/Barachant_tbme_final.pdf)
+> [4] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Multiclass Brain-Computer Interface Classification by Riemannian Geometry," in IEEE Transactions on Biomedical Engineering, vol. 59, no. 4, p. 920-928, 2012. [pdf](http://hal.archives-ouvertes.fr/docs/00/68/13/28/PDF/Barachant_tbme_final.pdf)
 >
-> [5] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, “Classification of covariance matrices using a Riemannian-based kernel for BCI applications“, in NeuroComputing, vol. 112, p. 172-178, 2013. [pdf](http://hal.archives-ouvertes.fr/docs/00/82/04/75/PDF/BARACHANT_Neurocomputing_ForHal.pdf)
-
-# changelog
-
-### v0.2.5
-- Added `BilinearFilter`
-- Added a permutation test for generic scikit-learn estimator
-- Stats module refactoring, with distance based t-test and f-test
-- Removed two way permutation test
-- Added `FlatChannelRemover`
-- Support for python 3.5 and 3.6
-- Added `Shrinkage` transformer
-- Added `Coherences` transformer
-- Added `Embedding` class.
-
-### v0.2.4
-- Improved documentation
-- Added TSclassifier for out-of the box tangent space classification.
-- Added Wasserstein distance and mean.
-- Added NearestNeighbor classifier.
-- Added Softmax probabilities for MDM.
-- Added CSP for covariance matrices.
-- Added Approximate Joint diagonalization algorithms (JADE, PHAM, UWEDGE).
-- Added ALE mean.
-- Added Multiclass CSP.
-- API: param name changes in `CospCovariances` to comply to Scikit-Learn.
-- API: attributes name changes in most modules to comply to the Scikit-Learn naming convention.
-- Added `HankelCovariances` estimation
-- Added `SPoC` spatial filtering
-- Added Harmonic mean
-- Added Kullback leibler mean
-
-### v0.2.3
- - Added multiprocessing for MDM with joblib
- - Added kullback-leibler divergence
- - Added Riemannian Potato
- - Added sample_weight for mean estimation and MDM
+> [5] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification of covariance matrices using a Riemannian-based kernel for BCI applications", in NeuroComputing, vol. 112, p. 172-178, 2013. [pdf](http://hal.archives-ouvertes.fr/docs/00/82/04/75/PDF/BARACHANT_Neurocomputing_ForHal.pdf)

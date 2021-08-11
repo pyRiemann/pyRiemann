@@ -7,8 +7,39 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.2.5 (January 2018)
+v0.2.8.dev
+----------
+
+- Add instantaneous, lagged and imaginary coherences in :func:`pyriemann.utils.covariance.coherence` and :class:`pyriemann.estimation.Coherences`
+
+- Correct spectral estimation in :func:`pyriemann.utils.covariance.cross_spectrum` to obtain equivalence with SciPy
+
+v0.2.7 (June 2021)
+------------------
+
+- Add example on SSVEP classification
+
+- Fix compatibility with scikit-learn v0.24
+
+- Correct probas of MDM
+
+- Add predict_proba for Potato, and an example on artifact detection
+
+- Add weights to Pham's AJD algorithm
+
+- Add :func:`pyriemann.utils.covariance.cross_spectrum`, fix :func:`pyriemann.utils.covariance.cospectrum`; :func:`pyriemann.utils.covariance.coherence` output is kept unchanged
+
+- Add :class:`pyriemann.spatialfilters.AJDC` for BSS and gBSS, with an example on artifact correction
+
+- Add :class:`pyriemann.preprocessing.Whitening`, with optional dimension reduction
+
+v0.2.6 (March 2020)
 -------------------
+
+- Updated for better Scikit-Learn v0.22 support
+
+v0.2.5 (January 2018)
+---------------------
 
 - Added BilinearFilter
 
@@ -29,7 +60,7 @@ v0.2.5 (January 2018)
 - Added Embedding class.
 
 v0.2.4 (June 2016)
--------------------
+------------------
 
 - Improved documentation
 

@@ -1,6 +1,5 @@
 """Module for classification function."""
 import numpy as np
-from numpy import concatenate, ones, unique, argsort
 
 from scipy import stats
 
@@ -106,26 +105,21 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : MDM instance
             The MDM instance.
         """
-        self.classes_ = unique(y)
+        self.classes_ = np.unique(y)
 
         if sample_weight is None:
-            sample_weight = ones(X.shape[0])
+            sample_weight = np.ones(X.shape[0])
 
         if self.n_jobs == 1:
-            self.covmeans_ = [mean_covariance(X[y == l], metric=self.metric_mean,
-                                    sample_weight=sample_weight[y == l])
-                                        for l in self.classes_]
-            """
-            for l in self.classes_:
-                self.covmeans_.append(
-                    mean_covariance(X[y == l], metric=self.metric_mean,
-                                    sample_weight=sample_weight[y == l]))
-            """
+            self.covmeans_ = [
+                mean_covariance(X[y == ll], metric=self.metric_mean,
+                                sample_weight=sample_weight[y == ll])
+                for ll in self.classes_]
         else:
             self.covmeans_ = Parallel(n_jobs=self.n_jobs)(
-                delayed(mean_covariance)(X[y == l], metric=self.metric_mean,
-                                         sample_weight=sample_weight[y == l])
-                for l in self.classes_)
+                delayed(mean_covariance)(X[y == ll], metric=self.metric_mean,
+                                         sample_weight=sample_weight[y == ll])
+                for ll in self.classes_)
 
         return self
 
@@ -141,7 +135,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
                 covtest, self.covmeans_[m], self.metric_dist)
                 for m in range(Nc))
 
-        dist = concatenate(dist, axis=1)
+        dist = np.concatenate(dist, axis=1)
         return dist
 
     def predict(self, covtest):
@@ -193,18 +187,18 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         prob : ndarray, shape (n_trials, n_classes)
             the softmax probabilities for each class.
         """
-        return softmax(-self._predict_distances(X))
+        return softmax(-self._predict_distances(X)**2)
 
 
 class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     """Classification by Minimum Distance to Mean with geodesic filtering.
 
-    Apply geodesic filtering described in [1], and classify using MDM algorithm
+    Apply geodesic filtering described in [1]_, and classify using MDM.
     The geodesic filtering is achieved in tangent space with a Linear
     Discriminant Analysis, then data are projected back to the manifold and
-    classifier with a regular mdm.
-    This is basically a pipeline of FGDA and MDM
+    classifier with a regular MDM.
+    This is basically a pipeline of FGDA and MDM.
 
     Parameters
     ----------
@@ -218,7 +212,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         distance in order to keep the good sensitivity for the classification.
     tsupdate : bool (default False)
         Activate tangent space update for covariante shift correction between
-        training and test, as described in [2]. This is not compatible with
+        training and test, as described in [2]_. This is not compatible with
         online implementation. Performance are better when the number of trials
         for prediction is higher.
     n_jobs : int, (default: 1)
@@ -229,6 +223,11 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
         are used.
 
+    Attributes
+    ----------
+    classes_ : list
+        list of classes.
+
     See Also
     --------
     MDM
@@ -237,14 +236,14 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     References
     ----------
-    [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian geometry
-    applied to BCI classification", 9th International Conference Latent
-    Variable Analysis and Signal Separation (LVA/ICA 2010), LNCS vol. 6365,
-    2010, p. 629-636.
+    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian
+        geometry applied to BCI classification", 9th International Conference
+        Latent Variable Analysis and Signal Separation (LVA/ICA 2010),
+        LNCS vol. 6365, 2010, p. 629-636.
 
-    [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification of
-    covariance matrices using a Riemannian-based kernel for BCI applications",
-    in NeuroComputing, vol. 112, p. 172-178, 2013.
+    .. [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification
+        of covariance matrices using a Riemannian-based kernel for BCI
+        applications", in NeuroComputing, vol. 112, p. 172-178, 2013.
     """
 
     def __init__(self, metric='riemann', tsupdate=False, n_jobs=1):
@@ -282,10 +281,12 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : FgMDM instance
             The FgMDM instance.
         """
+        self.classes_ = np.unique(y)
         self._mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
         self._fgda = FGDA(metric=self.metric_mean, tsupdate=self.tsupdate)
         cov = self._fgda.fit_transform(X, y)
         self._mdm.fit(cov, y)
+        self.classes_ = self._mdm.classes_
         return self
 
     def predict(self, X):
@@ -303,7 +304,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         """
         cov = self._fgda.transform(X)
         return self._mdm.predict(cov)
-    
+
     def predict_proba(self, X):
         """Predict proba using softmax after FGDA filtering.
 
@@ -319,7 +320,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         """
         cov = self._fgda.transform(X)
         return self._mdm.predict_proba(cov)
-    
+
     def transform(self, X):
         """get the distance to each centroid after FGDA filtering.
 
@@ -382,7 +383,6 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         if not isinstance(clf, ClassifierMixin):
             raise TypeError('clf must be a ClassifierMixin')
 
-            
     def fit(self, X, y):
         """Fit TSclassifier.
 
@@ -398,6 +398,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         self : TSclassifier. instance
             The TSclassifier. instance.
         """
+        self.classes_ = np.unique(y)
         ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
         self._pipe = make_pipeline(ts, self.clf)
         self._pipe.fit(X, y)
@@ -510,6 +511,6 @@ class KNearestNeighbor(MDM):
             the prediction for each trials according to the closest centroid.
         """
         dist = self._predict_distances(covtest)
-        neighbors_classes = self.classes_[argsort(dist)]
+        neighbors_classes = self.classes_[np.argsort(dist)]
         out, _ = stats.mode(neighbors_classes[:, 0:self.n_neighbors], axis=1)
         return out.ravel()

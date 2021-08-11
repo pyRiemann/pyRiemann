@@ -10,11 +10,10 @@ import seaborn as sns
 from time import time
 from matplotlib import pyplot as plt
 
-from mne import Epochs, pick_types
+from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
-from mne.event import find_events
 
 from pyriemann.stats import PermutationDistance, PermutationModel
 from pyriemann.estimation import Covariances
@@ -34,22 +33,34 @@ event_id = dict(hands=2, feet=3)
 subject = 1
 runs = [6, 10, 14]  # motor imagery: hands vs feet
 
-raw_files = [read_raw_edf(f, preload=True, verbose=False)
-             for f in eegbci.load_data(subject, runs)]
+raw_files = [
+    read_raw_edf(f, preload=True, verbose=False)
+    for f in eegbci.load_data(subject, runs)
+]
 raw = concatenate_raws(raw_files)
 
 # Apply band-pass filter
 raw.filter(7., 35., method='iir')
 
-events = find_events(raw, shortest_event=0, stim_channel='STI 014')
-picks = pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False,
-                   exclude='bads')
+events, _ = events_from_annotations(raw, event_id=dict(T1=2, T2=3))
+
+picks = pick_types(
+    raw.info, meg=False, eeg=True, stim=False, eog=False, exclude='bads')
 picks = picks[::4]
 
 # Read epochs (train will be done only between 1 and 2s)
 # Testing will be done with a running classifier
-epochs = Epochs(raw, events, event_id, tmin, tmax, proj=True, picks=picks,
-                baseline=None, preload=True, verbose=False)
+epochs = Epochs(
+    raw,
+    events,
+    event_id,
+    tmin,
+    tmax,
+    proj=True,
+    picks=picks,
+    baseline=None,
+    preload=True,
+    verbose=False)
 labels = epochs.events[:, -1] - 2
 
 # get epochs

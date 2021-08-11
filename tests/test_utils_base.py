@@ -1,6 +1,7 @@
+import pytest
 import numpy as np
-from nose.tools import assert_raises
 from numpy.testing import assert_array_almost_equal
+
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.utils.base import (sqrtm, invsqrtm, logm, expm, powm)
 
@@ -45,4 +46,5 @@ def test_check_raise():
     C = 2*np.ones((10, 3, 3))
     # This is an indirect check, the riemannian mean must crash when the
     # matrices are not SPD.
-    assert_raises(ValueError, mean_riemann, C)
+    with pytest.raises(ValueError):
+        mean_riemann(C)

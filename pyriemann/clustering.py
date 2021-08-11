@@ -1,8 +1,27 @@
 """Clustering functions."""
-import numpy
+import numpy as np
+from scipy.stats import norm
 from sklearn.base import (BaseEstimator, ClassifierMixin, TransformerMixin,
                           ClusterMixin)
-from sklearn.cluster.k_means_ import _init_centroids
+
+try:
+    from sklearn.cluster._kmeans import _init_centroids
+except ImportError:
+    # Workaround for scikit-learn v0.24.0rc1+
+    # See issue: https://github.com/alexandrebarachant/pyRiemann/issues/92
+    from sklearn.cluster import KMeans
+
+    def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
+        if random_state is not None:
+            random_state = np.random.RandomState(random_state)
+        return KMeans(n_clusters=n_clusters)._init_centroids(
+            X,
+            x_squared_norms,
+            init,
+            random_state,
+        )
+
+
 from joblib import Parallel, delayed
 
 from .classification import MDM
@@ -15,14 +34,14 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
     """helper to fit a single run of centroid."""
     # init random state if provided
     mdm = MDM(metric=metric, n_jobs=n_jobs)
-    squared_nomrs = [numpy.linalg.norm(x, ord='fro')**2 for x in X]
+    squared_nomrs = [np.linalg.norm(x, ord='fro')**2 for x in X]
     mdm.covmeans_ = _init_centroids(X, n_clusters, init,
                                     random_state=random_state,
                                     x_squared_norms=squared_nomrs)
     if y is not None:
-        mdm.classes_ = numpy.unique(y)
+        mdm.classes_ = np.unique(y)
     else:
-        mdm.classes_ = numpy.arange(n_clusters)
+        mdm.classes_ = np.arange(n_clusters)
 
     labels = mdm.predict(X)
     k = 0
@@ -32,7 +51,7 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
         dist = mdm._predict_distances(X)
         labels = mdm.classes_[dist.argmin(axis=1)]
         k += 1
-        if (k > max_iter) | (numpy.mean(labels == old_labels) > (1 - tol)):
+        if (k > max_iter) | (np.mean(labels == old_labels) > (1 - tol)):
             break
     inertia = sum([sum(dist[labels == mdm.classes_[i], i])
                    for i in range(len(mdm.classes_))])
@@ -55,7 +74,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         The maximum number of iteration to reach convergence.
     metric : string (default: 'riemann')
         The type of metric used for centroid and distance estimation.
-    random_state : integer or numpy.RandomState, optional
+    random_state : integer or np.RandomState, optional
         The generator used to initialize the centers. If an integer is
         given, it fixes the seed. Defaults to the global numpy random
         number generator.
@@ -130,7 +149,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         self : Kmeans instance
             The Kmean instance.
         """
-        if (self.init is not 'random') | (self.n_init == 1):
+        if (self.init != 'random') | (self.n_init == 1):
             # no need to iterate if init is not random
             labels, inertia, mdm = _fit_single(X, y,
                                                n_clusters=self.n_clusters,
@@ -141,19 +160,19 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
                                                tol=self.tol,
                                                n_jobs=self.n_jobs)
         else:
-            numpy.random.seed(self.seed)
-            seeds = numpy.random.randint(
-                numpy.iinfo(numpy.int32).max, size=self.n_init)
+            np.random.seed(self.seed)
+            seeds = np.random.randint(
+                np.iinfo(np.int32).max, size=self.n_init)
             if self.n_jobs == 1:
                 res = []
                 for i in range(self.n_init):
                     res.append(_fit_single(X, y,
-                                      n_clusters=self.n_clusters,
-                                      init=self.init,
-                                      random_state=seeds[i],
-                                      metric=self.metric,
-                                      max_iter=self.max_iter,
-                                      tol=self.tol))
+                                           n_clusters=self.n_clusters,
+                                           init=self.init,
+                                           random_state=seeds[i],
+                                           metric=self.metric,
+                                           max_iter=self.max_iter,
+                                           tol=self.tol))
                 labels, inertia, mdm = zip(*res)
             else:
 
@@ -169,7 +188,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
                     for seed in seeds)
                 labels, inertia, mdm = zip(*res)
 
-            best = numpy.argmin(inertia)
+            best = np.argmin(inertia)
             mdm = mdm[best]
             labels = labels[best]
             inertia = inertia[best]
@@ -234,7 +253,7 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
     def fit(self, X, y):
         """fit."""
         self.covmeans_ = []
-        self.classes_ = numpy.unique(y)
+        self.classes_ = np.unique(y)
         for c in self.classes_:
             self.km.fit(X[y == c])
             self.covmeans_.extend(self.km.centroids())
@@ -251,23 +270,23 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     """Artefact detection with the Riemannian Potato.
 
-    The Riemannian Potato [1] is a clustering method used to detect artifact in
-    EEG signals. The algorithm iteratively estimate the centroid of clean
-    signal by rejecting every trial that have a distance greater than several
-    standard deviation from it.
+    The Riemannian Potato [1]_ is a clustering method used to detect artifact
+    in EEG signals. The algorithm iteratively estimates the centroid of clean
+    signal by rejecting every trial that is too far from it.
 
     Parameters
     ----------
     metric : string (default 'riemann')
         The type of metric used for centroid and distance estimation.
-    threshold : int (default 3)
-        The number of standard deviation to reject artifacts.
+    threshold : float (default 3)
+        Threshold on z-score of distance to reject artifacts. It is the number
+        of standard deviations from the mean of distances to the centroid.
     n_iter_max : int (default 100)
         The maximum number of iteration to reach convergence.
-    pos_label: int (default 1)
-        The positive label corresponding to clean data
-    neg_label: int (default 0)
-        The negative label corresponding to artifact data
+    pos_label : int (default 1)
+        The positive label corresponding to clean data.
+    neg_label : int (default 0)
+        The negative label corresponding to artifact data.
 
     Notes
     -----
@@ -280,10 +299,10 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     References
     ----------
-    [1] A. Barachant, A. Andreev and M. Congedo, "The Riemannian Potato: an
-    automatic and adaptive artifact detection method for online experiments
-    using Riemannian geometry", in Proceedings of TOBI Workshop IV, p. 19-20,
-    2013.
+    .. [1] A. Barachant, A. Andreev and M. Congedo, "The Riemannian Potato: an
+        automatic and adaptive artifact detection method for online experiments
+        using Riemannian geometry", in Proceedings of TOBI Workshop IV,
+        p. 19-20, 2013.
     """
 
     def __init__(self, metric='riemann', threshold=3, n_iter_max=100,
@@ -316,9 +335,9 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         if y is not None:
             if len(y) != len(X):
-                raise ValueError('y must be the same lenght of X')
+                raise ValueError('y must be the same length of X')
 
-            classes = numpy.int32(numpy.unique(y))
+            classes = np.int32(np.unique(y))
 
             if len(classes) > 2:
                 raise ValueError('number of classes must be maximum 2')
@@ -326,20 +345,20 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
             if self.pos_label not in classes:
                 raise ValueError('y must contain a positive class')
 
-            y_old = numpy.int32(numpy.array(y) == self.pos_label)
+            y_old = np.int32(np.array(y) == self.pos_label)
         else:
-            y_old = numpy.ones(len(X))
+            y_old = np.ones(len(X))
         # start loop
         for n_iter in range(self.n_iter_max):
             ix = (y_old == 1)
             self._mdm.fit(X[ix], y_old[ix])
-            y = numpy.zeros(len(X))
-            d = numpy.squeeze(numpy.log(self._mdm.transform(X[ix])))
-            self._mean = numpy.mean(d)
-            self._std = numpy.std(d)
+            y = np.zeros(len(X))
+            d = np.squeeze(np.log(self._mdm.transform(X[ix])))
+            self._mean = np.mean(d)
+            self._std = np.std(d)
             y[ix] = self._get_z_score(d) < self.threshold
 
-            if numpy.array_equal(y, y_old):
+            if np.array_equal(y, y_old):
                 break
             else:
                 y_old = y
@@ -355,10 +374,10 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Returns
         -------
-        z : ndarray, shape (n_epochs, 1)
+        z : ndarray, shape (n_trials,)
             the normalized log-distance to the centroid.
         """
-        d = numpy.squeeze(numpy.log(self._mdm.transform(X)))
+        d = np.squeeze(np.log(self._mdm.transform(X)), axis=1)
         z = self._get_z_score(d)
         return z
 
@@ -372,17 +391,43 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Returns
         -------
-        pred : ndarray of bool, shape (n_epochs, 1)
+        pred : ndarray of bool, shape (n_trials,)
             the artefact detection. True if the trial is clean, and False if
             the trial contain an artefact.
         """
         z = self.transform(X)
         pred = z < self.threshold
-        out = numpy.zeros_like(z) + self.neg_label
+        out = np.zeros_like(z) + self.neg_label
         out[pred] = self.pos_label
         return out
 
+    def predict_proba(self, X):
+        """Probability of belonging to the potato / being clean.
+
+        It is the probability to reject the null hypothesis "clean data",
+        computing the right-tailed probability from z-score.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        proba : ndarray, shape (n_trials,)
+            data is considered as normal/clean for high value of proba.
+            data is considered as abnormal/artifacted for low value of proba.
+        """
+        z = self.transform(X)
+        proba = self._get_proba(z)
+        return proba
+
     def _get_z_score(self, d):
-        """get z score from distance."""
+        """get z-score from distance."""
         z = (d - self._mean) / self._std
         return z
+
+    def _get_proba(self, z):
+        """get right-tailed proba from z-score."""
+        proba = 1 - norm.cdf(z)
+        return proba
