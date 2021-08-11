@@ -310,7 +310,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=1000,
     r"""Return Ando-Li-Mathias (ALM) mean
 
     Find the geometric mean recursively [1], generalizing from:
-    
+
     .. math::
         \mathbf{C} = A^{\frac{1}{2}}(A^{-\frac{1}{2}}B^{\frac{1}{2}}A^{-\frac{1}{2}})^{\frac{1}{2}}A^{\frac{1}{2}}
 
@@ -332,10 +332,10 @@ def mean_alm(covmats, tol=1e-14, maxiter=1000,
     ----------
     [1] T. Ando, C.-K. Li and R. Mathias, "Geometric Means", Linear Algebra
         Appl. 385 (2004), 305-334.
-    """
+    """  # noqa
     sample_weight = _get_sample_weight(sample_weight, covmats)
     C = covmats
-    C_iter = numpy.zeros_like(C)
+    C_iter = np.zeros_like(C)
     Nt = covmats.shape[0]
     if Nt == 2:
         X = geodesic_riemann(covmats[0], covmats[1], alpha=0.5)
@@ -343,15 +343,17 @@ def mean_alm(covmats, tol=1e-14, maxiter=1000,
     else:
         for k in range(maxiter):
             for h in range(Nt):
-                s = numpy.mod(numpy.arange(h, h + Nt - 1) + 1, Nt)
+                s = np.mod(np.arange(h, h + Nt - 1) + 1, Nt)
                 C_iter[h] = mean_alm(C[s])
 
-            crit = numpy.linalg.norm(C_iter[0] - C[0], 2) / (
-                    numpy.linalg.norm(C[0], 2))
-            if crit < tol: break
+            crit = np.linalg.norm(C_iter[0] - C[0], 2) / (
+                np.linalg.norm(C[0], 2))
+            if crit < tol:
+                break
             C = deepcopy(C_iter)
         else:
-            if verbose: print ('Max number of iterations reached')
+            if verbose:
+                print('Max number of iterations reached')
         return C_iter.mean(axis=0)
 
 
