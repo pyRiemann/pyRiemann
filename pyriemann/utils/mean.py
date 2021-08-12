@@ -309,7 +309,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=1000,
              verbose=False, sample_weight=None):
     r"""Return Ando-Li-Mathias (ALM) mean
 
-    Find the geometric mean recursively [1], generalizing from:
+    Find the geometric mean recursively [1]_, generalizing from:
 
     .. math::
         \mathbf{C} = A^{\frac{1}{2}}(A^{-\frac{1}{2}}B^{\frac{1}{2}}A^{-\frac{1}{2}})^{\frac{1}{2}}A^{\frac{1}{2}}
@@ -330,7 +330,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=1000,
 
     References
     ----------
-    [1] T. Ando, C.-K. Li and R. Mathias, "Geometric Means", Linear Algebra
+    .. [1] T. Ando, C.-K. Li and R. Mathias, "Geometric Means", Linear Algebra
         Appl. 385 (2004), 305-334.
     """  # noqa
     sample_weight = _get_sample_weight(sample_weight, covmats)
