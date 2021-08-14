@@ -42,9 +42,9 @@ def _sch(X):
             T_{i,j} = \{ \Sigma_{scm}^{ii} \text{if} i = j, 0 \text{otherwise} \}
     Note that the optimal :math:`\gamma` is estimate by the authors' method.
 
-    :param X: Signal matrix, (n_channels, n_trials)
+    :param X: Signal matrix, (n_channels, n_times)
 
-    :returns: Schaefer-Strimmer shrinkage covariance matrix, Nchannels X Nchannels
+    :returns: Schaefer-Strimmer shrinkage covariance matrix, (n_channels, n_channels)
 
     References
     ----------
@@ -54,20 +54,20 @@ def _sch(X):
     http://doi.org/10.2202/1544-6115.1175
     """  # noqa
     Ns = X.shape[1]
-    C_scm = np.cov(X, ddof=0)
-    X_c = X - np.tile(X.mean(axis=1), [Ns, 1]).T
+    X_c = (X.T - X.T.mean(axis=0)).T
+    C_scm = 1./Ns * X_c @ X_c.T
 
     # Compute optimal gamma, the weigthing between SCM and srinkage estimator
-    R = Ns / (Ns - 1.0) * np.corrcoef(X)
-    var_R = (X_c ** 2) @ (X_c ** 2).T - 2 * C_scm * X_c @ X_c.T
-    var_R += Ns * C_scm ** 2
+    R = (Ns / ((Ns - 1.) * np.outer(X.std(axis=1), X.std(axis=1)))) * C_scm
+    var_R = (X_c ** 2) @ (X_c ** 2).T - 2 * C_scm * (X_c @ X_c.T) + Ns * C_scm ** 2
     var_R *= Ns / ((Ns - 1) ** 3 * np.outer(X.var(axis=1), X.var(axis=1)))
     R -= np.diag(np.diag(R))
     var_R -= np.diag(np.diag(var_R))
     gamma = max(0, min(1, var_R.sum() / (R ** 2).sum()))
-
-    C_scm *= (1. - gamma) * (Ns / (Ns - 1.))
-    return C_scm + gamma * (Ns / (Ns - 1.)) * np.diag(np.diag(C_scm))
+    
+    sigma = (1. - gamma) * (Ns / (Ns - 1.)) * C_scm
+    shrinkage = gamma * (Ns / (Ns - 1.)) * np.diag(np.diag(C_scm))
+    return sigma + shrinkage
 
 
 def _check_est(est):
