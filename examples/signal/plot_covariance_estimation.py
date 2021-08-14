@@ -191,13 +191,7 @@ for i, e in enumerate(estimators):
         try:
             acc[i, j, :] = cross_val_score(clf, X, y, cv=cv, scoring="roc_auc")
         except ValueError:
-            print(
-                "Wrong covariance estimation with ",
-                e,
-                ":",
-                t,
-                "s not sufficent to estimate a PSD matrix",
-            )
+            print(f"{e}: {t} is not sufficent to estimate a PSD matrix")
             acc[i, j, :] = [np.nan] * n_splits
 
 ###############################################################################
