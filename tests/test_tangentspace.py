@@ -1,7 +1,7 @@
 """Test tangent space functions."""
 import numpy as np
 from numpy.testing import assert_array_almost_equal
-from nose.tools import assert_raises
+import pytest
 
 from pyriemann.tangentspace import TangentSpace, FGDA
 
@@ -37,17 +37,17 @@ def test_TangentSpace_transform():
     ts.fit(covset)
     ts.transform(covset)
 
-    X = np.zeros(shape=(10, 9))
-    assert_raises(ValueError, ts.transform, X)
 
-    X = np.zeros(shape=(10, 9, 8))
-    assert_raises(ValueError, ts.transform, X)
+@pytest.mark.parametrize('shape', [(10, 9), (10, 9, 8), (10), (12, 8, 8)])
+def test_TangentSpace_transform_dim(shape):
+    """Test transform input shape, could be TS vector or covmat"""
+    covset = generate_cov(10, 3)
+    ts = TangentSpace(metric='riemann')
+    ts.fit(covset)
 
-    X = np.zeros(shape=(10))
-    assert_raises(ValueError, ts.transform, X)
-
-    X = np.zeros(shape=(12, 8, 8))
-    assert_raises(ValueError, ts.transform, X)
+    X = np.zeros(shape=shape)
+    with pytest.raises(ValueError):
+        ts.transform(X)
 
 
 def test_TangentSpace_transform_without_fit():
