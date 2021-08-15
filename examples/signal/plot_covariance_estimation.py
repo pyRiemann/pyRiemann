@@ -21,10 +21,8 @@ from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
 from pyriemann.estimation import Covariances
 from pyriemann.utils.distance import distance
-from pyriemann.classification import MDM, TSclassifier
+from pyriemann.classification import MDM
 from sklearn.model_selection import cross_val_score, StratifiedKFold
-from sklearn.pipeline import Pipeline
-from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 
 ###############################################################################
@@ -86,7 +84,7 @@ raw_files = [
     for f in eegbci.load_data(subject, runs)
 ]
 raw = concatenate_raws(raw_files)
-picks = pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
+picks = pick_types(raw.info, eeg=True, exclude="bads")
 
 # subsample elecs
 picks = picks[::2]
@@ -134,7 +132,7 @@ dfc = pd.DataFrame(dfc)
 
 fig, ax = plt.subplots(figsize=(6, 4))
 ax.set(yscale="log")
-sns.lineplot(data=dfc, x="wlen", y="cond", hue="estimator", ax=ax)  # style="estimator",
+sns.lineplot(data=dfc, x="wlen", y="cond", hue="estimator", ax=ax)
 ax.set_title("Condition number of estimated covariance matrices")
 ax.set_xlabel("Epoch length (s)")
 _ = ax.set_ylabel(r"$\lambda_{\min}$/$\lambda_{\max}$")
@@ -149,9 +147,8 @@ estimators = ["lwf", "oas", "scm", "sch"]
 tmin = 0.0
 w_len = np.linspace(0.2, 2.0, 5)
 n_trials, n_splits = 45, 3
-# balanced accuracy: tmin = -0.2; w_len = np.linspace(0.2, 2.2, 5);  n_trials, n_splits = 45, 5
-# bl2 = tmin = -0.; w_len = np.linspace(0.2, 2., 5); n_trials, n_splits = 45, 5
 dfa = list()
+sc = "balanced_accuracy"
 
 cv = StratifiedKFold(n_splits=n_splits, shuffle=True)
 for wl in w_len:
@@ -172,10 +169,10 @@ for wl in w_len:
     for est in estimators:
         clf = make_pipeline(Covariances(estimator=est), MDM())
         try:
-            score = cross_val_score(clf, X, y, cv=cv, scoring="balanced_accuracy")
+            score = cross_val_score(clf, X, y, cv=cv, scoring=sc)
             dfa += [dict(estimator=est, wlen=wl, accuracy=sc) for sc in score]
         except ValueError:
-            print(f"{e}: {t} is not sufficent to estimate a PSD matrix")
+            print(f"{est}: {wl} is not sufficent to estimate a PSD matrix")
             dfa += [dict(estimator=est, wlen=wl, accuracy=np.nan)] * n_splits
 dfa = pd.DataFrame(dfa)
 
