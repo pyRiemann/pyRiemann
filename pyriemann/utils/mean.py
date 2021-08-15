@@ -41,7 +41,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     """  # noqa
     # init
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    Nt, Ne, Ne = covmats.shape
+    n_trials, n_channels, n_channels = covmats.shape
     if init is None:
         C = np.mean(covmats, axis=0)
     else:
@@ -55,9 +55,9 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
         k = k + 1
         C12 = sqrtm(C)
         Cm12 = invsqrtm(C)
-        J = np.zeros((Ne, Ne))
+        J = np.zeros((n_channels, n_channels))
 
-        for index in range(Nt):
+        for index in range(n_trials):
             tmp = np.dot(np.dot(Cm12, covmats[index, :, :]), Cm12)
             J += sample_weight[index] * logm(tmp)
 
@@ -87,9 +87,9 @@ def mean_logeuclid(covmats, sample_weight=None):
 
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    Nt, Ne, Ne = covmats.shape
-    T = np.zeros((Ne, Ne))
-    for index in range(Nt):
+    n_trials, n_channels, n_channels = covmats.shape
+    T = np.zeros((n_channels, n_channels))
+    for index in range(n_trials):
         T += sample_weight[index] * logm(covmats[index, :, :])
     C = expm(T)
 
@@ -134,9 +134,9 @@ def mean_harmonic(covmats, sample_weight=None):
 
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    Nt, Ne, Ne = covmats.shape
-    T = np.zeros((Ne, Ne))
-    for index in range(Nt):
+    n_trials, n_channels, n_channels = covmats.shape
+    T = np.zeros((n_channels, n_channels))
+    for index in range(n_trials):
         T += sample_weight[index] * np.linalg.inv(covmats[index, :, :])
     C = np.linalg.inv(T)
 
@@ -161,7 +161,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
 
     """  # noqa
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    Nt, Ne, Ne = covmats.shape
+    n_trials, n_channels, n_channels = covmats.shape
     if init is None:
         C = np.mean(covmats, axis=0)
     else:
@@ -172,7 +172,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     while (crit > tol) and (k < maxiter):
         k = k + 1
 
-        J = np.zeros((Ne, Ne))
+        J = np.zeros((n_channels, n_channels))
 
         for index, Ci in enumerate(covmats):
             J += sample_weight[index] * np.linalg.inv(0.5 * Ci + 0.5 * C)
@@ -210,7 +210,7 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
         (IRS), 2011 Proceedings International.
     """  # noqa
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    Nt, Ne, Ne = covmats.shape
+    n_trials, n_channels, n_channels = covmats.shape
     if init is None:
         C = np.mean(covmats, axis=0)
     else:
@@ -222,7 +222,7 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
     while (crit > tol) and (k < maxiter):
         k = k + 1
 
-        J = np.zeros((Ne, Ne))
+        J = np.zeros((n_channels, n_channels))
 
         for index, Ci in enumerate(covmats):
             tmp = np.dot(np.dot(K, Ci), K)
@@ -275,7 +275,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
 
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    Nt, Ne, Ne = covmats.shape
+    n_trials, n_channels, n_channels = covmats.shape
     crit = np.inf
     k = 0
 
@@ -283,7 +283,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
     B, _ = ajd_pham(covmats)
     while (crit > tol) and (k < maxiter):
         k += 1
-        J = np.zeros((Ne, Ne))
+        J = np.zeros((n_channels, n_channels))
 
         for index, Ci in enumerate(covmats):
             tmp = logm(np.dot(np.dot(B.T, Ci), B))
@@ -292,11 +292,11 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
         update = np.diag(np.diag(expm(J)))
         B = np.dot(B, invsqrtm(update))
 
-        crit = distance_riemann(np.eye(Ne), update)
+        crit = distance_riemann(np.eye(n_channels), update)
 
     A = np.linalg.inv(B)
 
-    J = np.zeros((Ne, Ne))
+    J = np.zeros((n_channels, n_channels))
     for index, Ci in enumerate(covmats):
         tmp = logm(np.dot(np.dot(B.T, Ci), B))
         J += sample_weight[index] * tmp
