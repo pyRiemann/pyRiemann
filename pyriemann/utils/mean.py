@@ -305,7 +305,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
     return C
 
 
-def mean_alm(covmats, tol=1e-14, maxiter=1000,
+def mean_alm(covmats, tol=1e-14, maxiter=100,
              verbose=False, sample_weight=None):
     r"""Return Ando-Li-Mathias (ALM) mean
 
@@ -321,7 +321,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=1000,
     Extremely slow, due to the recursive formulation.
 
     :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
-    :param tol: the tolerance to stop the gradient descent
+    :param tol: the tolerance to stop iterations
     :param maxiter: maximum number of iteration, default 100
     :param verbose: indicate when reaching maxiter
     :param sample_weight: the weight of each sample
