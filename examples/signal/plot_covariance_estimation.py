@@ -69,7 +69,8 @@ ax.set(xscale="log")
 sns.lineplot(data=dfd, x="wlen", y="dist", hue="estimator", ax=ax)
 ax.set_title("Distance to groundtruth covariance matrix")
 ax.set_xlabel("Number of samples")
-_ = ax.set_ylabel(r"$\delta(\Sigma, \hat{\Sigma})$")
+ax.set_ylabel(r"$\delta(\Sigma, \hat{\Sigma})$")
+_ = plt.tight_layout()
 
 ###############################################################################
 # Choice of estimator for motor imagery data
@@ -135,7 +136,8 @@ ax.set(yscale="log")
 sns.lineplot(data=dfc, x="wlen", y="cond", hue="estimator", ax=ax)
 ax.set_title("Condition number of estimated covariance matrices")
 ax.set_xlabel("Epoch length (s)")
-_ = ax.set_ylabel(r"$\lambda_{\min}$/$\lambda_{\max}$")
+ax.set_ylabel(r"$\lambda_{\min}$/$\lambda_{\max}$")
+_ = plt.tight_layout()
 
 ###############################################################################
 # Picking a good estimator for classification
@@ -192,7 +194,8 @@ sns.lineplot(
 )
 ax.set_title("Accuracy for different estimators and epoch lengths")
 ax.set_xlabel("Epoch length (s)")
-_ = ax.set_ylabel(r"Accuracy (\%)")
+ax.set_ylabel(r"Accuracy (\%)")
+_ = plt.tight_layout()
 
 ###############################################################################
 # References
