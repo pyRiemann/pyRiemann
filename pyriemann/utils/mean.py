@@ -309,7 +309,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=100,
              verbose=False, sample_weight=None):
     r"""Return Ando-Li-Mathias (ALM) mean
 
-    Find the geometric mean recursively [1], generalizing from:
+    Find the geometric mean recursively [1]_, generalizing from:
 
     .. math::
         \mathbf{C} = A^{\frac{1}{2}}(A^{-\frac{1}{2}}B^{\frac{1}{2}}A^{-\frac{1}{2}})^{\frac{1}{2}}A^{\frac{1}{2}}
@@ -326,25 +326,29 @@ def mean_alm(covmats, tol=1e-14, maxiter=100,
     :param verbose: indicate when reaching maxiter
     :param sample_weight: the weight of each sample
 
-    :returns: Karcher mean covariance matrix
+    :returns: the mean covariance matrix
+
+    Notes
+    -----
+    .. versionadded:: 0.2.8.dev
 
     References
     ----------
-    [1] T. Ando, C.-K. Li and R. Mathias, "Geometric Means", Linear Algebra
+    .. [1] T. Ando, C.-K. Li and R. Mathias, "Geometric Means", Linear Algebra
         Appl. 385 (2004), 305-334.
     """  # noqa
     sample_weight = _get_sample_weight(sample_weight, covmats)
     C = covmats
     C_iter = np.zeros_like(C)
-    Nt = covmats.shape[0]
-    if Nt == 2:
+    n_trials = covmats.shape[0]
+    if n_trials == 2:
         alpha = sample_weight[1] / sample_weight[0] / 2
         X = geodesic_riemann(covmats[0], covmats[1], alpha=alpha)
         return X
     else:
         for k in range(maxiter):
-            for h in range(Nt):
-                s = np.mod(np.arange(h, h + Nt - 1) + 1, Nt)
+            for h in range(n_trials):
+                s = np.mod(np.arange(h, h + n_trials - 1) + 1, n_trials)
                 C_iter[h] = mean_alm(C[s], sample_weight=sample_weight[s])
 
             norm_iter = np.linalg.norm(C_iter[0] - C[0], 2)
