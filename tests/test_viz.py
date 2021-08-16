@@ -1,35 +1,34 @@
+import pytest
 import numpy as np
-from pyriemann.utils.viz import (plot_confusion_matrix, plot_embedding,
-                                 plot_cospectra)
+from conftest import covmats
+
+try:
+    from pyriemann.utils.viz import (
+        plot_confusion_matrix,
+        plot_embedding,
+        plot_cospectra,
+    )
+except ImportError:
+    no_plot = True
 
 
-def generate_cov(Nt, Ne):
-    """Generate a set of cavariances matrices for test purpose."""
-    rs = np.random.RandomState(1234)
-    diags = 2.0 + 0.1 * rs.randn(Nt, Ne)
-    A = 2*rs.rand(Ne, Ne) - 1
-    A /= np.atleast_2d(np.sqrt(np.sum(A**2, 1))).T
-    covmats = np.empty((Nt, Ne, Ne))
-    for i in range(Nt):
-        covmats[i] = np.dot(np.dot(A, np.diag(diags[i])), A.T)
-    return covmats, diags, A
-
-
-def test_embedding():
+@pytest.mark.skipif("no_plot" in locals(), reason="Matplotlib not installed")
+def test_embedding(covmats):
     """Test Embedding."""
-    covmats, diags, A = generate_cov(20, 3)
-    plot_embedding(covmats, y=None, metric='euclid')
+    plot_embedding(covmats, y=None, metric="euclid")
     y = np.ones(covmats.shape[0])
-    plot_embedding(covmats, y=y, metric='euclid')
+    plot_embedding(covmats, y=y, metric="euclid")
 
 
+@pytest.mark.skipif("no_plot" in locals(), reason="Matplotlib not installed")
 def test_confusion_matrix():
     """Test confusion_matrix"""
     target = np.array([0, 1] * 10)
     preds = np.array([0, 1] * 10)
-    plot_confusion_matrix(target, preds, ['a', 'b'])
+    plot_confusion_matrix(target, preds, ["a", "b"])
 
 
+@pytest.mark.skipif("no_plot" in locals(), reason="Matplotlib not installed")
 def test_cospectra():
     """Test plot_cospectra"""
     n_freqs, n_channels = 16, 3

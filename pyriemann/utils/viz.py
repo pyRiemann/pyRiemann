@@ -1,11 +1,11 @@
 """Helpers for vizualization."""
-import seaborn as sns
 import pandas as pd
 import numpy as np
 
 from sklearn.metrics import confusion_matrix
 from pyriemann.embedding import Embedding
 import matplotlib.pyplot as plt
+import seaborn as sns
 
 
 def plot_confusion_matrix(targets, predictions, target_names,

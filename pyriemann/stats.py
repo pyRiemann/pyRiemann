@@ -1,7 +1,6 @@
 import sys
 import math
 import numpy as np
-import matplotlib.pyplot as plt
 
 from .utils.utils import check_version
 from .utils.distance import distance, pairwise_distance
@@ -130,6 +129,11 @@ class BasePermutation():
         axes : axes handle (default None)
             Axes handle for matplotlib. if None a new figure will be created.
         """
+        try:
+            import matplotlib.pyplot as plt
+        except ImportError:
+            raise ImportError("Install matplotlib to plot permutation")
+
         if axes is None:
             fig, axes = plt.subplots(1, 1)
         axes.hist(self.scores_[1:], nbins, range)
