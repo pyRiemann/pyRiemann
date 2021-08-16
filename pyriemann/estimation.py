@@ -409,8 +409,6 @@ class Coherences(CospCovariances):
     4-d array with a coherence matrice estimation for each trial and in each
     frequency bin of the FFT.
 
-    The estimation of coherence matrix is done with matplotlib cohere function.
-
     Parameters
     ----------
     window : int (default 128)
