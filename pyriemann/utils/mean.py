@@ -41,7 +41,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     """  # noqa
     # init
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_trials, n_channels, n_channels = covmats.shape
+    n_trials, n_channels, _ = covmats.shape
     if init is None:
         C = np.mean(covmats, axis=0)
     else:
@@ -87,7 +87,7 @@ def mean_logeuclid(covmats, sample_weight=None):
 
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_trials, n_channels, n_channels = covmats.shape
+    n_trials, n_channels, _ = covmats.shape
     T = np.zeros((n_channels, n_channels))
     for index in range(n_trials):
         T += sample_weight[index] * logm(covmats[index, :, :])
@@ -134,7 +134,7 @@ def mean_harmonic(covmats, sample_weight=None):
 
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_trials, n_channels, n_channels = covmats.shape
+    n_trials, n_channels, _ = covmats.shape
     T = np.zeros((n_channels, n_channels))
     for index in range(n_trials):
         T += sample_weight[index] * np.linalg.inv(covmats[index, :, :])
@@ -161,7 +161,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
 
     """  # noqa
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_trials, n_channels, n_channels = covmats.shape
+    n_trials, n_channels, _ = covmats.shape
     if init is None:
         C = np.mean(covmats, axis=0)
     else:
@@ -210,7 +210,7 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
         (IRS), 2011 Proceedings International.
     """  # noqa
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_trials, n_channels, n_channels = covmats.shape
+    n_trials, n_channels, _ = covmats.shape
     if init is None:
         C = np.mean(covmats, axis=0)
     else:
@@ -275,7 +275,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
 
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_trials, n_channels, n_channels = covmats.shape
+    n_trials, n_channels, _ = covmats.shape
     crit = np.inf
     k = 0
 
