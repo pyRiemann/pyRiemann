@@ -104,16 +104,19 @@ covs = Covariances(estimator='lwf').transform(epochs_data)
 
 
 ###############################################################################
-# Calibration of Potato
-# ---------------------
+# Offline Calibration of Potato
+# -----------------------------
 #
 # 2D projection of the z-score map of the Riemannian potato, for 2x2 covariance
 # matrices (in blue if clean, in red if artifacted) and their reference matrix
 # (in black). The colormap defines the z-score and a chosen isocontour defines
 # the potato. It reproduces Fig 1 of reference [2]_.
 
-z_th = 2.5       # z-score threshold
+z_th = 2.0       # z-score threshold
 t = 40           # nb of matrices to train the potato
+
+
+###############################################################################
 
 # Calibrate potato by unsupervised training on first matrices: compute a
 # reference matrix, mean and standard deviation of distances to this reference.
@@ -159,9 +162,17 @@ plt.show()
 #
 # Detect artifacts/outliers on test set, with an animation to imitate an online
 # acquisition, processing and artifact detection of EEG time-series.
-# The potato is static: it is not updated when EEG is not artifacted, damaging
-# its efficiency over time.
+# Initialized with an offline calibration, the online potato can be [2]_:
+#
+# * static: it is never updated, damaging its efficiency over time,
+# * semi-dynamic: it is updated when EEG is not artifacted.
 
+is_static = False       # static or semi-dynamic mode
+
+
+###############################################################################
+
+# Prepare data for online detection
 test_covs_max = 300     # nb of matrices to visualize in this example
 test_covs_visu = 30     # nb of matrices to display simultaneously
 test_time_start = -2    # start time to display signal
@@ -177,7 +188,6 @@ covs_visu = np.empty([0, 2, 2])
 rp_colors, ep_colors = [], []
 alphas = np.linspace(0, 1, test_covs_visu)
 
-# Prepare animation for online detection
 fig = plt.figure(figsize=(12, 10), constrained_layout=False)
 fig.suptitle('Online artifact detection by potatoes', fontsize=16)
 gs = fig.add_gridspec(nrows=4, ncols=40, top=0.90, hspace=0.3, wspace=1.0)
@@ -197,15 +207,21 @@ cax_ep = fig.add_subplot(gs[2:4, 36])
 p_ep = plot_potato_2D(ax_ep, cax_ep, X, Y, ep_zscores, ep_center, covs_visu,
                       ep_colors, 'Z-score of Euclidean distance to reference')
 
-# Plot online detection (an interactive display is required)
 
+###############################################################################
 
+# Prepare animation for online detection
 def online_update(self):
     global t, time, sig, covs_visu
 
     # Online artifact detection
     rp_label = rpotato.predict(covs[t][np.newaxis, ...])
     ep_label = epotato.predict(covs[t][np.newaxis, ...])
+    if not is_static:
+        if rp_label[0] == 1:
+            rpotato.partial_fit(covs[t][np.newaxis, ...], alpha=1 / t)
+        if ep_label[0] == 1:
+            epotato.partial_fit(covs[t][np.newaxis, ...], alpha=1 / t)
 
     # Update data
     time_start = t * interval + test_time_end
@@ -238,8 +254,11 @@ def online_update(self):
     return pl_sig0, pl_sig1, p_rp, p_ep
 
 
-# For a correct display, change the parameter 'interval_display'
-interval_display = 1.0
+###############################################################################
+
+# Plot online detection (an interactive display is required).
+interval_display = 1.0  # can be changed for a slower display
+
 potato = FuncAnimation(fig, online_update, frames=test_covs_max,
                        interval=interval_display, blit=False, repeat=False)
 plt.show()

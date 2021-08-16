@@ -163,8 +163,8 @@ def test_BilinearFilter():
 def test_AJDC():
     """Test AJDC"""
     rs = np.random.RandomState(33)
-    n_subjects, n_conditions, n_channels, n_samples = 5, 3, 8, 512
-    X = rs.randn(n_subjects, n_conditions, n_channels, n_samples)
+    n_subjects, n_conditions, n_channels, n_times = 5, 3, 8, 512
+    X = rs.randn(n_subjects, n_conditions, n_channels, n_times)
 
     # Test Init
     ajdc = AJDC(fmin=1, fmax=32, fs=64)
@@ -182,28 +182,28 @@ def test_AJDC():
     assert_array_equal(ajdc.backward_filters_.shape,
                        [n_channels, ajdc.n_sources_])
     with pytest.raises(ValueError):  # unequal # of conditions
-        ajdc.fit([rs.randn(n_conditions, n_channels, n_samples),
-                  rs.randn(n_conditions + 1, n_channels, n_samples)])
+        ajdc.fit([rs.randn(n_conditions, n_channels, n_times),
+                  rs.randn(n_conditions + 1, n_channels, n_times)])
     with pytest.raises(ValueError):  # unequal # of channels
-        ajdc.fit([rs.randn(n_conditions, n_channels, n_samples),
-                  rs.randn(n_conditions, n_channels + 1, n_samples)])
-    # 3 subjects, same # conditions and channels, different # of samples
-    X = [rs.randn(n_conditions, n_channels, n_samples),
-         rs.randn(n_conditions, n_channels, n_samples + 200),
-         rs.randn(n_conditions, n_channels, n_samples + 500)]
+        ajdc.fit([rs.randn(n_conditions, n_channels, n_times),
+                  rs.randn(n_conditions, n_channels + 1, n_times)])
+    # 3 subjects, same # conditions and channels, different # of times
+    X = [rs.randn(n_conditions, n_channels, n_times),
+         rs.randn(n_conditions, n_channels, n_times + 200),
+         rs.randn(n_conditions, n_channels, n_times + 500)]
     ajdc.fit(X)
-    # 2 subjects, 2 conditions, same # channels, different # of samples
-    X = [[rs.randn(n_channels, n_samples),
-          rs.randn(n_channels, n_samples + 200)],
-         [rs.randn(n_channels, n_samples + 500),
-          rs.randn(n_channels, n_samples + 100)]]
+    # 2 subjects, 2 conditions, same # channels, different # of times
+    X = [[rs.randn(n_channels, n_times),
+          rs.randn(n_channels, n_times + 200)],
+         [rs.randn(n_channels, n_times + 500),
+          rs.randn(n_channels, n_times + 100)]]
     ajdc.fit(X)
 
     # Test transform
     n_trials = 4
-    X = rs.randn(n_trials, n_channels, n_samples)
+    X = rs.randn(n_trials, n_channels, n_times)
     Xt = ajdc.transform(X)
-    assert_array_equal(Xt.shape, [n_trials, ajdc.n_sources_, n_samples])
+    assert_array_equal(Xt.shape, [n_trials, ajdc.n_sources_, n_times])
     with pytest.raises(ValueError):  # not 3 dims
         ajdc.transform(X[0])
     with pytest.raises(ValueError):  # unequal # of chans
@@ -211,14 +211,14 @@ def test_AJDC():
 
     # Test inverse_transform
     Xtb = ajdc.inverse_transform(Xt)
-    assert_array_equal(Xtb.shape, [n_trials, n_channels, n_samples])
+    assert_array_equal(Xtb.shape, [n_trials, n_channels, n_times])
     with pytest.raises(ValueError):  # not 3 dims
         ajdc.inverse_transform(Xt[0])
     with pytest.raises(ValueError):  # unequal # of sources
         ajdc.inverse_transform(rs.randn(n_trials, ajdc.n_sources_ + 1, 1))
 
     Xtb = ajdc.inverse_transform(Xt, supp=[ajdc.n_sources_ - 1])
-    assert_array_equal(Xtb.shape, [n_trials, n_channels, n_samples])
+    assert_array_equal(Xtb.shape, [n_trials, n_channels, n_times])
     with pytest.raises(ValueError):  # not a list
         ajdc.inverse_transform(Xt, supp=1)
 

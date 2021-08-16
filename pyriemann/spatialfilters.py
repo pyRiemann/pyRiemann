@@ -79,7 +79,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
         y : ndarray shape (n_trials, 1)
             labels corresponding to each trial.
@@ -131,12 +131,12 @@ class Xdawn(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
 
         Returns
         -------
-        Xf : ndarray, shape (n_trials, n_filters * n_classes, n_samples)
+        Xf : ndarray, shape (n_trials, n_filters * n_classes, n_times)
             ndarray of spatialy filtered trials.
         """
         X = np.dot(self.filters_, X)
@@ -571,10 +571,10 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_subjects, n_conditions, n_channels, n_samples) |
+        X : ndarray, shape (n_subjects, n_conditions, n_channels, n_times) |
                 list of n_subjects of list of n_conditions ndarray of shape
-                (n_channels, n_samples), with same n_conditions and n_channels
-                but different n_samples
+                (n_channels, n_times), with same n_conditions and n_channels
+                but different n_times
             Signal in channel space, acquired for different subjects and under
             different experimental conditions.
         y : None
@@ -643,12 +643,12 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             Trials in channel space.
 
         Returns
         -------
-        source : ndarray, shape (n_trials, n_sources, n_samples)
+        source : ndarray, shape (n_trials, n_sources, n_times)
             Trials in source space.
         """
         if X.ndim != 3:
@@ -668,14 +668,14 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_sources, n_samples)
+        X : ndarray, shape (n_trials, n_sources, n_times)
             Trials in source space.
         supp : list of int | None, (default None)
             Indices of sources to suppress.
 
         Returns
         -------
-        signal : ndarray, shape (n_trials, n_channels, n_samples)
+        signal : ndarray, shape (n_trials, n_channels, n_times)
             Trials in channel space.
         """
         if X.ndim != 3:
@@ -702,7 +702,7 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             Trials in channel space.
 
         Returns

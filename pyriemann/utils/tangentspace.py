@@ -11,12 +11,12 @@ def tangent_space(covmats, Cref):
     """Project a set of covariance matrices in the tangent space. according to
     the reference point Cref
 
-    :param covmats: np.ndarray
-        Covariance matrices set, Ntrials X Nchannels X Nchannels
-    :param Cref: np.ndarray
+    :param covmats: ndarray, shape (n_trials, n_channels, n_channels)
+        Covariance matrices set
+    :param Cref: ndarray, shape (n_channels, n_channels)
         The reference covariance matrix
-    :returns: np.ndarray
-        the Tangent space , a matrix of Ntrials X (Nchannels*(Nchannels+1)/2)
+    :returns: ndarray, shape (n_trials, n_channels * (n_channels + 1) / 2)
+        the Tangent space
 
     """
     Nt, Ne, Ne = covmats.shape
@@ -36,14 +36,13 @@ def tangent_space(covmats, Cref):
 def untangent_space(T, Cref):
     """Project a set of Tangent space vectors back to the manifold.
 
-    :param T: np.ndarray
-        The Tangent space, a matrix of
-        n_trials X (n_channels * (n_channels + 1)/2)
-    :param Cref: np.ndarray
+    :param T: ndarray, shape (n_trials, n_channels * (n_channels + 1) / 2)
+        The Tangent space
+    :param Cref: ndarray, shape (n_channels, n_channels)
         The reference covariance matrix
 
-    :returns: np.ndarray
-        A set of Covariance matrix, n_trials X n_channels X n_channels
+    :returns: ndarray, shape (n_trials, n_channels, n_channels)
+        A set of Covariance matrix
     """
     Nt, Nd = T.shape
     Ne = int((np.sqrt(1 + 8 * Nd) - 1) / 2)

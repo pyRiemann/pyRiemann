@@ -14,7 +14,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
     on the maximization of the distance between centroids. This is done by a
     backward elimination where the electrode that carries the less distance is
     removed from the subset at each iteration.
-    This algorith is described in [1].
+    This algorith is described in [1]_.
 
     Parameters
     ----------
@@ -50,9 +50,9 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    [1] A. Barachant and S. Bonnet, "Channel selection procedure using
-    riemannian distance for BCI applications," in 2011 5th International
-    IEEE/EMBS Conference on Neural Engineering (NER), 2011, 348-351
+    .. [1] A. Barachant and S. Bonnet, "Channel selection procedure using
+        riemannian distance for BCI applications," in 2011 5th International
+        IEEE/EMBS Conference on Neural Engineering (NER), 2011, 348-351
     """
 
     def __init__(self, nelec=16, metric='riemann', n_jobs=1):

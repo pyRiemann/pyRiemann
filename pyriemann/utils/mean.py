@@ -30,7 +30,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     .. math::
         \mathbf{C} = \arg\min{(\sum_i \delta_R ( \mathbf{C} , \mathbf{C}_i)^2)}
 
-    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
     :param tol: the tolerance to stop the gradient descent
     :param maxiter: The maximum number of iteration, default 50
     :param init: A covariance matrix used to initialize the gradient descent. If None the Arithmetic mean is used
@@ -79,7 +79,7 @@ def mean_logeuclid(covmats, sample_weight=None):
     .. math::
         \mathbf{C} = \exp{(\frac{1}{N} \sum_i \log{\mathbf{C}_i})}
 
-    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
     :param sample_weight: the weight of each sample
 
     :returns: the mean covariance matrix
@@ -101,7 +101,7 @@ def mean_kullback_sym(covmats, sample_weight=None):
     This mean is the geometric mean between the Arithmetic and the Harmonic
     mean, as shown in [1]_.
 
-    :param covmats: Covariance matrices set, n_trials X n_channels X n_channels
+    :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
     :param sample_weight: the weight of each sample
 
     :returns: the mean covariance matrix
@@ -126,7 +126,7 @@ def mean_harmonic(covmats, sample_weight=None):
     .. math::
         \mathbf{C} = \left(\frac{1}{N} \sum_i {\mathbf{C}_i}^{-1}\right)^{-1}
 
-    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
     :param sample_weight: the weight of each sample
 
     :returns: the mean covariance matrix
@@ -150,7 +150,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     .. math::
         \mathbf{C} = \left(\sum_i \left( 0.5 \mathbf{C} + 0.5 \mathbf{C}_i \right)^{-1} \right)^{-1}
 
-    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
     :param tol: the tolerance to stop the gradient descent
     :param maxiter: The maximum number of iteration, default 50
     :param init: A covariance matrix used to initialize the iterative procedure. If None the Arithmetic mean is used
@@ -194,7 +194,7 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
 
     with :math:`\mathbf{K} = \mathbf{C}^{1/2}`.
 
-    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
     :param tol: the tolerance to stop the gradient descent
     :param maxiter: The maximum number of iteration, default 50
     :param init: A covariance matrix used to initialize the iterative procedure. If None the Arithmetic mean is used
@@ -242,7 +242,7 @@ def mean_euclid(covmats, sample_weight=None):
     .. math::
         \mathbf{C} = \frac{1}{N} \sum_i \mathbf{C}_i
 
-    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
     :param sample_weight: the weight of each sample
 
     :returns: the mean covariance matrix
@@ -255,7 +255,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
     """Return the mean covariance matrix according using the AJD-based
     log-Euclidean Mean (ALE). See [1].
 
-    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
     :param tol: the tolerance to stop the gradient descent
     :param maxiter: The maximum number of iteration, default 50
     :param sample_weight: the weight of each sample
@@ -310,7 +310,7 @@ def mean_identity(covmats, sample_weight=None):
     .. math::
         \mathbf{C} = \mathbf{I}_d
 
-    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
     :returns: the identity matrix of size Nchannels
 
     """
@@ -321,7 +321,7 @@ def mean_identity(covmats, sample_weight=None):
 def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
     """Return the mean covariance matrix according to the metric
 
-    :param covmats: Covariance matrices set, Ntrials X Nchannels X Nchannels
+    :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
     :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'identity', 'wasserstein', 'ale',  # noqa
         'harmonic', 'kullback_sym' or a callable function
     :param sample_weight: the weight of each sample

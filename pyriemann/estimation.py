@@ -47,7 +47,7 @@ class Covariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
         y : ndarray shape (n_trials,)
             labels corresponding to each trial, not used.
@@ -64,7 +64,7 @@ class Covariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
 
         Returns
@@ -95,10 +95,10 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
                                 \end{array}
                                 \right]
 
-    This super trial :math:`\mathbf{\\tilde{X}}_i` will be used for covariance
+    This super trial :math:`\mathbf{\tilde{X}}_i` will be used for covariance
     estimation.
     This allows to take into account the spatial structure of the signal, as
-    described in [1].
+    described in [1]_.
 
     Parameters
     ----------
@@ -122,16 +122,16 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    [1] A. Barachant, M. Congedo ,"A Plug&Play P300 BCI Using Information
-    Geometry", arXiv:1409.0107, 2014.
+    .. [1] A. Barachant, M. Congedo ,"A Plug&Play P300 BCI Using Information
+        Geometry", arXiv:1409.0107, 2014.
 
-    [2] M. Congedo, A. Barachant, A. Andreev ,"A New generation of
-    Brain-Computer Interface Based on Riemannian Geometry", arXiv: 1310.8115.
-    2013.
+    .. [2] M. Congedo, A. Barachant, A. Andreev ,"A New generation of
+        Brain-Computer Interface Based on Riemannian Geometry",
+        arXiv:1310.8115, 2013.
 
-    [3] A. Barachant, M. Congedo, G. Van Veen, C. Jutten, "Classification de
-    potentiels evoques P300 par geometrie riemannienne pour les interfaces
-    cerveau-machine EEG", 24eme colloque GRETSI, 2013.
+    .. [3] A. Barachant, M. Congedo, G. Van Veen, C. Jutten, "Classification de
+        potentiels evoques P300 par geometrie riemannienne pour les interfaces
+        cerveau-machine EEG", 24eme colloque GRETSI, 2013.
     """
 
     def __init__(self, classes=None, estimator='scm', svd=None):
@@ -151,7 +151,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
         y : ndarray shape (n_trials,)
             labels corresponding to each trial.
@@ -186,7 +186,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
 
         Returns
@@ -231,7 +231,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         :func:`pyriemann.utils.covariance.covariances`.
     xdawn_estimator : string (default: 'scm')
         covariance matrix estimator for xdawn spatial filtering.
-    baseline_cov : baseline_cov : array, shape(n_chan, n_chan) | None (default)
+    baseline_cov : array, shape (n_chan, n_chan) | None (default)
         baseline_covariance for xdawn. see `Xdawn`.
 
     See Also
@@ -267,7 +267,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
         y : ndarray shape (n_trials,)
             labels corresponding to each trial.
@@ -291,7 +291,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
 
         Returns
@@ -335,6 +335,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
     ----------
     freqs_ : ndarray, shape (n_freqs,)
         If transformed, the frequencies associated to cospectra.
+        None if ``fs`` is None.
 
     See Also
     --------
@@ -359,7 +360,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
         y : ndarray, shape (n_trials,)
             labels corresponding to each trial, not used.
@@ -376,7 +377,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
 
         Returns
@@ -403,11 +404,11 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
 
 class Coherences(CospCovariances):
-    """Estimation of coherences matrix.
+    """Estimation of squared coherence matrices.
 
-    Coherence matrix estimation. this method will return a
-    4-d array with a coherence matrice estimation for each trial and in each
-    frequency bin of the FFT.
+    Squared coherence matrices estimation [1]_. This method will return a 4-d
+    array with a squared coherence matrix estimation for each trial and in
+    each frequency bin of the FFT.
 
     Parameters
     ----------
@@ -421,40 +422,90 @@ class Coherences(CospCovariances):
         The maximal frequency to be returned.
     fs : float | None, (default None)
         The sampling frequency of the signal.
+    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default
+            'ordinary')
+        The coherence type:
+
+        * 'ordinary' for the ordinary coherence, defined in Eq.(22) of [1]_;
+          this normalization of cross-spectral matrices captures both in-phase
+          and out-of-phase correlations. However it is inflated by the
+          artificial in-phase (zero-lag) correlation engendered by volume
+          conduction.
+        * 'instantaneous' for the instantaneous coherence, Eq.(26) of [1]_,
+          capturing only in-phase correlation.
+        * 'lagged' for the lagged-coherence, Eq.(28) of [1]_, capturing only
+          out-of-phase correlation (not defined for DC and Nyquist bins).
+        * 'imaginary' for the imaginary coherence [2]_, Eq.(0.16) of [3]_,
+          capturing out-of-phase correlation but still affected by in-phase
+          correlation.
+
+    Attributes
+    ----------
+    freqs_ : ndarray, shape (n_freqs,)
+        If transformed, the frequencies associated to cospectra.
+        None if ``fs`` is None.
 
     See Also
     --------
     Covariances
     HankelCovariances
     CospCovariances
+
+    References
+    ----------
+    .. [1] R. Pascual-Marqui, "Instantaneous and lagged measurements of linear
+        and nonlinear dependence between groups of multivariate time series:
+        frequency decomposition", arXiv, 2007.
+        https://arxiv.org/ftp/arxiv/papers/0711/0711.1455.pdf
+
+    .. [2] G. Nolte, O. Bai, L. Wheaton, Z. Mari, S. Vorbach, M. Hallett,
+        "Identifying true brain interaction from EEG data using the imaginary
+        part of coherency", Clin Neurophysiol, 2004.
+        https://doi.org/10.1016/j.clinph.2004.04.029
+
+    .. [3] Congedo, M. "Non-Parametric Synchronization Measures used in EEG
+        and MEG", TechReport, 2018.
+        https://hal.archives-ouvertes.fr/hal-01868538v2/document
     """
 
+    def __init__(self, window=128, overlap=0.75, fmin=None, fmax=None,
+                 fs=None, coh='ordinary'):
+        """Init."""
+        self.window = _nextpow2(window)
+        self.overlap = overlap
+        self.fmin = fmin
+        self.fmax = fmax
+        self.fs = fs
+        self.coh = coh
+
     def transform(self, X):
-        """Estimate the coherences matrices.
+        """Estimate the squared coherences matrices.
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
 
         Returns
         -------
         covmats : ndarray, shape (n_trials, n_channels, n_channels, n_freqs)
-            ndarray of coherence matrices for each trials and for each
-            frequency bin.
+            Squared coherence matrices for each trial and for each frequency
+            bin.
         """
-        Nt, Ne, _ = X.shape
+        Nt = len(X)
         out = []
 
         for i in range(Nt):
-            S = coherence(
+            S, freqs = coherence(
                 X[i],
                 window=self.window,
                 overlap=self.overlap,
                 fmin=self.fmin,
                 fmax=self.fmax,
-                fs=self.fs)
+                fs=self.fs,
+                coh=self.coh)
             out.append(S)
+        self.freqs_ = freqs
 
         return np.array(out)
 
@@ -496,7 +547,7 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
         y : ndarray shape (n_trials,)
             labels corresponding to each trial, not used.
@@ -513,7 +564,7 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of trials.
 
         Returns
@@ -568,7 +619,7 @@ class Shrinkage(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
+        X : ndarray, shape (n_trials, n_channels, n_times)
             ndarray of Target data.
         y : ndarray shape (n_trials,)
             Labels corresponding to each trial, not used.

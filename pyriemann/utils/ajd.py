@@ -108,7 +108,7 @@ def rjd(X, eps=1e-8, n_iter_max=1000):
 def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
     """Approximate joint diagonalization based on Pham's algorithm.
 
-    This is a direct implementation of the Pham's AJD algorithm [1].
+    This is a direct implementation of the Pham's AJD algorithm [1]_.
 
     Parameters
     ----------
@@ -139,9 +139,9 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
 
     References
     ----------
-    [1] Pham, Dinh Tuan. "Joint approximate diagonalization of positive
-    definite Hermitian matrices." SIAM Journal on Matrix Analysis and
-    Applications 22, no. 4 (2001): 1136-1152.
+    .. [1] Pham, Dinh Tuan. "Joint approximate diagonalization of positive
+        definite Hermitian matrices." SIAM Journal on Matrix Analysis and
+        Applications 22, no. 4 (2001): 1136-1152.
 
     """
     normalized_weight = _get_normalized_weight(sample_weight, X)  # sum = 1

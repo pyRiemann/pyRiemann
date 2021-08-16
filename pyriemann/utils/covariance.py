@@ -62,18 +62,24 @@ def covariances(X, estimator='cov'):
 
     Parameters
     ----------
-    X : ndarray, shape (n_trials, n_channels, n_samples)
+    X : ndarray, shape (n_trials, n_channels, n_times)
         ndarray of trials.
 
     estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'corr'} (default: 'scm')
         covariance matrix estimator:
 
-        * 'cov' for numpy based covariance matrix, https://numpy.org/doc/stable/reference/generated/numpy.cov.html
-        * 'scm' for sample covariance matrix, https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
-        * 'lwf' for shrunk Ledoit-Wolf covariance matrix, https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
-        * 'oas' for oracle approximating shrunk covariance matrix, https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
-        * 'mcd' for minimum covariance determinant matrix, https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
-        * 'corr' for correlation coefficient matrix, https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
+        * 'cov' for numpy based covariance matrix,
+          https://numpy.org/doc/stable/reference/generated/numpy.cov.html
+        * 'scm' for sample covariance matrix,
+          https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
+        * 'lwf' for shrunk Ledoit-Wolf covariance matrix
+          https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
+        * 'oas' for oracle approximating shrunk covariance matrix,
+          https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
+        * 'mcd' for minimum covariance determinant matrix,
+          https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
+        * 'corr' for correlation coefficient matrix,
+          https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
 
     Returns
     -------
@@ -129,7 +135,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_samples)
+    X : ndarray, shape (n_channels, n_times)
         Multi-channel time-series.
     window : int (default 128)
         The length of the FFT window used for spectral estimation.
@@ -153,33 +159,26 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     ----------
     .. [1] https://en.wikipedia.org/wiki/Cross-spectrum
     """
-    Ne, Ns = X.shape
-    number_freqs = int(window / 2)
+    window = int(window)
+    if window < 1:
+        raise ValueError('Value window must be a positive integer')
+    if not 0 < overlap < 1:
+        raise ValueError(
+            'Value overlap must be included in (0, 1) (Got %d)' % overlap)
 
+    n_channels, n_times = X.shape
+    n_freqs = int(window / 2) + 1  # X real signal => compute half-spectrum
     step = int((1.0 - overlap) * window)
-    step = max(1, step)
-
-    number_windows = int((Ns - window) / step + 1)
-    # pre-allocation of memory
-    fdata = np.zeros((number_windows, Ne, number_freqs), dtype=complex)
+    n_windows = int((n_times - window) / step + 1)
     win = np.hanning(window)
 
-    # Loop on all frequencies
-    for window_ix in range(int(number_windows)):
+    # FFT calculation on all windows
+    shape = (n_channels, n_windows, window)
+    strides = X.strides[:-1]+(step*X.strides[-1], X.strides[-1])
+    Xs = np.lib.stride_tricks.as_strided(X, shape=shape, strides=strides)
+    fdata = np.fft.rfft(Xs * win, n=window).transpose(1, 0, 2)
 
-        # time markers to select the data
-        # marker of the beginning of the time window
-        t1 = int(window_ix * step)
-        # marker of the end of the time window
-        t2 = int(t1 + window)
-        # select current window and apodize it
-        cdata = X[:, t1:t2] * win
-
-        # FFT calculation
-        fdata[window_ix, :, :] = np.fft.fft(
-            cdata, n=window, axis=1)[:, 0:number_freqs]
-
-    # adjust frequency range to specified range (in case it is a parameter)
+    # adjust frequency range to specified range
     if fs is not None:
         if fmin is None:
             fmin = 0
@@ -189,10 +188,10 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             raise ValueError('Parameter fmax must be superior to fmin')
         if 2.0 * fmax > fs:  # check Nyquist-Shannon
             raise ValueError('Parameter fmax must be inferior to fs/2')
-        f = np.arange(0, 1, 1.0 / number_freqs) * (fs / 2.0)
-        Fix = (f >= fmin) & (f <= fmax)
-        fdata = fdata[:, :, Fix]
-        freqs = f[Fix]
+        f = np.arange(0, n_freqs, dtype=int) * float(fs / window)
+        fix = (f >= fmin) & (f <= fmax)
+        fdata = fdata[:, :, fix]
+        freqs = f[fix]
     else:
         if fmin is not None:
             warnings.warn('Parameter fmin not used because fs is None')
@@ -200,11 +199,18 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             warnings.warn('Parameter fmax not used because fs is None')
         freqs = None
 
-    Nf = fdata.shape[2]
-    S = np.zeros((Ne, Ne, Nf), dtype=complex)
-    for i in range(Nf):
-        S[:, :, i] = np.dot(fdata[:, :, i].conj().T, fdata[:, :, i])
-    S /= number_windows * np.linalg.norm(win)**2
+    n_freqs = fdata.shape[2]
+    S = np.zeros((n_channels, n_channels, n_freqs), dtype=complex)
+    for i in range(n_freqs):
+        S[:, :, i] = fdata[:, :, i].conj().T @ fdata[:, :, i]
+    S /= n_windows * np.linalg.norm(win)**2
+
+    # normalization to respect Parseval's theorem with the half-spectrum
+    # excepted DC bin (always), and Nyquist bin (when window is even)
+    if window % 2:
+        S[..., 1:] *= 2
+    else:
+        S[..., 1:-1] *= 2
 
     return S, freqs
 
@@ -214,7 +220,7 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_samples)
+    X : ndarray, shape (n_channels, n_times)
         Multi-channel time-series.
     window : int (default 128)
         The length of the FFT window used for spectral estimation.
@@ -245,12 +251,13 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     return S.real, freqs
 
 
-def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
-    """Compute coherence.
+def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
+              coh='ordinary'):
+    """Compute squared coherence.
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_samples)
+    X : ndarray, shape (n_channels, n_times)
         Multi-channel time-series.
     window : int (default 128)
         The length of the FFT window used for spectral estimation.
@@ -262,19 +269,58 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         The maximal frequency to be returned.
     fs : float | None, (default None)
         The sampling frequency of the signal.
+    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default
+            'ordinary')
+        The coherence type, see :class:`pyriemann.estimation.Coherences`.
 
     Returns
     -------
     C : ndarray, shape (n_channels, n_channels, n_freqs)
-        Coherence matrices, for each frequency bin.
+        Squared coherence matrices, for each frequency bin.
+    freqs : ndarray, shape (n_freqs,)
+        The frequencies associated to coherence.
     """
-    S, _ = cross_spectrum(X, window, overlap, fmin, fmax, fs)
+    S, freqs = cross_spectrum(
+        X,
+        window=window,
+        overlap=overlap,
+        fmin=fmin,
+        fmax=fmax,
+        fs=fs)
     S2 = np.abs(S)**2  # squared cross-spectral modulus
+
     C = np.zeros_like(S2)
-    for f in range(S2.shape[-1]):
+    f_inds = np.arange(0, C.shape[-1], dtype=int)
+
+    # lagged coh not defined for DC and Nyquist bins, because S is real
+    if coh == 'lagged':
+        if freqs is None:
+            f_inds = np.arange(1, C.shape[-1] - 1, dtype=int)
+            warnings.warn('DC and Nyquist bins are not defined for lagged-'
+                          'coherence: filled with zeros')
+        else:
+            f_inds_ = f_inds[(freqs > 0) & (freqs < fs / 2)]
+            if not np.array_equal(f_inds_, f_inds):
+                warnings.warn('DC and Nyquist bins are not defined for lagged-'
+                              'coherence: filled with zeros')
+            f_inds = f_inds_
+
+    for f in f_inds:
         psd = np.sqrt(np.diag(S2[..., f]))
-        C[..., f] = S2[..., f] / np.outer(psd, psd)
-    return C
+        psd_prod = np.outer(psd, psd)
+        if coh == 'ordinary':
+            C[..., f] = S2[..., f] / psd_prod
+        elif coh == 'instantaneous':
+            C[..., f] = (S[..., f].real)**2 / psd_prod
+        elif coh == 'lagged':
+            np.fill_diagonal(S[..., f].real, 0.)  # prevent div by zero on diag
+            C[..., f] = (S[..., f].imag)**2 / (psd_prod - (S[..., f].real)**2)
+        elif coh == 'imaginary':
+            C[..., f] = (S[..., f].imag)**2 / psd_prod
+        else:
+            raise ValueError("'%s' is not a supported coherence" % coh)
+
+    return C, freqs
 
 
 ###############################################################################

@@ -194,11 +194,11 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     """Classification by Minimum Distance to Mean with geodesic filtering.
 
-    Apply geodesic filtering described in [1], and classify using MDM algorithm
+    Apply geodesic filtering described in [1]_, and classify using MDM.
     The geodesic filtering is achieved in tangent space with a Linear
     Discriminant Analysis, then data are projected back to the manifold and
-    classifier with a regular mdm.
-    This is basically a pipeline of FGDA and MDM
+    classifier with a regular MDM.
+    This is basically a pipeline of FGDA and MDM.
 
     Parameters
     ----------
@@ -212,7 +212,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         distance in order to keep the good sensitivity for the classification.
     tsupdate : bool (default False)
         Activate tangent space update for covariante shift correction between
-        training and test, as described in [2]. This is not compatible with
+        training and test, as described in [2]_. This is not compatible with
         online implementation. Performance are better when the number of trials
         for prediction is higher.
     n_jobs : int, (default: 1)
@@ -236,14 +236,14 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     References
     ----------
-    [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian geometry
-    applied to BCI classification", 9th International Conference Latent
-    Variable Analysis and Signal Separation (LVA/ICA 2010), LNCS vol. 6365,
-    2010, p. 629-636.
+    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian
+        geometry applied to BCI classification", 9th International Conference
+        Latent Variable Analysis and Signal Separation (LVA/ICA 2010),
+        LNCS vol. 6365, 2010, p. 629-636.
 
-    [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification of
-    covariance matrices using a Riemannian-based kernel for BCI applications",
-    in NeuroComputing, vol. 112, p. 172-178, 2013.
+    .. [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification
+        of covariance matrices using a Riemannian-based kernel for BCI
+        applications", in NeuroComputing, vol. 112, p. 172-178, 2013.
     """
 
     def __init__(self, metric='riemann', tsupdate=False, n_jobs=1):

@@ -25,6 +25,8 @@ except ImportError:
 from joblib import Parallel, delayed
 
 from .classification import MDM
+from .utils.mean import mean_covariance
+from .utils.geodesic import geodesic
 
 #######################################################################
 
@@ -270,8 +272,8 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     """Artefact detection with the Riemannian Potato.
 
-    The Riemannian Potato [1] is a clustering method used to detect artifact in
-    EEG signals. The algorithm iteratively estimates the centroid of clean
+    The Riemannian Potato [1]_ is a clustering method used to detect artifact
+    in EEG signals. The algorithm iteratively estimates the centroid of clean
     signal by rejecting every trial that is too far from it.
 
     Parameters
@@ -299,10 +301,14 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     References
     ----------
-    [1] A. Barachant, A. Andreev and M. Congedo, "The Riemannian Potato: an
-    automatic and adaptive artifact detection method for online experiments
-    using Riemannian geometry", in Proceedings of TOBI Workshop IV, p. 19-20,
-    2013.
+    .. [1] A. Barachant, A. Andreev and M. Congedo, "The Riemannian Potato: an
+        automatic and adaptive artifact detection method for online experiments
+        using Riemannian geometry", in Proceedings of TOBI Workshop IV,
+        p. 19-20, 2013.
+
+    .. [2] Q. Barthélemy, L. Mayaud, D. Ojeda, M. Congedo, "The Riemannian
+        potato field: a tool for online signal quality index of EEG", IEEE
+        TNSRE, 2019.
     """
 
     def __init__(self, metric='riemann', threshold=3, n_iter_max=100,
@@ -312,7 +318,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         self.threshold = threshold
         self.n_iter_max = n_iter_max
         if pos_label == neg_label:
-            raise(ValueError("Positive and Negative labels must be different"))
+            raise(ValueError("Positive and negative labels must be different"))
         self.pos_label = pos_label
         self.neg_label = neg_label
 
@@ -323,8 +329,8 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
             ndarray of SPD matrices.
-        y : ndarray | None (default None)
-            Not used, here for compatibility with sklearn API.
+        y : ndarray, shape (n_trials,) | None (default None)
+            Labels corresponding to each trial.
 
         Returns
         -------
@@ -333,22 +339,8 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         """
         self._mdm = MDM(metric=self.metric)
 
-        if y is not None:
-            if len(y) != len(X):
-                raise ValueError('y must be the same length of X')
+        y_old = self._check_labels(X, y)
 
-            classes = np.int32(np.unique(y))
-
-            if len(classes) > 2:
-                raise ValueError('number of classes must be maximum 2')
-
-            if self.pos_label not in classes:
-                raise ValueError('y must contain a positive class')
-
-            y_old = np.int32(np.array(y) == self.pos_label)
-        else:
-            y_old = np.ones(len(X))
-        # start loop
         for n_iter in range(self.n_iter_max):
             ix = (y_old == 1)
             self._mdm.fit(X[ix], y_old[ix])
@@ -362,6 +354,56 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
                 break
             else:
                 y_old = y
+        return self
+
+    def partial_fit(self, X, y=None, alpha=0.1):
+        """Partially fit the potato from covariance matrices.
+
+        This partial fit can be used to update dynamic or semi-dymanic online
+        potatoes with clean EEG [2]_.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+        y : ndarray, shape (n_trials,) | None (default None)
+            Labels corresponding to each trial.
+        alpha : float (default 0.1)
+            Update rate in [0, 1] for the centroid, and mean and standard
+            deviation of log-distances: 0 for no update, 1 for full update.
+
+        Returns
+        -------
+        self : Potato instance
+            The Potato instance.
+        """
+        if not hasattr(self, '_mdm'):
+            raise ValueError('Partial fit can be called only on an already '
+                             'fitted potato.')
+
+        n_trials, n_channels, _ = X.shape
+        if n_channels != self._mdm.covmeans_[0].shape[0]:
+            raise ValueError(
+                'X does not have the good number of channels. Should be %d but'
+                ' got %d.' % (self._mdm.covmeans_[0].shape[0], n_channels))
+
+        y = self._check_labels(X, y)
+
+        if not 0 <= alpha <= 1:
+            raise ValueError('Parameter alpha must be in [0, 1]')
+
+        if alpha > 0:
+            if n_trials > 1:  # mini-batch update
+                Xm = mean_covariance(X[(y == 1)], metric=self.metric)
+            else:  # pure online update
+                Xm = X[0]
+            self._mdm.covmeans_[0] = geodesic(
+                self._mdm.covmeans_[0], Xm, alpha, metric=self.metric)
+            d = np.squeeze(np.log(self._mdm.transform(Xm[np.newaxis, ...])))
+            self._mean = (1 - alpha) * self._mean + alpha * d
+            self._std = np.sqrt(
+                (1 - alpha) * self._std**2 + alpha * (d - self._mean)**2)
+
         return self
 
     def transform(self, X):
@@ -421,6 +463,27 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         z = self.transform(X)
         proba = self._get_proba(z)
         return proba
+
+    def _check_labels(self, X, y):
+        """check validity of labels."""
+        if y is not None:
+            if len(y) != len(X):
+                raise ValueError('y must be the same length of X')
+
+            classes = np.int32(np.unique(y))
+
+            if len(classes) > 2:
+                raise ValueError('number of classes must be maximum 2')
+
+            if self.pos_label not in classes:
+                raise ValueError('y must contain a positive class')
+
+            y = np.int32(np.array(y) == self.pos_label)
+
+        else:
+            y = np.ones(len(X))
+
+        return y
 
     def _get_z_score(self, d):
         """get z-score from distance."""

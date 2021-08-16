@@ -9,7 +9,7 @@ from pyriemann.utils.distance import pairwise_distance
 class Embedding(BaseEstimator):
     """Embed SPD matrices into an Euclidean space of smaller dimension.
 
-    It uses Laplacian Eigenmaps [1] to embed SPD matrices into an Euclidean
+    It uses Laplacian Eigenmaps [1]_ to embed SPD matrices into an Euclidean
     space. The basic hypothesis is that high-dimensional data lives in a
     low-dimensional manifold, whose intrinsic geometry can be described
     via the Laplacian matrix of a graph. The vertices of this graph are
@@ -30,9 +30,9 @@ class Embedding(BaseEstimator):
 
     References
     ----------
-    [1] M. Belkin and P. Niyogi, "Laplacian Eigenmaps for dimensionality
-    reduction and data representation," in Journal Neural Computation,
-    vol. 15, no. 6, p. 1373-1396 , 2003
+    .. [1] M. Belkin and P. Niyogi, "Laplacian Eigenmaps for dimensionality
+        reduction and data representation," in Journal Neural Computation,
+        vol. 15, no. 6, p. 1373-1396 , 2003
 
     """
 
