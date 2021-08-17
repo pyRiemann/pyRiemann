@@ -46,6 +46,10 @@ def _sch(X):
 
     :returns: Schaefer-Strimmer shrinkage covariance matrix, (n_channels, n_channels)
 
+    Notes
+    -----
+    .. versionadded:: 0.2.8.dev
+
     References
     ----------
     .. [1] Schafer, J., and K. Strimmer. 2005. A shrinkage approach to

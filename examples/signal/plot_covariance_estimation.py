@@ -70,7 +70,7 @@ sns.lineplot(data=dfd, x="wlen", y="dist", hue="estimator", ax=ax)
 ax.set_title("Distance to groundtruth covariance matrix")
 ax.set_xlabel("Number of samples")
 ax.set_ylabel(r"$\delta(\Sigma, \hat{\Sigma})$")
-_ = plt.tight_layout()
+plt.tight_layout()
 
 ###############################################################################
 # Choice of estimator for motor imagery data
@@ -98,8 +98,8 @@ event_ids = dict(hands=2, feet=3)
 # Influence of shrinkage to estimate covariance
 # -----------------------------------------------
 # Sample covariance matrix (SCM) estimation could lead to ill-conditionned
-# matrices depending to the quality and quantity of EEG sample available.
-# Matrix condition number is the ratio between the highest andlowest
+# matrices depending on the quality and quantity of EEG data available.
+# Matrix condition number is the ratio between the highest and lowest
 # eigenvalues: high values indicates ill-conditionned matrices that are not
 # suitable for classification.
 # A common approach to mitigate this issue is to regularize covariance matrices

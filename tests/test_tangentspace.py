@@ -41,7 +41,8 @@ def test_TangentSpace_transform():
 @pytest.mark.parametrize('shape', [(10, 9), (10, 9, 8), (10), (12, 8, 8)])
 def test_TangentSpace_transform_dim(shape):
     """Test transform input shape, could be TS vector or covmat"""
-    covset = generate_cov(10, 3)
+    n_trials, n_channels = 10, 3
+    covset = generate_cov(n_trials, n_channels)
     ts = TangentSpace(metric='riemann')
     ts.fit(covset)
 
