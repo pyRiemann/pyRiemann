@@ -53,15 +53,17 @@ def test_mean_shape(mean):
 @pytest.mark.parametrize("mean", [mean_riemann, mean_logdet])
 def test_mean_shape_with_init(mean):
     """Test the shape of mean with init"""
-    covmats, _, A = generate_cov(5, 3)
+    n_trials, n_channels = 5, 3
+    covmats, _, A = generate_cov(n_trials, n_channels)
     C = mean(covmats, init=covmats[0])
-    assert C.shape == (3, 3)
+    assert C.shape == (n_channels, n_channels)
 
 
 @pytest.mark.parametrize("init", [True, False])
 def test_riemann_mean(init):
     """Test the riemannian mean"""
-    covmats, diags, A = generate_cov(100, 3)
+    n_trials, n_channels = 100, 3
+    covmats, diags, A = generate_cov(n_trials, n_channels)
     if init:
         C = mean_riemann(covmats, init=covmats[0])
     else:
