@@ -75,7 +75,8 @@ def test_riemann_mean(init):
 
 def test_euclid_mean():
     """Test the euclidean mean"""
-    covmats, _, _ = generate_cov(100, 3)
+    n_trials, n_channels = 100, 3
+    covmats, _, _ = generate_cov(n_trials, n_channels)
     C = mean_euclid(covmats)
     assert C == approx(covmats.mean(axis=0))
 
