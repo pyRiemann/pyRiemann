@@ -1,5 +1,4 @@
-import pytest
-from conftest import covmats  # noqa: F401
+from conftest import covmats, requires_matplotlib  # noqa: F401
 import numpy as np
 
 from pyriemann.utils.viz import (
@@ -7,12 +6,9 @@ from pyriemann.utils.viz import (
     plot_embedding,
     plot_cospectra,
 )
-import importlib.util
-
-plot = importlib.util.find_spec("matplotlib")
 
 
-@pytest.mark.skipif(plot is None, reason="Matplotlib not installed")
+@requires_matplotlib
 def test_embedding(covmats):  # noqa: F811
     """Test Embedding."""
     plot_embedding(covmats, y=None, metric="euclid")
@@ -20,7 +16,7 @@ def test_embedding(covmats):  # noqa: F811
     plot_embedding(covmats, y=y, metric="euclid")
 
 
-@pytest.mark.skipif(plot is None, reason="Matplotlib not installed")
+@requires_matplotlib
 def test_confusion_matrix():
     """Test confusion_matrix"""
     target = np.array([0, 1] * 10)
@@ -28,7 +24,7 @@ def test_confusion_matrix():
     plot_confusion_matrix(target, preds, ["a", "b"])
 
 
-@pytest.mark.skipif(plot is None, reason="Matplotlib not installed")
+@requires_matplotlib
 def test_cospectra():
     """Test plot_cospectra"""
     n_freqs, n_channels = 16, 3
