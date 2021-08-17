@@ -45,7 +45,8 @@ def generate_cov(n_trials, n_channels):
 )
 def test_mean_shape(mean):
     """Test the shape of mean"""
-    covmats, _, A = generate_cov(5, 3)
+    n_trials, n_channels = 5, 3
+    covmats, _, A = generate_cov(n_trials, n_channels)
     C = mean(covmats)
     assert C.shape == (3, 3)
 
