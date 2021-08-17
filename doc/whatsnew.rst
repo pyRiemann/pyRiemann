@@ -16,6 +16,8 @@ v0.2.8.dev
 
 - Add ``partial_fit`` in :class:`pyriemann.clustering.Potato`, useful for an online update; and update example on artifact detection.
 
+- Deprecate :func:`pyriemann.utils.viz.plot_confusion_matrix` as sklearn integrate its own version.
+
 v0.2.7 (June 2021)
 ------------------
 
