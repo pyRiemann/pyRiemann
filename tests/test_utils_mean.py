@@ -92,7 +92,7 @@ def test_identity_mean():
 
 def test_alm_mean():
     """Test the ALM mean"""
-    n_trials, n_channels = 5, 3
+    n_trials, n_channels = 3, 3
     covmats, _, _ = generate_cov(n_trials, n_channels)
     C_alm = mean_alm(covmats)
     C_riem = mean_riemann(covmats)
@@ -101,7 +101,7 @@ def test_alm_mean():
 
 def test_alm_mean_maxiter():
     """Test the ALM mean with max iteration"""
-    n_trials, n_channels = 5, 3
+    n_trials, n_channels = 3, 3
     covmats, _, _ = generate_cov(n_trials, n_channels)
     C = mean_alm(covmats, maxiter=1, verbose=True)  # maxiter reached
     assert C.shape == (3, 3)
@@ -123,11 +123,16 @@ def test_alm_mean_2trials():
         ("logeuclid", mean_logeuclid),
         ("euclid", mean_euclid),
         ("alm", mean_alm),
+        ("identity", mean_identity),
+        ("wasserstein", mean_wasserstein),
+        ("ale", mean_ale),
+        ("harmonic", mean_harmonic),
+        ("kullback_sym", mean_kullback_sym),
     ],
 )
 def test_mean_covariance_metric(metric, mean):
     """Test mean_covariance for metric"""
-    n_trials, n_channels = 5, 3
+    n_trials, n_channels = 3, 3
     covmats, _, _ = generate_cov(n_trials, n_channels)
     C = mean_covariance(covmats, metric=metric)
     Ctrue = mean(covmats)
