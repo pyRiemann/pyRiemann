@@ -48,7 +48,7 @@ def test_mean_shape(mean):
     n_trials, n_channels = 5, 3
     covmats, _, A = generate_cov(n_trials, n_channels)
     C = mean(covmats)
-    assert C.shape == (n_channels , n_channels)
+    assert C.shape == (n_channels, n_channels)
 
 
 @pytest.mark.parametrize("mean", [mean_riemann, mean_logdet])
@@ -104,7 +104,7 @@ def test_alm_mean_maxiter():
     n_trials, n_channels = 3, 3
     covmats, _, _ = generate_cov(n_trials, n_channels)
     C = mean_alm(covmats, maxiter=1, verbose=True)  # maxiter reached
-    assert C.shape == (3, 3)
+    assert C.shape == (n_channels, n_channels)
 
 
 def test_alm_mean_2trials():
@@ -116,7 +116,7 @@ def test_alm_mean_2trials():
 
 
 @pytest.mark.parametrize(
-    "metric,mean",
+    "metric, mean",
     [
         ("riemann", mean_riemann),
         ("logdet", mean_logdet),
