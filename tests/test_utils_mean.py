@@ -48,7 +48,7 @@ def test_mean_shape(mean):
     n_trials, n_channels = 5, 3
     covmats, _, A = generate_cov(n_trials, n_channels)
     C = mean(covmats)
-    assert C.shape == (3, 3)
+    assert C.shape == (n_channels , n_channels)
 
 
 @pytest.mark.parametrize("mean", [mean_riemann, mean_logdet])
@@ -83,15 +83,17 @@ def test_euclid_mean():
 
 
 def test_identity_mean():
-    """Test the logdet mean"""
-    covmats, _, _ = generate_cov(100, 3)
+    """Test the identity mean"""
+    n_trials, n_channels = 100, 3
+    covmats, _, _ = generate_cov(n_trials, n_channels)
     C = mean_identity(covmats)
-    assert np.all(C == np.eye(3))
+    assert np.all(C == np.eye(n_channels))
 
 
 def test_alm_mean():
     """Test the ALM mean"""
-    covmats, _, _ = generate_cov(3, 3)
+    n_trials, n_channels = 5, 3
+    covmats, _, _ = generate_cov(n_trials, n_channels)
     C_alm = mean_alm(covmats)
     C_riem = mean_riemann(covmats)
     assert C_alm == approx(C_riem)
@@ -99,14 +101,16 @@ def test_alm_mean():
 
 def test_alm_mean_maxiter():
     """Test the ALM mean with max iteration"""
-    covmats, _, _ = generate_cov(3, 3)
+    n_trials, n_channels = 5, 3
+    covmats, _, _ = generate_cov(n_trials, n_channels)
     C = mean_alm(covmats, maxiter=1, verbose=True)  # maxiter reached
     assert C.shape == (3, 3)
 
 
 def test_alm_mean_2trials():
     """Test the ALM mean with 2 trials"""
-    covmats, _, _ = generate_cov(2, 3)
+    n_trials, n_channels = 2, 3
+    covmats, _, _ = generate_cov(n_trials, n_channels)
     C = mean_alm(covmats)  # n_trials=2
     assert np.all(C == geodesic_riemann(covmats[0], covmats[1], alpha=0.5))
 
@@ -123,7 +127,8 @@ def test_alm_mean_2trials():
 )
 def test_mean_covariance_metric(metric, mean):
     """Test mean_covariance for metric"""
-    covmats, _, _ = generate_cov(3, 3)
+    n_trials, n_channels = 5, 3
+    covmats, _, _ = generate_cov(n_trials, n_channels)
     C = mean_covariance(covmats, metric=metric)
     Ctrue = mean(covmats)
     assert np.all(C == Ctrue)
