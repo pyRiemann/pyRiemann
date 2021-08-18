@@ -1,4 +1,5 @@
 """Mean covariance estimation."""
+from copy import deepcopy
 import numpy as np
 
 from .base import sqrtm, invsqrtm, logm, expm
@@ -40,7 +41,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     """  # noqa
     # init
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    Nt, Ne, Ne = covmats.shape
+    n_trials, n_channels, _ = covmats.shape
     if init is None:
         C = np.mean(covmats, axis=0)
     else:
@@ -54,9 +55,9 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
         k = k + 1
         C12 = sqrtm(C)
         Cm12 = invsqrtm(C)
-        J = np.zeros((Ne, Ne))
+        J = np.zeros((n_channels, n_channels))
 
-        for index in range(Nt):
+        for index in range(n_trials):
             tmp = np.dot(np.dot(Cm12, covmats[index, :, :]), Cm12)
             J += sample_weight[index] * logm(tmp)
 
@@ -86,9 +87,9 @@ def mean_logeuclid(covmats, sample_weight=None):
 
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    Nt, Ne, Ne = covmats.shape
-    T = np.zeros((Ne, Ne))
-    for index in range(Nt):
+    n_trials, n_channels, _ = covmats.shape
+    T = np.zeros((n_channels, n_channels))
+    for index in range(n_trials):
         T += sample_weight[index] * logm(covmats[index, :, :])
     C = expm(T)
 
@@ -133,9 +134,9 @@ def mean_harmonic(covmats, sample_weight=None):
 
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    Nt, Ne, Ne = covmats.shape
-    T = np.zeros((Ne, Ne))
-    for index in range(Nt):
+    n_trials, n_channels, _ = covmats.shape
+    T = np.zeros((n_channels, n_channels))
+    for index in range(n_trials):
         T += sample_weight[index] * np.linalg.inv(covmats[index, :, :])
     C = np.linalg.inv(T)
 
@@ -160,7 +161,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
 
     """  # noqa
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    Nt, Ne, Ne = covmats.shape
+    n_trials, n_channels, _ = covmats.shape
     if init is None:
         C = np.mean(covmats, axis=0)
     else:
@@ -171,7 +172,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     while (crit > tol) and (k < maxiter):
         k = k + 1
 
-        J = np.zeros((Ne, Ne))
+        J = np.zeros((n_channels, n_channels))
 
         for index, Ci in enumerate(covmats):
             J += sample_weight[index] * np.linalg.inv(0.5 * Ci + 0.5 * C)
@@ -209,7 +210,7 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
         (IRS), 2011 Proceedings International.
     """  # noqa
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    Nt, Ne, Ne = covmats.shape
+    n_trials, n_channels, _ = covmats.shape
     if init is None:
         C = np.mean(covmats, axis=0)
     else:
@@ -221,7 +222,7 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
     while (crit > tol) and (k < maxiter):
         k = k + 1
 
-        J = np.zeros((Ne, Ne))
+        J = np.zeros((n_channels, n_channels))
 
         for index, Ci in enumerate(covmats):
             tmp = np.dot(np.dot(K, Ci), K)
@@ -274,7 +275,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
 
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    Nt, Ne, Ne = covmats.shape
+    n_trials, n_channels, _ = covmats.shape
     crit = np.inf
     k = 0
 
@@ -282,7 +283,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
     B, _ = ajd_pham(covmats)
     while (crit > tol) and (k < maxiter):
         k += 1
-        J = np.zeros((Ne, Ne))
+        J = np.zeros((n_channels, n_channels))
 
         for index, Ci in enumerate(covmats):
             tmp = logm(np.dot(np.dot(B.T, Ci), B))
@@ -291,17 +292,74 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
         update = np.diag(np.diag(expm(J)))
         B = np.dot(B, invsqrtm(update))
 
-        crit = distance_riemann(np.eye(Ne), update)
+        crit = distance_riemann(np.eye(n_channels), update)
 
     A = np.linalg.inv(B)
 
-    J = np.zeros((Ne, Ne))
+    J = np.zeros((n_channels, n_channels))
     for index, Ci in enumerate(covmats):
         tmp = logm(np.dot(np.dot(B.T, Ci), B))
         J += sample_weight[index] * tmp
 
     C = np.dot(np.dot(A.T, expm(J)), A)
     return C
+
+
+def mean_alm(covmats, tol=1e-14, maxiter=100,
+             verbose=False, sample_weight=None):
+    r"""Return Ando-Li-Mathias (ALM) mean
+
+    Find the geometric mean recursively [1]_, generalizing from:
+
+    .. math::
+        \mathbf{C} = A^{\frac{1}{2}}(A^{-\frac{1}{2}}B^{\frac{1}{2}}A^{-\frac{1}{2}})^{\frac{1}{2}}A^{\frac{1}{2}}
+
+    require a high number of iterations.
+
+    This is the adaptation of the Matlab code proposed by Dario Bini and
+    Bruno Iannazzo, http://bezout.dm.unipi.it/software/mmtoolbox/
+    Extremely slow, due to the recursive formulation.
+
+    :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
+    :param tol: the tolerance to stop iterations
+    :param maxiter: maximum number of iteration, default 100
+    :param verbose: indicate when reaching maxiter
+    :param sample_weight: the weight of each sample
+
+    :returns: the mean covariance matrix
+
+    Notes
+    -----
+    .. versionadded:: 0.2.8.dev
+
+    References
+    ----------
+    .. [1] T. Ando, C.-K. Li and R. Mathias, "Geometric Means", Linear Algebra
+        Appl. 385 (2004), 305-334.
+    """  # noqa
+    sample_weight = _get_sample_weight(sample_weight, covmats)
+    C = covmats
+    C_iter = np.zeros_like(C)
+    n_trials = covmats.shape[0]
+    if n_trials == 2:
+        alpha = sample_weight[1] / sample_weight[0] / 2
+        X = geodesic_riemann(covmats[0], covmats[1], alpha=alpha)
+        return X
+    else:
+        for k in range(maxiter):
+            for h in range(n_trials):
+                s = np.mod(np.arange(h, h + n_trials - 1) + 1, n_trials)
+                C_iter[h] = mean_alm(C[s], sample_weight=sample_weight[s])
+
+            norm_iter = np.linalg.norm(C_iter[0] - C[0], 2)
+            norm_c = np.linalg.norm(C[0], 2)
+            if (norm_iter / norm_c) < tol:
+                break
+            C = deepcopy(C_iter)
+        else:
+            if verbose:
+                print('Max number of iterations reached')
+        return C_iter.mean(axis=0)
 
 
 def mean_identity(covmats, sample_weight=None):
@@ -322,8 +380,8 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
     """Return the mean covariance matrix according to the metric
 
     :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
-    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'identity', 'wasserstein', 'ale',  # noqa
-        'harmonic', 'kullback_sym' or a callable function
+    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'identity', 'wasserstein', 'ale', # noqa
+        'alm', 'harmonic', 'kullback_sym' or a callable function
     :param sample_weight: the weight of each sample
     :param args: the argument passed to the sub function
     :returns: the mean covariance matrix
@@ -344,7 +402,8 @@ mean_methods = {'riemann': mean_riemann,
                 'wasserstein': mean_wasserstein,
                 'ale': mean_ale,
                 'harmonic': mean_harmonic,
-                'kullback_sym': mean_kullback_sym}
+                'kullback_sym': mean_kullback_sym,
+                'alm': mean_alm}
 
 
 def _check_mean_method(method):

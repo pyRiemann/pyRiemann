@@ -16,6 +16,8 @@ v0.2.8.dev
 
 - Add ``partial_fit`` in :class:`pyriemann.clustering.Potato`, useful for an online update; and update example on artifact detection.
 
+- Add Ando-Li-Mathias mean estimation in :func:`pyriemann.utils.mean`
+
 v0.2.7 (June 2021)
 ------------------
 
