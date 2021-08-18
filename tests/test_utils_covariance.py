@@ -14,16 +14,18 @@ from pyriemann.utils.covariance import (covariances, covariances_EP, eegtocov,
 )
 def test_covariances(estimator):
     """Test covariance for multiple estimator"""
-    x = np.random.randn(2, 3, 100)
+    rs = np.random.RandomState(42)
+    n_trials, n_channels, n_times = 2, 3, 100
+    x = rs.randn(n_trials, n_channels, n_times)
     if estimator is None:
         cov = covariances(x)
-        assert cov.shape == (2, 3, 3)
+        assert cov.shape == (n_trials, n_channels, n_channels)
     elif estimator == 'truc':
         with pytest.raises(ValueError):
             covariances(x, estimator=estimator)
     else:
         cov = covariances(x, estimator=estimator)
-        assert cov.shape == (2, 3, 3)
+        assert cov.shape == (n_trials, n_channels, n_channels)
 
 
 @pytest.mark.parametrize(
@@ -31,21 +33,25 @@ def test_covariances(estimator):
 )
 def test_covariances_EP(estimator):
     """Test covariance_EP for multiple estimator"""
-    x = np.random.randn(2, 3, 100)
-    p = np.random.randn(3, 100)
+    rs = np.random.RandomState(42)
+    n_trials, n_channels, n_times = 2, 3, 100
+    x = rs.randn(n_trials, n_channels, n_times)
+    p = rs.randn(n_channels, n_times)
 
     if estimator is None:
         cov = covariances_EP(x, p)
     else:
         cov = covariances_EP(x, p, estimator=estimator)
-    assert cov.shape == (2, 6, 6)
+    assert cov.shape == (n_trials, 2 * n_channels, 2 * n_channels)
 
 
 def test_covariances_eegtocov():
     """Test eegtocov"""
-    x = np.random.randn(1000, 3)
+    rs = np.random.RandomState(42)
+    n_times, n_channels = 1000, 3
+    x = rs.randn(n_times, n_channels)
     cov = eegtocov(x)
-    assert cov.shape[1] == 3
+    assert cov.shape[1] == n_channels
 
 
 def test_covariances_cross_spectrum():

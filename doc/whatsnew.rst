@@ -14,7 +14,7 @@ v0.2.8.dev
 
 - Correct spectral estimation in :func:`pyriemann.utils.covariance.cross_spectrum` to obtain equivalence with SciPy
 
-- Add Schaefer-Strimmer covariance estimator in :func:`pyriemann.utils.covariance.covariances`
+- Add Schaefer-Strimmer covariance estimator in :func:`pyriemann.utils.covariance.covariances`, and an example to compare estimators
 
 v0.2.7 (June 2021)
 ------------------

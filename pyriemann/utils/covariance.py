@@ -53,9 +53,8 @@ def _sch(X):
     References
     ----------
     .. [1] Schafer, J., and K. Strimmer. 2005. A shrinkage approach to
-    large-scale covariance estimation and implications for functional
-    genomics. Statist. Appl. Genet. Mol. Biol. 4:32.
-    http://doi.org/10.2202/1544-6115.1175
+        large-scale covariance estimation and implications for functional
+        genomics. Statist. Appl. Genet. Mol. Biol. 4:32.
     """  # noqa
     n_times = X.shape[1]
     X_c = (X.T - X.T.mean(axis=0)).T
