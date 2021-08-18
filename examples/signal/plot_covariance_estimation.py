@@ -14,7 +14,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
-from numpy.linalg import eigh
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
@@ -105,7 +104,7 @@ event_ids = dict(hands=2, feet=3)
 # A common approach to mitigate this issue is to regularize covariance matrices
 # by shrinkage, like in Ledoit-Wolf, Schaefer-Strimmer or oracle estimator.
 
-estimators = ["lwf", "oas", "scm", "sch"]
+estimators = ["lwf", "oas", "sch", "scm"]
 tmin = -0.2
 w_len = np.linspace(0.2, 2, 10)
 n_trials = 45
@@ -125,7 +124,7 @@ for wl in w_len:
     for est in estimators:
         cov = Covariances(estimator=est).transform(epochs.get_data())
         for k in range(len(cov)):
-            ev, _ = eigh(cov[k, :, :])
+            ev, _ = np.linalg.eigh(cov[k, :, :])
             dfc.append(dict(estimator=est, wlen=wl, cond=ev[-1] / ev[0]))
 dfc = pd.DataFrame(dfc)
 
@@ -137,7 +136,7 @@ sns.lineplot(data=dfc, x="wlen", y="cond", hue="estimator", ax=ax)
 ax.set_title("Condition number of estimated covariance matrices")
 ax.set_xlabel("Epoch length (s)")
 ax.set_ylabel(r"$\lambda_{\min}$/$\lambda_{\max}$")
-_ = plt.tight_layout()
+plt.tight_layout()
 
 ###############################################################################
 # Picking a good estimator for classification
@@ -145,7 +144,7 @@ _ = plt.tight_layout()
 # The choice of covariance estimator have an impact on classification,
 # especially when the covariances are estimated on short time windows.
 
-estimators = ["lwf", "oas", "scm", "sch"]
+estimators = ["lwf", "oas", "sch", "scm"]
 tmin = 0.0
 w_len = np.linspace(0.2, 2.0, 5)
 n_trials, n_splits = 45, 3
@@ -194,13 +193,13 @@ sns.lineplot(
 )
 ax.set_title("Accuracy for different estimators and epoch lengths")
 ax.set_xlabel("Epoch length (s)")
-ax.set_ylabel(r"Accuracy (\%)")
-_ = plt.tight_layout()
+ax.set_ylabel("Classification accuracy")
+plt.tight_layout()
 
 ###############################################################################
 # References
 # ----------
 # .. [1] S. Chevallier, E. Kalunga, Q. Barthélemy, F. Yger. "Riemannian
-# classification for SSVEP based BCI: offline versus online implementations."
-# Brain–Computer Interfaces Handbook: Technological and Theoretical Advances,
-# 2018.
+#    classification for SSVEP based BCI: offline versus online implementations"
+#    Brain–Computer Interfaces Handbook: Technological and Theoretical Advances
+#    , 2018.
