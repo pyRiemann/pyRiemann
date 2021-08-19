@@ -24,6 +24,9 @@ from pyriemann.classification import MDM
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.pipeline import make_pipeline
 
+
+rs = np.random.RandomState(42)
+
 ###############################################################################
 # Estimating covariance on synthetic data
 # ----------------------------------------
@@ -32,14 +35,14 @@ from sklearn.pipeline import make_pipeline
 # groundtruth.
 
 n_trials, n_channels, n_times = 10, 5, 1000
-var = 2.0 + 0.1 * np.random.randn(n_trials, n_channels)
-A = 2 * np.random.rand(n_channels, n_channels) - 1
+var = 2.0 + 0.1 * rs.randn(n_trials, n_channels)
+A = 2 * rs.rand(n_channels, n_channels) - 1
 A /= np.linalg.norm(A, axis=1)[:, np.newaxis]
 true_cov = np.empty(shape=(n_trials, n_channels, n_channels))
 X = np.empty(shape=(n_trials, n_channels, n_times))
 for i in range(n_trials):
     true_cov[i] = A @ np.diag(var[i]) @ A.T
-    X[i] = np.random.multivariate_normal(
+    X[i] = rs.multivariate_normal(
         np.array([0.0] * n_channels), true_cov[i], size=n_times
     ).T
 

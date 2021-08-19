@@ -45,6 +45,16 @@ def test_covariances_EP(estimator):
     assert cov.shape == (n_trials, 2 * n_channels, 2 * n_channels)
 
 
+def test_covariances_EP_ntimes():
+    """Test that prototype and signal have same time dimension"""
+    rs = np.random.RandomState(42)
+    n_trials, n_channels, n_times, n_times_P = 2, 3, 100, 101
+    x = rs.randn(n_trials, n_channels, n_times)
+    p = rs.randn(n_channels, n_times_P)
+    with pytest.raises(ValueError):
+        covariances_EP(x, p)
+
+
 def test_covariances_eegtocov():
     """Test eegtocov"""
     rs = np.random.RandomState(42)

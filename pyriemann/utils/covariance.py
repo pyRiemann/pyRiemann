@@ -151,7 +151,11 @@ def covariances_EP(X, P, estimator='cov'):
     """Special form covariance matrix."""
     est = _check_est(estimator)
     n_trials, n_channels, n_times = X.shape
-    n_proto, n_times = P.shape
+    n_proto, n_times_P = P.shape
+    if n_times_P != n_times:
+        raise ValueError(
+            f"X and P do not have the same n_times: {n_times} and {n_times_P}"
+        )
     covmats = np.zeros((n_trials, n_channels + n_proto, n_channels + n_proto))
     for i in range(n_trials):
         covmats[i, :, :] = est(np.concatenate((P, X[i, :, :]), axis=0))
