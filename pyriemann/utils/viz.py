@@ -3,16 +3,18 @@ import pandas as pd
 import numpy as np
 from sklearn.metrics import confusion_matrix
 from pyriemann.embedding import Embedding
+from pyriemann.utils import deprecated
 
 
+@deprecated(
+    "plot_confusion_matrix is deprecated and will be remove in 0.4.0; "
+    "please use sklearn confusion_matrix and ConfusionMatrixDisplay; "
+    "see examples/ERP/plot_classify_EEG_tangentspace.py"
+)
 def plot_confusion_matrix(
     targets, predictions, target_names, title="Confusion matrix", cmap="Blues"
 ):
-    """Plot Confusion Matrix. **Deprecated**
-
-    Sklearn provides confusion_matrix and ConfusionMatrixDisplay,
-    see examples/ERP/plot_classify_EEG_tangentspace.py for an example.
-    """
+    """Plot Confusion Matrix."""
     try:
         import seaborn as sns
     except ImportError:
