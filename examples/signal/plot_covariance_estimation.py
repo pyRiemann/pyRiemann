@@ -10,17 +10,17 @@ impact on classification [1]_.
 #
 # License: BSD (3-clause)
 
-import numpy as np
-import pandas as pd
-import seaborn as sns
 from matplotlib import pyplot as plt
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
+import numpy as np
+import pandas as pd
 from pyriemann.estimation import Covariances
 from pyriemann.utils.distance import distance
 from pyriemann.classification import MDM
+import seaborn as sns
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.pipeline import make_pipeline
 
