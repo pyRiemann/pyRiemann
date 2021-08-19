@@ -48,7 +48,7 @@ for i in range(n_trials):
 # Schaefer-Strimmer (SCH), oracle approximating shrunk covariance (OAS),
 # minimum covariance determinant (MCD) and others. We will compare the
 # distance of LWF, OAS and SCH estimators with the groundtruth, while
-# increasing number of samples.
+# increasing epoch length.
 
 estimators = ["lwf", "oas", "sch"]
 w_len = np.linspace(10, n_times, 20, dtype=np.int)
