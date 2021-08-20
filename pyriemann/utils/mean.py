@@ -74,7 +74,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
 
 
 def mean_logeuclid(covmats, sample_weight=None):
-    r"""Return the mean covariance matrix according to the log-euclidean
+    r"""Return the mean covariance matrix according to the log-Euclidean
     metric.
 
     .. math::
@@ -238,7 +238,7 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
 
 
 def mean_euclid(covmats, sample_weight=None):
-    r"""Return the mean covariance matrix according to the euclidean metric :
+    r"""Return the mean covariance matrix according to the Euclidean metric :
 
     .. math::
         \mathbf{C} = \frac{1}{N} \sum_i \mathbf{C}_i
@@ -369,7 +369,7 @@ def mean_identity(covmats, sample_weight=None):
         \mathbf{C} = \mathbf{I}_d
 
     :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
-    :returns: the identity matrix of size Nchannels
+    :returns: the identity matrix of size n_channels
 
     """
     C = np.eye(covmats.shape[1])
@@ -380,7 +380,8 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
     """Return the mean covariance matrix according to the metric
 
     :param covmats: Covariance matrices set, (n_trials, n_channels, n_channels)
-    :param metric: the metric (Default value 'riemann'), can be : 'riemann' , 'logeuclid' , 'euclid' , 'logdet', 'identity', 'wasserstein', 'ale', # noqa
+    :param metric: the metric (default 'riemann'), can be : 'riemann',
+        'logeuclid', 'euclid', 'logdet', 'identity', 'wasserstein', 'ale',
         'alm', 'harmonic', 'kullback_sym' or a callable function
     :param sample_weight: the weight of each sample
     :param args: the argument passed to the sub function
