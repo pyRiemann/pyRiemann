@@ -1,134 +1,139 @@
-from numpy.testing import assert_array_almost_equal, assert_array_equal
 import numpy as np
+import pytest
+from pytest import approx
+from pyriemann.utils.mean import (
+    mean_riemann,
+    mean_euclid,
+    mean_logeuclid,
+    mean_logdet,
+    mean_ale,
+    mean_identity,
+    mean_covariance,
+    mean_kullback_sym,
+    mean_harmonic,
+    mean_wasserstein,
+    mean_alm,
+)
+from pyriemann.utils.geodesic import geodesic_riemann
 
-from pyriemann.utils.mean import (mean_riemann, mean_euclid, mean_logeuclid,
-                                  mean_logdet, mean_ale, mean_identity,
-                                  mean_covariance, mean_kullback_sym,
-                                  mean_harmonic, mean_wasserstein)
 
-
-def generate_cov(Nt, Ne):
+def generate_cov(n_trials, n_channels):
     """Generate a set of cavariances matrices for test purpose"""
     rs = np.random.RandomState(1234)
-    diags = 2.0 + 0.1 * rs.randn(Nt, Ne)
-    A = 2*rs.rand(Ne, Ne) - 1
-    A /= np.atleast_2d(np.sqrt(np.sum(A**2, 1))).T
-    covmats = np.empty((Nt, Ne, Ne))
-    for i in range(Nt):
-        covmats[i] = np.dot(np.dot(A, np.diag(diags[i])), A.T)
+    diags = 2.0 + 0.1 * rs.randn(n_trials, n_channels)
+    A = 2 * rs.rand(n_channels, n_channels) - 1
+    A /= np.linalg.norm(A, axis=1)[:, np.newaxis]
+    covmats = np.empty((n_trials, n_channels, n_channels))
+    for i in range(n_trials):
+        covmats[i] = A @ np.diag(diags[i]) @ A.T
     return covmats, diags, A
 
 
-def test_riemann_mean():
+@pytest.mark.parametrize(
+    "mean",
+    [
+        mean_riemann,
+        mean_logeuclid,
+        mean_euclid,
+        mean_identity,
+        mean_logdet,
+        mean_ale,
+        mean_kullback_sym,
+        mean_harmonic,
+        mean_wasserstein,
+    ],
+)
+def test_mean_shape(mean):
+    """Test the shape of mean"""
+    n_trials, n_channels = 5, 3
+    covmats, _, A = generate_cov(n_trials, n_channels)
+    C = mean(covmats)
+    assert C.shape == (n_channels, n_channels)
+
+
+@pytest.mark.parametrize("mean", [mean_riemann, mean_logdet])
+def test_mean_shape_with_init(mean):
+    """Test the shape of mean with init"""
+    n_trials, n_channels = 5, 3
+    covmats, _, A = generate_cov(n_trials, n_channels)
+    C = mean(covmats, init=covmats[0])
+    assert C.shape == (n_channels, n_channels)
+
+
+@pytest.mark.parametrize("init", [True, False])
+def test_riemann_mean(init):
     """Test the riemannian mean"""
-    covmats, diags, A = generate_cov(100, 3)
+    n_trials, n_channels = 100, 3
+    covmats, diags, A = generate_cov(n_trials, n_channels)
+    if init:
+        C = mean_riemann(covmats, init=covmats[0])
+    else:
+        C = mean_riemann(covmats)
     Ctrue = np.exp(np.log(diags).mean(0))
-    Ctrue = np.dot(np.dot(A, np.diag(Ctrue)), A.T)
-    C = mean_riemann(covmats)
-    assert_array_almost_equal(C, Ctrue)
-
-
-def test_riemann_mean_with_init():
-    """Test the riemannian mean with init"""
-    covmats, diags, A = generate_cov(100, 3)
-    C = mean_riemann(covmats, init=covmats[0])
-    Ctrue = np.exp(np.log(diags).mean(0))
-    Ctrue = np.dot(np.dot(A, np.diag(Ctrue)), A.T)
-    assert_array_almost_equal(C, Ctrue)
-
-
-def test_logeuclid_mean():
-    """Test the logeuclidean mean"""
-    covmats, _, A = generate_cov(100, 3)
-    C = mean_logeuclid(covmats)
-    assert C.shape == (3, 3)
+    Ctrue = A @ np.diag(Ctrue) @ A.T
+    assert C == approx(Ctrue)
 
 
 def test_euclid_mean():
     """Test the euclidean mean"""
-    covmats, _, _ = generate_cov(100, 3)
+    n_trials, n_channels = 100, 3
+    covmats, _, _ = generate_cov(n_trials, n_channels)
     C = mean_euclid(covmats)
-    assert C.shape == (3, 3)
-    assert_array_almost_equal(C, covmats.mean(axis=0))
+    assert C == approx(covmats.mean(axis=0))
 
 
 def test_identity_mean():
-    """Test the logdet mean"""
-    covmats, _, _ = generate_cov(100, 3)
+    """Test the identity mean"""
+    n_trials, n_channels = 100, 3
+    covmats, _, _ = generate_cov(n_trials, n_channels)
     C = mean_identity(covmats)
-    assert C.shape == (3, 3)
-    assert_array_equal(C, np.eye(3))
+    assert np.all(C == np.eye(n_channels))
 
 
-def test_logdet_mean():
-    """Test the logdet mean"""
-    covmats, _, _ = generate_cov(100, 3)
-    C = mean_logdet(covmats)
-    assert C.shape == (3, 3)
+def test_alm_mean():
+    """Test the ALM mean"""
+    n_trials, n_channels = 3, 3
+    covmats, _, _ = generate_cov(n_trials, n_channels)
+    C_alm = mean_alm(covmats)
+    C_riem = mean_riemann(covmats)
+    assert C_alm == approx(C_riem)
 
 
-def test_logdet_mean_with_init():
-    """Test the logdet mean"""
-    covmats, _, _ = generate_cov(100, 3)
-    C = mean_logdet(covmats, init=covmats[0])
-    assert C.shape == (3, 3)
+def test_alm_mean_maxiter():
+    """Test the ALM mean with max iteration"""
+    n_trials, n_channels = 3, 3
+    covmats, _, _ = generate_cov(n_trials, n_channels)
+    C = mean_alm(covmats, maxiter=1, verbose=True)  # maxiter reached
+    assert C.shape == (n_channels, n_channels)
 
 
-def test_ald_mean():
-    """Test the Ale mean"""
-    covmats, _, _ = generate_cov(100, 3)
-    C = mean_ale(covmats)
-    assert C.shape == (3, 3)
+def test_alm_mean_2trials():
+    """Test the ALM mean with 2 trials"""
+    n_trials, n_channels = 2, 3
+    covmats, _, _ = generate_cov(n_trials, n_channels)
+    C = mean_alm(covmats)  # n_trials=2
+    assert np.all(C == geodesic_riemann(covmats[0], covmats[1], alpha=0.5))
 
 
-def test_kullback_mean():
-    """Test the kullback mean"""
-    covmats, _, _ = generate_cov(100, 3)
-    C = mean_kullback_sym(covmats)
-    assert C.shape == (3, 3)
-
-
-def test_harmonic_mean():
-    """Test the harmonic mean"""
-    covmats, _, _ = generate_cov(100, 3)
-    C = mean_harmonic(covmats)
-    assert C.shape == (3, 3)
-
-
-def test_wasserstein_mean():
-    """Test the wasserstein mean"""
-    covmats, _, _ = generate_cov(100, 3)
-    C = mean_wasserstein(covmats)
-    assert C.shape == (3, 3)
-
-
-def test_mean_covariance_riemann():
-    """Test mean_covariance for riemannian metric"""
-    covmats, _, _ = generate_cov(100, 3)
-    C = mean_covariance(covmats, metric='riemann')
-    Ctrue = mean_riemann(covmats)
-    assert_array_equal(C, Ctrue)
-
-
-def test_mean_covariance_logdet():
-    """Test mean_covariance for logdet metric"""
-    covmats, _, _ = generate_cov(100, 3)
-    C = mean_covariance(covmats, metric='logdet')
-    Ctrue = mean_logdet(covmats)
-    assert_array_equal(C, Ctrue)
-
-
-def test_mean_covariance_logeuclid():
-    """Test mean_covariance for logeuclid metric"""
-    covmats, _, _ = generate_cov(100, 3)
-    C = mean_covariance(covmats, metric='logeuclid')
-    Ctrue = mean_logeuclid(covmats)
-    assert_array_equal(C, Ctrue)
-
-
-def test_mean_covariance_euclid():
-    """Test mean_covariance for euclidean metric"""
-    covmats, diags, A = generate_cov(100, 3)
-    C = mean_covariance(covmats, metric='euclid')
-    Ctrue = mean_euclid(covmats)
-    assert_array_equal(C, Ctrue)
+@pytest.mark.parametrize(
+    "metric, mean",
+    [
+        ("riemann", mean_riemann),
+        ("logdet", mean_logdet),
+        ("logeuclid", mean_logeuclid),
+        ("euclid", mean_euclid),
+        ("alm", mean_alm),
+        ("identity", mean_identity),
+        ("wasserstein", mean_wasserstein),
+        ("ale", mean_ale),
+        ("harmonic", mean_harmonic),
+        ("kullback_sym", mean_kullback_sym),
+    ],
+)
+def test_mean_covariance_metric(metric, mean):
+    """Test mean_covariance for metric"""
+    n_trials, n_channels = 3, 3
+    covmats, _, _ = generate_cov(n_trials, n_channels)
+    C = mean_covariance(covmats, metric=metric)
+    Ctrue = mean(covmats)
+    assert np.all(C == Ctrue)

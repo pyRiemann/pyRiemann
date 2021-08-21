@@ -18,6 +18,8 @@ v0.2.8.dev
 
 - Deprecate :func:`pyriemann.utils.viz.plot_confusion_matrix` as sklearn integrate its own version.
 
+- Add Ando-Li-Mathias mean estimation in :func:`pyriemann.utils.mean.mean_covariance`
+
 v0.2.7 (June 2021)
 ------------------
 
