@@ -7,11 +7,16 @@ The easiest way to install a stable version of pyRiemann is through pypi, the py
 
 ``pip install pyriemann``
 
-For a bleeding edge version, you can clone the source code on `github <https://github.com/alexandrebarachant/pyRiemann>`__ and install directly the package from source.
+For a bleeding edge version, you can clone the source code on `github <https://github.com/pyRiemann/pyRiemann>`__ and install directly the package from source.
 
-``python setup.py install``
+``pip install -e .``
 
-The install script will install the required dependencies.
+The install script will install the required dependencies. If you want also to build the documentation and to run the test locally, you could install all development dependencies with
+
+``pip install -e .[docs,tests]``
+
+If you use a zsh shell, you need to write `pip install -e .\[docs,tests\]`. If you do not know what zsh is, you could use the above command.
+
 
 Dependencies
 ~~~~~~~~~~~~
@@ -27,14 +32,17 @@ Mandatory dependencies
 
 -  `scikit-learn >=0.17 <http://scikit-learn.org/>`__
 
--  `matplotlib <matplotlib.sourceforge.net>`__
-
 -  `pandas <http://pandas.pydata.org/>`__
+
+-  `joblib <https://joblib.readthedocs.io/>`__
+
 
 Recommended dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^
-This dependencies are recommended to run examples and tutorials, although they are not required to use most of the packages methods and functions.
+These dependencies are recommanded to use the plotting functions of pyriemann or to run examples and tutorials, but they are not mandatory:
 
 - `mne-python <http://mne-tools.github.io/>`__
 
-- `seaborn <http://stanford.edu/~mwaskom/software/seaborn/index.html/>`__
+-  `matplotlib <https://matplotlib.org/>`__
+
+-  `seaborn <https://seaborn.pydata.org>`__
