@@ -34,5 +34,7 @@ setup(name='pyriemann',
       platforms='any',
       python_requires=">=3.6",
       install_requires=['numpy', 'scipy', 'scikit-learn',  'joblib', 'pandas'],
+      extras_require={'docs': ['sphinx-gallery', 'sphinx-bootstrap_theme', 'numpydoc', 'mne', 'seaborn'],
+                      'tests': ['pytest', 'seaborn', 'flake8']},
       zip_safe=False,
 )
