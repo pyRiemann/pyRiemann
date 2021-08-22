@@ -1,54 +1,63 @@
+from conftest import covmats, requires_matplotlib  # noqa: F401
 import numpy as np
 from pyriemann.stats import PermutationDistance, PermutationModel
-import pytest
 from pyriemann.spatialfilters import CSP
+import pytest
 
 
-def generate_cov(Nt, Ne):
-    """Generate a set of cavariances matrices for test purpose."""
-    rs = np.random.RandomState(1234)
-    diags = 2.0 + 0.1 * rs.randn(Nt, Ne)
-    A = 2*rs.rand(Ne, Ne) - 1
-    A /= np.atleast_2d(np.sqrt(np.sum(A**2, 1))).T
-    covmats = np.empty((Nt, Ne, Ne))
-    for i in range(Nt):
-        covmats[i] = np.dot(np.dot(A, np.diag(diags[i])), A.T)
-    return covmats
-
-
-def test_permutation_distance():
+def test_permutation_badmode(covmats):  # noqa: F811
     """Test one way permutation test"""
-    covset = generate_cov(10, 5)
-    labels = np.array([0, 1]).repeat(5)
-    groups = np.array([0] * 5 + [1] * 5)
-
     with pytest.raises(ValueError):
-        PermutationDistance(mode='badmode')
+        PermutationDistance(mode="badmode")
 
+
+@pytest.mark.parametrize("mode", ["ttest", "ftest"])
+def test_permutation_mode(mode, covmats):  # noqa: F811
+    """Test one way permutation test"""
+    labels = np.array([0, 1]).repeat(3)
+    p = PermutationDistance(100, mode=mode)
+    p.test(covmats, labels)
+
+
+def test_permutation_pairwise(covmats):  # noqa: F811
+    """Test one way permutation pairwise test"""
+    labels = np.array([0, 1]).repeat(3)
+    groups = np.array([0] * 3 + [1] * 3)
     # pairwise
-    p = PermutationDistance(100, mode='pairwise')
-    p.test(covset, labels)
+    p = PermutationDistance(100, mode="pairwise")
+    p.test(covmats, labels)
     # with group
-    p.test(covset, labels, groups=groups)
-    # t-test
-    p = PermutationDistance(100, mode='ttest')
-    p.test(covset, labels)
-    # f-test
-    p = PermutationDistance(100, mode='ftest')
-    p.test(covset, labels)
+    p.test(covmats, labels, groups=groups)
+
+
+def test_permutation_pairwise_estimator(covmats):  # noqa: F811
+    """Test one way permutation with estimator"""
+    labels = np.array([0, 1]).repeat(3)
     # with custom estimator
-    p = PermutationDistance(10, mode='pairwise', estimator=CSP(2, log=False))
-    p.test(covset, labels)
+    p = PermutationDistance(10, mode="pairwise", estimator=CSP(2, log=False))
+    p.test(covmats, labels)
+
+
+def test_permutation_pairwise_unique(covmats):  # noqa: F811
+    """Test one way permutation with estimator"""
+    labels = np.array([0, 1]).repeat(3)
     # unique perms
     p = PermutationDistance(1000)
-    p.test(covset, labels)
+    p.test(covmats, labels)
+
+
+@requires_matplotlib
+def test_permutation_pairwise_plot(covmats):  # noqa: F811
+    """Test one way permutation with estimator"""
+    labels = np.array([0, 1]).repeat(3)
+    p = PermutationDistance(100, mode="pairwise")
+    p.test(covmats, labels)
     p.plot(nbins=2)
 
 
-def test_permutation_model():
+def test_permutation_model(covmats):  # noqa: F811
     """Test one way permutation test"""
-    covset = generate_cov(10, 30)
-    labels = np.array([0, 1]).repeat(5)
+    labels = np.array([0, 1]).repeat(3)
     # pairwise
     p = PermutationModel(10)
-    p.test(covset, labels)
+    p.test(covmats, labels)
