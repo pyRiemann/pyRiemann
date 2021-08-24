@@ -198,7 +198,7 @@ def test_AJDC_fit_error(rndstate):
 
 
 def test_AJDC_transform_error(rndstate):
-    n_subjects, n_conditions, n_channels, n_times = 5, 3, 8, 512
+    n_subjects, n_conditions, n_channels, n_times = 2, 2, 3, 256
     X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
     ajdc = AJDC().fit(X)
     n_trials = 4
@@ -210,7 +210,7 @@ def test_AJDC_transform_error(rndstate):
 
 
 def test_AJDC_fit_variable_input(rndstate):
-    n_subjects, n_cond, n_chan, n_times = 5, 3, 8, 512
+    n_subjects, n_cond, n_chan, n_times = 2, 2, 3, 256
     X = rndstate.randn(n_subjects, n_cond, n_chan, n_times)
     ajdc = AJDC()
     # 3 subjects, same # conditions and channels, different # of times
@@ -229,7 +229,7 @@ def test_AJDC_fit_variable_input(rndstate):
 
 
 def test_AJDC_inverse_transform(rndstate):
-    n_subjects, n_conditions, n_channels, n_times = 5, 3, 8, 512
+    n_subjects, n_conditions, n_channels, n_times = 2, 2, 3, 256
     X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
     ajdc = AJDC().fit(X)
     n_trials = 4
@@ -250,7 +250,7 @@ def test_AJDC_inverse_transform(rndstate):
 
 def test_AJDC_expl_var(rndstate):
     # Test get_src_expl_var
-    n_subjects, n_conditions, n_channels, n_times = 5, 3, 8, 512
+    n_subjects, n_conditions, n_channels, n_times = 2, 2, 3, 256
     X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
     ajdc = AJDC().fit(X)
     n_trials = 4
