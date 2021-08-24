@@ -25,6 +25,8 @@ class ClassifierTestCase:
             self.clf_populate_classes(classif, covmats, labels)
         if classif is KNearestNeighbor:
             self.clf_predict_proba_trials(classif, covmats, labels)
+        if classif is (FgMDM, TSclassifier):
+            self.clf_tsupdate(classif, covmats, labels)
 
     def test_multi_classes(self, classif, get_covmats):
         n_classes, n_trials, n_channels = 3, 9, 3
@@ -42,6 +44,8 @@ class ClassifierTestCase:
             self.clf_populate_classes(classif, covmats, labels)
         if classif is KNearestNeighbor:
             self.clf_predict_proba_trials(classif, covmats, labels)
+        if classif is (FgMDM, TSclassifier):
+            self.clf_tsupdate(classif, covmats, labels)
 
 
 class TestClassifier(ClassifierTestCase):
@@ -92,6 +96,10 @@ class TestClassifier(ClassifierTestCase):
         clf = classif()
         clf.fit(covmats, labels)
         assert_array_equal(clf.classes_, np.unique(labels))
+
+    def clf_classif_tsupdate(self, classif, covmats, labels):
+        clf = classif(tsupdate=True)
+        clf.fit(covmats, labels).predict(covmats)
 
 
 @pytest.mark.parametrize("classif", [MDM, FgMDM, TSclassifier])
@@ -169,4 +177,9 @@ def test_TSclassifier_classifier(get_covmats):
     clf.fit(covmats, labels).predict(covmats)
 
 
-# TODO: add tsupdate test
+@pytest.mark.parametrize("classif", [FgMDM, TSclassifier])
+def test_classif_tsupdate(classif, get_covmats):
+    n_trials, n_channels = 6, 3
+    covmats = get_covmats(n_trials, n_channels)
+    labels = np.array([0, 1]).repeat(n_trials // 2)
+    clf = classif(tsupdate=True)
