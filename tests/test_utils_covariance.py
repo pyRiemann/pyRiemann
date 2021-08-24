@@ -225,7 +225,8 @@ def test_covariances_coherence(coh, rndstate):
         x[2] = np.sin(2 * np.pi * ft * t + np.pi / 2) \
             + noise * rndstate.randn((n_times))
         # pi shifted channel = opposite phase
-        x[3] = np.sin(2 * np.pi * ft * t + np.pi) + noise * rndstate.randn((n_times))
+        noise_term = noise * rndstate.randn((n_times))
+        x[3] = np.sin(2 * np.pi * ft * t + np.pi) + noise_term
 
         c, freqs = coherence(x, fs=fs, window=fs, overlap=0.5, coh=coh)
         foi = (freqs == ft)
@@ -287,7 +288,8 @@ def test_normalize(rndstate):
     with pytest.raises(ValueError):  # not at least 2d
         normalize(rndstate.randn(n_channels), "trace")
     with pytest.raises(ValueError):  # not square
-        normalize(rndstate.randn(n_trials, n_channels, n_channels + 2), "trace")
+        shape = (n_trials, n_channels, n_channels + 2)
+        normalize(rndstate.randn(*shape), "trace")
     with pytest.raises(ValueError):  # invalid normalization type
         normalize(rndstate.randn(n_trials, n_channels, n_channels), "abc")
 
@@ -303,7 +305,8 @@ def test_get_nondiag_weight(rndstate):
     w = get_nondiag_weight(rndstate.randn(n_trials, n_channels, n_channels))
     assert_array_equal(w.shape, [n_trials])
     # test a 4d array, ie a group of groups of square matrices
-    w = get_nondiag_weight(rndstate.randn(n_conds, n_trials, n_channels, n_channels))
+    shape = (n_conds, n_trials, n_channels, n_channels)
+    w = get_nondiag_weight(rndstate.randn(*shape))
     assert_array_equal(w.shape, [n_conds, n_trials])
 
     # 2x2 constant matrices => non-diag weights equal to 1
@@ -318,4 +321,5 @@ def test_get_nondiag_weight(rndstate):
     with pytest.raises(ValueError):  # not at least 2d
         get_nondiag_weight(rndstate.randn(n_channels))
     with pytest.raises(ValueError):  # not square
-        get_nondiag_weight(rndstate.randn(n_trials, n_channels, n_channels + 2))
+        shape = (n_trials, n_channels, n_channels + 2)
+        get_nondiag_weight(rndstate.randn(*shape))

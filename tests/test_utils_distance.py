@@ -68,12 +68,12 @@ def test_distance_func_rand(dist, get_covmats):
     assert dist(A, B) == approx(0, abs=1e-4, rel=1e-6)
 
 
-@pytest.mark.parametrize("dist, dist_func", zip(get_distances(), get_dist_func()))
-def test_distance_wrapper(dist, dist_func, get_covmats):
+@pytest.mark.parametrize("dist, dfunc", zip(get_distances(), get_dist_func()))
+def test_distance_wrapper(dist, dfunc, get_covmats):
     n_trials, n_channels = 2, 5
     covmats = get_covmats(n_trials, n_channels)
     A, B = covmats[0], covmats[1]
-    assert distance(A, B, metric=dist) == dist_func(A, B)
+    assert distance(A, B, metric=dist) == dfunc(A, B)
 
 
 def test_pairwise_distance_matrix(get_covmats):

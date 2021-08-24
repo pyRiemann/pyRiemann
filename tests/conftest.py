@@ -43,16 +43,16 @@ def rndstate():
 
 @pytest.fixture
 def get_covmats(rndstate):
-    def _gen_cov(n_trials, n_channels):
-        return generate_cov(n_trials, n_channels, rndstate, return_params=False)
+    def _gen_cov(n_trials, n_chan):
+        return generate_cov(n_trials, n_chan, rndstate, return_params=False)
 
     return _gen_cov
 
 
 @pytest.fixture
 def get_covmats_params(rndstate):
-    def _gen_cov_params(n_trials, n_channels):
-        return generate_cov(n_trials, n_channels, rndstate, return_params=True)
+    def _gen_cov_params(n_trials, n_chan):
+        return generate_cov(n_trials, n_chan, rndstate, return_params=True)
 
     return _gen_cov_params
 

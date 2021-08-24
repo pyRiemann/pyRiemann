@@ -7,7 +7,10 @@ from pytest import approx
 from sklearn.dummy import DummyClassifier
 
 
-@pytest.mark.parametrize("classif", [MDM, FgMDM, KNearestNeighbor, TSclassifier])
+rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier]
+
+
+@pytest.mark.parametrize("classif", rclf)
 class ClassifierTestCase:
     def test_two_classes(self, classif, get_covmats):
         n_classes, n_trials, n_channels = 2, 6, 3
@@ -125,7 +128,7 @@ def test_metric_dist(classif, mean, dist, get_covmats):
     clf.fit(covmats, labels).predict(covmats)
 
 
-@pytest.mark.parametrize("classif", [MDM, FgMDM, KNearestNeighbor, TSclassifier])
+@pytest.mark.parametrize("classif", rclf)
 @pytest.mark.parametrize("metric", [42, "faulty"])
 def test_metric_wrong_keys(classif, metric, get_covmats):
     with pytest.raises((TypeError, KeyError)):
@@ -136,7 +139,7 @@ def test_metric_wrong_keys(classif, metric, get_covmats):
         clf.fit(covmats, labels).predict(covmats)
 
 
-@pytest.mark.parametrize("classif", [MDM, FgMDM, KNearestNeighbor, TSclassifier])
+@pytest.mark.parametrize("classif", rclf)
 @pytest.mark.parametrize("metric", get_metrics())
 def test_metric_str(classif, metric, get_covmats):
     n_trials, n_channels = 6, 3
@@ -175,11 +178,3 @@ def test_TSclassifier_classifier(get_covmats):
     labels = np.array([0, 1]).repeat(n_trials // 2)
     clf = TSclassifier(clf=DummyClassifier())
     clf.fit(covmats, labels).predict(covmats)
-
-
-@pytest.mark.parametrize("classif", [FgMDM, TSclassifier])
-def test_classif_tsupdate(classif, get_covmats):
-    n_trials, n_channels = 6, 3
-    covmats = get_covmats(n_trials, n_channels)
-    labels = np.array([0, 1]).repeat(n_trials // 2)
-    clf = classif(tsupdate=True)

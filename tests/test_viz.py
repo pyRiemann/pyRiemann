@@ -24,7 +24,8 @@ def test_confusion_matrix():
     """Test confusion_matrix"""
     target = np.array([0, 1] * 10)
     preds = np.array([0, 1] * 10)
-    with pytest.warns(DeprecationWarning, match="plot_confusion_matrix is deprecated"):
+    with pytest.warns(DeprecationWarning,
+                      match="plot_confusion_matrix is deprecated"):
         plot_confusion_matrix(target, preds, ["a", "b"])
 
 

@@ -82,15 +82,15 @@ def test_distance_wrapper_simple(metric):
     assert geodesic(A, B, 0.5, metric=metric) == approx(Ctrue)
 
 
-@pytest.mark.parametrize("metric, geod_func", zip(get_geod_name(), get_geod_func()))
-def test_distance_wrapper_random(metric, geod_func, get_covmats):
+@pytest.mark.parametrize("met, gfunc", zip(get_geod_name(), get_geod_func()))
+def test_distance_wrapper_random(met, gfunc, get_covmats):
     n_trials, n_channels = 2, 5
     covmats = get_covmats(n_trials, n_channels)
     A, B = covmats[0], covmats[1]
-    if geod_func is geodesic_euclid:
+    if gfunc is geodesic_euclid:
         Ctrue = mean_euclid(covmats)
-    elif geod_func is geodesic_logeuclid:
+    elif gfunc is geodesic_logeuclid:
         Ctrue = mean_logeuclid(covmats)
-    elif geod_func is geodesic_riemann:
+    elif gfunc is geodesic_riemann:
         Ctrue = mean_riemann(covmats)
-    assert geodesic(A, B, 0.5, metric=metric) == approx(Ctrue)
+    assert geodesic(A, B, 0.5, metric=met) == approx(Ctrue)

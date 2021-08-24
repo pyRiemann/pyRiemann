@@ -75,7 +75,8 @@ class TestRiemannianClustering(ClusteringTestCase):
         _, n_channels, n_channels = covmats.shape
         clf = clust(n_clusters=n_clusters).fit(covmats)
         centroids = clf.centroids()
-        assert np.array(centroids).shape == (n_clusters, n_channels, n_channels)
+        shape = (n_clusters, n_channels, n_channels)
+        assert np.array(centroids).shape == shape
 
     def clf_transform_per_class(self, clust, covmats, n_clusters, labels):
         n_classes = len(np.unique(labels))
@@ -131,7 +132,10 @@ def test_km_init_metric(clust, init, n_init, metric, get_covmats):
             n_init=n_init,
         )
     else:
-        clf = clust(n_clusters=n_clusters, metric=metric, init=init, n_init=n_init)
+        clf = clust(n_clusters=n_clusters,
+                    metric=metric,
+                    init=init,
+                    n_init=n_init)
     clf.fit(covmats, labels)
     transformed = clf.transform(covmats)
     assert len(transformed) == n_trials

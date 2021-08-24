@@ -1,6 +1,8 @@
 from conftest import get_covmats, rndstate, get_metrics
 import numpy as np
-from pyriemann.utils.tangentspace import tangent_space, untangent_space, transport
+from pyriemann.utils.tangentspace import (
+    tangent_space, untangent_space, transport
+)
 import pytest
 from pytest import approx
 
@@ -26,7 +28,6 @@ def test_untangent_space(rndstate):
 def test_tangent_and_untangent_space(get_covmats):
     """Test tangent space projection and retro-projection should be the same"""
     n_trials, n_channels = 10, 3
-    n_ts = (n_channels * (n_channels + 1)) // 2
     covmats = get_covmats(n_trials, n_channels)
     Xts = tangent_space(covmats, np.eye(n_channels))
     covmats_ut = untangent_space(Xts, np.eye(n_channels))
@@ -36,7 +37,6 @@ def test_tangent_and_untangent_space(get_covmats):
 @pytest.mark.parametrize("metric", get_metrics())
 def test_transport(metric, get_covmats):
     n_trials, n_channels = 10, 3
-    n_ts = (n_channels * (n_channels + 1)) // 2
     covmats = get_covmats(n_trials, n_channels)
     ref = np.eye(n_channels)
     covtr = transport(covmats, ref, metric=metric)

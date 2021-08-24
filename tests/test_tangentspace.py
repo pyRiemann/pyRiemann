@@ -41,14 +41,6 @@ class TestTangentSpace(TangentSpaceTestCase):
         else:
             assert Xtr.shape == (n_trials, n_channels, n_channels)
 
-    def clf_fit_independence(self, tspace, covmats, labels):
-        n_trials, n_channels, n_channels = covmats.shape
-        ts = tspace()
-        Xtr = ts.fit(covmats, labels)
-        # retraining with different size should erase previous fit
-        new_covmats = covmats[:, :-1, :-1]
-        Xtr = ts.fit(new_covmats, labels)
-
     def clf_fit_transform_independence(self, tspace, covmats, labels):
         n_trials, n_channels, n_channels = covmats.shape
         ts = tspace()
@@ -58,7 +50,6 @@ class TestTangentSpace(TangentSpaceTestCase):
         ts.fit(new_covmats, labels)
         # fit_transform should work as well
         ts.fit_transform(covmats, labels)
-
 
     def clf_transform_wo_fit(self, tspace, covmats):
         n_trials, n_channels, n_channels = covmats.shape
