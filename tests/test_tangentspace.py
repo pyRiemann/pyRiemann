@@ -14,6 +14,7 @@ class TangentSpaceTestCase:
         labels = np.array([0, 1]).repeat(n_trials // n_classes)
         self.clf_transform(tspace, covmats, labels)
         self.clf_fit_transform(tspace, covmats, labels)
+        self.clf_fit_transform_independence(tspace, covmats, labels)
         if tspace is TangentSpace:
             self.clf_transform_wo_fit(tspace, covmats)
             self.clf_inversetransform(tspace, covmats)
@@ -39,6 +40,25 @@ class TestTangentSpace(TangentSpaceTestCase):
             assert Xtr.shape == (n_trials, n_ts)
         else:
             assert Xtr.shape == (n_trials, n_channels, n_channels)
+
+    def clf_fit_independence(self, tspace, covmats, labels):
+        n_trials, n_channels, n_channels = covmats.shape
+        ts = tspace()
+        Xtr = ts.fit(covmats, labels)
+        # retraining with different size should erase previous fit
+        new_covmats = covmats[:, :-1, :-1]
+        Xtr = ts.fit(new_covmats, labels)
+
+    def clf_fit_transform_independence(self, tspace, covmats, labels):
+        n_trials, n_channels, n_channels = covmats.shape
+        ts = tspace()
+        ts.fit(covmats, labels)
+        # retraining with different size should erase previous fit
+        new_covmats = covmats[:, :-1, :-1]
+        ts.fit(new_covmats, labels)
+        # fit_transform should work as well
+        ts.fit_transform(covmats, labels)
+
 
     def clf_transform_wo_fit(self, tspace, covmats):
         n_trials, n_channels, n_channels = covmats.shape

@@ -164,7 +164,6 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             the tangent space projection of the matrices.
         """
         # compute mean covariance
-        self._check_reference_points(X)
         self.reference_ = mean_covariance(X, metric=self.metric,
                                           sample_weight=sample_weight)
         return tangent_space(X, self.reference_)
