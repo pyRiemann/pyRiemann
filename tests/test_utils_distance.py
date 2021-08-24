@@ -61,11 +61,11 @@ def test_distance_func_eye(dist):
 
 @pytest.mark.parametrize("dist", get_dist_func())
 def test_distance_func_rand(dist, get_covmats):
-    n_trials, n_channels = 2, 5
+    n_trials, n_channels = 2, 6
     covmats = get_covmats(n_trials, n_channels)
     A, C = covmats[0], covmats[1]
-    B = geodesic(A, C, alpha=1e-8)
-    assert dist(A, B) == approx(0, abs=1e-4, rel=1e-6)
+    B = geodesic(A, C, alpha=0.5)
+    assert dist(A, B) < dist(A, C)
 
 
 @pytest.mark.parametrize("dist, dfunc", zip(get_distances(), get_dist_func()))
