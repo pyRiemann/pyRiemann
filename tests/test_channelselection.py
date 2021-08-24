@@ -1,31 +1,26 @@
 """Test for channel selection."""
+from conftest import get_covmats, rndstate
 import numpy as np
+from numpy.testing import assert_array_equal
 from pyriemann.channelselection import ElectrodeSelection, FlatChannelRemover
 
 
-def generate_cov(Nt, Ne):
-    """Generate a set of cavariances matrices for test purpose."""
-    diags = 1.0+0.1*np.random.randn(Nt, Ne)
-    covmats = np.empty((Nt, Ne, Ne))
-    for i in range(Nt):
-        covmats[i] = np.diag(diags[i])
-    return covmats
-
-
-def test_ElectrodeSelection_transform():
+def test_ElectrodeSelection_transform(get_covmats):
     """Test transform of channelselection."""
-    covset = generate_cov(10, 30)
+    n_trials, n_channels = 10, 3
+    covset = get_covmats(n_trials, n_channels)
     labels = np.array([0, 1]).repeat(5)
     se = ElectrodeSelection()
     se.fit(covset, labels)
     se.transform(covset)
 
 
-def test_FlatChannelRemover():
-    X = np.random.rand(100, 10, 3)
+def test_FlatChannelRemover(rndstate):
+    n_times, n_trials, n_channels = 100, 10, 3
+    X = rndstate.rand(n_times, n_trials, n_channels)
     X[:, 0, :] = 999
     fcr = FlatChannelRemover()
     fcr.fit(X)
-    np.testing.assert_array_equal(fcr.channels_, range(1, 10))
+    assert_array_equal(fcr.channels_, range(1, 10))
     Xt = fcr.fit_transform(X)
-    np.testing.assert_array_equal(Xt, X[:, 1:, :])
+    assert_array_equal(Xt, X[:, 1:, :])

@@ -1,54 +1,77 @@
+from conftest import get_covmats, requires_matplotlib
 import numpy as np
 from pyriemann.stats import PermutationDistance, PermutationModel
 import pytest
 from pyriemann.spatialfilters import CSP
 
 
-def generate_cov(Nt, Ne):
-    """Generate a set of cavariances matrices for test purpose."""
-    rs = np.random.RandomState(1234)
-    diags = 2.0 + 0.1 * rs.randn(Nt, Ne)
-    A = 2*rs.rand(Ne, Ne) - 1
-    A /= np.atleast_2d(np.sqrt(np.sum(A**2, 1))).T
-    covmats = np.empty((Nt, Ne, Ne))
-    for i in range(Nt):
-        covmats[i] = np.dot(np.dot(A, np.diag(diags[i])), A.T)
-    return covmats
-
-
-def test_permutation_distance():
+def test_permutation_badmode():
     """Test one way permutation test"""
-    covset = generate_cov(10, 5)
-    labels = np.array([0, 1]).repeat(5)
-    groups = np.array([0] * 5 + [1] * 5)
+    with pytest.raises(ValueError):
+        PermutationDistance(mode="badmode")
+
+
+@pytest.mark.parametrize("mode", ["ttest", "ftest"])
+def test_permutation_mode(mode, get_covmats):
+    """Test one way permutation test"""
+    n_trials, n_channels = 6, 3
+    covmats = get_covmats(n_trials, n_channels)
+    labels = np.array([0, 1]).repeat(3)
+    p = PermutationDistance(100, mode=mode)
+    p.test(covmats, labels)
 
     with pytest.raises(ValueError):
         PermutationDistance(mode='badmode')
 
+def test_permutation_pairwise(get_covmats):
+    """Test one way permutation pairwise test"""
+    n_trials, n_channels = 6, 3
+    covmats = get_covmats(n_trials, n_channels)
+    labels = np.array([0, 1]).repeat(3)
+    groups = np.array([0] * 3 + [1] * 3)
     # pairwise
     p = PermutationDistance(100, mode='pairwise')
     p.test(covset, labels)
     # with group
-    p.test(covset, labels, groups=groups)
-    # t-test
-    p = PermutationDistance(100, mode='ttest')
-    p.test(covset, labels)
-    # f-test
-    p = PermutationDistance(100, mode='ftest')
-    p.test(covset, labels)
+    p.test(covmats, labels, groups=groups)
+
+
+def test_permutation_pairwise_estimator(get_covmats):
+    """Test one way permutation with estimator"""
+    n_trials, n_channels = 6, 3
+    covmats = get_covmats(n_trials, n_channels)
+    labels = np.array([0, 1]).repeat(3)
     # with custom estimator
-    p = PermutationDistance(10, mode='pairwise', estimator=CSP(2, log=False))
-    p.test(covset, labels)
+    p = PermutationDistance(10, mode="pairwise", estimator=CSP(2, log=False))
+    p.test(covmats, labels)
+
+
+def test_permutation_pairwise_unique(get_covmats):
+    """Test one way permutation with estimator"""
+    n_trials, n_channels = 6, 3
+    covmats = get_covmats(n_trials, n_channels)
+    labels = np.array([0, 1]).repeat(3)
     # unique perms
     p = PermutationDistance(1000)
-    p.test(covset, labels)
+    p.test(covmats, labels)
+
+
+@requires_matplotlib
+def test_permutation_pairwise_plot(get_covmats):
+    """Test one way permutation with estimator"""
+    n_trials, n_channels = 6, 3
+    covmats = get_covmats(n_trials, n_channels)
+    labels = np.array([0, 1]).repeat(3)
+    p = PermutationDistance(100, mode="pairwise")
+    p.test(covmats, labels)
     p.plot(nbins=2)
 
 
-def test_permutation_model():
+def test_permutation_model(get_covmats):
     """Test one way permutation test"""
-    covset = generate_cov(10, 30)
-    labels = np.array([0, 1]).repeat(5)
+    n_trials, n_channels = 6, 3
+    covmats = get_covmats(n_trials, n_channels)
+    labels = np.array([0, 1]).repeat(3)
     # pairwise
     p = PermutationModel(10)
     p.test(covset, labels)
