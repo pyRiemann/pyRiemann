@@ -7,7 +7,7 @@ from pyriemann.channelselection import ElectrodeSelection, FlatChannelRemover
 
 def test_ElectrodeSelection_transform(get_covmats):
     """Test transform of channelselection."""
-    n_trials, n_channels = 10, 3
+    n_trials, n_channels = 10, 30
     covset = get_covmats(n_trials, n_channels)
     labels = np.array([0, 1]).repeat(5)
     se = ElectrodeSelection()
