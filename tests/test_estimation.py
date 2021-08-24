@@ -12,7 +12,11 @@ from pyriemann.estimation import (
 import pytest
 
 
-@pytest.mark.parametrize("estimator", ["cov", "scm", "lwf", "oas", "mcd", "corr"])
+estim = ["cov", "scm", "lwf", "oas", "mcd", "corr"]
+coh = ["ordinary", "instantaneous", "lagged", "imaginary"]
+
+
+@pytest.mark.parametrize("estimator", estim)
 def test_covariances(estimator, rndstate):
     """Test Covariances"""
     n_trials, n_channels, n_times = 2, 3, 100
@@ -47,7 +51,7 @@ def test_hankel_covariances_delays(rndstate):
     assert np.any(np.linalg.eigvals(covmats) > 0.0)
 
 
-@pytest.mark.parametrize("estimator", ["cov", "scm", "lwf", "oas", "mcd", "corr"])
+@pytest.mark.parametrize("estimator", estim)
 @pytest.mark.parametrize("svd", [None, 2])
 def test_erp_covariances(estimator, svd, rndstate):
     """Test fit ERPCovariances"""
@@ -81,7 +85,7 @@ def test_erp_covariances_svd_error(rndstate):
         ERPCovariances(svd="42")
 
 
-@pytest.mark.parametrize("est", ["cov", "scm", "lwf", "oas", "mcd", "corr"])
+@pytest.mark.parametrize("est", estim)
 def test_xdawn_covariances(est, rndstate):
     """Test fit XdawnCovariances"""
     n_classes, nfilter = 2, 2
@@ -103,7 +107,7 @@ def test_xdawn_covariances(est, rndstate):
     assert np.any(np.linalg.eigvals(covmats) > 0.0)
 
 
-@pytest.mark.parametrize("xdawn_est", ["cov", "scm", "lwf", "oas", "mcd", "corr"])
+@pytest.mark.parametrize("xdawn_est", estim)
 def test_xdawn_covariances(xdawn_est, rndstate):
     """Test fit XdawnCovariances"""
     n_classes, nfilter = 2, 2
@@ -173,7 +177,7 @@ def test_cosp_covariances(rndstate):
     assert np.any(np.linalg.eigvals(covmats.mean(axis=-1)) > 0.0)
 
 
-@pytest.mark.parametrize("coh", ["ordinary", "instantaneous", "lagged", "imaginary"])
+@pytest.mark.parametrize("coh", coh)
 def test_coherences(coh, rndstate):
     """Test fit Coherences"""
     n_trials, n_channels, n_times = 2, 3, 1000

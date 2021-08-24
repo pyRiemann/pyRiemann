@@ -32,28 +32,41 @@ class SpatialFiltersTestCase:
         n_classes = 3
         n_trials, n_channels, n_times = 6, 3, 512
         labels = np.array([0, 1, 2]).repeat(n_trials // n_classes)
+        if spfilt is Xdawn:
+            X = rndstate.randn(n_trials, n_channels, n_times)
+        elif spfilt in (CSP, SPoC, BilinearFilter):
+            X = get_covmats(n_trials, n_channels)
+        elif spfilt is AJDC:
+            n_subjects, n_conditions = 2, 2
+            X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
+
+        if spfilt in (Xdawn, CSP, SPoC, AJDC):
+            self.clf_fit(spfilt, X, labels, n_channels, n_times)
+        if spfilt is CSP:
+            self.clf_fit_error(spfilt, X, labels)
+        self.clf_transform(spfilt, X, labels, n_trials, n_channels, n_times)
+        if spfilt in (CSP, SPoC, BilinearFilter):
+            self.clf_transform_error(spfilt, X, labels, n_channels)
 
 
 class TestSpatialFilters(SpatialFiltersTestCase):
     def clf_fit(self, spfilt, X, labels, n_channels, n_times):
         n_classes = len(np.unique(labels))
-        default_nfilter = 4
         if spfilt is BilinearFilter:
             filters = np.eye(n_channels)
             sf = spfilt(filters)
         else:
             sf = spfilt()
         sf.fit(X, labels)
-        if sf is Xdawn:
-            assert len(xd.classes_) == n_classes
-            assert len(sf.filters_) == n_classes * default_nfilter
+        if spfilt is Xdawn:
+            assert len(sf.classes_) == n_classes
+            assert sf.filters_.shape == (n_classes * n_channels, n_channels)
             for sfilt in sf.filters_:
                 assert sfilt.shape == (n_channels,)
-        elif sf in [CSP, SPoC]:
-            assert sf.filters_.shape == (default_nfilter, n_times)
-        elif sf is AJDC:
-            n_sources = sf.n_sources_
-            assert sf.forward_filters_.shape == (n_sources_, n_channels)
+        elif spfilt in [CSP, SPoC]:
+            assert sf.filters_.shape == (n_channels, n_channels)
+        elif spfilt is AJDC:
+            assert sf.forward_filters_.shape == (sf.n_sources_, n_channels)
 
     def clf_fit_error(self, spfilt, X, labels):
         sf = spfilt()
@@ -71,7 +84,6 @@ class TestSpatialFilters(SpatialFiltersTestCase):
             sf.fit(X, X)
 
     def clf_transform(self, spfilt, X, labels, n_trials, n_channels, n_times):
-        default_nfilter = 4
         n_classes = len(np.unique(labels))
         if spfilt is BilinearFilter:
             filters = np.eye(n_channels)
@@ -113,8 +125,7 @@ def test_Xdawn_baselinecov(rndstate):
     labels = np.array([0, 1]).repeat(n_trials // n_classes)
     baseline_cov = np.identity(n_channels)
     xd = Xdawn(baseline_cov=baseline_cov)
-    xd.fit(x, labels)
-    transformed = xd.transform(x)
+    xd.fit(x, labels).transform(x)
     assert len(xd.filters_) == n_classes * default_nfilter
     for sfilt in xd.filters_:
         assert sfilt.shape == (n_channels,)
@@ -173,13 +184,14 @@ def test_AJDC_fit(rndstate):
     n_subjects, n_conditions, n_channels, n_times = 5, 3, 8, 512
     X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
     ajdc = AJDC().fit(X)
-    assert_array_equal(ajdc.forward_filters_.shape, [ajdc.n_sources_, n_channels])
-    assert_array_equal(ajdc.backward_filters_.shape, [n_channels, ajdc.n_sources_])
+    shape_ffilt = (ajdc.n_sources_, n_channels)
+    shape_bfilt = (n_channels, ajdc.n_sources_)
+    assert_array_equal(ajdc.forward_filters_.shape, shape_ffilt)
+    assert_array_equal(ajdc.backward_filters_.shape, shape_bfilt)
 
 
 def test_AJDC_fit_error(rndstate):
-    n_subjects, n_conditions, n_channels, n_times = 5, 3, 8, 512
-    X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
+    n_conditions, n_channels, n_times = 3, 8, 512
     ajdc = AJDC()
     with pytest.raises(ValueError):  # unequal # of conditions
         ajdc.fit(
@@ -222,8 +234,10 @@ def test_AJDC_fit_variable_input(rndstate):
 
     # 2 subjects, 2 conditions, same # channels, different # of times
     X = [
-        [rndstate.randn(n_chan, n_times + rndstate.randint(500)) for _ in range(2)],
-        [rndstate.randn(n_chan, n_times + rndstate.randint(500)) for _ in range(2)],
+        [rndstate.randn(n_chan, n_times + rndstate.randint(500))
+         for _ in range(2)],
+        [rndstate.randn(n_chan, n_times + rndstate.randint(500))
+         for _ in range(2)],
     ]
     ajdc.fit(X)
 
@@ -240,7 +254,8 @@ def test_AJDC_inverse_transform(rndstate):
     with pytest.raises(ValueError):  # not 3 dims
         ajdc.inverse_transform(Xt[0])
     with pytest.raises(ValueError):  # unequal # of sources
-        ajdc.inverse_transform(rndstate.randn(n_trials, ajdc.n_sources_ + 1, 1))
+        shape = (n_trials, ajdc.n_sources_ + 1, 1)
+        ajdc.inverse_transform(rndstate.randn(*shape))
 
     Xtb = ajdc.inverse_transform(Xt, supp=[ajdc.n_sources_ - 1])
     assert_array_equal(Xtb.shape, [n_trials, n_channels, n_times])
