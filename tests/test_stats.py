@@ -1,8 +1,8 @@
 from conftest import get_covmats, requires_matplotlib
 import numpy as np
 from pyriemann.stats import PermutationDistance, PermutationModel
-import pytest
 from pyriemann.spatialfilters import CSP
+import pytest
 
 
 def test_permutation_badmode():
@@ -20,8 +20,6 @@ def test_permutation_mode(mode, get_covmats):
     p = PermutationDistance(100, mode=mode)
     p.test(covmats, labels)
 
-    with pytest.raises(ValueError):
-        PermutationDistance(mode='badmode')
 
 def test_permutation_pairwise(get_covmats):
     """Test one way permutation pairwise test"""
@@ -30,8 +28,8 @@ def test_permutation_pairwise(get_covmats):
     labels = np.array([0, 1]).repeat(3)
     groups = np.array([0] * 3 + [1] * 3)
     # pairwise
-    p = PermutationDistance(100, mode='pairwise')
-    p.test(covset, labels)
+    p = PermutationDistance(100, mode="pairwise")
+    p.test(covmats, labels)
     # with group
     p.test(covmats, labels, groups=groups)
 
@@ -74,4 +72,4 @@ def test_permutation_model(get_covmats):
     labels = np.array([0, 1]).repeat(3)
     # pairwise
     p = PermutationModel(10)
-    p.test(covset, labels)
+    p.test(covmats, labels)

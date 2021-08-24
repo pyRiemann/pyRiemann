@@ -59,25 +59,8 @@ def test_riemann_mean(init, get_covmats_params):
     else:
         C = mean_riemann(covmats)
     Ctrue = np.exp(np.log(diags).mean(0))
-    Ctrue = np.dot(np.dot(A, np.diag(Ctrue)), A.T)
-    C = mean_riemann(covmats)
-    assert_array_almost_equal(C, Ctrue)
-
-
-def test_riemann_mean_with_init():
-    """Test the riemannian mean with init"""
-    covmats, diags, A = generate_cov(100, 3)
-    C = mean_riemann(covmats, init=covmats[0])
-    Ctrue = np.exp(np.log(diags).mean(0))
-    Ctrue = np.dot(np.dot(A, np.diag(Ctrue)), A.T)
-    assert_array_almost_equal(C, Ctrue)
-
-
-def test_logeuclid_mean():
-    """Test the logeuclidean mean"""
-    covmats, _, A = generate_cov(100, 3)
-    C = mean_logeuclid(covmats)
-    assert C.shape == (3, 3)
+    Ctrue = A @ np.diag(Ctrue) @ A.T
+    assert C == approx(Ctrue)
 
 
 def test_euclid_mean(get_covmats):
@@ -85,8 +68,7 @@ def test_euclid_mean(get_covmats):
     n_trials, n_channels = 100, 3
     covmats = get_covmats(n_trials, n_channels)
     C = mean_euclid(covmats)
-    assert C.shape == (3, 3)
-    assert_array_almost_equal(C, covmats.mean(axis=0))
+    assert C == approx(covmats.mean(axis=0))
 
 
 def test_identity_mean(get_covmats):

@@ -177,6 +177,7 @@ Mean
     mean_logdet
     mean_wasserstein
     mean_ale
+    mean_alm
     mean_harmonic
     mean_kullback_sym
 
