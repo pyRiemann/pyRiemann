@@ -95,16 +95,14 @@ def test_FGDA_init(tsupdate, metric, get_covmats):
 def test_TS_vecdim_error(get_covmats, rndstate):
     n_trials, n_ts = 4, 6
     ts = TangentSpace()
-    # ts.fit(covmats, labels)
     with pytest.raises(ValueError):
         tsvectors_wrong = np.empty((n_trials, n_ts + 1))
         ts.transform(tsvectors_wrong)
 
 
 def test_TS_matdim_error(get_covmats):
-    n_trials, n_channels, n_ts = 4, 3, 6
+    n_trials, n_channels = 4, 3
     ts = TangentSpace()
-    # ts.fit(covmats, labels)
     with pytest.raises(ValueError):
         not_square_mat = np.empty((n_trials, n_channels, n_channels + 1))
         ts.transform(not_square_mat)

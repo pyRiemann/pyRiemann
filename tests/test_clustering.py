@@ -121,7 +121,12 @@ def test_km_init_metric(clust, init, n_init, metric, get_covmats):
             n_init=n_init,
         )
     else:
-        clf = clust(n_clusters=n_clusters, metric=metric, init=init, n_init=n_init)
+        clf = clust(
+            n_clusters=n_clusters,
+            metric=metric,
+            init=init,
+            n_init=n_init
+        )
     clf.fit(covmats, labels)
     transformed = clf.transform(covmats)
     assert len(transformed) == n_trials
