@@ -1,6 +1,5 @@
-from conftest import get_covmats, get_distances
+from conftest import get_distances
 import numpy as np
-from numpy.testing import assert_array_almost_equal
 from pyriemann.utils.distance import (
     distance_riemann,
     distance_euclid,

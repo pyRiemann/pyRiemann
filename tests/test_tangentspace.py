@@ -1,6 +1,5 @@
-from conftest import get_covmats, get_metrics, rndstate
+from conftest import get_metrics
 import numpy as np
-from numpy.testing import assert_array_almost_equal
 from pyriemann.tangentspace import TangentSpace, FGDA
 import pytest
 from pytest import approx

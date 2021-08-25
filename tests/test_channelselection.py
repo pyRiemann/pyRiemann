@@ -1,5 +1,3 @@
-"""Test for channel selection."""
-from conftest import get_covmats, rndstate
 import numpy as np
 from numpy.testing import assert_array_equal
 from pyriemann.channelselection import ElectrodeSelection, FlatChannelRemover

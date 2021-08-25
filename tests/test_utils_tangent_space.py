@@ -1,4 +1,4 @@
-from conftest import get_covmats, rndstate, get_metrics
+from conftest import get_metrics
 import numpy as np
 from pyriemann.utils.tangentspace import (
     tangent_space, untangent_space, transport

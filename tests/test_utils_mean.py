@@ -1,4 +1,3 @@
-from conftest import get_covmats, get_covmats_params
 import numpy as np
 import pytest
 from pytest import approx

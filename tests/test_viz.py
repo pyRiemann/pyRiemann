@@ -1,4 +1,4 @@
-from conftest import get_covmats, requires_matplotlib
+from conftest import requires_matplotlib
 import numpy as np
 import pytest
 
