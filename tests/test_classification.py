@@ -2,6 +2,7 @@ from conftest import get_covmats, get_distances, get_means, get_metrics
 import numpy as np
 from numpy.testing import assert_array_equal
 from pyriemann.classification import MDM, FgMDM, KNearestNeighbor, TSclassifier
+from pyriemann.estimation import Covariances
 import pytest
 from pytest import approx
 from sklearn.dummy import DummyClassifier
@@ -129,7 +130,7 @@ def test_metric_dist(classif, mean, dist, get_covmats):
 
 
 @pytest.mark.parametrize("classif", rclf)
-@pytest.mark.parametrize("metric", [42, "faulty"])
+@pytest.mark.parametrize("metric", [42, "faulty", {"foo": "bar"}])
 def test_metric_wrong_keys(classif, metric, get_covmats):
     with pytest.raises((TypeError, KeyError)):
         n_trials, n_channels = 6, 3
@@ -178,3 +179,9 @@ def test_TSclassifier_classifier(get_covmats):
     labels = np.array([0, 1]).repeat(n_trials // 2)
     clf = TSclassifier(clf=DummyClassifier())
     clf.fit(covmats, labels).predict(covmats)
+
+
+def test_TSclassifier_classifier_error():
+    """Test TS if not Classifier"""
+    with pytest.raises(TypeError):
+        clf = TSclassifier(clf=Covariances())

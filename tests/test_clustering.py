@@ -40,11 +40,6 @@ class ClusteringTestCase:
             labels = np.array([0, 1]).repeat(n_trials // 2)
             self.clf_transform_per_class(clust, covmats, n_clusters, labels)
             self.clf_jobs(clust, covmats, n_clusters, labels)
-        if clust is Potato:
-            self.clf_transform(clust, covmats)
-            self.clf_predict(clust, covmats)
-            self.clf_predict_proba(clust, covmats)
-            self.clf_partial_fit(clust, covmats)
 
 
 class TestRiemannianClustering(ClusteringTestCase):
@@ -96,24 +91,18 @@ class TestRiemannianClustering(ClusteringTestCase):
         predicted = clf.predict(covmats)
         assert predicted.shape == (n_trials,)
 
-    def clf_predict_proba(self, clust, covmats, n_clusters=None):
+    def clf_predict_proba(self, clust, covmats):
         n_trials = covmats.shape[0]
-        if n_clusters is None:
-            clf = clust()
-        else:
-            clf = clust(n_clusters=n_clusters)
+        clf = clust()
         clf.fit(covmats)
         probabilities = clf.predict(covmats)
-        if n_clusters is None:
-            assert probabilities.shape == (n_trials,)
-        else:
-            assert probabilities.shape == (n_trials, n_clusters)
-            assert probabilities.sum(axis=1) == approx(np.ones(n_trials))
+        assert probabilities.shape == (n_trials,)
 
     def clf_partial_fit(self, clust, covmats):
         clf = clust()
         clf.fit(covmats)
         clf.partial_fit(covmats)
+        clf.partial_fit(covmats[np.newaxis, 0])  # fit one sample at a time
 
 
 @pytest.mark.parametrize("clust", [Kmeans, KmeansPerClassTransform])
@@ -132,10 +121,7 @@ def test_km_init_metric(clust, init, n_init, metric, get_covmats):
             n_init=n_init,
         )
     else:
-        clf = clust(n_clusters=n_clusters,
-                    metric=metric,
-                    init=init,
-                    n_init=n_init)
+        clf = clust(n_clusters=n_clusters, metric=metric, init=init, n_init=n_init)
     clf.fit(covmats, labels)
     transformed = clf.transform(covmats)
     assert len(transformed) == n_trials
@@ -146,7 +132,7 @@ def test_Potato_equal_labels():
         Potato(pos_label=0)
 
 
-@pytest.mark.parametrize("y_fail", [[1], [0] * 6, [0, 2, 3] + [1] * 17])
+@pytest.mark.parametrize("y_fail", [[1], [0] * 6, [0] * 7, [0, 1, 2] * 2])
 def test_Potato_fit_error(y_fail, get_covmats):
     n_trials, n_channels = 6, 3
     covmats = get_covmats(n_trials, n_channels)
