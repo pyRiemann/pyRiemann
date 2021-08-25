@@ -1,4 +1,4 @@
-from conftest import get_covmats, get_metrics
+from conftest import get_covmats, get_metrics, rndstate
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 from pyriemann.tangentspace import TangentSpace, FGDA
@@ -90,3 +90,24 @@ def test_FGDA_init(tsupdate, metric, get_covmats):
     ts.fit(covmats, labels)
     Xtr = ts.transform(covmats)
     assert Xtr.shape == (n_trials, n_channels, n_channels)
+
+
+def test_TS_vecdim_error(get_covmats, rndstate):
+    n_trials, n_ts = 4, 6
+    ts = TangentSpace()
+    # ts.fit(covmats, labels)
+    with pytest.raises(ValueError):
+        tsvectors_wrong = np.empty((n_trials, n_ts + 1))
+        ts.transform(tsvectors_wrong)
+
+
+def test_TS_matdim_error(get_covmats):
+    n_trials, n_channels, n_ts = 4, 3, 6
+    ts = TangentSpace()
+    # ts.fit(covmats, labels)
+    with pytest.raises(ValueError):
+        not_square_mat = np.empty((n_trials, n_channels, n_channels + 1))
+        ts.transform(not_square_mat)
+    with pytest.raises(ValueError):
+        too_many_dim = np.empty((1, 2, 3, 4))
+        ts.transform(too_many_dim)
