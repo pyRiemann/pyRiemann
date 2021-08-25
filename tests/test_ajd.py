@@ -42,11 +42,11 @@ def test_ajd_shape(ajd, get_covmats):
 
 def test_pham(get_covmats):
     """Test pham's ajd"""
-    n_trials, n_channels = 5, 3
+    n_trials, n_channels, w_val = 5, 3, 2
     covmats = get_covmats(n_trials, n_channels)
     V, D = ajd_pham(covmats)
 
-    w = n_trials * np.ones(n_trials)
+    w = w_val * np.ones(n_trials)
     Vw, Dw = ajd_pham(covmats, sample_weight=w)
     assert_array_equal(V, Vw)  # same result as ajd_pham without weight
     assert_array_equal(D, Dw)
@@ -54,9 +54,9 @@ def test_pham(get_covmats):
 
 def test_pham_pos_weight(get_covmats):
     # Test that weight must be strictly positive
-    n_trials, n_channels = 5, 3
+    n_trials, n_channels, w_val = 5, 3, 2
     covmats = get_covmats(n_trials, n_channels)
-    w = n_trials * np.ones(n_trials)
+    w = w_val * np.ones(n_trials)
     with pytest.raises(ValueError):  # not strictly positive weight
         w[0] = 0
         ajd_pham(covmats, sample_weight=w)
@@ -65,9 +65,9 @@ def test_pham_pos_weight(get_covmats):
 def test_pham_zero_weight(get_covmats):
     # now test that setting one weight to almost zero it's almost
     # like not passing the matrix
-    n_trials, n_channels = 5, 3
+    n_trials, n_channels, w_val = 5, 3, 2
     covmats = get_covmats(n_trials, n_channels)
-    w = n_trials * np.ones(n_trials)
+    w = w_val * np.ones(n_trials)
     V, D = ajd_pham(covmats[1:])
     w[0] = 1e-12
 
