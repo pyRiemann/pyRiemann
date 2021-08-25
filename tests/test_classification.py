@@ -1,4 +1,4 @@
-from conftest import get_covmats, get_distances, get_means, get_metrics
+from conftest import get_distances, get_means, get_metrics
 import numpy as np
 from numpy.testing import assert_array_equal
 from pyriemann.classification import MDM, FgMDM, KNearestNeighbor, TSclassifier

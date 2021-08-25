@@ -1,5 +1,3 @@
-from numpy.testing import assert_array_almost_equal
-from conftest import get_covmats
 import numpy as np
 from pyriemann.utils.geodesic import (
     geodesic_riemann,

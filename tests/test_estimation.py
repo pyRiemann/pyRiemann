@@ -1,4 +1,3 @@
-from conftest import rndstate
 import numpy as np
 from pyriemann.estimation import (
     Covariances,
@@ -86,7 +85,7 @@ def test_erp_covariances_svd_error(rndstate):
 
 
 @pytest.mark.parametrize("est", estim)
-def test_xdawn_covariances(est, rndstate):
+def test_xdawn_est(est, rndstate):
     """Test fit XdawnCovariances"""
     n_classes, nfilter = 2, 2
     n_trials, n_channels, n_times = 4, 6, 100
@@ -108,7 +107,7 @@ def test_xdawn_covariances(est, rndstate):
 
 
 @pytest.mark.parametrize("xdawn_est", estim)
-def test_xdawn_covariances(xdawn_est, rndstate):
+def test_xdawn_covariances_est(xdawn_est, rndstate):
     """Test fit XdawnCovariances"""
     n_classes, nfilter = 2, 2
     n_trials, n_channels, n_times = 4, 6, 100

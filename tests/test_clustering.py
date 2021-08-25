@@ -1,8 +1,7 @@
-from conftest import get_covmats, get_metrics
+from conftest import get_metrics
 import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
-from pytest import approx
 from pyriemann.clustering import Kmeans, KmeansPerClassTransform, Potato
 
 

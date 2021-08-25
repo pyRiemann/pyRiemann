@@ -1,4 +1,3 @@
-from conftest import get_covmats, get_covmats_params
 from numpy.testing import assert_array_equal
 import numpy as np
 import pytest
