@@ -78,6 +78,7 @@ def test_distance_wrapper(dist, dfunc, get_covmats):
 def test_pairwise_distance_matrix(get_covmats):
     n_trials, n_channels = 6, 5
     covmats = get_covmats(n_trials, n_channels)
-    A, B = covmats[:4], covmats[4:]
+    n_subset = 4
+    A, B = covmats[:n_subset], covmats[n_subset:]
     pdist = pairwise_distance(A, B)
-    assert pdist.shape == (4, 2)
+    assert pdist.shape == (n_subset, 2)

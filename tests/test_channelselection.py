@@ -8,7 +8,7 @@ def test_ElectrodeSelection_transform(get_covmats, get_labels):
     n_trials, n_channels, n_classes = 10, 30, 2
     # labels = get_labels(n_trials, n_classes)
     covset = get_covmats(n_trials, n_channels)
-    labels = np.array([0, 1]).repeat(5)
+    labels = np.array([0, 1]).repeat(n_trials // 2)
     se = ElectrodeSelection()
     se.fit(covset, labels)
     se.transform(covset)
