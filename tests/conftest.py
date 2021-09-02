@@ -107,5 +107,9 @@ def get_metrics():
         yield met
 
 
-def is_spsd(mats):
+def is_semi_psd(mats):
     return np.all(np.linalg.eigvals(mats) >= 0.0)
+
+
+def is_psd(mats):
+    return np.all(np.linalg.eigvals(mats) > 0.0)

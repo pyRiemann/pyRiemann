@@ -1,4 +1,4 @@
-import numpy as np
+from conftest import is_psd, is_semi_psd
 from pyriemann.estimation import (
     Covariances,
     ERPCovariances,
@@ -25,7 +25,7 @@ def test_covariances(estimator, rndstate):
     covmats = cov.fit_transform(x)
     assert cov.get_params() == dict(estimator=estimator)
     assert covmats.shape == (n_trials, n_channels, n_channels)
-    assert np.any(np.linalg.eigvals(covmats) > 0.0)
+    assert is_psd(covmats)
 
 
 def test_hankel_covariances(rndstate):
@@ -37,7 +37,7 @@ def test_hankel_covariances(rndstate):
     covmats = cov.fit_transform(x)
     assert cov.get_params() == dict(estimator="scm", delays=4)
     assert covmats.shape == (n_trials, 4 * n_channels, 4 * n_channels)
-    assert np.any(np.linalg.eigvals(covmats) > 0.0)
+    assert is_psd(covmats)
 
 
 def test_hankel_covariances_delays(rndstate):
@@ -47,7 +47,7 @@ def test_hankel_covariances_delays(rndstate):
     cov.fit(x)
     covmats = cov.fit_transform(x)
     assert covmats.shape == (n_trials, 3 * n_channels, 3 * n_channels)
-    assert np.any(np.linalg.eigvals(covmats) > 0.0)
+    assert is_psd(covmats)
 
 
 @pytest.mark.parametrize("estimator", estim)
@@ -65,7 +65,7 @@ def test_erp_covariances(estimator, svd, rndstate, get_labels):
         covsize = n_classes * svd + n_channels
     assert cov.get_params() == dict(classes=None, estimator=estimator, svd=svd)
     assert covmats.shape == (n_trials, covsize, covsize)
-    assert np.any(np.linalg.eigvals(covmats) > 0.0)
+    assert is_semi_psd(covmats)
 
 
 def test_erp_covariances_classes(rndstate, get_labels):
@@ -75,7 +75,7 @@ def test_erp_covariances_classes(rndstate, get_labels):
     cov = ERPCovariances(classes=[0])
     covmats = cov.fit_transform(x, labels)
     assert covmats.shape == (n_trials, 2 * n_channels, 2 * n_channels)
-    assert np.any(np.linalg.eigvals(covmats) > 0.0)
+    assert is_semi_psd(covmats)
 
 
 def test_erp_covariances_svd_error(rndstate):
@@ -103,7 +103,7 @@ def test_xdawn_est(est, rndstate, get_labels):
     )
     covsize = 2 * (n_classes * nfilter)
     assert covmats.shape == (n_trials, covsize, covsize)
-    assert np.any(np.linalg.eigvals(covmats) > 0.0)
+    assert is_semi_psd(covmats)
 
 
 @pytest.mark.parametrize("xdawn_est", estim)
@@ -125,13 +125,13 @@ def test_xdawn_covariances_est(xdawn_est, rndstate, get_labels):
     )
     covsize = 2 * (n_classes * nfilter)
     assert covmats.shape == (n_trials, covsize, covsize)
-    assert np.any(np.linalg.eigvals(covmats) > 0.0)
+    assert is_semi_psd(covmats)
 
 
 @pytest.mark.parametrize("nfilter", [2, 4])
 def test_xdawn_covariances_nfilter(nfilter, rndstate, get_labels):
     """Test fit XdawnCovariances"""
-    n_classes, n_trials, n_channels, n_times = 2, 4, 6, 100
+    n_classes, n_trials, n_channels, n_times = 2, 4, 8, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
     labels = get_labels(n_trials, n_classes)
     cov = XdawnCovariances(nfilter=nfilter)
@@ -146,7 +146,7 @@ def test_xdawn_covariances_nfilter(nfilter, rndstate, get_labels):
     )
     covsize = 2 * (n_classes * nfilter)
     assert covmats.shape == (n_trials, covsize, covsize)
-    assert np.any(np.linalg.eigvals(covmats) > 0.0)
+    assert is_semi_psd(covmats)
 
 
 def test_xdawn_covariances_applyfilters(rndstate, get_labels):
@@ -158,7 +158,7 @@ def test_xdawn_covariances_applyfilters(rndstate, get_labels):
     covmats = cov.fit_transform(x, labels)
     covsize = n_classes * nfilter + n_channels
     assert covmats.shape == (n_trials, covsize, covsize)
-    assert np.any(np.linalg.eigvals(covmats) > 0.0)
+    assert is_semi_psd(covmats)
 
 
 def test_cosp_covariances(rndstate):
@@ -173,13 +173,13 @@ def test_cosp_covariances(rndstate):
     )
     n_freqs = 65
     assert covmats.shape == (n_trials, n_channels, n_channels, n_freqs)
-    assert np.any(np.linalg.eigvals(covmats.mean(axis=-1)) > 0.0)
+    assert is_semi_psd(covmats.mean(axis=-1))
 
 
 @pytest.mark.parametrize("coh", coh)
 def test_coherences(coh, rndstate):
     """Test fit Coherences"""
-    n_trials, n_channels, n_times = 2, 3, 1000
+    n_trials, n_channels, n_times = 2, 5, 200
     x = rndstate.randn(n_trials, n_channels, n_times)
 
     cov = Coherences(coh=coh)
@@ -190,7 +190,8 @@ def test_coherences(coh, rndstate):
     )
     n_freqs = 65
     assert covmats.shape == (n_trials, n_channels, n_channels, n_freqs)
-    assert np.any(np.linalg.eigvals(covmats.mean(axis=-1)) > 0.0)
+    if coh in ["ordinary", "instantaneous"]:
+        assert is_semi_psd(covmats.mean(axis=-1))
 
 
 @pytest.mark.parametrize("shrinkage", [0.1, 0.9])
@@ -203,4 +204,4 @@ def test_shrinkage(shrinkage, rndstate):
     covmats = sh.fit(covmats).transform(covmats)
     assert sh.get_params() == dict(shrinkage=shrinkage)
     assert covmats.shape == (n_trials, n_channels, n_channels)
-    assert np.any(np.linalg.eigvals(covmats) > 0.0)
+    assert is_psd(covmats)
