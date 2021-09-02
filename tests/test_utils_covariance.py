@@ -1,4 +1,4 @@
-from numpy.testing import assert_array_almost_equal, assert_array_equal
+from numpy.testing import assert_array_almost_equal
 import numpy as np
 from scipy.signal import welch, csd, coherence as coherence_sp
 import pytest
