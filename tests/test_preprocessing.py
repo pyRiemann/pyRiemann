@@ -64,8 +64,8 @@ def test_whitening_dimred(dim_red, rndstate, get_covmats):
         assert whit.n_components_ <= n_channels
     else:
         assert whit.n_components_ == n_comp
-    assert_array_equal(whit.filters_.shape, [n_channels, n_comp])
-    assert_array_equal(whit.inv_filters_.shape, [n_comp, n_channels])
+    assert whit.filters_.shape == (n_channels, n_comp)
+    assert whit.inv_filters_.shape == (n_comp, n_channels)
 
 
 @pytest.mark.parametrize("dim_red", dim_red)
@@ -80,7 +80,7 @@ def test_whitening_transform(dim_red, rndstate, get_covmats):
         n_comp = n_channels
     else:
         n_comp = whit.n_components_
-    assert_array_equal(cov_w.shape, [n_trials, n_comp, n_comp])
+    assert cov_w.shape == (n_trials, n_comp, n_comp)
     # after whitening, mean = identity
     assert_array_almost_equal(cov_w.mean(axis=0), np.eye(n_comp))
     if dim_red is not None and "max_cond" in dim_red.keys():
@@ -94,6 +94,6 @@ def test_whitening_inverse_transform(dim_red, rndstate, get_covmats):
     cov = get_covmats(n_trials, n_channels)
     whit = Whitening(dim_red=dim_red).fit(cov)
     cov_iw = whit.inverse_transform(whit.transform(cov))
-    assert_array_equal(cov_iw.shape, [n_trials, n_channels, n_channels])
+    assert cov_iw.shape == (n_trials, n_channels, n_channels)
     if dim_red is None:
         assert_array_almost_equal(cov, cov_iw)

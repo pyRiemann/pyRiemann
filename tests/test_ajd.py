@@ -45,9 +45,10 @@ def test_pham(get_covmats):
     n_trials, n_channels, w_val = 5, 3, 2
     covmats = get_covmats(n_trials, n_channels)
     V, D = ajd_pham(covmats)
+    assert V.shape == (n_channels, n_channels)
+    assert D.shape == (n_trials, n_channels, n_channels)
 
-    w = w_val * np.ones(n_trials)
-    Vw, Dw = ajd_pham(covmats, sample_weight=w)
+    Vw, Dw = ajd_pham(covmats, sample_weight=w_val * np.ones(n_trials))
     assert_array_equal(V, Vw)  # same result as ajd_pham without weight
     assert_array_equal(D, Dw)
 
@@ -68,7 +69,7 @@ def test_pham_zero_weight(get_covmats):
     n_trials, n_channels, w_val = 5, 3, 2
     covmats = get_covmats(n_trials, n_channels)
     w = w_val * np.ones(n_trials)
-    V, D = ajd_pham(covmats[1:])
+    V, D = ajd_pham(covmats[1:], sample_weight=w)
     w[0] = 1e-12
 
     Vw, Dw = ajd_pham(covmats, sample_weight=w)
@@ -85,3 +86,5 @@ def test_uwedge(init, get_covmats_params):
         V, D = uwedge(covmats)
     else:
         V, D = uwedge(covmats, init=A)
+    assert V.shape == (n_channels, n_channels)
+    assert D.shape == (n_trials, n_channels, n_channels)
