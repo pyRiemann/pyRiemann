@@ -13,10 +13,10 @@ rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier]
 
 @pytest.mark.parametrize("classif", rclf)
 class ClassifierTestCase:
-    def test_two_classes(self, classif, get_covmats):
+    def test_two_classes(self, classif, get_covmats, get_labels):
         n_classes, n_trials, n_channels = 2, 6, 3
         covmats = get_covmats(n_trials, n_channels)
-        labels = np.array([0, 1]).repeat(n_trials // n_classes)
+        labels = get_labels(n_trials, n_classes)
         self.clf_predict(classif, covmats, labels)
         if classif is MDM:
             self.clf_fitpredict(classif, covmats, labels)
@@ -32,10 +32,10 @@ class ClassifierTestCase:
         if classif is (FgMDM, TSclassifier):
             self.clf_tsupdate(classif, covmats, labels)
 
-    def test_multi_classes(self, classif, get_covmats):
+    def test_multi_classes(self, classif, get_covmats, get_labels):
         n_classes, n_trials, n_channels = 3, 9, 3
         covmats = get_covmats(n_trials, n_channels)
-        labels = np.array([0, 1, 2]).repeat(n_trials // n_classes)
+        labels = get_labels(n_trials, n_classes)
         self.clf_predict(classif, covmats, labels)
         if classif is MDM:
             self.clf_fitpredict(classif, covmats, labels)
@@ -109,10 +109,10 @@ class TestClassifier(ClassifierTestCase):
 @pytest.mark.parametrize("classif", [MDM, FgMDM, TSclassifier])
 @pytest.mark.parametrize("mean", ["faulty", 42])
 @pytest.mark.parametrize("dist", ["not_real", 27])
-def test_metric_dict_error(classif, mean, dist, get_covmats):
+def test_metric_dict_error(classif, mean, dist, get_covmats, get_labels):
     with pytest.raises((TypeError, KeyError)):
-        n_trials, n_channels = 6, 3
-        labels = np.array([0, 1]).repeat(n_trials // 2)
+        n_trials, n_channels, n_classes = 6, 3, 2
+        labels = get_labels(n_trials, n_classes)
         covmats = get_covmats(n_trials, n_channels)
         clf = classif(metric={"mean": mean, "distance": dist})
         clf.fit(covmats, labels).predict(covmats)
@@ -121,9 +121,9 @@ def test_metric_dict_error(classif, mean, dist, get_covmats):
 @pytest.mark.parametrize("classif", [MDM, FgMDM])
 @pytest.mark.parametrize("mean", get_means())
 @pytest.mark.parametrize("dist", get_distances())
-def test_metric_dist(classif, mean, dist, get_covmats):
-    n_trials, n_channels = 4, 3
-    labels = np.array([0, 1]).repeat(n_trials // 2)
+def test_metric_dist(classif, mean, dist, get_covmats, get_labels):
+    n_trials, n_channels, n_classes = 4, 3, 2
+    labels = get_labels(n_trials, n_classes)
     covmats = get_covmats(n_trials, n_channels)
     clf = classif(metric={"mean": mean, "distance": dist})
     clf.fit(covmats, labels).predict(covmats)
@@ -131,10 +131,10 @@ def test_metric_dist(classif, mean, dist, get_covmats):
 
 @pytest.mark.parametrize("classif", rclf)
 @pytest.mark.parametrize("metric", [42, "faulty", {"foo": "bar"}])
-def test_metric_wrong_keys(classif, metric, get_covmats):
+def test_metric_wrong_keys(classif, metric, get_covmats, get_labels):
     with pytest.raises((TypeError, KeyError)):
-        n_trials, n_channels = 6, 3
-        labels = np.array([0, 1]).repeat(n_trials // 2)
+        n_trials, n_channels, n_classes = 6, 3, 2
+        labels = get_labels(n_trials, n_classes)
         covmats = get_covmats(n_trials, n_channels)
         clf = classif(metric=metric)
         clf.fit(covmats, labels).predict(covmats)
@@ -142,29 +142,29 @@ def test_metric_wrong_keys(classif, metric, get_covmats):
 
 @pytest.mark.parametrize("classif", rclf)
 @pytest.mark.parametrize("metric", get_metrics())
-def test_metric_str(classif, metric, get_covmats):
-    n_trials, n_channels = 6, 3
-    labels = np.array([0, 1]).repeat(n_trials // 2)
+def test_metric_str(classif, metric, get_covmats, get_labels):
+    n_trials, n_channels, n_classes = 6, 3, 2
+    labels = get_labels(n_trials, n_classes)
     covmats = get_covmats(n_trials, n_channels)
     clf = classif(metric=metric)
     clf.fit(covmats, labels).predict(covmats)
 
 
 @pytest.mark.parametrize("dist", ["not_real", 42])
-def test_knn_dict_dist(dist, get_covmats):
+def test_knn_dict_dist(dist, get_covmats, get_labels):
     with pytest.raises(KeyError):
-        n_trials, n_channels = 6, 3
-        labels = np.array([0, 1]).repeat(n_trials // 2)
+        n_trials, n_channels, n_classes = 6, 3, 2
+        labels = get_labels(n_trials, n_classes)
         covmats = get_covmats(n_trials, n_channels)
         clf = KNearestNeighbor(metric={"distance": dist})
         clf.fit(covmats, labels).predict(covmats)
 
 
-def test_1NN(get_covmats):
+def test_1NN(get_covmats, get_labels):
     """Test KNearestNeighbor with K=1"""
-    n_trials, n_channels = 9, 3
+    n_trials, n_channels, n_classes = 9, 3, 3
     covmats = get_covmats(n_trials, n_channels)
-    labels = np.array([0, 1, 2]).repeat(n_trials // 3)
+    labels = get_labels(n_trials, n_classes)
 
     knn = KNearestNeighbor(1, metric="riemann")
     knn.fit(covmats, labels)
@@ -172,11 +172,11 @@ def test_1NN(get_covmats):
     assert_array_equal(labels, preds)
 
 
-def test_TSclassifier_classifier(get_covmats):
+def test_TSclassifier_classifier(get_covmats, get_labels):
     """Test TS Classifier"""
-    n_trials, n_channels = 6, 3
+    n_trials, n_channels, n_classes = 6, 3, 2
     covmats = get_covmats(n_trials, n_channels)
-    labels = np.array([0, 1]).repeat(n_trials // 2)
+    labels = get_labels(n_trials, n_classes)
     clf = TSclassifier(clf=DummyClassifier())
     clf.fit(covmats, labels).predict(covmats)
 

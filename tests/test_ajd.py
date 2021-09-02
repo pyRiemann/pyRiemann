@@ -69,7 +69,7 @@ def test_pham_zero_weight(get_covmats):
     n_trials, n_channels, w_val = 5, 3, 2
     covmats = get_covmats(n_trials, n_channels)
     w = w_val * np.ones(n_trials)
-    V, D = ajd_pham(covmats[1:], sample_weight=w)
+    V, D = ajd_pham(covmats[1:], sample_weight=w[1:])
     w[0] = 1e-12
 
     Vw, Dw = ajd_pham(covmats, sample_weight=w)
