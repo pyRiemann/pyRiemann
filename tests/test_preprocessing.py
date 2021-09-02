@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal
 from pyriemann.spatialfilters import Whitening
 import pytest
 
