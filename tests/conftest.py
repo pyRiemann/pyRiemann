@@ -57,6 +57,14 @@ def get_covmats_params(rndstate):
     return _gen_cov_params
 
 
+@pytest.fixture
+def get_labels():
+    def _get_labels(n_trials, n_classes):
+        return np.arange(n_classes).repeat(n_trials // n_classes)
+
+    return _get_labels
+
+
 def get_distances():
     distances = [
         "riemann",
