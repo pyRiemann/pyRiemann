@@ -263,15 +263,15 @@ def test_normalize(rndstate):
     # test a 2d array, ie a single square matrix
     mat = rndstate.randn(n_channels, n_channels)
     mat_n = normalize(mat, "trace")
-    assert_array_equal(mat.shape, mat_n.shape)
+    assert mat.shape == mat_n.shape
     # test a 3d array, ie a group of square matrices
     mat = rndstate.randn(n_trials, n_channels, n_channels)
     mat_n = normalize(mat, "determinant")
-    assert_array_equal(mat.shape, mat_n.shape)
+    assert mat.shape == mat_n.shape
     # test a 4d array, ie a group of groups of square matrices
     mat = rndstate.randn(n_conds, n_trials, n_channels, n_channels)
     mat_n = normalize(mat, "trace")
-    assert_array_equal(mat.shape, mat_n.shape)
+    assert mat.shape == mat_n.shape
 
     # after trace-normalization => trace equal to 1
     mat = rndstate.randn(n_trials, n_channels, n_channels)
@@ -301,11 +301,11 @@ def test_get_nondiag_weight(rndstate):
     assert np.isscalar(w)
     # test a 3d array, ie a group of square matrices
     w = get_nondiag_weight(rndstate.randn(n_trials, n_channels, n_channels))
-    assert_array_equal(w.shape, [n_trials])
+    assert w.shape == (n_trials,)
     # test a 4d array, ie a group of groups of square matrices
     shape = (n_conds, n_trials, n_channels, n_channels)
     w = get_nondiag_weight(rndstate.randn(*shape))
-    assert_array_equal(w.shape, [n_conds, n_trials])
+    assert w.shape == (n_conds, n_trials)
 
     # 2x2 constant matrices => non-diag weights equal to 1
     mats = rndstate.randn(n_trials, 1, 1) * np.ones((n_trials, 2, 2))
