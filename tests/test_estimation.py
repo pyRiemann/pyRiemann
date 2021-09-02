@@ -11,7 +11,7 @@ from pyriemann.estimation import (
 import pytest
 
 
-estim = ["cov", "scm", "lwf", "oas", "mcd", "corr"]
+estim = ["cov", "scm", "lwf", "oas", "mcd", "corr", "sch"]
 coh = ["ordinary", "instantaneous", "lagged", "imaginary"]
 
 
