@@ -7,7 +7,7 @@ from pyriemann.clustering import Kmeans, KmeansPerClassTransform, Potato
 
 @pytest.mark.parametrize("clust", [Kmeans, KmeansPerClassTransform, Potato])
 class ClusteringTestCase:
-    def test_two_clusters(self, clust, get_covmats):
+    def test_two_clusters(self, clust, get_covmats, get_labels):
         n_clusters = 2
         n_trials, n_channels = 6, 3
         covmats = get_covmats(n_trials, n_channels)
@@ -17,7 +17,8 @@ class ClusteringTestCase:
             self.clf_jobs(clust, covmats, n_clusters)
             self.clf_centroids(clust, covmats, n_clusters)
         if clust is KmeansPerClassTransform:
-            labels = np.array([0, 1]).repeat(n_trials // 2)
+            n_classes = 2
+            labels = get_labels(n_trials, n_classes)
             self.clf_transform_per_class(clust, covmats, n_clusters, labels)
             self.clf_jobs(clust, covmats, n_clusters, labels)
         if clust is Potato:
@@ -26,7 +27,7 @@ class ClusteringTestCase:
             self.clf_predict_proba(clust, covmats)
             self.clf_partial_fit(clust, covmats)
 
-    def test_three_clusters(self, clust, get_covmats):
+    def test_three_clusters(self, clust, get_covmats, get_labels):
         n_clusters = 3
         n_trials, n_channels = 6, 3
         covmats = get_covmats(n_trials, n_channels)
@@ -36,7 +37,8 @@ class ClusteringTestCase:
             self.clf_jobs(clust, covmats, n_clusters)
             self.clf_centroids(clust, covmats, n_clusters)
         if clust is KmeansPerClassTransform:
-            labels = np.array([0, 1]).repeat(n_trials // 2)
+            n_classes = 2
+            labels = get_labels(n_trials, n_classes)
             self.clf_transform_per_class(clust, covmats, n_clusters, labels)
             self.clf_jobs(clust, covmats, n_clusters, labels)
 
@@ -108,10 +110,10 @@ class TestRiemannianClustering(ClusteringTestCase):
 @pytest.mark.parametrize("init", ["random", "ndarray"])
 @pytest.mark.parametrize("n_init", [1, 5])
 @pytest.mark.parametrize("metric", get_metrics())
-def test_km_init_metric(clust, init, n_init, metric, get_covmats):
+def test_km_init_metric(clust, init, n_init, metric, get_covmats, get_labels):
     n_clusters, n_trials, n_channels = 2, 6, 3
     covmats = get_covmats(n_trials, n_channels)
-    labels = np.array([0, 1]).repeat(n_trials // n_clusters)
+    labels = get_labels(n_trials, n_clusters)
     if init == "ndarray":
         clf = clust(
             n_clusters=n_clusters,
@@ -151,29 +153,29 @@ def test_Potato_partial_fit_not_fitted(get_covmats):
         Potato().partial_fit(covmats)
 
 
-def test_Potato_partial_fit_diff_channels(get_covmats):
-    n_trials, n_channels = 6, 3
+def test_Potato_partial_fit_diff_channels(get_covmats, get_labels):
+    n_trials, n_channels, n_classes = 6, 3, 2
     covmats = get_covmats(n_trials, n_channels)
-    labels = np.array([0, 1]).repeat(n_trials // 2)
+    labels = get_labels(n_trials, n_classes)
     pt = Potato().fit(covmats, labels)
     with pytest.raises(ValueError):  # unequal # of chans
         pt.partial_fit(get_covmats(2, n_channels + 1))
 
 
-def test_Potato_partial_fit_no_poslabel(get_covmats):
-    n_trials, n_channels = 6, 3
+def test_Potato_partial_fit_no_poslabel(get_covmats, get_labels):
+    n_trials, n_channels, n_classes = 6, 3, 2
     covmats = get_covmats(n_trials, n_channels)
-    labels = np.array([0, 1]).repeat(n_trials // 2)
+    labels = get_labels(n_trials, n_classes)
     pt = Potato().fit(covmats, labels)
     with pytest.raises(ValueError):  # no positive labels
         pt.partial_fit(covmats, [0] * n_trials)
 
 
 @pytest.mark.parametrize("alpha", [-0.1, 1.1])
-def test_Potato_partial_fit_alpha(alpha, get_covmats):
-    n_trials, n_channels = 6, 3
+def test_Potato_partial_fit_alpha(alpha, get_covmats, get_labels):
+    n_trials, n_channels, n_classes = 6, 3, 2
     covmats = get_covmats(n_trials, n_channels)
-    labels = np.array([0, 1]).repeat(n_trials // 2)
+    labels = get_labels(n_trials, n_classes)
     pt = Potato().fit(covmats, labels)
     with pytest.raises(ValueError):
         pt.partial_fit(covmats, labels, alpha=alpha)

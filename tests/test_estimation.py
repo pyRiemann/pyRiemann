@@ -10,8 +10,8 @@ from pyriemann.estimation import (
 )
 import pytest
 
-
-estim = ["cov", "scm", "lwf", "oas", "mcd", "corr", "sch"]
+# TODO = add "sch" when PR merged
+estim = ["cov", "scm", "lwf", "oas", "mcd", "corr"]
 coh = ["ordinary", "instantaneous", "lagged", "imaginary"]
 
 
@@ -52,11 +52,11 @@ def test_hankel_covariances_delays(rndstate):
 
 @pytest.mark.parametrize("estimator", estim)
 @pytest.mark.parametrize("svd", [None, 2])
-def test_erp_covariances(estimator, svd, rndstate):
+def test_erp_covariances(estimator, svd, rndstate, get_labels):
     """Test fit ERPCovariances"""
     n_classes, n_trials, n_channels, n_times = 2, 4, 3, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
-    labels = np.array([0, 1]).repeat(n_trials // n_classes)
+    labels = get_labels(n_trials, n_classes)
     cov = ERPCovariances(estimator=estimator, svd=svd)
     covmats = cov.fit_transform(x, labels)
     if svd is None:
@@ -68,10 +68,10 @@ def test_erp_covariances(estimator, svd, rndstate):
     assert np.any(np.linalg.eigvals(covmats) > 0.0)
 
 
-def test_erp_covariances_classes(rndstate):
-    n_trials, n_channels, n_times = 4, 3, 100
+def test_erp_covariances_classes(rndstate, get_labels):
+    n_trials, n_channels, n_times, n_classes = 4, 3, 100, 2
     x = rndstate.randn(n_trials, n_channels, n_times)
-    labels = np.array([0, 1]).repeat(n_trials // 2)
+    labels = get_labels(n_trials, n_classes)
     cov = ERPCovariances(classes=[0])
     covmats = cov.fit_transform(x, labels)
     assert covmats.shape == (n_trials, 2 * n_channels, 2 * n_channels)
@@ -85,12 +85,12 @@ def test_erp_covariances_svd_error(rndstate):
 
 
 @pytest.mark.parametrize("est", estim)
-def test_xdawn_est(est, rndstate):
+def test_xdawn_est(est, rndstate, get_labels):
     """Test fit XdawnCovariances"""
     n_classes, nfilter = 2, 2
     n_trials, n_channels, n_times = 4, 6, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
-    labels = np.array([0, 1]).repeat(n_trials // n_classes)
+    labels = get_labels(n_trials, n_classes)
     cov = XdawnCovariances(nfilter, estimator=est)
     covmats = cov.fit_transform(x, labels)
     assert cov.get_params() == dict(
@@ -107,12 +107,12 @@ def test_xdawn_est(est, rndstate):
 
 
 @pytest.mark.parametrize("xdawn_est", estim)
-def test_xdawn_covariances_est(xdawn_est, rndstate):
+def test_xdawn_covariances_est(xdawn_est, rndstate, get_labels):
     """Test fit XdawnCovariances"""
     n_classes, nfilter = 2, 2
     n_trials, n_channels, n_times = 4, 6, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
-    labels = np.array([0, 1]).repeat(n_trials // n_classes)
+    labels = get_labels(n_trials, n_classes)
     cov = XdawnCovariances(nfilter, xdawn_estimator=xdawn_est)
     covmats = cov.fit_transform(x, labels)
     assert cov.get_params() == dict(
@@ -129,11 +129,11 @@ def test_xdawn_covariances_est(xdawn_est, rndstate):
 
 
 @pytest.mark.parametrize("nfilter", [2, 4])
-def test_xdawn_covariances_nfilter(nfilter, rndstate):
+def test_xdawn_covariances_nfilter(nfilter, rndstate, get_labels):
     """Test fit XdawnCovariances"""
     n_classes, n_trials, n_channels, n_times = 2, 4, 6, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
-    labels = np.array([0, 1]).repeat(n_trials // n_classes)
+    labels = get_labels(n_trials, n_classes)
     cov = XdawnCovariances(nfilter=nfilter)
     covmats = cov.fit_transform(x, labels)
     assert cov.get_params() == dict(
@@ -149,11 +149,11 @@ def test_xdawn_covariances_nfilter(nfilter, rndstate):
     assert np.any(np.linalg.eigvals(covmats) > 0.0)
 
 
-def test_xdawn_covariances_applyfilters(rndstate):
+def test_xdawn_covariances_applyfilters(rndstate, get_labels):
     n_classes, nfilter = 2, 2
     n_trials, n_channels, n_times = 4, 6, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
-    labels = np.array([0, 1]).repeat(n_trials // n_classes)
+    labels = get_labels(n_trials, n_classes)
     cov = XdawnCovariances(nfilter=nfilter, applyfilters=False)
     covmats = cov.fit_transform(x, labels)
     covsize = n_classes * nfilter + n_channels

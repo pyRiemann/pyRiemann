@@ -7,10 +7,10 @@ from pytest import approx
 
 @pytest.mark.parametrize("tspace", [TangentSpace, FGDA])
 class TangentSpaceTestCase:
-    def test_tangentspace(self, tspace, get_covmats):
+    def test_tangentspace(self, tspace, get_covmats, get_labels):
         n_classes, n_trials, n_channels = 2, 6, 3
         covmats = get_covmats(n_trials, n_channels)
-        labels = np.array([0, 1]).repeat(n_trials // n_classes)
+        labels = get_labels(n_trials, n_classes)
         self.clf_transform(tspace, covmats, labels)
         self.clf_fit_transform(tspace, covmats, labels)
         self.clf_fit_transform_independence(tspace, covmats, labels)
@@ -81,9 +81,9 @@ def test_TangentSpace_init(fit, tsupdate, metric, get_covmats):
 
 @pytest.mark.parametrize("tsupdate", [True, False])
 @pytest.mark.parametrize("metric", get_metrics())
-def test_FGDA_init(tsupdate, metric, get_covmats):
+def test_FGDA_init(tsupdate, metric, get_covmats, get_labels):
     n_classes, n_trials, n_channels = 2, 6, 3
-    labels = np.array([0, 1]).repeat(n_trials // n_classes)
+    labels = get_labels(n_trials, n_classes)
     covmats = get_covmats(n_trials, n_channels)
     ts = FGDA(metric=metric, tsupdate=tsupdate)
     ts.fit(covmats, labels)

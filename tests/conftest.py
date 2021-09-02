@@ -105,3 +105,7 @@ def get_metrics():
     ]
     for met in metrics:
         yield met
+
+
+def is_spsd(mats):
+    return np.all(np.linalg.eigvals(mats) >= 0.0)
