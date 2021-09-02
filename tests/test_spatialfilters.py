@@ -184,10 +184,8 @@ def test_AJDC_fit(rndstate):
     n_subjects, n_conditions, n_channels, n_times = 5, 3, 8, 512
     X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
     ajdc = AJDC().fit(X)
-    shape_ffilt = (ajdc.n_sources_, n_channels)
-    shape_bfilt = (n_channels, ajdc.n_sources_)
-    assert_array_equal(ajdc.forward_filters_.shape, shape_ffilt)
-    assert_array_equal(ajdc.backward_filters_.shape, shape_bfilt)
+    assert ajdc.forward_filters_.shape == (ajdc.n_sources_, n_channels)
+    assert ajdc.backward_filters_.shape == (n_channels, ajdc.n_sources_)
 
 
 def test_AJDC_fit_error(rndstate):
@@ -258,7 +256,7 @@ def test_AJDC_inverse_transform(rndstate):
         ajdc.inverse_transform(rndstate.randn(*shape))
 
     Xit = ajdc.inverse_transform(Xt, supp=[ajdc.n_sources_ - 1])
-    assert_array_equal(Xit.shape, [n_trials, n_channels, n_times])
+    assert Xit.shape == (n_trials, n_channels, n_times)
     with pytest.raises(ValueError):  # not a list
         ajdc.inverse_transform(Xt, supp=1)
 
@@ -271,7 +269,7 @@ def test_AJDC_expl_var(rndstate):
     n_trials = 4
     X_new = rndstate.randn(n_trials, n_channels, n_times)
     v = ajdc.get_src_expl_var(X_new)
-    assert_array_equal(v.shape, [n_trials, ajdc.n_sources_])
+    assert v.shape == (n_trials, ajdc.n_sources_)
     with pytest.raises(ValueError):  # not 3 dims
         ajdc.get_src_expl_var(X_new[0])
     with pytest.raises(ValueError):  # unequal # of chans
