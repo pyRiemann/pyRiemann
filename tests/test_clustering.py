@@ -16,16 +16,19 @@ class ClusteringTestCase:
             self.clf_transform(clust, covmats, n_clusters)
             self.clf_jobs(clust, covmats, n_clusters)
             self.clf_centroids(clust, covmats, n_clusters)
+            self.clf_fit_independence(clust, covmats)
         if clust is KmeansPerClassTransform:
             n_classes = 2
             labels = get_labels(n_trials, n_classes)
             self.clf_transform_per_class(clust, covmats, n_clusters, labels)
             self.clf_jobs(clust, covmats, n_clusters, labels)
+            self.clf_fit_labels_independence(clust, covmats, labels)
         if clust is Potato:
             self.clf_transform(clust, covmats)
             self.clf_predict(clust, covmats)
             self.clf_predict_proba(clust, covmats)
             self.clf_partial_fit(clust, covmats)
+            self.clf_fit_independence(clust, covmats)
 
     def test_three_clusters(self, clust, get_covmats, get_labels):
         n_clusters = 3
@@ -36,11 +39,13 @@ class ClusteringTestCase:
             self.clf_transform(clust, covmats, n_clusters)
             self.clf_jobs(clust, covmats, n_clusters)
             self.clf_centroids(clust, covmats, n_clusters)
+            self.clf_fit_independence(clust, covmats)
         if clust is KmeansPerClassTransform:
             n_classes = 2
             labels = get_labels(n_trials, n_classes)
             self.clf_transform_per_class(clust, covmats, n_clusters, labels)
             self.clf_jobs(clust, covmats, n_clusters, labels)
+            self.clf_fit_labels_independence(clust, covmats, labels)
 
 
 class TestRiemannianClustering(ClusteringTestCase):
@@ -105,6 +110,20 @@ class TestRiemannianClustering(ClusteringTestCase):
         clf.partial_fit(covmats)
         clf.partial_fit(covmats[np.newaxis, 0])  # fit one sample at a time
 
+    def clf_fit_independence(self, clust, covmats):
+        clf = clust()
+        clf.fit(covmats).transform(covmats)
+        # retraining with different size should erase previous fit
+        new_covmats = covmats[:, :-1, :-1]
+        clf.fit(new_covmats).transform(new_covmats)
+
+    def clf_fit_labels_independence(self, clust, covmats, labels):
+        clf = clust()
+        clf.fit(covmats, labels).transform(covmats)
+        # retraining with different size should erase previous fit
+        new_covmats = covmats[:, :-1, :-1]
+        clf.fit(new_covmats, labels).transform(new_covmats)
+
 
 @pytest.mark.parametrize("clust", [Kmeans, KmeansPerClassTransform])
 @pytest.mark.parametrize("init", ["random", "ndarray"])
@@ -123,10 +142,7 @@ def test_km_init_metric(clust, init, n_init, metric, get_covmats, get_labels):
         )
     else:
         clf = clust(
-            n_clusters=n_clusters,
-            metric=metric,
-            init=init,
-            n_init=n_init
+            n_clusters=n_clusters, metric=metric, init=init, n_init=n_init
         )
     clf.fit(covmats, labels)
     transformed = clf.transform(covmats)

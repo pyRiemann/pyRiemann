@@ -20,8 +20,8 @@ class SpatialFiltersTestCase:
             n_subjects, n_conditions = 2, 2
             X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
 
-        if spfilt in (Xdawn, CSP, SPoC, AJDC):
-            self.clf_fit(spfilt, X, labels, n_channels, n_times)
+        self.clf_fit(spfilt, X, labels, n_channels, n_times)
+        self.clf_fit_independence(spfilt, X, labels, n_channels, n_times)
         if spfilt is CSP:
             self.clf_fit_error(spfilt, X, labels)
         self.clf_transform(spfilt, X, labels, n_trials, n_channels, n_times)
@@ -40,8 +40,8 @@ class SpatialFiltersTestCase:
             n_subjects, n_conditions = 2, 2
             X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
 
-        if spfilt in (Xdawn, CSP, SPoC, AJDC):
-            self.clf_fit(spfilt, X, labels, n_channels, n_times)
+        self.clf_fit(spfilt, X, labels, n_channels, n_times)
+        self.clf_fit_independence(spfilt, X, labels, n_channels, n_times)
         if spfilt is CSP:
             self.clf_fit_error(spfilt, X, labels)
         self.clf_transform(spfilt, X, labels, n_trials, n_channels, n_times)
@@ -115,6 +115,22 @@ class TestSpatialFilters(SpatialFiltersTestCase):
             sf = spfilt()
         with pytest.raises(ValueError):
             sf.fit(X, labels).transform(X[:, :-1, :-1])
+
+    def clf_fit_independence(self, spfilt, X, labels, n_channels, n_times):
+        if spfilt is BilinearFilter:
+            filters = np.eye(n_channels)
+            sf = spfilt(filters)
+        else:
+            sf = spfilt()
+        sf.fit(X, labels)
+        if spfilt is Xdawn:
+            X_new = X[:, :-1, :]
+        elif spfilt in (CSP, SPoC, BilinearFilter):
+            X_new = X[:, :-1, :-1]
+        elif spfilt is AJDC:
+            X_new = X[:, :, :-1, :]
+        # retraining with different size should erase previous fit
+        sf.fit(X_new, labels)
 
 
 def test_Xdawn_baselinecov(rndstate, get_labels):

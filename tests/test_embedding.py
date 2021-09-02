@@ -12,3 +12,13 @@ def test_embedding(metric, eps, get_covmats):
     embd = Embedding(metric=metric, n_components=n_comp, eps=eps)
     covembd = embd.fit_transform(covmats)
     assert covembd.shape == (n_trials, n_comp)
+
+
+def test_fit_independence(get_covmats):
+    n_trials, n_channels = 6, 3
+    covmats = get_covmats(n_trials, n_channels)
+    embd = Embedding()
+    embd.fit_transform(covmats)
+    # retraining with different size should erase previous fit
+    new_covmats = covmats[:, :-1, :-1]
+    embd.fit_transform(new_covmats)
