@@ -249,16 +249,16 @@ def test_AJDC_inverse_transform(rndstate):
     n_trials = 4
     X_new = rndstate.randn(n_trials, n_channels, n_times)
     Xt = ajdc.transform(X_new)
-    Xtb = ajdc.inverse_transform(Xt)
-    assert_array_equal(Xtb.shape, [n_trials, n_channels, n_times])
+    Xit = ajdc.inverse_transform(Xt)
+    assert_array_equal(Xit.shape, [n_trials, n_channels, n_times])
     with pytest.raises(ValueError):  # not 3 dims
         ajdc.inverse_transform(Xt[0])
     with pytest.raises(ValueError):  # unequal # of sources
         shape = (n_trials, ajdc.n_sources_ + 1, 1)
         ajdc.inverse_transform(rndstate.randn(*shape))
 
-    Xtb = ajdc.inverse_transform(Xt, supp=[ajdc.n_sources_ - 1])
-    assert_array_equal(Xtb.shape, [n_trials, n_channels, n_times])
+    Xit = ajdc.inverse_transform(Xt, supp=[ajdc.n_sources_ - 1])
+    assert_array_equal(Xit.shape, [n_trials, n_channels, n_times])
     with pytest.raises(ValueError):  # not a list
         ajdc.inverse_transform(Xt, supp=1)
 
