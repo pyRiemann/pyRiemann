@@ -3,9 +3,10 @@ from numpy.testing import assert_array_equal
 from pyriemann.channelselection import ElectrodeSelection, FlatChannelRemover
 
 
-def test_ElectrodeSelection_transform(get_covmats):
+def test_ElectrodeSelection_transform(get_covmats, get_labels):
     """Test transform of channelselection."""
-    n_trials, n_channels = 10, 30
+    n_trials, n_channels, n_classes = 10, 30, 2
+    # labels = get_labels(n_trials, n_classes)
     covset = get_covmats(n_trials, n_channels)
     labels = np.array([0, 1]).repeat(5)
     se = ElectrodeSelection()
