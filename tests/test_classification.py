@@ -18,6 +18,7 @@ class ClassifierTestCase:
         covmats = get_covmats(n_trials, n_channels)
         labels = get_labels(n_trials, n_classes)
         self.clf_predict(classif, covmats, labels)
+        self.clf_fit_independence(classif, covmats, labels)
         if classif is MDM:
             self.clf_fitpredict(classif, covmats, labels)
         if classif in (MDM, FgMDM):
@@ -36,6 +37,7 @@ class ClassifierTestCase:
         n_classes, n_trials, n_channels = 3, 9, 3
         covmats = get_covmats(n_trials, n_channels)
         labels = get_labels(n_trials, n_classes)
+        self.clf_fit_independence(classif, covmats, labels)
         self.clf_predict(classif, covmats, labels)
         if classif is MDM:
             self.clf_fitpredict(classif, covmats, labels)
@@ -90,6 +92,13 @@ class TestClassifier(ClassifierTestCase):
         clf.fit(covmats, labels)
         transformed = clf.transform(covmats)
         assert transformed.shape == (n_trials, n_classes)
+
+    def clf_fit_independence(self, classif, covmats, labels):
+        clf = classif()
+        clf.fit(covmats, labels).predict(covmats)
+        # retraining with different size should erase previous fit
+        new_covmats = covmats[:, :-1, :-1]
+        clf.fit(new_covmats, labels).predict(new_covmats)
 
     def clf_jobs(self, classif, covmats, labels):
         clf = classif(n_jobs=2)
