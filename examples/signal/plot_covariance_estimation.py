@@ -54,7 +54,7 @@ for i in range(n_trials):
 # increasing epoch length.
 
 estimators = ["lwf", "oas", "sch"]
-w_len = np.linspace(10, n_times, 20, dtype=np.int)
+w_len = np.linspace(10, n_times, 20, dtype=int)
 dfd = list()
 for est in estimators:
     for wl in w_len:
@@ -77,7 +77,7 @@ plt.tight_layout()
 ###############################################################################
 # Choice of estimator for motor imagery data
 # -------------------------------------------
-# Loading data from PhysioNet MI dataset
+# Loading data from PhysioNet MI dataset, for subject 1.
 
 event_id = dict(hands=2, feet=3)
 subject = 1
@@ -105,7 +105,7 @@ event_ids = dict(hands=2, feet=3)
 # eigenvalues: high values indicates ill-conditionned matrices that are not
 # suitable for classification.
 # A common approach to mitigate this issue is to regularize covariance matrices
-# by shrinkage, like in Ledoit-Wolf, Schaefer-Strimmer or oracle estimator.
+# by shrinkage, like in Ledoit-Wolf, Schaefer-Strimmer or oracle estimators.
 
 estimators = ["lwf", "oas", "sch", "scm"]
 tmin = -0.2
@@ -138,7 +138,7 @@ ax.set(yscale="log")
 sns.lineplot(data=dfc, x="wlen", y="cond", hue="estimator", ax=ax)
 ax.set_title("Condition number of estimated covariance matrices")
 ax.set_xlabel("Epoch length (s)")
-ax.set_ylabel(r"$\lambda_{\min}$/$\lambda_{\max}$")
+ax.set_ylabel(r"$\lambda_{\max}$/$\lambda_{\min}$")
 plt.tight_layout()
 
 ###############################################################################
