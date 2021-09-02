@@ -8,10 +8,10 @@ from pyriemann.spatialfilters import Xdawn, CSP, SPoC, BilinearFilter, AJDC
 
 @pytest.mark.parametrize("spfilt", [Xdawn, CSP, SPoC, BilinearFilter, AJDC])
 class SpatialFiltersTestCase:
-    def test_two_classes(self, spfilt, get_covmats, rndstate):
+    def test_two_classes(self, spfilt, get_covmats, rndstate, get_labels):
         n_classes = 2
         n_trials, n_channels, n_times = 8, 3, 512
-        labels = np.array([0, 1]).repeat(n_trials // n_classes)
+        labels = get_labels(n_trials, n_classes)
         if spfilt is Xdawn:
             X = rndstate.randn(n_trials, n_channels, n_times)
         elif spfilt in (CSP, SPoC, BilinearFilter):
@@ -28,10 +28,10 @@ class SpatialFiltersTestCase:
         if spfilt in (CSP, SPoC, BilinearFilter):
             self.clf_transform_error(spfilt, X, labels, n_channels)
 
-    def test_three_classes(self, spfilt, get_covmats, rndstate):
+    def test_three_classes(self, spfilt, get_covmats, rndstate, get_labels):
         n_classes = 3
         n_trials, n_channels, n_times = 6, 3, 512
-        labels = np.array([0, 1, 2]).repeat(n_trials // n_classes)
+        labels = get_labels(n_trials, n_classes)
         if spfilt is Xdawn:
             X = rndstate.randn(n_trials, n_channels, n_times)
         elif spfilt in (CSP, SPoC, BilinearFilter):
@@ -117,12 +117,12 @@ class TestSpatialFilters(SpatialFiltersTestCase):
             sf.fit(X, labels).transform(X[:, :-1, :-1])
 
 
-def test_Xdawn_baselinecov(rndstate):
+def test_Xdawn_baselinecov(rndstate, get_labels):
     """Test cov precomputation"""
     n_trials, n_channels, n_times = 6, 5, 100
     n_classes, default_nfilter = 2, 4
     x = rndstate.randn(n_trials, n_channels, n_times)
-    labels = np.array([0, 1]).repeat(n_trials // n_classes)
+    labels = get_labels(n_trials, n_classes)
     baseline_cov = np.identity(n_channels)
     xd = Xdawn(baseline_cov=baseline_cov)
     xd.fit(x, labels).transform(x)
@@ -134,10 +134,10 @@ def test_Xdawn_baselinecov(rndstate):
 @pytest.mark.parametrize("nfilter", [3, 4])
 @pytest.mark.parametrize("metric", get_metrics())
 @pytest.mark.parametrize("log", [True, False])
-def test_CSP_init(nfilter, metric, log, get_covmats):
+def test_CSP_init(nfilter, metric, log, get_covmats, get_labels):
     n_classes, n_trials, n_channels = 2, 6, 3
     covmats = get_covmats(n_trials, n_channels)
-    labels = np.array([0, 1]).repeat(n_trials // n_classes)
+    labels = get_labels(n_trials, n_classes)
     csp = CSP(nfilter=nfilter, metric=metric, log=log)
     csp.fit(covmats, labels)
     Xtr = csp.transform(covmats)
@@ -160,10 +160,10 @@ def test_BilinearFilter_log_error():
 
 
 @pytest.mark.parametrize("log", [True, False])
-def test_BilinearFilter_log(log, get_covmats):
+def test_BilinearFilter_log(log, get_covmats, get_labels):
     n_classes, n_trials, n_channels = 2, 6, 3
     covmats = get_covmats(n_trials, n_channels)
-    labels = np.array([0, 1]).repeat(n_trials // n_classes)
+    labels = get_labels(n_trials, n_classes)
     bf = BilinearFilter(np.eye(n_channels), log=log)
     Xtr = bf.fit(covmats, labels).transform(covmats)
     if log:
