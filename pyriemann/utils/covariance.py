@@ -30,6 +30,52 @@ def _mcd(X):
     return C
 
 
+def _sch(X):
+    """Schaefer-Strimmer covariance estimator
+
+    Shrinkage estimator using method from [1]_:
+    .. math::
+            \hat{\Sigma} = (1 - \gamma)\Sigma_{scm} + \gamma T
+
+    where :math:`T` is the diagonal target matrix:
+    .. math::
+            T_{i,j} = \{ \Sigma_{scm}^{ii} \text{if} i = j, 0 \text{otherwise} \}
+    Note that the optimal :math:`\gamma` is estimated by the authors' method.
+
+    :param X: Signal matrix, (n_channels, n_times)
+
+    :returns: Schaefer-Strimmer shrinkage covariance matrix, (n_channels, n_channels)
+
+    Notes
+    -----
+    .. versionadded:: 0.2.8.dev
+
+    References
+    ----------
+    .. [1] Schafer, J., and K. Strimmer. 2005. A shrinkage approach to
+        large-scale covariance estimation and implications for functional
+        genomics. Statist. Appl. Genet. Mol. Biol. 4:32.
+    """  # noqa
+    n_times = X.shape[1]
+    X_c = (X.T - X.T.mean(axis=0)).T
+    C_scm = 1. / n_times * X_c @ X_c.T
+
+    # Compute optimal gamma, the weigthing between SCM and srinkage estimator
+    R = (n_times / ((n_times - 1.) * np.outer(X.std(axis=1), X.std(axis=1))))
+    R *= C_scm
+    var_R = (X_c ** 2) @ (X_c ** 2).T - 2 * C_scm * (X_c @ X_c.T)
+    var_R += n_times * C_scm ** 2
+    Xvar = np.outer(X.var(axis=1), X.var(axis=1))
+    var_R *= n_times / ((n_times - 1) ** 3 * Xvar)
+    R -= np.diag(np.diag(R))
+    var_R -= np.diag(np.diag(var_R))
+    gamma = max(0, min(1, var_R.sum() / (R ** 2).sum()))
+
+    sigma = (1. - gamma) * (n_times / (n_times - 1.)) * C_scm
+    shrinkage = gamma * (n_times / (n_times - 1.)) * np.diag(np.diag(C_scm))
+    return sigma + shrinkage
+
+
 def _check_est(est):
     """Check if a given estimator is valid"""
 
@@ -40,6 +86,7 @@ def _check_est(est):
         'lwf': _lwf,
         'oas': _oas,
         'mcd': _mcd,
+        'sch': _sch,
         'corr': np.corrcoef
     }
 
@@ -65,7 +112,7 @@ def covariances(X, estimator='cov'):
     X : ndarray, shape (n_trials, n_channels, n_times)
         ndarray of trials.
 
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'corr'} (default: 'scm')
+    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} (default: 'scm')
         covariance matrix estimator:
 
         * 'cov' for numpy based covariance matrix,
@@ -78,6 +125,8 @@ def covariances(X, estimator='cov'):
           https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
         * 'mcd' for minimum covariance determinant matrix,
           https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
+        * 'sch' for Schaefer-Strimmer covariance,
+          http://doi.org/10.2202/1544-6115.1175,
         * 'corr' for correlation coefficient matrix,
           https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
 
@@ -91,9 +140,9 @@ def covariances(X, estimator='cov'):
     .. [1] https://scikit-learn.org/stable/modules/covariance.html
     """  # noqa
     est = _check_est(estimator)
-    Nt, Ne, Ns = X.shape
-    covmats = np.zeros((Nt, Ne, Ne))
-    for i in range(Nt):
+    n_trials, n_channels, n_times = X.shape
+    covmats = np.empty((n_trials, n_channels, n_channels))
+    for i in range(n_trials):
         covmats[i, :, :] = est(X[i, :, :])
     return covmats
 
@@ -101,10 +150,14 @@ def covariances(X, estimator='cov'):
 def covariances_EP(X, P, estimator='cov'):
     """Special form covariance matrix."""
     est = _check_est(estimator)
-    Nt, Ne, Ns = X.shape
-    Np, Ns = P.shape
-    covmats = np.zeros((Nt, Ne + Np, Ne + Np))
-    for i in range(Nt):
+    n_trials, n_channels, n_times = X.shape
+    n_proto, n_times_P = P.shape
+    if n_times_P != n_times:
+        raise ValueError(
+            f"X and P do not have the same n_times: {n_times} and {n_times_P}"
+        )
+    covmats = np.empty((n_trials, n_channels + n_proto, n_channels + n_proto))
+    for i in range(n_trials):
         covmats[i, :, :] = est(np.concatenate((P, X[i, :, :]), axis=0))
     return covmats
 
@@ -117,10 +170,10 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
         padd = np.zeros((int(window / 2), sig.shape[1]))
         sig = np.concatenate((padd, sig, padd), axis=0)
 
-    Ns, Ne = sig.shape
+    n_times, n_channels = sig.shape
     jump = int(window * overlapp)
     ix = 0
-    while (ix + window < Ns):
+    while (ix + window < n_times):
         X.append(est(sig[ix:ix + window, :].T))
         ix = ix + jump
 

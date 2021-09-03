@@ -20,6 +20,8 @@ v0.2.8.dev
 
 - Add Ando-Li-Mathias mean estimation in :func:`pyriemann.utils.mean.mean_covariance`
 
+- Add Schaefer-Strimmer covariance estimator in :func:`pyriemann.utils.covariance.covariances`, and an example to compare estimators
+
 v0.2.7 (June 2021)
 ------------------
 
