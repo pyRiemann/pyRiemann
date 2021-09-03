@@ -108,8 +108,32 @@ def get_metrics():
 
 
 def is_semi_psd(mats):
+    """ Check if all matrices are positive semi-definite.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        The set of square matrices, at least 2D ndarray.
+
+    Returns
+    -------
+    ret : boolean
+        True if all matrices are positive semi-definite.
+    """
     return np.all(np.linalg.eigvals(mats) >= 0.0)
 
 
 def is_psd(mats):
+    """ Check if all matrices are positive-definite.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        The set of square matrices, at least 2D ndarray.
+
+    Returns
+    -------
+    ret : boolean
+        True if all matrices are positive-definite.
+    """
     return np.all(np.linalg.eigvals(mats) > 0.0)
