@@ -141,7 +141,7 @@ def covariances(X, estimator='cov'):
     """  # noqa
     est = _check_est(estimator)
     n_trials, n_channels, n_times = X.shape
-    covmats = np.zeros((n_trials, n_channels, n_channels))
+    covmats = np.empty((n_trials, n_channels, n_channels))
     for i in range(n_trials):
         covmats[i, :, :] = est(X[i, :, :])
     return covmats
@@ -156,7 +156,7 @@ def covariances_EP(X, P, estimator='cov'):
         raise ValueError(
             f"X and P do not have the same n_times: {n_times} and {n_times_P}"
         )
-    covmats = np.zeros((n_trials, n_channels + n_proto, n_channels + n_proto))
+    covmats = np.empty((n_trials, n_channels + n_proto, n_channels + n_proto))
     for i in range(n_trials):
         covmats[i, :, :] = est(np.concatenate((P, X[i, :, :]), axis=0))
     return covmats
