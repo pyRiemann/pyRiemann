@@ -212,7 +212,7 @@ def test_covariances_coherence(coh, rndstate):
         t = np.arange(0, n_periods, 1 / fs)
         n_times = t.shape[0]
 
-        x = np.zeros((4, len(t)))
+        x = np.empty((4, len(t)))
         noise = 1e-9
         # reference channel: a pure sine + small noise (to avoid nan or inf)
         x[0] = np.sin(2 * np.pi * ft * t) + noise * rndstate.randn((n_times))
