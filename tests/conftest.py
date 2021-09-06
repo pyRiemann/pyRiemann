@@ -1,4 +1,5 @@
 import pytest
+from pytest import approx
 import numpy as np
 from functools import partial
 
@@ -65,6 +66,99 @@ def get_labels():
     return _get_labels
 
 
+def is_positive_semi_definite(mats):
+    """Check if all matrices are positive semi-definite
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        The set of square matrices, at least 2D ndarray.
+
+    Returns
+    -------
+    ret : boolean
+        True if all matrices are positive semi-definite
+    """
+    cs = mats.shape[-1]
+    return np.all(np.linalg.eigvals(mats.reshape((-1, cs, cs))) >= 0.0)
+
+
+def is_positive_definite(mats):
+    """Check if all matrices are positive definite
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        The set of square matrices, at least 2D ndarray.
+
+    Returns
+    -------
+    ret : boolean
+        True if all matrices are positive definite.
+    """
+    cs = mats.shape[-1]
+    return np.all(np.linalg.eigvals(mats.reshape((-1, cs, cs))) > 0.0)
+
+
+def is_symmetric(X):
+    """Check if all matrices are symmetric.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        The set of square matrices, at least 2D ndarray.
+
+    Returns
+    -------
+    ret : boolean
+        True if all matrices are symmetric.
+    """
+    # return assert_array_almost_equal(X, np.swapaxes(X, -2, -1), 6)
+    return X == approx(np.swapaxes(X, -2, -1))
+
+
+@pytest.fixture
+def is_spd():
+    """Check if all matrices are symmetric positive-definite.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        The set of square matrices, at least 2D ndarray.
+
+    Returns
+    -------
+    ret : boolean
+        True if all matrices are symmetric positive-definite.
+    """
+
+    def _is_spd(X):
+        return is_symmetric(X) and is_positive_definite(X)
+
+    return _is_spd
+
+
+@pytest.fixture
+def is_spsd():
+    """Check if all matrices are symmetric positive semi-definite.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        The set of square matrices, at least 2D ndarray.
+
+    Returns
+    -------
+    ret : boolean
+        True if all matrices are symmetric positive semi-definite.
+    """
+
+    def _is_spsd(X):
+        return is_symmetric(X) and is_positive_semi_definite(X)
+
+    return _is_spsd
+
+
 def get_distances():
     distances = [
         "riemann",
@@ -105,11 +199,3 @@ def get_metrics():
     ]
     for met in metrics:
         yield met
-
-
-def is_semi_psd(mats):
-    return np.all(np.linalg.eigvals(mats) >= 0.0)
-
-
-def is_psd(mats):
-    return np.all(np.linalg.eigvals(mats) > 0.0)
