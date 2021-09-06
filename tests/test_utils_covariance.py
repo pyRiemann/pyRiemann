@@ -1,3 +1,4 @@
+from conftest import rndstate
 from numpy.testing import assert_array_almost_equal, assert_array_equal
 import numpy as np
 from scipy.signal import welch, csd, coherence as coherence_sp
@@ -12,11 +13,10 @@ from pyriemann.utils.covariance import (covariances, covariances_EP, eegtocov,
     'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd',
                   'sch', np.cov, 'truc', None]
 )
-def test_covariances(estimator):
+def test_covariances(estimator, rndstate):
     """Test covariance for multiple estimator"""
-    rs = np.random.RandomState(42)
     n_trials, n_channels, n_times = 2, 3, 100
-    x = rs.randn(n_trials, n_channels, n_times)
+    x = rndstate.randn(n_trials, n_channels, n_times)
     if estimator is None:
         cov = covariances(x)
         assert cov.shape == (n_trials, n_channels, n_channels)
@@ -31,43 +31,31 @@ def test_covariances(estimator):
 @pytest.mark.parametrize(
     'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd', 'sch', None]
 )
-def test_covariances_EP(estimator):
+def test_covariances_EP(estimator, rndstate):
     """Test covariance_EP for multiple estimator"""
-    rs = np.random.RandomState(42)
-    n_trials, n_channels, n_times = 2, 3, 100
-    x = rs.randn(n_trials, n_channels, n_times)
-    p = rs.randn(n_channels, n_times)
+    n_trials, n_channels_x, n_channels_p, n_times = 2, 3, 3, 100
+    x = rndstate.randn(n_trials, n_channels_x, n_times)
+    p = rndstate.randn(n_channels_p, n_times)
 
     if estimator is None:
         cov = covariances_EP(x, p)
     else:
         cov = covariances_EP(x, p, estimator=estimator)
-    assert cov.shape == (n_trials, 2 * n_channels, 2 * n_channels)
+    n_dim_cov = n_channels_x + n_channels_p
+    assert cov.shape == (n_trials, n_dim_cov, n_dim_cov)
 
 
-def test_covariances_EP_ntimes():
-    """Test that prototype and signal have same time dimension"""
-    rs = np.random.RandomState(42)
-    n_trials, n_channels, n_times, n_times_P = 2, 3, 100, 101
-    x = rs.randn(n_trials, n_channels, n_times)
-    p = rs.randn(n_channels, n_times_P)
-    with pytest.raises(ValueError):
-        covariances_EP(x, p)
-
-
-def test_covariances_eegtocov():
+def test_covariances_eegtocov(rndstate):
     """Test eegtocov"""
-    rs = np.random.RandomState(42)
     n_times, n_channels = 1000, 3
-    x = rs.randn(n_times, n_channels)
+    x = rndstate.randn(n_times, n_channels)
     cov = eegtocov(x)
     assert cov.shape[1] == n_channels
 
 
-def test_covariances_cross_spectrum():
-    rs = np.random.RandomState(42)
+def test_covariances_cross_spectrum(rndstate):
     n_channels, n_times = 3, 1000
-    x = rs.randn(n_channels, n_times)
+    x = rndstate.randn(n_channels, n_times)
     cross_spectrum(x)
     cross_spectrum(x, fs=128, fmin=2, fmax=40)
     cross_spectrum(x, fs=129, window=37)
@@ -103,7 +91,7 @@ def test_covariances_cross_spectrum():
                               np.zeros_like(c.imag.diagonal()))
 
     # test equivalence between pyriemann and scipy for (auto-)spectra
-    x = rs.randn(5, n_times)
+    x = rndstate.randn(5, n_times)
     fs, window, overlap = 128, 256, 0.75
     spect_pr, freqs_pr = cross_spectrum(
         x,
@@ -127,7 +115,7 @@ def test_covariances_cross_spectrum():
     assert_array_almost_equal(spect_pr, spect_sp, 6)
 
     # test equivalence between pyriemann and scipy for cross-spectra
-    x = rs.randn(2, n_times)
+    x = rndstate.randn(2, n_times)
     fs, window, overlap = 64, 128, 0.5
     cross_pr, freqs_pr = cross_spectrum(
         x,
@@ -151,10 +139,9 @@ def test_covariances_cross_spectrum():
     assert_array_almost_equal(cross_pr, cross_sp, 6)
 
 
-def test_covariances_cospectrum():
+def test_covariances_cospectrum(rndstate):
     """Test cospectrum"""
-    rs = np.random.RandomState(42)
-    x = rs.randn(3, 1000)
+    x = rndstate.randn(3, 1000)
     cospectrum(x)
     cospectrum(x, fs=128, fmin=2, fmax=40)
 
@@ -181,11 +168,10 @@ def test_covariances_cospectrum():
 @pytest.mark.parametrize(
     'coh', ['ordinary', 'instantaneous', 'lagged', 'imaginary', 'foobar']
 )
-def test_covariances_coherence(coh):
+def test_covariances_coherence(coh, rndstate):
     """Test coherence"""
-    rs = np.random.RandomState(42)
     n_channels, n_times = 3, 2048
-    x = rs.randn(n_channels, n_times)
+    x = rndstate.randn(n_channels, n_times)
 
     if coh == 'foobar':
         with pytest.raises(ValueError):  # unknown coh
@@ -231,15 +217,15 @@ def test_covariances_coherence(coh):
         x = np.zeros((4, len(t)))
         noise = 1e-9
         # reference channel: a pure sine + small noise (to avoid nan or inf)
-        x[0] = np.sin(2 * np.pi * ft * t) + noise * rs.randn((n_times))
+        x[0] = np.sin(2 * np.pi * ft * t) + noise * rndstate.randn((n_times))
         # pi/4 shifted channel = pi/4 lagged phase
         x[1] = np.sin(2 * np.pi * ft * t + np.pi / 4) \
-            + noise * rs.randn((n_times))
+            + noise * rndstate.randn((n_times))
         # pi/2 shifted channel = quadrature phase
         x[2] = np.sin(2 * np.pi * ft * t + np.pi / 2) \
-            + noise * rs.randn((n_times))
+            + noise * rndstate.randn((n_times))
         # pi shifted channel = opposite phase
-        x[3] = np.sin(2 * np.pi * ft * t + np.pi) + noise * rs.randn((n_times))
+        x[3] = np.sin(2 * np.pi * ft * t + np.pi) + noise * rndstate.randn((n_times))
 
         c, freqs = coherence(x, fs=fs, window=fs, overlap=0.5, coh=coh)
         foi = (freqs == ft)
@@ -271,26 +257,25 @@ def test_covariances_coherence(coh):
             assert c[0, 3, foi] == pytest.approx(0.0)
 
 
-def test_normalize():
+def test_normalize(rndstate):
     """Test normalize"""
-    rs = np.random.RandomState(42)
     n_conds, n_trials, n_channels = 15, 20, 3
 
     # test a 2d array, ie a single square matrix
-    mat = rs.randn(n_channels, n_channels)
+    mat = rndstate.randn(n_channels, n_channels)
     mat_n = normalize(mat, "trace")
     assert_array_equal(mat.shape, mat_n.shape)
     # test a 3d array, ie a group of square matrices
-    mat = rs.randn(n_trials, n_channels, n_channels)
+    mat = rndstate.randn(n_trials, n_channels, n_channels)
     mat_n = normalize(mat, "determinant")
     assert_array_equal(mat.shape, mat_n.shape)
     # test a 4d array, ie a group of groups of square matrices
-    mat = rs.randn(n_conds, n_trials, n_channels, n_channels)
+    mat = rndstate.randn(n_conds, n_trials, n_channels, n_channels)
     mat_n = normalize(mat, "trace")
     assert_array_equal(mat.shape, mat_n.shape)
 
     # after trace-normalization => trace equal to 1
-    mat = rs.randn(n_trials, n_channels, n_channels)
+    mat = rndstate.randn(n_trials, n_channels, n_channels)
     mat_tn = normalize(mat, "trace")
     assert_array_almost_equal(np.ones(mat_tn.shape[0]),
                               np.trace(mat_tn, axis1=-2, axis2=-1))
@@ -300,38 +285,37 @@ def test_normalize():
                               np.abs(np.linalg.det(mat_dn)))
 
     with pytest.raises(ValueError):  # not at least 2d
-        normalize(rs.randn(n_channels), "trace")
+        normalize(rndstate.randn(n_channels), "trace")
     with pytest.raises(ValueError):  # not square
-        normalize(rs.randn(n_trials, n_channels, n_channels + 2), "trace")
+        normalize(rndstate.randn(n_trials, n_channels, n_channels + 2), "trace")
     with pytest.raises(ValueError):  # invalid normalization type
-        normalize(rs.randn(n_trials, n_channels, n_channels), "abc")
+        normalize(rndstate.randn(n_trials, n_channels, n_channels), "abc")
 
 
-def test_get_nondiag_weight():
+def test_get_nondiag_weight(rndstate):
     """Test get_nondiag_weight"""
-    rs = np.random.RandomState(17)
     n_conds, n_trials, n_channels = 10, 20, 3
 
     # test a 2d array, ie a single square matrix
-    w = get_nondiag_weight(rs.randn(n_channels, n_channels))
+    w = get_nondiag_weight(rndstate.randn(n_channels, n_channels))
     assert np.isscalar(w)
     # test a 3d array, ie a group of square matrices
-    w = get_nondiag_weight(rs.randn(n_trials, n_channels, n_channels))
+    w = get_nondiag_weight(rndstate.randn(n_trials, n_channels, n_channels))
     assert_array_equal(w.shape, [n_trials])
     # test a 4d array, ie a group of groups of square matrices
-    w = get_nondiag_weight(rs.randn(n_conds, n_trials, n_channels, n_channels))
+    w = get_nondiag_weight(rndstate.randn(n_conds, n_trials, n_channels, n_channels))
     assert_array_equal(w.shape, [n_conds, n_trials])
 
     # 2x2 constant matrices => non-diag weights equal to 1
-    mats = rs.randn(n_trials, 1, 1) * np.ones((n_trials, 2, 2))
+    mats = rndstate.randn(n_trials, 1, 1) * np.ones((n_trials, 2, 2))
     w = get_nondiag_weight(mats)
     assert_array_almost_equal(w, np.ones(n_trials))
     # diagonal matrices => non-diag weights equal to 0
-    mats = rs.randn(n_trials, 1, 1) * ([np.eye(n_channels)] * n_trials)
+    mats = rndstate.randn(n_trials, 1, 1) * ([np.eye(n_channels)] * n_trials)
     w = get_nondiag_weight(mats)
     assert_array_almost_equal(w, np.zeros(n_trials))
 
     with pytest.raises(ValueError):  # not at least 2d
-        get_nondiag_weight(rs.randn(n_channels))
+        get_nondiag_weight(rndstate.randn(n_channels))
     with pytest.raises(ValueError):  # not square
-        get_nondiag_weight(rs.randn(n_trials, n_channels, n_channels + 2))
+        get_nondiag_weight(rndstate.randn(n_trials, n_channels, n_channels + 2))

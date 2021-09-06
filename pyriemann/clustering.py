@@ -80,15 +80,12 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         The generator used to initialize the centers. If an integer is
         given, it fixes the seed. Defaults to the global numpy random
         number generator.
-    init : 'k-means++', 'random' or an ndarray (default 'random')
+    init : 'random' or an ndarray (default 'random')
         Method for initialization of centers.
-        'k-means++' : selects initial cluster centers for k-mean
-        clustering in a smart way to speed up convergence. See section
-        Notes in k_init for more details.
         'random': choose k observations (rows) at random from data for
         the initial centroids.
-        If an ndarray is passed, it should be of shape (n_clusters, n_features)
-        and gives the initial centers.
+        If an ndarray is passed, it should be of shape
+        (n_clusters, n_channels, n_channels) and gives the initial centers.
     n_init : int, (default: 10)
         Number of time the k-means algorithm will be run with different
         centroid seeds. The final results will be the best output of
@@ -151,7 +148,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         self : Kmeans instance
             The Kmean instance.
         """
-        if (self.init != 'random') | (self.n_init == 1):
+        if (self.init != 'random'):
             # no need to iterate if init is not random
             labels, inertia, mdm = _fit_single(X, y,
                                                n_clusters=self.n_clusters,

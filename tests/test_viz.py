@@ -1,4 +1,4 @@
-from conftest import covmats, requires_matplotlib  # noqa: F401
+from conftest import get_covmats, requires_matplotlib
 import numpy as np
 import pytest
 
@@ -10,8 +10,10 @@ from pyriemann.utils.viz import (
 
 
 @requires_matplotlib
-def test_embedding(covmats):  # noqa: F811
+def test_embedding(get_covmats):
     """Test Embedding."""
+    n_trials, n_channels = 5, 3
+    covmats = get_covmats(n_trials, n_channels)
     plot_embedding(covmats, y=None, metric="euclid")
     y = np.ones(covmats.shape[0])
     plot_embedding(covmats, y=y, metric="euclid")
@@ -22,8 +24,7 @@ def test_confusion_matrix():
     """Test confusion_matrix"""
     target = np.array([0, 1] * 10)
     preds = np.array([0, 1] * 10)
-    with pytest.warns(DeprecationWarning,
-                      match="plot_confusion_matrix is deprecated"):
+    with pytest.warns(DeprecationWarning, match="plot_confusion_matrix is deprecated"):
         plot_confusion_matrix(target, preds, ["a", "b"])
 
 
