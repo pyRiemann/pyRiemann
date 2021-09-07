@@ -66,8 +66,8 @@ def get_labels():
     return _get_labels
 
 
-def is_positive_semi_definite(mats):
-    """Check if all matrices are positive semi-definite
+def is_positive_semi_definite(X):
+    """Check if all matrices are positive semi-definite.
 
     Parameters
     ----------
@@ -77,14 +77,14 @@ def is_positive_semi_definite(mats):
     Returns
     -------
     ret : boolean
-        True if all matrices are positive semi-definite
+        True if all matrices are positive semi-definite.
     """
-    cs = mats.shape[-1]
-    return np.all(np.linalg.eigvals(mats.reshape((-1, cs, cs))) >= 0.0)
+    cs = X.shape[-1]
+    return np.all(np.linalg.eigvals(X.reshape((-1, cs, cs))) >= 0.0)
 
 
-def is_positive_definite(mats):
-    """Check if all matrices are positive definite
+def is_positive_definite(X):
+    """Check if all matrices are positive definite.
 
     Parameters
     ----------
@@ -96,8 +96,8 @@ def is_positive_definite(mats):
     ret : boolean
         True if all matrices are positive definite.
     """
-    cs = mats.shape[-1]
-    return np.all(np.linalg.eigvals(mats.reshape((-1, cs, cs))) > 0.0)
+    cs = X.shape[-1]
+    return np.all(np.linalg.eigvals(X.reshape((-1, cs, cs))) > 0.0)
 
 
 def is_symmetric(X):
@@ -113,7 +113,6 @@ def is_symmetric(X):
     ret : boolean
         True if all matrices are symmetric.
     """
-    # return assert_array_almost_equal(X, np.swapaxes(X, -2, -1), 6)
     return X == approx(np.swapaxes(X, -2, -1))
 
 
