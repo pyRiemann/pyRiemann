@@ -19,7 +19,7 @@ from qiskit.circuit.library import ZZFeatureMap, TwoLocal
 from qiskit.aqua import QuantumInstance, aqua_globals
 from qiskit.aqua.quantum_instance import logger
 from qiskit.aqua.algorithms import QSVM, SklearnSVM, VQC
-from qiskit.aqua.utils import split_dataset_to_data_and_labels, map_label_to_class_name
+from qiskit.aqua.utils import split_dataset_to_data_and_labels, map_label_to_class_name, get_feature_dimension
 from qiskit.ml.datasets import ad_hoc_data, sample_ad_hoc_data
 from qiskit.providers.ibmq import least_busy
 from qiskit.aqua.components.optimizers import SPSA
@@ -543,9 +543,11 @@ class QuanticBase(BaseEstimator, ClassifierMixin):
       self.log("seed = ", aqua_globals.random_seed)
       if qAccountToken:
         self.log("Real quantum computation will be performed")
+        IBMQ.delete_account()
         IBMQ.save_account(qAccountToken)
         IBMQ.load_account()
-        provider = IBMQ.get_provider(hub='ibm-q')
+        self.log("Getting provider...")
+        self.provider = IBMQ.get_provider(hub='ibm-q')
       else:
         self.log("Quantum simulation will be performed")
         self.backend = BasicAer.get_backend('qasm_simulator')
@@ -563,7 +565,10 @@ class QuanticBase(BaseEstimator, ClassifierMixin):
   def splitTargetAndNonTarget(self, X, y):
     self.log("[Warning] Spitting target from non target. Only binary classification is supported.")
     nbSensor = len(X[0])
-    nbSamples = len(X[0][0])
+    try:
+        nbSamples = len(X[0][0])
+    except:
+        nbSamples = 1
     self.feature_dim = nbSensor*nbSamples
     self.log("Feature dimension = ", self.feature_dim)
     Xta = X[y == self.target]
@@ -572,9 +577,9 @@ class QuanticBase(BaseEstimator, ClassifierMixin):
     Xnt = X[numpy.logical_not(y == self.target)]
     nbXnt = len(Xnt)
     balanced = nbXnt == nbXta
-    if(not balanced):
-      self.log("Set is not balanced. Balancing...")
-      Xnt = Xnt[range(nbXta)]
+    # if(not balanced):
+    #    self.log("Set is not balanced. Balancing...")
+    #    Xnt = Xnt[range(nbXta)]
         
     VectorizedXta = self.vectorize(Xta)
     VectorizedXnt = self.vectorize(Xnt)
@@ -594,18 +599,23 @@ class QuanticBase(BaseEstimator, ClassifierMixin):
 
     self.training_input["Target"] = VectorizedXta
     self.training_input["NonTarget"] = VectorizedXnt
-    self.feature_map = ZZFeatureMap(feature_dimension=self.new_feature_dim, reps=2, entanglement='linear')
+    self.log(get_feature_dimension(self.training_input))
+    self.feature_map = ZZFeatureMap(feature_dimension=get_feature_dimension(self.training_input), reps=2, entanglement='linear')
     self.additionnal_setup()
     if self.quantum:
-      if not self.backend:
-        devices = provider.backends(filters=lambda x: x.configuration().n_qubits >= vectorLen
+      if not hasattr(self, "backend"):
+        devices = self.provider.backends(filters=lambda x: x.configuration().n_qubits >= self.new_feature_dim
                                             and not x.configuration().simulator 
                                             and x.status().operational==True)
-        self.backend = least_busy(devices)
+        try:
+            self.backend = least_busy(devices)
+        except:
+            self.log("Devices are all busy. Getting the first one...")
+            self.backend = devices[0]
         self.log("Quantum backend = ", self.backend)
       monitor = lambda job_id, job_status, queue_position, job: print(job_id, job_status, queue_position, job)
       self.quantum_instance = QuantumInstance(self.backend, shots=1024, seed_simulator=aqua_globals.random_seed,
-                                  seed_transpiler=aqua_globals.random_seed, job_callback="toto", wait=1)
+                                  seed_transpiler=aqua_globals.random_seed)
     return self
 
   def get_params(self, deep=True):
@@ -615,7 +625,7 @@ class QuanticBase(BaseEstimator, ClassifierMixin):
       "quantum":self.quantum,
       "processVector":self.processVector,
       "verbose":self.verbose,
-      "test_input":self.test_input
+      "test_input":self.test_input,
     }
 
   def set_params(self, **parameters):
@@ -668,10 +678,12 @@ class QuanticSVM(QuanticBase):
   def run(self, predict_set=None):
     self.log("SVM classification running...")
     if self.quantum:
+      self.log("Quantum instance is ", self.quantum_instance)
       qsvm = QSVM(self.feature_map, self.training_input, self.test_input, predict_set)
       result = qsvm.run(self.quantum_instance)
     else:
       result = SklearnSVM(self.training_input, self.test_input, predict_set).run()
+    self.log(result)
     return result
 
 class QuanticVQC(QuanticBase):
