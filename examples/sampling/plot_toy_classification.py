@@ -18,7 +18,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pyriemann.classification import MDM
 from sklearn.model_selection import KFold
-from tqdm import tqdm
 
 from pyriemann.sampling import sample_gaussian_spd, generate_random_spd_matrix
 
@@ -50,15 +49,13 @@ def make_classification_problem(n_samples=100, n_dim=2, class_sep=1.0,
 
     # generate dataset for class 0
     CO = generate_random_spd_matrix(n_dim)
-    X0 = sample_gaussian_spd(n_samples=n_samples, Ybar=CO, sigma=class_disp,
-                             show_progress_bar=False)
+    X0 = sample_gaussian_spd(n_samples=n_samples, Ybar=CO, sigma=class_disp)
     y0 = np.zeros(n_samples)
 
     # generate dataset for class 1
     epsilon = np.exp(class_sep/np.sqrt(n_dim))
     C1 = epsilon * CO
-    X1 = sample_gaussian_spd(n_samples=n_samples, Ybar=C1, sigma=class_disp,
-                             show_progress_bar=False)
+    X1 = sample_gaussian_spd(n_samples=n_samples, Ybar=C1, sigma=class_disp)
     y1 = np.ones(n_samples)
 
     X = np.concatenate([X0, X1])
@@ -80,7 +77,7 @@ sigma = 1.00  # dispersion of the Gaussian distributions
 # Loop over different levels of separability between the classes
 scores_array = []
 deltas_array = np.linspace(0, 5*sigma, 10)
-for delta in tqdm(deltas_array):
+for delta in deltas_array:
 
     # generate data points for a classification problem
     X, y = make_classification_problem(n_samples=250, n_dim=n_dim,
