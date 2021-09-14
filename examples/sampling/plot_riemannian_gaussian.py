@@ -33,16 +33,13 @@ epsilon = 4.0  # parameter for controlling the distance between centers
 Ybar = generate_random_spd_matrix(n_dim)  # random reference point
 samples_1 = sample_gaussian_spd(n_samples=n_samples,
                                 Ybar=Ybar,
-                                sigma=sigma,
-                                show_progress_bar=True)
+                                sigma=sigma)
 samples_2 = sample_gaussian_spd(n_samples=n_samples,
                                 Ybar=Ybar,
-                                sigma=sigma/2,
-                                show_progress_bar=True)
+                                sigma=sigma/2)
 samples_3 = sample_gaussian_spd(n_samples=n_samples,
                                 Ybar=epsilon*Ybar,
-                                sigma=sigma,
-                                show_progress_bar=True)
+                                sigma=sigma)
 
 # Stack all of the samples into one data array for the embedding
 samples = np.concatenate([samples_1, samples_2, samples_3])

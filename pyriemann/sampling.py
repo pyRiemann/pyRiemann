@@ -1,6 +1,5 @@
 import numpy as np
 from functools import partial
-from tqdm import tqdm
 from pyriemann.utils.base import sqrtm
 
 
@@ -35,8 +34,7 @@ def pdf_r(r, sigma):
     return np.exp(partial_1 + partial_2)
 
 
-def slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
-                   show_progress_bar=False):
+def slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10):
     """Slice sampling procedure
 
     Implementation of a slice sampling algorithm for sampling from any target
@@ -62,8 +60,6 @@ def slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
         samples can help reducing this correlation. Note that this makes the
         algorithm actually sample `thin x n_samples` samples from the pdf, so
         expect the whole sampling procedure to take longer
-    show_progress_bar : bool (default: False)
-        show progress bar of the slice sampling procedure
 
     Returns
     -------
@@ -77,7 +73,7 @@ def slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
     n_dim = len(x0)
     samples = []
     n_samples_total = (n_samples+n_burnin)*thin
-    for _ in tqdm(range(n_samples_total), disable=not show_progress_bar):
+    for _ in range(n_samples_total):
 
         for i in range(n_dim):
 
@@ -122,7 +118,7 @@ def slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
     return samples
 
 
-def sample_parameter_r(n_samples, n_dim, sigma, show_progress_bar=False):
+def sample_parameter_r(n_samples, n_dim, sigma):
     """Sample the r parameters of a Riemannian Gaussian distribution
 
     Sample the logarithm of the eigenvalues of a SPD matrix following a
@@ -138,8 +134,6 @@ def sample_parameter_r(n_samples, n_dim, sigma, show_progress_bar=False):
         dimensionality of the SPD matrices to be sampled
     sigma : float
         dispersion of the Riemannian Gaussian distribution
-    show_progress_bar : bool (default: False)
-        show progress bar of the slice sampling procedure
 
     Returns
     -------
@@ -184,8 +178,7 @@ def sample_parameter_U(n_samples, n_dim):
     return u_samples
 
 
-def sample_gaussian_spd_centered(n_samples, n_dim, sigma,
-                                 show_progress_bar=False):
+def sample_gaussian_spd_centered(n_samples, n_dim, sigma):
     """Sample a Riemannian Gaussian distribution centered at the Identity
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at the
@@ -202,8 +195,6 @@ def sample_gaussian_spd_centered(n_samples, n_dim, sigma,
         dimensionality of the SPD matrices to be sampled
     sigma : float
         dispersion of the Riemannian Gaussian distribution
-    show_progress_bar : bool (default: False)
-        show progress bar of the slice sampling procedure
 
     Returns
     -------
@@ -213,8 +204,7 @@ def sample_gaussian_spd_centered(n_samples, n_dim, sigma,
 
     samples_r = sample_parameter_r(n_samples=n_samples,
                                    n_dim=n_dim,
-                                   sigma=sigma,
-                                   show_progress_bar=show_progress_bar)
+                                   sigma=sigma)
     samples_U = sample_parameter_U(n_samples=n_samples, n_dim=n_dim)
 
     samples = np.zeros((n_samples, n_dim, n_dim))
@@ -227,7 +217,7 @@ def sample_gaussian_spd_centered(n_samples, n_dim, sigma,
     return samples
 
 
-def sample_gaussian_spd(n_samples, Ybar, sigma, show_progress_bar=False):
+def sample_gaussian_spd(n_samples, Ybar, sigma):
     """Sample a Riemannian Gaussian distribution
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered Ybar
@@ -248,8 +238,6 @@ def sample_gaussian_spd(n_samples, Ybar, sigma, show_progress_bar=False):
         center of the Riemannian Gaussian distribution
     sigma : float
         dispersion of the Riemannian Gaussian distribution
-    show_progress_bar : bool (default: False)
-        show progress bar of the slice sampling procedure
 
     Returns
     -------
@@ -261,8 +249,7 @@ def sample_gaussian_spd(n_samples, Ybar, sigma, show_progress_bar=False):
     samples_centered = sample_gaussian_spd_centered(
                         n_samples,
                         n_dim=n_dim,
-                        sigma=sigma,
-                        show_progress_bar=show_progress_bar)
+                        sigma=sigma)
 
     # apply the parallel transport to Ybar on each of the samples
     samples = np.zeros((n_samples, n_dim, n_dim))
@@ -308,15 +295,13 @@ if __name__ == '__main__':
     Ybar = generate_random_spd_matrix(n_dim)
     samples_1 = sample_gaussian_spd(n_samples=n_samples,
                                     Ybar=Ybar,
-                                    sigma=sigma,
-                                    show_progress_bar=True)
+                                    sigma=sigma)
 
     delta = 1
     epsilon = np.exp(delta/np.sqrt(n_dim))
     samples_2 = sample_gaussian_spd(n_samples=n_samples,
                                     Ybar=epsilon*Ybar,
-                                    sigma=sigma,
-                                    show_progress_bar=True)
+                                    sigma=sigma)
 
     samples = np.concatenate([samples_1, samples_2])
     labels = np.array(n_samples*[1] + n_samples*[2])
