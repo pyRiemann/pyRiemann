@@ -1,0 +1,17 @@
+numpy
+scipy
+scikit-learn
+joblib
+pandas
+
+[docs]
+sphinx-gallery
+sphinx-bootstrap_theme
+numpydoc
+mne
+seaborn
+
+[tests]
+pytest
+seaborn
+flake8
