@@ -279,7 +279,7 @@ def sample_gaussian_spd(n_samples, mean, sigma, random_state=42):
 
     Returns
     -------
-    samples : ndarray (n_samples, n_dim, n_dim)
+    samples : ndarray, shape (n_samples, n_dim, n_dim)
         samples of the Riemannian Gaussian distribution
     """
 
