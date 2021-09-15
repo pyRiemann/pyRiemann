@@ -37,8 +37,8 @@ random_state = 42  # ensure reproducibility
 # Loop over different levels of separability between the classes
 scores_array = []
 deltas_array = np.linspace(0, 5*sigma, 10)
-for delta in deltas_array:
 
+for delta in deltas_array:
     # generate data points for a classification problem
     X, y = make_gaussian_blobs(n_samples=250,
                                n_dim=n_dim,
