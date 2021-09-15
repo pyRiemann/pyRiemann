@@ -4,7 +4,7 @@ Sample from the Riemannian Gaussian distribution in the SPD manifold
 =====================================================================
 
 Spectral embedding of samples from the Riemannian Gaussian distribution
-with different centerings and dispersions
+with different centerings and dispersions.
 
 """
 # Authors: Pedro Rodrigues <pedro.rodrigues@melix.org>
