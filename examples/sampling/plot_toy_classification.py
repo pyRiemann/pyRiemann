@@ -52,6 +52,7 @@ for delta in deltas_array:
     # get the classification score for this setup
     scores_array.append(
         cross_val_score(clf, X, y, cv=5, scoring='roc_auc').mean())
+
 scores_array = np.array(scores_array)
 
 ###############################################################################
