@@ -195,7 +195,7 @@ def _sample_parameter_U(n_samples, n_dim, random_state=42):
 
     Returns
     -------
-    u_samples : ndarray (n_samples, n_dim)
+    u_samples : ndarray, shape (n_samples, n_dim)
         samples of the U parameters of the Riemannian Gaussian distribution
     """
 
