@@ -16,9 +16,9 @@ illustrate how the accuracy of the MDM classifier varies when Delta increases.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from pyriemann.classification import MDM
 from sklearn.model_selection import KFold
 
+from pyriemann.classification import MDM
 from pyriemann.sampling import sample_gaussian_spd, generate_random_spd_matrix
 
 np.random.seed(42)
