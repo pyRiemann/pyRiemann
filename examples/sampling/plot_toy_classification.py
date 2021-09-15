@@ -30,7 +30,7 @@ print(__doc__)
 
 
 n_dim = 4  # dimensionality of the data points
-sigma = 1.00  # dispersion of the Gaussian distributions
+sigma = 1.0  # dispersion of the Gaussian distributions
 random_state = 42  # ensure reproducibility
 
 ###############################################################################
