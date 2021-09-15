@@ -11,11 +11,11 @@ with different centerings and dispersions.
 #
 # License: BSD (3-clause)
 
-from pyriemann.embedding import Embedding
-from pyriemann.sampling import sample_gaussian_spd, generate_random_spd_matrix
-
 import numpy as np
 import matplotlib.pyplot as plt
+
+from pyriemann.embedding import Embedding
+from pyriemann.sampling import sample_gaussian_spd, generate_random_spd_matrix
 
 
 print(__doc__)
