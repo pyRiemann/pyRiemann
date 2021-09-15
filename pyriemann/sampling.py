@@ -274,8 +274,8 @@ def sample_gaussian_spd(n_samples, mean, sigma, random_state=42):
         center of the Riemannian Gaussian distribution
     sigma : float
         dispersion of the Riemannian Gaussian distribution
-    random_state : int, RandomState instance or None (default: 42)
-        pass an int for reproducible output
+    random_state : int, RandomState instance or None (default: None)
+        Pass an int for reproducible output across multiple function calls.
 
     Returns
     -------
