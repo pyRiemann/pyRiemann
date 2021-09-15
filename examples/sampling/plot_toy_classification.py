@@ -16,55 +16,14 @@ illustrate how the accuracy of the MDM classifier varies when Delta increases.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from sklearn.model_selection import KFold
+from sklearn.model_selection import cross_val_score
 
 from pyriemann.classification import MDM
-from pyriemann.sampling import sample_gaussian_spd, generate_random_spd_matrix
-
-np.random.seed(42)
+from pyriemann.datasets import make_gaussian_blobs
 
 
 print(__doc__)
 
-###############################################################################
-# Define helper functions for the example
-
-
-def get_classification_score(clf, X, y):
-
-    kf = KFold(n_splits=5)
-    score = []
-    for train_index, test_index in kf.split(X):
-        X_train, X_test = X[train_index], X[test_index]
-        y_train, y_test = y[train_index], y[test_index]
-        clf.fit(X_train, y_train)
-        score.append(clf.score(X_test, y_test))
-    score = np.mean(score)
-
-    return score
-
-
-def make_classification_problem(n_samples=100, n_dim=2, class_sep=1.0,
-                                class_disp=1.0):
-
-    # generate dataset for class 0
-    CO = generate_random_spd_matrix(n_dim)
-    X0 = sample_gaussian_spd(n_samples=n_samples, Ybar=CO, sigma=class_disp)
-    y0 = np.zeros(n_samples)
-
-    # generate dataset for class 1
-    epsilon = np.exp(class_sep/np.sqrt(n_dim))
-    C1 = epsilon * CO
-    X1 = sample_gaussian_spd(n_samples=n_samples, Ybar=C1, sigma=class_disp)
-    y1 = np.ones(n_samples)
-
-    X = np.concatenate([X0, X1])
-    y = np.concatenate([y0, y1])
-    idx = np.random.permutation(len(X))
-    X = X[idx]
-    y = y[idx]
-
-    return X, y
 
 ###############################################################################
 # Set general parameters for the illustrations
@@ -72,6 +31,7 @@ def make_classification_problem(n_samples=100, n_dim=2, class_sep=1.0,
 
 n_dim = 4  # dimensionality of the data points
 sigma = 1.00  # dispersion of the Gaussian distributions
+random_state = 42  # ensure reproducibility
 
 ###############################################################################
 # Loop over different levels of separability between the classes
@@ -80,14 +40,18 @@ deltas_array = np.linspace(0, 5*sigma, 10)
 for delta in deltas_array:
 
     # generate data points for a classification problem
-    X, y = make_classification_problem(n_samples=250, n_dim=n_dim,
-                                       class_sep=delta, class_disp=sigma)
+    X, y = make_gaussian_blobs(n_samples=250,
+                               n_dim=n_dim,
+                               class_sep=delta,
+                               class_disp=sigma,
+                               random_state=random_state)
 
     # which classifier to consider
     clf = MDM()
 
     # get the classification score for this setup
-    scores_array.append(get_classification_score(clf, X, y))
+    scores_array.append(
+        cross_val_score(clf, X, y, cv=5, scoring='roc_auc').mean())
 scores_array = np.array(scores_array)
 
 ###############################################################################

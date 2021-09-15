@@ -9,6 +9,7 @@ from . import stats
 from . import embedding
 from . import preprocessing
 from . import sampling
+from . import datasets
 
 
 __all__ = [
@@ -22,5 +23,6 @@ __all__ = [
     'stats',
     'embedding',
     'preprocessing',
-    'sampling'
+    'sampling',
+    'datasets'
 ]

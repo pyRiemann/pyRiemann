@@ -8,3 +8,4 @@
 /dist
 *-e
 *.egg-info/
+.vscode/
