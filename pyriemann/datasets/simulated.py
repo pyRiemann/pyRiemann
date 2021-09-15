@@ -4,7 +4,7 @@ from .sampling import generate_random_spd_matrix, sample_gaussian_spd
 
 
 def make_gaussian_blobs(n_samples=100, n_dim=2, class_sep=1.0, class_disp=1.0,
-                        random_state=42):
+                        random_state=None):
     """Generate SPD dataset with two classes sampled from Riemannian Gaussian
 
     Generate a dataset with SPD matrices generated from two Riemannian
@@ -33,7 +33,7 @@ def make_gaussian_blobs(n_samples=100, n_dim=2, class_sep=1.0, class_disp=1.0,
 
     Notes
     -----
-    .. versionadded:: 0.2.8.dev
+    .. versionadded:: 0.2.8
 
     """
 

@@ -19,7 +19,7 @@ import matplotlib.pyplot as plt
 from sklearn.model_selection import cross_val_score
 
 from pyriemann.classification import MDM
-from pyriemann.datasets import make_gaussian_blobs
+from pyriemann.datasets import simulated
 
 
 print(__doc__)
@@ -40,11 +40,11 @@ deltas_array = np.linspace(0, 5*sigma, 10)
 
 for delta in deltas_array:
     # generate data points for a classification problem
-    X, y = make_gaussian_blobs(n_samples=250,
-                               n_dim=n_dim,
-                               class_sep=delta,
-                               class_disp=sigma,
-                               random_state=random_state)
+    X, y = simulated.make_gaussian_blobs(n_samples=250,
+                                         n_dim=n_dim,
+                                         class_sep=delta,
+                                         class_disp=sigma,
+                                         random_state=random_state)
 
     # which classifier to consider
     clf = MDM()

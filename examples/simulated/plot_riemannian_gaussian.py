@@ -15,7 +15,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from pyriemann.embedding import Embedding
-from pyriemann.sampling import sample_gaussian_spd, generate_random_spd_matrix
+from pyriemann.datasets import sampling
 
 
 print(__doc__)
@@ -29,19 +29,20 @@ epsilon = 4.0  # parameter for controlling the distance between centers
 random_state = 42  # ensure reproducibility
 
 # Generate the samples on three different conditions
-mean = generate_random_spd_matrix(n_dim)  # random reference point
-samples_1 = sample_gaussian_spd(n_samples=n_samples,
-                                mean=mean,
-                                sigma=sigma,
-                                random_state=random_state)
-samples_2 = sample_gaussian_spd(n_samples=n_samples,
-                                mean=mean,
-                                sigma=sigma/2,
-                                random_state=random_state)
-samples_3 = sample_gaussian_spd(n_samples=n_samples,
-                                mean=epsilon*mean,
-                                sigma=sigma,
-                                random_state=random_state)
+mean = sampling.generate_random_spd_matrix(n_dim)  # random reference point
+
+samples_1 = sampling.sample_gaussian_spd(n_samples=n_samples,
+                                         mean=mean,
+                                         sigma=sigma,
+                                         random_state=random_state)
+samples_2 = sampling.sample_gaussian_spd(n_samples=n_samples,
+                                         mean=mean,
+                                         sigma=sigma/2,
+                                         random_state=random_state)
+samples_3 = sampling.sample_gaussian_spd(n_samples=n_samples,
+                                         mean=epsilon*mean,
+                                         sigma=sigma,
+                                         random_state=random_state)
 
 # Stack all of the samples into one data array for the embedding
 samples = np.concatenate([samples_1, samples_2, samples_3])
