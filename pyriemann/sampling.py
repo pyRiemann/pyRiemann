@@ -311,7 +311,7 @@ def generate_random_spd_matrix(n_dim, random_state=42):
 
     Returns
     -------
-    C : ndarray (n_dim, n_dim)
+    C : ndarray, shape (n_dim, n_dim)
         random SPD matrix
 
     """
