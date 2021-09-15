@@ -74,7 +74,7 @@ def slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10):
 
     Returns
     -------
-    samples : ndarray (n_samples, n_dim)
+    samples : ndarray, shape (n_samples, n_dim)
         samples from the target pdf
     """
 
