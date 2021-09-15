@@ -317,7 +317,7 @@ def generate_random_spd_matrix(n_dim, random_state=42):
     """
     rs = check_random_state(random_state)
     A = rs.randn(n_dim, n_dim)
-    A = (A+A.T)/2
+    A = (A + A.T)/2
     _, Q = np.linalg.eig(A)
     w = rs.rand(n_dim)
     C = Q @ np.diag(w) @ Q.T
