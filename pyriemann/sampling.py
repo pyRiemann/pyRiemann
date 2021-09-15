@@ -22,6 +22,17 @@ def pdf_r(r, sigma):
     -------
     p : float
         pdf applied to data point r
+
+    Notes
+    -----
+    .. versionadded:: 0.2.8.dev
+    
+    References
+    ----------
+    .. [1] S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton, “Riemannian
+        Gaussian distributions on the space of symmetric positive definite
+        matrices”, IEEE Trans Inf Theory, vol. 63, pp. 2153–2170, 2017.
+        https://arxiv.org/pdf/1507.01760.pdf
     """
 
     n_dim = len(r)
