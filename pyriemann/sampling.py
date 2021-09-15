@@ -1,9 +1,10 @@
 import numpy as np
 from functools import partial
 from pyriemann.utils.base import sqrtm
+from sklearn.utils import check_random_state
 
 
-def pdf_r(r, sigma):
+def _pdf_r(r, sigma):
     """pdf for the log of eigenvalues of a SPD matrix
 
     Probability density function for the logarithm of the eigenvalues of a SPD
@@ -24,7 +25,7 @@ def pdf_r(r, sigma):
     Notes
     -----
     .. versionadded:: 0.2.8.dev
-    
+
     References
     ----------
     .. [1] S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton, “Riemannian
@@ -43,7 +44,8 @@ def pdf_r(r, sigma):
     return np.exp(partial_1 + partial_2)
 
 
-def slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10):
+def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
+                    random_state=42):
     """Slice sampling procedure
 
     Implementation of a slice sampling algorithm for sampling from any target
@@ -69,6 +71,8 @@ def slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10):
         samples can help reducing this correlation. Note that this makes the
         algorithm actually sample `thin x n_samples` samples from the pdf, so
         expect the whole sampling procedure to take longer
+    random_state : int, RandomState instance or None (default: 42)
+        pass an int for reproducible output
 
     Returns
     -------
@@ -76,12 +80,23 @@ def slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10):
         samples from the target pdf
     """
 
-    w = 1.0
+    if (n_samples <= 0) or (not isinstance(n_samples, int)):
+        raise ValueError(
+            f'n_samples must be a positive integer (Got {n_samples})')
+    if (n_burnin <= 0) or (not isinstance(n_burnin, int)):
+        raise ValueError(
+            f'n_samples must be a positive integer (Got {n_burnin})')
+    if (thin <= 0) or (not isinstance(thin, int)):
+        raise ValueError(
+            f'thin must be a positive integer (Got {thin})')
+
+    rs = check_random_state(random_state)
+    w = 1.0  # initial bracket width
     xt = np.copy(x0)
 
     n_dim = len(x0)
     samples = []
-    n_samples_total = (n_samples+n_burnin)*thin
+    n_samples_total = (n_samples + n_burnin) * thin
     for _ in range(n_samples_total):
 
         for i in range(n_dim):
@@ -93,10 +108,10 @@ def slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10):
             Px = ptarget(xt)
 
             # step 2 : draw vertical coordinate uprime ~ U(0, ptarget(xt))
-            uprime_i = Px * np.random.rand()
+            uprime_i = Px * rs.rand()
 
             # step 3 : create a horizontal interval (xl_i, xr_i) enclosing xt_i
-            r = np.random.rand()
+            r = rs.rand()
             xl_i = xt[i] - r*w
             xr_i = xt[i] + (1-r)*w
             while ptarget(xt + (xl_i - xt[i])*ei) > uprime_i:
@@ -106,7 +121,7 @@ def slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10):
 
             # step 4 : loop
             while True:
-                xprime_i = xl_i + (xr_i - xl_i) * np.random.rand()
+                xprime_i = xl_i + (xr_i - xl_i) * rs.rand()
                 Px = ptarget(xt + (xprime_i - xt[i])*ei)
                 if Px > uprime_i:
                     break
@@ -127,7 +142,7 @@ def slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10):
     return samples
 
 
-def sample_parameter_r(n_samples, n_dim, sigma):
+def _sample_parameter_r(n_samples, n_dim, sigma, random_state=42):
     """Sample the r parameters of a Riemannian Gaussian distribution
 
     Sample the logarithm of the eigenvalues of a SPD matrix following a
@@ -143,6 +158,8 @@ def sample_parameter_r(n_samples, n_dim, sigma):
         dimensionality of the SPD matrices to be sampled
     sigma : float
         dispersion of the Riemannian Gaussian distribution
+    random_state : int, RandomState instance or None (default: 42)
+        pass an int for reproducible output
 
     Returns
     -------
@@ -150,14 +167,16 @@ def sample_parameter_r(n_samples, n_dim, sigma):
         samples of the r parameters of the Riemannian Gaussian distribution
     """
 
-    x0 = np.random.randn(n_dim)
-    ptarget = partial(pdf_r, sigma=sigma)
-    r_samples = slice_sampling(ptarget, n_samples=n_samples, x0=x0)
+    rs = check_random_state(random_state)
+    x0 = rs.randn(n_dim)
+    ptarget = partial(_pdf_r, sigma=sigma)
+    r_samples = _slice_sampling(
+        ptarget, n_samples=n_samples, x0=x0, random_state=random_state)
 
     return r_samples
 
 
-def sample_parameter_U(n_samples, n_dim):
+def _sample_parameter_U(n_samples, n_dim, random_state=42):
     """Sample the U parameters of a Riemannian Gaussian distribution
 
     Sample the eigenvectors a SPD matrix following a Riemannian Gaussian
@@ -171,6 +190,8 @@ def sample_parameter_U(n_samples, n_dim):
         how many samples to generate
     n_dim : int
         dimensionality of the SPD matrices to be sampled
+    random_state : int, RandomState instance or None (default: 42)
+        pass an int for reproducible output
 
     Returns
     -------
@@ -178,16 +199,17 @@ def sample_parameter_U(n_samples, n_dim):
         samples of the U parameters of the Riemannian Gaussian distribution
     """
 
+    rs = check_random_state(random_state)
     u_samples = np.zeros((n_samples, n_dim, n_dim))
     for i in range(n_samples):
-        A = np.random.randn(n_dim, n_dim)
+        A = rs.randn(n_dim, n_dim)
         Q, _ = np.linalg.qr(A)
         u_samples[i] = Q
 
     return u_samples
 
 
-def sample_gaussian_spd_centered(n_samples, n_dim, sigma):
+def sample_gaussian_spd_centered(n_samples, n_dim, sigma, random_state=42):
     """Sample a Riemannian Gaussian distribution centered at the Identity
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at the
@@ -204,6 +226,8 @@ def sample_gaussian_spd_centered(n_samples, n_dim, sigma):
         dimensionality of the SPD matrices to be sampled
     sigma : float
         dispersion of the Riemannian Gaussian distribution
+    random_state : int, RandomState instance or None (default: 42)
+        pass an int for reproducible output
 
     Returns
     -------
@@ -211,10 +235,13 @@ def sample_gaussian_spd_centered(n_samples, n_dim, sigma):
         samples of the Riemannian Gaussian distribution
     """
 
-    samples_r = sample_parameter_r(n_samples=n_samples,
-                                   n_dim=n_dim,
-                                   sigma=sigma)
-    samples_U = sample_parameter_U(n_samples=n_samples, n_dim=n_dim)
+    samples_r = _sample_parameter_r(n_samples=n_samples,
+                                    n_dim=n_dim,
+                                    sigma=sigma,
+                                    random_state=random_state)
+    samples_U = _sample_parameter_U(n_samples=n_samples,
+                                    n_dim=n_dim,
+                                    random_state=random_state)
 
     samples = np.zeros((n_samples, n_dim, n_dim))
     for i in range(n_samples):
@@ -226,11 +253,11 @@ def sample_gaussian_spd_centered(n_samples, n_dim, sigma):
     return samples
 
 
-def sample_gaussian_spd(n_samples, Ybar, sigma):
+def sample_gaussian_spd(n_samples, mean, sigma, random_state=42):
     """Sample a Riemannian Gaussian distribution
 
-    Sample SPD matrices from a Riemannian Gaussian distribution centered Ybar
-    and with dispersion parametrized by sigma. This distribution has been
+    Sample SPD matrices from a Riemannian Gaussian distribution centered at
+    mean and with dispersion parametrized by sigma. This distribution has been
     defined in Said et al. "Riemannian Gaussian Distributions on the space of
     symmetric positive definite matrices" (2016) and generalizes the notion of
     a Gaussian distribution to the space of SPD matrices. The sampling is based
@@ -243,10 +270,12 @@ def sample_gaussian_spd(n_samples, Ybar, sigma):
     ----------
     n_samples : int
         how many samples to generate
-    Ybar : ndarray (n_dim, n_dim)
+    mean : ndarray (n_dim, n_dim)
         center of the Riemannian Gaussian distribution
     sigma : float
         dispersion of the Riemannian Gaussian distribution
+    random_state : int, RandomState instance or None (default: 42)
+        pass an int for reproducible output
 
     Returns
     -------
@@ -254,28 +283,31 @@ def sample_gaussian_spd(n_samples, Ybar, sigma):
         samples of the Riemannian Gaussian distribution
     """
 
-    n_dim = Ybar.shape[0]
+    n_dim = mean.shape[0]
     samples_centered = sample_gaussian_spd_centered(
                         n_samples,
                         n_dim=n_dim,
-                        sigma=sigma)
+                        sigma=sigma,
+                        random_state=random_state)
 
-    # apply the parallel transport to Ybar on each of the samples
+    # apply the parallel transport to mean on each of the samples
     samples = np.zeros((n_samples, n_dim, n_dim))
     for i in range(n_samples):
-        samples[i] = sqrtm(Ybar) @ samples_centered[i] @ sqrtm(Ybar)
+        samples[i] = sqrtm(mean) @ samples_centered[i] @ sqrtm(mean)
         samples[i] = (samples[i] + samples[i].T) / 2.0  # ensure symmetry
 
     return samples
 
 
-def generate_random_spd_matrix(n_dim):
+def generate_random_spd_matrix(n_dim, random_state=42):
     """Generate a random SPD matrix
 
     Parameters
     ----------
     n_dim : int
         dimensionality of the matrix to sample
+    random_state : int, RandomState instance or None (default: 42)
+        pass an int for reproducible output
 
     Returns
     -------
@@ -283,44 +315,11 @@ def generate_random_spd_matrix(n_dim):
         random SPD matrix
 
     """
-    A = np.random.randn(n_dim, n_dim)
+    rs = check_random_state(random_state)
+    A = rs.randn(n_dim, n_dim)
     A = (A+A.T)/2
     _, Q = np.linalg.eig(A)
-    w = np.random.rand(n_dim)
+    w = rs.rand(n_dim)
     C = Q @ np.diag(w) @ Q.T
 
     return C
-
-
-if __name__ == '__main__':
-
-    import matplotlib.pyplot as plt
-    np.random.seed(42)
-
-    n_samples = 50
-    sigma = 0.50
-    n_dim = 10
-
-    Ybar = generate_random_spd_matrix(n_dim)
-    samples_1 = sample_gaussian_spd(n_samples=n_samples,
-                                    Ybar=Ybar,
-                                    sigma=sigma)
-
-    delta = 1
-    epsilon = np.exp(delta/np.sqrt(n_dim))
-    samples_2 = sample_gaussian_spd(n_samples=n_samples,
-                                    Ybar=epsilon*Ybar,
-                                    sigma=sigma)
-
-    samples = np.concatenate([samples_1, samples_2])
-    labels = np.array(n_samples*[1] + n_samples*[2])
-
-    from pyriemann.embedding import Embedding
-    lapl = Embedding(metric='riemann', n_components=2)
-    embd = lapl.fit_transform(X=samples)
-
-    fig, ax = plt.subplots(figsize=(8, 6))
-    colors = {1: 'C0', 2: 'C1', 3: 'C2'}
-    for i in range(len(samples)):
-        ax.scatter(embd[i, 0], embd[i, 1], c=colors[labels[i]])
-    plt.show()
