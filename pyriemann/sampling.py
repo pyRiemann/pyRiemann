@@ -7,9 +7,7 @@ def pdf_r(r, sigma):
     """pdf for the log of eigenvalues of a SPD matrix
 
     Probability density function for the logarithm of the eigenvalues of a SPD
-    matrix samples from the Riemannian Gaussian distribution.
-
-    See https://arxiv.org/pdf/1507.01760.pdf for the mathematical details
+    matrix samples from the Riemannian Gaussian distribution [1]_.
 
     Parameters
     ----------
