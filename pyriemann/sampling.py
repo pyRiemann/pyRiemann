@@ -270,7 +270,7 @@ def sample_gaussian_spd(n_samples, mean, sigma, random_state=42):
     ----------
     n_samples : int
         how many samples to generate
-    mean : ndarray (n_dim, n_dim)
+    mean : ndarray, shape (n_dim, n_dim)
         center of the Riemannian Gaussian distribution
     sigma : float
         dispersion of the Riemannian Gaussian distribution
