@@ -1,7 +1,8 @@
 from functools import partial
 import numpy as np
 from sklearn.utils import check_random_state
-from pyriemann.utils.base import sqrtm, expm
+from pyriemann.utils.base import sqrtm, expm, powm
+from pyriemann.utils.distance import distance_riemann
 
 
 def _pdf_r(r, sigma):
@@ -338,3 +339,47 @@ def generate_random_spd_matrix(n_dim, random_state=None):
     C = expm(A)
 
     return C
+
+
+def make_outliers(n_samples, mean, sigma, outlier_coeff=10, random_state=None):
+    """Generate a set of outlier points
+
+    Simulate data points that are outliers for a given Riemannian Gaussian
+    distribution with fixed mean and dispersion.
+
+    Parameters
+    ----------
+    n_samples : int
+        How many samples to generate.
+    mean : ndarray, shape (n_dim, n_dim)
+        Center of the Riemannian Gaussian distribution.
+    sigma : float
+        Dispersion of the Riemannian Gaussian distribution.
+    outlier_coeff: float
+        Coefficient determining how to define an outlier data point, i.e. how
+        many times the sigma parameter its distance to the mean should be.
+    random_state : int, RandomState instance or None (default: None)
+        Pass an int for reproducible output across multiple function calls.
+
+    Returns
+    -------
+    outliers : ndarray, shape (n_samples, n_dim, n_dim)
+        Array of simulated outlier data points
+
+    Notes
+    -----
+    .. versionadded:: 0.2.8
+    """
+
+    n_dim = mean.shape[1]
+    mean_sqrt = sqrtm(mean)
+
+    outliers = np.zeros((n_samples, n_dim, n_dim))
+    for i in range(n_samples):
+        Oi = generate_random_spd_matrix(n_dim=n_dim, random_state=random_state)
+        epsilon_num = outlier_coeff * sigma * n_dim
+        epsilon_den = distance_riemann(Oi, np.eye(n_dim))**2
+        epsilon = np.sqrt(epsilon_num / epsilon_den)
+        outliers[i, :, :] = mean_sqrt @ powm(Oi, epsilon) @ mean_sqrt
+
+    return outliers
