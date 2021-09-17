@@ -28,7 +28,7 @@ def make_gaussian_blobs(n_samples=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     -------
     X : ndarray, shape (2*n_samples, n_dim, n_dim)
         ndarray of SPD matrices.
-    y : ndarray shape (n_samples, 1)
+    y : ndarray, shape (n_samples,)
         labels corresponding to each sample.
 
     Notes

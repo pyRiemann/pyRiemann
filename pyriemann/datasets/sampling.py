@@ -1,7 +1,7 @@
 from functools import partial
 import numpy as np
 from sklearn.utils import check_random_state
-from pyriemann.utils.base import sqrtm
+from pyriemann.utils.base import sqrtm, expm
 
 
 def _pdf_r(r, sigma):
@@ -14,7 +14,7 @@ def _pdf_r(r, sigma):
 
     Parameters
     ----------
-    r : ndarray shape (n_dim,)
+    r : ndarray, shape (n_dim,)
         Vector defines in R^n_dim.
     sigma : float
         Dispersion of the Riemannian Gaussian distribution.
@@ -24,6 +24,10 @@ def _pdf_r(r, sigma):
     p : float
         Probability density function applied to data point r
     """
+
+    if (sigma <= 0):
+        raise ValueError(
+            f'sigma must be a positive number (Got {sigma})')
 
     n_dim = len(r)
     partial_1 = -np.sum(r**2)/sigma**2
@@ -156,7 +160,7 @@ def _sample_parameter_r(n_samples, n_dim, sigma, random_state=None):
 
     Returns
     -------
-    r_samples : ndarray (n_samples, n_dim)
+    r_samples : ndarray, shape (n_samples, n_dim)
         Samples of the r parameters of the Riemannian Gaussian distribution.
     """
 
@@ -202,7 +206,7 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
     return u_samples
 
 
-def sample_gaussian_spd_centered(n_samples, n_dim, sigma, random_state=None):
+def _sample_gaussian_spd_centered(n_samples, n_dim, sigma, random_state=None):
     """Sample a Riemannian Gaussian distribution centered at the Identity
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at the
@@ -250,7 +254,6 @@ def sample_gaussian_spd_centered(n_samples, n_dim, sigma, random_state=None):
         Ui = samples_U[i]
         ri = samples_r[i]
         samples[i] = Ui.T @ np.diag(np.exp(ri)) @ Ui
-        samples[i] = (samples[i] + samples[i].T) / 2.0  # ensure symmetry
 
     return samples
 
@@ -294,18 +297,14 @@ def sample_gaussian_spd(n_samples, mean, sigma, random_state=None):
     """
 
     n_dim = mean.shape[0]
-    samples_centered = sample_gaussian_spd_centered(n_samples,
-                                                    n_dim=n_dim,
-                                                    sigma=sigma,
-                                                    random_state=random_state)
+    samples_centered = _sample_gaussian_spd_centered(n_samples,
+                                                     n_dim=n_dim,
+                                                     sigma=sigma,
+                                                     random_state=random_state)
 
     # apply the parallel transport to mean on each of the samples
-    samples = np.zeros((n_samples, n_dim, n_dim))
     mean_sqrt = sqrtm(mean)
-    for i in range(n_samples):
-        samples[i] = mean_sqrt @ samples_centered[i] @ mean_sqrt
-        samples[i] = (samples[i] + samples[i].T) / 2.0  # ensure symmetry
-
+    samples = mean_sqrt @ samples_centered @ mean_sqrt
     return samples
 
 
@@ -328,11 +327,14 @@ def generate_random_spd_matrix(n_dim, random_state=None):
     -----
     .. versionadded:: 0.2.8
     """
+
+    if (n_dim <= 0) or (not isinstance(n_dim, int)):
+        raise ValueError(
+            f'n_samples must be a positive integer (Got {n_dim})')
+
     rs = check_random_state(random_state)
     A = rs.randn(n_dim, n_dim)
     A = (A + A.T)/2
-    _, Q = np.linalg.eig(A)
-    w = rs.rand(n_dim)
-    C = Q @ np.diag(w) @ Q.T
+    C = expm(A)
 
     return C
