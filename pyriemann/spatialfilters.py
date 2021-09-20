@@ -185,7 +185,7 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
         self.log = log
 
     def fit(self, X, y):
-        """Train CSP spatial filters.
+        """Train BilinearFilter spatial filters.
 
         Parameters
         ----------
@@ -196,8 +196,8 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        self : CSP instance
-            The CSP instance.
+        self : BilinearFilter instance
+            The BilinearFilter instance.
         """
         self.filters_ = self.filters
         return self

@@ -1,117 +1,196 @@
+from conftest import get_distances, get_means, get_metrics
 import numpy as np
 from numpy.testing import assert_array_equal
+from pyriemann.classification import MDM, FgMDM, KNearestNeighbor, TSclassifier
+from pyriemann.estimation import Covariances
 import pytest
-from pyriemann.classification import (MDM, FgMDM, KNearestNeighbor,
-                                      TSclassifier)
+from pytest import approx
+from sklearn.dummy import DummyClassifier
 
 
-def generate_cov(Nt, Ne):
-    """Generate a set of cavariances matrices for test purpose."""
-    rs = np.random.RandomState(1234)
-    diags = 2.0 + 0.1 * rs.randn(Nt, Ne)
-    A = 2*rs.rand(Ne, Ne) - 1
-    A /= np.atleast_2d(np.sqrt(np.sum(A**2, 1))).T
-    covmats = np.empty((Nt, Ne, Ne))
-    for i in range(Nt):
-        covmats[i] = np.dot(np.dot(A, np.diag(diags[i])), A.T)
-    return covmats
+rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier]
 
 
-def test_MDM_init():
-    """Test init of MDM"""
-    MDM(metric='riemann')
+@pytest.mark.parametrize("classif", rclf)
+class ClassifierTestCase:
+    def test_two_classes(self, classif, get_covmats, get_labels):
+        n_classes, n_trials, n_channels = 2, 6, 3
+        covmats = get_covmats(n_trials, n_channels)
+        labels = get_labels(n_trials, n_classes)
+        self.clf_predict(classif, covmats, labels)
+        self.clf_fit_independence(classif, covmats, labels)
+        if classif is MDM:
+            self.clf_fitpredict(classif, covmats, labels)
+        if classif in (MDM, FgMDM):
+            self.clf_transform(classif, covmats, labels)
+        if classif in (MDM, FgMDM, KNearestNeighbor):
+            self.clf_jobs(classif, covmats, labels)
+        if classif in (MDM, FgMDM, TSclassifier):
+            self.clf_predict_proba(classif, covmats, labels)
+            self.clf_populate_classes(classif, covmats, labels)
+        if classif is KNearestNeighbor:
+            self.clf_predict_proba_trials(classif, covmats, labels)
+        if classif is (FgMDM, TSclassifier):
+            self.clf_tsupdate(classif, covmats, labels)
 
-    # Should raise if metric not string or dict
-    with pytest.raises(TypeError):
-        MDM(metric=42)
+    def test_multi_classes(self, classif, get_covmats, get_labels):
+        n_classes, n_trials, n_channels = 3, 9, 3
+        covmats = get_covmats(n_trials, n_channels)
+        labels = get_labels(n_trials, n_classes)
+        self.clf_fit_independence(classif, covmats, labels)
+        self.clf_predict(classif, covmats, labels)
+        if classif is MDM:
+            self.clf_fitpredict(classif, covmats, labels)
+        if classif in (MDM, FgMDM):
+            self.clf_transform(classif, covmats, labels)
+        if classif in (MDM, FgMDM, KNearestNeighbor):
+            self.clf_jobs(classif, covmats, labels)
+        if classif in (MDM, FgMDM, TSclassifier):
+            self.clf_predict_proba(classif, covmats, labels)
+            self.clf_populate_classes(classif, covmats, labels)
+        if classif is KNearestNeighbor:
+            self.clf_predict_proba_trials(classif, covmats, labels)
+        if classif is (FgMDM, TSclassifier):
+            self.clf_tsupdate(classif, covmats, labels)
 
-    # Should raise if metric is not contain bad keys
+
+class TestClassifier(ClassifierTestCase):
+    def clf_predict(self, classif, covmats, labels):
+        n_trials = len(labels)
+        clf = classif()
+        clf.fit(covmats, labels)
+        predicted = clf.predict(covmats)
+        assert predicted.shape == (n_trials,)
+
+    def clf_predict_proba(self, classif, covmats, labels):
+        n_trials = len(labels)
+        n_classes = len(np.unique(labels))
+        clf = classif()
+        clf.fit(covmats, labels)
+        probabilities = clf.predict_proba(covmats)
+        assert probabilities.shape == (n_trials, n_classes)
+        assert probabilities.sum(axis=1) == approx(np.ones(n_trials))
+
+    def clf_predict_proba_trials(self, classif, covmats, labels):
+        n_trials = len(labels)
+        # n_classes = len(np.unique(labels))
+        clf = classif()
+        clf.fit(covmats, labels)
+        probabilities = clf.predict_proba(covmats)
+        assert probabilities.shape == (n_trials, n_trials)
+        assert probabilities.sum(axis=1) == approx(np.ones(n_trials))
+
+    def clf_fitpredict(self, classif, covmats, labels):
+        clf = classif()
+        clf.fit_predict(covmats, labels)
+        assert_array_equal(clf.classes_, np.unique(labels))
+
+    def clf_transform(self, classif, covmats, labels):
+        n_trials = len(labels)
+        n_classes = len(np.unique(labels))
+        clf = classif()
+        clf.fit(covmats, labels)
+        transformed = clf.transform(covmats)
+        assert transformed.shape == (n_trials, n_classes)
+
+    def clf_fit_independence(self, classif, covmats, labels):
+        clf = classif()
+        clf.fit(covmats, labels).predict(covmats)
+        # retraining with different size should erase previous fit
+        new_covmats = covmats[:, :-1, :-1]
+        clf.fit(new_covmats, labels).predict(new_covmats)
+
+    def clf_jobs(self, classif, covmats, labels):
+        clf = classif(n_jobs=2)
+        clf.fit(covmats, labels)
+        clf.predict(covmats)
+
+    def clf_populate_classes(self, classif, covmats, labels):
+        clf = classif()
+        clf.fit(covmats, labels)
+        assert_array_equal(clf.classes_, np.unique(labels))
+
+    def clf_classif_tsupdate(self, classif, covmats, labels):
+        clf = classif(tsupdate=True)
+        clf.fit(covmats, labels).predict(covmats)
+
+
+@pytest.mark.parametrize("classif", [MDM, FgMDM, TSclassifier])
+@pytest.mark.parametrize("mean", ["faulty", 42])
+@pytest.mark.parametrize("dist", ["not_real", 27])
+def test_metric_dict_error(classif, mean, dist, get_covmats, get_labels):
+    with pytest.raises((TypeError, KeyError)):
+        n_trials, n_channels, n_classes = 6, 3, 2
+        labels = get_labels(n_trials, n_classes)
+        covmats = get_covmats(n_trials, n_channels)
+        clf = classif(metric={"mean": mean, "distance": dist})
+        clf.fit(covmats, labels).predict(covmats)
+
+
+@pytest.mark.parametrize("classif", [MDM, FgMDM])
+@pytest.mark.parametrize("mean", get_means())
+@pytest.mark.parametrize("dist", get_distances())
+def test_metric_dist(classif, mean, dist, get_covmats, get_labels):
+    n_trials, n_channels, n_classes = 4, 3, 2
+    labels = get_labels(n_trials, n_classes)
+    covmats = get_covmats(n_trials, n_channels)
+    clf = classif(metric={"mean": mean, "distance": dist})
+    clf.fit(covmats, labels).predict(covmats)
+
+
+@pytest.mark.parametrize("classif", rclf)
+@pytest.mark.parametrize("metric", [42, "faulty", {"foo": "bar"}])
+def test_metric_wrong_keys(classif, metric, get_covmats, get_labels):
+    with pytest.raises((TypeError, KeyError)):
+        n_trials, n_channels, n_classes = 6, 3, 2
+        labels = get_labels(n_trials, n_classes)
+        covmats = get_covmats(n_trials, n_channels)
+        clf = classif(metric=metric)
+        clf.fit(covmats, labels).predict(covmats)
+
+
+@pytest.mark.parametrize("classif", rclf)
+@pytest.mark.parametrize("metric", get_metrics())
+def test_metric_str(classif, metric, get_covmats, get_labels):
+    n_trials, n_channels, n_classes = 6, 3, 2
+    labels = get_labels(n_trials, n_classes)
+    covmats = get_covmats(n_trials, n_channels)
+    clf = classif(metric=metric)
+    clf.fit(covmats, labels).predict(covmats)
+
+
+@pytest.mark.parametrize("dist", ["not_real", 42])
+def test_knn_dict_dist(dist, get_covmats, get_labels):
     with pytest.raises(KeyError):
-        MDM(metric={'universe': 42})
-
-    # should works with correct dict
-    MDM(metric={'mean': 'riemann', 'distance': 'logeuclid'})
-
-
-def test_MDM_fit():
-    """Test Fit of MDM"""
-    covset = generate_cov(100, 3)
-    labels = np.array([0, 1]).repeat(50)
-    mdm = MDM(metric='riemann')
-    mdm.fit(covset, labels)
+        n_trials, n_channels, n_classes = 6, 3, 2
+        labels = get_labels(n_trials, n_classes)
+        covmats = get_covmats(n_trials, n_channels)
+        clf = KNearestNeighbor(metric={"distance": dist})
+        clf.fit(covmats, labels).predict(covmats)
 
 
-def test_MDM_predict():
-    """Test prediction of MDM"""
-    covset = generate_cov(100, 3)
-    labels = np.array([0, 1]).repeat(50)
-    mdm = MDM(metric='riemann')
-    mdm.fit(covset, labels)
-    mdm.predict(covset)
+def test_1NN(get_covmats, get_labels):
+    """Test KNearestNeighbor with K=1"""
+    n_trials, n_channels, n_classes = 9, 3, 3
+    covmats = get_covmats(n_trials, n_channels)
+    labels = get_labels(n_trials, n_classes)
 
-    # test fit_predict
-    mdm = MDM(metric='riemann')
-    mdm.fit_predict(covset, labels)
-
-    # test transform
-    mdm.transform(covset)
-
-    # predict proba
-    mdm.predict_proba(covset)
-
-    # test n_jobs
-    mdm = MDM(metric='riemann', n_jobs=2)
-    mdm.fit(covset, labels)
-    mdm.predict(covset)
-
-
-def test_KNN():
-    """Test KNearestNeighbor"""
-    covset = generate_cov(30, 3)
-    labels = np.array([0, 1, 2]).repeat(10)
-
-    knn = KNearestNeighbor(1, metric='riemann')
-    knn.fit(covset, labels)
-    preds = knn.predict(covset)
+    knn = KNearestNeighbor(1, metric="riemann")
+    knn.fit(covmats, labels)
+    preds = knn.predict(covmats)
     assert_array_equal(labels, preds)
 
 
-def test_TSclassifier():
+def test_TSclassifier_classifier(get_covmats, get_labels):
     """Test TS Classifier"""
-    covset = generate_cov(40, 3)
-    labels = np.array([0, 1]).repeat(20)
+    n_trials, n_channels, n_classes = 6, 3, 2
+    covmats = get_covmats(n_trials, n_channels)
+    labels = get_labels(n_trials, n_classes)
+    clf = TSclassifier(clf=DummyClassifier())
+    clf.fit(covmats, labels).predict(covmats)
 
+
+def test_TSclassifier_classifier_error():
+    """Test TS if not Classifier"""
     with pytest.raises(TypeError):
-        TSclassifier(clf='666')
-
-    clf = TSclassifier()
-    clf.fit(covset, labels)
-    assert_array_equal(clf.classes_, np.array([0, 1]))
-    clf.predict(covset)
-    clf.predict_proba(covset)
-
-
-def test_FgMDM_init():
-    """Test init of FgMDM"""
-    FgMDM(metric='riemann')
-
-    # Should raise if metric not string or dict
-    with pytest.raises(TypeError):
-        FgMDM(metric=42)
-
-    # Should raise if metric is not contain bad keys
-    with pytest.raises(KeyError):
-        FgMDM(metric={'universe': 42})
-
-    # should works with correct dict
-    FgMDM(metric={'mean': 'riemann', 'distance': 'logeuclid'})
-
-
-def test_FgMDM_predict():
-    """Test prediction of FgMDM"""
-    covset = generate_cov(100, 3)
-    labels = np.array([0, 1]).repeat(50)
-    fgmdm = FgMDM(metric='riemann')
-    fgmdm.fit(covset, labels)
-    fgmdm.predict(covset)
-    fgmdm.transform(covset)
+        TSclassifier(clf=Covariances())

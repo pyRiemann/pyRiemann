@@ -22,6 +22,8 @@ v0.2.8.dev
 
 - Add Schaefer-Strimmer covariance estimator in :func:`pyriemann.utils.covariance.covariances`, and an example to compare estimators
 
+- Refactor tests + fix refit of :class:`pyriemann.tangentspace.TangentSpace`
+
 v0.2.7 (June 2021)
 ------------------
 

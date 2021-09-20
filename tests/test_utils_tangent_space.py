@@ -1,36 +1,43 @@
+from conftest import get_metrics
 import numpy as np
-from numpy.testing import assert_array_almost_equal
-
-from pyriemann.utils.tangentspace import tangent_space, untangent_space
-
-
-def generate_cov(Nt, Ne):
-    """Generate a set of cavariances matrices for test purpose"""
-    rs = np.random.RandomState(1234)
-    diags = 2.0 + 0.1 * rs.randn(Nt, Ne)
-    A = 2*rs.rand(Ne, Ne) - 1
-    A /= np.atleast_2d(np.sqrt(np.sum(A**2, 1))).T
-    covmats = np.empty((Nt, Ne, Ne))
-    for i in range(Nt):
-        covmats[i] = np.dot(np.dot(A, np.diag(diags[i])), A.T)
-    return covmats
+from pyriemann.utils.tangentspace import (
+    tangent_space, untangent_space, transport
+)
+import pytest
+from pytest import approx
 
 
-def test_tangent_space():
+def test_tangent_space(get_covmats):
     """Test tangent space projection"""
-    C = generate_cov(10, 3)
-    tangent_space(C, np.eye(3))
+    n_trials, n_channels = 6, 3
+    n_ts = (n_channels * (n_channels + 1)) // 2
+    covmats = get_covmats(n_trials, n_channels)
+    Xts = tangent_space(covmats, np.eye(n_channels))
+    assert Xts.shape == (n_trials, n_ts)
 
 
-def test_untangent_space():
+def test_untangent_space(rndstate):
     """Test untangent space projection"""
-    T = np.random.randn(10, 6)
-    untangent_space(T, np.eye(3))
+    n_trials, n_channels = 10, 3
+    n_ts = (n_channels * (n_channels + 1)) // 2
+    T = rndstate.randn(n_trials, n_ts)
+    covmats = untangent_space(T, np.eye(n_channels))
+    assert covmats.shape == (n_trials, n_channels, n_channels)
 
 
-def test_tangent_and_untangent_space():
+def test_tangent_and_untangent_space(get_covmats):
     """Test tangent space projection and retro-projection should be the same"""
-    C = generate_cov(10, 3)
-    T = tangent_space(C, np.eye(3))
-    covmats = untangent_space(T, np.eye(3))
-    assert_array_almost_equal(C, covmats)
+    n_trials, n_channels = 10, 3
+    covmats = get_covmats(n_trials, n_channels)
+    Xts = tangent_space(covmats, np.eye(n_channels))
+    covmats_ut = untangent_space(Xts, np.eye(n_channels))
+    assert covmats_ut == approx(covmats)
+
+
+@pytest.mark.parametrize("metric", get_metrics())
+def test_transport(metric, get_covmats):
+    n_trials, n_channels = 10, 3
+    covmats = get_covmats(n_trials, n_channels)
+    ref = np.eye(n_channels)
+    covtr = transport(covmats, ref, metric=metric)
+    assert covtr.shape == (n_trials, n_channels, n_channels)

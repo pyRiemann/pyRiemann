@@ -1,122 +1,84 @@
-from numpy.testing import assert_array_almost_equal
-import pytest
+from conftest import get_distances
 import numpy as np
+from pyriemann.utils.distance import (
+    distance_riemann,
+    distance_euclid,
+    distance_logeuclid,
+    distance_logdet,
+    distance_kullback,
+    distance_kullback_right,
+    distance_kullback_sym,
+    distance_wasserstein,
+    distance,
+    pairwise_distance,
+    _check_distance_method,
+)
+from pyriemann.utils.geodesic import geodesic
+import pytest
+from pytest import approx
 
-from pyriemann.utils.distance import (distance_riemann,
-                                      distance_euclid,
-                                      distance_logeuclid,
-                                      distance_logdet,
-                                      distance_kullback,
-                                      distance_kullback_right,
-                                      distance_kullback_sym,
-                                      distance_wasserstein,
-                                      distance, pairwise_distance,
-                                      _check_distance_method)
+
+def get_dist_func():
+    dist_func = [
+        distance_riemann,
+        distance_logeuclid,
+        distance_euclid,
+        distance_logdet,
+        distance_kullback,
+        distance_kullback_right,
+        distance_kullback_sym,
+        distance_wasserstein,
+    ]
+    for df in dist_func:
+        yield df
 
 
-def test_check_distance_methd():
-    """Test _check_distance_method"""
-    _check_distance_method('riemann')
-    _check_distance_method(distance_riemann)
+@pytest.mark.parametrize("dist", get_distances())
+def test_check_distance_str(dist):
+    _check_distance_method(dist)
+
+
+@pytest.mark.parametrize("dist", get_dist_func())
+def test_check_distance_func(dist):
+    _check_distance_method(dist)
+
+
+def test_check_distance_error():
     with pytest.raises(ValueError):
-        _check_distance_method('666')
+        _check_distance_method("universe")
     with pytest.raises(ValueError):
         _check_distance_method(42)
 
 
-def test_distance_riemann():
-    """Test riemannian distance"""
-    A = 2*np.eye(3)
-    B = 2*np.eye(3)
-    assert_array_almost_equal(distance_riemann(A, B), 0)
+@pytest.mark.parametrize("dist", get_dist_func())
+def test_distance_func_eye(dist):
+    n_channels = 3
+    A = 2 * np.eye(n_channels)
+    B = 2 * np.eye(n_channels)
+    assert dist(A, B) == approx(0)
 
 
-def test_distance_kullback():
-    """Test kullback divergence"""
-    A = 2*np.eye(3)
-    B = 2*np.eye(3)
-    assert_array_almost_equal(distance_kullback(A, B), 0)
-    assert_array_almost_equal(distance_kullback_right(A, B), 0)
-    assert_array_almost_equal(distance_kullback_sym(A, B), 0)
+@pytest.mark.parametrize("dist", get_dist_func())
+def test_distance_func_rand(dist, get_covmats):
+    n_trials, n_channels = 2, 6
+    covmats = get_covmats(n_trials, n_channels)
+    A, C = covmats[0], covmats[1]
+    B = geodesic(A, C, alpha=0.5)
+    assert dist(A, B) < dist(A, C)
 
 
-def test_distance_euclid():
-    """Test euclidean distance"""
-    A = 2*np.eye(3)
-    B = 2*np.eye(3)
-    assert distance_euclid(A, B) == 0
+@pytest.mark.parametrize("dist, dfunc", zip(get_distances(), get_dist_func()))
+def test_distance_wrapper(dist, dfunc, get_covmats):
+    n_trials, n_channels = 2, 5
+    covmats = get_covmats(n_trials, n_channels)
+    A, B = covmats[0], covmats[1]
+    assert distance(A, B, metric=dist) == dfunc(A, B)
 
 
-def test_distance_logeuclid():
-    """Test logeuclid distance"""
-    A = 2*np.eye(3)
-    B = 2*np.eye(3)
-    assert distance_logeuclid(A, B) == 0
-
-
-def test_distance_wasserstein():
-    """Test wasserstein distance"""
-    A = 2*np.eye(3)
-    B = 2*np.eye(3)
-    assert distance_wasserstein(A, B) == 0
-
-
-def test_distance_logdet():
-    """Test logdet distance"""
-    A = 2*np.eye(3)
-    B = 2*np.eye(3)
-    assert distance_logdet(A, B) == 0
-
-
-def test_distance_generic_riemann():
-    """Test riemannian distance for generic function"""
-    A = 2*np.eye(3)
-    B = 2*np.eye(3)
-    assert distance(A, B, metric='riemann') == distance_riemann(A, B)
-
-
-def test_distance_generic_euclid():
-    """Test euclidean distance for generic function"""
-    A = 2*np.eye(3)
-    B = 2*np.eye(3)
-    assert distance(A, B, metric='euclid') == distance_euclid(A, B)
-
-
-def test_distance_generic_logdet():
-    """Test logdet distance for generic function"""
-    A = 2*np.eye(3)
-    B = 2*np.eye(3)
-    assert distance(A, B, metric='logdet') == distance_logdet(A, B)
-
-
-def test_distance_generic_logeuclid():
-    """Test logeuclid distance for generic function"""
-    A = 2*np.eye(3)
-    B = 2*np.eye(3)
-    assert distance(A, B, metric='logeuclid') == distance_logeuclid(A, B)
-
-
-def test_distance_generic_kullback():
-    """Test logeuclid distance for generic function"""
-    A = 2*np.eye(3)
-    B = 2*np.eye(3)
-    assert distance(A, B, metric='kullback') == distance_kullback(A, B)
-    assert distance(A, B, metric='kullback_right') == \
-        distance_kullback_right(A, B)
-    assert distance(A, B, metric='kullback_sym') == \
-        distance_kullback_sym(A, B)
-
-
-def test_distance_generic_custom():
-    """Test custom distance for generic function"""
-    A = 2*np.eye(3)
-    B = 2*np.eye(3)
-    assert distance(
-        A, B, metric=distance_logeuclid) == distance_logeuclid(A, B)
-
-
-def test_pairwise_distance_matrix():
-    """Test pairwise distance"""
-    A = np.array([2*np.eye(3), 3*np.eye(3)])
-    B = np.array([2*np.eye(3), 3*np.eye(3)])
-    pairwise_distance(A, B)
+def test_pairwise_distance_matrix(get_covmats):
+    n_trials, n_channels = 6, 5
+    covmats = get_covmats(n_trials, n_channels)
+    n_subset = 4
+    A, B = covmats[:n_subset], covmats[n_subset:]
+    pdist = pairwise_distance(A, B)
+    assert pdist.shape == (n_subset, 2)

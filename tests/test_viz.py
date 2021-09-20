@@ -1,4 +1,4 @@
-from conftest import covmats, requires_matplotlib  # noqa: F401
+from conftest import requires_matplotlib
 import numpy as np
 import pytest
 
@@ -10,8 +10,10 @@ from pyriemann.utils.viz import (
 
 
 @requires_matplotlib
-def test_embedding(covmats):  # noqa: F811
+def test_embedding(get_covmats):
     """Test Embedding."""
+    n_trials, n_channels = 5, 3
+    covmats = get_covmats(n_trials, n_channels)
     plot_embedding(covmats, y=None, metric="euclid")
     y = np.ones(covmats.shape[0])
     plot_embedding(covmats, y=y, metric="euclid")
