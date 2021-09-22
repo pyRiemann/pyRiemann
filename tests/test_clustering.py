@@ -2,14 +2,17 @@ from conftest import get_metrics
 import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
-from pyriemann.clustering import Kmeans, KmeansPerClassTransform, Potato
+from pyriemann.clustering import (Kmeans, KmeansPerClassTransform, Potato,
+                                  PotatoField)
 
 
-@pytest.mark.parametrize("clust", [Kmeans, KmeansPerClassTransform, Potato])
+@pytest.mark.parametrize(
+    "clust", [Kmeans, KmeansPerClassTransform, Potato, PotatoField]
+)
 class ClusteringTestCase:
     def test_two_clusters(self, clust, get_covmats, get_labels):
         n_clusters = 2
-        n_trials, n_channels = 6, 3
+        n_trials, n_channels = 6, 4
         covmats = get_covmats(n_trials, n_channels)
         if clust is Kmeans:
             self.clf_predict(clust, covmats, n_clusters)
@@ -29,6 +32,16 @@ class ClusteringTestCase:
             self.clf_predict_proba(clust, covmats)
             self.clf_partial_fit(clust, covmats)
             self.clf_fit_independence(clust, covmats)
+        if clust is PotatoField:
+            n_potatoes = 3
+            covmats = [get_covmats(n_trials, n_channels),
+                       get_covmats(n_trials, n_channels + 2),
+                       get_covmats(n_trials, n_channels + 1)]
+            self.clf_transform(clust, covmats, n_potatoes)
+            self.clf_predict(clust, covmats, n_potatoes)
+            self.clf_predict_proba(clust, covmats, n_potatoes)
+            self.clf_partial_fit(clust, covmats, n_potatoes)
+            self.clf_fit_independence(clust, covmats, n_potatoes)
 
     def test_three_clusters(self, clust, get_covmats, get_labels):
         n_clusters = 3
@@ -50,15 +63,20 @@ class ClusteringTestCase:
 
 class TestRiemannianClustering(ClusteringTestCase):
     def clf_transform(self, clust, covmats, n_clusters=None):
-        n_trials = covmats.shape[0]
+        n_trials = len(covmats)
         if n_clusters is None:
             clf = clust()
+        elif clust is PotatoField:
+            n_trials = len(covmats[0])
+            clf = clust(n_potatoes=n_clusters)
         else:
             clf = clust(n_clusters=n_clusters)
         clf.fit(covmats)
         transformed = clf.transform(covmats)
         if n_clusters is None:
             assert transformed.shape == (n_trials,)
+        elif clust is PotatoField:
+            assert transformed.shape == (n_clusters, n_trials)
         else:
             assert transformed.shape == (n_trials, n_clusters)
 
@@ -88,33 +106,52 @@ class TestRiemannianClustering(ClusteringTestCase):
         assert transformed.shape == (n_trials, n_classes * n_clusters)
 
     def clf_predict(self, clust, covmats, n_clusters=None):
-        n_trials = covmats.shape[0]
+        n_trials = len(covmats)
         if n_clusters is None:
             clf = clust()
+        elif clust is PotatoField:
+            n_trials = len(covmats[0])
+            clf = clust(n_potatoes=n_clusters)
         else:
             clf = clust(n_clusters=n_clusters)
         clf.fit(covmats)
         predicted = clf.predict(covmats)
         assert predicted.shape == (n_trials,)
 
-    def clf_predict_proba(self, clust, covmats):
-        n_trials = covmats.shape[0]
-        clf = clust()
+    def clf_predict_proba(self, clust, covmats, n=None):
+        if n is None:
+            n_trials = len(covmats)
+            clf = clust()
+        else:  # PotatoField
+            n_trials = len(covmats[0])
+            clf = clust(n_potatoes=n)
         clf.fit(covmats)
         probabilities = clf.predict(covmats)
         assert probabilities.shape == (n_trials,)
 
-    def clf_partial_fit(self, clust, covmats):
-        clf = clust()
+    def clf_partial_fit(self, clust, covmats, n=None):
+        if n is None:
+            clf = clust()
+        else:  # PotatoField
+            clf = clust(n_potatoes=n)
         clf.fit(covmats)
         clf.partial_fit(covmats)
-        clf.partial_fit(covmats[np.newaxis, 0])  # fit one sample at a time
+        if n is None:
+            clf.partial_fit(covmats[np.newaxis, 0])  # fit one covmat at a time
+        else:
+            clf.partial_fit([c[np.newaxis, 0] for c in covmats])
 
-    def clf_fit_independence(self, clust, covmats):
-        clf = clust()
+    def clf_fit_independence(self, clust, covmats, n=None):
+        if n is None:
+            clf = clust()
+        else:  # PotatoField
+            clf = clust(n_potatoes=n)
         clf.fit(covmats).transform(covmats)
         # retraining with different size should erase previous fit
-        new_covmats = covmats[:, :-1, :-1]
+        if n is None:
+            new_covmats = covmats[:, :-1, :-1]
+        else:
+            new_covmats = [c[:, :-1, :-1] for c in covmats]
         clf.fit(new_covmats).transform(new_covmats)
 
     def clf_fit_labels_independence(self, clust, covmats, labels):
@@ -149,9 +186,11 @@ def test_km_init_metric(clust, init, n_init, metric, get_covmats, get_labels):
     assert len(transformed) == n_trials
 
 
-def test_Potato_equal_labels():
+def test_Potato_fit_equal_labels(get_covmats):
+    n_trials, n_channels = 6, 3
+    covmats = get_covmats(n_trials, n_channels)
     with pytest.raises(ValueError):
-        Potato(pos_label=0)
+        Potato(pos_label=0).fit(covmats)
 
 
 @pytest.mark.parametrize("y_fail", [[1], [0] * 6, [0] * 7, [0, 1, 2] * 2])
@@ -221,3 +260,58 @@ def test_Potato_specific_labels(get_covmats):
     assert_array_equal(np.unique(pt.predict(covmats)), [2, 7])
     # fit with custom positive label
     pt.fit(covmats, y=[2] * n_trials)
+
+
+def test_PotatoField_fit(get_covmats):
+    n_potatoes, n_trials, n_channels = 2, 6, 3
+    covmats1 = get_covmats(n_trials, n_channels)
+    covmats2 = get_covmats(n_trials, n_channels + 1)
+    covmats = [covmats1, covmats2]
+    with pytest.raises(ValueError):  # n_potatoes too low
+        PotatoField(n_potatoes=0).fit(covmats)
+    with pytest.raises(ValueError):   # p_threshold out of bounds
+        PotatoField(p_threshold=0).fit(covmats)
+    with pytest.raises(ValueError):  # p_threshold out of bounds
+        PotatoField(p_threshold=1).fit(covmats)
+    pf = PotatoField(n_potatoes=n_potatoes)
+    with pytest.raises(ValueError):  # n_potatoes not equal to input length
+        pf.fit([covmats1, covmats1, covmats2])
+    with pytest.raises(ValueError):  # n_trials not equal
+        pf.fit([covmats1, covmats2[:1]])
+
+
+def test_PotatoField_partialfit(get_covmats):
+    n_potatoes, n_trials, n_channels = 2, 6, 3
+    covmats1 = get_covmats(n_trials, n_channels)
+    covmats2 = get_covmats(n_trials, n_channels + 1)
+    covmats = [covmats1, covmats2]
+    pf = PotatoField(n_potatoes=n_potatoes).fit(covmats)
+    with pytest.raises(ValueError):  # n_potatoes not equal to input length
+        pf.partial_fit([covmats1, covmats1, covmats2])
+    with pytest.raises(ValueError):  # n_trials not equal
+        pf.partial_fit([covmats1, covmats2[:1]])
+
+
+def test_PotatoField_transform(get_covmats):
+    n_potatoes, n_trials, n_channels = 2, 6, 3
+    covmats1 = get_covmats(n_trials, n_channels)
+    covmats2 = get_covmats(n_trials, n_channels + 1)
+    covmats = [covmats1, covmats2]
+    pf = PotatoField(n_potatoes=n_potatoes).fit(covmats)
+    with pytest.raises(ValueError):  # n_potatoes not equal to input length
+        pf.transform([covmats1, covmats1, covmats2])
+    with pytest.raises(ValueError):  # n_trials not equal
+        pf.transform([covmats1, covmats2[:1]])
+
+
+def test_PotatoField_predictproba(get_covmats):
+    n_potatoes, n_trials, n_channels = 2, 6, 3
+    covmats1 = get_covmats(n_trials, n_channels)
+    covmats2 = get_covmats(n_trials, n_channels + 1)
+    covmats = [covmats1, covmats2]
+    pf = PotatoField(n_potatoes=n_potatoes).fit(covmats)
+    with pytest.raises(ValueError):  # n_potatoes not equal to input length
+        pf.predict_proba([covmats1, covmats1, covmats2])
+    with pytest.raises(ValueError):  # n_trials not equal
+        pf.predict_proba([covmats1, covmats2[:1]])
+
