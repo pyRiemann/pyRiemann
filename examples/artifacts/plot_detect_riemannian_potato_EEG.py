@@ -221,7 +221,6 @@ def online_update(self):
             rpotato.partial_fit(covs[np.newaxis, t], alpha=1 / t)
         if ep_label == 1:
             epotato.partial_fit(covs[np.newaxis, t], alpha=1 / t)
-            #TODO: update plot_potato_2D
 
     # Update data
     time_start = t * interval + test_time_end

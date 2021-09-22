@@ -314,4 +314,3 @@ def test_PotatoField_predictproba(get_covmats):
         pf.predict_proba([covmats1, covmats1, covmats2])
     with pytest.raises(ValueError):  # n_trials not equal
         pf.predict_proba([covmats1, covmats2[:1]])
-

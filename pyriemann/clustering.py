@@ -590,7 +590,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
                     'got %d.' % (n_trials, X[i].shape[0]))
             self._potatoes.append(clone(pt))
             self._potatoes[i].fit(X[i], y)
-            
+
         return self
 
     def partial_fit(self, X, y=None, alpha=0.1):
@@ -711,7 +711,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         if len(X) != self.n_potatoes:
             raise ValueError(
                 'Length of X is not equal to n_potatoes. Should be %d but got '
-                '%d.' % (self.n_potatoes, len(X)))        
+                '%d.' % (self.n_potatoes, len(X)))
 
     def _get_proba(self, q):
         """Get proba from a chi-squared value q."""

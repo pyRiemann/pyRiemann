@@ -55,7 +55,7 @@ def plot_detection(ax, rp_label, rpf_label):
             xmin=-test_time_start / test_duration + 0.005,
             xmax=(duration - test_time_start) / test_duration + 0.005)
         labels.append(r2)
-        ax.text(0.65 , 0.95, 'RPF', color='m', size=16, transform=ax.transAxes)
+        ax.text(0.65, 0.95, 'RPF', color='m', size=16, transform=ax.transAxes)
     if rp_label and rpf_label:
         r3 = ax.axhspan(
             ylims[0] + 0.05 * height, ylims[1] - 0.05 * height,
