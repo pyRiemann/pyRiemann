@@ -29,7 +29,7 @@ print(__doc__)
 # Set general parameters for the illustrations
 
 
-n_matrices = 100 # how many matrices to sample on each class
+n_matrices = 100  # how many matrices to sample on each class
 n_dim = 4  # dimensionality of the data points
 sigma = 1.0  # dispersion of the Gaussian distributions
 random_state = 42  # ensure reproducibility
