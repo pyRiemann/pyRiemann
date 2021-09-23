@@ -15,7 +15,7 @@ def _pdf_r(r, sigma):
     Parameters
     ----------
     r : ndarray, shape (n_dim,)
-        Vector defines in R^n_dim.
+        Vector with the logarithm of the eigenvalues of a SPD matrix.
     sigma : float
         Dispersion of the Riemannian Gaussian distribution.
 
