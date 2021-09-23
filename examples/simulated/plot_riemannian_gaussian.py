@@ -22,7 +22,7 @@ print(__doc__)
 
 ###############################################################################
 # Set parameters for sampling from the Riemannian Gaussian distribution
-n_samples = 100  # how many samples to generate
+n_matrices = 100  # how many SPD matrices to generate
 n_dim = 4  # number of dimensions of the SPD matrices
 sigma = 1.0  # dispersion of the Gaussian distribution
 epsilon = 4.0  # parameter for controlling the distance between centers
@@ -31,22 +31,22 @@ random_state = 42  # ensure reproducibility
 # Generate the samples on three different conditions
 mean = generate_random_spd_matrix(n_dim)  # random reference point
 
-samples_1 = sample_gaussian_spd(n_samples=n_samples,
+samples_1 = sample_gaussian_spd(n_matrices=n_matrices,
                                 mean=mean,
                                 sigma=sigma,
                                 random_state=random_state)
-samples_2 = sample_gaussian_spd(n_samples=n_samples,
+samples_2 = sample_gaussian_spd(n_matrices=n_matrices,
                                 mean=mean,
                                 sigma=sigma/2,
                                 random_state=random_state)
-samples_3 = sample_gaussian_spd(n_samples=n_samples,
+samples_3 = sample_gaussian_spd(n_matrices=n_matrices,
                                 mean=epsilon*mean,
                                 sigma=sigma,
                                 random_state=random_state)
 
 # Stack all of the samples into one data array for the embedding
 samples = np.concatenate([samples_1, samples_2, samples_3])
-labels = np.array(n_samples*[1] + n_samples*[2] + n_samples*[3])
+labels = np.array(n_matrices*[1] + n_matrices*[2] + n_matrices*[3])
 
 ###############################################################################
 # Apply the spectral embedding over the SPD matrices

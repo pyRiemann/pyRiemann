@@ -206,7 +206,7 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
     return u_samples
 
 
-def _sample_gaussian_spd_centered(n_samples, n_dim, sigma, random_state=None):
+def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None):
     """Sample a Riemannian Gaussian distribution centered at the Identity
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at the
@@ -215,8 +215,8 @@ def _sample_gaussian_spd_centered(n_samples, n_dim, sigma, random_state=None):
 
     Parameters
     ----------
-    n_samples : int
-        How many samples to generate.
+    n_matrices : int
+        How many matrices to generate.
     n_dim : int
         Dimensionality of the SPD matrices to be sampled.
     sigma : float
@@ -226,7 +226,7 @@ def _sample_gaussian_spd_centered(n_samples, n_dim, sigma, random_state=None):
 
     Returns
     -------
-    samples : ndarray, shape (n_samples, n_dim, n_dim)
+    samples : ndarray, shape (n_matrices, n_dim, n_dim)
         Samples of the Riemannian Gaussian distribution
 
     Notes
@@ -241,16 +241,16 @@ def _sample_gaussian_spd_centered(n_samples, n_dim, sigma, random_state=None):
         https://arxiv.org/pdf/1507.01760.pdf
     """
 
-    samples_r = _sample_parameter_r(n_samples=n_samples,
+    samples_r = _sample_parameter_r(n_samples=n_matrices,
                                     n_dim=n_dim,
                                     sigma=sigma,
                                     random_state=random_state)
-    samples_U = _sample_parameter_U(n_samples=n_samples,
+    samples_U = _sample_parameter_U(n_samples=n_matrices,
                                     n_dim=n_dim,
                                     random_state=random_state)
 
-    samples = np.zeros((n_samples, n_dim, n_dim))
-    for i in range(n_samples):
+    samples = np.zeros((n_matrices, n_dim, n_dim))
+    for i in range(n_matrices):
         Ui = samples_U[i]
         ri = samples_r[i]
         samples[i] = Ui.T @ np.diag(np.exp(ri)) @ Ui
@@ -258,7 +258,7 @@ def _sample_gaussian_spd_centered(n_samples, n_dim, sigma, random_state=None):
     return samples
 
 
-def sample_gaussian_spd(n_samples, mean, sigma, random_state=None):
+def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None):
     """Sample a Riemannian Gaussian distribution
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at
@@ -270,8 +270,8 @@ def sample_gaussian_spd(n_samples, mean, sigma, random_state=None):
 
     Parameters
     ----------
-    n_samples : int
-        How many samples to generate.
+    n_matrices : int
+        How many matrices to generate.
     mean : ndarray, shape (n_dim, n_dim)
         Center of the Riemannian Gaussian distribution.
     sigma : float
@@ -281,7 +281,7 @@ def sample_gaussian_spd(n_samples, mean, sigma, random_state=None):
 
     Returns
     -------
-    samples : ndarray, shape (n_samples, n_dim, n_dim)
+    samples : ndarray, shape (n_matrices, n_dim, n_dim)
         Samples of the Riemannian Gaussian distribution
 
     Notes
@@ -297,7 +297,7 @@ def sample_gaussian_spd(n_samples, mean, sigma, random_state=None):
     """
 
     n_dim = mean.shape[0]
-    samples_centered = _sample_gaussian_spd_centered(n_samples,
+    samples_centered = _sample_gaussian_spd_centered(n_matrices=n_matrices,
                                                      n_dim=n_dim,
                                                      sigma=sigma,
                                                      random_state=random_state)

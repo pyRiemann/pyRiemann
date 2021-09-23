@@ -40,7 +40,7 @@ deltas_array = np.linspace(0, 5*sigma, 5)
 
 for delta in deltas_array:
     # generate data points for a classification problem
-    X, y = make_gaussian_blobs(n_samples=100,
+    X, y = make_gaussian_blobs(n_matrices=100,
                                n_dim=n_dim,
                                class_sep=delta,
                                class_disp=sigma,
