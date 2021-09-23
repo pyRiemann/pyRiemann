@@ -100,8 +100,8 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
 
     Returns
     -------
-    outliers : ndarray, shape (n_samples, n_dim, n_dim)
-        Array of simulated outlier data points
+    outliers : ndarray, shape (n_matrices, n_dim, n_dim)
+        Array of simulated outlier matrices
 
     Notes
     -----
