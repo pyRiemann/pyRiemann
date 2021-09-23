@@ -36,6 +36,8 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         ndarray of SPD matrices.
     y : ndarray, shape (2*n_matrices,)
         labels corresponding to each matrix.
+    centers : ndarray, shape (2, n_dim, n_dim)
+        The centers of each class. Only returned if ``return_centers=True``.
 
     Notes
     -----

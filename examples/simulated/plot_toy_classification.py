@@ -29,6 +29,7 @@ print(__doc__)
 # Set general parameters for the illustrations
 
 
+n_matrices = 100 # how many matrices to sample on each class
 n_dim = 4  # dimensionality of the data points
 sigma = 1.0  # dispersion of the Gaussian distributions
 random_state = 42  # ensure reproducibility
@@ -40,7 +41,7 @@ deltas_array = np.linspace(0, 5*sigma, 5)
 
 for delta in deltas_array:
     # generate data points for a classification problem
-    X, y = make_gaussian_blobs(n_matrices=100,
+    X, y = make_gaussian_blobs(n_matrices=n_matrices,
                                n_dim=n_dim,
                                class_sep=delta,
                                class_disp=sigma,
