@@ -75,7 +75,7 @@ def add_alpha(p_cols, alphas):
 raw_fname = os.path.join(sample.data_path(), 'MEG', 'sample',
                          'sample_audvis_filt-0-40_raw.fif')
 raw = read_raw_fif(raw_fname, preload=True, verbose=False)
-sfreq = int(raw.info['sfreq'])
+sfreq = int(raw.info['sfreq'])  # 150 Hz
 
 
 ###############################################################################
@@ -255,7 +255,7 @@ def online_update(self):
 
 ###############################################################################
 
-# Plot online detection (a dynamic display is required).
+# Plot online detection (a dynamic display is required)
 interval_display = 1.0  # can be changed for a slower display
 
 potato = FuncAnimation(fig, online_update, frames=test_covs_max,

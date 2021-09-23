@@ -97,7 +97,7 @@ interval = 0.2    # interval between epochs
 
 # RP definition
 z_th = 2.0           # z-score threshold
-low_freq, high_freq = 1, 35
+low_freq, high_freq = 1., 35.
 rp = Potato(metric='riemann', threshold=z_th)
 
 # EEG processing for RP
@@ -130,17 +130,17 @@ p_th = 0.01          # probability threshold
 rpf_config = {
     'RPF eye_blinks': {  # for eye-blinks
         'ch_names': ['Fp1', 'Fpz', 'Fp2'],
-        'low_freq': 1,
-        'high_freq': 20},
+        'low_freq': 1.,
+        'high_freq': 20.},
     'RPF occipital': {  # for high-frequency artifacts in occipital area
         'ch_names': ['O1', 'Oz', 'O2'],
-        'low_freq': 25,
-        'high_freq': 45,
+        'low_freq': 25.,
+        'high_freq': 45.,
         'cov_normalization': 'trace'},  # trace-norm to be insensitive to power
     'RPF global_lf': {  # for low-frequency artifacts in all channels
         'ch_names': None,
         'low_freq': 0.5,
-        'high_freq': 3}
+        'high_freq': 3.}
 }
 rpf = PotatoField(metric='riemann', z_threshold=z_th, p_threshold=p_th,
                   n_potatoes=len(rpf_config))
@@ -171,7 +171,8 @@ rpf.fit([c[train_set] for c in rpf_covs])
 # not artifacted [1]_.
 
 # Prepare data for online detection
-test_covs_max = 400     # nb of matrices to visualize in this example
+test_covs_max = 400     # nb of epochs to visualize in this example
+test_covs_visu = 100    # nb of z-scores/proba to display simultaneously
 test_time_start = -2    # start time to display signal
 test_time_end = 5       # end time to display signal
 
@@ -180,7 +181,7 @@ time_start = t * interval + test_time_start
 time_end = t * interval + test_time_end
 time = np.linspace(time_start, time_end, int((time_end - time_start) * sfreq),
                    endpoint=False)
-raw.filter(l_freq=0.5, h_freq=75, method='iir', verbose=False)
+raw.filter(l_freq=0.5, h_freq=75., method='iir', verbose=False)
 eeg_data = 1e5 * raw.get_data()
 sig = eeg_data[:, int(time_start * sfreq):int(time_end * sfreq)]
 eeg_offset = - 15 * np.linspace(1, ch_count, ch_count, endpoint=False)
@@ -238,7 +239,7 @@ def online_update(self):
     covs_z = np.hstack((covs_z,
                         np.vstack((rp_zscore[np.newaxis], rpf_zscores))))
     covs_p = np.r_[covs_p, rpf_proba]
-    if len(covs_p) > 100:
+    if len(covs_p) > test_covs_visu:
         covs_t, covs_z, covs_p = covs_t[1:], covs_z[:, 1:], covs_p[1:]
     t += 1
 
@@ -260,7 +261,7 @@ def online_update(self):
 
 ###############################################################################
 
-# Plot online detection (a dynamic display is required).
+# Plot online detection (a dynamic display is required)
 interval_display = 1.0  # can be changed for a slower display
 
 potato = FuncAnimation(fig, online_update, frames=test_covs_max,
