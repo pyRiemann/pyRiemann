@@ -1,17 +1,19 @@
 import numpy as np
 from sklearn.utils.validation import check_random_state
+
+from ..utils.distance import distance_riemann
+from ..utils.base import powm, sqrtm
 from .sampling import generate_random_spd_matrix, sample_gaussian_spd
-from pyriemann.utils.distance import distance_riemann
-from pyriemann.utils.base import powm, sqrtm
 
 
 def make_gaussian_blobs(n_samples=100, n_dim=2, class_sep=1.0, class_disp=1.0,
-                        random_state=None):
+                        return_centers=False, random_state=None):
     """Generate SPD dataset with two classes sampled from Riemannian Gaussian
 
-    Generate a dataset with SPD matrices generated from two Riemannian
-    Gaussian distributions. The distributions have the same class dispersions
-    and the distance between their centers of mass is an input parameter.
+    Generate a dataset with SPD matrices drawn from two Riemannian Gaussian
+    distributions. The distributions have the same class dispersions and the
+    distance between their centers of mass is an input parameter. Useful for
+    testing classification or clustering methods.
 
     Parameters
     ----------
@@ -23,6 +25,8 @@ def make_gaussian_blobs(n_samples=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         Parameter controlling the separability of the classes.
     class_disp : float (default: 1.0)
         Intra dispersion of the points sampled from each class.
+    return_centers : bool (default: False)
+        If True, then return the centers of each cluster
     random_state : int, RandomState instance or None (default: None)
         Pass an int for reproducible output across multiple function calls.
 
@@ -30,7 +34,7 @@ def make_gaussian_blobs(n_samples=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     -------
     X : ndarray, shape (2*n_samples, n_dim, n_dim)
         ndarray of SPD matrices.
-    y : ndarray, shape (n_samples,)
+    y : ndarray, shape (2*n_samples,)
         labels corresponding to each sample.
 
     Notes
@@ -42,16 +46,16 @@ def make_gaussian_blobs(n_samples=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     rs = check_random_state(random_state)
 
     # generate dataset for class 0
-    CO = generate_random_spd_matrix(n_dim)
+    C0 = generate_random_spd_matrix(n_dim)
     X0 = sample_gaussian_spd(n_samples=n_samples,
-                             mean=CO,
+                             mean=C0,
                              sigma=class_disp,
                              random_state=random_state)
     y0 = np.zeros(n_samples)
 
     # generate dataset for class 1
     epsilon = np.exp(class_sep/np.sqrt(n_dim))
-    C1 = epsilon * CO
+    C1 = epsilon * C0
     X1 = sample_gaussian_spd(n_samples=n_samples,
                              mean=C1,
                              sigma=class_disp,
@@ -64,7 +68,11 @@ def make_gaussian_blobs(n_samples=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     X = X[idx]
     y = y[idx]
 
-    return X, y
+    if return_centers:
+        centers = np.stack([C0, C1])
+        return X, y, centers
+    else:
+        return X, y
 
 
 def make_outliers(n_samples, mean, sigma, outlier_coeff=10, random_state=None):
@@ -106,6 +114,6 @@ def make_outliers(n_samples, mean, sigma, outlier_coeff=10, random_state=None):
         epsilon_num = outlier_coeff * sigma * n_dim
         epsilon_den = distance_riemann(Oi, np.eye(n_dim))**2
         epsilon = np.sqrt(epsilon_num / epsilon_den)
-        outliers[i, :, :] = mean_sqrt @ powm(Oi, epsilon) @ mean_sqrt
+        outliers[i] = mean_sqrt @ powm(Oi, epsilon) @ mean_sqrt
 
     return outliers
