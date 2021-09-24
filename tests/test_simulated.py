@@ -26,7 +26,7 @@ def test_gaussian_blobs():
                                         class_sep=2.0,
                                         class_disp=1.0,
                                         return_centers=True,
-                                        random_state=None)  
+                                        random_state=None)
     assert centers.shape == (2, n_dim, n_dim)  # centers shape mismatch
 
 
