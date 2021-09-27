@@ -3,8 +3,9 @@
 Online Artifact Detection with Riemannian Potato Field
 ===============================================================================
 
-Example of Riemannian Potato Field [1]_ applied on EEG time-series to detect
-artifacts in online processing, compared to the Riemannian Potato [2]_.
+Example of Riemannian Potato Field (RPF) [1]_ applied on EEG time-series to
+detect artifacts in online processing. It is compared to the Riemannian Potato
+(RP) [2]_.
 """
 # Authors: Quentin Barthélemy
 #
@@ -116,10 +117,10 @@ rp.fit(rp_covs[train_set])
 # Riemannian potato field
 # -----------------------
 #
-# Riemannian potato field (RPF) [1]_ combines several potatoes of low dimension
-# , each one being designed to capture specific artifact typically affecting
-# specific spatial areas (ie, subsets of channels) and/or specific frequency
-# bands.
+# Riemannian potato field (RPF) [1]_ combines several potatoes of low
+# dimension, each one being designed to capture specific artifact typically
+# affecting specific spatial areas (ie, subsets of channels) and/or specific
+# frequency bands.
 #
 # BCI or NFB applications aim at the modulation specific brain oscillations, it
 # is thus advisable to exclude such frequencies from potatoes so as to prevent
@@ -167,7 +168,7 @@ rpf.fit([c[train_set] for c in rpf_covs])
 #
 # Detect artifacts/outliers on test set, with an animation to imitate an online
 # acquisition, processing and artifact detection of EEG time-series.
-# Remak that all these potatoes are semi-dynamic: they are updated when EEG is
+# Remark that all these potatoes are semi-dynamic: they are updated when EEG is
 # not artifacted [1]_.
 
 # Prepare data for online detection
@@ -204,7 +205,7 @@ for c, l in enumerate(['RP'] + [*rpf_config]):
 ax[1].set_ylim([-1.5, 8.5])
 ax[1].legend(loc='upper left')
 axp = ax[1].twinx()
-axp.set(ylabel='RPF probability of being clean')
+axp.set(ylabel='RPF probability of clean EEG')
 pl3 = axp.plot(covs_t, covs_p, lw=0.75, c='k', label='RPF proba')
 axp.set_ylim([0, 1])
 axp.legend(loc='upper right')
@@ -237,7 +238,7 @@ def online_update(self):
                      eeg_data[:, int(time_start*sfreq):int(time_end*sfreq)]))
     covs_t = np.r_[covs_t, time_start]
     covs_z = np.hstack((covs_z,
-                        np.vstack((rp_zscore[np.newaxis], rpf_zscores))))
+                        np.vstack((rp_zscore[np.newaxis], rpf_zscores.T))))
     covs_p = np.r_[covs_p, rpf_proba]
     if len(covs_p) > test_covs_visu:
         covs_t, covs_z, covs_p = covs_t[1:], covs_z[:, 1:], covs_p[1:]
@@ -260,8 +261,8 @@ def online_update(self):
 
 
 ###############################################################################
-
 # Plot online detection (a dynamic display is required)
+
 interval_display = 1.0  # can be changed for a slower display
 
 potato = FuncAnimation(fig, online_update, frames=test_covs_max,

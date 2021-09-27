@@ -75,8 +75,6 @@ class TestRiemannianClustering(ClusteringTestCase):
         transformed = clf.transform(covmats)
         if n_clusters is None:
             assert transformed.shape == (n_trials,)
-        elif clust is PotatoField:
-            assert transformed.shape == (n_clusters, n_trials)
         else:
             assert transformed.shape == (n_trials, n_clusters)
 
@@ -262,7 +260,7 @@ def test_Potato_specific_labels(get_covmats):
     pt.fit(covmats, y=[2] * n_trials)
 
 
-def test_PotatoField_fit(get_covmats):
+def test_potato_field_fit(get_covmats):
     n_potatoes, n_trials, n_channels = 2, 6, 3
     covmats1 = get_covmats(n_trials, n_channels)
     covmats2 = get_covmats(n_trials, n_channels + 1)
@@ -280,7 +278,7 @@ def test_PotatoField_fit(get_covmats):
         pf.fit([covmats1, covmats2[:1]])
 
 
-def test_PotatoField_partialfit(get_covmats):
+def test_potato_field_partialfit(get_covmats):
     n_potatoes, n_trials, n_channels = 2, 6, 3
     covmats1 = get_covmats(n_trials, n_channels)
     covmats2 = get_covmats(n_trials, n_channels + 1)
@@ -292,7 +290,7 @@ def test_PotatoField_partialfit(get_covmats):
         pf.partial_fit([covmats1, covmats2[:1]])
 
 
-def test_PotatoField_transform(get_covmats):
+def test_potato_field_transform(get_covmats):
     n_potatoes, n_trials, n_channels = 2, 6, 3
     covmats1 = get_covmats(n_trials, n_channels)
     covmats2 = get_covmats(n_trials, n_channels + 1)
@@ -304,7 +302,7 @@ def test_PotatoField_transform(get_covmats):
         pf.transform([covmats1, covmats2[:1]])
 
 
-def test_PotatoField_predictproba(get_covmats):
+def test_potato_field_predictproba(get_covmats):
     n_potatoes, n_trials, n_channels = 2, 6, 3
     covmats1 = get_covmats(n_trials, n_channels)
     covmats2 = get_covmats(n_trials, n_channels + 1)

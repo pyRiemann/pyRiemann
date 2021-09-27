@@ -639,19 +639,19 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Returns
         -------
-        z : ndarray, shape (n_potatoes, n_trials)
+        z : ndarray, shape (n_trials, n_potatoes)
             the normalized log-distances to the centroids.
         """
         self._check_length(X)
         n_trials = X[0].shape[0]
 
-        z = np.zeros((self.n_potatoes, n_trials))
+        z = np.zeros((n_trials, self.n_potatoes))
         for i in range(self.n_potatoes):
             if X[i].shape[0] != n_trials:
                 raise ValueError(
                     'Unequal n_trials between ndarray of X. Should be %d but '
                     'got %d.' % (n_trials, X[i].shape[0]))
-            z[i] = self._potatoes[i].transform(X[i])
+            z[:, i] = self._potatoes[i].transform(X[i])
         return z
 
     def predict(self, X, alpha=0):
