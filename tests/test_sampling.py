@@ -1,6 +1,6 @@
 from pyriemann.datasets.sampling import (sample_gaussian_spd,
                                          generate_random_spd_matrix)
-from pyriemann.utils.distance import distance                                         
+from pyriemann.utils.distance import distance
 from conftest import is_positive_definite
 import numpy as np
 
