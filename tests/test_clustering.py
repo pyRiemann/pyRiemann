@@ -184,7 +184,7 @@ def test_km_init_metric(clust, init, n_init, metric, get_covmats, get_labels):
     assert len(transformed) == n_trials
 
 
-def test_Potato_fit_equal_labels(get_covmats):
+def test_potato_fit_equal_labels(get_covmats):
     n_trials, n_channels = 6, 3
     covmats = get_covmats(n_trials, n_channels)
     with pytest.raises(ValueError):
@@ -192,21 +192,21 @@ def test_Potato_fit_equal_labels(get_covmats):
 
 
 @pytest.mark.parametrize("y_fail", [[1], [0] * 6, [0] * 7, [0, 1, 2] * 2])
-def test_Potato_fit_error(y_fail, get_covmats):
+def test_potato_fit_error(y_fail, get_covmats):
     n_trials, n_channels = 6, 3
     covmats = get_covmats(n_trials, n_channels)
     with pytest.raises(ValueError):
         Potato().fit(covmats, y=y_fail)
 
 
-def test_Potato_partial_fit_not_fitted(get_covmats):
+def test_potato_partial_fit_not_fitted(get_covmats):
     n_trials, n_channels = 6, 3
     covmats = get_covmats(n_trials, n_channels)
     with pytest.raises(ValueError):  # potato not fitted
         Potato().partial_fit(covmats)
 
 
-def test_Potato_partial_fit_diff_channels(get_covmats, get_labels):
+def test_potato_partial_fit_diff_channels(get_covmats, get_labels):
     n_trials, n_channels, n_classes = 6, 3, 2
     covmats = get_covmats(n_trials, n_channels)
     labels = get_labels(n_trials, n_classes)
@@ -215,7 +215,7 @@ def test_Potato_partial_fit_diff_channels(get_covmats, get_labels):
         pt.partial_fit(get_covmats(2, n_channels + 1))
 
 
-def test_Potato_partial_fit_no_poslabel(get_covmats, get_labels):
+def test_potato_partial_fit_no_poslabel(get_covmats, get_labels):
     n_trials, n_channels, n_classes = 6, 3, 2
     covmats = get_covmats(n_trials, n_channels)
     labels = get_labels(n_trials, n_classes)
@@ -225,7 +225,7 @@ def test_Potato_partial_fit_no_poslabel(get_covmats, get_labels):
 
 
 @pytest.mark.parametrize("alpha", [-0.1, 1.1])
-def test_Potato_partial_fit_alpha(alpha, get_covmats, get_labels):
+def test_potato_partial_fit_alpha(alpha, get_covmats, get_labels):
     n_trials, n_channels, n_classes = 6, 3, 2
     covmats = get_covmats(n_trials, n_channels)
     labels = get_labels(n_trials, n_classes)
@@ -234,7 +234,7 @@ def test_Potato_partial_fit_alpha(alpha, get_covmats, get_labels):
         pt.partial_fit(covmats, labels, alpha=alpha)
 
 
-def test_Potato_1channel(get_covmats):
+def test_potato_1channel(get_covmats):
     n_trials, n_channels = 6, 1
     covmats_1chan = get_covmats(n_trials, n_channels)
     pt = Potato()
@@ -243,14 +243,14 @@ def test_Potato_1channel(get_covmats):
     pt.predict_proba(covmats_1chan)
 
 
-def test_Potato_threshold(get_covmats):
+def test_potato_threshold(get_covmats):
     n_trials, n_channels = 6, 3
     covmats = get_covmats(n_trials, n_channels)
     pt = Potato(threshold=1)
     pt.fit(covmats)
 
 
-def test_Potato_specific_labels(get_covmats):
+def test_potato_specific_labels(get_covmats):
     n_trials, n_channels = 6, 3
     covmats = get_covmats(n_trials, n_channels)
     pt = Potato(threshold=1, pos_label=2, neg_label=7)

@@ -326,8 +326,9 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         X : ndarray, shape (n_trials, n_channels, n_channels)
             ndarray of SPD matrices.
         y : ndarray, shape (n_trials,) | None (default None)
-            Labels corresponding to each trial. If None, all trials are
-            considered as clean.
+            Labels corresponding to each trial: positive (resp. negative) label
+            corresponds to a clean (resp. artifact) trial. If None, all trials
+            are considered as clean.
 
         Returns
         -------
@@ -607,8 +608,9 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
                 n_channels), with same n_trials but different n_channels
             list of ndarray of SPD matrices.
         y : ndarray, shape (n_trials,) | None (default None)
-            Labels corresponding to each trial. If None, all trials are
-            considered as clean.
+            Labels corresponding to each trial: positive (resp. negative) label
+            corresponds to a clean (resp. artifact) trial. If None, all trials
+            are considered as clean.
         alpha : float (default 0.1)
             Update rate in [0, 1] for the centroid, and mean and standard
             deviation of log-distances: 0 for no update, 1 for full update.
