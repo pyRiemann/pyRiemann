@@ -7,8 +7,7 @@ import numpy as np
 
 def test_gaussian_blobs():
     """Test function for sampling Gaussian blobs."""
-    n_dim = 8
-    n_matrices = 50
+    n_matrices, n_dim = 50, 8
     X, y = make_gaussian_blobs(n_matrices=n_matrices,
                                n_dim=n_dim,
                                class_sep=2.0,
@@ -32,10 +31,8 @@ def test_gaussian_blobs():
 
 def test_generate_random_spd_matrix():
     """Test function for sampling outliers"""
-    n_matrices = 100
-    n_dim = 8
+    n_matrices, n_dim, sigma = 100, 8, 1.
     mean = generate_random_spd_matrix(n_dim)
-    sigma = 1.0
     X = make_outliers(n_matrices=n_matrices,
                       mean=mean,
                       sigma=sigma,
