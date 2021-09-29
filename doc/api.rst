@@ -129,7 +129,6 @@ Datasets
 
 .. autosummary::
     :toctree: generated/
-    :template: class.rst
 
     make_gaussian_blobs
     make_outliers    
@@ -141,7 +140,6 @@ Sampling
 
 .. autosummary::
     :toctree: generated/
-    :template: class.rst
 
     sample_gaussian_spd
     generate_random_spd_matrix      
