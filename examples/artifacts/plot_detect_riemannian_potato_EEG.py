@@ -1,6 +1,6 @@
 """
 ===============================================================================
-Artifact Detection with Riemannian Potato
+Online Artifact Detection with Riemannian Potato
 ===============================================================================
 
 Example of Riemannian Potato [1]_ applied on EEG time-series to detect
@@ -75,7 +75,7 @@ def add_alpha(p_cols, alphas):
 raw_fname = os.path.join(sample.data_path(), 'MEG', 'sample',
                          'sample_audvis_filt-0-40_raw.fif')
 raw = read_raw_fif(raw_fname, preload=True, verbose=False)
-sfreq = int(raw.info['sfreq'])
+sfreq = int(raw.info['sfreq'])  # 150 Hz
 
 
 ###############################################################################
@@ -89,7 +89,7 @@ raw.pick_types(meg=False, eeg=True).apply_proj()
 # beginning, to have a reliable calibration
 ch_names = ['EEG 010', 'EEG 015']
 
-# Apply IIR band-pass filter, between 1 and 35 Hz, to mimic online filtering
+# Apply band-pass filter between 1 and 35 Hz
 raw.filter(1., 35., method='iir', picks=ch_names)
 
 # Epoch time-series with a sliding window
@@ -164,7 +164,7 @@ plt.show()
 # acquisition, processing and artifact detection of EEG time-series.
 # Initialized with an offline calibration, the online potato can be [2]_:
 #
-# * static: it is never updated, damaging its efficiency over time,
+# * static: it is never updated, damaging its efficiency over time;
 # * semi-dynamic: it is updated when EEG is not artifacted.
 
 is_static = False       # static or semi-dynamic mode
@@ -184,8 +184,7 @@ time = np.linspace(time_start, time_end, int((time_end - time_start) * sfreq),
                    endpoint=False)
 eeg_data = 3e5 * raw.get_data(picks=ch_names)
 sig = eeg_data[:, int(time_start * sfreq):int(time_end * sfreq)]
-covs_visu = np.empty([0, 2, 2])
-rp_colors, ep_colors = [], []
+covs_visu, rp_colors, ep_colors = np.empty([0, 2, 2]), [], []
 alphas = np.linspace(0, 1, test_covs_visu)
 
 fig = plt.figure(figsize=(12, 10), constrained_layout=False)
@@ -215,13 +214,13 @@ def online_update(self):
     global t, time, sig, covs_visu
 
     # Online artifact detection
-    rp_label = rpotato.predict(covs[t][np.newaxis, ...])
-    ep_label = epotato.predict(covs[t][np.newaxis, ...])
+    rp_label = rpotato.predict(covs[np.newaxis, t])[0]
+    ep_label = epotato.predict(covs[np.newaxis, t])[0]
     if not is_static:
-        if rp_label[0] == 1:
-            rpotato.partial_fit(covs[t][np.newaxis, ...], alpha=1 / t)
-        if ep_label[0] == 1:
-            epotato.partial_fit(covs[t][np.newaxis, ...], alpha=1 / t)
+        if rp_label == 1:
+            rpotato.partial_fit(covs[np.newaxis, t], alpha=1 / t)
+        if ep_label == 1:
+            epotato.partial_fit(covs[np.newaxis, t], alpha=1 / t)
 
     # Update data
     time_start = t * interval + test_time_end
@@ -231,7 +230,7 @@ def online_update(self):
     time = np.r_[time[int(interval * sfreq):], time_]
     sig = np.hstack((sig[:, int(interval*sfreq):],
                      eeg_data[:, int(time_start*sfreq):int(time_end*sfreq)]))
-    covs_visu = np.vstack((covs_visu, covs[t][np.newaxis, ...]))
+    covs_visu = np.vstack((covs_visu, covs[np.newaxis, t]))
     rp_colors.append('b' if rp_label == 1 else 'r')
     ep_colors.append('b' if ep_label == 1 else 'r')
     if len(covs_visu) > test_covs_visu:
@@ -255,8 +254,8 @@ def online_update(self):
 
 
 ###############################################################################
+# Plot online detection (a dynamic display is required)
 
-# Plot online detection (an interactive display is required).
 interval_display = 1.0  # can be changed for a slower display
 
 potato = FuncAnimation(fig, online_update, frames=test_covs_max,

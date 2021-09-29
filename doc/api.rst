@@ -58,6 +58,7 @@ Clustering
     Kmeans
     KmeansPerClassTransform
     Potato
+    PotatoField
 
 
 Tangent Space

@@ -24,6 +24,8 @@ v0.2.8.dev
 
 - Refactor tests + fix refit of :class:`pyriemann.tangentspace.TangentSpace`
 
+- Add :class:`pyriemann.clustering.PotatoField`, and an example on artifact detection
+
 v0.2.7 (June 2021)
 ------------------
 
