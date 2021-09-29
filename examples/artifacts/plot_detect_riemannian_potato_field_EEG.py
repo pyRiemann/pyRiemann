@@ -118,9 +118,9 @@ rp.fit(rp_covs[train_set])
 # -----------------------
 #
 # Riemannian potato field (RPF) [1]_ combines several potatoes of low
-# dimension, each one being designed to capture specific artifact typically
-# affecting specific spatial areas (ie, subsets of channels) and/or specific
-# frequency bands.
+# dimensionality, each one designed to capture a different kind of artifact
+# typically affecting some specific spatial area (i.e. subsets of channels)
+# and/or specific frequency bands.
 #
 # BCI or NFB applications aim at the modulation specific brain oscillations, it
 # is thus advisable to exclude such frequencies from potatoes so as to prevent

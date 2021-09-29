@@ -515,12 +515,13 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
     n_potatoes : int (default 1)
         Number of potatoes in the field.
     p_threshold : float (default 0.01)
-        Threshold on probability to being clean, in (0, 1).
-    metric : string (default 'riemann')
-        The type of metric used for centroid and distance estimation.
+        Threshold on probability to being clean, in (0, 1), combining
+        probabilities of potatoes using Fisher's method.
     z_threshold : float (default 3)
         Threshold on z-score of distance to reject artifacts. It is the number
-        of standard deviations from the mean of distances to the centroid.    
+        of standard deviations from the mean of distances to the centroid.
+    metric : string (default 'riemann')
+        The type of metric used for centroid and distance estimation.
     n_iter_max : int (default 10)
         The maximum number of iteration to reach convergence.
     pos_label: int (default 1)
@@ -560,10 +561,12 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Parameters
         ----------
-        X : list of n_potatoes ndarrays of shape (n_trials, n_channels,
-            n_channels) with same n_trials but potentially different n_channels
-            List of ndarrays of SPD matrices, each corresponding to a different 
-            subset of EEG channels and/or filtering with a specific frequency band.
+        X : list of n_potatoes ndarrays of shape (n_trials, n_channels, \
+                n_channels) with same n_trials but potentially different \
+                n_channels
+            List of ndarrays of SPD matrices, each corresponding to a different
+            subset of EEG channels and/or filtering with a specific frequency
+            band.
         y : ndarray, shape (n_trials,) | None (default None)
             Labels corresponding to each trial: positive (resp. negative) label
             corresponds to a clean (resp. artifact) trial. If None, all trials
@@ -606,9 +609,12 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Parameters
         ----------
-        X : list of n_potatoes ndarray of shape (n_trials, n_channels,
-                n_channels), with same n_trials but different n_channels
-            list of ndarray of SPD matrices.
+        X : list of n_potatoes ndarrays of shape (n_trials, n_channels, \
+                n_channels) with same n_trials but potentially different \
+                n_channels
+            List of ndarrays of SPD matrices, each corresponding to a different
+            subset of EEG channels and/or filtering with a specific frequency
+            band.
         y : ndarray, shape (n_trials,) | None (default None)
             Labels corresponding to each trial: positive (resp. negative) label
             corresponds to a clean (resp. artifact) trial. If None, all trials
@@ -639,9 +645,12 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Parameters
         ----------
-        X : list of n_potatoes ndarray of shape (n_trials, n_channels,
-                n_channels), with same n_trials but different n_channels
-            list of ndarray of SPD matrices.
+        X : list of n_potatoes ndarrays of shape (n_trials, n_channels, \
+                n_channels) with same n_trials but potentially different \
+                n_channels
+            List of ndarrays of SPD matrices, each corresponding to a different
+            subset of EEG channels and/or filtering with a specific frequency
+            band.
 
         Returns
         -------
@@ -665,9 +674,12 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Parameters
         ----------
-        X : list of n_potatoes ndarray of shape (n_trials, n_channels,
-                n_channels), with same n_trials but different n_channels
-            list of ndarray of SPD matrices.
+        X : list of n_potatoes ndarrays of shape (n_trials, n_channels, \
+                n_channels) with same n_trials but potentially different \
+                n_channels
+            List of ndarrays of SPD matrices, each corresponding to a different
+            subset of EEG channels and/or filtering with a specific frequency
+            band.
 
         Returns
         -------
@@ -687,9 +699,12 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Parameters
         ----------
-        X : list of n_potatoes ndarray of shape (n_trials, n_channels,
-                n_channels), with same n_trials but different n_channels
-            list of ndarray of SPD matrices.
+        X : list of n_potatoes ndarrays of shape (n_trials, n_channels, \
+                n_channels) with same n_trials but potentially different \
+                n_channels
+            List of ndarrays of SPD matrices, each corresponding to a different
+            subset of EEG channels and/or filtering with a specific frequency
+            band.
 
         Returns
         -------
