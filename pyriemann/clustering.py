@@ -519,7 +519,8 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
     metric : string (default 'riemann')
         The type of metric used for centroid and distance estimation.
     z_threshold : float (default 3)
-        Threshold on z-score of distance to the centroid.
+        Threshold on z-score of distance to reject artifacts. It is the number
+        of standard deviations from the mean of distances to the centroid.    
     n_iter_max : int (default 10)
         The maximum number of iteration to reach convergence.
     pos_label: int (default 1)
@@ -542,8 +543,8 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         TNSRE, 2019.
     """
 
-    def __init__(self, n_potatoes=1, p_threshold=0.01, metric='riemann',
-                 z_threshold=3, n_iter_max=10, pos_label=1, neg_label=0):
+    def __init__(self, n_potatoes=1, p_threshold=0.01, z_threshold=3,
+                 metric='riemann', n_iter_max=10, pos_label=1, neg_label=0):
         """Init."""
         self.n_potatoes = int(n_potatoes)
         self.p_threshold = p_threshold
@@ -559,9 +560,10 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Parameters
         ----------
-        X : list of n_potatoes ndarray of shape (n_trials, n_channels,
-                n_channels), with same n_trials but different n_channels
-            list of ndarray of SPD matrices.
+        X : list of n_potatoes ndarrays of shape (n_trials, n_channels,
+            n_channels) with same n_trials but potentially different n_channels
+            List of ndarrays of SPD matrices, each corresponding to a different 
+            subset of EEG channels and/or filtering with a specific frequency band.
         y : ndarray, shape (n_trials,) | None (default None)
             Labels corresponding to each trial: positive (resp. negative) label
             corresponds to a clean (resp. artifact) trial. If None, all trials
@@ -617,8 +619,8 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Returns
         -------
-        self : Potato instance
-            The Potato instance.
+        self : PotatoField instance
+            The Potato Field instance.
         """
         self._check_length(X)
         n_trials = X[0].shape[0]
@@ -658,7 +660,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
             z[:, i] = self._potatoes[i].transform(X[i])
         return z
 
-    def predict(self, X, alpha=0):
+    def predict(self, X):
         """Predict artefact from data.
 
         Parameters
