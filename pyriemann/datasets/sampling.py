@@ -1,5 +1,6 @@
 from functools import partial
 import numpy as np
+import warnings
 from sklearn.utils import check_random_state
 from pyriemann.utils.base import sqrtm, expm
 
@@ -254,6 +255,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None):
         Ui = samples_U[i]
         ri = samples_r[i]
         samples[i] = Ui.T @ np.diag(np.exp(ri)) @ Ui
+        samples[i] = 1/2 * (samples[i] + samples[i].T)
 
     return samples
 
@@ -305,6 +307,12 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None):
     # apply the parallel transport to mean on each of the samples
     mean_sqrt = sqrtm(mean)
     samples = mean_sqrt @ samples_centered @ mean_sqrt
+
+    if ~np.all(np.linalg.eigvals(samples.reshape((-1, n_dim, n_dim))) > 0.0):
+        msg = "Some of the sampled matrices are very badly conditioned and \
+               may not be SPD. Reducing sigma may solve the problem."
+        warnings.warn(msg)
+
     return samples
 
 
@@ -336,5 +344,11 @@ def generate_random_spd_matrix(n_dim, random_state=None):
     A = rs.randn(n_dim, n_dim)
     A = (A + A.T)/2
     C = expm(A)
+
+    if np.linalg.cond(C) > 1e12:
+        msg = "The sampled matrix is very badly conditioned and may not \
+               behave numerically as a SPD matricx. Try sampling again or \
+               reducing the dimensionality of the matrix."
+        warnings.warn(msg)
 
     return C
