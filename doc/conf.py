@@ -331,5 +331,5 @@ intersphinx_mapping = {'https://docs.python.org/': None}
 
 
 def setup(app):
-    app.add_javascript('copybutton.js')
-    app.add_stylesheet('style.css')
+    app.add_js_file('copybutton.js')
+    app.add_css_file('style.css')

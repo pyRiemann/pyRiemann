@@ -59,7 +59,6 @@ Clustering
     KmeansPerClassTransform
     Potato
 
-
 Tangent Space
 ------------------
 .. _tangentspace_api:
@@ -108,7 +107,7 @@ Channel selection
     :template: class.rst
 
     ElectrodeSelection
-    FlatChannelRemover
+    FlatChannelRemover         
 
 Stats
 ------------------
@@ -121,6 +120,30 @@ Stats
 
     PermutationDistance
     PermutationModel
+
+Datasets
+------------------
+.. _datasets_api:
+.. currentmodule:: pyriemann.datasets.simulated
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    make_gaussian_blobs
+    make_outliers    
+
+Sampling
+------------------
+.. _sampling_api:
+.. currentmodule:: pyriemann.datasets.sampling
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    sample_gaussian_spd
+    generate_random_spd_matrix      
 
 
 Utils function
@@ -232,3 +255,4 @@ Aproximate Joint Diagonalization
     rjd
     ajd_pham
     uwedge
+
