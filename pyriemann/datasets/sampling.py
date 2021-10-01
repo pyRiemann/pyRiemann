@@ -3,7 +3,6 @@ import numpy as np
 import warnings
 from sklearn.utils import check_random_state
 from pyriemann.utils.base import sqrtm, expm
-from ...tests.conftest import is_spd
 
 
 def _pdf_r(r, sigma):
