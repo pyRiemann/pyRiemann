@@ -3,6 +3,7 @@ from pyriemann.datasets.sampling import (sample_gaussian_spd,
 from pyriemann.utils.distance import distance_riemann
 from conftest import is_positive_definite
 import numpy as np
+import pytest
 
 
 def test_sample_gaussian_spd():
@@ -31,3 +32,22 @@ def test_sigma_gaussian_spd():
     avg_d1 = np.mean([distance_riemann(X1_i, mean) for X1_i in X1])
     avg_d2 = np.mean([distance_riemann(X2_i, mean) for X2_i in X2])
     assert avg_d1 < avg_d2
+
+
+def test_functions_error():
+    n_matrices, n_dim = 10, 16
+    sigma = 2.0
+    mean = np.eye(n_dim)
+    with pytest.raises(ValueError):  # mean is not a matrix
+        sample_gaussian_spd(n_matrices, np.ones(n_dim), sigma)
+    with pytest.raises(ValueError):  # sigma is not a scalar
+        sigma = np.ones(n_dim)
+        sample_gaussian_spd(n_matrices, mean, np.one(n_dim))
+    with pytest.raises(ValueError):  # n_matrices is negative
+        sample_gaussian_spd(-n_matrices, mean, sigma)
+    with pytest.raises(ValueError):  # n_matrices is not an integer
+        sample_gaussian_spd(float(n_matrices), mean, sigma)
+    with pytest.raises(ValueError):  # n_dim is not an integer
+        generate_random_spd_matrix(float(n_dim))
+    with pytest.raises(ValueError):  # n_dim is negative
+        generate_random_spd_matrix(-n_dim)
