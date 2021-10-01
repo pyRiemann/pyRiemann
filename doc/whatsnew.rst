@@ -26,6 +26,10 @@ v0.2.8.dev
 
 - Add :class:`pyriemann.clustering.PotatoField`, and an example on artifact detection
 
+- Add sampling SPD matrices from a Riemannian Gaussian distribution in ...
+
+- Add new functions for generating a random ...
+
 v0.2.7 (June 2021)
 ------------------
 
