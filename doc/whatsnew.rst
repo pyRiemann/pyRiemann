@@ -24,6 +24,10 @@ v0.2.8.dev
 
 - Refactor tests + fix refit of :class:`pyriemann.tangentspace.TangentSpace`
 
+- Add sampling SPD matrices from a Riemannian Gaussian distribution in ...
+
+- Add new functions for generating a random ...
+
 v0.2.7 (June 2021)
 ------------------
 
