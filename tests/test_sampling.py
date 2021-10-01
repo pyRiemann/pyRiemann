@@ -3,7 +3,6 @@ from pyriemann.datasets.sampling import (sample_gaussian_spd,
 from pyriemann.utils.distance import distance_riemann
 from conftest import is_positive_definite
 import numpy as np
-import pytest
 
 
 def test_sample_gaussian_spd():
