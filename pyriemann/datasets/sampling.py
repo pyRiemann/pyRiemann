@@ -309,7 +309,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None):
     mean_sqrt = sqrtm(mean)
     samples = mean_sqrt @ samples_centered @ mean_sqrt
 
-    if is_spd(samples):
+    if ~np.all(np.linalg.eigvals(samples.reshape((-1, n_dim, n_dim))) >= 0.0):
         msg = "Some of the sampled matrices are very badly conditioned and \
                may not behave numerically as a SPD matrix. Try sampling again \
                or reducing the dimensionality of the matrix."
@@ -347,7 +347,7 @@ def generate_random_spd_matrix(n_dim, random_state=None):
     A = (A + A.T)/2
     C = expm(A)
 
-    if is_spd(C):
+    if ~np.all(np.linalg.eigvals(C.reshape((-1, n_dim, n_dim))) >= 0.0):
         msg = "The sampled matrix is very badly conditioned and may not \
                behave numerically as a SPD matrix. Try sampling again or \
                reducing the dimensionality of the matrix."
