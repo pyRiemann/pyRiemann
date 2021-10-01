@@ -2,7 +2,6 @@ from pyriemann.datasets.sampling import generate_random_spd_matrix
 from pyriemann.datasets.simulated import (make_gaussian_blobs,
                                           make_outliers)
 from conftest import is_positive_definite
-import pytest
 import numpy as np
 
 
@@ -41,37 +40,3 @@ def test_generate_random_spd_matrix():
                       random_state=None)
     assert X.shape == (n_matrices, n_dim, n_dim)  # X shape mismatch
     assert is_positive_definite(X)  # X is an array of SPD matrices
-
-
-def test_functions_error():
-    n_matrices, n_dim, class_sep, class_disp = 10, 16, 2., 1.
-    with pytest.raises(ValueError):  # n_matrices is not an integer
-        make_gaussian_blobs(n_matrices=float(n_matrices),
-                            n_dim=n_dim,
-                            class_sep=class_sep,
-                            class_disp=class_disp)
-    with pytest.raises(ValueError):  # n_matrices is negative
-        make_gaussian_blobs(n_matrices=-n_matrices,
-                            n_dim=n_dim,
-                            class_sep=class_sep,
-                            class_disp=class_disp)
-    with pytest.raises(ValueError):  # n_dim is not an integer
-        make_gaussian_blobs(n_matrices=n_matrices,
-                            n_dim=float(n_dim),
-                            class_sep=class_sep,
-                            class_disp=class_disp)
-    with pytest.raises(ValueError):  # n_dim is negative
-        make_gaussian_blobs(n_matrices=n_matrices,
-                            n_dim=-n_dim,
-                            class_sep=class_sep,
-                            class_disp=class_disp)
-    with pytest.raises(ValueError):  # class_sep is not a scalar
-        make_gaussian_blobs(n_matrices=n_matrices,
-                            n_dim=n_dim,
-                            class_sep=class_sep*np.ones(n_dim),
-                            class_disp=class_disp)
-    with pytest.raises(ValueError):  # class_disp is not a scalar
-        make_gaussian_blobs(n_matrices=n_matrices,
-                            n_dim=n_dim,
-                            class_sep=class_sep,
-                            class_disp=class_disp*np.ones(n_dim))
