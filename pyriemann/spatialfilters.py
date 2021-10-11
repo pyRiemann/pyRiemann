@@ -509,7 +509,7 @@ class AJDC(BaseEstimator, TransformerMixin):
     dim_red : None | dict, (default None)
         Parameter for dimension reduction of cospectra, because Pham's AJD is
         sensitive to matrices conditioning. For more details, see parameter
-        ``dim_red`` of :class:`pyriemann.spatialfilters.Whitening`.
+        ``dim_red`` of :class:`pyriemann.preprocessing.Whitening`.
     verbose : bool (default True)
         Verbose flag.
 
@@ -571,9 +571,9 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_subjects, n_conditions, n_channels, n_times) |
-                list of n_subjects of list of n_conditions ndarray of shape
-                (n_channels, n_times), with same n_conditions and n_channels
+        X : ndarray, shape (n_subjects, n_conditions, n_channels, n_times) | \
+                list of n_subjects of list of n_conditions ndarray of shape \
+                (n_channels, n_times), with same n_conditions and n_channels \
                 but different n_times
             Signal in channel space, acquired for different subjects and under
             different experimental conditions.

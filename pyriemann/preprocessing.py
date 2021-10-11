@@ -20,7 +20,7 @@ class Whitening(BaseEstimator, TransformerMixin):
         The metric for the estimation of mean covariance matrix used for
         whitening and dimension reduction.
     dim_red : None | dict, (default None)
-        If None :
+        If ``None`` :
             no dimension reduction during whitening.
         If ``{'n_components': val}`` :
             dimension reduction defining the number of components;

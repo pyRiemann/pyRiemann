@@ -422,7 +422,7 @@ class Coherences(CospCovariances):
         The maximal frequency to be returned.
     fs : float | None, (default None)
         The sampling frequency of the signal.
-    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default
+    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default \
             'ordinary')
         The coherence type:
 

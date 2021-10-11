@@ -48,7 +48,7 @@ def _sch(X):
 
     Notes
     -----
-    .. versionadded:: 0.2.8.dev
+    .. versionadded:: 0.2.8
 
     References
     ----------
@@ -322,7 +322,7 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         The maximal frequency to be returned.
     fs : float | None, (default None)
         The sampling frequency of the signal.
-    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default
+    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default \
             'ordinary')
         The coherence type, see :class:`pyriemann.estimation.Coherences`.
 

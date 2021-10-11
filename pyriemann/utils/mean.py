@@ -330,7 +330,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=100,
 
     Notes
     -----
-    .. versionadded:: 0.2.8.dev
+    .. versionadded:: 0.2.8
 
     References
     ----------
