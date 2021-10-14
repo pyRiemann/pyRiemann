@@ -1,6 +1,5 @@
 
 import numpy as np
-from pytest import approx
 
 
 def generate_cov(n_trials, n_channels, rs, return_params=False):
@@ -31,7 +30,7 @@ def is_square(X):
         True if matrices are square.
     """
 
-    return  X.ndim >= 2 and X.shape[-2] == X.shape[-1]
+    return X.ndim >= 2 and X.shape[-2] == X.shape[-1]
 
 
 def is_symmetric(X):
@@ -48,7 +47,7 @@ def is_symmetric(X):
         True if all matrices are symmetric.
     """
 
-    return is_square(X) and X == approx(np.swapaxes(X, -2, -1))
+    return is_square(X) and np.allclose(X, np.swapaxes(X, -2, -1))
 
 
 def is_positive_definite(X):
