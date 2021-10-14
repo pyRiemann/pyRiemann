@@ -1,7 +1,7 @@
 from pyriemann.datasets.sampling import (sample_gaussian_spd,
                                          generate_random_spd_matrix)
 from pyriemann.utils.distance import distance_riemann
-from conftest import is_positive_definite
+from pyriemann.utils.test import is_positive_definite
 import numpy as np
 
 

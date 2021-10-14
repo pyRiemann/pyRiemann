@@ -9,12 +9,14 @@ from pyriemann.estimation import (
 )
 import pytest
 
+from pyriemann.utils.test import is_spsd, is_spd
+
 estim = ["cov", "scm", "lwf", "oas", "mcd", "corr", "sch"]
 coh = ["ordinary", "instantaneous", "lagged", "imaginary"]
 
 
 @pytest.mark.parametrize("estimator", estim)
-def test_covariances(estimator, rndstate, is_spd):
+def test_covariances(estimator, rndstate):
     """Test Covariances"""
     n_trials, n_channels, n_times = 2, 3, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
@@ -26,7 +28,7 @@ def test_covariances(estimator, rndstate, is_spd):
     assert is_spd(covmats)
 
 
-def test_hankel_covariances(rndstate, is_spd):
+def test_hankel_covariances(rndstate):
     """Test Hankel Covariances"""
     n_trials, n_channels, n_times = 2, 3, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
@@ -38,7 +40,7 @@ def test_hankel_covariances(rndstate, is_spd):
     assert is_spd(covmats)
 
 
-def test_hankel_covariances_delays(rndstate, is_spd):
+def test_hankel_covariances_delays(rndstate):
     n_trials, n_channels, n_times = 2, 3, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
     cov = HankelCovariances(delays=[1, 2])
@@ -50,7 +52,7 @@ def test_hankel_covariances_delays(rndstate, is_spd):
 
 @pytest.mark.parametrize("estimator", estim)
 @pytest.mark.parametrize("svd", [None, 2])
-def test_erp_covariances(estimator, svd, rndstate, get_labels, is_spsd):
+def test_erp_covariances(estimator, svd, rndstate, get_labels):
     """Test fit ERPCovariances"""
     n_classes, n_trials, n_channels, n_times = 2, 4, 3, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
@@ -66,7 +68,7 @@ def test_erp_covariances(estimator, svd, rndstate, get_labels, is_spsd):
     assert is_spsd(covmats)
 
 
-def test_erp_covariances_classes(rndstate, get_labels, is_spsd):
+def test_erp_covariances_classes(rndstate, get_labels):
     n_trials, n_channels, n_times, n_classes = 4, 3, 100, 2
     x = rndstate.randn(n_trials, n_channels, n_times)
     labels = get_labels(n_trials, n_classes)
@@ -83,7 +85,7 @@ def test_erp_covariances_svd_error(rndstate):
 
 
 @pytest.mark.parametrize("est", estim)
-def test_xdawn_est(est, rndstate, get_labels, is_spsd):
+def test_xdawn_est(est, rndstate, get_labels):
     """Test fit XdawnCovariances"""
     n_classes, nfilter = 2, 2
     n_trials, n_channels, n_times = 4, 6, 100
@@ -105,7 +107,7 @@ def test_xdawn_est(est, rndstate, get_labels, is_spsd):
 
 
 @pytest.mark.parametrize("xdawn_est", estim)
-def test_xdawn_covariances_est(xdawn_est, rndstate, get_labels, is_spsd):
+def test_xdawn_covariances_est(xdawn_est, rndstate, get_labels):
     """Test fit XdawnCovariances"""
     n_classes, nfilter = 2, 2
     n_trials, n_channels, n_times = 4, 6, 100
@@ -127,7 +129,7 @@ def test_xdawn_covariances_est(xdawn_est, rndstate, get_labels, is_spsd):
 
 
 @pytest.mark.parametrize("nfilter", [2, 4])
-def test_xdawn_covariances_nfilter(nfilter, rndstate, get_labels, is_spsd):
+def test_xdawn_covariances_nfilter(nfilter, rndstate, get_labels):
     """Test fit XdawnCovariances"""
     n_classes, n_trials, n_channels, n_times = 2, 4, 8, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
@@ -147,7 +149,7 @@ def test_xdawn_covariances_nfilter(nfilter, rndstate, get_labels, is_spsd):
     assert is_spsd(covmats)
 
 
-def test_xdawn_covariances_applyfilters(rndstate, get_labels, is_spsd):
+def test_xdawn_covariances_applyfilters(rndstate, get_labels):
     n_classes, nfilter = 2, 2
     n_trials, n_channels, n_times = 4, 6, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
@@ -159,7 +161,7 @@ def test_xdawn_covariances_applyfilters(rndstate, get_labels, is_spsd):
     assert is_spsd(covmats)
 
 
-def test_cosp_covariances(rndstate, is_spsd):
+def test_cosp_covariances(rndstate):
     """Test fit CospCovariances"""
     n_trials, n_channels, n_times = 2, 3, 1000
     x = rndstate.randn(n_trials, n_channels, n_times)
@@ -175,7 +177,7 @@ def test_cosp_covariances(rndstate, is_spsd):
 
 
 @pytest.mark.parametrize("coh", coh)
-def test_coherences(coh, rndstate, is_spsd):
+def test_coherences(coh, rndstate):
     """Test fit Coherences"""
     n_trials, n_channels, n_times = 2, 5, 200
     x = rndstate.randn(n_trials, n_channels, n_times)
@@ -193,7 +195,7 @@ def test_coherences(coh, rndstate, is_spsd):
 
 
 @pytest.mark.parametrize("shrinkage", [0.1, 0.9])
-def test_shrinkage(shrinkage, rndstate, is_spd):
+def test_shrinkage(shrinkage, rndstate):
     """Test Shrinkage"""
     n_trials, n_channels, n_times = 2, 3, 100
     x = rndstate.randn(n_trials, n_channels, n_times)

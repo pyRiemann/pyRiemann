@@ -1,7 +1,7 @@
 from pyriemann.datasets.sampling import generate_random_spd_matrix
 from pyriemann.datasets.simulated import (make_gaussian_blobs,
                                           make_outliers)
-from conftest import is_positive_definite
+from pyriemann.utils.test import is_positive_definite
 import numpy as np
 
 

@@ -3,6 +3,7 @@ import warnings
 import numpy as np
 
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
+from pyriemann.utils.test import is_square
 
 # Mapping different estimator on the sklearn toolbox
 
@@ -396,9 +397,7 @@ def normalize(X, norm):
     Xn : ndarray, shape (..., n, n)
         The set of normalized matrices, same dimensions as X.
     """
-    if X.ndim < 2:
-        raise ValueError('Input must have at least 2 dimensions')
-    if X.shape[-2] != X.shape[-1]:
+    if not is_square(X):
         raise ValueError('Matrices must be square')
 
     if norm == "trace":
@@ -434,9 +433,7 @@ def get_nondiag_weight(X):
         separation of human electroencephalogram by approximate joint
         diagonalization of second order statistics", Clin Neurophysiol, 2008
     """
-    if X.ndim < 2:
-        raise ValueError('Input must have at least 2 dimensions')
-    if X.shape[-2] != X.shape[-1]:
+    if not is_square(X):
         raise ValueError('Matrices must be square')
 
     X2 = X**2
