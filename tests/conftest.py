@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from functools import partial
 
-from pyriemann.utils.test import generate_cov
+from pyriemann.datasets import make_covariances
 
 
 def requires_module(function, name, call=None):
@@ -32,7 +32,8 @@ def rndstate():
 @pytest.fixture
 def get_covmats(rndstate):
     def _gen_cov(n_trials, n_chan):
-        return generate_cov(n_trials, n_chan, rndstate, return_params=False)
+        return make_covariances(n_trials, n_chan, rndstate,
+                                return_params=False)
 
     return _gen_cov
 
@@ -40,7 +41,7 @@ def get_covmats(rndstate):
 @pytest.fixture
 def get_covmats_params(rndstate):
     def _gen_cov_params(n_trials, n_chan):
-        return generate_cov(n_trials, n_chan, rndstate, return_params=True)
+        return make_covariances(n_trials, n_chan, rndstate, return_params=True)
 
     return _gen_cov_params
 

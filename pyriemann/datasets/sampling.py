@@ -1,9 +1,10 @@
 from functools import partial
-import numpy as np
 import warnings
+import numpy as np
 from sklearn.utils import check_random_state
-from pyriemann.utils.base import sqrtm, expm
-from pyriemann.utils.test import is_spsd
+
+from ..utils.base import sqrtm, expm
+from ..utils.test import is_sym_pos_semi_def as is_spsd
 
 
 def _pdf_r(r, sigma):

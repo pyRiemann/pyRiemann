@@ -9,7 +9,8 @@ from pyriemann.estimation import (
 )
 import pytest
 
-from pyriemann.utils.test import is_spsd, is_spd
+from pyriemann.utils.test import (is_sym_pos_def as is_spd,
+                                  is_sym_pos_semi_def as is_spsd)
 
 estim = ["cov", "scm", "lwf", "oas", "mcd", "corr", "sch"]
 coh = ["ordinary", "instantaneous", "lagged", "imaginary"]

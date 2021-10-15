@@ -6,6 +6,45 @@ from ..utils.base import powm, sqrtm
 from .sampling import generate_random_spd_matrix, sample_gaussian_spd
 
 
+def make_covariances(n_matrices, n_channels, rs, return_params=False):
+    """Generate a set of covariances matrices, with the same eigen vectors.
+
+    Parameters
+    ----------
+    n_matrices : int
+        Number of matrices to generate.
+    n_channels : int
+        Number of channels in covariance matrices.
+    rs : RandomState instance
+        Random state for reproducible output across multiple function calls.
+    return_params : bool (default False)
+        If True, then return parameters
+
+    Returns
+    -------
+    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+        Covariances matrices
+    evals : ndarray, shape (n_matrices, n_channels)
+        Eigen values used for each covariance matrix.
+        Only returned if ``return_params=True``.
+    evecs : ndarray, shape (n_channels, n_channels)
+        Eigen vectors used for all covariance matrices.
+        Only returned if ``return_params=True``.
+    """
+    evals = 2.0 + 0.1 * rs.randn(n_matrices, n_channels)
+    evecs = 2 * rs.rand(n_channels, n_channels) - 1
+    evecs /= np.linalg.norm(evecs, axis=1)[:, np.newaxis]
+
+    covmats = np.empty((n_matrices, n_channels, n_channels))
+    for i in range(n_matrices):
+        covmats[i] = evecs @ np.diag(evals[i]) @ evecs.T
+
+    if return_params:
+        return covmats, evals, evecs
+    else:
+        return covmats
+
+
 def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
                         return_centers=False, random_state=None):
     """Generate SPD dataset with two classes sampled from Riemannian Gaussian

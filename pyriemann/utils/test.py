@@ -2,22 +2,14 @@
 import numpy as np
 
 
-def generate_cov(n_trials, n_channels, rs, return_params=False):
-    """Generate a set of covariances matrices for test purpose"""
-    diags = 2.0 + 0.1 * rs.randn(n_trials, n_channels)
-    A = 2 * rs.rand(n_channels, n_channels) - 1
-    A /= np.linalg.norm(A, axis=1)[:, np.newaxis]
-    covmats = np.empty((n_trials, n_channels, n_channels))
-    for i in range(n_trials):
-        covmats[i] = A @ np.diag(diags[i]) @ A.T
-    if return_params:
-        return covmats, diags, A
-    else:
-        return covmats
+def _get_eigenvals(X):
+    """ Private function to compute eigen values. """
+    n = X.shape[-1]
+    return np.linalg.eigvals(X.reshape((-1, n, n)))
 
 
 def is_square(X):
-    """Check if matrices are square.
+    """ Check if matrices are square.
 
     Parameters
     ----------
@@ -29,12 +21,11 @@ def is_square(X):
     ret : boolean
         True if matrices are square.
     """
-
     return X.ndim >= 2 and X.shape[-2] == X.shape[-1]
 
 
-def is_symmetric(X):
-    """Check if all matrices are symmetric.
+def is_sym(X):
+    """ Check if all matrices are symmetric.
 
     Parameters
     ----------
@@ -46,12 +37,11 @@ def is_symmetric(X):
     ret : boolean
         True if all matrices are symmetric.
     """
-
     return is_square(X) and np.allclose(X, np.swapaxes(X, -2, -1))
 
 
-def is_positive_definite(X):
-    """Check if all matrices are positive definite.
+def is_pos_def(X):
+    """ Check if all matrices are positive definite.
 
     Parameters
     ----------
@@ -63,13 +53,11 @@ def is_positive_definite(X):
     ret : boolean
         True if all matrices are positive definite.
     """
-    cs = X.shape[-1]
-    return is_square(X) and \
-        np.all(np.linalg.eigvals(X.reshape((-1, cs, cs))) > 0.0)
+    return is_square(X) and np.all(_get_eigenvals(X) > 0.0)
 
 
-def is_positive_semi_definite(X):
-    """Check if all matrices are positive semi-definite.
+def is_pos_semi_def(X):
+    """ Check if all matrices are positive semi-definite.
 
     Parameters
     ----------
@@ -81,13 +69,11 @@ def is_positive_semi_definite(X):
     ret : boolean
         True if all matrices are positive semi-definite.
     """
-    cs = X.shape[-1]
-    return is_square(X) and \
-        np.all(np.linalg.eigvals(X.reshape((-1, cs, cs))) >= 0.0)
+    return is_square(X) and np.all(_get_eigenvals(X) >= 0.0)
 
 
-def is_spd(X):
-    """Check if all matrices are symmetric positive-definite.
+def is_sym_pos_def(X):
+    """ Check if all matrices are symmetric positive-definite.
 
     Parameters
     ----------
@@ -99,12 +85,11 @@ def is_spd(X):
     ret : boolean
         True if all matrices are symmetric positive-definite.
     """
+    return is_sym(X) and is_pos_def(X)
 
-    return is_symmetric(X) and is_positive_definite(X)
 
-
-def is_spsd(X):
-    """Check if all matrices are symmetric positive semi-definite.
+def is_sym_pos_semi_def(X):
+    """ Check if all matrices are symmetric positive semi-definite.
 
     Parameters
     ----------
@@ -116,5 +101,4 @@ def is_spsd(X):
     ret : boolean
         True if all matrices are symmetric positive semi-definite.
     """
-
-    return is_symmetric(X) and is_positive_semi_definite(X)
+    return is_sym(X) and is_pos_semi_def(X)
