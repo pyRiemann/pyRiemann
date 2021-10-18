@@ -8,7 +8,7 @@ from ..utils.test import is_sym_pos_semi_def as is_spsd
 
 
 def _pdf_r(r, sigma):
-    """pdf for the log of eigenvalues of a SPD matrix
+    """Pdf for the log of eigenvalues of a SPD matrix
 
     Probability density function for the logarithm of the eigenvalues of a SPD
     matrix samples from the Riemannian Gaussian distribution. See Said et al.
@@ -29,15 +29,14 @@ def _pdf_r(r, sigma):
     """
 
     if (sigma <= 0):
-        raise ValueError(
-            f'sigma must be a positive number (Got {sigma})')
+        raise ValueError(f'sigma must be a positive number (Got {sigma})')
 
     n_dim = len(r)
-    partial_1 = -np.sum(r**2)/sigma**2
+    partial_1 = -np.sum(r**2) / sigma**2
     partial_2 = 0
     for i in range(n_dim):
-        for j in range(i+1, n_dim):
-            partial_2 = partial_2 + np.log(np.sinh(np.abs(r[i]-r[j])/2))
+        for j in range(i + 1, n_dim):
+            partial_2 = partial_2 + np.log(np.sinh(np.abs(r[i] - r[j]) / 2))
 
     return np.exp(partial_1 + partial_2)
 
@@ -86,8 +85,7 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
         raise ValueError(
             f'n_samples must be a positive integer (Got {n_burnin})')
     if (thin <= 0) or (not isinstance(thin, int)):
-        raise ValueError(
-            f'thin must be a positive integer (Got {thin})')
+        raise ValueError(f'thin must be a positive integer (Got {thin})')
 
     rs = check_random_state(random_state)
     w = 1.0  # initial bracket width
@@ -112,17 +110,17 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
 
             # step 3 : create a horizontal interval (xl_i, xr_i) enclosing xt_i
             r = rs.rand()
-            xl_i = xt[i] - r*w
-            xr_i = xt[i] + (1-r)*w
-            while ptarget(xt + (xl_i - xt[i])*ei) > uprime_i:
+            xl_i = xt[i] - r * w
+            xr_i = xt[i] + (1-r) * w
+            while ptarget(xt + (xl_i - xt[i]) * ei) > uprime_i:
                 xl_i = xl_i - w
-            while ptarget(xt + (xr_i - xt[i])*ei) > uprime_i:
+            while ptarget(xt + (xr_i - xt[i]) * ei) > uprime_i:
                 xr_i = xr_i + w
 
             # step 4 : loop
             while True:
                 xprime_i = xl_i + (xr_i - xl_i) * rs.rand()
-                Px = ptarget(xt + (xprime_i - xt[i])*ei)
+                Px = ptarget(xt + (xprime_i - xt[i]) * ei)
                 if Px > uprime_i:
                     break
                 else:
@@ -137,7 +135,7 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
 
         samples.append(xt)
 
-    samples = np.array(samples)[(n_burnin*thin):][::thin]
+    samples = np.array(samples)[(n_burnin * thin):][::thin]
 
     return samples
 
@@ -257,7 +255,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None):
         Ui = samples_U[i]
         ri = samples_r[i]
         samples[i] = Ui.T @ np.diag(np.exp(ri)) @ Ui
-        samples[i] = 1/2 * (samples[i] + samples[i].T)
+        samples[i] = 0.5 * (samples[i] + samples[i].T)
 
     return samples
 
@@ -345,7 +343,7 @@ def generate_random_spd_matrix(n_dim, random_state=None):
 
     rs = check_random_state(random_state)
     A = rs.randn(n_dim, n_dim)
-    A = (A + A.T)/2
+    A = 0.5 * (A + A.T)
     C = expm(A)
 
     if not is_spsd(C):

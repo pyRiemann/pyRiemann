@@ -18,7 +18,7 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False):
     rs : RandomState instance
         Random state for reproducible output across multiple function calls.
     return_params : bool (default False)
-        If True, then return parameters
+        If True, then return parameters.
 
     Returns
     -------
@@ -83,6 +83,8 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     .. versionadded:: 0.2.8
 
     """
+    if not isinstance(class_sep, float):
+        raise ValueError(f'class_sep must be a float (Got {class_sep})')
 
     rs = check_random_state(random_state)
 
@@ -95,7 +97,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     y0 = np.zeros(n_matrices)
 
     # generate dataset for class 1
-    epsilon = np.exp(class_sep/np.sqrt(n_dim))
+    epsilon = np.exp(class_sep / np.sqrt(n_dim))
     C1 = epsilon * C0
     X1 = sample_gaussian_spd(n_matrices=n_matrices,
                              mean=C1,

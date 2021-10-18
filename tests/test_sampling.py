@@ -4,7 +4,7 @@ import numpy as np
 from pyriemann.datasets.sampling import (sample_gaussian_spd,
                                          generate_random_spd_matrix)
 from pyriemann.utils.distance import distance_riemann
-from pyriemann.utils.test import is_pos_def
+from pyriemann.utils.test import is_sym_pos_def as is_spd
 
 
 def test_sample_gaussian_spd():
@@ -13,7 +13,7 @@ def test_sample_gaussian_spd():
     mean = np.eye(n_dim)
     X = sample_gaussian_spd(n_matrices, mean, sigma, random_state=None)
     assert X.shape == (n_matrices, n_dim, n_dim)  # X shape mismatch
-    assert is_pos_def(X)  # X is an array of SPD matrices
+    assert is_spd(X)  # X is an array of SPD matrices
 
 
 def test_generate_random_spd_matrix():
@@ -21,7 +21,7 @@ def test_generate_random_spd_matrix():
     n_dim = 16
     X = generate_random_spd_matrix(n_dim, random_state=None)
     assert X.shape == (n_dim, n_dim)  # X shape mismatch
-    assert is_pos_def(X)  # X is a SPD matrix
+    assert is_spd(X)  # X is a SPD matrix
 
 
 def test_sigma_gaussian_spd():

@@ -4,7 +4,7 @@ import numpy as np
 from pyriemann.datasets.sampling import generate_random_spd_matrix
 from pyriemann.datasets.simulated import (make_gaussian_blobs,
                                           make_outliers)
-from pyriemann.utils.test import is_pos_def
+from pyriemann.utils.test import is_sym_pos_def as is_spd
 
 
 def test_gaussian_blobs():
@@ -17,7 +17,7 @@ def test_gaussian_blobs():
                                return_centers=False,
                                random_state=None)
     assert X.shape == (2*n_matrices, n_dim, n_dim)  # X shape mismatch
-    assert is_pos_def(X)  # X is an array of SPD matrices
+    assert is_spd(X)  # X is an array of SPD matrices
     assert y.shape == (2*n_matrices,)  # y shape mismatch
     assert np.unique(y).shape == (2,)  # Unexpected number of classes
     assert sum(y == 0) == n_matrices  # Unexpected number of samples in class 0
@@ -41,7 +41,7 @@ def test_generate_random_spd_matrix():
                       outlier_coeff=10,
                       random_state=None)
     assert X.shape == (n_matrices, n_dim, n_dim)  # X shape mismatch
-    assert is_pos_def(X)  # X is an array of SPD matrices
+    assert is_spd(X)  # X is an array of SPD matrices
 
 
 def test_functions_error():
