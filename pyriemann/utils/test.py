@@ -40,6 +40,39 @@ def is_sym(X):
     return is_square(X) and np.allclose(X, np.swapaxes(X, -2, -1))
 
 
+def is_skew_sym(X):
+    """Check if all matrices are skew-symmetric.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        The set of square matrices, at least 2D ndarray.
+
+    Returns
+    -------
+    ret : boolean
+        True if all matrices are skew-symmetric.
+    """
+    return is_square(X) and np.allclose(X, -np.swapaxes(X, -2, -1))
+
+
+def is_hermitian(X):
+    """Check if all matrices are Hermitian, ie with a symmetric real part and
+    a skew-symmetric imaginary part.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        The set of square matrices, at least 2D ndarray.
+
+    Returns
+    -------
+    ret : boolean
+        True if all matrices are Hermitian.
+    """
+    return is_sym(X.real) and is_skew_sym(X.imag)
+
+
 def is_pos_def(X):
     """ Check if all matrices are positive definite.
 
