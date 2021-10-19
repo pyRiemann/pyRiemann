@@ -2,7 +2,6 @@ from conftest import requires_matplotlib
 import numpy as np
 import pytest
 
-from pyriemann.datasets import make_covariances
 from pyriemann.utils.viz import (
     plot_confusion_matrix,
     plot_embedding,
@@ -14,7 +13,7 @@ from pyriemann.utils.viz import (
 def test_embedding(get_covmats):
     """Test Embedding."""
     n_trials, n_channels = 5, 3
-    covmats = make_covariances(n_trials, n_channels)
+    covmats = get_covmats(n_trials, n_channels)
     plot_embedding(covmats, y=None, metric="euclid")
     y = np.ones(covmats.shape[0])
     plot_embedding(covmats, y=y, metric="euclid")
