@@ -1,7 +1,7 @@
 import numpy as np
 
 from pyriemann.utils.test import (
-    is_square, is_sym, is_skew_sym, is_hermitian,
+    is_square, is_sym, is_skew_sym, is_real, is_hermitian,
     is_pos_def, is_pos_semi_def,
     is_sym_pos_def, is_sym_pos_semi_def
 )
@@ -31,6 +31,16 @@ def test_is_skew_sym():
     assert not is_skew_sym(np.eye(n_channels))
     assert not is_skew_sym(A + A.T)
     assert not is_skew_sym(np.ones((n_channels, n_channels + 1)))
+
+
+def test_is_real():
+    rs = np.random.RandomState(1234)
+    A = rs.randn(n_channels, n_channels + 2)
+    B = np.zeros((n_channels, n_channels + 2), dtype=complex)
+    B.real = A
+    assert is_real(B)
+    B.imag = A / 1000.0
+    assert not is_real(B)
 
 
 def test_is_hermitian():

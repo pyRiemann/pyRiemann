@@ -56,6 +56,23 @@ def is_skew_sym(X):
     return is_square(X) and np.allclose(X, -np.swapaxes(X, -2, -1))
 
 
+def is_real(X):
+    """Check if all complex matrices are strictly real.
+    Better management of numerical imprecisions than np.all(np.isreal()).
+
+    Parameters
+    ----------
+    X : ndarray
+        The set of matrices.
+
+    Returns
+    -------
+    ret : boolean
+        True if all complex matrices are strictly real.
+    """
+    return np.allclose(X.imag, np.zeros_like(X.imag))
+
+
 def is_hermitian(X):
     """Check if all matrices are Hermitian, ie with a symmetric real part and
     a skew-symmetric imaginary part.

@@ -6,7 +6,7 @@ import pytest
 from pyriemann.utils.covariance import (covariances, covariances_EP, eegtocov,
                                         cross_spectrum, cospectrum, coherence,
                                         normalize, get_nondiag_weight)
-from pyriemann.utils.test import is_hermitian
+from pyriemann.utils.test import is_real, is_hermitian
 
 
 @pytest.mark.parametrize(
@@ -82,11 +82,11 @@ def test_covariances_cross_spectrum(rndstate):
     # ie with symmetric real parts and skew-symmetric imag parts
     assert is_hermitian(np.transpose(c, (2, 0, 1)))
     # test if DC bins are real (always true)
-    assert np.all(np.isreal(c[..., 0]))
+    assert is_real(c[..., 0])
     # test if Nyquist bins are real (true when window is even)
-    assert np.all(np.isreal(c[..., -1]))
+    assert is_real(c[..., -1])
     # test if auto-spectra are real
-    assert np.all(np.isreal(c.diagonal()))
+    assert is_real(c.diagonal())
 
     # test equivalence between pyriemann and scipy for (auto-)spectra
     x = rndstate.randn(5, n_times)
