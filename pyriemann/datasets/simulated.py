@@ -7,7 +7,7 @@ from .sampling import generate_random_spd_matrix, sample_gaussian_spd
 
 
 def make_covariances(n_matrices, n_channels, rs, return_params=False):
-    """Generate a set of covariances matrices, with the same eigen vectors.
+    """Generate a set of covariances matrices, with the same eigenvectors.
 
     Parameters
     ----------

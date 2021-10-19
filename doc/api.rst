@@ -125,25 +125,16 @@ Stats
 Datasets
 ------------------
 .. _datasets_api:
-.. currentmodule:: pyriemann.datasets.simulated
+.. currentmodule:: pyriemann.datasets
 
 .. autosummary::
     :toctree: generated/
 
     make_gaussian_blobs
-    make_outliers    
-
-Sampling
-------------------
-.. _sampling_api:
-.. currentmodule:: pyriemann.datasets.sampling
-
-.. autosummary::
-    :toctree: generated/
-
+    make_outliers
+    make_covariances
     sample_gaussian_spd
-    generate_random_spd_matrix      
-
+    generate_random_spd_matrix 
 
 Utils function
 --------------
