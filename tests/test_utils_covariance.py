@@ -6,6 +6,7 @@ import pytest
 from pyriemann.utils.covariance import (covariances, covariances_EP, eegtocov,
                                         cross_spectrum, cospectrum, coherence,
                                         normalize, get_nondiag_weight)
+from pyriemann.utils.test import is_hermitian
 
 
 @pytest.mark.parametrize(
@@ -77,17 +78,15 @@ def test_covariances_cross_spectrum(rndstate):
     c, freqs = cross_spectrum(x, fs=128, window=256)
     assert c.shape[0] == c.shape[1] == n_channels
     assert c.shape[-1] == freqs.shape[0]
-    # test if real parts are symmetric
-    assert_array_almost_equal(c.real, np.transpose(c.real, (1, 0, 2)), 6)
-    # test if imag parts are skew-symmetric
-    assert_array_almost_equal(c.imag, -np.transpose(c.imag, (1, 0, 2)), 6)
+    # test if cross-spectra are hermitian,
+    # ie with symmetric real parts and skew-symmetric imag parts
+    assert is_hermitian(np.transpose(c, (2, 0, 1)))
     # test if DC bins are real (always true)
-    assert_array_almost_equal(c[..., 0].imag, np.zeros_like(c[..., 0].imag))
+    assert np.all(np.isreal(c[..., 0]))
     # test if Nyquist bins are real (true when window is even)
-    assert_array_almost_equal(c[..., -1].imag, np.zeros_like(c[..., -1].imag))
+    assert np.all(np.isreal(c[..., -1]))
     # test if auto-spectra are real
-    assert_array_almost_equal(c.imag.diagonal(),
-                              np.zeros_like(c.imag.diagonal()))
+    assert np.all(np.isreal(c.diagonal()))
 
     # test equivalence between pyriemann and scipy for (auto-)spectra
     x = rndstate.randn(5, n_times)
