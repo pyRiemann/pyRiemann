@@ -24,9 +24,9 @@ v0.2.8.dev
 
 - Refactor tests + fix refit of :class:`pyriemann.tangentspace.TangentSpace`
 
-- Add sampling SPD matrices from a Riemannian Gaussian distribution in :func:`pyriemann.datasets.sampling`
+- Add sampling SPD matrices from a Riemannian Gaussian distribution in :func:`pyriemann.datasets.sample_gaussian_spd`
 
-- Add new functions for generating random datasets with SPD matrices in :func:`pyriemann.datasets.simulated`
+- Add new functions for generating random datasets with SPD matrices in :func:`pyriemann.datasets.make_gaussian_blobs`
 
 v0.2.7 (June 2021)
 ------------------
