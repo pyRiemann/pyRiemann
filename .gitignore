@@ -7,3 +7,6 @@
 /doc/auto_examples
 /dist
 *-e
+*.egg-info/
+.vscode/
+sandbox/

@@ -1,7 +1,8 @@
 import pytest
-from pytest import approx
 import numpy as np
 from functools import partial
+
+from pyriemann.datasets import make_covariances
 
 
 def requires_module(function, name, call=None):
@@ -23,20 +24,6 @@ requires_matplotlib = partial(requires_module, name="matplotlib")
 requires_seaborn = partial(requires_module, name="seaborn")
 
 
-def generate_cov(n_trials, n_channels, rs, return_params=False):
-    """Generate a set of covariances matrices for test purpose"""
-    diags = 2.0 + 0.1 * rs.randn(n_trials, n_channels)
-    A = 2 * rs.rand(n_channels, n_channels) - 1
-    A /= np.linalg.norm(A, axis=1)[:, np.newaxis]
-    covmats = np.empty((n_trials, n_channels, n_channels))
-    for i in range(n_trials):
-        covmats[i] = A @ np.diag(diags[i]) @ A.T
-    if return_params:
-        return covmats, diags, A
-    else:
-        return covmats
-
-
 @pytest.fixture
 def rndstate():
     return np.random.RandomState(1234)
@@ -45,7 +32,8 @@ def rndstate():
 @pytest.fixture
 def get_covmats(rndstate):
     def _gen_cov(n_trials, n_chan):
-        return generate_cov(n_trials, n_chan, rndstate, return_params=False)
+        return make_covariances(n_trials, n_chan, rndstate,
+                                return_params=False)
 
     return _gen_cov
 
@@ -53,7 +41,7 @@ def get_covmats(rndstate):
 @pytest.fixture
 def get_covmats_params(rndstate):
     def _gen_cov_params(n_trials, n_chan):
-        return generate_cov(n_trials, n_chan, rndstate, return_params=True)
+        return make_covariances(n_trials, n_chan, rndstate, return_params=True)
 
     return _gen_cov_params
 
@@ -64,98 +52,6 @@ def get_labels():
         return np.arange(n_classes).repeat(n_trials // n_classes)
 
     return _get_labels
-
-
-def is_positive_semi_definite(X):
-    """Check if all matrices are positive semi-definite.
-
-    Parameters
-    ----------
-    X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
-
-    Returns
-    -------
-    ret : boolean
-        True if all matrices are positive semi-definite.
-    """
-    cs = X.shape[-1]
-    return np.all(np.linalg.eigvals(X.reshape((-1, cs, cs))) >= 0.0)
-
-
-def is_positive_definite(X):
-    """Check if all matrices are positive definite.
-
-    Parameters
-    ----------
-    X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
-
-    Returns
-    -------
-    ret : boolean
-        True if all matrices are positive definite.
-    """
-    cs = X.shape[-1]
-    return np.all(np.linalg.eigvals(X.reshape((-1, cs, cs))) > 0.0)
-
-
-def is_symmetric(X):
-    """Check if all matrices are symmetric.
-
-    Parameters
-    ----------
-    X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
-
-    Returns
-    -------
-    ret : boolean
-        True if all matrices are symmetric.
-    """
-    return X == approx(np.swapaxes(X, -2, -1))
-
-
-@pytest.fixture
-def is_spd():
-    """Check if all matrices are symmetric positive-definite.
-
-    Parameters
-    ----------
-    X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
-
-    Returns
-    -------
-    ret : boolean
-        True if all matrices are symmetric positive-definite.
-    """
-
-    def _is_spd(X):
-        return is_symmetric(X) and is_positive_definite(X)
-
-    return _is_spd
-
-
-@pytest.fixture
-def is_spsd():
-    """Check if all matrices are symmetric positive semi-definite.
-
-    Parameters
-    ----------
-    X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
-
-    Returns
-    -------
-    ret : boolean
-        True if all matrices are symmetric positive semi-definite.
-    """
-
-    def _is_spsd(X):
-        return is_symmetric(X) and is_positive_semi_definite(X)
-
-    return _is_spsd
 
 
 def get_distances():
