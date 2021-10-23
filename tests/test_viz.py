@@ -6,6 +6,7 @@ from pyriemann.utils.viz import (
     plot_confusion_matrix,
     plot_embedding,
     plot_cospectra,
+    plot_erp,
 )
 
 
@@ -36,3 +37,12 @@ def test_cospectra():
     cosp = np.random.randn(n_freqs, n_channels, n_channels)
     freqs = np.random.randn(n_freqs)
     plot_cospectra(cosp, freqs)
+
+
+@requires_matplotlib
+@pytest.mark.parametrize("display", ["all", "mean+/-std", "hist"])
+def test_erp(display):
+    """Test plot_erp"""
+    n_matrices, n_channels, n_times = 16, 3, 100
+    X = np.random.randn(n_matrices, n_channels, n_times)
+    plot_erp(X, display=display, chax=0)

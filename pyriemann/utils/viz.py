@@ -1,4 +1,5 @@
 """Helpers for vizualization."""
+import numbers
 import pandas as pd
 import numpy as np
 from sklearn.metrics import confusion_matrix
@@ -100,3 +101,102 @@ def plot_cospectra(cosp, freqs, ylabels=None, title="Cospectra"):
             plt.yticks([])
 
     return fig
+
+
+def plot_erp(X, display='all', *, chax=0, t=None, **kwargs):
+    ''' Display repetitions of a multichannel ERP.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_reps, n_channels, n_times)
+        Repetitions of the multichannel ERP.
+
+    display : {'all', 'mean', 'hist'}
+        Type of display:
+
+        * 'all' for all the repetitions;
+        * 'mean+/-std' for the mean +/- standard deviation of the repetitions;
+        * 'hist' for the 2D histogram of the repetitions.
+
+    chax : int | ndarray, shape(n_channels,) of subplots (default 0)
+        If `chax` is an integer, it defines the channel index to display, and
+        function returns only the axis with the figure of this channel.
+        If `chax` is an array of shape(n_channels,) of subplots, all channels
+        are displayed (one by subplot) and function returns the axes of all
+        channels.
+
+    t : None | ndarray, shape (n_times,) (default None)
+        Values to display time on x-axis.
+
+    Returns
+    -------
+    axes : figure axis
+        Axis of the figure.
+    '''
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        raise ImportError("Install matplotlib to plot erp")
+
+    def _plot_erp_all(ax, t, X, **kwargs):
+        color = kwargs.get('color', 'gray')
+        alpha = kwargs.get('alpha', 0.5)
+        for i_rep in range(X.shape[0]):
+            ax.plot(t, X[i_rep, :], color=color, alpha=alpha)
+
+    def _plot_erp_mean(ax, t, mean, std, **kwargs):
+        linewidth = kwargs.get('linewidth', 1.5)
+        color_mean = kwargs.get('color_mean', 'k')
+        color_std = kwargs.get('color_std', 'gray')
+        ax.plot(t, mean, color=color_mean, linewidth=linewidth)
+        ax.fill_between(t, mean - std, mean + std, color=color_std) 
+
+    def _plot_erp_hist(ax, t, X, **kwargs):
+        n_bins = kwargs.get('n_bins', 50)
+        cmap = kwargs.get('cmap', plt.cm.Greys)
+        ax.hist2d(t.ravel(), X.ravel(), bins=(X.shape[-1], n_bins), cmap=cmap)
+
+    if X.ndim != 3:
+        raise Exception('Input X has not 3 dimensions')
+    n_reps, n_channels, n_times = X.shape
+    if t is None:
+        t = np.arange(n_times)
+    elif t.shape != (n_times,):
+        raise Exception(
+            'Parameter t has not the same number of times as X')
+
+    if isinstance(chax, numbers.Integral):
+        channels = [chax]
+        axes = [plt.gca()]
+    elif isinstance(chax, np.ndarray):
+        if chax.shape != (n_channels,):
+            raise Exception(
+                'Parameter chax has not the same number of channels as X')
+        channels = np.arange(n_channels)
+        axes = chax
+    else:
+        raise Exception('Parameter chax unknown %s' % chax)
+
+    if display == 'all':
+        for (channel, ax) in zip(channels, axes):
+            _plot_erp_all(ax, t, X[:, channel, :], **kwargs)
+
+    elif display == 'mean+/-std':
+        mean, std = np.mean(X, axis=0), np.std(X, axis=0)
+        for (channel, ax) in zip(channels, axes):
+            _plot_erp_mean(ax, t, mean[channel, :], std[channel, :], **kwargs)
+
+    elif display == 'hist':
+        t_rep = np.repeat(t[np.newaxis, :], n_reps, axis=0)
+        for (channel, ax) in zip(channels, axes):
+            _plot_erp_hist(ax, t_rep, X[:, channel, :], **kwargs)
+
+    else:
+        raise Exception('Parameter display unknown %s' % display)
+
+    if isinstance(chax, numbers.Integral):
+        return axes[0]
+    elif isinstance(chax, np.ndarray):
+        for ax in axes[:-1]:
+            ax.set_xticklabels([])  # remove xticklabels
+        return axes
