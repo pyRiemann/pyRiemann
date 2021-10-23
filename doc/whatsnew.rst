@@ -30,6 +30,8 @@ v0.2.8.dev
 
 - Add new function :func:`pyriemann.datasets.make_gaussian_blobs` for generating random datasets with SPD matrices
 
+- Add an example on ERP visualization
+
 v0.2.7 (June 2021)
 ------------------
 
