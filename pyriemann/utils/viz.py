@@ -149,7 +149,7 @@ def plot_erp(X, display='all', *, chax=0, t=None, **kwargs):
         color_mean = kwargs.get('color_mean', 'k')
         color_std = kwargs.get('color_std', 'gray')
         ax.plot(t, mean, color=color_mean, linewidth=linewidth)
-        ax.fill_between(t, mean - std, mean + std, color=color_std) 
+        ax.fill_between(t, mean - std, mean + std, color=color_std)
 
     def _plot_erp_hist(ax, t, X, **kwargs):
         n_bins = kwargs.get('n_bins', 50)
