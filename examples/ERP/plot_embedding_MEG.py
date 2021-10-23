@@ -1,6 +1,6 @@
 """
 =====================================================================
-Embedding ERP EEG data in 2D Euclidean space with Laplacian Eigenmaps
+Embedding ERP MEG data in 2D Euclidean space with Laplacian Eigenmaps
 =====================================================================
 
 Spectral embedding via Laplacian Eigenmaps of a set of ERP data.
