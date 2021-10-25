@@ -64,7 +64,7 @@ def plot_embedding(
     return fig
 
 
-def plot_cospectra(cosp, freqs, ylabels=None, title="Cospectra"):
+def plot_cospectra(cosp, freqs, *, ylabels=None, title="Cospectra"):
     """Plot cospectral matrices
 
     Parameters
@@ -83,9 +83,16 @@ def plot_cospectra(cosp, freqs, ylabels=None, title="Cospectra"):
         import matplotlib.pyplot as plt
     except ImportError:
         raise ImportError("Install matplotlib to plot cospectra")
+
+    if cosp.ndim != 3:
+        raise Exception('Input cosp has not 3 dimensions')
+    n_freqs, n_channels, _ = cosp.shape
+    if freqs.shape != (n_freqs,):
+        raise Exception(
+            'Input freqs has not the same number of frequencies as cosp')
+
     fig = plt.figure(figsize=(12, 7))
     fig.suptitle(title)
-    n_freqs = min(cosp.shape[0], freqs.shape[0])
     for f in range(n_freqs):
         ax = plt.subplot((n_freqs - 1) // 8 + 1, 8, f + 1)
         plt.imshow(cosp[f], cmap=plt.get_cmap("Reds"))
@@ -103,18 +110,19 @@ def plot_cospectra(cosp, freqs, ylabels=None, title="Cospectra"):
     return fig
 
 
-def plot_erp(X, display='all', *, chax=0, t=None, **kwargs):
-    ''' Display repetitions of a multichannel ERP.
+def plot_waveforms(X, display, *, chax=0, time=None, **kwargs):
+    ''' Display repetitions of a multichannel waveform.
 
     Parameters
     ----------
     X : ndarray, shape (n_reps, n_channels, n_times)
-        Repetitions of the multichannel ERP.
+        Repetitions of the multichannel waveform.
 
-    display : {'all', 'mean', 'hist'}
+    display : {'all', 'mean', 'mean+/-std', 'hist'}
         Type of display:
 
         * 'all' for all the repetitions;
+        * 'mean' for the mean of the repetitions;
         * 'mean+/-std' for the mean +/- standard deviation of the repetitions;
         * 'hist' for the 2D histogram of the repetitions.
 
@@ -125,8 +133,8 @@ def plot_erp(X, display='all', *, chax=0, t=None, **kwargs):
         are displayed (one by subplot) and function returns the axes of all
         channels.
 
-    t : None | ndarray, shape (n_times,) (default None)
-        Values to display time on x-axis.
+    time : None | ndarray, shape (n_times,) (default None)
+        Values to display on x-axis.
 
     Returns
     -------
@@ -136,22 +144,24 @@ def plot_erp(X, display='all', *, chax=0, t=None, **kwargs):
     try:
         import matplotlib.pyplot as plt
     except ImportError:
-        raise ImportError("Install matplotlib to plot erp")
+        raise ImportError("Install matplotlib to plot waveforms")
 
-    def _plot_erp_all(ax, t, X, **kwargs):
+    def _plot_all(ax, t, X, **kwargs):
         color = kwargs.get('color', 'gray')
         alpha = kwargs.get('alpha', 0.5)
         for i_rep in range(X.shape[0]):
             ax.plot(t, X[i_rep, :], color=color, alpha=alpha)
 
-    def _plot_erp_mean(ax, t, mean, std, **kwargs):
+    def _plot_mean(ax, t, mean, **kwargs):
         linewidth = kwargs.get('linewidth', 1.5)
         color_mean = kwargs.get('color_mean', 'k')
-        color_std = kwargs.get('color_std', 'gray')
         ax.plot(t, mean, color=color_mean, linewidth=linewidth)
+
+    def _plot_std(ax, t, mean, std, **kwargs):
+        color_std = kwargs.get('color_std', 'gray')
         ax.fill_between(t, mean - std, mean + std, color=color_std)
 
-    def _plot_erp_hist(ax, t, X, **kwargs):
+    def _plot_hist(ax, t, X, **kwargs):
         n_bins = kwargs.get('n_bins', 50)
         cmap = kwargs.get('cmap', plt.cm.Greys)
         ax.hist2d(t.ravel(), X.ravel(), bins=(X.shape[-1], n_bins), cmap=cmap)
@@ -159,11 +169,11 @@ def plot_erp(X, display='all', *, chax=0, t=None, **kwargs):
     if X.ndim != 3:
         raise Exception('Input X has not 3 dimensions')
     n_reps, n_channels, n_times = X.shape
-    if t is None:
-        t = np.arange(n_times)
-    elif t.shape != (n_times,):
+    if time is None:
+        time = np.arange(n_times)
+    elif time.shape != (n_times,):
         raise Exception(
-            'Parameter t has not the same number of times as X')
+            'Parameter time has not the same number of times as X')
 
     if isinstance(chax, numbers.Integral):
         channels = [chax]
@@ -179,17 +189,21 @@ def plot_erp(X, display='all', *, chax=0, t=None, **kwargs):
 
     if display == 'all':
         for (channel, ax) in zip(channels, axes):
-            _plot_erp_all(ax, t, X[:, channel, :], **kwargs)
+            _plot_all(ax, time, X[:, channel, :], **kwargs)
 
-    elif display == 'mean+/-std':
-        mean, std = np.mean(X, axis=0), np.std(X, axis=0)
+    elif display in ['mean', 'mean+/-std']:
+        mean = np.mean(X, axis=0)
         for (channel, ax) in zip(channels, axes):
-            _plot_erp_mean(ax, t, mean[channel, :], std[channel, :], **kwargs)
+            _plot_mean(ax, time, mean[channel, :], **kwargs)
+        if display == 'mean+/-std':
+            sd = np.std(X, axis=0)
+            for (channel, ax) in zip(channels, axes):
+                _plot_std(ax, time, mean[channel, :], sd[channel, :], **kwargs)
 
     elif display == 'hist':
-        t_rep = np.repeat(t[np.newaxis, :], n_reps, axis=0)
+        time_rep = np.repeat(time[np.newaxis, :], n_reps, axis=0)
         for (channel, ax) in zip(channels, axes):
-            _plot_erp_hist(ax, t_rep, X[:, channel, :], **kwargs)
+            _plot_hist(ax, time_rep, X[:, channel, :], **kwargs)
 
     else:
         raise Exception('Parameter display unknown %s' % display)

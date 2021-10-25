@@ -1,6 +1,6 @@
 """
 ===============================================================================
-Display ERP.
+Display ERP
 ===============================================================================
 
 Different ways to display a multichannel event-related potential (ERP).
@@ -13,7 +13,7 @@ Different ways to display a multichannel event-related potential (ERP).
 import numpy as np
 import mne
 from matplotlib import pyplot as plt
-from pyriemann.utils.viz import plot_erp
+from pyriemann.utils.viz import plot_waveforms
 
 
 ###############################################################################
@@ -51,7 +51,7 @@ ylims = []
 
 fig, ax = plt.subplots(nrows=n_channels, ncols=1, figsize=(7, 12))
 fig.suptitle('Plot all trials', fontsize=16)
-ax = plot_erp(X, display='all', chax=ax, t=time, alpha=0.3)
+ax = plot_waveforms(X, 'all', chax=ax, time=time, alpha=0.3)
 for i_channel in range(n_channels):
     ax[i_channel].set(ylabel=raw.ch_names[i_channel])
     ax[i_channel].set_xlim(tmin, tmax)
@@ -70,7 +70,7 @@ plt.show()
 
 fig, ax = plt.subplots(nrows=n_channels, ncols=1, figsize=(7, 12))
 fig.suptitle('Plot mean+/-std of trials', fontsize=16)
-plot_erp(X, display='mean+/-std', chax=ax, t=time)
+ax = plot_waveforms(X, 'mean+/-std', chax=ax, time=time)
 for i_channel in range(n_channels):
     ax[i_channel].set(ylabel=raw.ch_names[i_channel])
     ax[i_channel].set_xlim(tmin, tmax)
@@ -87,7 +87,8 @@ plt.show()
 
 fig, ax = plt.subplots(nrows=n_channels, ncols=1, figsize=(7, 12))
 fig.suptitle('Plot histogram of trials', fontsize=16)
-plot_erp(X, display='hist', chax=ax, t=time, n_bins=25, cmap=plt.cm.Greys)
+ax = plot_waveforms(X, 'hist', chax=ax, time=time, n_bins=25,
+                    cmap=plt.cm.Greys)
 for i_channel in range(n_channels):
     ax[i_channel].set(ylabel=raw.ch_names[i_channel])
     ax[i_channel].set_ylim(ylims[i_channel])

@@ -6,7 +6,7 @@ from pyriemann.utils.viz import (
     plot_confusion_matrix,
     plot_embedding,
     plot_cospectra,
-    plot_erp,
+    plot_waveforms
 )
 
 
@@ -40,9 +40,9 @@ def test_cospectra():
 
 
 @requires_matplotlib
-@pytest.mark.parametrize("display", ["all", "mean+/-std", "hist"])
-def test_erp(display):
-    """Test plot_erp"""
-    n_matrices, n_channels, n_times = 16, 3, 100
+@pytest.mark.parametrize("display", ["all", "mean", "mean+/-std", "hist"])
+def test_plot_waveforms(display):
+    """Test plot_waveforms"""
+    n_matrices, n_channels, n_times = 16, 3, 50
     X = np.random.randn(n_matrices, n_channels, n_times)
-    plot_erp(X, display=display, chax=0)
+    plot_waveforms(X, display, chax=0)
