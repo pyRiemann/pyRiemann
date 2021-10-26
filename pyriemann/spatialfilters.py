@@ -104,7 +104,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
         self.filters_ = []
         self.patterns_ = []
         for c in self.classes_:
-            # Prototyped responce for each class
+            # Prototyped response for each class
             P = np.mean(X[y == c, :, :], axis=0)
 
             # Covariance matrix of the prototyper response & signal
