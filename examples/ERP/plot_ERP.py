@@ -40,6 +40,8 @@ epochs = mne.Epochs(
 X = epochs.get_data()
 print('Number of trials:', X.shape[0])
 time = np.linspace(tmin, tmax, num=X.shape[2])
+
+plt.rcParams["figure.figsize"] = (7, 12)
 ylims = []
 
 
@@ -49,14 +51,14 @@ ylims = []
 #
 # This kind of plot is a little bit messy.
 
-fig, ax = plt.subplots(nrows=n_channels, ncols=1, figsize=(7, 12))
+
+fig = plot_waveforms(X, 'all', time=time, alpha=0.3)
 fig.suptitle('Plot all trials', fontsize=16)
-ax = plot_waveforms(X, 'all', chax=ax, time=time, alpha=0.3)
 for i_channel in range(n_channels):
-    ax[i_channel].set(ylabel=raw.ch_names[i_channel])
-    ax[i_channel].set_xlim(tmin, tmax)
-    ylims.append(ax[i_channel].get_ylim())
-ax[n_channels - 1].set(xlabel='Time')
+    fig.axes[i_channel].set(ylabel=raw.ch_names[i_channel])
+    fig.axes[i_channel].set_xlim(tmin, tmax)
+    ylims.append(fig.axes[i_channel].get_ylim())
+fig.axes[n_channels - 1].set(xlabel='Time')
 plt.show()
 
 
@@ -68,14 +70,13 @@ plt.show()
 # contaminated by artifacts, and they make a symmetric assumption on amplitude
 # distribution.
 
-fig, ax = plt.subplots(nrows=n_channels, ncols=1, figsize=(7, 12))
+fig = plot_waveforms(X, 'mean+/-std', time=time)
 fig.suptitle('Plot mean+/-std of trials', fontsize=16)
-ax = plot_waveforms(X, 'mean+/-std', chax=ax, time=time)
 for i_channel in range(n_channels):
-    ax[i_channel].set(ylabel=raw.ch_names[i_channel])
-    ax[i_channel].set_xlim(tmin, tmax)
-    ax[i_channel].set_ylim(ylims[i_channel])
-ax[n_channels - 1].set(xlabel='Time')
+    fig.axes[i_channel].set(ylabel=raw.ch_names[i_channel])
+    fig.axes[i_channel].set_xlim(tmin, tmax)
+    fig.axes[i_channel].set_ylim(ylims[i_channel])
+fig.axes[n_channels - 1].set(xlabel='Time')
 plt.show()
 
 
@@ -85,14 +86,12 @@ plt.show()
 #
 # This plot estimates a 2D histogram of trials [1]_.
 
-fig, ax = plt.subplots(nrows=n_channels, ncols=1, figsize=(7, 12))
+fig = plot_waveforms(X, 'hist', time=time, n_bins=25, cmap=plt.cm.Greys)
 fig.suptitle('Plot histogram of trials', fontsize=16)
-ax = plot_waveforms(X, 'hist', chax=ax, time=time, n_bins=25,
-                    cmap=plt.cm.Greys)
 for i_channel in range(n_channels):
-    ax[i_channel].set(ylabel=raw.ch_names[i_channel])
-    ax[i_channel].set_ylim(ylims[i_channel])
-ax[n_channels - 1].set(xlabel='Time')
+    fig.axes[i_channel].set(ylabel=raw.ch_names[i_channel])
+    fig.axes[i_channel].set_ylim(ylims[i_channel])
+fig.axes[n_channels - 1].set(xlabel='Time')
 plt.show()
 
 

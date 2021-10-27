@@ -45,4 +45,7 @@ def test_plot_waveforms(display):
     """Test plot_waveforms"""
     n_matrices, n_channels, n_times = 16, 3, 50
     X = np.random.randn(n_matrices, n_channels, n_times)
-    plot_waveforms(X, display, chax=0)
+    plot_waveforms(X, display)
+
+    X = np.random.randn(n_matrices, 1, n_times)
+    plot_waveforms(X, display)

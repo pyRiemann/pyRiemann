@@ -110,7 +110,7 @@ def plot_cospectra(cosp, freqs, *, ylabels=None, title="Cospectra"):
     return fig
 
 
-def plot_waveforms(X, display, *, chax=0, time=None, **kwargs):
+def plot_waveforms(X, display, *, time=None, **kwargs):
     ''' Display repetitions of a multichannel waveform.
 
     Parameters
@@ -126,45 +126,18 @@ def plot_waveforms(X, display, *, chax=0, time=None, **kwargs):
         * 'mean+/-std' for the mean +/- standard deviation of the repetitions;
         * 'hist' for the 2D histogram of the repetitions.
 
-    chax : int | ndarray, shape(n_channels,) of subplots (default 0)
-        If `chax` is an integer, it defines the channel index to display, and
-        function returns only the axis with the figure of this channel.
-        If `chax` is an array of shape(n_channels,) of subplots, all channels
-        are displayed (one by subplot) and function returns the axes of all
-        channels.
-
     time : None | ndarray, shape (n_times,) (default None)
         Values to display on x-axis.
 
     Returns
     -------
-    axes : figure axis
-        Axis of the figure.
+    fig : matplotlib figure
+        Figure of waveform (one subplot by channel).
     '''
     try:
         import matplotlib.pyplot as plt
     except ImportError:
         raise ImportError("Install matplotlib to plot waveforms")
-
-    def _plot_all(ax, t, X, **kwargs):
-        color = kwargs.get('color', 'gray')
-        alpha = kwargs.get('alpha', 0.5)
-        for i_rep in range(X.shape[0]):
-            ax.plot(t, X[i_rep, :], color=color, alpha=alpha)
-
-    def _plot_mean(ax, t, mean, **kwargs):
-        linewidth = kwargs.get('linewidth', 1.5)
-        color_mean = kwargs.get('color_mean', 'k')
-        ax.plot(t, mean, color=color_mean, linewidth=linewidth)
-
-    def _plot_std(ax, t, mean, std, **kwargs):
-        color_std = kwargs.get('color_std', 'gray')
-        ax.fill_between(t, mean - std, mean + std, color=color_std)
-
-    def _plot_hist(ax, t, X, **kwargs):
-        n_bins = kwargs.get('n_bins', 50)
-        cmap = kwargs.get('cmap', plt.cm.Greys)
-        ax.hist2d(t.ravel(), X.ravel(), bins=(X.shape[-1], n_bins), cmap=cmap)
 
     if X.ndim != 3:
         raise Exception('Input X has not 3 dimensions')
@@ -175,42 +148,43 @@ def plot_waveforms(X, display, *, chax=0, time=None, **kwargs):
         raise Exception(
             'Parameter time has not the same number of times as X')
 
-    if isinstance(chax, numbers.Integral):
-        channels = [chax]
-        axes = [plt.gca()]
-    elif isinstance(chax, np.ndarray):
-        if chax.shape != (n_channels,):
-            raise Exception(
-                'Parameter chax has not the same number of channels as X')
-        channels = np.arange(n_channels)
-        axes = chax
-    else:
-        raise Exception('Parameter chax unknown %s' % chax)
+    fig, axes = plt.subplots(nrows=n_channels, ncols=1)
+    if n_channels == 1:
+        axes = [axes]
+    channels = np.arange(n_channels)
 
     if display == 'all':
+        color = kwargs.get('color', 'gray')
+        alpha = kwargs.get('alpha', 0.5)
         for (channel, ax) in zip(channels, axes):
-            _plot_all(ax, time, X[:, channel, :], **kwargs)
+            for i_rep in range(n_reps):
+                ax.plot(time, X[i_rep, channel], color=color, alpha=alpha)
 
     elif display in ['mean', 'mean+/-std']:
+        linewidth = kwargs.get('linewidth', 1.5)
+        color_mean = kwargs.get('color_mean', 'k')
         mean = np.mean(X, axis=0)
         for (channel, ax) in zip(channels, axes):
-            _plot_mean(ax, time, mean[channel, :], **kwargs)
+            ax.plot(time, mean[channel], color=color_mean, linewidth=linewidth)
         if display == 'mean+/-std':
-            sd = np.std(X, axis=0)
+            color_std = kwargs.get('color_std', 'gray')
+            std = np.std(X, axis=0)
             for (channel, ax) in zip(channels, axes):
-                _plot_std(ax, time, mean[channel, :], sd[channel, :], **kwargs)
+                ax.fill_between(time, mean[channel] - std[channel],
+                                mean[channel] + std[channel], color=color_std)
 
     elif display == 'hist':
+        n_bins = kwargs.get('n_bins', 50)
+        cmap = kwargs.get('cmap', plt.cm.Greys)
         time_rep = np.repeat(time[np.newaxis, :], n_reps, axis=0)
         for (channel, ax) in zip(channels, axes):
-            _plot_hist(ax, time_rep, X[:, channel, :], **kwargs)
+            ax.hist2d(time_rep.ravel(), X[:, channel, :].ravel(),
+                      bins=(n_times, n_bins), cmap=cmap)
 
     else:
         raise Exception('Parameter display unknown %s' % display)
 
-    if isinstance(chax, numbers.Integral):
-        return axes[0]
-    elif isinstance(chax, np.ndarray):
+    if n_channels > 1:
         for ax in axes[:-1]:
             ax.set_xticklabels([])  # remove xticklabels
-        return axes
+    return fig
