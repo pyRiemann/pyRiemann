@@ -24,7 +24,6 @@ from pyriemann.utils.viz import plot_waveforms
 data_path = mne.datasets.sample.data_path()
 raw_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw.fif"
 event_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif"
-tmin, tmax = -0.1, 0.8
 
 # Read raw data, select occipital channels and high-pass filter signal
 raw = mne.io.Raw(raw_fname, preload=True, verbose=False)
@@ -34,6 +33,7 @@ n_channels = len(raw.ch_names)
 raw.filter(1.0, None, method="iir")
 
 # Read epochs and get responses to left visual field stimulus
+tmin, tmax = -0.1, 0.8
 epochs = mne.Epochs(
     raw, mne.read_events(event_fname), {'vis_l': 3}, tmin, tmax, proj=False,
     baseline=None, preload=True, verbose=False)
@@ -50,7 +50,6 @@ ylims = []
 # ---------------
 #
 # This kind of plot is a little bit messy.
-
 
 fig = plot_waveforms(X, 'all', time=time, alpha=0.3)
 fig.suptitle('Plot all trials', fontsize=16)
