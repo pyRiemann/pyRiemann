@@ -37,9 +37,9 @@ tmin, tmax = -0.1, 0.8
 epochs = mne.Epochs(
     raw, mne.read_events(event_fname), {'vis_l': 3}, tmin, tmax, proj=False,
     baseline=None, preload=True, verbose=False)
-X = epochs.get_data()
+X = 5e5 * epochs.get_data()
 print('Number of trials:', X.shape[0])
-time = np.linspace(tmin, tmax, num=X.shape[2])
+times = np.linspace(tmin, tmax, num=X.shape[2])
 
 plt.rcParams["figure.figsize"] = (7, 12)
 ylims = []
@@ -51,7 +51,7 @@ ylims = []
 #
 # This kind of plot is a little bit messy.
 
-fig = plot_waveforms(X, 'all', time=time, alpha=0.3)
+fig = plot_waveforms(X, 'all', times=times, alpha=0.3)
 fig.suptitle('Plot all trials', fontsize=16)
 for i_channel in range(n_channels):
     fig.axes[i_channel].set(ylabel=raw.ch_names[i_channel])
@@ -69,7 +69,7 @@ plt.show()
 # contaminated by artifacts, and they make a symmetric assumption on amplitude
 # distribution.
 
-fig = plot_waveforms(X, 'mean+/-std', time=time)
+fig = plot_waveforms(X, 'mean+/-std', times=times)
 fig.suptitle('Plot mean+/-std of trials', fontsize=16)
 for i_channel in range(n_channels):
     fig.axes[i_channel].set(ylabel=raw.ch_names[i_channel])
@@ -85,7 +85,7 @@ plt.show()
 #
 # This plot estimates a 2D histogram of trials [1]_.
 
-fig = plot_waveforms(X, 'hist', time=time, n_bins=25, cmap=plt.cm.Greys)
+fig = plot_waveforms(X, 'hist', times=times, n_bins=25, cmap=plt.cm.Greys)
 fig.suptitle('Plot histogram of trials', fontsize=16)
 for i_channel in range(n_channels):
     fig.axes[i_channel].set(ylabel=raw.ch_names[i_channel])
