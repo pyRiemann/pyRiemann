@@ -65,9 +65,10 @@ def download_sample_data(dataset="ssvep", subject=1, session=1):
         raise NotImplementedError("Not yet implemented")
 
     # Use MNE fetch_dataset to download EEG file
+    archive_name = url.split('/')[-1]
     dataset_params = {
         'dataset_name': dataset,
-        'archive_name': url,
+        'archive_name': archive_name,
         'hash': 'md5:ff7f0361a2d41f8df3fb53b9a9bc1220',
         'url': url,
         'folder_name': folder_name,
@@ -78,7 +79,7 @@ def download_sample_data(dataset="ssvep", subject=1, session=1):
         dataset_params
     )
 
-    return os.path.join(data_path, url.split('/')[-1])
+    return os.path.join(data_path, archive_name)
 
 
 # Download data
