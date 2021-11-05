@@ -2,8 +2,8 @@
 import pandas as pd
 import numpy as np
 from sklearn.metrics import confusion_matrix
-from pyriemann.embedding import Embedding
-from pyriemann.utils import deprecated
+from ..embedding import Embedding
+from . import deprecated
 
 
 @deprecated(
@@ -63,8 +63,8 @@ def plot_embedding(
     return fig
 
 
-def plot_cospectra(cosp, freqs, ylabels=None, title="Cospectra"):
-    """Plot cospectral matrices
+def plot_cospectra(cosp, freqs, *, ylabels=None, title="Cospectra"):
+    """Plot cospectral matrices.
 
     Parameters
     ----------
@@ -77,14 +77,25 @@ def plot_cospectra(cosp, freqs, ylabels=None, title="Cospectra"):
     -------
     fig : matplotlib figure
         Figure of cospectra.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.7
     """
     try:
         import matplotlib.pyplot as plt
     except ImportError:
         raise ImportError("Install matplotlib to plot cospectra")
+
+    if cosp.ndim != 3:
+        raise Exception('Input cosp has not 3 dimensions')
+    n_freqs, n_channels, _ = cosp.shape
+    if freqs.shape != (n_freqs,):
+        raise Exception(
+            'Input freqs has not the same number of frequencies as cosp')
+
     fig = plt.figure(figsize=(12, 7))
     fig.suptitle(title)
-    n_freqs = min(cosp.shape[0], freqs.shape[0])
     for f in range(n_freqs):
         ax = plt.subplot((n_freqs - 1) // 8 + 1, 8, f + 1)
         plt.imshow(cosp[f], cmap=plt.get_cmap("Reds"))
@@ -99,4 +110,95 @@ def plot_cospectra(cosp, freqs, ylabels=None, title="Cospectra"):
         else:
             plt.yticks([])
 
+    return fig
+
+
+def plot_waveforms(X, display, *, times=None, color='gray', alpha=0.5,
+                   linewidth=1.5, color_mean='k', color_std='gray', n_bins=50,
+                   cmap=None):
+    ''' Display repetitions of a multichannel waveform.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_reps, n_channels, n_times)
+        Repetitions of the multichannel waveform.
+    display : {'all', 'mean', 'mean+/-std', 'hist'}
+        Type of display:
+
+        * 'all' for all the repetitions;
+        * 'mean' for the mean of the repetitions;
+        * 'mean+/-std' for the mean +/- standard deviation of the repetitions;
+        * 'hist' for the 2D histogram of the repetitions.
+    time : None | ndarray, shape (n_times,) (default None)
+        Values to display on x-axis.
+    color : matplotlib color, optional
+        Color of the lines, when ``display=all``.
+    alpha : float, optional
+        Alpha value used to cumulate repetitions, when ``display=all``.
+    linewidth : float, optional
+        Line width in points, when ``display=mean``.
+    color_mean : matplotlib color, optional
+        Color of the mean line, when ``display=mean``.
+    color_std : matplotlib color, optional
+        Color of the standard deviation area, when ``display=mean+/-std``.
+    n_bins : int, optional
+        Number of vertical bins for the 2D histogram, when ``display=hist``.
+    cmap : Colormap or str, optional
+        Color map for the histogram, when ``display=hist``.
+
+    Returns
+    -------
+    fig : matplotlib figure
+        Figure of waveform (one subplot by channel).
+
+    Notes
+    -----
+    .. versionadded:: 0.2.8
+    '''
+    try:
+        import matplotlib.pyplot as plt
+    except ImportError:
+        raise ImportError("Install matplotlib to plot waveforms")
+
+    if X.ndim != 3:
+        raise Exception('Input X has not 3 dimensions')
+    n_reps, n_channels, n_times = X.shape
+    if times is None:
+        times = np.arange(n_times)
+    elif times.shape != (n_times,):
+        raise Exception(
+            'Parameter times has not the same number of values as X')
+
+    fig, axes = plt.subplots(nrows=n_channels, ncols=1)
+    if n_channels == 1:
+        axes = [axes]
+    channels = np.arange(n_channels)
+
+    if display == 'all':
+        for (channel, ax) in zip(channels, axes):
+            for i_rep in range(n_reps):
+                ax.plot(times, X[i_rep, channel], c=color, alpha=alpha)
+
+    elif display in ['mean', 'mean+/-std']:
+        mean = np.mean(X, axis=0)
+        for (channel, ax) in zip(channels, axes):
+            ax.plot(times, mean[channel], c=color_mean, lw=linewidth)
+        if display == 'mean+/-std':
+            std = np.std(X, axis=0)
+            for (channel, ax) in zip(channels, axes):
+                ax.fill_between(times, mean[channel] - std[channel],
+                                mean[channel] + std[channel], color=color_std)
+
+    elif display == 'hist':
+        times_rep = np.repeat(times[np.newaxis, :], n_reps, axis=0)
+        for (channel, ax) in zip(channels, axes):
+            ax.hist2d(times_rep.ravel(), X[:, channel, :].ravel(),
+                      bins=(n_times, n_bins), cmap=cmap)
+
+    else:
+        raise Exception('Parameter display unknown %s' % display)
+
+    if n_channels > 1:
+        for ax in axes[:-1]:
+            ax.set_xticklabels([])  # remove xticklabels
     return fig

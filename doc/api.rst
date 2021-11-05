@@ -108,7 +108,7 @@ Channel selection
     :template: class.rst
 
     ElectrodeSelection
-    FlatChannelRemover         
+    FlatChannelRemover
 
 Stats
 ------------------
@@ -156,7 +156,6 @@ Covariance preprocessing
     normalize
     get_nondiag_weight
 
-
 Distances
 ~~~~~~~~~~~~~~~~~~~~~~
 .. _distance_api:
@@ -173,7 +172,6 @@ Distances
     distance_kullback
     distance_kullback_sym
     distance_wasserstein
-
 
 Mean
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -194,7 +192,6 @@ Mean
     mean_harmonic
     mean_kullback_sym
 
-
 Geodesic
 ~~~~~~~~~~~~~~~~~~~~~~
 .. _geodesic_api:
@@ -207,7 +204,6 @@ Geodesic
     geodesic_riemann
     geodesic_euclid
     geodesic_logeuclid
-
 
 Tangent Space
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -246,3 +242,15 @@ Aproximate Joint Diagonalization
     ajd_pham
     uwedge
 
+Visualization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. _viz_api:
+.. currentmodule:: pyriemann.utils.viz
+
+.. autosummary::
+    :toctree: generated/
+
+    plot_confusion_matrix
+    plot_embedding
+    plot_cospectra
+    plot_waveforms
