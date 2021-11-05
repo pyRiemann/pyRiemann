@@ -113,7 +113,9 @@ def plot_cospectra(cosp, freqs, *, ylabels=None, title="Cospectra"):
     return fig
 
 
-def plot_waveforms(X, display, *, times=None, **kwargs):
+def plot_waveforms(X, display, *, times=None, color='gray', alpha=0.5,
+                   linewidth=1.5, color_mean='k', color_std='gray', n_bins=50,
+                   cmap=None):
     ''' Display repetitions of a multichannel waveform.
 
     Parameters
@@ -129,7 +131,6 @@ def plot_waveforms(X, display, *, times=None, **kwargs):
         * 'hist' for the 2D histogram of the repetitions.
     time : None | ndarray, shape (n_times,) (default None)
         Values to display on x-axis.
-
     color : matplotlib color, optional
         Color of the lines, when ``display=all``.
     alpha : float, optional
@@ -174,28 +175,21 @@ def plot_waveforms(X, display, *, times=None, **kwargs):
     channels = np.arange(n_channels)
 
     if display == 'all':
-        color = kwargs.get('color', 'gray')
-        alpha = kwargs.get('alpha', 0.5)
         for (channel, ax) in zip(channels, axes):
             for i_rep in range(n_reps):
                 ax.plot(times, X[i_rep, channel], c=color, alpha=alpha)
 
     elif display in ['mean', 'mean+/-std']:
-        linewidth = kwargs.get('linewidth', 1.5)
-        color_mean = kwargs.get('color_mean', 'k')
         mean = np.mean(X, axis=0)
         for (channel, ax) in zip(channels, axes):
             ax.plot(times, mean[channel], c=color_mean, lw=linewidth)
         if display == 'mean+/-std':
-            color_std = kwargs.get('color_std', 'gray')
             std = np.std(X, axis=0)
             for (channel, ax) in zip(channels, axes):
                 ax.fill_between(times, mean[channel] - std[channel],
                                 mean[channel] + std[channel], color=color_std)
 
     elif display == 'hist':
-        n_bins = kwargs.get('n_bins', 50)
-        cmap = kwargs.get('cmap', plt.cm.Greys)
         times_rep = np.repeat(times[np.newaxis, :], n_reps, axis=0)
         for (channel, ax) in zip(channels, axes):
             ax.hist2d(times_rep.ravel(), X[:, channel, :].ravel(),
