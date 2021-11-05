@@ -1,7 +1,7 @@
 sphinx-gallery
 sphinx-bootstrap_theme
 numpydoc
-mne>=0.23.4
+mne>=0.24
 pooch
 tqdm
 scikit-learn

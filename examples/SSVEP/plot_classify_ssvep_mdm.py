@@ -18,10 +18,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 # mne import
-from mne import get_config, set_config, find_events, create_info, Epochs
-from mne.datasets.utils import _get_path
-from mne.utils import _fetch_file, _url_to_local_path
+from mne import find_events, create_info, Epochs
 from mne.io import Raw, RawArray
+from mne.datasets import fetch_dataset
 
 # pyriemann import
 from pyriemann.estimation import Covariances
@@ -60,20 +59,26 @@ def download_sample_data(dataset="ssvep", subject=1, session=1):
         DATASET_URL = 'https://zenodo.org/record/2392979/files/'
         url = '{:s}subject{:02d}_run{:d}_raw.fif'.format(DATASET_URL,
                                                          subject, session + 1)
-        sign = 'SSVEPEXO'
-        key, key_dest = 'MNE_DATASETS_SSVEPEXO_PATH', 'MNE-ssvepexo-data'
+        config_key = 'MNE_DATASETS_SSVEPEXO_PATH'
+        folder_name = 'MNE-ssvepexo-data'
     elif dataset == "p300" or dataset == "imagery":
         raise NotImplementedError("Not yet implemented")
 
-    # Use MNE _fetch_file to download EEG file
-    if get_config(key) is None:
-        set_config(key, os.path.join(os.path.expanduser("~"), "mne_data"))
-    path = _get_path(None, key, sign)
-    destination = _url_to_local_path(url, os.path.join(path, key_dest))
-    os.makedirs(os.path.dirname(destination), exist_ok=True)
-    if not os.path.exists(destination):
-        _fetch_file(url, destination, print_destination=False)
-    return destination
+    # Use MNE fetch_dataset to download EEG file
+    dataset_params = {
+        'dataset_name': dataset,
+        'archive_name': url,
+        'hash': 'md5:ff7f0361a2d41f8df3fb53b9a9bc1220',
+        'url': url,
+        'folder_name': folder_name,
+        'config_key': config_key
+    }
+
+    data_path = fetch_dataset(
+        dataset_params
+    )
+
+    return os.path.join(data_path, url.split('/')[-1])
 
 
 # Download data
