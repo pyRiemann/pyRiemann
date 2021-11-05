@@ -3,6 +3,7 @@ sphinx-bootstrap_theme
 numpydoc
 mne>=0.23.4
 pooch
+tqdm
 scikit-learn
 seaborn
 pandas
