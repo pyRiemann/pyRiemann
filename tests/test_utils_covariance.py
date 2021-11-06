@@ -3,9 +3,11 @@ import numpy as np
 from scipy.signal import welch, csd, coherence as coherence_sp
 import pytest
 
-from pyriemann.utils.covariance import (covariances, covariances_EP, eegtocov,
-                                        cross_spectrum, cospectrum, coherence,
-                                        normalize, get_nondiag_weight)
+from pyriemann.utils.covariance import (
+    covariances, covariances_EP, covariances_X, eegtocov,
+    cross_spectrum, cospectrum, coherence,
+    normalize, get_nondiag_weight
+)
 from pyriemann.utils.test import is_real, is_hermitian
 
 
@@ -14,27 +16,28 @@ from pyriemann.utils.test import is_real, is_hermitian
                   'sch', np.cov, 'truc', None]
 )
 def test_covariances(estimator, rndstate):
-    """Test covariance for multiple estimator"""
-    n_trials, n_channels, n_times = 2, 3, 100
-    x = rndstate.randn(n_trials, n_channels, n_times)
+    """Test covariance for multiple estimators"""
+    n_matrices, n_channels, n_times = 2, 3, 100
+    x = rndstate.randn(n_matrices, n_channels, n_times)
+
     if estimator is None:
         cov = covariances(x)
-        assert cov.shape == (n_trials, n_channels, n_channels)
+        assert cov.shape == (n_matrices, n_channels, n_channels)
     elif estimator == 'truc':
         with pytest.raises(ValueError):
             covariances(x, estimator=estimator)
     else:
         cov = covariances(x, estimator=estimator)
-        assert cov.shape == (n_trials, n_channels, n_channels)
+        assert cov.shape == (n_matrices, n_channels, n_channels)
 
 
 @pytest.mark.parametrize(
     'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd', 'sch', None]
 )
 def test_covariances_EP(estimator, rndstate):
-    """Test covariance_EP for multiple estimator"""
-    n_trials, n_channels_x, n_channels_p, n_times = 2, 3, 3, 100
-    x = rndstate.randn(n_trials, n_channels_x, n_times)
+    """Test covariance_EP for multiple estimators"""
+    n_matrices, n_channels_x, n_channels_p, n_times = 2, 3, 3, 100
+    x = rndstate.randn(n_matrices, n_channels_x, n_times)
     p = rndstate.randn(n_channels_p, n_times)
 
     if estimator is None:
@@ -42,7 +45,23 @@ def test_covariances_EP(estimator, rndstate):
     else:
         cov = covariances_EP(x, p, estimator=estimator)
     n_dim_cov = n_channels_x + n_channels_p
-    assert cov.shape == (n_trials, n_dim_cov, n_dim_cov)
+    assert cov.shape == (n_matrices, n_dim_cov, n_dim_cov)
+
+
+@pytest.mark.parametrize(
+    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd', 'sch', None]
+)
+def test_covariances_X(estimator, rndstate):
+    """Test covariance_X for multiple estimators"""
+    n_matrices, n_channels, n_times = 3, 5, 15
+    x = rndstate.randn(n_matrices, n_channels, n_times)
+
+    if estimator is None:
+        cov = covariances_X(x, alpha=5.)
+    else:
+        cov = covariances_X(x, estimator=estimator, alpha=5.)
+    n_dim_cov = n_channels + n_times
+    assert cov.shape == (n_matrices, n_dim_cov, n_dim_cov)
 
 
 def test_covariances_eegtocov(rndstate):
@@ -258,23 +277,23 @@ def test_covariances_coherence(coh, rndstate):
 
 def test_normalize(rndstate):
     """Test normalize"""
-    n_conds, n_trials, n_channels = 15, 20, 3
+    n_conds, n_matrices, n_channels = 15, 20, 3
 
     # test a 2d array, ie a single square matrix
     mat = rndstate.randn(n_channels, n_channels)
     mat_n = normalize(mat, "trace")
     assert mat.shape == mat_n.shape
     # test a 3d array, ie a group of square matrices
-    mat = rndstate.randn(n_trials, n_channels, n_channels)
+    mat = rndstate.randn(n_matrices, n_channels, n_channels)
     mat_n = normalize(mat, "determinant")
     assert mat.shape == mat_n.shape
     # test a 4d array, ie a group of groups of square matrices
-    mat = rndstate.randn(n_conds, n_trials, n_channels, n_channels)
+    mat = rndstate.randn(n_conds, n_matrices, n_channels, n_channels)
     mat_n = normalize(mat, "trace")
     assert mat.shape == mat_n.shape
 
     # after trace-normalization => trace equal to 1
-    mat = rndstate.randn(n_trials, n_channels, n_channels)
+    mat = rndstate.randn(n_matrices, n_channels, n_channels)
     mat_tn = normalize(mat, "trace")
     assert_array_almost_equal(np.ones(mat_tn.shape[0]),
                               np.trace(mat_tn, axis1=-2, axis2=-1))
@@ -286,38 +305,39 @@ def test_normalize(rndstate):
     with pytest.raises(ValueError):  # not at least 2d
         normalize(rndstate.randn(n_channels), "trace")
     with pytest.raises(ValueError):  # not square
-        shape = (n_trials, n_channels, n_channels + 2)
+        shape = (n_matrices, n_channels, n_channels + 2)
         normalize(rndstate.randn(*shape), "trace")
     with pytest.raises(ValueError):  # invalid normalization type
-        normalize(rndstate.randn(n_trials, n_channels, n_channels), "abc")
+        normalize(rndstate.randn(n_matrices, n_channels, n_channels), "abc")
 
 
 def test_get_nondiag_weight(rndstate):
     """Test get_nondiag_weight"""
-    n_conds, n_trials, n_channels = 10, 20, 3
+    n_conds, n_matrices, n_channels = 10, 20, 3
 
     # test a 2d array, ie a single square matrix
     w = get_nondiag_weight(rndstate.randn(n_channels, n_channels))
     assert np.isscalar(w)
     # test a 3d array, ie a group of square matrices
-    w = get_nondiag_weight(rndstate.randn(n_trials, n_channels, n_channels))
-    assert w.shape == (n_trials,)
+    w = get_nondiag_weight(rndstate.randn(n_matrices, n_channels, n_channels))
+    assert w.shape == (n_matrices,)
     # test a 4d array, ie a group of groups of square matrices
-    shape = (n_conds, n_trials, n_channels, n_channels)
+    shape = (n_conds, n_matrices, n_channels, n_channels)
     w = get_nondiag_weight(rndstate.randn(*shape))
-    assert w.shape == (n_conds, n_trials)
+    assert w.shape == (n_conds, n_matrices)
 
     # 2x2 constant matrices => non-diag weights equal to 1
-    mats = rndstate.randn(n_trials, 1, 1) * np.ones((n_trials, 2, 2))
+    mats = rndstate.randn(n_matrices, 1, 1) * np.ones((n_matrices, 2, 2))
     w = get_nondiag_weight(mats)
-    assert_array_almost_equal(w, np.ones(n_trials))
+    assert_array_almost_equal(w, np.ones(n_matrices))
     # diagonal matrices => non-diag weights equal to 0
-    mats = rndstate.randn(n_trials, 1, 1) * ([np.eye(n_channels)] * n_trials)
+    mats = rndstate.randn(n_matrices, 1, 1) * \
+        ([np.eye(n_channels)] * n_matrices)
     w = get_nondiag_weight(mats)
-    assert_array_almost_equal(w, np.zeros(n_trials))
+    assert_array_almost_equal(w, np.zeros(n_matrices))
 
     with pytest.raises(ValueError):  # not at least 2d
         get_nondiag_weight(rndstate.randn(n_channels))
     with pytest.raises(ValueError):  # not square
-        shape = (n_trials, n_channels, n_channels + 2)
+        shape = (n_matrices, n_channels, n_channels + 2)
         get_nondiag_weight(rndstate.randn(*shape))
