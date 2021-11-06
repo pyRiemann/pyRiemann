@@ -3,7 +3,7 @@
 import numpy as np
 from sklearn.base import BaseEstimator
 from sklearn.manifold import spectral_embedding
-from pyriemann.utils.distance import pairwise_distance
+from .utils.distance import pairwise_distance
 
 
 class Embedding(BaseEstimator):
@@ -65,8 +65,8 @@ class Embedding(BaseEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            SPD matrices.
 
         Returns
         -------
@@ -91,12 +91,13 @@ class Embedding(BaseEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            SPD matrices.
 
         Returns
         -------
-        X_new: array-like, shape (n_samples, n_components)
+        X_new: array-like, shape (n_matrices, n_components)
+            Coordinates of embedded matrices.
 
         """
         self.fit(X)

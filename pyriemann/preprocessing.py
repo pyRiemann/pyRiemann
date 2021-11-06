@@ -104,7 +104,7 @@ class Whitening(BaseEstimator, TransformerMixin):
             dim_red_val = self.dim_red.get(dim_red_key)
 
             eigvals, eigvecs = eigh(Xm, eigvals_only=False)
-            eigvals = eigvals[::-1]         # eigvals in descending order
+            eigvals = eigvals[::-1]       # sort eigvals in descending order
             eigvecs = np.fliplr(eigvecs)  # idem for eigvecs
 
             if dim_red_key == 'n_components':
