@@ -3,7 +3,7 @@ import warnings
 import numpy as np
 
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
-from pyriemann.utils.test import is_square
+from .test import is_square
 
 # Mapping different estimator on the sklearn toolbox
 
@@ -43,7 +43,7 @@ def _sch(X):
             T_{i,j} = \{ \Sigma_{scm}^{ii} \text{if} i = j, 0 \text{otherwise} \}
     Note that the optimal :math:`\gamma` is estimated by the authors' method.
 
-    :param X: Signal matrix, (n_channels, n_times)
+    :param X: Multi-channel time-series, (n_channels, n_times)
 
     :returns: Schaefer-Strimmer shrinkage covariance matrix, (n_channels, n_channels)
 
@@ -110,11 +110,11 @@ def covariances(X, estimator='cov'):
 
     Parameters
     ----------
-    X : ndarray, shape (n_trials, n_channels, n_times)
-        ndarray of trials.
-
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} (default: 'scm')
-        covariance matrix estimator:
+    X : ndarray, shape (n_matrices, n_channels, n_times)
+        Multi-channel time-series.
+    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
+            (default: 'scm')
+        Covariance matrix estimator:
 
         * 'cov' for numpy based covariance matrix,
           https://numpy.org/doc/stable/reference/generated/numpy.cov.html
@@ -133,34 +133,101 @@ def covariances(X, estimator='cov'):
 
     Returns
     -------
-    covmats : ndarray, shape (n_trials, n_channels, n_channels)
-        ndarray of covariance matrices.
+    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+        Covariance matrices.
 
     References
     ----------
     .. [1] https://scikit-learn.org/stable/modules/covariance.html
     """  # noqa
     est = _check_est(estimator)
-    n_trials, n_channels, n_times = X.shape
-    covmats = np.empty((n_trials, n_channels, n_channels))
-    for i in range(n_trials):
-        covmats[i, :, :] = est(X[i, :, :])
+    n_matrices, n_channels, n_times = X.shape
+    covmats = np.empty((n_matrices, n_channels, n_channels))
+    for i in range(n_matrices):
+        covmats[i] = est(X[i])
     return covmats
 
 
 def covariances_EP(X, P, estimator='cov'):
-    """Special form covariance matrix."""
+    """Special form covariance matrix, concatenating a prototype P.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n_channels, n_times)
+        Multi-channel time-series.
+    P : ndarray, shape (n_channels_proto, n_times)
+        Multi-channel prototype.
+    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
+            (default: 'cov')
+        Covariance matrix estimator, see
+        :func:`pyriemann.utils.covariance.covariances`.
+
+    Returns
+    -------
+    covmats : ndarray, shape (n_matrices, n_channels + n_channels_proto, \
+            n_channels + n_channels_proto)
+        Covariance matrices.
+    """
     est = _check_est(estimator)
-    n_trials, n_channels, n_times = X.shape
-    n_proto, n_times_P = P.shape
-    if n_times_P != n_times:
+    n_matrices, n_channels, n_times = X.shape
+    n_channels_proto, n_times_p = P.shape
+    if n_times_p != n_times:
         raise ValueError(
-            f"X and P do not have the same n_times: {n_times} and {n_times_P}"
-        )
-    covmats = np.empty((n_trials, n_channels + n_proto, n_channels + n_proto))
-    for i in range(n_trials):
-        covmats[i, :, :] = est(np.concatenate((P, X[i, :, :]), axis=0))
+            f"X and P do not have the same n_times: {n_times} and {n_times_p}")
+    covmats = np.empty((n_matrices, n_channels + n_channels_proto,
+                        n_channels + n_channels_proto))
+    for i in range(n_matrices):
+        covmats[i] = est(np.concatenate((P, X[i]), axis=0))
     return covmats
+
+
+def covariances_X(X, estimator='scm', alpha=0.2):
+    """Special form covariance matrix, embedding input X.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n_channels, n_times)
+        Multi-channel time-series.
+    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
+            (default: 'scm')
+        Covariance matrix estimator, see
+        :func:`pyriemann.utils.covariance.covariances`.
+    alpha : float (default 0.2)
+        Regularization parameter (strictly positive).
+
+    Returns
+    -------
+    covmats : ndarray, shape (n_matrices, n_channels + n_times, n_channels + \
+            n_times)
+        Covariance matrices.
+
+    References
+    ----------
+    .. [1] M. Congedo and A. Barachant, "A special form of SPD covariance
+        matrix for interpretation and visualization of data manipulated with
+        Riemannian geometry", AIP Conference Proceedings 1641, 2015
+    """
+    if alpha <= 0:
+        raise ValueError(
+            'Parameter alpha must be strictly positive (Got %d)' % alpha)
+    est = _check_est(estimator)
+    n_matrices, n_channels, n_times = X.shape
+
+    Hchannels = np.eye(n_channels) \
+        - np.outer(np.ones(n_channels), np.ones(n_channels)) / n_channels
+    Htimes = np.eye(n_times) \
+        - np.outer(np.ones(n_times), np.ones(n_times)) / n_times
+    X = Hchannels @ X @ Htimes  # Eq(8), double centering
+
+    covmats = np.empty(
+        (n_matrices, n_channels + n_times, n_channels + n_times))
+    for i in range(n_matrices):
+        Y = np.concatenate((
+            np.concatenate((X[i], alpha * np.eye(n_channels)), axis=1),  # top
+            np.concatenate((alpha * np.eye(n_times), X[i].T), axis=1)  # bottom
+        ), axis=0)  # Eq(9)
+        covmats[i] = est(Y)
+    return covmats / (2 * alpha)  # Eq(10)
 
 
 def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):

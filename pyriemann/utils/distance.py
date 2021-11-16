@@ -64,7 +64,7 @@ def distance_riemann(A, B):
     r"""Riemannian distance between two covariance matrices A and B.
 
     .. math::
-        d = {\left( \sum_i \log(\lambda_i)^2 \right)}^{-1/2}
+        d = {\left( \sum_i \log(\lambda_i)^2 \right)}^{1/2}
 
     where :math:`\lambda_i` are the joint eigenvalues of A and B
 

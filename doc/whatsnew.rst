@@ -32,6 +32,8 @@ v0.2.8.dev
 
 - Add module ``pyriemann.utils.viz`` in API, add :func:`pyriemann.utils.viz.plot_waveforms`, and add an example on ERP visualization
 
+- Add a special form covariance matrix :func:`pyriemann.utils.covariance.covariances_X`
+
 v0.2.7 (June 2021)
 ------------------
 

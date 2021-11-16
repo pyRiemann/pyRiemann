@@ -150,6 +150,8 @@ Covariance preprocessing
     :toctree: generated/
 
     covariances
+    covariances_EP
+    covariances_X
     cross_spectrum
     cospectrum
     coherence
