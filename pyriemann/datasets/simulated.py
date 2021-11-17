@@ -49,11 +49,30 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False,
         return covmats
 
 
-def make_masks(n_matrices, n_channels, n_channels_red, rs):
+def make_masks(n_masks, n_dim0, n_dim1_min, rs):
+    """Generate a set of masks, defined as semi-orthogonal matrices.
+
+    Parameters
+    ----------
+    n_masks : int
+        Number of masks to generate.
+    n_dim0 : int
+        First dimension of masks.
+    n_dim1_min : int
+        Minimal value for second dimension of masks.
+    rs : RandomState instance
+        Random state for reproducible output across multiple function calls.
+
+    Returns
+    -------
+    masks : list of n_masks ndarray of shape (n_dim0, n_dim1_i), \
+            with different n_dim1_i, such that n_dim1_min <= n_dim1_i <= n_dim0
+        Masks.
+    """
     masks = []
-    for i in range(n_matrices):
-        n_channels_2 = rs.randint(n_channels_red, n_channels, size=1)[0]
-        mask, _ = np.linalg.qr(rs.randn(n_channels, n_channels_2))
+    for i in range(n_masks):
+        n_dim1 = rs.randint(n_dim1_min, n_dim0, size=1)[0]
+        mask, _ = np.linalg.qr(rs.randn(n_dim0, n_dim1))
         masks.append(mask)
     return masks
 

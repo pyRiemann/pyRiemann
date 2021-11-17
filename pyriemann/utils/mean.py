@@ -518,7 +518,7 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=50, init=None,
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Covariance matrices.
     masks : list of n_matrices ndarray of shape (n_channels, n_channels_i), \
-            with different n_channels_i <= n_channels
+            with different n_channels_i, such that n_channels_i <= n_channels
         Masks, defined as semi-orthogonal matrices. See [1]_.
     tol : float (default 10e-9)
         The tolerance to stop the gradient descent.
