@@ -109,7 +109,7 @@ def test_alm_mean_2matrices(get_covmats):
 @pytest.mark.parametrize("init", [True, False])
 def test_riemann_mean_masked_shape(init, get_covmats, get_masks):
     """Test the masked riemann mean"""
-    n_matrices, n_channels = 10, 6
+    n_matrices, n_channels = 10, 4
     covmats = get_covmats(n_matrices, n_channels)
     masks = get_masks(n_matrices, n_channels)
     if init:
@@ -122,7 +122,7 @@ def test_riemann_mean_masked_shape(init, get_covmats, get_masks):
 @pytest.mark.parametrize("init", [True, False])
 def test_riemann_mean_nan_shape(init, get_covmats):
     """Test the riemann nan mean"""
-    n_matrices, n_channels = 10, 6
+    n_matrices, n_channels = 50, 4
     covmats = get_covmats(n_matrices, n_channels)
     emean = np.mean(covmats, axis=0)
     for i in range(n_matrices):

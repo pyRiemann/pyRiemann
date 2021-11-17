@@ -33,7 +33,7 @@ C_ref = mean_riemann(covmats)
 n_corrup_channels_max = n_channels // 2
 
 all_n_corrup_channels, all_corrup_channels = np.zeros(n_matrices), []
-for i in range(len(covmats)):
+for i in range(n_matrices):
     n_corrupt_channels = rs.randint(n_corrup_channels_max, size=1)
     corrup_channels = rs.randint(n_channels, size=n_corrupt_channels)
     for chan in corrup_channels:
