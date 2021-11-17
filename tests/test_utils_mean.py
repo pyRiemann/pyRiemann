@@ -122,10 +122,10 @@ def test_riemann_mean_masked_shape(init, get_covmats, get_masks):
 @pytest.mark.parametrize("init", [True, False])
 def test_riemann_mean_nan_shape(init, get_covmats):
     """Test the riemann nan mean"""
-    n_matrices, n_channels = 10, 3
+    n_matrices, n_channels = 10, 6
     covmats = get_covmats(n_matrices, n_channels)
     emean = np.mean(covmats, axis=0)
-    for i in range(len(covmats)):
+    for i in range(n_matrices):
         corrup_channels = np.random.randint(n_channels, size=n_channels // 2)
         for chan in corrup_channels:
             covmats[i, chan] = np.nan
