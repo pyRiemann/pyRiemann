@@ -6,7 +6,8 @@ from ..utils.base import powm, sqrtm
 from .sampling import generate_random_spd_matrix, sample_gaussian_spd
 
 
-def make_covariances(n_matrices, n_channels, rs, return_params=False):
+def make_covariances(n_matrices, n_channels, rs, return_params=False,
+                     evals_mean=2.0, evals_std=0.1):
     """Generate a set of covariances matrices, with the same eigenvectors.
 
     Parameters
@@ -19,6 +20,10 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False):
         Random state for reproducible output across multiple function calls.
     return_params : bool (default False)
         If True, then return parameters.
+    evals_mean : float (default 2.0)
+        Mean of eigen values.
+    evals_std : float (default 0.1)
+        Standard deviation of eigen values.
 
     Returns
     -------
@@ -31,7 +36,7 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False):
         Eigen vectors used for all covariance matrices.
         Only returned if ``return_params=True``.
     """
-    evals = 2.0 + 0.1 * rs.randn(n_matrices, n_channels)
+    evals = np.abs(evals_mean + evals_std * rs.randn(n_matrices, n_channels))
     evecs = 2 * rs.rand(n_channels, n_channels) - 1
     evecs /= np.linalg.norm(evecs, axis=1)[:, np.newaxis]
 
