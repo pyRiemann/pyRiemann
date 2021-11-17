@@ -72,7 +72,7 @@ C_nanriem = nanmean_riemann(covmats)
 
 # Riemannian mean, after matrix deletion: average non-corrupted matrices
 isnan = np.isnan(np.sum(covmats, axis=(1, 2)))
-covmats_ = np.delete(covmats, np.where(isnan == True), axis=0)
+covmats_ = np.delete(covmats, np.where(isnan), axis=0)
 perc = len(covmats_) / n_matrices * 100
 print("Percentage of non-corrupted matrices: {:.2f} %".format(perc))
 C_mdriem = mean_riemann(covmats_)

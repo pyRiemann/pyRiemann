@@ -106,17 +106,17 @@ def test_alm_mean_2matrices(get_covmats):
     assert np.all(C == geodesic_riemann(covmats[0], covmats[1], alpha=0.5))
 
 
-#@pytest.mark.parametrize("init", [True, False])
-#def test_riemann_mean_masked_shape(init, get_covmats):
-#    """Test the masked riemann mean"""
-#    n_matrices, n_channels = 10, 3
-#    covmats = get_covmats(n_matrices, n_channels)
-#    #TODO: masks = get_masks(n_matrices, n_channels)
-#    if init:
-#        C = maskedmean_riemann(covmats, masks, init=covmats[0])
-#    else:
-#        C = maskedmean_riemann(covmats, masks)
-#    assert C.shape == (n_channels, n_channels)
+@pytest.mark.parametrize("init", [True, False])
+def test_riemann_mean_masked_shape(init, get_covmats, get_masks):
+    """Test the masked riemann mean"""
+    n_matrices, n_channels = 10, 6
+    covmats = get_covmats(n_matrices, n_channels)
+    masks = get_masks(n_matrices, n_channels)
+    if init:
+        C = maskedmean_riemann(covmats, masks, init=covmats[0])
+    else:
+        C = maskedmean_riemann(covmats, masks)
+    assert C.shape == (n_channels, n_channels)
 
 
 @pytest.mark.parametrize("init", [True, False])

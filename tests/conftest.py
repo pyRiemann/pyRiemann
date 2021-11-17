@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from functools import partial
 
-from pyriemann.datasets import make_covariances
+from pyriemann.datasets import make_covariances, make_masks
 
 
 def requires_module(function, name, call=None):
@@ -52,6 +52,14 @@ def get_labels():
         return np.arange(n_classes).repeat(n_trials // n_classes)
 
     return _get_labels
+
+
+@pytest.fixture
+def get_masks(rndstate):
+    def _gen_masks(n_matrices, n_channels):
+        return make_masks(n_matrices, n_channels, n_channels // 2, rndstate)
+
+    return _gen_masks
 
 
 def get_distances():

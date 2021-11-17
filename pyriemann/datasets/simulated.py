@@ -37,8 +37,7 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False,
         Only returned if ``return_params=True``.
     """
     evals = np.abs(evals_mean + evals_std * rs.randn(n_matrices, n_channels))
-    evecs, _ = np.linalg.qr(rs.rand(n_channels, n_channels))
-    evecs /= np.linalg.norm(evecs, axis=1)[:, np.newaxis]
+    evecs, _ = np.linalg.qr(rs.randn(n_channels, n_channels))
 
     covmats = np.empty((n_matrices, n_channels, n_channels))
     for i in range(n_matrices):
@@ -48,6 +47,15 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False,
         return covmats, evals, evecs
     else:
         return covmats
+
+
+def make_masks(n_matrices, n_channels, n_channels_red, rs):
+    masks = []
+    for i in range(n_matrices):
+        n_channels_2 = rs.randint(n_channels_red, n_channels, size=1)[0]
+        mask, _ = np.linalg.qr(rs.randn(n_channels, n_channels_2))
+        masks.append(mask)
+    return masks
 
 
 def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
