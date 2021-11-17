@@ -193,6 +193,8 @@ Mean
     mean_alm
     mean_harmonic
     mean_kullback_sym
+    maskedmean_riemann
+    nanmean_riemann
 
 Geodesic
 ~~~~~~~~~~~~~~~~~~~~~~
