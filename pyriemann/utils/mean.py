@@ -468,7 +468,7 @@ def nanmean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
         The maximum number of iteration.
     init : None | ndarray, shape (n_channels, n_channels) (default None)
         A covariance matrix used to initialize the gradient descent.
-        If None the Identity is used.
+        If None, a regularized Euclidean NaN-mean is used.
     sample_weight : None | ndarray, shape (n_matrices) (default None)
         The weight of each matrix.
 
@@ -487,10 +487,20 @@ def nanmean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
         optimization for averaging partially observed covariance matrices",
         ACML 2021.
     """
-    masks = _get_masks_from_nan(covmats)
-    covmats = np.nan_to_num(covmats)  # avoid nan contamination in matmul
-    C = maskedmean_riemann(covmats, masks, tol=tol, maxiter=maxiter, init=init,
-                           sample_weight=sample_weight)
+    n_matrices, n_channels, _ = covmats.shape
+    if init is None:
+        Cinit = np.nanmean(covmats, axis=0) + 1e-6 * np.eye(n_channels)
+    else:
+        Cinit = init
+
+    C = maskedmean_riemann(
+        np.nan_to_num(covmats),  # avoid nan contamination in matmul
+        _get_masks_from_nan(covmats),
+        tol=tol,
+        maxiter=maxiter,
+        init=Cinit,
+        sample_weight=sample_weight
+    )
     return C
 
 
@@ -539,7 +549,7 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=50, init=None,
     maskedcovmats = _apply_masks(covmats, masks)
     n_matrices, n_channels, _ = covmats.shape
     if init is None:
-        C = np.mean(covmats, axis=0)
+        C = np.eye(n_channels)
     else:
         C = init
 

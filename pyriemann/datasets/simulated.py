@@ -37,7 +37,7 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False,
         Only returned if ``return_params=True``.
     """
     evals = np.abs(evals_mean + evals_std * rs.randn(n_matrices, n_channels))
-    evecs = 2 * rs.rand(n_channels, n_channels) - 1
+    evecs, _ = np.linalg.qr(rs.rand(n_channels, n_channels))
     evecs /= np.linalg.norm(evecs, axis=1)[:, np.newaxis]
 
     covmats = np.empty((n_matrices, n_channels, n_channels))
