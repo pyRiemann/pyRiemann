@@ -19,15 +19,18 @@ import numpy as np
 from matplotlib import pyplot as plt
 from pyriemann.estimation import XdawnCovariances
 from pyriemann.classification import MDM
-from pyriemann.utils.viz import plot_confusion_matrix
 
 import mne
 from mne import io
 from mne.datasets import sample
 
-from sklearn.pipeline import make_pipeline
+from sklearn.metrics import (
+    classification_report,
+    confusion_matrix,
+    ConfusionMatrixDisplay,
+)
 from sklearn.model_selection import KFold
-from sklearn.metrics import classification_report
+from sklearn.pipeline import make_pipeline
 
 print(__doc__)
 
@@ -35,19 +38,20 @@ data_path = sample.data_path()
 
 ###############################################################################
 # Set parameters and read data
-raw_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw.fif'
-event_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif'
-tmin, tmax = -0., 1
+raw_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw.fif"
+event_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif"
+tmin, tmax = -0.0, 1
 event_id = dict(aud_l=1, aud_r=2, vis_l=3, vis_r=4)
 
 # Setup for reading the raw data
 raw = io.Raw(raw_fname, preload=True)
-raw.filter(2, None, method='iir')  # replace baselining with high-pass
+raw.filter(2, None, method="iir")  # replace baselining with high-pass
 events = mne.read_events(event_fname)
 
-raw.info['bads'] = ['MEG 2443']  # set bad channels
+raw.info["bads"] = ["MEG 2443"]  # set bad channels
 picks = mne.pick_types(
-    raw.info, meg='grad', eeg=False, stim=False, eog=False, exclude='bads')
+    raw.info, meg="grad", eeg=False, stim=False, eog=False, exclude="bads"
+)
 
 # Read epochs
 epochs = mne.Epochs(
@@ -60,7 +64,8 @@ epochs = mne.Epochs(
     picks=picks,
     baseline=None,
     preload=True,
-    verbose=False)
+    verbose=False,
+)
 
 labels = epochs.events[:, -1]
 evoked = epochs.average()
@@ -71,11 +76,11 @@ evoked = epochs.average()
 n_components = 3  # pick some components
 
 # Define a monte-carlo cross-validation generator (reduce variance):
-cv = KFold(n_splits=10, random_state=42)
+cv = KFold(n_splits=10, shuffle=True, random_state=42)
 pr = np.zeros(len(labels))
 epochs_data = epochs.get_data()
 
-print('Multiclass classification with XDAWN + MDM')
+print("Multiclass classification with XDAWN + MDM")
 
 clf = make_pipeline(XdawnCovariances(n_components), MDM())
 
@@ -96,12 +101,14 @@ evoked.data = xd.Xd_.patterns_.T
 evoked.times = np.arange(evoked.data.shape[0])
 evoked.plot_topomap(
     times=[0, n_components, 2 * n_components, 3 * n_components],
-    ch_type='grad',
+    ch_type="grad",
     colorbar=False,
-    size=1.5)
+    size=1.5,
+)
 
 ###############################################################################
 # plot the confusion matrix
-names = ['audio left', 'audio right', 'vis left', 'vis right']
-plot_confusion_matrix(labels, pr, names)
+names = ["audio left", "audio right", "vis left", "vis right"]
+cm = confusion_matrix(labels, pr)
+ConfusionMatrixDisplay(cm, display_labels=names).plot()
 plt.show()

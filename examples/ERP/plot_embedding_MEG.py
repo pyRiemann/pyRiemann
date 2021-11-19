@@ -1,7 +1,7 @@
 """
-====================================================================
-Embedding ERP EEG data in 2D Euclidean space with Laplacian Eigenmaps
-====================================================================
+=====================================================================
+Embedding ERP MEG data in 2D Euclidean space with Laplacian Eigenmaps
+=====================================================================
 
 Spectral embedding via Laplacian Eigenmaps of a set of ERP data.
 
@@ -9,8 +9,6 @@ Spectral embedding via Laplacian Eigenmaps of a set of ERP data.
 # Authors: Pedro Rodrigues <pedro.rodrigues01@gmail.com>
 #
 # License: BSD (3-clause)
-
-import numpy as np
 
 from pyriemann.estimation import XdawnCovariances
 from pyriemann.embedding import Embedding
@@ -22,7 +20,7 @@ from mne.datasets import sample
 from sklearn.model_selection import train_test_split
 
 from matplotlib import pyplot as plt
-import seaborn as sns
+
 
 print(__doc__)
 

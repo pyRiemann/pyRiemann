@@ -1,7 +1,7 @@
 sphinx-gallery
 sphinx-bootstrap_theme
 numpydoc
-mne
+mne[data]>=0.24
 scikit-learn
 seaborn
 pandas

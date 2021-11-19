@@ -7,13 +7,59 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
+v0.2.8.dev
+----------
+
+- Correct spectral estimation in :func:`pyriemann.utils.covariance.cross_spectrum` to obtain equivalence with SciPy
+
+- Add instantaneous, lagged and imaginary coherences in :func:`pyriemann.utils.covariance.coherence` and :class:`pyriemann.estimation.Coherences`
+
+- Add ``partial_fit`` in :class:`pyriemann.clustering.Potato`, useful for an online update; and update example on artifact detection.
+
+- Deprecate :func:`pyriemann.utils.viz.plot_confusion_matrix` as sklearn integrate its own version.
+
+- Add Ando-Li-Mathias mean estimation in :func:`pyriemann.utils.mean.mean_covariance`
+
+- Add Schaefer-Strimmer covariance estimator in :func:`pyriemann.utils.covariance.covariances`, and an example to compare estimators
+
+- Refactor tests + fix refit of :class:`pyriemann.tangentspace.TangentSpace`
+
+- Add :class:`pyriemann.clustering.PotatoField`, and an example on artifact detection
+
+- Add sampling SPD matrices from a Riemannian Gaussian distribution in :func:`pyriemann.datasets.sample_gaussian_spd`
+
+- Add new function :func:`pyriemann.datasets.make_gaussian_blobs` for generating random datasets with SPD matrices
+
+- Add module ``pyriemann.utils.viz`` in API, add :func:`pyriemann.utils.viz.plot_waveforms`, and add an example on ERP visualization
+
+- Add a special form covariance matrix :func:`pyriemann.utils.covariance.covariances_X`
+
+v0.2.7 (June 2021)
+------------------
+
+- Add example on SSVEP classification
+
+- Fix compatibility with scikit-learn v0.24
+
+- Correct probas of :class:`pyriemann.classification.MDM`
+
+- Add ``predict_proba`` for :class:`pyriemann.clustering.Potato`, and an example on artifact detection
+
+- Add weights to Pham's AJD algorithm :func:`pyriemann.utils.ajd.ajd_pham`
+
+- Add :func:`pyriemann.utils.covariance.cross_spectrum`, fix :func:`pyriemann.utils.covariance.cospectrum`; :func:`pyriemann.utils.covariance.coherence` output is kept unchanged
+
+- Add :class:`pyriemann.spatialfilters.AJDC` for BSS and gBSS, with an example on artifact correction
+
+- Add :class:`pyriemann.preprocessing.Whitening`, with optional dimension reduction
+
 v0.2.6 (March 2020)
 -------------------
 
 - Updated for better Scikit-Learn v0.22 support
 
 v0.2.5 (January 2018)
--------------------
+---------------------
 
 - Added BilinearFilter
 
@@ -34,7 +80,7 @@ v0.2.5 (January 2018)
 - Added Embedding class.
 
 v0.2.4 (June 2016)
--------------------
+------------------
 
 - Improved documentation
 

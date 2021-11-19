@@ -3,3 +3,10 @@
 .coverage
 .coveralls.yml
 /doc/build
+/doc/generated
+/doc/auto_examples
+/dist
+*-e
+*.egg-info/
+.vscode/
+sandbox/

@@ -1,11 +1,32 @@
 """Clustering functions."""
-import numpy
+import numpy as np
+from scipy.stats import norm, chi2
 from sklearn.base import (BaseEstimator, ClassifierMixin, TransformerMixin,
-                          ClusterMixin)
-from sklearn.cluster._kmeans import KMeans, check_random_state
+                          ClusterMixin, clone)
+
+try:
+    from sklearn.cluster._kmeans import _init_centroids
+except ImportError:
+    # Workaround for scikit-learn v0.24.0rc1+
+    # See issue: https://github.com/alexandrebarachant/pyRiemann/issues/92
+    from sklearn.cluster import KMeans
+
+    def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
+        if random_state is not None:
+            random_state = np.random.RandomState(random_state)
+        return KMeans(n_clusters=n_clusters)._init_centroids(
+            X,
+            x_squared_norms,
+            init,
+            random_state,
+        )
+
+
 from joblib import Parallel, delayed
 
 from .classification import MDM
+from .utils.mean import mean_covariance
+from .utils.geodesic import geodesic
 
 #######################################################################
 
@@ -15,15 +36,14 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
     """helper to fit a single run of centroid."""
     # init random state if provided
     mdm = MDM(metric=metric, n_jobs=n_jobs)
-    squared_nomrs = [numpy.linalg.norm(x, ord='fro')**2 for x in X]
-    random_state = check_random_state(random_state)
-    mdm.covmeans_ = KMeans(n_clusters=n_clusters)._init_centroids(X=X, init=init,
+    squared_nomrs = [np.linalg.norm(x, ord='fro')**2 for x in X]
+    mdm.covmeans_ = _init_centroids(X, n_clusters, init,
                                     random_state=random_state,
                                     x_squared_norms=squared_nomrs)
     if y is not None:
-        mdm.classes_ = numpy.unique(y)
+        mdm.classes_ = np.unique(y)
     else:
-        mdm.classes_ = numpy.arange(n_clusters)
+        mdm.classes_ = np.arange(n_clusters)
 
     labels = mdm.predict(X)
     k = 0
@@ -33,7 +53,7 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
         dist = mdm._predict_distances(X)
         labels = mdm.classes_[dist.argmin(axis=1)]
         k += 1
-        if (k > max_iter) | (numpy.mean(labels == old_labels) > (1 - tol)):
+        if (k > max_iter) | (np.mean(labels == old_labels) > (1 - tol)):
             break
     inertia = sum([sum(dist[labels == mdm.classes_[i], i])
                    for i in range(len(mdm.classes_))])
@@ -56,19 +76,16 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         The maximum number of iteration to reach convergence.
     metric : string (default: 'riemann')
         The type of metric used for centroid and distance estimation.
-    random_state : integer or numpy.RandomState, optional
+    random_state : integer or np.RandomState, optional
         The generator used to initialize the centers. If an integer is
         given, it fixes the seed. Defaults to the global numpy random
         number generator.
-    init : 'k-means++', 'random' or an ndarray (default 'random')
+    init : 'random' or an ndarray (default 'random')
         Method for initialization of centers.
-        'k-means++' : selects initial cluster centers for k-mean
-        clustering in a smart way to speed up convergence. See section
-        Notes in k_init for more details.
         'random': choose k observations (rows) at random from data for
         the initial centroids.
-        If an ndarray is passed, it should be of shape (n_clusters, n_features)
-        and gives the initial centers.
+        If an ndarray is passed, it should be of shape
+        (n_clusters, n_channels, n_channels) and gives the initial centers.
     n_init : int, (default: 10)
         Number of time the k-means algorithm will be run with different
         centroid seeds. The final results will be the best output of
@@ -131,7 +148,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         self : Kmeans instance
             The Kmean instance.
         """
-        if (self.init is not 'random') | (self.n_init == 1):
+        if (self.init != 'random'):
             # no need to iterate if init is not random
             labels, inertia, mdm = _fit_single(X, y,
                                                n_clusters=self.n_clusters,
@@ -142,19 +159,19 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
                                                tol=self.tol,
                                                n_jobs=self.n_jobs)
         else:
-            numpy.random.seed(self.seed)
-            seeds = numpy.random.randint(
-                numpy.iinfo(numpy.int32).max, size=self.n_init)
+            np.random.seed(self.seed)
+            seeds = np.random.randint(
+                np.iinfo(np.int32).max, size=self.n_init)
             if self.n_jobs == 1:
                 res = []
                 for i in range(self.n_init):
                     res.append(_fit_single(X, y,
-                                      n_clusters=self.n_clusters,
-                                      init=self.init,
-                                      random_state=seeds[i],
-                                      metric=self.metric,
-                                      max_iter=self.max_iter,
-                                      tol=self.tol))
+                                           n_clusters=self.n_clusters,
+                                           init=self.init,
+                                           random_state=seeds[i],
+                                           metric=self.metric,
+                                           max_iter=self.max_iter,
+                                           tol=self.tol))
                 labels, inertia, mdm = zip(*res)
             else:
 
@@ -170,7 +187,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
                     for seed in seeds)
                 labels, inertia, mdm = zip(*res)
 
-            best = numpy.argmin(inertia)
+            best = np.argmin(inertia)
             mdm = mdm[best]
             labels = labels[best]
             inertia = inertia[best]
@@ -235,7 +252,7 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
     def fit(self, X, y):
         """fit."""
         self.covmeans_ = []
-        self.classes_ = numpy.unique(y)
+        self.classes_ = np.unique(y)
         for c in self.classes_:
             self.km.fit(X[y == c])
             self.covmeans_.extend(self.km.centroids())
@@ -252,23 +269,23 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     """Artefact detection with the Riemannian Potato.
 
-    The Riemannian Potato [1] is a clustering method used to detect artifact in
-    EEG signals. The algorithm iteratively estimate the centroid of clean
-    signal by rejecting every trial that have a distance greater than several
-    standard deviation from it.
+    The Riemannian Potato [1]_ is a clustering method used to detect artifact
+    in EEG signals. The algorithm iteratively estimates the centroid of clean
+    signal by rejecting every trial that is too far from it.
 
     Parameters
     ----------
     metric : string (default 'riemann')
         The type of metric used for centroid and distance estimation.
-    threshold : int (default 3)
-        The number of standard deviation to reject artifacts.
+    threshold : float (default 3)
+        Threshold on z-score of distance to reject artifacts. It is the number
+        of standard deviations from the mean of distances to the centroid.
     n_iter_max : int (default 100)
         The maximum number of iteration to reach convergence.
-    pos_label: int (default 1)
-        The positive label corresponding to clean data
-    neg_label: int (default 0)
-        The negative label corresponding to artifact data
+    pos_label : int (default 1)
+        The positive label corresponding to clean data.
+    neg_label : int (default 0)
+        The negative label corresponding to artifact data.
 
     Notes
     -----
@@ -281,10 +298,14 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     References
     ----------
-    [1] A. Barachant, A. Andreev and M. Congedo, "The Riemannian Potato: an
-    automatic and adaptive artifact detection method for online experiments
-    using Riemannian geometry", in Proceedings of TOBI Workshop IV, p. 19-20,
-    2013.
+    .. [1] A. Barachant, A. Andreev and M. Congedo, "The Riemannian Potato: an
+        automatic and adaptive artifact detection method for online experiments
+        using Riemannian geometry", in Proceedings of TOBI Workshop IV,
+        p. 19-20, 2013.
+
+    .. [2] Q. Barthélemy, L. Mayaud, D. Ojeda, M. Congedo, "The Riemannian
+        potato field: a tool for online signal quality index of EEG", IEEE
+        TNSRE, 2019.
     """
 
     def __init__(self, metric='riemann', threshold=3, n_iter_max=100,
@@ -293,33 +314,168 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         self.metric = metric
         self.threshold = threshold
         self.n_iter_max = n_iter_max
-        if pos_label == neg_label:
-            raise(ValueError("Positive and Negative labels must be different"))
         self.pos_label = pos_label
         self.neg_label = neg_label
 
     def fit(self, X, y=None):
-        """Fit the potato from covariance matrices.
+        """Fit the potato from covariance matrices, with an iterative outlier
+        removal to obtain a reliable potato.
 
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
             ndarray of SPD matrices.
-        y : ndarray | None (default None)
-            Not used, here for compatibility with sklearn API.
+        y : ndarray, shape (n_trials,) | None (default None)
+            Labels corresponding to each trial: positive (resp. negative) label
+            corresponds to a clean (resp. artifact) trial. If None, all trials
+            are considered as clean.
 
         Returns
         -------
         self : Potato instance
             The Potato instance.
         """
+        if self.pos_label == self.neg_label:
+            raise ValueError("Positive and negative labels must be different")
+
         self._mdm = MDM(metric=self.metric)
 
+        y_old = self._check_labels(X, y)
+
+        for n_iter in range(self.n_iter_max):
+            ix = (y_old == 1)
+            self._mdm.fit(X[ix], y_old[ix])
+            y = np.zeros(len(X))
+            d = np.squeeze(np.log(self._mdm.transform(X[ix])))
+            self._mean = np.mean(d)
+            self._std = np.std(d)
+            y[ix] = self._get_z_score(d) < self.threshold
+
+            if np.array_equal(y, y_old):
+                break
+            else:
+                y_old = y
+        return self
+
+    def partial_fit(self, X, y=None, alpha=0.1):
+        """Partially fit the potato from covariance matrices.
+
+        This partial fit can be used to update dynamic or semi-dymanic online
+        potatoes with clean EEG [2]_.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+        y : ndarray, shape (n_trials,) | None (default None)
+            Labels corresponding to each trial: positive (resp. negative) label
+            corresponds to a clean (resp. artifact) trial. If None, all trials
+            are considered as clean.
+        alpha : float (default 0.1)
+            Update rate in [0, 1] for the centroid, and mean and standard
+            deviation of log-distances: 0 for no update, 1 for full update.
+
+        Returns
+        -------
+        self : Potato instance
+            The Potato instance.
+        """
+        if not hasattr(self, '_mdm'):
+            raise ValueError(
+                'Partial fit can be called only on an already fitted potato.')
+
+        n_trials, n_channels, _ = X.shape
+        if n_channels != self._mdm.covmeans_[0].shape[0]:
+            raise ValueError(
+                'X does not have the good number of channels. Should be %d but'
+                ' got %d.' % (self._mdm.covmeans_[0].shape[0], n_channels))
+
+        y = self._check_labels(X, y)
+
+        if not 0 <= alpha <= 1:
+            raise ValueError('Parameter alpha must be in [0, 1]')
+
+        if alpha > 0:
+            if n_trials > 1:  # mini-batch update
+                Xm = mean_covariance(X[(y == self.pos_label)],
+                                     metric=self.metric)
+            else:             # pure online update
+                Xm = X[0]
+            self._mdm.covmeans_[0] = geodesic(
+                self._mdm.covmeans_[0], Xm, alpha, metric=self.metric)
+
+            d = np.squeeze(np.log(self._mdm.transform(Xm[np.newaxis, ...])))
+            self._mean = (1 - alpha) * self._mean + alpha * d
+            self._std = np.sqrt(
+                (1 - alpha) * self._std**2 + alpha * (d - self._mean)**2)
+
+        return self
+
+    def transform(self, X):
+        """Return the normalized log-distance to the centroid (z-score).
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        z : ndarray, shape (n_trials,)
+            the normalized log-distance to the centroid.
+        """
+        d = np.squeeze(np.log(self._mdm.transform(X)), axis=1)
+        z = self._get_z_score(d)
+        return z
+
+    def predict(self, X):
+        """Predict artefact from data.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        pred : ndarray of bool, shape (n_trials,)
+            the artefact detection. True if the trial is clean, and False if
+            the trial contain an artefact.
+        """
+        z = self.transform(X)
+        pred = z < self.threshold
+        out = np.zeros_like(z) + self.neg_label
+        out[pred] = self.pos_label
+        return out
+
+    def predict_proba(self, X):
+        """Return probability of belonging to the potato / being clean.
+
+        It is the probability to reject the null hypothesis "clean data",
+        computing the right-tailed probability from z-score.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of SPD matrices.
+
+        Returns
+        -------
+        proba : ndarray, shape (n_trials,)
+            data is considered as normal/clean for high value of proba.
+            data is considered as abnormal/artifacted for low value of proba.
+        """
+        z = self.transform(X)
+        proba = self._get_proba(z)
+        return proba
+
+    def _check_labels(self, X, y):
+        """Check validity of labels."""
         if y is not None:
             if len(y) != len(X):
-                raise ValueError('y must be the same lenght of X')
+                raise ValueError('y must be the same length of X')
 
-            classes = numpy.int32(numpy.unique(y))
+            classes = np.int32(np.unique(y))
 
             if len(classes) > 2:
                 raise ValueError('number of classes must be maximum 2')
@@ -327,63 +483,258 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
             if self.pos_label not in classes:
                 raise ValueError('y must contain a positive class')
 
-            y_old = numpy.int32(numpy.array(y) == self.pos_label)
-        else:
-            y_old = numpy.ones(len(X))
-        # start loop
-        for n_iter in range(self.n_iter_max):
-            ix = (y_old == 1)
-            self._mdm.fit(X[ix], y_old[ix])
-            y = numpy.zeros(len(X))
-            d = numpy.squeeze(numpy.log(self._mdm.transform(X[ix])))
-            self._mean = numpy.mean(d)
-            self._std = numpy.std(d)
-            y[ix] = self._get_z_score(d) < self.threshold
+            y = np.int32(np.array(y) == self.pos_label)
 
-            if numpy.array_equal(y, y_old):
-                break
-            else:
-                y_old = y
+        else:
+            y = np.ones(len(X))
+
+        return y
+
+    def _get_z_score(self, d):
+        """Get z-score from distance."""
+        z = (d - self._mean) / self._std
+        return z
+
+    def _get_proba(self, z):
+        """Get right-tailed proba from z-score."""
+        proba = 1 - norm.cdf(z)
+        return proba
+
+
+class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
+
+    """Artefact detection with the Riemannian Potato Field.
+
+    The Riemannian Potato Field [1]_ is a clustering method used to detect
+    artifact in EEG signals. The algorithm combines several potatoes of low
+    dimension, each one being designed to capture specific artifact typically
+    affecting specific subsets of channels and/or specific frequency bands.
+
+    Parameters
+    ----------
+    n_potatoes : int (default 1)
+        Number of potatoes in the field.
+    p_threshold : float (default 0.01)
+        Threshold on probability to being clean, in (0, 1), combining
+        probabilities of potatoes using Fisher's method.
+    z_threshold : float (default 3)
+        Threshold on z-score of distance to reject artifacts. It is the number
+        of standard deviations from the mean of distances to the centroid.
+    metric : string (default 'riemann')
+        The type of metric used for centroid and distance estimation.
+    n_iter_max : int (default 10)
+        The maximum number of iteration to reach convergence.
+    pos_label: int (default 1)
+        The positive label corresponding to clean data.
+    neg_label: int (default 0)
+        The negative label corresponding to artifact data.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.8
+
+    See Also
+    --------
+    Potato
+
+    References
+    ----------
+    .. [1] Q. Barthélemy, L. Mayaud, D. Ojeda, M. Congedo, "The Riemannian
+        potato field: a tool for online signal quality index of EEG", IEEE
+        TNSRE, 2019.
+    """
+
+    def __init__(self, n_potatoes=1, p_threshold=0.01, z_threshold=3,
+                 metric='riemann', n_iter_max=10, pos_label=1, neg_label=0):
+        """Init."""
+        self.n_potatoes = int(n_potatoes)
+        self.p_threshold = p_threshold
+        self.metric = metric
+        self.z_threshold = z_threshold
+        self.n_iter_max = n_iter_max
+        self.pos_label = pos_label
+        self.neg_label = neg_label
+
+    def fit(self, X, y=None):
+        """Fit the potato field from covariance matrices, with iterative
+        outlier removal to obtain reliable potatoes.
+
+        Parameters
+        ----------
+        X : list of n_potatoes ndarrays of shape (n_trials, n_channels, \
+                n_channels) with same n_trials but potentially different \
+                n_channels
+            List of ndarrays of SPD matrices, each corresponding to a different
+            subset of EEG channels and/or filtering with a specific frequency
+            band.
+        y : ndarray, shape (n_trials,) | None (default None)
+            Labels corresponding to each trial: positive (resp. negative) label
+            corresponds to a clean (resp. artifact) trial. If None, all trials
+            are considered as clean.
+
+        Returns
+        -------
+        self : Potato field instance
+            The Potato field instance.
+        """
+        if self.n_potatoes < 1:
+            raise ValueError('Parameter n_potatoes must be at least 1')
+        if not 0 < self.p_threshold < 1:
+            raise ValueError('Parameter p_threshold must be in (0, 1)')
+        self._check_length(X)
+        n_trials = X[0].shape[0]
+
+        pt = Potato(
+            metric=self.metric,
+            threshold=self.z_threshold,
+            n_iter_max=self.n_iter_max,
+            pos_label=self.pos_label,
+            neg_label=self.neg_label)
+        self._potatoes = []
+        for i in range(self.n_potatoes):
+            if X[i].shape[0] != n_trials:
+                raise ValueError(
+                    'Unequal n_trials between ndarray of X. Should be %d but '
+                    'got %d.' % (n_trials, X[i].shape[0]))
+            self._potatoes.append(clone(pt))
+            self._potatoes[i].fit(X[i], y)
+
+        return self
+
+    def partial_fit(self, X, y=None, alpha=0.1):
+        """Partially fit the potato field from covariance matrices.
+
+        This partial fit can be used to update dynamic or semi-dymanic online
+        potatoes with clean EEG [1]_.
+
+        Parameters
+        ----------
+        X : list of n_potatoes ndarrays of shape (n_trials, n_channels, \
+                n_channels) with same n_trials but potentially different \
+                n_channels
+            List of ndarrays of SPD matrices, each corresponding to a different
+            subset of EEG channels and/or filtering with a specific frequency
+            band.
+        y : ndarray, shape (n_trials,) | None (default None)
+            Labels corresponding to each trial: positive (resp. negative) label
+            corresponds to a clean (resp. artifact) trial. If None, all trials
+            are considered as clean.
+        alpha : float (default 0.1)
+            Update rate in [0, 1] for the centroid, and mean and standard
+            deviation of log-distances: 0 for no update, 1 for full update.
+
+        Returns
+        -------
+        self : PotatoField instance
+            The Potato Field instance.
+        """
+        self._check_length(X)
+        n_trials = X[0].shape[0]
+
+        for i in range(self.n_potatoes):
+            if X[i].shape[0] != n_trials:
+                raise ValueError(
+                    'Unequal n_trials between ndarray of X. Should be %d but '
+                    'got %d.' % (n_trials, X[i].shape[0]))
+            self._potatoes[i].partial_fit(X[i], y, alpha=alpha)
         return self
 
     def transform(self, X):
-        """return the normalized log-distance to the centroid (z-score).
+        """Return the normalized log-distances to the centroids (ie geometric
+        z-scores of distances).
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : list of n_potatoes ndarrays of shape (n_trials, n_channels, \
+                n_channels) with same n_trials but potentially different \
+                n_channels
+            List of ndarrays of SPD matrices, each corresponding to a different
+            subset of EEG channels and/or filtering with a specific frequency
+            band.
 
         Returns
         -------
-        z : ndarray, shape (n_epochs, 1)
-            the normalized log-distance to the centroid.
+        z : ndarray, shape (n_trials, n_potatoes)
+            the normalized log-distances to the centroids.
         """
-        d = numpy.squeeze(numpy.log(self._mdm.transform(X)))
-        z = self._get_z_score(d)
+        self._check_length(X)
+        n_trials = X[0].shape[0]
+
+        z = np.zeros((n_trials, self.n_potatoes))
+        for i in range(self.n_potatoes):
+            if X[i].shape[0] != n_trials:
+                raise ValueError(
+                    'Unequal n_trials between ndarray of X. Should be %d but '
+                    'got %d.' % (n_trials, X[i].shape[0]))
+            z[:, i] = self._potatoes[i].transform(X[i])
         return z
 
     def predict(self, X):
-        """predict artefact from data.
+        """Predict artefact from data.
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : list of n_potatoes ndarrays of shape (n_trials, n_channels, \
+                n_channels) with same n_trials but potentially different \
+                n_channels
+            List of ndarrays of SPD matrices, each corresponding to a different
+            subset of EEG channels and/or filtering with a specific frequency
+            band.
 
         Returns
         -------
-        pred : ndarray of bool, shape (n_epochs, 1)
+        pred : ndarray of bool, shape (n_trials,)
             the artefact detection. True if the trial is clean, and False if
             the trial contain an artefact.
         """
-        z = self.transform(X)
-        pred = z < self.threshold
-        out = numpy.zeros_like(z) + self.neg_label
+        p = self.predict_proba(X)
+        pred = p > self.p_threshold
+        out = np.zeros_like(p) + self.neg_label
         out[pred] = self.pos_label
         return out
 
-    def _get_z_score(self, d):
-        """get z score from distance."""
-        z = (d - self._mean) / self._std
-        return z
+    def predict_proba(self, X):
+        """Predict probability obtained combining probabilities of potatoes
+        using Fisher's method. A threshold of 0.01 can be used.
+
+        Parameters
+        ----------
+        X : list of n_potatoes ndarrays of shape (n_trials, n_channels, \
+                n_channels) with same n_trials but potentially different \
+                n_channels
+            List of ndarrays of SPD matrices, each corresponding to a different
+            subset of EEG channels and/or filtering with a specific frequency
+            band.
+
+        Returns
+        -------
+        proba : ndarray, shape (n_trials,)
+            data is considered as normal/clean for high value of proba.
+            data is considered as abnormal/artifacted for low value of proba.
+        """
+        self._check_length(X)
+        n_trials = X[0].shape[0]
+
+        p = np.zeros((self.n_potatoes, n_trials))
+        for i in range(self.n_potatoes):
+            if X[i].shape[0] != n_trials:
+                raise ValueError(
+                    'Unequal n_trials between ndarray of X. Should be %d but '
+                    'got %d.' % (n_trials, X[i].shape[0]))
+            p[i] = self._potatoes[i].predict_proba(X[i])
+        p[p < 1e-10] = 1e-10  # avoid trouble with log
+        q = - 2 * np.sum(np.log(p), axis=0)
+        proba = self._get_proba(q)
+        return proba
+
+    def _check_length(self, X):
+        """Check validity of input length."""
+        if len(X) != self.n_potatoes:
+            raise ValueError(
+                'Length of X is not equal to n_potatoes. Should be %d but got '
+                '%d.' % (self.n_potatoes, len(X)))
+
+    def _get_proba(self, q):
+        """Get proba from a chi-squared value q."""
+        proba = 1 - chi2.cdf(q, df=2 * self.n_potatoes)
+        return proba

@@ -42,15 +42,17 @@ import sphinx_bootstrap_theme
 
 extensions = [
     'sphinx.ext.autodoc',
+    'sphinx.ext.autosummary',
+    'sphinx.ext.coverage',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
+    # 'sphinx.ext.linkcode',
+    # 'sphinx.ext.mathjax',
+    'sphinx.ext.imgmath',
     'sphinx.ext.todo',
     'numpydoc',
-    'sphinx.ext.coverage',
-    'sphinx.ext.mathjax',
-    'sphinx.ext.ifconfig',
-    'sphinx.ext.viewcode',
-    'sphinx.ext.autosummary',
+    # 'sphinx.ext.ifconfig',
+    # 'sphinx.ext.viewcode',
     'sphinx_gallery.gen_gallery',
 ]
 plot_include_source = True
@@ -82,7 +84,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pyRiemann'
-copyright = u'2015, Alexandre Barachant'
+copyright = u'2015-2021, pyRiemann Contributors'
 author = u'Alexandre Barachant'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -158,8 +160,7 @@ html_theme_options = {
     False,
     'bootstrap_version':
     "3",
-    'navbar_links': [("API", "api"), ("Gallery", "auto_examples/index"),
-                     ("Tutorials", "auto_tutorials/index")],
+    'navbar_links': [("API", "api"), ("Gallery", "auto_examples/index")],
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -174,7 +175,7 @@ html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
-#html_logo = None
+html_logo = 'logo.png'
 
 # The name of an image file (within the static path) to use as favicon of the
 # docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -282,7 +283,7 @@ latex_documents = [
 #latex_use_parts = False
 
 # If true, show page references after internal links.
-#latex_show_pagerefs = False
+# latex_show_pagerefs = False
 
 # If true, show URL addresses after external links.
 #latex_show_urls = False

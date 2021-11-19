@@ -5,7 +5,7 @@ API reference
 =============
 
 Covariance Estimation
-------------------
+---------------------
 .. _estimation_api:
 .. currentmodule:: pyriemann.estimation
 
@@ -22,8 +22,8 @@ Covariance Estimation
     Shrinkage
 
 Embedding
-------------------
-.. _embedding_api
+---------
+.. _embedding_api:
 .. currentmodule:: pyriemann.embedding
 
 .. autosummary::
@@ -33,7 +33,7 @@ Embedding
     Embedding
 
 Classification
-------------------
+--------------
 .. _classification_api:
 .. currentmodule:: pyriemann.classification
 
@@ -58,7 +58,7 @@ Clustering
     Kmeans
     KmeansPerClassTransform
     Potato
-
+    PotatoField
 
 Tangent Space
 ------------------
@@ -85,6 +85,18 @@ Spatial Filtering
     CSP
     SPoC
     BilinearFilter
+    AJDC
+
+Preprocessing
+-------------
+.. _preprocessing_api:
+.. currentmodule:: pyriemann.preprocessing
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    Whitening
 
 Channel selection
 ------------------
@@ -110,11 +122,41 @@ Stats
     PermutationDistance
     PermutationModel
 
+Datasets
+------------------
+.. _datasets_api:
+.. currentmodule:: pyriemann.datasets
+
+.. autosummary::
+    :toctree: generated/
+
+    make_gaussian_blobs
+    make_outliers
+    make_covariances
+    sample_gaussian_spd
+    generate_random_spd_matrix 
 
 Utils function
 --------------
 
 Utils functions are low level functions that implement most base components of Riemannian Geometry.
+
+Covariance preprocessing
+~~~~~~~~~~~~~~~~~~~~~~~~
+.. _covariance_api:
+.. currentmodule:: pyriemann.utils.covariance
+
+.. autosummary::
+    :toctree: generated/
+
+    covariances
+    covariances_EP
+    covariances_X
+    cross_spectrum
+    cospectrum
+    coherence
+    normalize
+    get_nondiag_weight
 
 Distances
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -133,7 +175,6 @@ Distances
     distance_kullback_sym
     distance_wasserstein
 
-
 Mean
 ~~~~~~~~~~~~~~~~~~~~~~
 .. _mean_api:
@@ -149,9 +190,9 @@ Mean
     mean_logdet
     mean_wasserstein
     mean_ale
+    mean_alm
     mean_harmonic
     mean_kullback_sym
-
 
 Geodesic
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -165,7 +206,6 @@ Geodesic
     geodesic_riemann
     geodesic_euclid
     geodesic_logeuclid
-
 
 Tangent Space
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -193,7 +233,7 @@ Base
     powm
 
 Aproximate Joint Diagonalization
-~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. _ajd_api:
 .. currentmodule:: pyriemann.utils.ajd
 
@@ -203,3 +243,16 @@ Aproximate Joint Diagonalization
     rjd
     ajd_pham
     uwedge
+
+Visualization
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. _viz_api:
+.. currentmodule:: pyriemann.utils.viz
+
+.. autosummary::
+    :toctree: generated/
+
+    plot_confusion_matrix
+    plot_embedding
+    plot_cospectra
+    plot_waveforms

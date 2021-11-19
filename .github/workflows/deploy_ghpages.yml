@@ -1,0 +1,52 @@
+name: Deploy GitHub pages
+
+on: [push, pull_request]
+
+
+jobs:
+  build_docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Generate HTML docs
+        uses: ammaraskar/sphinx-action@master
+        with:
+          docs-folder: "doc/"
+          pre-build-command: |
+            apt-get update
+            pip install -e .
+            pip install -r doc/doc-requirements.txt
+      - name:  Upload generated HTML as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: DocHTML
+          path: doc/build/html/
+
+  # deploy_docs:
+  #   if: github.ref == 'refs/heads/master'
+  #   needs:
+  #     build_docs
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v2
+  #     - name: Download artifacts
+  #       uses: actions/download-artifact@v2
+  #       with:
+  #         name: DocHTML
+  #         path: doc/build/html/
+  #     - name: Commit to documentation branch
+  #       run: |
+  #         git clone --no-checkout --depth 1 https://github.com/${{ github.repository_owner }}/qndiag.git --branch gh-pages --single-branch gh-pages
+  #         cp -r doc/build/html/* gh-pages/
+  #         cd gh-pages
+  #         touch .nojekyll
+  #         git config --local user.email "pyriemann@github.com"
+  #         git config --local user.name "pyriemann GitHub Action"
+  #         git add .
+  #         git commit -m "Update documentation" -a || true
+  #     - name: Push changes
+  #       uses: ad-m/github-push-action@v0.6.0
+  #       with:
+  #         branch: gh-pages
+  #         directory: gh-pages
+  #         github_token: ${{ secrets.GITHUB_TOKEN }}

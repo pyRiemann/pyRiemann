@@ -1,22 +1,24 @@
-import numpy as np
-
+from conftest import get_metrics
 from pyriemann.embedding import Embedding
-from numpy.testing import assert_array_equal
+import pytest
 
 
-def generate_cov(Nt, Ne):
-    """Generate a set of cavariances matrices for test purpose."""
-    rs = np.random.RandomState(1234)
-    diags = 2.0 + 0.1 * rs.randn(Nt, Ne)
-    A = 2*rs.rand(Ne, Ne) - 1
-    A /= np.atleast_2d(np.sqrt(np.sum(A**2, 1))).T
-    covmats = np.empty((Nt, Ne, Ne))
-    for i in range(Nt):
-        covmats[i] = np.dot(np.dot(A, np.diag(diags[i])), A.T)
-    return covmats, diags, A
-
-def test_embedding():
+@pytest.mark.parametrize("metric", get_metrics())
+@pytest.mark.parametrize("eps", [None, 0.1])
+def test_embedding(metric, eps, get_covmats):
     """Test Embedding."""
-    covmats, diags, A = generate_cov(100, 3)
-    embd = Embedding(metric='riemann', n_components=2).fit_transform(covmats)
-    assert_array_equal(embd.shape[1], 2)
+    n_trials, n_channels, n_comp = 6, 3, 2
+    covmats = get_covmats(n_trials, n_channels)
+    embd = Embedding(metric=metric, n_components=n_comp, eps=eps)
+    covembd = embd.fit_transform(covmats)
+    assert covembd.shape == (n_trials, n_comp)
+
+
+def test_fit_independence(get_covmats):
+    n_trials, n_channels = 6, 3
+    covmats = get_covmats(n_trials, n_channels)
+    embd = Embedding()
+    embd.fit_transform(covmats)
+    # retraining with different size should erase previous fit
+    new_covmats = covmats[:, :-1, :-1]
+    embd.fit_transform(new_covmats)
