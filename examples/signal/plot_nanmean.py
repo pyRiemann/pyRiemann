@@ -63,6 +63,11 @@ plt.show()
 ###############################################################################
 # Estimate covariance means
 # -------------------------
+# Riemannian mean could only be computed on full-rank matrices. A common
+# strategy is called matrix deletion, that is removing all matrices with
+# corrupted channels. This results in discarding useful information
+# as uncorrupted channels are removed from the computation of the mean.
+# Nan-mean use as much information as possible to estimate the mean.
 
 # Euclidean NaN-mean
 C_naneucl = np.nanmean(covmats, axis=0)
@@ -83,13 +88,13 @@ C_mdriem = mean_riemann(covmats_)
 # ------------------------
 
 d_naneucl = distance_riemann(C_ref, C_naneucl)
-print("Euclidean NaN-mean, dist = {:.3f}".format(d_naneucl))
+print("Euclidean NaN-mean, distance to uncorrupted mean = {:.3f}".format(d_naneucl))
 
 d_nanriem = distance_riemann(C_ref, C_nanriem)
-print("Riemannian NaN-mean, dist = {:.3f}".format(d_nanriem))
+print("Riemannian NaN-mean, distance to uncorrupted mean = {:.3f}".format(d_nanriem))
 
 d_mdriem = distance_riemann(C_ref, C_mdriem)
-print("Riemannian mean, after matrix deletion, dist = {:.3f}".format(d_mdriem))
+print("Riemannian mean, after matrix deletion, distance to uncorrupted mean = {:.3f}".format(d_mdriem))
 
 
 ###############################################################################
