@@ -11,6 +11,8 @@ Estimate the mean of covariance matrices corrupted by NaN values [1]_.
 
 import numpy as np
 from matplotlib import pyplot as plt
+import pandas as pd
+import seaborn as sns
 
 from pyriemann.datasets import make_covariances
 from pyriemann.utils.mean import mean_riemann, nanmean_riemann
@@ -95,6 +97,49 @@ print(f"Riemannian NaN-mean, distance to uncorrupted mean = {d_nanriem:.3f}")
 
 d_mdriem = distance_riemann(C_ref, C_mdriem)
 print(f"Riemannian mean with deletion, distance to mean = {d_mdriem:.3f}")
+
+
+###############################################################################
+# Plot influence of corrupted channels
+# ------------------------------------
+#
+
+covmats_orig = make_covariances(n_matrices, n_channels, rs,
+                                evals_mean=100., evals_std=20.)
+C_ref = mean_riemann(covmats_orig)
+
+df = []
+for j, nc in enumerate(range(1,  n_channels // 2 + 1)):
+    n_corrup_channels_max = nc
+    covmats = np.copy(covmats_orig)
+
+    for i in range(n_matrices):
+        n_corrupt_channels = rs.randint(n_corrup_channels_max, size=1)
+        corrup_channels = rs.randint(n_channels, size=n_corrupt_channels)
+        for chan in corrup_channels:
+            covmats[i, chan] = np.nan
+            covmats[i, :, chan] = np.nan
+    C_naneucl = np.nanmean(covmats, axis=0)
+    C_nanriem = nanmean_riemann(covmats)
+    isnan = np.isnan(np.sum(covmats, axis=(1, 2)))
+    covmats_ = np.delete(covmats, np.where(isnan), axis=0)
+    C_mdriem = mean_riemann(covmats_)
+    res_ne = {'corrupt': nc,
+              'mean': 'NaN euclidean',
+              'dist': distance_riemann(C_ref, C_naneucl)}
+    res_nr = {'corrupt': nc,
+              'mean': 'NaN Riemannian',
+              'dist': distance_riemann(C_ref, C_nanriem)}
+    res_rm = {'corrupt': nc,
+              'mean': 'Riemannian (with deletion)',
+              'dist': distance_riemann(C_ref, C_mdriem)}
+    df += [res_ne, res_nr, res_rm]
+df = pd.DataFrame(df)
+
+g = sns.catplot(data=df, x="corrupt", y="dist", hue="mean", kind="point")
+g.set_axis_labels("Number of corrupted channels", "Distance to reference")
+g.set_titles("Influence of corrupted channels")
+plt.show()
 
 
 ###############################################################################
