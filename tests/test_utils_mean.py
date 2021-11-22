@@ -121,20 +121,36 @@ def test_riemann_mean_masked_shape(init, get_covmats, get_masks):
 
 @pytest.mark.parametrize("init", [True, False])
 def test_riemann_mean_nan_shape(init, get_covmats, rndstate):
-    """Test the riemann nan mean"""
-    n_matrices, n_channels = 50, 4
+    """Test the riemann nan mean shape"""
+    n_matrices, n_channels = 50, 6
     covmats = get_covmats(n_matrices, n_channels)
     emean = np.mean(covmats, axis=0)
     for i in range(n_matrices):
-        corrup_channels = rndstate.randint(n_channels, size=n_channels // 2)
-        for chan in corrup_channels:
-            covmats[i, chan] = np.nan
-            covmats[i, :, chan] = np.nan
+        corrup_channels = rndstate.choice(
+            np.arange(0, n_channels), size=n_channels // 2, replace=False)
+        for j in corrup_channels:
+            covmats[i, j] = np.nan
+            covmats[i, :, j] = np.nan
     if init:
         C = nanmean_riemann(covmats, init=emean)
     else:
         C = nanmean_riemann(covmats)
     assert C.shape == (n_channels, n_channels)
+
+
+def test_riemann_mean_nan_errors(get_covmats):
+    """Test the riemann nan mean errors"""
+    n_matrices, n_channels = 10, 4
+    covmats = get_covmats(n_matrices, n_channels)
+
+    with pytest.raises(ValueError):  # not symmetric NaN values
+        covmats_ = covmats.copy()
+        covmats_[0, 0] = np.nan  # corrup only a row, not its corresp column
+        nanmean_riemann(covmats_)
+    with pytest.raises(ValueError):  # not rows and columns NaN values
+        covmats_ = covmats.copy()
+        covmats_[1, 0, 1] = np.nan  # corrup an off-diagonal value
+        nanmean_riemann(covmats_)
 
 
 @pytest.mark.parametrize(

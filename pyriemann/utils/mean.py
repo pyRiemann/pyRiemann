@@ -427,12 +427,12 @@ def _get_mask_from_nan(covmat):
     nan_col = np.all(np.isnan(covmat), axis=0)
     nan_row = np.all(np.isnan(covmat), axis=1)
     if not np.array_equal(nan_col, nan_row):
-        raise ValueError('Nan values are not symmetric.')
+        raise ValueError('NaN values are not symmetric.')
     nan_inds = np.where(nan_col)
     subcovmat_ = np.delete(covmat, nan_inds, axis=0)
     subcovmat = np.delete(subcovmat_, nan_inds, axis=1)
     if np.any(np.isnan(subcovmat)):
-        raise ValueError('Nan values must fill rows and columns.')
+        raise ValueError('NaN values must fill rows and columns.')
     mask = np.delete(np.eye(covmat.shape[0]), nan_inds, axis=1)
     return mask
 
