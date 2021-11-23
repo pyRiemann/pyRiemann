@@ -15,7 +15,7 @@ jobs:
           pre-build-command: |
             apt-get update
             pip install -e .
-            pip install -r doc/doc-requirements.txt
+            pip install -r doc/requirements.txt
       - name:  Upload generated HTML as artifact
         uses: actions/upload-artifact@v2
         with:
