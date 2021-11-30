@@ -6,7 +6,8 @@ from ..utils.base import powm, sqrtm
 from .sampling import generate_random_spd_matrix, sample_gaussian_spd
 
 
-def make_covariances(n_matrices, n_channels, rs, return_params=False):
+def make_covariances(n_matrices, n_channels, rs, return_params=False,
+                     evals_mean=2.0, evals_std=0.1):
     """Generate a set of covariances matrices, with the same eigenvectors.
 
     Parameters
@@ -19,6 +20,10 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False):
         Random state for reproducible output across multiple function calls.
     return_params : bool (default False)
         If True, then return parameters.
+    evals_mean : float (default 2.0)
+        Mean of eigen values.
+    evals_std : float (default 0.1)
+        Standard deviation of eigen values.
 
     Returns
     -------
@@ -31,9 +36,8 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False):
         Eigen vectors used for all covariance matrices.
         Only returned if ``return_params=True``.
     """
-    evals = 2.0 + 0.1 * rs.randn(n_matrices, n_channels)
-    evecs = 2 * rs.rand(n_channels, n_channels) - 1
-    evecs /= np.linalg.norm(evecs, axis=1)[:, np.newaxis]
+    evals = np.abs(evals_mean + evals_std * rs.randn(n_matrices, n_channels))
+    evecs, _ = np.linalg.qr(rs.randn(n_channels, n_channels))
 
     covmats = np.empty((n_matrices, n_channels, n_channels))
     for i in range(n_matrices):
@@ -43,6 +47,34 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False):
         return covmats, evals, evecs
     else:
         return covmats
+
+
+def make_masks(n_masks, n_dim0, n_dim1_min, rs):
+    """Generate a set of masks, defined as semi-orthogonal matrices.
+
+    Parameters
+    ----------
+    n_masks : int
+        Number of masks to generate.
+    n_dim0 : int
+        First dimension of masks.
+    n_dim1_min : int
+        Minimal value for second dimension of masks.
+    rs : RandomState instance
+        Random state for reproducible output across multiple function calls.
+
+    Returns
+    -------
+    masks : list of n_masks ndarray of shape (n_dim0, n_dim1_i), \
+            with different n_dim1_i, such that n_dim1_min <= n_dim1_i <= n_dim0
+        Masks.
+    """
+    masks = []
+    for i in range(n_masks):
+        n_dim1 = rs.randint(n_dim1_min, n_dim0, size=1)[0]
+        mask, _ = np.linalg.qr(rs.randn(n_dim0, n_dim1))
+        masks.append(mask)
+    return masks
 
 
 def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,

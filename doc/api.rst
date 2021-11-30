@@ -133,6 +133,7 @@ Datasets
     make_gaussian_blobs
     make_outliers
     make_covariances
+    make_masks
     sample_gaussian_spd
     generate_random_spd_matrix 
 
@@ -193,6 +194,8 @@ Mean
     mean_alm
     mean_harmonic
     mean_kullback_sym
+    maskedmean_riemann
+    nanmean_riemann
 
 Geodesic
 ~~~~~~~~~~~~~~~~~~~~~~

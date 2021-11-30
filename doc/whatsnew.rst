@@ -34,6 +34,8 @@ v0.2.8.dev
 
 - Add a special form covariance matrix :func:`pyriemann.utils.covariance.covariances_X`
 
+- Add masked and NaN means with Riemannian metric: :func:`pyriemann.utils.mean.maskedmean_riemann` and :func:`pyriemann.utils.mean.nanmean_riemann`
+
 v0.2.7 (June 2021)
 ------------------
 

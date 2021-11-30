@@ -8,6 +8,7 @@ from . import clustering
 from . import stats
 from . import embedding
 from . import preprocessing
+from . import datasets
 
 
 __all__ = [
@@ -21,4 +22,5 @@ __all__ = [
     'stats',
     'embedding',
     'preprocessing',
+    'datasets',
 ]
