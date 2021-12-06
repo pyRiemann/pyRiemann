@@ -36,6 +36,8 @@ v0.2.8.dev
 
 - Add masked and NaN means with Riemannian metric: :func:`pyriemann.utils.mean.maskedmean_riemann` and :func:`pyriemann.utils.mean.nanmean_riemann`
 
+- Add ``corr`` option in :func:`pyriemann.utils.covariance.normalize`, to normalize covariance into correlation matrices
+
 v0.2.7 (June 2021)
 ------------------
 
