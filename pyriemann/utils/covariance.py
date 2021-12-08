@@ -1,6 +1,7 @@
 import warnings
 
 import numpy as np
+from scipy.linalg import block_diag
 
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
 from .test import is_square
@@ -444,6 +445,55 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
     return C, freqs
 
 
+def block_covariances(X, blocks, estimator='cov'):
+    """Compute block diagonal covariance.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
+        blocks: list of int
+            list of block sizes.
+        estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
+            (default: 'scm')
+            Covariance matrix estimator:
+
+            * 'cov' for numpy based covariance matrix,
+              https://numpy.org/doc/stable/reference/generated/numpy.cov.html
+            * 'scm' for sample covariance matrix,
+              https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
+            * 'lwf' for shrunk Ledoit-Wolf covariance matrix
+              https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
+            * 'oas' for oracle approximating shrunk covariance matrix,
+              https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
+            * 'mcd' for minimum covariance determinant matrix,
+              https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
+            * 'sch' for Schaefer-Strimmer covariance,
+              http://doi.org/10.2202/1544-6115.1175,
+            * 'corr' for correlation coefficient matrix,
+              https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
+
+        Returns
+        -------
+        C : ndarray, shape (n_channels, n_channels, n_freqs)
+            Squared coherence matrices, for each frequency bin.
+
+        """
+    est = _check_est(estimator)
+    n_trials, n_channels, n_times = X.shape
+
+    covmats = np.empty((n_trials, n_channels, n_channels))
+    for i in range(n_trials):
+        blockcov = []
+        idx_start = 0
+        for j in blocks:
+            blockcov.append(est(X[i, idx_start:idx_start+j, :]))
+            idx_start += j
+        covmats[i, :, :] = block_diag(*tuple(blockcov))
+
+    return covmats
+
+
 ###############################################################################
 
 
@@ -510,3 +560,5 @@ def get_nondiag_weight(X):
     num = np.sum(X2, axis=(-2, -1)) - denom
     weights = (1.0 / (X.shape[-1] - 1)) * (num / denom)
     return weights
+
+

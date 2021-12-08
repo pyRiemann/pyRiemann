@@ -3,7 +3,7 @@ import numpy as np
 
 from .spatialfilters import Xdawn
 from .utils.covariance import (covariances, covariances_EP, cospectrum,
-                               coherence)
+                               coherence, block_covariances)
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.covariance import shrunk_covariance
 
@@ -651,3 +651,74 @@ class Shrinkage(BaseEstimator, TransformerMixin):
             covmats[ii] = shrunk_covariance(x, self.shrinkage)
 
         return covmats
+
+
+class BlockCovariances(BaseEstimator, TransformerMixin):
+    """Estimation of block covariance matrix.
+    Perform a block covariance matrix estimation for each given trial. The
+    resulting matrices are block diagonal matrices
+    Parameters
+    ----------
+    estimator : string (default: 'scm')
+        covariance matrix estimator. For regularization consider 'lwf' or 'oas'
+        For a complete list of estimator, see `utils.covariance`.
+    block_size : list or int
+        Sizes of individual blocks given as int for same-size block or list for
+        varying block sizes.
+    See Also
+    --------
+    ERPCovariances
+    XdawnCovariances
+    CospCovariances
+    HankelCovariances
+    """
+
+    def __init__(self, block_size, estimator='scm'):
+        """Init."""
+        self.estimator = estimator
+        self.block_size = block_size
+
+    def fit(self, X, y=None):
+        """Fit.
+        Do nothing. For compatibility purpose.
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_samples)
+            ndarray of trials.
+        y : ndarray shape (n_trials,)
+            labels corresponding to each trial, not used.
+        Returns
+        -------
+        self : Covariances instance
+            The Covariances instance.
+        """
+        return self
+
+    def transform(self, X):
+        """Estimate block covariance matrices.
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_samples)
+            ndarray of trials.
+        Returns
+        -------
+        covmats : ndarray, shape (n_trials, n_channels, n_channels)
+            ndarray of covariance matrices for each trials.
+        """
+        n_trials, n_channels, n_times = X.shape
+
+        if type(self.block_size) == int:
+            n_blocks = n_channels//self.block_size
+
+            if n_blocks*self.block_size != n_channels:
+                raise ValueError('block_size must be divisor of number of channels of X.')
+
+            blocks = [self.block_size for b in range(n_blocks)]
+
+        else:
+            blocks = self.block_size
+
+        if np.sum(blocks) != n_channels:
+            raise ValueError('Sum of individual block sizes must match number of channels of X.')
+
+        return block_covariances(X, blocks, self.estimator)
