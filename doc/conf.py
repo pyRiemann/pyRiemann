@@ -66,7 +66,7 @@ sphinx_gallery_conf = {
 }
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
-autodoc_default_flags = ['inherited-members']
+autodoc_default_options = {'inherited-members': True}
 
 autosummary_generate = True
 numpydoc_show_class_members = False

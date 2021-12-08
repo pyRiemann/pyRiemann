@@ -2,7 +2,7 @@ import pytest
 import numpy as np
 from functools import partial
 
-from pyriemann.datasets import make_covariances
+from pyriemann.datasets import make_covariances, make_masks
 
 
 def requires_module(function, name, call=None):
@@ -31,8 +31,8 @@ def rndstate():
 
 @pytest.fixture
 def get_covmats(rndstate):
-    def _gen_cov(n_trials, n_chan):
-        return make_covariances(n_trials, n_chan, rndstate,
+    def _gen_cov(n_matrices, n_channels):
+        return make_covariances(n_matrices, n_channels, rndstate,
                                 return_params=False)
 
     return _gen_cov
@@ -40,18 +40,27 @@ def get_covmats(rndstate):
 
 @pytest.fixture
 def get_covmats_params(rndstate):
-    def _gen_cov_params(n_trials, n_chan):
-        return make_covariances(n_trials, n_chan, rndstate, return_params=True)
+    def _gen_cov_params(n_matrices, n_channels):
+        return make_covariances(n_matrices, n_channels, rndstate,
+                                return_params=True)
 
     return _gen_cov_params
 
 
 @pytest.fixture
 def get_labels():
-    def _get_labels(n_trials, n_classes):
-        return np.arange(n_classes).repeat(n_trials // n_classes)
+    def _get_labels(n_matrices, n_classes):
+        return np.arange(n_classes).repeat(n_matrices // n_classes)
 
     return _get_labels
+
+
+@pytest.fixture
+def get_masks(rndstate):
+    def _gen_masks(n_matrices, n_channels):
+        return make_masks(n_matrices, n_channels, n_channels // 2, rndstate)
+
+    return _gen_masks
 
 
 def get_distances():
