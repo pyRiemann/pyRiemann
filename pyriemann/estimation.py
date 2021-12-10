@@ -657,6 +657,7 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
     """Estimation of block covariance matrix.
     Perform a block covariance matrix estimation for each given trial. The
     resulting matrices are block diagonal matrices
+
     Parameters
     ----------
     estimator : string (default: 'scm')
@@ -665,6 +666,7 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
     block_size : list or int
         Sizes of individual blocks given as int for same-size block or list for
         varying block sizes.
+
     See Also
     --------
     ERPCovariances
@@ -680,13 +682,16 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y=None):
         """Fit.
+
         Do nothing. For compatibility purpose.
+
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
             ndarray of trials.
         y : ndarray shape (n_trials,)
             labels corresponding to each trial, not used.
+
         Returns
         -------
         self : Covariances instance
@@ -696,10 +701,12 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         """Estimate block covariance matrices.
+
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_samples)
             ndarray of trials.
+
         Returns
         -------
         covmats : ndarray, shape (n_trials, n_channels, n_channels)
@@ -707,8 +714,8 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
         """
         n_trials, n_channels, n_times = X.shape
 
-        if type(self.block_size) == int:
-            n_blocks = n_channels//self.block_size
+        if isinstance(self.block_size, int):
+            n_blocks = n_channels // self.block_size
 
             if n_blocks*self.block_size != n_channels:
                 raise ValueError('block_size must be divisor '
