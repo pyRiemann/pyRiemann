@@ -560,5 +560,3 @@ def get_nondiag_weight(X):
     num = np.sum(X2, axis=(-2, -1)) - denom
     weights = (1.0 / (X.shape[-1] - 1)) * (num / denom)
     return weights
-
-

@@ -275,6 +275,7 @@ def test_covariances_coherence(coh, rndstate):
             # imag coh equal 0 between ref and opposite phase channels
             assert c[0, 3, foi] == pytest.approx(0.0)
 
+
 @pytest.mark.parametrize(
     'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd',
                   'sch', np.cov, 'truc', None]
@@ -310,7 +311,9 @@ def test_block_covariances(rndstate):
 
     cov = block_covariances(x, [3, 5, 4], estimator='cov')
     cov2 = covariances(x, estimator='cov')
-    covcomp = block_diag(*(cov2[0, :3, :3], cov2[0, 3:8, 3:8], cov2[0, 8:12, 8:12]))
+    covcomp = block_diag(*(cov2[0, :3, :3],
+                           cov2[0, 3:8, 3:8],
+                           cov2[0, 8:12, 8:12]))
     assert_array_almost_equal(cov[0], covcomp)
 
 

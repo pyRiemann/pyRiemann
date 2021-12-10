@@ -711,7 +711,8 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
             n_blocks = n_channels//self.block_size
 
             if n_blocks*self.block_size != n_channels:
-                raise ValueError('block_size must be divisor of number of channels of X.')
+                raise ValueError('block_size must be divisor '
+                                 'of number of channels of X.')
 
             blocks = [self.block_size for b in range(n_blocks)]
 
@@ -719,6 +720,7 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
             blocks = self.block_size
 
         if np.sum(blocks) != n_channels:
-            raise ValueError('Sum of individual block sizes must match number of channels of X.')
+            raise ValueError('Sum of individual block sizes '
+                             'must match number of channels of X.')
 
         return block_covariances(X, blocks, self.estimator)
