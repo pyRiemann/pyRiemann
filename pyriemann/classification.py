@@ -516,15 +516,16 @@ class KNearestNeighbor(MDM):
         out, _ = stats.mode(neighbors_classes[:, 0:self.n_neighbors], axis=1)
         return out.ravel()
 
+
 class MDWM (MDM):
     """Classification by Minimum Distance to Weighted Mean.
 
-    Classification by nearest centroid. For each of the given classes, a 
+    Classification by nearest centroid. For each of the given classes, a
     centroid is estimated, according to the chosen metric, as a weighted mean
-    of point (i.e. covariance matrices) from the source domain, combined with 
-    the class centroid of the target domain. 
-    For classification, a given new point is attibuted to the class whose centroid is 
-    the nearest according to the chosen metric.
+    of point (i.e. covariance matrices) from the source domain, combined with
+    the class centroid of the target domain.
+    For classification, a given new point is attibuted to the class whose
+    centroid is the nearest according to the chosen metric.
 
     Parameters
     ----------
@@ -537,7 +538,7 @@ class MDWM (MDM):
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
     L : float, (default: 0)
-        Transfer coefficient. This parameter controls the trade-off between 
+        Transfer coefficient. This parameter controls the trade-off between
         source and target data.
     n_jobs : int, (default: 1)
         The number of jobs to use for the computation. This works by computing
@@ -563,18 +564,17 @@ class MDWM (MDM):
 
     References
     ----------
-    [1] E. Kalunga, S. Chevallier and Q. Barthélemy, "Transfer learning for 
-    SSVEP-based BCI using Riemannian similarities between users", in 26th 
+    [1] E. Kalunga, S. Chevallier and Q. Barthélemy, "Transfer learning for
+    SSVEP-based BCI using Riemannian similarities between users", in 26th
     European Signal Processing Conference (EUSIPCO), pp. 1685-1689. IEEE, 2018.
 
-    [2] S. Khazem, S. Chevallier, Q. Barthélemy, K. Haroun and C. Noûs, 
-    "Minimizing Subject-dependent Calibration for BCI with Riemannian Transfer 
-    Learning", in 10th International IEEE/EMBS Conference on Neural 
+    [2] S. Khazem, S. Chevallier, Q. Barthélemy, K. Haroun and C. Noûs,
+    "Minimizing Subject-dependent Calibration for BCI with Riemannian Transfer
+    Learning", in 10th International IEEE/EMBS Conference on Neural
     Engineering (NER), pp. 523-526. IEEE, 2021.
     """
 
-    def __init__(self,metric='riemann', L=0, n_jobs=1):
-        
+    def __init__(self, metric='riemann', L=0, n_jobs=1):
         """Init."""
         self.metric = metric
         self.n_jobs = n_jobs
@@ -595,7 +595,6 @@ class MDWM (MDM):
 
         else:
             raise TypeError('metric must be dict or str')
-
 
     def fit(self, X, y, X_source, y_source, sample_weight=None):
         """Fit (estimates) the centroids.
@@ -619,38 +618,42 @@ class MDWM (MDM):
         self : MDWM instance
             The MDWM instance.
         """
-        
+
         if set(y) != set(y_source):
             raise Exception(f"classes in source domain must match classes in target \
-                domain. Classes in source are {np.unique(y_source)} while classes \
-                    in target are {np.unique(y)}")
+                domain. Classes in source are {np.unique(y_source)} while \
+                    classes in target are {np.unique(y)}")
 
         self.classes_ = np.unique(y)
 
         if sample_weight is None:
             sample_weight = np.ones(X_source.shape[0])
-             
-        if self.n_jobs == 1:
-            self.target_means_ = [mean_covariance(X[y == l], 
-                                              metric=self.metric_mean)
-                                        for l in self.classes_]
 
-            self.domain_means_ = [mean_covariance(X_source[y_source == l], 
-                                                  metric=self.metric_mean,
-                                    sample_weight=sample_weight[y_source == l])
-                                        for l in self.classes_]
+        if self.n_jobs == 1:
+            self.target_means_ = [
+                mean_covariance(X[y == ll], metric=self.metric_mean)
+                for ll in self.classes_]
+
+            self.domain_means_ = [
+                mean_covariance(
+                    X_source[y_source == ll],
+                    metric=self.metric_mean,
+                    sample_weight=sample_weight[y_source == ll]
+                    )
+                for ll in self.classes_]
         else:
             self.target_means_ = Parallel(n_jobs=self.n_jobs)(
-                delayed(mean_covariance)(X[y == l], metric=self.metric_mean)
-                for l in self.classes_) 
+                delayed(mean_covariance)(X[y == ll], metric=self.metric_mean)
+                for ll in self.classes_)
             self.domain_means_ = Parallel(n_jobs=self.n_jobs)(
-                delayed(mean_covariance)(X_source[y_source == l],
-                                metric=self.metric_mean,
-                                sample_weight=sample_weight[y_source == l])
-                for l in self.classes_)
+                delayed(mean_covariance)(
+                    X_source[y_source == ll],
+                    metric=self.metric_mean,
+                    sample_weight=sample_weight[y_source == ll])
+                for ll in self.classes_)
 
-        self.class_center_ = [geodesic(self.target_means_[i], 
+        self.class_center_ = [geodesic(self.target_means_[i],
                                        self.domain_means_[i],
-                                       self.L, self.metric) 
-                for i, _ in enumerate(self.classes_)]
+                                       self.L, self.metric)
+                              for i, _ in enumerate(self.classes_)]
         return self
