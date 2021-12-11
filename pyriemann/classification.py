@@ -686,6 +686,7 @@ class SVC(sklearnSVC):
         -------
         self : SVC instance
             The SVC instance.
+
         """
         self._set_cref(X)
         self._set_kernel()
