@@ -538,7 +538,7 @@ class MDWM (MDM):
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
     L : float, (default: 0)
-        Transfer coefficient in [0,1]. This parameter controls the trade-off 
+        Transfer coefficient in [0,1]. This parameter controls the trade-off
         between source and target data.
     n_jobs : int, (default: 1)
         The number of jobs to use for the computation. This works by computing
