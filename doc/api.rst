@@ -135,7 +135,7 @@ Datasets
     make_covariances
     make_masks
     sample_gaussian_spd
-    generate_random_spd_matrix 
+    generate_random_spd_matrix
 
 Utils function
 --------------
