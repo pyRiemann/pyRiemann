@@ -739,8 +739,8 @@ class MDWM (MDM):
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
     L : float, (default: 0)
-        Transfer coefficient. This parameter controls the trade-off between
-        source and target data.
+        Transfer coefficient in [0,1]. This parameter controls the trade-off 
+        between source and target data.
     n_jobs : int, (default: 1)
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
@@ -802,15 +802,15 @@ class MDWM (MDM):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
             ndarray of SPD matrices from target subject
-        y : ndarray shape (n_trials, 1)
+        y : ndarray shape (n_matrices, 1)
             labels corresponding to each trial of target subject
-        X_source : ndarray, shape (n_trials, n_channels, n_channels)
+        X_source : ndarray, shape (n_matrices, n_channels, n_channels)
             ndarray of SPD matrices from source domain subjects
-        y_source : ndarray shape (n_trials, 1)
+        y_source : ndarray shape (n_matrices, 1)
             labels corresponding to each trial.
-        sample_weight : None | ndarray shape (n_trials, 1)
+        sample_weight : None | ndarray shape (n_matrices, 1)
             the weights of each sample from the domain. if None, each sample
             is treated with equal weights.
 
