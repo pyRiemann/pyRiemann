@@ -456,34 +456,23 @@ def block_covariances(X, blocks, estimator='cov'):
             list of block sizes.
         estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
             (default: 'scm')
-            Covariance matrix estimator:
-
-            * 'cov' for numpy based covariance matrix,
-              https://numpy.org/doc/stable/reference/generated/numpy.cov.html
-            * 'scm' for sample covariance matrix,
-              https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
-            * 'lwf' for shrunk Ledoit-Wolf covariance matrix
-              https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
-            * 'oas' for oracle approximating shrunk covariance matrix,
-              https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
-            * 'mcd' for minimum covariance determinant matrix,
-              https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
-            * 'sch' for Schaefer-Strimmer covariance,
-              http://doi.org/10.2202/1544-6115.1175,
-            * 'corr' for correlation coefficient matrix,
-              https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
+            Covariance matrix estimator, see
+                :func:`pyriemann.utils.covariance.covariances`.
 
         Returns
         -------
         C : ndarray, shape (n_channels, n_channels, n_freqs)
             Squared coherence matrices, for each frequency bin.
 
-        """
+    Notes
+    -----
+    .. versionadded:: 0.2.8
+    """
     est = _check_est(estimator)
-    n_trials, n_channels, n_times = X.shape
+    n_matrices, n_channels, n_times = X.shape
 
-    covmats = np.empty((n_trials, n_channels, n_channels))
-    for i in range(n_trials):
+    covmats = np.empty((n_matrices, n_channels, n_channels))
+    for i in range(n_matrices):
         blockcov = []
         idx_start = 0
         for j in blocks:
