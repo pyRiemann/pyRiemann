@@ -190,7 +190,7 @@ plt.show()
 # The covariance matrices will be estimated using the Ledoit-Wolf shrinkage
 # estimator on the extended signal.
 
-cov_ext_trials = BlockCovariances(estimator='lwf', 
+cov_ext_trials = BlockCovariances(estimator='lwf',
                                   block_size=8).transform(epochs.get_data())
 
 # This plot shows an example of a covariance matrix observed for each class:
