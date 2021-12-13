@@ -38,6 +38,8 @@ v0.2.8.dev
 
 - Add ``corr`` option in :func:`pyriemann.utils.covariance.normalize`, to normalize covariance into correlation matrices
 
+- Add UMAP embeddings with Riemannian metrics :class:`pyriemann.embedding.UMAP`
+
 v0.2.7 (June 2021)
 ------------------
 
