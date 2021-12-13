@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.metrics import confusion_matrix
-from ..embedding import Embedding
+from ..embedding import SpectralEmbedding
 from . import deprecated
 
 
@@ -41,7 +41,7 @@ def plot_embedding(
         import matplotlib.pyplot as plt
     except ImportError:
         raise ImportError("Install matplotlib to plot embeddings")
-    lapl = Embedding(n_components=2, metric=metric)
+    lapl = SpectralEmbedding(n_components=2, metric=metric)
     embd = lapl.fit_transform(X)
 
     if y is None:

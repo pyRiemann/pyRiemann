@@ -11,7 +11,7 @@ Spectral embedding via Laplacian Eigenmaps of a set of ERP data.
 # License: BSD (3-clause)
 
 from pyriemann.estimation import XdawnCovariances
-from pyriemann.embedding import Embedding
+from pyriemann.embedding import SpectralEmbedding
 
 import mne
 from mne import io
@@ -58,7 +58,7 @@ split = train_test_split(X, y, train_size=0.25, random_state=42)
 Xtrain, Xtest, ytrain, ytest = split
 covs = xdwn.fit(Xtrain, ytrain).transform(Xtest)
 
-lapl = Embedding(metric='riemann', n_components=2)
+lapl = SpectralEmbedding(metric='riemann', n_components=2)
 embd = lapl.fit_transform(covs)
 
 ###############################################################################

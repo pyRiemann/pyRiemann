@@ -12,7 +12,7 @@ from pyriemann.utils.viz import (
 
 @requires_matplotlib
 def test_embedding(get_covmats):
-    """Test Embedding."""
+    """Test SpectralEmbedding."""
     n_trials, n_channels = 5, 3
     covmats = get_covmats(n_trials, n_channels)
     plot_embedding(covmats, y=None, metric="euclid")
