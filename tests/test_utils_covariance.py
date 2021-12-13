@@ -317,28 +317,42 @@ def test_block_covariances(rndstate):
     assert_array_almost_equal(cov[0], covcomp)
 
 
-def test_normalize(rndstate):
-    """Test normalize"""
-    n_conds, n_matrices, n_channels = 15, 20, 3
+@pytest.mark.parametrize('norm', ['corr', 'trace', 'determinant'])
+def test_normalize_shapes(norm, rndstate):
+    """Test normalize shapes"""
+    n_conds, n_matrices, n_channels = 15, 10, 3
 
     # test a 2d array, ie a single square matrix
     mat = rndstate.randn(n_channels, n_channels)
-    mat_n = normalize(mat, "trace")
+    mat_n = normalize(mat, norm)
     assert mat.shape == mat_n.shape
     # test a 3d array, ie a group of square matrices
     mat = rndstate.randn(n_matrices, n_channels, n_channels)
-    mat_n = normalize(mat, "determinant")
+    mat_n = normalize(mat, norm)
     assert mat.shape == mat_n.shape
     # test a 4d array, ie a group of groups of square matrices
     mat = rndstate.randn(n_conds, n_matrices, n_channels, n_channels)
-    mat_n = normalize(mat, "trace")
+    mat_n = normalize(mat, norm)
     assert mat.shape == mat_n.shape
+
+
+def test_normalize_values(rndstate, get_covmats):
+    """Test normalize values"""
+    n_matrices, n_channels = 20, 3
+
+    # after corr-normalization => diags = 1 and values in [-1, 1]
+    mat = get_covmats(n_channels, n_channels)
+    mat_cn = normalize(mat, "corr")
+    assert_array_almost_equal(np.ones(mat_cn.shape[:-1]),
+                              np.diagonal(mat_cn, axis1=-2, axis2=-1))
+    assert np.all(-1 <= mat_cn) and np.all(mat_cn <= 1)
 
     # after trace-normalization => trace equal to 1
     mat = rndstate.randn(n_matrices, n_channels, n_channels)
     mat_tn = normalize(mat, "trace")
     assert_array_almost_equal(np.ones(mat_tn.shape[0]),
                               np.trace(mat_tn, axis1=-2, axis2=-1))
+
     # after determinant-normalization => determinant equal to +/- 1
     mat_dn = normalize(mat, "determinant")
     assert_array_almost_equal(np.ones(mat_dn.shape[0]),

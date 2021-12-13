@@ -38,6 +38,8 @@ v0.2.8.dev
 
 - Add block covariance matrix: :func:`pyriemann.utils.covariance.block_covariances`
 
+- Add ``corr`` option in :func:`pyriemann.utils.covariance.normalize`, to normalize covariance into correlation matrices
+
 v0.2.7 (June 2021)
 ------------------
 

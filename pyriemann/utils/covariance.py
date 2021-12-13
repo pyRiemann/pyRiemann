@@ -498,7 +498,7 @@ def block_covariances(X, blocks, estimator='cov'):
 
 
 def normalize(X, norm):
-    """Normalize a set of square matrices, using trace or determinant.
+    """Normalize a set of square matrices, using corr, trace or determinant.
 
     Parameters
     ----------
@@ -506,8 +506,13 @@ def normalize(X, norm):
         The set of square matrices, at least 2D ndarray. Matrices must be
         invertible for determinant-normalization.
 
-    norm : {"trace", "determinant"}
-        The type of normalization.
+    norm : {"corr", "trace", "determinant"}
+        The type of normalization:
+
+        * 'corr': normalized matrices are correlation matrices, with values in
+          [-1, 1] and diagonal values equal to 1;
+        * 'trace': trace of normalized matrices is 1;
+        * 'determinant': determinant of normalized matrices is +/- 1.
 
     Returns
     -------
@@ -517,7 +522,10 @@ def normalize(X, norm):
     if not is_square(X):
         raise ValueError('Matrices must be square')
 
-    if norm == "trace":
+    if norm == "corr":
+        stddev = np.sqrt(np.abs(np.diagonal(X, axis1=-2, axis2=-1)))
+        denom = np.expand_dims(stddev, axis=-2) * stddev[..., np.newaxis]
+    elif norm == "trace":
         denom = np.trace(X, axis1=-2, axis2=-1)
     elif norm == "determinant":
         denom = np.abs(np.linalg.det(X)) ** (1 / X.shape[-1])
@@ -527,6 +535,10 @@ def normalize(X, norm):
     while denom.ndim != X.ndim:
         denom = denom[..., np.newaxis]
     Xn = X / denom
+
+    if norm == "corr":
+        np.clip(Xn, -1, 1, out=Xn)
+
     return Xn
 
 
