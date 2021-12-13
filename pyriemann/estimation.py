@@ -656,7 +656,7 @@ class Shrinkage(BaseEstimator, TransformerMixin):
 class BlockCovariances(BaseEstimator, TransformerMixin):
     """Estimation of block covariance matrix.
     Perform a block covariance matrix estimation for each given trial. The
-    resulting matrices are block diagonal matrices
+    resulting matrices are block diagonal matrices.
 
     Parameters
     ----------
@@ -687,9 +687,9 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
-            ndarray of trials.
-        y : ndarray shape (n_trials,)
+        X : ndarray, shape (n_matrices, n_channels, n_samples)
+            ndarray of matrices.
+        y : ndarray shape (n_matrices,)
             labels corresponding to each trial, not used.
 
         Returns
@@ -704,15 +704,15 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_samples)
-            ndarray of trials.
+        X : ndarray, shape (n_matrices, n_channels, n_samples)
+            ndarray of matrices.
 
         Returns
         -------
-        covmats : ndarray, shape (n_trials, n_channels, n_channels)
+        covmats : ndarray, shape (n_matrices, n_channels, n_channels)
             ndarray of covariance matrices for each trials.
         """
-        n_trials, n_channels, n_times = X.shape
+        n_matrices, n_channels, n_times = X.shape
 
         if isinstance(self.block_size, int):
             n_blocks = n_channels // self.block_size

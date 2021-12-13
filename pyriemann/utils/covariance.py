@@ -461,8 +461,8 @@ def block_covariances(X, blocks, estimator='cov'):
 
         Returns
         -------
-        C : ndarray, shape (n_channels, n_channels, n_freqs)
-            Squared coherence matrices, for each frequency bin.
+        C : ndarray, shape (n_matrices, n_channels, n_channels)
+            Block diagonal covariance matrices.
 
     Notes
     -----
