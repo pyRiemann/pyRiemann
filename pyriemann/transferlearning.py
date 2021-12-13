@@ -1,7 +1,7 @@
-from .classification import MDM
 import numpy as np
 from joblib import Parallel, delayed
 
+from .classification import MDM
 from .utils.mean import mean_covariance
 from .utils.geodesic import geodesic
 

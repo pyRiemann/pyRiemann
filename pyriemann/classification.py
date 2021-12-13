@@ -11,7 +11,6 @@ from joblib import Parallel, delayed
 
 from .utils.mean import mean_covariance
 from .utils.distance import distance
-from .utils.geodesic import geodesic
 from .tangentspace import FGDA, TangentSpace
 
 
