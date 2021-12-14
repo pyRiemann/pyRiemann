@@ -658,6 +658,12 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
     Perform a block covariance matrix estimation for each given trial. The
     resulting matrices are block diagonal matrices.
 
+    The blocks on the diagonal are calculated as individual covariance
+    matrices for a subset of channels using the given the estimator.
+    Varying block sized possible by passing a list to allow incorporation
+    of different modalities with different number of channels (e.g. EEG,
+    ECoG, LFP, EMG) with their own respective covariance matrices.
+
     Parameters
     ----------
     estimator : string (default: 'scm')

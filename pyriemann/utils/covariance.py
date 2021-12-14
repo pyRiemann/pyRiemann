@@ -448,21 +448,26 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
 def block_covariances(X, blocks, estimator='cov'):
     """Compute block diagonal covariance.
 
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_times)
-            Multi-channel time-series.
-        blocks: list of int
-            list of block sizes.
-        estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
-            (default: 'scm')
-            Covariance matrix estimator, see
-                :func:`pyriemann.utils.covariance.covariances`.
+    Calculates block diagonal matrices where each block is a covariance
+    matrix of a subset of channels.
+    Block sizes are passed as a list of integers and can vary. The sum
+    of block sizes must equal the number of channels in X.
 
-        Returns
-        -------
-        C : ndarray, shape (n_matrices, n_channels, n_channels)
-            Block diagonal covariance matrices.
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n_channels, n_times)
+        Multi-channel time-series.
+    blocks: list of int
+        list of block sizes.
+    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
+        (default: 'scm')
+        Covariance matrix estimator, see
+            :func:`pyriemann.utils.covariance.covariances`.
+
+    Returns
+    -------
+    C : ndarray, shape (n_matrices, n_channels, n_channels)
+        Block diagonal covariance matrices.
 
     Notes
     -----
