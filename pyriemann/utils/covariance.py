@@ -476,6 +476,10 @@ def block_covariances(X, blocks, estimator='cov'):
     est = _check_est(estimator)
     n_matrices, n_channels, n_times = X.shape
 
+    if np.sum(blocks) != n_channels:
+        raise ValueError('Sum of individual block sizes '
+                         'must match number of channels of X.')
+
     covmats = np.empty((n_matrices, n_channels, n_channels))
     for i in range(n_matrices):
         blockcov = []
