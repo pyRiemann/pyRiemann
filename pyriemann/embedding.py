@@ -1,6 +1,11 @@
 """Embedding covariance matrices via manifold learning techniques."""
 
 import numpy as np
+from sklearn.manifold._locally_linear import null_space
+
+from pyriemann.utils.mean import mean_riemann
+
+from pyriemann.utils.base import logm, invsqrtm
 from sklearn.base import BaseEstimator
 from sklearn.manifold import spectral_embedding
 from .utils.distance import pairwise_distance
@@ -102,3 +107,151 @@ class Embedding(BaseEstimator):
         """
         self.fit(X)
         return self.embedding_
+
+
+import numpy as np
+from scipy.linalg import eigh, svd, qr, solve
+from scipy.sparse import eye, csr_matrix
+from scipy.sparse.linalg import eigsh
+
+from sklearn.base import BaseEstimator, TransformerMixin, _UnstableArchMixin
+from sklearn.utils import check_random_state, check_array
+from sklearn.utils._arpack import _init_arpack_v0
+from sklearn.utils.extmath import stable_cumsum
+from sklearn.utils.validation import check_is_fitted
+from sklearn.utils.validation import FLOAT_DTYPES
+from sklearn.neighbors import NearestNeighbors
+
+
+class RiemannLLE(BaseEstimator, TransformerMixin):
+    """
+    Wrapper for UMAP for dimensionality reduction on positive definite matrices with a Riemannian metric
+    Parameters
+    ----------
+    metric : str (default 'riemann')
+        string code for the metric from .utils.distance
+    **kwargs : dict
+        arguments to pass to umap.
+    """
+
+    def __init__(self, n_components=2, n_neighbors=5, n_jobs=1, reg=1e-3, **kwargs):
+        self.n_components = n_components
+        self.n_neighbors = n_neighbors
+        self.n_jobs = n_jobs
+        self.reg = reg
+        self.null_space_args = kwargs
+
+    def fit(self, X, y=None):
+        self.data = X
+        self.embedding, self.reconstruction_error = riemann_lle(X, self.n_components, self.n_neighbors, self.reg,
+                                                                self.null_space_args)
+        return self
+
+    def transform(self, X, y=None):
+        pairwise_distances = pairwise_distance(X, self.data, metric='riemann')
+        ind = np.array([np.argsort(dist)[1:self.n_neighbors + 1] for dist in pairwise_distances])
+
+        weights = barycenter_weights(X, self.data, ind, reg=self.reg)
+
+        X_new = np.empty((X.shape[0], self.n_components))
+        for i in range(X.shape[0]):
+            X_new[i] = np.dot(self.embedding[ind[i]].T, weights[i])
+        return X_new
+
+    def fit_transform(self, X, y=None):
+        self.data = X
+        self.embedding, self.reconstruction_error = riemann_lle(X, self.n_components, self.n_neighbors, self.reg,
+                                                                self.null_space_args)
+        return self.embedding
+
+
+def barycenter_weights(X, Y, indices, reg=1e-3):
+    """Compute Riemannian barycenter weights of X from Y along the first axis.
+    We estimate the weights to assign to each point in Y[indices] to recover
+    the point X[i] by geodesic interpolation. The barycenter weights sum to 1.
+    Parameters
+    ----------
+    X : array-like, shape (n_samples, n_dim)
+    Y : array-like, shape (n_samples, n_dim)
+    indices : array-like, shape (n_samples, n_dim)
+            Indices of the points in Y used to compute the barycenter
+    reg : float, default=1e-3
+        amount of regularization to add for the problem to be
+        well-posed in the case of n_neighbors > n_dim
+    Returns
+    -------
+    B : array-like, shape (n_samples, n_neighbors)
+    Notes
+    -----
+    See developers note for more information.
+    """
+    # indices = check_array(indices, dtype=int)
+
+    n_samples, n_neighbors = indices.shape
+    assert X.shape[0] == n_samples
+
+    B = np.empty((n_samples, n_neighbors), dtype=X.dtype)
+    v = np.ones(n_neighbors, dtype=X.dtype)
+
+    for i in range(len(X)):
+        X_neighbors = Y[indices[i]]
+        G = riemann_kernel_matrix(X_neighbors, X_neighbors, X[i])
+        trace = np.trace(G)
+        if trace > 0:
+            R = reg * trace
+        else:
+            R = reg
+        G.flat[:: n_neighbors + 1] += R
+        w = solve(G, v, sym_pos=True)
+        B[i, :] = w / np.sum(w)
+    return B
+
+
+def riemann_lle(X, n_components=2, n_neighbors=5, reg=1e-3, null_space_args={}):
+    n_samples = X.shape[0]
+    pairwise_distances = pairwise_distance(X, metric='riemann')
+    neighbors = np.array([np.argsort(dist)[1:n_neighbors + 1] for dist in pairwise_distances])
+
+    B = barycenter_weights(X, X, neighbors, reg=reg)
+
+    indptr = np.arange(0, n_samples * n_neighbors + 1, n_neighbors)
+    W = csr_matrix((B.ravel(), neighbors.ravel(), indptr), shape=(n_samples, n_samples))
+    M = (W.T * W - W.T - W).toarray()
+    M.flat[:: M.shape[0] + 1] += 1  # W = W - I = W - I
+    return null_space(
+        M,
+        n_components,
+        k_skip=1,
+        **null_space_args
+    )
+
+
+def riemann_kernel_matrix(X, Y=None, Cref=None):
+    if Cref is None:
+        G = mean_riemann(X)
+        G_invsq = invsqrtm(G)
+
+    else:
+        G_invsq = invsqrtm(Cref)
+
+    Ntx, Ne, Ne = X.shape
+
+    X_ = np.zeros((Ntx, Ne, Ne))
+    for index in range(Ntx):
+        X_[index] = logm(G_invsq @ X[index] @ G_invsq)
+
+    if Y is None:
+        Nty, Ne, Ne = X.shape
+        Y_ = X_
+
+    else:
+        Nty, Ne, Ne = Y.shape
+        Y_ = np.zeros((Nty, Ne, Ne))
+        for index in range(Nty):
+            Y_[index] = logm(G_invsq @ Y[index] @ G_invsq)
+
+    res = np.zeros((Nty, Ntx))
+    for i in range(Nty):
+        for j in range(Ntx):
+            res[i][j] = np.trace(X_[i] @ Y_[j])
+    return res
