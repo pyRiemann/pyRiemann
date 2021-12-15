@@ -673,12 +673,13 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
         Sizes of individual blocks given as int for same-size block or list for
         varying block sizes.
 
+    Notes
+    -----
+    .. versionadded:: 0.2.8
+
     See Also
     --------
-    ERPCovariances
-    XdawnCovariances
-    CospCovariances
-    HankelCovariances
+    Covariances
     """
 
     def __init__(self, block_size, estimator='scm'):
