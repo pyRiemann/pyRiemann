@@ -1,14 +1,20 @@
 """Embedding covariance matrices via manifold learning techniques."""
 
 import numpy as np
+from scipy.linalg import solve
+from scipy.sparse import csr_matrix
+
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.manifold import spectral_embedding
 from sklearn.manifold._locally_linear import null_space
 
-from pyriemann.utils.mean import mean_riemann
-
-from pyriemann.utils.base import logm, invsqrtm
-from sklearn.base import BaseEstimator
-from sklearn.manifold import spectral_embedding
+from .utils.mean import mean_riemann
+from .utils.base import logm, invsqrtm
 from .utils.distance import pairwise_distance
+
+
+
+
 
 
 class Embedding(BaseEstimator):
@@ -107,20 +113,6 @@ class Embedding(BaseEstimator):
         """
         self.fit(X)
         return self.embedding_
-
-
-import numpy as np
-from scipy.linalg import eigh, svd, qr, solve
-from scipy.sparse import eye, csr_matrix
-from scipy.sparse.linalg import eigsh
-
-from sklearn.base import BaseEstimator, TransformerMixin, _UnstableArchMixin
-from sklearn.utils import check_random_state, check_array
-from sklearn.utils._arpack import _init_arpack_v0
-from sklearn.utils.extmath import stable_cumsum
-from sklearn.utils.validation import check_is_fitted
-from sklearn.utils.validation import FLOAT_DTYPES
-from sklearn.neighbors import NearestNeighbors
 
 
 class RiemannLLE(BaseEstimator, TransformerMixin):
