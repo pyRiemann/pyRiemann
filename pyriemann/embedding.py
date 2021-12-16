@@ -8,13 +8,8 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.manifold import spectral_embedding
 from sklearn.manifold._locally_linear import null_space
 
-from .utils.mean import mean_riemann
-from .utils.base import logm, invsqrtm
+from .utils.kernel import kernel_riemann
 from .utils.distance import pairwise_distance
-
-
-
-
 
 
 class Embedding(BaseEstimator):
@@ -107,7 +102,7 @@ class Embedding(BaseEstimator):
 
         Returns
         -------
-        X_new: array-like, shape (n_matrices, n_components)
+        X_new: ndarray, shape (n_matrices, n_components)
             Coordinates of embedded matrices.
 
         """
@@ -116,14 +111,43 @@ class Embedding(BaseEstimator):
 
 
 class RiemannLLE(BaseEstimator, TransformerMixin):
-    """
-    Wrapper for UMAP for dimensionality reduction on positive definite matrices with a Riemannian metric
+    """Riemannian Locally Linear Embedding (LLE).
+
+    Riemannian LLE as proposed in [1]_. LLE is a non-linear, neighborhood-preserving
+    dimensionality reduction algorithm which consists of three main steps:
+    For each point x,
+    1.  find its k nearest neighbors KNN(x) and
+    2.  calculate the best reconstruction of x based on its KNN.
+    3.  Then calculate a low-dimensional embedding for all points based on
+        the weights in step 2.
+
     Parameters
     ----------
-    metric : str (default 'riemann')
-        string code for the metric from .utils.distance
-    **kwargs : dict
-        arguments to pass to umap.
+    n_components : int, default: 2
+        Dimensionality of projected space.
+    n_neighbors : int, default: 5
+        Number of neighbors for reconstruction of each point.
+    n_jobs : int, default: 1
+        The number of jobs to use for the computation. This works by computing
+        each of the class centroid in parallel.
+        If -1 all CPUs are used. If 1 is given, no parallel computing code is
+        used at all, which is useful for debugging. For n_jobs below -1,
+        (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
+        are used.
+    reg : float, default: 1e-3
+        Regularization parameter.
+    **kwargs
+        Keyword arguments passed to sklearn.manifold._locally_linear.null_space.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.8
+
+    References
+    ----------
+    .. [1] A. Goh and R. Vidal, "Clustering and dimensionality reduction
+        on Riemannian manifolds", 2008 IEEE Conference on Computer Vision
+        and Pattern Recognition, June 2008
     """
 
     def __init__(self, n_components=2, n_neighbors=5, n_jobs=1, reg=1e-3, **kwargs):
@@ -134,14 +158,31 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         self.null_space_args = kwargs
 
     def fit(self, X, y=None):
+        """Fit the model from data in X.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            SPD matrices.
+
+        Returns
+        -------
+        self : object
+            Returns the instance itself.
+
+        """
         self.data = X
-        self.embedding, self.reconstruction_error = riemann_lle(X, self.n_components, self.n_neighbors, self.reg,
+        self.embedding, self.reconstruction_error = riemann_lle(X,
+                                                                self.n_components,
+                                                                self.n_neighbors,
+                                                                self.reg,
                                                                 self.null_space_args)
         return self
 
     def transform(self, X, y=None):
         pairwise_distances = pairwise_distance(X, self.data, metric='riemann')
-        ind = np.array([np.argsort(dist)[1:self.n_neighbors + 1] for dist in pairwise_distances])
+        ind = np.array([np.argsort(dist)[1:self.n_neighbors + 1]
+                        for dist in pairwise_distances])
 
         weights = barycenter_weights(X, self.data, ind, reg=self.reg)
 
@@ -152,7 +193,10 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
 
     def fit_transform(self, X, y=None):
         self.data = X
-        self.embedding, self.reconstruction_error = riemann_lle(X, self.n_components, self.n_neighbors, self.reg,
+        self.embedding, self.reconstruction_error = riemann_lle(X,
+                                                                self.n_components,
+                                                                self.n_neighbors,
+                                                                self.reg,
                                                                 self.null_space_args)
         return self.embedding
 
@@ -161,33 +205,36 @@ def barycenter_weights(X, Y, indices, reg=1e-3):
     """Compute Riemannian barycenter weights of X from Y along the first axis.
     We estimate the weights to assign to each point in Y[indices] to recover
     the point X[i] by geodesic interpolation. The barycenter weights sum to 1.
+
     Parameters
     ----------
-    X : array-like, shape (n_samples, n_dim)
-    Y : array-like, shape (n_samples, n_dim)
-    indices : array-like, shape (n_samples, n_dim)
-            Indices of the points in Y used to compute the barycenter
+    X : ndarray, shape (n_matrices, n_dim)
+    Y : ndarray, shape (n_matrices, n_dim)
+    indices : ndarray, shape (n_matrices, n_dim)
+        Indices of the points in Y used to compute the barycenter
     reg : float, default=1e-3
         amount of regularization to add for the problem to be
         well-posed in the case of n_neighbors > n_dim
+
     Returns
     -------
-    B : array-like, shape (n_samples, n_neighbors)
+    B : ndarray, shape (n_matrices, n_neighbors)
+
     Notes
     -----
-    See developers note for more information.
+    .. versionadded:: 0.2.8
+    See sklearn.manifold._locally_linear.barycenter_weights for original code.
     """
-    # indices = check_array(indices, dtype=int)
 
-    n_samples, n_neighbors = indices.shape
-    assert X.shape[0] == n_samples
+    n_matrices, n_neighbors = indices.shape
+    assert X.shape[0] == n_matrices
 
-    B = np.empty((n_samples, n_neighbors), dtype=X.dtype)
+    B = np.empty((n_matrices, n_neighbors), dtype=X.dtype)
     v = np.ones(n_neighbors, dtype=X.dtype)
 
     for i in range(len(X)):
         X_neighbors = Y[indices[i]]
-        G = riemann_kernel_matrix(X_neighbors, X_neighbors, X[i])
+        G = kernel_riemann(X_neighbors, Cref=X[i])
         trace = np.trace(G)
         if trace > 0:
             R = reg * trace
@@ -200,14 +247,57 @@ def barycenter_weights(X, Y, indices, reg=1e-3):
 
 
 def riemann_lle(X, n_components=2, n_neighbors=5, reg=1e-3, null_space_args={}):
-    n_samples = X.shape[0]
+    """Riemannian Locally Linear Embedding (LLE).
+
+    Riemannian LLE as proposed in [1]_. LLE is a non-linear, neighborhood-preserving
+    dimensionality reduction algorithm which consists of three main steps:
+    For each point x,
+    1.  find its k nearest neighbors KNN(x) and
+    2.  calculate the best reconstruction of x based on its KNN.
+    3.  Then calculate a low-dimensional embedding for all points based on
+        the weights in step 2.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n_channels, n_channels)
+        ndarray of SPD matrices.
+    n_components : int, default: 2
+        Dimensionality of projected space.
+    n_neighbors : int, default: 5
+        Number of neighbors for reconstruction of each point.
+    n_jobs : int, default: 1
+        The number of jobs to use for the computation. This works by computing
+        each of the class centroid in parallel.
+        If -1 all CPUs are used. If 1 is given, no parallel computing code is
+        used at all, which is useful for debugging. For n_jobs below -1,
+        (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
+        are used.
+    reg : float, default: 1e-3
+        Regularization parameter.
+    null_space_args : dict, default {}
+        Keyword arguments passed to sklearn.manifold._locally_linear.null_space.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.8
+    See sklearn.manifold._locally_linear.locally_linear_embedding for original code.
+
+    References
+    ----------
+    .. [1] A. Goh and R. Vidal, "Clustering and dimensionality reduction
+        on Riemannian manifolds", 2008 IEEE Conference on Computer Vision
+        and Pattern Recognition, June 2008
+    """
+
+    n_matrices, n_channels, n_channels = X.shape
     pairwise_distances = pairwise_distance(X, metric='riemann')
-    neighbors = np.array([np.argsort(dist)[1:n_neighbors + 1] for dist in pairwise_distances])
+    neighbors = np.array([np.argsort(dist)[1:n_neighbors + 1]
+                          for dist in pairwise_distances])
 
     B = barycenter_weights(X, X, neighbors, reg=reg)
 
-    indptr = np.arange(0, n_samples * n_neighbors + 1, n_neighbors)
-    W = csr_matrix((B.ravel(), neighbors.ravel(), indptr), shape=(n_samples, n_samples))
+    indptr = np.arange(0, n_matrices * n_neighbors + 1, n_neighbors)
+    W = csr_matrix((B.ravel(), neighbors.ravel(), indptr), shape=(n_matrices, n_matrices))
     M = (W.T * W - W.T - W).toarray()
     M.flat[:: M.shape[0] + 1] += 1  # W = W - I = W - I
     return null_space(
@@ -216,34 +306,3 @@ def riemann_lle(X, n_components=2, n_neighbors=5, reg=1e-3, null_space_args={}):
         k_skip=1,
         **null_space_args
     )
-
-
-def riemann_kernel_matrix(X, Y=None, Cref=None):
-    if Cref is None:
-        G = mean_riemann(X)
-        G_invsq = invsqrtm(G)
-
-    else:
-        G_invsq = invsqrtm(Cref)
-
-    Ntx, Ne, Ne = X.shape
-
-    X_ = np.zeros((Ntx, Ne, Ne))
-    for index in range(Ntx):
-        X_[index] = logm(G_invsq @ X[index] @ G_invsq)
-
-    if Y is None:
-        Nty, Ne, Ne = X.shape
-        Y_ = X_
-
-    else:
-        Nty, Ne, Ne = Y.shape
-        Y_ = np.zeros((Nty, Ne, Ne))
-        for index in range(Nty):
-            Y_[index] = logm(G_invsq @ Y[index] @ G_invsq)
-
-    res = np.zeros((Nty, Ntx))
-    for i in range(Nty):
-        for j in range(Ntx):
-            res[i][j] = np.trace(X_[i] @ Y_[j])
-    return res
