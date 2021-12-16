@@ -251,3 +251,13 @@ def test_block_covariances_array_value_error(rndstate):
     cov = BlockCovariances(block_size=[4, 4, 5])
     with pytest.raises(ValueError):
         cov.fit_transform(x)
+
+
+def test_block_covariances_block_size_type_error(rndstate):
+    """Test Covariances"""
+    n_trials, n_channels, n_times = 2, 12, 100
+    x = rndstate.randn(n_trials, n_channels, n_times)
+    cov = BlockCovariances(block_size='[4, 4, 5]')
+    with pytest.raises(ValueError):
+        cov.fit_transform(x)
+

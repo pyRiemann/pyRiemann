@@ -725,7 +725,10 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
             n_blocks = n_channels // self.block_size
             blocks = [self.block_size for b in range(n_blocks)]
 
-        else:
+        elif isinstance(self.block_size, (list, np.ndarray)):
             blocks = self.block_size
+
+        else:
+            raise ValueError("block_size must be int or list.")
 
         return block_covariances(X, blocks, self.estimator)
