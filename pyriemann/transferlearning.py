@@ -57,7 +57,7 @@ class MDWM (MDM):
         European Signal Processing Conference (EUSIPCO), pp. 1685-1689. IEEE,
         2018.
 
-    .. [2] S. Khazem, S. Chevallier, Q. Barthélemy, K. Haroun and C. Noûs,
+    .. [2] S. Khazem, S. Chevallier, Q. Barthelemy, K. Haroun and C. Nous,
         "Minimizing Subject-dependent Calibration for BCI with Riemannian
         Transfer Learning", in 10th International IEEE/EMBS Conference on
         Neural Engineering (NER), pp. 523-526. IEEE, 2021.
