@@ -52,7 +52,7 @@ class MDWM (MDM):
 
     References
     ----------
-    .. [1] E. Kalunga, S. Chevallier and Q. Barthélemy, "Transfer learning for
+    .. [1] E. Kalunga, S. Chevallier and Q. Barthelemy, "Transfer learning for
         SSVEP-based BCI using Riemannian similarities between users", in 26th
         European Signal Processing Conference (EUSIPCO), pp. 1685-1689. IEEE,
         2018.
