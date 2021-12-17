@@ -10,8 +10,8 @@ class MDWM (MDM):
 
     Classification by nearest centroid. For each of the given classes, a
     centroid is estimated, according to the chosen metric, as a weighted mean
-    of point (i.e. covariance matrices) from the source domain, combined with
-    the class centroid of the target domain.
+    of covariance matrices from the source domain, combined with
+    the class centroid of the target domain [1]_ [2]_.
     For classification, a given new point is attibuted to the class whose
     centroid is the nearest according to the chosen metric.
 
@@ -46,20 +46,17 @@ class MDWM (MDM):
     See Also
     --------
     MDM
-    Kmeans
-    FgMDM
-    KNearestNeighbor
 
     References
     ----------
-    [1] E. Kalunga, S. Chevallier and Q. Barthélemy, "Transfer learning for
-    SSVEP-based BCI using Riemannian similarities between users", in 26th
-    European Signal Processing Conference (EUSIPCO), pp. 1685-1689. IEEE, 2018.
+    .. [1] E. Kalunga, S. Chevallier and Q. Barthélemy, "Transfer learning for
+        SSVEP-based BCI using Riemannian similarities between users", in 26th
+        European Signal Processing Conference (EUSIPCO), pp. 1685-1689. IEEE, 2018.
 
-    [2] S. Khazem, S. Chevallier, Q. Barthélemy, K. Haroun and C. Noûs,
-    "Minimizing Subject-dependent Calibration for BCI with Riemannian Transfer
-    Learning", in 10th International IEEE/EMBS Conference on Neural
-    Engineering (NER), pp. 523-526. IEEE, 2021.
+    .. [2] S. Khazem, S. Chevallier, Q. Barthélemy, K. Haroun and C. Noûs,
+        "Minimizing Subject-dependent Calibration for BCI with Riemannian Transfer
+        Learning", in 10th International IEEE/EMBS Conference on Neural
+        Engineering (NER), pp. 523-526. IEEE, 2021.
     """
 
     def __init__(self, metric='riemann', L=0, n_jobs=1):
@@ -107,6 +104,11 @@ class MDWM (MDM):
             The MDWM instance.
         """
 
+        if not 0 <= self.lambda <= 1:
+            raise ValueError(
+                'Value lambda must be included in [0, 1] (Got %d)'
+                % self.lambda)
+
         if set(y) != set(y_source):
             raise Exception(f"classes in source domain must match classes in target \
                 domain. Classes in source are {np.unique(y_source)} while \
@@ -140,7 +142,7 @@ class MDWM (MDM):
                     sample_weight=sample_weight[y_source == ll])
                 for ll in self.classes_)
 
-        self.class_center_ = [geodesic(self.target_means_[i],
+        self.covmeans_ = [geodesic(self.target_means_[i],
                                        self.domain_means_[i],
                                        self.L, self.metric)
                               for i, _ in enumerate(self.classes_)]
