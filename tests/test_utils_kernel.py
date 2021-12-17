@@ -10,9 +10,9 @@ from pyriemann.utils.test import (is_sym_pos_def as is_spd,
                                   is_sym_pos_semi_def as is_spsd)
 
 def test_riemann_kernel(rndstate, get_covmats):
-    """Test Riemannian Kernel"""
+    """Test Riemannian Kernel build"""
     n_trials, n_channels = 5, 3
-    cov = get_covmats(n_trials, n_channels,)
+    cov = get_covmats(n_trials, n_channels)
     K = kernel_riemann(cov, cov, np.eye(n_channels))
     assert is_spsd(K)
 
@@ -23,11 +23,20 @@ def test_riemann_kernel(rndstate, get_covmats):
 
 
 def test_riemann_kernel_cref(rndstate, get_covmats):
-    """Test Riemannian Kernel"""
+    """Test Riemannian Kernel reference"""
     n_trials, n_channels = 5, 3
-    cov = get_covmats(n_trials, n_channels,)
+    cov = get_covmats(n_trials, n_channels)
     cref = mean_riemann(cov)
     K = kernel_riemann(cov, cov)
     K1 = kernel_riemann(cov, cov, cref)
     assert_array_equal(K, K1)
 
+
+def test_riemann_kernel_x_y(rndstate, get_covmats):
+    """Test Riemannian Kernel reference"""
+    n_trials, n_channels = 5, 3
+    cov = get_covmats(n_trials, n_channels)
+    cov2 = get_covmats(n_trials+1, n_channels)
+    K = kernel_riemann(cov, cov2)
+
+    assert K.shape == (n_trials, n_trials + 1)
