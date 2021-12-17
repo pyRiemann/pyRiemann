@@ -5,6 +5,7 @@ from .classification import MDM
 from .utils.mean import mean_covariance
 from .utils.geodesic import geodesic
 
+
 class MDWM (MDM):
     """Classification by Minimum Distance to Weighted Mean.
 
@@ -25,10 +26,10 @@ class MDWM (MDM):
         distance estimation. Typical usecase is to pass 'logeuclid' metric for
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
-    L : float, (default: 0)
-        Transfer coefficient in [0,1], controlling the trade-off between 
+    Lambda : float, (default: 0)
+        Transfer coefficient in [0,1], controlling the trade-off between
         source and target data. At 0, there is no transfer, only the data
-        acquired from the source are used. At 1, this is a calibration-free 
+        acquired from the source are used. At 1, this is a calibration-free
         system as no data are required from the source.
     n_jobs : int, (default: 1)
         The number of jobs to use for the computation. This works by computing
@@ -53,19 +54,23 @@ class MDWM (MDM):
     ----------
     .. [1] E. Kalunga, S. Chevallier and Q. Barthélemy, "Transfer learning for
         SSVEP-based BCI using Riemannian similarities between users", in 26th
-        European Signal Processing Conference (EUSIPCO), pp. 1685-1689. IEEE, 2018.
+        European Signal Processing Conference (EUSIPCO), pp. 1685-1689. IEEE,
+        2018.
 
     .. [2] S. Khazem, S. Chevallier, Q. Barthélemy, K. Haroun and C. Noûs,
-        "Minimizing Subject-dependent Calibration for BCI with Riemannian Transfer
-        Learning", in 10th International IEEE/EMBS Conference on Neural
-        Engineering (NER), pp. 523-526. IEEE, 2021.
+        "Minimizing Subject-dependent Calibration for BCI with Riemannian
+        Transfer Learning", in 10th International IEEE/EMBS Conference on
+        Neural Engineering (NER), pp. 523-526. IEEE, 2021.
     """
 
-    def __init__(self, metric='riemann', L=0, n_jobs=1):
+    def __init__(self, metric='riemann', Lambda=0, n_jobs=1):
         """Init."""
         self.metric = metric
         self.n_jobs = n_jobs
-        self.L = L
+        self.Lambda = Lambda
+        self.target_means_ = None
+        self.domain_means_ = None
+        self.classes_ = None
 
         if isinstance(metric, str):
             self.metric_mean = metric
@@ -106,10 +111,10 @@ class MDWM (MDM):
             The MDWM instance.
         """
 
-        if not 0 <= self.lambda <= 1:
+        if not 0 <= self.Lambda <= 1:
             raise ValueError(
-                'Value lambda must be included in [0, 1] (Got %d)'
-                % self.lambda)
+                'Value Lambda must be included in [0, 1] (Got %d)'
+                % self.Lambda)
 
         if set(y) != set(y_source):
             raise Exception(f"classes in source domain must match classes in target \
@@ -125,7 +130,9 @@ class MDWM (MDM):
             self.target_means_ = [
                 mean_covariance(X[y == ll], metric=self.metric_mean)
                 for ll in self.classes_]
-
+            print(f"[DEBUG] self.classes_ {self.classes_}")
+            print(f"[DEBUG] y_source {y_source}")
+            print(f"[DEBUG] X_source.shape {X_source.shape}")
             self.domain_means_ = [
                 mean_covariance(
                     X_source[y_source == ll],
@@ -145,7 +152,7 @@ class MDWM (MDM):
                 for ll in self.classes_)
 
         self.covmeans_ = [geodesic(self.target_means_[i],
-                                       self.domain_means_[i],
-                                       self.L, self.metric)
-                              for i, _ in enumerate(self.classes_)]
+                                   self.domain_means_[i],
+                                   self.Lambda, self.metric)
+                          for i, _ in enumerate(self.classes_)]
         return self
