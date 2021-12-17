@@ -66,7 +66,7 @@ def test_covariances_X(estimator, rndstate):
 
 
 @pytest.mark.parametrize(
-    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd', 
+    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd',
                   'sch', np.cov, 'truc', None]
 )
 def test_block_covariances_est(estimator, rndstate):
