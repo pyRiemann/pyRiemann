@@ -482,12 +482,11 @@ def block_covariances(X, blocks, estimator='cov'):
 
     covmats = np.empty((n_matrices, n_channels, n_channels))
     for i in range(n_matrices):
-        blockcov = []
-        idx_start = 0
+        blockcov, idx_start = [], 0
         for j in blocks:
             blockcov.append(est(X[i, idx_start:idx_start+j, :]))
             idx_start += j
-        covmats[i, :, :] = block_diag(*tuple(blockcov))
+        covmats[i] = block_diag(*tuple(blockcov))
 
     return covmats
 
