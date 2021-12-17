@@ -19,7 +19,7 @@ def _nextpow2(i):
 class Covariances(BaseEstimator, TransformerMixin):
     """Estimation of covariance matrix.
 
-    Perform a simple covariance matrix estimation for each given trial.
+    Perform a simple covariance matrix estimation for each given input.
 
     Parameters
     ----------
@@ -47,10 +47,10 @@ class Covariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            ndarray of trials.
-        y : ndarray shape (n_trials,)
-            labels corresponding to each trial, not used.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series
+        y : ndarray shape (n_matrices,)
+            Labels corresponding to each matrix, not used.
 
         Returns
         -------
@@ -64,13 +64,13 @@ class Covariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            ndarray of trials.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series
 
         Returns
         -------
-        covmats : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of covariance matrices for each trials.
+        covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+            Covariance matrices.
         """
         covmats = covariances(X, estimator=self.estimator)
         return covmats
@@ -151,10 +151,10 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            ndarray of trials.
-        y : ndarray shape (n_trials,)
-            labels corresponding to each trial.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
+        y : ndarray shape (n_matrices,)
+            Labels corresponding to each matrix.
 
         Returns
         -------
@@ -186,13 +186,13 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            ndarray of trials.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
 
         Returns
         -------
-        covmats : ndarray, shape (n_trials, n_c, n_c)
-            ndarray of covariance matrices for each trials, with n_c the size
+        covmats : ndarray, shape (n_matrices, n_c, n_c)
+            Covariance matrices for each input, with n_c the size
             of covmats equal to n_channels * (n_classes + 1) in case svd is
             None and equal to n_channels + n_classes * svd otherwise.
         """
@@ -267,10 +267,10 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            ndarray of trials.
-        y : ndarray shape (n_trials,)
-            labels corresponding to each trial.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
+        y : ndarray shape (n_matrices,)
+            Labels corresponding to each matrix.
 
         Returns
         -------
@@ -291,19 +291,102 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            ndarray of trials.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
 
         Returns
         -------
-        covmats : ndarray, shape (n_trials, n_c, n_c)
-            ndarray of covariance matrices for each trials.
+        covmats : ndarray, shape (n_matrices, n_c, n_c)
+            Covariance matrices.
         """
         if self.applyfilters:
             X = self.Xd_.transform(X)
 
         covmats = covariances_EP(X, self.P_, estimator=self.estimator)
         return covmats
+
+
+class BlockCovariances(BaseEstimator, TransformerMixin):
+    """Estimation of block covariance matrix.
+
+    Perform a block covariance estimation for each given matrix. The
+    resulting matrices are block diagonal matrices.
+
+    The blocks on the diagonal are calculated as individual covariance
+    matrices for a subset of channels using the given the estimator.
+    Varying block sized possible by passing a list to allow incorporation
+    of different modalities with different number of channels (e.g. EEG,
+    ECoG, LFP, EMG) with their own respective covariance matrices.
+
+    Parameters
+    ----------
+    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
+        (default: 'scm')
+        Covariance matrix estimator, see
+            :func:`pyriemann.utils.covariance.covariances`.
+    block_size : int | list
+        Sizes of individual blocks given as int for same-size block, or list
+        for varying block sizes.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.8
+
+    See Also
+    --------
+    Covariances
+    """
+
+    def __init__(self, block_size, estimator='scm'):
+        """Init."""
+        self.estimator = estimator
+        self.block_size = block_size
+
+    def fit(self, X, y=None):
+        """Fit.
+
+        Do nothing. For compatibility purpose.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
+        y : ndarray shape (n_matrices,)
+            Labels corresponding to each matrix, not used.
+
+        Returns
+        -------
+        self : BlockCovariances instance
+            The BlockCovariances instance.
+        """
+        return self
+
+    def transform(self, X):
+        """Estimate block covariance matrices.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
+
+        Returns
+        -------
+        covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+            Covariance matrices.
+        """
+        n_matrices, n_channels, n_times = X.shape
+
+        if isinstance(self.block_size, int):
+            n_blocks = n_channels // self.block_size
+            blocks = [self.block_size for b in range(n_blocks)]
+
+        elif isinstance(self.block_size, (list, np.ndarray)):
+            blocks = self.block_size
+
+        else:
+            raise ValueError("Parameter block_size must be int or list.")
+
+        return block_covariances(X, blocks, self.estimator)
 
 
 ###############################################################################
@@ -315,7 +398,7 @@ class CospCovariances(BaseEstimator, TransformerMixin):
     Co-spectral matrices are the real part of complex cross-spectral matrices
     (see :func:`pyriemann.utils.covariance.cross_spectrum`), estimated as the
     spectrum covariance in the frequency domain. This method returns a 4-d
-    array with a cospectral covariance matrice for each trial and in each
+    array with a cospectral covariance matrix for each input and in each
     frequency bin of the FFT.
 
     Parameters
@@ -360,10 +443,10 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            ndarray of trials.
-        y : ndarray, shape (n_trials,)
-            labels corresponding to each trial, not used.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
+        y : ndarray, shape (n_matrices,)
+            Labels corresponding to each matrix, not used.
 
         Returns
         -------
@@ -377,14 +460,13 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            ndarray of trials.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
 
         Returns
         -------
-        covmats : ndarray, shape (n_trials, n_channels, n_channels, n_freqs)
-            ndarray of covariance matrices for each trials and for each
-            frequency bin.
+        covmats : ndarray, shape (n_matrices, n_channels, n_channels, n_freqs)
+            Covariance matrices for each input and for each frequency bin.
         """
         Nt = len(X)
         out = []
@@ -407,7 +489,7 @@ class Coherences(CospCovariances):
     """Estimation of squared coherence matrices.
 
     Squared coherence matrices estimation [1]_. This method will return a 4-d
-    array with a squared coherence matrix estimation for each trial and in
+    array with a squared coherence matrix estimation for each input and in
     each frequency bin of the FFT.
 
     Parameters
@@ -483,13 +565,13 @@ class Coherences(CospCovariances):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            ndarray of trials.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
 
         Returns
         -------
-        covmats : ndarray, shape (n_trials, n_channels, n_channels, n_freqs)
-            Squared coherence matrices for each trial and for each frequency
+        covmats : ndarray, shape (n_matrices, n_channels, n_channels, n_freqs)
+            Squared coherence matrices for each input and for each frequency
             bin.
         """
         Nt = len(X)
@@ -547,10 +629,10 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            ndarray of trials.
-        y : ndarray shape (n_trials,)
-            labels corresponding to each trial, not used.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
+        y : ndarray shape (n_matrices,)
+            Labels corresponding to each matrix, not used.
 
         Returns
         -------
@@ -564,13 +646,13 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            ndarray of trials.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
 
         Returns
         -------
-        covmats : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of covariance matrices for each trials.
+        covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+            Covariance matrices.
         """
 
         if isinstance(self.delays, int):
@@ -595,7 +677,7 @@ class Shrinkage(BaseEstimator, TransformerMixin):
 
     This transformer apply a shrinkage regularization to any covariance matrix.
     It directly use the `shrunk_covariance` function from scikit learn, applied
-    on each trial.
+    on each input.
 
     Parameters
     ----------
@@ -619,10 +701,10 @@ class Shrinkage(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
+        X : ndarray, shape (n_matrices, n_channels, n_times)
             ndarray of Target data.
-        y : ndarray shape (n_trials,)
-            Labels corresponding to each trial, not used.
+        y : ndarray shape (n_matrices,)
+            Labels corresponding to each matrix, not used.
 
         Returns
         -------
@@ -636,13 +718,13 @@ class Shrinkage(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of covariances matrices
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Covariances matrices
 
         Returns
         -------
-        covmats : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of covariance matrices for each trials.
+        covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+            Shrunk covariances matrices.
         """
 
         covmats = np.zeros_like(X)
@@ -651,84 +733,3 @@ class Shrinkage(BaseEstimator, TransformerMixin):
             covmats[ii] = shrunk_covariance(x, self.shrinkage)
 
         return covmats
-
-
-class BlockCovariances(BaseEstimator, TransformerMixin):
-    """Estimation of block covariance matrix.
-    Perform a block covariance matrix estimation for each given trial. The
-    resulting matrices are block diagonal matrices.
-
-    The blocks on the diagonal are calculated as individual covariance
-    matrices for a subset of channels using the given the estimator.
-    Varying block sized possible by passing a list to allow incorporation
-    of different modalities with different number of channels (e.g. EEG,
-    ECoG, LFP, EMG) with their own respective covariance matrices.
-
-    Parameters
-    ----------
-    estimator : string (default: 'scm')
-        covariance matrix estimator. For regularization consider 'lwf' or 'oas'
-        For a complete list of estimator, see `utils.covariance`.
-    block_size : list or int
-        Sizes of individual blocks given as int for same-size block or list for
-        varying block sizes.
-
-    Notes
-    -----
-    .. versionadded:: 0.2.8
-
-    See Also
-    --------
-    Covariances
-    """
-
-    def __init__(self, block_size, estimator='scm'):
-        """Init."""
-        self.estimator = estimator
-        self.block_size = block_size
-
-    def fit(self, X, y=None):
-        """Fit.
-
-        Do nothing. For compatibility purpose.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_samples)
-            ndarray of matrices.
-        y : ndarray shape (n_matrices,)
-            labels corresponding to each trial, not used.
-
-        Returns
-        -------
-        self : Covariances instance
-            The Covariances instance.
-        """
-        return self
-
-    def transform(self, X):
-        """Estimate block covariance matrices.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_samples)
-            ndarray of matrices.
-
-        Returns
-        -------
-        covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-            ndarray of covariance matrices for each trials.
-        """
-        n_matrices, n_channels, n_times = X.shape
-
-        if isinstance(self.block_size, int):
-            n_blocks = n_channels // self.block_size
-            blocks = [self.block_size for b in range(n_blocks)]
-
-        elif isinstance(self.block_size, (list, np.ndarray)):
-            blocks = self.block_size
-
-        else:
-            raise ValueError("block_size must be int or list.")
-
-        return block_covariances(X, blocks, self.estimator)

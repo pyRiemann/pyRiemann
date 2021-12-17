@@ -163,6 +163,59 @@ def test_xdawn_covariances_applyfilters(rndstate, get_labels):
     assert is_spsd(covmats)
 
 
+@pytest.mark.parametrize("estimator", estim)
+def test_block_covariances_est(estimator, rndstate):
+    """Test BlockCovariances estimators"""
+    n_trials, n_channels, n_times = 2, 12, 100
+    x = rndstate.randn(n_trials, n_channels, n_times)
+    cov = BlockCovariances(block_size=6, estimator=estimator)
+    cov.fit(x)
+    covmats = cov.fit_transform(x)
+    assert cov.get_params() == dict(block_size=6, estimator=estimator)
+    assert covmats.shape == (n_trials, n_channels, n_channels)
+    assert is_spd(covmats)
+
+
+@pytest.mark.parametrize("block_size", [1, 6, [4, 8]])
+def test_block_covariances_blocks(block_size, rndstate):
+    """Test BlockCovariances fit"""
+    n_trials, n_channels, n_times = 2, 12, 100
+    x = rndstate.randn(n_trials, n_channels, n_times)
+    cov = BlockCovariances(block_size=block_size)
+    cov.fit(x)
+    covmats = cov.fit_transform(x)
+    assert cov.get_params() == dict(block_size=block_size, estimator='scm')
+    assert covmats.shape == (n_trials, n_channels, n_channels)
+    assert is_spd(covmats)
+
+
+def test_block_covariances_int_value_error(rndstate):
+    """Test BlockCovariances error"""
+    n_trials, n_channels, n_times = 2, 12, 100
+    x = rndstate.randn(n_trials, n_channels, n_times)
+    cov = BlockCovariances(block_size=5)
+    with pytest.raises(ValueError):
+        cov.fit_transform(x)
+
+
+def test_block_covariances_array_value_error(rndstate):
+    """Test BlockCovariances error"""
+    n_trials, n_channels, n_times = 2, 12, 100
+    x = rndstate.randn(n_trials, n_channels, n_times)
+    cov = BlockCovariances(block_size=[4, 4, 5])
+    with pytest.raises(ValueError):
+        cov.fit_transform(x)
+
+
+def test_block_covariances_block_size_type_error(rndstate):
+    """Test BlockCovariances error"""
+    n_trials, n_channels, n_times = 2, 12, 100
+    x = rndstate.randn(n_trials, n_channels, n_times)
+    cov = BlockCovariances(block_size='[4, 4, 5]')
+    with pytest.raises(ValueError):
+        cov.fit_transform(x)
+
+
 def test_cosp_covariances(rndstate):
     """Test fit CospCovariances"""
     n_trials, n_channels, n_times = 2, 3, 1000
@@ -207,56 +260,3 @@ def test_shrinkage(shrinkage, rndstate):
     assert sh.get_params() == dict(shrinkage=shrinkage)
     assert covmats.shape == (n_trials, n_channels, n_channels)
     assert is_spd(covmats)
-
-
-@pytest.mark.parametrize("estimator", estim)
-def test_block_covariances_est(estimator, rndstate):
-    """Test block Covariances estimators"""
-    n_trials, n_channels, n_times = 2, 12, 100
-    x = rndstate.randn(n_trials, n_channels, n_times)
-    cov = BlockCovariances(block_size=6, estimator=estimator)
-    cov.fit(x)
-    covmats = cov.fit_transform(x)
-    assert cov.get_params() == dict(block_size=6, estimator=estimator)
-    assert covmats.shape == (n_trials, n_channels, n_channels)
-    assert is_spd(covmats)
-
-
-@pytest.mark.parametrize("block_size", [1, 6, [4, 8]])
-def test_block_covariances_blocks(block_size, rndstate):
-    """Test block Covariances fit"""
-    n_trials, n_channels, n_times = 2, 12, 100
-    x = rndstate.randn(n_trials, n_channels, n_times)
-    cov = BlockCovariances(block_size=block_size)
-    cov.fit(x)
-    covmats = cov.fit_transform(x)
-    assert cov.get_params() == dict(block_size=block_size, estimator='scm')
-    assert covmats.shape == (n_trials, n_channels, n_channels)
-    assert is_spd(covmats)
-
-
-def test_block_covariances_int_value_error(rndstate):
-    """Test block Covariances error"""
-    n_trials, n_channels, n_times = 2, 12, 100
-    x = rndstate.randn(n_trials, n_channels, n_times)
-    cov = BlockCovariances(block_size=5)
-    with pytest.raises(ValueError):
-        cov.fit_transform(x)
-
-
-def test_block_covariances_array_value_error(rndstate):
-    """Test block Covariances error"""
-    n_trials, n_channels, n_times = 2, 12, 100
-    x = rndstate.randn(n_trials, n_channels, n_times)
-    cov = BlockCovariances(block_size=[4, 4, 5])
-    with pytest.raises(ValueError):
-        cov.fit_transform(x)
-
-
-def test_block_covariances_block_size_type_error(rndstate):
-    """Test block Covariances error"""
-    n_trials, n_channels, n_times = 2, 12, 100
-    x = rndstate.randn(n_trials, n_channels, n_times)
-    cov = BlockCovariances(block_size='[4, 4, 5]')
-    with pytest.raises(ValueError):
-        cov.fit_transform(x)
