@@ -16,6 +16,7 @@ Covariance Estimation
     Covariances
     ERPCovariances
     XdawnCovariances
+    BlockCovariances
     CospCovariances
     Coherences
     HankelCovariances
@@ -153,6 +154,7 @@ Covariance preprocessing
     covariances
     covariances_EP
     covariances_X
+    block_covariances
     cross_spectrum
     cospectrum
     coherence
