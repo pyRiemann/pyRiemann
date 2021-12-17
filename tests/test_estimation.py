@@ -211,7 +211,7 @@ def test_shrinkage(shrinkage, rndstate):
 
 @pytest.mark.parametrize("estimator", estim)
 def test_block_covariances_est(estimator, rndstate):
-    """Test Covariances"""
+    """Test block Covariances estimators"""
     n_trials, n_channels, n_times = 2, 12, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
     cov = BlockCovariances(block_size=6, estimator=estimator)
@@ -224,7 +224,7 @@ def test_block_covariances_est(estimator, rndstate):
 
 @pytest.mark.parametrize("block_size", [1, 6, [4, 8]])
 def test_block_covariances_blocks(block_size, rndstate):
-    """Test Covariances"""
+    """Test block Covariances fit"""
     n_trials, n_channels, n_times = 2, 12, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
     cov = BlockCovariances(block_size=block_size)
@@ -236,7 +236,7 @@ def test_block_covariances_blocks(block_size, rndstate):
 
 
 def test_block_covariances_int_value_error(rndstate):
-    """Test Covariances"""
+    """Test block Covariances error"""
     n_trials, n_channels, n_times = 2, 12, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
     cov = BlockCovariances(block_size=5)
@@ -245,7 +245,7 @@ def test_block_covariances_int_value_error(rndstate):
 
 
 def test_block_covariances_array_value_error(rndstate):
-    """Test Covariances"""
+    """Test block Covariances error"""
     n_trials, n_channels, n_times = 2, 12, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
     cov = BlockCovariances(block_size=[4, 4, 5])
@@ -254,7 +254,7 @@ def test_block_covariances_array_value_error(rndstate):
 
 
 def test_block_covariances_block_size_type_error(rndstate):
-    """Test Covariances"""
+    """Test block Covariances error"""
     n_trials, n_channels, n_times = 2, 12, 100
     x = rndstate.randn(n_trials, n_channels, n_times)
     cov = BlockCovariances(block_size='[4, 4, 5]')
