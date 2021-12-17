@@ -260,4 +260,3 @@ def test_block_covariances_block_size_type_error(rndstate):
     cov = BlockCovariances(block_size='[4, 4, 5]')
     with pytest.raises(ValueError):
         cov.fit_transform(x)
-
