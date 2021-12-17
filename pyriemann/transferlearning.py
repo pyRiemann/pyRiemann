@@ -26,8 +26,10 @@ class MDWM (MDM):
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
     L : float, (default: 0)
-        Transfer coefficient in [0,1]. This parameter controls the trade-off
-        between source and target data.
+        Transfer coefficient in [0,1], controlling the trade-off between 
+        source and target data. At 0, there is no transfer, only the data
+        acquired from the source are used. At 1, this is a calibration-free 
+        system as no data are required from the source.
     n_jobs : int, (default: 1)
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
