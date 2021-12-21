@@ -23,7 +23,7 @@ from mne.io import Raw, RawArray
 from mne.datasets import fetch_dataset
 
 # pyriemann import
-from pyriemann.estimation import Covariances
+from pyriemann.estimation import BlockCovariances
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.classification import MDM
 
@@ -190,7 +190,8 @@ plt.show()
 # The covariance matrices will be estimated using the Ledoit-Wolf shrinkage
 # estimator on the extended signal.
 
-cov_ext_trials = Covariances(estimator='lwf').transform(epochs.get_data())
+cov_ext_trials = BlockCovariances(estimator='lwf',
+                                  block_size=8).transform(epochs.get_data())
 
 # This plot shows an example of a covariance matrix observed for each class:
 
