@@ -78,13 +78,13 @@ class MDWM (MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            ndarray of SPD matrices from target subject
+            Covariance matrices from target domain
         y : ndarray shape (n_matrices, 1)
-            labels corresponding to each trial of target subject
+            labels corresponding to each matrix of target domain
         X_source : ndarray, shape (n_matrices, n_channels, n_channels)
-            ndarray of SPD matrices from source domain subjects
+            Covariance matrices from source domain
         y_source : ndarray shape (n_matrices, 1)
-            labels corresponding to each trial.
+            labels corresponding to each matrix of source domain
         sample_weight : None | ndarray shape (n_matrices, 1)
             the weights of each sample from the domain. if None, each sample
             is treated with equal weights.
@@ -116,9 +116,10 @@ class MDWM (MDM):
 
         if self.transfer_coef != 0:
             if set(y) != set(y_source):
-                raise ValueError(f"classes in source domain must match classes in target \
-                    domain. Classes in source are {np.unique(y_source)} while \
-                        classes in target are {np.unique(y)}")
+                raise ValueError(f"classes in source domain must match\
+                    classes in target domain. Classes in source are\
+                        {np.unique(y_source)} while classes in target are\
+                            {np.unique(y)}")
 
         if sample_weight is not None:
             if (sample_weight.shape != (X_source.shape[0], 1)) and \
