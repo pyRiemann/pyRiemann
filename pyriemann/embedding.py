@@ -113,8 +113,9 @@ class Embedding(BaseEstimator):
 class RiemannLLE(BaseEstimator, TransformerMixin):
     """Riemannian Locally Linear Embedding (LLE).
 
-    Riemannian LLE as proposed in [1]_. LLE is a non-linear, neighborhood-preserving
-    dimensionality reduction algorithm which consists of three main steps:
+    Riemannian LLE as proposed in [1]_. LLE is a non-linear,
+    neighborhood-preserving dimensionality reduction algorithm which
+    consists of three main steps:
     For each point x,
     1.  find its k nearest neighbors KNN(x) and
     2.  calculate the best reconstruction of x based on its KNN.
@@ -137,7 +138,7 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
     reg : float, default: 1e-3
         Regularization parameter.
     **kwargs
-        Keyword arguments passed to sklearn.manifold._locally_linear.null_space.
+        Keyword arguments passed to sklearn.manifold._locally_linear.null_space
 
     Notes
     -----
@@ -150,7 +151,8 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         and Pattern Recognition, June 2008
     """
 
-    def __init__(self, n_components=2, n_neighbors=5, n_jobs=1, reg=1e-3, **kwargs):
+    def __init__(self, n_components=2, n_neighbors=5,
+                 n_jobs=1, reg=1e-3, **kwargs):
         self.n_components = n_components
         self.n_neighbors = n_neighbors
         self.n_jobs = n_jobs
@@ -172,11 +174,12 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
 
         """
         self.data = X
-        self.embedding, self.reconstruction_error = riemann_lle(X,
-                                                                self.n_components,
-                                                                self.n_neighbors,
-                                                                self.reg,
-                                                                self.null_space_args)
+        self.embedding, self.reconstruction_error = \
+            riemann_lle(X,
+                        self.n_components,
+                        self.n_neighbors,
+                        self.reg,
+                        self.null_space_args)
         return self
 
     def transform(self, X, y=None):

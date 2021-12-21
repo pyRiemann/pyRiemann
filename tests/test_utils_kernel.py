@@ -4,10 +4,9 @@ from pyriemann.utils.base import logm
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import numpy as np
-import pytest
 
-from pyriemann.utils.test import (is_sym_pos_def as is_spd,
-                                  is_sym_pos_semi_def as is_spsd)
+from pyriemann.utils.test import is_sym_pos_semi_def as is_spsd
+
 
 def test_riemann_kernel(rndstate, get_covmats):
     """Test Riemannian Kernel build"""
