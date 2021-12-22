@@ -128,13 +128,6 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         Dimensionality of projected space.
     n_neighbors : int, default: 5
         Number of neighbors for reconstruction of each point.
-    n_jobs : int, default: 1
-        The number of jobs to use for the computation. This works by computing
-        each of the class centroid in parallel.
-        If -1 all CPUs are used. If 1 is given, no parallel computing code is
-        used at all, which is useful for debugging. For n_jobs below -1,
-        (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
-        are used.
     reg : float, default: 1e-3
         Regularization parameter.
     **kwargs
@@ -164,7 +157,6 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
                  n_jobs=1, reg=1e-3, **kwargs):
         self.n_components = n_components
         self.n_neighbors = n_neighbors
-        self.n_jobs = n_jobs
         self.reg = reg
         self.null_space_args = kwargs
 
@@ -199,7 +191,7 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
 
         X_new = np.empty((X.shape[0], self.n_components))
         for i in range(X.shape[0]):
-            X_new[i] = np.dot(self.embedding[ind[i]].T, weights[i])
+            X_new[i] = np.dot(self.embedding_[ind[i]].T, weights[i])
         return X_new
 
     def fit_transform(self, X, y=None):
