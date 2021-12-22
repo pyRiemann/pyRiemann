@@ -140,6 +140,15 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
     **kwargs
         Keyword arguments passed to sklearn.manifold._locally_linear.null_space
 
+    Attributes
+    ----------
+    embedding_ : ndarray, shape (n_samples, n_components)
+        Stores the embedding vectors
+    error_ : float
+        Reconstruction error associated with `embedding_`
+    data_ : int
+        Training data.
+
     Notes
     -----
     .. versionadded:: 0.2.8
@@ -173,21 +182,20 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
             Returns the instance itself.
 
         """
-        self.data = X
-        self.embedding, self.reconstruction_error = \
-            riemann_lle(X,
-                        self.n_components,
-                        self.n_neighbors,
-                        self.reg,
-                        self.null_space_args)
+        self.data_ = X
+        self.embedding_, self.error_ = riemann_lle(X,
+                                                   self.n_components,
+                                                   self.n_neighbors,
+                                                   self.reg,
+                                                   self.null_space_args)
         return self
 
     def transform(self, X, y=None):
-        pairwise_distances = pairwise_distance(X, self.data, metric='riemann')
+        pairwise_distances = pairwise_distance(X, self.data_, metric='riemann')
         ind = np.array([np.argsort(dist)[1:self.n_neighbors + 1]
                         for dist in pairwise_distances])
 
-        weights = barycenter_weights(X, self.data, ind, reg=self.reg)
+        weights = barycenter_weights(X, self.data_, ind, reg=self.reg)
 
         X_new = np.empty((X.shape[0], self.n_components))
         for i in range(X.shape[0]):
@@ -195,13 +203,13 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         return X_new
 
     def fit_transform(self, X, y=None):
-        self.data = X
-        self.embedding, self.reconstruction_error = riemann_lle(X,
-                                                                self.n_components,
-                                                                self.n_neighbors,
-                                                                self.reg,
-                                                                self.null_space_args)
-        return self.embedding
+        self.data_ = X
+        self.embedding_, self.error_ = riemann_lle(X,
+                                                   self.n_components,
+                                                   self.n_neighbors,
+                                                   self.reg,
+                                                   self.null_space_args)
+        return self.embedding_
 
 
 def barycenter_weights(X, Y, indices, reg=1e-3):
@@ -249,11 +257,16 @@ def barycenter_weights(X, Y, indices, reg=1e-3):
     return B
 
 
-def riemann_lle(X, n_components=2, n_neighbors=5, reg=1e-3, null_space_args={}):
+def riemann_lle(X,
+                n_components=2,
+                n_neighbors=5,
+                reg=1e-3,
+                null_space_args={}):
     """Riemannian Locally Linear Embedding (LLE).
 
-    Riemannian LLE as proposed in [1]_. LLE is a non-linear, neighborhood-preserving
-    dimensionality reduction algorithm which consists of three main steps:
+    Riemannian LLE as proposed in [1]_. LLE is a non-linear, neighborhood-
+    preserving dimensionality reduction algorithm which consists of three
+    main steps:
     For each point x,
     1.  find its k nearest neighbors KNN(x) and
     2.  calculate the best reconstruction of x based on its KNN.
@@ -278,12 +291,14 @@ def riemann_lle(X, n_components=2, n_neighbors=5, reg=1e-3, null_space_args={}):
     reg : float, default: 1e-3
         Regularization parameter.
     null_space_args : dict, default {}
-        Keyword arguments passed to sklearn.manifold._locally_linear.null_space.
+        Keyword arguments passed to
+        sklearn.manifold._locally_linear.null_space.
 
     Notes
     -----
     .. versionadded:: 0.2.8
-    See sklearn.manifold._locally_linear.locally_linear_embedding for original code.
+    See sklearn.manifold._locally_linear.locally_linear_embedding for original
+    code.
 
     References
     ----------
@@ -300,7 +315,8 @@ def riemann_lle(X, n_components=2, n_neighbors=5, reg=1e-3, null_space_args={}):
     B = barycenter_weights(X, X, neighbors, reg=reg)
 
     indptr = np.arange(0, n_matrices * n_neighbors + 1, n_neighbors)
-    W = csr_matrix((B.ravel(), neighbors.ravel(), indptr), shape=(n_matrices, n_matrices))
+    W = csr_matrix((B.ravel(), neighbors.ravel(), indptr), shape=(n_matrices,
+                                                                  n_matrices))
     M = (W.T * W - W.T - W).toarray()
     M.flat[:: M.shape[0] + 1] += 1  # W = W - I = W - I
     return null_space(
