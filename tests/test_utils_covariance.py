@@ -1,12 +1,13 @@
 from numpy.testing import assert_array_almost_equal
 import numpy as np
+from scipy.linalg import block_diag
 from scipy.signal import welch, csd, coherence as coherence_sp
 import pytest
 
 from pyriemann.utils.covariance import (
     covariances, covariances_EP, covariances_X, eegtocov,
     cross_spectrum, cospectrum, coherence,
-    normalize, get_nondiag_weight
+    normalize, get_nondiag_weight, block_covariances
 )
 from pyriemann.utils.test import is_real, is_hermitian
 
@@ -62,6 +63,47 @@ def test_covariances_X(estimator, rndstate):
         cov = covariances_X(x, estimator=estimator, alpha=5.)
     n_dim_cov = n_channels + n_times
     assert cov.shape == (n_matrices, n_dim_cov, n_dim_cov)
+
+
+@pytest.mark.parametrize(
+    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd',
+                  'sch', np.cov, 'truc', None]
+)
+def test_block_covariances_est(estimator, rndstate):
+    """Test block covariance for multiple estimators"""
+    n_matrices, n_channels, n_times = 2, 12, 100
+    x = rndstate.randn(n_matrices, n_channels, n_times)
+
+    if estimator is None:
+        cov = block_covariances(x, [4, 4, 4])
+        assert cov.shape == (n_matrices, n_channels, n_channels)
+    elif estimator == 'truc':
+        with pytest.raises(ValueError):
+            block_covariances(x, [4, 4, 4], estimator=estimator)
+    else:
+        cov = block_covariances(x, [4, 4, 4], estimator=estimator)
+        assert cov.shape == (n_matrices, n_channels, n_channels)
+
+
+def test_block_covariances(rndstate):
+    """Test block covariance"""
+    n_matrices, n_channels, n_times = 2, 12, 100
+    x = rndstate.randn(n_matrices, n_channels, n_times)
+
+    cov = block_covariances(x, [12], estimator='cov')
+    assert_array_almost_equal(cov, covariances(x, estimator='cov'))
+
+    cov = block_covariances(x, [6, 6], estimator='cov')
+    cov2 = covariances(x, estimator='cov')
+    covcomp = block_diag(*(cov2[0, :6, :6], cov2[0, 6:12, 6:12]))
+    assert_array_almost_equal(cov[0], covcomp)
+
+    cov = block_covariances(x, [3, 5, 4], estimator='cov')
+    cov2 = covariances(x, estimator='cov')
+    covcomp = block_diag(*(cov2[0, :3, :3],
+                           cov2[0, 3:8, 3:8],
+                           cov2[0, 8:12, 8:12]))
+    assert_array_almost_equal(cov[0], covcomp)
 
 
 def test_covariances_eegtocov(rndstate):
