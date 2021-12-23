@@ -1,12 +1,11 @@
 """Embedding covariance matrices via manifold learning techniques."""
 
 import numpy as np
-from scipy.linalg import solve
+from scipy.linalg import solve, eigh
 from scipy.sparse import csr_matrix
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.manifold import spectral_embedding
-from sklearn.manifold._locally_linear import null_space
 
 from .utils.kernel import kernel_riemann
 from .utils.distance import pairwise_distance
@@ -72,7 +71,9 @@ class Embedding(BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            SPD matrices.
+            ndarray of SPD matrices.
+        y : ndarray | None (default: None)
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
@@ -98,7 +99,9 @@ class Embedding(BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            SPD matrices.
+            ndarray of SPD matrices.
+        y : ndarray | None (default: None)
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
@@ -153,12 +156,10 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         and Pattern Recognition, June 2008
     """
 
-    def __init__(self, n_components=2, n_neighbors=5,
-                 n_jobs=1, reg=1e-3, **kwargs):
+    def __init__(self, n_components=2, n_neighbors=5, reg=1e-3):
         self.n_components = n_components
         self.n_neighbors = n_neighbors
         self.reg = reg
-        self.null_space_args = kwargs
 
     def fit(self, X, y=None):
         """Fit the model from data in X.
@@ -166,7 +167,9 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            SPD matrices.
+            ndarray of SPD matrices.
+        y : ndarray | None (default: None)
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
@@ -178,11 +181,25 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         self.embedding_, self.error_ = riemann_lle(X,
                                                    self.n_components,
                                                    self.n_neighbors,
-                                                   self.reg,
-                                                   self.null_space_args)
+                                                   self.reg)
         return self
 
     def transform(self, X, y=None):
+        """Calculate embedding coordinates for new data points based on fitted
+        points.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            ndarray of SPD matrices.
+        y : ndarray | None (default: None)
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        X_: array-like, shape (n_matrices, n_components)
+            Coordinates of embedded matrices.
+        """
         pairwise_distances = pairwise_distance(X, self.data_, metric='riemann')
         ind = np.array([np.argsort(dist)[1:self.n_neighbors + 1]
                         for dist in pairwise_distances])
@@ -195,12 +212,25 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         return X_new
 
     def fit_transform(self, X, y=None):
+        """Calculate the coordinates of the embedded points.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            ndarray of SPD matrices.
+        y : ndarray | None (default: None)
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        X_: array-like, shape (n_matrices, n_components)
+            Coordinates of embedded matrices.
+        """
         self.data_ = X
         self.embedding_, self.error_ = riemann_lle(X,
                                                    self.n_components,
                                                    self.n_neighbors,
-                                                   self.reg,
-                                                   self.null_space_args)
+                                                   self.reg)
         return self.embedding_
 
 
@@ -212,7 +242,9 @@ def barycenter_weights(X, Y, indices, reg=1e-3):
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_dim)
+        ndarray of SPD matrices.
     Y : ndarray, shape (n_matrices, n_dim)
+        ndarray of SPD matrices.
     indices : ndarray, shape (n_matrices, n_dim)
         Indices of the points in Y used to compute the barycenter
     reg : float, default=1e-3
@@ -252,8 +284,7 @@ def barycenter_weights(X, Y, indices, reg=1e-3):
 def riemann_lle(X,
                 n_components=2,
                 n_neighbors=5,
-                reg=1e-3,
-                null_space_args={}):
+                reg=1e-3):
     """Riemannian Locally Linear Embedding (LLE).
 
     Riemannian LLE as proposed in [1]_. LLE is a non-linear, neighborhood-
@@ -282,9 +313,6 @@ def riemann_lle(X,
         are used.
     reg : float, default: 1e-3
         Regularization parameter.
-    null_space_args : dict, default {}
-        Keyword arguments passed to
-        sklearn.manifold._locally_linear.null_space.
 
     Notes
     -----
@@ -309,11 +337,39 @@ def riemann_lle(X,
     indptr = np.arange(0, n_matrices * n_neighbors + 1, n_neighbors)
     W = csr_matrix((B.ravel(), neighbors.ravel(), indptr), shape=(n_matrices,
                                                                   n_matrices))
+    # M = (W - I).T * (W - I) = W.T * W - W.T - W + I
     M = (W.T * W - W.T - W).toarray()
-    M.flat[:: M.shape[0] + 1] += 1  # W = W - I = W - I
+    M.flat[:: M.shape[0] + 1] += 1
     return null_space(
         M,
         n_components,
         k_skip=1,
-        **null_space_args
     )
+
+
+def null_space(M, k, k_skip=1):
+    """
+    Find the null space of a matrix M.
+
+    Parameters
+    ----------
+    M : ndarray
+        Input covariance matrix: should be symmetric positive semi-definite
+    k : int
+        Number of eigenvalues/vectors to return
+    k_skip : int, default=1
+        Number of low eigenvalues to skip.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.8
+    See sklearn.manifold._locally_linear.null_space for original code.
+    """
+
+    if hasattr(M, "toarray"):
+        M = M.toarray()
+    eigen_values, eigen_vectors = eigh(
+        M, eigvals=(k_skip, k + k_skip - 1), overwrite_a=True
+    )
+    index = np.argsort(np.abs(eigen_values))
+    return eigen_vectors[:, index], np.sum(eigen_values)
