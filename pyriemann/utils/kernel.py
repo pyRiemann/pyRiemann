@@ -20,8 +20,8 @@ def kernel(X, Y=None, Cref=None, metric='riemann'):
             calculation. If None, Cref is calculated as the mean of X
             according to the specified metric.
         metric : string (default: 'riemann')
-        The type of metric used for tangent space and mean estimation. Can
-        be 'riemann'.
+            The type of metric used for tangent space and mean estimation. Can
+            be 'riemann'.
 
         Returns
         ----------
