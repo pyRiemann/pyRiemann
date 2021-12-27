@@ -4,6 +4,41 @@ from .mean import mean_riemann
 from .base import invsqrtm, logm
 
 
+def kernel(X, Y=None, Cref=None, metric='riemann'):
+    r""" Calculates the Kernel matrix K of inner products of two sets
+         X and Y of SPD matrices on tangent space of C according to the
+         specified metric.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            First set of SPD matrices.
+        Y : ndarray, shape (n_matrices, n_channels, n_channels), optional
+            Second set of SPD matrices. If None, Y is set to X.
+        Cref : ndarray, shape (n_channels, n_channels), optional
+            Reference point for the tangent space and inner product
+            calculation. If None, Cref is calculated as the mean of X
+            according to the specified metric.
+        metric : string (default: 'riemann')
+        The type of metric used for tangent space and mean estimation. Can
+        be 'riemann'.
+
+        Returns
+        ----------
+        K : ndarray, shape (n_matrices, n_matrices)
+            The kernel matrix of X and Y.
+
+        Notes
+        -----
+        .. versionadded:: 0.2.8
+        """
+    if metric == 'riemann':
+        return kernel_riemann(X, Y, Cref)
+    else:
+        raise ValueError("Kernel metric must be 'riemann'.")
+
+
+
 def kernel_riemann(X, Y=None, Cref=None):
     r""" Calculates the Kernel matrix K of inner products of two sets
      X and Y of SPD matrices on tangent space of C by calculating pairwise
