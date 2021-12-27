@@ -38,7 +38,6 @@ def kernel(X, Y=None, Cref=None, metric='riemann'):
         raise ValueError("Kernel metric must be 'riemann'.")
 
 
-
 def kernel_riemann(X, Y=None, Cref=None):
     r""" Calculates the Kernel matrix K of inner products of two sets
      X and Y of SPD matrices on tangent space of C by calculating pairwise
