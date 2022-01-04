@@ -71,7 +71,7 @@ class Embedding(BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            ndarray of SPD matrices.
+            Set of SPD matrices.
         y : ndarray | None (default: None)
             Not used, here for compatibility with sklearn API.
 
@@ -142,7 +142,7 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         Stores the embedding vectors
     error_ : float
         Reconstruction error associated with `embedding_`
-    data_ : int
+    data_ : ndarray, shape (n_matrices, n_channels, n_channels)
         Training data.
 
     Notes
@@ -254,10 +254,12 @@ def barycenter_weights(X, Y, indices, reg=1e-3):
     Returns
     -------
     B : ndarray, shape (n_matrices, n_neighbors)
+        Interpolation weights.
 
     Notes
     -----
     .. versionadded:: 0.2.8
+    
     See sklearn.manifold._locally_linear.barycenter_weights for original code.
     """
 
@@ -267,7 +269,7 @@ def barycenter_weights(X, Y, indices, reg=1e-3):
     B = np.empty((n_matrices, n_neighbors), dtype=X.dtype)
     v = np.ones(n_neighbors, dtype=X.dtype)
 
-    for i in range(len(X)):
+    for i in range(n_matrices):
         X_neighbors = Y[indices[i]]
         G = kernel_riemann(X_neighbors, Cref=X[i])
         trace = np.trace(G)

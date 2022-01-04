@@ -30,7 +30,7 @@ def test_fit_independence(get_covmats):
 
 def test_rlle_embedding(get_covmats):
     """Test RiemannLLE embedding fit_transform."""
-    n_trials, n_channels, n_comp = 6, 3, 2
+    n_matrices, n_channels, n_comp = 6, 3, 2
     covmats = get_covmats(n_trials, n_channels)
     embd = RiemannLLE(n_components=n_comp)
     covembd = embd.fit_transform(covmats)

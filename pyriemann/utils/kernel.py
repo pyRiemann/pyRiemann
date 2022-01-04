@@ -13,13 +13,13 @@ def kernel(X, Y=None, Cref=None, metric='riemann'):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             First set of SPD matrices.
-        Y : ndarray, shape (n_matrices, n_channels, n_channels), optional
+        Y : None | ndarray, shape (n_matrices, n_channels, n_channels)
             Second set of SPD matrices. If None, Y is set to X.
-        Cref : ndarray, shape (n_channels, n_channels), optional
+        Cref : None | ndarray, shape (n_channels, n_channels)
             Reference point for the tangent space and inner product
             calculation. If None, Cref is calculated as the mean of X
             according to the specified metric.
-        metric : string (default: 'riemann')
+        metric : {'riemann'}
             The type of metric used for tangent space and mean estimation. Can
             be 'riemann'.
 
@@ -50,9 +50,9 @@ def kernel_riemann(X, Y=None, Cref=None):
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
         First set of SPD matrices.
-    Y : ndarray, shape (n_matrices, n_channels, n_channels), optional
+    Y : None | ndarray, shape (n_matrices, n_channels, n_channels)
         Second set of SPD matrices. If None, Y is set to X.
-    Cref : ndarray, shape (n_channels, n_channels), optional
+    C : None | ndarray, shape (n_channels, n_channels)
         Reference point for the tangent space and inner product calculation.
         If None, Cref is calculated as the Riemannian mean of X.
 
@@ -75,7 +75,7 @@ def kernel_riemann(X, Y=None, Cref=None):
     n_matrices_X, n_channels, n_channels = X.shape
 
     X_ = np.matmul(G_invsq, np.matmul(X, G_invsq))
-    X_ = np.array([logm(X_[index]) for index in range(n_matrices_X)])
+    X_ = np.array([logm(x_) for x_ in X_])
 
     if isinstance(Y, type(None)) or np.array_equal(X, Y):
         Y_ = X_
@@ -84,7 +84,7 @@ def kernel_riemann(X, Y=None, Cref=None):
         n_matrices_Y, n_channels, n_channels = Y.shape
 
         Y_ = np.matmul(G_invsq, np.matmul(Y, G_invsq))
-        Y_ = np.array([logm(Y_[index]) for index in range(n_matrices_Y)])
+        Y_ = np.array([logm(y_) for y_ in Y_])
 
     # calculate scalar products
     # for i in range(n_matrices_X):

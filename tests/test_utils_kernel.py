@@ -10,7 +10,7 @@ from pyriemann.utils.test import is_sym
 
 def test_riemann_kernel(rndstate, get_covmats):
     """Test Riemannian Kernel build"""
-    n_trials, n_channels = 5, 3
+    n_matrices, n_channels = 5, 3
     cov = get_covmats(n_trials, n_channels)
     K = kernel_riemann(cov, cov, np.eye(n_channels))
     assert is_sym(K)

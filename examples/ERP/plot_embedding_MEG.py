@@ -1,9 +1,9 @@
 """
 =====================================================================
-Embedding ERP MEG data in 2D Euclidean space with Laplacian Eigenmaps
-=====================================================================
+Embedding ERP MEG data in 2D Euclidean space
+============================================
 
-Spectral embedding via Laplacian Eigenmaps and Riemannian locally linear
+Embeddings via Laplacian Eigenmaps and Riemannian locally linear
 embedding of a set of ERP data.
 
 """
@@ -60,7 +60,8 @@ Xtrain, Xtest, ytrain, ytest = split
 covs = xdwn.fit(Xtrain, ytrain).transform(Xtest)
 
 ###############################################################################
-# with Spectral Embedding (SE)
+# Spectral Embedding (SE)
+# -----------------------
 
 lapl = Embedding(metric='riemann', n_components=2)
 embd = lapl.fit_transform(covs)
@@ -84,7 +85,8 @@ ax.legend()
 plt.show()
 
 ###############################################################################
-# with Riemannian Locally Linear Embedding (RLLE)
+# Riemannian Locally Linear Embedding (RLLE)
+# ------------------------------------------
 
 rlle = RiemannLLE(n_components=2)
 embd = rlle.fit_transform(covs)
