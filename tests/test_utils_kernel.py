@@ -11,7 +11,7 @@ from pyriemann.utils.test import is_sym
 def test_riemann_kernel(rndstate, get_covmats):
     """Test Riemannian Kernel build"""
     n_matrices, n_channels = 5, 3
-    cov = get_covmats(n_trials, n_channels)
+    cov = get_covmats(n_matrices, n_channels)
     K = kernel_riemann(cov, cov, np.eye(n_channels))
     assert is_sym(K)
 
@@ -23,8 +23,8 @@ def test_riemann_kernel(rndstate, get_covmats):
 
 def test_riemann_kernel_cref(rndstate, get_covmats):
     """Test Riemannian Kernel reference"""
-    n_trials, n_channels = 5, 3
-    cov = get_covmats(n_trials, n_channels)
+    n_matrices, n_channels = 5, 3
+    cov = get_covmats(n_matrices, n_channels)
     cref = mean_riemann(cov)
     K = kernel_riemann(cov, cov)
     K1 = kernel_riemann(cov, cov, cref)
@@ -33,18 +33,18 @@ def test_riemann_kernel_cref(rndstate, get_covmats):
 
 def test_riemann_kernel_x_y(rndstate, get_covmats):
     """Test Riemannian Kernel reference"""
-    n_trials, n_channels = 5, 3
-    cov = get_covmats(n_trials, n_channels)
-    cov2 = get_covmats(n_trials + 1, n_channels)
+    n_matrices, n_channels = 5, 3
+    cov = get_covmats(n_matrices, n_channels)
+    cov2 = get_covmats(n_matrices + 1, n_channels)
     K = kernel_riemann(cov, cov2)
 
-    assert K.shape == (n_trials, n_trials + 1)
+    assert K.shape == (n_matrices, n_matrices + 1)
 
 
 def test_generic_kernel(rndstate, get_covmats):
     """Test Riemannian Kernel reference"""
-    n_trials, n_channels = 5, 3
-    cov = get_covmats(n_trials, n_channels)
+    n_matrices, n_channels = 5, 3
+    cov = get_covmats(n_matrices, n_channels)
     K = kernel(cov, cov, np.eye(n_channels), metric='riemann')
     K1 = kernel_riemann(cov, cov, np.eye(n_channels))
 
