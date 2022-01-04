@@ -99,7 +99,7 @@ class Embedding(BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            ndarray of SPD matrices.
+            Set of SPD matrices.
         y : ndarray | None (default: None)
             Not used, here for compatibility with sklearn API.
 
@@ -133,8 +133,6 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         Number of neighbors for reconstruction of each point.
     reg : float, default: 1e-3
         Regularization parameter.
-    **kwargs
-        Keyword arguments passed to sklearn.manifold._locally_linear.null_space
 
     Attributes
     ----------
@@ -167,7 +165,7 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            ndarray of SPD matrices.
+            Set of SPD matrices.
         y : ndarray | None (default: None)
             Not used, here for compatibility with sklearn API.
 
@@ -191,13 +189,13 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            ndarray of SPD matrices.
+            Set of SPD matrices.
         y : ndarray | None (default: None)
             Not used, here for compatibility with sklearn API.
 
         Returns
         -------
-        X_: array-like, shape (n_matrices, n_components)
+        X_: ndarray, shape (n_matrices, n_components)
             Coordinates of embedded matrices.
         """
         pairwise_distances = pairwise_distance(X, self.data_, metric='riemann')
@@ -217,13 +215,13 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            ndarray of SPD matrices.
+            Set of SPD matrices.
         y : ndarray | None (default: None)
             Not used, here for compatibility with sklearn API.
 
         Returns
         -------
-        X_: array-like, shape (n_matrices, n_components)
+        X_: ndarray, shape (n_matrices, n_components)
             Coordinates of embedded matrices.
         """
         self.data_ = X
@@ -241,11 +239,11 @@ def barycenter_weights(X, Y, indices, reg=1e-3):
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_dim)
-        ndarray of SPD matrices.
-    Y : ndarray, shape (n_matrices, n_dim)
-        ndarray of SPD matrices.
-    indices : ndarray, shape (n_matrices, n_dim)
+    X : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    Y : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    indices : ndarray, shape (n_matrices, n_neighbors)
         Indices of the points in Y used to compute the barycenter
     reg : float, default=1e-3
         amount of regularization to add for the problem to be
@@ -259,12 +257,12 @@ def barycenter_weights(X, Y, indices, reg=1e-3):
     Notes
     -----
     .. versionadded:: 0.2.8
-    
     See sklearn.manifold._locally_linear.barycenter_weights for original code.
     """
 
     n_matrices, n_neighbors = indices.shape
-    assert X.shape[0] == n_matrices
+    assert X.shape[0] == n_matrices, "Number of index-sets in indices must " \
+                                     "match number of matrices in X."
 
     B = np.empty((n_matrices, n_neighbors), dtype=X.dtype)
     v = np.ones(n_neighbors, dtype=X.dtype)
@@ -301,18 +299,11 @@ def riemann_lle(X,
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
-        ndarray of SPD matrices.
+        Set of SPD matrices.
     n_components : int, default: 2
         Dimensionality of projected space.
     n_neighbors : int, default: 5
         Number of neighbors for reconstruction of each point.
-    n_jobs : int, default: 1
-        The number of jobs to use for the computation. This works by computing
-        each of the class centroid in parallel.
-        If -1 all CPUs are used. If 1 is given, no parallel computing code is
-        used at all, which is useful for debugging. For n_jobs below -1,
-        (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
-        are used.
     reg : float, default: 1e-3
         Regularization parameter.
 
@@ -350,12 +341,11 @@ def riemann_lle(X,
 
 
 def null_space(M, k, k_skip=1):
-    """
-    Find the null space of a matrix M.
+    """Find the null space of a matrix M.
 
     Parameters
     ----------
-    M : ndarray
+    M : ndarray, shape (n_matrices, n_matrices)
         Input covariance matrix: should be symmetric positive semi-definite
     k : int
         Number of eigenvalues/vectors to return
