@@ -32,6 +32,7 @@ Embedding
     :template: class.rst
 
     Embedding
+    RiemannianLLE
 
 Classification
 --------------
@@ -177,6 +178,17 @@ Distances
     distance_kullback
     distance_kullback_sym
     distance_wasserstein
+
+Kernels
+~~~~~~~~~~~~~~~~~~~~~~
+.. _kernel_api:
+.. currentmodule:: pyriemann.utils.kernel
+
+.. autosummary::
+    :toctree: generated/
+
+    kernel
+    kernel_riemann
 
 Mean
 ~~~~~~~~~~~~~~~~~~~~~~
