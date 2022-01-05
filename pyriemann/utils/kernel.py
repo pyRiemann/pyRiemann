@@ -100,7 +100,7 @@ def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
 
     K = np.einsum('abc,dbc->ad', X_, Y_)
 
-    #regularization due to numerical errors
+    # regularization due to numerical errors
     if np.array_equal(X_, Y_):
         K.flat[:: n_matrices_X + 1] += reg
 
