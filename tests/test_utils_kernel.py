@@ -10,7 +10,7 @@ from pyriemann.utils.test import is_pos_semi_def as is_spsd
 
 def test_riemann_kernel(rndstate, get_covmats):
     """Test Riemannian Kernel build"""
-    n_matrices, n_channels = 8, 2
+    n_matrices, n_channels = 12, 3
     cov = get_covmats(n_matrices, n_channels)
     K = kernel_riemann(cov, cov, np.eye(n_channels))
     assert is_spsd(K)

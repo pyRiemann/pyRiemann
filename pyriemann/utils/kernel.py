@@ -4,7 +4,7 @@ from .mean import mean_riemann
 from .base import invsqrtm, logm
 
 
-def kernel(X, Y=None, Cref=None, metric='riemann'):
+def kernel(X, Y=None, Cref=None, metric='riemann', reg=1e-10):
     r""" Calculates the Kernel matrix K of inner products of two sets
          X and Y of SPD matrices on tangent space of C according to the
          specified metric.
@@ -22,6 +22,9 @@ def kernel(X, Y=None, Cref=None, metric='riemann'):
         metric : {'riemann'}
             The type of metric used for tangent space and mean estimation. Can
             be 'riemann'.
+        reg : float, (default : 1e-10)
+            Regularization parameter to mitigate numerical errors in kernel
+            matrix estimation.
 
         Returns
         ----------
@@ -33,12 +36,12 @@ def kernel(X, Y=None, Cref=None, metric='riemann'):
         .. versionadded:: 0.2.8
         """
     if metric == 'riemann':
-        return kernel_riemann(X, Y, Cref)
+        return kernel_riemann(X, Y, Cref, reg=reg)
     else:
         raise ValueError("Kernel metric must be 'riemann'.")
 
 
-def kernel_riemann(X, Y=None, Cref=None):
+def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
     r""" Calculates the Kernel matrix K of inner products of two sets
      X and Y of SPD matrices on tangent space of C by calculating pairwise
 
@@ -55,6 +58,9 @@ def kernel_riemann(X, Y=None, Cref=None):
     C : None | ndarray, shape (n_channels, n_channels)
         Reference point for the tangent space and inner product calculation.
         If None, Cref is calculated as the Riemannian mean of X.
+    reg : float, (default : 1e-10)
+        Regularization parameter to mitigate numerical errors in kernel
+        matrix estimation.
 
     Returns
     ----------
@@ -93,5 +99,9 @@ def kernel_riemann(X, Y=None, Cref=None):
     # einsum does same as that just a looooooot faster
 
     K = np.einsum('abc,dbc->ad', X_, Y_)
+
+    #regularization due to numerical errors
+    if np.array_equal(X_, Y_):
+        K.flat[:: n_matrices_X + 1] += reg
 
     return K
