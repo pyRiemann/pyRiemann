@@ -4,11 +4,13 @@ import numpy as np
 from scipy import stats
 
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
+from sklearn.svm import SVC
 from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from joblib import Parallel, delayed
 
+from .utils.kernel import kernel
 from .utils.mean import mean_covariance
 from .utils.distance import distance
 from .tangentspace import FGDA, TangentSpace
@@ -92,11 +94,11 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
-        y : ndarray shape (n_trials, 1)
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : ndarray shape (n_matrices, 1)
             labels corresponding to each trial.
-        sample_weight : None | ndarray shape (n_trials, 1)
+        sample_weight : None | ndarray shape (n_matrices, 1)
             the weights of each sample. if None, each sample is treated with
             equal weights.
 
@@ -143,12 +145,12 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        pred : ndarray of int, shape (n_trials, 1)
+        pred : ndarray of int, shape (n_matrices, 1)
             the prediction for each trials according to the closest centroid.
         """
         dist = self._predict_distances(covtest)
@@ -159,12 +161,12 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        dist : ndarray, shape (n_trials, n_classes)
+        dist : ndarray, shape (n_matrices, n_classes)
             the distance to each centroid according to the metric.
         """
         return self._predict_distances(X)
@@ -179,12 +181,12 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        prob : ndarray, shape (n_trials, n_classes)
+        prob : ndarray, shape (n_matrices, n_classes)
             the softmax probabilities for each class.
         """
         return softmax(-self._predict_distances(X)**2)
@@ -271,9 +273,9 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
-        y : ndarray shape (n_trials, 1)
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : ndarray shape (n_matrices, 1)
             labels corresponding to each trial.
 
         Returns
@@ -294,12 +296,12 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        pred : ndarray of int, shape (n_trials, 1)
+        pred : ndarray of int, shape (n_matrices, 1)
             the prediction for each trials according to the closest centroid.
         """
         cov = self._fgda.transform(X)
@@ -310,12 +312,12 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        prob : ndarray, shape (n_trials, n_classes)
+        prob : ndarray, shape (n_matrices, n_classes)
             the softmax probabilities for each class.
         """
         cov = self._fgda.transform(X)
@@ -326,12 +328,12 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        dist : ndarray, shape (n_trials, n_cluster)
+        dist : ndarray, shape (n_matrices, n_cluster)
             the distance to each centroid according to the metric.
         """
         cov = self._fgda.transform(X)
@@ -388,9 +390,9 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
-        y : ndarray shape (n_trials, 1)
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : ndarray shape (n_matrices, 1)
             labels corresponding to each trial.
 
         Returns
@@ -409,12 +411,12 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        pred : ndarray of int, shape (n_trials, 1)
+        pred : ndarray of int, shape (n_matrices, 1)
             the prediction for each trials according to the closest centroid.
         """
         return self._pipe.predict(X)
@@ -424,12 +426,12 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        pred : ndarray of ifloat, shape (n_trials, n_classes)
+        pred : ndarray of ifloat, shape (n_matrices, n_classes)
             the prediction for each trials according to the closest centroid.
         """
         return self._pipe.predict_proba(X)
@@ -482,9 +484,9 @@ class KNearestNeighbor(MDM):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
-        y : ndarray shape (n_trials, 1)
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : ndarray shape (n_matrices, 1)
             labels corresponding to each trial.
 
         Returns
@@ -502,15 +504,108 @@ class KNearestNeighbor(MDM):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        pred : ndarray of int, shape (n_trials, 1)
+        pred : ndarray of int, shape (n_matrices, 1)
             the prediction for each trials according to the closest centroid.
         """
         dist = self._predict_distances(covtest)
         neighbors_classes = self.classes_[np.argsort(dist)]
         out, _ = stats.mode(neighbors_classes[:, 0:self.n_neighbors], axis=1)
         return out.ravel()
+
+
+class RSVC(BaseEstimator, ClassifierMixin):
+    """Classification by Riemannian Support Vector Machine.
+
+    Support vector machine with precomputed Riemannian kernel matrix
+    according to the metric as described in [1]_.
+
+    Parameters
+    ----------
+    svc_func : SVC class, (default: sklearn.svm.SVC)
+        Class to perform the svc calculations.
+    metric : {'riemann'}
+        Metric for kernel matrix computation.
+    Cref : None | ndarray, shape (n_channels, n_channels)
+        Reference point for kernel matrix computation. If None, the mean of
+        the training data according to the metric is used.
+    **kwargs
+        Keyword arguments passed to svc_func.
+
+    Attributes
+    ----------
+    svc_ : svc_func instance
+        Fitted SVC with precomputed Riemannian kernel matrix.
+    data_ : ndarray, shape (n_matrices, n_channels, n_channels)
+        Training data.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.8
+
+    References
+    ----------
+    .. [1] A. Barachant, S. Bonnet, M. Congedo, and C. Jutten.
+        Classification of covariance matrices using a Riemannian-based kernel
+        for BCI applications". In: Neurocomputing 112 (July 2013), pp. 172-178.
+    """
+
+    def __init__(self, svc_func=SVC, metric='riemann', Cref=None,
+                 **kwargs):
+        """Init."""
+        self.svc_func = svc_func
+        self.Cref = Cref
+        self.metric = metric
+        self.svc_params = kwargs
+        self.svc_ = self.svc_func(kernel='precomputed', **self.svc_params)
+
+    def __setattr__(self, name, value):
+        if 'svc_' in self.__dict__.keys():
+            if name in self.svc_.__dict__.keys():
+                setattr(self.svc_, name, value)
+                return
+        super().__setattr__(name, value)
+
+    def fit(self, X, y):
+        """Fit.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : ndarray, shape (n_matrices, 1)
+            labels corresponding to each trial.
+
+        Returns
+        -------
+        self : Riemannian SVC instance
+            The RSVC instance.
+        """
+        kernelmat = kernel(X, X, Cref=self.Cref, metric=self.metric)
+        self.data_ = X
+        self.svc_ = self.svc_.fit(kernelmat, y)
+
+        return self
+
+    def predict(self, X_test):
+        """Get the predictions.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+
+        Returns
+        -------
+        pred : ndarray of int, shape (n_matrices, 1)
+            the prediction for each trials according to the RSVC.
+        """
+        test_kernel_mat = kernel(self.data_,
+                                 X_test,
+                                 Cref=self.Cref,
+                                 metric=self.metric)
+        return self.svc_.predict(test_kernel_mat)

@@ -47,6 +47,7 @@ Classification
     FgMDM
     TSclassifier
     KNearestNeighbor
+    RSVC
 
 Clustering
 ------------------

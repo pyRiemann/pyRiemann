@@ -1,14 +1,16 @@
 from conftest import get_distances, get_means, get_metrics
 import numpy as np
 from numpy.testing import assert_array_equal
-from pyriemann.classification import MDM, FgMDM, KNearestNeighbor, TSclassifier
+from pyriemann.classification import (MDM, FgMDM, KNearestNeighbor,
+                                      TSclassifier, RSVC)
+
 from pyriemann.estimation import Covariances
 import pytest
 from pytest import approx
 from sklearn.dummy import DummyClassifier
 
 
-rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier]
+rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, RSVC]
 
 
 @pytest.mark.parametrize("classif", rclf)
@@ -141,7 +143,7 @@ def test_metric_dist(classif, mean, dist, get_covmats, get_labels):
 @pytest.mark.parametrize("classif", rclf)
 @pytest.mark.parametrize("metric", [42, "faulty", {"foo": "bar"}])
 def test_metric_wrong_keys(classif, metric, get_covmats, get_labels):
-    with pytest.raises((TypeError, KeyError)):
+    with pytest.raises((TypeError, KeyError, ValueError)):
         n_trials, n_channels, n_classes = 6, 3, 2
         labels = get_labels(n_trials, n_classes)
         covmats = get_covmats(n_trials, n_channels)
@@ -156,7 +158,13 @@ def test_metric_str(classif, metric, get_covmats, get_labels):
     labels = get_labels(n_trials, n_classes)
     covmats = get_covmats(n_trials, n_channels)
     clf = classif(metric=metric)
-    clf.fit(covmats, labels).predict(covmats)
+
+    if classif is RSVC and metric != 'riemann':
+        with pytest.raises(ValueError):
+            clf.fit(covmats, labels).predict(covmats)
+
+    else:
+        clf.fit(covmats, labels).predict(covmats)
 
 
 @pytest.mark.parametrize("dist", ["not_real", 42])
@@ -194,3 +202,15 @@ def test_TSclassifier_classifier_error():
     """Test TS if not Classifier"""
     with pytest.raises(TypeError):
         TSclassifier(clf=Covariances())
+
+
+def test_RSVC_SVC_params_error(get_covmats, get_labels):
+    n_trials, n_channels, n_classes = 6, 3, 2
+    covmats = get_covmats(n_trials, n_channels)
+    labels = get_labels(n_trials, n_classes)
+
+    with pytest.raises(TypeError):
+        RSVC(C='hello').fit(covmats, labels)
+
+    with pytest.raises(TypeError):
+        RSVC(foo=5).fit(covmats, labels)

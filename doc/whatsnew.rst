@@ -44,6 +44,8 @@ v0.2.8.dev
 
 - Add Riemannian Kernel Function: :func:`pyriemann.utils.kernel.kernel_riemann`
 
+- Add Riemannian Support Vector Machine: :func:`pyriemann.classification.RSVC`
+
 
 v0.2.7 (June 2021)
 ------------------
