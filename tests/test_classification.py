@@ -204,6 +204,20 @@ def test_TSclassifier_classifier_error():
         TSclassifier(clf=Covariances())
 
 
+def test_RSVC_SVC_params():
+    rsvc = RSVC()
+    mi = 500
+    rsvc.max_iter = mi
+    assert rsvc.svc_.max_iter == mi
+    with pytest.raises(AttributeError):
+        assert rsvc.max_iter == mi
+
+    rsvc.maxiter = mi
+    assert rsvc.maxiter == mi
+    with pytest.raises(AttributeError):
+        assert rsvc.svc_.maxiter == mi
+
+
 def test_RSVC_SVC_params_error(get_covmats, get_labels):
     n_trials, n_channels, n_classes = 6, 3, 2
     covmats = get_covmats(n_trials, n_channels)
@@ -213,4 +227,4 @@ def test_RSVC_SVC_params_error(get_covmats, get_labels):
         RSVC(C='hello').fit(covmats, labels)
 
     with pytest.raises(TypeError):
-        RSVC(foo=5).fit(covmats, labels)
+        RSVC(foo=5)
