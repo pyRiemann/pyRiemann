@@ -361,7 +361,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         """Partially fit the potato from covariance matrices.
 
         This partial fit can be used to update dynamic or semi-dymanic online
-        potatoes with clean EEG [2]_.
+        potatoes with clean EEG.
 
         Parameters
         ----------
@@ -605,7 +605,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         """Partially fit the potato field from covariance matrices.
 
         This partial fit can be used to update dynamic or semi-dymanic online
-        potatoes with clean EEG [1]_.
+        potatoes with clean EEG.
 
         Parameters
         ----------

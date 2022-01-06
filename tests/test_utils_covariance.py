@@ -1,12 +1,13 @@
 from numpy.testing import assert_array_almost_equal
 import numpy as np
+from scipy.linalg import block_diag
 from scipy.signal import welch, csd, coherence as coherence_sp
 import pytest
 
 from pyriemann.utils.covariance import (
     covariances, covariances_EP, covariances_X, eegtocov,
     cross_spectrum, cospectrum, coherence,
-    normalize, get_nondiag_weight
+    normalize, get_nondiag_weight, block_covariances
 )
 from pyriemann.utils.test import is_real, is_hermitian
 
@@ -62,6 +63,47 @@ def test_covariances_X(estimator, rndstate):
         cov = covariances_X(x, estimator=estimator, alpha=5.)
     n_dim_cov = n_channels + n_times
     assert cov.shape == (n_matrices, n_dim_cov, n_dim_cov)
+
+
+@pytest.mark.parametrize(
+    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd',
+                  'sch', np.cov, 'truc', None]
+)
+def test_block_covariances_est(estimator, rndstate):
+    """Test block covariance for multiple estimators"""
+    n_matrices, n_channels, n_times = 2, 12, 100
+    x = rndstate.randn(n_matrices, n_channels, n_times)
+
+    if estimator is None:
+        cov = block_covariances(x, [4, 4, 4])
+        assert cov.shape == (n_matrices, n_channels, n_channels)
+    elif estimator == 'truc':
+        with pytest.raises(ValueError):
+            block_covariances(x, [4, 4, 4], estimator=estimator)
+    else:
+        cov = block_covariances(x, [4, 4, 4], estimator=estimator)
+        assert cov.shape == (n_matrices, n_channels, n_channels)
+
+
+def test_block_covariances(rndstate):
+    """Test block covariance"""
+    n_matrices, n_channels, n_times = 2, 12, 100
+    x = rndstate.randn(n_matrices, n_channels, n_times)
+
+    cov = block_covariances(x, [12], estimator='cov')
+    assert_array_almost_equal(cov, covariances(x, estimator='cov'))
+
+    cov = block_covariances(x, [6, 6], estimator='cov')
+    cov2 = covariances(x, estimator='cov')
+    covcomp = block_diag(*(cov2[0, :6, :6], cov2[0, 6:12, 6:12]))
+    assert_array_almost_equal(cov[0], covcomp)
+
+    cov = block_covariances(x, [3, 5, 4], estimator='cov')
+    cov2 = covariances(x, estimator='cov')
+    covcomp = block_diag(*(cov2[0, :3, :3],
+                           cov2[0, 3:8, 3:8],
+                           cov2[0, 8:12, 8:12]))
+    assert_array_almost_equal(cov[0], covcomp)
 
 
 def test_covariances_eegtocov(rndstate):
@@ -275,28 +317,42 @@ def test_covariances_coherence(coh, rndstate):
             assert c[0, 3, foi] == pytest.approx(0.0)
 
 
-def test_normalize(rndstate):
-    """Test normalize"""
-    n_conds, n_matrices, n_channels = 15, 20, 3
+@pytest.mark.parametrize('norm', ['corr', 'trace', 'determinant'])
+def test_normalize_shapes(norm, rndstate):
+    """Test normalize shapes"""
+    n_conds, n_matrices, n_channels = 15, 10, 3
 
     # test a 2d array, ie a single square matrix
     mat = rndstate.randn(n_channels, n_channels)
-    mat_n = normalize(mat, "trace")
+    mat_n = normalize(mat, norm)
     assert mat.shape == mat_n.shape
     # test a 3d array, ie a group of square matrices
     mat = rndstate.randn(n_matrices, n_channels, n_channels)
-    mat_n = normalize(mat, "determinant")
+    mat_n = normalize(mat, norm)
     assert mat.shape == mat_n.shape
     # test a 4d array, ie a group of groups of square matrices
     mat = rndstate.randn(n_conds, n_matrices, n_channels, n_channels)
-    mat_n = normalize(mat, "trace")
+    mat_n = normalize(mat, norm)
     assert mat.shape == mat_n.shape
+
+
+def test_normalize_values(rndstate, get_covmats):
+    """Test normalize values"""
+    n_matrices, n_channels = 20, 3
+
+    # after corr-normalization => diags = 1 and values in [-1, 1]
+    mat = get_covmats(n_channels, n_channels)
+    mat_cn = normalize(mat, "corr")
+    assert_array_almost_equal(np.ones(mat_cn.shape[:-1]),
+                              np.diagonal(mat_cn, axis1=-2, axis2=-1))
+    assert np.all(-1 <= mat_cn) and np.all(mat_cn <= 1)
 
     # after trace-normalization => trace equal to 1
     mat = rndstate.randn(n_matrices, n_channels, n_channels)
     mat_tn = normalize(mat, "trace")
     assert_array_almost_equal(np.ones(mat_tn.shape[0]),
                               np.trace(mat_tn, axis1=-2, axis2=-1))
+
     # after determinant-normalization => determinant equal to +/- 1
     mat_dn = normalize(mat, "determinant")
     assert_array_almost_equal(np.ones(mat_dn.shape[0]),
