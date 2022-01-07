@@ -32,7 +32,7 @@ Embedding
     :template: class.rst
 
     Embedding
-    RiemannianLLE
+    RiemannLLE
 
 Classification
 --------------
