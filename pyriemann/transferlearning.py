@@ -128,18 +128,28 @@ class MDWM (MDM):
                 raise ValueError("Parameter sample_weight should either be \
                     None or an ndarray shape (n_matrices, 1)")
 
-        self.classes_ = np.unique(y_source)
+        if X.shape[1:] != X_source.shape[1:]:
+            raise ValueError("X and X_source must have the same number of \
+                n_channels")
+
+        if X.shape[0] != y.shape[0]:
+            raise ValueError("X and y must be for the same number of \
+                matrices i.e. n_matrices")
 
         if sample_weight is None:
             sample_weight = np.ones(X_source.shape[0])
+
+        if not (X_source.shape[0] == y_source.shape[0]
+                == sample_weight.shape[0]):
+            raise ValueError("X and y must be for the same number of \
+                matrices i.e. n_matrices")
+
+        self.classes_ = np.unique(y_source)
 
         if self.n_jobs == 1:
             self.target_means_ = [
                 mean_covariance(X[y == ll], metric=self.metric_mean)
                 for ll in self.classes_]
-            print(f"[DEBUG] self.classes_ {self.classes_}")
-            print(f"[DEBUG] y_source {y_source}")
-            print(f"[DEBUG] X_source.shape {X_source.shape}")
             self.source_means_ = [
                 mean_covariance(
                     X_source[y_source == ll],
