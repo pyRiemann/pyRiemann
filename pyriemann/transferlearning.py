@@ -87,7 +87,7 @@ class MDWM (MDM):
         y_source : ndarray, shape (n_matrices,)
             labels corresponding to each matrix of source domain
         sample_weight : None | ndarray, shape (n_matrices,)
-            Weight of each matrix from the source domain. 
+            Weight of each matrix from the source domain.
             If None, matrices are treated with equal weights.
 
         Returns
