@@ -49,6 +49,10 @@ def get_covmats_params(rndstate):
 
 @pytest.fixture
 def get_labels():
+    '''
+    Generate labels for matrices
+    Note: This only considers the case of balanced classes.
+    '''
     def _get_labels(n_matrices, n_classes):
         return np.arange(n_classes).repeat(n_matrices // n_classes)
 

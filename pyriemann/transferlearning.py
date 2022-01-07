@@ -26,7 +26,7 @@ class MDWM (MDM):
         distance estimation. Typical usecase is to pass 'logeuclid' metric for
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
-    Lambda : float, (default: 0)
+    transfer_coef : float, (default: 0)
         Transfer coefficient in [0,1], controlling the trade-off between
         source and target data. At 0, there is no transfer, only the data
         acquired from the source are used. At 1, this is a calibration-free
@@ -63,30 +63,14 @@ class MDWM (MDM):
         Neural Engineering (NER), pp. 523-526. IEEE, 2021.
     """
 
-    def __init__(self, metric='riemann', Lambda=0, n_jobs=1):
+    def __init__(self, metric='riemann', transfer_coef=0, n_jobs=1):
         """Init."""
         self.metric = metric
         self.n_jobs = n_jobs
-        self.Lambda = Lambda
+        self.transfer_coef = transfer_coef
         self.target_means_ = None
-        self.domain_means_ = None
+        self.source_means_ = None
         self.classes_ = None
-
-        if isinstance(metric, str):
-            self.metric_mean = metric
-            self.metric_dist = metric
-
-        elif isinstance(metric, dict):
-            # check keys
-            for key in ['mean', 'distance']:
-                if key not in metric.keys():
-                    raise KeyError('metric must contain "mean" and "distance"')
-
-            self.metric_mean = metric['mean']
-            self.metric_dist = metric['distance']
-
-        else:
-            raise TypeError('metric must be dict or str')
 
     def fit(self, X, y, X_source, y_source, sample_weight=None):
         """Fit (estimates) the centroids.
@@ -111,17 +95,38 @@ class MDWM (MDM):
             The MDWM instance.
         """
 
-        if not 0 <= self.Lambda <= 1:
+        if not 0 <= self.transfer_coef <= 1:
             raise ValueError(
-                'Value Lambda must be included in [0, 1] (Got %d)'
-                % self.Lambda)
+                'Value transfer_coef must be included in [0, 1] (Got %d)'
+                % self.transfer_coef)
 
-        if set(y) != set(y_source):
-            raise Exception(f"classes in source domain must match classes in target \
-                domain. Classes in source are {np.unique(y_source)} while \
-                    classes in target are {np.unique(y)}")
+        if isinstance(self.metric, str):
+            self.metric_mean = self.metric
+            self.metric_dist = self.metric
+        elif isinstance(self.metric, dict):
+            # check keys
+            for key in ['mean', 'distance']:
+                if key not in self.metric.keys():
+                    raise KeyError('metric must contain "mean" and "distance"')
 
-        self.classes_ = np.unique(y)
+            self.metric_mean = self.metric['mean']
+            self.metric_dist = self.metric['distance']
+        else:
+            raise TypeError('metric must be dict or str')
+
+        if self.transfer_coef != 0:
+            if set(y) != set(y_source):
+                raise ValueError(f"classes in source domain must match classes in target \
+                    domain. Classes in source are {np.unique(y_source)} while \
+                        classes in target are {np.unique(y)}")
+
+        if sample_weight is not None:
+            if (sample_weight.shape != (X_source.shape[0], 1)) and \
+                                (sample_weight.shape != (X_source.shape[0],)):
+                raise ValueError("Parameter sample_weight should either be \
+                    None or an ndarray shape (n_matrices, 1)")
+
+        self.classes_ = np.unique(y_source)
 
         if sample_weight is None:
             sample_weight = np.ones(X_source.shape[0])
@@ -133,18 +138,18 @@ class MDWM (MDM):
             print(f"[DEBUG] self.classes_ {self.classes_}")
             print(f"[DEBUG] y_source {y_source}")
             print(f"[DEBUG] X_source.shape {X_source.shape}")
-            self.domain_means_ = [
+            self.source_means_ = [
                 mean_covariance(
                     X_source[y_source == ll],
                     metric=self.metric_mean,
                     sample_weight=sample_weight[y_source == ll]
-                    )
+                )
                 for ll in self.classes_]
         else:
             self.target_means_ = Parallel(n_jobs=self.n_jobs)(
                 delayed(mean_covariance)(X[y == ll], metric=self.metric_mean)
                 for ll in self.classes_)
-            self.domain_means_ = Parallel(n_jobs=self.n_jobs)(
+            self.source_means_ = Parallel(n_jobs=self.n_jobs)(
                 delayed(mean_covariance)(
                     X_source[y_source == ll],
                     metric=self.metric_mean,
@@ -152,7 +157,7 @@ class MDWM (MDM):
                 for ll in self.classes_)
 
         self.covmeans_ = [geodesic(self.target_means_[i],
-                                   self.domain_means_[i],
-                                   self.Lambda, self.metric)
+                                   self.source_means_[i],
+                                   self.transfer_coef, self.metric)
                           for i, _ in enumerate(self.classes_)]
         return self
