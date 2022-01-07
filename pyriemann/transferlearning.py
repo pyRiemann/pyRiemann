@@ -68,9 +68,10 @@ class MDWM (MDM):
         self.metric = metric
         self.n_jobs = n_jobs
         self.transfer_coef = transfer_coef
-        self.target_means_ = None
-        self.source_means_ = None
+        self.covmeans_ = None
         self.classes_ = None
+        self._target_means = None
+        self._domain_means = None
 
     def fit(self, X, y, X_source, y_source, sample_weight=None):
         """Fit (estimates) the centroids.
@@ -79,15 +80,15 @@ class MDWM (MDM):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Covariance matrices from target domain
-        y : ndarray shape (n_matrices, 1)
+        y : ndarray, shape (n_matrices,)
             labels corresponding to each matrix of target domain
         X_source : ndarray, shape (n_matrices, n_channels, n_channels)
             Covariance matrices from source domain
-        y_source : ndarray shape (n_matrices, 1)
+        y_source : ndarray, shape (n_matrices,)
             labels corresponding to each matrix of source domain
-        sample_weight : None | ndarray shape (n_matrices, 1)
-            the weights of each sample from the domain. if None, each sample
-            is treated with equal weights.
+        sample_weight : None | ndarray, shape (n_matrices,)
+            Weight of each matrix from the source domain. 
+            If None, matrices are treated with equal weights.
 
         Returns
         -------
