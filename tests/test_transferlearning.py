@@ -159,13 +159,75 @@ def test_different_labels_no_transfer(transfer, get_covmats, get_labels):
 @pytest.mark.parametrize("excess", [-1, 1])
 def test_sample_weight_shape_error(transfer, excess, get_covmats, get_labels):
     with pytest.raises((ValueError)):
-        nn, n_classes, n_classes_source, n_channels = 2, 4, 4, 3
-        n_trials_source = n_classes_source * 3
+        nn, n_classes, n_channels = 2, 4, 3
+        n_trials_source = n_classes * 3
         n_trials_target = n_classes * nn
         sample_weight = np.ones(n_trials_source + excess)
 
         covmats_source = get_covmats(n_trials_source, n_channels)
-        labels_source = get_labels(n_trials_source, n_classes_source)
+        labels_source = get_labels(n_trials_source, n_classes)
+
+        covmats_target = get_covmats(n_trials_target, n_channels)
+        labels_target = get_labels(n_trials_target, n_classes)
+
+        trans = transfer(transfer_coef=0.5)
+        trans.fit(covmats_target, labels_target, covmats_source,
+                  labels_source, sample_weight)
+
+
+@pytest.mark.parametrize("transfer", [MDWM])
+@pytest.mark.parametrize("excess", [-1, 1])
+def test_n_channels_mismatch_error(transfer, excess, get_covmats, get_labels):
+    with pytest.raises((ValueError)):
+        nn, n_classes, n_channels = 2, 4, 3
+        n_trials_source = n_classes * 3
+        n_trials_target = n_classes * nn
+        sample_weight = np.ones(n_trials_source)
+
+        covmats_source = get_covmats(n_trials_source, n_channels + excess)
+        labels_source = get_labels(n_trials_source, n_classes)
+
+        covmats_target = get_covmats(n_trials_target, n_channels)
+        labels_target = get_labels(n_trials_target, n_classes)
+
+        trans = transfer(transfer_coef=0.5)
+        trans.fit(covmats_target, labels_target, covmats_source,
+                  labels_source, sample_weight)
+
+
+@pytest.mark.parametrize("transfer", [MDWM])
+@pytest.mark.parametrize("excess", [-2, 2])
+def test_target_matrices_mismatch(transfer, excess, get_covmats, get_labels):
+    with pytest.raises((ValueError)):
+        nn, n_classes, n_channels = 2, 4, 3
+        n_trials_source = n_classes * 3
+        n_trials_target = n_classes * nn
+        sample_weight = np.ones(n_trials_source)
+
+        covmats_source = get_covmats(n_trials_source, n_channels + excess)
+        labels_source = get_labels(n_trials_source, n_classes)
+
+        covmats_target = get_covmats(n_trials_target, n_channels)
+        labels_target = get_labels(n_trials_target + excess, n_classes)
+
+        trans = transfer(transfer_coef=0.5)
+        trans.fit(covmats_target, labels_target, covmats_source,
+                  labels_source, sample_weight)
+
+
+@pytest.mark.parametrize("transfer", [MDWM])
+@pytest.mark.parametrize("excess_X,excess_y,excess_weight",
+                         [(2, 0, 0), (0, 2, 0), (0, 0, 2)])
+def test_source_matrices_mismatch(transfer, excess_X, excess_y, excess_weight,
+                                  get_covmats, get_labels):
+    with pytest.raises((ValueError)):
+        nn, n_classes, n_channels = 2, 2, 3
+        n_trials_source = n_classes * 3
+        n_trials_target = n_classes * nn
+        sample_weight = np.ones(n_trials_source + excess_weight)
+
+        covmats_source = get_covmats(n_trials_source + excess_X, n_channels)
+        labels_source = get_labels((n_trials_source + excess_y), n_classes)
 
         covmats_target = get_covmats(n_trials_target, n_channels)
         labels_target = get_labels(n_trials_target, n_classes)
