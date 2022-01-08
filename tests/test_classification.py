@@ -120,7 +120,7 @@ class TestClassifier(ClassifierTestCase):
 @pytest.mark.parametrize("dist", ["not_real", 27])
 def test_metric_dict_error(classif, mean, dist, get_covmats, get_labels):
     with pytest.raises((TypeError, KeyError)):
-        n_trials, n_channels, n_classes = 7, 3, 2
+        n_trials, n_channels, n_classes = 6, 3, 2
         labels = get_labels(n_trials, n_classes)
         covmats = get_covmats(n_trials, n_channels)
         clf = classif(metric={"mean": mean, "distance": dist})
