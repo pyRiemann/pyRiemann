@@ -20,6 +20,8 @@ from mne.datasets import sample
 
 from sklearn.model_selection import train_test_split
 
+import matplotlib.pyplot as plt
+
 
 print(__doc__)
 
@@ -61,12 +63,14 @@ covs = xdwn.fit(Xtrain, ytrain).transform(Xtest)
 # Spectral Embedding (SE)
 # -----------------------
 
-plot_embedding(covs, metric='riemann', embd_type='Spectral', normalize=True)
-
+plot_embedding(covs, ytest, metric='riemann', embd_type='Spectral',
+               normalize=True)
+plt.show()
 
 ###############################################################################
 # Riemannian Locally Linear Embedding (RLLE)
 # ------------------------------------------
 
-plot_embedding(covs, metric='riemann', embd_type='LocallyLinear',
-               normalize=True)
+plot_embedding(covs, ytest, metric='riemann', embd_type='LocallyLinear',
+               normalize=False)
+plt.show()

@@ -48,7 +48,9 @@ def plot_embedding(X,
     if embd_type == 'Spectral':
         lapl = SpectralEmbedding(n_components=2, metric=metric)
     elif embd_type == 'LocallyLinear':
-        lapl = LocallyLinearEmbedding(n_components=2, metric=metric)
+        lapl = LocallyLinearEmbedding(n_components=2,
+                                      n_neighbors=X.shape[1],
+                                      metric=metric)
     else:
         raise ValueError("Invalid embedding type. Valid types are: 'Spectral',"
                          " 'LocallyLinear'")
