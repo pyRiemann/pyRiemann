@@ -78,7 +78,7 @@ def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
 
     n_matrices_X, n_channels, n_channels = X.shape
 
-    X_ = np.matmul(G_invsq, np.matmul(X, G_invsq))
+    X_ = G_invsq @ X @ G_invsq
     X_ = np.array([logm(x_) for x_ in X_])
 
     if isinstance(Y, type(None)) or np.array_equal(X, Y):
