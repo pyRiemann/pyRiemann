@@ -14,6 +14,7 @@ def test_riemann_kernel(rndstate, get_covmats):
     cov = get_covmats(n_matrices, n_channels)
     K = kernel_riemann(cov, cov, np.eye(n_channels))
     assert is_spsd(K)
+    assert K.shape == (n_matrices, n_matrices)
 
     log_cov = np.array([logm(c) for c in cov])
     tensor = np.tensordot(log_cov, log_cov.T, axes=1)
