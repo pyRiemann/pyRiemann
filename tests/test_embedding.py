@@ -39,10 +39,10 @@ def test_rlle_embedding(get_covmats):
 
 def test_rlle_transform(get_covmats):
     """Test LocallyLinearEmbedding embedding transform."""
-    n_matrices, n_channels = 6, 3
+    n_matrices, n_channels, n_comp = 6, 3, 2
     covmats = get_covmats(n_matrices, n_channels)
-    n_comp = 2
     embd = LocallyLinearEmbedding(n_components=n_comp)
+
     embd.fit(covmats)
     new_covmats = get_covmats(n_matrices + 2, n_channels)
     covembd = embd.transform(new_covmats)
@@ -60,10 +60,8 @@ def test_barycenter_weights(get_covmats):
 
 def test_riemann_lle(get_covmats):
     """Test riemann_lle helper function."""
-    n_matrices, n_channels = 4, 3
+    n_matrices, n_channels, n_comps, n_neighbors = 4, 3, 2, 2
     covmats = get_covmats(n_matrices, n_channels)
-    n_comps = 2
-    n_neighbors = 2
     embedding, error = riemann_lle(covmats,
                                    n_neighbors=n_neighbors,
                                    n_components=n_comps)
