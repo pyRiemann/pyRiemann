@@ -1,7 +1,7 @@
 from conftest import get_metrics
 import numpy as np
-from pyriemann.embedding import (Embedding,
-                                 RiemannLLE,
+from pyriemann.embedding import (SpectralEmbedding,
+                                 LocallyLinearEmbedding,
                                  barycenter_weights,
                                  riemann_lle)
 import pytest
@@ -9,19 +9,19 @@ import pytest
 
 @pytest.mark.parametrize("metric", get_metrics())
 @pytest.mark.parametrize("eps", [None, 0.1])
-def test_embedding(metric, eps, get_covmats):
-    """Test Embedding."""
+def test_spectral_embedding(metric, eps, get_covmats):
+    """Test SpectralEmbedding."""
     n_matrices, n_channels, n_comp = 6, 3, 2
     covmats = get_covmats(n_matrices, n_channels)
-    embd = Embedding(metric=metric, n_components=n_comp, eps=eps)
+    embd = SpectralEmbedding(metric=metric, n_components=n_comp, eps=eps)
     covembd = embd.fit_transform(covmats)
     assert covembd.shape == (n_matrices, n_comp)
 
 
-def test_fit_independence(get_covmats):
+def test_spectral_embedding_fit_independence(get_covmats):
     n_matrices, n_channels = 6, 3
     covmats = get_covmats(n_matrices, n_channels)
-    embd = Embedding()
+    embd = SpectralEmbedding()
     embd.fit_transform(covmats)
     # retraining with different size should erase previous fit
     new_covmats = covmats[:, :-1, :-1]
@@ -29,20 +29,20 @@ def test_fit_independence(get_covmats):
 
 
 def test_rlle_embedding(get_covmats):
-    """Test RiemannLLE embedding fit_transform."""
+    """Test LocallyLinearEmbedding embedding fit_transform."""
     n_matrices, n_channels, n_comp = 6, 3, 2
     covmats = get_covmats(n_matrices, n_channels)
-    embd = RiemannLLE(n_components=n_comp)
+    embd = LocallyLinearEmbedding(n_components=n_comp)
     covembd = embd.fit_transform(covmats)
     assert covembd.shape == (n_matrices, n_comp)
 
 
 def test_rlle_transform(get_covmats):
-    """Test RiemannLLE embedding transform."""
+    """Test LocallyLinearEmbedding embedding transform."""
     n_matrices, n_channels = 6, 3
     covmats = get_covmats(n_matrices, n_channels)
     n_comp = 2
-    embd = RiemannLLE(n_components=n_comp)
+    embd = LocallyLinearEmbedding(n_components=n_comp)
     embd.fit(covmats)
     new_covmats = get_covmats(n_matrices + 2, n_channels)
     covembd = embd.transform(new_covmats)

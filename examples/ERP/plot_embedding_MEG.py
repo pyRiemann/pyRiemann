@@ -7,20 +7,18 @@ Embeddings via Laplacian Eigenmaps and Riemannian locally linear
 embedding of a set of ERP data.
 
 """
-# Authors: Pedro Rodrigues <pedro.rodrigues01@gmail.com>
-#
+# Authors:  Pedro Rodrigues <pedro.rodrigues01@gmail.com>,
+#           Gabriel Wagner vom Berg <gabriel@bccn-berlin.de>
 # License: BSD (3-clause)
 
 from pyriemann.estimation import XdawnCovariances
-from pyriemann.embedding import Embedding, RiemannLLE
+from pyriemann.utils.viz import plot_embedding
 
 import mne
 from mne import io
 from mne.datasets import sample
 
 from sklearn.model_selection import train_test_split
-
-from matplotlib import pyplot as plt
 
 
 print(__doc__)
@@ -63,47 +61,12 @@ covs = xdwn.fit(Xtrain, ytrain).transform(Xtest)
 # Spectral Embedding (SE)
 # -----------------------
 
-lapl = Embedding(metric='riemann', n_components=2)
-embd = lapl.fit_transform(covs)
+plot_embedding(covs, metric='riemann', embd_type='Spectral', normalize=True)
 
-###############################################################################
-# Plot the two first components of the SE embedded points
-
-fig, ax = plt.subplots(figsize=(7, 8), facecolor='white')
-
-for cond, label in event_id.items():
-    idx = (ytest == label)
-    ax.scatter(embd[idx, 0], embd[idx, 1], s=36, label=cond)
-
-ax.set_xlabel(r'$\varphi_1$', fontsize=16)
-ax.set_ylabel(r'$\varphi_2$', fontsize=16)
-ax.set_title('Spectral embedding of ERP recordings', fontsize=16)
-ax.set_xticks([-1.0, -0.5, 0.0, +0.5, 1.0])
-ax.set_yticks([-1.0, -0.5, 0.0, +0.5, 1.0])
-ax.grid(False)
-ax.legend()
-plt.show()
 
 ###############################################################################
 # Riemannian Locally Linear Embedding (RLLE)
 # ------------------------------------------
 
-rlle = RiemannLLE(n_components=2)
-embd = rlle.fit_transform(covs)
-
-###############################################################################
-# Plot the two first components of the RLLE embedded points
-
-fig, ax = plt.subplots(figsize=(7, 8), facecolor='white')
-
-for cond, label in event_id.items():
-    idx = (ytest == label)
-    ax.scatter(embd[idx, 0], embd[idx, 1], s=36, label=cond)
-
-ax.set_xlabel(r'$\varphi_1$', fontsize=16)
-ax.set_ylabel(r'$\varphi_2$', fontsize=16)
-ax.set_title('Riemannian Locally Linear Embedding of ERP recordings',
-             fontsize=16)
-ax.grid(False)
-ax.legend()
-plt.show()
+plot_embedding(covs, metric='riemann', embd_type='LocallyLinear',
+               normalize=True)

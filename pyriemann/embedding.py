@@ -7,11 +7,11 @@ from scipy.sparse import csr_matrix
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.manifold import spectral_embedding
 
-from .utils.kernel import kernel_riemann
+from .utils.kernel import kernel
 from .utils.distance import pairwise_distance
 
 
-class Embedding(BaseEstimator):
+class SpectralEmbedding(BaseEstimator):
     """Embed SPD matrices into an Euclidean space of smaller dimension.
 
     It uses Laplacian Eigenmaps [1]_ to embed SPD matrices into an Euclidean
@@ -113,7 +113,7 @@ class Embedding(BaseEstimator):
         return self.embedding_
 
 
-class RiemannLLE(BaseEstimator, TransformerMixin):
+class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
     """Riemannian Locally Linear Embedding (LLE).
 
     Riemannian LLE as proposed in [1]_. LLE is a non-linear,
@@ -131,6 +131,8 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         Dimensionality of projected space.
     n_neighbors : int, default: 5
         Number of neighbors for reconstruction of each point.
+    metric : {'riemann'}
+        Metric used for KNN and Kernel estimation.
     reg : float, default: 1e-3
         Regularization parameter.
 
@@ -154,9 +156,11 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         and Pattern Recognition, June 2008
     """
 
-    def __init__(self, n_components=2, n_neighbors=5, reg=1e-3):
+    def __init__(self, n_components=2, n_neighbors=5, metric='riemann',
+                 reg=1e-3):
         self.n_components = n_components
         self.n_neighbors = n_neighbors
+        self.metric = metric
         self.reg = reg
 
     def fit(self, X, y=None):
@@ -179,6 +183,7 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         self.embedding_, self.error_ = riemann_lle(X,
                                                    self.n_components,
                                                    self.n_neighbors,
+                                                   self.metric,
                                                    self.reg)
         return self
 
@@ -198,11 +203,17 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         X_: ndarray, shape (n_matrices, n_components)
             Coordinates of embedded matrices.
         """
-        pairwise_distances = pairwise_distance(X, self.data_, metric='riemann')
+        pairwise_distances = pairwise_distance(X,
+                                               self.data_,
+                                               metric=self.metric)
         ind = np.array([np.argsort(dist)[1:self.n_neighbors + 1]
                         for dist in pairwise_distances])
 
-        weights = barycenter_weights(X, self.data_, ind, reg=self.reg)
+        weights = barycenter_weights(X,
+                                     self.data_,
+                                     ind,
+                                     metric=self.metric,
+                                     reg=self.reg)
 
         X_new = np.empty((X.shape[0], self.n_components))
         for i in range(X.shape[0]):
@@ -228,11 +239,12 @@ class RiemannLLE(BaseEstimator, TransformerMixin):
         self.embedding_, self.error_ = riemann_lle(X,
                                                    self.n_components,
                                                    self.n_neighbors,
+                                                   self.metric,
                                                    self.reg)
         return self.embedding_
 
 
-def barycenter_weights(X, Y, indices, reg=1e-3):
+def barycenter_weights(X, Y, indices, metric='riemann', reg=1e-3):
     """Compute Riemannian barycenter weights of X from Y along the first axis.
     We estimate the weights to assign to each point in Y[indices] to recover
     the point X[i] by geodesic interpolation. The barycenter weights sum to 1.
@@ -245,6 +257,8 @@ def barycenter_weights(X, Y, indices, reg=1e-3):
         Set of SPD matrices.
     indices : ndarray, shape (n_matrices, n_neighbors)
         Indices of the points in Y used to compute the barycenter
+    metric : {'riemann'}
+        Kernel metric.
     reg : float, default=1e-3
         amount of regularization to add for the problem to be
         well-posed in the case of n_neighbors > n_dim
@@ -269,7 +283,7 @@ def barycenter_weights(X, Y, indices, reg=1e-3):
 
     for i in range(n_matrices):
         X_neighbors = Y[indices[i]]
-        G = kernel_riemann(X_neighbors, Cref=X[i])
+        G = kernel(X_neighbors, Cref=X[i], metric=metric)
         trace = np.trace(G)
         if trace > 0:
             R = reg * trace
@@ -284,6 +298,7 @@ def barycenter_weights(X, Y, indices, reg=1e-3):
 def riemann_lle(X,
                 n_components=2,
                 n_neighbors=5,
+                metric='riemann',
                 reg=1e-3):
     """Riemannian Locally Linear Embedding (LLE).
 
@@ -304,8 +319,15 @@ def riemann_lle(X,
         Dimensionality of projected space.
     n_neighbors : int, default: 5
         Number of neighbors for reconstruction of each point.
+    metric : {'riemann'}
+        Metric used for KNN and Kernel estimation.
     reg : float, default: 1e-3
         Regularization parameter.
+
+    Returns
+    -------
+    embd : ndarray, shape (n_matrices, n_components)
+        Locally linear embedding of matrices in X.
 
     Notes
     -----
@@ -321,18 +343,20 @@ def riemann_lle(X,
     """
 
     n_matrices, n_channels, n_channels = X.shape
-    pairwise_distances = pairwise_distance(X, metric='riemann')
+    pairwise_distances = pairwise_distance(X, metric=metric)
     neighbors = np.array([np.argsort(dist)[1:n_neighbors + 1]
                           for dist in pairwise_distances])
 
-    B = barycenter_weights(X, X, neighbors, reg=reg)
+    B = barycenter_weights(X, X, neighbors, metric=metric, reg=reg)
 
     indptr = np.arange(0, n_matrices * n_neighbors + 1, n_neighbors)
     W = csr_matrix((B.ravel(), neighbors.ravel(), indptr), shape=(n_matrices,
                                                                   n_matrices))
     # M = (W - I).T * (W - I) = W.T * W - W.T - W + I
+    # calculated in the two following lines
     M = (W.T * W - W.T - W).toarray()
     M.flat[:: M.shape[0] + 1] += 1
+
     return null_space(
         M,
         n_components,

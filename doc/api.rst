@@ -31,7 +31,7 @@ Embedding
     :toctree: generated/
     :template: class.rst
 
-    Embedding
+    SpectralEmbedding
     RiemannianLLE
 
 Classification
