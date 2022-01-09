@@ -17,8 +17,8 @@ def kernel(X, Y=None, Cref=None, metric='riemann', reg=1e-10):
             Second set of SPD matrices. If None, Y is set to X.
         Cref : None | ndarray, shape (n_channels, n_channels)
             Reference point for the tangent space and inner product
-            calculation. If None, Cref is calculated as the Riemannian mean of X
-            according to the specified metric.
+            calculation. If None, Cref is calculated as the Riemannian mean of
+            X according to the specified metric.
         metric : {'riemann'}
             The type of metric used for tangent space and mean estimation. Can
             be 'riemann'.
