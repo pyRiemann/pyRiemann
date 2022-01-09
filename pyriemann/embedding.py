@@ -326,8 +326,10 @@ def riemann_lle(X,
 
     Returns
     -------
-    embd : ndarray, shape (n_matrices, n_components)
+    embd_ : ndarray, shape (n_matrices, n_components)
         Locally linear embedding of matrices in X.
+    error_ : float
+        Error of the projected embedding.
 
     Notes
     -----
@@ -357,35 +359,10 @@ def riemann_lle(X,
     M = (W.T * W - W.T - W).toarray()
     M.flat[:: M.shape[0] + 1] += 1
 
-    return null_space(
-        M,
-        n_components,
-        k_skip=1,
-    )
-
-
-def null_space(M, k, k_skip=1):
-    """Find the null space of a matrix M.
-
-    Parameters
-    ----------
-    M : ndarray, shape (n_matrices, n_matrices)
-        Input covariance matrix: should be symmetric positive semi-definite
-    k : int
-        Number of eigenvalues/vectors to return
-    k_skip : int, default=1
-        Number of low eigenvalues to skip.
-
-    Notes
-    -----
-    .. versionadded:: 0.2.8
-    See sklearn.manifold._locally_linear.null_space for original code.
-    """
-
-    if hasattr(M, "toarray"):
-        M = M.toarray()
     eigen_values, eigen_vectors = eigh(
-        M, eigvals=(k_skip, k + k_skip - 1), overwrite_a=True
+        M, eigvals=(1, n_components), overwrite_a=True
     )
     index = np.argsort(np.abs(eigen_values))
-    return eigen_vectors[:, index], np.sum(eigen_values)
+    embd_, error_ = eigen_vectors[:, index], np.sum(eigen_values)
+
+    return embd_, error_
