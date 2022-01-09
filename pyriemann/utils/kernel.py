@@ -17,14 +17,14 @@ def kernel(X, Y=None, Cref=None, metric='riemann', reg=1e-10):
             Second set of SPD matrices. If None, Y is set to X.
         Cref : None | ndarray, shape (n_channels, n_channels)
             Reference point for the tangent space and inner product
-            calculation. If None, Cref is calculated as the mean of X
+            calculation. If None, Cref is calculated as the Riemannian mean of X
             according to the specified metric.
         metric : {'riemann'}
             The type of metric used for tangent space and mean estimation. Can
             be 'riemann'.
         reg : float, (default : 1e-10)
             Regularization parameter to mitigate numerical errors in kernel
-            matrix estimation.
+            matrix estimation, to provide a positive-definite kernel matrix.
 
         Returns
         ----------
@@ -55,7 +55,7 @@ def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
         First set of SPD matrices.
     Y : None | ndarray, shape (n_matrices, n_channels, n_channels)
         Second set of SPD matrices. If None, Y is set to X.
-    C : None | ndarray, shape (n_channels, n_channels)
+    Cref : None | ndarray, shape (n_channels, n_channels)
         Reference point for the tangent space and inner product calculation.
         If None, Cref is calculated as the Riemannian mean of X.
     reg : float, (default : 1e-10)
@@ -72,11 +72,9 @@ def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
     .. versionadded:: 0.2.8
     """
     if Cref is None:
-        G = mean_riemann(X)
-        G_invsq = invsqrtm(G)
+        Cref = mean_riemann(X)
 
-    else:
-        G_invsq = invsqrtm(Cref)
+    G_invsq = invsqrtm(Cref)
 
     n_matrices_X, n_channels, n_channels = X.shape
 
@@ -89,7 +87,7 @@ def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
     else:
         n_matrices_Y, n_channels, n_channels = Y.shape
 
-        Y_ = np.matmul(G_invsq, np.matmul(Y, G_invsq))
+        Y_ = G_invsq @ Y @ G_invsq
         Y_ = np.array([logm(y_) for y_ in Y_])
 
     # calculate scalar products
