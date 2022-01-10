@@ -39,7 +39,25 @@ def plot_embedding(X,
                    title="Embedding of covariances",
                    embd_type='Spectral',
                    normalize=True):
-    """Plot 2D embedding of covariance matrices using Diffusion maps."""
+    """Plot 2D embedding of covariance matrices using Diffusion maps.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels)
+        Labels corresponding to each matrix.
+    metric : {'riemann' ,'logeuclid' , 'euclid' , 'logdet', 'kullback',
+                'kullback_right', 'kullback_sym'}
+        Metric used in the embedding. Can only be 'riemann' ,'logeuclid' ,
+        'euclid' for Locally Linear Embedding.
+    title : str, optional (default : "Embedding of covariances")
+        Title string for plot.
+    embd_type : {'Spectral' ,'LocallyLinear'}
+        Embedding type.
+    normalize : bool, (default : True)
+        If True, the plot is normalized from -1 to +1
+    """
     try:
         import matplotlib.pyplot as plt
     except ImportError:
