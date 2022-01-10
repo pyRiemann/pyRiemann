@@ -1,12 +1,8 @@
-from pyriemann.utils.kernel import (kernel,
-                                    kernel_riemann,
-                                    kernel_euclid,
-                                    kernel_logeuclid)
-from pyriemann.utils.mean import mean_riemann, mean_covariance
-from pyriemann.utils.base import logm
+from pyriemann.utils.kernel import kernel
+from pyriemann.utils.mean import mean_covariance
 from pyriemann.utils.test import is_pos_semi_def as is_spsd
 
-from numpy.testing import assert_array_equal, assert_array_almost_equal
+from numpy.testing import assert_array_equal
 import numpy as np
 import pytest
 
