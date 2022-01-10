@@ -1,25 +1,28 @@
-from pyriemann.utils.kernel import *
+from pyriemann.utils.kernel import (kernel,
+                                    kernel_euclid,
+                                    kernel_logeuclid,
+                                    kernel_riemann)
 from pyriemann.utils.mean import mean_covariance
 from pyriemann.utils.test import is_pos_semi_def as is_spsd
 
 from numpy.testing import assert_array_equal
-import numpy as np
 import pytest
 
-rker = ['riemann', 'euclid', 'logeuclid']
+rker_str = ['riemann', 'euclid', 'logeuclid']
+rker_fct = [kernel_riemann, kernel_euclid, kernel_logeuclid]
 
 
-@pytest.mark.parametrize("ker", rker)
+@pytest.mark.parametrize("ker", rker_fct)
 def test_kernel(ker, rndstate, get_covmats):
     """Test Kernel build"""
     n_matrices, n_channels = 12, 3
     cov = get_covmats(n_matrices, n_channels)
-    K = kernel(cov, cov, np.eye(n_channels), metric=ker)
+    K = ker(cov, cov)
     assert is_spsd(K)
     assert K.shape == (n_matrices, n_matrices)
 
 
-@pytest.mark.parametrize("ker", rker)
+@pytest.mark.parametrize("ker", rker_str)
 def test_kernel_cref(ker, rndstate, get_covmats):
     """Test Kernel reference"""
     n_matrices, n_channels = 5, 3
@@ -30,7 +33,7 @@ def test_kernel_cref(ker, rndstate, get_covmats):
     assert_array_equal(K, K1)
 
 
-@pytest.mark.parametrize("ker", rker)
+@pytest.mark.parametrize("ker", rker_str)
 def test_riemann_kernel_x_y(ker, rndstate, get_covmats):
     """Test Riemannian Kernel for different X and Y."""
     n_matrices, n_channels = 5, 3
@@ -41,7 +44,7 @@ def test_riemann_kernel_x_y(ker, rndstate, get_covmats):
     assert K.shape == (n_matrices, n_matrices + 1)
 
 
-@pytest.mark.parametrize("ker", rker)
+@pytest.mark.parametrize("ker", rker_str)
 def test_metric_string(ker, rndstate, get_covmats):
     """Test generic Kernel function."""
     n_matrices, n_channels = 5, 3
@@ -59,7 +62,7 @@ def test_metric_string_error(rndstate, get_covmats):
         kernel(cov, metric='foo')
 
 
-@pytest.mark.parametrize("ker", rker)
+@pytest.mark.parametrize("ker", rker_str)
 def test_input_dimension_error(ker, rndstate, get_covmats):
     """Test errors for incorrect dimension."""
     n_matrices, n_channels = 5, 3
