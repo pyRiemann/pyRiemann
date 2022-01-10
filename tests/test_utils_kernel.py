@@ -1,4 +1,4 @@
-from pyriemann.utils.kernel import kernel
+from pyriemann.utils.kernel import *
 from pyriemann.utils.mean import mean_covariance
 from pyriemann.utils.test import is_pos_semi_def as is_spsd
 
