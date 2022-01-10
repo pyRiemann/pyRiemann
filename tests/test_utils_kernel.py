@@ -1,52 +1,77 @@
-from pyriemann.utils.kernel import kernel_riemann, kernel
-from pyriemann.utils.mean import mean_riemann
+from pyriemann.utils.kernel import (kernel,
+                                    kernel_riemann,
+                                    kernel_euclid,
+                                    kernel_logeuclid)
+from pyriemann.utils.mean import mean_riemann, mean_covariance
 from pyriemann.utils.base import logm
+from pyriemann.utils.test import is_pos_semi_def as is_spsd
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import numpy as np
+import pytest
 
-from pyriemann.utils.test import is_pos_semi_def as is_spsd
+rker = ['riemann', 'euclid', 'logeuclid']
 
 
-def test_riemann_kernel(rndstate, get_covmats):
-    """Test Riemannian Kernel build"""
+@pytest.mark.parametrize("ker", rker)
+def test_kernel(ker, rndstate, get_covmats):
+    """Test Kernel build"""
     n_matrices, n_channels = 12, 3
     cov = get_covmats(n_matrices, n_channels)
-    K = kernel_riemann(cov, cov, np.eye(n_channels))
+    K = kernel(cov, cov, np.eye(n_channels), metric=ker)
     assert is_spsd(K)
     assert K.shape == (n_matrices, n_matrices)
 
-    log_cov = np.array([logm(c) for c in cov])
-    tensor = np.tensordot(log_cov, log_cov.T, axes=1)
-    K1 = np.trace(tensor, axis1=1, axis2=2)
-    assert_array_almost_equal(K, K1)
 
-
-def test_riemann_kernel_cref(rndstate, get_covmats):
-    """Test Riemannian Kernel reference"""
+@pytest.mark.parametrize("ker", rker)
+def test_kernel_cref(ker, rndstate, get_covmats):
+    """Test Kernel reference"""
     n_matrices, n_channels = 5, 3
     cov = get_covmats(n_matrices, n_channels)
-    cref = mean_riemann(cov)
-    K = kernel_riemann(cov, cov)
-    K1 = kernel_riemann(cov, cov, cref)
+    cref = mean_covariance(cov, metric=ker)
+    K = kernel(cov, cov, metric=ker)
+    K1 = kernel(cov, cov, cref, metric=ker)
     assert_array_equal(K, K1)
 
 
-def test_riemann_kernel_x_y(rndstate, get_covmats):
-    """Test Riemannian Kernel reference"""
+@pytest.mark.parametrize("ker", rker)
+def test_riemann_kernel_x_y(ker, rndstate, get_covmats):
+    """Test Riemannian Kernel for different X and Y."""
     n_matrices, n_channels = 5, 3
     cov = get_covmats(n_matrices, n_channels)
     cov2 = get_covmats(n_matrices + 1, n_channels)
-    K = kernel_riemann(cov, cov2)
+    K = kernel(cov, cov2, metric=ker)
 
     assert K.shape == (n_matrices, n_matrices + 1)
 
 
-def test_generic_kernel(rndstate, get_covmats):
-    """Test Riemannian Kernel reference"""
+@pytest.mark.parametrize("ker", rker)
+def test_metric_string(ker, rndstate, get_covmats):
+    """Test generic Kernel function."""
     n_matrices, n_channels = 5, 3
     cov = get_covmats(n_matrices, n_channels)
-    K = kernel(cov, cov, np.eye(n_channels), metric='riemann')
-    K1 = kernel_riemann(cov, cov, np.eye(n_channels))
-
+    K = globals()[f'kernel_{ker}'](cov)
+    K1 = kernel(cov, metric=ker)
     assert_array_equal(K, K1)
+
+
+def test_metric_string_error(rndstate, get_covmats):
+    """Test generic Kernel function error raise."""
+    n_matrices, n_channels = 5, 3
+    cov = get_covmats(n_matrices, n_channels)
+    with pytest.raises(ValueError):
+        kernel(cov, metric='foo')
+
+
+@pytest.mark.parametrize("ker", rker)
+def test_input_dimension_error(ker, rndstate, get_covmats):
+    """Test errors for incorrect dimension."""
+    n_matrices, n_channels = 5, 3
+    cov = get_covmats(n_matrices, n_channels)
+    cov2 = get_covmats(n_matrices, n_channels+1)
+    cref = get_covmats(1, n_channels+1)[0]
+
+    with pytest.raises(AssertionError):
+        kernel(cov, Cref=cref, metric=ker)
+    with pytest.raises(AssertionError):
+        kernel(cov, cov2, metric=ker)
