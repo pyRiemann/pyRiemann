@@ -85,7 +85,7 @@ def test_riemann_correctness(rndstate, get_covmats):
     """Test example correctness of Riemann kernel."""
     n_matrices, n_channels = 5, 3
     cov = get_covmats(n_matrices, n_channels)
-    K = kernel_riemann(cov, Cref=eye(n_channels),reg=0)
+    K = kernel_riemann(cov, Cref=eye(n_channels), reg=0)
 
     log_cov = array([logm(c) for c in cov])
     tensor = tensordot(log_cov, log_cov.T, axes=1)

@@ -325,7 +325,7 @@ def locally_linear_embedding(X,
         Dimensionality of projected space.
     n_neighbors : int, default: 5
         Number of neighbors for reconstruction of each point.
-    metric : {'riemann'}
+    metric : {'riemann', 'logeuclid', 'euclid'}, default: 'riemann'
         Metric used for KNN and Kernel estimation.
     reg : float, default: 1e-3
         Regularization parameter.
