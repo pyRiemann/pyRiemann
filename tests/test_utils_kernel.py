@@ -34,8 +34,8 @@ def test_kernel_cref(ker, rndstate, get_covmats):
 
 
 @pytest.mark.parametrize("ker", rker_str)
-def test_riemann_kernel_x_y(ker, rndstate, get_covmats):
-    """Test Riemannian Kernel for different X and Y."""
+def test_kernel_x_y(ker, rndstate, get_covmats):
+    """Test Kernel for different X and Y."""
     n_matrices, n_channels = 5, 3
     cov = get_covmats(n_matrices, n_channels)
     cov2 = get_covmats(n_matrices + 1, n_channels)

@@ -41,6 +41,34 @@ def kernel(X, Y=None, Cref=None, metric='riemann', reg=1e-10):
                          "'logeuclid'.")
 
 
+def _apply_matrix_kernel(kernel_fct, X, Y=None, Cref=None, reg=1e-10):
+    """Applies a matrix kernel function"""
+    _check_dimensions(X, Y, Cref)
+    n_matrices_X, n_channels, n_channels = X.shape
+
+    X_ = kernel_fct(X, Cref)
+
+    if isinstance(Y, type(None)) or np.array_equal(X, Y):
+        Y_ = X_
+
+    else:
+        Y_ = kernel_fct(Y, Cref)
+
+    # calculate scalar products
+    # for i in range(n_matrices_X):
+    #     for j in range(n_matrices_Y):
+    #         K[i][j] = np.trace(X_[i] @ Y_[j])
+    # einsum does same as that just a looooooot faster
+
+    K = np.einsum('abc,dbc->ad', X_, Y_)
+
+    # regularization due to numerical errors
+    if np.array_equal(X_, Y_):
+        K.flat[:: n_matrices_X + 1] += reg
+
+    return K
+
+
 def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
     r""" Calculates the Riemannian Kernel matrix K of inner products of two
     sets X and Y of SPD matrices on tangent space of C by calculating pairwise
@@ -71,37 +99,16 @@ def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
     -----
     .. versionadded:: 0.2.8
     """
-    _check_dimensions(X, Y, Cref)
-    if Cref is None:
-        Cref = mean_riemann(X)
+    def kernelfct(X, Cref):
+        if Cref is None:
+            Cref = mean_riemann(X)
 
-    C_invsq = invsqrtm(Cref)
+        C_invsq = invsqrtm(Cref)
+        X_ = C_invsq @ X @ C_invsq
+        X_ = np.array([logm(x_) for x_ in X_])
+        return X_
 
-    n_matrices_X, n_channels, n_channels = X.shape
-
-    X_ = C_invsq @ X @ C_invsq
-    X_ = np.array([logm(x_) for x_ in X_])
-
-    if isinstance(Y, type(None)) or np.array_equal(X, Y):
-        Y_ = X_
-
-    else:
-        Y_ = C_invsq @ Y @ C_invsq
-        Y_ = np.array([logm(y_) for y_ in Y_])
-
-    # calculate scalar products
-    # for i in range(n_matrices_X):
-    #     for j in range(n_matrices_Y):
-    #         K[i][j] = np.trace(X_[i] @ Y_[j])
-    # einsum does same as that just a looooooot faster
-
-    K = np.einsum('abc,dbc->ad', X_, Y_)
-
-    # regularization due to numerical errors
-    if np.array_equal(X_, Y_):
-        K.flat[:: n_matrices_X + 1] += reg
-
-    return K
+    return _apply_matrix_kernel(kernelfct, X, Y, Cref, reg)
 
 
 def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
@@ -134,35 +141,16 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
     -----
     .. versionadded:: 0.2.8
     """
-    _check_dimensions(X, Y, Cref)
-    if Cref is None:
-        Cref = mean_euclid(X)
+    def kernelfct(X, Cref):
+        if Cref is None:
+            Cref = mean_euclid(X)
 
-    C_invsq = invsqrtm(Cref)
+        C_invsq = invsqrtm(Cref)
+        X_ = (X - Cref)
+        X_ = C_invsq @ X_ @ C_invsq
+        return X_
 
-    n_matrices_X, n_channels, n_channels = X.shape
-
-    X_ = C_invsq @ (X - Cref) @ C_invsq
-
-    if isinstance(Y, type(None)) or np.array_equal(X, Y):
-        Y_ = X_
-
-    else:
-        Y_ = C_invsq @ (Y - Cref) @ C_invsq
-
-    # calculate scalar products
-    # for i in range(n_matrices_X):
-    #     for j in range(n_matrices_Y):
-    #         K[i][j] = np.trace(X_[i] @ Y_[j])
-    # einsum does same as that just a looooooot faster
-
-    K = np.einsum('abc,dbc->ad', X_, Y_)
-
-    # regularization due to numerical errors
-    if np.array_equal(X_, Y_):
-        K.flat[:: n_matrices_X + 1] += reg
-
-    return K
+    return _apply_matrix_kernel(kernelfct, X, Y, Cref, reg)
 
 
 def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
@@ -195,37 +183,17 @@ def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
     -----
     .. versionadded:: 0.2.8
     """
-    _check_dimensions(X, Y, Cref)
-    if Cref is None:
-        Cref = mean_logeuclid(X)
 
-    C_log = logm(Cref)
+    def kernelfct(X, Cref):
+        if Cref is None:
+            Cref = mean_logeuclid(X)
 
-    n_matrices_X, n_channels, n_channels = X.shape
+        C_log = logm(Cref)
+        X_ = np.array([logm(x) for x in X])
+        X_ = (X_ - C_log)
+        return X_
 
-    X_ = np.array([logm(x) for x in X])
-    X_ = (X_ - C_log)
-
-    if isinstance(Y, type(None)) or np.array_equal(X, Y):
-        Y_ = X_
-
-    else:
-        Y_ = np.array([logm(y) for y in Y])
-        Y_ = (Y_ - C_log)
-
-    # calculate scalar products
-    # for i in range(n_matrices_X):
-    #     for j in range(n_matrices_Y):
-    #         K[i][j] = np.trace(X_[i] @ Y_[j])
-    # einsum does same as that just a looooooot faster
-
-    K = np.einsum('abc,dbc->ad', X_, Y_)
-
-    # regularization due to numerical errors
-    if np.array_equal(X_, Y_):
-        K.flat[:: n_matrices_X + 1] += reg
-
-    return K
+    return _apply_matrix_kernel(kernelfct, X, Y, Cref, reg)
 
 
 def _check_dimensions(X, Y, Cref):
