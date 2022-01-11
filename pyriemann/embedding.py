@@ -187,11 +187,13 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
                           n_components=self.n_components,
                           n_neighbors=self.n_neighbors)
 
-        self.embedding_, self.error_ = riemann_lle(X,
-                                                   self.n_components,
-                                                   self.n_neighbors,
-                                                   self.metric,
-                                                   self.reg)
+        embd, err = locally_linear_embedding(X,
+                                             self.n_components,
+                                             self.n_neighbors,
+                                             self.metric,
+                                             self.reg)
+
+        self.embedding_, self.error_ = embd, err
         return self
 
     def transform(self, X, y=None):
@@ -299,11 +301,11 @@ def barycenter_weights(X, Y, indices, metric='riemann', reg=1e-3):
     return B
 
 
-def riemann_lle(X,
-                n_components=2,
-                n_neighbors=5,
-                metric='riemann',
-                reg=1e-3):
+def locally_linear_embedding(X,
+                             n_components=2,
+                             n_neighbors=5,
+                             metric='riemann',
+                             reg=1e-3):
     """Riemannian Locally Linear Embedding (LLE).
 
     Riemannian LLE as proposed in [1]_. LLE is a non-linear, neighborhood-

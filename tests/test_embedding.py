@@ -4,7 +4,7 @@ import numpy as np
 from pyriemann.embedding import (SpectralEmbedding,
                                  LocallyLinearEmbedding,
                                  barycenter_weights,
-                                 riemann_lle)
+                                 locally_linear_embedding)
 import pytest
 
 rembd = [SpectralEmbedding, LocallyLinearEmbedding]
@@ -122,12 +122,12 @@ def test_barycenter_weights(get_covmats):
     assert weights.shape == (n_matrices, 2)
 
 
-def test_riemann_lle(get_covmats):
-    """Test riemann_lle helper function."""
+def test_locally_linear_embedding(get_covmats):
+    """Test locally_linear_embedding helper function."""
     n_matrices, n_channels, n_comps, n_neighbors = 4, 3, 2, 2
     covmats = get_covmats(n_matrices, n_channels)
-    embedding, error = riemann_lle(covmats,
-                                   n_neighbors=n_neighbors,
-                                   n_components=n_comps)
+    embedding, error = locally_linear_embedding(covmats,
+                                                n_neighbors=n_neighbors,
+                                                n_components=n_comps)
     assert embedding.shape == (n_matrices, n_comps)
     assert isinstance(error, float)

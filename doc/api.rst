@@ -33,6 +33,8 @@ Embedding
 
     SpectralEmbedding
     LocallyLinearEmbedding
+    locally_linear_embedding
+    barycenter_weights
 
 Classification
 --------------
@@ -189,6 +191,8 @@ Kernels
 
     kernel
     kernel_riemann
+    kernel_euclid
+    kernel_logeuclid
 
 Mean
 ~~~~~~~~~~~~~~~~~~~~~~
