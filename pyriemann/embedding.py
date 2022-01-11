@@ -81,6 +81,9 @@ class SpectralEmbedding(BaseEstimator):
             Returns the instance itself.
 
         """
+        _check_dimensions(X,
+                          n_components=self.n_components)
+
         affinity_matrix = self._get_affinity_matrix(X, self.eps)
         embd = spectral_embedding(adjacency=affinity_matrix,
                                   n_components=self.n_components,
@@ -180,6 +183,10 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
         """
         self.data_ = X
+        _check_dimensions(X,
+                          n_components=self.n_components,
+                          n_neighbors=self.n_neighbors)
+
         self.embedding_, self.error_ = riemann_lle(X,
                                                    self.n_components,
                                                    self.n_neighbors,
@@ -203,6 +210,8 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         X_: ndarray, shape (n_matrices, n_components)
             Coordinates of embedded matrices.
         """
+        _check_dimensions(self.data_,
+                          X)
         pairwise_distances = pairwise_distance(X,
                                                self.data_,
                                                metric=self.metric)
@@ -235,12 +244,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         X_: ndarray, shape (n_matrices, n_components)
             Coordinates of embedded matrices.
         """
-        self.data_ = X
-        self.embedding_, self.error_ = riemann_lle(X,
-                                                   self.n_components,
-                                                   self.n_neighbors,
-                                                   self.metric,
-                                                   self.reg)
+        self.fit(X)
         return self.embedding_
 
 
@@ -366,3 +370,23 @@ def riemann_lle(X,
     embd_, error_ = eigen_vectors[:, index], np.sum(eigen_values)
 
     return embd_, error_
+
+
+def _check_dimensions(X, Y=None, n_components=None, n_neighbors=None):
+    n_matrices, n_channels, n_channels = X.shape
+
+    if not isinstance(Y, type(None)):
+        assert Y.shape[1:] == (n_channels, n_channels), "Dimension of " \
+                                                        "matrices in data to "\
+                                                        "be transformed must " \
+                                                        "match dimension of " \
+                                                        "data used for " \
+                                                        "fitting."
+
+    if not isinstance(n_neighbors, type(None)):
+        assert n_matrices > n_neighbors, "n_neighbors must be " \
+                                         "smaller than n_matrices."
+
+    if not isinstance(n_components, type(None)):
+        assert n_components < n_matrices, "n_components must be smaller " \
+                                           "than n_matrices."
