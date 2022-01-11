@@ -378,7 +378,7 @@ def _check_dimensions(X, Y=None, n_components=None, n_neighbors=None):
     if not isinstance(Y, type(None)):
         assert Y.shape[1:] == (n_channels, n_channels), "Dimension of " \
                                                         "matrices in data to "\
-                                                        "be transformed must " \
+                                                        "be transformed must "\
                                                         "match dimension of " \
                                                         "data used for " \
                                                         "fitting."

@@ -1,6 +1,5 @@
 from conftest import get_metrics
 import numpy as np
-from numpy.testing import assert_array_equal
 
 from pyriemann.embedding import (SpectralEmbedding,
                                  LocallyLinearEmbedding,
@@ -48,12 +47,10 @@ class TestEmbedding(EmbeddingTestCase):
         assert transformed.shape == (n_matrices - 1, n_components)
 
     def embd_transform_error(self, embedding, covmats, n_components):
-        n_matrices, n_channels, n_channels = covmats.shape
         embd = embedding(n_components=n_components)
         embd = embd.fit(covmats)
         with pytest.raises(AssertionError):
-            transformed = embd.transform(covmats[:-1, :-1, :-1])
-       # assert transformed.shape == (n_matrices - 1, n_components)
+            embd.transform(covmats[:-1, :-1, :-1])
 
     def embd_fit_independence(self, embedding, covmats, n_components):
         n_matrices, n_channels, n_channels = covmats.shape
