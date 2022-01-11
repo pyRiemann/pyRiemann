@@ -263,7 +263,7 @@ def barycenter_weights(X, Y, indices, metric='riemann', reg=1e-3):
         Set of SPD matrices.
     indices : ndarray, shape (n_matrices, n_neighbors)
         Indices of the points in Y used to compute the barycenter
-    metric : {'riemann'}
+    metric : {'riemann', 'logeuclid', 'euclid'}, default: 'riemann'
         Kernel metric.
     reg : float, default=1e-3
         amount of regularization to add for the problem to be
