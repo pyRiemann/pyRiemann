@@ -1,3 +1,8 @@
+from numpy import array, eye
+from numpy.core import tensordot, trace
+
+from pyriemann.utils.base import logm
+
 from pyriemann.utils.kernel import (kernel,
                                     kernel_euclid,
                                     kernel_logeuclid,
@@ -5,7 +10,7 @@ from pyriemann.utils.kernel import (kernel,
 from pyriemann.utils.mean import mean_covariance
 from pyriemann.utils.test import is_pos_semi_def as is_spsd
 
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
 
 rker_str = ['riemann', 'euclid', 'logeuclid']
@@ -74,3 +79,15 @@ def test_input_dimension_error(ker, rndstate, get_covmats):
         kernel(cov, Cref=cref, metric=ker)
     with pytest.raises(AssertionError):
         kernel(cov, cov2, metric=ker)
+
+
+def test_riemann_correctness(rndstate, get_covmats):
+    """Test example correctness of Riemann kernel."""
+    n_matrices, n_channels = 5, 3
+    cov = get_covmats(n_matrices, n_channels)
+    K = kernel_riemann(cov, Cref=eye(n_channels),reg=0)
+
+    log_cov = array([logm(c) for c in cov])
+    tensor = tensordot(log_cov, log_cov.T, axes=1)
+    K1 = trace(tensor, axis1=1, axis2=2)
+    assert_array_almost_equal(K, K1)
