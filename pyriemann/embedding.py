@@ -134,7 +134,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         Dimensionality of projected space.
     n_neighbors : int, default: 5
         Number of neighbors for reconstruction of each point.
-    metric : {'riemann'}
+    metric : {'riemann', 'logeuclid', 'euclid'}, default: 'riemann'
         Metric used for KNN and Kernel estimation.
     reg : float, default: 1e-3
         Regularization parameter.
@@ -295,7 +295,7 @@ def barycenter_weights(X, Y, indices, metric='riemann', reg=1e-3):
             R = reg
         G.flat[:: n_neighbors + 1] += R
         w = solve(G, v, sym_pos=True)
-        B[i, :] = w / np.sum(w)
+        B[i] = w / np.sum(w)
     return B
 
 

@@ -32,7 +32,7 @@ Embedding
     :template: class.rst
 
     SpectralEmbedding
-    RiemannianLLE
+    LocallyLinearEmbedding
 
 Classification
 --------------
