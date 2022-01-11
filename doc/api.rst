@@ -29,12 +29,14 @@ Embedding
 
 .. autosummary::
     :toctree: generated/
+
+    locally_linear_embedding
+    barycenter_weights
+
     :template: class.rst
 
     SpectralEmbedding
     LocallyLinearEmbedding
-    locally_linear_embedding
-    barycenter_weights
 
 Classification
 --------------
