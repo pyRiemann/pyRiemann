@@ -11,6 +11,14 @@ from .utils.kernel import kernel
 from .utils.distance import pairwise_distance
 
 
+@deprecated(
+    "Embedding is deprecated and will be remove in 0.4.0; "
+    "please use SpectralEmbedding."
+)
+class Embedding(BaseEstimator):
+    pass
+
+
 class SpectralEmbedding(BaseEstimator):
     """Embed SPD matrices into an Euclidean space of smaller dimension.
 

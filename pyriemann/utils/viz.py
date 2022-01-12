@@ -35,6 +35,7 @@ def plot_confusion_matrix(
 
 def plot_embedding(X,
                    y=None,
+                   *,
                    metric="riemann",
                    title="Embedding of covariances",
                    embd_type='Spectral',
