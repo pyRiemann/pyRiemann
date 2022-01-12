@@ -252,7 +252,8 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
 def barycenter_weights(X, Y, indices, metric='riemann', reg=1e-3):
     """Compute Riemannian barycenter weights of X from Y along the first axis.
-    We estimate the weights to assign to each point in Y[indices] to recover
+
+    Estimates the weights to assign to each point in Y[indices] to recover
     the point X[i] by geodesic interpolation. The barycenter weights sum to 1.
 
     Parameters
@@ -279,7 +280,6 @@ def barycenter_weights(X, Y, indices, metric='riemann', reg=1e-3):
     .. versionadded:: 0.2.8
     See sklearn.manifold._locally_linear.barycenter_weights for original code.
     """
-
     n_matrices, n_neighbors = indices.shape
     assert X.shape[0] == n_matrices, "Number of index-sets in indices must " \
                                      "match number of matrices in X."
@@ -349,7 +349,6 @@ def locally_linear_embedding(X,
         on Riemannian manifolds", 2008 IEEE Conference on Computer Vision
         and Pattern Recognition, June 2008
     """
-
     n_matrices, n_channels, n_channels = X.shape
     pairwise_distances = pairwise_distance(X, metric=metric)
     neighbors = np.array([np.argsort(dist)[1:n_neighbors + 1]
