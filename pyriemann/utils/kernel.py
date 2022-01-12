@@ -117,7 +117,7 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
 
     .. math::
         K_{i,j} =
-        {tr}(P^{-1/2}(X_i - P)P^{-1/2} P^{-1/2}(Y_i - P)P^{-1/2})
+        {tr}(P^{-1/2}(X_i - P)P^{-1/2} P^{-1/2}(Y_j - P)P^{-1/2})
 
     Parameters
     ----------
@@ -159,7 +159,7 @@ def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
 
     .. math::
         K_{i,j} =
-        {tr}(P^{-1/2}(X_i - P)P^{-1/2} P^{-1/2}(Y_i - P)P^{-1/2})
+        {tr}((\log(X_i) - \log(P))(\log(Y_j) - \log(P)))
 
     Parameters
     ----------
