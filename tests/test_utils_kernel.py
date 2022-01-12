@@ -8,7 +8,7 @@ from pyriemann.utils.kernel import (kernel,
                                     kernel_logeuclid,
                                     kernel_riemann)
 from pyriemann.utils.mean import mean_covariance
-from pyriemann.utils.test import is_pos_semi_def as is_spsd
+from pyriemann.utils.test import is_sym_pos_semi_def as is_spsd
 
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
