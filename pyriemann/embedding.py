@@ -7,12 +7,13 @@ from scipy.sparse import csr_matrix
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.manifold import spectral_embedding
 
+from .utils import deprecated
 from .utils.kernel import kernel
 from .utils.distance import pairwise_distance
 
 
 @deprecated(
-    "Embedding is deprecated and will be remove in 0.4.0; "
+    "Embedding is deprecated and will be removed in 0.4.0; "
     "please use SpectralEmbedding."
 )
 class Embedding(BaseEstimator):
@@ -196,10 +197,10 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
                           n_neighbors=self.n_neighbors)
 
         embd, err = locally_linear_embedding(X,
-                                             self.n_components,
-                                             self.n_neighbors,
-                                             self.metric,
-                                             self.reg)
+                                             n_components=self.n_components,
+                                             n_neighbors=self.n_neighbors,
+                                             metric=self.metric,
+                                             reg=self.reg)
 
         self.embedding_, self.error_ = embd, err
         return self
@@ -310,6 +311,7 @@ def barycenter_weights(X, Y, indices, metric='riemann', reg=1e-3):
 
 
 def locally_linear_embedding(X,
+                             *,
                              n_components=2,
                              n_neighbors=5,
                              metric='riemann',
