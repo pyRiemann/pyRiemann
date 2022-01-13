@@ -60,7 +60,7 @@ def _apply_matrix_kernel(kernel_fct, X, Y=None, Cref=None, reg=1e-10):
     #         K[i][j] = np.trace(X_[i] @ Y_[j])
     # einsum does same as that just a looooooot faster
 
-    K = np.einsum('abc,dbc->ad', X_, Y_)
+    K = np.einsum('abc,dbc->ad', X_, Y_, optimize=True)
 
     # regularization due to numerical errors
     if np.array_equal(X_, Y_):
