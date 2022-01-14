@@ -21,7 +21,8 @@ class Embedding(BaseEstimator):
 
 
 class SpectralEmbedding(BaseEstimator):
-    """Spectral embedding of SPD matrices into an Euclidean space of smaller dimension.
+    """Spectral embedding of SPD matrices into an Euclidean space of smaller
+    dimension.
 
     It uses Laplacian Eigenmaps [1]_ to embed SPD matrices into an Euclidean
     space. The basic hypothesis is that high-dimensional data lives in a
@@ -126,7 +127,7 @@ class SpectralEmbedding(BaseEstimator):
 
 
 class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
-    """Locally Linear Embedding (LLE) of SPD matrices. 
+    """Locally Linear Embedding (LLE) of SPD matrices.
 
     As proposed in [1]_, Locally Linear Embedding (LLE) is a non-linear,
     neighborhood-preserving dimensionality reduction algorithm which
@@ -317,15 +318,16 @@ def locally_linear_embedding(X,
                              n_neighbors=5,
                              metric='riemann',
                              reg=1e-3):
-    """Perform a Locally Linear Embedding (LLE) of SPD matrices. 
+    """Perform a Locally Linear Embedding (LLE) of SPD matrices.
 
-    As proposed in [1]_, Locally Linear Embedding (LLE) is a non-linear, neighborhood-
-    preserving dimensionality reduction algorithm which consists of three
-    main steps. For each point x,
+    As proposed in [1]_, Locally Linear Embedding (LLE) is a non-linear,
+    neighborhood-preserving dimensionality reduction algorithm which consists
+    of three main steps. For each point xi,
 
-    1.  find its k nearest neighbors KNN(x) and
-    2.  calculate the best reconstruction of x based on its KNN.
-    3.  Then calculate a low-dimensional embedding for all points based on
+    1.  find its k nearest neighbors KNN(xi),
+    2.  calculate the best reconstruction of xi based on its
+        k-nearest-neighbors (Eq.9 in _[1]),
+    3.  calculate a low-dimensional embedding for all points based on
         the weights in step 2.
 
     Parameters
