@@ -6,6 +6,18 @@ Embedding ERP MEG data in 2D Euclidean space
 Embeddings via Laplacian Eigenmaps and Riemannian locally linear
 embedding of a set of ERP data.
 
+"Locally Linear Embedding (LLE) assumes that the  local neighborhood of a
+point on the manifold can be well approximated by  the affine subspace
+spanned by the k-nearest neighbors of the point and finds a low-dimensional
+embedding of the data based on these affine approximations. Laplacian
+Eigenmaps (LE) are based on computing the low dimensional representation
+that best preserves locality instead of local linearity in LLE." _[1]
+
+References
+----------
+.. [1] A. Goh and R. Vidal, "Clustering and dimensionality reduction
+    on Riemannian manifolds", 2008 IEEE Conference on Computer Vision
+    and Pattern Recognition, June 2008.
 """
 # Authors:  Pedro Rodrigues <pedro.rodrigues01@gmail.com>,
 #           Gabriel Wagner vom Berg <gabriel@bccn-berlin.de>
