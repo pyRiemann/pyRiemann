@@ -117,7 +117,7 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
 
     .. math::
         K_{i,j} =
-        {tr}(P^{-1/2}(X_i - P)P^{-1/2} P^{-1/2}(Y_j - P)P^{-1/2})
+        {tr}(C^{-1/2}(X_i - C)C^{-1/2} C^{-1/2}(Y_j - C)C^{-1/2})
 
     Parameters
     ----------
@@ -159,7 +159,7 @@ def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
 
     .. math::
         K_{i,j} =
-        {tr}((\log(X_i) - \log(P))(\log(Y_j) - \log(P)))
+        {tr}((\log(X_i) - \log(C))(\log(Y_j) - \log(C)))
 
     Parameters
     ----------
@@ -199,9 +199,13 @@ def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
 def _check_dimensions(X, Y, Cref):
     """Checks for mathcing dimensions in X, Y and Cref."""
     if not isinstance(Y, type(None)):
-        assert Y.shape[1:] == X.shape[1:], "Dimension of matrices in Y must " \
-                                           "match dimension of matrices in X."
+        assert Y.shape[1:] == X.shape[1:], f"Dimension of matrices in Y must "\
+                                           f"match dimension of matrices in " \
+                                           f"X. Expected {X.shape[1:]}, got " \
+                                           f"{Y.shape[1:]}."
 
     if not isinstance(Cref, type(None)):
-        assert Cref.shape == X.shape[1:], "Dimension of Cref must match " \
-                                          "dimension of matrices in X."
+        assert Cref.shape == X.shape[1:], f"Dimension of Cref must match " \
+                                          f"dimension of matrices in X. " \
+                                          f"Expected {X.shape[1:]}, got " \
+                                          f"{Cref.shape}."

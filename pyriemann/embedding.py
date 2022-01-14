@@ -290,8 +290,9 @@ def barycenter_weights(X, Y, indices, metric='riemann', reg=1e-3):
     See sklearn.manifold._locally_linear.barycenter_weights for original code.
     """
     n_matrices, n_neighbors = indices.shape
-    assert X.shape[0] == n_matrices, "Number of index-sets in indices must " \
-                                     "match number of matrices in X."
+    msg = f"Number of index-sets in indices (is {n_matrices}) must match " \
+          f"number of matrices in X (is {X.shape[0]})."
+    assert X.shape[0] == n_matrices, msg
 
     B = np.empty((n_matrices, n_neighbors), dtype=X.dtype)
     v = np.ones(n_neighbors, dtype=X.dtype)
@@ -387,17 +388,17 @@ def _check_dimensions(X, Y=None, n_components=None, n_neighbors=None):
     n_matrices, n_channels, n_channels = X.shape
 
     if not isinstance(Y, type(None)):
-        assert Y.shape[1:] == (n_channels, n_channels), "Dimension of " \
-                                                        "matrices in data to "\
-                                                        "be transformed must "\
-                                                        "match dimension of " \
-                                                        "data used for " \
-                                                        "fitting."
+        msg = f"Dimension of matrices in data to be transformed must match " \
+              f"dimension of data used for fitting. Expected " \
+              f"{(n_channels, n_channels)}, got {Y.shape[1:]}."
+        assert Y.shape[1:] == (n_channels, n_channels), msg
 
     if not isinstance(n_neighbors, type(None)):
-        assert n_matrices > n_neighbors, "n_neighbors must be " \
-                                         "smaller than n_matrices."
+        msg = f"n_neighbors (is {n_neighbors}) must be smaller than " \
+              f"n_matrices (is {n_matrices})."
+        assert n_matrices > n_neighbors, msg
 
     if not isinstance(n_components, type(None)):
-        assert n_components < n_matrices, "n_components must be smaller " \
-                                           "than n_matrices."
+        msg = f"n_components (is {n_components}) must be smaller than " \
+              f"n_matrices (is {n_matrices})."
+        assert n_components < n_matrices, msg
