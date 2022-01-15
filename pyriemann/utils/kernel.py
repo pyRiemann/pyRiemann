@@ -77,6 +77,8 @@ def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
         K_{i,j} =
         {tr}(\log(C^{-1/2}X_i C^{-1/2})\log(C^{-1/2}Y_j C^{-1/2}))
 
+    as proposed in [1]_.
+
     Parameters
     ----------
     X : ndarray, shape (n_matrices_X, n_channels, n_channels)
@@ -98,6 +100,12 @@ def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
     Notes
     -----
     .. versionadded:: 0.2.8
+
+    References
+    ----------
+    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, Classification
+        of covariance matrices using a Riemannian-based kernel for BCI
+        applications. Neurocomputing, Elsevier, 2013, 112, pp.172-178.
     """
     def kernelfct(X, Cref):
         if Cref is None:
