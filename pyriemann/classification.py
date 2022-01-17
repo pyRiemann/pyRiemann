@@ -518,17 +518,17 @@ class KNearestNeighbor(MDM):
         return out.ravel()
 
 
-class RSVC(BaseEstimator, ClassifierMixin):
+class SupportVectorMachine(BaseEstimator, ClassifierMixin):
     """Classification by Riemannian Support Vector Machine.
 
     Support vector machine with precomputed Riemannian kernel matrix
-    according to the metric as described in [1]_.
+    according to different metrics as described in [1]_.
 
     Parameters
     ----------
     svc_func : SVC class, (default: sklearn.svm.SVC)
         Class to perform the svc calculations.
-    metric : {'riemann'}
+    metric : {'riemann', 'euclid', 'logeuclid'}
         Metric for kernel matrix computation.
     Cref : None | ndarray, shape (n_channels, n_channels)
         Reference point for kernel matrix computation. If None, the mean of
@@ -583,7 +583,7 @@ class RSVC(BaseEstimator, ClassifierMixin):
         Returns
         -------
         self : Riemannian SVC instance
-            The RSVC instance.
+            The SVC instance.
         """
         kernelmat = kernel(X, X, Cref=self.Cref, metric=self.metric)
         self.data_ = X
@@ -602,7 +602,7 @@ class RSVC(BaseEstimator, ClassifierMixin):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices, 1)
-            the prediction for each trials according to the RSVC.
+            the prediction for each trials according to the SVC.
         """
         test_kernel_mat = kernel(self.data_,
                                  X_test,
