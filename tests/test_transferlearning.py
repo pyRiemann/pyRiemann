@@ -13,7 +13,7 @@ class TransferTestCase:
     def test_transfer_with_target_sample(self, transfer,
                                          get_covmats, get_labels):
         nn, n_classes, n_channels = 2, 2, 3
-        n_trials_source = n_classes * 3
+        n_matrices_source = n_classes * 3
         n_trials_target = n_classes * nn
         sample_weight = None
 
