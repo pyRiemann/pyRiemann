@@ -58,6 +58,11 @@ def plot_embedding(X,
         Embedding type.
     normalize : bool, (default : True)
         If True, the plot is normalized from -1 to +1
+
+    Returns
+    -------
+    fig : matplotlib figure
+        Figure containing the plot.
     """
     try:
         import matplotlib.pyplot as plt

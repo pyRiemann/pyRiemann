@@ -219,7 +219,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        X_: ndarray, shape (n_matrices, n_components)
+        X_new: ndarray, shape (n_matrices, n_components)
             Coordinates of embedded matrices.
         """
         _check_dimensions(self.data_,
@@ -253,7 +253,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        X_: ndarray, shape (n_matrices, n_components)
+        X_new: ndarray, shape (n_matrices, n_components)
             Coordinates of embedded matrices.
         """
         self.fit(X)
@@ -288,7 +288,6 @@ def barycenter_weights(X, Y, indices, metric='riemann', reg=1e-3):
     Notes
     -----
     .. versionadded:: 0.2.8
-    See sklearn.manifold._locally_linear.barycenter_weights for original code.
     """
     n_matrices, n_neighbors = indices.shape
     msg = f"Number of index-sets in indices (is {n_matrices}) must match " \
@@ -353,8 +352,6 @@ def locally_linear_embedding(X,
     Notes
     -----
     .. versionadded:: 0.2.8
-    See sklearn.manifold._locally_linear.locally_linear_embedding for original
-    code.
 
     References
     ----------

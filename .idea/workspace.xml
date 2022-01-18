@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="BranchesTreeState">
+    <expand>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="LOCAL_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:origin" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:upstream" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+      <path>
+        <item name="ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="REMOTE_ROOT" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:upstream" type="e8cecc67:BranchNodeDescriptor" />
+        <item name="GROUP_NODE:maint" type="e8cecc67:BranchNodeDescriptor" />
+      </path>
+    </expand>
+    <select />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="f1f6953e-1a25-409b-9a91-de3ae8bdabb2" name="Default Changelist" comment="merge upstream master">
+      <change beforePath="$PROJECT_DIR$/pyriemann/embedding.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyriemann/embedding.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pyriemann/utils/viz.py" beforeDir="false" afterPath="$PROJECT_DIR$/pyriemann/utils/viz.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Python Script" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="GithubPullRequestsUISettings">
+    <option name="hiddenUrls">
+      <set>
+        <option value="https://github.com/pyRiemann/pyRiemann.git" />
+      </set>
+    </option>
+  </component>
+  <component name="JupyterTrust" id="67ca5465-ce6b-4371-9b87-38ca1ba1eb73" />
+  <component name="ProjectId" id="218IXTLlyP5BBesa5jysyrP0r9M" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="false" />
+    <property name="com.intellij.ide.scratch.LRUPopupBuilder$1/New Scratch File" value="Python" />
+    <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
+    <property name="nodejs_npm_path_reset_for_default_project" value="true" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RunManager" selected="Python tests.pytest in tests">
+    <configuration name="plot_embedding_MEG" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="pyRiemann" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/examples/ERP" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/examples/ERP/plot_embedding_MEG.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="scratch_4" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="pyRiemann" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$APPLICATION_CONFIG_DIR$/scratches" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="SCRIPT_NAME" value="$APPLICATION_CONFIG_DIR$/scratches/scratch_4.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <configuration name="Nosetests in tests" type="tests" factoryName="Nosetests" nameIsGenerated="true">
+      <module name="pyRiemann" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="_new_regexPattern" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="pytest for test_sampling.test_functions_error" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+      <module name="pyRiemann" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="_new_keywords" value="&quot;&quot;" />
+      <option name="_new_parameters" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;test_sampling.test_functions_error&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="pytest for test_utils_kernel.test_riemann_correctness" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+      <module name="pyRiemann" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="_new_keywords" value="&quot;&quot;" />
+      <option name="_new_parameters" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;test_utils_kernel.test_riemann_correctness&quot;" />
+      <option name="_new_targetType" value="&quot;PYTHON&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="pytest in test_embedding.py" type="tests" factoryName="py.test" temporary="true" nameIsGenerated="true">
+      <module name="pyRiemann" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="_new_keywords" value="&quot;&quot;" />
+      <option name="_new_parameters" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/test_embedding.py&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
+    <configuration name="pytest in tests" type="tests" factoryName="py.test" singleton="false" nameIsGenerated="true">
+      <module name="pyRiemann" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/tests" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <option name="_new_keywords" value="&quot;&quot;" />
+      <option name="_new_parameters" value="&quot;&quot;" />
+      <option name="_new_additionalArguments" value="&quot;&quot;" />
+      <option name="_new_target" value="&quot;$PROJECT_DIR$/tests/&quot;" />
+      <option name="_new_targetType" value="&quot;PATH&quot;" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Python.scratch_4" />
+      <item itemvalue="Python.plot_embedding_MEG" />
+      <item itemvalue="Python tests.Nosetests in tests" />
+      <item itemvalue="Python tests.pytest in tests" />
+      <item itemvalue="Python tests.pytest in test_embedding.py" />
+      <item itemvalue="Python tests.pytest for test_utils_kernel.test_riemann_correctness" />
+      <item itemvalue="Python tests.pytest for test_sampling.test_functions_error" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.plot_embedding_MEG" />
+        <item itemvalue="Python tests.pytest in test_embedding.py" />
+        <item itemvalue="Python.scratch_4" />
+        <item itemvalue="Python tests.pytest for test_sampling.test_functions_error" />
+        <item itemvalue="Python tests.pytest for test_utils_kernel.test_riemann_correctness" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SvnConfiguration">
+    <configuration />
+  </component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="f1f6953e-1a25-409b-9a91-de3ae8bdabb2" name="Default Changelist" comment="" />
+      <created>1637316326975</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1637316326975</updated>
+      <workItem from="1637316334224" duration="7884000" />
+      <workItem from="1637334979872" duration="11696000" />
+      <workItem from="1639393176312" duration="4135000" />
+      <workItem from="1639592600788" duration="42524000" />
+      <workItem from="1640858100295" duration="98580000" />
+      <workItem from="1642495540221" duration="1253000" />
+    </task>
+    <task id="LOCAL-00001" summary="Added Tests and all for block covariance estimation.">
+      <created>1638994285374</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1638994285374</updated>
+    </task>
+    <option name="localTasksCounter" value="2" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="2" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+    <option name="oldMeFiltersMigrated" value="true" />
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Added Tests and all for block covariance estimation." />
+    <option name="LAST_COMMIT_MESSAGE" value="Added Tests and all for block covariance estimation." />
+  </component>
+  <component name="WindowStateProjectService">
+    <state x="337" y="32" key="#Nosetests_in_test_estimation.py" timestamp="1637331978053">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state x="337" y="32" key="#Nosetests_in_test_estimation.py/0.23.1280.777@0.23.1280.777" timestamp="1637331978053" />
+    <state x="337" y="32" key="#Nosetests_in_test_utils_covariance.py" timestamp="1637335006003">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state x="337" y="32" key="#Nosetests_in_test_utils_covariance.py/0.23.1280.777@0.23.1280.777" timestamp="1637335006003" />
+    <state x="337" y="32" key="#Nosetests_in_tests" timestamp="1637332051016">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state x="337" y="32" key="#Nosetests_in_tests/0.23.1280.777@0.23.1280.777" timestamp="1637332051016" />
+    <state x="525" y="281" key="#Notifications" timestamp="1638997252457">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state x="525" y="281" key="#Notifications/0.23.1280.777@0.23.1280.777" timestamp="1638997252457" />
+    <state x="104" y="73" key="#com.intellij.execution.impl.EditConfigurationsDialog" timestamp="1641823103049">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state x="104" y="73" key="#com.intellij.execution.impl.EditConfigurationsDialog/0.23.1280.777@0.23.1280.777" timestamp="1641823103049" />
+    <state x="0" y="23" width="605" height="777" key="#pytest_in_test_estimation.py" timestamp="1637332075497">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state x="0" y="23" width="605" height="777" key="#pytest_in_test_estimation.py/0.23.1280.777@0.23.1280.777" timestamp="1637332075497" />
+    <state x="226" y="23" key="CommitChangelistDialog2" timestamp="1639175347041">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state x="226" y="23" key="CommitChangelistDialog2/0.23.1280.777@0.23.1280.777" timestamp="1639175347041" />
+    <state x="100" y="123" width="1080" height="577" key="DiffContextDialog" timestamp="1639399768215">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state x="100" y="123" width="1080" height="577" key="DiffContextDialog/0.23.1280.777@0.23.1280.777" timestamp="1639399768215" />
+    <state x="488" y="350" key="Github.Dialog.Accounts.Choose" timestamp="1638997154482">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state x="488" y="350" key="Github.Dialog.Accounts.Choose/0.23.1280.777@0.23.1280.777" timestamp="1638997154482" />
+    <state width="1238" height="279" key="GridCell.Tab.0.bottom" timestamp="1642440469076">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state width="1238" height="279" key="GridCell.Tab.0.bottom/0.23.1280.777@0.23.1280.777" timestamp="1642440469076" />
+    <state width="1238" height="279" key="GridCell.Tab.0.center" timestamp="1642440469074">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state width="1238" height="279" key="GridCell.Tab.0.center/0.23.1280.777@0.23.1280.777" timestamp="1642440469074" />
+    <state width="1238" height="279" key="GridCell.Tab.0.left" timestamp="1642440469072">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state width="1238" height="279" key="GridCell.Tab.0.left/0.23.1280.777@0.23.1280.777" timestamp="1642440469072" />
+    <state width="1238" height="279" key="GridCell.Tab.0.right" timestamp="1642440469075">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state width="1238" height="279" key="GridCell.Tab.0.right/0.23.1280.777@0.23.1280.777" timestamp="1642440469075" />
+    <state width="1238" height="246" key="GridCell.Tab.1.bottom" timestamp="1642440469007">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state width="1238" height="246" key="GridCell.Tab.1.bottom/0.23.1280.777@0.23.1280.777" timestamp="1642440469007" />
+    <state width="1238" height="246" key="GridCell.Tab.1.center" timestamp="1642440469006">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state width="1238" height="246" key="GridCell.Tab.1.center/0.23.1280.777@0.23.1280.777" timestamp="1642440469006" />
+    <state width="1238" height="246" key="GridCell.Tab.1.left" timestamp="1642440469006">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state width="1238" height="246" key="GridCell.Tab.1.left/0.23.1280.777@0.23.1280.777" timestamp="1642440469006" />
+    <state width="1238" height="246" key="GridCell.Tab.1.right" timestamp="1642440469007">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state width="1238" height="246" key="GridCell.Tab.1.right/0.23.1280.777@0.23.1280.777" timestamp="1642440469007" />
+    <state x="530" y="285" key="MultipleFileMergeDialog" timestamp="1637316516725">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state x="530" y="285" key="MultipleFileMergeDialog/0.23.1280.777@0.23.1280.777" timestamp="1637316516725" />
+    <state x="149" y="50" key="SettingsEditor" timestamp="1642031245496">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state x="149" y="50" key="SettingsEditor/0.23.1280.777@0.23.1280.777" timestamp="1642031245496" />
+    <state x="240" y="151" key="Vcs.Push.Dialog.v2" timestamp="1638997149137">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state x="240" y="151" key="Vcs.Push.Dialog.v2/0.23.1280.777@0.23.1280.777" timestamp="1638997149137" />
+    <state x="431" y="332" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2" timestamp="1641384024139">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state x="431" y="332" key="com.intellij.openapi.vcs.update.UpdateOrStatusOptionsDialogupdate-v2/0.23.1280.777@0.23.1280.777" timestamp="1641384024139" />
+    <state x="557" y="151" width="600" height="538" key="find.popup" timestamp="1642420946454">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state x="557" y="151" width="600" height="538" key="find.popup/0.23.1280.777@0.23.1280.777" timestamp="1642420946454" />
+    <state x="319" y="207" key="git4idea.merge.GitPullDialog" timestamp="1638995462844">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state x="319" y="207" key="git4idea.merge.GitPullDialog/0.23.1280.777@0.23.1280.777" timestamp="1638995462844" />
+    <state width="600" height="428" key="javadoc.popup" timestamp="1639593556649">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state width="600" height="428" key="javadoc.popup/0.23.1280.777@0.23.1280.777" timestamp="1639593556649" />
+    <state x="305" y="124" width="670" height="676" key="search.everywhere.popup" timestamp="1641819937949">
+      <screen x="0" y="23" width="1280" height="777" />
+    </state>
+    <state x="305" y="124" width="670" height="676" key="search.everywhere.popup/0.23.1280.777@0.23.1280.777" timestamp="1641819937949" />
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_utils_kernel_test_metric_string_error.coverage" NAME="pytest for test_utils_kernel.test_metric_string_error Coverage Results" MODIFIED="1641821592610" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_embedding_test_barycenter_weights.coverage" NAME="pytest for test_embedding.test_barycenter_weights Coverage Results" MODIFIED="1640177661949" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$test_utils_covariance.coverage" NAME="test_utils_covariance Coverage Results" MODIFIED="1637334763394" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_utils_kernel_test_kernel_cref.coverage" NAME="pytest for test_utils_kernel.test_kernel_cref Coverage Results" MODIFIED="1641819102574" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$Nosetests_in_test_utils_covariance_py.coverage" NAME="Nosetests in test_utils_covariance.py Coverage Results" MODIFIED="1637334785537" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_in_test_preprocessing_py.coverage" NAME="pytest in test_preprocessing.py Coverage Results" MODIFIED="1639175393747" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_utils_kernel_test_riemann_kernel.coverage" NAME="pytest for test_utils_kernel.test_riemann_kernel Coverage Results" MODIFIED="1641378795083" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_in_test_estimation_py.coverage" NAME="pytest in test_estimation.py Coverage Results" MODIFIED="1639175386897" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_in_test_clustering_py.coverage" NAME="pytest in test_clustering.py Coverage Results" MODIFIED="1639175397921" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$Nosetests_in_tests.coverage" NAME="Nosetests in tests Coverage Results" MODIFIED="1639175262795" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_utils_kernel_test_riemann_correctness.coverage" NAME="pytest for test_utils_kernel.test_riemann_correctness Coverage Results" MODIFIED="1641906788960" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$plot_classify_ssvep_mdm.coverage" NAME="plot_classify_ssvep_mdm Coverage Results" MODIFIED="1639179315914" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/examples/SSVEP" />
+    <SUITE FILE_PATH="coverage/pyRiemann$test_estimation.coverage" NAME="test_estimation Coverage Results" MODIFIED="1637334323660" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$scratch_3.coverage" NAME="scratch_3 Coverage Results" MODIFIED="1639602577241" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$APPLICATION_CONFIG_DIR$/scratches" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_utils_kernel_test_riemann_kernel_x_y.coverage" NAME="pytest for test_utils_kernel.test_riemann_kernel_x_y Coverage Results" MODIFIED="1639755730609" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_classification_test_RSVC_SVC_params_error.coverage" NAME="pytest for test_classification.test_RSVC_SVC_params_error Coverage Results" MODIFIED="1641416656150" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_in_test_utils_distance_py.coverage" NAME="pytest in test_utils_distance.py Coverage Results" MODIFIED="1637334172121" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_in_test_ajd_py.coverage" NAME="pytest in test_ajd.py Coverage Results" MODIFIED="1639175248925" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$scratch_4.coverage" NAME="scratch_4 Coverage Results" MODIFIED="1642186577705" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$APPLICATION_CONFIG_DIR$/scratches" />
+    <SUITE FILE_PATH="coverage/pyRiemann$plot_embedding_MEG.coverage" NAME="plot_embedding_MEG Coverage Results" MODIFIED="1642259964670" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/examples/ERP" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_utils_kernel_test_generic_kernel.coverage" NAME="pytest for test_utils_kernel.test_generic_kernel Coverage Results" MODIFIED="1640620875689" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_in_test_utils_kernel_py.coverage" NAME="pytest in test_utils_kernel.py Coverage Results" MODIFIED="1641823598485" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_utils_kernel_test_input_dimension_error.coverage" NAME="pytest for test_utils_kernel.test_input_dimension_error Coverage Results" MODIFIED="1641822713383" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_utils_kernel_test_riemann_kernel_cref.coverage" NAME="pytest for test_utils_kernel.test_riemann_kernel_cref Coverage Results" MODIFIED="1639749907422" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_sampling_test_functions_error.coverage" NAME="pytest for test_sampling.test_functions_error Coverage Results" MODIFIED="1642164001944" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_estimation_test_block_covariances_block_size_type_error.coverage" NAME="pytest for test_estimation.test_block_covariances_block_size_type_error Coverage Results" MODIFIED="1639694942530" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_classification_test_RSVC_SVC_params.coverage" NAME="pytest for test_classification.test_RSVC_SVC_params Coverage Results" MODIFIED="1641467495514" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_in_test_embedding_py.coverage" NAME="pytest in test_embedding.py Coverage Results" MODIFIED="1642187372644" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_in_test_classification_py.coverage" NAME="pytest in test_classification.py Coverage Results" MODIFIED="1641467448734" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$scratch_2.coverage" NAME="scratch_2 Coverage Results" MODIFIED="1637330256069" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$APPLICATION_CONFIG_DIR$/scratches" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_in_tests.coverage" NAME="pytest in tests Coverage Results" MODIFIED="1642420397809" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_in_test_utils_base_py.coverage" NAME="pytest in test_utils_covariance.py Coverage Results" MODIFIED="1637335932256" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_utils_kernel_test_metric_string.coverage" NAME="pytest for test_utils_kernel.test_metric_string Coverage Results" MODIFIED="1641819860579" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_classification_test_RSVC_C_params.coverage" NAME="pytest for test_classification.test_RSVC_C_params Coverage Results" MODIFIED="1641394703931" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_preprocessing_test_hilbert_transform.coverage" NAME="pytest for test_preprocessing.test_hilbert_transform Coverage Results" MODIFIED="1641490829200" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+    <SUITE FILE_PATH="coverage/pyRiemann$pytest_for_test_viz_test_embedding_error_raise.coverage" NAME="pytest for test_viz.test_embedding_error_raise Coverage Results" MODIFIED="1641587279942" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/tests" />
+  </component>
+</project>
