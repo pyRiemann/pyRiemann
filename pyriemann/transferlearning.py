@@ -18,6 +18,11 @@ class MDWM (MDM):
 
     Parameters
     ----------
+    transfer_coef : float,
+        Transfer coefficient in [0,1], controlling the trade-off between
+        source and target data. At 0, there is no transfer, only the data
+        acquired from the source are used. At 1, this is a calibration-free
+        system as no data are required from the source.
     metric : string | dict (default: 'riemann')
         The type of metric used for centroid and distance estimation.
         see `mean_covariance` for the list of supported metric.
@@ -26,11 +31,6 @@ class MDWM (MDM):
         distance estimation. Typical usecase is to pass 'logeuclid' metric for
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
-    transfer_coef : float, (default: 0)
-        Transfer coefficient in [0,1], controlling the trade-off between
-        source and target data. At 0, there is no transfer, only the data
-        acquired from the source are used. At 1, this is a calibration-free
-        system as no data are required from the source.
     n_jobs : int, (default: 1)
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
@@ -63,7 +63,7 @@ class MDWM (MDM):
         Neural Engineering (NER), pp. 523-526. IEEE, 2021.
     """
 
-    def __init__(self, metric='riemann', transfer_coef=0, n_jobs=1):
+    def __init__(self, transfer_coef, metric='riemann', n_jobs=1):
         """Init."""
         self.metric = metric
         self.n_jobs = n_jobs
