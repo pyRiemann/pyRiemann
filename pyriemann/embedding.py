@@ -326,7 +326,7 @@ def locally_linear_embedding(X,
 
     1.  find its k nearest neighbors KNN(xi),
     2.  calculate the best reconstruction of xi based on its
-        k-nearest-neighbors (Eq.9 in _[1]),
+        k-nearest-neighbors (Eq.9 in [1]_),
     3.  calculate a low-dimensional embedding for all points based on
         the weights in step 2.
 

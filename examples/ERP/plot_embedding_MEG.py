@@ -11,7 +11,7 @@ point on the manifold can be well approximated by  the affine subspace
 spanned by the k-nearest neighbors of the point and finds a low-dimensional
 embedding of the data based on these affine approximations. Laplacian
 Eigenmaps (LE) are based on computing the low dimensional representation
-that best preserves locality instead of local linearity in LLE." _[1]
+that best preserves locality instead of local linearity in LLE." [1]_
 
 References
 ----------
