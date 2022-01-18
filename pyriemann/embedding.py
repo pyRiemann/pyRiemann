@@ -118,7 +118,7 @@ class SpectralEmbedding(BaseEstimator):
 
         Returns
         -------
-        X_new: ndarray, shape (n_matrices, n_components)
+        X_new : ndarray, shape (n_matrices, n_components)
             Coordinates of embedded matrices.
 
         """
@@ -219,7 +219,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        X_new: ndarray, shape (n_matrices, n_components)
+        X_new : ndarray, shape (n_matrices, n_components)
             Coordinates of embedded matrices.
         """
         _check_dimensions(self.data_,
@@ -253,7 +253,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        X_new: ndarray, shape (n_matrices, n_components)
+        X_new : ndarray, shape (n_matrices, n_components)
             Coordinates of embedded matrices.
         """
         self.fit(X)
@@ -344,9 +344,9 @@ def locally_linear_embedding(X,
 
     Returns
     -------
-    embd_ : ndarray, shape (n_matrices, n_components)
+    embd : ndarray, shape (n_matrices, n_components)
         Locally linear embedding of matrices in X.
-    error_ : float
+    error : float
         Error of the projected embedding.
 
     Notes

@@ -5,7 +5,9 @@ from .base import invsqrtm, logm
 
 
 def kernel(X, Y=None, Cref=None, metric='riemann', reg=1e-10):
-    r""" Calculates the Kernel matrix K of inner products of two sets
+    r"""  Calculates a kernel matrix according to a specified metric
+    
+    Calculates the kernel matrix K of inner products of two sets
          X and Y of SPD matrices on tangent space of C according to the
          specified metric.
 
@@ -13,15 +15,16 @@ def kernel(X, Y=None, Cref=None, metric='riemann', reg=1e-10):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             First set of SPD matrices.
-        Y : None | ndarray, shape (n_matrices, n_channels, n_channels)
+        Y : None | ndarray, shape (n_matrices, n_channels, n_channels), \
+            default: None
             Second set of SPD matrices. If None, Y is set to X.
-        Cref : None | ndarray, shape (n_channels, n_channels)
+        Cref : None | ndarray, shape (n_channels, n_channels), default: None
             Reference point for the tangent space and inner product
-            calculation. If None, Cref is calculated as the Riemannian mean of
+            calculation. If None, Cref is calculated as the mean of
             X according to the specified metric.
-        metric : {'riemann', 'euclid', 'logeuclid'}
+        metric : {'riemann', 'euclid', 'logeuclid'}, default: 'riemann'
             The type of metric used for tangent space and mean estimation.
-        reg : float, (default : 1e-10)
+        reg : float, default: 1e-10
             Regularization parameter to mitigate numerical errors in kernel
             matrix estimation, to provide a positive-definite kernel matrix.
 
@@ -70,7 +73,9 @@ def _apply_matrix_kernel(kernel_fct, X, Y=None, Cref=None, reg=1e-10):
 
 
 def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
-    r""" Calculates the Riemannian Kernel matrix K of inner products of two
+    r""" Calculates Riemannian kernel
+    
+    Calculates the Riemannian kernel matrix K of inner products of two
     sets X and Y of SPD matrices on tangent space of C by calculating pairwise
 
     .. math::
@@ -83,12 +88,12 @@ def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
     ----------
     X : ndarray, shape (n_matrices_X, n_channels, n_channels)
         First set of SPD matrices.
-    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels)
+    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), default: None
         Second set of SPD matrices. If None, Y is set to X.
-    Cref : None | ndarray, shape (n_channels, n_channels)
+    Cref : None | ndarray, shape (n_channels, n_channels), default: None
         Reference point for the tangent space and inner product calculation.
         If None, Cref is calculated as the Riemannian mean of X.
-    reg : float, (default : 1e-10)
+    reg : float, default: 1e-10
         Regularization parameter to mitigate numerical errors in kernel
         matrix estimation.
 
@@ -120,7 +125,9 @@ def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
 
 
 def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
-    r""" Calculates the Euclidean Kernel matrix K of inner products of two sets
+    r"""  Calculates Euclidean kernel
+    
+    Calculates the Euclidean kernel matrix K of inner products of two sets
      X and Y of SPD matrices on tangent space of C by calculating pairwise
 
     .. math::
@@ -131,12 +138,12 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
     ----------
     X : ndarray, shape (n_matrices_X, n_channels, n_channels)
         First set of SPD matrices.
-    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels)
+    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), default: None
         Second set of SPD matrices. If None, Y is set to X.
-    Cref : None | ndarray, shape (n_channels, n_channels)
+    Cref : None | ndarray, shape (n_channels, n_channels), default: None
         Reference point for the tangent space and inner product calculation.
         If None, Cref is calculated as the Euclidean mean of X.
-    reg : float, (default : 1e-10)
+    reg : float, default: 1e-10
         Regularization parameter to mitigate numerical errors in kernel
         matrix estimation.
 
@@ -162,7 +169,9 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
 
 
 def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
-    r""" Calculates the Log-Euclidean Kernel matrix K of inner products of two
+    r""" Calculates Log-Euclidean kernel
+    
+    Calculates the Log-Euclidean kernel matrix K of inner products of two
     sets X and Y of SPD matrices on tangent space of C by calculating pairwise
 
     .. math::
@@ -173,12 +182,12 @@ def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
     ----------
     X : ndarray, shape (n_matrices_X, n_channels, n_channels)
         First set of SPD matrices.
-    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels)
+    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), default: None
         Second set of SPD matrices. If None, Y is set to X.
-    Cref : None | ndarray, shape (n_channels, n_channels)
+    Cref : None | ndarray, shape (n_channels, n_channels), default: None
         Reference point for the tangent space and inner product calculation.
         If None, Cref is calculated as the Log-Euclidean mean of X.
-    reg : float, (default : 1e-10)
+    reg : float, default: 1e-10
         Regularization parameter to mitigate numerical errors in kernel
         matrix estimation.
 
