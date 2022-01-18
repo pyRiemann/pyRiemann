@@ -4,7 +4,8 @@ Embedding ERP MEG data in 2D Euclidean space
 ============================================
 
 Embeddings via Laplacian Eigenmaps and Riemannian locally linear
-embedding of a set of ERP data.
+embedding of a set of ERP data. Embedding via Laplacian Eigenmaps is
+referred to as Spectral Embedding (SE).
 
 "Locally Linear Embedding (LLE) assumes that the  local neighborhood of a
 point on the manifold can be well approximated by  the affine subspace
