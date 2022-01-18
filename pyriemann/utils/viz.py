@@ -48,10 +48,11 @@ def plot_embedding(X,
         Set of SPD matrices.
     y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels)
         Labels corresponding to each matrix.
-    metric : {'riemann' ,'logeuclid' , 'euclid' , 'logdet', 'kullback',
-                'kullback_right', 'kullback_sym'}
-        Metric used in the embedding. Can only be 'riemann' ,'logeuclid' ,
-        'euclid' for Locally Linear Embedding.
+    metric : string (default : 'riemann')
+        Metric used in the embedding. Can be {'riemann' ,'logeuclid' ,
+        'euclid'} for Locally Linear Embedding and {'riemann' ,'logeuclid' ,
+        'euclid' , 'logdet', 'kullback', 'kullback_right', 'kullback_sym'}
+        for Spectral Embedding.
     title : str, optional (default : "Embedding of covariances")
         Title string for plot.
     embd_type : {'Spectral' ,'LocallyLinear'}
@@ -62,8 +63,7 @@ def plot_embedding(X,
     Returns
     -------
     fig : matplotlib figure
-        Figure containing the plot.
-
+        Figure of embedding.
     """
     try:
         import matplotlib.pyplot as plt
