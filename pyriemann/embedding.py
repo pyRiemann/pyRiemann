@@ -276,7 +276,7 @@ def barycenter_weights(X, Y, indices, metric='riemann', reg=1e-3):
         Indices of the points in Y used to compute the barycenter
     metric : {'riemann', 'logeuclid', 'euclid'}, default: 'riemann'
         Kernel metric.
-    reg : float, default=1e-3
+    reg : float, default: 1e-3
         amount of regularization to add for the problem to be
         well-posed in the case of n_neighbors > n_channels
 
