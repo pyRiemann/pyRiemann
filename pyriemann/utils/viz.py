@@ -63,6 +63,7 @@ def plot_embedding(X,
     -------
     fig : matplotlib figure
         Figure containing the plot.
+    
     """
     try:
         import matplotlib.pyplot as plt
