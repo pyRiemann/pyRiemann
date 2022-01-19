@@ -113,14 +113,14 @@ covs = Covariances(estimator='lwf').transform(epochs_data)
 # the potato. It reproduces Fig 1 of reference [2]_.
 
 z_th = 2.0       # z-score threshold
-t = 40           # nb of matrices to train the potato
+train_covs = 40  # nb of matrices to train the potato
 
 
 ###############################################################################
 
 # Calibrate potato by unsupervised training on first matrices: compute a
 # reference matrix, mean and standard deviation of distances to this reference.
-train_set = range(t)
+train_set = range(train_covs)
 rpotato = Potato(metric='riemann', threshold=z_th).fit(covs[train_set])
 rp_center = rpotato._mdm.covmeans_[0]
 epotato = Potato(metric='euclid', threshold=z_th).fit(covs[train_set])
@@ -178,8 +178,8 @@ test_covs_visu = 30     # nb of matrices to display simultaneously
 test_time_start = -2    # start time to display signal
 test_time_end = 5       # end time to display signal
 
-time_start = t * interval + test_time_start
-time_end = t * interval + test_time_end
+time_start = train_covs * interval + test_time_start
+time_end = train_covs * interval + test_time_end
 time = np.linspace(time_start, time_end, int((time_end - time_start) * sfreq),
                    endpoint=False)
 eeg_data = 3e5 * raw.get_data(picks=ch_names)
@@ -210,8 +210,8 @@ p_ep = plot_potato_2D(ax_ep, cax_ep, X, Y, ep_zscores, ep_center, covs_visu,
 ###############################################################################
 
 # Prepare animation for online detection
-def online_update(self):
-    global t, time, sig, covs_visu
+def online_detect(t):
+    global time, sig, covs_visu
 
     # Online artifact detection
     rp_label = rpotato.predict(covs[np.newaxis, t])[0]
@@ -239,7 +239,6 @@ def online_update(self):
         ep_colors.pop(0)
     rp_colors_ = add_alpha(rp_colors, alphas)
     ep_colors_ = add_alpha(ep_colors, alphas)
-    t += 1
 
     # Update plot
     pl_sig0.set_data(time, sig[0])
@@ -258,7 +257,8 @@ def online_update(self):
 
 interval_display = 1.0  # can be changed for a slower display
 
-potato = FuncAnimation(fig, online_update, frames=test_covs_max,
+potato = FuncAnimation(fig, online_detect,
+                       frames=range(train_covs, test_covs_max),
                        interval=interval_display, blit=False, repeat=False)
 plt.show()
 
