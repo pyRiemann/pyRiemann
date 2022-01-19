@@ -1,6 +1,6 @@
 import numpy as np
 
-from .mean import mean_riemann, mean_euclid, mean_logeuclid
+from .mean import mean_riemann
 from .base import invsqrtm, logm
 
 
