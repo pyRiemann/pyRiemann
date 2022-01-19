@@ -13,9 +13,9 @@ def kernel(X, Y=None, Cref=None, metric='riemann', reg=1e-10):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
+        X : ndarray, shape (n_matrices_X, n_channels, n_channels)
             First set of SPD matrices.
-        Y : None | ndarray, shape (n_matrices, n_channels, n_channels), \
+        Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), \
                 default: None
             Second set of SPD matrices. If None, Y is set to X.
         Cref : None | ndarray, shape (n_channels, n_channels), default: None
@@ -30,7 +30,7 @@ def kernel(X, Y=None, Cref=None, metric='riemann', reg=1e-10):
 
         Returns
         ----------
-        K : ndarray, shape (n_matrices, n_matrices)
+        K : ndarray, shape (n_matrices_X, n_matrices_Y)
             The kernel matrix of X and Y.
 
         Notes
