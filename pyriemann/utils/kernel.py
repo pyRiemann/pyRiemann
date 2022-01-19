@@ -20,8 +20,7 @@ def kernel(X, Y=None, Cref=None, metric='riemann', reg=1e-10):
             Second set of SPD matrices. If None, Y is set to X.
         Cref : None | ndarray, shape (n_channels, n_channels), default: None
             Reference point for the tangent space and inner product
-            calculation. If None, Cref is calculated as the mean of
-            X according to the specified metric.
+            calculation. Only used if metric='riemann'
         metric : {'riemann', 'euclid', 'logeuclid'}, default: 'riemann'
             The type of metric used for tangent space and mean estimation.
         reg : float, default: 1e-10
@@ -133,6 +132,43 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
     .. math::
         K_{i,j} = {tr}(X_i Y_j)
 
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices_X, n_channels, n_channels)
+        First set of SPD matrices.
+    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), \
+            default: None
+        Second set of SPD matrices. If None, Y is set to X.
+    Cref : None
+        Does nothing. For compatibility purposes.
+    reg : float, default: 1e-10
+        Regularization parameter to mitigate numerical errors in kernel
+        matrix estimation.
+
+    Returns
+    ----------
+    K : ndarray, shape (n_matrices_X, n_matrices_Y)
+        The kernel matrix of X and Y.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.8
+    """
+    def kernelfct(X, Cref):
+        return X
+
+    return _apply_matrix_kernel(kernelfct, X, Y, Cref, reg)
+
+
+def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
+    r""" Calculates Log-Euclidean kernel
+
+    Calculates the Log-Euclidean kernel matrix K of inner products of two
+    sets X and Y of SPD matrices on tangent space of C by calculating pairwise
+
+    .. math::
+        K_{i,j} = {tr}(\log(X_i)\log(Y_j))
+
     as proposed in [1]_.
 
     Parameters
@@ -142,9 +178,8 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
     Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), \
             default: None
         Second set of SPD matrices. If None, Y is set to X.
-    Cref : None | ndarray, shape (n_channels, n_channels), default: None
-        Reference point for the tangent space and inner product calculation.
-        If None, Cref is calculated as the Euclidean mean of X.
+    Cref : None
+        Does nothing. For compatibility purposes.
     reg : float, default: 1e-10
         Regularization parameter to mitigate numerical errors in kernel
         matrix estimation.
@@ -163,44 +198,6 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
     .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, Classification
         of covariance matrices using a Riemannian-based kernel for BCI
         applications. Neurocomputing, Elsevier, 2013, 112, pp.172-178.
-    """
-    def kernelfct(X, Cref):
-        return X
-
-    return _apply_matrix_kernel(kernelfct, X, Y, Cref, reg)
-
-
-def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
-    r""" Calculates Log-Euclidean kernel
-
-    Calculates the Log-Euclidean kernel matrix K of inner products of two
-    sets X and Y of SPD matrices on tangent space of C by calculating pairwise
-
-    .. math::
-        K_{i,j} = {tr}(\log(X_i)\log(Y_j))
-
-    Parameters
-    ----------
-    X : ndarray, shape (n_matrices_X, n_channels, n_channels)
-        First set of SPD matrices.
-    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), \
-            default: None
-        Second set of SPD matrices. If None, Y is set to X.
-    Cref : None | ndarray, shape (n_channels, n_channels), default: None
-        Reference point for the tangent space and inner product calculation.
-        If None, Cref is calculated as the Log-Euclidean mean of X.
-    reg : float, default: 1e-10
-        Regularization parameter to mitigate numerical errors in kernel
-        matrix estimation.
-
-    Returns
-    ----------
-    K : ndarray, shape (n_matrices_X, n_matrices_Y)
-        The kernel matrix of X and Y.
-
-    Notes
-    -----
-    .. versionadded:: 0.2.8
     """
 
     def kernelfct(X, Cref):
