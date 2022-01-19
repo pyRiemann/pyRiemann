@@ -5,37 +5,37 @@ from .base import invsqrtm, logm
 
 
 def kernel(X, Y=None, Cref=None, metric='riemann', reg=1e-10):
-    r"""  Calculates a kernel matrix according to a specified metric
+    r"""Calculate the kernel matrix according to the specified metric.
 
-    Calculates the kernel matrix K of inner products of two sets
-     X and Y of SPD matrices on tangent space of C according to the
-     specified metric.
+    Calculates the kernel matrix K of inner products of two sets X and Y of
+    SPD matrices on the tangent space of Cref according to the specified
+    metric.
 
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices_X, n_channels, n_channels)
-            First set of SPD matrices.
-        Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), \
-                default: None
-            Second set of SPD matrices. If None, Y is set to X.
-        Cref : None | ndarray, shape (n_channels, n_channels), default: None
-            Reference point for the tangent space and inner product
-            calculation. Only used if metric='riemann'
-        metric : {'riemann', 'euclid', 'logeuclid'}, default: 'riemann'
-            The type of metric used for tangent space and mean estimation.
-        reg : float, default: 1e-10
-            Regularization parameter to mitigate numerical errors in kernel
-            matrix estimation, to provide a positive-definite kernel matrix.
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices_X, n_channels, n_channels)
+        First set of SPD matrices.
+    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), \
+            default: None
+        Second set of SPD matrices. If None, Y is set to X.
+    Cref : None | ndarray, shape (n_channels, n_channels), default: None
+        Reference point for the tangent space and inner product
+        calculation. Only used if metric='riemann'
+    metric : {'riemann', 'euclid', 'logeuclid'}, default: 'riemann'
+        The type of metric used for tangent space and mean estimation.
+    reg : float, default: 1e-10
+        Regularization parameter to mitigate numerical errors in kernel
+        matrix estimation, to provide a positive-definite kernel matrix.
 
-        Returns
-        ----------
-        K : ndarray, shape (n_matrices_X, n_matrices_Y)
-            The kernel matrix of X and Y.
+    Returns
+    -------
+    K : ndarray, shape (n_matrices_X, n_matrices_Y)
+        The kernel matrix of X and Y.
 
-        Notes
-        -----
-        .. versionadded:: 0.2.8
-        """
+    Notes
+    -----
+    .. versionadded:: 0.2.8
+    """
     try:
         return globals()[f'kernel_{metric}'](X, Y, Cref, reg=reg)
     except KeyError:
@@ -44,7 +44,7 @@ def kernel(X, Y=None, Cref=None, metric='riemann', reg=1e-10):
 
 
 def _apply_matrix_kernel(kernel_fct, X, Y=None, Cref=None, reg=1e-10):
-    """Applies a matrix kernel function"""
+    """Apply a matrix kernel function."""
     _check_dimensions(X, Y, Cref)
     n_matrices_X, n_channels, n_channels = X.shape
 
@@ -72,7 +72,7 @@ def _apply_matrix_kernel(kernel_fct, X, Y=None, Cref=None, reg=1e-10):
 
 
 def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
-    r""" Calculates Riemannian kernel
+    r"""Calculate the Riemannian kernel matrix.
 
     Calculates the Riemannian kernel matrix K of inner products of two
     sets X and Y of SPD matrices on tangent space of C by calculating pairwise
@@ -97,7 +97,7 @@ def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
         matrix estimation.
 
     Returns
-    ----------
+    -------
     K : ndarray, shape (n_matrices_X, n_matrices_Y)
         The kernel matrix of X and Y.
 
@@ -124,10 +124,10 @@ def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
 
 
 def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
-    r"""  Calculates Euclidean kernel
+    r"""Calculate Euclidean kernel matrix.
 
     Calculates the Euclidean kernel matrix K of inner products of two sets
-    X and Y of SPD matrices on tangent space of C by calculating pairwise
+    X and Y of SPD matrices on tangent space of Cref by calculating pairwise
 
     .. math::
         K_{i,j} = {tr}(X_i Y_j)
@@ -146,7 +146,7 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
         matrix estimation.
 
     Returns
-    ----------
+    -------
     K : ndarray, shape (n_matrices_X, n_matrices_Y)
         The kernel matrix of X and Y.
 
@@ -161,7 +161,7 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
 
 
 def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
-    r""" Calculates Log-Euclidean kernel
+    r"""Calculate Log-Euclidean kernel matrix.
 
     Calculates the Log-Euclidean kernel matrix K of inner products of two
     sets X and Y of SPD matrices on tangent space of C by calculating pairwise
@@ -185,7 +185,7 @@ def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
         matrix estimation.
 
     Returns
-    ----------
+    -------
     K : ndarray, shape (n_matrices_X, n_matrices_Y)
         The kernel matrix of X and Y.
 
@@ -199,7 +199,6 @@ def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
         of covariance matrices using a Riemannian-based kernel for BCI
         applications. Neurocomputing, Elsevier, 2013, 112, pp.172-178.
     """
-
     def kernelfct(X, Cref):
         X_ = np.array([logm(x) for x in X])
         return X_
@@ -208,7 +207,7 @@ def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
 
 
 def _check_dimensions(X, Y, Cref):
-    """Checks for mathcing dimensions in X, Y and Cref."""
+    """Check for matching dimensions in X, Y and Cref."""
     if not isinstance(Y, type(None)):
         assert Y.shape[1:] == X.shape[1:], f"Dimension of matrices in Y must "\
                                            f"match dimension of matrices in " \
