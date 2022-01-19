@@ -79,8 +79,7 @@ def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
     sets X and Y of SPD matrices on tangent space of C by calculating pairwise
 
     .. math::
-        K_{i,j} =
-        {tr}(\log(C^{-1/2}X_i C^{-1/2})\log(C^{-1/2}Y_j C^{-1/2}))
+        K_{i,j} = {tr}(\log(C^{-1/2}X_i C^{-1/2})\log(C^{-1/2}Y_j C^{-1/2}))
 
     as proposed in [1]_.
 
@@ -132,8 +131,7 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
     X and Y of SPD matrices on tangent space of C by calculating pairwise
 
     .. math::
-        K_{i,j} =
-        {tr}(C^{-1/2}(X_i - C)C^{-1/2} C^{-1/2}(Y_j - C)C^{-1/2})
+        K_{i,j} = {tr}(X_i Y_j)
 
     Parameters
     ----------
@@ -159,13 +157,7 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
     .. versionadded:: 0.2.8
     """
     def kernelfct(X, Cref):
-        if Cref is None:
-            Cref = mean_euclid(X)
-
-        C_invsq = invsqrtm(Cref)
-        X_ = (X - Cref)
-        X_ = C_invsq @ X_ @ C_invsq
-        return X_
+        return X
 
     return _apply_matrix_kernel(kernelfct, X, Y, Cref, reg)
 
@@ -177,8 +169,7 @@ def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
     sets X and Y of SPD matrices on tangent space of C by calculating pairwise
 
     .. math::
-        K_{i,j} =
-        {tr}((\log(X_i) - \log(C))(\log(Y_j) - \log(C)))
+        K_{i,j} = {tr}(\log(X_i)\log(Y_j))
 
     Parameters
     ----------
@@ -205,12 +196,7 @@ def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
     """
 
     def kernelfct(X, Cref):
-        if Cref is None:
-            Cref = mean_logeuclid(X)
-
-        C_log = logm(Cref)
         X_ = np.array([logm(x) for x in X])
-        X_ = (X_ - C_log)
         return X_
 
     return _apply_matrix_kernel(kernelfct, X, Y, Cref, reg)
