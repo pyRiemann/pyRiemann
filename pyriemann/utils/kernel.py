@@ -133,6 +133,8 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
     .. math::
         K_{i,j} = {tr}(X_i Y_j)
 
+    as proposed in [1]_.
+
     Parameters
     ----------
     X : ndarray, shape (n_matrices_X, n_channels, n_channels)
@@ -155,6 +157,12 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
     Notes
     -----
     .. versionadded:: 0.2.8
+
+    References
+    ----------
+    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, Classification
+        of covariance matrices using a Riemannian-based kernel for BCI
+        applications. Neurocomputing, Elsevier, 2013, 112, pp.172-178.
     """
     def kernelfct(X, Cref):
         return X
