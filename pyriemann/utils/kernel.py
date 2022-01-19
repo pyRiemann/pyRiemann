@@ -8,15 +8,15 @@ def kernel(X, Y=None, Cref=None, metric='riemann', reg=1e-10):
     r"""  Calculates a kernel matrix according to a specified metric
 
     Calculates the kernel matrix K of inner products of two sets
-         X and Y of SPD matrices on tangent space of C according to the
-         specified metric.
+     X and Y of SPD matrices on tangent space of C according to the
+     specified metric.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             First set of SPD matrices.
         Y : None | ndarray, shape (n_matrices, n_channels, n_channels), \
-            default: None
+                default: None
             Second set of SPD matrices. If None, Y is set to X.
         Cref : None | ndarray, shape (n_channels, n_channels), default: None
             Reference point for the tangent space and inner product
@@ -89,7 +89,7 @@ def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
     X : ndarray, shape (n_matrices_X, n_channels, n_channels)
         First set of SPD matrices.
     Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), \
-        default: None
+            default: None
         Second set of SPD matrices. If None, Y is set to X.
     Cref : None | ndarray, shape (n_channels, n_channels), default: None
         Reference point for the tangent space and inner product calculation.
@@ -129,7 +129,7 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
     r"""  Calculates Euclidean kernel
 
     Calculates the Euclidean kernel matrix K of inner products of two sets
-     X and Y of SPD matrices on tangent space of C by calculating pairwise
+    X and Y of SPD matrices on tangent space of C by calculating pairwise
 
     .. math::
         K_{i,j} =
@@ -140,7 +140,7 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
     X : ndarray, shape (n_matrices_X, n_channels, n_channels)
         First set of SPD matrices.
     Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), \
-        default: None
+            default: None
         Second set of SPD matrices. If None, Y is set to X.
     Cref : None | ndarray, shape (n_channels, n_channels), default: None
         Reference point for the tangent space and inner product calculation.
@@ -185,7 +185,7 @@ def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
     X : ndarray, shape (n_matrices_X, n_channels, n_channels)
         First set of SPD matrices.
     Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), \
-        default: None
+            default: None
         Second set of SPD matrices. If None, Y is set to X.
     Cref : None | ndarray, shape (n_channels, n_channels), default: None
         Reference point for the tangent space and inner product calculation.

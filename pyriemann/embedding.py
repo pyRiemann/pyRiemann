@@ -378,9 +378,9 @@ def locally_linear_embedding(X,
         M, eigvals=(1, n_components), overwrite_a=True
     )
     index = np.argsort(np.abs(eigen_values))
-    embd_, error_ = eigen_vectors[:, index], np.sum(eigen_values)
+    embd, error = eigen_vectors[:, index], np.sum(eigen_values)
 
-    return embd_, error_
+    return embd, error
 
 
 def _check_dimensions(X, Y=None, n_components=None, n_neighbors=None):
