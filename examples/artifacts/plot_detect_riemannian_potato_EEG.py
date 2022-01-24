@@ -19,6 +19,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import to_rgb
 from matplotlib.animation import FuncAnimation
+from IPython.display import HTML
 
 from mne.datasets import sample
 from mne.io import read_raw_fif
@@ -251,16 +252,23 @@ def online_detect(t):
     p_ep.set_color(ep_colors_)
     return pl_sig0, pl_sig1, p_rp, p_ep
 
-
-###############################################################################
-# Plot online detection (a dynamic display is required)
-
 interval_display = 1.0  # can be changed for a slower display
 
 potato = FuncAnimation(fig, online_detect,
                        frames=range(train_covs, test_covs_max),
                        interval=interval_display, blit=False, repeat=False)
+
+
+###############################################################################
+
+# Plot online detection
+
+# Plot complete visu: a dynamic display is required
 plt.show()
+
+# Plot only 10s, for animated documentation
+plt.rcParams["animation.embed_limit"] = 10
+HTML(potato.to_jshtml(fps=5, default_mode='loop'))
 
 
 ###############################################################################

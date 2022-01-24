@@ -14,6 +14,7 @@ detect artifacts in online processing. It is compared to the Riemannian Potato
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation
+from IPython.display import HTML
 
 from mne.datasets import eegbci
 from mne.io import read_raw_edf
@@ -258,16 +259,23 @@ def online_detect(t):
     pl3[0].set_data(covs_t, covs_p)
     return pl, pl2, pl3
 
-
-###############################################################################
-# Plot online detection (a dynamic display is required)
-
 interval_display = 1.0  # can be changed for a slower display
 
 potato = FuncAnimation(fig, online_detect,
                        frames=range(train_covs, test_covs_max),
                        interval=interval_display, blit=False, repeat=False)
+
+
+###############################################################################
+
+# Plot online detection
+
+# Plot complete visu: a dynamic display is required
 plt.show()
+
+# Plot only 10s, for animated documentation
+plt.rcParams["animation.embed_limit"] = 10
+HTML(potato.to_jshtml(fps=5, default_mode='loop'))
 
 
 ###############################################################################
