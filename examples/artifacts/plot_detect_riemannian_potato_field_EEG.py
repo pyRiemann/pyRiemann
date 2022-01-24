@@ -259,6 +259,7 @@ def online_detect(t):
     pl3[0].set_data(covs_t, covs_p)
     return pl, pl2, pl3
 
+
 interval_display = 1.0  # can be changed for a slower display
 
 potato = FuncAnimation(fig, online_detect,

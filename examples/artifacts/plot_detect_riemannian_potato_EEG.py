@@ -252,6 +252,7 @@ def online_detect(t):
     p_ep.set_color(ep_colors_)
     return pl_sig0, pl_sig1, p_rp, p_ep
 
+
 interval_display = 1.0  # can be changed for a slower display
 
 potato = FuncAnimation(fig, online_detect,
