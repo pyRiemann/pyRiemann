@@ -485,7 +485,7 @@ def nanmean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     ----------
     .. [1] F. Yger, S. Chevallier, Q. Barthélemy, S. Sra. "Geodesically-convex
         optimization for averaging partially observed covariance matrices",
-        ACML 2021.
+        ACML 2020.
     """
     n_matrices, n_channels, _ = covmats.shape
     if init is None:
@@ -543,7 +543,7 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=50, init=None,
     ----------
     .. [1] F. Yger, S. Chevallier, Q. Barthélemy, S. Sra. "Geodesically-convex
         optimization for averaging partially observed covariance matrices",
-        ACML 2021.
+        ACML 2020.
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
     maskedcovmats = _apply_masks(covmats, masks)

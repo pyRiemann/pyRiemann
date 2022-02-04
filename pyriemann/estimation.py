@@ -24,7 +24,8 @@ class Covariances(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     estimator : string (default: 'scm')
-        covariance matrix estimator. For regularization consider 'lwf' or 'oas'
+        Covariance matrix estimator.
+        For regularization consider 'lwf' or 'oas'.
         For the complete list of estimators, see parameter `estimator` of
         :func:`pyriemann.utils.covariance.covariances`.
 
@@ -106,7 +107,8 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         list of classes to take into account for prototype estimation.
         If None (default), all classes will be accounted.
     estimator : string (default: 'scm')
-        covariance matrix estimator. For regularization consider 'lwf' or 'oas'
+        Covariance matrix estimator.
+        For regularization, consider 'lwf' or 'oas'.
         For the complete list of estimators, see parameter `estimator` of
         :func:`pyriemann.utils.covariance.covariances`.
     svd : int | None (default None)
@@ -205,7 +207,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
     Estimation of special form covariance matrix dedicated to ERP processing
     combined with Xdawn spatial filtering. This is similar to `ERPCovariances`
-    but data are spatially filtered with `Xdawn`. A complete descrition of the
+    but data are spatially filtered with `Xdawn`. A complete description of the
     method is available in [1]_.
 
     The advantage of this estimation is to reduce dimensionality of the
@@ -226,13 +228,16 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         list of classes to take into account for prototype estimation.
         If None (default), all classes will be accounted.
     estimator : string (default: 'scm')
-        covariance matrix estimator. For regularization consider 'lwf' or 'oas'
+        Covariance matrix estimator.
+        For regularization, consider 'lwf' or 'oas'.
         For the complete list of estimators, see parameter `estimator` of
         :func:`pyriemann.utils.covariance.covariances`.
     xdawn_estimator : string (default: 'scm')
-        covariance matrix estimator for xdawn spatial filtering.
+        Covariance matrix estimator for `Xdawn` spatial filtering.
+        Should be regularized.
     baseline_cov : array, shape (n_chan, n_chan) | None (default)
-        baseline_covariance for xdawn. see `Xdawn`.
+        Baseline covariance for `Xdawn` spatial filtering.
+        See :class:`pyriemann.spatialfilters.Xdawn`.
 
     See Also
     --------
@@ -495,7 +500,7 @@ class Coherences(CospCovariances):
     Parameters
     ----------
     window : int (default 128)
-        The lengt of the FFT window used for spectral estimation.
+        The length of the FFT window used for spectral estimation.
     overlap : float (default 0.75)
         The percentage of overlap between window.
     fmin : float | None, (default None)
@@ -605,7 +610,8 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
         the delays to apply for the hankel matrices. if Int, it use a range of
         delays up to the given value. A list of int can be given.
     estimator : string (default: 'scm')
-        covariance matrix estimator. For regularization consider 'lwf' or 'oas'
+        Covariance matrix estimator.
+        For regularization, consider 'lwf' or 'oas'.
         For the complete list of estimators, see parameter `estimator` of
         :func:`pyriemann.utils.covariance.covariances`.
 
