@@ -127,7 +127,7 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
     r"""Calculate Euclidean kernel matrix.
 
     Calculates the Euclidean kernel matrix K of inner products of two sets
-    X and Y of SPD matrices on tangent space of Cref by calculating pairwise
+    X and Y of SPD matrices by calculating pairwise
 
     .. math::
         K_{i,j} = {tr}(X_i Y_j)
@@ -162,7 +162,7 @@ def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
     r"""Calculate Log-Euclidean kernel matrix.
 
     Calculates the Log-Euclidean kernel matrix K of inner products of two
-    sets X and Y of SPD matrices on tangent space of C by calculating pairwise
+    sets X and Y of SPD matrices by calculating pairwise
 
     .. math::
         K_{i,j} = {tr}(\log(X_i)\log(Y_j))
