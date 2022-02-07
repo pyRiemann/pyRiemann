@@ -34,7 +34,7 @@ def test_kernel_cref(ker, rndstate, get_covmats):
     cov = get_covmats(n_matrices, n_channels)
     cref = mean_covariance(cov, metric=ker)
     K = kernel(cov, cov, metric=ker)
-    K1 = kernel(cov, cov, cref, metric=ker)
+    K1 = kernel(cov, cov, Cref=cref, metric=ker)
     assert_array_equal(K, K1)
 
 
@@ -74,9 +74,9 @@ def test_input_dimension_error(ker, rndstate, get_covmats):
     cov = get_covmats(n_matrices, n_channels)
     cov2 = get_covmats(n_matrices, n_channels+1)
     cref = get_covmats(1, n_channels+1)[0]
-
-    with pytest.raises(AssertionError):
-        kernel(cov, Cref=cref, metric=ker)
+    if ker == 'riemann':
+        with pytest.raises(AssertionError):
+            kernel(cov, Cref=cref, metric=ker)
     with pytest.raises(AssertionError):
         kernel(cov, cov2, metric=ker)
 

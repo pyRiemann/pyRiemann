@@ -4,7 +4,7 @@ from .mean import mean_riemann
 from .base import invsqrtm, logm
 
 
-def kernel(X, Y=None, Cref=None, metric='riemann', reg=1e-10):
+def kernel(X, Y=None, *, Cref=None, metric='riemann', reg=1e-10):
     r"""Calculate the kernel matrix according to the specified metric.
 
     Calculates the kernel matrix K of inner products of two sets X and Y of
@@ -37,13 +37,13 @@ def kernel(X, Y=None, Cref=None, metric='riemann', reg=1e-10):
     .. versionadded:: 0.2.8
     """
     try:
-        return globals()[f'kernel_{metric}'](X, Y, Cref, reg=reg)
+        return globals()[f'kernel_{metric}'](X, Y, Cref=Cref, reg=reg)
     except KeyError:
         raise ValueError("Kernel metric must be 'riemann', 'euclid' or "
                          "'logeuclid'.")
 
 
-def _apply_matrix_kernel(kernel_fct, X, Y=None, Cref=None, reg=1e-10):
+def _apply_matrix_kernel(kernel_fct, X, Y=None, *, Cref=None, reg=1e-10):
     """Apply a matrix kernel function."""
     _check_dimensions(X, Y, Cref)
     n_matrices_X, n_channels, n_channels = X.shape
@@ -71,7 +71,7 @@ def _apply_matrix_kernel(kernel_fct, X, Y=None, Cref=None, reg=1e-10):
     return K
 
 
-def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
+def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
     r"""Calculate the Riemannian kernel matrix.
 
     Calculates the Riemannian kernel matrix K of inner products of two
@@ -120,10 +120,10 @@ def kernel_riemann(X, Y=None, Cref=None, reg=1e-10):
         X_ = np.array([logm(x_) for x_ in X_])
         return X_
 
-    return _apply_matrix_kernel(kernelfct, X, Y, Cref, reg)
+    return _apply_matrix_kernel(kernelfct, X, Y, Cref=Cref, reg=reg)
 
 
-def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
+def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
     r"""Calculate Euclidean kernel matrix.
 
     Calculates the Euclidean kernel matrix K of inner products of two sets
@@ -139,8 +139,6 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
     Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), \
             default: None
         Second set of SPD matrices. If None, Y is set to X.
-    Cref : None
-        Does nothing. For compatibility purposes.
     reg : float, default: 1e-10
         Regularization parameter to mitigate numerical errors in kernel
         matrix estimation.
@@ -157,10 +155,10 @@ def kernel_euclid(X, Y=None, Cref=None, reg=1e-10):
     def kernelfct(X, Cref):
         return X
 
-    return _apply_matrix_kernel(kernelfct, X, Y, Cref, reg)
+    return _apply_matrix_kernel(kernelfct, X, Y, reg=reg)
 
 
-def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
+def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
     r"""Calculate Log-Euclidean kernel matrix.
 
     Calculates the Log-Euclidean kernel matrix K of inner products of two
@@ -178,8 +176,6 @@ def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
     Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), \
             default: None
         Second set of SPD matrices. If None, Y is set to X.
-    Cref : None
-        Does nothing. For compatibility purposes.
     reg : float, default: 1e-10
         Regularization parameter to mitigate numerical errors in kernel
         matrix estimation.
@@ -203,7 +199,7 @@ def kernel_logeuclid(X, Y=None, Cref=None, reg=1e-10):
         X_ = np.array([logm(x) for x in X])
         return X_
 
-    return _apply_matrix_kernel(kernelfct, X, Y, Cref, reg)
+    return _apply_matrix_kernel(kernelfct, X, Y, reg=reg)
 
 
 def _check_dimensions(X, Y, Cref):
