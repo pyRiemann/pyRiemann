@@ -40,6 +40,11 @@ v0.2.8.dev
 
 - Add block covariance matrix: :class:`pyriemann.estimation.BlockCovariances` and :func:`pyriemann.utils.covariance.block_covariances`
 
+- Add Riemannian Locally Linear Embedding: :class:`pyriemann.embedding.LocallyLinearEmbedding` and :func:`pyriemann.embedding.locally_linear_embedding`
+
+- Add Riemannian Kernel Function: :func:`pyriemann.utils.kernel.kernel_riemann`
+
+
 v0.2.7 (June 2021)
 ------------------
 

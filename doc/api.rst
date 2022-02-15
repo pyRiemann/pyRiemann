@@ -29,9 +29,14 @@ Embedding
 
 .. autosummary::
     :toctree: generated/
+
+    locally_linear_embedding
+    barycenter_weights
+
     :template: class.rst
 
-    Embedding
+    SpectralEmbedding
+    LocallyLinearEmbedding
 
 Classification
 --------------
@@ -177,6 +182,19 @@ Distances
     distance_kullback
     distance_kullback_sym
     distance_wasserstein
+
+Kernels
+~~~~~~~~~~~~~~~~~~~~~~
+.. _kernel_api:
+.. currentmodule:: pyriemann.utils.kernel
+
+.. autosummary::
+    :toctree: generated/
+
+    kernel
+    kernel_riemann
+    kernel_euclid
+    kernel_logeuclid
 
 Mean
 ~~~~~~~~~~~~~~~~~~~~~~
