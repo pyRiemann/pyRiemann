@@ -70,7 +70,7 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs):
         Masks.
     """
     masks = []
-    for i in range(n_masks):
+    for _ in range(n_masks):
         n_dim1 = rs.randint(n_dim1_min, n_dim0, size=1)[0]
         mask, _ = np.linalg.qr(rs.randn(n_dim0, n_dim1))
         masks.append(mask)
@@ -79,7 +79,7 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs):
 
 def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
                         return_centers=False, random_state=None, *,
-                        mat_mean=.0, mat_std=1.):
+                        mat_mean=.0, mat_std=1., n_jobs=1):
     """Generate SPD dataset with two classes sampled from Riemannian Gaussian.
 
     Generate a dataset with SPD matrices drawn from two Riemannian Gaussian
@@ -105,6 +105,9 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         Mean of random values to generate matrices.
     mat_std : float, default=1.0
         Standard deviation of random values to generate matrices.
+    n_jobs : int, (default: 1)
+        The number of jobs to use for the computation. This works by computing
+        each of the class centroid in parallel. If -1 all CPUs are used.
 
     Returns
     -------
@@ -136,8 +139,8 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         n_matrices=n_matrices,
         mean=C0,
         sigma=class_disp,
-        random_state=random_state
-    )
+        random_state=random_state,
+        n_jobs=n_jobs)
     y0 = np.zeros(n_matrices)
 
     # generate dataset for class 1
@@ -147,8 +150,8 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         n_matrices=n_matrices,
         mean=C1,
         sigma=class_disp,
-        random_state=random_state
-    )
+        random_state=random_state,
+        n_jobs=n_jobs)
     y1 = np.ones(n_matrices)
 
     X = np.concatenate([X0, X1])
