@@ -347,12 +347,14 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None, n_jobs=1):
     """
 
     n_dim = mean.shape[0]
+    # dispersion is corrected w.r.t. dimension
     samples_centered = _sample_gaussian_spd_centered(
         n_matrices=n_matrices,
         n_dim=n_dim,
-        sigma=sigma,
+        sigma=sigma / np.sqrt(n_dim),
         random_state=random_state,
-        n_jobs=n_jobs)
+        n_jobs=n_jobs,
+    )
 
     # apply the parallel transport to mean on each of the samples
     mean_sqrt = sqrtm(mean)
