@@ -5,7 +5,7 @@ from .base import invsqrtm, logm
 
 
 def kernel(X, Y=None, *, Cref=None, metric='riemann', reg=1e-10):
-    r"""Calculate the kernel matrix according to the specified metric.
+    """Calculate the kernel matrix according to the specified metric.
 
     Calculates the kernel matrix K of inner products of two sets X and Y of
     SPD matrices on the tangent space of Cref according to the specified
@@ -86,8 +86,7 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
     ----------
     X : ndarray, shape (n_matrices_X, n_channels, n_channels)
         First set of SPD matrices.
-    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), \
-            default: None
+    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), default: None
         Second set of SPD matrices. If None, Y is set to X.
     Cref : None | ndarray, shape (n_channels, n_channels), default: None
         Reference point for the tangent space and inner product calculation.
@@ -136,8 +135,7 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
     ----------
     X : ndarray, shape (n_matrices_X, n_channels, n_channels)
         First set of SPD matrices.
-    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), \
-            default: None
+    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), default: None
         Second set of SPD matrices. If None, Y is set to X.
     reg : float, default: 1e-10
         Regularization parameter to mitigate numerical errors in kernel
@@ -173,8 +171,7 @@ def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
     ----------
     X : ndarray, shape (n_matrices_X, n_channels, n_channels)
         First set of SPD matrices.
-    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), \
-            default: None
+    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), default: None
         Second set of SPD matrices. If None, Y is set to X.
     reg : float, default: 1e-10
         Regularization parameter to mitigate numerical errors in kernel
