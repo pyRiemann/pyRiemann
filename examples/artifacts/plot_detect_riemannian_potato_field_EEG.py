@@ -259,15 +259,28 @@ def online_detect(t):
     return pl, pl2, pl3
 
 
-###############################################################################
-# Plot online detection (a dynamic display is required)
-
 interval_display = 1.0  # can be changed for a slower display
 
 potato = FuncAnimation(fig, online_detect,
                        frames=range(train_covs, test_covs_max),
                        interval=interval_display, blit=False, repeat=False)
+
+
+###############################################################################
+
+# Plot online detection
+
+# Plot complete visu: a dynamic display is required
 plt.show()
+
+# Plot only 10s, for animated documentation
+try:
+    from IPython.display import HTML
+except ImportError:
+    raise ImportError("Install IPython to plot animation in documentation")
+
+plt.rcParams["animation.embed_limit"] = 10
+HTML(potato.to_jshtml(fps=5, default_mode='loop'))
 
 
 ###############################################################################
