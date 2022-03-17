@@ -19,7 +19,6 @@ import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.colors import to_rgb
 from matplotlib.animation import FuncAnimation
-from IPython.display import HTML
 
 from mne.datasets import sample
 from mne.io import read_raw_fif
@@ -268,8 +267,12 @@ potato = FuncAnimation(fig, online_detect,
 plt.show()
 
 # Plot only 10s, for animated documentation
-plt.rcParams["animation.embed_limit"] = 10
-HTML(potato.to_jshtml(fps=5, default_mode='loop'))
+try:
+    from IPython.display import HTML
+    plt.rcParams["animation.embed_limit"] = 10
+    HTML(potato.to_jshtml(fps=5, default_mode='loop'))
+except ImportError:
+    raise ImportError("Install IPython to plot animation in documentation")
 
 
 ###############################################################################

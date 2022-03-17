@@ -14,7 +14,6 @@ detect artifacts in online processing. It is compared to the Riemannian Potato
 import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation
-from IPython.display import HTML
 
 from mne.datasets import eegbci
 from mne.io import read_raw_edf
@@ -275,8 +274,12 @@ potato = FuncAnimation(fig, online_detect,
 plt.show()
 
 # Plot only 10s, for animated documentation
-plt.rcParams["animation.embed_limit"] = 10
-HTML(potato.to_jshtml(fps=5, default_mode='loop'))
+try:
+    from IPython.display import HTML
+    plt.rcParams["animation.embed_limit"] = 10
+    HTML(potato.to_jshtml(fps=5, default_mode='loop'))
+except ImportError:
+    raise ImportError("Install IPython to plot animation in documentation")
 
 
 ###############################################################################
