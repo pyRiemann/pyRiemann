@@ -109,7 +109,7 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
     .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, Classification
         of covariance matrices using a Riemannian-based kernel for BCI
         applications. Neurocomputing, Elsevier, 2013, 112, pp.172-178.
-    """
+    """  # noqa
     def kernelfct(X, Cref):
         if Cref is None:
             Cref = mean_riemann(X)
@@ -149,7 +149,7 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
     Notes
     -----
     .. versionadded:: 0.2.8
-    """
+    """  # noqa
     def kernelfct(X, Cref):
         return X
 
@@ -191,7 +191,7 @@ def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
     .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, Classification
         of covariance matrices using a Riemannian-based kernel for BCI
         applications. Neurocomputing, Elsevier, 2013, 112, pp.172-178.
-    """
+    """  # noqa
     def kernelfct(X, Cref):
         X_ = np.array([logm(x) for x in X])
         return X_
