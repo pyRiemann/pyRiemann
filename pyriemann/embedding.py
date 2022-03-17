@@ -166,12 +166,11 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    ..  [1] S. Roweis and L. K. Saul, "Nonlinear Dimensionality Reduction by
-        Locally Linear Embedding", in Science, Vol 290, Issue 5500, pp.
-        2323-2326, 2000.
-    ..  [2] A. Goh and R. Vidal, "Clustering and dimensionality reduction
-        on Riemannian manifolds", 2008 IEEE Conference on Computer Vision
-        and Pattern Recognition, June 2008
+    .. [1] S. Roweis and L. K. Saul, "Nonlinear Dimensionality Reduction by
+       Locally Linear Embedding", in Science, Vol 290, Issue 5500, pp.
+       2323-2326, 2000.
+    .. [2] A. Goh and R. Vidal, "Clustering and dimensionality reduction
+       on Riemannian manifolds", CVPR 2008
     """
 
     def __init__(self, n_components=2, n_neighbors=5, metric='riemann',
