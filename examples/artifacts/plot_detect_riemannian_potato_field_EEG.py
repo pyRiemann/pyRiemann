@@ -276,10 +276,11 @@ plt.show()
 # Plot only 10s, for animated documentation
 try:
     from IPython.display import HTML
-    plt.rcParams["animation.embed_limit"] = 10
-    HTML(potato.to_jshtml(fps=5, default_mode='loop'))
 except ImportError:
     raise ImportError("Install IPython to plot animation in documentation")
+
+plt.rcParams["animation.embed_limit"] = 10
+HTML(potato.to_jshtml(fps=5, default_mode='loop'))
 
 
 ###############################################################################
