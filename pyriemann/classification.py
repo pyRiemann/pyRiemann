@@ -591,7 +591,7 @@ class SupportVectorMachine(BaseEstimator, ClassifierMixin):
 
         return self
 
-    def predict(self, X_test):
+    def predict(self, X):
         """Get the predictions.
 
         Parameters
@@ -602,10 +602,10 @@ class SupportVectorMachine(BaseEstimator, ClassifierMixin):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices, 1)
-            the prediction for each trials according to the SVC.
+            the prediction for each trial according to the SVC.
         """
         test_kernel_mat = kernel(self.data_,
-                                 X_test,
+                                 X,
                                  Cref=self.Cref,
                                  metric=self.metric)
         return self.svc_.predict(test_kernel_mat)
