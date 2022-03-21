@@ -51,7 +51,7 @@ Classification
     FgMDM
     TSclassifier
     KNearestNeighbor
-    RSVC
+    SupportVectorMachine
 
 Clustering
 ------------------
