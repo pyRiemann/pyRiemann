@@ -14,7 +14,7 @@ with different centerings and dispersions.
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pyriemann.embedding import Embedding
+from pyriemann.embedding import SpectralEmbedding
 from pyriemann.datasets import sample_gaussian_spd, generate_random_spd_matrix
 
 
@@ -50,7 +50,7 @@ labels = np.array(n_matrices*[1] + n_matrices*[2] + n_matrices*[3])
 
 ###############################################################################
 # Apply the spectral embedding over the SPD matrices
-lapl = Embedding(metric='riemann', n_components=2)
+lapl = SpectralEmbedding(metric='riemann', n_components=2)
 embd = lapl.fit_transform(X=samples)
 
 ###############################################################################

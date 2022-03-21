@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.metrics import confusion_matrix
-from ..embedding import Embedding
+from ..embedding import SpectralEmbedding, LocallyLinearEmbedding
 from . import deprecated
 
 
@@ -33,15 +33,53 @@ def plot_confusion_matrix(
     return g
 
 
-def plot_embedding(
-    X, y=None, metric="riemann", title="Spectral embedding of covariances"
-):
-    """Plot 2D embedding of covariance matrices using Diffusion maps."""
+def plot_embedding(X,
+                   y=None,
+                   *,
+                   metric="riemann",
+                   title="Embedding of covariances",
+                   embd_type='Spectral',
+                   normalize=True):
+    """Plot 2D embedding of covariance matrices using Diffusion maps.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels)
+        Labels corresponding to each matrix.
+    metric : string (default : 'riemann')
+        Metric used in the embedding. Can be {'riemann' ,'logeuclid' ,
+        'euclid'} for Locally Linear Embedding and {'riemann' ,'logeuclid' ,
+        'euclid' , 'logdet', 'kullback', 'kullback_right', 'kullback_sym'}
+        for Spectral Embedding.
+    title : str, optional (default : "Embedding of covariances")
+        Title string for plot.
+    embd_type : {'Spectral' ,'LocallyLinear'}
+        Embedding type.
+    normalize : bool, (default : True)
+        If True, the plot is normalized from -1 to +1
+
+    Returns
+    -------
+    fig : matplotlib figure
+        Figure of embedding.
+    """
     try:
         import matplotlib.pyplot as plt
     except ImportError:
         raise ImportError("Install matplotlib to plot embeddings")
-    lapl = Embedding(n_components=2, metric=metric)
+
+    if embd_type == 'Spectral':
+        lapl = SpectralEmbedding(n_components=2, metric=metric)
+    elif embd_type == 'LocallyLinear':
+        lapl = LocallyLinearEmbedding(n_components=2,
+                                      n_neighbors=X.shape[1],
+                                      metric=metric)
+    else:
+        raise ValueError("Invalid embedding type. Valid types are: 'Spectral',"
+                         " 'LocallyLinear'")
+
     embd = lapl.fit_transform(X)
 
     if y is None:
@@ -54,10 +92,11 @@ def plot_embedding(
 
     ax.set_xlabel(r"$\varphi_1$", fontsize=16)
     ax.set_ylabel(r"$\varphi_2$", fontsize=16)
-    ax.set_title(title, fontsize=16)
+    ax.set_title(f'{embd_type} {title}', fontsize=16)
     ax.grid(False)
-    ax.set_xticks([-1.0, -0.5, 0.0, +0.5, 1.0])
-    ax.set_yticks([-1.0, -0.5, 0.0, +0.5, 1.0])
+    if normalize:
+        ax.set_xticks([-1.0, -0.5, 0.0, +0.5, 1.0])
+        ax.set_yticks([-1.0, -0.5, 0.0, +0.5, 1.0])
     ax.legend(list(np.unique(y)))
 
     return fig

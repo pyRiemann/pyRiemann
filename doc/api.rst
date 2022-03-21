@@ -29,10 +29,14 @@ Embedding
 
 .. autosummary::
     :toctree: generated/
+
+    locally_linear_embedding
+    barycenter_weights
+
     :template: class.rst
 
-    Embedding
-    RiemannianLLE
+    SpectralEmbedding
+    LocallyLinearEmbedding
 
 Classification
 --------------
@@ -190,6 +194,8 @@ Kernels
 
     kernel
     kernel_riemann
+    kernel_euclid
+    kernel_logeuclid
 
 Mean
 ~~~~~~~~~~~~~~~~~~~~~~
