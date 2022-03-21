@@ -108,8 +108,8 @@ rp_epochs = make_fixed_length_epochs(  # epoch time-series
 rp_covs = Covariances(estimator='scm').transform(rp_epochs.get_data())
 
 # RP training
-t = 45               # nb of matrices for training
-train_set = range(t)
+train_covs = 45      # nb of matrices for training
+train_set = range(train_covs)
 rp.fit(rp_covs[train_set])
 
 
@@ -178,8 +178,8 @@ test_time_start = -2    # start time to display signal
 test_time_end = 5       # end time to display signal
 
 test_duration = test_time_end - test_time_start
-time_start = t * interval + test_time_start
-time_end = t * interval + test_time_end
+time_start = train_covs * interval + test_time_start
+time_end = train_covs * interval + test_time_end
 time = np.linspace(time_start, time_end, int((time_end - time_start) * sfreq),
                    endpoint=False)
 raw.filter(l_freq=0.5, h_freq=75., method='iir', verbose=False)
@@ -214,8 +214,8 @@ axp.legend(loc='upper right')
 ###############################################################################
 
 # Prepare animation for online detection
-def online_update(self):
-    global t, time, sig, labels, covs_t, covs_z, covs_p
+def online_detect(t):
+    global time, sig, labels, covs_t, covs_z, covs_p
 
     # Online artifact detection
     rp_label = rp.predict(rp_covs[np.newaxis, t])[0]
@@ -242,7 +242,6 @@ def online_update(self):
     covs_p = np.r_[covs_p, rpf_proba]
     if len(covs_p) > test_covs_visu:
         covs_t, covs_z, covs_p = covs_t[1:], covs_z[:, 1:], covs_p[1:]
-    t += 1
 
     # Update plot
     for c in range(ch_count):
@@ -265,7 +264,8 @@ def online_update(self):
 
 interval_display = 1.0  # can be changed for a slower display
 
-potato = FuncAnimation(fig, online_update, frames=test_covs_max,
+potato = FuncAnimation(fig, online_detect,
+                       frames=range(train_covs, test_covs_max),
                        interval=interval_display, blit=False, repeat=False)
 plt.show()
 
