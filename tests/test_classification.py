@@ -205,7 +205,7 @@ def test_TSclassifier_classifier_error():
         TSclassifier(clf=Covariances())
 
 
-def test_SupportVectorMachine_SVC_params():
+def test_supportvectormachine_svc_params():
     rsvc = SupportVectorMachine()
     mi = 500
     rsvc.max_iter = mi
@@ -219,7 +219,7 @@ def test_SupportVectorMachine_SVC_params():
         assert rsvc.svc_.maxiter == mi
 
 
-def test_SupportVectorMachine_SVC_params_error(get_covmats, get_labels):
+def test_supportvectormachine_svc_params_error(get_covmats, get_labels):
     n_trials, n_channels, n_classes = 6, 3, 2
     covmats = get_covmats(n_trials, n_channels)
     labels = get_labels(n_trials, n_classes)

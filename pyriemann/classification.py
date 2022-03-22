@@ -567,7 +567,7 @@ class SupportVectorMachine(BaseEstimator, ClassifierMixin):
         """Enable setting attributes for SVC subclass."""
         if 'svc_' in self.__dict__.keys():
             if name in self.svc_.__dict__.keys():
-                setattr(self.svc_, name, value)
+                self.svc_.set_params(**{name: value})
                 return
         super().__setattr__(name, value)
 
