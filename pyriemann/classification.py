@@ -500,7 +500,7 @@ class KNearestNeighbor(MDM):
         return self
 
     def predict(self, covtest):
-        """get the predictions.
+        """Get the predictions.
 
         Parameters
         ----------
@@ -564,6 +564,7 @@ class SupportVectorMachine(BaseEstimator, ClassifierMixin):
         self.svc_ = self.svc_func(kernel='precomputed', **self.svc_params)
 
     def __setattr__(self, name, value):
+        """Enable setting attributes for SVC subclass."""
         if 'svc_' in self.__dict__.keys():
             if name in self.svc_.__dict__.keys():
                 setattr(self.svc_, name, value)
