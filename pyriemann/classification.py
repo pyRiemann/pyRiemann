@@ -526,8 +526,8 @@ class SupportVectorMachine(BaseEstimator, ClassifierMixin):
 
     Parameters
     ----------
-    svc_func : SVC class, (default: sklearn.svm.SVC)
-        Class to perform the svc calculations.
+    svc_func : class, (default: sklearn.svm.SVC)
+        Class that performs the svc calculations.
     metric : {'riemann', 'euclid', 'logeuclid'}
         Metric for kernel matrix computation.
     Cref : None | ndarray, shape (n_channels, n_channels)
@@ -585,7 +585,7 @@ class SupportVectorMachine(BaseEstimator, ClassifierMixin):
         self : Riemannian SVC instance
             The SVC instance.
         """
-        kernelmat = kernel(X, X, Cref=self.Cref, metric=self.metric)
+        kernelmat = kernel(X, Cref=self.Cref, metric=self.metric)
         self.data_ = X
         self.svc_ = self.svc_.fit(kernelmat, y)
 
@@ -604,8 +604,8 @@ class SupportVectorMachine(BaseEstimator, ClassifierMixin):
         pred : ndarray of int, shape (n_matrices, 1)
             the prediction for each trial according to the SVC.
         """
-        test_kernel_mat = kernel(self.data_,
-                                 X,
+        test_kernel_mat = kernel(X,
+                                 self.data_,
                                  Cref=self.Cref,
                                  metric=self.metric)
         return self.svc_.predict(test_kernel_mat)
