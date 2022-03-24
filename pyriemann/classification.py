@@ -18,7 +18,6 @@ from .tangentspace import FGDA, TangentSpace
 
 
 class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
-
     """Classification by Minimum Distance to Mean.
 
     Classification by nearest centroid. For each of the given classes, a
@@ -152,13 +151,13 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices, 1)
-            Prediction for each matrix according to the closest centroid.
+            Predictions for each matrix according to the closest centroid.
         """
         dist = self._predict_distances(covtest)
         return self.classes_[dist.argmin(axis=1)]
 
     def transform(self, X):
-        """get the distance to each centroid.
+        """Get the distance to each centroid.
 
         Parameters
         ----------
@@ -194,7 +193,6 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
 
 class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
-
     """Classification by Minimum Distance to Mean with geodesic filtering.
 
     Apply geodesic filtering described in [1]_, and classify using MDM.
@@ -293,7 +291,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         return self
 
     def predict(self, X):
-        """get the predictions after FGDA filtering.
+        """Get the predictions after FGDA filtering.
 
         Parameters
         ----------
@@ -303,7 +301,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices, 1)
-            Prediction for each matrix according to the closest centroid.
+            Predictions for each matrix according to the closest centroid.
         """
         cov = self._fgda.transform(X)
         return self._mdm.predict(cov)
@@ -325,7 +323,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         return self._mdm.predict_proba(cov)
 
     def transform(self, X):
-        """get the distance to each centroid after FGDA filtering.
+        """Get the distance to each centroid after FGDA filtering.
 
         Parameters
         ----------
@@ -342,7 +340,6 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
 
 class TSclassifier(BaseEstimator, ClassifierMixin):
-
     """Classification in the tangent space.
 
     Project data in the tangent space and apply a classifier on the projected
@@ -423,7 +420,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         return self._pipe.predict(X)
 
     def predict_proba(self, X):
-        """get the probability.
+        """Get the probability.
 
         Parameters
         ----------
@@ -439,7 +436,6 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
 
 
 class KNearestNeighbor(MDM):
-
     """Classification by K-NearestNeighbor.
 
     Classification by nearest Neighbors. For each point of the test set, the

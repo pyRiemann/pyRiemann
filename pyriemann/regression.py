@@ -94,7 +94,7 @@ class SVR(BaseEstimator, ClassifierMixin):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices, 1)
-            the prediction for each matrix according to the SVC.
+            Predictions for each matrix according to the SVC.
         """
         test_kernel_mat = kernel(X,
                                  self.data_,
@@ -163,7 +163,7 @@ class KNNRegression(MDM):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices, 1)
-            Prediction for each matrix according to the closest centroid.
+            Predictions for each matrix according to the closest centroid.
         """
         dist = self._predict_distances(covtest)
         dist_sorted = np.sort(dist)
