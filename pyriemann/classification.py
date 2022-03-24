@@ -4,10 +4,11 @@ import numpy as np
 from scipy import stats
 
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
-from sklearn.svm import SVC
+from sklearn.svm import SVC as sklearnSVC
 from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
+
 from joblib import Parallel, delayed
 
 from .utils.kernel import kernel
@@ -518,7 +519,7 @@ class KNearestNeighbor(MDM):
         return out.ravel()
 
 
-class SupportVectorMachine(BaseEstimator, ClassifierMixin):
+class SVC(BaseEstimator, ClassifierMixin):
     """Classification by Riemannian Support Vector Machine.
 
     Support vector machine with precomputed Riemannian kernel matrix
@@ -526,8 +527,6 @@ class SupportVectorMachine(BaseEstimator, ClassifierMixin):
 
     Parameters
     ----------
-    svc_func : class, (default: sklearn.svm.SVC)
-        Class that performs the svc calculations.
     metric : {'riemann', 'euclid', 'logeuclid'}
         Metric for kernel matrix computation.
     Cref : None | ndarray, shape (n_channels, n_channels)
@@ -554,10 +553,10 @@ class SupportVectorMachine(BaseEstimator, ClassifierMixin):
         for BCI applications". In: Neurocomputing 112 (July 2013), pp. 172-178.
     """
 
-    def __init__(self, svc_func=SVC, metric='riemann', Cref=None,
+    def __init__(self, metric='riemann', Cref=None,
                  **kwargs):
         """Init."""
-        self.svc_func = svc_func
+        self.svc_func = sklearnSVC
         self.Cref = Cref
         self.metric = metric
         self.svc_params = kwargs
