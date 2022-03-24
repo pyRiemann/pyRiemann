@@ -142,7 +142,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         return dist
 
     def predict(self, covtest):
-        """get the predictions.
+        """Get the predictions.
 
         Parameters
         ----------
@@ -408,7 +408,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         return self
 
     def predict(self, X):
-        """get the predictions.
+        """Get the predictions.
 
         Parameters
         ----------
@@ -418,7 +418,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices, 1)
-            the prediction for each trials according to the closest centroid.
+            Predictions for each matrix according to the closest centroid.
         """
         return self._pipe.predict(X)
 
@@ -433,7 +433,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         Returns
         -------
         pred : ndarray of ifloat, shape (n_matrices, n_classes)
-            the prediction for each trials according to the closest centroid.
+            Predictions for each matrix according to the closest centroid.
         """
         return self._pipe.predict_proba(X)
 
@@ -511,7 +511,7 @@ class KNearestNeighbor(MDM):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices, 1)
-            the prediction for each trials according to the closest centroid.
+            Predictions for each matrix according to the closest centroid.
         """
         dist = self._predict_distances(covtest)
         neighbors_classes = self.classes_[np.argsort(dist)]
@@ -602,7 +602,7 @@ class SVC(BaseEstimator, ClassifierMixin):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices, 1)
-            the prediction for each matrix according to the SVC.
+            Predictions for each matrix according to the SVC.
         """
         test_kernel_mat = kernel(X,
                                  self.data_,

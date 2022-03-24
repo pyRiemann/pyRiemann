@@ -70,7 +70,7 @@ class SVR(BaseEstimator, ClassifierMixin):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices, 1)
-            labels corresponding to each trial.
+            labels corresponding to each matrix.
 
         Returns
         -------
@@ -94,7 +94,7 @@ class SVR(BaseEstimator, ClassifierMixin):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices, 1)
-            the prediction for each trial according to the SVC.
+            the prediction for each matrix according to the SVC.
         """
         test_kernel_mat = kernel(X,
                                  self.data_,
@@ -137,10 +137,10 @@ class KNNRegression(MDM):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
-        y : ndarray shape (n_trials, 1)
-            labels corresponding to each trial.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : ndarray shape (n_matrices, 1)
+            labels corresponding to each matrix.
 
         Returns
         -------
@@ -157,13 +157,13 @@ class KNNRegression(MDM):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        pred : ndarray of int, shape (n_trials, 1)
-            the prediction for each trials according to the closest centroid.
+        pred : ndarray of int, shape (n_matrices, 1)
+            Prediction for each matrix according to the closest centroid.
         """
         dist = self._predict_distances(covtest)
         dist_sorted = np.sort(dist)
