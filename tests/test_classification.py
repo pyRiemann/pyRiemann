@@ -2,7 +2,7 @@ from conftest import get_distances, get_means, get_metrics
 import numpy as np
 from numpy.testing import assert_array_equal
 from pyriemann.classification import (MDM, FgMDM, KNearestNeighbor,
-                                      TSclassifier, SupportVectorMachine)
+                                      TSclassifier, SVC)
 
 from pyriemann.estimation import Covariances
 import pytest
@@ -10,7 +10,7 @@ from pytest import approx
 from sklearn.dummy import DummyClassifier
 
 
-rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SupportVectorMachine]
+rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC]
 
 
 @pytest.mark.parametrize("classif", rclf)
@@ -159,7 +159,7 @@ def test_metric_str(classif, metric, get_covmats, get_labels):
     covmats = get_covmats(n_trials, n_channels)
     clf = classif(metric=metric)
 
-    if classif is SupportVectorMachine and metric not in ['riemann', 'euclid',
+    if classif is SVC and metric not in ['riemann', 'euclid',
                                                           'logeuclid']:
         with pytest.raises(ValueError):
             clf.fit(covmats, labels).predict(covmats)
@@ -206,7 +206,7 @@ def test_TSclassifier_classifier_error():
 
 
 def test_supportvectormachine_svc_params():
-    rsvc = SupportVectorMachine()
+    rsvc = SVC()
     mi = 500
     rsvc.max_iter = mi
     assert rsvc.svc_.max_iter == mi
@@ -225,7 +225,7 @@ def test_supportvectormachine_svc_params_error(get_covmats, get_labels):
     labels = get_labels(n_trials, n_classes)
 
     with pytest.raises(TypeError):
-        SupportVectorMachine(C='hello').fit(covmats, labels)
+        SVC(C='hello').fit(covmats, labels)
 
     with pytest.raises(TypeError):
-        SupportVectorMachine(foo=5)
+        SVC(foo=5)
