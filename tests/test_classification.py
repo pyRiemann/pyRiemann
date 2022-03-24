@@ -159,8 +159,7 @@ def test_metric_str(classif, metric, get_covmats, get_labels):
     covmats = get_covmats(n_trials, n_channels)
     clf = classif(metric=metric)
 
-    if classif is SVC and metric not in ['riemann', 'euclid',
-                                                          'logeuclid']:
+    if classif is SVC and metric not in ['riemann', 'euclid', 'logeuclid']:
         with pytest.raises(ValueError):
             clf.fit(covmats, labels).predict(covmats)
 
