@@ -147,7 +147,7 @@ class KNNRegression(MDM):
         self : NearestNeighbor instance
             The NearestNeighbor instance.
         """
-        self.classes_ = y
+        self.values_ = y
         self.covmeans_ = X
 
         return self
@@ -167,8 +167,8 @@ class KNNRegression(MDM):
         """
         dist = self._predict_distances(covtest)
         dist_sorted = np.sort(dist)
-        neighbors_classes = self.classes_[np.argsort(dist)]
+        neighbors_values = self.values_[np.argsort(dist)]
         softmax_dist = softmax(-dist_sorted[:, 0:self.n_neighbors])
-        knn_classes = neighbors_classes[:, 0:self.n_neighbors]
-        out = np.sum(knn_classes*softmax_dist, axis=1)
+        knn_values = neighbors_values[:, 0:self.n_neighbors]
+        out = np.sum(knn_values*softmax_dist, axis=1)
         return out
