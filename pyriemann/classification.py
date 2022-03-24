@@ -97,10 +97,10 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray shape (n_matrices, 1)
-            labels corresponding to each trial.
+        y : ndarray, shape (n_matrices, 1)
+            Labels corresponding to each matrix.
         sample_weight : None | ndarray shape (n_matrices, 1)
-            the weights of each sample. if None, each sample is treated with
+            Weights of each matrix. If None, each matrix is treated with
             equal weights.
 
         Returns
@@ -152,7 +152,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices, 1)
-            the prediction for each trials according to the closest centroid.
+            Prediction for each matrix according to the closest centroid.
         """
         dist = self._predict_distances(covtest)
         return self.classes_[dist.argmin(axis=1)]
@@ -276,8 +276,8 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray shape (n_matrices, 1)
-            labels corresponding to each trial.
+        y : ndarray, shape (n_matrices, 1)
+            Labels corresponding to each matrix.
 
         Returns
         -------
@@ -303,7 +303,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices, 1)
-            the prediction for each trials according to the closest centroid.
+            Prediction for each matrix according to the closest centroid.
         """
         cov = self._fgda.transform(X)
         return self._mdm.predict(cov)
@@ -393,8 +393,8 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray shape (n_matrices, 1)
-            labels corresponding to each trial.
+        y : ndarray, shape (n_matrices, 1)
+            Labels corresponding to each matrix.
 
         Returns
         -------
@@ -487,8 +487,8 @@ class KNearestNeighbor(MDM):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray shape (n_matrices, 1)
-            labels corresponding to each trial.
+        y : ndarray, shape (n_matrices, 1)
+            Labels corresponding to each matrix.
 
         Returns
         -------
@@ -540,7 +540,7 @@ class SVC(BaseEstimator, ClassifierMixin):
     svc_ : svc_func instance
         Fitted SVC with precomputed Riemannian kernel matrix.
     data_ : ndarray, shape (n_matrices, n_channels, n_channels)
-        Training data.
+        If fitted, training data.
 
     Notes
     -----
@@ -578,7 +578,7 @@ class SVC(BaseEstimator, ClassifierMixin):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices, 1)
-            labels corresponding to each trial.
+            labels corresponding to each matrix.
 
         Returns
         -------
@@ -602,7 +602,7 @@ class SVC(BaseEstimator, ClassifierMixin):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices, 1)
-            the prediction for each trial according to the SVC.
+            the prediction for each matrix according to the SVC.
         """
         test_kernel_mat = kernel(X,
                                  self.data_,

@@ -220,9 +220,9 @@ def test_supportvectormachine_svc_params():
 
 
 def test_supportvectormachine_svc_params_error(get_covmats, get_labels):
-    n_trials, n_channels, n_classes = 6, 3, 2
-    covmats = get_covmats(n_trials, n_channels)
-    labels = get_labels(n_trials, n_classes)
+    n_matrices, n_channels, n_classes = 6, 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+    labels = get_labels(n_matrices, n_classes)
 
     with pytest.raises(TypeError):
         SVC(C='hello').fit(covmats, labels)
