@@ -32,7 +32,7 @@ class SVR(BaseEstimator, ClassifierMixin):
     svc_ : svc_func instance
         Fitted SVC with precomputed Riemannian kernel matrix.
     data_ : ndarray, shape (n_matrices, n_channels, n_channels)
-        Training data.
+        If fitted, training data.
 
     Notes
     -----
@@ -74,8 +74,8 @@ class SVR(BaseEstimator, ClassifierMixin):
 
         Returns
         -------
-        self : Riemannian SVC instance
-            The SVC instance.
+        self : Riemannian SVR instance
+            The SVR instance.
         """
         kernelmat = kernel(X, Cref=self.Cref, metric=self.metric)
         self.data_ = X
@@ -93,8 +93,8 @@ class SVR(BaseEstimator, ClassifierMixin):
 
         Returns
         -------
-        pred : ndarray of int, shape (n_matrices, 1)
-            Predictions for each matrix according to the SVC.
+        pred : ndarray, shape (n_matrices, 1)
+            Predictions for each matrix according to the SVR.
         """
         test_kernel_mat = kernel(X,
                                  self.data_,
@@ -106,7 +106,7 @@ class SVR(BaseEstimator, ClassifierMixin):
 class KNNRegression(MDM):
     """Regression by K-Nearest-Neighbors.
 
-    Reression by nearest Neighbors. For each point of the test set, the
+    Regression by nearest Neighbors. For each point of the test set, the
     pairwise distance to each element of the training set is estimated. The
     value is calculated according to the softmax average w.r.t. distance of
     the k nearest neighbors.
@@ -168,7 +168,7 @@ class KNNRegression(MDM):
         dist = self._predict_distances(covtest)
         dist_sorted = np.sort(dist)
         neighbors_values = self.values_[np.argsort(dist)]
-        softmax_dist = softmax(-dist_sorted[:, 0:self.n_neighbors])
+        softmax_dist = softmax(-dist_sorted[:, 0:self.n_neighbors]**2)
         knn_values = neighbors_values[:, 0:self.n_neighbors]
         out = np.sum(knn_values*softmax_dist, axis=1)
         return out
