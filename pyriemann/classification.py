@@ -4,6 +4,7 @@ import numpy as np
 from scipy import stats
 
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
+from sklearn.exceptions import NotFittedError
 from sklearn.svm import SVC as sklearnSVC
 from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
@@ -549,8 +550,7 @@ class SVC(BaseEstimator, ClassifierMixin):
         for BCI applications". In: Neurocomputing 112 (July 2013), pp. 172-178.
     """
 
-    def __init__(self, metric='riemann', Cref=None,
-                 **kwargs):
+    def __init__(self, metric='riemann', Cref=None, **kwargs):
         """Init."""
         self.svc_func = sklearnSVC
         self.Cref = Cref
@@ -605,3 +605,29 @@ class SVC(BaseEstimator, ClassifierMixin):
                                  Cref=self.Cref,
                                  metric=self.metric)
         return self.svc_.predict(test_kernel_mat)
+
+    def predict_proba(self, X):
+        """Compute probabilities of possible outcomes for samples in X.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+
+        Returns
+        -------
+        prob : ndarray, shape (n_matrices, n_classes)
+            the softmax probabilities for each class.
+        """
+        test_kernel_mat = kernel(X,
+                                 self.data_,
+                                 Cref=self.Cref,
+                                 metric=self.metric)
+
+        if self.probA_.size == 0 or self.probB_.size == 0:
+            raise NotFittedError(
+                "predict_proba is not available when fitted with "
+                "probability=False"
+            )
+
+        return self.svc_.predict_proba(test_kernel_mat)

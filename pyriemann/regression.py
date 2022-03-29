@@ -103,7 +103,7 @@ class SVR(BaseEstimator, ClassifierMixin):
         return self.svr_.predict(test_kernel_mat)
 
 
-class KNNRegression(MDM):
+class KNearestNeighborRegressor(MDM):
     """Regression by K-Nearest-Neighbors.
 
     Regression by nearest Neighbors. For each point of the test set, the
@@ -152,7 +152,7 @@ class KNNRegression(MDM):
 
         return self
 
-    def predict(self, covtest):
+    def predict(self, X):
         """Get the predictions.
 
         Parameters
@@ -165,7 +165,7 @@ class KNNRegression(MDM):
         pred : ndarray of int, shape (n_matrices, 1)
             Predictions for each matrix according to the closest centroid.
         """
-        dist = self._predict_distances(covtest)
+        dist = self._predict_distances(X)
         dist_sorted = np.sort(dist)
         neighbors_values = self.values_[np.argsort(dist)]
         softmax_dist = softmax(-dist_sorted[:, 0:self.n_neighbors]**2)
