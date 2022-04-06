@@ -208,14 +208,14 @@ def test_supportvectormachine_svc_params():
     rsvc = SVC()
     mi = 500
     rsvc.max_iter = mi
-    assert rsvc.svc_.max_iter == mi
+    assert rsvc.svc.max_iter == mi
     with pytest.raises(AttributeError):
         assert rsvc.max_iter == mi
 
     rsvc.maxiter = mi
     assert rsvc.maxiter == mi
     with pytest.raises(AttributeError):
-        assert rsvc.svc_.maxiter == mi
+        assert rsvc.svc.maxiter == mi
 
 
 def test_supportvectormachine_svc_params_error(get_covmats, get_labels):
