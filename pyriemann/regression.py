@@ -2,7 +2,6 @@
 
 import numpy as np
 
-from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.svm import SVR as sklearnSVR
 from sklearn.utils.extmath import softmax
 
