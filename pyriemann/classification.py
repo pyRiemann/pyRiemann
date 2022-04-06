@@ -530,12 +530,12 @@ class SVC(BaseEstimator, ClassifierMixin):
         Reference point for kernel matrix computation. If None, the mean of
         the training data according to the metric is used.
     **kwargs
-        Keyword arguments passed to svc_func.
+        Keyword arguments passed to sklearn.svc.SVC.
 
     Attributes
     ----------
-    svc_ : svc_func instance
-        Fitted SVC with precomputed Riemannian kernel matrix.
+    svc : sklearn.svc.SVC instance
+        SVC instance with precomputed kernel preset.
     data_ : ndarray, shape (n_matrices, n_channels, n_channels)
         If fitted, training data.
 
@@ -552,17 +552,15 @@ class SVC(BaseEstimator, ClassifierMixin):
 
     def __init__(self, metric='riemann', Cref=None, **kwargs):
         """Init."""
-        self.svc_func = sklearnSVC
         self.Cref = Cref
         self.metric = metric
-        self.svc_params = kwargs
-        self.svc_ = self.svc_func(kernel='precomputed', **self.svc_params)
+        self.svc = sklearnSVC(kernel='precomputed', **kwargs)
 
     def __setattr__(self, name, value):
         """Enable setting attributes for SVC subclass."""
-        if 'svc_' in self.__dict__.keys():
-            if name in self.svc_.get_params():
-                self.svc_.set_params(**{name: value})
+        if 'svc' in self.__dict__.keys():
+            if name in self.svc.get_params():
+                self.svc.set_params(**{name: value})
                 return
         super().__setattr__(name, value)
 
@@ -583,7 +581,7 @@ class SVC(BaseEstimator, ClassifierMixin):
         """
         kernelmat = kernel(X, Cref=self.Cref, metric=self.metric)
         self.data_ = X
-        self.svc_ = self.svc_.fit(kernelmat, y)
+        self.svc = self.svc.fit(kernelmat, y)
 
         return self
 
@@ -604,7 +602,7 @@ class SVC(BaseEstimator, ClassifierMixin):
                                  self.data_,
                                  Cref=self.Cref,
                                  metric=self.metric)
-        return self.svc_.predict(test_kernel_mat)
+        return self.svc.predict(test_kernel_mat)
 
     def predict_proba(self, X):
         """Compute probabilities of possible outcomes for samples in X.
@@ -630,4 +628,4 @@ class SVC(BaseEstimator, ClassifierMixin):
                 "probability=False"
             )
 
-        return self.svc_.predict_proba(test_kernel_mat)
+        return self.svc.predict_proba(test_kernel_mat)

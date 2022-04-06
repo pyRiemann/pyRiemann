@@ -63,7 +63,7 @@ Regression
     :template: class.rst
 
     SVR
-    KNNRegression
+    KNearestNeighborRegressor
 
 Clustering
 ------------------

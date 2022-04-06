@@ -25,12 +25,12 @@ class SVR(BaseEstimator, ClassifierMixin):
         Reference point for kernel matrix computation. If None, the mean of
         the training data according to the metric is used.
     **kwargs
-        Keyword arguments passed to svc_func.
+        Keyword arguments passed to sklearn.svm.SVR.
 
     Attributes
     ----------
-    svc_ : svc_func instance
-        Fitted SVC with precomputed Riemannian kernel matrix.
+    svr : sklearn.svm.SVR instance
+        SVR instance with precomputed kernel preset.
     data_ : ndarray, shape (n_matrices, n_channels, n_channels)
         If fitted, training data.
 
@@ -47,17 +47,15 @@ class SVR(BaseEstimator, ClassifierMixin):
 
     def __init__(self, metric='riemann', Cref=None, **kwargs):
         """Init."""
-        self.svr_func = sklearnSVR
         self.Cref = Cref
         self.metric = metric
-        self.svr_params = kwargs
-        self.svr_ = self.svr_func(kernel='precomputed', **self.svr_params)
+        self.svr = sklearnSVR(kernel='precomputed', **kwargs)
 
     def __setattr__(self, name, value):
-        """Enable setting attributes for SVC subclass."""
-        if 'svr_' in self.__dict__.keys():
-            if name in self.svr_.get_params():
-                self.svr_.set_params(**{name: value})
+        """Enable setting attributes for SVR subclass."""
+        if 'svr' in self.__dict__.keys():
+            if name in self.svr.get_params():
+                self.svr.set_params(**{name: value})
                 return
         super().__setattr__(name, value)
 
@@ -78,7 +76,7 @@ class SVR(BaseEstimator, ClassifierMixin):
         """
         kernelmat = kernel(X, Cref=self.Cref, metric=self.metric)
         self.data_ = X
-        self.svr_ = self.svr_.fit(kernelmat, y)
+        self.svr = self.svr.fit(kernelmat, y)
 
         return self
 
@@ -99,7 +97,7 @@ class SVR(BaseEstimator, ClassifierMixin):
                                  self.data_,
                                  Cref=self.Cref,
                                  metric=self.metric)
-        return self.svr_.predict(test_kernel_mat)
+        return self.svr.predict(test_kernel_mat)
 
 
 class KNearestNeighborRegressor(MDM):
@@ -109,6 +107,8 @@ class KNearestNeighborRegressor(MDM):
     pairwise distance to each element of the training set is estimated. The
     value is calculated according to the softmax average w.r.t. distance of
     the k nearest neighbors.
+
+    DISCLAIMER: This is an unpublished algorithm.
 
     Parameters
     ----------
