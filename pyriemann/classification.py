@@ -4,7 +4,6 @@ import numpy as np
 from scipy import stats
 
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
-from sklearn.exceptions import NotFittedError
 from sklearn.svm import SVC as sklearnSVC
 from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
@@ -516,7 +515,7 @@ class KNearestNeighbor(MDM):
         return out.ravel()
 
 
-class SVC(BaseEstimator, ClassifierMixin):
+class SVC(sklearnSVC):
     """Classification by Riemannian Support Vector Machine.
 
     Support vector machine with precomputed Riemannian kernel matrix
@@ -529,13 +528,56 @@ class SVC(BaseEstimator, ClassifierMixin):
     Cref : None | ndarray, shape (n_channels, n_channels)
         Reference point for kernel matrix computation. If None, the mean of
         the training data according to the metric is used.
-    **kwargs
-        Keyword arguments passed to sklearn.svc.SVC.
+    C : float, default=1.0
+        Regularization parameter. The strength of the regularization is
+        inversely proportional to C. Must be strictly positive. The penalty
+        is a squared l2 penalty.
+    shrinking : bool, default=True
+        Whether to use the shrinking heuristic.
+    probability : bool, default=False
+        Whether to enable probability estimates. This must be enabled prior
+        to calling `fit`, will slow down that method as it internally uses
+        5-fold cross-validation, and `predict_proba` may be inconsistent with
+        `predict`. Read more in the :ref:`User Guide <scores_probabilities>`.
+    tol : float, default=1e-3
+        Tolerance for stopping criterion.
+    cache_size : float, default=200
+        Specify the size of the kernel cache (in MB).
+    class_weight : dict or 'balanced', default=None
+        Set the parameter C of class i to class_weight[i]*C for
+        SVC. If not given, all classes are supposed to have
+        weight one.
+        The "balanced" mode uses the values of y to automatically adjust
+        weights inversely proportional to class frequencies in the input data
+        as ``n_samples / (n_classes * np.bincount(y))``.
+    verbose : bool, default=False
+        Enable verbose output. Note that this setting takes advantage of a
+        per-process runtime setting in libsvm that, if enabled, may not work
+        properly in a multithreaded context.
+    max_iter : int, default=-1
+        Hard limit on iterations within solver, or -1 for no limit.
+    decision_function_shape : {'ovo', 'ovr'}, default='ovr'
+        Whether to return a one-vs-rest ('ovr') decision function of shape
+        (n_samples, n_classes) as all other classifiers, or the original
+        one-vs-one ('ovo') decision function of libsvm which has shape
+        (n_samples, n_classes * (n_classes - 1) / 2). However, note that
+        internally, one-vs-one ('ovo') is always used as a multi-class strategy
+        to train models; an ovr matrix is only constructed from the ovo matrix.
+        The parameter is ignored for binary classification.
+    break_ties : bool, default=False
+        If true, ``decision_function_shape='ovr'``, and number of classes > 2,
+        :term:`predict` will break ties according to the confidence values of
+        :term:`decision_function`; otherwise the first class among the tied
+        classes is returned. Please note that breaking ties comes at a
+        relatively high computational cost compared to a simple predict.
+    random_state : int, RandomState instance or None, default=None
+        Controls the pseudo random number generation for shuffling the data for
+        probability estimates. Ignored when `probability` is False.
+        Pass an int for reproducible output across multiple function calls.
+        See :term:`Glossary <random_state>`.
 
     Attributes
     ----------
-    svc : sklearn.svc.SVC instance
-        SVC instance with precomputed kernel preset.
     data_ : ndarray, shape (n_matrices, n_channels, n_channels)
         If fitted, training data.
 
@@ -550,21 +592,39 @@ class SVC(BaseEstimator, ClassifierMixin):
         for BCI applications". In: Neurocomputing 112 (July 2013), pp. 172-178.
     """
 
-    def __init__(self, metric='riemann', Cref=None, **kwargs):
+    def __init__(self,
+                 *,
+                 metric='riemann',
+                 Cref=None,
+                 C=1.0,
+                 shrinking=True,
+                 probability=False,
+                 tol=1e-3,
+                 cache_size=200,
+                 class_weight=None,
+                 verbose=False,
+                 max_iter=-1,
+                 decision_function_shape="ovr",
+                 break_ties=False,
+                 random_state=None):
         """Init."""
         self.Cref = Cref
         self.metric = metric
-        self.svc = sklearnSVC(kernel='precomputed', **kwargs)
+        super().__init__(kernel='precomputed',
+                         C=C,
+                         shrinking=shrinking,
+                         probability=probability,
+                         tol=tol,
+                         cache_size=cache_size,
+                         class_weight=class_weight,
+                         verbose=verbose,
+                         max_iter=max_iter,
+                         decision_function_shape=decision_function_shape,
+                         break_ties=break_ties,
+                         random_state=random_state
+                         )
 
-    def __setattr__(self, name, value):
-        """Enable setting attributes for SVC subclass."""
-        if 'svc' in self.__dict__.keys():
-            if name in self.svc.get_params():
-                self.svc.set_params(**{name: value})
-                return
-        super().__setattr__(name, value)
-
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         """Fit.
 
         Parameters
@@ -573,6 +633,9 @@ class SVC(BaseEstimator, ClassifierMixin):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices, 1)
             labels corresponding to each matrix.
+        sample_weight : ndarray, shape (n_samples,), default=None
+            Per-sample weights. Rescale C per sample. Higher weights
+            force the classifier to put more emphasis on these points.
 
         Returns
         -------
@@ -581,8 +644,7 @@ class SVC(BaseEstimator, ClassifierMixin):
         """
         kernelmat = kernel(X, Cref=self.Cref, metric=self.metric)
         self.data_ = X
-        self.svc = self.svc.fit(kernelmat, y)
-
+        super().fit(kernelmat, y)
         return self
 
     def predict(self, X):
@@ -602,7 +664,7 @@ class SVC(BaseEstimator, ClassifierMixin):
                                  self.data_,
                                  Cref=self.Cref,
                                  metric=self.metric)
-        return self.svc.predict(test_kernel_mat)
+        return super().predict(test_kernel_mat)
 
     def predict_proba(self, X):
         """Compute probabilities of possible outcomes for samples in X.
@@ -622,10 +684,4 @@ class SVC(BaseEstimator, ClassifierMixin):
                                  Cref=self.Cref,
                                  metric=self.metric)
 
-        if self.probA_.size == 0 or self.probB_.size == 0:
-            raise NotFittedError(
-                "predict_proba is not available when fitted with "
-                "probability=False"
-            )
-
-        return self.svc.predict_proba(test_kernel_mat)
+        return super().predict_proba(test_kernel_mat)

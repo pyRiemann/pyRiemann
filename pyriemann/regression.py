@@ -10,7 +10,7 @@ from .utils.kernel import kernel
 from .classification import MDM
 
 
-class SVR(BaseEstimator, ClassifierMixin):
+class SVR(sklearnSVR):
     """Regression by Riemannian Support Vector Machine.
 
     Support vector machine regression with precomputed Riemannian kernel matrix
@@ -24,13 +24,30 @@ class SVR(BaseEstimator, ClassifierMixin):
     Cref : None | ndarray, shape (n_channels, n_channels)
         Reference point for kernel matrix computation. If None, the mean of
         the training data according to the metric is used.
-    **kwargs
-        Keyword arguments passed to sklearn.svm.SVR.
+    tol : float, default=1e-3
+        Tolerance for stopping criterion.
+    C : float, default=1.0
+        Regularization parameter. The strength of the regularization is
+        inversely proportional to C. Must be strictly positive.
+        The penalty is a squared l2 penalty.
+    epsilon : float, default=0.1
+         Epsilon in the epsilon-SVR model. It specifies the epsilon-tube
+         within which no penalty is associated in the training loss function
+         with points predicted within a distance epsilon from the actual
+         value.
+    shrinking : bool, default=True
+        Whether to use the shrinking heuristic.
+    cache_size : float, default=200
+        Specify the size of the kernel cache (in MB).
+    verbose : bool, default=False
+        Enable verbose output. Note that this setting takes advantage of a
+        per-process runtime setting in libsvm that, if enabled, may not work
+        properly in a multithreaded context.
+    max_iter : int, default=-1
+        Hard limit on iterations within solver, or -1 for no limit.
 
     Attributes
     ----------
-    svr : sklearn.svm.SVR instance
-        SVR instance with precomputed kernel preset.
     data_ : ndarray, shape (n_matrices, n_channels, n_channels)
         If fitted, training data.
 
@@ -45,21 +62,31 @@ class SVR(BaseEstimator, ClassifierMixin):
         for BCI applications". In: Neurocomputing 112 (July 2013), pp. 172-178.
     """
 
-    def __init__(self, metric='riemann', Cref=None, **kwargs):
+    def __init__(self,
+                 *,
+                 metric='riemann',
+                 Cref=None,
+                 tol=1e-3,
+                 C=1.0,
+                 epsilon=0.1,
+                 shrinking=True,
+                 cache_size=200,
+                 verbose=False,
+                 max_iter=-1,
+                 ):
         """Init."""
         self.Cref = Cref
         self.metric = metric
-        self.svr = sklearnSVR(kernel='precomputed', **kwargs)
+        super().__init__(kernel='precomputed',
+                         tol=tol,
+                         C=C,
+                         epsilon=epsilon,
+                         shrinking=shrinking,
+                         cache_size=cache_size,
+                         verbose=verbose,
+                         max_iter=max_iter)
 
-    def __setattr__(self, name, value):
-        """Enable setting attributes for SVR subclass."""
-        if 'svr' in self.__dict__.keys():
-            if name in self.svr.get_params():
-                self.svr.set_params(**{name: value})
-                return
-        super().__setattr__(name, value)
-
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         """Fit.
 
         Parameters
@@ -68,6 +95,9 @@ class SVR(BaseEstimator, ClassifierMixin):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices, 1)
             labels corresponding to each matrix.
+        sample_weight : ndarray, shape (n_samples,), default=None
+            Per-sample weights. Rescale C per sample. Higher weights
+            force the classifier to put more emphasis on these points.
 
         Returns
         -------
@@ -76,7 +106,7 @@ class SVR(BaseEstimator, ClassifierMixin):
         """
         kernelmat = kernel(X, Cref=self.Cref, metric=self.metric)
         self.data_ = X
-        self.svr = self.svr.fit(kernelmat, y)
+        super().fit(kernelmat, y)
 
         return self
 
@@ -97,7 +127,7 @@ class SVR(BaseEstimator, ClassifierMixin):
                                  self.data_,
                                  Cref=self.Cref,
                                  metric=self.metric)
-        return self.svr.predict(test_kernel_mat)
+        return super().predict(test_kernel_mat)
 
 
 class KNearestNeighborRegressor(MDM):
