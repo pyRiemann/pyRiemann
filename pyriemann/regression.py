@@ -45,8 +45,7 @@ class SVR(BaseEstimator, ClassifierMixin):
         for BCI applications". In: Neurocomputing 112 (July 2013), pp. 172-178.
     """
 
-    def __init__(self, metric='riemann', Cref=None,
-                 **kwargs):
+    def __init__(self, metric='riemann', Cref=None, **kwargs):
         """Init."""
         self.svr_func = sklearnSVR
         self.Cref = Cref
@@ -57,7 +56,7 @@ class SVR(BaseEstimator, ClassifierMixin):
     def __setattr__(self, name, value):
         """Enable setting attributes for SVC subclass."""
         if 'svr_' in self.__dict__.keys():
-            if name in self.svr_.__dict__.keys():
+            if name in self.svr_.get_params():
                 self.svr_.set_params(**{name: value})
                 return
         super().__setattr__(name, value)
@@ -93,7 +92,7 @@ class SVR(BaseEstimator, ClassifierMixin):
 
         Returns
         -------
-        pred : ndarray, shape (n_matrices, 1)
+        pred : ndarray, shape (n_matrices,)
             Predictions for each matrix according to the SVR.
         """
         test_kernel_mat = kernel(X,
@@ -124,13 +123,17 @@ class KNearestNeighborRegressor(MDM):
     classes_ : list
         list of classes.
 
+    Notes
+    -----
+    .. versionadded:: 0.2.8
+
     """
 
     def __init__(self, n_neighbors=5, metric='riemann'):
         """Init."""
         # store params for cloning purpose
         self.n_neighbors = n_neighbors
-        MDM.__init__(self, metric=metric)
+        super().__init__(metric=metric)
 
     def fit(self, X, y):
         """Fit (store the training data).
@@ -162,7 +165,7 @@ class KNearestNeighborRegressor(MDM):
 
         Returns
         -------
-        pred : ndarray of int, shape (n_matrices, 1)
+        pred : ndarray of int, shape (n_matrices,)
             Predictions for each matrix according to the closest centroid.
         """
         dist = self._predict_distances(X)

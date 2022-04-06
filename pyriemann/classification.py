@@ -561,7 +561,7 @@ class SVC(BaseEstimator, ClassifierMixin):
     def __setattr__(self, name, value):
         """Enable setting attributes for SVC subclass."""
         if 'svc_' in self.__dict__.keys():
-            if name in self.svc_.__dict__.keys():
+            if name in self.svc_.get_params():
                 self.svc_.set_params(**{name: value})
                 return
         super().__setattr__(name, value)
@@ -597,7 +597,7 @@ class SVC(BaseEstimator, ClassifierMixin):
 
         Returns
         -------
-        pred : ndarray of int, shape (n_matrices, 1)
+        pred : ndarray of int, shape (n_matrices,)
             Predictions for each matrix according to the SVC.
         """
         test_kernel_mat = kernel(X,
@@ -617,7 +617,7 @@ class SVC(BaseEstimator, ClassifierMixin):
         Returns
         -------
         prob : ndarray, shape (n_matrices, n_classes)
-            the softmax probabilities for each class.
+            the probabilities for each class.
         """
         test_kernel_mat = kernel(X,
                                  self.data_,
