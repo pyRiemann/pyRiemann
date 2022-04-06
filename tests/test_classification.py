@@ -206,16 +206,13 @@ def test_TSclassifier_classifier_error():
 
 def test_supportvectormachine_svc_params():
     rsvc = SVC()
-    mi = 500
-    rsvc.max_iter = mi
-    assert rsvc.svc.max_iter == mi
-    with pytest.raises(AttributeError):
-        assert rsvc.max_iter == mi
+    assert rsvc.metric == 'riemann'
 
-    rsvc.maxiter = mi
-    assert rsvc.maxiter == mi
-    with pytest.raises(AttributeError):
-        assert rsvc.svc.maxiter == mi
+    rsvc.set_params(**{'metric': 'logeuclid'})
+    assert rsvc.metric == 'logeuclid'
+    
+    rsvc.set_params(**{'max_iter': 501})
+    assert rsvc.max_iter == 501
 
 
 def test_supportvectormachine_svc_params_error(get_covmats, get_labels):
