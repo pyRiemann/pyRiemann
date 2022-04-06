@@ -210,7 +210,7 @@ def test_supportvectormachine_svc_params():
 
     rsvc.set_params(**{'metric': 'logeuclid'})
     assert rsvc.metric == 'logeuclid'
-    
+
     rsvc.set_params(**{'max_iter': 501})
     assert rsvc.max_iter == 501
 
