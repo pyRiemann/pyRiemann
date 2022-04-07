@@ -49,7 +49,7 @@ def test_metric_dict_error(regres, mean, dist, get_covmats, get_targets):
 @pytest.mark.parametrize("mean", get_means())
 @pytest.mark.parametrize("dist", get_distances())
 def test_metric_dist(regres, mean, dist, get_covmats, get_targets):
-    n_matrices, n_channels, n_classes = 4, 3, 2
+    n_matrices, n_channels = 4, 3
     targets = get_targets(n_matrices)
     covmats = get_covmats(n_matrices, n_channels)
     clf = regres(metric={"mean": mean, "distance": dist})
@@ -60,7 +60,7 @@ def test_metric_dist(regres, mean, dist, get_covmats, get_targets):
 @pytest.mark.parametrize("metric", [42, "faulty", {"foo": "bar"}])
 def test_metric_wrong_keys(regres, metric, get_covmats, get_targets):
     with pytest.raises((TypeError, KeyError, ValueError)):
-        n_matrices, n_channels, n_classes = 6, 3, 2
+        n_matrices, n_channels = 6, 3
         targets = get_targets(n_matrices)
         covmats = get_covmats(n_matrices, n_channels)
         clf = regres(metric=metric)
@@ -70,7 +70,7 @@ def test_metric_wrong_keys(regres, metric, get_covmats, get_targets):
 @pytest.mark.parametrize("regres", regs)
 @pytest.mark.parametrize("metric", get_metrics())
 def test_metric_str(regres, metric, get_covmats, get_targets):
-    n_matrices, n_channels, n_classes = 6, 3, 2
+    n_matrices, n_channels = 6, 3
     targets = get_targets(n_matrices)
     covmats = get_covmats(n_matrices, n_channels)
     clf = regres(metric=metric)
@@ -86,7 +86,7 @@ def test_metric_str(regres, metric, get_covmats, get_targets):
 @pytest.mark.parametrize("dist", ["not_real", 42])
 def test_knn_dict_dist(dist, get_covmats, get_targets):
     with pytest.raises(KeyError):
-        n_matrices, n_channels, n_classes = 6, 3, 2
+        n_matrices, n_channels = 6, 3
         targets = get_targets(n_matrices)
         covmats = get_covmats(n_matrices, n_channels)
         clf = KNearestNeighborRegressor(metric={"distance": dist})
@@ -95,7 +95,7 @@ def test_knn_dict_dist(dist, get_covmats, get_targets):
 
 def test_1NN(get_covmats, get_targets):
     """Test KNearestNeighborRegressor with K=1"""
-    n_matrices, n_channels, n_classes = 9, 3, 3
+    n_matrices, n_channels = 9, 3
     covmats = get_covmats(n_matrices, n_channels)
     targets = get_targets(n_matrices)
 
@@ -117,7 +117,7 @@ def test_supportvectormachine_svr_params():
 
 
 def test_supportvectormachine_svc_params_error(get_covmats, get_targets):
-    n_matrices, n_channels, n_classes = 6, 3, 2
+    n_matrices, n_channels = 6, 3
     covmats = get_covmats(n_matrices, n_channels)
     targets = get_targets(n_matrices)
 

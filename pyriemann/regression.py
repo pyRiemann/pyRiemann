@@ -149,6 +149,10 @@ class KNearestNeighborRegressor(MDM):
 
     Attributes
     ----------
+    values_ : ndarray, shape (n_matrices,)
+        List of training data target values.
+    covmeans_ : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices of training data.
 
     Notes
     -----
