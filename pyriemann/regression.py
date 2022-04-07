@@ -149,8 +149,6 @@ class KNearestNeighborRegressor(MDM):
 
     Attributes
     ----------
-    classes_ : list
-        list of classes.
 
     Notes
     -----
@@ -171,8 +169,8 @@ class KNearestNeighborRegressor(MDM):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray shape (n_matrices, 1)
-            labels corresponding to each matrix.
+        y : ndarray, shape (n_matrices,)
+            Target value for each matrix.
 
         Returns
         -------
@@ -194,8 +192,8 @@ class KNearestNeighborRegressor(MDM):
 
         Returns
         -------
-        pred : ndarray of int, shape (n_matrices,)
-            Predictions for each matrix according to the closest centroid.
+        pred : ndarray, shape (n_matrices,)
+            Predictions for each matrix according to the closest neighbors.
         """
         dist = self._predict_distances(X)
         dist_sorted = np.sort(dist)

@@ -11,20 +11,19 @@ regs = [SVR, KNearestNeighborRegressor]
 @pytest.mark.parametrize("regres", regs)
 class RegressorTestCase:
     def test_regression(self, regres, get_covmats, get_labels):
-        n_classes, n_trials, n_channels = 2, 6, 3
-        covmats = get_covmats(n_trials, n_channels)
-        labels = get_labels(n_trials, n_classes)
-        self.reg_predict(regres, covmats, labels)
-        self.reg_fit_independence(regres, covmats, labels)
+        n_matrices, n_channels = 6, 3
+        covmats = get_covmats(n_matrices, n_channels)
+        targets = get_targets(n_matrices)
+        self.reg_predict(regres, covmats, targets)
+        self.reg_fit_independence(regres, covmats, targets)
 
 
 class TestRegressor(RegressorTestCase):
-    def reg_predict(self, regres, covmats, labels):
-        n_trials = len(labels)
+    def reg_predict(self, regres, covmats, targets):
         clf = regres()
         clf.fit(covmats, labels)
         predicted = clf.predict(covmats)
-        assert predicted.shape == (n_trials,)
+        assert predicted.shape == (len(targets),)
 
     def reg_fit_independence(self, regres, covmats, labels):
         clf = regres()
@@ -37,13 +36,13 @@ class TestRegressor(RegressorTestCase):
 @pytest.mark.parametrize("regres", [KNearestNeighborRegressor])
 @pytest.mark.parametrize("mean", ["faulty", 42])
 @pytest.mark.parametrize("dist", ["not_real", 27])
-def test_metric_dict_error(regres, mean, dist, get_covmats, get_labels):
+def test_metric_dict_error(regres, mean, dist, get_covmats, get_targets):
     with pytest.raises((TypeError, KeyError)):
-        n_trials, n_channels, n_classes = 6, 3, 2
-        labels = get_labels(n_trials, n_classes)
-        covmats = get_covmats(n_trials, n_channels)
+        n_matrices, n_channels = 6, 3
+        targets = get_targets(n_matrices)
+        covmats = get_covmats(n_matrices, n_channels)
         clf = regres(metric={"mean": mean, "distance": dist})
-        clf.fit(covmats, labels).predict(covmats)
+        clf.fit(covmats, targets).predict(covmats)
 
 
 @pytest.mark.parametrize("regres", [KNearestNeighborRegressor])
