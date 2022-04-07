@@ -62,6 +62,12 @@ def get_masks(rndstate):
 
     return _gen_masks
 
+@pytest.fixture
+def get_targets():
+    def get_targets(n_matrices):
+        return np.random.rand(n_matrices)
+
+    return get_targets
 
 def get_distances():
     distances = [
