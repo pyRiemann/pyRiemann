@@ -46,6 +46,11 @@ v0.2.8.dev
 
 - Fix ``fit`` in :class:`pyriemann.channelselection.ElectrodeSelection`
 
+- Add Riemannian Support Vector Machine Classification: :class:`pyriemann.classification.SVC`
+
+- Add Riemannian Support Vector Machine Regression: :class:`pyriemann.regression.SVR`
+
+- Add K-Nearest-Neighbor Regression: :class:`pyriemann.regression.KNearestNeighborRegressor`
 
 v0.2.7 (June 2021)
 ------------------
