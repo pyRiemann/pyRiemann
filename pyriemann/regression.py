@@ -94,7 +94,7 @@ class SVR(sklearnSVR):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels corresponding to each matrix.
-        sample_weight : ndarray, shape (n_samples,), default: None
+        sample_weight : ndarray, shape (n_matrices,), default: None
             Per-sample weights. Rescale C per sample. Higher weights
             force the classifier to put more emphasis on these points.
 
@@ -200,8 +200,9 @@ class KNearestNeighborRegressor(MDM):
             Predictions for each matrix according to the closest neighbors.
         """
         dist = self._predict_distances(X)
-        dist_sorted = np.sort(dist)
-        neighbors_values = self.values_[np.argsort(dist)]
+        idx = np.argsort(dist)
+        dist_sorted = dist[idx]
+        neighbors_values = self.values_[idx]
         softmax_dist = softmax(-dist_sorted[:, 0:self.n_neighbors]**2)
         knn_values = neighbors_values[:, 0:self.n_neighbors]
         out = np.sum(knn_values*softmax_dist, axis=1)

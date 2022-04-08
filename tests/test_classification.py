@@ -203,7 +203,7 @@ def test_TSclassifier_classifier_error():
         TSclassifier(clf=Covariances())
 
 
-def test_supportvectormachine_svc_params():
+def test_svc_params():
     rsvc = SVC()
     assert rsvc.metric == 'riemann'
 
@@ -214,7 +214,7 @@ def test_supportvectormachine_svc_params():
     assert rsvc.max_iter == 501
 
 
-def test_supportvectormachine_svc_params_error(get_covmats, get_labels):
+def test_svc_params_error(get_covmats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
     covmats = get_covmats(n_matrices, n_channels)
     labels = get_labels(n_matrices, n_classes)

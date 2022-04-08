@@ -105,7 +105,7 @@ def test_1NN(get_covmats, get_targets):
     assert_array_equal(targets, preds)
 
 
-def test_supportvectormachine_svr_params():
+def test_svr_params():
     rsvr = SVR()
     assert rsvr.metric == 'riemann'
 
@@ -116,7 +116,7 @@ def test_supportvectormachine_svr_params():
     assert rsvr.max_iter == 501
 
 
-def test_supportvectormachine_svc_params_error(get_covmats, get_targets):
+def test_svr_params_error(get_covmats, get_targets):
     n_matrices, n_channels = 6, 3
     covmats = get_covmats(n_matrices, n_channels)
     targets = get_targets(n_matrices)
