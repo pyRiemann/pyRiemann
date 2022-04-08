@@ -201,7 +201,7 @@ class KNearestNeighborRegressor(MDM):
         """
         dist = self._predict_distances(X)
         idx = np.argsort(dist)
-        dist_sorted = np.take_along_axis(dist, idx, axis=0)
+        dist_sorted = np.take_along_axis(dist, idx, axis=1)
         neighbors_values = self.values_[idx]
         softmax_dist = softmax(-dist_sorted[:, 0:self.n_neighbors]**2)
         knn_values = neighbors_values[:, 0:self.n_neighbors]

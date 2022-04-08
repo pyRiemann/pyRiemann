@@ -101,8 +101,8 @@ def test_1NN(get_covmats, get_targets):
 
     knn = KNearestNeighborRegressor(1, metric="riemann")
     knn.fit(covmats, targets)
-    preds = knn.predict(covmats)
-    assert_array_equal(targets, preds)
+    preds = knn.predict(covmats[:-1])
+    assert_array_equal(targets[:-1], preds)
 
 
 def test_svr_params():
