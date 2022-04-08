@@ -549,7 +549,7 @@ class SVC(sklearnSVC):
         weight one.
         The "balanced" mode uses the values of y to automatically adjust
         weights inversely proportional to class frequencies in the input data
-        as ``n_samples / (n_classes * np.bincount(y))``.
+        as ``n_matrices / (n_classes * np.bincount(y))``.
     verbose : bool, default: False
         Enable verbose output. Note that this setting takes advantage of a
         per-process runtime setting in libsvm that, if enabled, may not work
@@ -558,9 +558,9 @@ class SVC(sklearnSVC):
         Hard limit on iterations within solver, or -1 for no limit.
     decision_function_shape : {'ovo', 'ovr'}, default: 'ovr'
         Whether to return a one-vs-rest ('ovr') decision function of shape
-        (n_samples, n_classes) as all other classifiers, or the original
+        (n_matrices, n_classes) as all other classifiers, or the original
         one-vs-one ('ovo') decision function of libsvm which has shape
-        (n_samples, n_classes * (n_classes - 1) / 2). However, note that
+        (n_matrices, n_classes * (n_classes - 1) / 2). However, note that
         internally, one-vs-one ('ovo') is always used as a multi-class strategy
         to train models; an ovr matrix is only constructed from the ovo matrix.
         The parameter is ignored for binary classification.
@@ -633,7 +633,7 @@ class SVC(sklearnSVC):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels corresponding to each matrix.
-        sample_weight : ndarray, shape (n_samples,), default: None
+        sample_weight : ndarray, shape (n_matrices,), default: None
             Per-sample weights. Rescale C per sample. Higher weights
             force the classifier to put more emphasis on these points.
 
