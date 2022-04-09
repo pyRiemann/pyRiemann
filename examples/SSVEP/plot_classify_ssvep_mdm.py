@@ -12,22 +12,18 @@ is trained to predict a 4-class problem for an offline setup.
 #
 # License: BSD (3-clause)
 
-# generic import
 import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-# mne import
-from mne import find_events, create_info, Epochs
+from mne import find_events, concatenate_raws, create_info, Epochs
 from mne.io import Raw, RawArray
 from mne.datasets import fetch_dataset
 
-# pyriemann import
 from pyriemann.estimation import BlockCovariances
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.classification import MDM
 
-# scikit-learn import
 from sklearn.model_selection import cross_val_score, RepeatedKFold
 
 
@@ -74,23 +70,22 @@ def download_sample_data(dataset="ssvep", subject=1, session=1):
         'folder_name': folder_name,
         'config_key': config_key
     }
-
-    data_path = fetch_dataset(
-        dataset_params
-    )
+    data_path = fetch_dataset(dataset_params)
 
     return os.path.join(data_path, archive_name)
 
 
 # Download data
-destination = download_sample_data(dataset="ssvep", subject=12, session=1)
-# Read data in MNE Raw and numpy format
-raw = Raw(destination, preload=True, verbose='ERROR')
-events = find_events(raw, shortest_event=0, verbose=False)
-raw = raw.pick_types(eeg=True)
+raws, events = [], []
+for s in range(4):
+    destination = download_sample_data(dataset="ssvep", subject=12, session=s)
+    raw = Raw(destination, preload=True, verbose='ERROR')
+    events.append(find_events(raw, shortest_event=0, verbose=False))
+    raws.append(raw.pick_types(eeg=True))
+
+raw, events = concatenate_raws(raws, events_list=events, verbose=False)
 event_id = {'13 Hz': 2, '17 Hz': 4, '21 Hz': 3, 'resting-state': 1}
 sfreq = int(raw.info['sfreq'])
-
 eeg_data = raw.get_data()
 
 ###############################################################################
@@ -130,7 +125,8 @@ raw.plot(duration=n_seconds, start=0, n_channels=8, scalings={'eeg': 4e-2},
 ###############################################################################
 # Extended signals for spatial covariance
 # ---------------------------------------
-# Using the approach proposed by [1], the SSVEP signal is extended to include
+#
+# Using the approach proposed by [1]_, the SSVEP signal is extended to include
 # the filtered signals for each stimulation frequency. We stack the filtered
 # signals to build an extended signal.
 
@@ -241,22 +237,24 @@ plt.show()
 
 ###############################################################################
 # Minimum distance to mean is a simple and robust algorithm for BCI decoding.
-# It reproduces results of [2] for the first session of subject 12.
+# It reproduces results of [2]_ for the first four sessions of subject 12.
+
+print("Number of trials: {}".format(len(cov_ext_trials)))
 
 cv = RepeatedKFold(n_splits=2, n_repeats=10, random_state=42)
 mdm = MDM(metric=dict(mean='riemann', distance='riemann'))
 scores = cross_val_score(mdm, cov_ext_trials, events[:, 2], cv=cv, n_jobs=1)
 print("MDM accuracy: {:.2f}% +/- {:.2f}".format(np.mean(scores)*100,
                                                 np.std(scores)*100))
-# The obtained results are 80.62% +/- 16.29 for this session, with a repeated
-# k-fold validation.
+# The obtained results are 96.09% +/- 2.24 for these sessions, with a repeated
+# 10-fold validation.
 
 ###############################################################################
 # References
 # ----------
-# [1] M. Congedo, A. Barachant, A. Andreev ,"A New generation of Brain-Computer
-# Interface Based on Riemannian Geometry", arXiv: 1310.8115, 2013.
-#
-# [2] E. K. Kalunga, S. Chevallier, Q. Barthélemy, E. Monacelli,
-# "Review of Riemannian distances and divergences, applied to SSVEP-based BCI",
-# Neuroinformatics, 2020.
+# .. [1] M. Congedo, A. Barachant, A. Andreev ,"A New generation of
+#    Brain-Computer Interface Based on Riemannian Geometry", arXiv: 1310.8115,
+#    2013.
+# .. [2] E. K. Kalunga, S. Chevallier, Q. Barthélemy, E. Monacelli, "Review of
+#    Riemannian distances and divergences, applied to SSVEP-based BCI",
+#    Neuroinformatics, 2020.
