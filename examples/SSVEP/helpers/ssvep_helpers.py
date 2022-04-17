@@ -30,7 +30,7 @@ def download_data(subject=1, session=1):
     archive_name = url.split('/')[-4:]
     dataset_params = {
         'dataset_name': "ssvep",
-        'archive_name': archive_name,
+        'archive_name': '/'.join(archive_name),
         'hash': 'md5:ff7f0361a2d41f8df3fb53b9a9bc1220',
         'url': url,
         'folder_name': 'MNE-ssvepexo-data',
