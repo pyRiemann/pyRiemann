@@ -27,7 +27,7 @@ def download_data(subject=1, session=1):
     url = '{:s}subject{:02d}_run{:d}_raw.fif'.format(
         DATASET_URL, subject, session + 1)
 
-    archive_name = url.split('/')[-1]
+    archive_name = url.split('/')[-4:]
     dataset_params = {
         'dataset_name': "ssvep",
         'archive_name': archive_name,
@@ -38,7 +38,7 @@ def download_data(subject=1, session=1):
     }
     data_path = fetch_dataset(dataset_params)
 
-    return os.path.join(data_path, archive_name)
+    return os.path.join(data_path, *archive_name)
 
 
 def bandpass_filter(raw, l_freq, h_freq, method="iir", verbose=False):
