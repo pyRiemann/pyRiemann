@@ -33,7 +33,7 @@ jobs:
         python -m pip install .[tests]
     - name: Lint with flake8
       run: |
-        flake8 examples tests pyriemann
+        flake8 examples tests pyriemann setup.py
     - name: Test with pytest
       run: |
         pytest
