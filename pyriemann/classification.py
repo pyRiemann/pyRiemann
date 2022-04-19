@@ -667,7 +667,7 @@ class SVC(sklearnSVC):
         return super().predict(test_kernel_mat)
 
     def predict_proba(self, X):
-        """Compute probabilities of possible outcomes for samples in X.
+        """Compute probabilities of possible classes for matrices in X.
 
         Parameters
         ----------
