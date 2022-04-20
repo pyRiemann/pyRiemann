@@ -46,6 +46,8 @@ v0.2.8.dev
 
 - Fix ``fit`` in :class:`pyriemann.channelselection.ElectrodeSelection`
 
+- Add example on principal geodesic analysis (PGA) for SSVEP classification
+
 
 v0.2.7 (June 2021)
 ------------------
