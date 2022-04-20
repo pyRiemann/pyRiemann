@@ -36,6 +36,7 @@ clabel = ['resting-state', '13 Hz', '17 Hz', '21 Hz']
 clist = ['b', 'g', 'c', 'r']
 cmap = ListedColormap(clist)
 
+
 def plot_pga(ax, data, labels, centers):
     sc = ax.scatter(data[:, 0], data[:, 1], c=labels, marker='P', cmap=cmap)
     ax.scatter(centers[:, 0], centers[:, 1], c=clist, marker='o', s=100)
@@ -64,7 +65,7 @@ raw = Raw(download_data(subject=12, session=1), preload=True, verbose=False)
 events = find_events(raw, shortest_event=0, verbose=False)
 raw = raw.pick_types(eeg=True)
 ch_count = len(raw.info['ch_names'])
-raw_ext = extend_signal(raw, frequencies, freq_band)      
+raw_ext = extend_signal(raw, frequencies, freq_band)
 epochs = Epochs(
     raw_ext, events, events_id, tmin=2, tmax=5, baseline=None, verbose=False)
 x_train = BlockCovariances(
@@ -74,7 +75,7 @@ y_train = events[:, 2]
 # Testing set
 raw = Raw(download_data(subject=12, session=4), preload=True, verbose=False)
 raw = raw.pick_types(eeg=True)
-raw_ext = extend_signal(raw, frequencies, freq_band)  
+raw_ext = extend_signal(raw, frequencies, freq_band)
 epochs = make_fixed_length_epochs(
     raw_ext, duration=duration, overlap=duration - interval, verbose=False)
 x_test = BlockCovariances(
@@ -169,7 +170,7 @@ def online_classify(t):
     colors = _add_alpha(colors, alphas)
 
     # Update plot
-    pl.set_offsets(np.c_[ts_visu[:, 0,], ts_visu[:, 1]])
+    pl.set_offsets(np.c_[ts_visu[:, 0], ts_visu[:, 1]])
     pl.set_color(colors)
     return pl
 
