@@ -13,6 +13,7 @@ from pyriemann.utils.mean import (
     mean_harmonic,
     mean_wasserstein,
     mean_alm,
+    mean_power,
     maskedmean_riemann,
     nanmean_riemann,
 )
@@ -32,13 +33,17 @@ from pyriemann.utils.geodesic import geodesic_riemann
         mean_harmonic,
         mean_wasserstein,
         nanmean_riemann,
+        mean_power,
     ],
 )
 def test_mean_shape(mean, get_covmats):
     """Test the shape of mean"""
     n_matrices, n_channels = 5, 3
     covmats = get_covmats(n_matrices, n_channels)
-    C = mean(covmats)
+    if mean == mean_power:
+        C = mean(covmats, 0.42)
+    else:
+        C = mean(covmats)
     assert C.shape == (n_channels, n_channels)
 
 
@@ -47,13 +52,16 @@ def test_mean_shape_with_init(mean, get_covmats):
     """Test the shape of mean with init"""
     n_matrices, n_channels = 5, 3
     covmats = get_covmats(n_matrices, n_channels)
-    C = mean(covmats, init=covmats[0])
+    if mean == mean_power:
+        C = mean(covmats, 0.42, init=covmats[0])
+    else:
+        C = mean(covmats, init=covmats[0])
     assert C.shape == (n_channels, n_channels)
 
 
 @pytest.mark.parametrize("init", [True, False])
 def test_riemann_mean(init, get_covmats_params):
-    """Test the riemannian mean"""
+    """Test the Riemannian mean"""
     n_matrices, n_channels = 100, 3
     covmats, diags, A = get_covmats_params(n_matrices, n_channels)
     if init:
@@ -104,6 +112,18 @@ def test_alm_mean_2matrices(get_covmats):
     covmats = get_covmats(n_matrices, n_channels)
     C = mean_alm(covmats)
     assert np.all(C == geodesic_riemann(covmats[0], covmats[1], alpha=0.5))
+
+
+def test_power_mean(get_covmats):
+    """Test the power mean"""
+    n_matrices, n_channels = 3, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    C_power_1 = mean_power(covmats, 1)
+    C_power_m1 = mean_power(covmats, -1)
+    C_arithm = mean_euclid(covmats)
+    C_harm = mean_harmonic(covmats)
+    assert C_power_1 == approx(C_arithm)
+    assert C_power_m1 == approx(C_harm)
 
 
 @pytest.mark.parametrize("init", [True, False])

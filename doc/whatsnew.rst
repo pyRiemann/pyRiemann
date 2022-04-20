@@ -46,6 +46,8 @@ v0.2.8.dev
 
 - Fix ``fit`` in :class:`pyriemann.channelselection.ElectrodeSelection`
 
+- Add power mean estimation in :func:`pyriemann.utils.mean.mean_power`
+
 
 v0.2.7 (June 2021)
 ------------------
