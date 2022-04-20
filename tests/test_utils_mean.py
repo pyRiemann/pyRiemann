@@ -61,7 +61,7 @@ def test_mean_shape_with_init(mean, get_covmats):
 
 @pytest.mark.parametrize("init", [True, False])
 def test_riemann_mean(init, get_covmats_params):
-    """Test the Riemannian mean"""
+    """Test the riemannian mean"""
     n_matrices, n_channels = 100, 3
     covmats, diags, A = get_covmats_params(n_matrices, n_channels)
     if init:
@@ -171,6 +171,17 @@ def test_riemann_mean_nan_errors(get_covmats):
         covmats_ = covmats.copy()
         covmats_[1, 0, 1] = np.nan  # corrup an off-diagonal value
         nanmean_riemann(covmats_)
+
+
+def test_power_mean_errors(get_covmats):
+    """Test the power mean errors"""
+    n_matrices, n_channels = 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+
+    with pytest.raises(ValueError):  # exponent is not a scalar
+        mean_power(covmats, [1])
+    with pytest.raises(ValueError):  # exponent is not non-null
+        mean_power(covmats, 0)
 
 
 @pytest.mark.parametrize(

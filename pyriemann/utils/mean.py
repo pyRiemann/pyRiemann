@@ -363,11 +363,11 @@ def mean_alm(covmats, tol=1e-14, maxiter=100,
         return C_iter.mean(axis=0)
 
 
-def mean_power(covmats, p, sample_weight=None, zeta=10e-10):
+def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10):
     """Return the power mean covariance matrix.
 
     :param covmats: Covariance matrices, (n_matrices, n_channels, n_channels)
-    :param p: Exponent
+    :param p: Exponent, not null
     :param sample_weight: Weight of each matrix
     :param zeta: Stopping criterion
 
@@ -385,6 +385,11 @@ def mean_power(covmats, p, sample_weight=None, zeta=10e-10):
            Estimating Power Means of Positive Definite Matrices", IEEE Trans.
            Sig. Process., 2017
     """
+    if not isinstance(p, (int, float)):
+        raise ValueError("Power mean only defined for a scalar exponent")
+    if p == 0:
+        raise ValueError("Power mean only defined for non-zero exponent")
+
     n_matrices, n_channels, _ = covmats.shape
     sample_weight = _get_sample_weight(sample_weight, covmats)
     phi = 0.375 / np.abs(p)
