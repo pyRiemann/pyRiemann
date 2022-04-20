@@ -241,3 +241,14 @@ def plot_waveforms(X, display, *, times=None, color='gray', alpha=0.5,
         for ax in axes[:-1]:
             ax.set_xticklabels([])  # remove xticklabels
     return fig
+
+
+def _add_alpha(colors, alphas):
+    ''' Add alphas to RGB channels '''
+    try:
+        from matplotlib.colors import to_rgb
+    except ImportError:
+        raise ImportError("Install matplotlib to add alpha")
+
+    cols = [to_rgb(c) for c in colors]
+    return [(c[0], c[1], c[2], a) for c, a in zip(cols, alphas[-len(cols):])]
