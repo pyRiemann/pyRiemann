@@ -367,7 +367,7 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10):
     """Return the power mean covariance matrix.
 
     :param covmats: Covariance matrices, (n_matrices, n_channels, n_channels)
-    :param p: Exponent, not null
+    :param p: Exponent, in [-1,0) U (0,1]
     :param sample_weight: Weight of each matrix
     :param zeta: Stopping criterion
 
@@ -379,42 +379,46 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10):
 
     References
     ----------
-    .. [1] Lim Y, Palfia M. "Matrix Power means and the Karcher mean", J.
+    .. [1] Lim Y and Palfia M. "Matrix Power means and the Karcher mean", J.
            Funct. Anal., 2012
-    .. [2] Congedo M, Barachant A, Kharati K E. "Fixed Point Algorithms for
+    .. [2] Congedo M, Barachant A and Kharati K E. "Fixed Point Algorithms for
            Estimating Power Means of Positive Definite Matrices", IEEE Trans.
            Sig. Process., 2017
     """
     if not isinstance(p, (int, float)):
         raise ValueError("Power mean only defined for a scalar exponent")
     if p == 0:
-        raise ValueError("Power mean only defined for non-zero exponent")
+        raise ValueError("Exponent must be non-zero")
+    if p < -1 or 1 < p:
+        raise ValueError("Exponent must be in [-1,0) U (0,1]")
 
     n_matrices, n_channels, _ = covmats.shape
     sample_weight = _get_sample_weight(sample_weight, covmats)
     phi = 0.375 / np.abs(p)
 
-    G = np.sum([w * powm(c, p) for (w, c) in zip(sample_weight, covmats)],
-               axis=0)
+    G = np.sum(
+        [w * powm(c, p) for (w, c) in zip(sample_weight, covmats)],
+        axis=0
+    )
     if p > 0:
         X = invsqrtm(G)
     else:
         X = sqrtm(G)
 
-    test = 10*zeta
+    test = 10 * zeta
     while test > zeta:
         H = np.sum(
-            [w * powm(np.dot(X, np.dot(powm(c, np.sign(p)), X.T)), np.abs(p))
+            [w * powm(X @ powm(c, np.sign(p)) @ X.T, np.abs(p))
              for (w, c) in zip(sample_weight, covmats)],
             axis=0
         )
-        X = np.dot(powm(H, -phi), X)
+        X = powm(H, -phi) @ X
         test = np.linalg.norm(H - np.eye(n_channels)) / np.sqrt(n_channels)
 
     if p > 0:
-        C = np.dot(np.linalg.inv(X), np.linalg.inv(X.T))
+        C = np.linalg.inv(X) @ np.linalg.inv(X.T)
     else:
-        C = np.dot(X.T, X)
+        C = X.T @ X
 
     return C
 

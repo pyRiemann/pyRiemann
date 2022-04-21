@@ -180,8 +180,10 @@ def test_power_mean_errors(get_covmats):
 
     with pytest.raises(ValueError):  # exponent is not a scalar
         mean_power(covmats, [1])
-    with pytest.raises(ValueError):  # exponent is not non-null
+    with pytest.raises(ValueError):  # exponent is not non-zero
         mean_power(covmats, 0)
+    with pytest.raises(ValueError):  # exponent is not in [-1,0) U (0,1]
+        mean_power(covmats, 3)
 
 
 @pytest.mark.parametrize(
