@@ -189,4 +189,5 @@ plt.show()
 ###############################################################################
 # References
 # ----------
-# .. [1] https://scikit-learn.org/stable/auto_examples/classification/plot_classifier_comparison.html
+# .. [1] https://scikit-learn.org/stable/auto_examples/classification/ \
+#    plot_classifier_comparison.html
