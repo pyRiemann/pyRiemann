@@ -46,6 +46,8 @@ v0.2.8.dev
 
 - Fix ``fit`` in :class:`pyriemann.channelselection.ElectrodeSelection`
 
+- Add example to compare classifiers on synthetic datasets
+
 
 v0.2.7 (June 2021)
 ------------------
