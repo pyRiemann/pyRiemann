@@ -36,7 +36,7 @@ def download_data(subject=1, session=1):
         'folder_name': 'MNE-ssvepexo-data',
         'config_key': 'MNE_DATASETS_SSVEPEXO_PATH'
     }
-    data_path = fetch_dataset(dataset_params)
+    data_path = fetch_dataset(dataset_params, force_update=True)
 
     return os.path.join(data_path, *archive_name)
 
