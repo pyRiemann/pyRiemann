@@ -101,22 +101,21 @@ def runner(clf, name):
     clf = make_pipeline(XdawnCovariances(n_components), clf)
 
     for train_idx, test_idx in cv.split(epochs_data):
-        y_train, y_test = labels[train_idx], labels[test_idx]
+        y_train = labels[train_idx]
 
         clf.fit(epochs_data[train_idx], y_train)
         pr[test_idx] = clf.predict(epochs_data[test_idx])
 
     print(classification_report(labels, pr))
 
-
-
-    ###############################################################################
+    ###########################################################################
     # plot the confusion matrix
     names = ["audio left", "audio right", "vis left", "vis right"]
     cm = confusion_matrix(labels, pr)
     ConfusionMatrixDisplay(cm, display_labels=names).plot()
     plt.title(f'Classification with {name}')
     plt.show()
+
 
 names = [
     "MDM",
