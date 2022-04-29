@@ -18,7 +18,7 @@ for mean-covariance matrices used by the classification algorithm.
 import numpy as np
 from matplotlib import pyplot as plt
 from pyriemann.estimation import XdawnCovariances
-from pyriemann.classification import MDM
+from pyriemann.classification import MDM, KNearestNeighbor, SVC
 
 import mne
 from mne import io
@@ -40,7 +40,7 @@ data_path = sample.data_path()
 # Set parameters and read data
 raw_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw.fif"
 event_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif"
-tmin, tmax = -0.0, 1
+tmin, tmax = -0.0, 1.
 event_id = dict(aud_l=1, aud_r=2, vis_l=3, vis_r=4)
 
 # Setup for reading the raw data
@@ -73,24 +73,12 @@ evoked = epochs.average()
 ###############################################################################
 # Decoding with Xdawn + MDM
 
-n_components = 3  # pick some components
+n_components = 2  # pick some components
 
 # Define a monte-carlo cross-validation generator (reduce variance):
 cv = KFold(n_splits=10, shuffle=True, random_state=42)
 pr = np.zeros(len(labels))
 epochs_data = epochs.get_data()
-
-print("Multiclass classification with XDAWN + MDM")
-
-clf = make_pipeline(XdawnCovariances(n_components), MDM())
-
-for train_idx, test_idx in cv.split(epochs_data):
-    y_train, y_test = labels[train_idx], labels[test_idx]
-
-    clf.fit(epochs_data[train_idx], y_train)
-    pr[test_idx] = clf.predict(epochs_data[test_idx])
-
-print(classification_report(labels, pr))
 
 ###############################################################################
 # plot the spatial patterns
@@ -106,9 +94,43 @@ evoked.plot_topomap(
     size=1.5,
 )
 
-###############################################################################
-# plot the confusion matrix
-names = ["audio left", "audio right", "vis left", "vis right"]
-cm = confusion_matrix(labels, pr)
-ConfusionMatrixDisplay(cm, display_labels=names).plot()
-plt.show()
+
+def runner(clf, name):
+    print(f"Multiclass classification with XDAWN + {name}")
+
+    clf = make_pipeline(XdawnCovariances(n_components), clf)
+
+    for train_idx, test_idx in cv.split(epochs_data):
+        y_train, y_test = labels[train_idx], labels[test_idx]
+
+        clf.fit(epochs_data[train_idx], y_train)
+        pr[test_idx] = clf.predict(epochs_data[test_idx])
+
+    print(classification_report(labels, pr))
+
+
+
+    ###############################################################################
+    # plot the confusion matrix
+    names = ["audio left", "audio right", "vis left", "vis right"]
+    cm = confusion_matrix(labels, pr)
+    ConfusionMatrixDisplay(cm, display_labels=names).plot()
+    plt.title(f'Classification with {name}')
+    plt.show()
+
+names = [
+    "MDM",
+    "Nearest Neighbors",
+    "RSVC AIR",
+    "RSVC LE",
+
+]
+classifiers = [
+    MDM(),
+    KNearestNeighbor(n_neighbors=3),
+    SVC(metric='riemann', probability=True),
+    SVC(metric='logeuclid', probability=True)
+]
+
+for clf, name in zip(classifiers, names):
+    runner(clf, name)
