@@ -649,4 +649,3 @@ class SVC(sklearnSVC):
         self.Cref = mean_covariance(X, metric=self.metric)
         super().fit(X, y)
         return self
-
