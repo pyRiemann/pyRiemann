@@ -463,6 +463,10 @@ class KNearestNeighbor(MDM):
     ----------
     classes_ : list
         list of classes.
+    covmeans_ : list
+        the class centroids.
+    classmeans_ : list
+        list of classes of centroids.
 
     See Also
     --------
@@ -492,8 +496,9 @@ class KNearestNeighbor(MDM):
         self : NearestNeighbor instance
             The NearestNeighbor instance.
         """
-        self.classes_ = y
         self.covmeans_ = X
+        self.classmeans_ = y
+        self.classes_ = np.unique(y)
 
         return self
 
@@ -511,6 +516,36 @@ class KNearestNeighbor(MDM):
             the prediction for each trials according to the closest centroid.
         """
         dist = self._predict_distances(covtest)
-        neighbors_classes = self.classes_[np.argsort(dist)]
+        neighbors_classes = self.classmeans_[np.argsort(dist)]
         out, _ = stats.mode(neighbors_classes[:, 0:self.n_neighbors], axis=1)
         return out.ravel()
+
+    def predict_proba(self, X):
+        """Predict proba using softmax.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+
+        Returns
+        -------
+        prob : ndarray, shape (n_matrices, n_classes)
+            Probabilities for each class.
+        """
+        n_matrices, _, _ = X.shape
+
+        dist = self._predict_distances(X)
+        idx = np.argsort(dist)
+        dist_sorted = np.take_along_axis(dist, idx, axis=1)
+        neighbors_classes = self.classmeans_[idx]
+        probas = softmax(-dist_sorted[:, 0:self.n_neighbors]**2)
+
+        prob = np.zeros((n_matrices, len(self.classes_)))
+        for m in range(n_matrices):
+            for il, ll in enumerate(self.classes_):
+                prob[m, il] = np.sum(
+                    probas[m, neighbors_classes[m, 0:self.n_neighbors]==ll]
+                )
+
+        return prob
