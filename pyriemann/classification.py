@@ -545,7 +545,7 @@ class KNearestNeighbor(MDM):
         for m in range(n_matrices):
             for il, ll in enumerate(self.classes_):
                 prob[m, il] = np.sum(
-                    probas[m, neighbors_classes[m, 0:self.n_neighbors]==ll]
+                    probas[m, neighbors_classes[m, 0:self.n_neighbors] == ll]
                 )
 
         return prob

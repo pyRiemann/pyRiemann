@@ -195,7 +195,7 @@ for ds_cnt, (X, y) in enumerate(datasets):
             ("%.2f" % score).lstrip("0"),
             size=15,
             horizontalalignment="right",
-            verticalalignment ="bottom"
+            verticalalignment="bottom"
         )
         ax.set_xlim(x_min, x_max)
         ax.set_ylim(y_min, y_max)
