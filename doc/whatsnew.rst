@@ -50,6 +50,8 @@ v0.2.8.dev
 
 - Add example to compare classifiers on synthetic datasets
 
+- Add ``predict_proba`` in :class:`pyriemann.classification.KNearestNeighbor`, and correct attribute ``classes_``
+
 
 v0.2.7 (June 2021)
 ------------------
