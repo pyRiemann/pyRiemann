@@ -525,9 +525,11 @@ class SVC(sklearnSVC):
     ----------
     metric : {'riemann', 'euclid', 'logeuclid'}, default: 'riemann'
         Metric for kernel matrix computation.
-    Cref : None | ndarray, shape (n_channels, n_channels)
-        Reference point for kernel matrix computation. If None, the mean of
-        the training data according to the metric is used.
+    Cref : None | ndarray | callable, shape (n_channels, n_channels)
+        Reference point for kernel matrix computation.
+        If None, the mean of the training data according to the metric is used.
+        If callable, the function is called on the training data to calculate
+        Cref.
     C : float, default: 1.0
         Regularization parameter. The strength of the regularization is
         inversely proportional to C. Must be strictly positive. The penalty
@@ -610,6 +612,7 @@ class SVC(sklearnSVC):
         """Init."""
         self.Cref = Cref
         self.metric = metric
+        self.Cref_ = None
         super().__init__(kernel='precomputed',
                          C=C,
                          shrinking=shrinking,
@@ -643,8 +646,16 @@ class SVC(sklearnSVC):
             The SVC instance.
         """
         if self.Cref is None:
-            self.Cref = mean_covariance(X, metric=self.metric)
-        kernelmat = kernel(X, Cref=self.Cref, metric=self.metric)
+            self.Cref_ = mean_covariance(X, metric=self.metric)
+        elif callable(self.Cref):
+            self.Cref_ = self.Cref(X)
+        elif isinstance(self.Cref, np.ndarray):
+            self.Cref_ = self.Cref
+        else:
+            raise TypeError(f'Cref has to be np.ndarray, callable or None. But '
+                            f'has type {type(self.Cref)}.')
+
+        kernelmat = kernel(X, Cref=self.Cref_, metric=self.metric)
         self.data_ = X
         super().fit(kernelmat, y)
         return self
@@ -664,7 +675,7 @@ class SVC(sklearnSVC):
         """
         test_kernel_mat = kernel(X,
                                  self.data_,
-                                 Cref=self.Cref,
+                                 Cref=self.Cref_,
                                  metric=self.metric)
         return super().predict(test_kernel_mat)
 

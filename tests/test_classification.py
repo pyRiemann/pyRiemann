@@ -9,6 +9,7 @@ import pytest
 from pytest import approx
 from sklearn.dummy import DummyClassifier
 
+from pyriemann.utils.mean import mean_covariance
 
 rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC]
 
@@ -224,3 +225,45 @@ def test_svc_params_error(get_covmats, get_labels):
 
     with pytest.raises(TypeError):
         SVC(foo=5)
+
+@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+def test_svc_cref_metric(get_covmats, get_labels, metric):
+    n_matrices, n_channels, n_classes = 6, 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+    labels = get_labels(n_matrices, n_classes)
+    Cref = mean_covariance(covmats, metric=metric)
+
+    rsvc = SVC(Cref=Cref).fit(covmats, labels)
+    rsvc_1 = SVC(Cref=None, metric=metric).fit(covmats, labels)
+    assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
+
+@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+def test_svc_cref_callable(get_covmats, get_labels, metric):
+    n_matrices, n_channels, n_classes = 6, 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+    labels = get_labels(n_matrices, n_classes)
+    Cref = lambda X: mean_covariance(X, metric=metric)
+
+    rsvc = SVC(Cref=Cref).fit(covmats, labels)
+    rsvc_1 = SVC(metric=metric).fit(covmats, labels)
+    assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
+
+    rsvc = SVC(Cref=Cref).fit(covmats, labels).predict(covmats)
+    rsvc_1 = SVC(metric=metric).fit(covmats, labels).predict(covmats)
+    assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
+
+
+@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+def test_svc_cref_error(get_covmats, get_labels, metric):
+    n_matrices, n_channels, n_classes = 6, 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+    labels = get_labels(n_matrices, n_classes)
+    Cref = lambda X, met: mean_covariance(X, metric=met)
+
+    with pytest.raises(TypeError):
+        SVC(Cref=Cref).fit(covmats, labels)
+
+    Cref = metric
+
+    with pytest.raises(TypeError):
+        SVC(Cref=Cref).fit(covmats, labels)
