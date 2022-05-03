@@ -610,11 +610,7 @@ class SVC(sklearnSVC):
         """Init."""
         self.Cref = Cref
         self.metric = metric
-        self.kernel_fct = lambda X, Y: kernel(X,
-                                              Y,
-                                              metric=metric,
-                                              Cref=self.Cref)
-        super().__init__(kernel=self.kernel_fct,
+        super().__init__(kernel='precomputed',
                          C=C,
                          shrinking=shrinking,
                          probability=probability,
@@ -646,6 +642,48 @@ class SVC(sklearnSVC):
         self : Riemannian SVC instance
             The SVC instance.
         """
-        self.Cref = mean_covariance(X, metric=self.metric)
-        super().fit(X, y)
+        if self.Cref is None:
+            self.Cref = mean_covariance(X, metric=self.metric)
+        kernelmat = kernel(X, Cref=self.Cref, metric=self.metric)
+        self.data_ = X
+        super().fit(kernelmat, y)
         return self
+
+    def predict(self, X):
+        """Get the predictions.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+
+        Returns
+        -------
+        pred : ndarray of int, shape (n_matrices,)
+            Predictions for each matrix according to the SVC.
+        """
+        test_kernel_mat = kernel(X,
+                                 self.data_,
+                                 Cref=self.Cref,
+                                 metric=self.metric)
+        return super().predict(test_kernel_mat)
+
+    def predict_proba(self, X):
+        """Compute probabilities of possible classes for matrices in X.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+
+        Returns
+        -------
+        prob : ndarray, shape (n_matrices, n_classes)
+            The probabilities for each class.
+        """
+        test_kernel_mat = kernel(X,
+                                 self.data_,
+                                 Cref=self.Cref,
+                                 metric=self.metric)
+
+        return super().predict_proba(test_kernel_mat)
