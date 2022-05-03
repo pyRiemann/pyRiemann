@@ -248,8 +248,10 @@ def test_svc_cref_callable(get_covmats, get_labels, metric):
     rsvc_1 = SVC(metric=metric).fit(covmats, labels)
     assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
 
-    rsvc = SVC(Cref=Cref).fit(covmats, labels).predict(covmats)
-    rsvc_1 = SVC(metric=metric).fit(covmats, labels).predict(covmats)
+    rsvc = SVC(Cref=Cref).fit(covmats, labels)
+    rsvc.predict(covmats)
+    rsvc_1 = SVC(metric=metric).fit(covmats, labels)
+    rsvc_1.predict(covmats)
     assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
 
 
