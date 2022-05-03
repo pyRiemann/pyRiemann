@@ -652,8 +652,8 @@ class SVC(sklearnSVC):
         elif isinstance(self.Cref, np.ndarray):
             self.Cref_ = self.Cref
         else:
-            raise TypeError(f'Cref has to be np.ndarray, callable or None. But '
-                            f'has type {type(self.Cref)}.')
+            raise TypeError(f'Cref has to be np.ndarray, callable or None. But'
+                            f' has type {type(self.Cref)}.')
 
         kernelmat = kernel(X, Cref=self.Cref_, metric=self.metric)
         self.data_ = X
