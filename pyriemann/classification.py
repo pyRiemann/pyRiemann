@@ -1,4 +1,6 @@
 """Module for classification function."""
+import functools
+
 import numpy as np
 
 from scipy import stats
@@ -530,6 +532,12 @@ class SVC(sklearnSVC):
         If None, the mean of the training data according to the metric is used.
         If callable, the function is called on the training data to calculate
         Cref.
+    kernel_fct : 'precomputed' | callable
+        If 'precomputed', the kernel matrix for datasets X and Y is estimated
+        according to pyriemann.utils.kernel(X, Y, Cref, metric).
+        If callable, the callable is passed as the kernel parameter to
+        sklearn.svm.SVC(). The callable has to be of the form
+        kernel(X, Y, Cref, metric).
     C : float, default: 1.0
         Regularization parameter. The strength of the regularization is
         inversely proportional to C. Must be strictly positive. The penalty
@@ -578,11 +586,6 @@ class SVC(sklearnSVC):
         Pass an int for reproducible output across multiple function calls.
         See :term:`Glossary <random_state>`.
 
-    Attributes
-    ----------
-    data_ : ndarray, shape (n_matrices, n_channels, n_channels)
-        If fitted, training data.
-
     Notes
     -----
     .. versionadded:: 0.2.8
@@ -597,6 +600,7 @@ class SVC(sklearnSVC):
     def __init__(self,
                  *,
                  metric='riemann',
+                 kernel_fct=None,
                  Cref=None,
                  C=1.0,
                  shrinking=True,
@@ -613,6 +617,7 @@ class SVC(sklearnSVC):
         self.Cref = Cref
         self.metric = metric
         self.Cref_ = None
+        self.kernel_fct = kernel_fct
         super().__init__(kernel='precomputed',
                          C=C,
                          shrinking=shrinking,
@@ -645,6 +650,12 @@ class SVC(sklearnSVC):
         self : Riemannian SVC instance
             The SVC instance.
         """
+        self._set_cref(X)
+        self._set_kernel()
+        super().fit(X, y)
+        return self
+
+    def _set_cref(self, X):
         if self.Cref is None:
             self.Cref_ = mean_covariance(X, metric=self.metric)
         elif callable(self.Cref):
@@ -652,49 +663,19 @@ class SVC(sklearnSVC):
         elif isinstance(self.Cref, np.ndarray):
             self.Cref_ = self.Cref
         else:
-            raise TypeError(f'Cref has to be np.ndarray, callable or None. But'
-                            f' has type {type(self.Cref)}.')
+            raise TypeError(f'Cref must be np.ndarray, callable or None, is'
+                            f' {self.Cref}.')
 
-        kernelmat = kernel(X, Cref=self.Cref_, metric=self.metric)
-        self.data_ = X
-        super().fit(kernelmat, y)
-        return self
+    def _set_kernel(self):
+        if callable(self.kernel_fct):
+            self.kernel = functools.partial(self.kernel_fct,
+                                            Cref=self.Cref_,
+                                            metric=self.metric)
 
-    def predict(self, X):
-        """Get the predictions.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-
-        Returns
-        -------
-        pred : ndarray of int, shape (n_matrices,)
-            Predictions for each matrix according to the SVC.
-        """
-        test_kernel_mat = kernel(X,
-                                 self.data_,
-                                 Cref=self.Cref_,
-                                 metric=self.metric)
-        return super().predict(test_kernel_mat)
-
-    def predict_proba(self, X):
-        """Compute probabilities of possible classes for matrices in X.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-
-        Returns
-        -------
-        prob : ndarray, shape (n_matrices, n_classes)
-            The probabilities for each class.
-        """
-        test_kernel_mat = kernel(X,
-                                 self.data_,
-                                 Cref=self.Cref,
-                                 metric=self.metric)
-
-        return super().predict_proba(test_kernel_mat)
+        elif self.kernel_fct is None:
+            self.kernel = functools.partial(kernel,
+                                            Cref=self.Cref_,
+                                            metric=self.metric)
+        else:
+            raise TypeError(f"kernel must be 'precomputed' or callable, is "
+                            f"{self.kernel}.")

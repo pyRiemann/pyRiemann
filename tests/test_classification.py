@@ -1,3 +1,5 @@
+import pickle
+
 from conftest import get_distances, get_means, get_metrics
 import numpy as np
 from numpy.testing import assert_array_equal
@@ -9,6 +11,7 @@ import pytest
 from pytest import approx
 from sklearn.dummy import DummyClassifier
 
+from pyriemann.utils.kernel import kernel
 from pyriemann.utils.mean import mean_covariance
 
 rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC]
@@ -244,7 +247,7 @@ def test_svc_cref_callable(get_covmats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     covmats = get_covmats(n_matrices, n_channels)
     labels = get_labels(n_matrices, n_classes)
-    def Cref(X): mean_covariance(X, metric=metric)
+    def Cref(X): return mean_covariance(X, metric=metric)
 
     rsvc = SVC(Cref=Cref).fit(covmats, labels)
     rsvc_1 = SVC(metric=metric).fit(covmats, labels)
@@ -271,3 +274,31 @@ def test_svc_cref_error(get_covmats, get_labels, metric):
 
     with pytest.raises(TypeError):
         SVC(Cref=Cref).fit(covmats, labels)
+
+
+@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+def test_svc_kernel_callable(get_covmats, get_labels, metric):
+    n_matrices, n_channels, n_classes = 6, 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+    labels = get_labels(n_matrices, n_classes)
+
+    rsvc = SVC(kernel_fct=kernel,
+               metric=metric).fit(covmats, labels)
+    rsvc_1 = SVC(metric=metric).fit(covmats, labels)
+    p1 = rsvc.predict(covmats[:-1])
+    p2 = rsvc_1.predict(covmats[:-1])
+    assert np.array_equal(p1, p2)
+
+    def custom_kernel(X, Y, Cref, metric):
+        return np.ones((len(X), len(Y)))
+    SVC(kernel_fct=custom_kernel,
+        metric=metric).fit(covmats, labels).predict(covmats[:-1])
+
+    def custom_kernel(X, Y, Cref):
+        return np.ones((len(X), len(Y)))
+    with pytest.raises(TypeError):
+        SVC(kernel_fct=custom_kernel, metric=metric).fit(covmats, labels)
+
+    # check if pickleable
+    pickle.dumps(rsvc)
+    pickle.dumps(rsvc_1)
