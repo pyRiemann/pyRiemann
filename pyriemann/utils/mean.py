@@ -388,7 +388,9 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10):
     if not isinstance(p, (int, float)):
         raise ValueError("Power mean only defined for a scalar exponent")
     if p == 0:
-        raise ValueError("Exponent must be non-zero")
+        raise ValueError("Exponent must be non-zero. Use mean_riemann instead "
+                         "because power mean tends to geometric mean when "
+                         "exponent tends to zero.")
     if p < -1 or 1 < p:
         raise ValueError("Exponent must be in [-1,0) U (0,1]")
 
