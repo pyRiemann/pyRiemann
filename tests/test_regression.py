@@ -2,7 +2,7 @@ import pickle
 
 import numpy as np
 
-from conftest import get_distances, get_means, get_metrics, get_targets
+from conftest import get_distances, get_means, get_metrics
 from numpy.testing import assert_array_equal
 from pyriemann.regression import (SVR, KNearestNeighborRegressor)
 
