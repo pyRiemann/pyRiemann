@@ -1,9 +1,15 @@
-from conftest import get_distances, get_means, get_metrics
+import pickle
+
+import numpy as np
+
+from conftest import get_distances, get_means, get_metrics, get_targets
 from numpy.testing import assert_array_equal
 from pyriemann.regression import (SVR, KNearestNeighborRegressor)
 
 import pytest
 
+from pyriemann.utils.kernel import kernel
+from pyriemann.utils.mean import mean_covariance
 
 regs = [SVR, KNearestNeighborRegressor]
 
@@ -126,3 +132,81 @@ def test_svr_params_error(get_covmats, get_targets):
 
     with pytest.raises(TypeError):
         SVR(foo=5)
+
+
+@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+def test_svr_cref_metric(get_covmats, get_targets, metric):
+    n_matrices, n_channels = 6, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    targets = get_targets(n_matrices)
+    Cref = mean_covariance(covmats, metric=metric)
+
+    rsvc = SVR(Cref=Cref).fit(covmats, targets)
+    rsvc_1 = SVR(Cref=None, metric=metric).fit(covmats, targets)
+    assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
+
+
+@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+def test_svc_cref_callable(get_covmats, get_targets, metric):
+    n_matrices, n_channels = 6, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    targets = get_targets(n_matrices)
+    def Cref(X): return mean_covariance(X, metric=metric)
+
+    rsvc = SVR(Cref=Cref).fit(covmats, targets)
+    rsvc_1 = SVR(metric=metric).fit(covmats, targets)
+    assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
+
+    rsvc = SVR(Cref=Cref).fit(covmats, targets)
+    rsvc.predict(covmats)
+    rsvc_1 = SVR(metric=metric).fit(covmats, targets)
+    rsvc_1.predict(covmats)
+    assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
+
+
+@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+def test_svc_cref_error(get_covmats, get_targets, metric):
+    n_matrices, n_channels = 6, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    targets = get_targets(n_matrices)
+    def Cref(X, met): mean_covariance(X, metric=met)
+
+    with pytest.raises(TypeError):
+        SVR(Cref=Cref).fit(covmats, targets)
+
+    Cref = metric
+
+    with pytest.raises(TypeError):
+        SVR(Cref=Cref).fit(covmats, targets)
+
+
+@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+def test_svc_kernel_callable(get_covmats, get_targets, metric):
+    n_matrices, n_channels = 6, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    targets = get_targets(n_matrices)
+
+    rsvc = SVR(kernel_fct=kernel,
+               metric=metric).fit(covmats, targets)
+    rsvc_1 = SVR(metric=metric).fit(covmats, targets)
+    p1 = rsvc.predict(covmats[:-1])
+    p2 = rsvc_1.predict(covmats[:-1])
+    assert np.array_equal(p1, p2)
+
+    def custom_kernel(X, Y, Cref, metric):
+        return np.ones((len(X), len(Y)))
+    SVR(kernel_fct=custom_kernel,
+        metric=metric).fit(covmats, targets).predict(covmats[:-1])
+
+    def custom_kernel(X, Y, Cref):
+        return np.ones((len(X), len(Y)))
+    with pytest.raises(TypeError):
+        SVR(kernel_fct=custom_kernel, metric=metric).fit(covmats, targets)
+
+    custom_kernel = np.array([1, 2])
+    with pytest.raises(TypeError):
+        SVR(kernel_fct=custom_kernel, metric=metric).fit(covmats, targets)
+
+    # check if pickleable
+    pickle.dumps(rsvc)
+    pickle.dumps(rsvc_1)

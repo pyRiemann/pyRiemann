@@ -299,6 +299,10 @@ def test_svc_kernel_callable(get_covmats, get_labels, metric):
     with pytest.raises(TypeError):
         SVC(kernel_fct=custom_kernel, metric=metric).fit(covmats, labels)
 
+    custom_kernel = np.array([1, 2])
+    with pytest.raises(TypeError):
+        SVC(kernel_fct=custom_kernel, metric=metric).fit(covmats, labels)
+
     # check if pickleable
     pickle.dumps(rsvc)
     pickle.dumps(rsvc_1)
