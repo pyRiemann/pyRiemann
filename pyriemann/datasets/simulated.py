@@ -121,7 +121,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     rs = check_random_state(random_state)
 
     # generate dataset for class 0
-    C0 = generate_random_spd_matrix(n_dim)
+    C0 = generate_random_spd_matrix(n_dim, random_state=random_state)
     X0 = sample_gaussian_spd(n_matrices=n_matrices,
                              mean=C0,
                              sigma=class_disp,
