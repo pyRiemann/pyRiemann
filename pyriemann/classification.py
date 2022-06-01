@@ -189,7 +189,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         Returns
         -------
         prob : ndarray, shape (n_matrices, n_classes)
-            the softmax probabilities for each class.
+            Probabilities for each class.
         """
         return softmax(-self._predict_distances(X)**2)
 
@@ -549,7 +549,7 @@ class KNearestNeighbor(MDM):
                     probas[m, neighbors_classes[m, 0:self.n_neighbors] == ll]
                 )
 
-        return prob    
+        return prob
 
 
 class SVC(sklearnSVC):

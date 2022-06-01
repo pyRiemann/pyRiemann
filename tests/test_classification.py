@@ -3,8 +3,13 @@ import pickle
 from conftest import get_distances, get_means, get_metrics
 import numpy as np
 from numpy.testing import assert_array_equal
-from pyriemann.classification import (MDM, FgMDM, KNearestNeighbor,
-                                      TSclassifier, SVC)
+from pyriemann.classification import (
+    MDM,
+    FgMDM,
+    KNearestNeighbor,
+    TSclassifier,
+    SVC
+)
 
 from pyriemann.estimation import Covariances
 import pytest
@@ -25,13 +30,13 @@ class ClassifierTestCase:
         labels = get_labels(n_matrices, n_classes)
         self.clf_predict(classif, covmats, labels)
         self.clf_fit_independence(classif, covmats, labels)
-        if classif is (MDM, KNearestNeighbor):
+        if classif is (MDM, KNearestNeighbor, SVC):
             self.clf_fitpredict(classif, covmats, labels)
         if classif in (MDM, FgMDM):
             self.clf_transform(classif, covmats, labels)
-        if classif in (MDM, FgMDM, KNearestNeighbor):
+        if classif in (MDM, FgMDM, KNearestNeighbor, SVC):
             self.clf_jobs(classif, covmats, labels)
-        if classif in (MDM, FgMDM, KNearestNeighbor, TSclassifier):
+        if classif in (MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC):
             self.clf_predict_proba(classif, covmats, labels)
             self.clf_populate_classes(classif, covmats, labels)
         if classif is (FgMDM, TSclassifier):
@@ -43,13 +48,13 @@ class ClassifierTestCase:
         labels = get_labels(n_matrices, n_classes)
         self.clf_fit_independence(classif, covmats, labels)
         self.clf_predict(classif, covmats, labels)
-        if classif is (MDM, KNearestNeighbor):
+        if classif is (MDM, KNearestNeighbor, SVC):
             self.clf_fitpredict(classif, covmats, labels)
         if classif in (MDM, FgMDM):
             self.clf_transform(classif, covmats, labels)
-        if classif in (MDM, FgMDM, KNearestNeighbor):
+        if classif in (MDM, FgMDM, KNearestNeighbor, SVC):
             self.clf_jobs(classif, covmats, labels)
-        if classif in (MDM, FgMDM, KNearestNeighbor, TSclassifier):
+        if classif in (MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC):
             self.clf_predict_proba(classif, covmats, labels)
             self.clf_populate_classes(classif, covmats, labels)
         if classif is (FgMDM, TSclassifier):

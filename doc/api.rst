@@ -62,8 +62,8 @@ Regression
     :toctree: generated/
     :template: class.rst
 
-    SVR
     KNearestNeighborRegressor
+    SVR
 
 Clustering
 ------------------
