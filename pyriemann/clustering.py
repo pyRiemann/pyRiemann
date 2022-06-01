@@ -14,7 +14,7 @@ except ImportError:
     def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
         if random_state is not None:
             random_state = np.random.RandomState(random_state)
-        return KMeans(n_clusters=n_clusters)._init_centroids(
+        return KMeans(n_clusters=n_clusters, init=init)._init_centroids(
             X,
             x_squared_norms,
             init,
@@ -148,17 +148,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         self : Kmeans instance
             The Kmean instance.
         """
-        if (self.init != 'random'):
-            # no need to iterate if init is not random
-            labels, inertia, mdm = _fit_single(X, y,
-                                               n_clusters=self.n_clusters,
-                                               init=self.init,
-                                               random_state=self.seed,
-                                               metric=self.metric,
-                                               max_iter=self.max_iter,
-                                               tol=self.tol,
-                                               n_jobs=self.n_jobs)
-        else:
+        if isinstance(self.init, str) and self.init == 'random':
             np.random.seed(self.seed)
             seeds = np.random.randint(
                 np.iinfo(np.int32).max, size=self.n_init)
@@ -191,6 +181,17 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
             mdm = mdm[best]
             labels = labels[best]
             inertia = inertia[best]
+
+        else:
+            # no need to iterate if init is not random
+            labels, inertia, mdm = _fit_single(X, y,
+                                               n_clusters=self.n_clusters,
+                                               init=self.init,
+                                               random_state=self.seed,
+                                               metric=self.metric,
+                                               max_iter=self.max_iter,
+                                               tol=self.tol,
+                                               n_jobs=self.n_jobs)
 
         self.mdm_ = mdm
         self.inertia_ = inertia

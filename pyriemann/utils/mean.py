@@ -2,7 +2,7 @@
 from copy import deepcopy
 import numpy as np
 
-from .base import sqrtm, invsqrtm, logm, expm
+from .base import sqrtm, invsqrtm, logm, expm, powm
 from .ajd import ajd_pham
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann
@@ -361,6 +361,68 @@ def mean_alm(covmats, tol=1e-14, maxiter=100,
             if verbose:
                 print('Max number of iterations reached')
         return C_iter.mean(axis=0)
+
+
+def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10):
+    """Return the power mean covariance matrix.
+
+    :param covmats: Covariance matrices, (n_matrices, n_channels, n_channels)
+    :param p: Exponent, in [-1,0) U (0,1]
+    :param sample_weight: Weight of each matrix
+    :param zeta: Stopping criterion
+
+    :returns: the mean covariance matrix
+
+    Notes
+    -----
+    .. versionadded:: 0.2.8
+
+    References
+    ----------
+    .. [1] Lim Y and Palfia M. "Matrix Power means and the Karcher mean", J.
+           Funct. Anal., 2012
+    .. [2] Congedo M, Barachant A and Kharati K E. "Fixed Point Algorithms for
+           Estimating Power Means of Positive Definite Matrices", IEEE Trans.
+           Sig. Process., 2017
+    """
+    if not isinstance(p, (int, float)):
+        raise ValueError("Power mean only defined for a scalar exponent")
+    if p == 0:
+        raise ValueError("Exponent must be non-zero. Use mean_riemann instead "
+                         "because power mean tends to geometric mean when "
+                         "exponent tends to zero.")
+    if p < -1 or 1 < p:
+        raise ValueError("Exponent must be in [-1,0) U (0,1]")
+
+    n_matrices, n_channels, _ = covmats.shape
+    sample_weight = _get_sample_weight(sample_weight, covmats)
+    phi = 0.375 / np.abs(p)
+
+    G = np.sum(
+        [w * powm(c, p) for (w, c) in zip(sample_weight, covmats)],
+        axis=0
+    )
+    if p > 0:
+        X = invsqrtm(G)
+    else:
+        X = sqrtm(G)
+
+    test = 10 * zeta
+    while test > zeta:
+        H = np.sum(
+            [w * powm(X @ powm(c, np.sign(p)) @ X.T, np.abs(p))
+             for (w, c) in zip(sample_weight, covmats)],
+            axis=0
+        )
+        X = powm(H, -phi) @ X
+        test = np.linalg.norm(H - np.eye(n_channels)) / np.sqrt(n_channels)
+
+    if p > 0:
+        C = np.linalg.inv(X) @ np.linalg.inv(X.T)
+    else:
+        C = X.T @ X
+
+    return C
 
 
 def mean_identity(covmats, sample_weight=None):

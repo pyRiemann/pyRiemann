@@ -46,6 +46,12 @@ v0.2.8.dev
 
 - Fix ``fit`` in :class:`pyriemann.channelselection.ElectrodeSelection`
 
+- Add power mean estimation in :func:`pyriemann.utils.mean.mean_power`
+
+- Add example to compare classifiers on synthetic datasets
+
+- Add ``predict_proba`` in :class:`pyriemann.classification.KNearestNeighbor`, and correct attribute ``classes_``
+
 - Add Riemannian Support Vector Machine Classification: :class:`pyriemann.classification.SVC`
 
 - Add Riemannian Support Vector Machine Regression: :class:`pyriemann.regression.SVR`
@@ -53,7 +59,6 @@ v0.2.8.dev
 - Add K-Nearest-Neighbor Regression: :class:`pyriemann.regression.KNearestNeighborRegressor`
 
 - Add example to compare classifiers on synthetic datasets
-
 
 v0.2.7 (June 2021)
 ------------------

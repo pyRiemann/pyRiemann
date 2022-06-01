@@ -226,6 +226,7 @@ Mean
     mean_ale
     mean_alm
     mean_harmonic
+    mean_power
     mean_kullback_sym
     maskedmean_riemann
     nanmean_riemann

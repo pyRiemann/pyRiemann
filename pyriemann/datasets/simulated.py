@@ -78,7 +78,8 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs):
 
 
 def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
-                        return_centers=False, random_state=None):
+                        return_centers=False, random_state=None, *,
+                        mat_mean=.0, mat_std=1.):
     """Generate SPD dataset with two classes sampled from Riemannian Gaussian
 
     Generate a dataset with SPD matrices drawn from two Riemannian Gaussian
@@ -100,6 +101,10 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         If True, then return the centers of each cluster
     random_state : int, RandomState instance or None (default: None)
         Pass an int for reproducible output across multiple function calls.
+    mat_mean : float (default 0.0)
+        Mean of random values to generate matrices.
+    mat_std : float (default 1.0)
+        Standard deviation of random values to generate matrices.
 
     Returns
     -------
@@ -121,20 +126,29 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     rs = check_random_state(random_state)
 
     # generate dataset for class 0
-    C0 = generate_random_spd_matrix(n_dim)
-    X0 = sample_gaussian_spd(n_matrices=n_matrices,
-                             mean=C0,
-                             sigma=class_disp,
-                             random_state=random_state)
+    C0 = generate_random_spd_matrix(
+        n_dim,
+        random_state=random_state,
+        mat_mean=mat_mean,
+        mat_std=mat_std
+    )
+    X0 = sample_gaussian_spd(
+        n_matrices=n_matrices,
+        mean=C0,
+        sigma=class_disp,
+        random_state=random_state
+    )
     y0 = np.zeros(n_matrices)
 
     # generate dataset for class 1
     epsilon = np.exp(class_sep / np.sqrt(n_dim))
     C1 = epsilon * C0
-    X1 = sample_gaussian_spd(n_matrices=n_matrices,
-                             mean=C1,
-                             sigma=class_disp,
-                             random_state=random_state)
+    X1 = sample_gaussian_spd(
+        n_matrices=n_matrices,
+        mean=C1,
+        sigma=class_disp,
+        random_state=random_state
+    )
     y1 = np.ones(n_matrices)
 
     X = np.concatenate([X0, X1])

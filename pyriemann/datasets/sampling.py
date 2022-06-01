@@ -299,10 +299,12 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None):
     """
 
     n_dim = mean.shape[0]
-    samples_centered = _sample_gaussian_spd_centered(n_matrices=n_matrices,
-                                                     n_dim=n_dim,
-                                                     sigma=sigma,
-                                                     random_state=random_state)
+    samples_centered = _sample_gaussian_spd_centered(
+        n_matrices=n_matrices,
+        n_dim=n_dim,
+        sigma=sigma,
+        random_state=random_state
+    )
 
     # apply the parallel transport to mean on each of the samples
     mean_sqrt = sqrtm(mean)
@@ -317,7 +319,8 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None):
     return samples
 
 
-def generate_random_spd_matrix(n_dim, random_state=None):
+def generate_random_spd_matrix(n_dim, random_state=None, *, mat_mean=.0,
+                               mat_std=1.):
     """Generate a random SPD matrix
 
     Parameters
@@ -326,6 +329,10 @@ def generate_random_spd_matrix(n_dim, random_state=None):
         Dimensionality of the matrix to sample.
     random_state : int, RandomState instance or None (default: None)
         Pass an int for reproducible output across multiple function calls.
+    mat_mean : float (default 0.0)
+        Mean of random values to generate matrix.
+    mat_std : float (default 1.0)
+        Standard deviation of random values to generate matrix.
 
     Returns
     -------
@@ -342,7 +349,7 @@ def generate_random_spd_matrix(n_dim, random_state=None):
             f'n_samples must be a positive integer (Got {n_dim})')
 
     rs = check_random_state(random_state)
-    A = rs.randn(n_dim, n_dim)
+    A = mat_mean + mat_std * rs.randn(n_dim, n_dim)
     A = 0.5 * (A + A.T)
     C = expm(A)
 

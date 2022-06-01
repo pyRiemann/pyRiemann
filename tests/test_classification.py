@@ -25,17 +25,15 @@ class ClassifierTestCase:
         labels = get_labels(n_matrices, n_classes)
         self.clf_predict(classif, covmats, labels)
         self.clf_fit_independence(classif, covmats, labels)
-        if classif is MDM:
+        if classif is (MDM, KNearestNeighbor):
             self.clf_fitpredict(classif, covmats, labels)
         if classif in (MDM, FgMDM):
             self.clf_transform(classif, covmats, labels)
         if classif in (MDM, FgMDM, KNearestNeighbor):
             self.clf_jobs(classif, covmats, labels)
-        if classif in (MDM, FgMDM, TSclassifier):
+        if classif in (MDM, FgMDM, KNearestNeighbor, TSclassifier):
             self.clf_predict_proba(classif, covmats, labels)
             self.clf_populate_classes(classif, covmats, labels)
-        if classif is KNearestNeighbor:
-            self.clf_predict_proba_trials(classif, covmats, labels)
         if classif is (FgMDM, TSclassifier):
             self.clf_tsupdate(classif, covmats, labels)
 
@@ -45,17 +43,15 @@ class ClassifierTestCase:
         labels = get_labels(n_matrices, n_classes)
         self.clf_fit_independence(classif, covmats, labels)
         self.clf_predict(classif, covmats, labels)
-        if classif is MDM:
+        if classif is (MDM, KNearestNeighbor):
             self.clf_fitpredict(classif, covmats, labels)
         if classif in (MDM, FgMDM):
             self.clf_transform(classif, covmats, labels)
         if classif in (MDM, FgMDM, KNearestNeighbor):
             self.clf_jobs(classif, covmats, labels)
-        if classif in (MDM, FgMDM, TSclassifier):
+        if classif in (MDM, FgMDM, KNearestNeighbor, TSclassifier):
             self.clf_predict_proba(classif, covmats, labels)
             self.clf_populate_classes(classif, covmats, labels)
-        if classif is KNearestNeighbor:
-            self.clf_predict_proba_trials(classif, covmats, labels)
         if classif is (FgMDM, TSclassifier):
             self.clf_tsupdate(classif, covmats, labels)
 
@@ -75,15 +71,6 @@ class TestClassifier(ClassifierTestCase):
         clf.fit(covmats, labels)
         probabilities = clf.predict_proba(covmats)
         assert probabilities.shape == (n_matrices, n_classes)
-        assert probabilities.sum(axis=1) == approx(np.ones(n_matrices))
-
-    def clf_predict_proba_trials(self, classif, covmats, labels):
-        n_matrices = len(labels)
-        # n_classes = len(np.unique(labels))
-        clf = classif()
-        clf.fit(covmats, labels)
-        probabilities = clf.predict_proba(covmats)
-        assert probabilities.shape == (n_matrices, n_matrices)
         assert probabilities.sum(axis=1) == approx(np.ones(n_matrices))
 
     def clf_fitpredict(self, classif, covmats, labels):
