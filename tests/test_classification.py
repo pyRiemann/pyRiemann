@@ -34,7 +34,7 @@ class ClassifierTestCase:
             self.clf_fitpredict(classif, covmats, labels)
         if classif in (MDM, FgMDM):
             self.clf_transform(classif, covmats, labels)
-        if classif in (MDM, FgMDM, KNearestNeighbor, SVC):
+        if classif in (MDM, FgMDM, KNearestNeighbor):
             self.clf_jobs(classif, covmats, labels)
         if classif in (MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC):
             self.clf_predict_proba(classif, covmats, labels)
@@ -52,7 +52,7 @@ class ClassifierTestCase:
             self.clf_fitpredict(classif, covmats, labels)
         if classif in (MDM, FgMDM):
             self.clf_transform(classif, covmats, labels)
-        if classif in (MDM, FgMDM, KNearestNeighbor, SVC):
+        if classif in (MDM, FgMDM, KNearestNeighbor):
             self.clf_jobs(classif, covmats, labels)
         if classif in (MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC):
             self.clf_predict_proba(classif, covmats, labels)
