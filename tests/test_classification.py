@@ -73,6 +73,8 @@ class TestClassifier(ClassifierTestCase):
         n_matrices = len(labels)
         n_classes = len(np.unique(labels))
         clf = classif()
+        if hasattr(clf, 'probability'):
+            clf.set_params(**{'probability': True})
         clf.fit(covmats, labels)
         probabilities = clf.predict_proba(covmats)
         assert probabilities.shape == (n_matrices, n_classes)
