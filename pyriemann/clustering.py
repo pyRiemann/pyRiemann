@@ -200,7 +200,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         return self
 
     def predict(self, X):
-        """get the predictions.
+        """Get the predictions.
 
         Parameters
         ----------

@@ -153,7 +153,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
     Attributes
     ----------
-    embedding_ : ndarray, shape (n_samples, n_components)
+    embedding_ : ndarray, shape (n_matrices, n_components)
         Stores the embedding vectors
     error_ : float
         Reconstruction error associated with `embedding_`

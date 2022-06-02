@@ -51,6 +51,19 @@ Classification
     FgMDM
     TSclassifier
     KNearestNeighbor
+    SVC
+
+Regression
+--------------
+.. _regression_api:
+.. currentmodule:: pyriemann.regression
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    KNearestNeighborRegressor
+    SVR
 
 Clustering
 ------------------
