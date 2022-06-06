@@ -753,7 +753,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         to Means Field Classifier", BCI Conference 2019
     """
 
-    def __init__(self, power_list=[-1,0,+1], method_label='sum_means',
+    def __init__(self, power_list=[-1, 0, 1], method_label='sum_means',
                  metric='riemann', n_jobs=1):
         """Init."""
         self.power_list = power_list
