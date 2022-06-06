@@ -10,7 +10,7 @@ of different classifiers.
 This should be taken with a grain of salt, as the intuition conveyed by
 these examples does not necessarily carry over to real datasets.
 
-The plots show training points in solid colors and testing points
+The 3D plots show training points in solid colors and testing points
 semi-transparent. The lower right shows the classification accuracy on the test
 set.
 
@@ -27,7 +27,7 @@ from matplotlib.colors import ListedColormap
 from sklearn.model_selection import train_test_split
 
 from pyriemann.datasets import make_covariances, make_gaussian_blobs
-from pyriemann.classification import MDM, KNearestNeighbor, SVC
+from pyriemann.classification import MDM, KNearestNeighbor, SVC, MeanField
 
 
 ###############################################################################
@@ -46,12 +46,14 @@ def get_proba(cov_00, cov_01, cov_11, clf):
 names = [
     "MDM",
     "Nearest Neighbors",
-    "SVC"
+    "SVC",
+    "MeanField"
 ]
 classifiers = [
     MDM(),
     KNearestNeighbor(n_neighbors=3),
-    SVC(probability=True)
+    SVC(probability=True),
+    MeanField(power_list=[-1, -0.25, 0, 0.25, 1])
 ]
 n_classifs = len(classifiers)
 
@@ -98,7 +100,7 @@ cm_bright = ListedColormap(["#FF0000", "#0000FF"])
 
 ###############################################################################
 
-figure = plt.figure(figsize=(12, 10))
+figure = plt.figure(figsize=(15, 10))
 i = 1
 # iterate over datasets
 for ds_cnt, (X, y) in enumerate(datasets):

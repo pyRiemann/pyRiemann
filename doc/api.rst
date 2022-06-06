@@ -52,6 +52,7 @@ Classification
     TSclassifier
     KNearestNeighbor
     SVC
+    MeanField
 
 Regression
 --------------
