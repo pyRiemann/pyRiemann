@@ -59,14 +59,15 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     References
     ----------
-    [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Multiclass
-    Brain-Computer Interface Classification by Riemannian Geometry," in IEEE
-    Transactions on Biomedical Engineering, vol. 59, no. 4, p. 920-928, 2012.
+    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Multiclass
+        Brain-Computer Interface Classification by Riemannian Geometry," in
+        IEEE Transactions on Biomedical Engineering, vol. 59, no. 4,
+        p. 920-928, 2012.
 
-    [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian geometry
-    applied to BCI classification", 9th International Conference Latent
-    Variable Analysis and Signal Separation (LVA/ICA 2010), LNCS vol. 6365,
-    2010, p. 629-636.
+    .. [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian
+        geometry applied to BCI classification", 9th International Conference
+        Latent Variable Analysis and Signal Separation (LVA/ICA 2010),
+        LNCS vol. 6365, 2010, p. 629-636.
     """
 
     def __init__(self, metric='riemann', n_jobs=1):
@@ -216,8 +217,8 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
     tsupdate : bool, default False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]_. This is not compatible with
-        online implementation. Performance are better when the number of trials
-        for prediction is higher.
+        online implementation. Performance are better when the number of
+        matrices for prediction is higher.
     n_jobs : int, default: 1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
@@ -361,8 +362,8 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
     tsupdate : bool, default: False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]. This is not compatible with
-        online implementation. Performance are better when the number of trials
-        for prediction is higher.
+        online implementation. Performance are better when the number of
+        matrices for prediction is higher.
     clf: sklearn classifier, default: LogisticRegression
         The classifier to apply in the tangent space
 

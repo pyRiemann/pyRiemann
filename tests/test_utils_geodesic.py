@@ -41,8 +41,8 @@ class GeodesicFuncTestCase:
         self.geodesic_middle(geodesic_func, A, B, Ctrue)
 
     def test_random_mat(self, geodesic_func, get_covmats):
-        n_trials, n_channels = 2, 5
-        covmats = get_covmats(n_trials, n_channels)
+        n_matrices, n_channels = 2, 5
+        covmats = get_covmats(n_matrices, n_channels)
         A, B = covmats[0], covmats[1]
         if geodesic_func is geodesic_euclid:
             Ctrue = mean_euclid(covmats)
@@ -82,8 +82,8 @@ def test_distance_wrapper_simple(metric):
 
 @pytest.mark.parametrize("met, gfunc", zip(get_geod_name(), get_geod_func()))
 def test_distance_wrapper_random(met, gfunc, get_covmats):
-    n_trials, n_channels = 2, 5
-    covmats = get_covmats(n_trials, n_channels)
+    n_matrices, n_channels = 2, 5
+    covmats = get_covmats(n_matrices, n_channels)
     A, B = covmats[0], covmats[1]
     if gfunc is geodesic_euclid:
         Ctrue = mean_euclid(covmats)

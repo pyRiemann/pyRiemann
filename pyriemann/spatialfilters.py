@@ -52,14 +52,15 @@ class Xdawn(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    [1] Rivet, B., Souloumiac, A., Attina, V., & Gibert, G. (2009). xDAWN
-    algorithm to enhance evoked potentials: application to brain-computer
-    interface. Biomedical Engineering, IEEE Transactions on, 56(8), 2035-2043.
+    .. [1] Rivet, B., Souloumiac, A., Attina, V., & Gibert, G. (2009). xDAWN
+        algorithm to enhance evoked potentials: application to brain-computer
+        interface. Biomedical Engineering, IEEE Transactions on, 56(8),
+        2035-2043.
 
-    [2] Rivet, B., Cecotti, H., Souloumiac, A., Maby, E., & Mattout, J. (2011,
-    August). Theoretical analysis of xDAWN algorithm: application to an
-    efficient sensor selection in a P300 BCI. In Signal Processing Conference,
-    2011 19th European (pp. 1382-1386). IEEE.
+    .. [2] Rivet, B., Cecotti, H., Souloumiac, A., Maby, E., & Mattout, J.
+        (2011). Theoretical analysis of xDAWN algorithm: application to an
+        efficient sensor selection in a P300 BCI. In Signal Processing
+        Conference, 2011 19th European (pp. 1382-1386). IEEE.
     """
 
     def __init__(self, nfilter=4, classes=None, estimator='scm',
@@ -80,7 +81,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_times)
-            ndarray of trials.
+            Set of trials.
         y : ndarray shape (n_trials, 1)
             labels corresponding to each trial.
 
@@ -132,12 +133,12 @@ class Xdawn(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_times)
-            ndarray of trials.
+            Set of trials.
 
         Returns
         -------
         Xf : ndarray, shape (n_trials, n_filters * n_classes, n_times)
-            ndarray of spatialy filtered trials.
+            Set of spatialy filtered trials.
         """
         X = np.dot(self.filters_, X)
         X = X.transpose((1, 0, 2))
@@ -190,7 +191,7 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of covariance.
+            Set of covariance matrices.
         y : ndarray shape (n_trials, 1)
             labels corresponding to each trial.
 
@@ -208,7 +209,7 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of covariance.
+            Set of covariance matrices.
 
         Returns
         -------
@@ -305,7 +306,7 @@ class CSP(BilinearFilter):
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of covariance.
+            Set of covariance matrices.
         y : ndarray shape (n_trials, 1)
             labels corresponding to each trial.
 
@@ -430,7 +431,7 @@ class SPoC(CSP):
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of covariance.
+            Set of covariance matrices.
         y : ndarray shape (n_trials, 1)
             target variable corresponding to each trial.
 
@@ -575,8 +576,8 @@ class AJDC(BaseEstimator, TransformerMixin):
                 list of n_subjects of list of n_conditions ndarray of shape \
                 (n_channels, n_times), with same n_conditions and n_channels \
                 but different n_times
-            Signal in channel space, acquired for different subjects and under
-            different experimental conditions.
+            Multi-channel time-series in channel space, acquired for different
+            subjects and under different experimental conditions.
         y : None
             Currently not used, here for compatibility with sklearn API.
 
@@ -643,13 +644,13 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            Trials in channel space.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series in channel space.
 
         Returns
         -------
-        source : ndarray, shape (n_trials, n_sources, n_times)
-            Trials in source space.
+        source : ndarray, shape (n_matrices, n_sources, n_times)
+            Multi-channel time-series in source space.
         """
         if X.ndim != 3:
             raise ValueError('X must have 3 dimensions (Got %d)' % X.ndim)
@@ -668,15 +669,15 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_sources, n_times)
-            Trials in source space.
+        X : ndarray, shape (n_matrices, n_sources, n_times)
+            Multi-channel time-series in source space.
         supp : list of int | None, (default None)
             Indices of sources to suppress.
 
         Returns
         -------
-        signal : ndarray, shape (n_trials, n_channels, n_times)
-            Trials in channel space.
+        signal : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series in channel space.
         """
         if X.ndim != 3:
             raise ValueError('X must have 3 dimensions (Got %d)' % X.ndim)
@@ -702,12 +703,12 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            Trials in channel space.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series in channel space.
 
         Returns
         -------
-        src_var : ndarray, shape (n_trials, n_sources)
+        src_var : ndarray, shape (n_matrices, n_sources)
             Explained variance for each source.
         """
         if X.ndim != 3:

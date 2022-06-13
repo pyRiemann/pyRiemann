@@ -112,8 +112,8 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         For the complete list of estimators, see parameter `estimator` of
         :func:`pyriemann.utils.covariance.covariances`.
     svd : int | None (default None)
-        if not none, the prototype responses will be reduce using a svd using
-        the number of components passed in svd.
+        if not none, the prototype responses will be reduce using a SVD using
+        the number of components passed in SVD.
 
     See Also
     --------
@@ -195,7 +195,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         -------
         covmats : ndarray, shape (n_matrices, n_c, n_c)
             Covariance matrices for each input, with n_c the size
-            of covmats equal to n_channels * (n_classes + 1) in case svd is
+            of covmats equal to n_channels * (n_classes + 1) in case SVD is
             None and equal to n_channels + n_classes * svd otherwise.
         """
         covmats = covariances_EP(X, self.P_, estimator=self.estimator)

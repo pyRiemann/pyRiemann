@@ -3,16 +3,18 @@
 Embedding ERP MEG data in 2D Euclidean space
 ============================================
 
-Embeddings via Laplacian Eigenmaps and Riemannian locally linear
-embedding of a set of ERP data. Embedding via Laplacian Eigenmaps is
+Riemannian embeddings via Laplacian Eigenmaps (LE) and Locally Linear
+Embedding (LLE) of a set of ERP data. Embedding via Laplacian Eigenmaps is
 referred to as Spectral Embedding (SE).
 
 "Locally Linear Embedding (LLE) assumes that the  local neighborhood of a
 point on the manifold can be well approximated by  the affine subspace
 spanned by the k-nearest neighbors of the point and finds a low-dimensional
-embedding of the data based on these affine approximations. Laplacian
-Eigenmaps (LE) are based on computing the low dimensional representation
-that best preserves locality instead of local linearity in LLE." [1]_
+embedding of the data based on these affine approximations.
+
+Laplacian Eigenmaps (LE) are based on computing the low dimensional
+representation that best preserves locality instead of local linearity in LLE."
+[1]_
 
 References
 ----------
@@ -73,16 +75,16 @@ Xtrain, Xtest, ytrain, ytest = split
 covs = xdwn.fit(Xtrain, ytrain).transform(Xtest)
 
 ###############################################################################
-# Spectral Embedding (SE)
-# -----------------------
+# Laplacian Eigenmaps (LE), also called Spectral Embedding (SE)
+# -------------------------------------------------------------
 
 plot_embedding(covs, ytest, metric='riemann', embd_type='Spectral',
                normalize=True)
 plt.show()
 
 ###############################################################################
-# Riemannian Locally Linear Embedding (RLLE)
-# ------------------------------------------
+# Locally Linear Embedding (LLE)
+# ------------------------------
 
 plot_embedding(covs, ytest, metric='riemann', embd_type='LocallyLinear',
                normalize=False)
