@@ -595,8 +595,8 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         for i in range(self.n_potatoes):
             if X[i].shape[0] != n_matrices:
                 raise ValueError(
-                    'Unequal n_matrices between ndarray of X. Should be %d but '
-                    'got %d.' % (n_matrices, X[i].shape[0]))
+                    'Unequal n_matrices between ndarray of X. Should be %d but'
+                    ' got %d.' % (n_matrices, X[i].shape[0]))
             self._potatoes.append(clone(pt))
             self._potatoes[i].fit(X[i], y)
 
@@ -635,8 +635,8 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         for i in range(self.n_potatoes):
             if X[i].shape[0] != n_matrices:
                 raise ValueError(
-                    'Unequal n_matrices between ndarray of X. Should be %d but '
-                    'got %d.' % (n_matrices, X[i].shape[0]))
+                    'Unequal n_matrices between ndarray of X. Should be %d but'
+                    ' got %d.' % (n_matrices, X[i].shape[0]))
             self._potatoes[i].partial_fit(X[i], y, alpha=alpha)
         return self
 
@@ -665,8 +665,8 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         for i in range(self.n_potatoes):
             if X[i].shape[0] != n_matrices:
                 raise ValueError(
-                    'Unequal n_matrices between ndarray of X. Should be %d but '
-                    'got %d.' % (n_matrices, X[i].shape[0]))
+                    'Unequal n_matrices between ndarray of X. Should be %d but'
+                    ' got %d.' % (n_matrices, X[i].shape[0]))
             z[:, i] = self._potatoes[i].transform(X[i])
         return z
 
@@ -720,8 +720,8 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         for i in range(self.n_potatoes):
             if X[i].shape[0] != n_matrices:
                 raise ValueError(
-                    'Unequal n_matrices between ndarray of X. Should be %d but '
-                    'got %d.' % (n_matrices, X[i].shape[0]))
+                    'Unequal n_matrices between ndarray of X. Should be %d but'
+                    ' got %d.' % (n_matrices, X[i].shape[0]))
             p[i] = self._potatoes[i].predict_proba(X[i])
         p[p < 1e-10] = 1e-10  # avoid trouble with log
         q = - 2 * np.sum(np.log(p), axis=0)
