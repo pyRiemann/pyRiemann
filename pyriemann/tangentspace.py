@@ -47,8 +47,8 @@ class TangentSpace(BaseEstimator, TransformerMixin):
     tsupdate : bool (default False)
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]_. This is not compatible with
-        online implementation. Performance are better when the number of trials
-        for prediction is higher.
+        online implementation. Performance are better when the number of
+        matrices for prediction is higher.
 
 
     Attributes
@@ -82,8 +82,8 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
         y : ndarray | None (default None)
             Not used, here for compatibility with sklearn API.
         sample_weight : ndarray | None (default None)
@@ -131,13 +131,13 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        ts : ndarray, shape (n_trials, n_ts)
-            the tangent space projection of the matrices.
+        ts : ndarray, shape (n_matrices, n_ts)
+            Tangent space projections of SPD matrices.
         """
         self._check_reference_points(X)
         if self.tsupdate:
@@ -151,8 +151,8 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
         y : ndarray | None (default None)
             Not used, here for compatibility with sklearn API.
         sample_weight : ndarray | None (default None)
@@ -160,8 +160,8 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        ts : ndarray, shape (n_trials, n_ts)
-            the tangent space projection of the matrices.
+        ts : ndarray, shape (n_matrices, n_ts)
+            Tangent space projections of SPD matrices.
         """
         # compute mean covariance
         self.reference_ = mean_covariance(X, metric=self.metric,
@@ -175,15 +175,15 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_ts)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_ts)
+            Set of tangent space projections of the matrices.
         y : ndarray | None (default None)
             Not used, here for compatibility with sklearn API.
 
         Returns
         -------
-        cov : ndarray, shape (n_trials, n_channels, n_channels)
-            the covariance matrices corresponding to each of tangent vector.
+        cov : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of covariance matrices corresponding to each of tangent vector.
         """
         self._check_reference_points(X)
         return untangent_space(X, self.reference_)
@@ -205,8 +205,8 @@ class FGDA(BaseEstimator, TransformerMixin):
     tsupdate : bool (default False)
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]_. This is not compatible with
-        online implementation. Performance are better when the number of trials
-        for prediction is higher.
+        online implementation. Performance are better when the number of
+        matrices for prediction is higher.
 
     See Also
     --------
@@ -255,8 +255,8 @@ class FGDA(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
         y : ndarray | None (default None)
             Not used, here for compatibility with sklearn API.
         sample_weight : ndarray | None (default None)
@@ -276,13 +276,13 @@ class FGDA(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        covs : ndarray, shape (n_trials, n_channels, n_channels)
-            covariances matrices after filtering.
+        covs : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices after filtering.
         """
         ts = self._ts.transform(X)
         return self._retro_project(ts)
@@ -292,8 +292,8 @@ class FGDA(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
         y : ndarray | None (default None)
             Not used, here for compatibility with sklearn API.
         sample_weight : ndarray | None (default None)
@@ -301,8 +301,8 @@ class FGDA(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        covs : ndarray, shape (n_trials, n_channels, n_channels)
-            covariances matrices after filtering.
+        covs : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices after filtering.
         """
         self._ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
         ts = self._fit_lda(X, y, sample_weight=sample_weight)
