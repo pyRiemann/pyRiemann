@@ -155,7 +155,7 @@ def plot_cospectra(cosp, freqs, *, ylabels=None, title="Cospectra"):
 def plot_waveforms(X, display, *, times=None, color='gray', alpha=0.5,
                    linewidth=1.5, color_mean='k', color_std='gray', n_bins=50,
                    cmap=None):
-    ''' Display repetitions of a multichannel waveform.
+    """ Display repetitions of a multichannel waveform.
 
     Parameters
     ----------
@@ -193,7 +193,7 @@ def plot_waveforms(X, display, *, times=None, color='gray', alpha=0.5,
     Notes
     -----
     .. versionadded:: 0.2.8
-    '''
+    """
     try:
         import matplotlib.pyplot as plt
     except ImportError:
