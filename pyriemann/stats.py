@@ -169,10 +169,10 @@ class PermutationModel(BasePermutation):
         Determines the cross-validation splitting strategy.
         Possible inputs for cv are:
 
-          - None, to use the default 3-fold cross validation,
-          - integer, to specify the number of folds in a `(Stratified)KFold`,
-          - An object to be used as a cross-validation generator.
-          - An iterable yielding train, test splits.
+        - None, to use the default 3-fold cross validation;
+        - integer, to specify the number of folds in a `(Stratified)KFold`;
+        - an object to be used as a cross-validation generator;
+        - an iterable yielding train, test splits.
 
         For integer/None inputs, if the estimator is a classifier and `y` is
         either binary or multiclass, :class:`StratifiedKFold` is used. In all
@@ -250,7 +250,7 @@ class PermutationDistance(BasePermutation):
 
     - 'pairwise' :
         the statistic is based on paiwire distance as
-        descibed in [1]. This is the fastest option for low sample size since
+        descibed in [1]_. This is the fastest option for low sample size since
         the pairwise distance matrix does not need to be estimated for each
         permutation.
 

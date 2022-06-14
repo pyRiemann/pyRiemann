@@ -11,8 +11,10 @@ from .utils.base import sqrtm, invsqrtm
 
 
 class Whitening(BaseEstimator, TransformerMixin):
-    """Implementation of the whitening, and an optional unsupervised dimension
-    reduction, with Covariance as input.
+    """Whitening, and optional unsupervised dimension reduction.
+
+    Implementation of the whitening, and an optional unsupervised dimension
+    reduction, with SPD matrices as inputs.
 
     Parameters
     ----------
@@ -86,7 +88,8 @@ class Whitening(BaseEstimator, TransformerMixin):
         Xm = mean_covariance(
             X,
             metric=self.metric,
-            sample_weight=sample_weight)
+            sample_weight=sample_weight
+        )
 
         # whitening without dimension reduction
         if self.dim_red is None:

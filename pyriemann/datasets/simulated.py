@@ -80,7 +80,7 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs):
 def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
                         return_centers=False, random_state=None, *,
                         mat_mean=.0, mat_std=1.):
-    """Generate SPD dataset with two classes sampled from Riemannian Gaussian
+    """Generate SPD dataset with two classes sampled from Riemannian Gaussian.
 
     Generate a dataset with SPD matrices drawn from two Riemannian Gaussian
     distributions. The distributions have the same class dispersions and the
@@ -166,7 +166,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
 
 def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
                   random_state=None):
-    """Generate a set of outlier points
+    """Generate a set of outlier points.
 
     Simulate data points that are outliers for a given Riemannian Gaussian
     distribution with fixed mean and dispersion.

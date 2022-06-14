@@ -8,7 +8,7 @@ from ..utils.test import is_sym_pos_semi_def as is_spsd
 
 
 def _pdf_r(r, sigma):
-    """Pdf for the log of eigenvalues of a SPD matrix
+    """Pdf for the log of eigenvalues of a SPD matrix.
 
     Probability density function for the logarithm of the eigenvalues of a SPD
     matrix samples from the Riemannian Gaussian distribution. See Said et al.
@@ -43,7 +43,7 @@ def _pdf_r(r, sigma):
 
 def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
                     random_state=None):
-    """Slice sampling procedure
+    """Slice sampling procedure.
 
     Implementation of a slice sampling algorithm for sampling from any target
     pdf or a multiple of it. The implementation follows the description given
@@ -141,7 +141,7 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
 
 
 def _sample_parameter_r(n_samples, n_dim, sigma, random_state=None):
-    """Sample the r parameters of a Riemannian Gaussian distribution
+    """Sample the r parameters of a Riemannian Gaussian distribution.
 
     Sample the logarithm of the eigenvalues of a SPD matrix following a
     Riemannian Gaussian distribution.
@@ -175,7 +175,7 @@ def _sample_parameter_r(n_samples, n_dim, sigma, random_state=None):
 
 
 def _sample_parameter_U(n_samples, n_dim, random_state=None):
-    """Sample the U parameters of a Riemannian Gaussian distribution
+    """Sample the U parameters of a Riemannian Gaussian distribution.
 
     Sample the eigenvectors of a SPD matrix following a Riemannian Gaussian
     distribution.
@@ -208,7 +208,7 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
 
 
 def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None):
-    """Sample a Riemannian Gaussian distribution centered at the Identity
+    """Sample a Riemannian Gaussian distribution centered at the Identity.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at the
     Identity, which has the role of the origin in the SPD manifold, and
@@ -261,7 +261,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None):
 
 
 def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None):
-    """Sample a Riemannian Gaussian distribution
+    """Sample a Riemannian Gaussian distribution.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at
     mean and with dispersion parametrized by sigma. This distribution has been
@@ -321,7 +321,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None):
 
 def generate_random_spd_matrix(n_dim, random_state=None, *, mat_mean=.0,
                                mat_std=1.):
-    """Generate a random SPD matrix
+    """Generate a random SPD matrix.
 
     Parameters
     ----------

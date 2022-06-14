@@ -21,14 +21,13 @@ class Embedding(BaseEstimator):
 
 
 class SpectralEmbedding(BaseEstimator):
-    """Spectral embedding of SPD matrices into an Euclidean space of smaller
-    dimension.
+    """Spectral embedding of SPD matrices into an Euclidean space.
 
     It uses Laplacian Eigenmaps [1]_ to embed SPD matrices into an Euclidean
-    space. The basic hypothesis is that high-dimensional data lives in a
-    low-dimensional manifold, whose intrinsic geometry can be described
-    via the Laplacian matrix of a graph. The vertices of this graph are
-    the SPD matrices and the weights of the links are determined by the
+    space of smaller dimension. The basic hypothesis is that high-dimensional
+    data lives in a low-dimensional manifold, whose intrinsic geometry can be
+    described via the Laplacian matrix of a graph. The vertices of this graph
+    are the SPD matrices and the weights of the links are determined by the
     Riemannian distance between each pair of them.
 
     Parameters
@@ -329,7 +328,7 @@ def locally_linear_embedding(X,
 
     1.  find its k nearest neighbors KNN(xi),
     2.  calculate the best reconstruction of xi based on its
-        k-nearest-neighbors (Eq.9 in [1]_),
+        k-nearest neighbors (Eq.9 in [1]_),
     3.  calculate a low-dimensional embedding for all points based on
         the weights in step 2.
 

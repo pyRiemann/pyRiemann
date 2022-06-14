@@ -12,8 +12,7 @@ from .preprocessing import Whitening
 
 
 class Xdawn(BaseEstimator, TransformerMixin):
-
-    """Implementation of the Xdawn Algorithm.
+    """Xdawn algorithm.
 
     Xdawn is a spatial filtering method designed to improve the signal
     to signal + noise ratio (SSNR) of the ERP responses. Xdawn was originaly
@@ -90,7 +89,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
         self : Xdawn instance
             The Xdawn instance.
         """
-        Nt, Ne, Ns = X.shape
+        n_trials, n_channels, n_times = X.shape
 
         self.classes_ = (np.unique(y) if self.classes is None else
                          self.classes)
@@ -99,7 +98,9 @@ class Xdawn(BaseEstimator, TransformerMixin):
         if Cx is None:
             # FIXME : too many reshape operation
             tmp = X.transpose((1, 2, 0))
-            Cx = np.matrix(self.estimator_fn(tmp.reshape(Ne, Ns * Nt)))
+            Cx = np.matrix(self.estimator_fn(
+                tmp.reshape(n_channels, n_times * n_trials)
+            ))
 
         self.evokeds_ = []
         self.filters_ = []
@@ -146,11 +147,10 @@ class Xdawn(BaseEstimator, TransformerMixin):
 
 
 class BilinearFilter(BaseEstimator, TransformerMixin):
-    r""" Bilinear spatial filter.
+    r"""Bilinear spatial filter.
 
-    Bilinear spatial filter for covariance matrices.
-    allow to define a custom spatial filter for bilinear projection of the
-    data :
+    Bilinear spatial filter for SPD matrices allows to define a custom spatial
+    filter for bilinear projection of the data:
 
     .. math::
         \mathbf{Cf}_i = \mathbf{V} \mathbf{C}_i \mathbf{V}^T
@@ -236,7 +236,7 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
 
 
 class CSP(BilinearFilter):
-    """Implementation of the CSP spatial Filtering with Covariance as input.
+    """CSP spatial filtering with covariance matrices as inputs.
 
     Implementation of the famous Common Spatial Pattern algorithm [1]_ [2]_,
     but with covariance matrices as input. In addition, the implementation
@@ -263,7 +263,6 @@ class CSP(BilinearFilter):
         If fit, the CSP spatial filters, else None.
     patterns_ : ndarray
         If fit, the CSP spatial patterns, else None.
-
 
     See Also
     --------
@@ -327,7 +326,7 @@ class CSP(BilinearFilter):
         if np.squeeze(y).ndim != 1:
             raise ValueError('y must be of shape (n_trials,).')
 
-        Nt, Ne, Ns = X.shape
+        n_trials, n_channels, _ = X.shape
         classes = np.unique(y)
         # estimate class means
         C = []
@@ -380,7 +379,7 @@ class CSP(BilinearFilter):
 
 
 class SPoC(CSP):
-    """Implementation of the SPoC spatial filtering with Covariance as input.
+    """SPoC spatial filtering with covariance matrices as inputs.
 
     Source Power Comodulation (SPoC) [1]_ allows to extract spatial filters and
     patterns by using a target (continuous) variable in the decomposition
@@ -472,7 +471,7 @@ class SPoC(CSP):
 
 
 class AJDC(BaseEstimator, TransformerMixin):
-    """Implementation of the AJDC.
+    """AJDC algorithm.
 
     The approximate joint diagonalization of Fourier cospectral matrices (AJDC)
     [1]_ is a versatile tool for blind source separation (BSS) tasks based on

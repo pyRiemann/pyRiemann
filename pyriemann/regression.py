@@ -12,11 +12,11 @@ from .utils.mean import mean_covariance
 
 
 class SVR(sklearnSVR):
-    """Regression by Riemannian Support Vector Machine.
+    """Regression by Support Vector Machine.
 
-    Support vector machine regression with precomputed Riemannian kernel matrix
-    according to different metrics, extending the idea described in [1]_ to
-    regression.
+    Support Vector Machine (SVM) regression with precomputed Riemannian kernel
+    matrix according to different metrics, extending the idea described in [1]_
+    to regression.
 
     Parameters
     ----------
@@ -111,7 +111,7 @@ class SVR(sklearnSVR):
 
         Returns
         -------
-        self : Riemannian SVR instance
+        self : SVR instance
             The SVR instance.
         """
         self._set_cref(X)
@@ -146,12 +146,12 @@ class SVR(sklearnSVR):
 
 
 class KNearestNeighborRegressor(MDM):
-    """Regression by K-Nearest-Neighbors.
+    """Regression by k-nearest-neighbors.
 
-    Regression by nearest Neighbors. For each point of the test set, the
+    Regression by k-nearest neighbors. For each point of the test set, the
     pairwise distance to each element of the training set is estimated. The
     value is calculated according to the softmax average w.r.t. distance of
-    the k nearest neighbors.
+    the k-nearest neighbors.
 
     DISCLAIMER: This is an unpublished algorithm.
 
@@ -194,8 +194,8 @@ class KNearestNeighborRegressor(MDM):
 
         Returns
         -------
-        self : NearestNeighbor instance
-            The NearestNeighbor instance.
+        self : KNearestNeighborRegressor instance
+            The KNearestNeighborRegressor instance.
         """
         self.values_ = y
         self.covmeans_ = X

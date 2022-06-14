@@ -62,10 +62,10 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
 
 class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
 
-    """Kmean clustering using Riemannian geometry.
+    """Clustering by k-means with SPD matrices as inputs.
 
-    Find clusters that minimize the sum of squared distance to their centroid.
-    This is a direct implementation of the kmean algorithm with a riemanian
+    Find clusters that minimize the sum of squared distance to their centroids.
+    This is a direct implementation of the k-means algorithm with a Riemannian
     metric.
 
     Parameters
@@ -215,7 +215,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         return self.mdm_.predict(X)
 
     def transform(self, X):
-        """get the distance to each centroid.
+        """Get the distance to each centroid.
 
         Parameters
         ----------
@@ -230,7 +230,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         return self.mdm_.transform(X)
 
     def centroids(self):
-        """helper for fast access to the centroid.
+        """Helper for fast access to the centroid.
 
         Returns
         -------
@@ -241,8 +241,12 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
 
 
 class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
+    """Clustering by k-means for each class with SPD matrices as inputs.
 
-    """Run kmeans for each class."""
+    See Also
+    --------
+    Kmeans
+    """
 
     def __init__(self, n_clusters=2, **params):
         """Init."""
@@ -267,7 +271,6 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
 
 
 class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
-
     """Artefact detection with the Riemannian Potato.
 
     The Riemannian Potato [1]_ is a clustering method used to detect artifact
@@ -319,7 +322,9 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         self.neg_label = neg_label
 
     def fit(self, X, y=None):
-        """Fit the potato from covariance matrices, with an iterative outlier
+        """Fit the potato from covariance matrices.
+
+        Fit the potato from covariance matrices, with an iterative outlier
         removal to obtain a reliable potato.
 
         Parameters
@@ -463,8 +468,8 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         Returns
         -------
         proba : ndarray, shape (n_matrices,)
-            data is considered as normal/clean for high value of proba.
-            data is considered as abnormal/artifacted for low value of proba.
+            Matrix is considered as normal/clean for high value of proba.
+            It is considered as abnormal/artifacted for low value of proba.
         """
         z = self.transform(X)
         proba = self._get_proba(z)
@@ -503,7 +508,6 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
 
 class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
-
     """Artefact detection with the Riemannian Potato Field.
 
     The Riemannian Potato Field [1]_ is a clustering method used to detect
@@ -557,7 +561,9 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         self.neg_label = neg_label
 
     def fit(self, X, y=None):
-        """Fit the potato field from covariance matrices, with iterative
+        """Fit the potato field from covariance matrices.
+
+        Fit the potato field from covariance matrices, with iterative
         outlier removal to obtain reliable potatoes.
 
         Parameters
@@ -641,8 +647,10 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         return self
 
     def transform(self, X):
-        """Return the normalized log-distances to the centroids (ie geometric
-        z-scores of distances).
+        """Return the normalized log-distances to the centroids.
+
+        Return the normalized log-distances to the centroids, ie geometric
+        z-scores of distances.
 
         Parameters
         ----------
@@ -695,8 +703,10 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         return out
 
     def predict_proba(self, X):
-        """Predict probability obtained combining probabilities of potatoes
-        using Fisher's method. A threshold of 0.01 can be used.
+        """Predict probability obtained combining probabilities of potatoes.
+
+        Predict probability obtained combining probabilities of potatoes using
+        Fisher's method. A threshold of 0.01 can be used.
 
         Parameters
         ----------
@@ -710,8 +720,8 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         Returns
         -------
         proba : ndarray, shape (n_matrices,)
-            data is considered as normal/clean for high value of proba.
-            data is considered as abnormal/artifacted for low value of proba.
+            Matrix is considered as normal/clean for high value of proba.
+            It is considered as abnormal/artifacted for low value of proba.
         """
         self._check_length(X)
         n_matrices = X[0].shape[0]
