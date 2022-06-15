@@ -718,7 +718,7 @@ class SVC(sklearnSVC):
 
 
 class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
-    """ Mean field classifier
+    """Classification by Minimum Distance to Mean Field.
 
     Classification by Minimum Distance to Mean Field [1]_, using power means.
 
@@ -727,7 +727,12 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
     power_list : list of float (default: [-1,0,+1])
         Exponents of power means.
     method_label : {'sum_means', 'inf_means'} (default: 'sum_means')
-        Method to combine labels.
+        Method to combine labels:
+
+        * sum_means: it assigns the covariance to the class whom the sum of
+          distances to means of the field is the lowest;
+        * inf_means: it assigns the covariance to the class of the closest mean
+          of the field.
     metric : string | dict (default: 'riemann')
         The type of metric used for distance estimation during prediction.
         See `distance` for the list of supported metric.

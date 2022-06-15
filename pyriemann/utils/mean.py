@@ -444,12 +444,21 @@ def mean_alm(covmats, tol=1e-14, maxiter=100,
 def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10):
     """Power mean of SPD matrices.
 
-    :param covmats: Covariance matrices, (n_matrices, n_channels, n_channels)
-    :param p: Exponent, in [-1,+1]
-    :param sample_weight: Weight of each matrix
-    :param zeta: Stopping criterion
+    Parameters
+    ----------
+    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    p : float
+        Exponent, in [-1,+1].
+    sample_weight : None | ndarray, shape (n_matrices,) (default None)
+        The weight of each matrix.
+    zeta : float (default 10e-10)
+        Stopping criterion.
 
-    :returns: the mean covariance matrix
+    Returns
+    -------
+    C : ndarray, shape (n_channels, n_channels)
+        Power mean.
 
     Notes
     -----
