@@ -1,4 +1,4 @@
-"""Aproximate joint diagonalization algorithm."""
+"""Aproximate joint diagonalization algorithms."""
 import numpy as np
 
 
@@ -29,7 +29,7 @@ def rjd(X, eps=1e-8, n_iter_max=1000):
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices to diagonalize
+        Set of SPD matrices to diagonalize.
     eps : float (default 1e-8)
         Tolerance for stopping criterion.
     n_iter_max : int (default 1000)
@@ -113,10 +113,10 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices to diagonalize
+        Set of SPD matrices to diagonalize.
     eps : float (default 1e-6)
-        tolerance for stoping criterion.
-    n_iter_max : int (default 1000)
+        Tolerance for stoping criterion.
+    n_iter_max : int (default 15)
         The maximum number of iteration to reach convergence.
     sample_weight : None | ndarray, shape (n_matrices,) (default None)
         The weight of each covariance matrix, strictly positive.
@@ -124,9 +124,9 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
     Returns
     -------
     V : ndarray, shape (n_channels, n_channels)
-        the diagonalizer
+        The diagonalizer.
     D : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of quasi diagonal matrices
+        Set of quasi diagonal matrices.
 
     Notes
     -----
@@ -146,7 +146,7 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
     """
     normalized_weight = _get_normalized_weight(sample_weight, X)  # sum = 1
 
-    n_epochs = X.shape[0]
+    n_matrices = X.shape[0]
 
     # Reshape input matrix
     A = np.concatenate(X, axis=0).T
@@ -180,7 +180,7 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
                 h12 = tmp1 + tmp2
                 h21 = np.conj((tmp1 - tmp2) / tmp)
 
-                decr += n_epochs * (g12 * np.conj(h12) + g21 * h21) / 2.0
+                decr += n_matrices * (g12 * np.conj(h12) + g21 * h21) / 2.0
 
                 tmp = 1 + 1.j * 0.5 * np.imag(h12 * h21)
                 tmp = np.real(tmp + np.sqrt(tmp ** 2 - h12 * h21))
@@ -188,12 +188,12 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
 
                 A[[ii, jj], :] = np.dot(tau, A[[ii, jj], :])
                 tmp = np.c_[A[:, Ii], A[:, Ij]]
-                tmp = np.reshape(tmp, (n_times * n_epochs, 2), order='F')
+                tmp = np.reshape(tmp, (n_times * n_matrices, 2), order='F')
                 tmp = np.dot(tmp, tau.T)
 
-                tmp = np.reshape(tmp, (n_times, n_epochs * 2), order='F')
-                A[:, Ii] = tmp[:, :n_epochs]
-                A[:, Ij] = tmp[:, n_epochs:]
+                tmp = np.reshape(tmp, (n_times, n_matrices * 2), order='F')
+                A[:, Ii] = tmp[:, :n_matrices]
+                A[:, Ij] = tmp[:, n_matrices:]
                 V[[ii, jj], :] = np.dot(tau, V[[ii, jj], :])
         if decr < epsilon:
             break
@@ -202,7 +202,7 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
 
 
 def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
-    """Approximate joint diagonalization algorithm UWEDGE.
+    """Approximate joint diagonalization based on UWEDGE.
 
     Uniformly Weighted Exhaustive Diagonalization using Gauss iteration
     (U-WEDGE). Implementation of the AJD algorithm by Tichavsky and
@@ -212,12 +212,12 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices to diagonalize
+        Set of SPD matrices to diagonalize.
     init: None | ndarray, shape (n_channels, n_channels) (default None)
         Initialization for the diagonalizer.
     eps : float (default 1e-7)
-        tolerance for stoping criterion.
-    n_iter_max : int (default 1000)
+        Tolerance for stoping criterion.
+    n_iter_max : int (default 100)
         The maximum number of iteration to reach convergence.
 
     Returns
@@ -246,7 +246,7 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
         Incorporating Weight Matrices" IEEE Transactions of Signal Processing,
         2009.
     """
-    L, d, _ = X.shape
+    n_matrices, d, _ = X.shape
 
     # reshape input matrix
     M = np.concatenate(X, 0).T
@@ -263,9 +263,9 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
         W_est = init
 
     Ms = np.array(M)
-    Rs = np.zeros((d, L))
+    Rs = np.zeros((d, n_matrices))
 
-    for k in range(L):
+    for k in range(n_matrices):
         ini = k*d
         Il = np.arange(ini, ini + d)
         M[:, Il] = 0.5*(M[:, Il] + M[:, Il].T)
@@ -288,7 +288,7 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
         aux = 1./np.sqrt(np.abs(np.diag(Raux)))
         W_est = np.dot(np.diag(aux), W_est)
 
-        for k in range(L):
+        for k in range(n_matrices):
             ini = k*d
             Il = np.arange(ini, ini + d)
             Ms[:, Il] = np.dot(np.dot(W_est, M[:, Il]), W_est.T)
@@ -299,5 +299,5 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
         crit = crit_new
         iteration += 1
 
-    D = np.reshape(Ms, (d, L, d)).transpose(1, 0, 2)
+    D = np.reshape(Ms, (d, n_matrices, d)).transpose(1, 0, 2)
     return W_est, D

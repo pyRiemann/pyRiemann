@@ -100,14 +100,14 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         return self
 
     def _check_data_dim(self, X):
-        """Check data shape and return the size of cov mat."""
+        """Check data shape and return the size of SPD matrix."""
         shape_X = X.shape
         if len(X.shape) == 2:
-            Ne = (np.sqrt(1 + 8 * shape_X[1]) - 1) / 2
-            if Ne != int(Ne):
+            n_channels = (np.sqrt(1 + 8 * shape_X[1]) - 1) / 2
+            if n_channels != int(n_channels):
                 raise ValueError("Shape of Tangent space vector does not"
                                  " correspond to a square matrix.")
-            return int(Ne)
+            return int(n_channels)
         elif len(X.shape) == 3:
             if shape_X[1] != shape_X[2]:
                 raise ValueError("Matrices must be square")

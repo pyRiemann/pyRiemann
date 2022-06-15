@@ -81,12 +81,12 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     r"""Estimate special form covariance matrix for ERP.
 
     Estimation of special form covariance matrix dedicated to ERP processing.
-    For each class, a prototyped response is obtained by average across trial :
+    For each class, a prototyped response is obtained by average across trial:
 
     .. math::
         \mathbf{P} = \frac{1}{N} \sum_i^N \mathbf{X}_i
 
-    and a super trial is build using the concatenation of P and the trial X :
+    and a super trial is build using the concatenation of P and the trial X:
 
     .. math::
         \mathbf{\tilde{X}}_i =  \left[
@@ -473,10 +473,9 @@ class CospCovariances(BaseEstimator, TransformerMixin):
         covmats : ndarray, shape (n_matrices, n_channels, n_channels, n_freqs)
             Covariance matrices for each input and for each frequency bin.
         """
-        Nt = len(X)
         out = []
 
-        for i in range(Nt):
+        for i in range(len(X)):
             S, freqs = cospectrum(
                 X[i],
                 window=self.window,
@@ -579,10 +578,9 @@ class Coherences(CospCovariances):
             Squared coherence matrices for each input and for each frequency
             bin.
         """
-        Nt = len(X)
         out = []
 
-        for i in range(Nt):
+        for i in range(len(X)):
             S, freqs = coherence(
                 X[i],
                 window=self.window,
@@ -598,7 +596,7 @@ class Coherences(CospCovariances):
 
 
 class HankelCovariances(BaseEstimator, TransformerMixin):
-    """Estimation of covariance matrix with time delayed hankel matrices.
+    """Estimation of covariance matrix with time delayed Hankel matrices.
 
     This estimation is usefull to catch spectral dynamics of the signal,
     similarly to the CSSP method. It is done by concatenating time delayed
@@ -607,7 +605,7 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     delays: int, list of int (default, 2)
-        the delays to apply for the hankel matrices. if Int, it use a range of
+        the delays to apply for the Hankel matrices. if Int, it use a range of
         delays up to the given value. A list of int can be given.
     estimator : string (default: 'scm')
         Covariance matrix estimator.
@@ -648,7 +646,7 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """Estimate the hankel covariance matrices.
+        """Estimate the Hankel covariance matrices.
 
         Parameters
         ----------
@@ -679,9 +677,9 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
 
 class Shrinkage(BaseEstimator, TransformerMixin):
-    """Regularization of covariance matrices by shrinkage
+    """Regularization of SPD matrices by shrinkage.
 
-    This transformer apply a shrinkage regularization to any covariance matrix.
+    This transformer apply a shrinkage regularization to any SPD matrix.
     It directly use the `shrunk_covariance` function from scikit learn, applied
     on each input.
 
@@ -708,7 +706,7 @@ class Shrinkage(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_times)
-            ndarray of Target data.
+            Set of SPD matrices.
         y : ndarray shape (n_matrices,)
             Labels corresponding to each matrix, not used.
 
@@ -720,17 +718,17 @@ class Shrinkage(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """Shrink and return the covariance matrices.
+        """Shrink and return the SPD matrices.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Covariances matrices
+            Set of SPD matrices.
 
         Returns
         -------
         covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-            Shrunk covariances matrices.
+            Set of shrunk SPD matrices.
         """
 
         covmats = np.zeros_like(X)

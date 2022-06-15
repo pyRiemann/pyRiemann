@@ -42,7 +42,7 @@ def test_powm():
 
 
 def test_check_raise():
-    """Test chech SPD matrices"""
+    """Test check SPD matrices"""
     C = 2*np.ones((10, 3, 3))
     # This is an indirect check, the riemannian mean must crash when the
     # matrices are not SPD.

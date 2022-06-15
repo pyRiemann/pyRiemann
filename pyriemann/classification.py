@@ -130,15 +130,15 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     def _predict_distances(self, covtest):
         """Helper to predict the distance. equivalent to transform."""
-        Nc = len(self.covmeans_)
+        n_centroids = len(self.covmeans_)
 
         if self.n_jobs == 1:
             dist = [distance(covtest, self.covmeans_[m], self.metric_dist)
-                    for m in range(Nc)]
+                    for m in range(n_centroids)]
         else:
             dist = Parallel(n_jobs=self.n_jobs)(delayed(distance)(
                 covtest, self.covmeans_[m], self.metric_dist)
-                for m in range(Nc))
+                for m in range(n_centroids))
 
         dist = np.concatenate(dist, axis=1)
         return dist
@@ -439,11 +439,11 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
 
 
 class KNearestNeighbor(MDM):
-    """Classification by K-NearestNeighbor.
+    """Classification by k-nearest neighbors.
 
-    Classification by nearest Neighbors. For each point of the test set, the
+    Classification by k-nearest neighbors. For each point of the test set, the
     pairwise distance to each element of the training set is estimated. The
-    class is affected according to the majority class of the k nearest
+    class is affected according to the majority class of the k-nearest
     neighbors.
 
     Parameters
@@ -554,9 +554,9 @@ class KNearestNeighbor(MDM):
 
 
 class SVC(sklearnSVC):
-    """Classification by Riemannian Support Vector Machine.
+    """Classification by Support Vector Machine.
 
-    Support vector machine with precomputed Riemannian kernel matrix
+    Support Vector Machine (SVM) with precomputed Riemannian kernel matrix
     according to different metrics as described in [1]_.
 
     Parameters
@@ -683,7 +683,7 @@ class SVC(sklearnSVC):
 
         Returns
         -------
-        self : Riemannian SVC instance
+        self : SVC instance
             The SVC instance.
         """
         self._set_cref(X)

@@ -33,20 +33,29 @@ def _mcd(X):
 
 
 def _sch(X):
-    """Schaefer-Strimmer covariance estimator
+    r"""Schaefer-Strimmer covariance estimator.
 
     Shrinkage estimator using method from [1]_:
+
     .. math::
             \hat{\Sigma} = (1 - \gamma)\Sigma_{scm} + \gamma T
 
     where :math:`T` is the diagonal target matrix:
+
     .. math::
-            T_{i,j} = \{ \Sigma_{scm}^{ii} \text{if} i = j, 0 \text{otherwise} \}
+        T_{i,j} = \{ \Sigma_{scm}^{ii} \text{if} i = j, 0 \text{otherwise} \}
+
     Note that the optimal :math:`\gamma` is estimated by the authors' method.
 
-    :param X: Multi-channel time-series, (n_channels, n_times)
+    Parameters
+    ----------
+    X : ndarray, shape (n_channels, n_times)
+        Multi-channel time-series.
 
-    :returns: Schaefer-Strimmer shrinkage covariance matrix, (n_channels, n_channels)
+    Returns
+    -------
+    cov : ndarray, shape (n_channels, n_channels)
+        Schaefer-Strimmer shrinkage covariance matrix.
 
     Notes
     -----
@@ -57,7 +66,7 @@ def _sch(X):
     .. [1] Schafer, J., and K. Strimmer. 2005. A shrinkage approach to
         large-scale covariance estimation and implications for functional
         genomics. Statist. Appl. Genet. Mol. Biol. 4:32.
-    """  # noqa
+    """
     n_times = X.shape[1]
     X_c = (X.T - X.T.mean(axis=0)).T
     C_scm = 1. / n_times * X_c @ X_c.T
@@ -274,7 +283,7 @@ def block_covariances(X, blocks, estimator='cov'):
 
 
 def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
-    """Convert EEG signal to covariance using sliding window"""
+    """Convert EEG signal to covariance using sliding window."""
     est = _check_est(estimator)
     X = []
     if padding:
@@ -536,7 +545,9 @@ def normalize(X, norm):
 
 
 def get_nondiag_weight(X):
-    """Compute non-diagonality weights of a set of square matrices, following
+    """Compute non-diagonality weights of a set of square matrices.
+
+    Compute non-diagonality weights of a set of square matrices, following
     Eq(B.1) in [1]_.
 
     Parameters

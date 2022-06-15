@@ -1,25 +1,31 @@
+""" Tangent Space """
 import numpy as np
 
 from .base import sqrtm, invsqrtm, logm, expm
 from .mean import mean_covariance
-###############################################################
-# Tangent Space
-###############################################################
 
 
 def tangent_space(covmats, Cref):
-    """ Project SPD matrices in the tangent space.
+    """ Project a set of SPD matrices in the tangent space.
 
     Project a set of SPD matrices in the tangent space, according to the
-    reference point Cref
+    reference matrix Cref.
 
-    :param covmats: ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices
-    :param Cref: ndarray, shape (n_channels, n_channels)
-        The reference SPD matrix
-    :returns: ndarray, shape (n_matrices, n_channels * (n_channels + 1) / 2)
-        Set of tangent space vectors
+    Parameters
+    ----------
+    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    Cref : ndarray, shape (n_channels, n_channels)
+        The reference SPD matrix.
 
+    Returns
+    -------
+    T : ndarray, shape (n_matrices, n_channels * (n_channels + 1) / 2)
+        Set of tangent space vectors.
+
+    See Also
+    --------
+    untangent_space
     """
     n_matrices, n_channels, _ = covmats.shape
     Cm12 = invsqrtm(Cref)
@@ -36,15 +42,26 @@ def tangent_space(covmats, Cref):
 
 
 def untangent_space(T, Cref):
-    """Project a set of Tangent space vectors back to the manifold.
+    """Project a set of tangent space vectors back to the manifold.
 
-    :param T: ndarray, shape (n_matrices, n_channels * (n_channels + 1) / 2)
-        Set of tangent space vectors
-    :param Cref: ndarray, shape (n_channels, n_channels)
-        The reference SPD matrix
+    Project a set of tangent space vectors back to the manifold, according to
+    the reference matrix Cref.
 
-    :returns: ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices
+    Parameters
+    ----------
+    T : ndarray, shape (n_matrices, n_channels * (n_channels + 1) / 2)
+        Set of tangent space vectors.
+    Cref: ndarray, shape (n_channels, n_channels)
+        The reference SPD matrix.
+
+    Returns
+    -------
+    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+
+    See Also
+    --------
+    tangent_space
     """
     n_matrices, n_ts = T.shape
     n_channels = int((np.sqrt(1 + 8 * n_ts) - 1) / 2)
@@ -63,7 +80,7 @@ def untangent_space(T, Cref):
 
 
 def transport(Covs, Cref, metric='riemann'):
-    """Parallel transport of two set of covariance matrix.
+    """Parallel transport of two sets of SPD matrices.
 
     """
     C = mean_covariance(Covs, metric=metric)

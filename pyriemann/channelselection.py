@@ -86,10 +86,10 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         mdm.fit(X, y, sample_weight=sample_weight)
         self.covmeans_ = mdm.covmeans_
 
-        Ne, _ = self.covmeans_[0].shape
+        n_channels, _ = self.covmeans_[0].shape
 
         self.dist_ = []
-        self.subelec_ = list(range(0, Ne, 1))
+        self.subelec_ = list(range(0, n_channels, 1))
         while (len(self.subelec_)) > self.nelec:
             di = np.zeros((len(self.subelec_), 1))
             for idx in range(len(self.subelec_)):

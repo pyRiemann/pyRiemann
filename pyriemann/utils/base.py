@@ -1,99 +1,143 @@
 import numpy as np
-import scipy
+from scipy.linalg import eigh
 
 from numpy.core.numerictypes import typecodes
 
 
-def _matrix_operator(Ci, operator):
-    """matrix equivalent of an operator."""
-    if Ci.dtype.char in typecodes['AllFloat'] and not np.isfinite(Ci).all():
+def _matrix_operator(C, operator):
+    """Matrix equivalent of an operator."""
+    if C.dtype.char in typecodes['AllFloat'] and not np.isfinite(C).all():
         raise ValueError(
             "Covariance matrices must be positive definite. Add "
             "regularization to avoid this error.")
-    eigvals, eigvects = scipy.linalg.eigh(Ci, check_finite=False)
+    eigvals, eigvects = eigh(C, check_finite=False)
     eigvals = np.diag(operator(eigvals))
-    Out = np.dot(np.dot(eigvects, eigvals), eigvects.T)
-    return Out
+    D = eigvects @ eigvals @ eigvects.T
+    return D
 
 
-def sqrtm(Ci):
-    r"""Return the matrix square root of a covariance matrix defined by :
+def sqrtm(C):
+    r""" Square root of SPD matrix.
 
-    .. math::
-        \mathbf{C} = \mathbf{V} \left( \mathbf{\Lambda} \right)^{1/2} \mathbf{V}^\top
-
-    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
-    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{Ci}`
-
-    :param Ci: the coavriance matrix
-    :returns: the matrix square root
-
-    """  # noqa
-    return _matrix_operator(Ci, np.sqrt)
-
-
-def logm(Ci):
-    r"""Return the matrix logarithm of a covariance matrix defined by :
+    Return the matrix square root of a SPD matrix defined by:
 
     .. math::
-        \mathbf{C} = \mathbf{V} \log{(\mathbf{\Lambda})} \mathbf{V}^\top
+        \mathbf{D} =
+        \mathbf{V} \left( \mathbf{\Lambda} \right)^{1/2} \mathbf{V}^\top
 
     where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
-    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{Ci}`
+    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}`.
 
-    :param Ci: the covariance matrix
-    :returns: the matrix logarithm
+    Parameters
+    ----------
+    C : ndarray, shape (n, n)
+        SPD matrix.
 
+    Returns
+    -------
+    D : ndarray, shape (n, n)
+        Matrix square root of C.
     """
-    return _matrix_operator(Ci, np.log)
+    return _matrix_operator(C, np.sqrt)
 
 
-def expm(Ci):
-    r"""Return the matrix exponential of a covariance matrix defined by :
+def logm(C):
+    r""" Logarithm of SPD matrix.
+
+    Return the matrix logarithm of a SPD matrix defined by:
 
     .. math::
-        \mathbf{C} = \mathbf{V} \exp{(\mathbf{\Lambda})} \mathbf{V}^\top
+        \mathbf{D} = \mathbf{V} \log{(\mathbf{\Lambda})} \mathbf{V}^\top
 
     where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
-    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{Ci}`
+    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}`.
 
-    :param Ci: the coavriance matrix
-    :returns: the matrix exponential
+    Parameters
+    ----------
+    C : ndarray, shape (n, n)
+        SPD matrix.
 
+    Returns
+    -------
+    D : ndarray, shape (n, n)
+        Matrix logarithm of C.
     """
-    return _matrix_operator(Ci, np.exp)
+    return _matrix_operator(C, np.log)
 
 
-def invsqrtm(Ci):
-    r"""Return the inverse matrix square root of a covariance matrix defined by :
+def expm(C):
+    r""" Exponential of SPD matrix.
+
+    Return the matrix exponential of a SPD matrix defined by:
 
     .. math::
-        \mathbf{C} = \mathbf{V} \left( \mathbf{\Lambda} \right)^{-1/2} \mathbf{V}^\top
+        \mathbf{D} = \mathbf{V} \exp{(\mathbf{\Lambda})} \mathbf{V}^\top
 
     where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
-    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{Ci}`
+    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}`.
 
-    :param Ci: the coavriance matrix
-    :returns: the inverse matrix square root
+    Parameters
+    ----------
+    C : ndarray, shape (n, n)
+        SPD matrix.
 
-    """  # noqa
+    Returns
+    -------
+    D : ndarray, shape (n, n)
+        Matrix exponential of C.
+    """
+    return _matrix_operator(C, np.exp)
+
+
+def invsqrtm(C):
+    r""" Inverse square root of SPD matrix.
+
+    Return the inverse matrix square root of a SPD matrix defined by:
+
+    .. math::
+        \mathbf{D} =
+        \mathbf{V} \left( \mathbf{\Lambda} \right)^{-1/2} \mathbf{V}^\top
+
+    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
+    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}`.
+
+    Parameters
+    ----------
+    C : ndarray, shape (n, n)
+        SPD matrix.
+
+    Returns
+    -------
+    D : ndarray, shape (n, n)
+        Inverse matrix square root of C.
+    """
     def isqrt(x): return 1. / np.sqrt(x)
-    return _matrix_operator(Ci, isqrt)
+    return _matrix_operator(C, isqrt)
 
 
-def powm(Ci, alpha):
-    r"""Return the matrix power :math:`\alpha` of a covariance matrix defined by :
+def powm(C, alpha):
+    r""" Power of SPD matrix.
+
+    Return the matrix power :math:`\alpha` of a SPD matrix defined by:
 
     .. math::
-        \mathbf{C} = \mathbf{V} \left( \mathbf{\Lambda} \right)^{\alpha} \mathbf{V}^\top
+        \mathbf{D} =
+        \mathbf{V} \left( \mathbf{\Lambda} \right)^{\alpha} \mathbf{V}^\top
 
     where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
-    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{Ci}`
+    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}`.
 
-    :param Ci: the coavriance matrix
-    :param alpha: the power to apply
-    :returns: the matrix power
+    Parameters
+    ----------
+    C : ndarray, shape (n, n)
+        SPD matrix.
+    alpha : float
+        The power to apply.
 
-    """  # noqa
+    Returns
+    -------
+    D : ndarray, shape (n, n)
+        Matrix power of C.
+    """
     def power(x): return x**alpha
-    return _matrix_operator(Ci, power)
+    return _matrix_operator(C, power)
