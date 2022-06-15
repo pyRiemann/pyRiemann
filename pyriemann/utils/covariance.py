@@ -33,7 +33,7 @@ def _mcd(X):
 
 
 def _sch(X):
-    """Schaefer-Strimmer covariance estimator.
+    r"""Schaefer-Strimmer covariance estimator.
 
     Shrinkage estimator using method from [1]_:
 

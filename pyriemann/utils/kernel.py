@@ -147,7 +147,7 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
     Notes
     -----
     .. versionadded:: 0.2.8
-    """  #noqa
+    """  # noqa
     def kernelfct(X, Cref):
         return X
 
