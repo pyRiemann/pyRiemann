@@ -35,7 +35,7 @@ def distance_kullback_right(A, B):
 
 
 def distance_kullback_sym(A, B):
-    """Symetrized Kullback-Leibler divergence between two SPD matrices."""
+    """Symmetrized Kullback-Leibler divergence between two SPD matrices."""
     return distance_kullback(A, B) + distance_kullback_right(A, B)
 
 
@@ -46,7 +46,7 @@ def distance_euclid(A, B):
     as the Frobenius norm of the difference of the two matrices:
 
     .. math::
-        d = \Vert \mathbf{A} - \mathbf{B} \Vert_F
+        d(A,B) = \Vert \mathbf{A} - \mathbf{B} \Vert_F
 
     Parameters
     ----------
@@ -69,7 +69,7 @@ def distance_logeuclid(A, B):
     Compute the Log-Euclidean distance between two SPD matrices A and B:
 
     .. math::
-        d = \Vert \log(\mathbf{A}) - \log(\mathbf{B}) \Vert_F
+        d(A,B) = \Vert \log(\mathbf{A}) - \log(\mathbf{B}) \Vert_F
 
     Parameters
     ----------
@@ -93,7 +93,7 @@ def distance_riemann(A, B):
     and B:
 
     .. math::
-        d = {\left( \sum_i \log(\lambda_i)^2 \right)}^{1/2}
+        d(A,B) = {\left( \sum_i \log(\lambda_i)^2 \right)}^{1/2}
 
     where :math:`\lambda_i` are the joint eigenvalues of A and B.
 
@@ -115,11 +115,11 @@ def distance_riemann(A, B):
 def distance_logdet(A, B):
     r"""Log-det distance between two SPD matrices.
 
-    Compute the Log-det distance between two SPD matrices A and B:
+    Compute the log-det distance between two SPD matrices A and B:
 
     .. math::
-        d = \sqrt{\log(\det(\frac{\mathbf{A}+\mathbf{B}}{2}))
-            - \frac{1}{2} \log(\det(\mathbf{A}) \det(\mathbf{B}))}
+        d(A,B) = \sqrt{\log(\det(\frac{\mathbf{A}+\mathbf{B}}{2}))
+                 - \frac{1}{2} \log(\det(\mathbf{A}) \det(\mathbf{B}))}
 
     Parameters
     ----------
@@ -144,7 +144,7 @@ def distance_wasserstein(A, B):
     Compute the Wasserstein distance between two SPD matrices A and B:
 
     .. math::
-        d = \left( {tr(A + B - 2(A^{1/2}BA^{1/2})^{1/2})} \right)^{1/2}
+        d(A,B) = \sqrt{ \text{tr}(A + B - 2(A^{1/2}BA^{1/2})^{1/2}) }
 
     Parameters
     ----------
@@ -164,14 +164,14 @@ def distance_wasserstein(A, B):
 
 
 def distance(A, B, metric='riemann'):
-    """Distance between two SPD matrices according to a metric.
+    """Distance between SPD matrices according to a metric.
 
     Compute the distance between two SPD matrices A and B according to a
-    metric.
+    metric, or between a set of SPD matrices A and a SPD matrix B.
 
     Parameters
     ----------
-    A : ndarray, shape (n, n)
+    A : ndarray, shape (n, n) or shape (n_matrices, n, n)
         First SPD matrix.
     B : ndarray, shape (n, n)
         Second SPD matrix.
@@ -181,8 +181,8 @@ def distance(A, B, metric='riemann'):
 
     Returns
     -------
-    d : float
-        The distance between A and B.
+    d : float or ndarray, shape (n_matrices, 1)
+        The distance(s) between A and B.
     """
     if callable(metric):
         distance_function = metric

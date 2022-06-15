@@ -87,7 +87,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         y : ndarray | None (default None)
             Not used, here for compatibility with sklearn API.
         sample_weight : ndarray | None (default None)
-            weight of each sample.
+            Weight of each matrix.
 
         Returns
         -------
@@ -156,7 +156,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         y : ndarray | None (default None)
             Not used, here for compatibility with sklearn API.
         sample_weight : ndarray | None (default None)
-            weight of each sample.
+            Weight of each matrix.
 
         Returns
         -------
@@ -260,7 +260,7 @@ class FGDA(BaseEstimator, TransformerMixin):
         y : ndarray | None (default None)
             Not used, here for compatibility with sklearn API.
         sample_weight : ndarray | None (default None)
-            weight of each sample.
+            Weight of each matrix.
 
         Returns
         -------
@@ -297,7 +297,7 @@ class FGDA(BaseEstimator, TransformerMixin):
         y : ndarray | None (default None)
             Not used, here for compatibility with sklearn API.
         sample_weight : ndarray | None (default None)
-            weight of each sample.
+            Weight of each matrix.
 
         Returns
         -------

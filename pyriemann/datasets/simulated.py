@@ -28,7 +28,7 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False,
     Returns
     -------
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-        Covariances matrices
+        Covariances matrices.
     evals : ndarray, shape (n_matrices, n_channels)
         Eigen values used for each covariance matrix.
         Only returned if ``return_params=True``.
@@ -109,9 +109,9 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     Returns
     -------
     X : ndarray, shape (2*n_matrices, n_dim, n_dim)
-        ndarray of SPD matrices.
+        Set of SPD matrices.
     y : ndarray, shape (2*n_matrices,)
-        labels corresponding to each matrix.
+        Labels corresponding to each matrix.
     centers : ndarray, shape (2, n_dim, n_dim)
         The centers of each class. Only returned if ``return_centers=True``.
 
@@ -188,7 +188,7 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
     Returns
     -------
     outliers : ndarray, shape (n_matrices, n_dim, n_dim)
-        Array of simulated outlier matrices
+        Set of simulated outlier matrix.
 
     Notes
     -----

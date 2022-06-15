@@ -58,7 +58,7 @@ def plot_embedding(X,
     embd_type : {'Spectral' ,'LocallyLinear'}
         Embedding type.
     normalize : bool, (default : True)
-        If True, the plot is normalized from -1 to +1
+        If True, the plot is normalized from -1 to +1.
 
     Returns
     -------
@@ -108,7 +108,7 @@ def plot_cospectra(cosp, freqs, *, ylabels=None, title="Cospectra"):
     Parameters
     ----------
     cosp : ndarray, shape (n_freqs, n_channels, n_channels)
-        ndarray of cospectra.
+        Cospectral matrices.
     freqs : ndarray, shape (n_freqs,)
         The frequencies associated to cospectra.
 

@@ -124,22 +124,17 @@ def covariances(X, estimator='cov'):
         Multi-channel time-series.
     estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
             (default: 'scm')
-        Covariance matrix estimator:
+        Covariance matrix estimator [1]_:
 
-        * 'cov' for numpy based covariance matrix,
-          https://numpy.org/doc/stable/reference/generated/numpy.cov.html
-        * 'scm' for sample covariance matrix,
-          https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
-        * 'lwf' for shrunk Ledoit-Wolf covariance matrix
-          https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
-        * 'oas' for oracle approximating shrunk covariance matrix,
-          https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
-        * 'mcd' for minimum covariance determinant matrix,
-          https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
-        * 'sch' for Schaefer-Strimmer covariance,
-          http://doi.org/10.2202/1544-6115.1175,
-        * 'corr' for correlation coefficient matrix,
-          https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
+        * 'cov' for numpy based covariance matrix [2]_,
+        * 'scm' for sample covariance matrix [3]_,
+        * 'lwf' for shrunk Ledoit-Wolf covariance matrix [4]_,
+        * 'oas' for oracle approximating shrunk covariance matrix [5]_,
+        * 'mcd' for minimum covariance determinant matrix [6]_,
+        * 'sch' for Schaefer-Strimmer covariance matrix [7]_,
+        * 'corr' for correlation coefficient matrix [8]_.
+
+        For regularization, consider 'lwf' or 'oas'.
 
     Returns
     -------
@@ -149,6 +144,13 @@ def covariances(X, estimator='cov'):
     References
     ----------
     .. [1] https://scikit-learn.org/stable/modules/covariance.html
+    .. [2] https://numpy.org/doc/stable/reference/generated/numpy.cov.html
+    .. [3] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
+    .. [4] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
+    .. [5] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
+    .. [6] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
+    .. [7] http://doi.org/10.2202/1544-6115.1175
+    .. [8] https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
     """  # noqa
     est = _check_est(estimator)
     n_matrices, n_channels, n_times = X.shape
@@ -257,7 +259,7 @@ def block_covariances(X, blocks, estimator='cov'):
     estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
         (default: 'scm')
         Covariance matrix estimator, see
-            :func:`pyriemann.utils.covariance.covariances`.
+        :func:`pyriemann.utils.covariance.covariances`.
 
     Returns
     -------
