@@ -27,10 +27,10 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     r"""Mean of SPD matrices according to the Riemannian metric.
 
     The procedure is similar to a gradient descent minimizing the sum of
-    affine-invariant Riemannian distances to the mean:
+    affine-invariant Riemannian distances :math:`d_R` to the mean:
 
     .. math::
-        \mathbf{C} = \arg\min{ \sum_i \delta_R ( \mathbf{C} , \mathbf{C}_i)^2 }
+        \mathbf{C} = \arg\min{ \sum_i d_R ( \mathbf{C} , \mathbf{C}_i)^2 }
 
     Parameters
     ----------
@@ -89,7 +89,7 @@ def mean_logeuclid(covmats, sample_weight=None):
     r"""Mean of SPD matrices according to the log-Euclidean metric.
 
     .. math::
-        \mathbf{C} = \exp{(\frac{1}{N} \sum_i \log{\mathbf{C}_i})}
+        \mathbf{C} = \exp{(\frac{1}{m} \sum_i \log{\mathbf{C}_i})}
 
     Parameters
     ----------
@@ -116,8 +116,8 @@ def mean_logeuclid(covmats, sample_weight=None):
 def mean_kullback_sym(covmats, sample_weight=None):
     """Mean of SPD matrices according to Kullback-Leibler divergence.
 
-    This mean is the geometric mean between the Eulidean and the harmonic
-    mean, as shown in [1]_.
+    This mean is the geometric mean between the Euclidean and the harmonic
+    means, as shown in [1]_.
 
     Parameters
     ----------
@@ -133,10 +133,9 @@ def mean_kullback_sym(covmats, sample_weight=None):
 
     References
     ----------
-    .. [1]  Moakher, Maher, and Philipp G. Batchelor. "Symmetric
-        positive-definite matrices: From geometry to applications and
-        visualization." In Visualization and Processing of Tensor Fields, pp.
-        285-298. Springer Berlin Heidelberg, 2006.
+    .. [1] Moakher, M, and Philipp G. B. "Symmetric positive-definite matrices:
+        From geometry to applications and visualization", Visualization and
+        Processing of Tensor Fields, pp. 285-298, 2006
     """
     C_euclid = mean_euclid(covmats, sample_weight)
     C_harmonic = mean_harmonic(covmats, sample_weight)
@@ -149,7 +148,7 @@ def mean_harmonic(covmats, sample_weight=None):
     r"""Harmonic mean of SPD matrices.
 
     .. math::
-        \mathbf{C} = \left(\frac{1}{N} \sum_i {\mathbf{C}_i}^{-1}\right)^{-1}
+        \mathbf{C} = \left(\frac{1}{m} \sum_i {\mathbf{C}_i}^{-1}\right)^{-1}
 
     Parameters
     ----------
@@ -176,7 +175,7 @@ def mean_harmonic(covmats, sample_weight=None):
 def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD matrices according to the log-det metric.
 
-    This is an iterative procedure where the update is:
+    Log-det mean is obtained by an iterative procedure where the update is:
 
     .. math::
         \mathbf{C} = \left(\sum_i \left( 0.5 \mathbf{C}
@@ -229,7 +228,8 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
                      sample_weight=None):
     r"""Mean of SPD matrices according to the Wasserstein metric.
 
-    This is an iterative procedure where the update is [1]_:
+    Wasserstein mean is obtained by an iterative procedure where the update is
+    [1]_:
 
     .. math::
         \mathbf{K} = \left(\sum_i \left( \mathbf{K} \mathbf{C}_i \mathbf{K}
@@ -259,8 +259,7 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
     References
     ----------
     .. [1] Barbaresco, F. "Geometric Radar Processing based on Frechet distance
-        :Information geometry versus Optimal Transport Theory", Radar Symposium
-        (IRS), 2011 Proceedings International.
+        : Information geometry versus Optimal Transport Theory", IRS, 2011
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
     n_matrices, n_channels, _ = covmats.shape
@@ -294,7 +293,7 @@ def mean_euclid(covmats, sample_weight=None):
     r"""Mean of SPD matrices according to the Euclidean metric.
 
     .. math::
-        \mathbf{C} = \frac{1}{N} \sum_i \mathbf{C}_i
+        \mathbf{C} = \frac{1}{m} \sum_i \mathbf{C}_i
 
     Parameters
     ----------
@@ -420,7 +419,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=100,
     sample_weight = _get_sample_weight(sample_weight, covmats)
     C = covmats
     C_iter = np.zeros_like(C)
-    n_matrices = covmats.shape[0]
+    n_matrices, _, _ = covmats.shape
     if n_matrices == 2:
         alpha = sample_weight[1] / sample_weight[0] / 2
         X = geodesic_riemann(covmats[0], covmats[1], alpha=alpha)
@@ -508,7 +507,7 @@ def mean_identity(covmats, sample_weight=None):
     r"""Identity matrix corresponding to the matrices dimension.
 
     .. math::
-        \mathbf{C} = \mathbf{I}_d
+        \mathbf{C} = \mathbf{I}_c
 
     Parameters
     ----------
@@ -522,7 +521,8 @@ def mean_identity(covmats, sample_weight=None):
     C : ndarray, shape (n_channels, n_channels)
         Identity.
     """
-    C = np.eye(covmats.shape[1])
+    _, n_channels, _ = covmats.shape
+    C = np.eye(n_channels)
     return C
 
 

@@ -153,9 +153,9 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
     Attributes
     ----------
     embedding_ : ndarray, shape (n_matrices, n_components)
-        Stores the embedding vectors
+        Stores the embedding vectors.
     error_ : float
-        Reconstruction error associated with `embedding_`
+        Reconstruction error associated with `embedding_`.
     data_ : ndarray, shape (n_matrices, n_channels, n_channels)
         Training data.
 
@@ -210,7 +210,9 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X, y=None):
-        """Calculate embedding coordinates for new data points based on fitted
+        """Calculate embedding coordinates.
+
+        Calculate embedding coordinates for new data points based on fitted
         points.
 
         Parameters
@@ -280,8 +282,8 @@ def barycenter_weights(X, Y, indices, metric='riemann', reg=1e-3):
     metric : {'riemann', 'logeuclid', 'euclid'}, default: 'riemann'
         Kernel metric.
     reg : float, default: 1e-3
-        amount of regularization to add for the problem to be
-        well-posed in the case of n_neighbors > n_channels
+        Amount of regularization to add for the problem to be
+        well-posed in the case of n_neighbors > n_channels.
 
     Returns
     -------

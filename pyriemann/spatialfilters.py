@@ -25,10 +25,11 @@ class Xdawn(BaseEstimator, TransformerMixin):
     nfilter : int (default 4)
         The number of components to decompose M/EEG signals.
     classes : list of int | None (default None)
-        list of classes to take into account for xdawn. If None (default), all
-        classes will be accounted.
-    estimator : str (default 'scm')
-        covariance matrix estimator. For regularization consider 'lwf' or 'oas'
+        List of classes to take into account for Xdawn.
+        If None, all classes will be accounted.
+    estimator : string (default: 'scm')
+        Covariance matrix estimator, see
+        :func:`pyriemann.utils.covariance.covariances`.
     baseline_cov : array, shape(n_chan, n_chan) | None (default)
         Covariance matrix to which the average signals are compared. If None,
         the baseline covariance is computed across all trials and time samples.
@@ -75,14 +76,14 @@ class Xdawn(BaseEstimator, TransformerMixin):
         return _check_est(self.estimator)
 
     def fit(self, X, y):
-        """Train xdawn spatial filters.
+        """Train Xdawn spatial filters.
 
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_times)
             Set of trials.
         y : ndarray shape (n_trials, 1)
-            labels corresponding to each trial.
+            Labels corresponding to each trial.
 
         Returns
         -------
@@ -162,8 +163,8 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    filters: ndarray of shape (n_filters x n_channels)
-        the filters for bilinear transform
+    filters : ndarray, shape (n_filters x n_channels)
+        The filters for bilinear transform
     log : bool (default False)
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.
@@ -171,7 +172,7 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
     Attributes
     ----------
     filters_ : ndarray
-        If fit, the Xdawn components used to decompose the data for each event
+        If fit, the filter components used to decompose the data for each event
         type, concatenated, else empty.
     """
 
@@ -193,7 +194,7 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
         X : ndarray, shape (n_trials, n_channels, n_channels)
             Set of covariance matrices.
         y : ndarray shape (n_trials, 1)
-            labels corresponding to each trial.
+            Labels corresponding to each trial.
 
         Returns
         -------
@@ -214,7 +215,7 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
         Returns
         -------
         Xf : ndarray, shape (n_trials, n_filters)
-             ndarray of spatialy filtered log-variance or covariance depending
+             Set of spatialy filtered log-variance or covariance depending
              on the 'log' input paramter.
         """
         if not isinstance(X, (np.ndarray, list)):
@@ -252,7 +253,7 @@ class CSP(BilinearFilter):
     nfilter : int (default 4)
         The number of components to decompose M/EEG signals.
     metric : str (default "euclid")
-        The metric for the estimation of mean covariance matrices
+        The metric for the estimation of mean covariance matrices.
     log : bool (default True)
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.
@@ -307,7 +308,7 @@ class CSP(BilinearFilter):
         X : ndarray, shape (n_trials, n_channels, n_channels)
             Set of covariance matrices.
         y : ndarray shape (n_trials, 1)
-            labels corresponding to each trial.
+            Labels corresponding to each trial.
 
         Returns
         -------
@@ -396,7 +397,7 @@ class SPoC(CSP):
     nfilter : int (default 4)
         The number of components to decompose M/EEG signals.
     metric : str (default "euclid")
-        The metric for the estimation of mean covariance matrices
+        The metric for the estimation of mean covariance matrices.
     log : bool (default True)
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.
@@ -432,7 +433,7 @@ class SPoC(CSP):
         X : ndarray, shape (n_trials, n_channels, n_channels)
             Set of covariance matrices.
         y : ndarray shape (n_trials, 1)
-            target variable corresponding to each trial.
+            Target variable corresponding to each trial.
 
         Returns
         -------

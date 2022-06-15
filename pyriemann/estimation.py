@@ -24,9 +24,7 @@ class Covariances(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     estimator : string (default: 'scm')
-        Covariance matrix estimator.
-        For regularization consider 'lwf' or 'oas'.
-        For the complete list of estimators, see parameter `estimator` of
+        Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
 
     See Also
@@ -86,7 +84,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     .. math::
         \mathbf{P} = \frac{1}{N} \sum_i^N \mathbf{X}_i
 
-    and a super trial is build using the concatenation of P and the trial X:
+    and a super trial is built using the concatenation of P and the trial X:
 
     .. math::
         \mathbf{\tilde{X}}_i =  \left[
@@ -104,15 +102,13 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     classes : list of int | None (default None)
-        list of classes to take into account for prototype estimation.
+        List of classes to take into account for prototype estimation.
         If None (default), all classes will be accounted.
     estimator : string (default: 'scm')
-        Covariance matrix estimator.
-        For regularization, consider 'lwf' or 'oas'.
-        For the complete list of estimators, see parameter `estimator` of
+        Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
     svd : int | None (default None)
-        if not none, the prototype responses will be reduce using a SVD using
+        If not none, the prototype responses will be reduce using a SVD using
         the number of components passed in SVD.
 
     See Also
@@ -216,9 +212,9 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     nfilter: int (default 4)
-        number of Xdawn filter per classes.
+        Number of Xdawn filters per class.
     applyfilters: bool (default True)
-        if set to true, spatial filter are applied to the prototypes and the
+        If set to true, spatial filter are applied to the prototypes and the
         signals. When set to False, filters are applied only to the ERP
         prototypes allowing for a better generalization across subject and
         session at the expense of dimensionality increase. In that case, the
@@ -228,16 +224,15 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         list of classes to take into account for prototype estimation.
         If None (default), all classes will be accounted.
     estimator : string (default: 'scm')
-        Covariance matrix estimator.
-        For regularization, consider 'lwf' or 'oas'.
-        For the complete list of estimators, see parameter `estimator` of
+        Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
     xdawn_estimator : string (default: 'scm')
         Covariance matrix estimator for `Xdawn` spatial filtering.
-        Should be regularized.
+        Should be regularized using 'lwf' or 'oas', see
+        :func:`pyriemann.utils.covariance.covariances`.
     baseline_cov : array, shape (n_chan, n_chan) | None (default)
-        Baseline covariance for `Xdawn` spatial filtering.
-        See :class:`pyriemann.spatialfilters.Xdawn`.
+        Baseline covariance for `Xdawn` spatial filtering,
+        see :class:`pyriemann.spatialfilters.Xdawn`.
 
     See Also
     --------
@@ -325,10 +320,9 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
-        (default: 'scm')
+    estimator : string (default: 'scm')
         Covariance matrix estimator, see
-            :func:`pyriemann.utils.covariance.covariances`.
+        :func:`pyriemann.utils.covariance.covariances`.
     block_size : int | list
         Sizes of individual blocks given as int for same-size block, or list
         for varying block sizes.
@@ -605,12 +599,10 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     delays: int, list of int (default, 2)
-        the delays to apply for the Hankel matrices. if Int, it use a range of
+        The delays to apply for the Hankel matrices. if Int, it use a range of
         delays up to the given value. A list of int can be given.
     estimator : string (default: 'scm')
-        Covariance matrix estimator.
-        For regularization, consider 'lwf' or 'oas'.
-        For the complete list of estimators, see parameter `estimator` of
+        Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
 
     See Also
@@ -679,7 +671,7 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 class Shrinkage(BaseEstimator, TransformerMixin):
     """Regularization of SPD matrices by shrinkage.
 
-    This transformer apply a shrinkage regularization to any SPD matrix.
+    This transformer applies a shrinkage regularization to any SPD matrix.
     It directly use the `shrunk_covariance` function from scikit learn, applied
     on each input.
 
@@ -687,7 +679,7 @@ class Shrinkage(BaseEstimator, TransformerMixin):
     ----------
     shrinkage: float, (default, 0.1)
         Coefficient in the convex combination used for the computation of the
-        shrunk estimate. must be between 0 and 1
+        shrunk estimate. Must be between 0 and 1.
 
     Notes
     -----
@@ -707,7 +699,7 @@ class Shrinkage(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_times)
             Set of SPD matrices.
-        y : ndarray shape (n_matrices,)
+        y : None | ndarray, shape (n_matrices,) (default None)
             Labels corresponding to each matrix, not used.
 
         Returns

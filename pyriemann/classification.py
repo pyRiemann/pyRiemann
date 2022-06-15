@@ -47,9 +47,9 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
     Attributes
     ----------
     covmeans_ : list
-        the class centroids.
+        The class centroids.
     classes_ : list
-        list of classes.
+        List of classes.
 
     See Also
     --------
@@ -129,7 +129,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         return self
 
     def _predict_distances(self, covtest):
-        """Helper to predict the distance. equivalent to transform."""
+        """Helper to predict the distance. Equivalent to transform."""
         n_centroids = len(self.covmeans_)
 
         if self.n_jobs == 1:
@@ -170,7 +170,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         Returns
         -------
         dist : ndarray, shape (n_matrices, n_classes)
-            the distance to each centroid according to the metric.
+            The distance to each centroid according to the metric.
         """
         return self._predict_distances(X)
 
@@ -230,7 +230,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
     Attributes
     ----------
     classes_ : list
-        list of classes.
+        List of classes.
 
     See Also
     --------
@@ -320,7 +320,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         Returns
         -------
         prob : ndarray, shape (n_matrices, n_classes)
-            the softmax probabilities for each class.
+            The softmax probabilities for each class.
         """
         cov = self._fgda.transform(X)
         return self._mdm.predict_proba(cov)
@@ -336,7 +336,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         Returns
         -------
         dist : ndarray, shape (n_matrices, n_cluster)
-            the distance to each centroid according to the metric.
+            The distance to each centroid according to the metric.
         """
         cov = self._fgda.transform(X)
         return self._mdm.transform(cov)
@@ -365,7 +365,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         online implementation. Performance are better when the number of
         matrices for prediction is higher.
     clf: sklearn classifier, default: LogisticRegression
-        The classifier to apply in the tangent space
+        The classifier to apply in the tangent space.
 
     See Also
     --------
@@ -398,8 +398,8 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
 
         Returns
         -------
-        self : TSclassifier. instance
-            The TSclassifier. instance.
+        self : TSclassifier instance
+            The TSclassifier instance.
         """
         self.classes_ = np.unique(y)
         ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
@@ -441,10 +441,10 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
 class KNearestNeighbor(MDM):
     """Classification by k-nearest neighbors.
 
-    Classification by k-nearest neighbors. For each point of the test set, the
-    pairwise distance to each element of the training set is estimated. The
-    class is affected according to the majority class of the k-nearest
-    neighbors.
+    Classification by k-nearest neighbors (k-NN). For each point of the test
+    set, the pairwise distance to each element of the training set is
+    estimated. The class is affected according to the majority class of the
+    k-nearest neighbors.
 
     Parameters
     ----------
@@ -464,11 +464,11 @@ class KNearestNeighbor(MDM):
     Attributes
     ----------
     classes_ : list
-        list of classes.
+        List of classes.
     covmeans_ : list
-        the class centroids.
+        The class centroids.
     classmeans_ : list
-        list of classes of centroids.
+        List of classes of centroids.
 
     See Also
     --------
@@ -554,9 +554,9 @@ class KNearestNeighbor(MDM):
 
 
 class SVC(sklearnSVC):
-    """Classification by Support Vector Machine.
+    """Classification by support-vector machine.
 
-    Support Vector Machine (SVM) with precomputed Riemannian kernel matrix
+    Support-vector machine (SVM) with precomputed Riemannian kernel matrix
     according to different metrics as described in [1]_.
 
     Parameters

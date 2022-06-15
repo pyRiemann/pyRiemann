@@ -39,9 +39,9 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
     Attributes
     ----------
     covmeans_ : list
-        the class centroids.
+        The class centroids.
     dist_ : list
-        list of distance at each interation.
+        List of distance at each interation.
 
     See Also
     --------

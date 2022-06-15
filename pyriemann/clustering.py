@@ -70,8 +70,8 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
 
     Parameters
     ----------
-    n_cluster: int (default: 2)
-        number of clusters.
+    n_cluster : int (default: 2)
+        Number of clusters.
     max_iter : int (default: 100)
         The maximum number of iteration to reach convergence.
     metric : string (default: 'riemann')
@@ -97,8 +97,8 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         used at all, which is useful for debugging. For n_jobs below -1,
         (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
         are used.
-    tol: float, (default: 1e-4)
-        the stopping criterion to stop convergence, representing the minimum
+    tol : float, (default: 1e-4)
+        The stopping criterion to stop convergence, representing the minimum
         amount of change in labels between two iterations.
 
     Attributes
@@ -146,7 +146,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         Returns
         -------
         self : Kmeans instance
-            The Kmean instance.
+            The Kmeans instance.
         """
         if isinstance(self.init, str) and self.init == 'random':
             np.random.seed(self.seed)

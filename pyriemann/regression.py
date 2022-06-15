@@ -12,9 +12,9 @@ from .utils.mean import mean_covariance
 
 
 class SVR(sklearnSVR):
-    """Regression by Support Vector Machine.
+    """Regression by support-vector machine.
 
-    Support Vector Machine (SVM) regression with precomputed Riemannian kernel
+    Support-vector machine (SVM) regression with precomputed Riemannian kernel
     matrix according to different metrics, extending the idea described in [1]_
     to regression.
 
@@ -106,7 +106,7 @@ class SVR(sklearnSVR):
         y : ndarray, shape (n_matrices,)
             Labels corresponding to each matrix.
         sample_weight : ndarray, shape (n_matrices,), default: None
-            Per-sample weights. Rescale C per sample. Higher weights
+            Per-matrix weights. Rescale C per matrix. Higher weights
             force the classifier to put more emphasis on these points.
 
         Returns
@@ -148,8 +148,8 @@ class SVR(sklearnSVR):
 class KNearestNeighborRegressor(MDM):
     """Regression by k-nearest-neighbors.
 
-    Regression by k-nearest neighbors. For each point of the test set, the
-    pairwise distance to each element of the training set is estimated. The
+    Regression by k-nearest neighbors (k-NN). For each point of the test set,
+    the pairwise distance to each element of the training set is estimated. The
     value is calculated according to the softmax average w.r.t. distance of
     the k-nearest neighbors.
 
@@ -168,7 +168,7 @@ class KNearestNeighborRegressor(MDM):
     values_ : ndarray, shape (n_matrices,)
         List of training data target values.
     covmeans_ : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices of training data.
+        Set of SPD matrices of training dataset.
 
     Notes
     -----
