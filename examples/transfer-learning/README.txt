@@ -1,4 +1,4 @@
-Simulated data
----------------
+Transfer Learning
+-------------------
 
-Examples using datasets sampled from known probability distributions
+Application of transfer learning
