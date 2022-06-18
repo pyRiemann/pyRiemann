@@ -6,7 +6,8 @@
 Applyin MDWM to learn from source matrices and classify target matrices.
 
 """
-# Authors: Emmanuel Kalunga <emmanuelkalunga.k@gmail.com>
+# Authors: Emmanuel Kalunga
+#          Sylvain Chevallier
 #
 # License: BSD (3-clause)
 
@@ -24,7 +25,11 @@ from sklearn.metrics import accuracy_score
 print(__doc__)
 
 ###############################################################################
+# Prepare data generation
+# -----------------------
+#
 # Set parameters for sampling from the Riemannian Gaussian distribution
+
 n_matrices_source = 100  # how many source SPD matrices to generate
 n_matrices_target = 50  # how many target SPD matrices to generate
 n_matrices_target_selected = 2  # target matrices available for training
@@ -38,6 +43,7 @@ random_state_2 = 43  # random generator seed to ensure reproducibility
 
 ###############################################################################
 # Generate two classes sample matrices for source and target subjects.
+
 mean = generate_random_spd_matrix(n_dim, random_state=32)  # reference point
 
 # Source subject
@@ -78,7 +84,7 @@ embd = lapl.fit_transform(X=samples)
 
 ###############################################################################
 # Plot source and target matrices
-# ---------------------------------------
+# -------------------------------
 #
 
 fig, ax = plt.subplots(figsize=(8, 6))
@@ -117,9 +123,9 @@ _ = ax.legend()
 
 ###############################################################################
 # Plot a sub-sample of the target matrices
-# ---------------------------------------
+# ----------------------------------------
 #
-# Assuming that only a limitted number of matrices is available from the
+# Assuming that only a limited number of matrices is available from the
 # target subject
 embd_source = embd[:2*n_matrices_source, :]
 embd_target = embd[2*n_matrices_source:, :]
@@ -168,7 +174,7 @@ _ = ax.legend()
 
 ###############################################################################
 # Apply MDWM transfer learning for classification of target matrices
-# ---------------------------------------
+# ------------------------------------------------------------------
 
 X_source = np.concatenate([src_sub_cl_1, src_sub_cl_2])
 y_source = np.array(n_matrices_source*[1] + n_matrices_source*[2])
@@ -196,6 +202,7 @@ for transfer_coef in transfer_coef_array:
 
 ###############################################################################
 # Plot transfer classification results
+
 fig, ax = plt.subplots(figsize=(7.5, 5.9))
 ax.plot(transfer_coef_array, coef_scores_array, lw=3.0)
 ax.set_xlabel(r'Transfer coefficient $\lambda$', fontsize=12)
@@ -205,18 +212,19 @@ ax.set_title(r'Classification score vs. transfer coefficient',
 _ = ax.grid(True)
 
 ###############################################################################
-# Applying transfer (i.e. increasing transfer coeficcient) improves
-# classification performance.
+# Relying more on transfer, i.e. increasing transfer coeficient, improves
+# the classification performance.
 
 
 ###############################################################################
-# MDWM vs MDM Comparison
-# -----------------------------------------------
+# MDWM vs MDM comparison
+# ----------------------
+#
 # In this section we compare the performance of classification with
 # MDWM transfer learning classification to performance of MDM classification.
 # For MDW we consider 2 cases:
-# (1) using all available source and target data for training, and
-# (2) only using available target data for training
+# (1) using all available source and target data for training $MDM(s+t)$, and
+# (2) only using available target data for training $MDM(t)$
 
 cv = StratifiedKFold(n_splits=50, shuffle=True, random_state=43)
 transfer_coef = 0.43
@@ -247,11 +255,10 @@ for test_idxs, train_idxs in cv.split(X_target, y_target):
 
 ###############################################################################
 # Plot MDWM vs MDM results
+
 fig, ax = plt.subplots(figsize=(7.5, 5.9))
 ax.boxplot([scores_array_mdm, scores_array_mdm_t, scores_array_mdwm])
 
-# ax.set_xlabel(r'Transfer coefficient $\lambda$', fontsize=12)
-# ax.set_xticks([0, 1])
 ax.set_xticklabels(['MDM(s+t)', 'MDM(t)', f"MDWM($\\lambda={transfer_coef}$)"],
                    fontsize=12)
 ax.set_ylabel(r'score', fontsize=12)
