@@ -119,10 +119,13 @@ def test_power_mean(get_covmats):
     n_matrices, n_channels = 3, 3
     covmats = get_covmats(n_matrices, n_channels)
     C_power_1 = mean_power(covmats, 1)
+    C_power_0 = mean_power(covmats, 0)
     C_power_m1 = mean_power(covmats, -1)
     C_arithm = mean_euclid(covmats)
+    C_geom = mean_riemann(covmats)
     C_harm = mean_harmonic(covmats)
     assert C_power_1 == approx(C_arithm)
+    assert C_power_0 == approx(C_geom)
     assert C_power_m1 == approx(C_harm)
 
 
@@ -180,9 +183,7 @@ def test_power_mean_errors(get_covmats):
 
     with pytest.raises(ValueError):  # exponent is not a scalar
         mean_power(covmats, [1])
-    with pytest.raises(ValueError):  # exponent is not non-zero
-        mean_power(covmats, 0)
-    with pytest.raises(ValueError):  # exponent is not in [-1,0) U (0,1]
+    with pytest.raises(ValueError):  # exponent is not in [-1,1]
         mean_power(covmats, 3)
 
 

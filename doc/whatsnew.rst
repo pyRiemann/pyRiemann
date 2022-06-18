@@ -58,6 +58,8 @@ v0.2.8.dev
 
 - Add K-Nearest-Neighbor regressor: :class:`pyriemann.regression.KNearestNeighborRegressor`
 
+- Add Minimum Distance to Mean Field classifier: :class:`pyriemann.classification.MeanField`
+
 v0.2.7 (June 2021)
 ------------------
 

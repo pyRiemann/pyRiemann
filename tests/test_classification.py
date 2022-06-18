@@ -8,7 +8,8 @@ from pyriemann.classification import (
     FgMDM,
     KNearestNeighbor,
     TSclassifier,
-    SVC
+    SVC,
+    MeanField
 )
 
 from pyriemann.estimation import Covariances
@@ -19,7 +20,7 @@ from sklearn.dummy import DummyClassifier
 from pyriemann.utils.kernel import kernel
 from pyriemann.utils.mean import mean_covariance
 
-rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC]
+rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC, MeanField]
 
 
 @pytest.mark.parametrize("classif", rclf)
@@ -30,15 +31,14 @@ class ClassifierTestCase:
         labels = get_labels(n_matrices, n_classes)
         self.clf_predict(classif, covmats, labels)
         self.clf_fit_independence(classif, covmats, labels)
-        if classif is (MDM, KNearestNeighbor, SVC):
+        self.clf_predict_proba(classif, covmats, labels)
+        self.clf_populate_classes(classif, covmats, labels)
+        if classif is (MDM, KNearestNeighbor, SVC, MeanField):
             self.clf_fitpredict(classif, covmats, labels)
         if classif in (MDM, FgMDM):
             self.clf_transform(classif, covmats, labels)
-        if classif in (MDM, FgMDM, KNearestNeighbor):
+        if classif in (MDM, FgMDM, KNearestNeighbor, MeanField):
             self.clf_jobs(classif, covmats, labels)
-        if classif in (MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC):
-            self.clf_predict_proba(classif, covmats, labels)
-            self.clf_populate_classes(classif, covmats, labels)
         if classif is (FgMDM, TSclassifier):
             self.clf_tsupdate(classif, covmats, labels)
 
@@ -48,15 +48,14 @@ class ClassifierTestCase:
         labels = get_labels(n_matrices, n_classes)
         self.clf_fit_independence(classif, covmats, labels)
         self.clf_predict(classif, covmats, labels)
-        if classif is (MDM, KNearestNeighbor, SVC):
+        self.clf_predict_proba(classif, covmats, labels)
+        self.clf_populate_classes(classif, covmats, labels)
+        if classif is (MDM, KNearestNeighbor, SVC, MeanField):
             self.clf_fitpredict(classif, covmats, labels)
         if classif in (MDM, FgMDM):
             self.clf_transform(classif, covmats, labels)
-        if classif in (MDM, FgMDM, KNearestNeighbor):
+        if classif in (MDM, FgMDM, KNearestNeighbor, MeanField):
             self.clf_jobs(classif, covmats, labels)
-        if classif in (MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC):
-            self.clf_predict_proba(classif, covmats, labels)
-            self.clf_populate_classes(classif, covmats, labels)
         if classif is (FgMDM, TSclassifier):
             self.clf_tsupdate(classif, covmats, labels)
 

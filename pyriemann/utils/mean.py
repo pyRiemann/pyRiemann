@@ -444,12 +444,21 @@ def mean_alm(covmats, tol=1e-14, maxiter=100,
 def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10):
     """Power mean of SPD matrices.
 
-    :param covmats: Covariance matrices, (n_matrices, n_channels, n_channels)
-    :param p: Exponent, in [-1,0) U (0,1]
-    :param sample_weight: Weight of each matrix
-    :param zeta: Stopping criterion
+    Parameters
+    ----------
+    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    p : float
+        Exponent, in [-1,+1].
+    sample_weight : None | ndarray, shape (n_matrices,) (default None)
+        The weight of each matrix.
+    zeta : float (default 10e-10)
+        Stopping criterion.
 
-    :returns: the mean covariance matrix
+    Returns
+    -------
+    C : ndarray, shape (n_channels, n_channels)
+        Power mean.
 
     Notes
     -----
@@ -465,12 +474,11 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10):
     """
     if not isinstance(p, (int, float)):
         raise ValueError("Power mean only defined for a scalar exponent")
-    if p == 0:
-        raise ValueError("Exponent must be non-zero. Use mean_riemann instead "
-                         "because power mean tends to geometric mean when "
-                         "exponent tends to zero.")
     if p < -1 or 1 < p:
-        raise ValueError("Exponent must be in [-1,0) U (0,1]")
+        raise ValueError("Exponent must be in [-1,+1]")
+
+    if p == 0:
+        return mean_riemann(covmats, sample_weight=sample_weight)
 
     n_matrices, n_channels, _ = covmats.shape
     sample_weight = _get_sample_weight(sample_weight, covmats)
