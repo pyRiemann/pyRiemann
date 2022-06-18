@@ -4,7 +4,6 @@ from pyriemann.transferlearning import MDWM
 import pytest
 
 
-# rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier]
 mat_transfer = [MDWM]
 
 

@@ -6,7 +6,7 @@ from .utils.mean import mean_covariance
 from .utils.geodesic import geodesic
 
 
-class MDWM (MDM):
+class MDWM(MDM):
     """Classification by Minimum Distance to Weighted Mean.
 
     Classification by nearest centroid. For each of the given classes, a
@@ -18,7 +18,7 @@ class MDWM (MDM):
 
     Parameters
     ----------
-    transfer_coef : float,
+    transfer_coef : float
         Transfer coefficient in [0,1], controlling the trade-off between
         source and target data. At 0, there is no transfer, only the data
         acquired from the source are used. At 1, this is a calibration-free
@@ -65,9 +65,9 @@ class MDWM (MDM):
 
     def __init__(self, transfer_coef, metric='riemann', n_jobs=1):
         """Init."""
+        self.transfer_coef = transfer_coef
         self.metric = metric
         self.n_jobs = n_jobs
-        self.transfer_coef = transfer_coef
         self.covmeans_ = None
         self.classes_ = None
         self._target_means = None
