@@ -13,7 +13,7 @@ Applyin MDWM to learn from source matrices and classify target matrices.
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pyriemann.embedding import Embedding
+from pyriemann.embedding import SpectralEmbedding
 from pyriemann.datasets import sample_gaussian_spd, generate_random_spd_matrix
 from pyriemann.transferlearning import MDWM
 from pyriemann.classification import MDM
@@ -73,7 +73,7 @@ samples = np.concatenate([src_sub_cl_1, src_sub_cl_2,
 labels = np.array(n_matrices_source*[1] + n_matrices_source*[2] +
                   n_matrices_target*[3] + n_matrices_target*[4])
 
-lapl = Embedding(metric='riemann', n_components=2)
+lapl = SpectralEmbedding(metric='riemann', n_components=2)
 embd = lapl.fit_transform(X=samples)
 
 ###############################################################################
