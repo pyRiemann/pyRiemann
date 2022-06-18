@@ -92,6 +92,17 @@ Tangent Space
     TangentSpace
     FGDA
 
+Transfer Learning
+------------------
+.. _transferlearning_api:
+.. currentmodule:: pyriemann.transferlearning
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    MDWM
+
 Spatial Filtering
 ------------------
 .. _spatialfilter_api:
