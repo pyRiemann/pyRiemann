@@ -3,7 +3,7 @@
  Apply MDWM transfer learning to classify a set of matrices
 =====================================================================
 
-Applyin MDWM to learn from source matrices and classify target matrices.
+Applying MDWM to learn from source matrices and classify target matrices.
 
 """
 # Authors: Emmanuel Kalunga
@@ -42,7 +42,7 @@ random_state = 42  # random generator seed to ensure reproducibility
 random_state_2 = 43  # random generator seed to ensure reproducibility
 
 ###############################################################################
-# Generate two classes sample matrices for source and target subjects.
+# Generate two-classes sample matrices for source and target subjects.
 
 mean = generate_random_spd_matrix(n_dim, random_state=32)  # reference point
 
@@ -117,16 +117,20 @@ ax.set_ylabel(r'$\phi_2$', fontsize=14)
 _ = ax.legend()
 
 ###############################################################################
-# The distribution of matrices from the target subject is shifted to the left.
-# Consequently, the two subject cannot share the same classification boundary
-
+# The distribution of matrices from the target subject (triangles) is shifted
+# to the left. Consequently, a model trained only on source subject data
+# (circles) will classify most of data from target as class 2 (orange) due to
+# the left shift.
 
 ###############################################################################
-# Plot a sub-sample of the target matrices
-# ----------------------------------------
+# Training on few target matrices
+# -------------------------------
 #
-# Assuming that only a limited number of matrices is available from the
-# target subject
+# It is common in transfer learning to assume that a limited number of
+# matrices from the target are available. The objective is to train
+# source data and on a limited amount of target data to make the best
+# prediction possible for target domain.
+
 embd_source = embd[:2*n_matrices_source, :]
 embd_target = embd[2*n_matrices_source:, :]
 labels_source = labels[:2*n_matrices_source]
@@ -173,8 +177,20 @@ ax.set_ylim(-1.15, 1.15)
 _ = ax.legend()
 
 ###############################################################################
-# Apply MDWM transfer learning for classification of target matrices
-# ------------------------------------------------------------------
+# Transfer learning for classification of target matrices
+# -------------------------------------------------------
+#
+# MDWM model trains on source data and takes into account available target
+# data to make transfer learning. For each of the given classes, a centroid
+# is estimated as a weighted mean of covariance matrices from the source
+# domain, combined with the class centroid of the target domain. For
+# classification, a given new point is attibuted to the class whose centroid
+# is the nearest wrt a chosen metric.
+#
+# The ``transfer_coef`` in [0,1] controls the trade-off between source
+# and target data. At 0, there is no transfer, only the data acquired from
+# the source is used. At 1, this is a calibration-free system as no data is
+# required from the source.
 
 X_source = np.concatenate([src_sub_cl_1, src_sub_cl_2])
 y_source = np.array(n_matrices_source*[1] + n_matrices_source*[2])
@@ -201,7 +217,8 @@ for transfer_coef in transfer_coef_array:
     coef_scores_array.append(np.array(scores_array).mean())
 
 ###############################################################################
-# Plot transfer classification results
+# Plot transfer classification results, to show the influence of
+# ``transfer_coef`` on classification accuracy.
 
 fig, ax = plt.subplots(figsize=(7.5, 5.9))
 ax.plot(transfer_coef_array, coef_scores_array, lw=3.0)
@@ -212,8 +229,10 @@ ax.set_title(r'Classification score vs. transfer coefficient',
 _ = ax.grid(True)
 
 ###############################################################################
-# Relying more on transfer, i.e. increasing transfer coeficient, improves
-# the classification performance.
+# Relying more on transfer, i.e., increasing transfer coefficient, improves
+# the classification performance up to an optimal point. After this peak,
+# the model becomes more and more calibration-free, as the target data
+# are associated with a weight that becomes negligible.
 
 
 ###############################################################################
@@ -223,8 +242,8 @@ _ = ax.grid(True)
 # In this section we compare the performance of classification with
 # MDWM transfer learning classification to performance of MDM classification.
 # For MDW we consider 2 cases:
-# (1) using all available source and target data for training $MDM(s+t)$, and
-# (2) only using available target data for training $MDM(t)$
+# (1) using all available source and target data for training *MDM(s+t)*, and
+# (2) only using available target data for training *MDM(t)*
 
 cv = StratifiedKFold(n_splits=50, shuffle=True, random_state=43)
 transfer_coef = 0.43
