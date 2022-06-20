@@ -282,6 +282,24 @@ Aproximate Joint Diagonalization
     ajd_pham
     uwedge
 
+Matrix Test
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. _test_api:
+.. currentmodule:: pyriemann.utils.test
+
+.. autosummary::
+    :toctree: generated/
+
+    is_square
+    is_sym
+    is_skew_sym
+    is_real
+    is_hermitian
+    is_pos_def
+    is_pos_semi_def
+    is_sym_pos_def
+    is_sym_pos_semi_def
+
 Visualization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 .. _viz_api:
