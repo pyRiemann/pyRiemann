@@ -3,8 +3,11 @@
  Apply MDWM transfer learning to classify a set of matrices
 =====================================================================
 
-Applying MDWM to learn from source matrices and classify target matrices.
-
+Applying Minimum Distance to Weighted Mean (MDWM) to learn from source matrices
+and classify target matrices. The MDWM model combines source domain information
+and available information from target domain to make prediction on target
+domain. The ``transfer_coef`` value determines the trade-off between source
+and target domain.
 """
 # Authors: Emmanuel Kalunga
 #          Sylvain Chevallier

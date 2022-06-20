@@ -42,9 +42,9 @@ class MDWM(MDM):
     Attributes
     ----------
     covmeans_ : list
-        the class centroids.
+        Class centroids, estimated after fit.
     classes_ : list
-        list of classes.
+        List of classes, obtained after fit
 
     See Also
     --------
@@ -68,10 +68,6 @@ class MDWM(MDM):
         self.transfer_coef = transfer_coef
         self.metric = metric
         self.n_jobs = n_jobs
-        self.covmeans_ = None
-        self.classes_ = None
-        self._target_means = None
-        self._domain_means = None
 
     def fit(self, X, y, X_source, y_source, sample_weight=None):
         """Fit (estimates) the centroids.
@@ -139,34 +135,21 @@ class MDWM(MDM):
         if sample_weight is None:
             sample_weight = np.ones(X_source.shape[0])
 
-        if not (X_source.shape[0] == y_source.shape[0]
-                == sample_weight.shape[0]):
+        if not (X_source.shape[0] == y_source.shape[0]):
             raise ValueError("X and y must be for the same number of \
                 matrices i.e. n_matrices")
 
         self.classes_ = np.unique(y_source)
 
-        if self.n_jobs == 1:
-            self.target_means_ = [
-                mean_covariance(X[y == ll], metric=self.metric_mean)
-                for ll in self.classes_]
-            self.source_means_ = [
-                mean_covariance(
-                    X_source[y_source == ll],
-                    metric=self.metric_mean,
-                    sample_weight=sample_weight[y_source == ll]
-                )
-                for ll in self.classes_]
-        else:
-            self.target_means_ = Parallel(n_jobs=self.n_jobs)(
-                delayed(mean_covariance)(X[y == ll], metric=self.metric_mean)
-                for ll in self.classes_)
-            self.source_means_ = Parallel(n_jobs=self.n_jobs)(
-                delayed(mean_covariance)(
-                    X_source[y_source == ll],
-                    metric=self.metric_mean,
-                    sample_weight=sample_weight[y_source == ll])
-                for ll in self.classes_)
+        self.target_means_ = Parallel(n_jobs=self.n_jobs)(
+            delayed(mean_covariance)(X[y == ll], metric=self.metric_mean)
+            for ll in self.classes_)
+        self.source_means_ = Parallel(n_jobs=self.n_jobs)(
+            delayed(mean_covariance)(
+                X_source[y_source == ll],
+                metric=self.metric_mean,
+                sample_weight=sample_weight[y_source == ll])
+            for ll in self.classes_)
 
         self.covmeans_ = [geodesic(self.target_means_[i],
                                    self.source_means_[i],

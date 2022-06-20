@@ -23,12 +23,13 @@ class TransferTestCase:
         covmats_target = get_covmats(n_matrices_target, n_channels)
         labels_target = get_labels(n_matrices_target, n_classes)
 
-        if transfer is MDWM:
-            self.trans_populate_classes(transfer, covmats_source,
-                                        labels_source, covmats_target,
-                                        labels_target, sample_weight)
-            self.trans_predict(transfer, covmats_source, labels_source,
-                               covmats_target, labels_target, sample_weight)
+        self.trans_populate_classes(transfer, covmats_source,
+                                    labels_source, covmats_target,
+                                    labels_target, sample_weight)
+        self.trans_predict(transfer, covmats_source, labels_source,
+                           covmats_target, labels_target, sample_weight)
+        self.trans_jobs(transfer, covmats_source, labels_source,
+                        covmats_target, labels_target, sample_weight)
 
 
 class TestTransfer(TransferTestCase):
