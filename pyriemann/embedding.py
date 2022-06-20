@@ -37,10 +37,9 @@ class SpectralEmbedding(BaseEstimator):
     metric : string | dict (default: 'riemann')
         The type of metric to be used for defining pairwise distance between
         covariance matrices.
-    eps:  float (default: None)
-        The scaling of the Gaussian kernel. If none is given
-        it will use the square of the median of pairwise distances between
-        points.
+    eps : None | float (default: None)
+        The scaling of the Gaussian kernel. If none is given it will use the
+        square of the median of pairwise distances between points.
 
     References
     ----------
@@ -81,7 +80,7 @@ class SpectralEmbedding(BaseEstimator):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray | None (default: None)
+        y : None
             Not used, here for compatibility with sklearn API.
 
         Returns
@@ -112,7 +111,7 @@ class SpectralEmbedding(BaseEstimator):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray | None (default: None)
+        y : None
             Not used, here for compatibility with sklearn API.
 
         Returns
@@ -186,7 +185,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray | None (default: None)
+        y : None
             Not used, here for compatibility with sklearn API.
 
         Returns
@@ -219,7 +218,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray | None (default: None)
+        y : None
             Not used, here for compatibility with sklearn API.
 
         Returns
@@ -253,7 +252,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray | None (default: None)
+        y : None
             Not used, here for compatibility with sklearn API.
 
         Returns

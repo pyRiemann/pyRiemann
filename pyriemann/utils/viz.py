@@ -46,8 +46,8 @@ def plot_embedding(X,
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
-    y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels)
-        Labels corresponding to each matrix.
+    y : None | ndarray, shape (n_matrices,) (fefault: None)
+        Labels for each matrix.
     metric : string (default : 'riemann')
         Metric used in the embedding. Can be {'riemann' ,'logeuclid' ,
         'euclid'} for Locally Linear Embedding and {'riemann' ,'logeuclid' ,

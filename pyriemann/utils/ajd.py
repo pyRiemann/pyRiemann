@@ -118,7 +118,8 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
     n_iter_max : int (default 15)
         The maximum number of iterations to reach convergence.
     sample_weight : None | ndarray, shape (n_matrices,) (default None)
-        The weight of each matrix, strictly positive.
+        Weights for each matrix, strictly positive.
+        If None, it uses equal weights.
 
     Returns
     -------

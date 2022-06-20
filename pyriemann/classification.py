@@ -100,10 +100,9 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
-            Labels corresponding to each matrix.
-        sample_weight : None | ndarray shape (n_matrices,)
-            Weights of each matrix. If None, each matrix is treated with
-            equal weights.
+            Labels for each matrix.
+        sample_weight : None | ndarray shape (n_matrices,), default: None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -278,7 +277,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
-            Labels corresponding to each matrix.
+            Labels for each matrix.
 
         Returns
         -------
@@ -364,7 +363,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         training and test, as described in [2]. This is not compatible with
         online implementation. Performance are better when the number of
         matrices for prediction is higher.
-    clf: sklearn classifier, default: LogisticRegression
+    clf : sklearn classifier, default: LogisticRegression
         The classifier to apply in the tangent space.
 
     See Also
@@ -394,7 +393,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
-            Labels corresponding to each matrix.
+            Labels for each matrix.
 
         Returns
         -------
@@ -491,7 +490,7 @@ class KNearestNeighbor(MDM):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
-            Labels corresponding to each matrix.
+            Labels for each matrix.
 
         Returns
         -------
@@ -556,8 +555,8 @@ class KNearestNeighbor(MDM):
 class SVC(sklearnSVC):
     """Classification by support-vector machine.
 
-    Support-vector machine (SVM) with precomputed Riemannian kernel matrix
-    according to different metrics as described in [1]_.
+    Support-vector machine (SVM) classification with precomputed Riemannian
+    kernel matrix according to different metrics as described in [1]_.
 
     Parameters
     ----------
@@ -570,10 +569,10 @@ class SVC(sklearnSVC):
         Cref.
     kernel_fct : 'precomputed' | callable
         If 'precomputed', the kernel matrix for datasets X and Y is estimated
-        according to pyriemann.utils.kernel(X, Y, Cref, metric).
+        according to `pyriemann.utils.kernel(X, Y, Cref, metric)`.
         If callable, the callable is passed as the kernel parameter to
-        sklearn.svm.SVC(). The callable has to be of the form
-        kernel(X, Y, Cref, metric).
+        `sklearn.svm.SVC()` [2]_. The callable has to be of the form
+        `kernel(X, Y, Cref, metric)`.
     C : float, default: 1.0
         Regularization parameter. The strength of the regularization is
         inversely proportional to C. Must be strictly positive. The penalty
@@ -631,6 +630,8 @@ class SVC(sklearnSVC):
     .. [1] A. Barachant, S. Bonnet, M. Congedo, and C. Jutten.
         Classification of covariance matrices using a Riemannian-based kernel
         for BCI applications". In: Neurocomputing 112 (July 2013), pp. 172-178.
+    .. [2]
+        https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
     """
 
     def __init__(self,
@@ -676,10 +677,11 @@ class SVC(sklearnSVC):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
-            Labels corresponding to each matrix.
-        sample_weight : ndarray, shape (n_matrices,), default: None
-            Per-sample weights. Rescale C per sample. Higher weights
-            force the classifier to put more emphasis on these points.
+            Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default: None
+            Weights for each matrix. Rescale C per matrix. Higher weights
+            force the classifier to put more emphasis on these matrices.
+            If None, it uses equal weights.
 
         Returns
         -------
@@ -720,7 +722,8 @@ class SVC(sklearnSVC):
 class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
     """Classification by Minimum Distance to Mean Field.
 
-    Classification by Minimum Distance to Mean Field [1]_, using power means.
+    Classification by Minimum Distance to Mean Field [1]_, defining several
+    power means for each class.
 
     Parameters
     ----------
@@ -740,9 +743,9 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
     Attributes
     ----------
     covmeans_ : list of list
-        the class centroids.
+        The class centroids.
     classes_ : list
-        list of classes.
+        List of classes.
 
     See Also
     --------
@@ -774,10 +777,9 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
-            Labels corresponding to each matrix.
-        sample_weight : None | ndarray shape (n_matrices,)
-            Weights of each matrix. If None, each matrix is treated with
-            equal weights.
+            Labels for each matrix.
+        sample_weight : None | ndarray shape (n_matrices,), default: None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------

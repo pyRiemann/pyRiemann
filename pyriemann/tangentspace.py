@@ -84,10 +84,10 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray | None (default None)
+        y : None
             Not used, here for compatibility with sklearn API.
-        sample_weight : ndarray | None (default None)
-            Weight of each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,) (default None)
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -153,10 +153,10 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray | None (default None)
+        y : None
             Not used, here for compatibility with sklearn API.
-        sample_weight : ndarray | None (default None)
-            Weight of each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,) (default None)
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -257,10 +257,10 @@ class FGDA(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray | None (default None)
+        y : None
             Not used, here for compatibility with sklearn API.
-        sample_weight : ndarray | None (default None)
-            Weight of each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,) (default None)
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -294,10 +294,10 @@ class FGDA(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray | None (default None)
+        y : None
             Not used, here for compatibility with sklearn API.
-        sample_weight : ndarray | None (default None)
-            Weight of each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,) (default None)
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------

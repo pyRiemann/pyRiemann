@@ -30,7 +30,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
     estimator : string (default: 'scm')
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
-    baseline_cov : array, shape(n_chan, n_chan) | None (default)
+    baseline_cov : None | array, shape(n_chan, n_chan) | (default: None)
         Covariance matrix to which the average signals are compared. If None,
         the baseline covariance is computed across all trials and time samples.
 
@@ -82,8 +82,8 @@ class Xdawn(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_times)
             Set of trials.
-        y : ndarray shape (n_trials, 1)
-            Labels corresponding to each trial.
+        y : ndarray, shape (n_trials,)
+            Labels for each trial.
 
         Returns
         -------
@@ -193,8 +193,8 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
             Set of covariance matrices.
-        y : ndarray shape (n_trials, 1)
-            Labels corresponding to each trial.
+        y : ndarray, shape (n_trials,)
+            Labels for each trial.
 
         Returns
         -------
@@ -215,8 +215,8 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
         Returns
         -------
         Xf : ndarray, shape (n_trials, n_filters)
-             Set of spatialy filtered log-variance or covariance depending
-             on the 'log' input paramter.
+            Set of spatialy filtered log-variance or covariance depending
+            on the 'log' input parameter.
         """
         if not isinstance(X, (np.ndarray, list)):
             raise TypeError('X must be an array.')
@@ -307,8 +307,8 @@ class CSP(BilinearFilter):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
             Set of covariance matrices.
-        y : ndarray shape (n_trials, 1)
-            Labels corresponding to each trial.
+        y : ndarray, shape (n_trials,)
+            Labels for each trial.
 
         Returns
         -------
@@ -387,7 +387,8 @@ class SPoC(CSP):
     process in order to give preference to components whose power comodulates
     with the target variable.
 
-    SPoC can be seen as an extension of the `CSP` driven by a continuous
+    SPoC can be seen as an extension of the
+    :class:`pyriemann.spatialfilters.CSP` driven by a continuous
     variable rather than a discrete (often binary) variable. Typical
     applications include extraction of motor patterns using EMG power or audio
     paterns using sound envelope.
@@ -432,8 +433,8 @@ class SPoC(CSP):
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
             Set of covariance matrices.
-        y : ndarray shape (n_trials, 1)
-            Target variable corresponding to each trial.
+        y : ndarray, shape (n_trials,)
+            Target variable for each trial.
 
         Returns
         -------
@@ -529,13 +530,13 @@ class AJDC(BaseEstimator, TransformerMixin):
         If fit, the spatial filters used to transform source into signal,
         also called mixing matrix.
 
-    Notes
-    -----
-    .. versionadded:: 0.2.7
-
     See Also
     --------
     CospCovariances
+
+    Notes
+    -----
+    .. versionadded:: 0.2.7
 
     References
     ----------

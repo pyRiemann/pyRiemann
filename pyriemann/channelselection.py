@@ -68,11 +68,10 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : None | ndarray, shape (n_matrices, 1)
-            Labels corresponding to each matrix.
-        sample_weight : None | ndarray, shape (n_matrices, 1)
-            Weights corresponding to each matrix.
-            If None, each matrix is treated with equal weights.
+        y : None | ndarray, shape (n_matrices,)
+            Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,)
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -139,8 +138,8 @@ class FlatChannelRemover(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_times)
             Multi-channel time-series.
-        y : ndarray, shape (n_matrices, n_dims) | None, optional
-            The regressor(s). Defaults to None.
+        y : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
@@ -173,8 +172,8 @@ class FlatChannelRemover(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_times)
             Multi-channel time-series.
-        y : ndarray, shape (n_matrices, n_dims) | None, optional
-            The regressor(s). Defaults to None.
+        y : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------

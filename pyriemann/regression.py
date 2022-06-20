@@ -27,10 +27,10 @@ class SVR(sklearnSVR):
         the training data according to the metric is used.
     kernel_fct : 'precomputed' | callable
         If 'precomputed', the kernel matrix for datasets X and Y is estimated
-        according to pyriemann.utils.kernel(X, Y, Cref, metric).
+        according to `pyriemann.utils.kernel(X, Y, Cref, metric)`.
         If callable, the callable is passed as the kernel parameter to
-        sklearn.svm.SVC(). The callable has to be of the form
-        kernel(X, Y, Cref, metric).
+        `sklearn.svm.SVC()` [2]_. The callable has to be of the form
+        `kernel(X, Y, Cref, metric)`.
     tol : float, default: 1e-3
         Tolerance for stopping criterion.
     C : float, default: 1.0
@@ -67,6 +67,8 @@ class SVR(sklearnSVR):
     .. [1] A. Barachant, S. Bonnet, M. Congedo, and C. Jutten.
         Classification of covariance matrices using a Riemannian-based kernel
         for BCI applications". In: Neurocomputing 112 (July 2013), pp. 172-178.
+    .. [2]
+        https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html
     """
 
     def __init__(self,
@@ -104,10 +106,11 @@ class SVR(sklearnSVR):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
-            Labels corresponding to each matrix.
-        sample_weight : ndarray, shape (n_matrices,), default: None
-            Per-matrix weights. Rescale C per matrix. Higher weights
-            force the classifier to put more emphasis on these points.
+            Target values for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default: None
+            Weights for each matrix. Rescale C per matrix. Higher weights
+            force the classifier to put more emphasis on these matrices.
+            If None, it uses equal weights.
 
         Returns
         -------
@@ -161,7 +164,7 @@ class KNearestNeighborRegressor(MDM):
         Number of neighbors.
     metric : string | dict, default: 'riemann'
         The type of metric used for distance estimation.
-        see `distance` for the list of supported metric.
+        See `distance` for the list of supported metric.
 
     Attributes
     ----------
@@ -190,7 +193,7 @@ class KNearestNeighborRegressor(MDM):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
-            Target value for each matrix.
+            Target values for each matrix.
 
         Returns
         -------
