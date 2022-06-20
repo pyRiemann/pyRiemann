@@ -177,7 +177,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_ts)
             Set of tangent space projections of the matrices.
-        y : ndarray | None (default None)
+        y : None
             Not used, here for compatibility with sklearn API.
 
         Returns

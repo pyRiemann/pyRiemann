@@ -68,7 +68,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : None | ndarray, shape (n_matrices,)
+        y : None | ndarray, shape (n_matrices,) (default None)
             Labels for each matrix.
         sample_weight : None | ndarray, shape (n_matrices,)
             Weights for each matrix. If None, it uses equal weights.

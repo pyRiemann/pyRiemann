@@ -74,7 +74,7 @@ class Whitening(BaseEstimator, TransformerMixin):
             Set of SPD matrices.
         y : None
             Ignored as unsupervised.
-        sample_weight : None | ndarray, shape (n_matrices,) (default None)
+        sample_weight : None | ndarray, shape (n_matrices,), (default None)
             Weight of each matrix, to compute the weighted mean covariance
             matrix used for whitening and dimension reduction. If None, uniform
             weights.

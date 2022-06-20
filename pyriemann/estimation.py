@@ -47,7 +47,7 @@ class Covariances(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_times)
-            Multi-channel time-series
+            Multi-channel time-series.
         y : None
             Not used, here for compatibility with sklearn API.
 
@@ -64,7 +64,7 @@ class Covariances(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_times)
-            Multi-channel time-series
+            Multi-channel time-series.
 
         Returns
         -------

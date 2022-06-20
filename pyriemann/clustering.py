@@ -140,7 +140,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray | None (default None)
+        y : ndarray, shape (n_matrices,) | None (default None)
             Not used, here for compatibility with sklearn API.
 
         Returns
