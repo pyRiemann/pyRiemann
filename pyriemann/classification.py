@@ -101,7 +101,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
-        sample_weight : None | ndarray shape (n_matrices,), default: None
+        sample_weight : None | ndarray, shape (n_matrices,), default: None
             Weights for each matrix. If None, it uses equal weights.
 
         Returns

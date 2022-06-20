@@ -530,13 +530,13 @@ class AJDC(BaseEstimator, TransformerMixin):
         If fit, the spatial filters used to transform source into signal,
         also called mixing matrix.
 
-    See Also
-    --------
-    CospCovariances
-
     Notes
     -----
     .. versionadded:: 0.2.7
+
+    See Also
+    --------
+    CospCovariances
 
     References
     ----------
