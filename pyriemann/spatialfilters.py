@@ -511,7 +511,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         Parameter for dimension reduction of cospectra, because Pham's AJD is
         sensitive to matrices conditioning. For more details, see parameter
         ``dim_red`` of :class:`pyriemann.preprocessing.Whitening`.
-    verbose : bool, default True
+    verbose : bool, default=True
         Verbose flag.
 
     Attributes

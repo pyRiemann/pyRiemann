@@ -27,7 +27,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     r"""Mean of SPD matrices according to the Riemannian metric.
 
     The procedure is similar to a gradient descent minimizing the sum of
-    affine-invariant Riemannian distances :math:`d_R` to the mean:
+    affine-invariant Riemannian distances :math:`d_R` to the mean [1]_:
 
     .. math::
         \mathbf{C} = \arg\min{ \sum_i d_R ( \mathbf{C} , \mathbf{C}_i)^2 }
@@ -92,6 +92,8 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
 
 def mean_logeuclid(covmats, sample_weight=None):
     r"""Mean of SPD matrices according to the log-Euclidean metric.
+
+    Log-Euclidean mean is [1]_:
 
     .. math::
         \mathbf{C} = \exp{(\frac{1}{m} \sum_i \log{\mathbf{C}_i})}
