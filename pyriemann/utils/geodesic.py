@@ -19,7 +19,7 @@ def geodesic(A, B, alpha, metric='riemann'):
         Second SPD matrix.
     alpha : float
         The position on the geodesic.
-    metric : string (default 'riemann')
+    metric : string, default='riemann'
         The metric, can be: 'riemann', 'logeuclid', 'euclid'.
 
     Returns
@@ -52,7 +52,7 @@ def geodesic_riemann(A, B, alpha=0.5):
         First SPD matrix.
     B : ndarray, shape (n, n)
         Second SPD matrix.
-    alpha : float (default 0.5)
+    alpha : float, default=0.5
         The position on the geodesic.
 
     Returns
@@ -85,7 +85,7 @@ def geodesic_euclid(A, B, alpha=0.5):
         First SPD matrix.
     B : ndarray, shape (n, n)
         Second SPD matrix.
-    alpha : float (default 0.5)
+    alpha : float, default=0.5
         The position on the geodesic.
 
     Returns
@@ -114,7 +114,7 @@ def geodesic_logeuclid(A, B, alpha=0.5):
         First SPD matrix.
     B : ndarray, shape (n, n)
         Second SPD matrix.
-    alpha : float (default 0.5)
+    alpha : float, default=0.5
         The position on the geodesic.
 
     Returns

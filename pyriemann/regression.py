@@ -20,7 +20,7 @@ class SVR(sklearnSVR):
 
     Parameters
     ----------
-    metric : {'riemann', 'euclid', 'logeuclid'}, default: 'riemann'
+    metric : {'riemann', 'euclid', 'logeuclid'}, default='riemann'
         Metric for kernel matrix computation.
     Cref : None | ndarray, shape (n_channels, n_channels)
         Reference point for kernel matrix computation. If None, the mean of
@@ -31,26 +31,26 @@ class SVR(sklearnSVR):
         If callable, the callable is passed as the kernel parameter to
         `sklearn.svm.SVC()` [2]_. The callable has to be of the form
         `kernel(X, Y, Cref, metric)`.
-    tol : float, default: 1e-3
+    tol : float, default=1e-3
         Tolerance for stopping criterion.
-    C : float, default: 1.0
+    C : float, default=1.0
         Regularization parameter. The strength of the regularization is
         inversely proportional to C. Must be strictly positive.
         The penalty is a squared l2 penalty.
-    epsilon : float, default: 0.1
+    epsilon : float, default=0.1
          Epsilon in the epsilon-SVR model. It specifies the epsilon-tube
          within which no penalty is associated in the training loss function
          with points predicted within a distance epsilon from the actual
          value.
-    shrinking : bool, default: True
+    shrinking : bool, default=True
         Whether to use the shrinking heuristic.
-    cache_size : float, default: 200
+    cache_size : float, default=200
         Specify the size of the kernel cache (in MB).
-    verbose : bool, default: False
+    verbose : bool, default=False
         Enable verbose output. Note that this setting takes advantage of a
         per-process runtime setting in libsvm that, if enabled, may not work
         properly in a multithreaded context.
-    max_iter : int, default: -1
+    max_iter : int, default=-1
         Hard limit on iterations within solver, or -1 for no limit.
 
     Attributes
@@ -107,7 +107,7 @@ class SVR(sklearnSVR):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Target values for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default: None
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
             Weights for each matrix. Rescale C per matrix. Higher weights
             force the classifier to put more emphasis on these matrices.
             If None, it uses equal weights.
@@ -160,9 +160,9 @@ class KNearestNeighborRegressor(MDM):
 
     Parameters
     ----------
-    n_neighbors : int, default : 5
+    n_neighbors : int, default=5
         Number of neighbors.
-    metric : string | dict, default: 'riemann'
+    metric : string | dict, default='riemann'
         The type of metric used for distance estimation.
         See `distance` for the list of supported metric.
 

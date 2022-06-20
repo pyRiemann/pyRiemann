@@ -28,7 +28,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     Parameters
     ----------
-    metric : string | dict, default: 'riemann'
+    metric : string | dict, default='riemann'
         The type of metric used for centroid and distance estimation.
         see `mean_covariance` for the list of supported metric.
         the metric could be a dict with two keys, `mean` and `distance` in
@@ -36,7 +36,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         distance estimation. Typical usecase is to pass 'logeuclid' metric for
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
-    n_jobs : int, default: 1
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
@@ -101,7 +101,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default: None
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
             Weights for each matrix. If None, it uses equal weights.
 
         Returns
@@ -205,7 +205,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     Parameters
     ----------
-    metric : string | dict, default: 'riemann'
+    metric : string | dict, default='riemann'
         The type of metric used for centroid and distance estimation.
         see `mean_covariance` for the list of supported metric.
         the metric could be a dict with two keys, `mean` and `distance` in
@@ -213,12 +213,12 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         distance estimation. Typical usecase is to pass 'logeuclid' metric for
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
-    tsupdate : bool, default False
+    tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]_. This is not compatible with
         online implementation. Performance are better when the number of
         matrices for prediction is higher.
-    n_jobs : int, default: 1
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
@@ -350,7 +350,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
 
     Parameters
     ----------
-    metric : string | dict, default: 'riemann'
+    metric : string | dict, default='riemann'
         The type of metric used for centroid and distance estimation.
         see `mean_covariance` for the list of supported metric.
         the metric could be a dict with two keys, `mean` and `distance` in
@@ -358,12 +358,12 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         distance estimation. Typical usecase is to pass 'logeuclid' metric for
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
-    tsupdate : bool, default: False
+    tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]. This is not compatible with
         online implementation. Performance are better when the number of
         matrices for prediction is higher.
-    clf : sklearn classifier, default: LogisticRegression
+    clf : sklearn classifier, default=LogisticRegression()
         The classifier to apply in the tangent space.
 
     See Also
@@ -447,12 +447,12 @@ class KNearestNeighbor(MDM):
 
     Parameters
     ----------
-    n_neighbors : int, default: 5
+    n_neighbors : int, default=5
         Number of neighbors.
-    metric : string | dict, default: 'riemann'
+    metric : string | dict, default='riemann'
         The type of metric used for distance estimation.
         see `distance` for the list of supported metric.
-    n_jobs : int, default: 1
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the distance to the training set in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
@@ -560,48 +560,48 @@ class SVC(sklearnSVC):
 
     Parameters
     ----------
-    metric : {'riemann', 'euclid', 'logeuclid'}, default: 'riemann'
+    metric : {'riemann', 'euclid', 'logeuclid'}, default='riemann'
         Metric for kernel matrix computation.
-    Cref : None | ndarray | callable, shape (n_channels, n_channels)
+    Cref : None | callable | ndarray, shape (n_channels, n_channels)
         Reference point for kernel matrix computation.
         If None, the mean of the training data according to the metric is used.
         If callable, the function is called on the training data to calculate
         Cref.
-    kernel_fct : 'precomputed' | callable
+    kernel_fct : None | 'precomputed' | callable
         If 'precomputed', the kernel matrix for datasets X and Y is estimated
         according to `pyriemann.utils.kernel(X, Y, Cref, metric)`.
         If callable, the callable is passed as the kernel parameter to
         `sklearn.svm.SVC()` [2]_. The callable has to be of the form
         `kernel(X, Y, Cref, metric)`.
-    C : float, default: 1.0
+    C : float, default=1.0
         Regularization parameter. The strength of the regularization is
         inversely proportional to C. Must be strictly positive. The penalty
         is a squared l2 penalty.
-    shrinking : bool, default: True
+    shrinking : bool, default=True
         Whether to use the shrinking heuristic.
-    probability : bool, default: False
+    probability : bool, default=False
         Whether to enable probability estimates. This must be enabled prior
         to calling `fit`, will slow down that method as it internally uses
         5-fold cross-validation, and `predict_proba` may be inconsistent with
         `predict`. Read more in the :ref:`User Guide <scores_probabilities>`.
-    tol : float, default: 1e-3
+    tol : float, default=1e-3
         Tolerance for stopping criterion.
-    cache_size : float, default: 200
+    cache_size : float, default=200
         Specify the size of the kernel cache (in MB).
-    class_weight : dict or 'balanced', default: None
+    class_weight : dict or 'balanced', default=None
         Set the parameter C of class i to class_weight[i]*C for
         SVC. If not given, all classes are supposed to have
         weight one.
         The "balanced" mode uses the values of y to automatically adjust
         weights inversely proportional to class frequencies in the input data
         as ``n_matrices / (n_classes * np.bincount(y))``.
-    verbose : bool, default: False
+    verbose : bool, default=False
         Enable verbose output. Note that this setting takes advantage of a
         per-process runtime setting in libsvm that, if enabled, may not work
         properly in a multithreaded context.
-    max_iter : int, default: -1
+    max_iter : int, default=-1
         Hard limit on iterations within solver, or -1 for no limit.
-    decision_function_shape : {'ovo', 'ovr'}, default: 'ovr'
+    decision_function_shape : {'ovo', 'ovr'}, default='ovr'
         Whether to return a one-vs-rest ('ovr') decision function of shape
         (n_matrices, n_classes) as all other classifiers, or the original
         one-vs-one ('ovo') decision function of libsvm which has shape
@@ -609,13 +609,13 @@ class SVC(sklearnSVC):
         internally, one-vs-one ('ovo') is always used as a multi-class strategy
         to train models; an ovr matrix is only constructed from the ovo matrix.
         The parameter is ignored for binary classification.
-    break_ties : bool, default: False
+    break_ties : bool, default=False
         If true, ``decision_function_shape='ovr'``, and number of classes > 2,
         :term:`predict` will break ties according to the confidence values of
         :term:`decision_function`; otherwise the first class among the tied
         classes is returned. Please note that breaking ties comes at a
         relatively high computational cost compared to a simple predict.
-    random_state : int, RandomState instance or None, default: None
+    random_state : int, RandomState instance or None, default=None
         Controls the pseudo random number generation for shuffling the data for
         probability estimates. Ignored when `probability` is False.
         Pass an int for reproducible output across multiple function calls.
@@ -678,7 +678,7 @@ class SVC(sklearnSVC):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default: None
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
             Weights for each matrix. Rescale C per matrix. Higher weights
             force the classifier to put more emphasis on these matrices.
             If None, it uses equal weights.
@@ -727,16 +727,16 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     Parameters
     ----------
-    power_list : list of float (default: [-1,0,+1])
+    power_list : list of float, default=[-1,0,+1]
         Exponents of power means.
-    method_label : {'sum_means', 'inf_means'} (default: 'sum_means')
+    method_label : {'sum_means', 'inf_means'}, default='sum_means'
         Method to combine labels:
 
         * sum_means: it assigns the covariance to the class whom the sum of
           distances to means of the field is the lowest;
         * inf_means: it assigns the covariance to the class of the closest mean
           of the field.
-    metric : string | dict (default: 'riemann')
+    metric : string | dict, default='riemann'
         The type of metric used for distance estimation during prediction.
         See `distance` for the list of supported metric.
 
@@ -778,7 +778,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
-        sample_weight : None | ndarray shape (n_matrices,), default: None
+        sample_weight : None | ndarray shape (n_matrices,), default=None
             Weights for each matrix. If None, it uses equal weights.
 
         Returns

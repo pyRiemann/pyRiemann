@@ -36,14 +36,14 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     ----------
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
-    tol : float (default 10e-9)
+    tol : float, default=10e-9
         The tolerance to stop the gradient descent.
-    maxiter : int (default 50)
+    maxiter : int, default=50
         The maximum number of iterations.
-    init : None | ndarray, shape (n_channels, n_channels) (default None)
+    init : None | ndarray, shape (n_channels, n_channels), default=None
         A SPD matrix used to initialize the gradient descent.
         If None the Euclidean mean is used.
-    sample_weight : None | ndarray, shape (n_matrices,) (default None)
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
@@ -100,7 +100,7 @@ def mean_logeuclid(covmats, sample_weight=None):
     ----------
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
-    sample_weight : None | ndarray, shape (n_matrices,) (default None)
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
@@ -134,7 +134,7 @@ def mean_kullback_sym(covmats, sample_weight=None):
     ----------
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
-    sample_weight : None | ndarray, shape (n_matrices,) (default None)
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
@@ -165,7 +165,7 @@ def mean_harmonic(covmats, sample_weight=None):
     ----------
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
-    sample_weight : None | ndarray, shape (n_matrices,) (default None)
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
@@ -196,14 +196,14 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     ----------
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
-    tol : float (default 10e-5)
+    tol : float, default=10e-5
         The tolerance to stop the gradient descent.
-    maxiter : int (default 50)
+    maxiter : int, default=50
         The maximum number of iterations.
-    init : None | ndarray, shape (n_channels, n_channels) (default None)
+    init : None | ndarray, shape (n_channels, n_channels), default=None
         A SPD matrix used to initialize the gradient descent.
         If None the Euclidean mean is used.
-    sample_weight : None | ndarray, shape (n_matrices,) (default None)
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
@@ -252,14 +252,14 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
     ----------
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
-    tol : float (default 10e-4)
+    tol : float, default=10e-4
         The tolerance to stop the gradient descent.
-    maxiter : int (default 50)
+    maxiter : int, default=50
         The maximum number of iterations.
-    init : None | ndarray, shape (n_channels, n_channels) (default None)
+    init : None | ndarray, shape (n_channels, n_channels), default=None
         A SPD matrix used to initialize the gradient descent.
         If None the Euclidean mean is used.
-    sample_weight : None | ndarray, shape (n_matrices,) (default None)
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
@@ -310,7 +310,7 @@ def mean_euclid(covmats, sample_weight=None):
     ----------
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
-    sample_weight : None | ndarray, shape (n_matrices,) (default None)
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
@@ -331,11 +331,11 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
     ----------
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
-    tol : float (default 10e-7)
+    tol : float, default=10e-7
         The tolerance to stop the gradient descent.
-    maxiter : int (default 50)
+    maxiter : int, default=50
         The maximum number of iterations.
-    sample_weight : None | ndarray, shape (n_matrices,) (default None)
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
@@ -404,13 +404,13 @@ def mean_alm(covmats, tol=1e-14, maxiter=100,
     ----------
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
-    tol : float (default 10e-14)
+    tol : float, default=10e-14
         The tolerance to stop the gradient descent.
-    maxiter : int (default 100)
+    maxiter : int, default=100
         The maximum number of iterations.
-    verbose : bool (default False)
+    verbose : bool, default=False
         Indicate when reaching maxiter.
-    sample_weight : None | ndarray, shape (n_matrices,) (default None)
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
@@ -461,9 +461,9 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10):
         Set of SPD matrices.
     p : float
         Exponent, in [-1,+1].
-    sample_weight : None | ndarray, shape (n_matrices,) (default None)
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
-    zeta : float (default 10e-10)
+    zeta : float, default=10e-10
         Stopping criterion.
 
     Returns
@@ -552,14 +552,14 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
     ----------
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
-    metric : string (default 'riemann')
+    metric : string, default='riemann'
         The metric, can be: 'riemann', 'logeuclid', 'euclid', 'logdet',
         'identity', 'wasserstein', 'ale', 'alm', 'harmonic', 'kullback_sym'
         or a callable function.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
     args : list of params
         The arguments passed to the sub function.
-    sample_weight : None | ndarray, shape (n_matrices,) (default None)
-        Weights for each matrix. If None, it uses equal weights.
 
     Returns
     -------
@@ -641,14 +641,14 @@ def nanmean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     ----------
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices, corrupted by symmetric NaN values [1]_.
-    tol : float (default 10e-9)
+    tol : float, default=10e-9
         The tolerance to stop the gradient descent.
-    maxiter : int (default 50)
+    maxiter : int, default=50
         The maximum number of iteration.
-    init : None | ndarray, shape (n_channels, n_channels) (default None)
+    init : None | ndarray, shape (n_channels, n_channels), default=None
         A SPD matrix used to initialize the gradient descent.
         If None, a regularized Euclidean NaN-mean is used.
-    sample_weight : None | ndarray, shape (n_matrices,) (default None)
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
@@ -699,14 +699,14 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=50, init=None,
     masks : list of n_matrices ndarray of shape (n_channels, n_channels_i), \
             with different n_channels_i, such that n_channels_i <= n_channels
         Masks, defined as semi-orthogonal matrices. See [1]_.
-    tol : float (default 10e-9)
+    tol : float, default=10e-9
         The tolerance to stop the gradient descent.
-    maxiter : int (default 50)
+    maxiter : int, default=50
         The maximum number of iteration.
-    init : None | ndarray, shape (n_channels, n_channels) (default None)
+    init : None | ndarray, shape (n_channels, n_channels), default=None
         A SPD matrix used to initialize the gradient descent.
         If None, the Identity is used.
-    sample_weight : None | ndarray, shape (n_matrices,) (default None)
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns

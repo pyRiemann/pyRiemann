@@ -32,12 +32,12 @@ class SpectralEmbedding(BaseEstimator):
 
     Parameters
     ----------
-    n_components : integer, default: 2
+    n_components : integer, default=2
         The dimension of the projected subspace.
-    metric : string | dict (default: 'riemann')
+    metric : string | dict, default='riemann'
         The type of metric to be used for defining pairwise distance between
         covariance matrices.
-    eps : None | float (default: None)
+    eps : None | float, default=None
         The scaling of the Gaussian kernel. If none is given it will use the
         square of the median of pairwise distances between points.
 
@@ -140,13 +140,13 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    n_components : int, default: 2
+    n_components : int, default=2
         Dimensionality of projected space.
-    n_neighbors : int, default: 5
+    n_neighbors : int, default=5
         Number of neighbors for reconstruction of each point.
     metric : {'riemann', 'logeuclid', 'euclid'}, default: 'riemann'
         Metric used for KNN and Kernel estimation.
-    reg : float, default: 1e-3
+    reg : float, default=1e-3
         Regularization parameter.
 
     Attributes
@@ -278,9 +278,9 @@ def barycenter_weights(X, Y, indices, metric='riemann', reg=1e-3):
         Set of SPD matrices.
     indices : ndarray, shape (n_matrices, n_neighbors)
         Indices of the points in Y used to compute the barycenter
-    metric : {'riemann', 'logeuclid', 'euclid'}, default: 'riemann'
+    metric : {'riemann', 'logeuclid', 'euclid'}, default='riemann'
         Kernel metric.
-    reg : float, default: 1e-3
+    reg : float, default=1e-3
         Amount of regularization to add for the problem to be
         well-posed in the case of n_neighbors > n_channels.
 
@@ -337,13 +337,13 @@ def locally_linear_embedding(X,
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
-    n_components : int, default: 2
+    n_components : int, default=2
         Dimensionality of projected space.
-    n_neighbors : int, default: 5
+    n_neighbors : int, default=5
         Number of neighbors for reconstruction of each point.
     metric : {'riemann', 'logeuclid', 'euclid'}, default: 'riemann'
         Metric used for KNN and Kernel estimation.
-    reg : float, default: 1e-3
+    reg : float, default=1e-3
         Regularization parameter.
 
     Returns

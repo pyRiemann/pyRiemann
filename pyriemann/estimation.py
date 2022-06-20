@@ -23,7 +23,7 @@ class Covariances(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    estimator : string (default: 'scm')
+    estimator : string, default=scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
 
@@ -101,14 +101,14 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    classes : list of int | None (default None)
+    classes : list of int | None, default=None
         List of classes to take into account for prototype estimation.
-        If None (default), all classes will be accounted.
-    estimator : string (default: 'scm')
+        If None, all classes will be accounted.
+    estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
-    svd : int | None (default None)
-        If not none, the prototype responses will be reduce using a SVD using
+    svd : int | None, default=None
+        If not None, the prototype responses will be reduce using a SVD using
         the number of components passed in SVD.
 
     See Also
@@ -212,26 +212,26 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    nfilter: int (default 4)
+    nfilter: int, default=4
         Number of Xdawn filters per class.
-    applyfilters: bool (default True)
+    applyfilters: bool, default=True
         If set to true, spatial filter are applied to the prototypes and the
         signals. When set to False, filters are applied only to the ERP
         prototypes allowing for a better generalization across subject and
         session at the expense of dimensionality increase. In that case, the
         estimation is similar to :class:`pyriemann.estimation.ERPCovariances`
         with `svd=nfilter` but with more compact prototype reduction.
-    classes : list of int | None (default None)
+    classes : list of int | None, default=None
         list of classes to take into account for prototype estimation.
-        If None (default), all classes will be accounted.
-    estimator : string (default: 'scm')
+        If None, all classes will be accounted.
+    estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
-    xdawn_estimator : string (default: 'scm')
+    xdawn_estimator : string, default='scm'
         Covariance matrix estimator for `Xdawn` spatial filtering.
         Should be regularized using 'lwf' or 'oas', see
         :func:`pyriemann.utils.covariance.covariances`.
-    baseline_cov : array, shape (n_chan, n_chan) | None (default)
+    baseline_cov : array, shape (n_chan, n_chan) | None, default=None
         Baseline covariance for `Xdawn` spatial filtering,
         see :class:`pyriemann.spatialfilters.Xdawn`.
 
@@ -321,12 +321,12 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    estimator : string (default: 'scm')
-        Covariance matrix estimator, see
-        :func:`pyriemann.utils.covariance.covariances`.
     block_size : int | list of int
         Sizes of individual blocks given as int for same-size block, or list
         for varying block sizes.
+    estimator : string, default='scm'
+        Covariance matrix estimator, see
+        :func:`pyriemann.utils.covariance.covariances`.
 
     Notes
     -----
@@ -403,15 +403,15 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    window : int (default 128)
+    window : int, default=128
         The length of the FFT window used for spectral estimation.
-    overlap : float (default 0.75)
+    overlap : float, default=0.75
         The percentage of overlap between window.
-    fmin : float | None, (default None)
+    fmin : float | None, default=None
         The minimal frequency to be returned.
-    fmax : float | None, (default None)
+    fmax : float | None, default=None
         The maximal frequency to be returned.
-    fs : float | None, (default None)
+    fs : float | None, default=None
         The sampling frequency of the signal.
 
     Attributes
@@ -493,18 +493,18 @@ class Coherences(CospCovariances):
 
     Parameters
     ----------
-    window : int (default 128)
+    window : int, default=128
         The length of the FFT window used for spectral estimation.
-    overlap : float (default 0.75)
+    overlap : float, default=0.75
         The percentage of overlap between window.
-    fmin : float | None, (default None)
+    fmin : float | None, default=None
         the minimal frequency to be returned.
-    fmax : float | None, (default None)
+    fmax : float | None, default=None
         The maximal frequency to be returned.
-    fs : float | None, (default None)
+    fs : float | None, default=None
         The sampling frequency of the signal.
-    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default \
-            'ordinary')
+    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, \
+            default='ordinary'
         The coherence type:
 
         * 'ordinary' for the ordinary coherence, defined in Eq.(22) of [1]_;
@@ -603,10 +603,10 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    delays: int | list of int (default: 4)
+    delays: int | list of int, default=4
         The delays to apply for the Hankel matrices. If `int`, it use a range
         of delays up to the given value. A list of int can be given.
-    estimator : string (default: 'scm')
+    estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
 
@@ -682,7 +682,7 @@ class Shrinkage(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    shrinkage : float, (default, 0.1)
+    shrinkage : float, default=0.1
         Coefficient in the convex combination used for the computation of the
         shrunk estimate. Must be between 0 and 1.
 

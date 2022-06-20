@@ -30,9 +30,9 @@ def rjd(X, eps=1e-8, n_iter_max=1000):
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of symmetric matrices to diagonalize.
-    eps : float (default 1e-8)
+    eps : float, default=1e-8
         Tolerance for stopping criterion.
-    n_iter_max : int (default 1000)
+    n_iter_max : int, default=1000
         The maximum number of iterations to reach convergence.
 
     Returns
@@ -113,11 +113,11 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices to diagonalize.
-    eps : float (default 1e-6)
+    eps : float, default=1e-6
         Tolerance for stoping criterion.
-    n_iter_max : int (default 15)
+    n_iter_max : int, default=15
         The maximum number of iterations to reach convergence.
-    sample_weight : None | ndarray, shape (n_matrices,) (default None)
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix, strictly positive.
         If None, it uses equal weights.
 
@@ -210,11 +210,11 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of symmetric matrices to diagonalize.
-    init : None | ndarray, shape (n_channels, n_channels) (default None)
+    init : None | ndarray, shape (n_channels, n_channels), default=None
         Initialization for the diagonalizer.
-    eps : float (default 1e-7)
+    eps : float, default=1e-7
         Tolerance for stoping criterion.
-    n_iter_max : int (default 100)
+    n_iter_max : int, default=100
         The maximum number of iterations to reach convergence.
 
     Returns
