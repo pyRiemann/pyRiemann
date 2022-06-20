@@ -676,8 +676,8 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 class Shrinkage(BaseEstimator, TransformerMixin):
     """Regularization of SPD matrices by shrinkage.
 
-    This transformer applies a shrinkage regularization to any SPD matrix [1]_.
-    It directly uses the `shrunk_covariance` function from scikit-learn [2]_,
+    This transformer applies a shrinkage regularization to any SPD matrix.
+    It directly uses the `shrunk_covariance` function from scikit-learn [1]_,
     applied on each input.
 
     Parameters
@@ -692,10 +692,7 @@ class Shrinkage(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo, and C. Jutten.
-        Classification of covariance matrices using a Riemannian-based kernel
-        for BCI applications". In: Neurocomputing 112 (July 2013), pp. 172-178.
-    .. [2] https://scikit-learn.org/stable/modules/generated/sklearn. \
+    .. [1] https://scikit-learn.org/stable/modules/generated/sklearn. \
         covariance.shrunk_covariance.html
     """
 
