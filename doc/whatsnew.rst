@@ -46,8 +46,6 @@ v0.2.8.dev
 
 - Fix ``fit`` in :class:`pyriemann.channelselection.ElectrodeSelection`
 
-- Add example on principal geodesic analysis (PGA) for SSVEP classification
-
 - Add power mean estimation in :func:`pyriemann.utils.mean.mean_power`
 
 - Add example in gallery to compare classifiers on synthetic datasets
@@ -61,6 +59,8 @@ v0.2.8.dev
 - Add K-Nearest-Neighbor regressor: :class:`pyriemann.regression.KNearestNeighborRegressor`
 
 - Add Minimum Distance to Mean Field classifier: :class:`pyriemann.classification.MeanField`
+
+- Add example on principal geodesic analysis (PGA) for SSVEP classification
 
 v0.2.7 (June 2021)
 ------------------
