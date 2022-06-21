@@ -11,9 +11,9 @@ class MDWM(MDM):
 
     Classification by nearest centroid. For each of the given classes, a
     centroid is estimated, according to the chosen metric, as a weighted mean
-    of covariance matrices from the source domain, combined with
+    of SPD matrices from the source domain, combined with
     the class centroid of the target domain [1]_ [2]_.
-    For classification, a given new point is attibuted to the class whose
+    For classification, a given new matrix is attibuted to the class whose
     centroid is the nearest according to the chosen metric.
 
     Parameters
@@ -23,7 +23,7 @@ class MDWM(MDM):
         source and target data. At 0, there is no transfer, only the data
         acquired from the source are used. At 1, this is a calibration-free
         system as no data are required from the source.
-    metric : string | dict (default: 'riemann')
+    metric : string | dict, default='riemann'
         The type of metric used for centroid and distance estimation.
         see `mean_covariance` for the list of supported metric.
         the metric could be a dict with two keys, `mean` and `distance` in
@@ -31,7 +31,7 @@ class MDWM(MDM):
         distance estimation. Typical usecase is to pass 'logeuclid' metric for
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
-    n_jobs : int, (default: 1)
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
@@ -75,16 +75,16 @@ class MDWM(MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Covariance matrices from target domain
+            Set of SPD matrices from target domain.
         y : ndarray, shape (n_matrices,)
-            labels corresponding to each matrix of target domain
+            Labels for each matrix of target domain.
         X_source : ndarray, shape (n_matrices_source, n_channels, n_channels)
-            Covariance matrices from source domain
+            Set of SPD matrices from source domain.
         y_source : ndarray, shape (n_matrices_source,)
-            labels corresponding to each matrix of source domain
-        sample_weight : None | ndarray, shape (n_matrices_source,)
-            Weight of each matrix from the source domain.
-            If None, matrices are treated with equal weights.
+            Labels for each matrix of source domain.
+        sample_weight : None | ndarray, shape (n_matrices_source,), default=None
+            Weights for each matrix from the source domain.
+            If None, it uses equal weights.
 
         Returns
         -------

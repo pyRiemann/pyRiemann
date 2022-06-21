@@ -117,7 +117,7 @@ ax.set_title(r'Embedded subjects matrices',
              fontsize=14)
 ax.set_xlabel(r'$\phi_1$', fontsize=14)
 ax.set_ylabel(r'$\phi_2$', fontsize=14)
-_ = ax.legend()
+ax.legend()
 
 ###############################################################################
 # The distribution of matrices from the target subject (triangles) is shifted
@@ -177,7 +177,7 @@ ax.set_xlabel(r'$\phi_1$', fontsize=14)
 ax.set_ylabel(r'$\phi_2$', fontsize=14)
 ax.set_xlim(-1.15, 1.15)
 ax.set_ylim(-1.15, 1.15)
-_ = ax.legend()
+ax.legend()
 
 ###############################################################################
 # Transfer learning for classification of target matrices
@@ -229,7 +229,7 @@ ax.set_xlabel(r'Transfer coefficient $\lambda$', fontsize=12)
 ax.set_ylabel(r'score', fontsize=12)
 ax.set_title(r'Classification score vs. transfer coefficient',
              fontsize=12)
-_ = ax.grid(True)
+ax.grid(True)
 
 ###############################################################################
 # Relying more on transfer, i.e., increasing transfer coefficient, improves
@@ -245,8 +245,9 @@ _ = ax.grid(True)
 # In this section we compare the performance of classification with
 # MDWM transfer learning classification to performance of MDM classification.
 # For MDW we consider 2 cases:
-# (1) using all available source and target data for training *MDM(s+t)*, and
-# (2) only using available target data for training *MDM(t)*
+#
+# 1. using all available source and target data for training *MDM(s+t)*, and
+# 2. only using available target data for training *MDM(t)*
 
 cv = StratifiedKFold(n_splits=50, shuffle=True, random_state=43)
 transfer_coef = 0.43
