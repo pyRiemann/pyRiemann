@@ -175,7 +175,7 @@ def distance(A, B, metric='riemann'):
         First SPD matrix.
     B : ndarray, shape (n, n)
         Second SPD matrix.
-    metric : string (default 'riemann')
+    metric : string, default='riemann'
         The metric, can be: 'riemann', 'logeuclid', 'euclid', 'logdet',
         'kullback', 'kullback_right', 'kullback_sym'.
 
@@ -206,9 +206,9 @@ def pairwise_distance(X, Y=None, metric='riemann'):
     ----------
     X : ndarray, shape (n_matrices_X, n, n)
         First set of SPD matrices.
-    Y : None | ndarray, shape (n_matrices_Y, n, n) (default None)
+    Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
         Second set of SPD matrices. If None, Y is set to X.
-    metric : string (default 'riemann')
+    metric : string, default='riemann'
         The metric, can be: 'riemann', 'logeuclid', 'euclid', 'logdet',
         'kullback', 'kullback_right', 'kullback_sym'.
 
@@ -249,7 +249,7 @@ distance_methods = {
 
 
 def _check_distance_method(method):
-    """checks methods """
+    """Checks methods """
     if isinstance(method, str):
         if method not in distance_methods.keys():
             raise ValueError('Unknown mean method')

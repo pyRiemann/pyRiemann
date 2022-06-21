@@ -58,6 +58,7 @@ def is_skew_sym(X):
 
 def is_real(X):
     """Check if all complex matrices are strictly real.
+
     Better management of numerical imprecisions than np.all(np.isreal()).
 
     Parameters
@@ -74,7 +75,9 @@ def is_real(X):
 
 
 def is_hermitian(X):
-    """Check if all matrices are Hermitian, ie with a symmetric real part and
+    """Check if all matrices are Hermitian.
+
+    Check if all matrices are Hermitian, ie with a symmetric real part and
     a skew-symmetric imaginary part.
 
     Parameters

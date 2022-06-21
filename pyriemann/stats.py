@@ -50,8 +50,8 @@ class BasePermutation():
             The target variable to try to predict in the case of
             supervised learning.
 
-        verbose: bool
-            if true, print progress.
+        verbose : bool, default=True
+            If true, print progress.
         """
         Npe = multiset_perm_number(y)
         self.scores_ = np.zeros(np.min([self.n_perms, int(Npe)]))
@@ -114,19 +114,19 @@ class BasePermutation():
 
         Parameters
         ----------
-        nbins : integer or array_like or 'auto', optional
+        nbins : integer or array_like or 'auto', default=10
             If an integer is given, bins + 1 bin edges are returned,
             consistently with np.histogram() for numpy version >= 1.3.
             Unequally spaced bins are supported if bins is a sequence.
 
-        range : tuple or None, optional
+        range : tuple or None, default=None
             The lower and upper range of the bins. Lower and upper outliers are
             ignored. If not provided, range is (x.min(), x.max()).
             Range has no effect if bins is a sequence.
             If bins is a sequence or range is specified, autoscaling is based
             on the specified bin range instead of the range of x.
 
-        axes : axes handle (default None)
+        axes : axes handle, default=None
             Axes handle for matplotlib. if None a new figure will be created.
         """
         try:
@@ -158,14 +158,14 @@ class PermutationModel(BasePermutation):
 
     Parameters
     ----------
-    n_perms : int  (default: 100)
+    n_perms : int, default=100
         The number of permutation. The minimum should be 20 for a resolution of
         0.05 p-value.
 
-    model : sklearn compatible model, (default: MDM())
+    model : sklearn compatible model, default=MDM()
         The model for scoring.
 
-    cv : int, (default 3) cross-validation generator or an iterable, optional
+    cv : int or cross-validation generator or an iterable, default=3
         Determines the cross-validation splitting strategy.
         Possible inputs for cv are:
 
@@ -178,16 +178,16 @@ class PermutationModel(BasePermutation):
         either binary or multiclass, :class:`StratifiedKFold` is used. In all
         other cases, `KFold` is used.
 
-    scoring : string, callable or None, optional, default: None
+    scoring : string or callable or None, default=None
         A string (see model evaluation documentation) or
         a scorer callable object / function with signature
         `scorer(estimator, X, y)`.
 
-    n_jobs : integer, optional
+    n_jobs : integer, default=1
         The number of CPUs to use to do the computation. -1 means
         'all CPUs'.
 
-    random_state : int (default 42)
+    random_state : int, default=42
         random state for the permutation test.
 
     Attributes
@@ -267,11 +267,11 @@ class PermutationDistance(BasePermutation):
 
     Parameters
     ----------
-    n_perms : int  (default: 100)
+    n_perms : int, default=100
         The number of permutation. The minimum should be 20 for a resolution of
         0.05 p-value.
 
-    metric : string | dict (default: 'riemann')
+    metric : string | dict, default='riemann'
         The type of metric used for centroid and distance estimation.
         see `distance` anb `mean_covariance` for the list of supported metric.
         the metric could be a dict with two keys, `mean` and `distance` in
@@ -280,18 +280,18 @@ class PermutationDistance(BasePermutation):
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
 
-    mode : string (default: 'pairwise')
+    mode : string, default='pairwise'
         Type of statistic to use. could be 'pairwise', 'ttest' of 'ftest'
 
-    n_jobs : integer, optional
+    n_jobs : integer, default=1
         The number of CPUs to use to do the computation. -1 means
         'all CPUs'.
 
-    random_state : int (default 42)
+    random_state : int, default=42
         random state for the permutation test.
 
-    estimator : sklearn compatible estimator
-        if provided, data are transformed before every permutation. should
+    estimator : None or sklearn compatible estimator, default=None
+        If provided, data are transformed before every permutation. should
         not be used unless a supervised opperation must be applied on the data.
         This would be the case for ERP covariance.
 

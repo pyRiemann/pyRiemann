@@ -18,9 +18,9 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    nelec : int (default 16)
+    nelec : int, default=16
         The number of electrode to keep in the final subset.
-    metric : string | dict (default: 'riemann')
+    metric : string | dict, default='riemann'
         The type of metric used for centroid and distance estimation.
         see `mean_covariance` for the list of supported metric.
         the metric could be a dict with two keys, `mean` and `distance` in
@@ -28,7 +28,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         distance estimation. Typical usecase is to pass 'logeuclid' metric for
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the selection.
-    n_jobs : int, (default: 1)
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
@@ -68,11 +68,10 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : None | ndarray, shape (n_matrices, 1)
-            Labels corresponding to each matrix.
-        sample_weight : None | ndarray, shape (n_matrices, 1)
-            Weights corresponding to each matrix.
-            If None, each matrix is treated with equal weights.
+        y : None | ndarray, shape (n_matrices,), default=None
+            Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -139,8 +138,8 @@ class FlatChannelRemover(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_times)
             Multi-channel time-series.
-        y : ndarray, shape (n_matrices, n_dims) | None, optional
-            The regressor(s). Defaults to None.
+        y : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
@@ -173,8 +172,8 @@ class FlatChannelRemover(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_times)
             Multi-channel time-series.
-        y : ndarray, shape (n_matrices, n_dims) | None, optional
-            The regressor(s). Defaults to None.
+        y : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------

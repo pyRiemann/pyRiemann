@@ -59,17 +59,17 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
     x0 : array
         Initial state for the MCMC procedure. Note that the shape of this array
         defines the dimensionality n_dim of the data points to be sampled.
-    n_burnin : int
+    n_burnin : int, default=20
         How many samples to discard from the beginning of the chain generated
         by the slice sampling procedure. Usually the first samples are prone to
         non-stationary behavior and do not follow very well the target pdf.
-    thin : int
+    thin : int, default=10
         Thinning factor for the slice sampling procedure. MCMC samples are
         often correlated between them, so taking one sample every `thin`
         samples can help reducing this correlation. Note that this makes the
         algorithm actually sample `thin x n_samples` samples from the pdf, so
         expect the whole sampling procedure to take longer.
-    random_state : int, RandomState instance or None (default: None)
+    random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
 
     Returns
@@ -156,7 +156,7 @@ def _sample_parameter_r(n_samples, n_dim, sigma, random_state=None):
         Dimensionality of the SPD matrices to be sampled.
     sigma : float
         Dispersion of the Riemannian Gaussian distribution.
-    random_state : int, RandomState instance or None (default: None)
+    random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
 
     Returns
@@ -188,7 +188,7 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
         How many samples to generate.
     n_dim : int
         Dimensionality of the SPD matrices to be sampled.
-    random_state : int, RandomState instance or None (default: None)
+    random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
 
     Returns
@@ -222,7 +222,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None):
         Dimensionality of the SPD matrices to be sampled.
     sigma : float
         Dispersion of the Riemannian Gaussian distribution.
-    random_state : int, RandomState instance or None (default: None)
+    random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
 
     Returns
@@ -278,7 +278,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None):
         Center of the Riemannian Gaussian distribution.
     sigma : float
         Dispersion of the Riemannian Gaussian distribution.
-    random_state : int, RandomState instance or None (default: None)
+    random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
 
     Returns
@@ -327,11 +327,11 @@ def generate_random_spd_matrix(n_dim, random_state=None, *, mat_mean=.0,
     ----------
     n_dim : int
         Dimensionality of the matrix to sample.
-    random_state : int, RandomState instance or None (default: None)
+    random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
-    mat_mean : float (default 0.0)
+    mat_mean : float, default=0.0
         Mean of random values to generate matrix.
-    mat_std : float (default 1.0)
+    mat_std : float, default=1.0
         Standard deviation of random values to generate matrix.
 
     Returns

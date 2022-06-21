@@ -122,8 +122,8 @@ def covariances(X, estimator='cov'):
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_times)
         Multi-channel time-series.
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
-            (default: 'scm')
+    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'}, \
+            default='scm'
         Covariance matrix estimator [1]_:
 
         * 'cov' for numpy based covariance matrix [2]_,
@@ -169,8 +169,8 @@ def covariances_EP(X, P, estimator='cov'):
         Multi-channel time-series.
     P : ndarray, shape (n_channels_proto, n_times)
         Multi-channel prototype.
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
-            (default: 'cov')
+    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'}, \
+            default='cov'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
 
@@ -200,11 +200,11 @@ def covariances_X(X, estimator='scm', alpha=0.2):
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_times)
         Multi-channel time-series.
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
-            (default: 'scm')
+    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'}, \
+            default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
-    alpha : float (default 0.2)
+    alpha : float, default=0.2
         Regularization parameter (strictly positive).
 
     Returns
@@ -256,8 +256,8 @@ def block_covariances(X, blocks, estimator='cov'):
         Multi-channel time-series.
     blocks: list of int
         List of block sizes.
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
-        (default: 'scm')
+    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'}, \
+        default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
 
@@ -312,15 +312,15 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     ----------
     X : ndarray, shape (n_channels, n_times)
         Multi-channel time-series.
-    window : int (default 128)
+    window : int, default=128
         The length of the FFT window used for spectral estimation.
-    overlap : float (default 0.75)
+    overlap : float, default=0.75
         The percentage of overlap between window.
-    fmin : float | None, (default None)
+    fmin : float | None, default=None
         The minimal frequency to be returned.
-    fmax : float | None, (default None)
+    fmax : float | None, default=None
         The maximal frequency to be returned.
-    fs : float | None, (default None)
+    fs : float | None, default=None
         The sampling frequency of the signal.
 
     Returns
@@ -397,15 +397,15 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     ----------
     X : ndarray, shape (n_channels, n_times)
         Multi-channel time-series.
-    window : int (default 128)
+    window : int, default=128
         The length of the FFT window used for spectral estimation.
-    overlap : float (default 0.75)
+    overlap : float, default=0.75
         The percentage of overlap between window.
-    fmin : float | None, (default None)
+    fmin : float | None, default=None
         The minimal frequency to be returned.
-    fmax : float | None, (default None)
+    fmax : float | None, default=None
         The maximal frequency to be returned.
-    fs : float | None, (default None)
+    fs : float | None, default=None
         The sampling frequency of the signal.
 
     Returns
@@ -434,18 +434,18 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
     ----------
     X : ndarray, shape (n_channels, n_times)
         Multi-channel time-series.
-    window : int (default 128)
+    window : int, default=128
         The length of the FFT window used for spectral estimation.
-    overlap : float (default 0.75)
+    overlap : float, default=0.75
         The percentage of overlap between window.
-    fmin : float | None, (default None)
+    fmin : float | None, default=None
         The minimal frequency to be returned.
-    fmax : float | None, (default None)
+    fmax : float | None, default=None
         The maximal frequency to be returned.
-    fs : float | None, (default None)
+    fs : float | None, default=None
         The sampling frequency of the signal.
-    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default \
-            'ordinary')
+    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, \
+            default='ordinary'
         The coherence type, see :class:`pyriemann.estimation.Coherences`.
 
     Returns
