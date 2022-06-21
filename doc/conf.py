@@ -84,7 +84,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pyRiemann'
-copyright = u'2015-2021, pyRiemann Contributors'
+copyright = u'2015-2022, pyRiemann Contributors'
 author = u'Alexandre Barachant'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -331,5 +331,5 @@ intersphinx_mapping = {'https://docs.python.org/': None}
 
 
 def setup(app):
-    app.add_javascript('copybutton.js')
-    app.add_stylesheet('style.css')
+    app.add_js_file('copybutton.js')
+    app.add_css_file('style.css')

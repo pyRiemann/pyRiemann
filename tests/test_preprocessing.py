@@ -24,8 +24,8 @@ def test_whitening_init():
 
 def test_whitening_error(rndstate, get_covmats):
     """Test Whitening"""
-    n_trials, n_channels = 20, 6
-    cov = get_covmats(n_trials, n_channels)
+    n_matrices, n_channels = 20, 6
+    cov = get_covmats(n_matrices, n_channels)
     # Test Fit
     with pytest.raises(ValueError):  # len dim_red not equal to 1
         Whitening(dim_red={"n_components": 2, "expl_var": 0.5}).fit(cov)
@@ -50,10 +50,10 @@ def test_whitening_error(rndstate, get_covmats):
 @pytest.mark.parametrize("dim_red", dim_red)
 def test_whitening_dimred(dim_red, rndstate, get_covmats):
     """Test Whitening"""
-    n_trials, n_channels = 20, 6
-    cov = get_covmats(n_trials, n_channels)
+    n_matrices, n_channels = 20, 6
+    cov = get_covmats(n_matrices, n_channels)
 
-    w = rndstate.rand(n_trials)
+    w = rndstate.rand(n_matrices)
     whit = Whitening(dim_red=dim_red).fit(cov, sample_weight=w)
     if dim_red is None:
         n_comp = n_channels
@@ -71,8 +71,8 @@ def test_whitening_dimred(dim_red, rndstate, get_covmats):
 @pytest.mark.parametrize("dim_red", dim_red)
 def test_whitening_transform(dim_red, rndstate, get_covmats):
     """Test Whitening"""
-    n_trials, n_channels = 20, 6
-    cov = get_covmats(n_trials, n_channels)
+    n_matrices, n_channels = 20, 6
+    cov = get_covmats(n_matrices, n_channels)
     # Test transform
     whit = Whitening().fit(cov)
     cov_w = whit.transform(cov)
@@ -80,7 +80,7 @@ def test_whitening_transform(dim_red, rndstate, get_covmats):
         n_comp = n_channels
     else:
         n_comp = whit.n_components_
-    assert cov_w.shape == (n_trials, n_comp, n_comp)
+    assert cov_w.shape == (n_matrices, n_comp, n_comp)
     # after whitening, mean = identity
     assert_array_almost_equal(cov_w.mean(axis=0), np.eye(n_comp))
     if dim_red is not None and "max_cond" in dim_red.keys():
@@ -90,10 +90,10 @@ def test_whitening_transform(dim_red, rndstate, get_covmats):
 @pytest.mark.parametrize("dim_red", dim_red)
 def test_whitening_inverse_transform(dim_red, rndstate, get_covmats):
     """Test Whitening inverse transform"""
-    n_trials, n_channels = 20, 6
-    cov = get_covmats(n_trials, n_channels)
+    n_matrices, n_channels = 20, 6
+    cov = get_covmats(n_matrices, n_channels)
     whit = Whitening(dim_red=dim_red).fit(cov)
     cov_iw = whit.inverse_transform(whit.transform(cov))
-    assert cov_iw.shape == (n_trials, n_channels, n_channels)
+    assert cov_iw.shape == (n_matrices, n_channels, n_channels)
     if dim_red is None:
         assert_array_almost_equal(cov, cov_iw)

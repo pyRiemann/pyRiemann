@@ -21,14 +21,13 @@ class Embedding(BaseEstimator):
 
 
 class SpectralEmbedding(BaseEstimator):
-    """Spectral embedding of SPD matrices into an Euclidean space of smaller
-    dimension.
+    """Spectral embedding of SPD matrices into an Euclidean space.
 
     It uses Laplacian Eigenmaps [1]_ to embed SPD matrices into an Euclidean
-    space. The basic hypothesis is that high-dimensional data lives in a
-    low-dimensional manifold, whose intrinsic geometry can be described
-    via the Laplacian matrix of a graph. The vertices of this graph are
-    the SPD matrices and the weights of the links are determined by the
+    space of smaller dimension. The basic hypothesis is that high-dimensional
+    data lives in a low-dimensional manifold, whose intrinsic geometry can be
+    described via the Laplacian matrix of a graph. The vertices of this graph
+    are the SPD matrices and the weights of the links are determined by the
     Riemannian distance between each pair of them.
 
     Parameters
@@ -153,10 +152,10 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
     Attributes
     ----------
-    embedding_ : ndarray, shape (n_samples, n_components)
-        Stores the embedding vectors
+    embedding_ : ndarray, shape (n_matrices, n_components)
+        Stores the embedding vectors.
     error_ : float
-        Reconstruction error associated with `embedding_`
+        Reconstruction error associated with `embedding_`.
     data_ : ndarray, shape (n_matrices, n_channels, n_channels)
         Training data.
 
@@ -211,7 +210,9 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X, y=None):
-        """Calculate embedding coordinates for new data points based on fitted
+        """Calculate embedding coordinates.
+
+        Calculate embedding coordinates for new data points based on fitted
         points.
 
         Parameters
@@ -281,8 +282,8 @@ def barycenter_weights(X, Y, indices, metric='riemann', reg=1e-3):
     metric : {'riemann', 'logeuclid', 'euclid'}, default: 'riemann'
         Kernel metric.
     reg : float, default: 1e-3
-        amount of regularization to add for the problem to be
-        well-posed in the case of n_neighbors > n_channels
+        Amount of regularization to add for the problem to be
+        well-posed in the case of n_neighbors > n_channels.
 
     Returns
     -------
@@ -329,7 +330,7 @@ def locally_linear_embedding(X,
 
     1.  find its k nearest neighbors KNN(xi),
     2.  calculate the best reconstruction of xi based on its
-        k-nearest-neighbors (Eq.9 in [1]_),
+        k-nearest neighbors (Eq.9 in [1]_),
     3.  calculate a low-dimensional embedding for all points based on
         the weights in step 2.
 

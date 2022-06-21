@@ -60,8 +60,8 @@ def test_distance_func_eye(dist):
 
 @pytest.mark.parametrize("dist", get_dist_func())
 def test_distance_func_rand(dist, get_covmats):
-    n_trials, n_channels = 2, 6
-    covmats = get_covmats(n_trials, n_channels)
+    n_matrices, n_channels = 2, 6
+    covmats = get_covmats(n_matrices, n_channels)
     A, C = covmats[0], covmats[1]
     B = geodesic(A, C, alpha=0.5)
     assert dist(A, B) < dist(A, C)
@@ -69,15 +69,15 @@ def test_distance_func_rand(dist, get_covmats):
 
 @pytest.mark.parametrize("dist, dfunc", zip(get_distances(), get_dist_func()))
 def test_distance_wrapper(dist, dfunc, get_covmats):
-    n_trials, n_channels = 2, 5
-    covmats = get_covmats(n_trials, n_channels)
+    n_matrices, n_channels = 2, 5
+    covmats = get_covmats(n_matrices, n_channels)
     A, B = covmats[0], covmats[1]
     assert distance(A, B, metric=dist) == dfunc(A, B)
 
 
 def test_pairwise_distance_matrix(get_covmats):
-    n_trials, n_channels = 6, 5
-    covmats = get_covmats(n_trials, n_channels)
+    n_matrices, n_channels = 6, 5
+    covmats = get_covmats(n_matrices, n_channels)
     n_subset = 4
     A, B = covmats[:n_subset], covmats[n_subset:]
     pdist = pairwise_distance(A, B)

@@ -51,6 +51,20 @@ Classification
     FgMDM
     TSclassifier
     KNearestNeighbor
+    SVC
+    MeanField
+
+Regression
+--------------
+.. _regression_api:
+.. currentmodule:: pyriemann.regression
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    KNearestNeighborRegressor
+    SVR
 
 Clustering
 ------------------
@@ -213,6 +227,7 @@ Mean
     mean_ale
     mean_alm
     mean_harmonic
+    mean_power
     mean_kullback_sym
     maskedmean_riemann
     nanmean_riemann

@@ -8,7 +8,7 @@ from ..utils.test import is_sym_pos_semi_def as is_spsd
 
 
 def _pdf_r(r, sigma):
-    """Pdf for the log of eigenvalues of a SPD matrix
+    """Pdf for the log of eigenvalues of a SPD matrix.
 
     Probability density function for the logarithm of the eigenvalues of a SPD
     matrix samples from the Riemannian Gaussian distribution. See Said et al.
@@ -25,7 +25,7 @@ def _pdf_r(r, sigma):
     Returns
     -------
     p : float
-        Probability density function applied to data point r
+        Probability density function applied to data point r.
     """
 
     if (sigma <= 0):
@@ -43,7 +43,7 @@ def _pdf_r(r, sigma):
 
 def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
                     random_state=None):
-    """Slice sampling procedure
+    """Slice sampling procedure.
 
     Implementation of a slice sampling algorithm for sampling from any target
     pdf or a multiple of it. The implementation follows the description given
@@ -68,7 +68,7 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
         often correlated between them, so taking one sample every `thin`
         samples can help reducing this correlation. Note that this makes the
         algorithm actually sample `thin x n_samples` samples from the pdf, so
-        expect the whole sampling procedure to take longer
+        expect the whole sampling procedure to take longer.
     random_state : int, RandomState instance or None (default: None)
         Pass an int for reproducible output across multiple function calls.
 
@@ -141,12 +141,12 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
 
 
 def _sample_parameter_r(n_samples, n_dim, sigma, random_state=None):
-    """Sample the r parameters of a Riemannian Gaussian distribution
+    """Sample the r parameters of a Riemannian Gaussian distribution.
 
     Sample the logarithm of the eigenvalues of a SPD matrix following a
     Riemannian Gaussian distribution.
 
-    See https://arxiv.org/pdf/1507.01760.pdf for the mathematical details
+    See https://arxiv.org/pdf/1507.01760.pdf for the mathematical details.
 
     Parameters
     ----------
@@ -175,12 +175,12 @@ def _sample_parameter_r(n_samples, n_dim, sigma, random_state=None):
 
 
 def _sample_parameter_U(n_samples, n_dim, random_state=None):
-    """Sample the U parameters of a Riemannian Gaussian distribution
+    """Sample the U parameters of a Riemannian Gaussian distribution.
 
     Sample the eigenvectors of a SPD matrix following a Riemannian Gaussian
     distribution.
 
-    See https://arxiv.org/pdf/1507.01760.pdf for the mathematical details
+    See https://arxiv.org/pdf/1507.01760.pdf for the mathematical details.
 
     Parameters
     ----------
@@ -194,7 +194,7 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
     Returns
     -------
     u_samples : ndarray, shape (n_samples, n_dim)
-        Samples of the U parameters of the Riemannian Gaussian distribution
+        Samples of the U parameters of the Riemannian Gaussian distribution.
     """
 
     rs = check_random_state(random_state)
@@ -208,7 +208,7 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
 
 
 def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None):
-    """Sample a Riemannian Gaussian distribution centered at the Identity
+    """Sample a Riemannian Gaussian distribution centered at the Identity.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at the
     Identity, which has the role of the origin in the SPD manifold, and
@@ -228,7 +228,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None):
     Returns
     -------
     samples : ndarray, shape (n_matrices, n_dim, n_dim)
-        Samples of the Riemannian Gaussian distribution
+        Samples of the Riemannian Gaussian distribution.
 
     Notes
     -----
@@ -261,7 +261,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None):
 
 
 def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None):
-    """Sample a Riemannian Gaussian distribution
+    """Sample a Riemannian Gaussian distribution.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at
     mean and with dispersion parametrized by sigma. This distribution has been
@@ -284,7 +284,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None):
     Returns
     -------
     samples : ndarray, shape (n_matrices, n_dim, n_dim)
-        Samples of the Riemannian Gaussian distribution
+        Samples of the Riemannian Gaussian distribution.
 
     Notes
     -----
@@ -299,10 +299,12 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None):
     """
 
     n_dim = mean.shape[0]
-    samples_centered = _sample_gaussian_spd_centered(n_matrices=n_matrices,
-                                                     n_dim=n_dim,
-                                                     sigma=sigma,
-                                                     random_state=random_state)
+    samples_centered = _sample_gaussian_spd_centered(
+        n_matrices=n_matrices,
+        n_dim=n_dim,
+        sigma=sigma,
+        random_state=random_state
+    )
 
     # apply the parallel transport to mean on each of the samples
     mean_sqrt = sqrtm(mean)
@@ -317,8 +319,9 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None):
     return samples
 
 
-def generate_random_spd_matrix(n_dim, random_state=None):
-    """Generate a random SPD matrix
+def generate_random_spd_matrix(n_dim, random_state=None, *, mat_mean=.0,
+                               mat_std=1.):
+    """Generate a random SPD matrix.
 
     Parameters
     ----------
@@ -326,11 +329,15 @@ def generate_random_spd_matrix(n_dim, random_state=None):
         Dimensionality of the matrix to sample.
     random_state : int, RandomState instance or None (default: None)
         Pass an int for reproducible output across multiple function calls.
+    mat_mean : float (default 0.0)
+        Mean of random values to generate matrix.
+    mat_std : float (default 1.0)
+        Standard deviation of random values to generate matrix.
 
     Returns
     -------
     C : ndarray, shape (n_dim, n_dim)
-        Random SPD matrix
+        Random SPD matrix.
 
     Notes
     -----
@@ -342,7 +349,7 @@ def generate_random_spd_matrix(n_dim, random_state=None):
             f'n_samples must be a positive integer (Got {n_dim})')
 
     rs = check_random_state(random_state)
-    A = rs.randn(n_dim, n_dim)
+    A = mat_mean + mat_std * rs.randn(n_dim, n_dim)
     A = 0.5 * (A + A.T)
     C = expm(A)
 

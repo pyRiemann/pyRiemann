@@ -11,8 +11,10 @@ from .utils.base import sqrtm, invsqrtm
 
 
 class Whitening(BaseEstimator, TransformerMixin):
-    """Implementation of the whitening, and an optional unsupervised dimension
-    reduction, with Covariance as input.
+    """Whitening, and optional unsupervised dimension reduction.
+
+    Implementation of the whitening, and an optional unsupervised dimension
+    reduction, with SPD matrices as inputs.
 
     Parameters
     ----------
@@ -68,11 +70,11 @@ class Whitening(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            Covariance matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
         y : None
             Ignored as unsupervised.
-        sample_weight : None | ndarray, shape (n_trials,) (default None)
+        sample_weight : None | ndarray, shape (n_matrices,) (default None)
             Weight of each matrix, to compute the weighted mean covariance
             matrix used for whitening and dimension reduction. If None, uniform
             weights.
@@ -86,7 +88,8 @@ class Whitening(BaseEstimator, TransformerMixin):
         Xm = mean_covariance(
             X,
             metric=self.metric,
-            sample_weight=sample_weight)
+            sample_weight=sample_weight
+        )
 
         # whitening without dimension reduction
         if self.dim_red is None:
@@ -166,13 +169,13 @@ class Whitening(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            Covariance matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        Xw : ndarray, shape (n_trials, n_components, n_components)
-            Whitened, and optionally reduced, covariance matrices.
+        Xw : ndarray, shape (n_matrices, n_components, n_components)
+            Set of whitened, and optionally reduced, SPD matrices.
         """
         Xw = self.filters_.T @ X @ self.filters_
         return Xw
@@ -182,13 +185,13 @@ class Whitening(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_components, n_components)
-            Whitened, and optionally reduced, covariance matrices.
+        X : ndarray, shape (n_matrices, n_components, n_components)
+            Set of whitened, and optionally reduced, SPD matrices.
 
         Returns
         -------
-        Xiw : ndarray, shape (n_trials, n_channels, n_channels)
-            Unwhitened, and optionally unreduced, covariance matrices.
+        Xiw : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of unwhitened, and optionally unreduced, SPD matrices.
         """
         Xiw = self.inv_filters_.T @ X @ self.inv_filters_
         return Xiw
