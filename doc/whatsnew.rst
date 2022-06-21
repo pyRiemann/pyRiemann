@@ -60,6 +60,8 @@ v0.2.8.dev
 
 - Add Minimum Distance to Mean Field classifier: :class:`pyriemann.classification.MeanField`
 
+- Add example on principal geodesic analysis (PGA) for SSVEP classification
+
 v0.2.7 (June 2021)
 ------------------
 
