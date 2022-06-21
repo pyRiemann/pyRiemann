@@ -223,11 +223,12 @@ datasets = [
         y
     ),
     make_gaussian_blobs(
-        2*n_matrices, n_channels, random_state=rs, class_sep=1., class_disp=.2
+        2*n_matrices, n_channels, random_state=rs, class_sep=1., class_disp=.2,
+        n_jobs=-1
     ),
     make_gaussian_blobs(
         2*n_matrices, n_channels, random_state=rs, class_sep=.5, class_disp=.5,
-        mat_std=.1
+        mat_std=.1, n_jobs=-1
     )
 ]
 n_datasets = len(datasets)

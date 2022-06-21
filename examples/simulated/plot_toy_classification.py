@@ -45,7 +45,8 @@ for delta in deltas_array:
                                n_dim=n_dim,
                                class_sep=delta,
                                class_disp=sigma,
-                               random_state=random_state)
+                               random_state=random_state,
+                               n_jobs=-1)
 
     # which classifier to consider
     clf = MDM()
