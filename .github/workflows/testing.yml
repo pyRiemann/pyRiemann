@@ -16,7 +16,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: [3.6, 3.7, 3.8]
+        python-version: [3.7, 3.8, 3.9]
         os: [ubuntu-latest, macOS-latest, windows-latest]
 
     steps:
@@ -33,7 +33,7 @@ jobs:
         python -m pip install .[tests]
     - name: Lint with flake8
       run: |
-        flake8 examples tests pyriemann
+        flake8 examples tests pyriemann setup.py
     - name: Test with pytest
       run: |
         pytest

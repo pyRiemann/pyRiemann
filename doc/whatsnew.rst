@@ -48,6 +48,19 @@ v0.2.8.dev
 
 - Add example on principal geodesic analysis (PGA) for SSVEP classification
 
+- Add power mean estimation in :func:`pyriemann.utils.mean.mean_power`
+
+- Add example in gallery to compare classifiers on synthetic datasets
+
+- Add ``predict_proba`` in :class:`pyriemann.classification.KNearestNeighbor`, and correct attribute ``classes_``
+
+- Add Riemannian Support Vector Machine classifier: :class:`pyriemann.classification.SVC`
+
+- Add Riemannian Support Vector Machine regressor: :class:`pyriemann.regression.SVR`
+
+- Add K-Nearest-Neighbor regressor: :class:`pyriemann.regression.KNearestNeighborRegressor`
+
+- Add Minimum Distance to Mean Field classifier: :class:`pyriemann.classification.MeanField`
 
 v0.2.7 (June 2021)
 ------------------

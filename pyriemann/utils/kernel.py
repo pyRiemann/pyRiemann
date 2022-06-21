@@ -5,11 +5,10 @@ from .base import invsqrtm, logm
 
 
 def kernel(X, Y=None, *, Cref=None, metric='riemann', reg=1e-10):
-    """Calculate the kernel matrix according to the specified metric.
+    """Calculate the kernel matrix according to a specified metric.
 
     Calculates the kernel matrix K of inner products of two sets X and Y of
-    SPD matrices on the tangent space of Cref according to the specified
-    metric.
+    SPD matrices on the tangent space of Cref according to a specified metric.
 
     Parameters
     ----------
@@ -20,7 +19,7 @@ def kernel(X, Y=None, *, Cref=None, metric='riemann', reg=1e-10):
         Second set of SPD matrices. If None, Y is set to X.
     Cref : None | ndarray, shape (n_channels, n_channels), default: None
         Reference point for the tangent space and inner product
-        calculation. Only used if metric='riemann'
+        calculation. Only used if metric='riemann'.
     metric : {'riemann', 'euclid', 'logeuclid'}, default: 'riemann'
         The type of metric used for tangent space and mean estimation.
     reg : float, default: 1e-10
@@ -72,15 +71,14 @@ def _apply_matrix_kernel(kernel_fct, X, Y=None, *, Cref=None, reg=1e-10):
 
 
 def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
-    r"""Calculate the Riemannian kernel matrix.
+    r"""Calculate the affine-invariant Riemannian kernel matrix.
 
-    Calculates the Riemannian kernel matrix K of inner products of two
-    sets X and Y of SPD matrices on tangent space of C by calculating pairwise
+    Calculates the affine-invariant Riemannian kernel matrix K of inner
+    products of two sets X and Y of SPD matrices on tangent space of C by
+    calculating pairwise [1]_:
 
     .. math::
         K_{i,j} = {tr}(\log(C^{-1/2}X_i C^{-1/2})\log(C^{-1/2}Y_j C^{-1/2}))
-
-    as proposed in [1]_.
 
     Parameters
     ----------
@@ -126,7 +124,7 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
     r"""Calculate Euclidean kernel matrix.
 
     Calculates the Euclidean kernel matrix K of inner products of two sets
-    X and Y of SPD matrices by calculating pairwise
+    X and Y of SPD matrices by calculating pairwise:
 
     .. math::
         K_{i,j} = {tr}(X_i Y_j)
@@ -159,13 +157,11 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
 def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
     r"""Calculate Log-Euclidean kernel matrix.
 
-    Calculates the Log-Euclidean kernel matrix K of inner products of two
-    sets X and Y of SPD matrices by calculating pairwise
+    Calculates the Log-Euclidean kernel matrix K of inner products of two sets
+    X and Y of SPD matrices by calculating pairwise [1]_:
 
     .. math::
         K_{i,j} = {tr}(\log(X_i)\log(Y_j))
-
-    as proposed in [1]_.
 
     Parameters
     ----------

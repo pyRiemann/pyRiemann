@@ -28,6 +28,7 @@ from pyriemann.classification import MDM
 
 rs = np.random.RandomState(42)
 
+
 ###############################################################################
 # Estimating covariance on synthetic data
 # ----------------------------------------
@@ -35,24 +36,30 @@ rs = np.random.RandomState(42)
 # Generate synthetic data, sampled from a distribution considered as the
 # groundtruth.
 
-n_trials, n_channels, n_times = 10, 5, 1000
-var = 2.0 + 0.1 * rs.randn(n_trials, n_channels)
+n_matrices, n_channels, n_times = 10, 5, 1000
+var = 2.0 + 0.1 * rs.randn(n_matrices, n_channels)
 A = 2 * rs.rand(n_channels, n_channels) - 1
 A /= np.linalg.norm(A, axis=1)[:, np.newaxis]
-true_cov = np.empty(shape=(n_trials, n_channels, n_channels))
-X = np.empty(shape=(n_trials, n_channels, n_times))
-for i in range(n_trials):
+true_cov = np.empty(shape=(n_matrices, n_channels, n_channels))
+X = np.empty(shape=(n_matrices, n_channels, n_times))
+for i in range(n_matrices):
     true_cov[i] = A @ np.diag(var[i]) @ A.T
     X[i] = rs.multivariate_normal(
         np.array([0.0] * n_channels), true_cov[i], size=n_times
     ).T
 
 ###############################################################################
-# Covariances() object offers several estimators: SCM, Ledoit-Wolf (LWF),
-# Schaefer-Strimmer (SCH), oracle approximating shrunk covariance (OAS),
-# minimum covariance determinant (MCD) and others. We will compare the
-# distance of LWF, OAS and SCH estimators with the groundtruth, while
-# increasing epoch length.
+# `Covariances()` object offers several estimators:
+#
+# - sample covariance matrix (SCM),
+# - Ledoit-Wolf (LWF),
+# - Schaefer-Strimmer (SCH),
+# - oracle approximating shrunk (OAS) covariance,
+# - minimum covariance determinant (MCD),
+# - and others.
+#
+# We will compare the distance of LWF, OAS and SCH estimators with the
+# groundtruth, while increasing epoch length.
 
 estimators = ["lwf", "oas", "sch"]
 w_len = np.linspace(10, n_times, 20, dtype=int)
@@ -60,7 +67,7 @@ dfd = list()
 for est in estimators:
     for wl in w_len:
         cov_est = Covariances(estimator=est).transform(X[:, :, :wl])
-        for k in range(n_trials):
+        for k in range(n_matrices):
             dist = distance(cov_est[k], true_cov[k], metric="riemann")
             dfd.append(dict(estimator=est, wlen=wl, dist=dist))
 dfd = pd.DataFrame(dfd)
@@ -71,7 +78,7 @@ fig, ax = plt.subplots(figsize=(6, 4))
 ax.set(xscale="log")
 sns.lineplot(data=dfd, x="wlen", y="dist", hue="estimator", ax=ax)
 ax.set_title("Distance to groundtruth covariance matrix")
-ax.set_xlabel("Number of samples")
+ax.set_xlabel("Number of time samples")
 ax.set_ylabel(r"$\delta(\Sigma, \hat{\Sigma})$")
 plt.tight_layout()
 
@@ -111,7 +118,7 @@ event_ids = dict(hands=2, feet=3)
 estimators = ["lwf", "oas", "sch", "scm"]
 tmin = -0.2
 w_len = np.linspace(0.2, 2, 10)
-n_trials = 45
+n_matrices = 45
 dfc = list()
 
 for wl in w_len:
@@ -151,7 +158,7 @@ plt.tight_layout()
 estimators = ["lwf", "oas", "sch", "scm"]
 tmin = 0.0
 w_len = np.linspace(0.2, 2.0, 5)
-n_trials, n_splits = 45, 3
+n_matrices, n_splits = 45, 3
 dfa = list()
 sc = "balanced_accuracy"
 
