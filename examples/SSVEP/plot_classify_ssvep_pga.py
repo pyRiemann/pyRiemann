@@ -15,7 +15,6 @@ before this example.
 
 import numpy as np
 import matplotlib.pyplot as plt
-from matplotlib.colors import ListedColormap
 from matplotlib.animation import FuncAnimation
 
 from mne import find_events, Epochs, make_fixed_length_epochs
@@ -33,16 +32,18 @@ from helpers.ssvep_helpers import download_data, extend_signal
 ###############################################################################
 
 clabel = ['resting-state', '13 Hz', '17 Hz', '21 Hz']
-clist = ['b', 'g', 'c', 'r']
-cmap = ListedColormap(clist)
+clist = plt.cm.viridis(np.array([0, 1, 2, 3])/3)
+cmap = "viridis"
 
 
 def plot_pga(ax, data, labels, centers):
     sc = ax.scatter(data[:, 0], data[:, 1], c=labels, marker='P', cmap=cmap)
-    ax.scatter(centers[:, 0], centers[:, 1], c=clist, marker='o', s=100)
+    ax.scatter(
+        centers[:, 0], centers[:, 1], c=clist, marker='o', s=100, cmap=cmap
+        )
     ax.set(xlabel='PGA, 1st axis', ylabel='PGA, 2nd axis')
     for i in range(len(clabel)):
-        ax.scatter([], [], c=clist[i], marker='o', s=50, label=clabel[i])
+        ax.scatter([], [], color=clist[i], marker='o', s=50, label=clabel[i])
     ax.legend(loc='upper right')
     return sc
 
