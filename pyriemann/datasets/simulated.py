@@ -105,7 +105,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         Mean of random values to generate matrices.
     mat_std : float, default=1.0
         Standard deviation of random values to generate matrices.
-    n_jobs : int, (default: 1)
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
 

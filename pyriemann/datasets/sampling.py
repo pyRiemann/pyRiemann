@@ -130,7 +130,7 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
         expect the whole sampling procedure to take longer.
     random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
-    n_jobs : int, (default: 1)
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
 
@@ -151,20 +151,12 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
 
     rs = check_random_state(random_state)
     w = 1.0  # initial bracket width
-    # xt = np.copy(x0)
 
-    # n_dim = len(x0)
     n_samples_total = (n_samples + n_burnin) * thin
 
-    # TODO, move loop
-    if n_jobs == 1:
-        samples = []
-        for _ in range(n_samples_total):
-            samples.append(_slice_one_sample(ptarget, x0, w, rs))
-    else:
-        samples = Parallel(n_jobs=n_jobs)(
-            delayed(_slice_one_sample)(ptarget, x0, w, rs)
-            for _ in range(n_samples_total))
+    samples = Parallel(n_jobs=n_jobs)(
+        delayed(_slice_one_sample)(ptarget, x0, w, rs)
+        for _ in range(n_samples_total))
 
     samples = np.array(samples)[(n_burnin * thin):][::thin]
 
@@ -189,7 +181,7 @@ def _sample_parameter_r(n_samples, n_dim, sigma, random_state=None, n_jobs=1):
         Dispersion of the Riemannian Gaussian distribution.
     random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
-    n_jobs : int, (default: 1)
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
 
@@ -265,7 +257,7 @@ def _sample_gaussian_spd_centered(
         Dispersion of the Riemannian Gaussian distribution.
     random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
-    n_jobs : int, (default: 1)
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
 
@@ -325,7 +317,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None, n_jobs=1):
         Dispersion of the Riemannian Gaussian distribution.
     random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
-    n_jobs : int, (default: 1)
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
 
