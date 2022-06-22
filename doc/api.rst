@@ -210,7 +210,7 @@ Kernels
     kernel_euclid
     kernel_logeuclid
 
-Mean
+Means
 ~~~~~~~~~~~~~~~~~~~~~~
 .. _mean_api:
 .. currentmodule:: pyriemann.utils.mean
@@ -232,7 +232,7 @@ Mean
     maskedmean_riemann
     nanmean_riemann
 
-Geodesic
+Geodesics
 ~~~~~~~~~~~~~~~~~~~~~~
 .. _geodesic_api:
 .. currentmodule:: pyriemann.utils.geodesic
@@ -282,9 +282,9 @@ Aproximate Joint Diagonalization
     ajd_pham
     uwedge
 
-Matrix Test
+Matrix Tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. _test_api:
+.. _mat_test_api:
 .. currentmodule:: pyriemann.utils.test
 
 .. autosummary::
