@@ -19,6 +19,27 @@ from .utils.distance import distance
 from .tangentspace import FGDA, TangentSpace
 
 
+def _check_metric(metric):
+
+    if isinstance(metric, str):
+        metric_mean = metric
+        metric_dist = metric
+
+    elif isinstance(metric, dict):
+        # check keys
+        for key in ['mean', 'distance']:
+            if key not in metric.keys():
+                raise KeyError('metric must contain "mean" and "distance"')
+
+        metric_mean = metric['mean']
+        metric_dist = metric['distance']
+
+    else:
+        raise TypeError('metric must be dict or str')
+
+    return metric_mean, metric_dist
+
+
 class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
     """Classification by Minimum Distance to Mean.
 
@@ -72,25 +93,8 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     def __init__(self, metric='riemann', n_jobs=1):
         """Init."""
-        # store params for cloning purpose
         self.metric = metric
         self.n_jobs = n_jobs
-
-        if isinstance(metric, str):
-            self.metric_mean = metric
-            self.metric_dist = metric
-
-        elif isinstance(metric, dict):
-            # check keys
-            for key in ['mean', 'distance']:
-                if key not in metric.keys():
-                    raise KeyError('metric must contain "mean" and "distance"')
-
-            self.metric_mean = metric['mean']
-            self.metric_dist = metric['distance']
-
-        else:
-            raise TypeError('metric must be dict or str')
 
     def fit(self, X, y, sample_weight=None):
         """Fit (estimates) the centroids.
@@ -109,6 +113,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : MDM instance
             The MDM instance.
         """
+        self.metric_mean, self.metric_dist = _check_metric(self.metric)
         self.classes_ = np.unique(y)
 
         if sample_weight is None:
@@ -255,20 +260,6 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.n_jobs = n_jobs
         self.tsupdate = tsupdate
 
-        if isinstance(metric, str):
-            self.metric_mean = metric
-
-        elif isinstance(metric, dict):
-            # check keys
-            for key in ['mean', 'distance']:
-                if key not in metric.keys():
-                    raise KeyError('metric must contain "mean" and "distance"')
-
-            self.metric_mean = metric['mean']
-
-        else:
-            raise TypeError('metric must be dict or str')
-
     def fit(self, X, y):
         """Fit FgMDM.
 
@@ -284,7 +275,9 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : FgMDM instance
             The FgMDM instance.
         """
+        self.metric_mean, _ = _check_metric(self.metric)
         self.classes_ = np.unique(y)
+
         self._mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
         self._fgda = FGDA(metric=self.metric_mean, tsupdate=self.tsupdate)
         cov = self._fgda.fit_transform(X, y)
@@ -382,9 +375,6 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         self.tsupdate = tsupdate
         self.clf = clf
 
-        if not isinstance(clf, ClassifierMixin):
-            raise TypeError('clf must be a ClassifierMixin')
-
     def fit(self, X, y):
         """Fit TSclassifier.
 
@@ -400,7 +390,10 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         self : TSclassifier instance
             The TSclassifier instance.
         """
+        if not isinstance(self.clf, ClassifierMixin):
+            raise TypeError('clf must be a ClassifierMixin')
         self.classes_ = np.unique(y)
+
         ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
         self._pipe = make_pipeline(ts, self.clf)
         self._pipe.fit(X, y)
@@ -478,7 +471,6 @@ class KNearestNeighbor(MDM):
 
     def __init__(self, n_neighbors=5, metric='riemann', n_jobs=1):
         """Init."""
-        # store params for cloning purpose
         self.n_neighbors = n_neighbors
         MDM.__init__(self, metric=metric, n_jobs=n_jobs)
 
@@ -497,6 +489,7 @@ class KNearestNeighbor(MDM):
         self : NearestNeighbor instance
             The NearestNeighbor instance.
         """
+        self.metric_mean, self.metric_dist = _check_metric(self.metric)
         self.covmeans_ = X
         self.classmeans_ = y
         self.classes_ = np.unique(y)

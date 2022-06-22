@@ -7,7 +7,7 @@ from sklearn.svm import SVR as sklearnSVR
 from sklearn.utils.extmath import softmax
 
 from .utils.kernel import kernel
-from .classification import MDM
+from .classification import MDM, _check_metric
 from .utils.mean import mean_covariance
 
 
@@ -181,7 +181,6 @@ class KNearestNeighborRegressor(MDM):
 
     def __init__(self, n_neighbors=5, metric='riemann'):
         """Init."""
-        # store params for cloning purpose
         self.n_neighbors = n_neighbors
         super().__init__(metric=metric)
 
@@ -200,6 +199,7 @@ class KNearestNeighborRegressor(MDM):
         self : KNearestNeighborRegressor instance
             The KNearestNeighborRegressor instance.
         """
+        self.metric_mean, self.metric_dist = _check_metric(self.metric)
         self.values_ = y
         self.covmeans_ = X
 

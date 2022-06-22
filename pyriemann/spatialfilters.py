@@ -177,12 +177,8 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
 
     def __init__(self, filters, log=False):
         """Init."""
-        if not isinstance(filters, np.ndarray):
-            raise TypeError('filters must be an array.')
         self.filters_ = filters
         self.filters = filters
-        if not isinstance(log, bool):
-            raise TypeError('log must be a boolean')
         self.log = log
 
     def fit(self, X, y):
@@ -200,6 +196,10 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
         self : BilinearFilter instance
             The BilinearFilter instance.
         """
+        if not isinstance(self.filters, np.ndarray):
+            raise TypeError('filters must be an array.')
+        if not isinstance(self.log, bool):
+            raise TypeError('log must be a boolean')
         self.filters_ = self.filters
         return self
 
@@ -290,13 +290,8 @@ class CSP(BilinearFilter):
 
     def __init__(self, nfilter=4, metric='euclid', log=True):
         """Init."""
-        if not isinstance(nfilter, int):
-            raise TypeError('nfilter must be an integer')
         self.nfilter = nfilter
-        _check_mean_method(metric)
         self.metric = metric
-        if not isinstance(log, bool):
-            raise TypeError('log must be a boolean')
         self.log = log
 
     def fit(self, X, y):
@@ -314,6 +309,12 @@ class CSP(BilinearFilter):
         self : CSP instance
             The CSP instance.
         """
+        if not isinstance(self.nfilter, int):
+            raise TypeError('nfilter must be an integer')
+        _check_mean_method(self.metric)
+        if not isinstance(self.log, bool):
+            raise TypeError('log must be a boolean')
+
         if not isinstance(X, (np.ndarray, list)):
             raise TypeError('X must be an array.')
         if not isinstance(y, (np.ndarray, list)):
