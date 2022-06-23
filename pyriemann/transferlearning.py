@@ -82,7 +82,8 @@ class MDWM(MDM):
             Set of SPD matrices from source domain.
         y_source : ndarray, shape (n_matrices_source,)
             Labels for each matrix of source domain.
-        sample_weight : None | ndarray, shape (n_matrices_source,), default=None
+        sample_weight : None | ndarray, shape (n_matrices_source,), \
+            default=None
             Weights for each matrix from the source domain.
             If None, it uses equal weights.
 
@@ -97,19 +98,7 @@ class MDWM(MDM):
                 'Value transfer_coef must be included in [0, 1] (Got %d)'
                 % self.transfer_coef)
 
-        if isinstance(self.metric, str):
-            self.metric_mean = self.metric
-            self.metric_dist = self.metric
-        elif isinstance(self.metric, dict):
-            # check keys
-            for key in ['mean', 'distance']:
-                if key not in self.metric.keys():
-                    raise KeyError('metric must contain "mean" and "distance"')
-
-            self.metric_mean = self.metric['mean']
-            self.metric_dist = self.metric['distance']
-        else:
-            raise TypeError('metric must be dict or str')
+        self.metric_mean, self.metric_dist = _check_metric(self.metric)
 
         if self.transfer_coef != 0:
             if set(y) != set(y_source):
