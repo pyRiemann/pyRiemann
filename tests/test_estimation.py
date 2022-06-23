@@ -80,10 +80,13 @@ def test_erp_covariances_classes(rndstate, get_labels):
     assert is_spsd(covmats)
 
 
-def test_erp_covariances_svd_error(rndstate):
-    # assert raise svd
+def test_erp_covariances_svd_error(rndstate, get_labels):
+    """ assert raise svd """
+    n_matrices, n_channels, n_times, n_classes = 4, 3, 50, 2
+    x = rndstate.randn(n_matrices, n_channels, n_times)
+    labels = get_labels(n_matrices, n_classes)
     with pytest.raises(TypeError):
-        ERPCovariances(svd="42")
+        ERPCovariances(svd="42").fit(x, labels)
 
 
 @pytest.mark.parametrize("est", estim)

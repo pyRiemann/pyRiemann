@@ -24,7 +24,7 @@ except ImportError:
 
 from joblib import Parallel, delayed
 
-from .classification import MDM
+from .classification import MDM, _check_metric
 from .utils.mean import mean_covariance
 from .utils.geodesic import geodesic
 
@@ -36,6 +36,7 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
     """helper to fit a single run of centroid."""
     # init random state if provided
     mdm = MDM(metric=metric, n_jobs=n_jobs)
+    mdm.metric_mean, mdm.metric_dist = _check_metric(metric)
     squared_nomrs = [np.linalg.norm(x, ord='fro')**2 for x in X]
     mdm.covmeans_ = _init_centroids(X, n_clusters, init,
                                     random_state=random_state,
@@ -107,7 +108,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
     mdm_ : MDM instance.
         MDM instance containing the centroids.
     labels_ :
-        Labels of each point
+        Labels of each point.
     inertia_ : float
         Sum of distances of samples to their closest cluster center.
 
@@ -226,7 +227,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         Returns
         -------
         dist : ndarray, shape (n_matrices, n_cluster)
-            the distance to each centroid according to the metric.
+            The distance to each centroid according to the metric.
         """
         return self.mdm_.transform(X)
 
@@ -256,7 +257,7 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
         self.metric = self.km.metric
 
     def fit(self, X, y):
-        """fit."""
+        """Fit."""
         self.covmeans_ = []
         self.classes_ = np.unique(y)
         for c in self.classes_:
@@ -265,8 +266,9 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """transform."""
+        """Transform."""
         mdm = MDM(metric=self.metric, n_jobs=self.km.n_jobs)
+        mdm.metric_mean, mdm.metric_dist = _check_metric(self.metric)
         mdm.covmeans_ = self.covmeans_
         return mdm._predict_distances(X)
 
@@ -346,6 +348,9 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
             raise ValueError("Positive and negative labels must be different")
 
         self._mdm = MDM(metric=self.metric)
+        self._mdm.metric_mean, self._mdm.metric_dist = _check_metric(
+            self.metric
+        )
 
         y_old = self._check_labels(X, y)
 
@@ -582,8 +587,8 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Returns
         -------
-        self : Potato field instance
-            The Potato field instance.
+        self : PotatoField instance
+            The PotatoField instance.
         """
         if self.n_potatoes < 1:
             raise ValueError('Parameter n_potatoes must be at least 1')
@@ -634,7 +639,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         Returns
         -------
         self : PotatoField instance
-            The Potato Field instance.
+            The PotatoField instance.
         """
         self._check_length(X)
         n_matrices = X[0].shape[0]
@@ -665,7 +670,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         Returns
         -------
         z : ndarray, shape (n_matrices, n_potatoes)
-            the normalized log-distances to the centroids.
+            The normalized log-distances to the centroids.
         """
         self._check_length(X)
         n_matrices = X[0].shape[0]

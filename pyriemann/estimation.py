@@ -138,10 +138,6 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         self.estimator = estimator
         self.svd = svd
 
-        if svd is not None:
-            if not isinstance(svd, int):
-                raise TypeError('svd must be None or int')
-
     def fit(self, X, y):
         """Fit.
 
@@ -159,6 +155,9 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         self : ERPCovariances instance
             The ERPCovariances instance.
         """
+        if self.svd is not None:
+            if not isinstance(self.svd, int):
+                raise TypeError('svd must be None or int')
         if self.classes is not None:
             classes = self.classes
         else:

@@ -194,10 +194,13 @@ def test_tsclassifier_fit(get_covmats, get_labels):
     clf.fit(covmats, labels).predict(covmats)
 
 
-def test_tsclassifier_init_error():
+def test_tsclassifier_clf_error(get_covmats, get_labels):
     """Test TS if not Classifier"""
+    n_matrices, n_channels, n_classes = 6, 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+    labels = get_labels(n_matrices, n_classes)
     with pytest.raises(TypeError):
-        TSclassifier(clf=Covariances())
+        TSclassifier(clf=Covariances()).fit(covmats, labels)
 
 
 def test_svc_params():
@@ -299,3 +302,17 @@ def test_svc_kernel_callable(get_covmats, get_labels, metric):
     # check if pickleable
     pickle.dumps(rsvc)
     pickle.dumps(rsvc_1)
+
+
+@pytest.mark.parametrize("method_label", ["sum_means", "inf_means"])
+def test_meanfield(get_covmats, get_labels, method_label):
+    n_matrices, n_channels, n_classes = 6, 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+    labels = get_labels(n_matrices, n_classes)
+    mf = MeanField(method_label=method_label).fit(covmats, labels)
+    pred = mf.predict(covmats)
+    assert pred.shape == (n_matrices,)
+    proba = mf.predict_proba(covmats)
+    assert proba.shape == (n_matrices, n_classes)
+    transf = mf.transform(covmats)
+    assert transf.shape == (n_matrices, n_classes)
