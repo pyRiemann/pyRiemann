@@ -33,7 +33,7 @@ def _pdf_r(r, sigma):
         raise ValueError(f'sigma must be a positive number (Got {sigma})')
 
     n_dim = len(r)
-    partial_1 = -np.sum(r**2) / sigma**2
+    partial_1 = -np.sum(r**2) / (2 * sigma**2)
     partial_2 = 0
     for i in range(n_dim):
         for j in range(i + 1, n_dim):
