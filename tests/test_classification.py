@@ -303,6 +303,7 @@ def test_svc_kernel_callable(get_covmats, get_labels, metric):
     pickle.dumps(rsvc)
     pickle.dumps(rsvc_1)
 
+
 @pytest.mark.parametrize("method_label", ["sum_means", "inf_means"])
 def test_meanfield(get_covmats, get_labels, method_label):
     n_matrices, n_channels, n_classes = 6, 3, 2
