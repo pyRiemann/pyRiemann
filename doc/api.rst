@@ -221,7 +221,7 @@ Kernels
     kernel_euclid
     kernel_logeuclid
 
-Mean
+Means
 ~~~~~~~~~~~~~~~~~~~~~~
 .. _mean_api:
 .. currentmodule:: pyriemann.utils.mean
@@ -243,7 +243,7 @@ Mean
     maskedmean_riemann
     nanmean_riemann
 
-Geodesic
+Geodesics
 ~~~~~~~~~~~~~~~~~~~~~~
 .. _geodesic_api:
 .. currentmodule:: pyriemann.utils.geodesic
@@ -292,6 +292,24 @@ Aproximate Joint Diagonalization
     rjd
     ajd_pham
     uwedge
+
+Matrix Tests
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. _mat_test_api:
+.. currentmodule:: pyriemann.utils.test
+
+.. autosummary::
+    :toctree: generated/
+
+    is_square
+    is_sym
+    is_skew_sym
+    is_real
+    is_hermitian
+    is_pos_def
+    is_pos_semi_def
+    is_sym_pos_def
+    is_sym_pos_semi_def
 
 Visualization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

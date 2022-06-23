@@ -18,10 +18,10 @@ class Whitening(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    metric : str (default "euclid")
+    metric : str, default='euclid'
         The metric for the estimation of mean covariance matrix used for
         whitening and dimension reduction.
-    dim_red : None | dict, (default None)
+    dim_red : None | dict, default=None
         If ``None`` :
             no dimension reduction during whitening.
         If ``{'n_components': val}`` :
@@ -41,7 +41,7 @@ class Whitening(BaseEstimator, TransformerMixin):
             (usually, eye-blink source) and the power of the lowest component
             you don't want to keep (acquisition sensor noise).
             ``val`` must be a float strictly superior to 1, typically 100.
-    verbose : bool (default False)
+    verbose : bool, default=False
         Verbose flag.
 
     Attributes
@@ -74,10 +74,10 @@ class Whitening(BaseEstimator, TransformerMixin):
             Set of SPD matrices.
         y : None
             Ignored as unsupervised.
-        sample_weight : None | ndarray, shape (n_matrices,) (default None)
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
             Weight of each matrix, to compute the weighted mean covariance
-            matrix used for whitening and dimension reduction. If None, uniform
-            weights.
+            matrix used for whitening and dimension reduction. If None, it uses
+            equal weights.
 
         Returns
         -------

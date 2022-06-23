@@ -37,26 +37,26 @@ class ClassifierTestCase:
             self.clf_fitpredict(classif, covmats, labels)
         if classif in (MDM, FgMDM):
             self.clf_transform(classif, covmats, labels)
-        if classif in (MDM, FgMDM, KNearestNeighbor, MeanField):
+        if hasattr(classif(), 'n_jobs'):
             self.clf_jobs(classif, covmats, labels)
-        if classif is (FgMDM, TSclassifier):
+        if hasattr(classif(), 'tsupdate'):
             self.clf_tsupdate(classif, covmats, labels)
 
     def test_multi_classes(self, classif, get_covmats, get_labels):
         n_classes, n_matrices, n_channels = 3, 9, 3
         covmats = get_covmats(n_matrices, n_channels)
         labels = get_labels(n_matrices, n_classes)
-        self.clf_fit_independence(classif, covmats, labels)
         self.clf_predict(classif, covmats, labels)
+        self.clf_fit_independence(classif, covmats, labels)
         self.clf_predict_proba(classif, covmats, labels)
         self.clf_populate_classes(classif, covmats, labels)
         if classif is (MDM, KNearestNeighbor, SVC, MeanField):
             self.clf_fitpredict(classif, covmats, labels)
         if classif in (MDM, FgMDM):
             self.clf_transform(classif, covmats, labels)
-        if classif in (MDM, FgMDM, KNearestNeighbor, MeanField):
+        if hasattr(classif(), 'n_jobs'):
             self.clf_jobs(classif, covmats, labels)
-        if classif is (FgMDM, TSclassifier):
+        if hasattr(classif(), 'tsupdate'):
             self.clf_tsupdate(classif, covmats, labels)
 
 
@@ -109,7 +109,7 @@ class TestClassifier(ClassifierTestCase):
         clf.fit(covmats, labels)
         assert_array_equal(clf.classes_, np.unique(labels))
 
-    def clf_classif_tsupdate(self, classif, covmats, labels):
+    def clf_tsupdate(self, classif, covmats, labels):
         clf = classif(tsupdate=True)
         clf.fit(covmats, labels).predict(covmats)
 
@@ -173,7 +173,7 @@ def test_knn_dict_dist(dist, get_covmats, get_labels):
         clf.fit(covmats, labels).predict(covmats)
 
 
-def test_1NN(get_covmats, get_labels):
+def test_1nn(get_covmats, get_labels):
     """Test KNearestNeighbor with K=1"""
     n_matrices, n_channels, n_classes = 9, 3, 3
     covmats = get_covmats(n_matrices, n_channels)
@@ -185,7 +185,7 @@ def test_1NN(get_covmats, get_labels):
     assert_array_equal(labels, preds)
 
 
-def test_TSclassifier_classifier(get_covmats, get_labels):
+def test_tsclassifier_fit(get_covmats, get_labels):
     """Test TS Classifier"""
     n_matrices, n_channels, n_classes = 6, 3, 2
     covmats = get_covmats(n_matrices, n_channels)
@@ -194,10 +194,13 @@ def test_TSclassifier_classifier(get_covmats, get_labels):
     clf.fit(covmats, labels).predict(covmats)
 
 
-def test_TSclassifier_classifier_error():
+def test_tsclassifier_clf_error(get_covmats, get_labels):
     """Test TS if not Classifier"""
+    n_matrices, n_channels, n_classes = 6, 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+    labels = get_labels(n_matrices, n_classes)
     with pytest.raises(TypeError):
-        TSclassifier(clf=Covariances())
+        TSclassifier(clf=Covariances()).fit(covmats, labels)
 
 
 def test_svc_params():
@@ -299,3 +302,17 @@ def test_svc_kernel_callable(get_covmats, get_labels, metric):
     # check if pickleable
     pickle.dumps(rsvc)
     pickle.dumps(rsvc_1)
+
+
+@pytest.mark.parametrize("method_label", ["sum_means", "inf_means"])
+def test_meanfield(get_covmats, get_labels, method_label):
+    n_matrices, n_channels, n_classes = 6, 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+    labels = get_labels(n_matrices, n_classes)
+    mf = MeanField(method_label=method_label).fit(covmats, labels)
+    pred = mf.predict(covmats)
+    assert pred.shape == (n_matrices,)
+    proba = mf.predict_proba(covmats)
+    assert proba.shape == (n_matrices, n_classes)
+    transf = mf.transform(covmats)
+    assert transf.shape == (n_matrices, n_classes)

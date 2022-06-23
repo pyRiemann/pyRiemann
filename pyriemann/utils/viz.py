@@ -46,18 +46,18 @@ def plot_embedding(X,
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
-    y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels)
-        Labels corresponding to each matrix.
-    metric : string (default : 'riemann')
+    y : None | ndarray, shape (n_matrices,), default=None
+        Labels for each matrix.
+    metric : string, default='riemann'
         Metric used in the embedding. Can be {'riemann' ,'logeuclid' ,
         'euclid'} for Locally Linear Embedding and {'riemann' ,'logeuclid' ,
         'euclid' , 'logdet', 'kullback', 'kullback_right', 'kullback_sym'}
         for Spectral Embedding.
-    title : str, optional (default : "Embedding of covariances")
+    title : str, default="Embedding of covariances"
         Title string for plot.
-    embd_type : {'Spectral' ,'LocallyLinear'}
+    embd_type : {'Spectral' ,'LocallyLinear'}, default='Spectral'
         Embedding type.
-    normalize : bool, (default : True)
+    normalize : bool, default=True
         If True, the plot is normalized from -1 to +1.
 
     Returns
@@ -168,7 +168,7 @@ def plot_waveforms(X, display, *, times=None, color='gray', alpha=0.5,
         * 'mean' for the mean of the repetitions;
         * 'mean+/-std' for the mean +/- standard deviation of the repetitions;
         * 'hist' for the 2D histogram of the repetitions.
-    time : None | ndarray, shape (n_times,) (default None)
+    time : None | ndarray, shape (n_times,), default=None
         Values to display on x-axis.
     color : matplotlib color, optional
         Color of the lines, when ``display=all``.
@@ -241,3 +241,14 @@ def plot_waveforms(X, display, *, times=None, color='gray', alpha=0.5,
         for ax in axes[:-1]:
             ax.set_xticklabels([])  # remove xticklabels
     return fig
+
+
+def _add_alpha(colors, alphas):
+    ''' Add alphas to RGB channels '''
+    try:
+        from matplotlib.colors import to_rgb
+    except ImportError:
+        raise ImportError("Install matplotlib to add alpha")
+
+    cols = [to_rgb(c) for c in colors]
+    return [(c[0], c[1], c[2], a) for c, a in zip(cols, alphas[-len(cols):])]

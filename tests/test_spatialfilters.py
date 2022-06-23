@@ -134,7 +134,7 @@ class TestSpatialFilters(SpatialFiltersTestCase):
         sf.fit(X_new, labels)
 
 
-def test_Xdawn_baselinecov(rndstate, get_labels):
+def test_xdawn_baselinecov(rndstate, get_labels):
     """Test cov precomputation"""
     n_matrices, n_channels, n_times = 6, 5, 100
     n_classes, default_nfilter = 2, 4
@@ -151,7 +151,7 @@ def test_Xdawn_baselinecov(rndstate, get_labels):
 @pytest.mark.parametrize("nfilter", [3, 4])
 @pytest.mark.parametrize("metric", get_metrics())
 @pytest.mark.parametrize("log", [True, False])
-def test_CSP_init(nfilter, metric, log, get_covmats, get_labels):
+def test_csp_init(nfilter, metric, log, get_covmats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 3
     covmats = get_covmats(n_matrices, n_channels)
     labels = get_labels(n_matrices, n_classes)
@@ -166,18 +166,24 @@ def test_CSP_init(nfilter, metric, log, get_covmats, get_labels):
     assert csp.patterns_.shape == (n_channels, n_channels)
 
 
-def test_BilinearFilter_filter_error():
+def test_bilinearfilter_filter_error(get_covmats, get_labels):
+    n_classes, n_matrices, n_channels = 2, 6, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    labels = get_labels(n_matrices, n_classes)
     with pytest.raises(TypeError):
-        BilinearFilter("foo")
+        BilinearFilter("foo").fit(covmats, labels)
 
 
-def test_BilinearFilter_log_error():
+def test_bilinearfilter_log_error(get_covmats, get_labels):
+    n_classes, n_matrices, n_channels = 2, 6, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    labels = get_labels(n_matrices, n_classes)
     with pytest.raises(TypeError):
-        BilinearFilter(np.eye(3), log="foo")
+        BilinearFilter(np.eye(3), log="foo").fit(covmats, labels)
 
 
 @pytest.mark.parametrize("log", [True, False])
-def test_BilinearFilter_log(log, get_covmats, get_labels):
+def test_bilinearfilter_log(log, get_covmats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 3
     covmats = get_covmats(n_matrices, n_channels)
     labels = get_labels(n_matrices, n_classes)
@@ -189,7 +195,7 @@ def test_BilinearFilter_log(log, get_covmats, get_labels):
         assert Xtr.shape == (n_matrices, n_channels, n_channels)
 
 
-def test_AJDC_init():
+def test_ajdc_init():
     ajdc = AJDC(fmin=1, fmax=32, fs=64)
     assert ajdc.window == 128
     assert ajdc.overlap == 0.5
@@ -197,7 +203,7 @@ def test_AJDC_init():
     assert ajdc.verbose
 
 
-def test_AJDC_fit(rndstate):
+def test_ajdc_fit(rndstate):
     n_subjects, n_conditions, n_channels, n_times = 5, 3, 8, 512
     X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
     ajdc = AJDC().fit(X)
@@ -205,7 +211,7 @@ def test_AJDC_fit(rndstate):
     assert ajdc.backward_filters_.shape == (n_channels, ajdc.n_sources_)
 
 
-def test_AJDC_fit_error(rndstate):
+def test_ajdc_fit_error(rndstate):
     n_conditions, n_channels, n_times = 3, 8, 512
     ajdc = AJDC()
     with pytest.raises(ValueError):  # unequal # of conditions
@@ -224,7 +230,7 @@ def test_AJDC_fit_error(rndstate):
         )
 
 
-def test_AJDC_transform_error(rndstate):
+def test_ajdc_transform_error(rndstate):
     n_subjects, n_conditions, n_channels, n_times = 2, 2, 3, 256
     X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
     ajdc = AJDC().fit(X)
@@ -236,7 +242,7 @@ def test_AJDC_transform_error(rndstate):
         ajdc.transform(rndstate.randn(n_matrices, n_channels + 1, 1))
 
 
-def test_AJDC_fit_variable_input(rndstate):
+def test_ajdc_fit_variable_input(rndstate):
     n_subjects, n_cond, n_chan, n_times = 2, 2, 3, 256
     X = rndstate.randn(n_subjects, n_cond, n_chan, n_times)
     ajdc = AJDC()
@@ -257,7 +263,7 @@ def test_AJDC_fit_variable_input(rndstate):
     ajdc.fit(X)
 
 
-def test_AJDC_inverse_transform(rndstate):
+def test_ajdc_inverse_transform(rndstate):
     n_subjects, n_conditions, n_channels, n_times = 2, 2, 3, 256
     X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
     ajdc = AJDC().fit(X)
@@ -278,7 +284,7 @@ def test_AJDC_inverse_transform(rndstate):
         ajdc.inverse_transform(Xt, supp=1)
 
 
-def test_AJDC_expl_var(rndstate):
+def test_ajdc_expl_var(rndstate):
     # Test get_src_expl_var
     n_subjects, n_conditions, n_channels, n_times = 2, 2, 3, 256
     X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)

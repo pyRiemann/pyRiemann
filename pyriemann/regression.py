@@ -7,7 +7,7 @@ from sklearn.svm import SVR as sklearnSVR
 from sklearn.utils.extmath import softmax
 
 from .utils.kernel import kernel
-from .classification import MDM
+from .classification import MDM, _check_metric
 from .utils.mean import mean_covariance
 
 
@@ -20,37 +20,37 @@ class SVR(sklearnSVR):
 
     Parameters
     ----------
-    metric : {'riemann', 'euclid', 'logeuclid'}, default: 'riemann'
+    metric : {'riemann', 'euclid', 'logeuclid'}, default='riemann'
         Metric for kernel matrix computation.
     Cref : None | ndarray, shape (n_channels, n_channels)
         Reference point for kernel matrix computation. If None, the mean of
         the training data according to the metric is used.
     kernel_fct : 'precomputed' | callable
         If 'precomputed', the kernel matrix for datasets X and Y is estimated
-        according to pyriemann.utils.kernel(X, Y, Cref, metric).
+        according to `pyriemann.utils.kernel(X, Y, Cref, metric)`.
         If callable, the callable is passed as the kernel parameter to
-        sklearn.svm.SVC(). The callable has to be of the form
-        kernel(X, Y, Cref, metric).
-    tol : float, default: 1e-3
+        `sklearn.svm.SVC()` [2]_. The callable has to be of the form
+        `kernel(X, Y, Cref, metric)`.
+    tol : float, default=1e-3
         Tolerance for stopping criterion.
-    C : float, default: 1.0
+    C : float, default=1.0
         Regularization parameter. The strength of the regularization is
         inversely proportional to C. Must be strictly positive.
         The penalty is a squared l2 penalty.
-    epsilon : float, default: 0.1
+    epsilon : float, default=0.1
          Epsilon in the epsilon-SVR model. It specifies the epsilon-tube
          within which no penalty is associated in the training loss function
          with points predicted within a distance epsilon from the actual
          value.
-    shrinking : bool, default: True
+    shrinking : bool, default=True
         Whether to use the shrinking heuristic.
-    cache_size : float, default: 200
+    cache_size : float, default=200
         Specify the size of the kernel cache (in MB).
-    verbose : bool, default: False
+    verbose : bool, default=False
         Enable verbose output. Note that this setting takes advantage of a
         per-process runtime setting in libsvm that, if enabled, may not work
         properly in a multithreaded context.
-    max_iter : int, default: -1
+    max_iter : int, default=-1
         Hard limit on iterations within solver, or -1 for no limit.
 
     Attributes
@@ -67,6 +67,8 @@ class SVR(sklearnSVR):
     .. [1] A. Barachant, S. Bonnet, M. Congedo, and C. Jutten.
         Classification of covariance matrices using a Riemannian-based kernel
         for BCI applications". In: Neurocomputing 112 (July 2013), pp. 172-178.
+    .. [2]
+        https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html
     """
 
     def __init__(self,
@@ -104,10 +106,11 @@ class SVR(sklearnSVR):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
-            Labels corresponding to each matrix.
-        sample_weight : ndarray, shape (n_matrices,), default: None
-            Per-matrix weights. Rescale C per matrix. Higher weights
-            force the classifier to put more emphasis on these points.
+            Target values for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. Rescale C per matrix. Higher weights
+            force the classifier to put more emphasis on these matrices.
+            If None, it uses equal weights.
 
         Returns
         -------
@@ -157,11 +160,11 @@ class KNearestNeighborRegressor(MDM):
 
     Parameters
     ----------
-    n_neighbors : int, default : 5
+    n_neighbors : int, default=5
         Number of neighbors.
-    metric : string | dict, default: 'riemann'
+    metric : string | dict, default='riemann'
         The type of metric used for distance estimation.
-        see `distance` for the list of supported metric.
+        See `distance` for the list of supported metric.
 
     Attributes
     ----------
@@ -178,7 +181,6 @@ class KNearestNeighborRegressor(MDM):
 
     def __init__(self, n_neighbors=5, metric='riemann'):
         """Init."""
-        # store params for cloning purpose
         self.n_neighbors = n_neighbors
         super().__init__(metric=metric)
 
@@ -190,13 +192,14 @@ class KNearestNeighborRegressor(MDM):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
-            Target value for each matrix.
+            Target values for each matrix.
 
         Returns
         -------
         self : KNearestNeighborRegressor instance
             The KNearestNeighborRegressor instance.
         """
+        self.metric_mean, self.metric_dist = _check_metric(self.metric)
         self.values_ = y
         self.covmeans_ = X
 

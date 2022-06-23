@@ -51,7 +51,7 @@ def untangent_space(T, Cref):
     ----------
     T : ndarray, shape (n_matrices, n_channels * (n_channels + 1) / 2)
         Set of tangent space vectors.
-    Cref: ndarray, shape (n_channels, n_channels)
+    Cref : ndarray, shape (n_channels, n_channels)
         The reference SPD matrix.
 
     Returns

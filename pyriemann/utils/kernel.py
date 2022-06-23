@@ -15,14 +15,14 @@ def kernel(X, Y=None, *, Cref=None, metric='riemann', reg=1e-10):
     X : ndarray, shape (n_matrices_X, n_channels, n_channels)
         First set of SPD matrices.
     Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), \
-            default: None
+            default=None
         Second set of SPD matrices. If None, Y is set to X.
-    Cref : None | ndarray, shape (n_channels, n_channels), default: None
+    Cref : None | ndarray, shape (n_channels, n_channels), default=None
         Reference point for the tangent space and inner product
         calculation. Only used if metric='riemann'.
-    metric : {'riemann', 'euclid', 'logeuclid'}, default: 'riemann'
+    metric : {'riemann', 'euclid', 'logeuclid'}, default='riemann'
         The type of metric used for tangent space and mean estimation.
-    reg : float, default: 1e-10
+    reg : float, default=1e-10
         Regularization parameter to mitigate numerical errors in kernel
         matrix estimation, to provide a positive-definite kernel matrix.
 
@@ -84,12 +84,12 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
     ----------
     X : ndarray, shape (n_matrices_X, n_channels, n_channels)
         First set of SPD matrices.
-    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), default: None
+    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), default=None
         Second set of SPD matrices. If None, Y is set to X.
-    Cref : None | ndarray, shape (n_channels, n_channels), default: None
+    Cref : None | ndarray, shape (n_channels, n_channels), default=None
         Reference point for the tangent space and inner product calculation.
         If None, Cref is calculated as the Riemannian mean of X.
-    reg : float, default: 1e-10
+    reg : float, default=1e-10
         Regularization parameter to mitigate numerical errors in kernel
         matrix estimation.
 
@@ -133,9 +133,9 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
     ----------
     X : ndarray, shape (n_matrices_X, n_channels, n_channels)
         First set of SPD matrices.
-    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), default: None
+    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), default=None
         Second set of SPD matrices. If None, Y is set to X.
-    reg : float, default: 1e-10
+    reg : float, default=1e-10
         Regularization parameter to mitigate numerical errors in kernel
         matrix estimation.
 
@@ -167,9 +167,9 @@ def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
     ----------
     X : ndarray, shape (n_matrices_X, n_channels, n_channels)
         First set of SPD matrices.
-    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), default: None
+    Y : None | ndarray, shape (n_matrices_Y, n_channels, n_channels), default=None
         Second set of SPD matrices. If None, Y is set to X.
-    reg : float, default: 1e-10
+    reg : float, default=1e-10
         Regularization parameter to mitigate numerical errors in kernel
         matrix estimation.
 

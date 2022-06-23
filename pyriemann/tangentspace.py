@@ -41,10 +41,10 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    metric : string (default: 'riemann')
+    metric : string, default='riemann'
         The type of metric used for reference point mean estimation.
         see `mean_covariance` for the list of supported metric.
-    tsupdate : bool (default False)
+    tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]_. This is not compatible with
         online implementation. Performance are better when the number of
@@ -84,10 +84,10 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray | None (default None)
+        y : None
             Not used, here for compatibility with sklearn API.
-        sample_weight : ndarray | None (default None)
-            Weight of each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -153,10 +153,10 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray | None (default None)
+        y : None
             Not used, here for compatibility with sklearn API.
-        sample_weight : ndarray | None (default None)
-            Weight of each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -177,7 +177,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_ts)
             Set of tangent space projections of the matrices.
-        y : ndarray | None (default None)
+        y : None
             Not used, here for compatibility with sklearn API.
 
         Returns
@@ -199,10 +199,10 @@ class FGDA(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    metric : string (default: 'riemann')
+    metric : string, default='riemann'
         The type of metric used for reference point mean estimation.
         see `mean_covariance` for the list of supported metric.
-    tsupdate : bool (default False)
+    tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]_. This is not compatible with
         online implementation. Performance are better when the number of
@@ -257,10 +257,10 @@ class FGDA(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray | None (default None)
+        y : None
             Not used, here for compatibility with sklearn API.
-        sample_weight : ndarray | None (default None)
-            Weight of each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -294,10 +294,10 @@ class FGDA(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray | None (default None)
+        y : None
             Not used, here for compatibility with sklearn API.
-        sample_weight : ndarray | None (default None)
-            Weight of each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------

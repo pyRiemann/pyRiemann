@@ -19,6 +19,27 @@ from .utils.distance import distance
 from .tangentspace import FGDA, TangentSpace
 
 
+def _check_metric(metric):
+
+    if isinstance(metric, str):
+        metric_mean = metric
+        metric_dist = metric
+
+    elif isinstance(metric, dict):
+        # check keys
+        for key in ['mean', 'distance']:
+            if key not in metric.keys():
+                raise KeyError('metric must contain "mean" and "distance"')
+
+        metric_mean = metric['mean']
+        metric_dist = metric['distance']
+
+    else:
+        raise TypeError('metric must be dict or str')
+
+    return metric_mean, metric_dist
+
+
 class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
     """Classification by Minimum Distance to Mean.
 
@@ -28,7 +49,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     Parameters
     ----------
-    metric : string | dict, default: 'riemann'
+    metric : string | dict, default='riemann'
         The type of metric used for centroid and distance estimation.
         see `mean_covariance` for the list of supported metric.
         the metric could be a dict with two keys, `mean` and `distance` in
@@ -36,7 +57,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         distance estimation. Typical usecase is to pass 'logeuclid' metric for
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
-    n_jobs : int, default: 1
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
@@ -72,25 +93,8 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     def __init__(self, metric='riemann', n_jobs=1):
         """Init."""
-        # store params for cloning purpose
         self.metric = metric
         self.n_jobs = n_jobs
-
-        if isinstance(metric, str):
-            self.metric_mean = metric
-            self.metric_dist = metric
-
-        elif isinstance(metric, dict):
-            # check keys
-            for key in ['mean', 'distance']:
-                if key not in metric.keys():
-                    raise KeyError('metric must contain "mean" and "distance"')
-
-            self.metric_mean = metric['mean']
-            self.metric_dist = metric['distance']
-
-        else:
-            raise TypeError('metric must be dict or str')
 
     def fit(self, X, y, sample_weight=None):
         """Fit (estimates) the centroids.
@@ -100,16 +104,16 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
-            Labels corresponding to each matrix.
-        sample_weight : None | ndarray shape (n_matrices,)
-            Weights of each matrix. If None, each matrix is treated with
-            equal weights.
+            Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
         self : MDM instance
             The MDM instance.
         """
+        self.metric_mean, self.metric_dist = _check_metric(self.metric)
         self.classes_ = np.unique(y)
 
         if sample_weight is None:
@@ -206,7 +210,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     Parameters
     ----------
-    metric : string | dict, default: 'riemann'
+    metric : string | dict, default='riemann'
         The type of metric used for centroid and distance estimation.
         see `mean_covariance` for the list of supported metric.
         the metric could be a dict with two keys, `mean` and `distance` in
@@ -214,12 +218,12 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         distance estimation. Typical usecase is to pass 'logeuclid' metric for
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
-    tsupdate : bool, default False
+    tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]_. This is not compatible with
         online implementation. Performance are better when the number of
         matrices for prediction is higher.
-    n_jobs : int, default: 1
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
@@ -256,20 +260,6 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.n_jobs = n_jobs
         self.tsupdate = tsupdate
 
-        if isinstance(metric, str):
-            self.metric_mean = metric
-
-        elif isinstance(metric, dict):
-            # check keys
-            for key in ['mean', 'distance']:
-                if key not in metric.keys():
-                    raise KeyError('metric must contain "mean" and "distance"')
-
-            self.metric_mean = metric['mean']
-
-        else:
-            raise TypeError('metric must be dict or str')
-
     def fit(self, X, y):
         """Fit FgMDM.
 
@@ -278,14 +268,16 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
-            Labels corresponding to each matrix.
+            Labels for each matrix.
 
         Returns
         -------
         self : FgMDM instance
             The FgMDM instance.
         """
+        self.metric_mean, _ = _check_metric(self.metric)
         self.classes_ = np.unique(y)
+
         self._mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
         self._fgda = FGDA(metric=self.metric_mean, tsupdate=self.tsupdate)
         cov = self._fgda.fit_transform(X, y)
@@ -351,7 +343,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
 
     Parameters
     ----------
-    metric : string | dict, default: 'riemann'
+    metric : string | dict, default='riemann'
         The type of metric used for centroid and distance estimation.
         see `mean_covariance` for the list of supported metric.
         the metric could be a dict with two keys, `mean` and `distance` in
@@ -359,12 +351,12 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         distance estimation. Typical usecase is to pass 'logeuclid' metric for
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
-    tsupdate : bool, default: False
+    tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]. This is not compatible with
         online implementation. Performance are better when the number of
         matrices for prediction is higher.
-    clf: sklearn classifier, default: LogisticRegression
+    clf : sklearn classifier, default=LogisticRegression()
         The classifier to apply in the tangent space.
 
     See Also
@@ -383,9 +375,6 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         self.tsupdate = tsupdate
         self.clf = clf
 
-        if not isinstance(clf, ClassifierMixin):
-            raise TypeError('clf must be a ClassifierMixin')
-
     def fit(self, X, y):
         """Fit TSclassifier.
 
@@ -394,14 +383,17 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
-            Labels corresponding to each matrix.
+            Labels for each matrix.
 
         Returns
         -------
         self : TSclassifier instance
             The TSclassifier instance.
         """
+        if not isinstance(self.clf, ClassifierMixin):
+            raise TypeError('clf must be a ClassifierMixin')
         self.classes_ = np.unique(y)
+
         ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
         self._pipe = make_pipeline(ts, self.clf)
         self._pipe.fit(X, y)
@@ -448,12 +440,12 @@ class KNearestNeighbor(MDM):
 
     Parameters
     ----------
-    n_neighbors : int, default: 5
+    n_neighbors : int, default=5
         Number of neighbors.
-    metric : string | dict, default: 'riemann'
+    metric : string | dict, default='riemann'
         The type of metric used for distance estimation.
         see `distance` for the list of supported metric.
-    n_jobs : int, default: 1
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the distance to the training set in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
@@ -479,7 +471,6 @@ class KNearestNeighbor(MDM):
 
     def __init__(self, n_neighbors=5, metric='riemann', n_jobs=1):
         """Init."""
-        # store params for cloning purpose
         self.n_neighbors = n_neighbors
         MDM.__init__(self, metric=metric, n_jobs=n_jobs)
 
@@ -491,13 +482,14 @@ class KNearestNeighbor(MDM):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
-            Labels corresponding to each matrix.
+            Labels for each matrix.
 
         Returns
         -------
         self : NearestNeighbor instance
             The NearestNeighbor instance.
         """
+        self.metric_mean, self.metric_dist = _check_metric(self.metric)
         self.covmeans_ = X
         self.classmeans_ = y
         self.classes_ = np.unique(y)
@@ -556,53 +548,53 @@ class KNearestNeighbor(MDM):
 class SVC(sklearnSVC):
     """Classification by support-vector machine.
 
-    Support-vector machine (SVM) with precomputed Riemannian kernel matrix
-    according to different metrics as described in [1]_.
+    Support-vector machine (SVM) classification with precomputed Riemannian
+    kernel matrix according to different metrics as described in [1]_.
 
     Parameters
     ----------
-    metric : {'riemann', 'euclid', 'logeuclid'}, default: 'riemann'
+    metric : {'riemann', 'euclid', 'logeuclid'}, default='riemann'
         Metric for kernel matrix computation.
-    Cref : None | ndarray | callable, shape (n_channels, n_channels)
+    Cref : None | callable | ndarray, shape (n_channels, n_channels)
         Reference point for kernel matrix computation.
         If None, the mean of the training data according to the metric is used.
         If callable, the function is called on the training data to calculate
         Cref.
-    kernel_fct : 'precomputed' | callable
+    kernel_fct : None | 'precomputed' | callable
         If 'precomputed', the kernel matrix for datasets X and Y is estimated
-        according to pyriemann.utils.kernel(X, Y, Cref, metric).
+        according to `pyriemann.utils.kernel(X, Y, Cref, metric)`.
         If callable, the callable is passed as the kernel parameter to
-        sklearn.svm.SVC(). The callable has to be of the form
-        kernel(X, Y, Cref, metric).
-    C : float, default: 1.0
+        `sklearn.svm.SVC()` [2]_. The callable has to be of the form
+        `kernel(X, Y, Cref, metric)`.
+    C : float, default=1.0
         Regularization parameter. The strength of the regularization is
         inversely proportional to C. Must be strictly positive. The penalty
         is a squared l2 penalty.
-    shrinking : bool, default: True
+    shrinking : bool, default=True
         Whether to use the shrinking heuristic.
-    probability : bool, default: False
+    probability : bool, default=False
         Whether to enable probability estimates. This must be enabled prior
         to calling `fit`, will slow down that method as it internally uses
         5-fold cross-validation, and `predict_proba` may be inconsistent with
         `predict`. Read more in the :ref:`User Guide <scores_probabilities>`.
-    tol : float, default: 1e-3
+    tol : float, default=1e-3
         Tolerance for stopping criterion.
-    cache_size : float, default: 200
+    cache_size : float, default=200
         Specify the size of the kernel cache (in MB).
-    class_weight : dict or 'balanced', default: None
+    class_weight : dict or 'balanced', default=None
         Set the parameter C of class i to class_weight[i]*C for
         SVC. If not given, all classes are supposed to have
         weight one.
         The "balanced" mode uses the values of y to automatically adjust
         weights inversely proportional to class frequencies in the input data
         as ``n_matrices / (n_classes * np.bincount(y))``.
-    verbose : bool, default: False
+    verbose : bool, default=False
         Enable verbose output. Note that this setting takes advantage of a
         per-process runtime setting in libsvm that, if enabled, may not work
         properly in a multithreaded context.
-    max_iter : int, default: -1
+    max_iter : int, default=-1
         Hard limit on iterations within solver, or -1 for no limit.
-    decision_function_shape : {'ovo', 'ovr'}, default: 'ovr'
+    decision_function_shape : {'ovo', 'ovr'}, default='ovr'
         Whether to return a one-vs-rest ('ovr') decision function of shape
         (n_matrices, n_classes) as all other classifiers, or the original
         one-vs-one ('ovo') decision function of libsvm which has shape
@@ -610,13 +602,13 @@ class SVC(sklearnSVC):
         internally, one-vs-one ('ovo') is always used as a multi-class strategy
         to train models; an ovr matrix is only constructed from the ovo matrix.
         The parameter is ignored for binary classification.
-    break_ties : bool, default: False
+    break_ties : bool, default=False
         If true, ``decision_function_shape='ovr'``, and number of classes > 2,
         :term:`predict` will break ties according to the confidence values of
         :term:`decision_function`; otherwise the first class among the tied
         classes is returned. Please note that breaking ties comes at a
         relatively high computational cost compared to a simple predict.
-    random_state : int, RandomState instance or None, default: None
+    random_state : int, RandomState instance or None, default=None
         Controls the pseudo random number generation for shuffling the data for
         probability estimates. Ignored when `probability` is False.
         Pass an int for reproducible output across multiple function calls.
@@ -631,6 +623,8 @@ class SVC(sklearnSVC):
     .. [1] A. Barachant, S. Bonnet, M. Congedo, and C. Jutten.
         Classification of covariance matrices using a Riemannian-based kernel
         for BCI applications". In: Neurocomputing 112 (July 2013), pp. 172-178.
+    .. [2]
+        https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
     """
 
     def __init__(self,
@@ -676,10 +670,11 @@ class SVC(sklearnSVC):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
-            Labels corresponding to each matrix.
-        sample_weight : ndarray, shape (n_matrices,), default: None
-            Per-sample weights. Rescale C per sample. Higher weights
-            force the classifier to put more emphasis on these points.
+            Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. Rescale C per matrix. Higher weights
+            force the classifier to put more emphasis on these matrices.
+            If None, it uses equal weights.
 
         Returns
         -------
@@ -720,29 +715,30 @@ class SVC(sklearnSVC):
 class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
     """Classification by Minimum Distance to Mean Field.
 
-    Classification by Minimum Distance to Mean Field [1]_, using power means.
+    Classification by Minimum Distance to Mean Field [1]_, defining several
+    power means for each class.
 
     Parameters
     ----------
-    power_list : list of float (default: [-1,0,+1])
+    power_list : list of float, default=[-1,0,+1]
         Exponents of power means.
-    method_label : {'sum_means', 'inf_means'} (default: 'sum_means')
+    method_label : {'sum_means', 'inf_means'}, default='sum_means'
         Method to combine labels:
 
         * sum_means: it assigns the covariance to the class whom the sum of
           distances to means of the field is the lowest;
         * inf_means: it assigns the covariance to the class of the closest mean
           of the field.
-    metric : string | dict (default: 'riemann')
+    metric : string | dict, default='riemann'
         The type of metric used for distance estimation during prediction.
         See `distance` for the list of supported metric.
 
     Attributes
     ----------
     covmeans_ : list of list
-        the class centroids.
+        The class centroids.
     classes_ : list
-        list of classes.
+        List of classes.
 
     See Also
     --------
@@ -774,10 +770,9 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
-            Labels corresponding to each matrix.
-        sample_weight : None | ndarray shape (n_matrices,)
-            Weights of each matrix. If None, each matrix is treated with
-            equal weights.
+            Labels for each matrix.
+        sample_weight : None | ndarray shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
