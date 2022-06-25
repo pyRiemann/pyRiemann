@@ -53,8 +53,8 @@ def _slice_one_sample(ptarget, x0, w, rs):
         Initial state for the MCMC procedure. Note that the shape of this array
         defines the dimensionality n_dim of the data points to be sampled.
     w : float
-        Initial bracket width
-    rs : int, RandomState instance or None (default: None)
+        Initial bracket width.
+    rs : int, RandomState instance or None
         Pass an int for reproducible output across multiple function calls.
 
     """
