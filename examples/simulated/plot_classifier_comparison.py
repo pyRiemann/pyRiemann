@@ -28,7 +28,12 @@ from matplotlib.colors import ListedColormap
 from sklearn.model_selection import train_test_split
 
 from pyriemann.datasets import make_covariances, make_gaussian_blobs
-from pyriemann.classification import MDM, KNearestNeighbor, SVC, MeanField
+from pyriemann.classification import (
+    MDM,
+    KNearestNeighbor,
+    SVC,
+    MeanField,
+)
 
 
 ###############################################################################
@@ -171,6 +176,7 @@ def plot_classifiers(metric):
 
     plt.show()
 
+
 ###############################################################################
 # Classifiers and Datasets
 # ------------------------
@@ -179,13 +185,13 @@ names = [
     "MDM",
     "k-NN",
     "SVC",
-    "MeanField"
+    "MeanField",
 ]
 classifiers = [
     MDM(),
     KNearestNeighbor(n_neighbors=3),
     SVC(probability=True),
-    MeanField(power_list=[-1, -0.25, 0, 0.25, 1])
+    MeanField(power_list=[-1, -0.25, 0, 0.25, 1]),
 ]
 n_classifs = len(classifiers)
 
