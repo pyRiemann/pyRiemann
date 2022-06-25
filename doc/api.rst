@@ -190,25 +190,12 @@ Distances
 
     distance
     distance_euclid
-    distance_riemann
-    distance_logeuclid
-    distance_logdet
     distance_kullback
     distance_kullback_sym
+    distance_logdet
+    distance_logeuclid
+    distance_riemann
     distance_wasserstein
-
-Kernels
-~~~~~~~~~~~~~~~~~~~~~~
-.. _kernel_api:
-.. currentmodule:: pyriemann.utils.kernel
-
-.. autosummary::
-    :toctree: generated/
-
-    kernel
-    kernel_riemann
-    kernel_euclid
-    kernel_logeuclid
 
 Means
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -219,16 +206,17 @@ Means
     :toctree: generated/
 
     mean_covariance
-    mean_euclid
-    mean_riemann
-    mean_logeuclid
-    mean_logdet
-    mean_wasserstein
     mean_ale
     mean_alm
+    mean_euclid
     mean_harmonic
-    mean_power
+    mean_identity
     mean_kullback_sym
+    mean_logdet
+    mean_logeuclid
+    mean_power
+    mean_riemann
+    mean_wasserstein
     maskedmean_riemann
     nanmean_riemann
 
@@ -241,9 +229,22 @@ Geodesics
     :toctree: generated/
 
     geodesic
-    geodesic_riemann
     geodesic_euclid
     geodesic_logeuclid
+    geodesic_riemann
+
+Kernels
+~~~~~~~~~~~~~~~~~~~~~~
+.. _kernel_api:
+.. currentmodule:: pyriemann.utils.kernel
+
+.. autosummary::
+    :toctree: generated/
+
+    kernel
+    kernel_euclid
+    kernel_logeuclid
+    kernel_riemann
 
 Tangent Space
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -278,8 +279,8 @@ Aproximate Joint Diagonalization
 .. autosummary::
     :toctree: generated/
 
-    rjd
     ajd_pham
+    rjd
     uwedge
 
 Matrix Tests
