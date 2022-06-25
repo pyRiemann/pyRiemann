@@ -1,39 +1,40 @@
 import numpy as np
 import pytest
 from pytest import approx
+
+from pyriemann.utils.geodesic import geodesic_riemann
 from pyriemann.utils.mean import (
-    mean_riemann,
-    mean_euclid,
-    mean_logeuclid,
-    mean_logdet,
-    mean_ale,
-    mean_identity,
     mean_covariance,
-    mean_kullback_sym,
-    mean_harmonic,
-    mean_wasserstein,
+    mean_ale,
     mean_alm,
+    mean_euclid,
+    mean_harmonic,
+    mean_identity,
+    mean_kullback_sym,
+    mean_logdet,
+    mean_logeuclid,
     mean_power,
+    mean_riemann,
+    mean_wasserstein,
     maskedmean_riemann,
     nanmean_riemann,
 )
-from pyriemann.utils.geodesic import geodesic_riemann
 
 
 @pytest.mark.parametrize(
     "mean",
     [
-        mean_riemann,
-        mean_logeuclid,
-        mean_euclid,
-        mean_identity,
-        mean_logdet,
         mean_ale,
-        mean_kullback_sym,
+        mean_euclid,
         mean_harmonic,
+        mean_identity,
+        mean_kullback_sym,
+        mean_logdet,
+        mean_logeuclid,
+        mean_power,
+        mean_riemann,
         mean_wasserstein,
         nanmean_riemann,
-        mean_power,
     ],
 )
 def test_mean_shape(mean, get_covmats):
@@ -190,16 +191,16 @@ def test_power_mean_errors(get_covmats):
 @pytest.mark.parametrize(
     "metric, mean",
     [
-        ("riemann", mean_riemann),
+        ("ale", mean_ale),
+        ("alm", mean_alm),
+        ("euclid", mean_euclid),
+        ("harmonic", mean_harmonic),
+        ("identity", mean_identity),
+        ("kullback_sym", mean_kullback_sym),
         ("logdet", mean_logdet),
         ("logeuclid", mean_logeuclid),
-        ("euclid", mean_euclid),
-        ("alm", mean_alm),
-        ("identity", mean_identity),
+        ("riemann", mean_riemann),
         ("wasserstein", mean_wasserstein),
-        ("ale", mean_ale),
-        ("harmonic", mean_harmonic),
-        ("kullback_sym", mean_kullback_sym),
     ],
 )
 def test_mean_covariance_metric(metric, mean, get_covmats):

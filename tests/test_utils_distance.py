@@ -1,32 +1,33 @@
 from conftest import get_distances
 import numpy as np
+import pytest
+from pytest import approx
+
 from pyriemann.utils.distance import (
-    distance_riemann,
     distance_euclid,
-    distance_logeuclid,
-    distance_logdet,
     distance_kullback,
     distance_kullback_right,
     distance_kullback_sym,
+    distance_logdet,
+    distance_logeuclid,
+    distance_riemann,
     distance_wasserstein,
     distance,
     pairwise_distance,
     _check_distance_method,
 )
 from pyriemann.utils.geodesic import geodesic
-import pytest
-from pytest import approx
 
 
 def get_dist_func():
     dist_func = [
-        distance_riemann,
-        distance_logeuclid,
         distance_euclid,
-        distance_logdet,
         distance_kullback,
         distance_kullback_right,
         distance_kullback_sym,
+        distance_logdet,
+        distance_logeuclid,
+        distance_riemann,
         distance_wasserstein,
     ]
     for df in dist_func:
