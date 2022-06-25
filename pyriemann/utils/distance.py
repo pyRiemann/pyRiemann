@@ -1,9 +1,33 @@
-"""Distance utils."""
+"""Distances between SPD matrices."""
 
 import numpy as np
 from scipy.linalg import eigvalsh
 
 from .base import logm, sqrtm
+
+
+def distance_euclid(A, B):
+    r"""Euclidean distance between two SPD matrices.
+
+    Compute the Euclidean distance between two SPD matrices A and B, defined
+    as the Frobenius norm of the difference of the two matrices:
+
+    .. math::
+        d(A,B) = \Vert \mathbf{A} - \mathbf{B} \Vert_F
+
+    Parameters
+    ----------
+    A : ndarray, shape (n, n)
+        First SPD matrix.
+    B : ndarray, shape (n, n)
+        Second SPD matrix.
+
+    Returns
+    -------
+    d : float
+        Euclidean distance between A and B.
+    """
+    return np.linalg.norm(A - B, ord='fro')
 
 
 def distance_kullback(A, B):
@@ -39,14 +63,14 @@ def distance_kullback_sym(A, B):
     return distance_kullback(A, B) + distance_kullback_right(A, B)
 
 
-def distance_euclid(A, B):
-    r"""Euclidean distance between two SPD matrices.
+def distance_logdet(A, B):
+    r"""Log-det distance between two SPD matrices.
 
-    Compute the Euclidean distance between two SPD matrices A and B, defined
-    as the Frobenius norm of the difference of the two matrices:
+    Compute the log-det distance between two SPD matrices A and B:
 
     .. math::
-        d(A,B) = \Vert \mathbf{A} - \mathbf{B} \Vert_F
+        d(A,B) = \sqrt{\log(\det(\frac{\mathbf{A}+\mathbf{B}}{2}))
+                 - \frac{1}{2} \log(\det(\mathbf{A}) \det(\mathbf{B}))}
 
     Parameters
     ----------
@@ -58,9 +82,11 @@ def distance_euclid(A, B):
     Returns
     -------
     d : float
-        Euclidean distance between A and B.
+        Log-det distance between A and B.
     """
-    return np.linalg.norm(A - B, ord='fro')
+    return np.sqrt(np.log(np.linalg.det(
+        (A + B) / 2.0)) - 0.5 *
+        np.log(np.linalg.det(A)*np.linalg.det(B)))
 
 
 def distance_logeuclid(A, B):
@@ -112,32 +138,6 @@ def distance_riemann(A, B):
     return np.sqrt((np.log(eigvalsh(A, B))**2).sum())
 
 
-def distance_logdet(A, B):
-    r"""Log-det distance between two SPD matrices.
-
-    Compute the log-det distance between two SPD matrices A and B:
-
-    .. math::
-        d(A,B) = \sqrt{\log(\det(\frac{\mathbf{A}+\mathbf{B}}{2}))
-                 - \frac{1}{2} \log(\det(\mathbf{A}) \det(\mathbf{B}))}
-
-    Parameters
-    ----------
-    A : ndarray, shape (n, n)
-        First SPD matrix.
-    B : ndarray, shape (n, n)
-        Second SPD matrix.
-
-    Returns
-    -------
-    d : float
-        Log-det distance between A and B.
-    """
-    return np.sqrt(np.log(np.linalg.det(
-        (A + B) / 2.0)) - 0.5 *
-        np.log(np.linalg.det(A)*np.linalg.det(B)))
-
-
 def distance_wasserstein(A, B):
     r"""Wasserstein distance between two SPD matrices.
 
@@ -163,6 +163,33 @@ def distance_wasserstein(A, B):
     return np.sqrt(np.trace(A + B - 2*C))
 
 
+###############################################################################
+
+
+distance_methods = {
+    'euclid': distance_euclid,
+    'kullback': distance_kullback,
+    'kullback_right': distance_kullback_right,
+    'kullback_sym': distance_kullback_sym,
+    'logdet': distance_logdet,
+    'logeuclid': distance_logeuclid,
+    'riemann': distance_riemann,
+    'wasserstein': distance_wasserstein,
+}
+
+
+def _check_distance_method(method):
+    """Check distance methods."""
+    if isinstance(method, str):
+        if method not in distance_methods.keys():
+            raise ValueError('Unknown mean method')
+        else:
+            method = distance_methods[method]
+    elif not hasattr(method, '__call__'):
+        raise ValueError('distance method must be a function or a string.')
+    return method
+
+
 def distance(A, B, metric='riemann'):
     """Distance between SPD matrices according to a metric.
 
@@ -176,8 +203,9 @@ def distance(A, B, metric='riemann'):
     B : ndarray, shape (n, n)
         Second SPD matrix.
     metric : string, default='riemann'
-        The metric, can be: 'riemann', 'logeuclid', 'euclid', 'logdet',
-        'kullback', 'kullback_right', 'kullback_sym'.
+        The metric for distance, can be: 'euclid', 'kullback',
+        'kullback_right', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
+        'wasserstein'.
 
     Returns
     -------
@@ -209,8 +237,9 @@ def pairwise_distance(X, Y=None, metric='riemann'):
     Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
         Second set of SPD matrices. If None, Y is set to X.
     metric : string, default='riemann'
-        The metric, can be: 'riemann', 'logeuclid', 'euclid', 'logdet',
-        'kullback', 'kullback_right', 'kullback_sym'.
+        The metric for distance, can be: 'euclid', 'kullback',
+        'kullback_right', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
+        'wasserstein'.
 
     Returns
     -------
@@ -234,27 +263,3 @@ def pairwise_distance(X, Y=None, metric='riemann'):
             for j in range(n_matrices_Y):
                 dist[i, j] = distance(X[i], Y[j], metric)
     return dist
-
-
-distance_methods = {
-    'riemann': distance_riemann,
-    'logeuclid': distance_logeuclid,
-    'euclid': distance_euclid,
-    'logdet': distance_logdet,
-    'kullback': distance_kullback,
-    'kullback_right': distance_kullback_right,
-    'kullback_sym': distance_kullback_sym,
-    'wasserstein': distance_wasserstein
-}
-
-
-def _check_distance_method(method):
-    """Checks methods """
-    if isinstance(method, str):
-        if method not in distance_methods.keys():
-            raise ValueError('Unknown mean method')
-        else:
-            method = distance_methods[method]
-    elif not hasattr(method, '__call__'):
-        raise ValueError('distance method must be a function or a string.')
-    return method
