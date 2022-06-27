@@ -48,15 +48,14 @@ def test_mean_shape(mean, get_covmats):
     assert C.shape == (n_channels, n_channels)
 
 
-@pytest.mark.parametrize("mean", [mean_riemann, mean_logdet])
+@pytest.mark.parametrize(
+    "mean", [mean_logdet, mean_riemann, mean_wasserstein, nanmean_riemann]
+)
 def test_mean_shape_with_init(mean, get_covmats):
     """Test the shape of mean with init"""
     n_matrices, n_channels = 5, 3
     covmats = get_covmats(n_matrices, n_channels)
-    if mean == mean_power:
-        C = mean(covmats, 0.42, init=covmats[0])
-    else:
-        C = mean(covmats, init=covmats[0])
+    C = mean(covmats, init=covmats[0])
     assert C.shape == (n_channels, n_channels)
 
 
@@ -72,22 +71,6 @@ def test_riemann_mean(init, get_covmats_params):
     Ctrue = np.exp(np.log(diags).mean(0))
     Ctrue = A @ np.diag(Ctrue) @ A.T
     assert C == approx(Ctrue)
-
-
-def test_euclid_mean(get_covmats):
-    """Test the euclidean mean"""
-    n_matrices, n_channels = 100, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    C = mean_euclid(covmats)
-    assert C == approx(covmats.mean(axis=0))
-
-
-def test_identity_mean(get_covmats):
-    """Test the identity mean"""
-    n_matrices, n_channels = 100, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    C = mean_identity(covmats)
-    assert np.all(C == np.eye(n_channels))
 
 
 def test_alm_mean(get_covmats):
@@ -115,6 +98,22 @@ def test_alm_mean_2matrices(get_covmats):
     assert np.all(C == geodesic_riemann(covmats[0], covmats[1], alpha=0.5))
 
 
+def test_euclid_mean(get_covmats):
+    """Test the euclidean mean"""
+    n_matrices, n_channels = 10, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    C = mean_euclid(covmats)
+    assert C == approx(covmats.mean(axis=0))
+
+
+def test_identity_mean(get_covmats):
+    """Test the identity mean"""
+    n_matrices, n_channels = 10, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    C = mean_identity(covmats)
+    assert np.all(C == np.eye(n_channels))
+
+
 def test_power_mean(get_covmats):
     """Test the power mean"""
     n_matrices, n_channels = 3, 3
@@ -128,6 +127,17 @@ def test_power_mean(get_covmats):
     assert C_power_1 == approx(C_arithm)
     assert C_power_0 == approx(C_geom)
     assert C_power_m1 == approx(C_harm)
+
+
+def test_power_mean_errors(get_covmats):
+    """Test the power mean errors"""
+    n_matrices, n_channels = 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+
+    with pytest.raises(ValueError):  # exponent is not a scalar
+        mean_power(covmats, [1])
+    with pytest.raises(ValueError):  # exponent is not in [-1,1]
+        mean_power(covmats, 3)
 
 
 @pytest.mark.parametrize("init", [True, False])
@@ -175,17 +185,6 @@ def test_riemann_mean_nan_errors(get_covmats):
         covmats_ = covmats.copy()
         covmats_[1, 0, 1] = np.nan  # corrup an off-diagonal value
         nanmean_riemann(covmats_)
-
-
-def test_power_mean_errors(get_covmats):
-    """Test the power mean errors"""
-    n_matrices, n_channels = 3, 2
-    covmats = get_covmats(n_matrices, n_channels)
-
-    with pytest.raises(ValueError):  # exponent is not a scalar
-        mean_power(covmats, [1])
-    with pytest.raises(ValueError):  # exponent is not in [-1,1]
-        mean_power(covmats, 3)
 
 
 @pytest.mark.parametrize(
