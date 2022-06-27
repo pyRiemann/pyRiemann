@@ -191,8 +191,11 @@ def distance_wasserstein(A, B):
         Wasserstein distance between A and B.
     """
     B12 = sqrtm(B)
-    C = sqrtm(np.dot(np.dot(B12, A), B12))
-    return np.sqrt(np.trace(A + B - 2*C))
+    dist2 = np.trace(A + B - 2 * sqrtm(B12 @ A @ B12))
+    if dist2 > 0.0:
+        return np.sqrt(dist2)
+    else:
+        return 0.0
 
 
 ###############################################################################
