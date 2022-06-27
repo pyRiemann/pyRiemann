@@ -68,6 +68,15 @@ def test_distance_func_rand(dist, get_covmats):
     assert dist(A, B) < dist(A, C)
 
 
+def test_distance_logdet_implementation(get_covmats):
+    n_matrices, n_channels = 2, 6
+    covmats = get_covmats(n_matrices, n_channels)
+    A, B = covmats[0], covmats[1]
+    dist = np.sqrt(np.log(np.linalg.det((A + B) / 2.0))
+                   - 0.5 * np.log(np.linalg.det(A)*np.linalg.det(B)))
+    assert distance_logdet(A, B) == approx(dist)
+
+
 @pytest.mark.parametrize("dist, dfunc", zip(get_distances(), get_dist_func()))
 def test_distance_wrapper(dist, dfunc, get_covmats):
     n_matrices, n_channels = 2, 5

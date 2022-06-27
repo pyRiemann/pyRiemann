@@ -70,7 +70,7 @@ def distance_logdet(A, B):
 
     .. math::
         d(A,B) = \sqrt{\log(\det(\frac{\mathbf{A}+\mathbf{B}}{2}))
-                 - \frac{1}{2} \log(\det(\mathbf{A}) \det(\mathbf{B}))}
+                 - \frac{1}{2} \log(\det(\mathbf{A} \mathbf{B}))}
 
     Parameters
     ----------
@@ -84,9 +84,13 @@ def distance_logdet(A, B):
     d : float
         Log-det distance between A and B.
     """
-    return np.sqrt(np.log(np.linalg.det(
-        (A + B) / 2.0)) - 0.5 *
-        np.log(np.linalg.det(A)*np.linalg.det(B)))
+    _, logdet_ApB = np.linalg.slogdet((A + B) / 2.0)
+    _, logdet_AxB = np.linalg.slogdet(np.dot(A, B))
+    dist2 = logdet_ApB - 0.5 * logdet_AxB
+    if dist2 > 0.0:
+        return np.sqrt(dist2)
+    else:
+        return 0.0
 
 
 def distance_logeuclid(A, B):
