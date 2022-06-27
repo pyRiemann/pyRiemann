@@ -74,6 +74,7 @@ def get_targets():
 def get_distances():
     distances = [
         "euclid",
+        "harmonic",
         "kullback",
         "kullback_right",
         "kullback_sym",

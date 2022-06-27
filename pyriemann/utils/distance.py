@@ -30,10 +30,13 @@ def distance_euclid(A, B):
     return np.linalg.norm(A - B, ord='fro')
 
 
-def distance_kullback(A, B):
-    """Kullback-Leibler divergence between two SPD matrices.
+def distance_harmonic(A, B):
+    r"""Harmonic distance between two SPD matrices.
 
-    Compute the Kullback-Leibler divergence between two SPD matrices A and B.
+    Compute the harmonic distance between two SPD matrices A and B:
+
+    .. math::
+        d(A,B) = \Vert \mathbf{A}^1 - \mathbf{B}^1 \Vert_F
 
     Parameters
     ----------
@@ -45,7 +48,28 @@ def distance_kullback(A, B):
     Returns
     -------
     d : float
-        Kullback-Leibler divergence between A and B.
+        Harmonic distance between A and B.
+    """
+    return distance_euclid(np.linalg.inv(A), np.linalg.inv(B))
+
+
+def distance_kullback(A, B):
+    """Kullback-Leibler divergence between two SPD matrices.
+
+    Compute the left Kullback-Leibler divergence between two SPD matrices A and
+    B.
+
+    Parameters
+    ----------
+    A : ndarray, shape (n, n)
+        First SPD matrix.
+    B : ndarray, shape (n, n)
+        Second SPD matrix.
+
+    Returns
+    -------
+    d : float
+        Left Kullback-Leibler divergence between A and B.
     """
     n, _ = A.shape
     logdet = np.log(np.linalg.det(B) / np.linalg.det(A))
@@ -59,7 +83,11 @@ def distance_kullback_right(A, B):
 
 
 def distance_kullback_sym(A, B):
-    """Symmetrized Kullback-Leibler divergence between two SPD matrices."""
+    """Symmetrized Kullback-Leibler divergence between two SPD matrices.
+
+    Compute the sum of left and right Kullback-Leibler divergences between two
+    SPD matrices A and B.
+    """
     return distance_kullback(A, B) + distance_kullback_right(A, B)
 
 
@@ -172,6 +200,7 @@ def distance_wasserstein(A, B):
 
 distance_methods = {
     'euclid': distance_euclid,
+    'harmonic': distance_harmonic,
     'kullback': distance_kullback,
     'kullback_right': distance_kullback_right,
     'kullback_sym': distance_kullback_sym,
@@ -207,9 +236,9 @@ def distance(A, B, metric='riemann'):
     B : ndarray, shape (n, n)
         Second SPD matrix.
     metric : string, default='riemann'
-        The metric for distance, can be: 'euclid', 'kullback',
+        The metric for distance, can be: 'euclid', 'harmonic', 'kullback',
         'kullback_right', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
-        'wasserstein'.
+        'wasserstein', or a callable function.
 
     Returns
     -------
@@ -241,7 +270,7 @@ def pairwise_distance(X, Y=None, metric='riemann'):
     Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
         Second set of SPD matrices. If None, Y is set to X.
     metric : string, default='riemann'
-        The metric for distance, can be: 'euclid', 'kullback',
+        The metric for distance, can be: 'euclid', 'harmonic', 'kullback',
         'kullback_right', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
         'wasserstein'.
 

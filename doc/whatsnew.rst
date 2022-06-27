@@ -62,6 +62,8 @@ v0.2.8.dev
 
 - Add example on principal geodesic analysis (PGA) for SSVEP classification
 
+- Add :func:`pyriemann.utils.distance.distance_harmonic`, and sort functions by their names in code, doc and tests
+
 v0.2.7 (June 2021)
 ------------------
 

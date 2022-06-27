@@ -190,6 +190,7 @@ Distances
 
     distance
     distance_euclid
+    distance_harmonic
     distance_kullback
     distance_kullback_sym
     distance_logdet

@@ -5,6 +5,7 @@ from pytest import approx
 
 from pyriemann.utils.distance import (
     distance_euclid,
+    distance_harmonic,
     distance_kullback,
     distance_kullback_right,
     distance_kullback_sym,
@@ -22,6 +23,7 @@ from pyriemann.utils.geodesic import geodesic
 def get_dist_func():
     dist_func = [
         distance_euclid,
+        distance_harmonic,
         distance_kullback,
         distance_kullback_right,
         distance_kullback_sym,
