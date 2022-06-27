@@ -1,32 +1,35 @@
 from conftest import get_distances
 import numpy as np
+import pytest
+from pytest import approx
+
 from pyriemann.utils.distance import (
-    distance_riemann,
     distance_euclid,
-    distance_logeuclid,
-    distance_logdet,
+    distance_harmonic,
     distance_kullback,
     distance_kullback_right,
     distance_kullback_sym,
+    distance_logdet,
+    distance_logeuclid,
+    distance_riemann,
     distance_wasserstein,
     distance,
     pairwise_distance,
     _check_distance_method,
 )
 from pyriemann.utils.geodesic import geodesic
-import pytest
-from pytest import approx
 
 
 def get_dist_func():
     dist_func = [
-        distance_riemann,
-        distance_logeuclid,
         distance_euclid,
-        distance_logdet,
+        distance_harmonic,
         distance_kullback,
         distance_kullback_right,
         distance_kullback_sym,
+        distance_logdet,
+        distance_logeuclid,
+        distance_riemann,
         distance_wasserstein,
     ]
     for df in dist_func:
@@ -65,6 +68,15 @@ def test_distance_func_rand(dist, get_covmats):
     A, C = covmats[0], covmats[1]
     B = geodesic(A, C, alpha=0.5)
     assert dist(A, B) < dist(A, C)
+
+
+def test_distance_logdet_implementation(get_covmats):
+    n_matrices, n_channels = 2, 6
+    covmats = get_covmats(n_matrices, n_channels)
+    A, B = covmats[0], covmats[1]
+    dist = np.sqrt(np.log(np.linalg.det((A + B) / 2.0))
+                   - 0.5 * np.log(np.linalg.det(A)*np.linalg.det(B)))
+    assert distance_logdet(A, B) == approx(dist)
 
 
 @pytest.mark.parametrize("dist, dfunc", zip(get_distances(), get_dist_func()))

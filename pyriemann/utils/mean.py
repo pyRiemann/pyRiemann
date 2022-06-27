@@ -1,4 +1,4 @@
-"""Mean covariance estimation."""
+"""Means of SPD matrices."""
 
 from copy import deepcopy
 import numpy as np
@@ -20,307 +20,6 @@ def _get_sample_weight(sample_weight, data):
         raise ValueError("len of sample_weight must be equal to len of data.")
     sample_weight /= np.sum(sample_weight)
     return sample_weight
-
-
-def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
-                 sample_weight=None):
-    r"""Mean of SPD matrices according to the Riemannian metric.
-
-    The procedure is similar to a gradient descent minimizing the sum of
-    affine-invariant Riemannian distances :math:`d_R` to the mean [1]_:
-
-    .. math::
-        \mathbf{C} = \arg\min{ \sum_i d_R ( \mathbf{C} , \mathbf{C}_i)^2 }
-
-    Parameters
-    ----------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices.
-    tol : float, default=10e-9
-        The tolerance to stop the gradient descent.
-    maxiter : int, default=50
-        The maximum number of iterations.
-    init : None | ndarray, shape (n_channels, n_channels), default=None
-        A SPD matrix used to initialize the gradient descent.
-        If None the Euclidean mean is used.
-    sample_weight : None | ndarray, shape (n_matrices,), default=None
-        Weights for each matrix. If None, it uses equal weights.
-
-    Returns
-    -------
-    C : ndarray, shape (n_channels, n_channels)
-        Riemannian mean.
-
-    References
-    ----------
-    .. [1] Moakher M. "A differential geometric approach to the geometric mean
-        of symmetric positive-definite matrices", SIAM J Matrix Anal Appl, 2005
-    """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_matrices, n_channels, _ = covmats.shape
-    if init is None:
-        C = np.mean(covmats, axis=0)
-    else:
-        C = init
-
-    k = 0
-    nu = 1.0
-    tau = np.finfo(np.float64).max
-    crit = np.finfo(np.float64).max
-    # stop when J<10^-9 or max iteration = 50
-    while (crit > tol) and (k < maxiter) and (nu > tol):
-        k = k + 1
-        C12 = sqrtm(C)
-        Cm12 = invsqrtm(C)
-        J = np.zeros((n_channels, n_channels))
-
-        for index in range(n_matrices):
-            tmp = np.dot(np.dot(Cm12, covmats[index]), Cm12)
-            J += sample_weight[index] * logm(tmp)
-
-        crit = np.linalg.norm(J, ord='fro')
-        h = nu * crit
-        C = np.dot(np.dot(C12, expm(nu * J)), C12)
-        if h < tau:
-            nu = 0.95 * nu
-            tau = h
-        else:
-            nu = 0.5 * nu
-
-    return C
-
-
-def mean_logeuclid(covmats, sample_weight=None):
-    r"""Mean of SPD matrices according to the log-Euclidean metric.
-
-    Log-Euclidean mean is [1]_:
-
-    .. math::
-        \mathbf{C} = \exp{(\frac{1}{m} \sum_i \log{\mathbf{C}_i})}
-
-    Parameters
-    ----------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices.
-    sample_weight : None | ndarray, shape (n_matrices,), default=None
-        Weights for each matrix. If None, it uses equal weights.
-
-    Returns
-    -------
-    C : ndarray, shape (n_channels, n_channels)
-        Log-Euclidean mean.
-
-    References
-    ----------
-    .. [1] Arsigny V, Fillard P, Pennec X, Ayache N. "Geometric means in a
-        novel vector space structure on symmetric positive-definite matrices",
-        SIAM J Matrix Anal Appl, 2007
-    """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_matrices, n_channels, _ = covmats.shape
-    T = np.zeros((n_channels, n_channels))
-    for index in range(n_matrices):
-        T += sample_weight[index] * logm(covmats[index])
-    C = expm(T)
-
-    return C
-
-
-def mean_kullback_sym(covmats, sample_weight=None):
-    """Mean of SPD matrices according to Kullback-Leibler divergence.
-
-    This mean is the geometric mean between the Euclidean and the harmonic
-    means, as shown in [1]_.
-
-    Parameters
-    ----------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices.
-    sample_weight : None | ndarray, shape (n_matrices,), default=None
-        Weights for each matrix. If None, it uses equal weights.
-
-    Returns
-    -------
-    C : ndarray, shape (n_channels, n_channels)
-        Kullback-Leibler mean.
-
-    References
-    ----------
-    .. [1] Moakher, M, and Philipp G. B. "Symmetric positive-definite matrices:
-        From geometry to applications and visualization", Visualization and
-        Processing of Tensor Fields, pp. 285-298, 2006
-    """
-    C_euclid = mean_euclid(covmats, sample_weight)
-    C_harmonic = mean_harmonic(covmats, sample_weight)
-    C = geodesic_riemann(C_euclid, C_harmonic, 0.5)
-
-    return C
-
-
-def mean_harmonic(covmats, sample_weight=None):
-    r"""Harmonic mean of SPD matrices.
-
-    .. math::
-        \mathbf{C} = \left(\frac{1}{m} \sum_i {\mathbf{C}_i}^{-1}\right)^{-1}
-
-    Parameters
-    ----------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices.
-    sample_weight : None | ndarray, shape (n_matrices,), default=None
-        Weights for each matrix. If None, it uses equal weights.
-
-    Returns
-    -------
-    C : ndarray, shape (n_channels, n_channels)
-        Harmonic mean.
-    """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_matrices, n_channels, _ = covmats.shape
-    T = np.zeros((n_channels, n_channels))
-    for index in range(n_matrices):
-        T += sample_weight[index] * np.linalg.inv(covmats[index])
-    C = np.linalg.inv(T)
-
-    return C
-
-
-def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
-    r"""Mean of SPD matrices according to the log-det metric.
-
-    Log-det mean is obtained by an iterative procedure where the update is:
-
-    .. math::
-        \mathbf{C} = \left(\sum_i \left( 0.5 \mathbf{C}
-                     + 0.5 \mathbf{C}_i \right)^{-1} \right)^{-1}
-
-    Parameters
-    ----------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices.
-    tol : float, default=10e-5
-        The tolerance to stop the gradient descent.
-    maxiter : int, default=50
-        The maximum number of iterations.
-    init : None | ndarray, shape (n_channels, n_channels), default=None
-        A SPD matrix used to initialize the gradient descent.
-        If None the Euclidean mean is used.
-    sample_weight : None | ndarray, shape (n_matrices,), default=None
-        Weights for each matrix. If None, it uses equal weights.
-
-    Returns
-    -------
-    C : ndarray, shape (n_channels, n_channels)
-        Log-det mean.
-    """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_matrices, n_channels, _ = covmats.shape
-    if init is None:
-        C = np.mean(covmats, axis=0)
-    else:
-        C = init
-    k = 0
-    crit = np.finfo(np.float64).max
-    # stop when J<10^-9 or max iteration = 50
-    while (crit > tol) and (k < maxiter):
-        k = k + 1
-
-        J = np.zeros((n_channels, n_channels))
-
-        for index, Ci in enumerate(covmats):
-            J += sample_weight[index] * np.linalg.inv(0.5 * Ci + 0.5 * C)
-
-        Cnew = np.linalg.inv(J)
-        crit = np.linalg.norm(Cnew - C, ord='fro')
-
-        C = Cnew
-    return C
-
-
-def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
-                     sample_weight=None):
-    r"""Mean of SPD matrices according to the Wasserstein metric.
-
-    Wasserstein mean is obtained by an iterative procedure where the update is
-    [1]_:
-
-    .. math::
-        \mathbf{K} = \left(\sum_i \left( \mathbf{K} \mathbf{C}_i \mathbf{K}
-                     \right)^{1/2} \right)^{1/2}
-
-    with :math:`\mathbf{K} = \mathbf{C}^{1/2}`.
-
-    Parameters
-    ----------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices.
-    tol : float, default=10e-4
-        The tolerance to stop the gradient descent.
-    maxiter : int, default=50
-        The maximum number of iterations.
-    init : None | ndarray, shape (n_channels, n_channels), default=None
-        A SPD matrix used to initialize the gradient descent.
-        If None the Euclidean mean is used.
-    sample_weight : None | ndarray, shape (n_matrices,), default=None
-        Weights for each matrix. If None, it uses equal weights.
-
-    Returns
-    -------
-    C : ndarray, shape (n_channels, n_channels)
-        Wasserstein mean.
-
-    References
-    ----------
-    .. [1] Barbaresco, F. "Geometric Radar Processing based on Frechet distance
-        : Information geometry versus Optimal Transport Theory", IRS, 2011
-    """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_matrices, n_channels, _ = covmats.shape
-    if init is None:
-        C = np.mean(covmats, axis=0)
-    else:
-        C = init
-    k = 0
-    K = sqrtm(C)
-    crit = np.finfo(np.float64).max
-    # stop when J<10^-9 or max iteration = 50
-    while (crit > tol) and (k < maxiter):
-        k = k + 1
-
-        J = np.zeros((n_channels, n_channels))
-
-        for index, Ci in enumerate(covmats):
-            tmp = np.dot(np.dot(K, Ci), K)
-            J += sample_weight[index] * sqrtm(tmp)
-
-        Knew = sqrtm(J)
-        crit = np.linalg.norm(Knew - K, ord='fro')
-        K = Knew
-    if k == maxiter:
-        print('Max iter reach')
-    C = np.dot(K, K)
-    return C
-
-
-def mean_euclid(covmats, sample_weight=None):
-    r"""Mean of SPD matrices according to the Euclidean metric.
-
-    .. math::
-        \mathbf{C} = \frac{1}{m} \sum_i \mathbf{C}_i
-
-    Parameters
-    ----------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices.
-    sample_weight : None | ndarray, shape (n_matrices,), default=None
-        Weights for each matrix. If None, it uses equal weights.
-
-    Returns
-    -------
-    C : ndarray, shape (n_channels, n_channels)
-        Euclidean mean.
-    """
-    return np.average(covmats, axis=0, weights=sample_weight)
 
 
 def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
@@ -454,6 +153,197 @@ def mean_alm(covmats, tol=1e-14, maxiter=100,
         return C_iter.mean(axis=0)
 
 
+def mean_euclid(covmats, sample_weight=None):
+    r"""Mean of SPD matrices according to the Euclidean metric.
+
+    .. math::
+        \mathbf{C} = \frac{1}{m} \sum_i \mathbf{C}_i
+
+    Parameters
+    ----------
+    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    C : ndarray, shape (n_channels, n_channels)
+        Euclidean mean.
+    """
+    return np.average(covmats, axis=0, weights=sample_weight)
+
+
+def mean_harmonic(covmats, sample_weight=None):
+    r"""Harmonic mean of SPD matrices.
+
+    .. math::
+        \mathbf{C} = \left(\frac{1}{m} \sum_i {\mathbf{C}_i}^{-1}\right)^{-1}
+
+    Parameters
+    ----------
+    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    C : ndarray, shape (n_channels, n_channels)
+        Harmonic mean.
+    """
+    sample_weight = _get_sample_weight(sample_weight, covmats)
+    n_matrices, n_channels, _ = covmats.shape
+    T = np.zeros((n_channels, n_channels))
+    for index in range(n_matrices):
+        T += sample_weight[index] * np.linalg.inv(covmats[index])
+    C = np.linalg.inv(T)
+
+    return C
+
+
+def mean_identity(covmats, sample_weight=None):
+    r"""Identity matrix corresponding to the matrices dimension.
+
+    .. math::
+        \mathbf{C} = \mathbf{I}_c
+
+    Parameters
+    ----------
+    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    sample_weight : None
+        Not used, here for compatibility with other means.
+
+    Returns
+    -------
+    C : ndarray, shape (n_channels, n_channels)
+        Identity.
+    """
+    _, n_channels, _ = covmats.shape
+    C = np.eye(n_channels)
+    return C
+
+
+def mean_kullback_sym(covmats, sample_weight=None):
+    """Mean of SPD matrices according to Kullback-Leibler divergence.
+
+    Symmetrized Kullback-Leibler mean is the geometric mean between the
+    Euclidean and the harmonic means, as shown in [1]_.
+
+    Parameters
+    ----------
+    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    C : ndarray, shape (n_channels, n_channels)
+        Kullback-Leibler mean.
+
+    References
+    ----------
+    .. [1] Moakher, M, and Philipp G. B. "Symmetric positive-definite matrices:
+        From geometry to applications and visualization", Visualization and
+        Processing of Tensor Fields, pp. 285-298, 2006
+    """
+    C_euclid = mean_euclid(covmats, sample_weight)
+    C_harmonic = mean_harmonic(covmats, sample_weight)
+    C = geodesic_riemann(C_euclid, C_harmonic, 0.5)
+
+    return C
+
+
+def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
+    r"""Mean of SPD matrices according to the log-det metric.
+
+    Log-det mean is obtained by an iterative procedure where the update is:
+
+    .. math::
+        \mathbf{C} = \left(\sum_i \left( 0.5 \mathbf{C}
+                     + 0.5 \mathbf{C}_i \right)^{-1} \right)^{-1}
+
+    Parameters
+    ----------
+    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    tol : float, default=10e-5
+        The tolerance to stop the gradient descent.
+    maxiter : int, default=50
+        The maximum number of iterations.
+    init : None | ndarray, shape (n_channels, n_channels), default=None
+        A SPD matrix used to initialize the gradient descent.
+        If None the Euclidean mean is used.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    C : ndarray, shape (n_channels, n_channels)
+        Log-det mean.
+    """
+    sample_weight = _get_sample_weight(sample_weight, covmats)
+    n_matrices, n_channels, _ = covmats.shape
+    if init is None:
+        C = np.mean(covmats, axis=0)
+    else:
+        C = init
+    k = 0
+    crit = np.finfo(np.float64).max
+    # stop when J<10^-9 or max iteration = 50
+    while (crit > tol) and (k < maxiter):
+        k = k + 1
+
+        J = np.zeros((n_channels, n_channels))
+
+        for index, Ci in enumerate(covmats):
+            J += sample_weight[index] * np.linalg.inv(0.5 * Ci + 0.5 * C)
+
+        Cnew = np.linalg.inv(J)
+        crit = np.linalg.norm(Cnew - C, ord='fro')
+
+        C = Cnew
+    return C
+
+
+def mean_logeuclid(covmats, sample_weight=None):
+    r"""Mean of SPD matrices according to the log-Euclidean metric.
+
+    Log-Euclidean mean is [1]_:
+
+    .. math::
+        \mathbf{C} = \exp{(\frac{1}{m} \sum_i \log{\mathbf{C}_i})}
+
+    Parameters
+    ----------
+    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    C : ndarray, shape (n_channels, n_channels)
+        Log-Euclidean mean.
+
+    References
+    ----------
+    .. [1] Arsigny V, Fillard P, Pennec X, Ayache N. "Geometric means in a
+        novel vector space structure on symmetric positive-definite matrices",
+        SIAM J Matrix Anal Appl, 2007
+    """
+    sample_weight = _get_sample_weight(sample_weight, covmats)
+    n_matrices, n_channels, _ = covmats.shape
+    T = np.zeros((n_channels, n_channels))
+    for index in range(n_matrices):
+        T += sample_weight[index] * logm(covmats[index])
+    C = expm(T)
+
+    return C
+
+
 def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10):
     """Power mean of SPD matrices.
 
@@ -524,27 +414,166 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10):
     return C
 
 
-def mean_identity(covmats, sample_weight=None):
-    r"""Identity matrix corresponding to the matrices dimension.
+def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
+                 sample_weight=None):
+    r"""Mean of SPD matrices according to the Riemannian metric.
+
+    The procedure is similar to a gradient descent minimizing the sum of
+    affine-invariant Riemannian distances :math:`d_R` to the mean [1]_:
 
     .. math::
-        \mathbf{C} = \mathbf{I}_c
+        \mathbf{C} = \arg\min{ \sum_i d_R ( \mathbf{C} , \mathbf{C}_i)^2 }
 
     Parameters
     ----------
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
-    sample_weight : None
-        Not used, here for compatibility with other means.
+    tol : float, default=10e-9
+        The tolerance to stop the gradient descent.
+    maxiter : int, default=50
+        The maximum number of iterations.
+    init : None | ndarray, shape (n_channels, n_channels), default=None
+        A SPD matrix used to initialize the gradient descent.
+        If None the Euclidean mean is used.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
 
     Returns
     -------
     C : ndarray, shape (n_channels, n_channels)
-        Identity.
+        Riemannian mean.
+
+    References
+    ----------
+    .. [1] Moakher M. "A differential geometric approach to the geometric mean
+        of symmetric positive-definite matrices", SIAM J Matrix Anal Appl, 2005
     """
-    _, n_channels, _ = covmats.shape
-    C = np.eye(n_channels)
+    sample_weight = _get_sample_weight(sample_weight, covmats)
+    n_matrices, n_channels, _ = covmats.shape
+    if init is None:
+        C = np.mean(covmats, axis=0)
+    else:
+        C = init
+
+    k = 0
+    nu = 1.0
+    tau = np.finfo(np.float64).max
+    crit = np.finfo(np.float64).max
+    # stop when J<10^-9 or max iteration = 50
+    while (crit > tol) and (k < maxiter) and (nu > tol):
+        k = k + 1
+        C12 = sqrtm(C)
+        Cm12 = invsqrtm(C)
+        J = np.zeros((n_channels, n_channels))
+
+        for index in range(n_matrices):
+            tmp = np.dot(np.dot(Cm12, covmats[index]), Cm12)
+            J += sample_weight[index] * logm(tmp)
+
+        crit = np.linalg.norm(J, ord='fro')
+        h = nu * crit
+        C = np.dot(np.dot(C12, expm(nu * J)), C12)
+        if h < tau:
+            nu = 0.95 * nu
+            tau = h
+        else:
+            nu = 0.5 * nu
+
     return C
+
+
+def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
+                     sample_weight=None):
+    r"""Mean of SPD matrices according to the Wasserstein metric.
+
+    Wasserstein mean is obtained by an iterative procedure where the update is
+    [1]_:
+
+    .. math::
+        \mathbf{K} = \left(\sum_i \left( \mathbf{K} \mathbf{C}_i \mathbf{K}
+                     \right)^{1/2} \right)^{1/2}
+
+    with :math:`\mathbf{K} = \mathbf{C}^{1/2}`.
+
+    Parameters
+    ----------
+    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    tol : float, default=10e-4
+        The tolerance to stop the gradient descent.
+    maxiter : int, default=50
+        The maximum number of iterations.
+    init : None | ndarray, shape (n_channels, n_channels), default=None
+        A SPD matrix used to initialize the gradient descent.
+        If None the Euclidean mean is used.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    C : ndarray, shape (n_channels, n_channels)
+        Wasserstein mean.
+
+    References
+    ----------
+    .. [1] Barbaresco, F. "Geometric Radar Processing based on Frechet distance
+        : Information geometry versus Optimal Transport Theory", IRS, 2011
+    """
+    sample_weight = _get_sample_weight(sample_weight, covmats)
+    n_matrices, n_channels, _ = covmats.shape
+    if init is None:
+        C = np.mean(covmats, axis=0)
+    else:
+        C = init
+    k = 0
+    K = sqrtm(C)
+    crit = np.finfo(np.float64).max
+    # stop when J<10^-9 or max iteration = 50
+    while (crit > tol) and (k < maxiter):
+        k = k + 1
+
+        J = np.zeros((n_channels, n_channels))
+
+        for index, Ci in enumerate(covmats):
+            tmp = np.dot(np.dot(K, Ci), K)
+            J += sample_weight[index] * sqrtm(tmp)
+
+        Knew = sqrtm(J)
+        crit = np.linalg.norm(Knew - K, ord='fro')
+        K = Knew
+    if k == maxiter:
+        print('Max iter reach')
+    C = np.dot(K, K)
+    return C
+
+
+###############################################################################
+
+
+mean_methods = {
+    'ale': mean_ale,
+    'alm': mean_alm,
+    'euclid': mean_euclid,
+    'harmonic': mean_harmonic,
+    'identity': mean_identity,
+    'kullback_sym': mean_kullback_sym,
+    'logdet': mean_logdet,
+    'logeuclid': mean_logeuclid,
+    'riemann': mean_riemann,
+    'wasserstein': mean_wasserstein,
+}
+
+
+def _check_mean_method(method):
+    """Check mean methods."""
+    if isinstance(method, str):
+        if method not in mean_methods.keys():
+            raise ValueError('Unknown mean method')
+        else:
+            method = mean_methods[method]
+    elif not hasattr(method, '__call__'):
+        raise ValueError('mean method must be a function or a string.')
+    return method
 
 
 def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
@@ -555,9 +584,9 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
     metric : string, default='riemann'
-        The metric, can be: 'riemann', 'logeuclid', 'euclid', 'logdet',
-        'identity', 'wasserstein', 'ale', 'alm', 'harmonic', 'kullback_sym'
-        or a callable function.
+        The metric for mean, can be: 'ale', 'alm', 'euclid', 'harmonic',
+        'identity', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
+        'wasserstein', or a callable function.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
     args : list of params
@@ -573,32 +602,6 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
     else:
         C = mean_methods[metric](covmats, sample_weight=sample_weight, *args)
     return C
-
-
-mean_methods = {
-    'riemann': mean_riemann,
-    'logeuclid': mean_logeuclid,
-    'euclid': mean_euclid,
-    'identity': mean_identity,
-    'logdet': mean_logdet,
-    'wasserstein': mean_wasserstein,
-    'ale': mean_ale,
-    'alm': mean_alm,
-    'harmonic': mean_harmonic,
-    'kullback_sym': mean_kullback_sym,
-}
-
-
-def _check_mean_method(method):
-    """checks methods """
-    if isinstance(method, str):
-        if method not in mean_methods.keys():
-            raise ValueError('Unknown mean method')
-        else:
-            method = mean_methods[method]
-    elif not hasattr(method, '__call__'):
-        raise ValueError('mean method must be a function or a string.')
-    return method
 
 
 ###############################################################################
@@ -630,59 +633,6 @@ def _apply_masks(covmats, masks):
     for i in range(len(covmats)):
         maskedcovmats.append(masks[i].T @ covmats[i] @ masks[i])
     return maskedcovmats
-
-
-def nanmean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
-                    sample_weight=None):
-    """Riemannian NaN-mean of SPD matrices.
-
-    The Riemannian NaN-mean is the masked Riemannian mean applied to SPD
-    matrices potentially corrupted by symmetric NaN values [1]_.
-
-    Parameters
-    ----------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices, corrupted by symmetric NaN values [1]_.
-    tol : float, default=10e-9
-        The tolerance to stop the gradient descent.
-    maxiter : int, default=50
-        The maximum number of iteration.
-    init : None | ndarray, shape (n_channels, n_channels), default=None
-        A SPD matrix used to initialize the gradient descent.
-        If None, a regularized Euclidean NaN-mean is used.
-    sample_weight : None | ndarray, shape (n_matrices,), default=None
-        Weights for each matrix. If None, it uses equal weights.
-
-    Returns
-    -------
-    C : ndarray, shape (n_channels, n_channels)
-        Riemannian NaN-mean.
-
-    Notes
-    -----
-    .. versionadded:: 0.2.8
-
-    References
-    ----------
-    .. [1] F. Yger, S. Chevallier, Q. Barthélemy, S. Sra. "Geodesically-convex
-        optimization for averaging partially observed covariance matrices",
-        ACML 2020.
-    """
-    n_matrices, n_channels, _ = covmats.shape
-    if init is None:
-        Cinit = np.nanmean(covmats, axis=0) + 1e-6 * np.eye(n_channels)
-    else:
-        Cinit = init
-
-    C = maskedmean_riemann(
-        np.nan_to_num(covmats),  # avoid nan contamination in matmul
-        _get_masks_from_nan(covmats),
-        tol=tol,
-        maxiter=maxiter,
-        init=Cinit,
-        sample_weight=sample_weight
-    )
-    return C
 
 
 def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=50, init=None,
@@ -757,4 +707,57 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=50, init=None,
         else:
             nu = 0.5 * nu
 
+    return C
+
+
+def nanmean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
+                    sample_weight=None):
+    """Riemannian NaN-mean of SPD matrices.
+
+    The Riemannian NaN-mean is the masked Riemannian mean applied to SPD
+    matrices potentially corrupted by symmetric NaN values [1]_.
+
+    Parameters
+    ----------
+    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices, corrupted by symmetric NaN values [1]_.
+    tol : float, default=10e-9
+        The tolerance to stop the gradient descent.
+    maxiter : int, default=50
+        The maximum number of iteration.
+    init : None | ndarray, shape (n_channels, n_channels), default=None
+        A SPD matrix used to initialize the gradient descent.
+        If None, a regularized Euclidean NaN-mean is used.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    C : ndarray, shape (n_channels, n_channels)
+        Riemannian NaN-mean.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.8
+
+    References
+    ----------
+    .. [1] F. Yger, S. Chevallier, Q. Barthélemy, S. Sra. "Geodesically-convex
+        optimization for averaging partially observed covariance matrices",
+        ACML 2020.
+    """
+    n_matrices, n_channels, _ = covmats.shape
+    if init is None:
+        Cinit = np.nanmean(covmats, axis=0) + 1e-6 * np.eye(n_channels)
+    else:
+        Cinit = init
+
+    C = maskedmean_riemann(
+        np.nan_to_num(covmats),  # avoid nan contamination in matmul
+        _get_masks_from_nan(covmats),
+        tol=tol,
+        maxiter=maxiter,
+        init=Cinit,
+        sample_weight=sample_weight
+    )
     return C

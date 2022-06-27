@@ -1,29 +1,34 @@
 import numpy as np
-from pyriemann.utils.geodesic import (
-    geodesic_riemann,
-    geodesic_euclid,
-    geodesic_logeuclid,
-    geodesic,
-)
-from pyriemann.utils.mean import mean_riemann, mean_logeuclid, mean_euclid
 import pytest
 from pytest import approx
 
+from pyriemann.utils.geodesic import (
+    geodesic,
+    geodesic_euclid,
+    geodesic_logeuclid,
+    geodesic_riemann,
+)
+from pyriemann.utils.mean import (
+    mean_euclid,
+    mean_logeuclid,
+    mean_riemann,
+)
+
 
 def get_geod_func():
-    geod_func = [geodesic_riemann, geodesic_euclid, geodesic_logeuclid]
+    geod_func = [geodesic_euclid, geodesic_logeuclid, geodesic_riemann]
     for gf in geod_func:
         yield gf
 
 
 def get_geod_name():
-    geod_name = ["riemann", "euclid", "logeuclid"]
+    geod_name = ["euclid", "logeuclid", "riemann"]
     for gn in geod_name:
         yield gn
 
 
 @pytest.mark.parametrize(
-    "geodesic_func", [geodesic_riemann, geodesic_euclid, geodesic_logeuclid]
+    "geodesic_func", [geodesic_euclid, geodesic_logeuclid, geodesic_riemann]
 )
 class GeodesicFuncTestCase:
     def test_simple_mat(self, geodesic_func, get_covmats):

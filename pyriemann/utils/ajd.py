@@ -1,4 +1,5 @@
 """Aproximate joint diagonalization algorithms."""
+
 import numpy as np
 
 
@@ -230,8 +231,8 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
 
     See Also
     --------
-    rjd
     ajd_pham
+    rjd
 
     References
     ----------

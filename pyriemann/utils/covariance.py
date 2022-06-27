@@ -2,8 +2,8 @@ import warnings
 
 import numpy as np
 from scipy.linalg import block_diag
-
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
+
 from .test import is_square
 
 # Mapping different estimator on the sklearn toolbox
@@ -12,6 +12,12 @@ from .test import is_square
 def _lwf(X):
     """Wrapper for sklearn ledoit wolf covariance estimator"""
     C, _ = ledoit_wolf(X.T)
+    return C
+
+
+def _mcd(X):
+    """Wrapper for sklearn mcd covariance estimator"""
+    _, C, _, _ = fast_mcd(X.T)
     return C
 
 
@@ -24,12 +30,6 @@ def _oas(X):
 def _scm(X):
     """Wrapper for sklearn sample covariance estimator"""
     return empirical_covariance(X.T)
-
-
-def _mcd(X):
-    """Wrapper for sklearn mcd covariance estimator"""
-    _, C, _, _ = fast_mcd(X.T)
-    return C
 
 
 def _sch(X):
@@ -71,7 +71,7 @@ def _sch(X):
     X_c = (X.T - X.T.mean(axis=0)).T
     C_scm = 1. / n_times * X_c @ X_c.T
 
-    # Compute optimal gamma, the weigthing between SCM and srinkage estimator
+    # Compute optimal gamma, the weigthing between SCM and shrinkage estimator
     R = (n_times / ((n_times - 1.) * np.outer(X.std(axis=1), X.std(axis=1))))
     R *= C_scm
     var_R = (X_c ** 2) @ (X_c ** 2).T - 2 * C_scm * (X_c @ X_c.T)
@@ -88,17 +88,17 @@ def _sch(X):
 
 
 def _check_est(est):
-    """Check if a given estimator is valid"""
+    """Check if a given estimator is valid."""
 
     # Check estimator exist and return the correct function
     estimators = {
+        'corr': np.corrcoef,
         'cov': np.cov,
-        'scm': _scm,
         'lwf': _lwf,
-        'oas': _oas,
         'mcd': _mcd,
+        'oas': _oas,
         'sch': _sch,
-        'corr': np.corrcoef
+        'scm': _scm,
     }
 
     if callable(est):
@@ -122,17 +122,18 @@ def covariances(X, estimator='cov'):
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_times)
         Multi-channel time-series.
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'}, \
+    estimator : {'corr', 'cov', 'lwf', 'mcd', 'oas', 'sch', 'scm'}, \
             default='scm'
         Covariance matrix estimator [1]_:
 
-        * 'cov' for numpy based covariance matrix [2]_,
-        * 'scm' for sample covariance matrix [3]_,
+        * 'corr' for correlation coefficient matrix [2]_,
+        * 'cov' for numpy based covariance matrix [3]_,
         * 'lwf' for shrunk Ledoit-Wolf covariance matrix [4]_,
-        * 'oas' for oracle approximating shrunk covariance matrix [5]_,
-        * 'mcd' for minimum covariance determinant matrix [6]_,
+        * 'mcd' for minimum covariance determinant matrix [5]_,
+        * 'oas' for oracle approximating shrunk covariance matrix [6]_,
         * 'sch' for Schaefer-Strimmer covariance matrix [7]_,
-        * 'corr' for correlation coefficient matrix [8]_.
+        * 'scm' for sample covariance matrix [8]_,
+        * or a callable function.
 
         For regularization, consider 'lwf' or 'oas'.
 
@@ -144,13 +145,13 @@ def covariances(X, estimator='cov'):
     References
     ----------
     .. [1] https://scikit-learn.org/stable/modules/covariance.html
-    .. [2] https://numpy.org/doc/stable/reference/generated/numpy.cov.html
-    .. [3] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
+    .. [2] https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
+    .. [3] https://numpy.org/doc/stable/reference/generated/numpy.cov.html
     .. [4] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
-    .. [5] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
-    .. [6] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
+    .. [5] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
+    .. [6] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
     .. [7] http://doi.org/10.2202/1544-6115.1175
-    .. [8] https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
+    .. [8] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
     """  # noqa
     est = _check_est(estimator)
     n_matrices, n_channels, n_times = X.shape
