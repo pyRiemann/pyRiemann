@@ -73,7 +73,7 @@ def distance_kullback(A, B):
     """
     n, _ = A.shape
     logdet = np.log(np.linalg.det(B) / np.linalg.det(A))
-    kl = np.trace(np.dot(np.linalg.inv(B), A)) - n + logdet
+    kl = np.trace(np.linalg.inv(B) @ A) - n + logdet
     return 0.5 * kl
 
 
@@ -176,7 +176,7 @@ def distance_wasserstein(A, B):
     Compute the Wasserstein distance between two SPD matrices A and B:
 
     .. math::
-        d(A,B) = \sqrt{ \text{tr}(A + B - 2(A^{1/2}BA^{1/2})^{1/2}) }
+        d(A,B) = \sqrt{ \text{tr}(A + B - 2(B^{1/2} A B^{1/2})^{1/2}) }
 
     Parameters
     ----------

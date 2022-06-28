@@ -226,24 +226,22 @@ def test_covariances_cospectrum(rndstate):
 
 
 @pytest.mark.parametrize(
-    'coh', ['ordinary', 'instantaneous', 'lagged', 'imaginary', 'foobar']
+    'coh', ['ordinary', 'instantaneous', 'lagged', 'imaginary']
 )
 def test_covariances_coherence(coh, rndstate):
     """Test coherence"""
     n_channels, n_times = 3, 2048
     x = rndstate.randn(n_channels, n_times)
 
-    if coh == 'foobar':
-        with pytest.raises(ValueError):  # unknown coh
-            coherence(x, coh=coh)
-    else:
+    if coh != 'lagged':
         coherence(x, coh=coh)
         coherence(x, fs=32, window=256, coh=coh)
-        c, freqs = coherence(x, fs=128, fmin=3, fmax=40, coh=coh)
-        assert c.shape[0] == c.shape[1] == n_channels
-        assert c.shape[-1] == freqs.shape[0]
-        # test if coherence in [0,1]
-        assert np.all((0. <= c) & (c <= 1.))
+
+    c, freqs = coherence(x, fs=128, fmin=3, fmax=40, coh=coh)
+    assert c.shape[0] == c.shape[1] == n_channels
+    assert c.shape[-1] == freqs.shape[0]
+    # test if coherence in [0,1]
+    assert np.all((0. <= c) & (c <= 1.))
 
     # test equivalence between pyriemann and scipy for ordinary coherence
     if coh == 'ordinary':
@@ -316,6 +314,14 @@ def test_covariances_coherence(coh, rndstate):
             assert c[0, 2, foi] == pytest.approx(1.0)
             # imag coh equal 0 between ref and opposite phase channels
             assert c[0, 3, foi] == pytest.approx(0.0)
+
+
+def test_covariances_coherence_error(rndstate):
+    """Test coherence error"""
+    n_channels, n_times = 3, 50
+    x = rndstate.randn(n_channels, n_times)
+    with pytest.raises(ValueError):  # unknown coh
+        coherence(x, coh='foobar')
 
 
 @pytest.mark.parametrize('norm', ['corr', 'trace', 'determinant'])

@@ -62,12 +62,44 @@ def test_distance_func_eye(dist):
 
 
 @pytest.mark.parametrize("dist", get_dist_func())
-def test_distance_func_rand(dist, get_covmats):
+def test_distance_func_geodesic(dist, get_covmats):
     n_matrices, n_channels = 2, 6
     covmats = get_covmats(n_matrices, n_channels)
     A, C = covmats[0], covmats[1]
     B = geodesic(A, C, alpha=0.5)
     assert dist(A, B) < dist(A, C)
+
+
+@pytest.mark.parametrize("dist", get_dist_func())
+def test_distance_func_separability(dist, get_covmats):
+    n_matrices, n_channels = 1, 6
+    covmats = get_covmats(n_matrices, n_channels)
+    assert dist(covmats[0], covmats[0]) == approx(0, abs=1e-7)
+
+
+@pytest.mark.parametrize(
+    "dist", [
+        distance_euclid,
+        distance_harmonic,
+        distance_logdet,
+        distance_logeuclid,
+        distance_riemann,
+        distance_wasserstein,
+    ]
+)
+def test_distance_func_symmetry(dist, get_covmats):
+    n_matrices, n_channels = 2, 5
+    covmats = get_covmats(n_matrices, n_channels)
+    A, B = covmats[0], covmats[1]
+    assert dist(A, B) == approx(dist(B, A))
+
+
+@pytest.mark.parametrize("dist", get_dist_func())
+def test_distance_func_triangle_inequality(dist, get_covmats):
+    n_matrices, n_channels = 3, 4
+    covmats = get_covmats(n_matrices, n_channels)
+    A, B, C = covmats[0], covmats[1], covmats[2]
+    assert dist(A, B) <= dist(A, C) + dist(C, B)
 
 
 def test_distance_logdet_implementation(get_covmats):
@@ -85,6 +117,13 @@ def test_distance_wrapper(dist, dfunc, get_covmats):
     covmats = get_covmats(n_matrices, n_channels)
     A, B = covmats[0], covmats[1]
     assert distance(A, B, metric=dist) == dfunc(A, B)
+
+
+@pytest.mark.parametrize("dist", get_dist_func())
+def test_distance_wrapper_between_set_and_matrix(dist, get_covmats):
+    n_matrices, n_channels = 10, 4
+    covmats = get_covmats(n_matrices, n_channels)
+    assert distance(covmats, covmats[-1], metric=dist).shape == (n_matrices, 1)
 
 
 def test_pairwise_distance_matrix(get_covmats):
