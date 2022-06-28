@@ -23,9 +23,8 @@ class Covariances(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    estimator : string (default: 'scm')
-        covariance matrix estimator. For regularization consider 'lwf' or 'oas'
-        For the complete list of estimators, see parameter `estimator` of
+    estimator : string, default=scm'
+        Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
 
     See Also
@@ -48,9 +47,9 @@ class Covariances(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_times)
-            Multi-channel time-series
-        y : ndarray shape (n_matrices,)
-            Labels corresponding to each matrix, not used.
+            Multi-channel time-series.
+        y : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
@@ -65,7 +64,7 @@ class Covariances(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_times)
-            Multi-channel time-series
+            Multi-channel time-series.
 
         Returns
         -------
@@ -80,12 +79,12 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     r"""Estimate special form covariance matrix for ERP.
 
     Estimation of special form covariance matrix dedicated to ERP processing.
-    For each class, a prototyped response is obtained by average across trial :
+    For each class, a prototyped response is obtained by average across trial:
 
     .. math::
         \mathbf{P} = \frac{1}{N} \sum_i^N \mathbf{X}_i
 
-    and a super trial is build using the concatenation of P and the trial X :
+    and a super trial is built using the concatenation of P and the trial X:
 
     .. math::
         \mathbf{\tilde{X}}_i =  \left[
@@ -102,16 +101,15 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    classes : list of int | None (default None)
-        list of classes to take into account for prototype estimation.
-        If None (default), all classes will be accounted.
-    estimator : string (default: 'scm')
-        covariance matrix estimator. For regularization consider 'lwf' or 'oas'
-        For the complete list of estimators, see parameter `estimator` of
+    classes : list of int | None, default=None
+        List of classes to take into account for prototype estimation.
+        If None, all classes will be accounted.
+    estimator : string, default='scm'
+        Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
-    svd : int | None (default None)
-        if not none, the prototype responses will be reduce using a svd using
-        the number of components passed in svd.
+    svd : int | None, default=None
+        If not None, the prototype responses will be reduce using a SVD using
+        the number of components passed in SVD.
 
     See Also
     --------
@@ -140,10 +138,6 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         self.estimator = estimator
         self.svd = svd
 
-        if svd is not None:
-            if not isinstance(svd, int):
-                raise TypeError('svd must be None or int')
-
     def fit(self, X, y):
         """Fit.
 
@@ -153,14 +147,17 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_times)
             Multi-channel time-series.
-        y : ndarray shape (n_matrices,)
-            Labels corresponding to each matrix.
+        y : ndarray, shape (n_matrices,)
+            Labels for each matrix.
 
         Returns
         -------
         self : ERPCovariances instance
             The ERPCovariances instance.
         """
+        if self.svd is not None:
+            if not isinstance(self.svd, int):
+                raise TypeError('svd must be None or int')
         if self.classes is not None:
             classes = self.classes
         else:
@@ -193,7 +190,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         -------
         covmats : ndarray, shape (n_matrices, n_c, n_c)
             Covariance matrices for each input, with n_c the size
-            of covmats equal to n_channels * (n_classes + 1) in case svd is
+            of covmats equal to n_channels * (n_classes + 1) in case SVD is
             None and equal to n_channels + n_classes * svd otherwise.
         """
         covmats = covariances_EP(X, self.P_, estimator=self.estimator)
@@ -204,35 +201,38 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
     """Estimate special form covariance matrix for ERP combined with Xdawn.
 
     Estimation of special form covariance matrix dedicated to ERP processing
-    combined with Xdawn spatial filtering. This is similar to `ERPCovariances`
-    but data are spatially filtered with `Xdawn`. A complete descrition of the
-    method is available in [1]_.
+    combined with `Xdawn` spatial filtering.
+    This is similar to :class:`pyriemann.estimation.ERPCovariances` but data
+    are spatially filtered with :class:`pyriemann.spatialfilters.Xdawn`.
+    A complete description of the method is available in [1]_.
 
     The advantage of this estimation is to reduce dimensionality of the
     covariance matrices efficiently.
 
     Parameters
     ----------
-    nfilter: int (default 4)
-        number of Xdawn filter per classes.
-    applyfilters: bool (default True)
-        if set to true, spatial filter are applied to the prototypes and the
+    nfilter: int, default=4
+        Number of Xdawn filters per class.
+    applyfilters: bool, default=True
+        If set to true, spatial filter are applied to the prototypes and the
         signals. When set to False, filters are applied only to the ERP
         prototypes allowing for a better generalization across subject and
         session at the expense of dimensionality increase. In that case, the
-        estimation is similar to ERPCovariances with `svd=nfilter` but with
-        more compact prototype reduction.
-    classes : list of int | None (default None)
+        estimation is similar to :class:`pyriemann.estimation.ERPCovariances`
+        with `svd=nfilter` but with more compact prototype reduction.
+    classes : list of int | None, default=None
         list of classes to take into account for prototype estimation.
-        If None (default), all classes will be accounted.
-    estimator : string (default: 'scm')
-        covariance matrix estimator. For regularization consider 'lwf' or 'oas'
-        For the complete list of estimators, see parameter `estimator` of
+        If None, all classes will be accounted.
+    estimator : string, default='scm'
+        Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
-    xdawn_estimator : string (default: 'scm')
-        covariance matrix estimator for xdawn spatial filtering.
-    baseline_cov : array, shape (n_chan, n_chan) | None (default)
-        baseline_covariance for xdawn. see `Xdawn`.
+    xdawn_estimator : string, default='scm'
+        Covariance matrix estimator for `Xdawn` spatial filtering.
+        Should be regularized using 'lwf' or 'oas', see
+        :func:`pyriemann.utils.covariance.covariances`.
+    baseline_cov : array, shape (n_chan, n_chan) | None, default=None
+        Baseline covariance for `Xdawn` spatial filtering,
+        see :class:`pyriemann.spatialfilters.Xdawn`.
 
     See Also
     --------
@@ -269,8 +269,8 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_times)
             Multi-channel time-series.
-        y : ndarray shape (n_matrices,)
-            Labels corresponding to each matrix.
+        y : ndarray, shape (n_matrices,)
+            Labels for each matrix.
 
         Returns
         -------
@@ -287,7 +287,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """Estimate xdawn covariance matrices.
+        """Estimate Xdawn covariance matrices.
 
         Parameters
         ----------
@@ -320,13 +320,12 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
-        (default: 'scm')
-        Covariance matrix estimator, see
-            :func:`pyriemann.utils.covariance.covariances`.
-    block_size : int | list
+    block_size : int | list of int
         Sizes of individual blocks given as int for same-size block, or list
         for varying block sizes.
+    estimator : string, default='scm'
+        Covariance matrix estimator, see
+        :func:`pyriemann.utils.covariance.covariances`.
 
     Notes
     -----
@@ -351,8 +350,8 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_times)
             Multi-channel time-series.
-        y : ndarray shape (n_matrices,)
-            Labels corresponding to each matrix, not used.
+        y : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
@@ -403,15 +402,15 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    window : int (default 128)
+    window : int, default=128
         The length of the FFT window used for spectral estimation.
-    overlap : float (default 0.75)
+    overlap : float, default=0.75
         The percentage of overlap between window.
-    fmin : float | None, (default None)
+    fmin : float | None, default=None
         The minimal frequency to be returned.
-    fmax : float | None, (default None)
+    fmax : float | None, default=None
         The maximal frequency to be returned.
-    fs : float | None, (default None)
+    fs : float | None, default=None
         The sampling frequency of the signal.
 
     Attributes
@@ -445,8 +444,8 @@ class CospCovariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_times)
             Multi-channel time-series.
-        y : ndarray, shape (n_matrices,)
-            Labels corresponding to each matrix, not used.
+        y : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
@@ -468,10 +467,9 @@ class CospCovariances(BaseEstimator, TransformerMixin):
         covmats : ndarray, shape (n_matrices, n_channels, n_channels, n_freqs)
             Covariance matrices for each input and for each frequency bin.
         """
-        Nt = len(X)
         out = []
 
-        for i in range(Nt):
+        for i in range(len(X)):
             S, freqs = cospectrum(
                 X[i],
                 window=self.window,
@@ -494,18 +492,18 @@ class Coherences(CospCovariances):
 
     Parameters
     ----------
-    window : int (default 128)
-        The lengt of the FFT window used for spectral estimation.
-    overlap : float (default 0.75)
+    window : int, default=128
+        The length of the FFT window used for spectral estimation.
+    overlap : float, default=0.75
         The percentage of overlap between window.
-    fmin : float | None, (default None)
+    fmin : float | None, default=None
         the minimal frequency to be returned.
-    fmax : float | None, (default None)
+    fmax : float | None, default=None
         The maximal frequency to be returned.
-    fs : float | None, (default None)
+    fs : float | None, default=None
         The sampling frequency of the signal.
-    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default \
-            'ordinary')
+    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, \
+            default='ordinary'
         The coherence type:
 
         * 'ordinary' for the ordinary coherence, defined in Eq.(22) of [1]_;
@@ -526,6 +524,10 @@ class Coherences(CospCovariances):
     freqs_ : ndarray, shape (n_freqs,)
         If transformed, the frequencies associated to cospectra.
         None if ``fs`` is None.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.8
 
     See Also
     --------
@@ -574,10 +576,9 @@ class Coherences(CospCovariances):
             Squared coherence matrices for each input and for each frequency
             bin.
         """
-        Nt = len(X)
         out = []
 
-        for i in range(Nt):
+        for i in range(len(X)):
             S, freqs = coherence(
                 X[i],
                 window=self.window,
@@ -593,7 +594,7 @@ class Coherences(CospCovariances):
 
 
 class HankelCovariances(BaseEstimator, TransformerMixin):
-    """Estimation of covariance matrix with time delayed hankel matrices.
+    """Estimation of covariance matrix with time delayed Hankel matrices.
 
     This estimation is usefull to catch spectral dynamics of the signal,
     similarly to the CSSP method. It is done by concatenating time delayed
@@ -601,12 +602,11 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    delays: int, list of int (default, 2)
-        the delays to apply for the hankel matrices. if Int, it use a range of
-        delays up to the given value. A list of int can be given.
-    estimator : string (default: 'scm')
-        covariance matrix estimator. For regularization consider 'lwf' or 'oas'
-        For the complete list of estimators, see parameter `estimator` of
+    delays: int | list of int, default=4
+        The delays to apply for the Hankel matrices. If `int`, it use a range
+        of delays up to the given value. A list of int can be given.
+    estimator : string, default='scm'
+        Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
 
     See Also
@@ -631,8 +631,8 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_times)
             Multi-channel time-series.
-        y : ndarray shape (n_matrices,)
-            Labels corresponding to each matrix, not used.
+        y : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
@@ -642,7 +642,7 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """Estimate the hankel covariance matrices.
+        """Estimate the Hankel covariance matrices.
 
         Parameters
         ----------
@@ -673,21 +673,26 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
 
 class Shrinkage(BaseEstimator, TransformerMixin):
-    """Regularization of covariance matrices by shrinkage
+    """Regularization of SPD matrices by shrinkage.
 
-    This transformer apply a shrinkage regularization to any covariance matrix.
-    It directly use the `shrunk_covariance` function from scikit learn, applied
-    on each input.
+    This transformer applies a shrinkage regularization to any SPD matrix.
+    It directly uses the `shrunk_covariance` function from scikit-learn [1]_,
+    applied on each input.
 
     Parameters
     ----------
-    shrinkage: float, (default, 0.1)
+    shrinkage : float, default=0.1
         Coefficient in the convex combination used for the computation of the
-        shrunk estimate. must be between 0 and 1
+        shrunk estimate. Must be between 0 and 1.
 
     Notes
     -----
     .. versionadded:: 0.2.5
+
+    References
+    ----------
+    .. [1] https://scikit-learn.org/stable/modules/generated/sklearn. \
+        covariance.shrunk_covariance.html
     """
 
     def __init__(self, shrinkage=0.1):
@@ -701,10 +706,10 @@ class Shrinkage(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_times)
-            ndarray of Target data.
-        y : ndarray shape (n_matrices,)
-            Labels corresponding to each matrix, not used.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
@@ -714,17 +719,17 @@ class Shrinkage(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """Shrink and return the covariance matrices.
+        """Shrink and return the SPD matrices.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Covariances matrices
+            Set of SPD matrices.
 
         Returns
         -------
         covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-            Shrunk covariances matrices.
+            Set of shrunk SPD matrices.
         """
 
         covmats = np.zeros_like(X)

@@ -2,8 +2,8 @@ import warnings
 
 import numpy as np
 from scipy.linalg import block_diag
-
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
+
 from .test import is_square
 
 # Mapping different estimator on the sklearn toolbox
@@ -12,6 +12,12 @@ from .test import is_square
 def _lwf(X):
     """Wrapper for sklearn ledoit wolf covariance estimator"""
     C, _ = ledoit_wolf(X.T)
+    return C
+
+
+def _mcd(X):
+    """Wrapper for sklearn mcd covariance estimator"""
+    _, C, _, _ = fast_mcd(X.T)
     return C
 
 
@@ -26,27 +32,30 @@ def _scm(X):
     return empirical_covariance(X.T)
 
 
-def _mcd(X):
-    """Wrapper for sklearn mcd covariance estimator"""
-    _, C, _, _ = fast_mcd(X.T)
-    return C
-
-
 def _sch(X):
-    """Schaefer-Strimmer covariance estimator
+    r"""Schaefer-Strimmer covariance estimator.
 
     Shrinkage estimator using method from [1]_:
+
     .. math::
             \hat{\Sigma} = (1 - \gamma)\Sigma_{scm} + \gamma T
 
     where :math:`T` is the diagonal target matrix:
+
     .. math::
-            T_{i,j} = \{ \Sigma_{scm}^{ii} \text{if} i = j, 0 \text{otherwise} \}
+        T_{i,j} = \{ \Sigma_{scm}^{ii} \text{if} i = j, 0 \text{otherwise} \}
+
     Note that the optimal :math:`\gamma` is estimated by the authors' method.
 
-    :param X: Multi-channel time-series, (n_channels, n_times)
+    Parameters
+    ----------
+    X : ndarray, shape (n_channels, n_times)
+        Multi-channel time-series.
 
-    :returns: Schaefer-Strimmer shrinkage covariance matrix, (n_channels, n_channels)
+    Returns
+    -------
+    cov : ndarray, shape (n_channels, n_channels)
+        Schaefer-Strimmer shrinkage covariance matrix.
 
     Notes
     -----
@@ -57,12 +66,12 @@ def _sch(X):
     .. [1] Schafer, J., and K. Strimmer. 2005. A shrinkage approach to
         large-scale covariance estimation and implications for functional
         genomics. Statist. Appl. Genet. Mol. Biol. 4:32.
-    """  # noqa
+    """
     n_times = X.shape[1]
     X_c = (X.T - X.T.mean(axis=0)).T
     C_scm = 1. / n_times * X_c @ X_c.T
 
-    # Compute optimal gamma, the weigthing between SCM and srinkage estimator
+    # Compute optimal gamma, the weigthing between SCM and shrinkage estimator
     R = (n_times / ((n_times - 1.) * np.outer(X.std(axis=1), X.std(axis=1))))
     R *= C_scm
     var_R = (X_c ** 2) @ (X_c ** 2).T - 2 * C_scm * (X_c @ X_c.T)
@@ -79,17 +88,17 @@ def _sch(X):
 
 
 def _check_est(est):
-    """Check if a given estimator is valid"""
+    """Check if a given estimator is valid."""
 
     # Check estimator exist and return the correct function
     estimators = {
+        'corr': np.corrcoef,
         'cov': np.cov,
-        'scm': _scm,
         'lwf': _lwf,
-        'oas': _oas,
         'mcd': _mcd,
+        'oas': _oas,
         'sch': _sch,
-        'corr': np.corrcoef
+        'scm': _scm,
     }
 
     if callable(est):
@@ -113,24 +122,20 @@ def covariances(X, estimator='cov'):
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_times)
         Multi-channel time-series.
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
-            (default: 'scm')
-        Covariance matrix estimator:
+    estimator : {'corr', 'cov', 'lwf', 'mcd', 'oas', 'sch', 'scm'}, \
+            default='scm'
+        Covariance matrix estimator [1]_:
 
-        * 'cov' for numpy based covariance matrix,
-          https://numpy.org/doc/stable/reference/generated/numpy.cov.html
-        * 'scm' for sample covariance matrix,
-          https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
-        * 'lwf' for shrunk Ledoit-Wolf covariance matrix
-          https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
-        * 'oas' for oracle approximating shrunk covariance matrix,
-          https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
-        * 'mcd' for minimum covariance determinant matrix,
-          https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
-        * 'sch' for Schaefer-Strimmer covariance,
-          http://doi.org/10.2202/1544-6115.1175,
-        * 'corr' for correlation coefficient matrix,
-          https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
+        * 'corr' for correlation coefficient matrix [2]_,
+        * 'cov' for numpy based covariance matrix [3]_,
+        * 'lwf' for shrunk Ledoit-Wolf covariance matrix [4]_,
+        * 'mcd' for minimum covariance determinant matrix [5]_,
+        * 'oas' for oracle approximating shrunk covariance matrix [6]_,
+        * 'sch' for Schaefer-Strimmer covariance matrix [7]_,
+        * 'scm' for sample covariance matrix [8]_,
+        * or a callable function.
+
+        For regularization, consider 'lwf' or 'oas'.
 
     Returns
     -------
@@ -140,6 +145,13 @@ def covariances(X, estimator='cov'):
     References
     ----------
     .. [1] https://scikit-learn.org/stable/modules/covariance.html
+    .. [2] https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
+    .. [3] https://numpy.org/doc/stable/reference/generated/numpy.cov.html
+    .. [4] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
+    .. [5] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
+    .. [6] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
+    .. [7] http://doi.org/10.2202/1544-6115.1175
+    .. [8] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
     """  # noqa
     est = _check_est(estimator)
     n_matrices, n_channels, n_times = X.shape
@@ -158,8 +170,8 @@ def covariances_EP(X, P, estimator='cov'):
         Multi-channel time-series.
     P : ndarray, shape (n_channels_proto, n_times)
         Multi-channel prototype.
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
-            (default: 'cov')
+    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'}, \
+            default='cov'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
 
@@ -189,11 +201,11 @@ def covariances_X(X, estimator='scm', alpha=0.2):
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_times)
         Multi-channel time-series.
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
-            (default: 'scm')
+    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'}, \
+            default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
-    alpha : float (default 0.2)
+    alpha : float, default=0.2
         Regularization parameter (strictly positive).
 
     Returns
@@ -245,10 +257,10 @@ def block_covariances(X, blocks, estimator='cov'):
         Multi-channel time-series.
     blocks: list of int
         List of block sizes.
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'} \
-        (default: 'scm')
+    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'}, \
+        default='scm'
         Covariance matrix estimator, see
-            :func:`pyriemann.utils.covariance.covariances`.
+        :func:`pyriemann.utils.covariance.covariances`.
 
     Returns
     -------
@@ -274,7 +286,7 @@ def block_covariances(X, blocks, estimator='cov'):
 
 
 def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
-    """Convert EEG signal to covariance using sliding window"""
+    """Convert EEG signal to covariance using sliding window."""
     est = _check_est(estimator)
     X = []
     if padding:
@@ -301,15 +313,15 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     ----------
     X : ndarray, shape (n_channels, n_times)
         Multi-channel time-series.
-    window : int (default 128)
+    window : int, default=128
         The length of the FFT window used for spectral estimation.
-    overlap : float (default 0.75)
+    overlap : float, default=0.75
         The percentage of overlap between window.
-    fmin : float | None, (default None)
+    fmin : float | None, default=None
         The minimal frequency to be returned.
-    fmax : float | None, (default None)
+    fmax : float | None, default=None
         The maximal frequency to be returned.
-    fs : float | None, (default None)
+    fs : float | None, default=None
         The sampling frequency of the signal.
 
     Returns
@@ -386,15 +398,15 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     ----------
     X : ndarray, shape (n_channels, n_times)
         Multi-channel time-series.
-    window : int (default 128)
+    window : int, default=128
         The length of the FFT window used for spectral estimation.
-    overlap : float (default 0.75)
+    overlap : float, default=0.75
         The percentage of overlap between window.
-    fmin : float | None, (default None)
+    fmin : float | None, default=None
         The minimal frequency to be returned.
-    fmax : float | None, (default None)
+    fmax : float | None, default=None
         The maximal frequency to be returned.
-    fs : float | None, (default None)
+    fs : float | None, default=None
         The sampling frequency of the signal.
 
     Returns
@@ -423,18 +435,18 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
     ----------
     X : ndarray, shape (n_channels, n_times)
         Multi-channel time-series.
-    window : int (default 128)
+    window : int, default=128
         The length of the FFT window used for spectral estimation.
-    overlap : float (default 0.75)
+    overlap : float, default=0.75
         The percentage of overlap between window.
-    fmin : float | None, (default None)
+    fmin : float | None, default=None
         The minimal frequency to be returned.
-    fmax : float | None, (default None)
+    fmax : float | None, default=None
         The maximal frequency to be returned.
-    fs : float | None, (default None)
+    fs : float | None, default=None
         The sampling frequency of the signal.
-    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, (default \
-            'ordinary')
+    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, \
+            default='ordinary'
         The coherence type, see :class:`pyriemann.estimation.Coherences`.
 
     Returns
@@ -536,7 +548,9 @@ def normalize(X, norm):
 
 
 def get_nondiag_weight(X):
-    """Compute non-diagonality weights of a set of square matrices, following
+    """Compute non-diagonality weights of a set of square matrices.
+
+    Compute non-diagonality weights of a set of square matrices, following
     Eq(B.1) in [1]_.
 
     Parameters

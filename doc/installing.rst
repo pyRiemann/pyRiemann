@@ -3,7 +3,7 @@
 Installing pyRiemann
 ====================
 
-The easiest way to install a stable version of pyRiemann is through pypi, the python packege manager :
+The easiest way to install a stable version of pyRiemann is through pypi, the python package manager :
 
 ``pip install pyriemann``
 

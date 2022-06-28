@@ -29,10 +29,14 @@ Embedding
 
 .. autosummary::
     :toctree: generated/
+
+    locally_linear_embedding
+    barycenter_weights
+
     :template: class.rst
 
-    Embedding
-    RiemannianLLE
+    SpectralEmbedding
+    LocallyLinearEmbedding
 
 Classification
 --------------
@@ -47,7 +51,20 @@ Classification
     FgMDM
     TSclassifier
     KNearestNeighbor
-    RSVC
+    SVC
+    MeanField
+
+Regression
+--------------
+.. _regression_api:
+.. currentmodule:: pyriemann.regression
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    KNearestNeighborRegressor
+    SVR
 
 Clustering
 ------------------
@@ -173,12 +190,49 @@ Distances
 
     distance
     distance_euclid
-    distance_riemann
-    distance_logeuclid
-    distance_logdet
+    distance_harmonic
     distance_kullback
     distance_kullback_sym
+    distance_logdet
+    distance_logeuclid
+    distance_riemann
     distance_wasserstein
+
+Means
+~~~~~~~~~~~~~~~~~~~~~~
+.. _mean_api:
+.. currentmodule:: pyriemann.utils.mean
+
+.. autosummary::
+    :toctree: generated/
+
+    mean_covariance
+    mean_ale
+    mean_alm
+    mean_euclid
+    mean_harmonic
+    mean_identity
+    mean_kullback_sym
+    mean_logdet
+    mean_logeuclid
+    mean_power
+    mean_riemann
+    mean_wasserstein
+    maskedmean_riemann
+    nanmean_riemann
+
+Geodesics
+~~~~~~~~~~~~~~~~~~~~~~
+.. _geodesic_api:
+.. currentmodule:: pyriemann.utils.geodesic
+
+.. autosummary::
+    :toctree: generated/
+
+    geodesic
+    geodesic_euclid
+    geodesic_logeuclid
+    geodesic_riemann
 
 Kernels
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -189,41 +243,9 @@ Kernels
     :toctree: generated/
 
     kernel
+    kernel_euclid
+    kernel_logeuclid
     kernel_riemann
-
-Mean
-~~~~~~~~~~~~~~~~~~~~~~
-.. _mean_api:
-.. currentmodule:: pyriemann.utils.mean
-
-.. autosummary::
-    :toctree: generated/
-
-    mean_covariance
-    mean_euclid
-    mean_riemann
-    mean_logeuclid
-    mean_logdet
-    mean_wasserstein
-    mean_ale
-    mean_alm
-    mean_harmonic
-    mean_kullback_sym
-    maskedmean_riemann
-    nanmean_riemann
-
-Geodesic
-~~~~~~~~~~~~~~~~~~~~~~
-.. _geodesic_api:
-.. currentmodule:: pyriemann.utils.geodesic
-
-.. autosummary::
-    :toctree: generated/
-
-    geodesic
-    geodesic_riemann
-    geodesic_euclid
-    geodesic_logeuclid
 
 Tangent Space
 ~~~~~~~~~~~~~~~~~~~~~~
@@ -258,9 +280,27 @@ Aproximate Joint Diagonalization
 .. autosummary::
     :toctree: generated/
 
-    rjd
     ajd_pham
+    rjd
     uwedge
+
+Matrix Tests
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+.. _mat_test_api:
+.. currentmodule:: pyriemann.utils.test
+
+.. autosummary::
+    :toctree: generated/
+
+    is_square
+    is_sym
+    is_skew_sym
+    is_real
+    is_hermitian
+    is_pos_def
+    is_pos_semi_def
+    is_sym_pos_def
+    is_sym_pos_semi_def
 
 Visualization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

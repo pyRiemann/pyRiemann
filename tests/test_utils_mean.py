@@ -1,35 +1,38 @@
 import numpy as np
 import pytest
 from pytest import approx
+
+from pyriemann.utils.geodesic import geodesic_riemann
 from pyriemann.utils.mean import (
-    mean_riemann,
-    mean_euclid,
-    mean_logeuclid,
-    mean_logdet,
-    mean_ale,
-    mean_identity,
     mean_covariance,
-    mean_kullback_sym,
-    mean_harmonic,
-    mean_wasserstein,
+    mean_ale,
     mean_alm,
+    mean_euclid,
+    mean_harmonic,
+    mean_identity,
+    mean_kullback_sym,
+    mean_logdet,
+    mean_logeuclid,
+    mean_power,
+    mean_riemann,
+    mean_wasserstein,
     maskedmean_riemann,
     nanmean_riemann,
 )
-from pyriemann.utils.geodesic import geodesic_riemann
 
 
 @pytest.mark.parametrize(
     "mean",
     [
-        mean_riemann,
-        mean_logeuclid,
-        mean_euclid,
-        mean_identity,
-        mean_logdet,
         mean_ale,
-        mean_kullback_sym,
+        mean_euclid,
         mean_harmonic,
+        mean_identity,
+        mean_kullback_sym,
+        mean_logdet,
+        mean_logeuclid,
+        mean_power,
+        mean_riemann,
         mean_wasserstein,
         nanmean_riemann,
     ],
@@ -38,11 +41,16 @@ def test_mean_shape(mean, get_covmats):
     """Test the shape of mean"""
     n_matrices, n_channels = 5, 3
     covmats = get_covmats(n_matrices, n_channels)
-    C = mean(covmats)
+    if mean == mean_power:
+        C = mean(covmats, 0.42)
+    else:
+        C = mean(covmats)
     assert C.shape == (n_channels, n_channels)
 
 
-@pytest.mark.parametrize("mean", [mean_riemann, mean_logdet])
+@pytest.mark.parametrize(
+    "mean", [mean_logdet, mean_riemann, mean_wasserstein, nanmean_riemann]
+)
 def test_mean_shape_with_init(mean, get_covmats):
     """Test the shape of mean with init"""
     n_matrices, n_channels = 5, 3
@@ -63,22 +71,6 @@ def test_riemann_mean(init, get_covmats_params):
     Ctrue = np.exp(np.log(diags).mean(0))
     Ctrue = A @ np.diag(Ctrue) @ A.T
     assert C == approx(Ctrue)
-
-
-def test_euclid_mean(get_covmats):
-    """Test the euclidean mean"""
-    n_matrices, n_channels = 100, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    C = mean_euclid(covmats)
-    assert C == approx(covmats.mean(axis=0))
-
-
-def test_identity_mean(get_covmats):
-    """Test the identity mean"""
-    n_matrices, n_channels = 100, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    C = mean_identity(covmats)
-    assert np.all(C == np.eye(n_channels))
 
 
 def test_alm_mean(get_covmats):
@@ -104,6 +96,48 @@ def test_alm_mean_2matrices(get_covmats):
     covmats = get_covmats(n_matrices, n_channels)
     C = mean_alm(covmats)
     assert np.all(C == geodesic_riemann(covmats[0], covmats[1], alpha=0.5))
+
+
+def test_euclid_mean(get_covmats):
+    """Test the euclidean mean"""
+    n_matrices, n_channels = 10, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    C = mean_euclid(covmats)
+    assert C == approx(covmats.mean(axis=0))
+
+
+def test_identity_mean(get_covmats):
+    """Test the identity mean"""
+    n_matrices, n_channels = 10, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    C = mean_identity(covmats)
+    assert np.all(C == np.eye(n_channels))
+
+
+def test_power_mean(get_covmats):
+    """Test the power mean"""
+    n_matrices, n_channels = 3, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    C_power_1 = mean_power(covmats, 1)
+    C_power_0 = mean_power(covmats, 0)
+    C_power_m1 = mean_power(covmats, -1)
+    C_arithm = mean_euclid(covmats)
+    C_geom = mean_riemann(covmats)
+    C_harm = mean_harmonic(covmats)
+    assert C_power_1 == approx(C_arithm)
+    assert C_power_0 == approx(C_geom)
+    assert C_power_m1 == approx(C_harm)
+
+
+def test_power_mean_errors(get_covmats):
+    """Test the power mean errors"""
+    n_matrices, n_channels = 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+
+    with pytest.raises(ValueError):  # exponent is not a scalar
+        mean_power(covmats, [1])
+    with pytest.raises(ValueError):  # exponent is not in [-1,1]
+        mean_power(covmats, 3)
 
 
 @pytest.mark.parametrize("init", [True, False])
@@ -156,16 +190,16 @@ def test_riemann_mean_nan_errors(get_covmats):
 @pytest.mark.parametrize(
     "metric, mean",
     [
-        ("riemann", mean_riemann),
+        ("ale", mean_ale),
+        ("alm", mean_alm),
+        ("euclid", mean_euclid),
+        ("harmonic", mean_harmonic),
+        ("identity", mean_identity),
+        ("kullback_sym", mean_kullback_sym),
         ("logdet", mean_logdet),
         ("logeuclid", mean_logeuclid),
-        ("euclid", mean_euclid),
-        ("alm", mean_alm),
-        ("identity", mean_identity),
+        ("riemann", mean_riemann),
         ("wasserstein", mean_wasserstein),
-        ("ale", mean_ale),
-        ("harmonic", mean_harmonic),
-        ("kullback_sym", mean_kullback_sym),
     ],
 )
 def test_mean_covariance_metric(metric, mean, get_covmats):

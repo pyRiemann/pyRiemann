@@ -12,12 +12,21 @@ from pyriemann.utils.viz import (
 
 @requires_matplotlib
 def test_embedding(get_covmats):
-    """Test Embedding."""
-    n_trials, n_channels = 5, 3
-    covmats = get_covmats(n_trials, n_channels)
+    """Test ."""
+    n_matrices, n_channels = 5, 3
+    covmats = get_covmats(n_matrices, n_channels)
     plot_embedding(covmats, y=None, metric="euclid")
     y = np.ones(covmats.shape[0])
     plot_embedding(covmats, y=y, metric="euclid")
+
+
+@requires_matplotlib
+def test_embedding_error_raise(get_covmats):
+    """Test ValueError for unknown embedding type."""
+    n_matrices, n_channels = 5, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    with pytest.raises(ValueError):
+        plot_embedding(covmats, y=None, metric="euclid", embd_type='foo')
 
 
 @requires_matplotlib

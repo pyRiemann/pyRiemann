@@ -14,13 +14,13 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
     on the maximization of the distance between centroids. This is done by a
     backward elimination where the electrode that carries the less distance is
     removed from the subset at each iteration.
-    This algorith is described in [1]_.
+    This algorithm is described in [1]_.
 
     Parameters
     ----------
-    nelec : int (default 16)
-        the number of electrode to keep in the final subset.
-    metric : string | dict (default: 'riemann')
+    nelec : int, default=16
+        The number of electrode to keep in the final subset.
+    metric : string | dict, default='riemann'
         The type of metric used for centroid and distance estimation.
         see `mean_covariance` for the list of supported metric.
         the metric could be a dict with two keys, `mean` and `distance` in
@@ -28,7 +28,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         distance estimation. Typical usecase is to pass 'logeuclid' metric for
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the selection.
-    n_jobs : int, (default: 1)
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
@@ -39,9 +39,9 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
     Attributes
     ----------
     covmeans_ : list
-        the class centroids.
+        The class centroids.
     dist_ : list
-        list of distance at each interation.
+        List of distance at each interation.
 
     See Also
     --------
@@ -66,27 +66,29 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
-        y : ndarray shape (n_trials, 1)
-            labels corresponding to each trial.
-        sample_weight : None | ndarray shape (n_trials, 1)
-            the weights of each sample. if None, each sample is treated with
-            equal weights.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None | ndarray, shape (n_matrices,), default=None
+            Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
         self : ElectrodeSelection instance
             The ElectrodeSelection instance.
         """
+        if y is None:
+            y = np.ones((X.shape[0]))
+
         mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
         mdm.fit(X, y, sample_weight=sample_weight)
         self.covmeans_ = mdm.covmeans_
 
-        Ne, _ = self.covmeans_[0].shape
+        n_channels, _ = self.covmeans_[0].shape
 
         self.dist_ = []
-        self.subelec_ = list(range(0, Ne, 1))
+        self.subelec_ = list(range(0, n_channels, 1))
         while (len(self.subelec_)) > self.nelec:
             di = np.zeros((len(self.subelec_), 1))
             for idx in range(len(self.subelec_)):
@@ -109,13 +111,13 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        covs : ndarray, shape (n_trials, n_elec, n_elec)
-            The covariances matrices after reduction of the number of channels.
+        covs : ndarray, shape (n_matrices, n_elec, n_elec)
+            Set of SPD matrices after reduction of the number of channels.
         """
         return X[:, self.subelec_, :][:, :, self.subelec_]
 
@@ -125,7 +127,7 @@ class FlatChannelRemover(BaseEstimator, TransformerMixin):
 
     Attributes
     ----------
-    channels : ndarray, shape (n_good_channels)
+    channels_ : ndarray, shape (n_good_channels)
         The indices of the non-flat channels.
     """
 
@@ -134,15 +136,15 @@ class FlatChannelRemover(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            Training data.
-        y : ndarray, shape (n_trials, n_dims) | None, optional
-            The regressor(s). Defaults to None.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
+        y : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
-        X : ndarray, shape (n_trials, n_good_channels, n_times)
-            The data without flat channels.
+        X : ndarray, shape (n_matrices, n_good_channels, n_times)
+            Multi-channel time-series without flat channels.
         """
         std = np.mean(np.std(X, axis=2) ** 2, 0)
         self.channels_ = np.where(std)[0]
@@ -153,13 +155,13 @@ class FlatChannelRemover(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            Training data.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
 
         Returns
         -------
-        X : ndarray, shape (n_trials, n_good_channels, n_times)
-            The data without flat channels.
+        X : ndarray, shape (n_matrices, n_good_channels, n_times)
+            Multi-channel time-series without flat channels.
         """
         return X[:, self.channels_, :]
 
@@ -168,15 +170,15 @@ class FlatChannelRemover(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            Training data.
-        y : ndarray, shape (n_trials, n_dims) | None, optional
-            The regressor(s). Defaults to None.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
+        y : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
-        X : ndarray, shape (n_trials, n_good_channels, n_times)
-            The data without flat channels.
+        X : ndarray, shape (n_matrices, n_good_channels, n_times)
+            Multi-channel time-series without flat channels.
         """
         self.fit(X, y)
         return self.transform(X)

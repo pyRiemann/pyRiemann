@@ -40,12 +40,29 @@ v0.2.8.dev
 
 - Add block covariance matrix: :class:`pyriemann.estimation.BlockCovariances` and :func:`pyriemann.utils.covariance.block_covariances`
 
-- Add Riemannian Locally Linear Embedding: :class:`pyriemann.embedding.RiemannLLE` and :func:`pyriemann.embedding.riemann_lle`
+- Add Riemannian Locally Linear Embedding: :class:`pyriemann.embedding.LocallyLinearEmbedding` and :func:`pyriemann.embedding.locally_linear_embedding`
 
 - Add Riemannian Kernel Function: :func:`pyriemann.utils.kernel.kernel_riemann`
 
-- Add Riemannian Support Vector Machine: :func:`pyriemann.classification.RSVC`
+- Fix ``fit`` in :class:`pyriemann.channelselection.ElectrodeSelection`
 
+- Add power mean estimation in :func:`pyriemann.utils.mean.mean_power`
+
+- Add example in gallery to compare classifiers on synthetic datasets
+
+- Add ``predict_proba`` in :class:`pyriemann.classification.KNearestNeighbor`, and correct attribute ``classes_``
+
+- Add Riemannian Support Vector Machine classifier: :class:`pyriemann.classification.SVC`
+
+- Add Riemannian Support Vector Machine regressor: :class:`pyriemann.regression.SVR`
+
+- Add K-Nearest-Neighbor regressor: :class:`pyriemann.regression.KNearestNeighborRegressor`
+
+- Add Minimum Distance to Mean Field classifier: :class:`pyriemann.classification.MeanField`
+
+- Add example on principal geodesic analysis (PGA) for SSVEP classification
+
+- Add :func:`pyriemann.utils.distance.distance_harmonic`, and sort functions by their names in code, doc and tests
 
 v0.2.7 (June 2021)
 ------------------

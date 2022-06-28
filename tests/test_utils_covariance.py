@@ -12,9 +12,11 @@ from pyriemann.utils.covariance import (
 from pyriemann.utils.test import is_real, is_hermitian
 
 
+estimators = ['corr', 'cov', 'lwf', 'mcd', 'oas', 'sch', 'scm']
+
+
 @pytest.mark.parametrize(
-    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd',
-                  'sch', np.cov, 'truc', None]
+    'estimator', estimators + [np.cov, 'truc', None]
 )
 def test_covariances(estimator, rndstate):
     """Test covariance for multiple estimators"""
@@ -33,7 +35,7 @@ def test_covariances(estimator, rndstate):
 
 
 @pytest.mark.parametrize(
-    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd', 'sch', None]
+    'estimator', estimators + [None]
 )
 def test_covariances_EP(estimator, rndstate):
     """Test covariance_EP for multiple estimators"""
@@ -50,7 +52,7 @@ def test_covariances_EP(estimator, rndstate):
 
 
 @pytest.mark.parametrize(
-    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd', 'sch', None]
+    'estimator', estimators + [None]
 )
 def test_covariances_X(estimator, rndstate):
     """Test covariance_X for multiple estimators"""
@@ -66,8 +68,7 @@ def test_covariances_X(estimator, rndstate):
 
 
 @pytest.mark.parametrize(
-    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd',
-                  'sch', np.cov, 'truc', None]
+    'estimator', estimators + [np.cov, 'truc', None]
 )
 def test_block_covariances_est(estimator, rndstate):
     """Test block covariance for multiple estimators"""

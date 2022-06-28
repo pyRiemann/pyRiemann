@@ -1,29 +1,34 @@
 import numpy as np
-from pyriemann.utils.geodesic import (
-    geodesic_riemann,
-    geodesic_euclid,
-    geodesic_logeuclid,
-    geodesic,
-)
-from pyriemann.utils.mean import mean_riemann, mean_logeuclid, mean_euclid
 import pytest
 from pytest import approx
 
+from pyriemann.utils.geodesic import (
+    geodesic,
+    geodesic_euclid,
+    geodesic_logeuclid,
+    geodesic_riemann,
+)
+from pyriemann.utils.mean import (
+    mean_euclid,
+    mean_logeuclid,
+    mean_riemann,
+)
+
 
 def get_geod_func():
-    geod_func = [geodesic_riemann, geodesic_euclid, geodesic_logeuclid]
+    geod_func = [geodesic_euclid, geodesic_logeuclid, geodesic_riemann]
     for gf in geod_func:
         yield gf
 
 
 def get_geod_name():
-    geod_name = ["riemann", "euclid", "logeuclid"]
+    geod_name = ["euclid", "logeuclid", "riemann"]
     for gn in geod_name:
         yield gn
 
 
 @pytest.mark.parametrize(
-    "geodesic_func", [geodesic_riemann, geodesic_euclid, geodesic_logeuclid]
+    "geodesic_func", [geodesic_euclid, geodesic_logeuclid, geodesic_riemann]
 )
 class GeodesicFuncTestCase:
     def test_simple_mat(self, geodesic_func, get_covmats):
@@ -41,8 +46,8 @@ class GeodesicFuncTestCase:
         self.geodesic_middle(geodesic_func, A, B, Ctrue)
 
     def test_random_mat(self, geodesic_func, get_covmats):
-        n_trials, n_channels = 2, 5
-        covmats = get_covmats(n_trials, n_channels)
+        n_matrices, n_channels = 2, 5
+        covmats = get_covmats(n_matrices, n_channels)
         A, B = covmats[0], covmats[1]
         if geodesic_func is geodesic_euclid:
             Ctrue = mean_euclid(covmats)
@@ -82,8 +87,8 @@ def test_distance_wrapper_simple(metric):
 
 @pytest.mark.parametrize("met, gfunc", zip(get_geod_name(), get_geod_func()))
 def test_distance_wrapper_random(met, gfunc, get_covmats):
-    n_trials, n_channels = 2, 5
-    covmats = get_covmats(n_trials, n_channels)
+    n_matrices, n_channels = 2, 5
+    covmats = get_covmats(n_matrices, n_channels)
     A, B = covmats[0], covmats[1]
     if gfunc is geodesic_euclid:
         Ctrue = mean_euclid(covmats)
