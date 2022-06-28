@@ -246,7 +246,7 @@ def test_coherences(coh, rndstate):
     )
 
     if coh == 'lagged':
-        cov.set_params(**{'fs' : 128, 'fmin': 1, 'fmax': 63})
+        cov.set_params(**{'fs': 128, 'fmin': 1, 'fmax': 63})
         n_freqs = 63
     else:
         n_freqs = 65
