@@ -286,7 +286,8 @@ def test_covariances_coherence(coh, rndstate):
         x[3] = np.sin(2 * np.pi * ft * t + np.pi) \
             + noise * rndstate.randn((n_times))
 
-        c, freqs = coherence(x, fs=fs, window=fs, overlap=0.5, coh=coh)
+        c, freqs = coherence(x, fs=fs, fmin=1, fmax=fs/2-1, window=fs,
+                             overlap=0.5, coh=coh)
         foi = (freqs == ft)
 
         if coh == 'ordinary':
