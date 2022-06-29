@@ -81,6 +81,7 @@ def test_distance_func_separability(dist, get_covmats):
     "dist", [
         distance_euclid,
         distance_harmonic,
+        distance_kullback_sym,
         distance_logdet,
         distance_logeuclid,
         distance_riemann,
