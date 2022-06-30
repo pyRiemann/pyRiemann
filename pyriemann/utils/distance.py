@@ -1,7 +1,7 @@
 """Distances between SPD matrices."""
 
 import numpy as np
-from scipy.linalg import eigvalsh
+from scipy.linalg import eigvalsh, solve
 
 from .base import logm, sqrtm
 
@@ -79,7 +79,7 @@ def distance_kullback(A, B):
     """
     n = A.shape[-1]
     logdet = np.log(np.linalg.det(B) / np.linalg.det(A))
-    return 0.5 * (np.trace(np.linalg.solve(B, A)) - n + logdet)
+    return 0.5 * (np.trace(solve(B, A, assume_a='pos')) - n + logdet)
 
 
 def distance_kullback_right(A, B):
