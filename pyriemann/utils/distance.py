@@ -55,7 +55,7 @@ def distance_harmonic(A, B):
 
 
 def distance_kullback(A, B):
-    """Kullback-Leibler divergence between two SPD matrices.
+    r"""Kullback-Leibler divergence between two SPD matrices.
 
     Compute the left Kullback-Leibler divergence between two SPD matrices A and
     B:
