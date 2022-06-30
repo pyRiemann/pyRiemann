@@ -218,7 +218,7 @@ def mean_identity(covmats, sample_weight=None):
     Returns
     -------
     C : ndarray, shape (n_channels, n_channels)
-        Identity.
+        Identity matrix.
     """
     _, n_channels, _ = covmats.shape
     C = np.eye(n_channels)

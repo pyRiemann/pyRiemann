@@ -103,7 +103,16 @@ def test_distance_func_triangle_inequality(dist, get_covmats):
     assert dist(A, B) <= dist(A, C) + dist(C, B)
 
 
-def test_distance_logdet_implementation(get_covmats):
+def test_distance_implementation_kullback(get_covmats):
+    n_matrices, n_channels = 2, 6
+    covmats = get_covmats(n_matrices, n_channels)
+    A, B = covmats[0], covmats[1]
+    dist = 0.5*(np.trace(np.linalg.inv(B) @ A) - n_channels
+                + np.log(np.linalg.det(B) / np.linalg.det(A)))
+    assert distance_kullback(A, B) == approx(dist)
+
+
+def test_distance_implementation_logdet(get_covmats):
     n_matrices, n_channels = 2, 6
     covmats = get_covmats(n_matrices, n_channels)
     A, B = covmats[0], covmats[1]
