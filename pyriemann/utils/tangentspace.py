@@ -34,9 +34,9 @@ def tangent_space(covmats, Cref):
     T = np.empty((n_matrices, n_ts))
     coeffs = (np.sqrt(2) * np.triu(np.ones((n_channels, n_channels)), 1) +
               np.eye(n_channels))[idx]
-    for index in range(n_matrices):
-        tmp = logm(Cm12 @ covmats[index] @ Cm12)
-        T[index, :] = np.multiply(coeffs, tmp[idx])
+    for i in range(n_matrices):
+        tmp = logm(Cm12 @ covmats[i] @ Cm12)
+        T[i] = np.multiply(coeffs, tmp[idx])
     return T
 
 
