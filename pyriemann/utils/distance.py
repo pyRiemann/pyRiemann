@@ -119,7 +119,7 @@ def distance_logdet(A, B):
         Log-det distance between A and B.
     """
     _, logdet_ApB = np.linalg.slogdet((A + B) / 2.0)
-    _, logdet_AxB = np.linalg.slogdet(np.dot(A, B))
+    _, logdet_AxB = np.linalg.slogdet(A @ B)
     dist2 = logdet_ApB - 0.5 * logdet_AxB
     if dist2 > 0.0:
         return np.sqrt(dist2)

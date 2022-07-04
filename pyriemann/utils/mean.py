@@ -66,7 +66,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
         J = np.zeros((n_channels, n_channels))
 
         for index, Ci in enumerate(covmats):
-            tmp = logm(np.dot(np.dot(B.T, Ci), B))
+            tmp = logm(B.T @ Ci @ B)
             J += sample_weight[index] * tmp
 
         update = np.diag(np.diag(expm(J)))
@@ -78,7 +78,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
 
     J = np.zeros((n_channels, n_channels))
     for index, Ci in enumerate(covmats):
-        tmp = logm(np.dot(np.dot(B.T, Ci), B))
+        tmp = logm(B.T @ Ci @ B)
         J += sample_weight[index] * tmp
 
     C = np.dot(np.dot(A.T, expm(J)), A)
@@ -292,7 +292,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         C = init
     k = 0
     crit = np.finfo(np.float64).max
-    # stop when J<10^-9 or max iteration = 50
+    # stop when J<10^-5 or max iteration = 50
     while (crit > tol) and (k < maxiter):
         k = k + 1
 
@@ -467,12 +467,12 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
         J = np.zeros((n_channels, n_channels))
 
         for index in range(n_matrices):
-            tmp = np.dot(np.dot(Cm12, covmats[index]), Cm12)
+            tmp = Cm12 @ covmats[index] @ Cm12
             J += sample_weight[index] * logm(tmp)
 
         crit = np.linalg.norm(J, ord='fro')
         h = nu * crit
-        C = np.dot(np.dot(C12, expm(nu * J)), C12)
+        C = C12 @ expm(nu * J) @ C12
         if h < tau:
             nu = 0.95 * nu
             tau = h
@@ -535,8 +535,7 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
         J = np.zeros((n_channels, n_channels))
 
         for index, Ci in enumerate(covmats):
-            tmp = np.dot(np.dot(K, Ci), K)
-            J += sample_weight[index] * sqrtm(tmp)
+            J += sample_weight[index] * sqrtm(K @ Ci @ K)
 
         Knew = sqrtm(J)
         crit = np.linalg.norm(Knew - K, ord='fro')

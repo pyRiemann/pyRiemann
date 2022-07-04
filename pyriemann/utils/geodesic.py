@@ -88,11 +88,10 @@ def geodesic_riemann(A, B, alpha=0.5):
     C : ndarray, shape (n, n)
         The SPD matrix on the Riemannian geodesic.
     """
-    sA = sqrtm(A)
-    isA = invsqrtm(A)
-    C = np.dot(np.dot(isA, B), isA)
+    sA, isA = sqrtm(A), invsqrtm(A)
+    C = isA @ B @ isA
     D = powm(C, alpha)
-    E = np.dot(np.dot(sA, D), sA)
+    E = sA @ D @ sA
     return E
 
 
