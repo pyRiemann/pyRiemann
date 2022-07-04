@@ -1,7 +1,5 @@
 """Geodesics for SPD matrices."""
 
-import numpy as np
-
 from .base import sqrtm, invsqrtm, powm, logm, expm
 
 
