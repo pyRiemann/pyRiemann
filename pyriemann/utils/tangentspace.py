@@ -74,7 +74,7 @@ def untangent_space(T, Cref):
         triuc = np.triu(covmats[i], 1) / np.sqrt(2)
         covmats[i] = (np.diag(np.diag(covmats[i])) + triuc + triuc.T)
         covmats[i] = expm(covmats[i])
-        covmats[i] = np.dot(np.dot(C12, covmats[i]), C12)
+        covmats[i] = np.linalg.multi_dot([C12, covmats[i], C12])
 
     return covmats
 
@@ -85,6 +85,6 @@ def transport(Covs, Cref, metric='riemann'):
     """
     C = mean_covariance(Covs, metric=metric)
     iC = invsqrtm(C)
-    E = sqrtm(np.dot(np.dot(iC, Cref), iC))
-    out = np.array([np.dot(np.dot(E, c), E.T) for c in Covs])
+    E = sqrtm(np.linalg.multi_dot([iC, Cref, iC]))
+    out = np.array([np.linalg.multi_dot([E, c, E.T]) for c in Covs])
     return out
