@@ -90,7 +90,7 @@ def geodesic_riemann(A, B, alpha=0.5):
     """
     sA = sqrtm(A)
     isA = invsqrtm(A)
-    C = np.dot(np.dot(isA, B), isA)
+    C = np.linalg.multi_dot([isA, B, isA])
     D = powm(C, alpha)
     E = np.dot(np.dot(sA, D), sA)
     return E
