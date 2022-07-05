@@ -279,14 +279,14 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
         A0 += np.eye(d)
         W_est = np.linalg.solve(A0, W_est)
 
-        Raux = np.dot(np.dot(W_est, M[:, 0:d]), W_est.T)
+        Raux = np.linalg.multi_dot([W_est, M[:, 0:d], W_est.T])
         aux = 1./np.sqrt(np.abs(np.diag(Raux)))
         W_est = np.dot(np.diag(aux), W_est)
 
         for k in range(n_matrices):
             ini = k*d
             Il = np.arange(ini, ini + d)
-            Ms[:, Il] = np.dot(np.dot(W_est, M[:, Il]), W_est.T)
+            Ms[:, Il] = np.linalg.multi_dot([W_est, M[:, Il], W_est.T])
             Rs[:, k] = np.diag(Ms[:, Il])
 
         crit_new = np.sum(Ms**2) - np.sum(Rs**2)
