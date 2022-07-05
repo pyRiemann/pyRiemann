@@ -241,8 +241,7 @@ class FGDA(BaseEstimator, TransformerMixin):
         self._lda.fit(ts, y)
 
         W = self._lda.coef_.copy()
-        self._W = np.dot(
-            np.dot(W.T, np.linalg.pinv(np.dot(W, W.T))), W)
+        self._W = np.linalg.multi_dot([W.T, np.linalg.pinv(np.dot(W, W.T)), W])
         return ts
 
     def _retro_project(self, ts):
