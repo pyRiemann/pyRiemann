@@ -467,12 +467,12 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
         J = np.zeros((n_channels, n_channels))
 
         for index in range(n_matrices):
-            tmp = np.dot(np.dot(Cm12, covmats[index]), Cm12)
+            tmp = np.linalg.multi_dot([Cm12, covmats[index], Cm12])
             J += sample_weight[index] * logm(tmp)
 
         crit = np.linalg.norm(J, ord='fro')
         h = nu * crit
-        C = np.dot(np.dot(C12, expm(nu * J)), C12)
+        C = np.linalg.multi_dot([C12, expm(nu * J), C12])
         if h < tau:
             nu = 0.95 * nu
             tau = h
