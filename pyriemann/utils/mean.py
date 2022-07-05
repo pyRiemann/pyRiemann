@@ -66,7 +66,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
         J = np.zeros((n_channels, n_channels))
 
         for index, Ci in enumerate(covmats):
-            tmp = logm(np.dot(np.dot(B.T, Ci), B))
+            tmp = logm(np.linalg.multi_dot([B.T, Ci, B]))
             J += sample_weight[index] * tmp
 
         update = np.diag(np.diag(expm(J)))
@@ -78,10 +78,10 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
 
     J = np.zeros((n_channels, n_channels))
     for index, Ci in enumerate(covmats):
-        tmp = logm(np.dot(np.dot(B.T, Ci), B))
+        tmp = logm(np.linalg.multi_dot([B.T, Ci, B]))
         J += sample_weight[index] * tmp
 
-    C = np.dot(np.dot(A.T, expm(J)), A)
+    C = np.linalg.multi_dot([A.T, expm(J), A])
     return C
 
 
@@ -535,7 +535,7 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
         J = np.zeros((n_channels, n_channels))
 
         for index, Ci in enumerate(covmats):
-            tmp = np.dot(np.dot(K, Ci), K)
+            tmp = np.linalg.multi_dot([K, Ci, K])
             J += sample_weight[index] * sqrtm(tmp)
 
         Knew = sqrtm(J)
