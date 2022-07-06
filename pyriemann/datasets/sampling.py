@@ -57,6 +57,10 @@ def _slice_one_sample(ptarget, x0, w, rs):
     rs : int, RandomState instance or None
         Pass an int for reproducible output across multiple function calls.
 
+    Returns
+    -------
+    sample : ndarray, shape (n_dim,)
+        Sample from the target pdf.
     """
     xt = np.copy(x0)
     n_dim = len(x0)
