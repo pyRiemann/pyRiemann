@@ -691,9 +691,8 @@ class Shrinkage(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] https://scikit-learn.org/stable/modules/generated/sklearn. \
-        covariance.shrunk_covariance.html
-    """
+    .. [1] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.shrunk_covariance.html
+    """  # noqa
 
     def __init__(self, shrinkage=0.1):
         """Init."""

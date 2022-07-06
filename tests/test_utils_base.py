@@ -46,5 +46,6 @@ def test_check_raise():
     C = 2*np.ones((10, 3, 3))
     # This is an indirect check, the riemannian mean must crash when the
     # matrices are not SPD.
-    with pytest.raises(ValueError):
-        mean_riemann(C)
+    with pytest.warns(RuntimeWarning):
+        with pytest.raises(ValueError):
+            mean_riemann(C)

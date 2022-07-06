@@ -6,7 +6,7 @@ from .mean import mean_covariance
 
 
 def tangent_space(covmats, Cref):
-    """ Project a set of SPD matrices in the tangent space.
+    """Project a set of SPD matrices in the tangent space.
 
     Project a set of SPD matrices in the tangent space, according to the
     reference matrix Cref.
@@ -34,10 +34,9 @@ def tangent_space(covmats, Cref):
     T = np.empty((n_matrices, n_ts))
     coeffs = (np.sqrt(2) * np.triu(np.ones((n_channels, n_channels)), 1) +
               np.eye(n_channels))[idx]
-    for index in range(n_matrices):
-        tmp = np.dot(np.dot(Cm12, covmats[index, :, :]), Cm12)
-        tmp = logm(tmp)
-        T[index, :] = np.multiply(coeffs, tmp[idx])
+    for i in range(n_matrices):
+        tmp = logm(Cm12 @ covmats[i] @ Cm12)
+        T[i] = np.multiply(coeffs, tmp[idx])
     return T
 
 
@@ -73,18 +72,30 @@ def untangent_space(T, Cref):
     for i in range(n_matrices):
         triuc = np.triu(covmats[i], 1) / np.sqrt(2)
         covmats[i] = (np.diag(np.diag(covmats[i])) + triuc + triuc.T)
-        covmats[i] = expm(covmats[i])
-        covmats[i] = np.dot(np.dot(C12, covmats[i]), C12)
+        covmats[i] = C12 @ expm(covmats[i]) @ C12
 
     return covmats
 
 
 def transport(Covs, Cref, metric='riemann'):
-    """Parallel transport of two sets of SPD matrices.
+    """Parallel transport of a set of SPD matrices towards a reference matrix.
 
+    Parameters
+    ----------
+    Covs : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    Cref : ndarray, shape (n_channels, n_channels)
+        The reference SPD matrix.
+    metric : string, default='riemann'
+        The metric used for mean, can be: 'euclid', 'logeuclid', 'riemann'.
+
+    Returns
+    -------
+    Covs : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of transported SPD matrices.
     """
     C = mean_covariance(Covs, metric=metric)
     iC = invsqrtm(C)
-    E = sqrtm(np.dot(np.dot(iC, Cref), iC))
-    out = np.array([np.dot(np.dot(E, c), E.T) for c in Covs])
+    E = sqrtm(iC @ Cref @ iC)
+    out = np.array([E @ c @ E.T for c in Covs])
     return out

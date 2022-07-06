@@ -1,7 +1,7 @@
 """Distances between SPD matrices."""
 
 import numpy as np
-from scipy.linalg import eigvalsh
+from scipy.linalg import eigvalsh, solve
 
 from .base import logm, sqrtm
 
@@ -13,7 +13,7 @@ def distance_euclid(A, B):
     as the Frobenius norm of the difference of the two matrices:
 
     .. math::
-        d(A,B) = \Vert \mathbf{A} - \mathbf{B} \Vert_F
+        d(\mathbf{A},\mathbf{B}) = \Vert \mathbf{A} - \mathbf{B} \Vert_F
 
     Parameters
     ----------
@@ -36,7 +36,8 @@ def distance_harmonic(A, B):
     Compute the harmonic distance between two SPD matrices A and B:
 
     .. math::
-        d(A,B) = \Vert \mathbf{A}^1 - \mathbf{B}^1 \Vert_F
+        d(\mathbf{A},\mathbf{B}) =
+        \Vert \mathbf{A}^{-1} - \mathbf{B}^{-1} \Vert_F
 
     Parameters
     ----------
@@ -54,10 +55,15 @@ def distance_harmonic(A, B):
 
 
 def distance_kullback(A, B):
-    """Kullback-Leibler divergence between two SPD matrices.
+    r"""Kullback-Leibler divergence between two SPD matrices.
 
     Compute the left Kullback-Leibler divergence between two SPD matrices A and
-    B.
+    B:
+
+    .. math::
+        d(\mathbf{A},\mathbf{B}) =
+        \frac{1}{2} \left( \text{tr}(\mathbf{B}^{-1}\mathbf{A}) - n
+        + \log(\frac{\det(\mathbf{B})}{\det(\mathbf{A})}) \right)
 
     Parameters
     ----------
@@ -71,10 +77,9 @@ def distance_kullback(A, B):
     d : float
         Left Kullback-Leibler divergence between A and B.
     """
-    n, _ = A.shape
+    n = A.shape[-1]
     logdet = np.log(np.linalg.det(B) / np.linalg.det(A))
-    kl = np.trace(np.dot(np.linalg.inv(B), A)) - n + logdet
-    return 0.5 * kl
+    return 0.5 * (np.trace(solve(B, A, assume_a='pos')) - n + logdet)
 
 
 def distance_kullback_right(A, B):
@@ -97,8 +102,9 @@ def distance_logdet(A, B):
     Compute the log-det distance between two SPD matrices A and B:
 
     .. math::
-        d(A,B) = \sqrt{\log(\det(\frac{\mathbf{A}+\mathbf{B}}{2}))
-                 - \frac{1}{2} \log(\det(\mathbf{A} \mathbf{B}))}
+        d(\mathbf{A},\mathbf{B}) =
+        \sqrt{\log(\det(\frac{\mathbf{A}+\mathbf{B}}{2}))
+        - \frac{1}{2} \log(\det(\mathbf{A} \mathbf{B}))}
 
     Parameters
     ----------
@@ -113,7 +119,7 @@ def distance_logdet(A, B):
         Log-det distance between A and B.
     """
     _, logdet_ApB = np.linalg.slogdet((A + B) / 2.0)
-    _, logdet_AxB = np.linalg.slogdet(np.dot(A, B))
+    _, logdet_AxB = np.linalg.slogdet(A @ B)
     dist2 = logdet_ApB - 0.5 * logdet_AxB
     if dist2 > 0.0:
         return np.sqrt(dist2)
@@ -127,7 +133,8 @@ def distance_logeuclid(A, B):
     Compute the Log-Euclidean distance between two SPD matrices A and B:
 
     .. math::
-        d(A,B) = \Vert \log(\mathbf{A}) - \log(\mathbf{B}) \Vert_F
+        d(\mathbf{A},\mathbf{B}) =
+        \Vert \log(\mathbf{A}) - \log(\mathbf{B}) \Vert_F
 
     Parameters
     ----------
@@ -151,9 +158,11 @@ def distance_riemann(A, B):
     and B:
 
     .. math::
-        d(A,B) = {\left( \sum_i \log(\lambda_i)^2 \right)}^{1/2}
+        d(\mathbf{A},\mathbf{B}) =
+        {\left( \sum_i \log(\lambda_i)^2 \right)}^{1/2}
 
-    where :math:`\lambda_i` are the joint eigenvalues of A and B.
+    where :math:`\lambda_i` are the joint eigenvalues of :math:`\mathbf{A}` and
+    :math:`\mathbf{B}`.
 
     Parameters
     ----------
@@ -176,7 +185,8 @@ def distance_wasserstein(A, B):
     Compute the Wasserstein distance between two SPD matrices A and B:
 
     .. math::
-        d(A,B) = \sqrt{ \text{tr}(A + B - 2(A^{1/2}BA^{1/2})^{1/2}) }
+        d(\mathbf{A},\mathbf{B}) =
+        \sqrt{ \text{tr}(A + B - 2(B^{1/2} A B^{1/2})^{1/2}) }
 
     Parameters
     ----------
@@ -265,6 +275,8 @@ def distance(A, B, metric='riemann'):
 
 def pairwise_distance(X, Y=None, metric='riemann'):
     """Pairwise distance matrix.
+
+    Compute the matrix of distances between pairs of elements of X and Y.
 
     Parameters
     ----------

@@ -428,7 +428,7 @@ class PermutationDistance(BasePermutation):
         pattern = np.zeros((n_samples, n_samples))
         for classe in classes:
             ix = (y == classe)
-            pattern += (np.outer(ix, ix) / np.float(ix.sum()))
+            pattern += (np.outer(ix, ix) / ix.sum())
 
         within_ss = (X * pattern).sum() / 2
 

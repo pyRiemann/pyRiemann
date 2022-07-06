@@ -98,7 +98,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
         if Cx is None:
             # FIXME : too many reshape operation
             tmp = X.transpose((1, 2, 0))
-            Cx = np.matrix(self.estimator_fn(
+            Cx = np.asarray(self.estimator_fn(
                 tmp.reshape(n_channels, n_times * n_trials)
             ))
 
@@ -110,7 +110,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
             P = np.mean(X[y == c, :, :], axis=0)
 
             # Covariance matrix of the prototyper response & signal
-            C = np.matrix(self.estimator_fn(P))
+            C = np.asarray(self.estimator_fn(P))
 
             # Spatial filters
             evals, evecs = eigh(C, Cx)

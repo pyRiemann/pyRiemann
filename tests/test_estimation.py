@@ -241,12 +241,18 @@ def test_coherences(coh, rndstate):
     x = rndstate.randn(n_matrices, n_channels, n_times)
 
     cov = Coherences(coh=coh)
+    assert cov.get_params() == dict(
+        window=128, overlap=0.75, fs=None, fmin=None, fmax=None, coh=coh
+    )
+
+    if coh == 'lagged':
+        cov.set_params(**{'fs': 128, 'fmin': 1, 'fmax': 63})
+        n_freqs = 63
+    else:
+        n_freqs = 65
+
     cov.fit(x)
     covmats = cov.fit_transform(x)
-    assert cov.get_params() == dict(
-        window=128, overlap=0.75, fmin=None, fmax=None, fs=None, coh=coh
-    )
-    n_freqs = 65
     assert covmats.shape == (n_matrices, n_channels, n_channels, n_freqs)
     if coh in ["ordinary", "instantaneous"]:
         assert is_spsd(covmats.transpose(0, 3, 1, 2))
