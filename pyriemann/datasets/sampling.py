@@ -101,7 +101,7 @@ def _slice_one_sample(ptarget, x0, w, rs):
 
 
 def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
-                     random_state=None, n_jobs=1):
+                    random_state=None, n_jobs=1):
     """Slice sampling procedure.
 
     Implementation of a slice sampling algorithm for sampling from any target
