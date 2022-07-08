@@ -64,6 +64,10 @@ v0.2.8.dev
 
 - Add :func:`pyriemann.utils.distance.distance_harmonic`, and sort functions by their names in code, doc and tests
 
+- Parallelize functions for dataset generation: :func:`pyriemann.datasets.make_gaussian_blobs`
+
+- Fix dispersion when generating datasets: :func:`pyriemann.datasets.sample_gaussian_spd`
+
 v0.2.7 (June 2021)
 ------------------
 

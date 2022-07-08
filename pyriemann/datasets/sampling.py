@@ -2,6 +2,7 @@ from functools import partial
 import warnings
 import numpy as np
 from sklearn.utils import check_random_state
+from joblib import Parallel, delayed
 
 from ..utils.base import sqrtm, expm
 from ..utils.test import is_sym_pos_semi_def as is_spsd
@@ -32,7 +33,7 @@ def _pdf_r(r, sigma):
         raise ValueError(f'sigma must be a positive number (Got {sigma})')
 
     n_dim = len(r)
-    partial_1 = -np.sum(r**2) / sigma**2
+    partial_1 = -np.sum(r**2) / (2 * sigma**2)
     partial_2 = 0
     for i in range(n_dim):
         for j in range(i + 1, n_dim):
@@ -41,8 +42,70 @@ def _pdf_r(r, sigma):
     return np.exp(partial_1 + partial_2)
 
 
+def _slice_one_sample(ptarget, x0, w, rs):
+    """Slice sampling for one sample
+
+    Parameters
+    ----------
+    ptarget : function with one input
+        The target pdf to sample from or a multiple of it.
+    x0 : array
+        Initial state for the MCMC procedure. Note that the shape of this array
+        defines the dimensionality n_dim of the data points to be sampled.
+    w : float
+        Initial bracket width.
+    rs : int, RandomState instance or None
+        Pass an int for reproducible output across multiple function calls.
+
+    Returns
+    -------
+    sample : ndarray, shape (n_dim,)
+        Sample from the target pdf.
+    """
+    xt = np.copy(x0)
+    n_dim = len(x0)
+
+    for i in range(n_dim):
+
+        ei = np.zeros(n_dim)
+        ei[i] = 1
+
+        # step 1 : evaluate ptarget(xt)
+        Px = ptarget(xt)
+
+        # step 2 : draw vertical coordinate uprime ~ U(0, ptarget(xt))
+        uprime_i = Px * rs.rand()
+
+        # step 3 : create a horizontal interval (xl_i, xr_i) enclosing xt_i
+        r = rs.rand()
+        xl_i = xt[i] - r * w
+        xr_i = xt[i] + (1-r) * w
+        while ptarget(xt + (xl_i - xt[i]) * ei) > uprime_i:
+            xl_i = xl_i - w
+        while ptarget(xt + (xr_i - xt[i]) * ei) > uprime_i:
+            xr_i = xr_i + w
+
+        # step 4 : loop
+        while True:
+            xprime_i = xl_i + (xr_i - xl_i) * rs.rand()
+            Px = ptarget(xt + (xprime_i - xt[i]) * ei)
+            if Px > uprime_i:
+                break
+            else:
+                if xprime_i > xt[i]:
+                    xr_i = xprime_i
+                else:
+                    xl_i = xprime_i
+
+        # store coordinate i of new sample
+        xt = np.copy(xt)
+        xt[i] = xprime_i
+
+    return xt
+
+
 def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
-                    random_state=None):
+                    random_state=None, n_jobs=1):
     """Slice sampling procedure.
 
     Implementation of a slice sampling algorithm for sampling from any target
@@ -71,6 +134,9 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
         expect the whole sampling procedure to take longer.
     random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
+    n_jobs : int, default=1
+        The number of jobs to use for the computation. This works by computing
+        each of the class centroid in parallel. If -1 all CPUs are used.
 
     Returns
     -------
@@ -89,58 +155,19 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
 
     rs = check_random_state(random_state)
     w = 1.0  # initial bracket width
-    xt = np.copy(x0)
 
-    n_dim = len(x0)
-    samples = []
     n_samples_total = (n_samples + n_burnin) * thin
 
-    for _ in range(n_samples_total):
-
-        for i in range(n_dim):
-
-            ei = np.zeros(n_dim)
-            ei[i] = 1
-
-            # step 1 : evaluate ptarget(xt)
-            Px = ptarget(xt)
-
-            # step 2 : draw vertical coordinate uprime ~ U(0, ptarget(xt))
-            uprime_i = Px * rs.rand()
-
-            # step 3 : create a horizontal interval (xl_i, xr_i) enclosing xt_i
-            r = rs.rand()
-            xl_i = xt[i] - r * w
-            xr_i = xt[i] + (1-r) * w
-            while ptarget(xt + (xl_i - xt[i]) * ei) > uprime_i:
-                xl_i = xl_i - w
-            while ptarget(xt + (xr_i - xt[i]) * ei) > uprime_i:
-                xr_i = xr_i + w
-
-            # step 4 : loop
-            while True:
-                xprime_i = xl_i + (xr_i - xl_i) * rs.rand()
-                Px = ptarget(xt + (xprime_i - xt[i]) * ei)
-                if Px > uprime_i:
-                    break
-                else:
-                    if xprime_i > xt[i]:
-                        xr_i = xprime_i
-                    else:
-                        xl_i = xprime_i
-
-            # store coordinate i of new sample
-            xt = np.copy(xt)
-            xt[i] = xprime_i
-
-        samples.append(xt)
+    samples = Parallel(n_jobs=n_jobs)(
+        delayed(_slice_one_sample)(ptarget, x0, w, rs)
+        for _ in range(n_samples_total))
 
     samples = np.array(samples)[(n_burnin * thin):][::thin]
 
     return samples
 
 
-def _sample_parameter_r(n_samples, n_dim, sigma, random_state=None):
+def _sample_parameter_r(n_samples, n_dim, sigma, random_state=None, n_jobs=1):
     """Sample the r parameters of a Riemannian Gaussian distribution.
 
     Sample the logarithm of the eigenvalues of a SPD matrix following a
@@ -158,6 +185,9 @@ def _sample_parameter_r(n_samples, n_dim, sigma, random_state=None):
         Dispersion of the Riemannian Gaussian distribution.
     random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
+    n_jobs : int, default=1
+        The number of jobs to use for the computation. This works by computing
+        each of the class centroid in parallel. If -1 all CPUs are used.
 
     Returns
     -------
@@ -169,7 +199,12 @@ def _sample_parameter_r(n_samples, n_dim, sigma, random_state=None):
     x0 = rs.randn(n_dim)
     ptarget = partial(_pdf_r, sigma=sigma)
     r_samples = _slice_sampling(
-        ptarget, n_samples=n_samples, x0=x0, random_state=random_state)
+        ptarget,
+        n_samples=n_samples,
+        x0=x0,
+        random_state=random_state,
+        n_jobs=n_jobs,
+        )
 
     return r_samples
 
@@ -207,7 +242,9 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
     return u_samples
 
 
-def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None):
+def _sample_gaussian_spd_centered(
+        n_matrices, n_dim, sigma, random_state=None, n_jobs=1
+        ):
     """Sample a Riemannian Gaussian distribution centered at the Identity.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at the
@@ -224,6 +261,9 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None):
         Dispersion of the Riemannian Gaussian distribution.
     random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
+    n_jobs : int, default=1
+        The number of jobs to use for the computation. This works by computing
+        each of the class centroid in parallel. If -1 all CPUs are used.
 
     Returns
     -------
@@ -245,7 +285,8 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None):
     samples_r = _sample_parameter_r(n_samples=n_matrices,
                                     n_dim=n_dim,
                                     sigma=sigma,
-                                    random_state=random_state)
+                                    random_state=random_state,
+                                    n_jobs=n_jobs)
     samples_U = _sample_parameter_U(n_samples=n_matrices,
                                     n_dim=n_dim,
                                     random_state=random_state)
@@ -260,7 +301,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None):
     return samples
 
 
-def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None):
+def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None, n_jobs=1):
     """Sample a Riemannian Gaussian distribution.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at
@@ -280,6 +321,9 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None):
         Dispersion of the Riemannian Gaussian distribution.
     random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
+    n_jobs : int, default=1
+        The number of jobs to use for the computation. This works by computing
+        each of the class centroid in parallel. If -1 all CPUs are used.
 
     Returns
     -------
@@ -299,11 +343,13 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None):
     """
 
     n_dim = mean.shape[0]
+    # dispersion is corrected w.r.t. dimension
     samples_centered = _sample_gaussian_spd_centered(
         n_matrices=n_matrices,
         n_dim=n_dim,
-        sigma=sigma,
-        random_state=random_state
+        sigma=sigma / np.sqrt(n_dim),
+        random_state=random_state,
+        n_jobs=n_jobs,
     )
 
     # apply the parallel transport to mean on each of the samples
