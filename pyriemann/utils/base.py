@@ -13,8 +13,7 @@ def _matrix_operator(C, operator):
             "Matrices must be positive definite. Add "
             "regularization to avoid this error.")
     eigvals, eigvects = eigh(C, check_finite=False)
-    eigvals = np.diag(operator(eigvals))
-    D = eigvects @ eigvals @ eigvects.T
+    D = (eigvects * operator(eigvals)[np.newaxis, :]) @ eigvects.T
     return D
 
 
