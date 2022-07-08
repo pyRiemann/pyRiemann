@@ -1,3 +1,5 @@
+"""Base functions for SPD matrices."""
+
 import numpy as np
 from scipy.linalg import eigh
 
@@ -5,10 +7,10 @@ from numpy.core.numerictypes import typecodes
 
 
 def _matrix_operator(C, operator):
-    """Matrix equivalent of an operator."""
+    """Matrix function."""
     if C.dtype.char in typecodes['AllFloat'] and not np.isfinite(C).all():
         raise ValueError(
-            "Covariance matrices must be positive definite. Add "
+            "Matrices must be positive definite. Add "
             "regularization to avoid this error.")
     eigvals, eigvects = eigh(C, check_finite=False)
     eigvals = np.diag(operator(eigvals))
@@ -16,10 +18,20 @@ def _matrix_operator(C, operator):
     return D
 
 
-def sqrtm(C):
-    r""" Square root of SPD matrix.
+def _matrices_operator(C, operator):
+    """Recursive matrix function."""
+    if not isinstance(C, np.ndarray) or C.ndim < 2:
+        raise ValueError('Input must be at least a 2D ndarray')
+    elif C.ndim == 2:
+        return _matrix_operator(C, operator)
+    else:
+        return np.asarray([_matrices_operator(c, operator) for c in C])
 
-    Return the matrix square root of a SPD matrix defined by:
+
+def sqrtm(C):
+    r"""Square root of SPD matrices.
+
+    The matrix square root of a SPD matrix is defined by:
 
     .. math::
         \mathbf{D} =
@@ -30,21 +42,21 @@ def sqrtm(C):
 
     Parameters
     ----------
-    C : ndarray, shape (n, n)
-        SPD matrix.
+    C : ndarray, shape (..., n, n)
+        SPD matrices, at least 2D ndarray.
 
     Returns
     -------
-    D : ndarray, shape (n, n)
+    D : ndarray, shape (..., n, n)
         Matrix square root of C.
     """
-    return _matrix_operator(C, np.sqrt)
+    return _matrices_operator(C, np.sqrt)
 
 
 def logm(C):
-    r""" Logarithm of SPD matrix.
+    r"""Logarithm of SPD matrices.
 
-    Return the matrix logarithm of a SPD matrix defined by:
+    The matrix logarithm of a SPD matrix is defined by:
 
     .. math::
         \mathbf{D} = \mathbf{V} \log{(\mathbf{\Lambda})} \mathbf{V}^\top
@@ -54,21 +66,21 @@ def logm(C):
 
     Parameters
     ----------
-    C : ndarray, shape (n, n)
-        SPD matrix.
+    C : ndarray, shape (..., n, n)
+        SPD matrices, at least 2D ndarray.
 
     Returns
     -------
-    D : ndarray, shape (n, n)
+    D : ndarray, shape (..., n, n)
         Matrix logarithm of C.
     """
-    return _matrix_operator(C, np.log)
+    return _matrices_operator(C, np.log)
 
 
 def expm(C):
-    r""" Exponential of SPD matrix.
+    r"""Exponential of SPD matrices.
 
-    Return the matrix exponential of a SPD matrix defined by:
+    The matrix exponential of a SPD matrix is defined by:
 
     .. math::
         \mathbf{D} = \mathbf{V} \exp{(\mathbf{\Lambda})} \mathbf{V}^\top
@@ -78,21 +90,21 @@ def expm(C):
 
     Parameters
     ----------
-    C : ndarray, shape (n, n)
-        SPD matrix.
+    C : ndarray, shape (..., n, n)
+        SPD matrices, at least 2D ndarray.
 
     Returns
     -------
-    D : ndarray, shape (n, n)
+    D : ndarray, shape (..., n, n)
         Matrix exponential of C.
     """
-    return _matrix_operator(C, np.exp)
+    return _matrices_operator(C, np.exp)
 
 
 def invsqrtm(C):
-    r""" Inverse square root of SPD matrix.
+    r"""Inverse square root of SPD matrices.
 
-    Return the inverse matrix square root of a SPD matrix defined by:
+    The matrix inverse square root of a SPD matrix is defined by:
 
     .. math::
         \mathbf{D} =
@@ -103,22 +115,22 @@ def invsqrtm(C):
 
     Parameters
     ----------
-    C : ndarray, shape (n, n)
-        SPD matrix.
+    C : ndarray, shape (..., n, n)
+        SPD matrices, at least 2D ndarray.
 
     Returns
     -------
-    D : ndarray, shape (n, n)
-        Inverse matrix square root of C.
+    D : ndarray, shape (..., n, n)
+        Matrix inverse square root of C.
     """
     def isqrt(x): return 1. / np.sqrt(x)
-    return _matrix_operator(C, isqrt)
+    return _matrices_operator(C, isqrt)
 
 
 def powm(C, alpha):
-    r""" Power of SPD matrix.
+    r"""Power of SPD matrices.
 
-    Return the matrix power :math:`\alpha` of a SPD matrix defined by:
+    The matrix power :math:`\alpha` of a SPD matrix is defined by:
 
     .. math::
         \mathbf{D} =
@@ -129,15 +141,15 @@ def powm(C, alpha):
 
     Parameters
     ----------
-    C : ndarray, shape (n, n)
-        SPD matrix.
+    C : ndarray, shape (..., n, n)
+        SPD matrices, at least 2D ndarray.
     alpha : float
         The power to apply.
 
     Returns
     -------
-    D : ndarray, shape (n, n)
+    D : ndarray, shape (..., n, n)
         Matrix power of C.
     """
     def power(x): return x**alpha
-    return _matrix_operator(C, power)
+    return _matrices_operator(C, power)
