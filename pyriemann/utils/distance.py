@@ -90,7 +90,7 @@ def distance_kullback(A, B):
     """
     n = A.shape[-1]
     tr = np.trace(_recursive(solve, B, A, assume_a='pos'), axis1=-2, axis2=-1)
-    logdet = np.log(np.linalg.det(B) / np.linalg.det(A))
+    logdet = np.linalg.slogdet(B)[1] - np.linalg.slogdet(A)[1]
     return 0.5 * (tr - n + logdet)
 
 
