@@ -6,10 +6,22 @@ from scipy.linalg import eigvalsh, solve
 from .base import logm, sqrtm
 
 
-def distance_euclid(A, B):
-    r"""Euclidean distance between two SPD matrices.
+def _recursive(fun, A, B, *args, **kwargs):
+    """Recursive fuction with two inputs."""
+    if not isinstance(A, np.ndarray) or A.ndim < 2:
+        raise ValueError('Input must be at least a 2D ndarray')
+    elif A.ndim == 2:
+        return fun(A, B, *args, **kwargs)
+    else:
+        return np.asarray(
+            [_recursive(fun, a, b, *args, **kwargs) for a, b in zip(A, B)]
+        )
 
-    Compute the Euclidean distance between two SPD matrices A and B, defined
+
+def distance_euclid(A, B):
+    r"""Euclidean distance between SPD matrices.
+
+    The Euclidean distance between two SPD matrices A and B is defined
     as the Frobenius norm of the difference of the two matrices:
 
     .. math::
@@ -17,23 +29,23 @@ def distance_euclid(A, B):
 
     Parameters
     ----------
-    A : ndarray, shape (n, n)
-        First SPD matrix.
-    B : ndarray, shape (n, n)
-        Second SPD matrix.
+    A : ndarray, shape (..., n, n)
+        First SPD matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, n)
+        Second SPD matrices, same dimensions as A.
 
     Returns
     -------
-    d : float
+    d : ndarray, shape (...,) or float
         Euclidean distance between A and B.
     """
-    return np.linalg.norm(A - B, ord='fro')
+    return np.linalg.norm(A - B, ord='fro', axis=(-2,-1))
 
 
 def distance_harmonic(A, B):
-    r"""Harmonic distance between two SPD matrices.
+    r"""Harmonic distance between SPD matrices.
 
-    Compute the harmonic distance between two SPD matrices A and B:
+    The harmonic distance between two SPD matrices A and B is:
 
     .. math::
         d(\mathbf{A},\mathbf{B}) =
@@ -41,24 +53,23 @@ def distance_harmonic(A, B):
 
     Parameters
     ----------
-    A : ndarray, shape (n, n)
-        First SPD matrix.
-    B : ndarray, shape (n, n)
-        Second SPD matrix.
+    A : ndarray, shape (..., n, n)
+        First SPD matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, n)
+        Second SPD matrices, same dimensions as A.
 
     Returns
     -------
-    d : float
+    d : ndarray, shape (...,) or float
         Harmonic distance between A and B.
     """
     return distance_euclid(np.linalg.inv(A), np.linalg.inv(B))
 
 
 def distance_kullback(A, B):
-    r"""Kullback-Leibler divergence between two SPD matrices.
+    r"""Kullback-Leibler divergence between SPD matrices.
 
-    Compute the left Kullback-Leibler divergence between two SPD matrices A and
-    B:
+    The left Kullback-Leibler divergence between two SPD matrices A and B is:
 
     .. math::
         d(\mathbf{A},\mathbf{B}) =
@@ -67,19 +78,20 @@ def distance_kullback(A, B):
 
     Parameters
     ----------
-    A : ndarray, shape (n, n)
-        First SPD matrix.
-    B : ndarray, shape (n, n)
-        Second SPD matrix.
+    A : ndarray, shape (..., n, n)
+        First SPD matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, n)
+        Second SPD matrices, same dimensions as A.
 
     Returns
     -------
-    d : float
+    d : ndarray, shape (...,) or float
         Left Kullback-Leibler divergence between A and B.
     """
     n = A.shape[-1]
+    tr = np.trace(_recursive(solve, B, A, assume_a='pos'), axis1=-2, axis2=-1)
     logdet = np.log(np.linalg.det(B) / np.linalg.det(A))
-    return 0.5 * (np.trace(solve(B, A, assume_a='pos')) - n + logdet)
+    return 0.5 * (tr - n + logdet)
 
 
 def distance_kullback_right(A, B):
@@ -88,18 +100,18 @@ def distance_kullback_right(A, B):
 
 
 def distance_kullback_sym(A, B):
-    """Symmetrized Kullback-Leibler divergence between two SPD matrices.
+    """Symmetrized Kullback-Leibler divergence between SPD matrices.
 
-    Compute the sum of left and right Kullback-Leibler divergences between two
-    SPD matrices A and B.
+    The symmetrized Kullback-Leibler divergence between two SPD matrices A and
+    B is the sum of left and right Kullback-Leibler divergences.
     """
     return distance_kullback(A, B) + distance_kullback_right(A, B)
 
 
 def distance_logdet(A, B):
-    r"""Log-det distance between two SPD matrices.
+    r"""Log-det distance between SPD matrices.
 
-    Compute the log-det distance between two SPD matrices A and B:
+    The log-det distance between two SPD matrices A and B is:
 
     .. math::
         d(\mathbf{A},\mathbf{B}) =
@@ -108,29 +120,27 @@ def distance_logdet(A, B):
 
     Parameters
     ----------
-    A : ndarray, shape (n, n)
-        First SPD matrix.
-    B : ndarray, shape (n, n)
-        Second SPD matrix.
+    A : ndarray, shape (..., n, n)
+        First SPD matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, n)
+        Second SPD matrices, same dimensions as A.
 
     Returns
     -------
-    d : float
+    d : ndarray, shape (...,) or float
         Log-det distance between A and B.
     """
     _, logdet_ApB = np.linalg.slogdet((A + B) / 2.0)
     _, logdet_AxB = np.linalg.slogdet(A @ B)
     dist2 = logdet_ApB - 0.5 * logdet_AxB
-    if dist2 > 0.0:
-        return np.sqrt(dist2)
-    else:
-        return 0.0
+    dist2 = np.maximum(0, dist2)
+    return np.sqrt(dist2)
 
 
 def distance_logeuclid(A, B):
-    r"""Log-Euclidean distance between two SPD matrices.
+    r"""Log-Euclidean distance between SPD matrices.
 
-    Compute the Log-Euclidean distance between two SPD matrices A and B:
+    The Log-Euclidean distance between two SPD matrices A and B is:
 
     .. math::
         d(\mathbf{A},\mathbf{B}) =
@@ -138,24 +148,24 @@ def distance_logeuclid(A, B):
 
     Parameters
     ----------
-    A : ndarray, shape (n, n)
-        First SPD matrix.
-    B : ndarray, shape (n, n)
-        Second SPD matrix.
+    A : ndarray, shape (..., n, n)
+        First SPD matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, n)
+        Second SPD matrices, same dimensions as A.
 
     Returns
     -------
-    d : float
+    d : ndarray, shape (...,) or float
         Log-Euclidean distance between A and B.
     """
     return distance_euclid(logm(A), logm(B))
 
 
 def distance_riemann(A, B):
-    r"""Affine-invariant Riemannian distance between two SPD matrices.
+    r"""Affine-invariant Riemannian distance between SPD matrices.
 
-    Compute the affine-invariant Riemannian distance between two SPD matrices A
-    and B:
+    The affine-invariant Riemannian distance between two SPD matrices A and B
+    is:
 
     .. math::
         d(\mathbf{A},\mathbf{B}) =
@@ -166,23 +176,23 @@ def distance_riemann(A, B):
 
     Parameters
     ----------
-    A : ndarray, shape (n, n)
-        First SPD matrix.
-    B : ndarray, shape (n, n)
-        Second SPD matrix.
+    A : ndarray, shape (..., n, n)
+        First SPD matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, n)
+        Second SPD matrices, same dimensions as A.
 
     Returns
     -------
-    d : float
+    d : ndarray, shape (...,) or float
         Affine-invariant Riemannian distance between A and B.
     """
-    return np.sqrt((np.log(eigvalsh(A, B))**2).sum())
+    return np.sqrt((np.log(_recursive(eigvalsh, A, B))**2).sum(axis=-1))
 
 
 def distance_wasserstein(A, B):
-    r"""Wasserstein distance between two SPD matrices.
+    r"""Wasserstein distance between SPD matrices.
 
-    Compute the Wasserstein distance between two SPD matrices A and B:
+    The Wasserstein distance between two SPD matrices A and B is:
 
     .. math::
         d(\mathbf{A},\mathbf{B}) =
@@ -190,22 +200,20 @@ def distance_wasserstein(A, B):
 
     Parameters
     ----------
-    A : ndarray, shape (n, n)
-        First SPD matrix.
-    B : ndarray, shape (n, n)
-        Second SPD matrix.
+    A : ndarray, shape (..., n, n)
+        First SPD matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, n)
+        Second SPD matrices, same dimensions as A.
 
     Returns
     -------
-    d : float
+    d : ndarray, shape (...,) or float
         Wasserstein distance between A and B.
     """
     B12 = sqrtm(B)
-    dist2 = np.trace(A + B - 2 * sqrtm(B12 @ A @ B12))
-    if dist2 > 0.0:
-        return np.sqrt(dist2)
-    else:
-        return 0.0
+    dist2 = np.trace(A + B - 2 * sqrtm(B12 @ A @ B12), axis1=-2, axis2=-1)
+    dist2 = np.maximum(0, dist2)
+    return np.sqrt(dist2)
 
 
 ###############################################################################
@@ -228,11 +236,11 @@ def _check_distance_method(method):
     """Check distance methods."""
     if isinstance(method, str):
         if method not in distance_methods.keys():
-            raise ValueError('Unknown mean method')
+            raise ValueError('Unknown distance method')
         else:
             method = distance_methods[method]
     elif not hasattr(method, '__call__'):
-        raise ValueError('distance method must be a function or a string.')
+        raise ValueError('Distance method must be a function or a string.')
     return method
 
 
@@ -263,12 +271,15 @@ def distance(A, B, metric='riemann'):
     else:
         distance_function = distance_methods[metric]
 
-    if len(A.shape) == 3:
-        d = np.empty((len(A), 1))
-        for i in range(len(A)):
+    shape_A = A.shape
+    if len(shape_A) == B.ndim:
+        d = distance_function(A, B)
+    elif len(shape_A) == 3:
+        d = np.empty((shape_A[0], 1))
+        for i in range(shape_A[0]):
             d[i] = distance_function(A[i], B)
     else:
-        d = distance_function(A, B)
+        raise ValueError("Inputs have incompatible dimensions.")
 
     return d
 
@@ -287,7 +298,7 @@ def pairwise_distance(X, Y=None, metric='riemann'):
     metric : string, default='riemann'
         The metric for distance, can be: 'euclid', 'harmonic', 'kullback',
         'kullback_right', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
-        'wasserstein'.
+        'wasserstein', or a callable function.
 
     Returns
     -------
