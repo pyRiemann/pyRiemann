@@ -4,36 +4,20 @@ import numpy as np
 from numpy.core.numerictypes import typecodes
 
 
-def _diag(X):
-    """Construct ndarray from diagonal terms.
-
-    Parameters
-    ----------
-    X : ndarray, shape (..., n)
-        Diagonal terms of ndarray.
-
-    Returns
-    -------
-    Y : ndarray, shape (..., n, n)
-        Diagonal ndarray.
-    """
-    dims = X.shape
-    n = dims[-1]
-    Y = np.zeros((*dims, n), X.dtype)
-    Y[..., np.arange(n), np.arange(n)] = X
-    return Y
-
-
 def _matrix_operator(C, operator):
     """Matrix function."""
     if not isinstance(C, np.ndarray) or C.ndim < 2:
         raise ValueError('Input must be at least a 2D ndarray')
-    if C.dtype.char in typecodes['AllFloat'] and not np.isfinite(C).all():
+    if C.dtype.char in typecodes['AllFloat'] and (
+            np.isinf(C).any() or np.isnan(C).any()):
         raise ValueError(
             "Matrices must be positive definite. Add "
             "regularization to avoid this error.")
     eigvals, eigvecs = np.linalg.eigh(C)
-    D = eigvecs @ _diag(operator(eigvals)) @ np.swapaxes(eigvecs, -2, -1)
+    eigvals = operator(eigvals)
+    if C.ndim >= 3:
+        eigvals = np.expand_dims(eigvals, -2)
+    D = (eigvecs * eigvals) @ np.swapaxes(eigvecs, -2, -1)
     return D
 
 
