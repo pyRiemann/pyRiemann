@@ -191,7 +191,7 @@ classifiers = [
     MDM(),
     KNearestNeighbor(n_neighbors=3),
     SVC(probability=True),
-    MeanField(power_list=[-1, -0.25, 0, 0.25, 1]),
+    MeanField(power_list=[-1, 0, 1]),
 ]
 n_classifs = len(classifiers)
 
