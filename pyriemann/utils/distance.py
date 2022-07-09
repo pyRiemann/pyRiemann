@@ -39,7 +39,7 @@ def distance_euclid(A, B):
     d : ndarray, shape (...,) or float
         Euclidean distance between A and B.
     """
-    return np.linalg.norm(A - B, ord='fro', axis=(-2,-1))
+    return np.linalg.norm(A - B, ord='fro', axis=(-2, -1))
 
 
 def distance_harmonic(A, B):
