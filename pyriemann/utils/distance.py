@@ -6,11 +6,19 @@ from scipy.linalg import eigvalsh, solve
 from .base import logm, sqrtm
 
 
+def _check_inputs(A, B):
+    """Recursive function with two inputs."""
+    if not isinstance(A, np.ndarray) or not isinstance(B, np.ndarray):
+        raise ValueError('Inputs must be ndarrays')
+    if not A.shape == B.shape:
+        raise ValueError('Inputs must have equal dimensions')
+    if A.ndim < 2:
+        raise ValueError('Inputs must be at least a 2D ndarray')
+
+
 def _recursive(fun, A, B, *args, **kwargs):
-    """Recursive fuction with two inputs."""
-    if not isinstance(A, np.ndarray) or A.ndim < 2:
-        raise ValueError('Input must be at least a 2D ndarray')
-    elif A.ndim == 2:
+    """Recursive function with two inputs."""
+    if A.ndim == 2:
         return fun(A, B, *args, **kwargs)
     else:
         return np.asarray(
@@ -39,6 +47,7 @@ def distance_euclid(A, B):
     d : ndarray, shape (...,) or float
         Euclidean distance between A and B.
     """
+    _check_inputs(A, B)
     return np.linalg.norm(A - B, ord='fro', axis=(-2, -1))
 
 
@@ -88,6 +97,7 @@ def distance_kullback(A, B):
     d : ndarray, shape (...,) or float
         Left Kullback-Leibler divergence between A and B.
     """
+    _check_inputs(A, B)
     n = A.shape[-1]
     tr = np.trace(_recursive(solve, B, A, assume_a='pos'), axis1=-2, axis2=-1)
     logdet = np.linalg.slogdet(B)[1] - np.linalg.slogdet(A)[1]
@@ -130,8 +140,9 @@ def distance_logdet(A, B):
     d : ndarray, shape (...,) or float
         Log-det distance between A and B.
     """
-    _, logdet_ApB = np.linalg.slogdet((A + B) / 2.0)
-    _, logdet_AxB = np.linalg.slogdet(A @ B)
+    _check_inputs(A, B)
+    logdet_ApB = np.linalg.slogdet((A + B) / 2.0)[1]
+    logdet_AxB = np.linalg.slogdet(A @ B)[1]
     dist2 = logdet_ApB - 0.5 * logdet_AxB
     dist2 = np.maximum(0, dist2)
     return np.sqrt(dist2)
@@ -186,6 +197,7 @@ def distance_riemann(A, B):
     d : ndarray, shape (...,) or float
         Affine-invariant Riemannian distance between A and B.
     """
+    _check_inputs(A, B)
     return np.sqrt((np.log(_recursive(eigvalsh, A, B))**2).sum(axis=-1))
 
 
@@ -210,6 +222,7 @@ def distance_wasserstein(A, B):
     d : ndarray, shape (...,) or float
         Wasserstein distance between A and B.
     """
+    _check_inputs(A, B)
     B12 = sqrtm(B)
     dist2 = np.trace(A + B - 2 * sqrtm(B12 @ A @ B12), axis1=-2, axis2=-1)
     dist2 = np.maximum(0, dist2)

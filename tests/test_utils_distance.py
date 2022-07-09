@@ -54,6 +54,14 @@ def test_check_distance_error():
 
 
 @pytest.mark.parametrize("dist", get_dist_func())
+def test_distance_error(dist, get_covmats):
+    n_matrices, n_channels = 5, 3
+    A = get_covmats(n_matrices, n_channels)
+    with pytest.raises(ValueError):
+        dist(A, A[0])
+
+
+@pytest.mark.parametrize("dist", get_dist_func())
 def test_distance_func_ndarray(dist, get_covmats):
     n_matrices, n_channels = 5, 3
     A = get_covmats(n_matrices, n_channels)
