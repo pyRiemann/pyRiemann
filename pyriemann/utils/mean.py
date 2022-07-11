@@ -60,14 +60,14 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
     B, _ = ajd_pham(covmats)
 
     crit = np.inf
-    k = 0
-    while (crit > tol) and (k < maxiter):
-        k += 1
+    for k in range(maxiter):
         J = np.einsum('a,abc->bc', sample_weight, logm(B.T @ covmats @ B))
         update = np.diag(np.diag(expm(J)))
         B = B @ invsqrtm(update)
 
         crit = distance_riemann(np.eye(n_channels), update)
+        if crit <= tol:
+            break
 
     A = np.linalg.inv(B)
     J = np.einsum('a,abc->bc', sample_weight, logm(B.T @ covmats @ B))
@@ -275,17 +275,17 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     else:
         C = init
 
-    k = 0
     crit = np.finfo(np.float64).max
-    while (crit > tol) and (k < maxiter):
-        k += 1
+    for k in range(maxiter):
         icovmats = np.linalg.inv(0.5 * covmats + 0.5 * C)
         J = np.einsum('a,abc->bc', sample_weight, icovmats)
-
         Cnew = np.linalg.inv(J)
-        crit = np.linalg.norm(Cnew - C, ord='fro')
 
+        crit = np.linalg.norm(Cnew - C, ord='fro')
         C = Cnew
+        if crit <= tol:
+            break
+
     return C
 
 
@@ -426,12 +426,10 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     else:
         C = init
 
-    k = 0
     nu = 1.0
     tau = np.finfo(np.float64).max
     crit = np.finfo(np.float64).max
-    while (crit > tol) and (k < maxiter) and (nu > tol):
-        k = k + 1
+    for k in range(maxiter):
         C12, Cm12 = sqrtm(C), invsqrtm(C)
         J = np.einsum('a,abc->bc', sample_weight, logm(Cm12 @ covmats @ Cm12))
 
@@ -443,6 +441,8 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
             tau = h
         else:
             nu = 0.5 * nu
+        if crit <= tol or nu <= tol:
+            break
 
     return C
 
@@ -489,19 +489,18 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
         C = mean_euclid(covmats, sample_weight=sample_weight)
     else:
         C = init
-
-    k = 0
     K = sqrtm(C)
+
     crit = np.finfo(np.float64).max
-    while (crit > tol) and (k < maxiter):
-        k += 1
+    for k in range(maxiter):
         J = np.einsum('a,abc->bc', sample_weight, sqrtm(K @ covmats @ K))
         Knew = sqrtm(J)
 
         crit = np.linalg.norm(Knew - K, ord='fro')
         K = Knew
-    if k == maxiter:
-        print('Max iter reach')
+        if crit <= tol:
+            break
+
     C = K @ K
     return C
 
