@@ -3,8 +3,8 @@
 from copy import deepcopy
 import numpy as np
 
-from .base import sqrtm, invsqrtm, logm, expm, powm
 from .ajd import ajd_pham
+from .base import sqrtm, invsqrtm, logm, expm, powm
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann
 
@@ -55,33 +55,23 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
         Matrices', PLoS ONE, 2015
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_matrices, n_channels, _ = covmats.shape
-    crit = np.inf
-    k = 0
-
+    _, n_channels, _ = covmats.shape
     # init with AJD
     B, _ = ajd_pham(covmats)
+
+    crit = np.inf
+    k = 0
     while (crit > tol) and (k < maxiter):
         k += 1
-        J = np.zeros((n_channels, n_channels))
-
-        for index, Ci in enumerate(covmats):
-            tmp = logm(B.T @ Ci @ B)
-            J += sample_weight[index] * tmp
-
+        J = np.einsum('a,abc->bc', sample_weight, logm(B.T @ covmats @ B))
         update = np.diag(np.diag(expm(J)))
-        B = np.dot(B, invsqrtm(update))
+        B = B @ invsqrtm(update)
 
         crit = distance_riemann(np.eye(n_channels), update)
 
     A = np.linalg.inv(B)
-
-    J = np.zeros((n_channels, n_channels))
-    for index, Ci in enumerate(covmats):
-        tmp = logm(B.T @ Ci @ B)
-        J += sample_weight[index] * tmp
-
-    C = np.dot(np.dot(A.T, expm(J)), A)
+    J = np.einsum('a,abc->bc', sample_weight, logm(B.T @ covmats @ B))
+    C = A.T @ expm(J) @ A
     return C
 
 
@@ -159,6 +149,8 @@ def mean_euclid(covmats, sample_weight=None):
     .. math::
         \mathbf{C} = \frac{1}{m} \sum_i \mathbf{C}_i
 
+    This mean is sometimes called arithmetic.
+
     Parameters
     ----------
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
@@ -192,13 +184,8 @@ def mean_harmonic(covmats, sample_weight=None):
     C : ndarray, shape (n_channels, n_channels)
         Harmonic mean.
     """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_matrices, n_channels, _ = covmats.shape
-    T = np.zeros((n_channels, n_channels))
-    for index in range(n_matrices):
-        T += sample_weight[index] * np.linalg.inv(covmats[index])
+    T = mean_euclid(np.linalg.inv(covmats), sample_weight=sample_weight)
     C = np.linalg.inv(T)
-
     return C
 
 
@@ -220,8 +207,7 @@ def mean_identity(covmats, sample_weight=None):
     C : ndarray, shape (n_channels, n_channels)
         Identity matrix.
     """
-    _, n_channels, _ = covmats.shape
-    C = np.eye(n_channels)
+    C = np.eye(covmats.shape[-1])
     return C
 
 
@@ -249,10 +235,9 @@ def mean_kullback_sym(covmats, sample_weight=None):
         From geometry to applications and visualization", Visualization and
         Processing of Tensor Fields, pp. 285-298, 2006
     """
-    C_euclid = mean_euclid(covmats, sample_weight)
-    C_harmonic = mean_harmonic(covmats, sample_weight)
+    C_euclid = mean_euclid(covmats, sample_weight=sample_weight)
+    C_harmonic = mean_harmonic(covmats, sample_weight=sample_weight)
     C = geodesic_riemann(C_euclid, C_harmonic, 0.5)
-
     return C
 
 
@@ -275,7 +260,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         The maximum number of iterations.
     init : None | ndarray, shape (n_channels, n_channels), default=None
         A SPD matrix used to initialize the gradient descent.
-        If None the Euclidean mean is used.
+        If None, the weighted Euclidean mean is used.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -285,21 +270,17 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         Log-det mean.
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_matrices, n_channels, _ = covmats.shape
     if init is None:
-        C = np.mean(covmats, axis=0)
+        C = mean_euclid(covmats, sample_weight=sample_weight)
     else:
         C = init
+
     k = 0
     crit = np.finfo(np.float64).max
-    # stop when J<10^-5 or max iteration = 50
     while (crit > tol) and (k < maxiter):
-        k = k + 1
-
-        J = np.zeros((n_channels, n_channels))
-
-        for index, Ci in enumerate(covmats):
-            J += sample_weight[index] * np.linalg.inv(0.5 * Ci + 0.5 * C)
+        k += 1
+        icovmats = np.linalg.inv(0.5 * covmats + 0.5 * C)
+        J = np.einsum('a,abc->bc', sample_weight, icovmats)
 
         Cnew = np.linalg.inv(J)
         crit = np.linalg.norm(Cnew - C, ord='fro')
@@ -334,13 +315,7 @@ def mean_logeuclid(covmats, sample_weight=None):
         novel vector space structure on symmetric positive-definite matrices",
         SIAM J Matrix Anal Appl, 2007
     """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_matrices, n_channels, _ = covmats.shape
-    T = np.zeros((n_channels, n_channels))
-    for index in range(n_matrices):
-        T += sample_weight[index] * logm(covmats[index])
-    C = expm(T)
-
+    C = expm(mean_euclid(logm(covmats), sample_weight=sample_weight))
     return C
 
 
@@ -383,14 +358,11 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10):
     if p == 0:
         return mean_riemann(covmats, sample_weight=sample_weight)
 
-    n_matrices, n_channels, _ = covmats.shape
+    _, n_channels, _ = covmats.shape
     sample_weight = _get_sample_weight(sample_weight, covmats)
     phi = 0.375 / np.abs(p)
 
-    G = np.sum(
-        [w * powm(c, p) for (w, c) in zip(sample_weight, covmats)],
-        axis=0
-    )
+    G = np.einsum('a,abc->bc', sample_weight, powm(covmats, p))
     if p > 0:
         X = invsqrtm(G)
     else:
@@ -398,10 +370,10 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10):
 
     test = 10 * zeta
     while test > zeta:
-        H = np.sum(
-            [w * powm(X @ powm(c, np.sign(p)) @ X.T, np.abs(p))
-             for (w, c) in zip(sample_weight, covmats)],
-            axis=0
+        H = np.einsum(
+            'a,abc->bc',
+            sample_weight,
+            powm(X @ powm(covmats, np.sign(p)) @ X.T, np.abs(p))
         )
         X = powm(H, -phi) @ X
         test = np.linalg.norm(H - np.eye(n_channels)) / np.sqrt(n_channels)
@@ -434,14 +406,14 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
         The maximum number of iterations.
     init : None | ndarray, shape (n_channels, n_channels), default=None
         A SPD matrix used to initialize the gradient descent.
-        If None the Euclidean mean is used.
+        If None, the weighted Euclidean mean is used.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
     -------
     C : ndarray, shape (n_channels, n_channels)
-        Riemannian mean.
+        Affine-invariant Riemannian mean.
 
     References
     ----------
@@ -449,9 +421,8 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
         of symmetric positive-definite matrices", SIAM J Matrix Anal Appl, 2005
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_matrices, n_channels, _ = covmats.shape
     if init is None:
-        C = np.mean(covmats, axis=0)
+        C = mean_euclid(covmats, sample_weight=sample_weight)
     else:
         C = init
 
@@ -459,16 +430,10 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     nu = 1.0
     tau = np.finfo(np.float64).max
     crit = np.finfo(np.float64).max
-    # stop when J<10^-9 or max iteration = 50
     while (crit > tol) and (k < maxiter) and (nu > tol):
         k = k + 1
-        C12 = sqrtm(C)
-        Cm12 = invsqrtm(C)
-        J = np.zeros((n_channels, n_channels))
-
-        for index in range(n_matrices):
-            tmp = Cm12 @ covmats[index] @ Cm12
-            J += sample_weight[index] * logm(tmp)
+        C12, Cm12 = sqrtm(C), invsqrtm(C)
+        J = np.einsum('a,abc->bc', sample_weight, logm(Cm12 @ covmats @ Cm12))
 
         crit = np.linalg.norm(J, ord='fro')
         h = nu * crit
@@ -520,29 +485,24 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
         : Information geometry versus Optimal Transport Theory", IRS, 2011
     """
     sample_weight = _get_sample_weight(sample_weight, covmats)
-    n_matrices, n_channels, _ = covmats.shape
     if init is None:
-        C = np.mean(covmats, axis=0)
+        C = mean_euclid(covmats, sample_weight=sample_weight)
     else:
         C = init
+
     k = 0
     K = sqrtm(C)
     crit = np.finfo(np.float64).max
-    # stop when J<10^-9 or max iteration = 50
     while (crit > tol) and (k < maxiter):
-        k = k + 1
-
-        J = np.zeros((n_channels, n_channels))
-
-        for index, Ci in enumerate(covmats):
-            J += sample_weight[index] * sqrtm(K @ Ci @ K)
-
+        k += 1
+        J = np.einsum('a,abc->bc', sample_weight, sqrtm(K @ covmats @ K))
         Knew = sqrtm(J)
+
         crit = np.linalg.norm(Knew - K, ord='fro')
         K = Knew
     if k == maxiter:
         print('Max iter reach')
-    C = np.dot(K, K)
+    C = K @ K
     return C
 
 
@@ -571,7 +531,7 @@ def _check_mean_method(method):
         else:
             method = mean_methods[method]
     elif not hasattr(method, '__call__'):
-        raise ValueError('mean method must be a function or a string.')
+        raise ValueError('Mean method must be a function or a string.')
     return method
 
 
@@ -639,9 +599,8 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=50, init=None,
     """Masked Riemannian mean of SPD matrices.
 
     Given masks defined as semi-orthogonal matrices, the masked Riemannian mean
-    of SPD matrices is obtained with a gradient descent minimizing the
-    sum of Riemannian distances between masked SPD matrices and the
-    masked mean [1]_.
+    of SPD matrices is obtained with a gradient descent minimizing the sum of
+    Riemannian distances between masked SPD matrices and the masked mean [1]_.
 
     Parameters
     ----------
