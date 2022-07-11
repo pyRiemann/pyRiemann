@@ -70,6 +70,8 @@ v0.2.8.dev
 
 - Improve base functions to process ndarrays of SPD matrices
 
+- Enhance means functions, with faster implementations
+
 v0.2.7 (June 2021)
 ------------------
 
