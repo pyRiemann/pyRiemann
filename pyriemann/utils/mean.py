@@ -319,7 +319,7 @@ def mean_logeuclid(covmats, sample_weight=None):
     return C
 
 
-def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10):
+def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10, maxiter=100):
     """Power mean of SPD matrices.
 
     Parameters
@@ -332,6 +332,8 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10):
         Weights for each matrix. If None, it uses equal weights.
     zeta : float, default=10e-10
         Stopping criterion.
+    maxiter : int, default=100
+        The maximum number of iterations.
 
     Returns
     -------
@@ -368,15 +370,18 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10):
     else:
         X = sqrtm(G)
 
-    test = 10 * zeta
-    while test > zeta:
+    crit = 10 * zeta
+    for k in range(maxiter):
         H = np.einsum(
             'a,abc->bc',
             sample_weight,
             powm(X @ powm(covmats, np.sign(p)) @ X.T, np.abs(p))
         )
         X = powm(H, -phi) @ X
-        test = np.linalg.norm(H - np.eye(n_channels)) / np.sqrt(n_channels)
+
+        crit = np.linalg.norm(H - np.eye(n_channels)) / np.sqrt(n_channels)
+        if crit <= zeta:
+            break
 
     if p > 0:
         C = np.linalg.inv(X) @ np.linalg.inv(X.T)
@@ -432,10 +437,10 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     for k in range(maxiter):
         C12, Cm12 = sqrtm(C), invsqrtm(C)
         J = np.einsum('a,abc->bc', sample_weight, logm(Cm12 @ covmats @ Cm12))
+        C = C12 @ expm(nu * J) @ C12
 
         crit = np.linalg.norm(J, ord='fro')
         h = nu * crit
-        C = C12 @ expm(nu * J) @ C12
         if h < tau:
             nu = 0.95 * nu
             tau = h
@@ -641,12 +646,10 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=50, init=None,
     else:
         C = init
 
-    k = 0
     nu = 1.0
     tau = np.finfo(np.float64).max
     crit = np.finfo(np.float64).max
-    while (crit > tol) and (k < maxiter) and (nu > tol):
-        k = k + 1
+    for k in range(maxiter):
         maskedC = _apply_masks(np.tile(C, (n_matrices, 1, 1)), masks)
         J = np.zeros((n_channels, n_channels))
         for i in range(n_matrices):
@@ -663,6 +666,8 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=50, init=None,
             tau = h
         else:
             nu = 0.5 * nu
+        if crit <= tol or nu <= tol:
+            break
 
     return C
 
