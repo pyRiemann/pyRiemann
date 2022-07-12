@@ -1,5 +1,6 @@
 """Means of SPD matrices."""
 
+import warnings
 from copy import deepcopy
 import numpy as np
 
@@ -60,7 +61,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
     B, _ = ajd_pham(covmats)
 
     crit = np.inf
-    for k in range(maxiter):
+    for _ in range(maxiter):
         J = np.einsum('a,abc->bc', sample_weight, logm(B.T @ covmats @ B))
         update = np.diag(np.diag(expm(J)))
         B = B @ invsqrtm(update)
@@ -68,6 +69,8 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
         crit = distance_riemann(np.eye(n_channels), update)
         if crit <= tol:
             break
+    else:
+        warnings.warn('Convergence not reached')
 
     A = np.linalg.inv(B)
     J = np.einsum('a,abc->bc', sample_weight, logm(B.T @ covmats @ B))
@@ -75,8 +78,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
     return C
 
 
-def mean_alm(covmats, tol=1e-14, maxiter=100,
-             verbose=False, sample_weight=None):
+def mean_alm(covmats, tol=1e-14, maxiter=100, sample_weight=None):
     r"""Ando-Li-Mathias (ALM) mean of SPD matrices.
 
     Return the geometric mean recursively [1]_, generalizing from:
@@ -99,8 +101,6 @@ def mean_alm(covmats, tol=1e-14, maxiter=100,
         The tolerance to stop the gradient descent.
     maxiter : int, default=100
         The maximum number of iterations.
-    verbose : bool, default=False
-        Indicate when reaching maxiter.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -127,7 +127,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=100,
         X = geodesic_riemann(covmats[0], covmats[1], alpha=alpha)
         return X
     else:
-        for k in range(maxiter):
+        for _ in range(maxiter):
             for h in range(n_matrices):
                 s = np.mod(np.arange(h, h + n_matrices - 1) + 1, n_matrices)
                 C_iter[h] = mean_alm(C[s], sample_weight=sample_weight[s])
@@ -138,8 +138,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=100,
                 break
             C = deepcopy(C_iter)
         else:
-            if verbose:
-                print('Max number of iterations reached')
+            warnings.warn('Convergence not reached')
         return C_iter.mean(axis=0)
 
 
@@ -149,7 +148,7 @@ def mean_euclid(covmats, sample_weight=None):
     .. math::
         \mathbf{C} = \frac{1}{m} \sum_i \mathbf{C}_i
 
-    This mean is sometimes called arithmetic.
+    This mean is also called arithmetic.
 
     Parameters
     ----------
@@ -276,7 +275,7 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         C = init
 
     crit = np.finfo(np.float64).max
-    for k in range(maxiter):
+    for _ in range(maxiter):
         icovmats = np.linalg.inv(0.5 * covmats + 0.5 * C)
         J = np.einsum('a,abc->bc', sample_weight, icovmats)
         Cnew = np.linalg.inv(J)
@@ -285,6 +284,8 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         C = Cnew
         if crit <= tol:
             break
+    else:
+        warnings.warn('Convergence not reached')
 
     return C
 
@@ -370,8 +371,9 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10, maxiter=100):
     else:
         X = sqrtm(G)
 
+    eye_n, sqrt_n = np.eye(n_channels), np.sqrt(n_channels)
     crit = 10 * zeta
-    for k in range(maxiter):
+    for _ in range(maxiter):
         H = np.einsum(
             'a,abc->bc',
             sample_weight,
@@ -379,9 +381,11 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10, maxiter=100):
         )
         X = powm(H, -phi) @ X
 
-        crit = np.linalg.norm(H - np.eye(n_channels)) / np.sqrt(n_channels)
+        crit = np.linalg.norm(H - eye_n) / sqrt_n
         if crit <= zeta:
             break
+    else:
+        warnings.warn('Convergence not reached')
 
     if p > 0:
         C = np.linalg.inv(X) @ np.linalg.inv(X.T)
@@ -448,6 +452,8 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
             nu = 0.5 * nu
         if crit <= tol or nu <= tol:
             break
+    else:
+        warnings.warn('Convergence not reached')
 
     return C
 
@@ -497,7 +503,7 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
     K = sqrtm(C)
 
     crit = np.finfo(np.float64).max
-    for k in range(maxiter):
+    for _ in range(maxiter):
         J = np.einsum('a,abc->bc', sample_weight, sqrtm(K @ covmats @ K))
         Knew = sqrtm(J)
 
@@ -505,6 +511,8 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
         K = Knew
         if crit <= tol:
             break
+    else:
+        warnings.warn('Convergence not reached')
 
     C = K @ K
     return C
@@ -598,7 +606,7 @@ def _apply_masks(covmats, masks):
     return maskedcovmats
 
 
-def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=50, init=None,
+def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=100, init=None,
                        sample_weight=None):
     """Masked Riemannian mean of SPD matrices.
 
@@ -615,7 +623,7 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=50, init=None,
         Masks, defined as semi-orthogonal matrices. See [1]_.
     tol : float, default=10e-9
         The tolerance to stop the gradient descent.
-    maxiter : int, default=50
+    maxiter : int, default=100
         The maximum number of iteration.
     init : None | ndarray, shape (n_channels, n_channels), default=None
         A SPD matrix used to initialize the gradient descent.
@@ -649,7 +657,7 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=50, init=None,
     nu = 1.0
     tau = np.finfo(np.float64).max
     crit = np.finfo(np.float64).max
-    for k in range(maxiter):
+    for _ in range(maxiter):
         maskedC = _apply_masks(np.tile(C, (n_matrices, 1, 1)), masks)
         J = np.zeros((n_channels, n_channels))
         for i in range(n_matrices):
@@ -668,11 +676,13 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=50, init=None,
             nu = 0.5 * nu
         if crit <= tol or nu <= tol:
             break
+    else:
+        warnings.warn('Convergence not reached')
 
     return C
 
 
-def nanmean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
+def nanmean_riemann(covmats, tol=10e-9, maxiter=100, init=None,
                     sample_weight=None):
     """Riemannian NaN-mean of SPD matrices.
 
@@ -685,7 +695,7 @@ def nanmean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
         Set of SPD matrices, corrupted by symmetric NaN values [1]_.
     tol : float, default=10e-9
         The tolerance to stop the gradient descent.
-    maxiter : int, default=50
+    maxiter : int, default=100
         The maximum number of iteration.
     init : None | ndarray, shape (n_channels, n_channels), default=None
         A SPD matrix used to initialize the gradient descent.
