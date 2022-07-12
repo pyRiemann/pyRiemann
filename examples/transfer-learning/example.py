@@ -11,6 +11,7 @@ from pyriemann.utils.base import invsqrtm, sqrtm, powm
 
 from pyriemann.transferlearning import TLSplitter, TLPipeline, DCT, RCT
 
+
 def make_example_dataset(N, theta, alpha, eps=3.0):
     '''
         theta : angle for the rotation matrix applied to dataset 2
@@ -29,8 +30,7 @@ def make_example_dataset(N, theta, alpha, eps=3.0):
     X2 = np.stack([invsqrtM2 @ X2i @ invsqrtM2.T for X2i in X2])
     # rotate dataset with Q
     Q = np.array(
-        [[np.cos(theta), -np.sin(theta)], 
-        [np.sin(theta), np.cos(theta)]])
+        [[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
     X2 = np.stack([Q @ X2i @ Q.T for X2i in X2])
     # transport the dataset to another place
     M1 = mean_riemann(X1)
@@ -43,7 +43,7 @@ def make_example_dataset(N, theta, alpha, eps=3.0):
 
     meta = pd.DataFrame()
     meta['domain'] = len(X1)*[1] + len(X2)*[2]
-    meta['target'] = meta['domain'] == 2 # fix domain 2 as target
+    meta['target'] = meta['domain'] == 2  # fix domain 2 as target
 
     return X, y, meta
 
@@ -69,20 +69,21 @@ def make_figure(X, y, meta):
     y = np.concatenate([y1, y2])
     for i in range(N1):
         if y1[i] == 0:
-            ax.scatter(S1[i,0], S1[i,1], c='C0', s=40, marker='x')
+            ax.scatter(S1[i, 0], S1[i, 1], c='C0', s=40, marker='x')
         if y1[i] == 1:
-            ax.scatter(S1[i,0], S1[i,1], c='C1', s=40, marker='x')
+            ax.scatter(S1[i, 0], S1[i, 1], c='C1', s=40, marker='x')
     for i in range(N2):
         if y2[i] == 0:
-            ax.scatter(S2[i,0], S2[i,1], c='C0', s=40, alpha=0.5, marker='o')
+            ax.scatter(S2[i, 0], S2[i, 1], c='C0', s=40, alpha=0.5, marker='o')
         if y2[i] == 1:
-            ax.scatter(S2[i,0], S2[i,1], c='C1', s=40, alpha=0.5, marker='o')
+            ax.scatter(S2[i, 0], S2[i, 1], c='C1', s=40, alpha=0.5, marker='o')
 
     ax.set_xlim([-1.05, +1.05])
     ax.set_ylim([-1.05, +1.05])
 
     return fig
-    
+
+
 np.random.seed(13)
 
 # create a 2D dataset with two domains, each with two classes
@@ -114,9 +115,9 @@ meth_list = ['DCT', 'RCT']
 for meth in meth_list:
     scores[meth] = []
 
-# The are three modes for training the pipeline: 
+# The are three modes for training the pipeline:
 #   (1) train clf only on source domain
-#   (2) train clf only on source domain + training partition from target 
+#   (2) train clf only on source domain + training partition from target
 #   (3) train clf only on training partition from target
 # these different choices yield very different results in the classification.
 training_mode = 1
@@ -132,7 +133,7 @@ for train_idx, test_idx in cv.split(X, y, meta):
     # DCT pipeline -- no transfer learning at all between source and target
     dct_transf = DCT()
     dct_pipeline = TLPipeline(
-        transformer=dct_transf, 
+        transformer=dct_transf,
         clf=MDM(),
         training_mode=training_mode)
     dct_pipeline.fit(X_train, y_train, meta_train)
@@ -141,11 +142,11 @@ for train_idx, test_idx in cv.split(X, y, meta):
     # RCT pipeline -- recenter the data from each domain to identity
     rct_transf = RCT()
     rct_pipeline = TLPipeline(
-        transformer=rct_transf, 
+        transformer=rct_transf,
         clf=MDM(),
         training_mode=training_mode)
     rct_pipeline.fit(X_train, y_train, meta_train)
-    scores['RCT'].append(rct_pipeline.score(X_test, y_test, meta_test))            
+    scores['RCT'].append(rct_pipeline.score(X_test, y_test, meta_test))
 
 # get the average score of each pipeline
 for meth in meth_list:

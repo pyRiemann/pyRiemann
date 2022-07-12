@@ -18,7 +18,8 @@ class TLSplitter():
         # index of training-split for the target data points
         kf_target = KFold(n_splits=self.n_splits).split(X[meta['target']])
         for train_idx_target, test_idx_target in kf_target:
-            train_idx_target = list(meta[meta['target']].index[train_idx_target])
+            train_idx_target = list(
+                meta[meta['target']].index[train_idx_target])
             train_idx = np.concatenate([idx_source, train_idx_target])
             test_idx_target = list(meta[meta['target']].index[test_idx_target])
             test_idx = test_idx_target
@@ -26,6 +27,7 @@ class TLSplitter():
 
     def get_n_splits(self, X, y, meta):
         return self.n_splits
+
 
 class DCT(BaseEstimator, TransformerMixin):
     '''
@@ -45,6 +47,7 @@ class DCT(BaseEstimator, TransformerMixin):
     def fit_transform(self, X, y, meta):
         return self.fit(X, y, meta).transform(X, y, meta)
 
+
 class RCT(BaseEstimator, TransformerMixin):
     '''
     Re-center (RCT) the data points from each domain to the Identity.
@@ -56,7 +59,7 @@ class RCT(BaseEstimator, TransformerMixin):
     def fit(self, X, y, meta):
         self._Minvsqrt = {}
         for domain in np.unique(meta['domain']):
-            domain_idx = meta['domain'] == domain        
+            domain_idx = meta['domain'] == domain
             M = mean_riemann(X[domain_idx])
             self._Minvsqrt[domain] = invsqrtm(M)
         return self
@@ -64,20 +67,21 @@ class RCT(BaseEstimator, TransformerMixin):
     def transform(self, X, y=None, meta=None):
         X_rct = np.zeros(X.shape)
         for domain in np.unique(meta['domain']):
-            domain_idx = meta['domain'] == domain
+            idx = meta['domain'] == domain
             Minvsqrt_domain = self._Minvsqrt[domain]
-            X_rct[domain_idx] = np.stack(
-                [Minvsqrt_domain @ Xi @ Minvsqrt_domain.T for Xi in X[domain_idx]])
-        return X_rct                            
+            X_rct[idx] = np.stack(
+                [Minvsqrt_domain @ Xi @ Minvsqrt_domain.T for Xi in X[idx]])
+        return X_rct
 
     def fit_transform(self, X, y, meta):
         return self.fit(X, y, meta).transform(X, y, meta)
+
 
 class TLPipeline(BaseEstimator, ClassifierMixin):
     '''
 
     Pipeline for carrying out transfer learning in pyRiemann.
-    
+
     When fitting the model we do:
         (1) Fit and transform the data points from each domain
         (2) Select which samples from each domain should be in the training set
@@ -87,9 +91,9 @@ class TLPipeline(BaseEstimator, ClassifierMixin):
         (1) Transform the data points from each domain
         (2) Use trained classifier to predict labels of testing set
 
-    The are three modes for training the pipeline: 
+    The are three modes for training the pipeline:
         (1) train clf only on source domain
-        (2) train clf only on source domain + training partition from target 
+        (2) train clf only on source domain + training partition from target
         (3) train clf only on training partition from target
     these different choices yield very different results in the classification.
 
@@ -111,7 +115,7 @@ class TLPipeline(BaseEstimator, ClassifierMixin):
         elif self._training_mode == 2:
             # take data from training source and target
             X_select = X
-            y_select = y            
+            y_select = y
 
         elif self._training_mode == 3:
             # take data only from training target
@@ -119,8 +123,8 @@ class TLPipeline(BaseEstimator, ClassifierMixin):
             X_select = X[select_target]
             y_select = y[select_target]
 
-        return X_select, y_select        
-    
+        return X_select, y_select
+
     def fit(self, X, y, meta):
         X_transf = self.transformer.fit_transform(X, y, meta)
         X_select, y_select = self.__select(X_transf, y, meta)
@@ -137,4 +141,4 @@ class TLPipeline(BaseEstimator, ClassifierMixin):
         from sklearn.metrics import accuracy_score
         y_pred = self.predict(X, meta)
         y_true = y
-        return accuracy_score(y_true, y_pred)        
+        return accuracy_score(y_true, y_pred)
