@@ -70,6 +70,8 @@ v0.2.8.dev
 
 - Enhance base and distance functions, to process ndarrays of SPD matrices
 
+- Enhance means functions, with faster implementations and warning when convergence is not reached
+
 v0.2.7 (June 2021)
 ------------------
 
