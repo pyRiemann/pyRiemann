@@ -1,4 +1,4 @@
-from numpy import array, eye
+from numpy import eye
 from numpy.core import tensordot, trace
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
