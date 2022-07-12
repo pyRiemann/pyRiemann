@@ -87,7 +87,7 @@ def test_riemann_correctness(rndstate, get_covmats):
     cov = get_covmats(n_matrices, n_channels)
     K = kernel_riemann(cov, Cref=eye(n_channels), reg=0)
 
-    log_cov = array([logm(c) for c in cov])
+    log_cov = logm(cov)
     tensor = tensordot(log_cov, log_cov.T, axes=1)
     K1 = trace(tensor, axis1=1, axis2=2)
     assert_array_almost_equal(K, K1)
