@@ -54,6 +54,28 @@ def test_check_distance_error():
 
 
 @pytest.mark.parametrize("dist", get_dist_func())
+def test_distance_error(dist, get_covmats):
+    n_matrices, n_channels = 5, 3
+    A = get_covmats(n_matrices, n_channels)
+    with pytest.raises(ValueError):
+        dist(A, A[0])
+
+
+@pytest.mark.parametrize("dist", get_dist_func())
+def test_distance_func_ndarray(dist, get_covmats):
+    n_matrices, n_channels = 5, 3
+    A = get_covmats(n_matrices, n_channels)
+    B = get_covmats(n_matrices, n_channels)
+    assert isinstance(dist(A[0], B[0]), float)  # 2D arrays
+    assert dist(A, B).shape == (n_matrices,)  # 3D arrays
+
+    n_sets = 5
+    C = np.asarray([A for _ in range(n_sets)])
+    D = np.asarray([B for _ in range(n_sets)])
+    assert dist(C, D).shape == (n_sets, n_matrices,)  # 4D arrays
+
+
+@pytest.mark.parametrize("dist", get_dist_func())
 def test_distance_func_eye(dist):
     n_channels = 3
     A = 2 * np.eye(n_channels)
@@ -134,6 +156,11 @@ def test_distance_wrapper_between_set_and_matrix(dist, get_covmats):
     n_matrices, n_channels = 10, 4
     covmats = get_covmats(n_matrices, n_channels)
     assert distance(covmats, covmats[-1], metric=dist).shape == (n_matrices, 1)
+
+    n_sets = 5
+    covs_4d = np.asarray([covmats for _ in range(n_sets)])
+    with pytest.raises(ValueError):
+        distance(covs_4d, covmats, metric=dist)
 
 
 def test_pairwise_distance_matrix(get_covmats):
