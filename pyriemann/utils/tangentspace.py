@@ -1,11 +1,12 @@
-""" Tangent Space """
+""" Tangent space for SPD matrices. """
+
 import numpy as np
 
 from .base import sqrtm, invsqrtm, logm, expm
 from .mean import mean_covariance
 
 
-def tangent_space(covmats, Cref):
+def tangent_space(X, Cref):
     """Project a set of SPD matrices in the tangent space.
 
     Project a set of SPD matrices in the tangent space, according to the
@@ -13,34 +14,32 @@ def tangent_space(covmats, Cref):
 
     Parameters
     ----------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+    X : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
     Cref : ndarray, shape (n_channels, n_channels)
         The reference SPD matrix.
 
     Returns
     -------
-    T : ndarray, shape (n_matrices, n_channels * (n_channels + 1) / 2)
+    X_new : ndarray, shape (n_matrices, n_channels * (n_channels + 1) / 2)
         Set of tangent space vectors.
 
     See Also
     --------
     untangent_space
     """
-    n_matrices, n_channels, _ = covmats.shape
     Cm12 = invsqrtm(Cref)
+    tmp = logm(Cm12 @ X @ Cm12)
+
+    n_channels = X.shape[-1]
     idx = np.triu_indices_from(Cref)
-    n_ts = int(n_channels * (n_channels + 1) / 2)
-    T = np.empty((n_matrices, n_ts))
     coeffs = (np.sqrt(2) * np.triu(np.ones((n_channels, n_channels)), 1) +
               np.eye(n_channels))[idx]
-    for i in range(n_matrices):
-        tmp = logm(Cm12 @ covmats[i] @ Cm12)
-        T[i] = np.multiply(coeffs, tmp[idx])
-    return T
+    X_new = coeffs * tmp[..., idx[0], idx[1]]
+    return X_new
 
 
-def untangent_space(T, Cref):
+def untangent_space(X, Cref):
     """Project a set of tangent space vectors back to the manifold.
 
     Project a set of tangent space vectors back to the manifold, according to
@@ -48,41 +47,40 @@ def untangent_space(T, Cref):
 
     Parameters
     ----------
-    T : ndarray, shape (n_matrices, n_channels * (n_channels + 1) / 2)
+    X : ndarray, shape (n_matrices, n_channels * (n_channels + 1) / 2)
         Set of tangent space vectors.
     Cref : ndarray, shape (n_channels, n_channels)
         The reference SPD matrix.
 
     Returns
     -------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+    X_original : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
 
     See Also
     --------
     tangent_space
     """
-    n_matrices, n_ts = T.shape
+    n_matrices, n_ts = X.shape
     n_channels = int((np.sqrt(1 + 8 * n_ts) - 1) / 2)
-    C12 = sqrtm(Cref)
-
     idx = np.triu_indices_from(Cref)
-    covmats = np.empty((n_matrices, n_channels, n_channels))
-    covmats[:, idx[0], idx[1]] = T
-    for i in range(n_matrices):
-        triuc = np.triu(covmats[i], 1) / np.sqrt(2)
-        covmats[i] = (np.diag(np.diag(covmats[i])) + triuc + triuc.T)
-        covmats[i] = C12 @ expm(covmats[i]) @ C12
+    X_original = np.empty((n_matrices, n_channels, n_channels))
+    X_original[..., idx[0], idx[1]] = X
+    idx = np.triu_indices_from(Cref, k=1)
+    X_original[..., idx[0], idx[1]] /= np.sqrt(2)
+    X_original[..., idx[1], idx[0]] = X_original[..., idx[0], idx[1]]
 
-    return covmats
+    C12 = sqrtm(Cref)
+    X_original = C12 @ expm(X_original) @ C12
+    return X_original
 
 
-def transport(Covs, Cref, metric='riemann'):
+def transport(X, Cref, metric='riemann'):
     """Parallel transport of a set of SPD matrices towards a reference matrix.
 
     Parameters
     ----------
-    Covs : ndarray, shape (n_matrices, n_channels, n_channels)
+    X : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
     Cref : ndarray, shape (n_channels, n_channels)
         The reference SPD matrix.
@@ -91,11 +89,11 @@ def transport(Covs, Cref, metric='riemann'):
 
     Returns
     -------
-    Covs : ndarray, shape (n_matrices, n_channels, n_channels)
+    X_new : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of transported SPD matrices.
     """
-    C = mean_covariance(Covs, metric=metric)
+    C = mean_covariance(X, metric=metric)
     iC = invsqrtm(C)
     E = sqrtm(iC @ Cref @ iC)
-    out = np.array([E @ c @ E.T for c in Covs])
-    return out
+    X_new = E @ X @ E.T
+    return X_new

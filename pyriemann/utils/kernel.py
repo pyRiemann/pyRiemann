@@ -2,8 +2,8 @@
 
 import numpy as np
 
-from .mean import mean_riemann
 from .base import invsqrtm, logm
+from .mean import mean_riemann
 
 
 def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
@@ -75,8 +75,7 @@ def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
         applications. Neurocomputing, Elsevier, 2013, 112, pp.172-178.
     """  # noqa
     def kernelfct(X, Cref):
-        X_ = np.array([logm(x) for x in X])
-        return X_
+        return logm(X)
 
     return _apply_matrix_kernel(kernelfct, X, Y, reg=reg)
 
@@ -124,8 +123,7 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
             Cref = mean_riemann(X)
 
         C_invsq = invsqrtm(Cref)
-        X_ = C_invsq @ X @ C_invsq
-        X_ = np.array([logm(x_) for x_ in X_])
+        X_ = logm(C_invsq @ X @ C_invsq)
         return X_
 
     return _apply_matrix_kernel(kernelfct, X, Y, Cref=Cref, reg=reg)
