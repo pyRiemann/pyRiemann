@@ -7,22 +7,22 @@ from .mean import mean_covariance
 
 
 def tangent_space(X, Cref):
-    """Project a set of SPD matrices in the tangent space.
+    """Project SPD matrices in the tangent space.
 
-    Project a set of SPD matrices in the tangent space, according to the
-    reference matrix Cref.
+    Project SPD matrices in the tangent space, according to the reference
+    matrix Cref.
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices.
+    X : ndarray, shape (..., n_channels, n_channels)
+        SPD matrices.
     Cref : ndarray, shape (n_channels, n_channels)
         The reference SPD matrix.
 
     Returns
     -------
-    X_new : ndarray, shape (n_matrices, n_channels * (n_channels + 1) / 2)
-        Set of tangent space vectors.
+    T : ndarray, shape (..., n_channels * (n_channels + 1) / 2)
+        Tangent vectors.
 
     See Also
     --------
@@ -35,52 +35,52 @@ def tangent_space(X, Cref):
     idx = np.triu_indices_from(Cref)
     coeffs = (np.sqrt(2) * np.triu(np.ones((n_channels, n_channels)), 1) +
               np.eye(n_channels))[idx]
-    X_new = coeffs * tmp[..., idx[0], idx[1]]
-    return X_new
+    T = coeffs * tmp[..., idx[0], idx[1]]
+    return T
 
 
-def untangent_space(X, Cref):
-    """Project a set of tangent space vectors back to the manifold.
+def untangent_space(T, Cref):
+    """Project tangent vectors back to the manifold.
 
-    Project a set of tangent space vectors back to the manifold, according to
-    the reference matrix Cref.
+    Project tangent vectors back to the matrix manifold, according to the
+    reference matrix Cref.
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_channels * (n_channels + 1) / 2)
-        Set of tangent space vectors.
+    T : ndarray, shape (..., n_channels * (n_channels + 1) / 2)
+        Tangent vectors.
     Cref : ndarray, shape (n_channels, n_channels)
         The reference SPD matrix.
 
     Returns
     -------
-    X_original : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices.
+    X : ndarray, shape (..., n_channels, n_channels)
+        SPD matrices.
 
     See Also
     --------
     tangent_space
     """
-    n_matrices, n_ts = X.shape
-    n_channels = int((np.sqrt(1 + 8 * n_ts) - 1) / 2)
+    dims = T.shape
+    n_channels = int((np.sqrt(1 + 8 * dims[-1]) - 1) / 2)
+    X = np.empty((*dims[:-1], n_channels, n_channels))
     idx = np.triu_indices_from(Cref)
-    X_original = np.empty((n_matrices, n_channels, n_channels))
-    X_original[..., idx[0], idx[1]] = X
+    X[..., idx[0], idx[1]] = T
     idx = np.triu_indices_from(Cref, k=1)
-    X_original[..., idx[0], idx[1]] /= np.sqrt(2)
-    X_original[..., idx[1], idx[0]] = X_original[..., idx[0], idx[1]]
+    X[..., idx[0], idx[1]] /= np.sqrt(2)
+    X[..., idx[1], idx[0]] = X[..., idx[0], idx[1]]
 
     C12 = sqrtm(Cref)
-    X_original = C12 @ expm(X_original) @ C12
-    return X_original
+    X = C12 @ expm(X) @ C12
+    return X
 
 
-def transport(X, Cref, metric='riemann'):
+def transport(Covs, Cref, metric='riemann'):
     """Parallel transport of a set of SPD matrices towards a reference matrix.
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_channels, n_channels)
+    Covs : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
     Cref : ndarray, shape (n_channels, n_channels)
         The reference SPD matrix.
@@ -89,11 +89,11 @@ def transport(X, Cref, metric='riemann'):
 
     Returns
     -------
-    X_new : ndarray, shape (n_matrices, n_channels, n_channels)
+    out : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of transported SPD matrices.
     """
-    C = mean_covariance(X, metric=metric)
+    C = mean_covariance(Covs, metric=metric)
     iC = invsqrtm(C)
     E = sqrtm(iC @ Cref @ iC)
-    X_new = E @ X @ E.T
-    return X_new
+    out = E @ Covs @ E.T
+    return out
