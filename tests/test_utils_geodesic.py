@@ -71,8 +71,24 @@ class TestGeodesicFunc(GeodesicFuncTestCase):
         assert geodesic_func(A, B, 0.5) == approx(Ctrue)
 
 
+@pytest.mark.parametrize(
+    "geodesic_func", [geodesic_euclid, geodesic_logeuclid, geodesic_riemann]
+)
+def test_geodesic_ndarray(geodesic_func, get_covmats):
+    n_matrices, n_channels = 5, 3
+    A = get_covmats(n_matrices, n_channels)
+    B = get_covmats(n_matrices, n_channels)
+    assert geodesic_func(A[0], B[0]).shape == A[0].shape  # 2D arrays
+    assert geodesic_func(A, B).shape == A.shape  # 3D arrays
+
+    n_sets = 5
+    C = np.asarray([A for _ in range(n_sets)])
+    D = np.asarray([B for _ in range(n_sets)])
+    assert geodesic_func(C, D).shape == C.shape  # 4D arrays
+
+
 @pytest.mark.parametrize("metric", get_geod_name())
-def test_distance_wrapper_simple(metric):
+def test_geodesic_wrapper_simple(metric):
     n_channels = 3
     if metric == "euclid":
         A = 1.0 * np.eye(n_channels)
@@ -86,7 +102,7 @@ def test_distance_wrapper_simple(metric):
 
 
 @pytest.mark.parametrize("met, gfunc", zip(get_geod_name(), get_geod_func()))
-def test_distance_wrapper_random(met, gfunc, get_covmats):
+def test_geodesic_wrapper_random(met, gfunc, get_covmats):
     n_matrices, n_channels = 2, 5
     covmats = get_covmats(n_matrices, n_channels)
     A, B = covmats[0], covmats[1]

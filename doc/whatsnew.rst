@@ -68,7 +68,7 @@ v0.2.8.dev
 
 - Fix dispersion when generating datasets: :func:`pyriemann.datasets.sample_gaussian_spd`
 
-- Enhance base and distance functions, to process ndarrays of SPD matrices
+- Enhance utils functions, to process ndarrays of SPD matrices
 
 - Enhance means functions, with faster implementations and warning when convergence is not reached
 
