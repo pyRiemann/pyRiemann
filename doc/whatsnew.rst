@@ -34,7 +34,7 @@ v0.2.8.dev
 
 - Add a special form covariance matrix :func:`pyriemann.utils.covariance.covariances_X`. :pr:`147` by :user:`qbarthelemy`
 
-- Add masked and NaN means with Riemannian metric: :func:`pyriemann.utils.mean.maskedmean_riemann` and :func:`pyriemann.utils.mean.nanmean_riemann`. :pr:`149` by :user:`qbarthelemy`
+- Add masked and NaN means with Riemannian metric: :func:`pyriemann.utils.mean.maskedmean_riemann` and :func:`pyriemann.utils.mean.nanmean_riemann`. :pr:`149` by :user:`qbarthelemy` and :user:`sylvchev`
 
 - Add ``corr`` option in :func:`pyriemann.utils.covariance.normalize`, to normalize covariance into correlation matrices. :pr:`153` by :user:`qbarthelemy`
 
@@ -46,7 +46,7 @@ v0.2.8.dev
 
 - Fix ``fit`` in :class:`pyriemann.channelselection.ElectrodeSelection`. :pr:`166` by :user:`qbarthelemy`
 
-- Add power mean estimation in :func:`pyriemann.utils.mean.mean_power`. :pr:`170` by :user:`qbarthelemy`
+- Add power mean estimation in :func:`pyriemann.utils.mean.mean_power`. :pr:`170` by :user:`qbarthelemy` and :user:`plcrodrigues`
 
 - Add example in gallery to compare classifiers on synthetic datasets. :pr:`175` by :user:`qbarthelemy`
 
@@ -58,7 +58,7 @@ v0.2.8.dev
 
 - Add K-Nearest-Neighbor regressor: :class:`pyriemann.regression.KNearestNeighborRegressor`. :pr:`164` by :user:`gabelstein`, :user:`qbarthelemy` and :user:`agramfort`
 
-- Add Minimum Distance to Mean Field classifier: :class:`pyriemann.classification.MeanField`. :pr:`172` by :user:`qbarthelemy`
+- Add Minimum Distance to Mean Field classifier: :class:`pyriemann.classification.MeanField`. :pr:`172` by :user:`qbarthelemy`  and :user:`plcrodrigues`
 
 - Add example on principal geodesic analysis (PGA) for SSVEP classification. :pr:`169` by :user:`qbarthelemy`
 
@@ -68,7 +68,7 @@ v0.2.8.dev
 
 - Fix dispersion when generating datasets: :func:`pyriemann.datasets.sample_gaussian_spd`. :pr:`179` by :user:`sylvchev`
 
-- Enhance base and distance functions, to process ndarrays of SPD matrices. :pr:`187` by :user:`qbarthelemy`
+- Enhance base and distance functions, to process ndarrays of SPD matrices. :pr:`186` and :pr:`187` by :user:`qbarthelemy`
 
 - Enhance utils functions, to process ndarrays of SPD matrices. :pr:`190` by :user:`qbarthelemy`
 
