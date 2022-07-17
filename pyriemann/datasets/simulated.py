@@ -120,7 +120,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     """
     if not isinstance(class_sep, float):
@@ -195,7 +195,7 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
     """
 
     n_dim = mean.shape[1]

@@ -542,7 +542,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     See Also
     --------

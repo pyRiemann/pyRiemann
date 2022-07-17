@@ -616,7 +616,7 @@ class SVC(sklearnSVC):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     References
     ----------
@@ -746,7 +746,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     References
     ----------

@@ -32,7 +32,7 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
     """  # noqa
     def kernelfct(X, Cref):
         return X
@@ -66,7 +66,7 @@ def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     References
     ----------
@@ -110,7 +110,7 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     References
     ----------
@@ -204,7 +204,7 @@ def kernel(X, Y=None, *, Cref=None, metric='riemann', reg=1e-10):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
     """
     try:
         return globals()[f'kernel_{metric}'](X, Y, Cref=Cref, reg=reg)

@@ -272,7 +272,7 @@ def _sample_gaussian_spd_centered(
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     References
     ----------
@@ -332,7 +332,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None, n_jobs=1):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     References
     ----------
@@ -387,7 +387,7 @@ def generate_random_spd_matrix(n_dim, random_state=None, *, mat_mean=.0,
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
     """
 
     if (n_dim <= 0) or (not isinstance(n_dim, int)):

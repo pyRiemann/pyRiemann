@@ -111,7 +111,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=100, sample_weight=None):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     References
     ----------
@@ -343,7 +343,7 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10, maxiter=100):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     References
     ----------
@@ -638,7 +638,7 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=100, init=None,
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     References
     ----------
@@ -710,7 +710,7 @@ def nanmean_riemann(covmats, tol=10e-9, maxiter=100, init=None,
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     References
     ----------

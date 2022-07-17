@@ -160,7 +160,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     References
     ----------
@@ -291,7 +291,7 @@ def barycenter_weights(X, Y, indices, metric='riemann', reg=1e-3):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
     """
     n_matrices, n_neighbors = indices.shape
     msg = f"Number of index-sets in indices (is {n_matrices}) must match " \
@@ -355,7 +355,7 @@ def locally_linear_embedding(X,
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     References
     ----------

@@ -329,7 +329,7 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     See Also
     --------
@@ -527,7 +527,7 @@ class Coherences(CospCovariances):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     See Also
     --------

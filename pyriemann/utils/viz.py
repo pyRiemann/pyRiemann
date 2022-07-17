@@ -192,7 +192,7 @@ def plot_waveforms(X, display, *, times=None, color='gray', alpha=0.5,
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
     """
     try:
         import matplotlib.pyplot as plt
