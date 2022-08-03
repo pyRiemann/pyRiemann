@@ -96,7 +96,7 @@ def test_distance_func_geodesic(dist, get_covmats):
 def test_distance_func_separability(dist, get_covmats):
     n_matrices, n_channels = 1, 6
     covmats = get_covmats(n_matrices, n_channels)
-    assert dist(covmats[0], covmats[0]) == approx(0, abs=1e-7)
+    assert dist(covmats[0], covmats[0]) == approx(0, abs=2e-7)
 
 
 @pytest.mark.parametrize(
