@@ -16,20 +16,20 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
     """Tangent space project TransformerMixin.
 
-    Tangent space projection map a set of covariance matrices to their
+    Tangent space projection map a set of SPD matrices to their
     tangent space according to [1]_. The Tangent space projection can be
     seen as a kernel operation, cf [2]_. After projection, each matrix is
-    represented as a vector of size :math:`N(N+1)/2` where N is the
-    dimension of the covariance matrices.
+    represented as a vector of size :math:`n (n+1)/2`, where :math:`n` is the
+    dimension of the SPD matrices.
 
-    Tangent space projection is useful to convert covariance matrices in
-    euclidean vectors while conserving the inner structure of the manifold.
+    Tangent space projection is useful to convert SPD matrices in
+    Euclidean vectors while conserving the inner structure of the manifold.
     After projection, standard processing and vector-based classification can
     be applied.
 
     Tangent space projection is a local approximation of the manifold. it takes
     one parameter, the reference point, that is usually estimated using the
-    geometric mean of the covariance matrices set you project. if the function
+    geometric mean of the SPD matrices set you project. If the function
     `fit` is not called, the identity matrix will be used as reference point.
     This can lead to serious degradation of performances.
     The approximation will be bigger if the matrices in the set are scattered
@@ -41,9 +41,13 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    metric : string, default='riemann'
-        The type of metric used for reference point mean estimation.
-        see `mean_covariance` for the list of supported metric.
+    metric : string | dict, default='riemann'
+        The type of metric used for reference matrix estimation (see
+        `mean_covariance` for the list of supported metric) and for tangent
+        space map (see `tangent_space` for the list of supported metric).
+        The metric could be a dict with two keys, `mean` and `map` in
+        order to pass different metrics for the reference matrix estimation
+        and the tangent space mapping.
     tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]_. This is not compatible with
@@ -94,10 +98,34 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         self : TangentSpace instance
             The TangentSpace instance.
         """
-        # compute mean covariance
-        self.reference_ = mean_covariance(X, metric=self.metric,
-                                          sample_weight=sample_weight)
+        self.metric_mean, self.metric_map = self._check_metric(self.metric)
+
+        self.reference_ = mean_covariance(
+            X,
+            metric=self.metric_mean,
+            sample_weight=sample_weight
+        )
         return self
+
+    def _check_metric(self, metric):
+
+        if isinstance(metric, str):
+            metric_mean = metric
+            metric_map = metric
+
+        elif isinstance(metric, dict):
+            # check keys
+            for key in ['mean', 'map']:
+                if key not in metric.keys():
+                    raise KeyError('metric must contain "mean" and "map"')
+
+            metric_mean = metric['mean']
+            metric_map = metric['map']
+
+        else:
+            raise TypeError('metric must be dict or str')
+
+        return metric_mean, metric_map
 
     def _check_data_dim(self, X):
         """Check data shape and return the size of SPD matrix."""
@@ -139,12 +167,14 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         ts : ndarray, shape (n_matrices, n_ts)
             Tangent space projections of SPD matrices.
         """
+        self.metric_mean, self.metric_map = self._check_metric(self.metric)
         self._check_reference_points(X)
+
         if self.tsupdate:
-            Cr = mean_covariance(X, metric=self.metric)
+            Cr = mean_covariance(X, metric=self.metric_mean)
         else:
             Cr = self.reference_
-        return tangent_space(X, Cr)
+        return tangent_space(X, Cr, metric=self.metric_map)
 
     def fit_transform(self, X, y=None, sample_weight=None):
         """Fit and transform in a single function.
@@ -163,10 +193,14 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         ts : ndarray, shape (n_matrices, n_ts)
             Tangent space projections of SPD matrices.
         """
-        # compute mean covariance
-        self.reference_ = mean_covariance(X, metric=self.metric,
-                                          sample_weight=sample_weight)
-        return tangent_space(X, self.reference_)
+        self.metric_mean, self.metric_map = self._check_metric(self.metric)
+
+        self.reference_ = mean_covariance(
+            X,
+            metric=self.metric_mean,
+            sample_weight=sample_weight
+        )
+        return tangent_space(X, self.reference_, metric=self.metric_map)
 
     def inverse_transform(self, X, y=None):
         """Inverse transform.
@@ -183,10 +217,11 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         Returns
         -------
         cov : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of covariance matrices corresponding to each of tangent vector.
+            Set of SPD matrices corresponding to each of tangent vector.
         """
+        self.metric_mean, self.metric_map = self._check_metric(self.metric)
         self._check_reference_points(X)
-        return untangent_space(X, self.reference_)
+        return untangent_space(X, self.reference_, metric=self.metric_map)
 
 
 class FGDA(BaseEstimator, TransformerMixin):
@@ -199,9 +234,13 @@ class FGDA(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    metric : string, default='riemann'
-        The type of metric used for reference point mean estimation.
-        see `mean_covariance` for the list of supported metric.
+    metric : string | dict, default='riemann'
+        The type of metric used for reference matrix estimation (see
+        `mean_covariance` for the list of supported metric) and for tangent
+        space map (see `tangent_space` for the list of supported metric).
+        The metric could be a dict with two keys, `mean` and `map` in
+        order to pass different metrics for the reference matrix estimation
+        and the tangent space mapping.
     tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]_. This is not compatible with
@@ -241,13 +280,12 @@ class FGDA(BaseEstimator, TransformerMixin):
         self._lda.fit(ts, y)
 
         W = self._lda.coef_.copy()
-        self._W = np.dot(
-            np.dot(W.T, np.linalg.pinv(np.dot(W, W.T))), W)
+        self._W = W.T @ np.linalg.pinv(W @ W.T) @ W
         return ts
 
     def _retro_project(self, ts):
         """Helper to project back in the manifold."""
-        ts = np.dot(ts, self._W)
+        ts = ts @ self._W
         return self._ts.inverse_transform(ts)
 
     def fit(self, X, y=None, sample_weight=None):
