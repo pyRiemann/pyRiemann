@@ -7,6 +7,11 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
+v0.3.1.dev
+----------
+
+- Add exponential and logarithmic maps for three main metrics, and add option ``metric`` into :func:`pyriemann.utils.tangentspace.tangent_space` and :func:`pyriemann.utils.tangentspace.untangent_space`. :pr:`195` by :user:`qbarthelemy`
+
 v0.3 (July 2022)
 ----------------
 
