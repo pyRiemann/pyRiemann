@@ -216,7 +216,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         estimation, and for tangent space map (see `tangent_space` for the list
         of supported metric).
         The metric could be a dict with three keys, `mean`, `dist` and `map` in
-        order to pass different metrics for the reference matrix estimation, 
+        order to pass different metrics for the reference matrix estimation,
         the distance estimation, and the tangent space mapping.
     tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
