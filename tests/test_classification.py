@@ -126,14 +126,39 @@ def test_metric_dict_error(classif, mean, dist, get_covmats, get_labels):
         clf.fit(covmats, labels).predict(covmats)
 
 
-@pytest.mark.parametrize("classif", [MDM, FgMDM])
-@pytest.mark.parametrize("mean", get_means())
-@pytest.mark.parametrize("dist", get_distances())
-def test_metric_dist(classif, mean, dist, get_covmats, get_labels):
+@pytest.mark.parametrize("metric_mean", get_means())
+@pytest.mark.parametrize("metric_dist", get_distances())
+def test_metric_MDM(metric_mean, metric_dist, get_covmats, get_labels):
     n_matrices, n_channels, n_classes = 4, 3, 2
     labels = get_labels(n_matrices, n_classes)
     covmats = get_covmats(n_matrices, n_channels)
-    clf = classif(metric={"mean": mean, "distance": dist})
+    clf = MDM(metric={"mean": metric_mean, "distance": metric_dist})
+    clf.fit(covmats, labels).predict(covmats)
+
+
+@pytest.mark.parametrize("metric_mean", get_means())
+@pytest.mark.parametrize("metric_dist", get_distances())
+@pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
+def test_metric_FgMDM(metric_mean, metric_dist, metric_map, get_covmats,
+                      get_labels):
+    n_matrices, n_channels, n_classes = 4, 3, 2
+    labels = get_labels(n_matrices, n_classes)
+    covmats = get_covmats(n_matrices, n_channels)
+    clf = FgMDM(metric={
+        "mean": metric_mean,
+        "distance": metric_dist,
+        "map": metric_map
+    })
+    clf.fit(covmats, labels).predict(covmats)
+
+
+@pytest.mark.parametrize("metric_mean", get_means())
+@pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
+def test_metric_TSclassifier(metric_mean, metric_map, get_covmats, get_labels):
+    n_matrices, n_channels, n_classes = 4, 3, 2
+    labels = get_labels(n_matrices, n_classes)
+    covmats = get_covmats(n_matrices, n_channels)
+    clf = TSclassifier(metric={"mean": metric_mean, "map": metric_map})
     clf.fit(covmats, labels).predict(covmats)
 
 
@@ -156,8 +181,9 @@ def test_metric_str(classif, metric, get_covmats, get_labels):
     covmats = get_covmats(n_matrices, n_channels)
     clf = classif(metric=metric)
 
-    if classif is SVC and metric not in ['riemann', 'euclid', 'logeuclid']:
-        with pytest.raises(ValueError):
+    if classif in [SVC, FgMDM, TSclassifier] \
+    and metric not in ['riemann', 'euclid', 'logeuclid']:
+        with pytest.raises((KeyError, ValueError)):
             clf.fit(covmats, labels).predict(covmats)
     else:
         clf.fit(covmats, labels).predict(covmats)
