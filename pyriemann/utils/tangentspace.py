@@ -34,6 +34,10 @@ def exp_map_euclid(X, Cref):
     -------
     X_original : ndarray, shape (..., n_channels, n_channels)
         SPD matrices.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
     return X + Cref
 
@@ -59,6 +63,10 @@ def exp_map_logeuclid(X, Cref):
     -------
     X_original : ndarray, shape (..., n_channels, n_channels)
         SPD matrices.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
     return expm(X + logm(Cref))
 
@@ -74,7 +82,7 @@ def exp_map_riemann(X, Cref, Cm12=False):
         \mathbf{X}_\text{new} = \mathbf{C}_\text{ref}^{1/2} \exp(\mathbf{X})
         \mathbf{C}_\text{ref}^{1/2}
 
-    When Cm12=True, it returns the full exponential map:
+    When Cm12=True, it returns the full Riemannian exponential map:
 
     .. math::
         \mathbf{X}_\text{new} = \mathbf{C}_\text{ref}^{1/2}
@@ -88,12 +96,16 @@ def exp_map_riemann(X, Cref, Cm12=False):
     Cref : ndarray, shape (n_channels, n_channels)
         The reference SPD matrix.
     Cm12 : bool, default=False
-        If True, it returns the full exponential map.
+        If True, it returns the full Riemannian exponential map.
 
     Returns
     -------
     X_original : ndarray, shape (..., n_channels, n_channels)
         SPD matrices.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
     if Cm12:
         Cm12 = invsqrtm(Cref)
@@ -123,6 +135,10 @@ def log_map_euclid(X, Cref):
     -------
     X_new : ndarray, shape (..., n_channels, n_channels)
         SPD matrices projected in tangent space.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
     _check_dimensions(X, Cref)
     return X - Cref
@@ -149,6 +165,10 @@ def log_map_logeuclid(X, Cref):
     -------
     X_new : ndarray, shape (..., n_channels, n_channels)
         SPD matrices projected in tangent space.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
     _check_dimensions(X, Cref)
     return logm(X) - logm(Cref)
@@ -165,7 +185,7 @@ def log_map_riemann(X, Cref, C12=False):
         \mathbf{X}_\text{new} = \log ( \mathbf{C}_\text{ref}^{-1/2}
         \mathbf{X} \mathbf{C}_\text{ref}^{-1/2})
 
-    When C12=True, it returns the full logarithmic map:
+    When C12=True, it returns the full Riemannian logarithmic map:
 
     .. math::
         \mathbf{X}_\text{new} = \mathbf{C}_\text{ref}^{1/2}
@@ -179,12 +199,16 @@ def log_map_riemann(X, Cref, C12=False):
     Cref : ndarray, shape (n_channels, n_channels)
         The reference SPD matrix.
     C12 : bool, default=False
-        If True, it returns the full logarithmic map.
+        If True, it returns the full Riemannian logarithmic map.
 
     Returns
     -------
     X_new : ndarray, shape (..., n_channels, n_channels)
         SPD matrices projected in tangent space.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
     _check_dimensions(X, Cref)
     Cm12 = invsqrtm(Cref)
@@ -196,7 +220,7 @@ def log_map_riemann(X, Cref, C12=False):
 
 
 def upper(X):
-    r"""Return the weighted upper triangular part.
+    r"""Return the weighted upper triangular part of symmetric matrices.
 
     This function computes the minimal representation of a matrix in tangent
     space [1]_: it keeps the upper triangular part of the symmetric matrix and
@@ -211,7 +235,11 @@ def upper(X):
     Returns
     -------
     T : ndarray, shape (..., n_channels * (n_channels + 1) / 2)
-        Weighted upper triangular parts of matrices.
+        Weighted upper triangular parts of symmetric matrices.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
 
     References
     ----------
@@ -220,7 +248,7 @@ def upper(X):
         Intell, 2008
     """
     n_channels = X.shape[-1]
-    idx = np.triu_indices_from(np.ones((n_channels, n_channels)))
+    idx = np.triu_indices_from(np.empty((n_channels, n_channels)))
     coeffs = (np.sqrt(2) * np.triu(np.ones((n_channels, n_channels)), 1) +
               np.eye(n_channels))[idx]
     T = coeffs * X[..., idx[0], idx[1]]
@@ -230,10 +258,13 @@ def upper(X):
 def unupper(T):
     """Inverse upper function.
 
+    This function is the inverse of upper function: it computes symmetric
+    matrices from their weighted upper triangular parts.
+
     Parameters
     ----------
     T : ndarray, shape (..., n_channels * (n_channels + 1) / 2)
-        Weighted upper triangular parts of matrices.
+        Weighted upper triangular parts of symmetric matrices.
 
     Returns
     -------
@@ -243,13 +274,17 @@ def unupper(T):
     See Also
     --------
     upper
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
     dims = T.shape
     n_channels = int((np.sqrt(1 + 8 * dims[-1]) - 1) / 2)
     X = np.empty((*dims[:-1], n_channels, n_channels))
-    idx = np.triu_indices_from(np.ones((n_channels, n_channels)))
+    idx = np.triu_indices_from(np.empty((n_channels, n_channels)))
     X[..., idx[0], idx[1]] = T
-    idx = np.triu_indices_from(np.ones((n_channels, n_channels)), k=1)
+    idx = np.triu_indices_from(np.empty((n_channels, n_channels)), k=1)
     X[..., idx[0], idx[1]] /= np.sqrt(2)
     X[..., idx[1], idx[0]] = X[..., idx[0], idx[1]]
     return X

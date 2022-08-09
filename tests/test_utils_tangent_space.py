@@ -3,7 +3,7 @@ import numpy as np
 from pyriemann.utils.tangentspace import (
     exp_map_euclid, exp_map_logeuclid, exp_map_riemann,
     log_map_euclid, log_map_logeuclid, log_map_riemann,
-    tangent_space, untangent_space, transport
+    upper, unupper, tangent_space, untangent_space, transport
 )
 import pytest
 from pytest import approx
@@ -24,6 +24,19 @@ def test_maps_shape(fun_map, get_covmats):
     covmats_4d = np.asarray([covmats for _ in range(n_sets)])
     Xt = fun_map(covmats_4d, np.eye(n_channels))
     assert Xt.shape == (n_sets, n_matrices, n_channels, n_channels)
+
+
+def test_upper_and_unupper(get_covmats):
+    """Test upper and unupper should be the same"""
+    n_matrices, n_channels = 10, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    covmats_ut = unupper(upper(covmats))
+    assert covmats_ut == approx(covmats)
+
+    n_sets = 2
+    covmats_4d = np.asarray([covmats for _ in range(n_sets)])
+    covmats_4d_ut = unupper(upper(covmats_4d))
+    assert covmats_4d_ut == approx(covmats_4d)
 
 
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])

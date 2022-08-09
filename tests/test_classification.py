@@ -3,6 +3,13 @@ import pickle
 from conftest import get_distances, get_means, get_metrics
 import numpy as np
 from numpy.testing import assert_array_equal
+import pytest
+from pytest import approx
+from sklearn.dummy import DummyClassifier
+
+from pyriemann.estimation import Covariances
+from pyriemann.utils.kernel import kernel
+from pyriemann.utils.mean import mean_covariance
 from pyriemann.classification import (
     MDM,
     FgMDM,
@@ -11,14 +18,6 @@ from pyriemann.classification import (
     SVC,
     MeanField
 )
-
-from pyriemann.estimation import Covariances
-import pytest
-from pytest import approx
-from sklearn.dummy import DummyClassifier
-
-from pyriemann.utils.kernel import kernel
-from pyriemann.utils.mean import mean_covariance
 
 rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC, MeanField]
 
@@ -33,7 +32,7 @@ class ClassifierTestCase:
         self.clf_fit_independence(classif, covmats, labels)
         self.clf_predict_proba(classif, covmats, labels)
         self.clf_populate_classes(classif, covmats, labels)
-        if classif is (MDM, KNearestNeighbor, SVC, MeanField):
+        if classif in (MDM, KNearestNeighbor, MeanField):
             self.clf_fitpredict(classif, covmats, labels)
         if classif in (MDM, FgMDM):
             self.clf_transform(classif, covmats, labels)
@@ -50,7 +49,7 @@ class ClassifierTestCase:
         self.clf_fit_independence(classif, covmats, labels)
         self.clf_predict_proba(classif, covmats, labels)
         self.clf_populate_classes(classif, covmats, labels)
-        if classif is (MDM, KNearestNeighbor, SVC, MeanField):
+        if classif in (MDM, KNearestNeighbor, MeanField):
             self.clf_fitpredict(classif, covmats, labels)
         if classif in (MDM, FgMDM):
             self.clf_transform(classif, covmats, labels)
@@ -114,62 +113,26 @@ class TestClassifier(ClassifierTestCase):
         clf.fit(covmats, labels).predict(covmats)
 
 
-@pytest.mark.parametrize("classif", [MDM, FgMDM, TSclassifier])
+@pytest.mark.parametrize("classif", rclf)
 @pytest.mark.parametrize("mean", ["faulty", 42])
 @pytest.mark.parametrize("dist", ["not_real", 27])
 def test_metric_dict_error(classif, mean, dist, get_covmats, get_labels):
+    n_matrices, n_channels, n_classes = 6, 3, 2
+    labels = get_labels(n_matrices, n_classes)
+    covmats = get_covmats(n_matrices, n_channels)
+    clf = classif(metric={"mean": mean, "distance": dist})
     with pytest.raises((TypeError, KeyError)):
-        n_matrices, n_channels, n_classes = 6, 3, 2
-        labels = get_labels(n_matrices, n_classes)
-        covmats = get_covmats(n_matrices, n_channels)
-        clf = classif(metric={"mean": mean, "distance": dist})
         clf.fit(covmats, labels).predict(covmats)
-
-
-@pytest.mark.parametrize("metric_mean", get_means())
-@pytest.mark.parametrize("metric_dist", get_distances())
-def test_metric_MDM(metric_mean, metric_dist, get_covmats, get_labels):
-    n_matrices, n_channels, n_classes = 4, 3, 2
-    labels = get_labels(n_matrices, n_classes)
-    covmats = get_covmats(n_matrices, n_channels)
-    clf = MDM(metric={"mean": metric_mean, "distance": metric_dist})
-    clf.fit(covmats, labels).predict(covmats)
-
-
-@pytest.mark.parametrize("metric_mean", get_means())
-@pytest.mark.parametrize("metric_dist", get_distances())
-@pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
-def test_metric_FgMDM(metric_mean, metric_dist, metric_map, get_covmats,
-                      get_labels):
-    n_matrices, n_channels, n_classes = 4, 3, 2
-    labels = get_labels(n_matrices, n_classes)
-    covmats = get_covmats(n_matrices, n_channels)
-    clf = FgMDM(metric={
-        "mean": metric_mean,
-        "distance": metric_dist,
-        "map": metric_map
-    })
-    clf.fit(covmats, labels).predict(covmats)
-
-
-@pytest.mark.parametrize("metric_mean", get_means())
-@pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
-def test_metric_TSclassifier(metric_mean, metric_map, get_covmats, get_labels):
-    n_matrices, n_channels, n_classes = 4, 3, 2
-    labels = get_labels(n_matrices, n_classes)
-    covmats = get_covmats(n_matrices, n_channels)
-    clf = TSclassifier(metric={"mean": metric_mean, "map": metric_map})
-    clf.fit(covmats, labels).predict(covmats)
 
 
 @pytest.mark.parametrize("classif", rclf)
 @pytest.mark.parametrize("metric", [42, "faulty", {"foo": "bar"}])
-def test_metric_wrong_keys(classif, metric, get_covmats, get_labels):
+def test_metric_errors(classif, metric, get_covmats, get_labels):
+    n_matrices, n_channels, n_classes = 6, 3, 2
+    labels = get_labels(n_matrices, n_classes)
+    covmats = get_covmats(n_matrices, n_channels)
+    clf = classif(metric=metric)
     with pytest.raises((TypeError, KeyError, ValueError)):
-        n_matrices, n_channels, n_classes = 6, 3, 2
-        labels = get_labels(n_matrices, n_classes)
-        covmats = get_covmats(n_matrices, n_channels)
-        clf = classif(metric=metric)
         clf.fit(covmats, labels).predict(covmats)
 
 
@@ -189,14 +152,40 @@ def test_metric_str(classif, metric, get_covmats, get_labels):
         clf.fit(covmats, labels).predict(covmats)
 
 
-@pytest.mark.parametrize("dist", ["not_real", 42])
-def test_knn_dict_dist(dist, get_covmats, get_labels):
-    with pytest.raises(KeyError):
-        n_matrices, n_channels, n_classes = 6, 3, 2
-        labels = get_labels(n_matrices, n_classes)
-        covmats = get_covmats(n_matrices, n_channels)
-        clf = KNearestNeighbor(metric={"distance": dist})
-        clf.fit(covmats, labels).predict(covmats)
+@pytest.mark.parametrize("metric_mean", get_means())
+@pytest.mark.parametrize("metric_dist", get_distances())
+def test_metric_mdm(metric_mean, metric_dist, get_covmats, get_labels):
+    n_matrices, n_channels, n_classes = 4, 3, 2
+    labels = get_labels(n_matrices, n_classes)
+    covmats = get_covmats(n_matrices, n_channels)
+    clf = MDM(metric={"mean": metric_mean, "distance": metric_dist})
+    clf.fit(covmats, labels).predict(covmats)
+
+
+@pytest.mark.parametrize("metric_mean", get_means())
+@pytest.mark.parametrize("metric_dist", get_distances())
+@pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
+def test_metric_fgmdm(metric_mean, metric_dist, metric_map, get_covmats,
+                      get_labels):
+    n_matrices, n_channels, n_classes = 4, 3, 2
+    labels = get_labels(n_matrices, n_classes)
+    covmats = get_covmats(n_matrices, n_channels)
+    clf = FgMDM(metric={
+        "mean": metric_mean,
+        "distance": metric_dist,
+        "map": metric_map
+    })
+    clf.fit(covmats, labels).predict(covmats)
+
+
+@pytest.mark.parametrize("metric_mean", get_means())
+@pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
+def test_metric_tsclassifier(metric_mean, metric_map, get_covmats, get_labels):
+    n_matrices, n_channels, n_classes = 4, 3, 2
+    labels = get_labels(n_matrices, n_classes)
+    covmats = get_covmats(n_matrices, n_channels)
+    clf = TSclassifier(metric={"mean": metric_mean, "map": metric_map})
+    clf.fit(covmats, labels).predict(covmats)
 
 
 def test_1nn(get_covmats, get_labels):
