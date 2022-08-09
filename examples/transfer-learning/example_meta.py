@@ -9,7 +9,7 @@ from pyriemann.classification import MDM
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.utils.base import invsqrtm, sqrtm, powm
 
-from pyriemann.transferlearning import TLSplitter, TLPipeline, DCT, RCT
+from pyriemann.transferlearning_meta import TLSplitter, TLPipeline, DCT, RCT
 
 
 def make_example_dataset(N, theta, alpha, eps=3.0):
