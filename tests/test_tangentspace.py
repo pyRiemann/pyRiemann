@@ -67,12 +67,17 @@ class TestTangentSpace(TangentSpaceTestCase):
 
 @pytest.mark.parametrize("fit", [True, False])
 @pytest.mark.parametrize("tsupdate", [True, False])
-@pytest.mark.parametrize("metric", get_metrics())
-def test_TangentSpace_init(fit, tsupdate, metric, get_covmats):
+@pytest.mark.parametrize("metric_mean", get_metrics())
+@pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
+def test_TangentSpace_init(fit, tsupdate, metric_mean, metric_map,
+                           get_covmats):
     n_matrices, n_channels = 4, 3
     n_ts = (n_channels * (n_channels + 1)) // 2
     covmats = get_covmats(n_matrices, n_channels)
-    ts = TangentSpace(metric=metric, tsupdate=tsupdate)
+    ts = TangentSpace(
+        metric={"mean": metric_mean, "map": metric_map},
+        tsupdate=tsupdate
+    )
     if fit:
         ts.fit(covmats)
     Xtr = ts.transform(covmats)
@@ -80,15 +85,30 @@ def test_TangentSpace_init(fit, tsupdate, metric, get_covmats):
 
 
 @pytest.mark.parametrize("tsupdate", [True, False])
-@pytest.mark.parametrize("metric", get_metrics())
-def test_FGDA_init(tsupdate, metric, get_covmats, get_labels):
+@pytest.mark.parametrize("metric_mean", get_metrics())
+@pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
+def test_FGDA_init(tsupdate, metric_mean, metric_map, get_covmats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 3
     labels = get_labels(n_matrices, n_classes)
     covmats = get_covmats(n_matrices, n_channels)
-    ts = FGDA(metric=metric, tsupdate=tsupdate)
+    ts = FGDA(
+        metric={"mean": metric_mean, "map": metric_map},
+        tsupdate=tsupdate
+    )
     ts.fit(covmats, labels)
     Xtr = ts.transform(covmats)
     assert Xtr.shape == (n_matrices, n_channels, n_channels)
+
+
+@pytest.mark.parametrize("tspace", [TangentSpace, FGDA])
+@pytest.mark.parametrize("metric", [42, "faulty", {"foo": "bar"}])
+def test_metric_wrong_keys(tspace, metric, get_covmats, get_labels):
+    with pytest.raises((TypeError, KeyError, ValueError)):
+        n_classes, n_matrices, n_channels = 2, 6, 3
+        labels = get_labels(n_matrices, n_classes)
+        covmats = get_covmats(n_matrices, n_channels)
+        clf = tspace(metric=metric)
+        clf.fit(covmats, labels).transform(covmats)
 
 
 def test_TS_vecdim_error(get_covmats, rndstate):

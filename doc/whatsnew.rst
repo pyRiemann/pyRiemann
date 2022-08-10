@@ -7,6 +7,15 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
+v0.3.1.dev
+----------
+
+- Add exponential and logarithmic maps for three main metrics: 'euclid', 'logeuclid' and 'riemann'.
+  :func:`pyriemann.utils.tangentspace.tangent_space` is splitted in two steps: (i) ``log_map_*()`` projecting SPD matrices into tangent space depending on the metric; and (ii) :func:`pyriemann.utils.tangentspace.upper` taking the upper triangular part of matrices.
+  Similarly, :func:`pyriemann.utils.tangentspace.untangent_space` is splitted into (i) :func:`pyriemann.utils.tangentspace.unupper` and (ii) ``exp_map_*()``.
+  The different metrics for tangent space mapping can now be defined into :class:`pyriemann.tangentspace.TangentSpace`,
+  then used for ``transform()`` as well as for ``inverse_transform()``. :pr:`195` by :user:`qbarthelemy`
+
 v0.3 (July 2022)
 ----------------
 

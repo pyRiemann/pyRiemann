@@ -53,7 +53,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         The type of metric used for centroid and distance estimation.
         see `mean_covariance` for the list of supported metric.
         the metric could be a dict with two keys, `mean` and `distance` in
-        order to pass different metric for the centroid estimation and the
+        order to pass different metrics for the centroid estimation and the
         distance estimation. Typical usecase is to pass 'logeuclid' metric for
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
@@ -211,13 +211,13 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
     Parameters
     ----------
     metric : string | dict, default='riemann'
-        The type of metric used for centroid and distance estimation.
-        see `mean_covariance` for the list of supported metric.
-        the metric could be a dict with two keys, `mean` and `distance` in
-        order to pass different metric for the centroid estimation and the
-        distance estimation. Typical usecase is to pass 'logeuclid' metric for
-        the mean in order to boost the computional speed and 'riemann' for the
-        distance in order to keep the good sensitivity for the classification.
+        The type of metric used for reference matrix estimation (see
+        `mean_covariance` for the list of supported metric), for distance
+        estimation, and for tangent space map (see `tangent_space` for the list
+        of supported metric).
+        The metric could be a dict with three keys, `mean`, `dist` and `map` in
+        order to pass different metrics for the reference matrix estimation,
+        the distance estimation, and the tangent space mapping.
     tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]_. This is not compatible with
@@ -275,11 +275,10 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : FgMDM instance
             The FgMDM instance.
         """
-        self.metric_mean, _ = _check_metric(self.metric)
         self.classes_ = np.unique(y)
 
         self._mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
-        self._fgda = FGDA(metric=self.metric_mean, tsupdate=self.tsupdate)
+        self._fgda = FGDA(metric=self.metric, tsupdate=self.tsupdate)
         cov = self._fgda.fit_transform(X, y)
         self._mdm.fit(cov, y)
         self.classes_ = self._mdm.classes_
@@ -344,15 +343,14 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
     Parameters
     ----------
     metric : string | dict, default='riemann'
-        The type of metric used for centroid and distance estimation.
-        see `mean_covariance` for the list of supported metric.
-        the metric could be a dict with two keys, `mean` and `distance` in
-        order to pass different metric for the centroid estimation and the
-        distance estimation. Typical usecase is to pass 'logeuclid' metric for
-        the mean in order to boost the computional speed and 'riemann' for the
-        distance in order to keep the good sensitivity for the classification.
+        The type of metric used for reference matrix estimation (see
+        `mean_covariance` for the list of supported metric) and for tangent
+        space map (see `tangent_space` for the list of supported metric).
+        The metric could be a dict with two keys, `mean` and `map` in
+        order to pass different metrics for the reference matrix estimation
+        and the tangent space mapping.
     tsupdate : bool, default=False
-        Activate tangent space update for covariante shift correction between
+        Activate tangent space update for covariate shift correction between
         training and test, as described in [2]. This is not compatible with
         online implementation. Performance are better when the number of
         matrices for prediction is higher.
