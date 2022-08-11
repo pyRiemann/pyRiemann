@@ -1,4 +1,6 @@
 """Spatial filtering function."""
+import warnings
+
 import numpy as np
 from scipy.linalg import eigh, inv
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -357,8 +359,7 @@ class CSP(BilinearFilter):
                 a = 0
                 b = 0
                 for i, c in enumerate(classes):
-                    tmp = np.dot(np.dot(evecs[:, j].T, C[i]),
-                                 evecs[:, j])
+                    tmp = np.dot(np.dot(evecs[:, j].T, C[i]), evecs[:, j])
                     a += Pc[i] * np.log(np.sqrt(tmp))
                     b += Pc[i] * (tmp ** 2 - 1)
                 mi = - (a + (3.0 / 16) * (b ** 2))
@@ -510,8 +511,30 @@ class AJDC(BaseEstimator, TransformerMixin):
         The sampling frequency of the signal.
     dim_red : None | dict, default=None
         Parameter for dimension reduction of cospectra, because Pham's AJD is
-        sensitive to matrices conditioning. For more details, see parameter
-        ``dim_red`` of :class:`pyriemann.preprocessing.Whitening`.
+        sensitive to matrices conditioning.
+
+        If ``None`` :
+            no dimension reduction during whitening.
+        If ``{'n_components': val}`` :
+            dimension reduction defining the number of components;
+            ``val`` must be an integer superior to 1.
+        If ``{'expl_var': val}`` :
+            dimension reduction selecting the number of components such that
+            the amount of variance that needs to be explained is greater than
+            the percentage specified by ``val``.
+            ``val`` must be a float in (0,1], typically ``0.99``.
+        If ``{'max_cond': val}`` :
+            dimension reduction selecting the number of components such that
+            the condition number of the mean matrix is lower than ``val``.
+            This threshold has a physiological interpretation, because it can
+            be viewed as the ratio between the power of the strongest component
+            (usually, eye-blink source) and the power of the lowest component
+            you don't want to keep (acquisition sensor noise).
+            ``val`` must be a float strictly superior to 1, typically 100.
+        If ``{'warm_restart': val}`` :
+            dimension reduction defining the number of components from an
+            initial joint diagonalizer, and then run AJD from this solution.
+            ``val`` must be a square ndarray.
     verbose : bool, default=True
         Verbose flag.
 
@@ -523,6 +546,8 @@ class AJDC(BaseEstimator, TransformerMixin):
         If fit, the frequencies associated to cospectra.
     n_sources_ : int
         If fit, the number of components of the source space.
+    diag_filters_ : ndarray, shape ``(n_sources_, n_sources_)``
+        If fit, the diagonalization filters, also called joint diagonalizer.
     forward_filters_ : ndarray, shape ``(n_sources_, n_channels_)``
         If fit, the spatial filters used to transform signal into source,
         also called deximing or separating matrix.
@@ -619,6 +644,20 @@ class AJDC(BaseEstimator, TransformerMixin):
         # estimation of non-diagonality weights, Eq(B.1) in [1]
         weights = get_nondiag_weight(self._cosp_channels)
 
+        # initial diagonalizer: if warm restart, dimension reduction defined by
+        # the size of the initial diag filters
+        init = None
+        if self.dim_red is None:
+            warnings.warn('Parameter dim_red should not be let to None')
+        elif isinstance(self.dim_red, dict) and len(self.dim_red) == 1 \
+                and next(iter(self.dim_red)) == 'warm_restart':
+            init = self.dim_red['warm_restart']
+            if init.ndim != 2 or init.shape[0] != init.shape[1]:
+                raise ValueError(
+                    'Initial diagonalizer defined in dim_red is not a 2D '
+                    'square matrix (Got shape = %s).' % (init.shape,))
+            self.dim_red = {'n_components': init.shape[0]}
+
         # dimension reduction and whitening, Eq.(8) in [2], computed on the
         # weighted mean of cospectra across frequencies (and conditions)
         whit = Whitening(
@@ -629,14 +668,15 @@ class AJDC(BaseEstimator, TransformerMixin):
         self.n_sources_ = whit.n_components_
 
         # approximate joint diagonalization, currently by Pham's algorithm [3]
-        diag_filters, self._cosp_sources = ajd_pham(
+        self.diag_filters_, self._cosp_sources = ajd_pham(
             cosp_rw,
+            init=init,
             n_iter_max=100,
             sample_weight=weights)
 
         # computation of forward and backward filters, Eq.(9) and (10) in [2]
-        self.forward_filters_ = diag_filters @ whit.filters_.T
-        self.backward_filters_ = whit.inv_filters_.T @ inv(diag_filters)
+        self.forward_filters_ = self.diag_filters_ @ whit.filters_.T
+        self.backward_filters_ = whit.inv_filters_.T @ inv(self.diag_filters_)
         return self
 
     def transform(self, X):
