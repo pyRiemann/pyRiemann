@@ -31,17 +31,25 @@ def test_get_normalized_weight_pos(get_covmats):
         _get_normalized_weight(w, covmats)
 
 
-@pytest.mark.parametrize("ajd", [rjd, ajd_pham])
-def test_ajd_shape(ajd, get_covmats):
+@pytest.mark.parametrize("ajd", [rjd, ajd_pham, uwedge])
+@pytest.mark.parametrize("init", [True, False])
+def test_ajd(ajd, init, get_covmats_params):
+    """Test ajd algos"""
     n_matrices, n_channels = 5, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    V, D = rjd(covmats)
+    covmats, _, A = get_covmats_params(n_matrices, n_channels)
+    if init:
+        V, D = ajd(covmats)
+    else:
+        V, D = ajd(covmats, init=A)
     assert V.shape == (n_channels, n_channels)
     assert D.shape == (n_matrices, n_channels, n_channels)
 
+    if ajd is rjd:
+        assert V.T @ V == approx(np.eye(n_channels))  # check orthogonality
 
-def test_pham(get_covmats):
-    """Test pham's ajd"""
+
+def test_pham_weight_none_equivalent_uniform(get_covmats):
+    """Test pham's ajd weights: none is equivalent to uniform values"""
     n_matrices, n_channels, w_val = 5, 3, 2
     covmats = get_covmats(n_matrices, n_channels)
     V, D = ajd_pham(covmats)
@@ -53,8 +61,8 @@ def test_pham(get_covmats):
     assert_array_equal(D, Dw)
 
 
-def test_pham_pos_weight(get_covmats):
-    # Test that weight must be strictly positive
+def test_pham_weight_positive(get_covmats):
+    """Test pham's ajd weights: must be strictly positive"""
     n_matrices, n_channels, w_val = 5, 3, 2
     covmats = get_covmats(n_matrices, n_channels)
     w = w_val * np.ones(n_matrices)
@@ -63,9 +71,9 @@ def test_pham_pos_weight(get_covmats):
         ajd_pham(covmats, sample_weight=w)
 
 
-def test_pham_zero_weight(get_covmats):
-    # now test that setting one weight to almost zero it's almost
-    # like not passing the matrix
+def test_pham_weight_zero(get_covmats):
+    """Test pham's ajd weights: setting one weight to almost zero it's almost
+    like not passing the matrix"""
     n_matrices, n_channels, w_val = 5, 3, 2
     covmats = get_covmats(n_matrices, n_channels)
     w = w_val * np.ones(n_matrices)
@@ -75,16 +83,3 @@ def test_pham_zero_weight(get_covmats):
     Vw, Dw = ajd_pham(covmats, sample_weight=w)
     assert V == approx(Vw, rel=1e-4, abs=1e-8)
     assert D == approx(Dw[1:], rel=1e-4, abs=1e-8)
-
-
-@pytest.mark.parametrize("init", [True, False])
-def test_uwedge(init, get_covmats_params):
-    """Test uwedge."""
-    n_matrices, n_channels = 5, 3
-    covmats, _, A = get_covmats_params(n_matrices, n_channels)
-    if init:
-        V, D = uwedge(covmats)
-    else:
-        V, D = uwedge(covmats, init=A)
-    assert V.shape == (n_channels, n_channels)
-    assert D.shape == (n_matrices, n_channels, n_channels)

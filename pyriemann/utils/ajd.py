@@ -20,7 +20,7 @@ def _get_normalized_weight(sample_weight, data):
     return normalized_weight
 
 
-def rjd(X, eps=1e-8, n_iter_max=1000):
+def rjd(X, *, init=None, eps=1e-8, n_iter_max=1000):
     """Approximate joint diagonalization based on Jacobi angles.
 
     This is a direct implementation of the AJD algorithm by Cardoso and
@@ -31,6 +31,8 @@ def rjd(X, eps=1e-8, n_iter_max=1000):
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of symmetric matrices to diagonalize.
+    init : None | ndarray, shape (n_channels, n_channels), default=None
+        Initialization for the diagonalizer.
     eps : float, default=1e-8
         Tolerance for stopping criterion.
     n_iter_max : int, default=1000
@@ -63,7 +65,10 @@ def rjd(X, eps=1e-8, n_iter_max=1000):
 
     # init variables
     m, nm = A.shape  # n_channels, n_matrices_x_channels
-    V = np.eye(m)
+    if init is None:
+        V = np.eye(m)
+    else:
+        V = init
     encore = True
     k = 0
 
@@ -105,7 +110,7 @@ def rjd(X, eps=1e-8, n_iter_max=1000):
     return V, D
 
 
-def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
+def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=15, sample_weight=None):
     """Approximate joint diagonalization based on Pham's algorithm.
 
     This is a direct implementation of the Pham's AJD algorithm [1]_.
@@ -114,6 +119,8 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices to diagonalize.
+    init : None | ndarray, shape (n_channels, n_channels), default=None
+        Initialization for the diagonalizer.
     eps : float, default=1e-6
         Tolerance for stoping criterion.
     n_iter_max : int, default=15
@@ -151,7 +158,10 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
 
     # Init variables
     n_channels, n_matrices_x_channels = A.shape
-    V = np.eye(n_channels)
+    if init is None:
+        V = np.eye(n_channels)
+    else:
+        V = init
     epsilon = n_channels * (n_channels - 1) * eps
 
     for it in range(n_iter_max):
@@ -199,7 +209,7 @@ def ajd_pham(X, eps=1e-6, n_iter_max=15, sample_weight=None):
     return V, D
 
 
-def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
+def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
     """Approximate joint diagonalization based on UWEDGE.
 
     Implementation of the AJD algorithm by Tichavsky and Yeredor [1]_ [2]_:
@@ -253,7 +263,7 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
 
     if init is None:
         E, H = np.linalg.eig(M[:, 0:d])
-        W_est = np.dot(np.diag(1. / np.sqrt(np.abs(E))), H.T)
+        W_est = np.diag(1. / np.sqrt(np.abs(E))) @ H.T
     else:
         W_est = init
 
@@ -269,19 +279,19 @@ def uwedge(X, init=None, eps=1e-7, n_iter_max=100):
 
     crit = np.sum(Ms**2) - np.sum(Rs**2)
     while (improve > eps) & (iteration < n_iter_max):
-        B = np.dot(Rs, Rs.T)
+        B = Rs @ Rs.T
         C1 = np.zeros((d, d))
         for i in range(d):
             C1[:, i] = np.sum(Ms[:, i:Md:d]*Rs, axis=1)
 
-        D0 = B*B.T - np.outer(np.diag(B), np.diag(B))
-        A0 = (C1 * B - np.dot(np.diag(np.diag(B)), C1.T)) / (D0 + np.eye(d))
+        D0 = B * B.T - np.outer(np.diag(B), np.diag(B))
+        A0 = (C1 * B - np.diag(np.diag(B)) @ C1.T) / (D0 + np.eye(d))
         A0 += np.eye(d)
         W_est = np.linalg.solve(A0, W_est)
 
         Raux = np.dot(np.dot(W_est, M[:, 0:d]), W_est.T)
-        aux = 1./np.sqrt(np.abs(np.diag(Raux)))
-        W_est = np.dot(np.diag(aux), W_est)
+        aux = 1. / np.sqrt(np.abs(np.diag(Raux)))
+        W_est = np.diag(aux) @ W_est
 
         for k in range(n_matrices):
             ini = k*d
