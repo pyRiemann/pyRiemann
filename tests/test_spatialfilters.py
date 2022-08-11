@@ -241,6 +241,7 @@ def test_ajdc_fit_error(rndstate):
     with pytest.raises(ValueError):  # initial diag not square
         ajdc.fit(X)
 
+
 def test_ajdc_transform_error(rndstate):
     n_subjects, n_conditions, n_channels, n_times = 2, 2, 4, 256
     X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
