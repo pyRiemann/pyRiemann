@@ -48,6 +48,19 @@ def test_ajd(ajd, init, get_covmats_params):
         assert V.T @ V == approx(np.eye(n_channels))  # check orthogonality
 
 
+@pytest.mark.parametrize("ajd", [rjd, ajd_pham, uwedge])
+def test_ajd_init_error(ajd, get_covmats):
+    """Test init for ajd algos"""
+    n_matrices, n_channels = 5, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    with pytest.raises(ValueError):  #  not 2D array
+        ajd(covmats, init=np.ones((3, 2, 2)))
+    with pytest.raises(ValueError):  #  not square array
+        ajd(covmats, init=np.ones((3, 2)))
+    with pytest.raises(ValueError):  #  shape not equal to n_channels
+        ajd(covmats, init=np.ones((2, 2)))
+
+
 def test_pham_weight_none_equivalent_uniform(get_covmats):
     """Test pham's ajd weights: none is equivalent to uniform values"""
     n_matrices, n_channels, w_val = 5, 3, 2

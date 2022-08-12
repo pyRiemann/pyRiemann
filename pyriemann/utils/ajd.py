@@ -20,6 +20,14 @@ def _get_normalized_weight(sample_weight, data):
     return normalized_weight
 
 
+def _check_init_diag(init, n):
+    if init.shape != (n, n):
+        raise ValueError(
+            'Initial diagonalizer shape must be %d x % d (Got %s).'
+            % (n, n, init.shape,))
+    return init
+
+
 def rjd(X, *, init=None, eps=1e-8, n_iter_max=1000):
     """Approximate joint diagonalization based on Jacobi angles.
 
@@ -68,7 +76,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=1000):
     if init is None:
         V = np.eye(m)
     else:
-        V = init
+        V = _check_init_diag(init, m)
     encore = True
     k = 0
 
@@ -161,7 +169,7 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=15, sample_weight=None):
     if init is None:
         V = np.eye(n_channels)
     else:
-        V = init
+        V = _check_init_diag(init, n_channels)
     epsilon = n_channels * (n_channels - 1) * eps
 
     for it in range(n_iter_max):
@@ -263,9 +271,9 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
 
     if init is None:
         E, H = np.linalg.eig(M[:, 0:d])
-        W_est = np.diag(1. / np.sqrt(np.abs(E))) @ H.T
+        W_est = H.T / np.sqrt(np.abs(E))[:, np.newaxis]
     else:
-        W_est = init
+        W_est = _check_init_diag(init, d)
 
     Ms = np.array(M)
     Rs = np.zeros((d, n_matrices))

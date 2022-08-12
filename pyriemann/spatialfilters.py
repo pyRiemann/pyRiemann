@@ -344,12 +344,12 @@ class CSP(BilinearFilter):
             ix = np.argsort(np.abs(evals - 0.5))[::-1]
         elif len(classes) > 2:
             evecs, D = ajd_pham(C)
-            Ctot = np.array(mean_covariance(C, self.metric))
+            Ctot = mean_covariance(C, self.metric)
             evecs = evecs.T
 
             # normalize
             for i in range(evecs.shape[1]):
-                tmp = np.dot(np.dot(evecs[:, i].T, Ctot), evecs[:, i])
+                tmp = evecs[:, i].T @ Ctot @ evecs[:, i]
                 evecs[:, i] /= np.sqrt(tmp)
 
             mutual_info = []
@@ -359,7 +359,7 @@ class CSP(BilinearFilter):
                 a = 0
                 b = 0
                 for i, c in enumerate(classes):
-                    tmp = np.dot(np.dot(evecs[:, j].T, C[i]), evecs[:, j])
+                    tmp = evecs[:, j].T @ C[i] @ evecs[:, j]
                     a += Pc[i] * np.log(np.sqrt(tmp))
                     b += Pc[i] * (tmp ** 2 - 1)
                 mi = - (a + (3.0 / 16) * (b ** 2))
