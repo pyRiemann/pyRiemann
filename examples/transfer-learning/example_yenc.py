@@ -1,6 +1,4 @@
-
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
 
 from pyriemann.datasets import make_gaussian_blobs
@@ -12,13 +10,13 @@ from pyriemann.utils.base import invsqrtm, sqrtm, powm
 from sklearn.pipeline import make_pipeline
 
 from pyriemann.transferlearning_yenc import (
-    encode_domains, 
+    encode_domains,
     decode_domains,
     TLSplitter,
-    DCT
+    DCT,
+    RCT
 )
 
-import pandas as pd
 
 def make_example_dataset(N, theta, alpha, eps=3.0):
     '''
@@ -100,8 +98,8 @@ np.random.seed(13)
 X_enc, y_enc = make_example_dataset(N=50, theta=np.pi/4, alpha=5)
 
 # plot a figure with the joint spectral embedding of the simulated data points
-# fig = make_figure(X_enc, y_enc)
-# fig.show()
+fig = make_figure(X_enc, y_enc)
+fig.show()
 
 # use the MDM classifier
 clf = MDM()
@@ -131,16 +129,27 @@ training_mode = 1
 
 # carry out the cross-validation
 for train_idx, test_idx in cv.split(X_enc, y_enc):
-
     # split the dataset into training and testing
     X_enc_train, X_enc_test = X_enc[train_idx], X_enc[test_idx]
     y_enc_train, y_enc_test = y_enc[train_idx], y_enc[test_idx]
 
     # DCT pipeline -- no transfer learning at all between source and target
     dct_preprocess = DCT(
-        training_mode=training_mode, 
+        training_mode=training_mode,
         target_domain=target_domain)
     clf = MDM()
     dct_pipeline = make_pipeline(dct_preprocess, clf)
     dct_pipeline.fit(X_enc_train, y_enc_train)
     scores['DCT'].append(dct_pipeline.score(X_enc_test, y_enc_test))
+
+    # RCT pipeline -- recenter the data from each domain to identity
+    rct_transf = RCT()
+    clf = MDM()
+    rct_pipeline = make_pipeline(rct_transf, clf)  # training_mode?
+    rct_pipeline.fit(X_enc_train, y_enc_train)
+    scores['RCT'].append(rct_pipeline.score(X_enc_test, y_enc_test))
+
+# get the average score of each pipeline
+for meth in meth_list:
+    scores[meth] = np.mean(scores[meth])
+print(scores)
