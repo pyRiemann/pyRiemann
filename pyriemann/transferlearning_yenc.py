@@ -122,9 +122,8 @@ class TLCenter(BaseEstimator, TransformerMixin):
         # Used during inference, apply recenter from specified target domain.
         # If no domain specified for inference, last one is used.
         X_rct = np.zeros_like(X)
-        Minvsqrt_domain = self._Minvsqrt[self.target_domain]
-        X_rct = np.stack(
-                [Minvsqrt_domain @ Xi @ Minvsqrt_domain.T for Xi in X])
+        Minvsqrt_target = self._Minvsqrt[self.target_domain]
+        X_rct = Minvsqrt_target @ X @ Minvsqrt_target
         return X_rct
 
     def fit_transform(self, X, y):
