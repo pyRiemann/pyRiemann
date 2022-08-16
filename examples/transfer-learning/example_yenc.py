@@ -109,8 +109,8 @@ clf = MDM()
 # the training set is composed of all data points from the source domain
 # plus a partition of the target domain whose size we can control
 target_domain = 'target_domain'
-target_train_frac = 0.25 # proportion of the target domain for training
-n_splits = 5 # how many times to split the target domain into train/test
+target_train_frac = 0.25  # proportion of the target domain for training
+n_splits = 5  # how many times to split the target domain into train/test
 cv = TLSplitter(
     n_splits=n_splits,
     target_train_frac=target_train_frac,
@@ -141,7 +141,7 @@ for train_idx, test_idx in cv.split(X_enc, y_enc):
     # Dummy pipeline -- no transfer learning at all between source and target
     dummy_preprocess = TLDummy()
     dummy_clf = TLClassifier(
-        target_domain=target_domain, 
+        target_domain=target_domain,
         clf=MDM(),
         training_mode=training_mode)
     dummy_pipeline = make_pipeline(dummy_preprocess, dummy_clf)
@@ -151,7 +151,7 @@ for train_idx, test_idx in cv.split(X_enc, y_enc):
     # RCT pipeline -- recenter the data from each domain to identity
     rct_preprocess = TLCenter(target_domain=target_domain)
     rct_clf = TLClassifier(
-        target_domain=target_domain, 
+        target_domain=target_domain,
         clf=MDM(),
         training_mode=training_mode)
     rct_pipeline = make_pipeline(rct_preprocess, rct_clf)

@@ -42,7 +42,7 @@ def decode_domains(X_enc, y_enc):
 
 
 class TLSplitter():
-    def __init__(self, target_domain, target_train_frac=0.80, n_splits=5):        
+    def __init__(self, target_domain, target_train_frac=0.80, n_splits=5):
         self.target_domain = target_domain
         self.target_train_frac = target_train_frac
         self.n_splits = n_splits
@@ -57,11 +57,11 @@ class TLSplitter():
 
         # index of training-split for the target data points
         ss_target = ShuffleSplit(
-            n_splits=self.n_splits, 
+            n_splits=self.n_splits,
             train_size=self.target_train_frac).split(idx_target)
         for train_sub_idx_target, test_sub_idx_target in ss_target:
             train_idx = np.concatenate(
-                [idx_source, idx_target[train_sub_idx_target]])             
+                [idx_source, idx_target[train_sub_idx_target]])
             test_idx = idx_target[test_sub_idx_target]
             yield train_idx, test_idx
 
@@ -153,7 +153,8 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
         (1) train clf only on source domain + training partition from target
         (2) train clf only on source domain
         (3) train clf only on training partition from target
-        these different choices yield very different results in the classification.
+        these different choices yield very different results in the
+        classification.
     """
 
     def __init__(self, target_domain, clf=base_clf, training_mode=1):
