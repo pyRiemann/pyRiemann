@@ -135,9 +135,7 @@ for train_idx, test_idx in cv.split(X_enc, y_enc):
     y_enc_train, y_enc_test = y_enc[train_idx], y_enc[test_idx]
 
     # DCT pipeline -- no transfer learning at all between source and target
-    dct_preprocess = DCT(
-        training_mode=training_mode,
-        target_domain=target_domain)
+    dct_preprocess = DCT()
     clf = DTClassifier(clf=MDM())
     dct_pipeline = make_pipeline(dct_preprocess, clf)
     dct_pipeline.fit(X_enc_train, y_enc_train)
