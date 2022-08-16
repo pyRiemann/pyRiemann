@@ -127,9 +127,7 @@ class RCT(BaseEstimator, TransformerMixin):
         X_rct = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
-            Minvsqrt_domain = self._Minvsqrt[d]
-            X_rct[idx] = np.stack(
-                [Minvsqrt_domain @ Xi @ Minvsqrt_domain.T for Xi in X[idx]])
+            X_rct[idx] = self._Minvsqrt[d] @ X[idx] @ self._Minvsqrt[d].T
         return X_rct
 
 

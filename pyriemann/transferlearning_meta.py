@@ -66,11 +66,9 @@ class RCT(BaseEstimator, TransformerMixin):
 
     def transform(self, X, y=None, meta=None):
         X_rct = np.zeros(X.shape)
-        for domain in np.unique(meta['domain']):
-            idx = meta['domain'] == domain
-            Minvsqrt_domain = self._Minvsqrt[domain]
-            X_rct[idx] = np.stack(
-                [Minvsqrt_domain @ Xi @ Minvsqrt_domain.T for Xi in X[idx]])
+        for d in np.unique(meta['domain']):
+            idx = meta['domain'] == d
+            X_rct[idx] = self._Minvsqrt[d] @ X[idx] @ self._Minvsqrt[d].T
         return X_rct
 
     def fit_transform(self, X, y, meta):
