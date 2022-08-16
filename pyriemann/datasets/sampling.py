@@ -1,6 +1,7 @@
 from functools import partial
 import warnings
 import numpy as np
+from scipy.stats import multivariate_normal
 from sklearn.utils import check_random_state
 from joblib import Parallel, delayed
 
@@ -40,6 +41,204 @@ def _pdf_r(r, sigma):
             partial_2 = partial_2 + np.log(np.sinh(np.abs(r[i] - r[j]) / 2))
 
     return np.exp(partial_1 + partial_2)
+
+
+def rejection_sampling_a(sigma, r_sample):
+    """ side function used for the rejection sampling
+    algorithm in the case where we generate r with
+        the first multivariate normal pdf
+    Parameters
+    ----------
+    sigma : float
+        Dispersion of the Riemannian Gaussian distribution.
+    r_samples : ndarray, shape (1, n_dim)
+        Sample of the r parameters of the Riemannian Gaussian distribution.
+    Returns
+    -------
+    probability_of_acceptation : float
+    """
+    MU_A = np.array([sigma**2/2, -sigma**2/2])
+    COV_MATRIX = (sigma**2)*np.eye(2)
+    M = np.pi*(sigma**2)*np.exp(sigma**2/4)
+    if r_sample[0] >= r_sample[1]:
+        M = np.pi*(sigma**2)*np.exp(sigma**2/4)
+        num = np.exp(-1/(2*sigma**2) * np.sum(r_sample**2))\
+            * np.sinh((r_sample[0] - r_sample[1])/2) * 1/M
+        den = multivariate_normal.pdf(r_sample, mean=MU_A, cov=COV_MATRIX)
+        return num / den
+    return 0
+
+
+def rejection_sampling_b(sigma, r_sample):
+    """ side function used for the rejection sampling
+    algorithm in the case where we generate r with
+        the second multivariate normal pdf
+    Parameters
+    ----------
+    sigma : float
+        Dispersion of the Riemannian Gaussian distribution.
+    r_samples : ndarray, shape (n_samples, n_dim)
+        Samples of the r parameters of the Riemannian Gaussian distribution.
+    Returns
+    -------
+    probability_of_acceptation : float
+    """
+    MU_B = np.array([-sigma**2/2, sigma**2/2])
+    COV_MATRIX = (sigma**2)*np.eye(2)
+    M = np.pi*(sigma**2)*np.exp(sigma**2/4)
+    if r_sample[0] < r_sample[1]:
+        M = np.pi*(sigma**2)*np.exp(sigma**2/4)
+        num = np.exp(-1/(2*sigma**2) * np.sum(r_sample**2))\
+            * np.sinh((r_sample[1] - r_sample[0])/2)
+        den = multivariate_normal.pdf(r_sample, mean=MU_B, cov=COV_MATRIX)*M
+        return num/den
+    return 0
+
+
+def rejection_sampling_v1(n_samples, sigma):
+    """ rejection sampling algorithm optimized for spatial
+    complexity but not for time complexity works very well
+    for low sigma values
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples to get from the ptarget distribution.
+    sigma : float
+        Dispersion of the Riemannian Gaussian distribution.
+    random_state : int, RandomState instance or None, default=None
+        Pass an int for reproducible output across multiple function calls.
+    Returns
+    -------
+    r_samples : ndarray, shape (n_samples, n_dim)
+        Samples of the r parameters of the Riemannian Gaussian distribution.
+    """
+    MU_A = np.array([sigma**2/2, -sigma**2/2])
+    MU_B = np.array([-sigma**2/2, sigma**2/2])
+    COV_MATRIX = (sigma**2)*np.eye(2)
+    RES = []
+    cpt = 0
+    while cpt != n_samples:
+        if np.random.binomial(1, 0.5, 1) == 1:
+            r_sample = multivariate_normal.rvs(MU_A, COV_MATRIX, 1)
+            res = rejection_sampling_a(sigma, r_sample)
+            if np.random.rand(1) < res:
+                RES.append(r_sample)
+                cpt += 1
+        else:
+            r_sample = multivariate_normal.rvs(MU_B, COV_MATRIX, 1)
+            res = rejection_sampling_b(sigma, r_sample)
+            if np.random.rand(1) < res:
+                RES.append(r_sample)
+                cpt += 1
+    return np.array(RES)
+
+
+def rejection_acceptation_probability(t):
+    """polynomial function which approaches the probability
+    of acceptation of the rejection_sampling algorithm depending on sigma
+    Parameters
+    ----------
+    t : float
+    Returns
+    -------
+    rejection_acceptation_probability(t) : float
+    """
+    return 0.01265*t**3 - 0.1648*t**2 + 0.7145*t-0.03374
+
+
+def rejection_acceptation_probability_shifted(t):
+    """polynomial function which approach the probability
+    of acceptation of the rejection_sampling algorithm depending on sigma,
+    the shift is used to estimate with confidence the number
+    of samples we need to get n_samples
+    Parameters
+    ----------
+    t : float
+    Returns
+    -------
+    rejection_acceptation_probability_shifted(t) : float
+    """
+    if t <= 0.3:
+        return 0.02
+    return 0.01265*t**3 - 0.1648*t**2 + 0.7145*t-0.15
+
+
+def rejection_sampling_v2(n_samples, sigma, random_state=None):
+    """ rejection sampling algorithm
+    optimized for time complexity but not for spatial complexity,
+    works very well for any sigma values which is not too low (<0.01)
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples to get from the ptarget distribution.
+    sigma : float
+        Dispersion of the Riemannian Gaussian distribution.
+    random_state : int, RandomState instance or None, default=None
+        Pass an int for reproducible output across multiple function calls.
+    Returns
+    -------
+    r_samples : ndarray, shape (n_samples, n_dim)
+        Samples of the r parameters of the Riemannian Gaussian distribution.
+    """
+    N = int(n_samples/rejection_acceptation_probability_shifted(sigma) + 1000)
+    MU_A = np.array([sigma**2/2, -sigma**2/2])
+    MU_B = np.array([-sigma**2/2, sigma**2/2])
+    COV_MATRIX = (sigma**2)*np.eye(2)
+    RES = []
+    cpt = 0
+    rs = check_random_state(random_state)
+    B = rs.binomial(1, 0.5, N)
+    M1 = multivariate_normal.rvs(MU_A, COV_MATRIX, N,
+                                 random_state=random_state)
+    M2 = multivariate_normal.rvs(MU_B, COV_MATRIX, N,
+                                 random_state=random_state)
+    R = rs.rand(N)
+    icount_br = 0
+    kcount_m1 = 0
+    lcount_m2 = 0
+    while cpt != n_samples:
+        if B[icount_br] == 1:
+            r_sample = M1[kcount_m1]
+            kcount_m1 += 1
+            res = rejection_sampling_a(sigma, r_sample)
+            if R[icount_br] < res:
+                RES.append(r_sample)
+                cpt += 1
+            icount_br += 1
+            if (icount_br >= N) and (cpt != n_samples):
+                raise ValueError("sigma value too low")
+        else:
+            r_sample = M2[lcount_m2]
+            lcount_m2 += 1
+            res = rejection_sampling_b(sigma, r_sample)
+            if R[icount_br] < res:
+                RES.append(r_sample)
+                cpt += 1
+            icount_br += 1
+            if (icount_br >= N) and (cpt != n_samples):
+                raise ValueError("sigma value too low")
+    return np.array(RES)
+
+
+def rejection_sampling(n_samples, sigma, random_state=None):
+    """ final rejection sampling algorithm
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples to get from the ptarget distribution.
+    sigma : float
+        Dispersion of the Riemannian Gaussian distribution.
+    random_state : int, RandomState instance or None, default=None
+        Pass an int for reproducible output across multiple function calls.
+    Returns
+    -------
+    r_samples : ndarray, shape (n_samples, n_dim)
+        Samples of the r parameters of the Riemannian Gaussian distribution.
+    """
+    if sigma < 0.1:
+        return rejection_sampling_v1(n_samples, sigma)
+    return rejection_sampling_v2(n_samples, sigma,
+                                 random_state=random_state)
 
 
 def _slice_one_sample(ptarget, x0, w, rs):
@@ -194,7 +393,9 @@ def _sample_parameter_r(n_samples, n_dim, sigma, random_state=None, n_jobs=1):
     r_samples : ndarray, shape (n_samples, n_dim)
         Samples of the r parameters of the Riemannian Gaussian distribution.
     """
-
+    if n_dim == 2:
+        return rejection_sampling(n_samples, sigma,
+                                  random_state=random_state)
     rs = check_random_state(random_state)
     x0 = rs.randn(n_dim)
     ptarget = partial(_pdf_r, sigma=sigma)
@@ -406,3 +607,5 @@ def generate_random_spd_matrix(n_dim, random_state=None, *, mat_mean=.0,
         warnings.warn(msg)
 
     return C
+
+print(_sample_parameter_r(n_samples=5, n_dim=2, sigma=1, random_state=1))
