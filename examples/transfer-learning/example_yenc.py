@@ -13,9 +13,9 @@ from pyriemann.transferlearning_yenc import (
     encode_domains,
     decode_domains,
     TLSplitter,
-    DCT,
-    RCT,
-    DTClassifier
+    TLDummy,
+    TLCenter,
+    TLClassifier
 )
 
 
@@ -135,8 +135,8 @@ for train_idx, test_idx in cv.split(X_enc, y_enc):
     y_enc_train, y_enc_test = y_enc[train_idx], y_enc[test_idx]
 
     # DCT pipeline -- no transfer learning at all between source and target
-    dct_preprocess = DCT()
-    clf = DTClassifier(clf=MDM())
+    dct_preprocess = TLDummy()
+    clf = TLClassifier(clf=MDM())
     dct_pipeline = make_pipeline(dct_preprocess, clf)
     dct_pipeline.fit(X_enc_train, y_enc_train)
     y_pred = dct_pipeline.predict(X_enc_test)
@@ -144,8 +144,8 @@ for train_idx, test_idx in cv.split(X_enc, y_enc):
     scores['DCT'].append(dct_pipeline.score(X_enc_test, y_enc_test))
 
     # RCT pipeline -- recenter the data from each domain to identity
-    rct_transf = RCT()
-    clf = DTClassifier(MDM())
+    rct_transf = TLCenter()
+    clf = TLClassifier(clf=MDM())
     rct_pipeline = make_pipeline(rct_transf, clf)  # training_mode?
     rct_pipeline.fit(X_enc_train, y_enc_train)
     scores['RCT'].append(rct_pipeline.score(X_enc_test, y_enc_test))

@@ -66,11 +66,11 @@ class TLSplitter():
         return self.n_splits
 
 
-class DCT(BaseEstimator, TransformerMixin):
-    """Direct center transfer
+class TLDummy(BaseEstimator, TransformerMixin):
+    """No transformation on data for transfer learning
 
     No transformation of the data points between the domains.
-    This is what we call the direct (DCT) method.
+    This is what we call the Direct Center Transfer (DCT) method.
     """
 
     def __init__(self):
@@ -86,10 +86,11 @@ class DCT(BaseEstimator, TransformerMixin):
         return self.fit(X, y).transform(X, y)
 
 
-class RCT(BaseEstimator, TransformerMixin):
-    """Re-Center Transfer
+class TLCenter(BaseEstimator, TransformerMixin):
+    """Recenter data for transfer learning
 
-    Re-center (RCT) the data points from each domain to the Identity.
+    Recenter the data points from each domain to the Identity on manifold.
+    This method is called Re-Center Transform (RCT).
 
     Parameters
     ----------
@@ -131,7 +132,7 @@ class RCT(BaseEstimator, TransformerMixin):
         return X_rct
 
 
-class DTClassifier(BaseEstimator, ClassifierMixin):
+class TLClassifier(BaseEstimator, ClassifierMixin):
     """Classification with extended labels
 
     Convert extended labels into class label to train a classifier
@@ -158,8 +159,8 @@ class DTClassifier(BaseEstimator, ClassifierMixin):
 
         Returns
         -------
-        self : DTClassifier instance
-            The DTClassifier instance.
+        self : TLClassifier instance
+            The TLClassifier instance.
         """
         _, y_dec, _ = decode_domains(X, y)
         self.clf.fit(X, y_dec)
