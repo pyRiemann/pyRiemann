@@ -607,5 +607,3 @@ def generate_random_spd_matrix(n_dim, random_state=None, *, mat_mean=.0,
         warnings.warn(msg)
 
     return C
-
-print(_sample_parameter_r(n_samples=5, n_dim=2, sigma=1, random_state=1))
