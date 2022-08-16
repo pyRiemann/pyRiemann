@@ -27,16 +27,16 @@ def make_example_dataset(N, theta, alpha, eps=3.0):
     M2 = mean_riemann(X2)
     invsqrtM2 = invsqrtm(M2)
     # re-center dataset to identity
-    X2 = np.stack([invsqrtM2 @ X2i @ invsqrtM2.T for X2i in X2])
+    X2 = invsqrtM2 @ X2 @ invsqrtM2.T
     # rotate dataset with Q
     Q = np.array(
         [[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
-    X2 = np.stack([Q @ X2i @ Q.T for X2i in X2])
+    X2 = Q @ X2 @ Q.T
     # transport the dataset to another place
     M1 = mean_riemann(X1)
     R = powm(M1, alpha=alpha)
     sqrtR = sqrtm(R)
-    X2 = np.stack([sqrtR @ X2i @ sqrtR.T for X2i in X2])
+    X2 = sqrtR @ X2 @ sqrtR.T
 
     X = np.concatenate([X1, X2])
     y = np.concatenate([y1, y2])
