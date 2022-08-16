@@ -1,8 +1,13 @@
 import numpy as np
 from sklearn.model_selection import KFold
-from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
+from sklearn.metrics import accuracy_score
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.utils.base import invsqrtm
+from pyriemann.classification import MDM
+
+
+base_clf = MDM()
 
 
 def encode_domains(X, y, domain):
@@ -22,7 +27,11 @@ def decode_domains(X_enc, y_enc):
     domain = []
     for n in range(len(y_enc)):
         yn_enc = y_enc[n]
-        yn = float(yn_enc.split('/')[0])
+        try:
+            yn = int(yn_enc.split('/')[0])
+        except AttributeError:
+            print(yn_enc)
+            yn = 0
         y.append(yn)
         dn = yn_enc.split('/')[1]
         domain.append(dn)
@@ -58,14 +67,14 @@ class TLSplitter():
 
 
 class DCT(BaseEstimator, TransformerMixin):
-    '''
+    """Direct center transfer
+
     No transformation of the data points between the domains.
     This is what we call the direct (DCT) method.
-    '''
+    """
 
-    def __init__(self, target_domain, training_mode):
-        self.target_domain = target_domain
-        self.training_mode = training_mode
+    def __init__(self):
+        pass
 
     def fit(self, X, y):
         return self
@@ -78,13 +87,18 @@ class DCT(BaseEstimator, TransformerMixin):
 
 
 class RCT(BaseEstimator, TransformerMixin):
-    '''
+    """Re-Center Transfer
+
     Re-center (RCT) the data points from each domain to the Identity.
-    '''
+
+    Parameters
+    ----------
+    infer_domain : str
+        If known indicate target domain for inference, else last one is used
+    """
 
     def __init__(self, infer_domain=None):
-        '''indicate target domain for inference, if known, else last one is used
-        '''
+        """Init"""
         self.infer_domain = infer_domain
 
     def fit(self, X, y):
@@ -117,3 +131,87 @@ class RCT(BaseEstimator, TransformerMixin):
             X_rct[idx] = np.stack(
                 [Minvsqrt_domain @ Xi @ Minvsqrt_domain.T for Xi in X[idx]])
         return X_rct
+
+
+class DTClassifier(BaseEstimator, ClassifierMixin):
+    """Classification with extended labels
+
+    Convert extended labels into class label to train a classifier
+
+    Parameters
+    ----------
+    clf : pyriemann classifier, default=MDM()
+        The classifier to apply on the manifold, with class label.
+    """
+
+    def __init__(self, clf=base_clf):
+        """Init."""
+        self.clf = clf
+
+    def fit(self, X, y):
+        """Fit DTClassifier.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : ndarray, shape (n_matrices,)
+            Extended labels for each matrix.
+
+        Returns
+        -------
+        self : DTClassifier instance
+            The DTClassifier instance.
+        """
+        _, y_dec, _ = decode_domains(X, y)
+        self.clf.fit(X, y_dec)
+        return self
+
+    def predict(self, X):
+        """Get the predictions.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+
+        Returns
+        -------
+        pred : ndarray of int, shape (n_matrices,)
+            Predictions for each matrix according to the classifier
+        """
+        return self.clf.predict(X)
+
+    def predict_proba(self, X):
+        """Get the probability.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+
+        Returns
+        -------
+        pred : ndarray of ifloat, shape (n_matrices, n_classes)
+            Predictions for each matrix according to the classifier
+        """
+        return self.clf.predict_proba(X)
+
+    def score(self, X, y, sample_weight=None):
+        """Return the mean accuracy on the given test data and labels.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : ndarray, shape (n_matrices,)
+            Labels for each matrix.
+
+        Returns
+        -------
+        score : float
+            Mean accuracy of clf.predict(X) wrt. y.
+        """
+        _, y_true, _ = decode_domains(X, y)
+        y_pred = self.predict(X)
+        return accuracy_score(y_true, y_pred)

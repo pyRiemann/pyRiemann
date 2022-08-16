@@ -14,7 +14,8 @@ from pyriemann.transferlearning_yenc import (
     decode_domains,
     TLSplitter,
     DCT,
-    RCT
+    RCT,
+    DTClassifier
 )
 
 
@@ -95,7 +96,7 @@ np.random.seed(13)
 # with A = QP, where Q is an orthogonal matrix and P a positive definite matrix
 # parameter theta defines the angle of rotation for Q and alpha is a proxy
 # for how far from the Identity the mean of the new dataset should be
-X_enc, y_enc = make_example_dataset(N=50, theta=np.pi/4, alpha=5)
+X_enc, y_enc = make_example_dataset(N=10, theta=np.pi/4, alpha=5)
 
 # plot a figure with the joint spectral embedding of the simulated data points
 fig = make_figure(X_enc, y_enc)
@@ -137,14 +138,16 @@ for train_idx, test_idx in cv.split(X_enc, y_enc):
     dct_preprocess = DCT(
         training_mode=training_mode,
         target_domain=target_domain)
-    clf = MDM()
+    clf = DTClassifier(clf=MDM())
     dct_pipeline = make_pipeline(dct_preprocess, clf)
     dct_pipeline.fit(X_enc_train, y_enc_train)
+    y_pred = dct_pipeline.predict(X_enc_test)
+    _, y_true, _ = decode_domains(X_enc_test, y_enc_test)
     scores['DCT'].append(dct_pipeline.score(X_enc_test, y_enc_test))
 
     # RCT pipeline -- recenter the data from each domain to identity
     rct_transf = RCT()
-    clf = MDM()
+    clf = DTClassifier(MDM())
     rct_pipeline = make_pipeline(rct_transf, clf)  # training_mode?
     rct_pipeline.fit(X_enc_train, y_enc_train)
     scores['RCT'].append(rct_pipeline.score(X_enc_test, y_enc_test))
