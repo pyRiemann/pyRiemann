@@ -19,7 +19,7 @@ from pyriemann.transferlearning_yenc import (
 )
 
 
-def make_example_dataset(N, theta, alpha, eps=3.0):
+def make_example_dataset(N, theta, alpha, eps):
     '''
         theta : angle for the rotation matrix applied to dataset 2
         alpha : proxy of how far the mean of dataset 2 should be from dataset 1
@@ -96,7 +96,7 @@ np.random.seed(13)
 # with A = QP, where Q is an orthogonal matrix and P a positive definite matrix
 # parameter theta defines the angle of rotation for Q and alpha is a proxy
 # for how far from the Identity the mean of the new dataset should be
-X_enc, y_enc = make_example_dataset(N=10, theta=np.pi/4, alpha=5)
+X_enc, y_enc = make_example_dataset(N=50, theta=np.pi/4, alpha=5, eps=1.5)
 
 # plot a figure with the joint spectral embedding of the simulated data points
 fig = make_figure(X_enc, y_enc)
@@ -107,46 +107,54 @@ clf = MDM()
 
 # new object for splitting the datasets into training-validation
 # the training set is composed of all data points from the source domain
-# plus a partition of the target domain
-n_splits = 5
+# plus a partition of the target domain whose size we can control
 target_domain = 'target_domain'
-
-cv = TLSplitter(n_splits=n_splits, target_domain=target_domain)
+target_train_frac = 0.25 # proportion of the target domain for training
+n_splits = 5 # how many times to split the target domain into train/test
+cv = TLSplitter(
+    n_splits=n_splits,
+    target_train_frac=target_train_frac,
+    target_domain=target_domain)
 
 # we consider two types of pipeline for transfer learning
 # DCT : no transformation of dataset between the domains
 # RCT : re-center the data points from each domain to the Identity
 scores = {}
-meth_list = ['DCT', 'RCT']
+meth_list = ['Dummy', 'RCT']
 for meth in meth_list:
     scores[meth] = []
 
 # The are three modes for training the pipeline:
-#   (1) train clf only on source domain
-#   (2) train clf only on source domain + training partition from target
+#   (1) train clf only on source domain + training partition from target
+#   (2) train clf only on source domain
 #   (3) train clf only on training partition from target
 # these different choices yield very different results in the classification.
 training_mode = 1
 
 # carry out the cross-validation
 for train_idx, test_idx in cv.split(X_enc, y_enc):
+
     # split the dataset into training and testing
     X_enc_train, X_enc_test = X_enc[train_idx], X_enc[test_idx]
     y_enc_train, y_enc_test = y_enc[train_idx], y_enc[test_idx]
 
-    # DCT pipeline -- no transfer learning at all between source and target
-    dct_preprocess = TLDummy()
-    clf = TLClassifier(clf=MDM())
-    dct_pipeline = make_pipeline(dct_preprocess, clf)
-    dct_pipeline.fit(X_enc_train, y_enc_train)
-    y_pred = dct_pipeline.predict(X_enc_test)
-    _, y_true, _ = decode_domains(X_enc_test, y_enc_test)
-    scores['DCT'].append(dct_pipeline.score(X_enc_test, y_enc_test))
+    # Dummy pipeline -- no transfer learning at all between source and target
+    dummy_preprocess = TLDummy()
+    dummy_clf = TLClassifier(
+        target_domain=target_domain, 
+        clf=MDM(),
+        training_mode=training_mode)
+    dummy_pipeline = make_pipeline(dummy_preprocess, dummy_clf)
+    dummy_pipeline.fit(X_enc_train, y_enc_train)
+    scores['Dummy'].append(dummy_pipeline.score(X_enc_test, y_enc_test))
 
     # RCT pipeline -- recenter the data from each domain to identity
-    rct_transf = TLCenter(target_domain=target_domain)
-    clf = TLClassifier(clf=MDM())
-    rct_pipeline = make_pipeline(rct_transf, clf)  # training_mode?
+    rct_preprocess = TLCenter(target_domain=target_domain)
+    rct_clf = TLClassifier(
+        target_domain=target_domain, 
+        clf=MDM(),
+        training_mode=training_mode)
+    rct_pipeline = make_pipeline(rct_preprocess, rct_clf)
     rct_pipeline.fit(X_enc_train, y_enc_train)
     scores['RCT'].append(rct_pipeline.score(X_enc_test, y_enc_test))
 

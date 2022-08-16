@@ -116,8 +116,8 @@ for meth in meth_list:
     scores[meth] = []
 
 # The are three modes for training the pipeline:
-#   (1) train clf only on source domain
-#   (2) train clf only on source domain + training partition from target
+#   (1) train clf only on source domain + training partition from target
+#   (2) train clf only on source domain
 #   (3) train clf only on training partition from target
 # these different choices yield very different results in the classification.
 training_mode = 1

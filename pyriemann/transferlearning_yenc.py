@@ -1,5 +1,5 @@
 import numpy as np
-from sklearn.model_selection import KFold
+from sklearn.model_selection import ShuffleSplit
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.metrics import accuracy_score
 from pyriemann.utils.mean import mean_covariance
@@ -42,9 +42,10 @@ def decode_domains(X_enc, y_enc):
 
 
 class TLSplitter():
-    def __init__(self, target_domain, n_splits=5):
-        self.n_splits = n_splits
+    def __init__(self, target_domain, target_train_frac=0.80, n_splits=5):        
         self.target_domain = target_domain
+        self.target_train_frac = target_train_frac
+        self.n_splits = n_splits
 
     def split(self, X, y):
         # decode the domains of the data points
@@ -55,10 +56,12 @@ class TLSplitter():
         idx_target = np.where(domain == self.target_domain)[0]
 
         # index of training-split for the target data points
-        kf_target = KFold(n_splits=self.n_splits).split(idx_target)
-        for train_sub_idx_target, test_sub_idx_target in kf_target:
+        ss_target = ShuffleSplit(
+            n_splits=self.n_splits, 
+            train_size=self.target_train_frac).split(idx_target)
+        for train_sub_idx_target, test_sub_idx_target in ss_target:
             train_idx = np.concatenate(
-                [idx_source, idx_target[train_sub_idx_target]])
+                [idx_source, idx_target[train_sub_idx_target]])             
             test_idx = idx_target[test_sub_idx_target]
             yield train_idx, test_idx
 
@@ -95,7 +98,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     target_domain : str
-        If known indicate target domain for inference, else last one is used
+        Which domain to consider as target
     metric : str, default='riemann'
         The metric for mean, can be: 'ale', 'alm', 'euclid', 'harmonic',
         'identity', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
@@ -103,7 +106,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(self, target_domain=None, metric='riemann'):
+    def __init__(self, target_domain, metric='riemann'):
         """Init"""
         self.target_domain = target_domain
         self.metric = metric
@@ -114,13 +117,10 @@ class TLCenter(BaseEstimator, TransformerMixin):
         for d in np.unique(domains):
             M = mean_covariance(X[domains == d], self.metric)
             self._Minvsqrt[d] = invsqrtm(M)
-        if self.target_domain is None:
-            self.target_domain = np.unique(domains)[-1]
         return self
 
     def transform(self, X, y=None):
         # Used during inference, apply recenter from specified target domain.
-        # If no domain specified for inference, last one is used.
         X_rct = np.zeros_like(X)
         Minvsqrt_target = self._Minvsqrt[self.target_domain]
         X_rct = Minvsqrt_target @ X @ Minvsqrt_target
@@ -140,17 +140,27 @@ class TLCenter(BaseEstimator, TransformerMixin):
 class TLClassifier(BaseEstimator, ClassifierMixin):
     """Classification with extended labels
 
-    Convert extended labels into class label to train a classifier
+    Convert extended labels into class label to train a classifier and choose
+    how to join the data from source and target domains as training and testing
+    partitions
 
     Parameters
     ----------
     clf : pyriemann classifier, default=MDM()
         The classifier to apply on the manifold, with class label.
+    training_mode : int
+        The are three modes for training the pipeline:
+        (1) train clf only on source domain + training partition from target
+        (2) train clf only on source domain
+        (3) train clf only on training partition from target
+        these different choices yield very different results in the classification.
     """
 
-    def __init__(self, clf=base_clf):
+    def __init__(self, target_domain, clf=base_clf, training_mode=1):
         """Init."""
+        self.target_domain = target_domain
         self.clf = clf
+        self.training_mode = training_mode
 
     def fit(self, X, y):
         """Fit DTClassifier.
@@ -167,8 +177,19 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
         self : TLClassifier instance
             The TLClassifier instance.
         """
-        _, y_dec, _ = decode_domains(X, y)
-        self.clf.fit(X, y_dec)
+        X_dec, y_dec, domains = decode_domains(X, y)
+
+        if self.training_mode == 1:
+            X_train = X_dec
+            y_train = y_dec
+        elif self.training_mode == 2:
+            X_train = X_dec[domains != self.target_domain]
+            y_train = y_dec[domains != self.target_domain]
+        elif self.training_mode == 3:
+            X_train = X_dec[domains == self.target_domain]
+            y_train = y_dec[domains == self.target_domain]
+
+        self.clf.fit(X_train, y_train)
         return self
 
     def predict(self, X):

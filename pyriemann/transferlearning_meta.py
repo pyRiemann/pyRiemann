@@ -90,8 +90,8 @@ class TLPipeline(BaseEstimator, ClassifierMixin):
         (2) Use trained classifier to predict labels of testing set
 
     The are three modes for training the pipeline:
-        (1) train clf only on source domain
-        (2) train clf only on source domain + training partition from target
+        (1) train clf only on source domain + training partition from target
+        (2) train clf only on source domain
         (3) train clf only on training partition from target
     these different choices yield very different results in the classification.
 
@@ -105,15 +105,15 @@ class TLPipeline(BaseEstimator, ClassifierMixin):
     def __select(self, X, y, meta):
 
         if self._training_mode == 1:
+            # take data from training source and target
+            X_select = X
+            y_select = y
+
+        elif self._training_mode == 2:
             # take only data from training source
             select_source = ~meta['target']
             X_select = X[select_source]
             y_select = y[select_source]
-
-        elif self._training_mode == 2:
-            # take data from training source and target
-            X_select = X
-            y_select = y
 
         elif self._training_mode == 3:
             # take data only from training target
