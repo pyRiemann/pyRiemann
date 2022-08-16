@@ -155,10 +155,9 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     y1 = np.ones(n_matrices)
 
     X = np.concatenate([X0, X1])
-    y = np.concatenate([y0, y1])
+    y = np.concatenate([y0, y1]).astype(int)
     idx = rs.permutation(len(X))
-    X = X[idx]
-    y = y[idx].astype(int)
+    X, y = X[idx], y[idx]
 
     if return_centers:
         centers = np.stack([C0, C1])
