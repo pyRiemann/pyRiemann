@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.model_selection import KFold
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.metrics import accuracy_score
-from pyriemann.utils.mean import mean_riemann
+from pyriemann.utils.mean import mean_covariance
 from pyriemann.utils.base import invsqrtm
 from pyriemann.classification import MDM
 
@@ -96,17 +96,23 @@ class TLCenter(BaseEstimator, TransformerMixin):
     ----------
     infer_domain : str
         If known indicate target domain for inference, else last one is used
+    metric : str, default='riemann'
+        The metric for mean, can be: 'ale', 'alm', 'euclid', 'harmonic',
+        'identity', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
+        'wasserstein', or a callable function.
+
     """
 
-    def __init__(self, infer_domain=None):
+    def __init__(self, infer_domain=None, metric='riemann'):
         """Init"""
         self.infer_domain = infer_domain
+        self.metric = metric
 
     def fit(self, X, y):
         _, _, domains = decode_domains(X, y)
         self._Minvsqrt = {}
         for d in np.unique(domains):
-            M = mean_riemann(X[domains == d])
+            M = mean_covariance(X[domains == d], self.metric)
             self._Minvsqrt[d] = invsqrtm(M)
         if self.infer_domain is None:
             self.infer_domain = np.unique(domains)[-1]
