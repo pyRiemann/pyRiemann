@@ -94,7 +94,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    infer_domain : str
+    target_domain : str
         If known indicate target domain for inference, else last one is used
     metric : str, default='riemann'
         The metric for mean, can be: 'ale', 'alm', 'euclid', 'harmonic',
@@ -103,9 +103,9 @@ class TLCenter(BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(self, infer_domain=None, metric='riemann'):
+    def __init__(self, target_domain=None, metric='riemann'):
         """Init"""
-        self.infer_domain = infer_domain
+        self.target_domain = target_domain
         self.metric = metric
 
     def fit(self, X, y):
@@ -114,15 +114,15 @@ class TLCenter(BaseEstimator, TransformerMixin):
         for d in np.unique(domains):
             M = mean_covariance(X[domains == d], self.metric)
             self._Minvsqrt[d] = invsqrtm(M)
-        if self.infer_domain is None:
-            self.infer_domain = np.unique(domains)[-1]
+        if self.target_domain is None:
+            self.target_domain = np.unique(domains)[-1]
         return self
 
     def transform(self, X, y=None):
         # Used during inference, apply recenter from specified target domain.
         # If no domain specified for inference, last one is used.
         X_rct = np.zeros_like(X)
-        Minvsqrt_domain = self._Minvsqrt[self.infer_domain]
+        Minvsqrt_domain = self._Minvsqrt[self.target_domain]
         X_rct = np.stack(
                 [Minvsqrt_domain @ Xi @ Minvsqrt_domain.T for Xi in X])
         return X_rct

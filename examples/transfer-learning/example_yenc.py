@@ -144,7 +144,7 @@ for train_idx, test_idx in cv.split(X_enc, y_enc):
     scores['DCT'].append(dct_pipeline.score(X_enc_test, y_enc_test))
 
     # RCT pipeline -- recenter the data from each domain to identity
-    rct_transf = TLCenter()
+    rct_transf = TLCenter(target_domain=target_domain)
     clf = TLClassifier(clf=MDM())
     rct_pipeline = make_pipeline(rct_transf, clf)  # training_mode?
     rct_pipeline.fit(X_enc_train, y_enc_train)
