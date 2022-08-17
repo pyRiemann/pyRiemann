@@ -42,8 +42,10 @@ def decode_domains(X_enc, y_enc):
 
 
 class TLSplitter():
-    def __init__(self, target_domain, target_train_frac=0.80, n_splits=5):
+    def __init__(self, target_domain, training_mode=1, target_train_frac=0.80, 
+    n_splits=5):
         self.target_domain = target_domain
+        self.training_mode = training_mode
         self.target_train_frac = target_train_frac
         self.n_splits = n_splits
 
@@ -129,7 +131,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
     def fit_transform(self, X, y):
         # used during fit, in pipeline
         self.fit(X, y)
-        _, yd, domains = decode_domains(X, y)
+        _, _, domains = decode_domains(X, y)
         X_rct = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
