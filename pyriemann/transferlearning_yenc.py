@@ -1,11 +1,12 @@
 import numpy as np
+from joblib import Parallel, delayed
 from sklearn.model_selection import ShuffleSplit
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.metrics import accuracy_score
 from pyriemann.utils.mean import mean_covariance
 from pyriemann.utils.base import invsqrtm
+from pyriemann.utils.geodesic import geodesic
 from pyriemann.classification import MDM
-
 
 base_clf = MDM()
 
@@ -222,6 +223,178 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
             Predictions for each matrix according to the classifier
         """
         return self.clf.predict_proba(X)
+
+    def score(self, X, y, sample_weight=None):
+        """Return the mean accuracy on the given test data and labels.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : ndarray, shape (n_matrices,)
+            Labels for each matrix.
+
+        Returns
+        -------
+        score : float
+            Mean accuracy of clf.predict(X) wrt. y.
+        """
+        _, y_true, _ = decode_domains(X, y)
+        y_pred = self.predict(X)
+        return accuracy_score(y_true, y_pred)
+
+
+class TLMDM(MDM):
+    """Classification by Minimum Distance to Weighted Mean.
+
+    Classification by nearest centroid. For each of the given classes, a
+    centroid is estimated, according to the chosen metric, as a weighted mean
+    of SPD matrices from the source domain, combined with
+    the class centroid of the target domain [1]_ [2]_.
+    For classification, a given new matrix is attibuted to the class whose
+    centroid is the nearest according to the chosen metric.
+
+    Parameters
+    ----------
+    transfer_coef : float
+        Transfer coefficient in [0,1], controlling the trade-off between
+        source and target data. At 0, there is no transfer, only the data
+        acquired from the source are used. At 1, this is a calibration-free
+        system as no data are required from the source.
+    target_domain : string
+        Name of the target domain in extended labels
+    metric : string | dict, default='riemann'
+        The type of metric used for centroid and distance estimation.
+        see `mean_covariance` for the list of supported metric.
+        the metric could be a dict with two keys, `mean` and `distance` in
+        order to pass different metric for the centroid estimation and the
+        distance estimation. Typical usecase is to pass 'logeuclid' metric for
+        the mean in order to boost the computional speed and 'riemann' for the
+        distance in order to keep the good sensitivity for the classification.
+    n_jobs : int, default=1
+        The number of jobs to use for the computation. This works by computing
+        each of the class centroid in parallel.
+        If -1 all CPUs are used. If 1 is given, no parallel computing code is
+        used at all, which is useful for debugging. For n_jobs below -1,
+        (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
+        are used.
+
+    Attributes
+    ----------
+    covmeans_ : list
+        Class centroids, estimated after fit.
+    classes_ : list
+        List of classes, obtained after fit
+
+    See Also
+    --------
+    MDM
+
+    References
+    ----------
+    .. [1] E. Kalunga, S. Chevallier and Q. Barthelemy, "Transfer learning for
+        SSVEP-based BCI using Riemannian similarities between users", in 26th
+        European Signal Processing Conference (EUSIPCO), pp. 1685-1689. IEEE,
+        2018.
+    .. [2] S. Khazem, S. Chevallier, Q. Barthelemy, K. Haroun and C. Nous,
+        "Minimizing Subject-dependent Calibration for BCI with Riemannian
+        Transfer Learning", in 10th International IEEE/EMBS Conference on
+        Neural Engineering (NER), pp. 523-526. IEEE, 2021.
+    """
+
+    def __init__(
+            self,
+            transfer_coef,
+            target_domain,
+            metric='riemann',
+            n_jobs=1):
+        """Init."""
+        self.transfer_coef = transfer_coef
+        self.target_domain = target_domain
+        self.metric = metric
+        self.n_jobs = n_jobs
+
+    def fit(self, X, y, sample_weight=None):
+        """Fit (estimates) the centroids.
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices from source and target domain
+        y : ndarray, shape (n_matrices,)
+            Extended labels for each matrix
+        sample_weight : None | ndarray, shape (n_matrices_source,), \
+            default=None
+            Weights for each matrix from the source domains.
+            If None, it uses equal weights.
+        Returns
+        -------
+        self : MDWM instance
+            The MDWM instance.
+        """
+
+        if not 0 <= self.transfer_coef <= 1:
+            raise ValueError(
+                'Value transfer_coef must be included in [0, 1] (Got %d)'
+                % self.transfer_coef)
+
+        if isinstance(self.metric, str):
+            self.metric_mean = self.metric
+            self.metric_dist = self.metric
+        elif isinstance(self.metric, dict):
+            # check keys
+            for key in ['mean', 'distance']:
+                if key not in self.metric.keys():
+                    raise KeyError('metric must contain "mean" and "distance"')
+
+        X_dec, y_dec, domains = decode_domains(X, y)
+        X_src = X_dec[domains != self.target_domain]
+        y_src = y_dec[domains != self.target_domain]
+        X_tgt = X_dec[domains == self.target_domain]
+        y_tgt = y_dec[domains == self.target_domain]
+
+        if self.transfer_coef != 0:
+            if set(y_tgt) != set(y_src):
+                raise ValueError(
+                    f"classes in source domain must match classes in target \
+                    domain. Classes in source are {np.unique(y_src)} while \
+                    classes in target are {np.unique(y)}")
+
+        if sample_weight is not None:
+            if (sample_weight.shape != (X_src.shape[0], 1)) and \
+                                (sample_weight.shape != (X_src.shape[0],)):
+                raise ValueError("Parameter sample_weight should either be \
+                    None or an ndarray shape (n_matrices, 1)")
+
+        # if X.shape[0] != y.shape[0]:
+        #     raise ValueError("X and y must be for the same number of \
+        #         matrices i.e. n_matrices")
+
+        if sample_weight is None:
+            sample_weight = np.ones(X_src.shape[0])
+
+        # if not (X_source.shape[0] == y_source.shape[0]):
+        #     raise ValueError("X and y must be for the same number of \
+        #         matrices i.e. n_matrices")
+
+        self.classes_ = np.unique(y_src)
+
+        self.target_means_ = Parallel(n_jobs=self.n_jobs)(
+            delayed(mean_covariance)(
+                X_tgt[y_tgt == ll],
+                metric=self.metric_mean)
+            for ll in self.classes_)
+        self.source_means_ = Parallel(n_jobs=self.n_jobs)(
+            delayed(mean_covariance)(
+                X_src[y_src == ll],
+                metric=self.metric_mean,
+                sample_weight=sample_weight[y_src == ll])
+            for ll in self.classes_)
+
+        self.covmeans_ = [geodesic(self.target_means_[i],
+                                   self.source_means_[i],
+                                   self.transfer_coef, self.metric)
+                          for i in range(len(self.classes_))]
+        return self
 
     def score(self, X, y, sample_weight=None):
         """Return the mean accuracy on the given test data and labels.

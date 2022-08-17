@@ -15,7 +15,8 @@ from pyriemann.transferlearning_yenc import (
     TLSplitter,
     TLDummy,
     TLCenter,
-    TLClassifier
+    TLClassifier,
+    TLMDM
 )
 
 
@@ -120,7 +121,7 @@ cv = TLSplitter(
 # DCT : no transformation of dataset between the domains
 # RCT : re-center the data points from each domain to the Identity
 scores = {}
-meth_list = ['Dummy', 'RCT']
+meth_list = ['Dummy', 'RCT', 'TLMDM']
 for meth in meth_list:
     scores[meth] = []
 
@@ -157,6 +158,11 @@ for train_idx, test_idx in cv.split(X_enc, y_enc):
     rct_pipeline = make_pipeline(rct_preprocess, rct_clf)
     rct_pipeline.fit(X_enc_train, y_enc_train)
     scores['RCT'].append(rct_pipeline.score(X_enc_test, y_enc_test))
+
+    tlmdm_clf = TLMDM(transfer_coef=0.3, target_domain=target_domain)
+    tlmdm_pipeline = make_pipeline(tlmdm_clf)
+    tlmdm_pipeline.fit(X_enc_train, y_enc_train)
+    scores['TLMDM'].append(tlmdm_pipeline.score(X_enc_test, y_enc_test))
 
 # get the average score of each pipeline
 for meth in meth_list:
