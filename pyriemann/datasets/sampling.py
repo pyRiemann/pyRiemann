@@ -43,8 +43,8 @@ def _pdf_r(r, sigma):
     return np.exp(partial_1 + partial_2)
 
 
-def _rejection_sampling_gfunction_plus(sigma, r_sample):
-    """ side function used for the rejection sampling
+def _rejection_sampling_2D_gfunction_plus(sigma, r_sample):
+    """ auxiliary function used for the 2D rejection sampling
     algorithm in the case where r is sampled with
     the function g+.
     Parameters
@@ -68,8 +68,8 @@ def _rejection_sampling_gfunction_plus(sigma, r_sample):
     return 0
 
 
-def _rejection_sampling_gfunction_minus(sigma, r_sample):
-    """ side function used for the rejection sampling
+def _rejection_sampling_2D_gfunction_minus(sigma, r_sample):
+    """ auxiliary function used for the 2D rejection sampling
     algorithm in the case where r is sampled with
     the function g-.
     Parameters
@@ -93,10 +93,11 @@ def _rejection_sampling_gfunction_minus(sigma, r_sample):
     return 0
 
 
-def rejection_sampling(n_samples, sigma, random_state=None):
-    """ rejection sampling algorithm optimized for spatial
-    complexity but not for time complexity works very well
-    for low sigma values
+def _rejection_sampling_2D(n_samples, sigma, random_state=None):
+    """ Rejection sampling algorithm for the 2D case. The algorithm is
+    optimized for spatial complexity but not for time complexity.
+    Works very well for low sigma values
+
     Parameters
     ----------
     n_samples : int
@@ -119,13 +120,13 @@ def rejection_sampling(n_samples, sigma, random_state=None):
     while cpt != n_samples:
         if rs.binomial(1, 0.5, 1) == 1:
             r_sample = multivariate_normal.rvs(MU_A, COV_MATRIX, 1, rs)
-            res = _rejection_sampling_gfunction_plus(sigma, r_sample)
+            res = _rejection_sampling_2D_gfunction_plus(sigma, r_sample)
             if rs.rand(1) < res:
                 RES.append(r_sample)
                 cpt += 1
         else:
             r_sample = multivariate_normal.rvs(MU_B, COV_MATRIX, 1, rs)
-            res = _rejection_sampling_gfunction_minus(sigma, r_sample)
+            res = _rejection_sampling_2D_gfunction_minus(sigma, r_sample)
             if rs.rand(1) < res:
                 RES.append(r_sample)
                 cpt += 1
@@ -257,9 +258,8 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
     return samples
 
 
-def _sample_parameter_r(
-        n_samples, n_dim, sigma, random_state=None, n_jobs=1, sampling_method=None
-        ):
+def _sample_parameter_r(n_samples, n_dim, sigma,
+                        random_state=None, n_jobs=1, sampling_method=None):
     """Sample the r parameters of a Riemannian Gaussian distribution.
 
     Sample the logarithm of the eigenvalues of a SPD matrix following a
@@ -278,13 +278,14 @@ def _sample_parameter_r(
     random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
-        The numbfer of jobs to use for the computation. This works by computing
+        The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
     sampling_method : str, default=None
         Name of the sampling method used to sample samples_r. It can be
         'slice' or 'rejection'. If it is None, the sampling_method
-        will be equal to 'slice' for n_dim != 2 and equal to 
+        will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
+
     Returns
     -------
     r_samples : ndarray, shape (n_samples, n_dim)
@@ -294,8 +295,8 @@ def _sample_parameter_r(
         raise ValueError(f'Unknown sampling method {sampling_method},\
                          try slice or rejection')
     if n_dim == 2 and sampling_method != "slice":
-        return rejection_sampling(n_samples, sigma,
-                                  random_state=random_state)
+        return _rejection_sampling_2D(n_samples, sigma,
+                                      random_state=random_state)
     if n_dim != 2 and sampling_method == "rejection":
         raise ValueError(
             f'n_dim={n_dim} is not yet supported with rejection sampling')
@@ -346,9 +347,8 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
     return u_samples
 
 
-def _sample_gaussian_spd_centered(
-        n_matrices, n_dim, sigma, random_state=None, n_jobs=1, sampling_method=None
-        ):
+def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
+                                  n_jobs=1, sampling_method=None):
     """Sample a Riemannian Gaussian distribution centered at the Identity.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at the
@@ -371,7 +371,7 @@ def _sample_gaussian_spd_centered(
     sampling_method : str, default=None
         Name of the sampling method used to sample samples_r. It can be
         'slice' or 'rejection'. If it is None, the sampling_method
-        will be equal to 'slice' for n_dim != 2 and equal to 
+        will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
 
     Returns
@@ -411,9 +411,8 @@ def _sample_gaussian_spd_centered(
     return samples
 
 
-def sample_gaussian_spd(
-        n_matrices, mean, sigma, random_state=None, n_jobs=1, sampling_method=None
-        ):
+def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
+                        n_jobs=1, sampling_method=None):
     """Sample a Riemannian Gaussian distribution.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at
@@ -439,7 +438,7 @@ def sample_gaussian_spd(
     sampling_method : str, default=None
         Name of the sampling method used to sample samples_r. It can be
         'slice' or 'rejection'. If it is None, the sampling_method
-        will be equal to 'slice' for n_dim != 2 and equal to 
+        will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
 
     Returns

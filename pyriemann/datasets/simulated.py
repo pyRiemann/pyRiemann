@@ -79,7 +79,8 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs):
 
 def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
                         return_centers=False, random_state=None, *,
-                        mat_mean=.0, mat_std=1., n_jobs=1, sampling_method=None):
+                        mat_mean=.0, mat_std=1., n_jobs=1,
+                        sampling_method=None):
     """Generate SPD dataset with two classes sampled from Riemannian Gaussian.
 
     Generate a dataset with SPD matrices drawn from two Riemannian Gaussian
@@ -111,7 +112,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     sampling_method : str, default=None
         Name of the sampling method used to sample samples_r. It can be
         'slice' or 'rejection'. If it is None, the sampling_method
-        will be equal to 'slice' for n_dim != 2 and equal to 
+        will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
 
     Returns
