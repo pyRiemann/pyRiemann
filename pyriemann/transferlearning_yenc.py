@@ -1,4 +1,3 @@
-from cmath import isnan
 import numpy as np
 from joblib import Parallel, delayed
 from sklearn.model_selection import ShuffleSplit
@@ -11,6 +10,7 @@ from pyriemann.classification import MDM
 
 base_clf = MDM()
 INVALID_INT = -99999
+
 
 def encode_domains(X, y, domain):
     y_enc = []

@@ -1,4 +1,3 @@
-from base64 import decode
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -135,7 +134,7 @@ for train_idx, test_idx in cv.split(X_enc, y_enc):
     y_enc_train, y_enc_test = y_enc[train_idx], y_enc[test_idx]
 
     # there are three modes for training the pipeline:
-    training_mode = 1    
+    training_mode = 1
     # (1) train clf only on source domain + training partition from target
     if training_mode == 1:
         pass
@@ -149,7 +148,7 @@ for train_idx, test_idx in cv.split(X_enc, y_enc):
         X_train, y_train, domains = decode_domains(X_enc_train, y_enc_train)
         y_train[domains != target_domain] = INVALID_INT
         X_enc_train, y_enc_train = encode_domains(X_train, y_train, domains)
-    # these different choices yield very different results     
+    # these different choices yield very different results
 
     # Dummy pipeline -- no transfer learning at all between source and target
     dummy_preprocess = TLDummy()
