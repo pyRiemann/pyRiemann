@@ -43,10 +43,10 @@ def _pdf_r(r, sigma):
     return np.exp(partial_1 + partial_2)
 
 
-def rejection_sampling_a(sigma, r_sample):
+def _rejection_sampling_gfunction_plus(sigma, r_sample):
     """ side function used for the rejection sampling
-    algorithm in the case where we generate r with
-        the first multivariate normal pdf
+    algorithm in the case where r is sampled with
+    the function g+.
     Parameters
     ----------
     sigma : float
@@ -68,10 +68,10 @@ def rejection_sampling_a(sigma, r_sample):
     return 0
 
 
-def rejection_sampling_b(sigma, r_sample):
+def _rejection_sampling_gfunction_minus(sigma, r_sample):
     """ side function used for the rejection sampling
-    algorithm in the case where we generate r with
-        the second multivariate normal pdf
+    algorithm in the case where r is sampled with
+    the function g-.
     Parameters
     ----------
     sigma : float
@@ -119,13 +119,13 @@ def rejection_sampling(n_samples, sigma, random_state=None):
     while cpt != n_samples:
         if rs.binomial(1, 0.5, 1) == 1:
             r_sample = multivariate_normal.rvs(MU_A, COV_MATRIX, 1, rs)
-            res = rejection_sampling_a(sigma, r_sample)
+            res = _rejection_sampling_gfunction_plus(sigma, r_sample)
             if rs.rand(1) < res:
                 RES.append(r_sample)
                 cpt += 1
         else:
             r_sample = multivariate_normal.rvs(MU_B, COV_MATRIX, 1, rs)
-            res = rejection_sampling_b(sigma, r_sample)
+            res = _rejection_sampling_gfunction_minus(sigma, r_sample)
             if rs.rand(1) < res:
                 RES.append(r_sample)
                 cpt += 1
@@ -278,17 +278,21 @@ def _sample_parameter_r(
     random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
-        The number of jobs to use for the computation. This works by computing
+        The numbfer of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
     sampling_method : str, default=None
         Name of the sampling method used to sample samples_r. It can be
-        'slice' or 'rejection'.
-
+        'slice' or 'rejection'. If it is None, the sampling_method
+        will be equal to 'slice' for n_dim != 2 and equal to 
+        'rejection' for n_dim = 2.
     Returns
     -------
     r_samples : ndarray, shape (n_samples, n_dim)
         Samples of the r parameters of the Riemannian Gaussian distribution.
     """
+    if sampling_method not in ['slice', 'rejection', None]:
+        raise ValueError(f'Unknown sampling method {sampling_method},\
+                         try slice or rejection')
     if n_dim == 2 and sampling_method != "slice":
         return rejection_sampling(n_samples, sigma,
                                   random_state=random_state)
@@ -365,8 +369,10 @@ def _sample_gaussian_spd_centered(
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
     sampling_method : str, default=None
-        Name of the sampling method used to sample samples_r. It can be 
-        'slice' or 'rejection'.
+        Name of the sampling method used to sample samples_r. It can be
+        'slice' or 'rejection'. If it is None, the sampling_method
+        will be equal to 'slice' for n_dim != 2 and equal to 
+        'rejection' for n_dim = 2.
 
     Returns
     -------
@@ -431,8 +437,10 @@ def sample_gaussian_spd(
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
     sampling_method : str, default=None
-        Name of the sampling method used to sample samples_r. It can be 
-        'slice' or 'rejection'.
+        Name of the sampling method used to sample samples_r. It can be
+        'slice' or 'rejection'. If it is None, the sampling_method
+        will be equal to 'slice' for n_dim != 2 and equal to 
+        'rejection' for n_dim = 2.
 
     Returns
     -------

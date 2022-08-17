@@ -109,8 +109,10 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
     sampling_method : str, default=None
-        Name of the sampling method used to sample samples_r. It can be 
-        'slice' or 'rejection'.
+        Name of the sampling method used to sample samples_r. It can be
+        'slice' or 'rejection'. If it is None, the sampling_method
+        will be equal to 'slice' for n_dim != 2 and equal to 
+        'rejection' for n_dim = 2.
 
     Returns
     -------
