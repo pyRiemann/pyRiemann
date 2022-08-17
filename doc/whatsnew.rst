@@ -16,6 +16,9 @@ v0.3.1.dev
   The different metrics for tangent space mapping can now be defined into :class:`pyriemann.tangentspace.TangentSpace`,
   then used for ``transform()`` as well as for ``inverse_transform()``. :pr:`195` by :user:`qbarthelemy`
 
+- Enhance AJD: add ``init`` to :func:`pyriemann.utils.ajd.ajd_pham` and :func:`pyriemann.utils.ajd.rjd`,
+  add ``warm_restart`` to :class:`pyriemann.spatialfilters.AJDC`. :pr:`196` by :user:`qbarthelemy`
+
 v0.3 (July 2022)
 ----------------
 

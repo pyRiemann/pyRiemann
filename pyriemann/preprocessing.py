@@ -19,8 +19,8 @@ class Whitening(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     metric : str, default='euclid'
-        The metric for the estimation of mean covariance matrix used for
-        whitening and dimension reduction.
+        The metric for the estimation of mean matrix used for whitening and
+        dimension reduction.
     dim_red : None | dict, default=None
         If ``None`` :
             no dimension reduction during whitening.
@@ -34,8 +34,7 @@ class Whitening(BaseEstimator, TransformerMixin):
             ``val`` must be a float in (0,1], typically ``0.99``.
         If ``{'max_cond': val}`` :
             dimension reduction selecting the number of components such that
-            the condition number of the mean covariance matrix is lower than
-            ``val``.
+            the condition number of the mean matrix is lower than ``val``.
             This threshold has a physiological interpretation, because it can
             be viewed as the ratio between the power of the strongest component
             (usually, eye-blink source) and the power of the lowest component
@@ -49,9 +48,9 @@ class Whitening(BaseEstimator, TransformerMixin):
     n_components_ : int
         If fit, the number of components after dimension reduction.
     filters_ : ndarray, shape ``(n_channels_, n_components_)``
-        If fit, the spatial filters to whiten covariance matrices.
+        If fit, the spatial filters to whiten SPD matrices.
     inv_filters_ : ndarray, shape ``(n_components_, n_channels_)``
-        If fit, the spatial filters to unwhiten covariance matrices.
+        If fit, the spatial filters to unwhiten SPD matrices.
 
     Notes
     -----
@@ -75,16 +74,15 @@ class Whitening(BaseEstimator, TransformerMixin):
         y : None
             Ignored as unsupervised.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
-            Weight of each matrix, to compute the weighted mean covariance
-            matrix used for whitening and dimension reduction. If None, it uses
-            equal weights.
+            Weight of each matrix, to compute the weighted mean matrix used for
+            whitening and dimension reduction. If None, it uses equal weights.
 
         Returns
         -------
         self : Whitening instance
             The Whitening instance.
         """
-        # weighted mean of input covariance matrices
+        # weighted mean of input SPD matrices
         Xm = mean_covariance(
             X,
             metric=self.metric,
