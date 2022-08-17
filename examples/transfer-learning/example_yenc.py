@@ -1,3 +1,4 @@
+from base64 import decode
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -16,7 +17,8 @@ from pyriemann.transferlearning_yenc import (
     TLDummy,
     TLCenter,
     TLClassifier,
-    TLMDM
+    TLMDM,
+    INVALID_INT
 )
 
 
@@ -100,8 +102,8 @@ np.random.seed(13)
 X_enc, y_enc = make_example_dataset(N=50, theta=np.pi/4, alpha=5, eps=1.5)
 
 # plot a figure with the joint spectral embedding of the simulated data points
-fig = make_figure(X_enc, y_enc)
-fig.show()
+# fig = make_figure(X_enc, y_enc)
+# fig.show()
 
 # use the MDM classifier
 clf = MDM()
@@ -125,13 +127,6 @@ meth_list = ['Dummy', 'RCT', 'TLMDM']
 for meth in meth_list:
     scores[meth] = []
 
-# The are three modes for training the pipeline:
-#   (1) train clf only on source domain + training partition from target
-#   (2) train clf only on source domain
-#   (3) train clf only on training partition from target
-# these different choices yield very different results in the classification.
-training_mode = 1
-
 # carry out the cross-validation
 for train_idx, test_idx in cv.split(X_enc, y_enc):
 
@@ -139,12 +134,28 @@ for train_idx, test_idx in cv.split(X_enc, y_enc):
     X_enc_train, X_enc_test = X_enc[train_idx], X_enc[test_idx]
     y_enc_train, y_enc_test = y_enc[train_idx], y_enc[test_idx]
 
+    # there are three modes for training the pipeline:
+    training_mode = 1    
+    # (1) train clf only on source domain + training partition from target
+    if training_mode == 1:
+        pass
+    # (2) train clf only on source domain
+    elif training_mode == 2:
+        X_train, y_train, domains = decode_domains(X_enc_train, y_enc_train)
+        y_train[domains == target_domain] = INVALID_INT
+        X_enc_train, y_enc_train = encode_domains(X_train, y_train, domains)
+    # (3) train clf only on training partition from target
+    elif training_mode == 3:
+        X_train, y_train, domains = decode_domains(X_enc_train, y_enc_train)
+        y_train[domains != target_domain] = INVALID_INT
+        X_enc_train, y_enc_train = encode_domains(X_train, y_train, domains)
+    # these different choices yield very different results     
+
     # Dummy pipeline -- no transfer learning at all between source and target
     dummy_preprocess = TLDummy()
     dummy_clf = TLClassifier(
         target_domain=target_domain,
-        clf=MDM(),
-        training_mode=training_mode)
+        clf=MDM())
     dummy_pipeline = make_pipeline(dummy_preprocess, dummy_clf)
     dummy_pipeline.fit(X_enc_train, y_enc_train)
     scores['Dummy'].append(dummy_pipeline.score(X_enc_test, y_enc_test))
@@ -153,8 +164,7 @@ for train_idx, test_idx in cv.split(X_enc, y_enc):
     rct_preprocess = TLCenter(target_domain=target_domain)
     rct_clf = TLClassifier(
         target_domain=target_domain,
-        clf=MDM(),
-        training_mode=training_mode)
+        clf=MDM())
     rct_pipeline = make_pipeline(rct_preprocess, rct_clf)
     rct_pipeline.fit(X_enc_train, y_enc_train)
     scores['RCT'].append(rct_pipeline.score(X_enc_test, y_enc_test))

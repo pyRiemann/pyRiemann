@@ -1,3 +1,4 @@
+from cmath import isnan
 import numpy as np
 from joblib import Parallel, delayed
 from sklearn.model_selection import ShuffleSplit
@@ -9,7 +10,7 @@ from pyriemann.utils.geodesic import geodesic
 from pyriemann.classification import MDM
 
 base_clf = MDM()
-
+INVALID_INT = -99999
 
 def encode_domains(X, y, domain):
     y_enc = []
@@ -43,10 +44,8 @@ def decode_domains(X_enc, y_enc):
 
 
 class TLSplitter():
-    def __init__(self, target_domain, training_mode=1, target_train_frac=0.80, 
-    n_splits=5):
+    def __init__(self, target_domain, target_train_frac=0.80, n_splits=5):
         self.target_domain = target_domain
-        self.training_mode = training_mode
         self.target_train_frac = target_train_frac
         self.n_splits = n_splits
 
@@ -151,20 +150,12 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
     ----------
     clf : pyriemann classifier, default=MDM()
         The classifier to apply on the manifold, with class label.
-    training_mode : int
-        The are three modes for training the pipeline:
-        (1) train clf only on source domain + training partition from target
-        (2) train clf only on source domain
-        (3) train clf only on training partition from target
-        these different choices yield very different results in the
-        classification.
     """
 
-    def __init__(self, target_domain, clf=base_clf, training_mode=1):
+    def __init__(self, target_domain, clf=base_clf):
         """Init."""
         self.target_domain = target_domain
         self.clf = clf
-        self.training_mode = training_mode
 
     def fit(self, X, y):
         """Fit DTClassifier.
@@ -183,15 +174,9 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
         """
         X_dec, y_dec, domains = decode_domains(X, y)
 
-        if self.training_mode == 1:
-            X_train = X_dec
-            y_train = y_dec
-        elif self.training_mode == 2:
-            X_train = X_dec[domains != self.target_domain]
-            y_train = y_dec[domains != self.target_domain]
-        elif self.training_mode == 3:
-            X_train = X_dec[domains == self.target_domain]
-            y_train = y_dec[domains == self.target_domain]
+        select = np.where(y_dec != INVALID_INT)[0]
+        X_train = X_dec[select]
+        y_train = y_dec[select]
 
         self.clf.fit(X_train, y_train)
         return self
