@@ -7,13 +7,13 @@ from .mean import mean_riemann
 
 
 def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
-    r"""Calculate Euclidean kernel matrix.
+    r"""Euclidean kernel between two sets of SPD matrices.
 
     Calculates the Euclidean kernel matrix K of inner products of two sets
     X and Y of SPD matrices by calculating pairwise:
 
     .. math::
-        K_{i,j} = {tr}(X_i Y_j)
+        K_{i,j} = \text{tr}(X_i Y_j)
 
     Parameters
     ----------
@@ -28,7 +28,7 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
     Returns
     -------
     K : ndarray, shape (n_matrices_X, n_matrices_Y)
-        The kernel matrix of X and Y.
+        The Euclidean kernel matrix between X and Y.
 
     Notes
     -----
@@ -41,13 +41,13 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
 
 
 def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
-    r"""Calculate Log-Euclidean kernel matrix.
+    r"""Log-Euclidean kernel between two sets of SPD matrices.
 
     Calculates the Log-Euclidean kernel matrix K of inner products of two sets
     X and Y of SPD matrices by calculating pairwise [1]_:
 
     .. math::
-        K_{i,j} = {tr}(\log(X_i)\log(Y_j))
+        K_{i,j} = \text{tr}(\log(X_i) \log(Y_j))
 
     Parameters
     ----------
@@ -62,7 +62,7 @@ def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
     Returns
     -------
     K : ndarray, shape (n_matrices_X, n_matrices_Y)
-        The kernel matrix of X and Y.
+        The Log-Euclidean kernel matrix between X and Y.
 
     Notes
     -----
@@ -81,14 +81,15 @@ def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
 
 
 def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
-    r"""Calculate the affine-invariant Riemannian kernel matrix.
+    r"""Affine-invariant Riemannian kernel between two sets of SPD matrices.
 
     Calculates the affine-invariant Riemannian kernel matrix K of inner
-    products of two sets X and Y of SPD matrices on tangent space of C by
+    products of two sets X and Y of SPD matrices on tangent space of Cref by
     calculating pairwise [1]_:
 
     .. math::
-        K_{i,j} = {tr}(\log(C^{-1/2}X_i C^{-1/2})\log(C^{-1/2}Y_j C^{-1/2}))
+        K_{i,j} = \text{tr}(\log(C_\text{ref}^{-1/2} X_i C_\text{ref}^{-1/2})
+        \log(C_\text{ref}^{-1/2} Y_j C_\text{ref}^{-1/2}) )
 
     Parameters
     ----------
@@ -106,7 +107,7 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
     Returns
     -------
     K : ndarray, shape (n_matrices_X, n_matrices_Y)
-        The kernel matrix of X and Y.
+        The affine-invariant Riemannian kernel matrix between X and Y.
 
     Notes
     -----
@@ -176,7 +177,7 @@ def _apply_matrix_kernel(kernel_fct, X, Y=None, *, Cref=None, reg=1e-10):
 
 
 def kernel(X, Y=None, *, Cref=None, metric='riemann', reg=1e-10):
-    """Calculate the kernel matrix according to a specified metric.
+    """Kernel matrix according to a specified metric.
 
     Calculates the kernel matrix K of inner products of two sets X and Y of
     SPD matrices on the tangent space of Cref according to a specified metric.
@@ -200,7 +201,7 @@ def kernel(X, Y=None, *, Cref=None, metric='riemann', reg=1e-10):
     Returns
     -------
     K : ndarray, shape (n_matrices_X, n_matrices_Y)
-        The kernel matrix of X and Y.
+        The kernel matrix between X and Y.
 
     Notes
     -----

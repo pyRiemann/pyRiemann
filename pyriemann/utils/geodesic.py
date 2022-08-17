@@ -61,10 +61,10 @@ def geodesic_logeuclid(A, B, alpha=0.5):
 
 
 def geodesic_riemann(A, B, alpha=0.5):
-    r"""Riemannian geodesic between SPD matrices.
+    r"""Affine-invariant Riemannian geodesic between SPD matrices.
 
-    The matrix at the position alpha on the Riemannian geodesic between two SPD
-    matrices A and B is:
+    The matrix at the position alpha on the affine-invariant Riemannian
+    geodesic between two SPD matrices A and B is:
 
     .. math::
         \mathbf{C} = \mathbf{A}^{1/2} \left( \mathbf{A}^{-1/2} \mathbf{B}
@@ -84,7 +84,7 @@ def geodesic_riemann(A, B, alpha=0.5):
     Returns
     -------
     C : ndarray, shape (..., n, n)
-        SPD matrices on the Riemannian geodesic.
+        SPD matrices on the affine-invariant Riemannian geodesic.
     """
     sA, isA = sqrtm(A), invsqrtm(A)
     C = isA @ B @ isA

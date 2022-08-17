@@ -2,15 +2,12 @@
 import functools
 
 import numpy as np
-
 from scipy import stats
-
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.svm import SVC as sklearnSVC
 from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
-
 from joblib import Parallel, delayed
 
 from .utils.kernel import kernel
