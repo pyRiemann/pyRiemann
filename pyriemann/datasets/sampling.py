@@ -44,15 +44,17 @@ def _pdf_r(r, sigma):
 
 
 def _rejection_sampling_2D_gfunction_plus(sigma, r_sample):
-    """ auxiliary function used for the 2D rejection sampling
-    algorithm in the case where r is sampled with
-    the function g+.
+    """Auxiliary function for the 2D rejection sampling algorithm.
+    
+    It is used in the case where r is sampled with the function g+.
+
     Parameters
     ----------
     sigma : float
         Dispersion of the Riemannian Gaussian distribution.
     r_samples : ndarray, shape (1, n_dim)
         Sample of the r parameters of the Riemannian Gaussian distribution.
+
     Returns
     -------
     probability_of_acceptation : float
