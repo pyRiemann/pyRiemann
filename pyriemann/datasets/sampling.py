@@ -103,7 +103,7 @@ def _rejection_sampling_2D(n_samples, sigma, random_state=None):
     Parameters
     ----------
     n_samples : int
-        Number of samples to get from the ptarget distribution.
+        Number of samples to get from the target distribution.
     sigma : float
         Dispersion of the Riemannian Gaussian distribution.
     random_state : int, RandomState instance or None, default=None
