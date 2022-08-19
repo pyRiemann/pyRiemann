@@ -60,45 +60,49 @@ def _rejection_sampling_2D_gfunction_plus(sigma, r_sample):
     probability_of_acceptation : float
     """
     mu_a = np.array([sigma**2/2, -sigma**2/2])
-    COV_MATRIX = (sigma**2)*np.eye(2)
-    M = np.pi*(sigma**2)*np.exp(sigma**2/4)
+    cov_matrix = (sigma**2)*np.eye(2)
+    m = np.pi*(sigma**2)*np.exp(sigma**2/4)
     if r_sample[0] >= r_sample[1]:
         num = np.exp(-1/(2*sigma**2) * np.sum(r_sample**2))\
-            * np.sinh((r_sample[0] - r_sample[1])/2) * 1/M
-        den = multivariate_normal.pdf(r_sample, mean=MU_A, cov=COV_MATRIX)
+            * np.sinh((r_sample[0] - r_sample[1])/2) * 1/m
+        den = multivariate_normal.pdf(r_sample, mean=mu_a, cov=cov_matrix)
         return num / den
     return 0
 
 
 def _rejection_sampling_2D_gfunction_minus(sigma, r_sample):
-    """ auxiliary function used for the 2D rejection sampling
-    algorithm in the case where r is sampled with
-    the function g-.
+    """Auxiliary function for the 2D rejection sampling algorithm.
+    
+    It is used in the case where r is sampled with the function g-.
+
     Parameters
     ----------
     sigma : float
         Dispersion of the Riemannian Gaussian distribution.
-    r_samples : ndarray, shape (n_samples, n_dim)
-        Samples of the r parameters of the Riemannian Gaussian distribution.
+    r_samples : ndarray, shape (1, n_dim)
+        Sample of the r parameters of the Riemannian Gaussian distribution.
+
     Returns
     -------
     probability_of_acceptation : float
     """
-    MU_B = np.array([-sigma**2/2, sigma**2/2])
-    COV_MATRIX = (sigma**2)*np.eye(2)
-    M = np.pi*(sigma**2)*np.exp(sigma**2/4)
+    mu_b = np.array([-sigma**2/2, sigma**2/2])
+    cov_matrix = (sigma**2)*np.eye(2)
+    m = np.pi*(sigma**2)*np.exp(sigma**2/4)
     if r_sample[0] < r_sample[1]:
         num = np.exp(-1/(2*sigma**2) * np.sum(r_sample**2))\
             * np.sinh((r_sample[1] - r_sample[0])/2)
-        den = multivariate_normal.pdf(r_sample, mean=MU_B, cov=COV_MATRIX)*M
+        den = multivariate_normal.pdf(r_sample, mean=mu_b, cov=cov_matrix)*m
         return num/den
     return 0
 
 
 def _rejection_sampling_2D(n_samples, sigma, random_state=None):
-    """ Rejection sampling algorithm for the 2D case. The algorithm is
-    optimized for spatial complexity but not for time complexity.
-    Works very well for low sigma values
+    """Rejection sampling algorithm for the 2D case. 
+    
+    Implementation of a rejection sampling algorithm. The implementation 
+    follows the description given in page 528 of Christopher Bishop's book
+    "Pattern recognition and Machine Learning" (2006).
 
     Parameters
     ----------
@@ -108,26 +112,27 @@ def _rejection_sampling_2D(n_samples, sigma, random_state=None):
         Dispersion of the Riemannian Gaussian distribution.
     random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
+
     Returns
     -------
     r_samples : ndarray, shape (n_samples, n_dim)
         Samples of the r parameters of the Riemannian Gaussian distribution.
     """
-    MU_A = np.array([sigma**2/2, -sigma**2/2])
-    MU_B = np.array([-sigma**2/2, sigma**2/2])
-    COV_MATRIX = (sigma**2)*np.eye(2)
+    mu_a = np.array([sigma**2/2, -sigma**2/2])
+    mu_b = np.array([-sigma**2/2, sigma**2/2])
+    cov_matrix = (sigma**2)*np.eye(2)
     RES = []
     cpt = 0
     rs = check_random_state(random_state)
     while cpt != n_samples:
         if rs.binomial(1, 0.5, 1) == 1:
-            r_sample = multivariate_normal.rvs(MU_A, COV_MATRIX, 1, rs)
+            r_sample = multivariate_normal.rvs(mu_a, cov_matrix, 1, rs)
             res = _rejection_sampling_2D_gfunction_plus(sigma, r_sample)
             if rs.rand(1) < res:
                 RES.append(r_sample)
                 cpt += 1
         else:
-            r_sample = multivariate_normal.rvs(MU_B, COV_MATRIX, 1, rs)
+            r_sample = multivariate_normal.rvs(mu_b, cov_matrix, 1, rs)
             res = _rejection_sampling_2D_gfunction_minus(sigma, r_sample)
             if rs.rand(1) < res:
                 RES.append(r_sample)
