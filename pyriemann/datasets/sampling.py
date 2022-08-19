@@ -59,7 +59,7 @@ def _rejection_sampling_2D_gfunction_plus(sigma, r_sample):
     -------
     probability_of_acceptation : float
     """
-    MU_A = np.array([sigma**2/2, -sigma**2/2])
+    mu_a = np.array([sigma**2/2, -sigma**2/2])
     COV_MATRIX = (sigma**2)*np.eye(2)
     M = np.pi*(sigma**2)*np.exp(sigma**2/4)
     if r_sample[0] >= r_sample[1]:
