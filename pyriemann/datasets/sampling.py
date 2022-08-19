@@ -45,6 +45,7 @@ def _pdf_r(r, sigma):
 
 def _rejection_sampling_2D_gfunction_plus(sigma, r_sample):
     """Auxiliary function for the 2D rejection sampling algorithm.
+
     It is used in the case where r is sampled with the function g+.
 
     Parameters
@@ -71,6 +72,7 @@ def _rejection_sampling_2D_gfunction_plus(sigma, r_sample):
 
 def _rejection_sampling_2D_gfunction_minus(sigma, r_sample):
     """Auxiliary function for the 2D rejection sampling algorithm.
+
     It is used in the case where r is sampled with the function g-.
 
     Parameters
@@ -97,6 +99,7 @@ def _rejection_sampling_2D_gfunction_minus(sigma, r_sample):
 
 def _rejection_sampling_2D(n_samples, sigma, random_state=None):
     """Rejection sampling algorithm for the 2D case.
+
     Implementation of a rejection sampling algorithm. The implementation
     follows the description given in page 528 of Christopher Bishop's book
     "Pattern recognition and Machine Learning" (2006).
