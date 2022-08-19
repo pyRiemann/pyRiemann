@@ -294,8 +294,8 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
         Samples of the r parameters of the Riemannian Gaussian distribution.
     """
     if sampling_method not in ['slice', 'rejection', None]:
-        raise ValueError(f'Unknown sampling method {sampling_method},\
-                         try slice or rejection')
+        raise ValueError(f'Unknown sampling method {sampling_method},'
+                         'try slice or rejection')
     if n_dim == 2 and sampling_method != "slice":
         return _rejection_sampling_2D(n_samples, sigma,
                                       random_state=random_state)
