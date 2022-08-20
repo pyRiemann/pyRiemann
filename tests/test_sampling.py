@@ -13,7 +13,7 @@ def test_sample_gaussian_spd(n_jobs):
     n_matrices, n_dim, sigma = 10, 8, 1.
     mean = np.eye(n_dim)
     X = sample_gaussian_spd(
-        n_matrices, mean, sigma, random_state=42, n_jobs=n_jobs
+        n_matrices, mean, sigma, random_state=42, n_jobs=n_jobs, sampling_method=None
         )
     assert X.shape == (n_matrices, n_dim, n_dim)  # X shape mismatch
     assert is_spd(X)  # X is an array of SPD matrices
