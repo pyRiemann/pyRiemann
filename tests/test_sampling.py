@@ -8,20 +8,41 @@ from pyriemann.utils.test import is_sym_pos_def as is_spd
 
 
 @pytest.mark.parametrize("n_jobs", [1, -1])
-def test_sample_gaussian_spd(n_jobs):
-    """Test Riemannian Gaussian sampling."""
-    n_matrices, n_dim, sigma = 10, 8, 1.
+@pytest.mark.parametrize("sampling_method", [None, 'slice', 'rejection'])
+def test_sample_gaussian_spd_dim2(n_jobs, sampling_method):
+    """Test Riemannian Gaussian sampling for dim=2."""
+    n_matrices, n_dim, sigma = 5, 2, 1.
     mean = np.eye(n_dim)
-    X = sample_gaussian_spd(
-        n_matrices, mean, sigma, random_state=42, n_jobs=n_jobs, sampling_method=None
-        )
+    X = sample_gaussian_spd(n_matrices, mean, sigma, random_state=42,
+                            n_jobs=n_jobs, sampling_method=sampling_method)
     assert X.shape == (n_matrices, n_dim, n_dim)  # X shape mismatch
     assert is_spd(X)  # X is an array of SPD matrices
 
 
+@pytest.mark.parametrize("n_dim", [3, 4])
+@pytest.mark.parametrize("n_jobs", [1, -1])
+@pytest.mark.parametrize("sampling_method", [None, 'slice'])
+def test_sample_gaussian_spd_dimsup(n_dim, n_jobs, sampling_method):
+    """Test Riemannian Gaussian sampling for dim > 2."""
+    n_matrices, sigma = 5, 1.
+    mean = np.eye(n_dim)
+    X = sample_gaussian_spd(n_matrices, mean, sigma, random_state=42,
+                            n_jobs=n_jobs, sampling_method=sampling_method)
+    assert X.shape == (n_matrices, n_dim, n_dim)  # X shape mismatch
+    assert is_spd(X)  # X is an array of SPD matrices
+
+
+def test_sample_gaussian_spd_error():
+    with pytest.raises(ValueError):  # unknown sampling method
+        sample_gaussian_spd(5, np.eye(2), 1., sampling_method='blabla')
+    with pytest.raises(ValueError):  # dim=3 not yet supported with rejection
+        n_dim = 3
+        sample_gaussian_spd(5, np.eye(n_dim), 1., sampling_method='rejection')
+
+
 def test_generate_random_spd_matrix():
     """Test generating random SPD matrix"""
-    n_dim = 16
+    n_dim = 4
     X = generate_random_spd_matrix(n_dim, random_state=None)
     assert X.shape == (n_dim, n_dim)  # X shape mismatch
     assert is_spd(X)  # X is a SPD matrix
@@ -30,7 +51,7 @@ def test_generate_random_spd_matrix():
 @pytest.mark.parametrize("n_jobs", [1, -1])
 def test_sigma_gaussian_spd(n_jobs):
     """Test sigma parameter from Riemannian Gaussian sampling."""
-    n_matrices, n_dim, sig_1, sig_2 = 10, 8, 1., 2.
+    n_matrices, n_dim, sig_1, sig_2 = 5, 4, 1., 2.
     mean = np.eye(n_dim)
     X1 = sample_gaussian_spd(
         n_matrices, mean, sig_1, random_state=42, n_jobs=n_jobs
@@ -44,7 +65,7 @@ def test_sigma_gaussian_spd(n_jobs):
 
 
 def test_functions_error():
-    n_matrices, n_dim = 10, 16
+    n_matrices, n_dim = 3, 4
     mean, sigma = np.eye(n_dim), 2.
     with pytest.raises(ValueError):  # mean is not a matrix
         sample_gaussian_spd(n_matrices, np.ones(n_dim), sigma)

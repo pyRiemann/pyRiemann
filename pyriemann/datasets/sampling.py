@@ -85,7 +85,8 @@ def _rejection_sampling_2D_gfunction_minus(sigma, r_sample):
 
     Returns
     -------
-    probability_of_acceptation : float
+    p : float
+        Probability of acceptation.
     """
     mu_b = np.array([-sigma**2/2, sigma**2/2])
     cov_matrix = (sigma**2)*np.eye(2)
