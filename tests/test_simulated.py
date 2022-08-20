@@ -2,9 +2,36 @@ import pytest
 import numpy as np
 
 from pyriemann.datasets.sampling import generate_random_spd_matrix
-from pyriemann.datasets.simulated import (make_gaussian_blobs,
-                                          make_outliers)
+from pyriemann.datasets.simulated import (
+    make_covariances,
+    make_masks,
+    make_gaussian_blobs,
+    make_outliers,
+)
 from pyriemann.utils.test import is_sym_pos_def as is_spd
+
+
+def test_make_covariances(rndstate):
+    """Test function for make covariances."""
+    n_matrices, n_channels = 5, 4
+    X, evals, evecs = make_covariances(n_matrices=n_matrices,
+                                       n_channels=n_channels,
+                                       return_params=True,
+                                       rs=rndstate)
+    assert X.shape == (n_matrices, n_channels, n_channels)  # X shape mismatch
+    assert evals.shape == (n_matrices, n_channels)  # evals shape mismatch
+    assert evecs.shape == (n_channels, n_channels)  # evecs shape mismatch
+
+
+def test_make_masks(rndstate):
+    """Test function for make masks."""
+    n_masks, n_dim0, n_dim1_min, = 5, 10, 3
+    M = make_masks(n_masks, n_dim0, n_dim1_min, rndstate)
+
+    for m in M:
+        dim0, dim1 = m.shape
+        assert dim0 == n_dim0  # 1st dim mismatch
+        assert n_dim1_min <= dim1 <= n_dim0  # 2nd dim mismatch
 
 
 def test_gaussian_blobs():

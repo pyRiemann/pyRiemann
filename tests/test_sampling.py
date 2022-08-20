@@ -23,7 +23,7 @@ def test_sample_gaussian_spd_dim2(n_jobs, sampling_method):
 @pytest.mark.parametrize("n_jobs", [1, -1])
 @pytest.mark.parametrize("sampling_method", [None, 'slice'])
 def test_sample_gaussian_spd_dimsup(n_dim, n_jobs, sampling_method):
-    """Test Riemannian Gaussian sampling for dim > 2."""
+    """Test Riemannian Gaussian sampling for dim>2."""
     n_matrices, sigma = 5, 1.
     mean = np.eye(n_dim)
     X = sample_gaussian_spd(n_matrices, mean, sigma, random_state=42,
