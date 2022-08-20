@@ -123,7 +123,7 @@ def _rejection_sampling_2D(n_samples, sigma, random_state=None):
     mu_a = np.array([sigma**2/2, -sigma**2/2])
     mu_b = np.array([-sigma**2/2, sigma**2/2])
     cov_matrix = (sigma**2)*np.eye(2)
-    RES = []
+    r_samples = []
     cpt = 0
     rs = check_random_state(random_state)
     while cpt != n_samples:
@@ -131,15 +131,15 @@ def _rejection_sampling_2D(n_samples, sigma, random_state=None):
             r_sample = multivariate_normal.rvs(mu_a, cov_matrix, 1, rs)
             res = _rejection_sampling_2D_gfunction_plus(sigma, r_sample)
             if rs.rand(1) < res:
-                RES.append(r_sample)
+                r_samples.append(r_sample)
                 cpt += 1
         else:
             r_sample = multivariate_normal.rvs(mu_b, cov_matrix, 1, rs)
             res = _rejection_sampling_2D_gfunction_minus(sigma, r_sample)
             if rs.rand(1) < res:
-                RES.append(r_sample)
+                r_samples.append(r_sample)
                 cpt += 1
-    return np.array(RES)
+    return np.array(r_samples)
 
 
 def _slice_one_sample(ptarget, x0, w, rs):
