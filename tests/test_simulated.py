@@ -9,7 +9,7 @@ from pyriemann.utils.test import is_sym_pos_def as is_spd
 
 def test_gaussian_blobs():
     """Test function for sampling Gaussian blobs."""
-    n_matrices, n_dim = 50, 8
+    n_matrices, n_dim = 5, 4
     X, y = make_gaussian_blobs(n_matrices=n_matrices,
                                n_dim=n_dim,
                                class_sep=2.0,
@@ -33,7 +33,7 @@ def test_gaussian_blobs():
 
 def test_generate_random_spd_matrix():
     """Test function for sampling outliers"""
-    n_matrices, n_dim, sigma = 100, 8, 1.
+    n_matrices, n_dim, sigma = 5, 4, 1.
     mean = generate_random_spd_matrix(n_dim)
     X = make_outliers(n_matrices=n_matrices,
                       mean=mean,
@@ -45,7 +45,7 @@ def test_generate_random_spd_matrix():
 
 
 def test_functions_error():
-    n_matrices, n_dim, class_sep, class_disp = 10, 16, 2., 1.
+    n_matrices, n_dim, class_sep, class_disp = 5, 4, 2., 1.
     with pytest.raises(ValueError):  # n_matrices is not an integer
         make_gaussian_blobs(n_matrices=float(n_matrices),
                             n_dim=n_dim,
