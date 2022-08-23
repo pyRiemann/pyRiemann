@@ -34,18 +34,15 @@ mean = generate_random_spd_matrix(n_dim)  # random reference point
 samples_1 = sample_gaussian_spd(n_matrices=n_matrices,
                                 mean=mean,
                                 sigma=sigma,
-                                random_state=random_state,
-                                sampling_method='rejection')
+                                random_state=random_state)
 samples_2 = sample_gaussian_spd(n_matrices=n_matrices,
                                 mean=mean,
                                 sigma=sigma/2,
-                                random_state=random_state,
-                                sampling_method='rejection')
+                                random_state=random_state)
 samples_3 = sample_gaussian_spd(n_matrices=n_matrices,
                                 mean=epsilon*mean,
                                 sigma=sigma,
-                                random_state=random_state,
-                                sampling_method='rejection')
+                                random_state=random_state)
 
 # Stack all of the samples into one data array for the embedding
 samples = np.concatenate([samples_1, samples_2, samples_3])
