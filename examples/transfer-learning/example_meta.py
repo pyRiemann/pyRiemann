@@ -92,7 +92,7 @@ np.random.seed(13)
 # with A = QP, where Q is an orthogonal matrix and P a positive definite matrix
 # parameter theta defines the angle of rotation for Q and alpha is a proxy
 # for how far from the Identity the mean of the new dataset should be
-X, y, meta = make_example_dataset(N=50, theta=np.pi/4, alpha=5)
+X, y, meta = make_example_dataset(N=50, theta=np.pi/4, alpha=5, eps=1.5)
 
 # plot a figure with the joint spectral embedding of the simulated data points
 fig = make_figure(X, y, meta)
@@ -104,8 +104,11 @@ clf = MDM()
 # new object for splitting the datasets into training-validation
 # the training set is composed of all data points from the source domain
 # plus a partition of the target domain
-n_splits = 5
-cv = TLSplitter(n_splits=n_splits)
+target_train_frac = 0.25  # proportion of the target domain for training
+n_splits = 5  # how many times to split the target domain into train/test
+cv = TLSplitter(
+    n_splits=n_splits,
+    target_train_frac=target_train_frac)
 
 # we consider two types of pipeline for transfer learning
 # DCT : no transformation of dataset between the domains
@@ -115,11 +118,11 @@ meth_list = ['DCT', 'RCT']
 for meth in meth_list:
     scores[meth] = []
 
-# The are three modes for training the pipeline:
-#   (1) train clf only on source domain + training partition from target
-#   (2) train clf only on source domain
-#   (3) train clf only on training partition from target
-# these different choices yield very different results in the classification.
+# there are three modes for training the pipeline:
+# (1) train clf only on source domain + training partition from target
+# (2) train clf only on source domain
+# (3) train clf only on training partition from target
+# these different choices yield very different results
 training_mode = 1
 
 # carry out the cross-validation
@@ -130,12 +133,16 @@ for train_idx, test_idx in cv.split(X, y, meta):
     y_train, y_test = y[train_idx], y[test_idx]
     meta_train, meta_test = meta.iloc[train_idx], meta.iloc[test_idx]
 
+    if training_mode == 2:
+        y_train[meta_train["target"]] = -1
+    elif training_mode == 3:
+        y_train[~meta_train["target"]] = -1
+
     # DCT pipeline -- no transfer learning at all between source and target
     dct_transf = DCT()
     dct_pipeline = TLPipeline(
         transformer=dct_transf,
-        clf=MDM(),
-        training_mode=training_mode)
+        clf=MDM())
     dct_pipeline.fit(X_train, y_train, meta_train)
     scores['DCT'].append(dct_pipeline.score(X_test, y_test, meta_test))
 
@@ -143,8 +150,7 @@ for train_idx, test_idx in cv.split(X, y, meta):
     rct_transf = RCT()
     rct_pipeline = TLPipeline(
         transformer=rct_transf,
-        clf=MDM(),
-        training_mode=training_mode)
+        clf=MDM())
     rct_pipeline.fit(X_train, y_train, meta_train)
     scores['RCT'].append(rct_pipeline.score(X_test, y_test, meta_test))
 

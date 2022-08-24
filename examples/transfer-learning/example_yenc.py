@@ -17,7 +17,6 @@ from pyriemann.transferlearning_yenc import (
     TLCenter,
     TLClassifier,
     TLMDM,
-    INVALID_INT
 )
 
 
@@ -121,10 +120,18 @@ cv = TLSplitter(
 # we consider two types of pipeline for transfer learning
 # DCT : no transformation of dataset between the domains
 # RCT : re-center the data points from each domain to the Identity
+# TLMDM : ???
 scores = {}
 meth_list = ['Dummy', 'RCT', 'TLMDM']
 for meth in meth_list:
     scores[meth] = []
+
+# there are three modes for training the pipeline:
+# (1) train clf only on source domain + training partition from target
+# (2) train clf only on source domain
+# (3) train clf only on training partition from target
+# these different choices yield very different results
+training_mode = 1
 
 # carry out the cross-validation
 for train_idx, test_idx in cv.split(X_enc, y_enc):
@@ -133,22 +140,14 @@ for train_idx, test_idx in cv.split(X_enc, y_enc):
     X_enc_train, X_enc_test = X_enc[train_idx], X_enc[test_idx]
     y_enc_train, y_enc_test = y_enc[train_idx], y_enc[test_idx]
 
-    # there are three modes for training the pipeline:
-    training_mode = 1
-    # (1) train clf only on source domain + training partition from target
-    if training_mode == 1:
-        pass
-    # (2) train clf only on source domain
-    elif training_mode == 2:
+    if training_mode == 2:
         X_train, y_train, domains = decode_domains(X_enc_train, y_enc_train)
-        y_train[domains == target_domain] = INVALID_INT
+        y_train[domains == target_domain] = -1
         X_enc_train, y_enc_train = encode_domains(X_train, y_train, domains)
-    # (3) train clf only on training partition from target
     elif training_mode == 3:
         X_train, y_train, domains = decode_domains(X_enc_train, y_enc_train)
-        y_train[domains != target_domain] = INVALID_INT
+        y_train[domains != target_domain] = -1
         X_enc_train, y_enc_train = encode_domains(X_train, y_train, domains)
-    # these different choices yield very different results
 
     # Dummy pipeline -- no transfer learning at all between source and target
     dummy_preprocess = TLDummy()
