@@ -114,6 +114,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
         will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
+        .. versionadded:: 0.3.1
 
     Returns
     -------

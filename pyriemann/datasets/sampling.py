@@ -274,7 +274,7 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
     Sample the logarithm of the eigenvalues of a SPD matrix following a
     Riemannian Gaussian distribution.
 
-    See https://arxiv.org/pdf/1507.01760.pdf for the mathematical details.
+    See [1]_ for the mathematical details.
 
     Parameters
     ----------
@@ -294,11 +294,19 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
         'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
         will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
+        .. versionadded:: 0.3.1
 
     Returns
     -------
     r_samples : ndarray, shape (n_samples, n_dim)
         Samples of the r parameters of the Riemannian Gaussian distribution.
+
+    References
+    ----------
+    .. [1] S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton, “Riemannian
+        Gaussian distributions on the space of symmetric positive definite
+        matrices”, IEEE Trans Inf Theory, vol. 63, pp. 2153–2170, 2017.
+        https://arxiv.org/pdf/1507.01760.pdf
     """
     if sampling_method not in ['slice', 'rejection', 'auto']:
         raise ValueError(f'Unknown sampling method {sampling_method},'
@@ -382,6 +390,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
         'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
         will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
+        .. versionadded:: 0.3.1
 
     Returns
     -------
@@ -449,6 +458,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
         will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
+        .. versionadded:: 0.3.1
 
     Returns
     -------
