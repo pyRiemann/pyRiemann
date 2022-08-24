@@ -268,7 +268,7 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
 
 
 def _sample_parameter_r(n_samples, n_dim, sigma,
-                        random_state=None, n_jobs=1, sampling_method=None):
+                        random_state=None, n_jobs=1, sampling_method='auto'):
     """Sample the r parameters of a Riemannian Gaussian distribution.
 
     Sample the logarithm of the eigenvalues of a SPD matrix following a
@@ -289,9 +289,9 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
-    sampling_method : str, default=None
+    sampling_method : str, default='auto'
         Name of the sampling method used to sample samples_r. It can be
-        'slice' or 'rejection'. If it is None, the sampling_method
+        'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
         will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
 
@@ -300,7 +300,7 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
     r_samples : ndarray, shape (n_samples, n_dim)
         Samples of the r parameters of the Riemannian Gaussian distribution.
     """
-    if sampling_method not in ['slice', 'rejection', None]:
+    if sampling_method not in ['slice', 'rejection', 'auto']:
         raise ValueError(f'Unknown sampling method {sampling_method},'
                          'try slice or rejection')
     if n_dim == 2 and sampling_method != "slice":
@@ -357,7 +357,7 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
 
 
 def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
-                                  n_jobs=1, sampling_method=None):
+                                  n_jobs=1, sampling_method='auto'):
     """Sample a Riemannian Gaussian distribution centered at the Identity.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at the
@@ -377,9 +377,9 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
-    sampling_method : str, default=None
+    sampling_method : str, default='auto'
         Name of the sampling method used to sample samples_r. It can be
-        'slice' or 'rejection'. If it is None, the sampling_method
+        'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
         will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
 
@@ -421,7 +421,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
 
 
 def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
-                        n_jobs=1, sampling_method=None):
+                        n_jobs=1, sampling_method='auto'):
     """Sample a Riemannian Gaussian distribution.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at
@@ -444,9 +444,9 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
-    sampling_method : str, default=None
+    sampling_method : str, default='auto'
         Name of the sampling method used to sample samples_r. It can be
-        'slice' or 'rejection'. If it is None, the sampling_method
+        'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
         will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
 
