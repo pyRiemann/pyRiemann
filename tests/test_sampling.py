@@ -8,7 +8,7 @@ from pyriemann.utils.test import is_sym_pos_def as is_spd
 
 
 @pytest.mark.parametrize("n_jobs", [1, -1])
-@pytest.mark.parametrize("sampling_method", [None, 'slice', 'rejection'])
+@pytest.mark.parametrize("sampling_method", ['auto', 'slice', 'rejection'])
 def test_sample_gaussian_spd_dim2(n_jobs, sampling_method):
     """Test Riemannian Gaussian sampling for dim=2."""
     n_matrices, n_dim, sigma = 5, 2, 1.
@@ -21,7 +21,7 @@ def test_sample_gaussian_spd_dim2(n_jobs, sampling_method):
 
 @pytest.mark.parametrize("n_dim", [3, 4])
 @pytest.mark.parametrize("n_jobs", [1, -1])
-@pytest.mark.parametrize("sampling_method", [None, 'slice'])
+@pytest.mark.parametrize("sampling_method", ['auto', 'slice'])
 def test_sample_gaussian_spd_dimsup(n_dim, n_jobs, sampling_method):
     """Test Riemannian Gaussian sampling for dim>2."""
     n_matrices, sigma = 5, 1.

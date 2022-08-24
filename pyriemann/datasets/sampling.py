@@ -390,6 +390,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
         'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
         will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
+
         .. versionadded:: 0.3.1
 
     Returns
@@ -458,6 +459,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
         will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
+
         .. versionadded:: 0.3.1
 
     Returns
