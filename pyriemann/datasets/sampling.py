@@ -476,7 +476,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
     sampling_method : str, default='auto'
-        Name of the sampling method used to sample samples_r. It can be
+        Sampling method to sample eigenvalues. It can be
         'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
         will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
