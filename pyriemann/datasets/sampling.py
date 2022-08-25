@@ -65,12 +65,15 @@ def _rejection_sampling_2D_gfunction_plus(sigma, r_sample):
     .. versionadded:: 0.3.1
 
     """
-    mu_a = np.array([sigma**2/2, -sigma**2/2])
-    cov_matrix = (sigma**2)*np.eye(2)
-    m = np.pi*(sigma**2)*np.exp(sigma**2/4)
+    mu_a = np.array([sigma**2 / 2, -(sigma**2) / 2])
+    cov_matrix = (sigma**2) * np.eye(2)
+    m = np.pi * (sigma**2) * np.exp(sigma**2 / 4)
     if r_sample[0] >= r_sample[1]:
-        num = np.exp(-1/(2*sigma**2) * np.sum(r_sample**2))\
-            * np.sinh((r_sample[0] - r_sample[1])/2) * 1/m
+        num = (
+            np.exp(-1 / (2 * sigma**2) * np.sum(r_sample**2))
+            * np.sinh((r_sample[0] - r_sample[1]) / 2)
+            / m
+        )
         den = multivariate_normal.pdf(r_sample, mean=mu_a, cov=cov_matrix)
         return num / den
     return 0
@@ -98,14 +101,16 @@ def _rejection_sampling_2D_gfunction_minus(sigma, r_sample):
     .. versionadded:: 0.3.1
 
     """
-    mu_b = np.array([-sigma**2/2, sigma**2/2])
-    cov_matrix = (sigma**2)*np.eye(2)
-    m = np.pi*(sigma**2)*np.exp(sigma**2/4)
+    mu_b = np.array([-(sigma**2) / 2, sigma**2 / 2])
+    cov_matrix = (sigma**2) * np.eye(2)
+    m = np.pi * (sigma**2) * np.exp(sigma**2 / 4)
     if r_sample[0] < r_sample[1]:
-        num = np.exp(-1/(2*sigma**2) * np.sum(r_sample**2))\
-            * np.sinh((r_sample[1] - r_sample[0])/2)
-        den = multivariate_normal.pdf(r_sample, mean=mu_b, cov=cov_matrix)*m
-        return num/den
+        num = (
+            np.exp(-1 / (2 * sigma**2) * np.sum(r_sample**2))
+            * np.sinh((r_sample[1] - r_sample[0]) / 2)
+        )
+        den = multivariate_normal.pdf(r_sample, mean=mu_b, cov=cov_matrix) * m
+        return num / den
     return 0
 
 
@@ -135,9 +140,9 @@ def _rejection_sampling_2D(n_samples, sigma, random_state=None):
     .. versionadded:: 0.3.1
 
     """
-    mu_a = np.array([sigma**2/2, -sigma**2/2])
-    mu_b = np.array([-sigma**2/2, sigma**2/2])
-    cov_matrix = (sigma**2)*np.eye(2)
+    mu_a = np.array([sigma**2 / 2, -(sigma**2) / 2])
+    mu_b = np.array([-(sigma**2) / 2, sigma**2 / 2])
+    cov_matrix = (sigma**2) * np.eye(2)
     r_samples = []
     cpt = 0
     rs = check_random_state(random_state)
