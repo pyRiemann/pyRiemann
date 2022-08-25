@@ -1,6 +1,7 @@
 from functools import partial
 import warnings
 import numpy as np
+from scipy.stats import multivariate_normal
 from sklearn.utils import check_random_state
 from joblib import Parallel, delayed
 
@@ -40,6 +41,125 @@ def _pdf_r(r, sigma):
             partial_2 = partial_2 + np.log(np.sinh(np.abs(r[i] - r[j]) / 2))
 
     return np.exp(partial_1 + partial_2)
+
+
+def _rejection_sampling_2D_gfunction_plus(sigma, r_sample):
+    """Auxiliary function for the 2D rejection sampling algorithm.
+
+    It is used in the case where r is sampled with the function g+.
+
+    Parameters
+    ----------
+    sigma : float
+        Dispersion of the Riemannian Gaussian distribution.
+    r_samples : ndarray, shape (1, n_dim)
+        Sample of the r parameters of the Riemannian Gaussian distribution.
+
+    Returns
+    -------
+    p : float
+        Probability of acceptation.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+
+    """
+    mu_a = np.array([sigma**2 / 2, -(sigma**2) / 2])
+    cov_matrix = (sigma**2) * np.eye(2)
+    m = np.pi * (sigma**2) * np.exp(sigma**2 / 4)
+    if r_sample[0] >= r_sample[1]:
+        num = (
+            np.exp(-1 / (2 * sigma**2) * np.sum(r_sample**2))
+            * np.sinh((r_sample[0] - r_sample[1]) / 2)
+            / m
+        )
+        den = multivariate_normal.pdf(r_sample, mean=mu_a, cov=cov_matrix)
+        return num / den
+    return 0
+
+
+def _rejection_sampling_2D_gfunction_minus(sigma, r_sample):
+    """Auxiliary function for the 2D rejection sampling algorithm.
+
+    It is used in the case where r is sampled with the function g-.
+
+    Parameters
+    ----------
+    sigma : float
+        Dispersion of the Riemannian Gaussian distribution.
+    r_samples : ndarray, shape (1, n_dim)
+        Sample of the r parameters of the Riemannian Gaussian distribution.
+
+    Returns
+    -------
+    p : float
+        Probability of acceptation.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+
+    """
+    mu_b = np.array([-(sigma**2) / 2, sigma**2 / 2])
+    cov_matrix = (sigma**2) * np.eye(2)
+    m = np.pi * (sigma**2) * np.exp(sigma**2 / 4)
+    if r_sample[0] < r_sample[1]:
+        num = (
+            np.exp(-1 / (2 * sigma**2) * np.sum(r_sample**2))
+            * np.sinh((r_sample[1] - r_sample[0]) / 2)
+        )
+        den = multivariate_normal.pdf(r_sample, mean=mu_b, cov=cov_matrix) * m
+        return num / den
+    return 0
+
+
+def _rejection_sampling_2D(n_samples, sigma, random_state=None):
+    """Rejection sampling algorithm for the 2D case.
+
+    Implementation of a rejection sampling algorithm. The implementation
+    follows the description given in page 528 of Christopher Bishop's book
+    "Pattern recognition and Machine Learning" (2006).
+
+    Parameters
+    ----------
+    n_samples : int
+        Number of samples to get from the target distribution.
+    sigma : float
+        Dispersion of the Riemannian Gaussian distribution.
+    random_state : int, RandomState instance or None, default=None
+        Pass an int for reproducible output across multiple function calls.
+
+    Returns
+    -------
+    r_samples : ndarray, shape (n_samples, n_dim)
+        Samples of the r parameters of the Riemannian Gaussian distribution.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+
+    """
+    mu_a = np.array([sigma**2 / 2, -(sigma**2) / 2])
+    mu_b = np.array([-(sigma**2) / 2, sigma**2 / 2])
+    cov_matrix = (sigma**2) * np.eye(2)
+    r_samples = []
+    cpt = 0
+    rs = check_random_state(random_state)
+    while cpt != n_samples:
+        if rs.binomial(1, 0.5, 1) == 1:
+            r_sample = multivariate_normal.rvs(mu_a, cov_matrix, 1, rs)
+            res = _rejection_sampling_2D_gfunction_plus(sigma, r_sample)
+            if rs.rand(1) < res:
+                r_samples.append(r_sample)
+                cpt += 1
+        else:
+            r_sample = multivariate_normal.rvs(mu_b, cov_matrix, 1, rs)
+            res = _rejection_sampling_2D_gfunction_minus(sigma, r_sample)
+            if rs.rand(1) < res:
+                r_samples.append(r_sample)
+                cpt += 1
+    return np.array(r_samples)
 
 
 def _slice_one_sample(ptarget, x0, w, rs):
@@ -167,13 +287,14 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
     return samples
 
 
-def _sample_parameter_r(n_samples, n_dim, sigma, random_state=None, n_jobs=1):
+def _sample_parameter_r(n_samples, n_dim, sigma,
+                        random_state=None, n_jobs=1, sampling_method='auto'):
     """Sample the r parameters of a Riemannian Gaussian distribution.
 
     Sample the logarithm of the eigenvalues of a SPD matrix following a
     Riemannian Gaussian distribution.
 
-    See https://arxiv.org/pdf/1507.01760.pdf for the mathematical details.
+    See [1]_ for the mathematical details.
 
     Parameters
     ----------
@@ -188,13 +309,35 @@ def _sample_parameter_r(n_samples, n_dim, sigma, random_state=None, n_jobs=1):
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
+    sampling_method : str, default='auto'
+        Name of the sampling method used to sample samples_r. It can be
+        'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
+        will be equal to 'slice' for n_dim != 2 and equal to
+        'rejection' for n_dim = 2.
+
+        .. versionadded:: 0.3.1
 
     Returns
     -------
     r_samples : ndarray, shape (n_samples, n_dim)
         Samples of the r parameters of the Riemannian Gaussian distribution.
-    """
 
+    References
+    ----------
+    .. [1] S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton, “Riemannian
+        Gaussian distributions on the space of symmetric positive definite
+        matrices”, IEEE Trans Inf Theory, vol. 63, pp. 2153–2170, 2017.
+        https://arxiv.org/pdf/1507.01760.pdf
+    """
+    if sampling_method not in ['slice', 'rejection', 'auto']:
+        raise ValueError(f'Unknown sampling method {sampling_method},'
+                         'try slice or rejection')
+    if n_dim == 2 and sampling_method != "slice":
+        return _rejection_sampling_2D(n_samples, sigma,
+                                      random_state=random_state)
+    if n_dim != 2 and sampling_method == "rejection":
+        raise ValueError(
+            f'n_dim={n_dim} is not yet supported with rejection sampling')
     rs = check_random_state(random_state)
     x0 = rs.randn(n_dim)
     ptarget = partial(_pdf_r, sigma=sigma)
@@ -242,9 +385,8 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
     return u_samples
 
 
-def _sample_gaussian_spd_centered(
-        n_matrices, n_dim, sigma, random_state=None, n_jobs=1
-        ):
+def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
+                                  n_jobs=1, sampling_method='auto'):
     """Sample a Riemannian Gaussian distribution centered at the Identity.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at the
@@ -264,6 +406,13 @@ def _sample_gaussian_spd_centered(
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
+    sampling_method : str, default='auto'
+        Name of the sampling method used to sample samples_r. It can be
+        'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
+        will be equal to 'slice' for n_dim != 2 and equal to
+        'rejection' for n_dim = 2.
+
+        .. versionadded:: 0.3.1
 
     Returns
     -------
@@ -286,7 +435,8 @@ def _sample_gaussian_spd_centered(
                                     n_dim=n_dim,
                                     sigma=sigma,
                                     random_state=random_state,
-                                    n_jobs=n_jobs)
+                                    n_jobs=n_jobs,
+                                    sampling_method=sampling_method)
     samples_U = _sample_parameter_U(n_samples=n_matrices,
                                     n_dim=n_dim,
                                     random_state=random_state)
@@ -301,7 +451,8 @@ def _sample_gaussian_spd_centered(
     return samples
 
 
-def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None, n_jobs=1):
+def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
+                        n_jobs=1, sampling_method='auto'):
     """Sample a Riemannian Gaussian distribution.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at
@@ -324,6 +475,13 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None, n_jobs=1):
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
+    sampling_method : str, default='auto'
+        Sampling method to sample eigenvalues. It can be
+        'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
+        will be equal to 'slice' for n_dim != 2 and equal to
+        'rejection' for n_dim = 2.
+
+        .. versionadded:: 0.3.1
 
     Returns
     -------
@@ -350,6 +508,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None, n_jobs=1):
         sigma=sigma / np.sqrt(n_dim),
         random_state=random_state,
         n_jobs=n_jobs,
+        sampling_method=sampling_method
     )
 
     # apply the parallel transport to mean on each of the samples
