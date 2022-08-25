@@ -3,13 +3,13 @@ from joblib import Parallel, delayed
 from sklearn.model_selection import ShuffleSplit
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.metrics import accuracy_score
-from pyriemann.utils.mean import mean_covariance
-from pyriemann.utils.base import invsqrtm
+from pyriemann.utils.mean import mean_covariance, mean_riemann
+from pyriemann.utils.distance import distance_riemann
+from pyriemann.utils.base import invsqrtm, powm, sqrtm
 from pyriemann.utils.geodesic import geodesic
 from pyriemann.classification import MDM
 
 base_clf = MDM()
-INVALID_INT = -99999
 
 
 def encode_domains(X, y, domain):
@@ -50,6 +50,7 @@ class TLSplitter():
         self.n_splits = n_splits
 
     def split(self, X, y):
+
         # decode the domains of the data points
         X, y, domain = decode_domains(X, y)
 
@@ -94,8 +95,8 @@ class TLDummy(BaseEstimator, TransformerMixin):
 class TLCenter(BaseEstimator, TransformerMixin):
     """Recenter data for transfer learning
 
-    Recenter the data points from each domain to the Identity on manifold.
-    This method is called Re-Center Transform (RCT).
+    Recenter the data points from each domain to the Identity on manifold, ie
+    make the geometric mean of the datasets become the identity.
 
     Parameters
     ----------
@@ -139,12 +140,104 @@ class TLCenter(BaseEstimator, TransformerMixin):
         return X_rct
 
 
+class TLStretch(BaseEstimator, TransformerMixin):
+    """Stretch data for transfer learning
+
+    Change the dispersion of the datapoints around their geometric mean
+    for each dataset so that they all have the same desired value.
+
+    The dispersion is defined as the squared sum of the AIRM-induced distances
+    of each point with respect to their geometric mean.
+
+    Parameters
+    ----------
+    target_domain : str
+        Which domain to consider as target
+    dispersion : float, default=1.0
+        Which target value for the dispersion of the data points
+    centered_data : bool, default=False
+        Whether the data has been re-centered to the Identity beforehand
+    """
+
+    def __init__(self, target_domain, final_dispersion=1.0,
+                 centered_data=False):
+        """Init"""
+        self.target_domain = target_domain
+        self.final_dispersion = final_dispersion
+        self.centered_data = centered_data
+
+    def fit(self, X, y):
+
+        _, _, domains = decode_domains(X, y)
+        m = X[0].shape[1]
+        self._means = {}
+
+        self._dispersions = {}
+        for d in np.unique(domains):
+            if self.centered_data:
+                self._means[d] = np.eye(m)
+            else:
+                self._means[d] = mean_riemann(X[domains == d])
+            disp_domain = np.sum([distance_riemann(Xi, self._means[d])**2
+                                 for Xi in X[domains == d]])
+            self._dispersions[d] = disp_domain
+
+        return self
+
+    def transform(self, X, y=None):
+        # Used during inference, apply recenter from specified target domain.
+        if self.centered_data:
+            num = self.final_dispersion
+            den = self._dispersions[self.target_domain]
+            X_str = powm(X, np.sqrt(num / den))
+        else:
+            # first have to re-center the data to Identity
+            Minvsqrt_target = invsqrtm(self._means[self.target_domain])
+            X_rct = Minvsqrt_target @ X @ Minvsqrt_target
+            # then do the re-stretching
+            num = self.final_dispersion
+            den = self._dispersions[self.target_domain]
+            X_rct_str = powm(X_rct, np.sqrt(num / den))
+            # and re-center back to previous mean
+            Msqrt_target = sqrtm(self._means[self.target_domain])
+            X_str = Msqrt_target @ X_rct_str @ Msqrt_target
+        return X_str
+
+    def fit_transform(self, X, y):
+        # used during fit, in pipeline
+        self.fit(X, y)
+        _, _, domains = decode_domains(X, y)
+        if self.centered_data:
+            X_str = np.zeros_like(X)
+            for d in np.unique(domains):
+                idx = domains == d
+                num = self.final_dispersion
+                den = self._dispersions[d]
+                X_str[idx] = powm(X[idx], np.sqrt(num / den))
+        else:
+            X_rct = np.zeros_like(X)
+            X_rct_str = np.zeros_like(X)
+            X_str = np.zeros_like(X)
+            for d in np.unique(domains):
+                idx = domains == d
+                # first have to re-center the data to Identity
+                Minvsqrt_target = invsqrtm(self._means[d])
+                X_rct[idx] = Minvsqrt_target @ X[idx] @ Minvsqrt_target
+                # then do the re-stretching
+                num = self.final_dispersion
+                den = self._dispersions[d]
+                X_rct_str[idx] = powm(X_rct[idx], np.sqrt(num / den))
+                # and re-center back to previous mean
+                Msqrt_domain = sqrtm(self._means[d])
+                X_str[idx] = Msqrt_domain @ X_rct_str[idx] @ Msqrt_domain
+        return X_str
+
+
 class TLClassifier(BaseEstimator, ClassifierMixin):
     """Classification with extended labels
 
-    Convert extended labels into class label to train a classifier and choose
-    how to join the data from source and target domains as training and testing
-    partitions
+    This is a wrapper that convert extended labels into class labels to
+    train a classifier of choice
 
     Parameters
     ----------
@@ -174,7 +267,7 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
         """
         X_dec, y_dec, domains = decode_domains(X, y)
 
-        select = np.where(y_dec != INVALID_INT)[0]
+        select = np.where(y_dec != -1)[0]
         X_train = X_dec[select]
         y_train = y_dec[select]
 

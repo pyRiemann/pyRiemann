@@ -15,6 +15,7 @@ from pyriemann.transferlearning_yenc import (
     TLSplitter,
     TLDummy,
     TLCenter,
+    TLStretch,
     TLClassifier,
     TLMDM,
 )
@@ -117,12 +118,13 @@ cv = TLSplitter(
     target_train_frac=target_train_frac,
     target_domain=target_domain)
 
-# we consider two types of pipeline for transfer learning
+# we consider several types of pipeline for transfer learning
 # DCT : no transformation of dataset between the domains
 # RCT : re-center the data points from each domain to the Identity
+# RCT+STR : re-center and then stretch the data points to match mean and disp
 # TLMDM : ???
 scores = {}
-meth_list = ['Dummy', 'RCT', 'TLMDM']
+meth_list = ['Dummy', 'RCT', 'RCT-STR', 'TLMDM']
 for meth in meth_list:
     scores[meth] = []
 
@@ -150,27 +152,41 @@ for train_idx, test_idx in cv.split(X_enc, y_enc):
         X_enc_train, y_enc_train = encode_domains(X_train, y_train, domains)
 
     # Dummy pipeline -- no transfer learning at all between source and target
-    dummy_preprocess = TLDummy()
-    dummy_clf = TLClassifier(
+    step1 = TLDummy()
+    clf = TLClassifier(
         target_domain=target_domain,
         clf=MDM())
-    dummy_pipeline = make_pipeline(dummy_preprocess, dummy_clf)
-    dummy_pipeline.fit(X_enc_train, y_enc_train)
-    scores['Dummy'].append(dummy_pipeline.score(X_enc_test, y_enc_test))
+    pipeline = make_pipeline(step1, clf)
+    pipeline.fit(X_enc_train, y_enc_train)
+    scores['Dummy'].append(pipeline.score(X_enc_test, y_enc_test))
 
     # RCT pipeline -- recenter the data from each domain to identity
-    rct_preprocess = TLCenter(target_domain=target_domain)
-    rct_clf = TLClassifier(
+    step1 = TLCenter(target_domain=target_domain)
+    clf = TLClassifier(
         target_domain=target_domain,
         clf=MDM())
-    rct_pipeline = make_pipeline(rct_preprocess, rct_clf)
-    rct_pipeline.fit(X_enc_train, y_enc_train)
-    scores['RCT'].append(rct_pipeline.score(X_enc_test, y_enc_test))
+    pipeline = make_pipeline(step1, clf)
+    pipeline.fit(X_enc_train, y_enc_train)
+    scores['RCT'].append(pipeline.score(X_enc_test, y_enc_test))
 
-    tlmdm_clf = TLMDM(transfer_coef=0.3, target_domain=target_domain)
-    tlmdm_pipeline = make_pipeline(tlmdm_clf)
-    tlmdm_pipeline.fit(X_enc_train, y_enc_train)
-    scores['TLMDM'].append(tlmdm_pipeline.score(X_enc_test, y_enc_test))
+    # RCT + STR pipeline -- recenter and stretch
+    step1 = TLCenter(target_domain=target_domain)
+    step2 = TLStretch(
+        target_domain=target_domain,
+        final_dispersion=1,
+        centered_data=True)
+    clf = TLClassifier(
+        target_domain=target_domain,
+        clf=MDM())
+    pipeline = make_pipeline(step1, step2, clf)
+    pipeline.fit(X_enc_train, y_enc_train)
+    scores['RCT-STR'].append(pipeline.score(X_enc_test, y_enc_test))
+
+    # TLMDM -- ??
+    clf = TLMDM(transfer_coef=0.3, target_domain=target_domain)
+    pipeline = make_pipeline(clf)
+    pipeline.fit(X_enc_train, y_enc_train)
+    scores['TLMDM'].append(pipeline.score(X_enc_test, y_enc_test))
 
 # get the average score of each pipeline
 for meth in meth_list:

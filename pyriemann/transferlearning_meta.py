@@ -1,13 +1,14 @@
 
 import numpy as np
-from sklearn.model_selection import KFold
+from sklearn.model_selection import ShuffleSplit
 from sklearn.base import BaseEstimator, TransformerMixin, ClassifierMixin
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.utils.base import invsqrtm
 
 
 class TLSplitter():
-    def __init__(self, n_splits=5):
+    def __init__(self, target_train_frac=0.80, n_splits=5):
+        self.target_train_frac = target_train_frac
         self.n_splits = n_splits
 
     def split(self, X, y, meta):
@@ -16,8 +17,10 @@ class TLSplitter():
         idx_source = np.where(~meta['target'])[0]
 
         # index of training-split for the target data points
-        kf_target = KFold(n_splits=self.n_splits).split(X[meta['target']])
-        for train_idx_target, test_idx_target in kf_target:
+        ss_target = ShuffleSplit(
+            n_splits=self.n_splits,
+            train_size=self.target_train_frac).split(X[meta['target']])
+        for train_idx_target, test_idx_target in ss_target:
             train_idx_target = list(
                 meta[meta['target']].index[train_idx_target])
             train_idx = np.concatenate([idx_source, train_idx_target])
@@ -97,36 +100,15 @@ class TLPipeline(BaseEstimator, ClassifierMixin):
 
     '''
 
-    def __init__(self, transformer, clf, training_mode=1):
+    def __init__(self, transformer, clf):
         self.transformer = transformer
         self.clf = clf
-        self._training_mode = training_mode
-
-    def __select(self, X, y, meta):
-
-        if self._training_mode == 1:
-            # take data from training source and target
-            X_select = X
-            y_select = y
-
-        elif self._training_mode == 2:
-            # take only data from training source
-            select_source = ~meta['target']
-            X_select = X[select_source]
-            y_select = y[select_source]
-
-        elif self._training_mode == 3:
-            # take data only from training target
-            select_target = meta['target']
-            X_select = X[select_target]
-            y_select = y[select_target]
-
-        return X_select, y_select
 
     def fit(self, X, y, meta):
         X_transf = self.transformer.fit_transform(X, y, meta)
-        X_select, y_select = self.__select(X_transf, y, meta)
-        X_train, y_train = X_select, y_select
+        select = np.where(y != -1)[0]
+        X_train = X_transf[select]
+        y_train = y[select]
         self.clf.fit(X_train, y_train)
         return self
 
