@@ -59,6 +59,11 @@ def _rejection_sampling_2D_gfunction_plus(sigma, r_sample):
     -------
     p : float
         Probability of acceptation.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+
     """
     mu_a = np.array([sigma**2/2, -sigma**2/2])
     cov_matrix = (sigma**2)*np.eye(2)
@@ -87,6 +92,11 @@ def _rejection_sampling_2D_gfunction_minus(sigma, r_sample):
     -------
     p : float
         Probability of acceptation.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+
     """
     mu_b = np.array([-sigma**2/2, sigma**2/2])
     cov_matrix = (sigma**2)*np.eye(2)
@@ -119,6 +129,11 @@ def _rejection_sampling_2D(n_samples, sigma, random_state=None):
     -------
     r_samples : ndarray, shape (n_samples, n_dim)
         Samples of the r parameters of the Riemannian Gaussian distribution.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+
     """
     mu_a = np.array([sigma**2/2, -sigma**2/2])
     mu_b = np.array([-sigma**2/2, sigma**2/2])
@@ -294,6 +309,7 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
         'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
         will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
+
         .. versionadded:: 0.3.1
 
     Returns
