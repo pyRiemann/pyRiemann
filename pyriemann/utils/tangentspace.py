@@ -21,7 +21,7 @@ def exp_map_euclid(X, Cref):
     :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
-        \mathbf{X}_\text{new} = \mathbf{X} + \mathbf{C}_\text{ref}
+        \mathbf{X}_\text{original} = \mathbf{X} + \mathbf{C}_\text{ref}
 
     Parameters
     ----------
@@ -50,7 +50,8 @@ def exp_map_logeuclid(X, Cref):
     :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
-        \mathbf{X}_\text{new} = \exp(\mathbf{X} + \log(\mathbf{C}_\text{ref}))
+        \mathbf{X}_\text{original} =
+        \exp(\mathbf{X} + \log(\mathbf{C}_\text{ref}))
 
     Parameters
     ----------
@@ -79,13 +80,13 @@ def exp_map_riemann(X, Cref, Cm12=False):
     :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
-        \mathbf{X}_\text{new} = \mathbf{C}_\text{ref}^{1/2} \exp(\mathbf{X})
-        \mathbf{C}_\text{ref}^{1/2}
+        \mathbf{X}_\text{original} = \mathbf{C}_\text{ref}^{1/2}
+        \exp(\mathbf{X}) \mathbf{C}_\text{ref}^{1/2}
 
     When Cm12=True, it returns the full Riemannian exponential map:
 
     .. math::
-        \mathbf{X}_\text{new} = \mathbf{C}_\text{ref}^{1/2}
+        \mathbf{X}_\text{original} = \mathbf{C}_\text{ref}^{1/2}
         \exp( \mathbf{C}_\text{ref}^{-1/2} \mathbf{X}
         \mathbf{C}_\text{ref}^{-1/2}) \mathbf{C}_\text{ref}^{1/2}
 
@@ -225,7 +226,7 @@ def upper(X):
     This function computes the minimal representation of a matrix in tangent
     space [1]_: it keeps the upper triangular part of the symmetric matrix and
     vectorizes it by applying unity weight for diagonal elements and
-    :math:`\sqrt(2)` weight for out-of-diagonal elements.
+    :math:`\sqrt{2}` weight for out-of-diagonal elements.
 
     Parameters
     ----------

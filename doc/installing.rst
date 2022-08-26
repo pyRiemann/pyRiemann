@@ -21,7 +21,7 @@ If you use a zsh shell, you need to write `pip install -e .\[docs,tests\]`. If y
 Dependencies
 ~~~~~~~~~~~~
 
--  Python (>= 3.6)
+-  Python (>= 3.7)
 
 Mandatory dependencies
 ^^^^^^^^^^^^^^^^^^^^^^
