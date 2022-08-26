@@ -62,10 +62,10 @@ import pyriemann
 from sklearn.model_selection import cross_val_score
 
 # load your data
-X = ... # your EEG data, in format n_trials x n_channels X n_times
-y = ... # the labels
+X = ... # EEG data, in format n_epochs x n_channels x n_times
+y = ... # labels
 
-# estimate covariances matrices
+# estimate covariance matrices
 cov = pyriemann.estimation.Covariances().fit_transform(X)
 
 # cross validation
@@ -89,15 +89,15 @@ from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score
 
 # load your data
-X = ... # your EEG data, in format n_trials x n_channels X n_times
-y = ... # the labels
+X = ... # EEG data, in format n_epochs x n_channels x n_times
+y = ... # labels
 
 # build your pipeline
 covest = Covariances()
 ts = TangentSpace()
 svc = SVC(kernel='linear')
+clf = make_pipeline(covest, ts, svc)
 
-clf = make_pipeline(covest,ts,svc)
 # cross validation
 accuracy = cross_val_score(clf, X, y)
 
