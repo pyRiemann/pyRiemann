@@ -19,7 +19,9 @@ v0.3.1.dev
 - Enhance AJD: add ``init`` to :func:`pyriemann.utils.ajd.ajd_pham` and :func:`pyriemann.utils.ajd.rjd`,
   add ``warm_restart`` to :class:`pyriemann.spatialfilters.AJDC`. :pr:`196` by :user:`qbarthelemy`
 
-- Add parameter ``sampling_method`` to :func:`pyriemann.dataset.sample_gaussian_spd`, with ``rejection`` accelerating 2x2 matrices generation. :pr:`198` by :user:`Artim436`
+- Add parameter ``sampling_method`` to :func:`pyriemann.datasets.sample_gaussian_spd`, with ``rejection`` accelerating 2x2 matrices generation. :pr:`198` by :user:`Artim436`
+
+- Add geometric medians for Euclidean and Riemannian metrics: :func:`pyriemann.utils.mean.median_euclid` and :func:`pyriemann.utils.mean.median_riemann`. :pr:`200` by :user:`qbarthelemy`
 
 v0.3 (July 2022)
 ----------------
