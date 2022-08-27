@@ -779,7 +779,7 @@ def median_euclid(covmats, tol=10e-6, maxiter=50, init=None):
     for _ in range(maxiter):
         dists = pairwise_distance(
             covmats,
-            C[np.newaxis, :, :],
+            C[np.newaxis, ...],
             metric='euclid'
         )[:, 0]
         is_zero = (dists == 0)
@@ -833,7 +833,7 @@ def median_riemann(covmats, tol=10e-6, maxiter=50, init=None):
     References
     ----------
     .. [1] Fletcher PT, Venkatasubramanian S and Joshi S. "The geometric median
-        on Riemannian manifolds with application to robust atlas estimation"
+        on Riemannian manifolds with application to robust atlas estimation",
         NeuroImage, 2009
     .. [2] Yang L, Arnaudon M and Barbaresco F. "Riemannian median, geometry of
         covariance matrices and radar target detection", EURAD, 2010
@@ -849,7 +849,7 @@ def median_riemann(covmats, tol=10e-6, maxiter=50, init=None):
     for _ in range(maxiter):
         dists = pairwise_distance(
             covmats,
-            C[np.newaxis, :, :],
+            C[np.newaxis, ...],
             metric='riemann'
         )[:, 0]
         is_zero = (dists == 0)
