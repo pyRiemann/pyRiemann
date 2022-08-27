@@ -220,6 +220,8 @@ Means
     mean_wasserstein
     maskedmean_riemann
     nanmean_riemann
+    median_euclid
+    median_riemann
 
 Geodesics
 ~~~~~~~~~~~~~~~~~~~~~~

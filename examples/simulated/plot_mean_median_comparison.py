@@ -19,6 +19,7 @@ from pyriemann.datasets import make_outliers
 from pyriemann.utils.mean import (
     mean_euclid, mean_riemann, median_euclid, median_riemann
 )
+from pyriemann.clustering import Potato
 
 rs = np.random.RandomState(17)
 
@@ -28,6 +29,7 @@ rs = np.random.RandomState(17)
 # --------------------
 #
 # Dataset of 2D vectors, reproducing Fig 1 of reference [2]_.
+#
 # Notice how the few outliers at the top right of the picture have forced the
 # mean away from the points, whereas the median remains centrally located.
 
@@ -38,14 +40,17 @@ X, y = make_blobs(
     cluster_std=[2, 2, 2],
     random_state=rs
 )
+is_inlier = (y <= 1)
 
 C_mean = np.mean(X, axis=0)
 C_med = median_euclid(X[..., np.newaxis])
 
 fig, ax = plt.subplots(figsize=(7, 7))
 fig.suptitle("Mean and median for 2D vectors", fontsize=16)
-ax.scatter(X[y<=1, 0], X[y<=1, 1], c='C0', edgecolors="k", label='Inliers')
-ax.scatter(X[y==2, 0], X[y==2, 1], c='C1', edgecolors="k", label='Outliers')
+ax.scatter(X[is_inlier, 0], X[is_inlier, 1], c='C0', edgecolors="k",
+           label='Inliers')
+ax.scatter(X[~is_inlier, 0], X[~is_inlier, 1], c='C1', edgecolors="k",
+           label='Outliers')
 ax.scatter(C_mean[0], C_mean[1], c='r', marker="x", label='Euclidean mean')
 ax.scatter(C_med[0], C_med[1], c='r', marker="s", label='Euclidean median')
 ax.legend(loc='upper left')
@@ -57,6 +62,7 @@ plt.show()
 # --------------------------------
 #
 # Dataset of 2x2 SPD matrices.
+#
 # A dynamic display is required if you want to rotate or zoom the 3D figure.
 # This 3D plot can be tricky to interpret. 2x2 SPD matrices can be viewed as
 # spatial coordinates contained in a hyper-cone [3]_.
@@ -103,7 +109,12 @@ plt.show()
 # Photo finish
 # ------------
 #
-# Specific zoom on means and medians.
+# Specific zoom on means and medians, with a surprise guest.
+#
+# Riemannian potato is fitted with an iterative outlier removal, providing a
+# robust mean [4]_.
+
+C_rp = Potato(metric='riemann', threshold=1.5).fit(X)._mdm.covmeans_[0]
 
 fig3 = plt.figure(figsize=(7, 7))
 fig3.suptitle("Means and medians for 2x2 SPD matrices\nZoom", fontsize=16)
@@ -116,6 +127,8 @@ ax3.scatter(C_emed[0, 0], C_emed[0, 1], C_emed[1, 1], c="r", marker="s",
             label='Euclidean median')
 ax3.scatter(C_rmed[0, 0], C_rmed[0, 1], C_rmed[1, 1], c="m", marker="s",
             label='Riemannian median')
+ax3.scatter(C_rp[0, 0], C_rp[0, 1], C_rp[1, 1], c="b", marker="*",
+            label='Riemannian potato')
 ax3.scatter(1, 0, 1, c="k", marker="+", s=50, label='Identity')
 ax3.legend(loc='center left', bbox_to_anchor=(0.7, 0.5))
 plt.show()
@@ -131,3 +144,5 @@ plt.show()
 #    median on Riemannian manifolds with application to robust atlas
 #    estimation", NeuroImage, 2009
 # .. [3] M. Congedo. Chap IX of "EEG source analysis", HdR, 2013
+# .. [4] Q. Barthélemy, L. Mayaud, D. Ojeda, M. Congedo, "The Riemannian potato
+#    field: a tool for online signal quality index of EEG", IEEE TNSRE, 2019
