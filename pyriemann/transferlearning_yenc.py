@@ -117,16 +117,18 @@ class TLCenter(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y):
         _, _, domains = decode_domains(X, y)
-        self._whitening = {}
+        self.whitening_ = {}
         for d in np.unique(domains):
-            idx = meta['domain'] == d
-            self._whitening[d] = Whitening(metric=self.metric).fit(X[idx])
+            idx = domains == d
+            self.whitening_[d] = Whitening(metric=self.metric).fit(X[idx])
         return self
 
     def transform(self, X, y=None):
         # Used during inference, apply recenter from specified target domain.
-        X_rct = self._whitening[self.target_domain].transform(X)
-        return X_rct
+        return self.whitening_[self.target_domain].transform(X)
+
+    def inverse_transform(self, X, y=None):
+        return self.whitening_[self.target_domain].inverse_transform(X)
 
     def fit_transform(self, X, y):
         # used during fit, in pipeline
@@ -135,7 +137,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
         X_rct = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
-            X_rct[idx] = self._whitening[d].transform(X[idx])
+            X_rct[idx] = self.whitening_[d].transform(X[idx])
         return X_rct
 
 
@@ -470,7 +472,10 @@ class TLMDM(MDM):
             for ll in self.classes_)
 
         self.covmeans_ = geodesic(
-            self.target_means_, self.source_means_, self.transfer_coef, self.metric
+            self.target_means_,
+            self.source_means_,
+            self.transfer_coef,
+            self.metric
         )
         return self
 
