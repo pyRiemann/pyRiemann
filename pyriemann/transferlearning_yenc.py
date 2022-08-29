@@ -7,7 +7,7 @@ from .utils.mean import mean_covariance, mean_riemann
 from .utils.distance import distance_riemann
 from .utils.base import invsqrtm, powm, sqrtm
 from .utils.geodesic import geodesic
-from .classification import MDM
+from .classification import MDM, _check_metric
 from .preprocessing import Whitening
 
 base_clf = MDM()
@@ -412,20 +412,11 @@ class TLMDM(MDM):
         self : TLMDM instance
             The TLMDM instance.
         """
-
+        self.metric_mean, self.metric_dist = _check_metric(self.metric)
         if not 0 <= self.transfer_coef <= 1:
             raise ValueError(
                 'Value transfer_coef must be included in [0, 1] (Got %d)'
                 % self.transfer_coef)
-
-        if isinstance(self.metric, str):
-            self.metric_mean = self.metric
-            self.metric_dist = self.metric
-        elif isinstance(self.metric, dict):
-            # check keys
-            for key in ['mean', 'distance']:
-                if key not in self.metric.keys():
-                    raise KeyError('metric must contain "mean" and "distance"')
 
         X_dec, y_dec, domains = decode_domains(X, y)
         X_src = X_dec[domains != self.target_domain]
