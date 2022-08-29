@@ -220,6 +220,15 @@ Means
     mean_wasserstein
     maskedmean_riemann
     nanmean_riemann
+
+Medians
+~~~~~~~~~~~~~~~~~~~~~~
+.. _median_api:
+.. currentmodule:: pyriemann.utils.median
+
+.. autosummary::
+    :toctree: generated/
+
     median_euclid
     median_riemann
 

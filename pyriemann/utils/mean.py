@@ -6,7 +6,7 @@ import numpy as np
 
 from .ajd import ajd_pham
 from .base import sqrtm, invsqrtm, logm, expm, powm
-from .distance import distance_riemann, pairwise_distance
+from .distance import distance_riemann
 from .geodesic import geodesic_riemann
 
 
@@ -328,7 +328,8 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10, maxiter=100):
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
     p : float
-        Exponent, in [-1,+1].
+        Exponent, in [-1,+1]. For p=0, it returns
+        :func:`pyriemann.utils.mean.mean_riemann`.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
     zeta : float, default=10e-10
@@ -399,11 +400,11 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
                  sample_weight=None):
     r"""Mean of SPD matrices according to the Riemannian metric.
 
-    The procedure is similar to a gradient descent minimizing the sum of
-    affine-invariant Riemannian distances :math:`d_R` to the mean [1]_:
+    The affine-invariant Riemannian mean minimizes the sum of squared
+    affine-invariant Riemannian distances :math:`d_R` to all matrices [1]_:
 
     .. math::
-        \mathbf{C} = \arg\min{ \sum_i d_R ( \mathbf{C} , \mathbf{C}_i)^2 }
+         \arg \min_{\mathbf{C}} \sum_i d_R (\mathbf{C}, \mathbf{C}_i)^2
 
     Parameters
     ----------
@@ -733,145 +734,4 @@ def nanmean_riemann(covmats, tol=10e-9, maxiter=100, init=None,
         init=Cinit,
         sample_weight=sample_weight
     )
-    return C
-
-
-###############################################################################
-
-
-def median_euclid(covmats, tol=10e-6, maxiter=50, init=None):
-    """Median of matrices according to the Euclidean metric.
-
-    Return the Euclidean geometric median for matrices,
-    different from the marginal median provided by numpy.median().
-
-    Parameters
-    ----------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of matrices.
-    tol : float, default=10e-6
-        The tolerance to stop the gradient descent.
-    maxiter : int, default=50
-        The maximum number of iterations.
-    init : None | ndarray, shape (n_channels, n_channels), default=None
-        A matrix used to initialize the gradient descent.
-        If None, the Euclidean mean is used.
-
-    Returns
-    -------
-    C : ndarray, shape (n_channels, n_channels)
-        Euclidean geometric median.
-
-    Notes
-    -----
-    .. versionadded:: 0.3.1
-
-    References
-    ----------
-    .. [1] Vardi Y and Zhan C-H. "The multivariate L1-median and associated
-        data depth", PNAS, 2000
-    """
-    if init is None:
-        C = mean_euclid(covmats)
-    else:
-        C = init
-
-    for _ in range(maxiter):
-        dists = pairwise_distance(
-            covmats,
-            C[np.newaxis, ...],
-            metric='euclid'
-        )[:, 0]
-        is_zero = (dists == 0)
-
-        inv_dists = 1 / dists[~is_zero]
-        weights = inv_dists / np.sum(inv_dists)
-        Cnew = np.einsum('a,abc->bc', weights, covmats[~is_zero])
-
-        n_zeros = np.sum(is_zero)
-        if n_zeros > 0:
-            r = np.linalg.norm((Cnew - C) * np.sum(inv_dists), ord='fro')
-            rinv = 0 if r == 0 else n_zeros / r
-            Cnew = max(0, 1 - rinv) * Cnew + min(1, rinv) * C
-
-        crit = np.linalg.norm(Cnew - C, ord='fro')
-        C = Cnew
-        if crit <= tol:
-            break
-    else:
-        warnings.warn('Convergence not reached')
-
-    return C
-
-
-def median_riemann(covmats, tol=10e-6, maxiter=50, init=None):
-    """Median of SPD matrices according to the Riemannian metric.
-
-    Return the affine-invariant Riemannian geometric median for SPD matrices.
-
-    Parameters
-    ----------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices.
-    tol : float, default=10e-6
-        The tolerance to stop the gradient descent.
-    maxiter : int, default=50
-        The maximum number of iterations.
-    init : None | ndarray, shape (n_channels, n_channels), default=None
-        A SPD matrix used to initialize the gradient descent.
-        If None, the Euclidean mean is used.
-
-    Returns
-    -------
-    C : ndarray, shape (n_channels, n_channels)
-        Affine-invariant Riemannian geometric median.
-
-    Notes
-    -----
-    .. versionadded:: 0.3.1
-
-    References
-    ----------
-    .. [1] Fletcher PT, Venkatasubramanian S and Joshi S. "The geometric median
-        on Riemannian manifolds with application to robust atlas estimation",
-        NeuroImage, 2009
-    .. [2] Yang L, Arnaudon M and Barbaresco F. "Riemannian median, geometry of
-        covariance matrices and radar target detection", EURAD, 2010
-    """
-    if init is None:
-        C = mean_euclid(covmats)
-    else:
-        C = init
-
-    nu = 1.0
-    tau = np.finfo(np.float64).max
-    crit = np.finfo(np.float64).max
-    for _ in range(maxiter):
-        dists = pairwise_distance(
-            covmats,
-            C[np.newaxis, ...],
-            metric='riemann'
-        )[:, 0]
-        is_zero = (dists == 0)
-
-        inv_dists = 1 / dists[~is_zero]
-        weights = inv_dists / np.sum(inv_dists)
-
-        C12, Cm12 = sqrtm(C), invsqrtm(C)
-        tangvecs = logm(Cm12 @ covmats[~is_zero] @ Cm12)
-        J = np.einsum('a,abc->bc', weights, tangvecs)
-        C = C12 @ expm(nu * J) @ C12
-
-        crit = np.linalg.norm(J, ord='fro')
-        h = nu * crit
-        if h < tau:
-            nu = 0.95 * nu
-            tau = h
-        else:
-            nu = 0.5 * nu
-        if crit <= tol or nu <= tol:
-            break
-    else:
-        warnings.warn('Convergence not reached')
-
     return C

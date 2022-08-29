@@ -18,8 +18,6 @@ from pyriemann.utils.mean import (
     mean_wasserstein,
     maskedmean_riemann,
     nanmean_riemann,
-    median_euclid,
-    median_riemann,
 )
 
 
@@ -37,8 +35,6 @@ from pyriemann.utils.mean import (
         mean_riemann,
         mean_wasserstein,
         nanmean_riemann,
-        median_euclid,
-        median_riemann,
     ],
 )
 def test_mean_shape(mean, get_covmats):
@@ -58,8 +54,6 @@ def test_mean_shape(mean, get_covmats):
         mean_riemann,
         mean_wasserstein,
         nanmean_riemann,
-        median_euclid,
-        median_riemann,
     ]
 )
 def test_mean_shape_with_init(mean, get_covmats):
@@ -92,6 +86,26 @@ def test_mean_weight_zero(mean, get_covmats):
     w[0] = 1e-12
     Cw = mean(covmats, sample_weight=w)
     assert C == approx(Cw, rel=1e-6, abs=1e-8)
+
+
+@pytest.mark.parametrize(
+    "mean",
+    [
+        mean_euclid,
+        mean_harmonic,
+        mean_kullback_sym,
+        mean_logdet,
+        mean_logeuclid,
+        mean_riemann,
+        mean_wasserstein,
+        nanmean_riemann,
+    ],
+)
+def test_mean_weight_len_error(mean, get_covmats):
+    n_matrices, n_channels = 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+    with pytest.raises(ValueError):
+        mean(covmats, sample_weight=np.ones(n_matrices + 1))
 
 
 @pytest.mark.parametrize(
