@@ -3,11 +3,12 @@ from joblib import Parallel, delayed
 from sklearn.model_selection import ShuffleSplit
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.metrics import accuracy_score
-from pyriemann.utils.mean import mean_covariance, mean_riemann
-from pyriemann.utils.distance import distance_riemann
-from pyriemann.utils.base import invsqrtm, powm, sqrtm
-from pyriemann.utils.geodesic import geodesic
-from pyriemann.classification import MDM
+from .utils.mean import mean_covariance, mean_riemann
+from .utils.distance import distance_riemann
+from .utils.base import invsqrtm, powm, sqrtm
+from .utils.geodesic import geodesic
+from .classification import MDM
+from .preprocessing import Whitening
 
 base_clf = MDM()
 
@@ -116,17 +117,15 @@ class TLCenter(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y):
         _, _, domains = decode_domains(X, y)
-        self._Minvsqrt = {}
+        self._whitening = {}
         for d in np.unique(domains):
-            M = mean_covariance(X[domains == d], self.metric)
-            self._Minvsqrt[d] = invsqrtm(M)
+            idx = meta['domain'] == d
+            self._whitening[d] = Whitening(metric=self.metric).fit(X[idx])
         return self
 
     def transform(self, X, y=None):
         # Used during inference, apply recenter from specified target domain.
-        X_rct = np.zeros_like(X)
-        Minvsqrt_target = self._Minvsqrt[self.target_domain]
-        X_rct = Minvsqrt_target @ X @ Minvsqrt_target
+        X_rct = self._whitening[self.target_domain].transform(X)
         return X_rct
 
     def fit_transform(self, X, y):
@@ -136,7 +135,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
         X_rct = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
-            X_rct[idx] = self._Minvsqrt[d] @ X[idx] @ self._Minvsqrt[d].T
+            X_rct[idx] = self._whitening[d].transform(X[idx])
         return X_rct
 
 
@@ -408,8 +407,8 @@ class TLMDM(MDM):
             If None, it uses equal weights.
         Returns
         -------
-        self : MDWM instance
-            The MDWM instance.
+        self : TLMDM instance
+            The TLMDM instance.
         """
 
         if not 0 <= self.transfer_coef <= 1:
@@ -470,10 +469,9 @@ class TLMDM(MDM):
                 sample_weight=sample_weight[y_src == ll])
             for ll in self.classes_)
 
-        self.covmeans_ = [geodesic(self.target_means_[i],
-                                   self.source_means_[i],
-                                   self.transfer_coef, self.metric)
-                          for i in range(len(self.classes_))]
+        self.covmeans_ = geodesic(
+            self.target_means_, self.source_means_, self.transfer_coef, self.metric
+        )
         return self
 
     def score(self, X, y, sample_weight=None):

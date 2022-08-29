@@ -2,8 +2,9 @@
 import numpy as np
 from sklearn.model_selection import ShuffleSplit
 from sklearn.base import BaseEstimator, TransformerMixin, ClassifierMixin
-from pyriemann.utils.mean import mean_riemann
-from pyriemann.utils.base import invsqrtm
+from .utils.mean import mean_riemann
+from .utils.base import invsqrtm
+from .preprocessing import Whitening
 
 
 class TLSplitter():
@@ -60,18 +61,17 @@ class RCT(BaseEstimator, TransformerMixin):
         pass
 
     def fit(self, X, y, meta):
-        self._Minvsqrt = {}
-        for domain in np.unique(meta['domain']):
-            domain_idx = meta['domain'] == domain
-            M = mean_riemann(X[domain_idx])
-            self._Minvsqrt[domain] = invsqrtm(M)
+        self._whitening = {}
+        for d in np.unique(meta['domain']):
+            idx = meta['domain'] == d
+            self._whitening[d] = Whitening(metric='riemann').fit(X[idx])
         return self
 
     def transform(self, X, y=None, meta=None):
-        X_rct = np.zeros(X.shape)
-        for d in np.unique(meta['domain']):
+        X_rct = np.zeros_like(X)
+        for domain in np.unique(meta['domain']):
             idx = meta['domain'] == d
-            X_rct[idx] = self._Minvsqrt[d] @ X[idx] @ self._Minvsqrt[d].T
+            X_rct[idx] = self._whitening[d].transform(X[idx])
         return X_rct
 
     def fit_transform(self, X, y, meta):
