@@ -66,7 +66,8 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
     ----------
     classes_ : ndarray, shape (n_classes,)
         Labels for each class.
-    covmeans_ : list of ``n_classes`` ndarrays of shape (n_channels, n_channels)
+    covmeans_ : list of ``n_classes`` ndarrays of shape (n_channels, \
+            n_channels)
         Centroids for each class.
 
     See Also
