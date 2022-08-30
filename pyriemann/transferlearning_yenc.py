@@ -3,11 +3,20 @@ from joblib import Parallel, delayed
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.metrics import accuracy_score
+<<<<<<< HEAD
 from pyriemann.utils.mean import mean_covariance, mean_riemann
 from pyriemann.utils.distance import distance_riemann, distance_euclid
 from pyriemann.utils.base import invsqrtm, powm, sqrtm
 from pyriemann.utils.geodesic import geodesic
 from pyriemann.classification import MDM
+=======
+from .utils.mean import mean_covariance, mean_riemann
+from .utils.distance import distance_riemann
+from .utils.base import invsqrtm, powm, sqrtm
+from .utils.geodesic import geodesic
+from .classification import MDM, _check_metric
+from .preprocessing import Whitening
+>>>>>>> a471d53b48cf10e7753ecd69b41b798a8ddab27e
 
 base_clf = MDM()
 
@@ -415,19 +424,24 @@ class TLCenter(BaseEstimator, TransformerMixin):
         self.metric = metric
 
     def fit(self, X, y):
+<<<<<<< HEAD
         _, _, domains = _decode_domains(X, y)
         self._Minvsqrt = {}
+=======
+        _, _, domains = decode_domains(X, y)
+        self.whitening_ = {}
+>>>>>>> a471d53b48cf10e7753ecd69b41b798a8ddab27e
         for d in np.unique(domains):
-            M = mean_covariance(X[domains == d], self.metric)
-            self._Minvsqrt[d] = invsqrtm(M)
+            idx = domains == d
+            self.whitening_[d] = Whitening(metric=self.metric).fit(X[idx])
         return self
 
     def transform(self, X, y=None):
         # Used during inference, apply recenter from specified target domain.
-        X_rct = np.zeros_like(X)
-        Minvsqrt_target = self._Minvsqrt[self.target_domain]
-        X_rct = Minvsqrt_target @ X @ Minvsqrt_target
-        return X_rct
+        return self.whitening_[self.target_domain].transform(X)
+
+    def inverse_transform(self, X, y=None):
+        return self.whitening_[self.target_domain].inverse_transform(X)
 
     def fit_transform(self, X, y):
         # used during fit, in pipeline
@@ -436,7 +450,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
         X_rct = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
-            X_rct[idx] = self._Minvsqrt[d] @ X[idx] @ self._Minvsqrt[d].T
+            X_rct[idx] = self.whitening_[d].transform(X[idx])
         return X_rct
 
 
@@ -776,15 +790,16 @@ class TLMDM(MDM):
             If None, it uses equal weights.
         Returns
         -------
-        self : MDWM instance
-            The MDWM instance.
+        self : TLMDM instance
+            The TLMDM instance.
         """
-
+        self.metric_mean, self.metric_dist = _check_metric(self.metric)
         if not 0 <= self.transfer_coef <= 1:
             raise ValueError(
                 'Value transfer_coef must be included in [0, 1] (Got %d)'
                 % self.transfer_coef)
 
+<<<<<<< HEAD
         if isinstance(self.metric, str):
             self.metric_mean = self.metric
             self.metric_dist = self.metric
@@ -795,6 +810,9 @@ class TLMDM(MDM):
                     raise KeyError('metric must contain "mean" and "distance"')
 
         X_dec, y_dec, domains = _decode_domains(X, y)
+=======
+        X_dec, y_dec, domains = decode_domains(X, y)
+>>>>>>> a471d53b48cf10e7753ecd69b41b798a8ddab27e
         X_src = X_dec[domains != self.target_domain]
         y_src = y_dec[domains != self.target_domain]
         X_tgt = X_dec[domains == self.target_domain]
@@ -838,10 +856,12 @@ class TLMDM(MDM):
                 sample_weight=sample_weight[y_src == ll])
             for ll in self.classes_)
 
-        self.covmeans_ = [geodesic(self.target_means_[i],
-                                   self.source_means_[i],
-                                   self.transfer_coef, self.metric)
-                          for i in range(len(self.classes_))]
+        self.covmeans_ = geodesic(
+            self.target_means_,
+            self.source_means_,
+            self.transfer_coef,
+            self.metric
+        )
         return self
 
     def score(self, X, y, sample_weight=None):
