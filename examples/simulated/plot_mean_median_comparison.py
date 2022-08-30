@@ -16,8 +16,8 @@ import matplotlib.pyplot as plt
 
 from sklearn.datasets import make_blobs
 from pyriemann.datasets import make_outliers
-from pyriemann.utils.mean import mean_euclid, mean_riemann
-from pyriemann.utils.median import median_euclid, median_riemann
+from pyriemann.utils import mean_euclid, mean_riemann
+from pyriemann.utils import median_euclid, median_riemann
 from pyriemann.clustering import Potato
 
 rs = np.random.RandomState(17)
@@ -129,8 +129,8 @@ ax3.scatter(C_emed[0, 0], C_emed[0, 1], C_emed[1, 1], c="r", marker="s",
             label='Euclidean median')
 ax3.scatter(C_rmed[0, 0], C_rmed[0, 1], C_rmed[1, 1], c="m", marker="s",
             label='Riemannian median')
-ax3.scatter(C_rp[0, 0], C_rp[0, 1], C_rp[1, 1], c="g", marker="*",
-            label='Center of\nRiemannian potato')
+ax3.scatter(C_rp[0, 0], C_rp[0, 1], C_rp[1, 1], c="chartreuse", marker="*",
+            s=40, label='Center of\nRiemannian potato')
 ax3.legend(loc='center left', bbox_to_anchor=(0.7, 0.5))
 plt.show()
 
