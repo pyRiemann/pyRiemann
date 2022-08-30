@@ -17,7 +17,7 @@ def _get_sample_weight(sample_weight, data):
     """
     if sample_weight is None:
         sample_weight = np.ones(data.shape[0])
-    if len(sample_weight) != data.shape[0]:
+    if sample_weight.shape != (data.shape[0],):
         raise ValueError("len of sample_weight must be equal to len of data.")
     sample_weight /= np.sum(sample_weight)
     return sample_weight
