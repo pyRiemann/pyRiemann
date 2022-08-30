@@ -3,20 +3,12 @@ from joblib import Parallel, delayed
 from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.metrics import accuracy_score
-<<<<<<< HEAD
-from pyriemann.utils.mean import mean_covariance, mean_riemann
-from pyriemann.utils.distance import distance_riemann, distance_euclid
-from pyriemann.utils.base import invsqrtm, powm, sqrtm
-from pyriemann.utils.geodesic import geodesic
-from pyriemann.classification import MDM
-=======
 from .utils.mean import mean_covariance, mean_riemann
-from .utils.distance import distance_riemann
+from .utils.distance import distance_riemann, distance_euclid
 from .utils.base import invsqrtm, powm, sqrtm
 from .utils.geodesic import geodesic
 from .classification import MDM, _check_metric
 from .preprocessing import Whitening
->>>>>>> a471d53b48cf10e7753ecd69b41b798a8ddab27e
 
 base_clf = MDM()
 
@@ -59,7 +51,7 @@ def _project(X, U):
     """
     Project U on the tangent space of orthogonal matrices with base point X
     """
-    
+
     return X @ ((X.T @ U) - (X.T @ U).T) / 2
 
 
@@ -424,13 +416,8 @@ class TLCenter(BaseEstimator, TransformerMixin):
         self.metric = metric
 
     def fit(self, X, y):
-<<<<<<< HEAD
         _, _, domains = _decode_domains(X, y)
-        self._Minvsqrt = {}
-=======
-        _, _, domains = decode_domains(X, y)
         self.whitening_ = {}
->>>>>>> a471d53b48cf10e7753ecd69b41b798a8ddab27e
         for d in np.unique(domains):
             idx = domains == d
             self.whitening_[d] = Whitening(metric=self.metric).fit(X[idx])
@@ -799,7 +786,6 @@ class TLMDM(MDM):
                 'Value transfer_coef must be included in [0, 1] (Got %d)'
                 % self.transfer_coef)
 
-<<<<<<< HEAD
         if isinstance(self.metric, str):
             self.metric_mean = self.metric
             self.metric_dist = self.metric
@@ -810,9 +796,6 @@ class TLMDM(MDM):
                     raise KeyError('metric must contain "mean" and "distance"')
 
         X_dec, y_dec, domains = _decode_domains(X, y)
-=======
-        X_dec, y_dec, domains = decode_domains(X, y)
->>>>>>> a471d53b48cf10e7753ecd69b41b798a8ddab27e
         X_src = X_dec[domains != self.target_domain]
         y_src = y_dec[domains != self.target_domain]
         X_tgt = X_dec[domains == self.target_domain]

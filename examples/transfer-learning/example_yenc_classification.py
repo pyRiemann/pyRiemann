@@ -124,7 +124,7 @@ def make_example_transfer_learning(N, class_sep=3.0, class_disp=1.0,
 # tlmdm : ???
 # calibration : use only data from target-train partition for the classifier
 scores = {}
-meth_list = ['dummy', 'rct', 'rpa', 'tlmdm', 'calibration']
+meth_list = ['dummy', 'rct', 'rpa', 'calibration']
 for meth in meth_list:
     scores[meth] = []
 
@@ -253,10 +253,10 @@ for seed in range(10):
                 pipeline.score(X_enc_test, y_enc_test))
 
             # (4) tlmdm pipeline -- ??
-            clf = TLMDM(transfer_coef=0.3, target_domain=target_domain)
-            pipeline = make_pipeline(clf)
-            pipeline.fit(X_enc_train, y_enc_train)
-            scores_cv['tlmdm'].append(pipeline.score(X_enc_test, y_enc_test))
+            # clf = TLMDM(transfer_coef=0.3, target_domain=target_domain)
+            # pipeline = make_pipeline(clf)
+            # pipeline.fit(X_enc_train, y_enc_train)
+            # scores_cv['tlmdm'].append(pipeline.score(X_enc_test, y_enc_test))
 
             # (5) calibration: use only data from target-train partition
 
