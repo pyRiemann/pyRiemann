@@ -30,7 +30,8 @@ rs = np.random.RandomState(17)
 # Dataset of 2D vectors, reproducing Fig 1 of reference [2]_.
 #
 # Notice how the few outliers at the top right of the picture have forced the
-# mean away from the points, whereas the median remains centrally located.
+# mean away from the points, whereas the geometric median remains centrally
+# located.
 
 X, y = make_blobs(
     n_samples=[7, 9, 6],
@@ -41,8 +42,9 @@ X, y = make_blobs(
 )
 is_inlier = (y <= 1)
 
-C_mean = np.mean(X, axis=0)
-C_med = median_euclid(X[..., np.newaxis])
+C_mean = mean_euclid(X[..., np.newaxis])
+C_mmed = np.median(X, axis=0)
+C_gmed = median_euclid(X[..., np.newaxis])
 
 fig, ax = plt.subplots(figsize=(7, 7))
 fig.suptitle("Mean and median for 2D vectors", fontsize=16)
@@ -51,7 +53,10 @@ ax.scatter(X[is_inlier, 0], X[is_inlier, 1], c='C0', edgecolors="k",
 ax.scatter(X[~is_inlier, 0], X[~is_inlier, 1], c='C1', edgecolors="k",
            label='Outliers')
 ax.scatter(C_mean[0], C_mean[1], c='r', marker="x", label='Euclidean mean')
-ax.scatter(C_med[0], C_med[1], c='r', marker="s", label='Euclidean median')
+ax.scatter(C_mmed[0], C_mmed[1], c='r', marker=">",
+           label='Marginal Euclidean median')
+ax.scatter(C_gmed[0], C_gmed[1], c='r', marker="s",
+           label='Geometric Euclidean median')
 ax.legend(loc='upper left')
 plt.show()
 

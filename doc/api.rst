@@ -224,7 +224,7 @@ Means
 Medians
 ~~~~~~~~~~~~~~~~~~~~~~
 .. _median_api:
-.. currentmodule:: pyriemann.utils.median
+.. currentmodule:: pyriemann.utils
 
 .. autosummary::
     :toctree: generated/
