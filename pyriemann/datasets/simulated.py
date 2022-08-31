@@ -1,8 +1,9 @@
 import numpy as np
 from sklearn.utils.validation import check_random_state
 
+from ..utils.mean import mean_riemann
 from ..utils.distance import distance_riemann
-from ..utils.base import powm, sqrtm
+from ..utils.base import invsqrtm, powm, sqrtm, expm
 from .sampling import generate_random_spd_matrix, sample_gaussian_spd
 
 
@@ -78,8 +79,8 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs):
 
 
 def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
-                        return_centers=False, random_state=None, *,
-                        mat_mean=.0, mat_std=1., n_jobs=1):
+                        input_centers=False, return_centers=False,
+                        center_dataset=True, random_state=None, n_jobs=1):
     """Generate SPD dataset with two classes sampled from Riemannian Gaussian.
 
     Generate a dataset with SPD matrices drawn from two Riemannian Gaussian
@@ -97,14 +98,15 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         Parameter controlling the separability of the classes.
     class_disp : float, default=1.0
         Intra dispersion of the points sampled from each class.
+    input_centers : ndarray, shape (2, n_dim, n_dim), default=None
+        List with the centers of mass for each class. If None, the centers are
+        sampled randomly based on class_sep.
     return_centers : bool, default=False
         If True, then return the centers of each cluster
+    center_dataset : bool, default=True
+        If True, re-center the simulated dataset to the Identity
     random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
-    mat_mean : float, default=0.0
-        Mean of random values to generate matrices.
-    mat_std : float, default=1.0
-        Standard deviation of random values to generate matrices.
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
@@ -127,39 +129,58 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         raise ValueError(f'class_sep must be a float (Got {class_sep})')
 
     rs = check_random_state(random_state)
+    seeds = rs.randint(100, size=2)
 
-    # generate dataset for class 0
-    C0 = generate_random_spd_matrix(
-        n_dim,
-        random_state=random_state,
-        mat_mean=mat_mean,
-        mat_std=mat_std
-    )
+    if input_centers is None:
+        C0 = np.eye(n_dim)  # first class mean at Identity at first
+        Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
+        Pv = (Pv + Pv.T)/2   # symmetrize
+        Pv = Pv / np.linalg.norm(Pv)  # normalize
+        P = expm(Pv)  # take it back to the SPD manifold
+        C1 = powm(P, alpha=class_sep)  # control distance to Identity
+
+    else:
+        C0, C1 = input_centers
+
+    # sample data points from class 0
     X0 = sample_gaussian_spd(
         n_matrices=n_matrices,
         mean=C0,
         sigma=class_disp,
-        random_state=random_state,
+        random_state=seeds[0],
         n_jobs=n_jobs)
     y0 = np.zeros(n_matrices)
 
-    # generate dataset for class 1
-    epsilon = np.exp(class_sep / np.sqrt(n_dim))
-    C1 = epsilon * C0
+    # sample data points from class 1
     X1 = sample_gaussian_spd(
         n_matrices=n_matrices,
         mean=C1,
         sigma=class_disp,
-        random_state=random_state,
+        random_state=seeds[1],
         n_jobs=n_jobs)
     y1 = np.ones(n_matrices)
 
+    # concatenate the samples
     X = np.concatenate([X0, X1])
+
+    if center_dataset:
+        # re-center the dataset to the Identity
+        M = mean_riemann(X)
+        M_invsqrt = invsqrtm(M)
+        for i in range(n_matrices):
+            X[i] = M_invsqrt @ X[i] @ M_invsqrt
+
+    # concatenate the labels for each class
     y = np.concatenate([y0, y1]).astype(int)
+
+    # randomly permute the samples of the dataset
     idx = rs.permutation(len(X))
     X, y = X[idx], y[idx]
 
     if return_centers:
+        if input_centers is None:
+            C0 = mean_riemann(X[y == 0])
+            C1 = mean_riemann(X[y == 1])
         centers = np.stack([C0, C1])
         return X, y, centers
     else:

@@ -1,10 +1,9 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pyriemann.datasets import sample_gaussian_spd
+from pyriemann.datasets import make_gaussian_blobs
 from pyriemann.classification import MDM
-from pyriemann.utils.mean import mean_riemann
-from pyriemann.utils.base import invsqrtm, sqrtm, powm, expm
+from pyriemann.utils.base import sqrtm, powm, expm
 
 from sklearn.pipeline import make_pipeline
 from sklearn.utils import check_random_state
@@ -44,46 +43,28 @@ def make_example_transfer_learning(N, class_sep=3.0, class_disp=1.0,
     n_dim = 2
 
     # create a source dataset with two classes and global mean at identity
-    M1_source = np.eye(n_dim)  # first class mean at Identity at first
-    X1_source = sample_gaussian_spd(n_matrices=N,
-                                    mean=M1_source,
-                                    sigma=class_disp,
-                                    random_state=seeds[0])
-    y1_source = (1*np.ones(N)).astype(int)
-    Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
-    Pv = (Pv + Pv.T)/2   # symmetrize
-    Pv = Pv / np.linalg.norm(Pv)  # normalize
-    P = expm(Pv)  # take it back to the SPD manifold
-    M2_source = powm(P, alpha=class_sep)  # control distance to identity
-    X2_source = sample_gaussian_spd(n_matrices=N,
-                                    mean=M2_source,
-                                    sigma=class_disp,
-                                    random_state=seeds[1])
-    y2_source = (2*np.ones(N)).astype(int)
-    X_source = np.concatenate([X1_source, X2_source])
-    M_source = mean_riemann(X_source)
-    M_source_invsqrt = invsqrtm(M_source)
-    for i in range(len(X_source)):  # center the dataset to Identity
-        X_source[i] = M_source_invsqrt @ X_source[i] @ M_source_invsqrt
-    y_source = np.concatenate([y1_source, y2_source])
+    X_source, y_source, means_source = make_gaussian_blobs(
+        n_matrices=N,
+        n_dim=2,
+        class_sep=class_sep,
+        class_disp=class_disp,
+        input_centers=None,
+        return_centers=True,
+        center_dataset=True,
+        random_state=seeds[0],
+        n_jobs=1)
 
     # create target dataset based on the source dataset
-    X1_target = sample_gaussian_spd(
+    X_target, y_target = make_gaussian_blobs(
         n_matrices=N,
-        mean=M1_source,
-        sigma=class_disp,
-        random_state=seeds[2])
-    X2_target = sample_gaussian_spd(
-        n_matrices=N,
-        mean=M2_source,
-        sigma=class_disp,
-        random_state=seeds[3])
-    X_target = np.concatenate([X1_target, X2_target])
-    M_target = mean_riemann(X_target)
-    M_target_invsqrt = invsqrtm(M_target)
-    for i in range(len(X_target)):  # center the dataset to Identity
-        X_target[i] = M_target_invsqrt @ X_target[i] @ M_target_invsqrt
-    y_target = np.copy(y_source)
+        n_dim=2,
+        class_sep=class_sep,
+        class_disp=class_disp,
+        input_centers=means_source,
+        return_centers=False,
+        center_dataset=True,
+        random_state=seeds[1],
+        n_jobs=1)
 
     # move the points in X_target with a random matrix A = P * Q
 
@@ -303,9 +284,9 @@ for meth in meth_list:
         np.median(scores[meth], axis=0),
         label=meth,
         lw=3.0)
-ax.legend(loc='upper left')
-ax.set_ylim(0.45, 0.75)
-ax.set_yticks([0.5, 0.6, 0.7])
+ax.legend(loc='center right')
+ax.set_ylim(0.45, 0.85)
+ax.set_yticks([0.5, 0.6, 0.7, 0.8])
 ax.set_xlim(0.00, 0.21)
 ax.set_xticks([0.01, 0.05, 0.10, 0.15, 0.20])
 ax.set_xticklabels([1, 5, 10, 15, 20])
