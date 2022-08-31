@@ -45,3 +45,20 @@ def test_median_warning_convergence(median, get_covmats):
     covmats = get_covmats(n_matrices, n_channels)
     with pytest.warns(UserWarning):
         median(covmats, maxiter=0)
+
+
+@pytest.mark.parametrize("n_values", [3, 5, 7])
+def test_median_euclid_1d(n_values, rndstate):
+    """Compare geometric Euclidean median to marginal median in 1D"""
+    values = 100 * rndstate.randn(n_values)
+    np_med = np.median(values)
+    py_med = median_euclid(values[..., np.newaxis, np.newaxis])[0, 0]
+    assert np_med == approx(py_med)
+
+
+@pytest.mark.parametrize("step_size", [0, 2.5])
+def test_median_riemann_stepsize_error(step_size, get_covmats):
+    n_matrices, n_channels = 1, 2
+    covmats = get_covmats(n_matrices, n_channels)
+    with pytest.raises(ValueError):
+        median_riemann(covmats, step_size=step_size)

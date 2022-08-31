@@ -29,7 +29,7 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
         The maximum number of iterations.
     init : None | ndarray, shape (n_channels, n_channels), default=None
         A matrix used to initialize the iterative algorithm.
-        If None, the Euclidean mean is used.
+        If None, the weighted Euclidean mean is used.
     weights : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -104,7 +104,7 @@ def median_riemann(X, *, tol=10e-6, maxiter=50, init=None, weights=None,
         The maximum number of iterations.
     init : None | ndarray, shape (n_channels, n_channels), default=None
         A SPD matrix used to initialize the gradient descent.
-        If None, the Euclidean mean is used.
+        If None, the weighted Euclidean mean is used.
     weights : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
     step_size : float, default=1.0
@@ -127,10 +127,10 @@ def median_riemann(X, *, tol=10e-6, maxiter=50, init=None, weights=None,
     .. [2] Yang L, Arnaudon M and Barbaresco F. "Riemannian median, geometry of
         covariance matrices and radar target detection", EURAD, 2010
     """
-    weights = _get_sample_weight(weights, X)
     if not 0 < step_size <= 2:
         raise ValueError(
             'Value step_size must be included in (0, 2] (Got %d)' % step_size)
+    weights = _get_sample_weight(weights, X)
     if init is None:
         M = mean_euclid(X, sample_weight=weights)
     else:

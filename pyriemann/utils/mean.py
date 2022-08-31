@@ -321,7 +321,15 @@ def mean_logeuclid(covmats, sample_weight=None):
 
 
 def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10, maxiter=100):
-    """Power mean of SPD matrices.
+    r"""Power mean of SPD matrices.
+
+    Power mean is the solution of [1]_ [2]_:
+
+    .. math::
+        \mathbf{C} = \frac{1}{m} \sum_i \mathbf{C} \sharp_p \mathbf{C}_i
+
+    where :math:`\mathbf{A} \sharp_p \mathbf{B}` is the geodesic between
+    matrices :math:`\mathbf{A}` and :math:`\mathbf{B}`.
 
     Parameters
     ----------
@@ -404,7 +412,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     affine-invariant Riemannian distances :math:`d_R` to all matrices [1]_:
 
     .. math::
-         \arg \min_{\mathbf{C}} \sum_i d_R (\mathbf{C}, \mathbf{C}_i)^2
+         \arg \min_{\mathbf{C}} \sum_i w_i d_R (\mathbf{C}, \mathbf{C}_i)^2
 
     Parameters
     ----------
