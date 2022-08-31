@@ -19,7 +19,7 @@ from pyriemann.transferlearning_yenc import (
     TLStretch,
     TLRotate,
     TLClassifier,
-    TLMDM
+    # TLMDM
 )
 
 
