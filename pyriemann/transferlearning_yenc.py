@@ -500,15 +500,6 @@ class TLMDM(MDM):
                 'Value transfer_coef must be included in [0, 1] (Got %d)'
                 % self.transfer_coef)
 
-        if isinstance(self.metric, str):
-            self.metric_mean = self.metric
-            self.metric_dist = self.metric
-        elif isinstance(self.metric, dict):
-            # check keys
-            for key in ['mean', 'distance']:
-                if key not in self.metric.keys():
-                    raise KeyError('metric must contain "mean" and "distance"')
-
         X_dec, y_dec, domains = _decode_domains(X, y)
         X_src = X_dec[domains != self.target_domain]
         y_src = y_dec[domains != self.target_domain]
