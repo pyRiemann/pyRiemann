@@ -146,7 +146,7 @@ points = np.concatenate([X_rct, np.eye(2)[None, :, :]])  # stack the identity
 embedded_points['rct'] = emb.fit_transform(points)
 
 # embed the source and target datasets after recentering
-rot = TLRotate(target_domain='target_domain')
+rot = TLRotate(target_domain='target_domain', metric='riemann')
 X_rot = rot.fit_transform(X_rct, y_enc)
 
 points = np.concatenate([X_org, X_rct, X_rot, np.eye(2)[None, :, :]])

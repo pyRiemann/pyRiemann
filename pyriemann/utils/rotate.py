@@ -1,5 +1,5 @@
 import numpy as np
-from ..utils.distance import distance_riemann, distance_euclid
+from ..utils.distance import distance
 
 
 def _project(X, U):
@@ -34,15 +34,11 @@ def _check_dimensions(M):
     return M
 
 
-def _loss_rie(Q, X, Y, weights=None):
+def _loss(Q, X, Y, weights=None, metric='euclid'):
 
     """
-    Loss function for estimating the rotation matrix in RPA using the
-    riemannian distance between the class means.
+    Loss function for estimating the rotation matrix in RPA.
     """
-
-    def loss_i_rie(Q, Xi, Yi):
-        return distance_riemann(Xi, Q @ Yi @ Q.T)**2
 
     X = _check_dimensions(X)
     Y = _check_dimensions(Y)
@@ -53,11 +49,7 @@ def _loss_rie(Q, X, Y, weights=None):
     if weights is None:
         weights = np.ones(len(X)) / len(X)
 
-    L = 0
-    for i in range(len(X)):
-        L = L + weights[i] * loss_i_rie(Q, X[i], Y[i])
-
-    return L
+    return weights @ distance(X, Q @ Y @ Q.T, metric=metric)
 
 
 def _grad_rie(Q, X, Y, weights=None):
@@ -88,32 +80,6 @@ def _grad_rie(Q, X, Y, weights=None):
     return G
 
 
-def _loss_euc(Q, X, Y, weights=None):
-
-    """
-    Loss function for estimating the rotation matrix in RPA using the euclidean
-    distance between the class means. Although not being geometry-aware, the
-    optimization problem with this option is much faster and more stable to
-    minimize compared to using a Riemannian distance between the class means,
-    besides yielding comparable performance for transfer learning.
-    """
-
-    def _loss_i_euc(Q, Xi, Yi):
-        return distance_euclid(Xi, Q @ Yi @ Q.T)**2
-
-    X = _check_dimensions(X)
-    Y = _check_dimensions(Y)
-
-    if len(X) != len(Y):
-        raise ValueError("The number of classes in each domain don't match")
-    if weights is None:
-        weights = np.ones(len(X)) / len(X)
-    L = 0
-    for i in range(len(X)):
-        L = L + weights[i] * _loss_i_euc(Q, X[i], Y[i])
-    return L
-
-
 def _grad_euc(Q, X, Y, weights=None):
 
     """
@@ -139,7 +105,7 @@ def _grad_euc(Q, X, Y, weights=None):
     return G
 
 
-def _warm_start(X, Y, setup='euc'):
+def _warm_start(X, Y, metric='euclid'):
 
     """Smart initialization of the minimization procedure
 
@@ -150,7 +116,7 @@ def _warm_start(X, Y, setup='euc'):
     the minimizers of "local" loss function and set as Q0 the matrix that
     yields the smallest value for the "global" loss function.
 
-    Note that the initialization is the same for both 'euc' and 'rie'.
+    Note that the initialization is the same for both 'euclid' and 'riemann'.
 
     [1] R. Bhatia and M. Congedo "Procrustes problems in Riemannian manifolds
     of positive definite matrices" (2019)
@@ -170,12 +136,6 @@ def _warm_start(X, Y, setup='euc'):
         Qstar = qX @ qY.T
         return Qstar
 
-    # decide which setup to use and the associated loss function
-    if setup == 'euc':
-        loss = _loss_euc
-    elif setup == 'rie':
-        loss = _loss_rie
-
     X = _check_dimensions(X)
     Y = _check_dimensions(Y)
 
@@ -187,39 +147,40 @@ def _warm_start(X, Y, setup='euc'):
     for i in range(len(X)):
         Q0_candidates.append(_get_local_solution(X[i], Y[i]))
 
-    i_min = np.argmin([loss(Q0_i, X, Y) for Q0_i in Q0_candidates])
+    i_min = np.argmin(
+        [_loss(Q0_i, X, Y, metric=metric) for Q0_i in Q0_candidates])
 
     return Q0_candidates[i_min]
 
 
-def get_rotation_matrix(M_source, M_target, weights=None, setup='euc',
+def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
                         tol_step=1e-9, maxiter=10_000, maxiter_linesearch=32):
 
     """Calculate rotation matrix for the Riemannian Procustes Analysis
 
     Get the rotation matrix that minimizes the loss function
-
+    .. math::
         L(Q) = sum_{i = 1}^L w_i delta^2(M_target_i, Q M_source_i Q^T)
 
     The solution can then be used to transform the data points from the source
     domain so that their class means are close to the those from the target
     domain. This manifold optimization problem was first defined in Eq(35) of
-    [1]. Our optimization procedure follows the usual setup for optimization
-    on manifolds as described in [2].
+    [1]_. Our optimization procedure follows the usual setup for optimization
+    on manifolds as described in [2]_.
 
     Parameters
     ----------
-    M_source : ndarray, shape (L, n, n)
-        Set with the means of the L class from the source domain
-    M_target : ndarray, shape (L, n, n)
-        Set with the means of the L class from the source domain
-    weights : None | array, shape (L), default=None
+    M_source : ndarray, shape (n_classes, n, n)
+        Set with the means of the n_classes from the source domain
+    M_target : ndarray, shape (n_classes, n, n)
+        Set with the means of the n_classes from the source domain
+    weights : None | array, shape (n_classes), default=None
         Set with the weights to assign for each class. If None, then give the
         same weight for each class
-    setup : str, default='euc'
+    metric : str, default='euclid'
         Which type of distance to minimize between the class means, either
-        'euc' for euclidean distance or 'rie' for the AIRM-induced distance
-        between SPD matrices
+        'euclid' for euclidean distance or 'riemann' for the AIRM-induced
+        distance between SPD matrices
     maxiter : int, default=10_000
         Maximum number of iterations in the optimization procedure
     maxiter_linesearch : int, default=32
@@ -233,8 +194,8 @@ def get_rotation_matrix(M_source, M_target, weights=None, setup='euc',
 
     References
     ----------
-    .. [1] P. Rodrigues et al. "Riemannian Procrustes Analysis : Transfer
-    Learning for Brain-Computer Interfaces" (2018)
+    .. [1] P. Rodrigues et al. "Riemannian Procrustes Analysis: Transfer
+           Learning for Brain-Computer Interfaces" (2018)
 
     .. [2] N. Boumal "An introduction to optimization on smooth manifolds"
     """
@@ -246,37 +207,35 @@ def get_rotation_matrix(M_source, M_target, weights=None, setup='euc',
         raise ValueError("The number of classes in each domain don't match")
 
     # decide which setup to use and the associated loss/grad functions
-    if setup == 'euc':
-        loss = _loss_euc
-        grad = _grad_euc
-    elif setup == 'rie':
-        loss = _loss_rie
-        grad = _grad_rie
+    if metric == 'euclid':
+        _grad = _grad_euc
+    elif metric == 'riemann':
+        _grad = _grad_rie
 
     # initialize the solution with an educated guess
-    Qk_1 = _warm_start(M_target, M_source)
+    Qk_1 = _warm_start(M_target, M_source, metric=metric)
 
     # loop over iterations
     for iter in range(maxiter):
 
         # get the current value for the loss function
-        Fk_1 = loss(Qk_1, M_target, M_source, weights)
+        Fk_1 = _loss(Qk_1, M_target, M_source, weights, metric=metric)
 
         # get the direction of steepest descent
-        direction = _project(Qk_1, grad(Qk_1, M_target, M_source, weights))
+        direction = _project(Qk_1, _grad(Qk_1, M_target, M_source, weights))
 
         # backtracking line search
         alpha = 1.0
         tau = 0.50
         r = 1e-4
         Qk = _retract(Qk_1, -alpha * direction)
-        Fk = loss(Qk, M_target, M_source)
+        Fk = _loss(Qk, M_target, M_source, metric=metric)
         for iter_linesearch in range(maxiter_linesearch):
             if Fk_1 - Fk > r * alpha * np.linalg.norm(direction)**2:
                 break
             alpha = tau * alpha
             Qk = _retract(Qk_1, -alpha * direction)
-            Fk = loss(Qk, M_target, M_source, weights)
+            Fk = _loss(Qk, M_target, M_source, weights, metric=metric)
 
         # test if the step size is small
         crit = np.linalg.norm(-alpha * direction)

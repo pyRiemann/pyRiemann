@@ -4,7 +4,7 @@ from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.metrics import accuracy_score
 from .utils.mean import mean_covariance, mean_riemann
-from .utils.distance import distance_riemann
+from .utils.distance import distance
 from .utils.base import invsqrtm, powm, sqrtm
 from .utils.geodesic import geodesic
 from .utils.rotate import get_rotation_matrix
@@ -191,7 +191,8 @@ class TLStretch(BaseEstimator, TransformerMixin):
                 self._means[d] = np.eye(m)
             else:
                 self._means[d] = mean_riemann(X[domains == d])
-            disp_domain = np.sum([distance_riemann(Xi, self._means[d])**2
+            disp_domain = np.sum([distance(
+                Xi, self._means[d], metric='riemann')**2
                                  for Xi in X[domains == d]])
             self._dispersions[d] = disp_domain
 
@@ -262,17 +263,16 @@ class TLRotate(BaseEstimator, TransformerMixin):
     weights : None | array, shape (L), default=None
         Set with the weights to assign for each class. If None, then give the
         same weight for each class
-    distance_to_minimize : str, default='euc'
-        Which distance to minimize between class means. Options are either
-        the euclidean ('euc') or Riemannian ('rie') distance
+    metric : {'euclid', 'riemann'}, default='euclid'
+        Metric for the distance to minimize between class means. Options are
+        either the Euclidean ('euclid') or Riemannian ('riemann') distance.
     """
 
-    def __init__(self, target_domain, weights=None,
-                 distance_to_minimize='euc'):
+    def __init__(self, target_domain, weights=None, metric='euclid'):
         """Init"""
         self.target_domain = target_domain
         self.weights = weights
-        self.distance_to_minimize = distance_to_minimize
+        self.metric = metric
 
     def fit(self, X, y):
 
@@ -294,7 +294,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
                     M_source,
                     M_target,
                     self.weights,
-                    setup=self.distance_to_minimize)
+                    setup=self.metric)
 
         return self
 
