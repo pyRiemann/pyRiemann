@@ -4,10 +4,10 @@ from .base import sqrtm, invsqrtm, powm, logm, expm
 
 
 def geodesic_euclid(A, B, alpha=0.5):
-    r"""Euclidean geodesic between two SPD matrices.
+    r"""Euclidean geodesic between SPD matrices.
 
-    Return the matrix at the position alpha on the Euclidean geodesic
-    between two SPD matrices A and B:
+    The matrix at the position alpha on the Euclidean geodesic between two SPD
+    matrices A and B is:
 
     .. math::
         \mathbf{C} = (1-\alpha) \mathbf{A} + \alpha \mathbf{B}
@@ -16,26 +16,26 @@ def geodesic_euclid(A, B, alpha=0.5):
 
     Parameters
     ----------
-    A : ndarray, shape (n, n)
-        First SPD matrix.
-    B : ndarray, shape (n, n)
-        Second SPD matrix.
+    A : ndarray, shape (..., n, n)
+        First SPD matrices.
+    B : ndarray, shape (..., n, n)
+        Second SPD matrices.
     alpha : float, default=0.5
         The position on the geodesic.
 
     Returns
     -------
-    C : ndarray, shape (n, n)
-        The SPD matrix on the Euclidean geodesic.
+    C : ndarray, shape (..., n, n)
+        SPD matrices on the Euclidean geodesic.
     """
     return (1 - alpha) * A + alpha * B
 
 
 def geodesic_logeuclid(A, B, alpha=0.5):
-    r"""Log-Euclidean geodesic between two SPD matrices.
+    r"""Log-Euclidean geodesic between SPD matrices.
 
-    Return the matrix at the position alpha on the Log-Euclidean geodesic
-    between two SPD matrices A and B:
+    The matrix at the position alpha on the Log-Euclidean geodesic between two
+    SPD matrices A and B is:
 
     .. math::
         \mathbf{C} = \exp \left( (1-\alpha) \log(\mathbf{A})
@@ -45,26 +45,26 @@ def geodesic_logeuclid(A, B, alpha=0.5):
 
     Parameters
     ----------
-    A : ndarray, shape (n, n)
-        First SPD matrix.
-    B : ndarray, shape (n, n)
-        Second SPD matrix.
+    A : ndarray, shape (..., n, n)
+        First SPD matrices.
+    B : ndarray, shape (..., n, n)
+        Second SPD matrices.
     alpha : float, default=0.5
         The position on the geodesic.
 
     Returns
     -------
-    C : ndarray, shape (n, n)
-        The SPD matrix on the Log-Euclidean geodesic.
+    C : ndarray, shape (..., n, n)
+        SPD matrices on the Log-Euclidean geodesic.
     """
     return expm((1 - alpha) * logm(A) + alpha * logm(B))
 
 
 def geodesic_riemann(A, B, alpha=0.5):
-    r"""Riemannian geodesic between two SPD matrices.
+    r"""Affine-invariant Riemannian geodesic between SPD matrices.
 
-    Return the matrix at the position alpha on the Riemannian geodesic
-    between two SPD matrices A and B:
+    The matrix at the position alpha on the affine-invariant Riemannian
+    geodesic between two SPD matrices A and B is:
 
     .. math::
         \mathbf{C} = \mathbf{A}^{1/2} \left( \mathbf{A}^{-1/2} \mathbf{B}
@@ -74,17 +74,17 @@ def geodesic_riemann(A, B, alpha=0.5):
 
     Parameters
     ----------
-    A : ndarray, shape (n, n)
-        First SPD matrix.
-    B : ndarray, shape (n, n)
-        Second SPD matrix.
+    A : ndarray, shape (..., n, n)
+        First SPD matrices.
+    B : ndarray, shape (..., n, n)
+        Second SPD matrices.
     alpha : float, default=0.5
         The position on the geodesic.
 
     Returns
     -------
-    C : ndarray, shape (n, n)
-        The SPD matrix on the Riemannian geodesic.
+    C : ndarray, shape (..., n, n)
+        SPD matrices on the affine-invariant Riemannian geodesic.
     """
     sA, isA = sqrtm(A), invsqrtm(A)
     C = isA @ B @ isA
@@ -97,17 +97,17 @@ def geodesic_riemann(A, B, alpha=0.5):
 
 
 def geodesic(A, B, alpha, metric='riemann'):
-    """Geodesic between two SPD matrices according to a metric.
+    """Geodesic between SPD matrices according to a metric.
 
-    Return the matrix at the position alpha on the geodesic between two SPD
+    Return the matrix at the position alpha on the geodesic between SPD
     matrices A and B according to a metric.
 
     Parameters
     ----------
-    A : ndarray, shape (n, n)
-        First SPD matrix.
-    B : ndarray, shape (n, n)
-        Second SPD matrix.
+    A : ndarray, shape (..., n, n)
+        First SPD matrices.
+    B : ndarray, shape (..., n, n)
+        Second SPD matrices.
     alpha : float
         The position on the geodesic.
     metric : string, default='riemann'
@@ -115,8 +115,8 @@ def geodesic(A, B, alpha, metric='riemann'):
 
     Returns
     -------
-    C : ndarray, shape (n, n)
-        The covariance matrix on the geodesic.
+    C : ndarray, shape (..., n, n)
+        SPD matrices on the geodesic.
     """
     options = {
         'euclid': geodesic_euclid,

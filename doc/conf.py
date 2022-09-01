@@ -21,6 +21,13 @@ import mne
 print(mne.datasets.sample.data_path(update_path=True))
 print(mne.datasets.eegbci.load_data(1, [6, 10, 14], update_path=True))
 
+# If extensions (or modules to document with autodoc) are in another directory,
+# add these directories to sys.path here. If the directory is relative to the
+# documentation root, use os.path.abspath to make it absolute, like shown here.
+curdir = os.path.dirname(__file__)
+sys.path.append(os.path.abspath(os.path.join(curdir, 'sphinxext')))
+
+
 matplotlib.use('Agg')
 import shlex
 import sphinx_gallery
@@ -51,6 +58,7 @@ extensions = [
     'sphinx.ext.imgmath',
     'sphinx.ext.todo',
     'numpydoc',
+    'sphinx_issues',
     # 'sphinx.ext.ifconfig',
     # 'sphinx.ext.viewcode',
     'sphinx_gallery.gen_gallery',
@@ -70,6 +78,11 @@ autodoc_default_options = {'inherited-members': True}
 
 autosummary_generate = True
 numpydoc_show_class_members = False
+
+# Config for sphinx_issues
+
+# we use the issues path for PRs since the issues URL will forward
+issues_github_path = "pyRiemann/pyRiemann"
 
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:

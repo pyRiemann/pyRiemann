@@ -79,8 +79,9 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs):
 
 
 def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
-                        input_centers=False, return_centers=False,
-                        center_dataset=True, random_state=None, n_jobs=1):
+                        return_centers=False, center_dataset=True,
+                        random_state=None, input_centers=None, *, n_jobs=1,
+                        sampling_method='auto'):
     """Generate SPD dataset with two classes sampled from Riemannian Gaussian.
 
     Generate a dataset with SPD matrices drawn from two Riemannian Gaussian
@@ -110,6 +111,13 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
+    sampling_method : str, default='auto'
+        Name of the sampling method used to sample samples_r. It can be
+        'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
+        will be equal to 'slice' for n_dim != 2 and equal to
+        'rejection' for n_dim = 2.
+
+        .. versionadded:: 0.3.1
 
     Returns
     -------
@@ -122,7 +130,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     """
     if not isinstance(class_sep, float):
@@ -148,7 +156,9 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         mean=C0,
         sigma=class_disp,
         random_state=seeds[0],
-        n_jobs=n_jobs)
+        n_jobs=n_jobs,
+        sampling_method=sampling_method
+    )
     y0 = np.zeros(n_matrices)
 
     # sample data points from class 1
@@ -157,7 +167,10 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         mean=C1,
         sigma=class_disp,
         random_state=seeds[1],
-        n_jobs=n_jobs)
+        n_jobs=n_jobs,
+        sampling_method=sampling_method
+    )
+
     y1 = np.ones(n_matrices)
 
     # concatenate the samples
@@ -215,7 +228,7 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
     """
 
     n_dim = mean.shape[1]

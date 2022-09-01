@@ -97,13 +97,16 @@ print(classification_report(labels, pr))
 xd = XdawnCovariances(n_components)
 xd.fit(epochs_data, labels)
 
-evoked.data = xd.Xd_.patterns_.T
-evoked.times = np.arange(evoked.data.shape[0])
-evoked.plot_topomap(
+info = evoked.copy().resample(1).info  # make it 1Hz for plotting
+patterns = mne.EvokedArray(
+    data=xd.Xd_.patterns_.T, info=info
+)
+patterns.plot_topomap(
     times=[0, n_components, 2 * n_components, 3 * n_components],
     ch_type="grad",
     colorbar=False,
     size=1.5,
+    time_format="Pattern %d"
 )
 
 ###############################################################################

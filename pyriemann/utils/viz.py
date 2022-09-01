@@ -40,7 +40,7 @@ def plot_embedding(X,
                    title="Embedding of covariances",
                    embd_type='Spectral',
                    normalize=True):
-    """Plot 2D embedding of covariance matrices using Diffusion maps.
+    """Plot 2D embedding of SPD matrices.
 
     Parameters
     ----------
@@ -192,7 +192,7 @@ def plot_waveforms(X, display, *, times=None, color='gray', alpha=0.5,
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
     """
     try:
         import matplotlib.pyplot as plt

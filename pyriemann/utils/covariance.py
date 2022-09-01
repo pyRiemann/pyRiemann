@@ -59,7 +59,7 @@ def _sch(X):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     References
     ----------

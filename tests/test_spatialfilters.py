@@ -55,6 +55,8 @@ class TestSpatialFilters(SpatialFiltersTestCase):
         if spfilt is BilinearFilter:
             filters = np.eye(n_channels)
             sf = spfilt(filters)
+        elif spfilt is AJDC:
+            sf = spfilt(dim_red={"n_components": n_channels - 1})
         else:
             sf = spfilt()
         sf.fit(X, labels)
@@ -87,8 +89,9 @@ class TestSpatialFilters(SpatialFiltersTestCase):
                       n_matrices, n_channels, n_times):
         n_classes = len(np.unique(labels))
         if spfilt is BilinearFilter:
-            filters = np.eye(n_channels)
-            sf = spfilt(filters)
+            sf = spfilt(np.eye(n_channels))
+        elif spfilt is AJDC:
+            sf = spfilt(dim_red={"expl_var": 0.9})
         else:
             sf = spfilt()
         if spfilt is AJDC:
@@ -110,8 +113,9 @@ class TestSpatialFilters(SpatialFiltersTestCase):
 
     def clf_transform_error(self, spfilt, X, labels, n_channels):
         if spfilt is BilinearFilter:
-            filters = np.eye(n_channels)
-            sf = spfilt(filters)
+            sf = spfilt(np.eye(n_channels))
+        elif spfilt is AJDC:
+            sf = spfilt(dim_red={"max_cond": 10})
         else:
             sf = spfilt()
         with pytest.raises(ValueError):
@@ -119,8 +123,9 @@ class TestSpatialFilters(SpatialFiltersTestCase):
 
     def clf_fit_independence(self, spfilt, X, labels, n_channels, n_times):
         if spfilt is BilinearFilter:
-            filters = np.eye(n_channels)
-            sf = spfilt(filters)
+            sf = spfilt(np.eye(n_channels))
+        elif spfilt is AJDC:
+            sf = spfilt(dim_red={"max_cond": 10})
         else:
             sf = spfilt()
         sf.fit(X, labels)
@@ -206,14 +211,16 @@ def test_ajdc_init():
 def test_ajdc_fit(rndstate):
     n_subjects, n_conditions, n_channels, n_times = 5, 3, 8, 512
     X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
-    ajdc = AJDC().fit(X)
+    ajdc = AJDC(dim_red={"n_components": n_channels - 1}).fit(X)
     assert ajdc.forward_filters_.shape == (ajdc.n_sources_, n_channels)
     assert ajdc.backward_filters_.shape == (n_channels, ajdc.n_sources_)
+    with pytest.warns(UserWarning):  # dim_red is None
+        AJDC().fit(X)
 
 
 def test_ajdc_fit_error(rndstate):
-    n_conditions, n_channels, n_times = 3, 8, 512
-    ajdc = AJDC()
+    n_subjects, n_conditions, n_channels, n_times = 2, 3, 8, 512
+    ajdc = AJDC(dim_red={"expl_var": 0.9})
     with pytest.raises(ValueError):  # unequal # of conditions
         ajdc.fit(
             [
@@ -228,12 +235,17 @@ def test_ajdc_fit_error(rndstate):
                 rndstate.randn(n_conditions, n_channels + 1, n_times),
             ]
         )
+    X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
+    V = rndstate.randn(n_channels, n_channels - 1)
+    ajdc = AJDC(dim_red={'warm_restart': V})
+    with pytest.raises(ValueError):  # initial diag not square
+        ajdc.fit(X)
 
 
 def test_ajdc_transform_error(rndstate):
-    n_subjects, n_conditions, n_channels, n_times = 2, 2, 3, 256
+    n_subjects, n_conditions, n_channels, n_times = 2, 2, 4, 256
     X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
-    ajdc = AJDC().fit(X)
+    ajdc = AJDC(dim_red={"warm_restart": np.eye(n_channels - 1)}).fit(X)
     n_matrices = 4
     X_new = rndstate.randn(n_matrices, n_channels, n_times)
     with pytest.raises(ValueError):  # not 3 dims
@@ -245,7 +257,7 @@ def test_ajdc_transform_error(rndstate):
 def test_ajdc_fit_variable_input(rndstate):
     n_subjects, n_cond, n_chan, n_times = 2, 2, 3, 256
     X = rndstate.randn(n_subjects, n_cond, n_chan, n_times)
-    ajdc = AJDC()
+    ajdc = AJDC(dim_red={"expl_var": 0.9})
     # 3 subjects, same # conditions and channels, different # of times
     X = [
         rndstate.randn(n_cond, n_chan, n_times + rndstate.randint(500))
@@ -264,9 +276,9 @@ def test_ajdc_fit_variable_input(rndstate):
 
 
 def test_ajdc_inverse_transform(rndstate):
-    n_subjects, n_conditions, n_channels, n_times = 2, 2, 3, 256
+    n_subjects, n_conditions, n_channels, n_times = 2, 2, 5, 256
     X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
-    ajdc = AJDC().fit(X)
+    ajdc = AJDC(dim_red={"warm_restart": np.eye(n_channels - 1)}).fit(X)
     n_matrices = 4
     X_new = rndstate.randn(n_matrices, n_channels, n_times)
     Xt = ajdc.transform(X_new)
@@ -284,11 +296,10 @@ def test_ajdc_inverse_transform(rndstate):
         ajdc.inverse_transform(Xt, supp=1)
 
 
-def test_ajdc_expl_var(rndstate):
-    # Test get_src_expl_var
+def test_ajdc_get_src_expl_var(rndstate):
     n_subjects, n_conditions, n_channels, n_times = 2, 2, 3, 256
     X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
-    ajdc = AJDC().fit(X)
+    ajdc = AJDC(dim_red={"expl_var": 0.9}).fit(X)
     n_matrices = 4
     X_new = rndstate.randn(n_matrices, n_channels, n_times)
     v = ajdc.get_src_expl_var(X_new)

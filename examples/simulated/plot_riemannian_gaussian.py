@@ -23,7 +23,7 @@ print(__doc__)
 ###############################################################################
 # Set parameters for sampling from the Riemannian Gaussian distribution
 n_matrices = 100  # how many SPD matrices to generate
-n_dim = 4  # number of dimensions of the SPD matrices
+n_dim = 2  # number of dimensions of the SPD matrices
 sigma = 1.0  # dispersion of the Gaussian distribution
 epsilon = 4.0  # parameter for controlling the distance between centers
 random_state = 42  # ensure reproducibility

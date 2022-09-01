@@ -255,6 +255,14 @@ Tangent Space
 .. autosummary::
     :toctree: generated/
 
+    exp_map_euclid
+    exp_map_logeuclid
+    exp_map_riemann
+    log_map_euclid
+    log_map_logeuclid
+    log_map_riemann
+    upper
+    unupper
     tangent_space
     untangent_space
 

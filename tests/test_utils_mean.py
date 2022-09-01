@@ -59,18 +59,26 @@ def test_mean_shape_with_init(mean, get_covmats):
     assert C.shape == (n_channels, n_channels)
 
 
-@pytest.mark.parametrize("init", [True, False])
-def test_riemann_mean(init, get_covmats_params):
-    """Test the riemannian mean"""
-    n_matrices, n_channels = 100, 3
-    covmats, diags, A = get_covmats_params(n_matrices, n_channels)
-    if init:
-        C = mean_riemann(covmats, init=covmats[0])
-    else:
-        C = mean_riemann(covmats)
-    Ctrue = np.exp(np.log(diags).mean(0))
-    Ctrue = A @ np.diag(Ctrue) @ A.T
-    assert C == approx(Ctrue)
+@pytest.mark.parametrize(
+    "mean", [
+        mean_ale,
+        mean_alm,
+        mean_logdet,
+        mean_power,
+        mean_riemann,
+        mean_wasserstein,
+        nanmean_riemann
+    ]
+)
+def test_mean_warning_convergence(mean, get_covmats):
+    """Test warning for convergence not reached """
+    n_matrices, n_channels = 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+    with pytest.warns(UserWarning):
+        if mean == mean_power:
+            mean(covmats, 0.3, maxiter=0)
+        else:
+            mean(covmats, maxiter=0)
 
 
 def test_alm_mean(get_covmats):
@@ -78,16 +86,9 @@ def test_alm_mean(get_covmats):
     n_matrices, n_channels = 3, 3
     covmats = get_covmats(n_matrices, n_channels)
     C_alm = mean_alm(covmats)
+    assert C_alm.shape == (n_channels, n_channels)
     C_riem = mean_riemann(covmats)
     assert C_alm == approx(C_riem)
-
-
-def test_alm_mean_maxiter(get_covmats):
-    """Test the ALM mean with max iteration"""
-    n_matrices, n_channels = 3, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    C = mean_alm(covmats, maxiter=1)
-    assert C.shape == (n_channels, n_channels)
 
 
 def test_alm_mean_2matrices(get_covmats):
@@ -141,40 +142,54 @@ def test_power_mean_errors(get_covmats):
 
 
 @pytest.mark.parametrize("init", [True, False])
+def test_riemann_mean(init, get_covmats_params):
+    """Test the riemannian mean"""
+    n_matrices, n_channels = 100, 3
+    covmats, diags, A = get_covmats_params(n_matrices, n_channels)
+    if init:
+        C = mean_riemann(covmats, init=covmats[0])
+    else:
+        C = mean_riemann(covmats)
+    Ctrue = np.exp(np.log(diags).mean(0))
+    Ctrue = A @ np.diag(Ctrue) @ A.T
+    assert C == approx(Ctrue)
+
+
+@pytest.mark.parametrize("init", [True, False])
 def test_riemann_mean_masked_shape(init, get_covmats, get_masks):
     """Test the masked riemann mean"""
-    n_matrices, n_channels = 10, 4
+    n_matrices, n_channels = 5, 3
     covmats = get_covmats(n_matrices, n_channels)
     masks = get_masks(n_matrices, n_channels)
     if init:
-        C = maskedmean_riemann(covmats, masks, init=covmats[0])
+        C = maskedmean_riemann(covmats, masks, tol=10e-3, init=covmats[0])
     else:
-        C = maskedmean_riemann(covmats, masks)
+        C = maskedmean_riemann(covmats, masks, tol=10e-3)
     assert C.shape == (n_channels, n_channels)
 
 
 @pytest.mark.parametrize("init", [True, False])
 def test_riemann_mean_nan_shape(init, get_covmats, rndstate):
     """Test the riemann nan mean shape"""
-    n_matrices, n_channels = 50, 6
+    n_matrices, n_channels = 10, 6
     covmats = get_covmats(n_matrices, n_channels)
     emean = np.mean(covmats, axis=0)
     for i in range(n_matrices):
         corrup_channels = rndstate.choice(
-            np.arange(0, n_channels), size=n_channels // 2, replace=False)
+            np.arange(0, n_channels), size=n_channels // 3, replace=False)
         for j in corrup_channels:
             covmats[i, j] = np.nan
             covmats[i, :, j] = np.nan
     if init:
-        C = nanmean_riemann(covmats, init=emean)
+        C = nanmean_riemann(covmats, tol=10e-3, init=emean)
     else:
-        C = nanmean_riemann(covmats)
+        C = nanmean_riemann(covmats, tol=10e-3)
     assert C.shape == (n_channels, n_channels)
 
 
 def test_riemann_mean_nan_errors(get_covmats):
     """Test the riemann nan mean errors"""
-    n_matrices, n_channels = 10, 4
+    n_matrices, n_channels = 5, 4
     covmats = get_covmats(n_matrices, n_channels)
 
     with pytest.raises(ValueError):  # not symmetric NaN values

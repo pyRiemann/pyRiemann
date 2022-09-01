@@ -60,7 +60,7 @@ class SVR(sklearnSVR):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     References
     ----------
@@ -175,7 +175,7 @@ class KNearestNeighborRegressor(MDM):
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     """
 
