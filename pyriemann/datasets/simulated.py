@@ -140,7 +140,8 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     seeds = rs.randint(100, size=2)
 
     if input_centers is None:
-        C0 = np.eye(int(n_dim))  # first class mean at Identity at first
+        n_dim = int(n_dim)
+        C0 = np.eye(n_dim)  # first class mean at Identity at first
         Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
         Pv = (Pv + Pv.T)/2   # symmetrize
         Pv = Pv / np.linalg.norm(Pv)  # normalize
