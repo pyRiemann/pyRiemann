@@ -111,7 +111,9 @@ class TLCenter(BaseEstimator, TransformerMixin):
     """Recenter data for transfer learning
 
     Recenter the data points from each domain to the Identity on manifold, ie
-    make the geometric mean of the datasets become the identity.
+    make the geometric mean of the datasets become the identity. This operation
+    corresponds to a whitening step if the SPD matrices represent the spatial
+    covariance matrices of multivariate signals.
 
     Parameters
     ----------
@@ -131,18 +133,18 @@ class TLCenter(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y):
         _, _, domains = _decode_domains(X, y)
-        self.whitening_ = {}
+        self.recenter_ = {}
         for d in np.unique(domains):
             idx = domains == d
-            self.whitening_[d] = Whitening(metric=self.metric).fit(X[idx])
+            self.recenter_[d] = Whitening(metric=self.metric).fit(X[idx])
         return self
 
     def transform(self, X, y=None):
         # Used during inference, apply recenter from specified target domain.
-        return self.whitening_[self.target_domain].transform(X)
+        return self.recenter_[self.target_domain].transform(X)
 
     def inverse_transform(self, X, y=None):
-        return self.whitening_[self.target_domain].inverse_transform(X)
+        return self.recenter_[self.target_domain].inverse_transform(X)
 
     def fit_transform(self, X, y):
         # used during fit, in pipeline
@@ -151,7 +153,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
         X_rct = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
-            X_rct[idx] = self.whitening_[d].transform(X[idx])
+            X_rct[idx] = self.recenter_[d].transform(X[idx])
         return X_rct
 
 
@@ -294,7 +296,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
                     M_source,
                     M_target,
                     self.weights,
-                    setup=self.metric)
+                    metric=self.metric)
 
         return self
 
