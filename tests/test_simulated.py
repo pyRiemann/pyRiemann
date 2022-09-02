@@ -1,3 +1,4 @@
+from typing import Type
 import pytest
 import numpy as np
 
@@ -83,7 +84,7 @@ def test_functions_error():
                             n_dim=n_dim,
                             class_sep=class_sep,
                             class_disp=class_disp)
-    with pytest.raises(ValueError):  # n_dim is not an integer
+    with pytest.raises(TypeError):  # n_dim is not an integer
         make_gaussian_blobs(n_matrices=n_matrices,
                             n_dim=float(n_dim),
                             class_sep=class_sep,
