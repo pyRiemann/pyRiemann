@@ -228,7 +228,7 @@ datasets = [
     ),
     make_gaussian_blobs(
         2*n_matrices, n_channels, random_state=rs, class_sep=.5, class_disp=.5,
-        mat_std=.1, n_jobs=4
+        n_jobs=4
     )
 ]
 n_datasets = len(datasets)
