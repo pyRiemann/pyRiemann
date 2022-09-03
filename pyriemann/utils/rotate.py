@@ -1,5 +1,6 @@
 import numpy as np
 from ..utils.distance import distance
+import warnings
 
 
 def _project(X, U):
@@ -58,12 +59,6 @@ def _grad_rie(Q, X, Y, weights=None):
     Gradient of loss function using Riemannian distances between class means.
     """
 
-    def _grad_i_rie(Q, Xi, Yi):
-        M = np.linalg.inv(Xi) @ Q @ Yi @ Q.T
-        w, v = np.linalg.eig(M)
-        logM = v @ np.diag(np.log(w)) @ np.linalg.inv(v)
-        return 4 * logM @ Q
-
     X = _check_dimensions(X)
     Y = _check_dimensions(Y)
 
@@ -73,9 +68,11 @@ def _grad_rie(Q, X, Y, weights=None):
     if weights is None:
         weights = np.ones(len(X)) / len(X)
 
-    G = np.zeros_like(Q)
-    for i in range(len(X)):
-        G = G + weights[i] * _grad_i_rie(Q, X[i], Y[i])
+    M = np.linalg.inv(X) @ Q @ Y @ Q.T
+    eigvals, eigvecs = np.linalg.eig(M)
+    logeigvals = np.expand_dims(np.log(eigvals), -2)
+    logM = (eigvecs * logeigvals) @ np.linalg.inv(eigvecs)
+    G = np.einsum('a,abc->bc', weights, 4 * logM @ Q)
 
     return G
 
@@ -86,9 +83,6 @@ def _grad_euc(Q, X, Y, weights=None):
     Gradient of loss function using Euclidean distances between class means.
     """
 
-    def _grad_i_euc(Q, Xi, Yi):
-        return -4 * (Xi - Q @ Yi @ Q.T) @ Q @ Yi
-
     X = _check_dimensions(X)
     Y = _check_dimensions(Y)
 
@@ -98,9 +92,7 @@ def _grad_euc(Q, X, Y, weights=None):
     if weights is None:
         weights = np.ones(len(X)) / len(X)
 
-    G = np.zeros_like(Q)
-    for i in range(len(X)):
-        G = G + weights[i] * _grad_i_euc(Q, X[i], Y[i])
+    G = np.einsum('a,abc->bc', weights, -4 * (X - Q @ Y @ Q.T) @ Q @ Y)
 
     return G
 
@@ -127,11 +119,9 @@ def _warm_start(X, Y, metric='euclid'):
     def _get_local_solution(Xi, Yi):
         wX, qX = np.linalg.eig(Xi)
         idx = wX.argsort()[::-1]
-        wX = wX[idx]
         qX = qX[:, idx]
         wY, qY = np.linalg.eig(Yi)
         idx = wY.argsort()[::-1]
-        wY = wY[idx]
         qY = qY[:, idx]
         Qstar = qX @ qY.T
         return Qstar
@@ -159,13 +149,14 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
     """Calculate rotation matrix for the Riemannian Procustes Analysis
 
     Get the rotation matrix that minimizes the loss function
+
     .. math::
-        L(Q) = sum_{i = 1}^L w_i delta^2(M_target_i, Q M_source_i Q^T)
+        L(Q) = \sum_i w_i delta^2(M_target_i, Q M_source_i Q^T)
 
     The solution can then be used to transform the data points from the source
     domain so that their class means are close to the those from the target
     domain. This manifold optimization problem was first defined in Eq(35) of
-    [1]_. Our optimization procedure follows the usual setup for optimization
+    [1]_. The optimization procedure follows the usual setup for optimization
     on manifolds as described in [2]_.
 
     Parameters
@@ -173,8 +164,8 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
     M_source : ndarray, shape (n_classes, n, n)
         Set with the means of the n_classes from the source domain
     M_target : ndarray, shape (n_classes, n, n)
-        Set with the means of the n_classes from the source domain
-    weights : None | array, shape (n_classes), default=None
+        Set with the means of the n_classes from the target domain
+    weights : None | array, shape (n_classes,), default=None
         Set with the weights to assign for each class. If None, then give the
         same weight for each class
     metric : str, default='euclid'
@@ -184,7 +175,7 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
     maxiter : int, default=10_000
         Maximum number of iterations in the optimization procedure
     maxiter_linesearch : int, default=32
-        Maximum number in the line search procedure
+        Maximum number of iterations in the line search procedure
 
     Returns
     -------
@@ -245,5 +236,8 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
         # update variables for next iteration
         Qk_1 = Qk
         Fk_1 = Fk
+
+    else:
+        warnings.warn('Convergence not reached.')
 
     return Qk
