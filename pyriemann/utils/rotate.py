@@ -4,7 +4,6 @@ import warnings
 
 
 def _project(X, U):
-
     """
     Project U on the tangent space of orthogonal matrices with base point X
     """
@@ -13,7 +12,6 @@ def _project(X, U):
 
 
 def _retract(X, v):
-
     """
     Retraction taking tangent vector v at base point X back to manifold of
     orthogonal matrices
@@ -36,10 +34,7 @@ def _check_dimensions(M):
 
 
 def _loss(Q, X, Y, weights=None, metric='euclid'):
-
-    """
-    Loss function for estimating the rotation matrix in RPA.
-    """
+    """Loss function for estimating the rotation matrix in RPA."""
 
     X = _check_dimensions(X)
     Y = _check_dimensions(Y)
@@ -54,7 +49,6 @@ def _loss(Q, X, Y, weights=None, metric='euclid'):
 
 
 def _grad_rie(Q, X, Y, weights=None):
-
     """
     Gradient of loss function using Riemannian distances between class means.
     """
@@ -78,7 +72,6 @@ def _grad_rie(Q, X, Y, weights=None):
 
 
 def _grad_euc(Q, X, Y, weights=None):
-
     """
     Gradient of loss function using Euclidean distances between class means.
     """
@@ -98,7 +91,6 @@ def _grad_euc(Q, X, Y, weights=None):
 
 
 def _warm_start(X, Y, metric='euclid'):
-
     """Smart initialization of the minimization procedure
 
     The loss function being optimized is a weighted sum of loss functions with
@@ -112,7 +104,6 @@ def _warm_start(X, Y, metric='euclid'):
 
     [1] R. Bhatia and M. Congedo "Procrustes problems in Riemannian manifolds
     of positive definite matrices" (2019)
-
     """
 
     # obtain the solution of the local loss function
@@ -145,8 +136,7 @@ def _warm_start(X, Y, metric='euclid'):
 
 def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
                         tol_step=1e-9, maxiter=10_000, maxiter_linesearch=32):
-
-    """Calculate rotation matrix for the Riemannian Procustes Analysis
+    r"""Calculate rotation matrix for the Riemannian Procustes Analysis.
 
     Get the rotation matrix that minimizes the loss function
 
