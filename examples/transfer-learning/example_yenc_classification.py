@@ -212,7 +212,7 @@ for target_train_frac in tqdm(target_train_frac_array):
             centered_data=True)
         step3 = TLRotate(
             target_domain=target_domain,
-            metric='euclid')
+            metric='riemann')
         clf = TLClassifier(
             target_domain=target_domain,
             clf=MDM())
