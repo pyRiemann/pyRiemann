@@ -1,6 +1,6 @@
+import warnings
 import numpy as np
 from ..utils.distance import distance
-import warnings
 
 
 def _project(X, U):

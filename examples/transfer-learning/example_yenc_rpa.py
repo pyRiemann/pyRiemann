@@ -1,3 +1,6 @@
+"""
+XXX add header doc to explain what this example does
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -9,7 +12,7 @@ from pyriemann.utils.base import invsqrtm, sqrtm, powm, expm
 from sklearn.utils import check_random_state
 
 from pyriemann.transferlearning_yenc import (
-    _encode_domains,
+    _encode_domains,  # XXX this is private API it should not be in example
     _decode_domains,
     TLCenter,
     TLRotate,
@@ -19,7 +22,7 @@ from pyriemann.transferlearning_yenc import (
 def make_example_transfer_learning(N, class_sep=3.0, class_disp=1.0,
                                    domain_sep=5.0, theta=0.0,
                                    random_state=None):
-    ''' Generate source and target toy datasets for transfer learning examples
+    """Generate source and target toy datasets for transfer learning examples
 
     N : how many matrices to sample on each class for each domain
     class_sep : how separable the classes from each domain should be
@@ -28,7 +31,7 @@ def make_example_transfer_learning(N, class_sep=3.0, class_disp=1.0,
     theta : angle for rotation
     random_state : int, RandomState instance or None, default=None
     Pass an int for reproducible output across multiple function calls.
-    '''
+    """
 
     rs = check_random_state(random_state)
     seeds = rs.randint(100, size=4)
@@ -85,7 +88,7 @@ def make_example_transfer_learning(N, class_sep=3.0, class_disp=1.0,
     # create SPD matrix for the translation between domains
     Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
     Pv = (Pv + Pv.T)/2  # symmetrize
-    Pv = Pv / np.linalg.norm(Pv)  # normalize
+    Pv /= np.linalg.norm(Pv)  # normalize
     P = expm(Pv)  # take it to the manifold
     P = powm(P, alpha=domain_sep)  # control distance to identity
     P = sqrtm(P)  # transport matrix
@@ -96,8 +99,7 @@ def make_example_transfer_learning(N, class_sep=3.0, class_disp=1.0,
 
     # transform the data points from the target domain
     A = P @ Q
-    for i in range(len(X_target)):
-        X_target[i] = A @ X_target[i] @ A.T
+    X_target = A @ X_target @ A.T
 
     # create array specifying the domain for each epoch
     domains = np.array(
@@ -165,7 +167,7 @@ for axi, step in zip(ax, steps):
     S_source = S_step[domain == 'source_domain']
     y_source = y[domain == 'source_domain']
     S_target = S_step[domain == 'target_domain']
-    y_target = y[domain == 'source_domain']
+    y_target = y[domain == 'target_domain']
     axi.scatter(
         S_source[y_source == 1][:, 0],
         S_source[y_source == 1][:, 1],

@@ -1,4 +1,6 @@
-
+"""
+XXX add header doc to explain what this example does
+"""
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -13,10 +15,13 @@ from pyriemann.transferlearning_meta import TLSplitter, TLPipeline, DCT, RCT
 
 
 def make_example_dataset(N, theta, alpha, eps=3.0):
-    '''
-        theta : angle for the rotation matrix applied to dataset 2
-        alpha : proxy of how far the mean of dataset 2 should be from dataset 1
-    '''
+    """
+    N : XXX
+    theta : angle for the rotation matrix applied to dataset 2
+    alpha : proxy of how far the mean of dataset 2 should be from dataset 1
+        XXX add a note for what value makes them aligned
+    eps : XXX
+    """
 
     # create a large set of matrices distributed in the same way
     X, y = make_gaussian_blobs(n_matrices=2*N, class_sep=eps)
@@ -49,16 +54,16 @@ def make_example_dataset(N, theta, alpha, eps=3.0):
 
 
 def make_figure(X, y, meta):
-    '''Plot the spectral embedding of the both datasets together'''
+    """Plot the spectral embedding of the both datasets together"""
 
     sel1 = meta['domain'] == 1
     sel2 = meta['domain'] == 2
 
-    y1 = y[meta['domain'] == 1]
-    y2 = y[meta['domain'] == 2]
+    y1 = y[sel1]
+    y2 = y[sel2]
 
-    N1 = sum(sel1)
-    N2 = sum(sel2)
+    N1 = np.sum(sel1)
+    N2 = np.sum(sel2)
 
     emb = SpectralEmbedding(n_components=2, metric='riemann')
     S = emb.fit_transform(X)
@@ -106,17 +111,12 @@ clf = MDM()
 # plus a partition of the target domain
 target_train_frac = 0.25  # proportion of the target domain for training
 n_splits = 5  # how many times to split the target domain into train/test
-cv = TLSplitter(
-    n_splits=n_splits,
-    target_train_frac=target_train_frac)
+cv = TLSplitter(n_splits=n_splits, target_train_frac=target_train_frac)
 
 # we consider two types of pipeline for transfer learning
 # DCT : no transformation of dataset between the domains
 # RCT : re-center the data points from each domain to the Identity
-scores = {}
-meth_list = ['DCT', 'RCT']
-for meth in meth_list:
-    scores[meth] = []
+scores = {meth: [] for meth in ['DCT', 'RCT']}
 
 # there are three modes for training the pipeline:
 # (1) train clf only on source domain + training partition from target
@@ -140,21 +140,17 @@ for train_idx, test_idx in cv.split(X, y, meta):
 
     # DCT pipeline -- no transfer learning at all between source and target
     dct_transf = DCT()
-    dct_pipeline = TLPipeline(
-        transformer=dct_transf,
-        clf=MDM())
+    dct_pipeline = TLPipeline(transformer=dct_transf, clf=MDM())
     dct_pipeline.fit(X_train, y_train, meta_train)
     scores['DCT'].append(dct_pipeline.score(X_test, y_test, meta_test))
 
     # RCT pipeline -- recenter the data from each domain to identity
     rct_transf = RCT()
-    rct_pipeline = TLPipeline(
-        transformer=rct_transf,
-        clf=MDM())
+    rct_pipeline = TLPipeline(transformer=rct_transf, clf=MDM())
     rct_pipeline.fit(X_train, y_train, meta_train)
     scores['RCT'].append(rct_pipeline.score(X_test, y_test, meta_test))
 
 # get the average score of each pipeline
-for meth in meth_list:
+for meth in scores.keys():
     scores[meth] = np.mean(scores[meth])
 print(scores)
