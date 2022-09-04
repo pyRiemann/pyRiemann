@@ -298,6 +298,11 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
     -----
     .. versionadded:: 0.2.3
 
+    Attributes
+    ----------
+    covmean_ : ndarray, shape (n_channels, n_channels)
+        Centroid of potato.
+
     See Also
     --------
     Kmeans
@@ -354,7 +359,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         y_old = self._check_labels(X, y)
 
-        for n_iter in range(self.n_iter_max):
+        for _ in range(self.n_iter_max):
             ix = (y_old == 1)
             self._mdm.fit(X[ix], y_old[ix])
             y = np.zeros(len(X))
@@ -367,6 +372,8 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
                 break
             else:
                 y_old = y
+
+        self.covmean_ = self._mdm.covmeans_[0]
         return self
 
     def partial_fit(self, X, y=None, alpha=0.1):
@@ -421,6 +428,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
             self._std = np.sqrt(
                 (1 - alpha) * self._std**2 + alpha * (d - self._mean)**2)
 
+        self.covmean_ = self._mdm.covmeans_[0]
         return self
 
     def transform(self, X):

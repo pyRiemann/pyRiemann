@@ -60,6 +60,50 @@ def test_mean_shape_with_init(mean, get_covmats):
 
 
 @pytest.mark.parametrize(
+    "mean",
+    [
+        mean_euclid,
+        mean_harmonic,
+        mean_kullback_sym,
+        mean_logdet,
+        mean_logeuclid,
+        mean_riemann,
+        mean_wasserstein,
+        nanmean_riemann,
+    ],
+)
+def test_mean_weight_zero(mean, get_covmats):
+    """Setting one weight to almost 0 it's almost like not passing the mat"""
+    n_matrices, n_channels, w_val = 5, 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+    w = w_val * np.ones(n_matrices)
+    C = mean(covmats[1:], sample_weight=w[1:])
+    w[0] = 1e-12
+    Cw = mean(covmats, sample_weight=w)
+    assert C == approx(Cw, rel=1e-6, abs=1e-8)
+
+
+@pytest.mark.parametrize(
+    "mean",
+    [
+        mean_euclid,
+        mean_harmonic,
+        mean_kullback_sym,
+        mean_logdet,
+        mean_logeuclid,
+        mean_riemann,
+        mean_wasserstein,
+        nanmean_riemann,
+    ],
+)
+def test_mean_weight_len_error(mean, get_covmats):
+    n_matrices, n_channels = 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+    with pytest.raises(ValueError):
+        mean(covmats, sample_weight=np.ones(n_matrices + 1))
+
+
+@pytest.mark.parametrize(
     "mean", [
         mean_ale,
         mean_alm,
@@ -202,6 +246,10 @@ def test_riemann_mean_nan_errors(get_covmats):
         nanmean_riemann(covmats_)
 
 
+def callable_np_average(X, sample_weight=None):
+    return np.average(X, axis=0, weights=sample_weight)
+
+
 @pytest.mark.parametrize(
     "metric, mean",
     [
@@ -215,6 +263,7 @@ def test_riemann_mean_nan_errors(get_covmats):
         ("logeuclid", mean_logeuclid),
         ("riemann", mean_riemann),
         ("wasserstein", mean_wasserstein),
+        (callable_np_average, mean_euclid),
     ],
 )
 def test_mean_covariance_metric(metric, mean, get_covmats):

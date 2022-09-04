@@ -64,10 +64,11 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     Attributes
     ----------
-    covmeans_ : list
-        The class centroids.
-    classes_ : list
-        List of classes.
+    classes_ : ndarray, shape (n_classes,)
+        Labels for each class.
+    covmeans_ : list of ``n_classes`` ndarrays of shape (n_channels, \
+            n_channels)
+        Centroids for each class.
 
     See Also
     --------
@@ -230,8 +231,8 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     Attributes
     ----------
-    classes_ : list
-        List of classes.
+    classes_ : ndarray, shape (n_classes,)
+        Labels for each class.
 
     See Also
     --------
@@ -354,6 +355,11 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
     clf : sklearn classifier, default=LogisticRegression()
         The classifier to apply in the tangent space.
 
+    Attributes
+    ----------
+    classes_ : ndarray, shape (n_classes,)
+        Labels for each class.
+
     See Also
     --------
     TangentSpace
@@ -450,12 +456,12 @@ class KNearestNeighbor(MDM):
 
     Attributes
     ----------
-    classes_ : list
-        List of classes.
-    covmeans_ : list
-        The class centroids.
-    classmeans_ : list
-        List of classes of centroids.
+    classes_ : ndarray, shape (n_classes,)
+        Labels for each class.
+    covmeans_ : ndarray, shape (n_matrices, n_channels, n_channels)
+        Matrices of training set.
+    classmeans_ : ndarray, shape (n_matrices,)
+        Labels of training set.
 
     See Also
     --------
@@ -730,10 +736,11 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     Attributes
     ----------
-    covmeans_ : list of list
-        The class centroids.
-    classes_ : list
-        List of classes.
+    classes_ : ndarray, shape (n_classes,)
+        Labels for each class.
+    covmeans_ : dict of ``n_powers`` lists of ``n_classes`` ndarrays of shape \
+            (n_channels, n_channels)
+        Centroids for each power and each class.
 
     See Also
     --------
