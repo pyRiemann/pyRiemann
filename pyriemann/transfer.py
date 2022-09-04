@@ -16,7 +16,7 @@ base_clf = MDM()
 # Define the helper functions for transfer learning
 
 
-def _encode_domains(X, y, domain):
+def encode_domains(X, y, domain):
     y_enc = []
     for n in range(len(y)):
         yn = y[n]
@@ -28,7 +28,7 @@ def _encode_domains(X, y, domain):
     return X_enc, y_enc
 
 
-def _decode_domains(X_enc, y_enc):
+def decode_domains(X_enc, y_enc):
     y = []
     domain = []
     for n in range(len(y_enc)):
@@ -65,7 +65,7 @@ class TLSplitter():
     def split(self, X, y):
 
         # decode the domains of the data points
-        X, y, domain = _decode_domains(X, y)
+        X, y, domain = decode_domains(X, y)
 
         # indentify the indices of the target dataset
         idx_source = np.where(domain != self.target_domain)[0]
@@ -132,7 +132,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
         self.metric = metric
 
     def fit(self, X, y):
-        _, _, domains = _decode_domains(X, y)
+        _, _, domains = decode_domains(X, y)
         self.recenter_ = {}
         for d in np.unique(domains):
             idx = domains == d
@@ -149,7 +149,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
     def fit_transform(self, X, y):
         # used during fit, in pipeline
         self.fit(X, y)
-        _, _, domains = _decode_domains(X, y)
+        _, _, domains = decode_domains(X, y)
         X_rct = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
@@ -184,7 +184,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
         self.centered_data = centered_data
 
     def fit(self, X, y):
-        _, _, domains = _decode_domains(X, y)
+        _, _, domains = decode_domains(X, y)
         m = X[0].shape[1]
         self._means = {}
         self._dispersions = {}
@@ -222,7 +222,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
     def fit_transform(self, X, y):
         # used during fit, in pipeline
         self.fit(X, y)
-        _, _, domains = _decode_domains(X, y)
+        _, _, domains = decode_domains(X, y)
         if self.centered_data:
             X_str = np.zeros_like(X)
             for d in np.unique(domains):
@@ -278,7 +278,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
 
     def fit(self, X, y):
 
-        _, _, domains = _decode_domains(X, y)
+        _, _, domains = decode_domains(X, y)
 
         idx = domains == self.target_domain
         X_target, y_target = X[idx], y[idx]
@@ -307,7 +307,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
     def fit_transform(self, X, y):
         # used during fit in pipeline, rotate each source domain
         self.fit(X, y)
-        _, _, domains = _decode_domains(X, y)
+        _, _, domains = decode_domains(X, y)
         X_rot = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
@@ -350,7 +350,7 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
         self : TLClassifier instance
             The TLClassifier instance.
         """
-        X_dec, y_dec, domains = _decode_domains(X, y)
+        X_dec, y_dec, domains = decode_domains(X, y)
 
         select = np.where(y_dec != -1)[0]
         X_train = X_dec[select]
@@ -404,7 +404,7 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
         score : float
             Mean accuracy of clf.predict(X) wrt. y.
         """
-        _, y_true, _ = _decode_domains(X, y)
+        _, y_true, _ = decode_domains(X, y)
         y_pred = self.predict(X)
         return accuracy_score(y_true, y_pred)
 
@@ -502,7 +502,7 @@ class TLMDM(MDM):
                 'Value transfer_coef must be included in [0, 1] (Got %d)'
                 % self.transfer_coef)
 
-        X_dec, y_dec, domains = _decode_domains(X, y)
+        X_dec, y_dec, domains = decode_domains(X, y)
         X_src = X_dec[domains != self.target_domain]
         y_src = y_dec[domains != self.target_domain]
         X_tgt = X_dec[domains == self.target_domain]
@@ -569,6 +569,6 @@ class TLMDM(MDM):
         score : float
             Mean accuracy of clf.predict(X) wrt. y.
         """
-        _, y_true, _ = _decode_domains(X, y)
+        _, y_true, _ = decode_domains(X, y)
         y_pred = self.predict(X)
         return accuracy_score(y_true, y_pred)

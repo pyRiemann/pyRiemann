@@ -1,3 +1,12 @@
+"""
+====================================================================
+Comparison of pipelines for transfer learning
+====================================================================
+
+Compare the classificaton performance of four pipelines for transfer learning.
+The data points are all simulated from a toy model based on the Riemannian
+Gaussian distribution.
+"""
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -9,9 +18,9 @@ from sklearn.pipeline import make_pipeline
 from sklearn.utils import check_random_state
 from tqdm import tqdm
 
-from pyriemann.transferlearning_yenc import (
-    _encode_domains,  # XXX it's private
-    _decode_domains,
+from pyriemann.transfer import (
+    encode_domains,
+    decode_domains,
     TLSplitter,
     TLDummy,
     TLCenter,
@@ -92,7 +101,7 @@ def make_example_transfer_learning(N, class_sep=3.0, class_disp=1.0,
     # encode the labels and domains together
     X = np.concatenate([X_source, X_target])
     y = np.concatenate([y_source, y_target])
-    X_enc, y_enc = _encode_domains(X, y, domains)
+    X_enc, y_enc = encode_domains(X, y, domains)
 
     return X_enc, y_enc
 
@@ -152,11 +161,11 @@ for target_train_frac in tqdm(target_train_frac_array):
         pipeline = make_pipeline(step1, clf)
 
         # the classifier is trained only with points from the source domain
-        X_train_dummy, y_train_dummy, domains = _decode_domains(
+        X_train_dummy, y_train_dummy, domains = decode_domains(
             X_enc_train,
             y_enc_train)
         y_train_dummy[domains == target_domain] = -1
-        X_enc_train_dummy, y_enc_train_dummy = _encode_domains(
+        X_enc_train_dummy, y_enc_train_dummy = encode_domains(
             X_train_dummy,
             y_train_dummy,
             domains)
@@ -178,11 +187,11 @@ for target_train_frac in tqdm(target_train_frac_array):
         pipeline = make_pipeline(step1, clf)
 
         # the classifier is trained only with points from the source domain
-        X_train_rct, y_train_rct, domains = _decode_domains(
+        X_train_rct, y_train_rct, domains = decode_domains(
             X_enc_train,
             y_enc_train)
         y_train_rct[domains == target_domain] = -1
-        X_enc_train_rct, y_enc_train_rct = _encode_domains(
+        X_enc_train_rct, y_enc_train_rct = encode_domains(
             X_train_rct,
             y_train_rct,
             domains)
@@ -231,11 +240,11 @@ for target_train_frac in tqdm(target_train_frac_array):
         pipeline = make_pipeline(clf)
 
         # the classifier is trained only with points from the target domain
-        X_train_clb, y_train_clb, domains = _decode_domains(
+        X_train_clb, y_train_clb, domains = decode_domains(
             X_enc_train,
             y_enc_train)
         y_train_clb[domains != target_domain] = -1
-        X_enc_train_clb, y_enc_train_clb = _encode_domains(
+        X_enc_train_clb, y_enc_train_clb = encode_domains(
             X_train_clb,
             y_train_clb,
             domains)
@@ -248,7 +257,7 @@ for target_train_frac in tqdm(target_train_frac_array):
             pipeline.score(X_enc_test, y_enc_test))
 
     # get the average score of each pipeline
-    for meth in meth_list:
+    for meth in scores.keys():
         scores[meth].append(np.mean(scores_cv[meth]))
 
 # store the results for each method on this particular seed

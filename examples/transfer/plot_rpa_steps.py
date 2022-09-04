@@ -1,5 +1,11 @@
 """
-XXX add header doc to explain what this example does
+====================================================================
+Plot the data transformations in the Riemannian Procrustes Analysis
+====================================================================
+
+Use the SpectralEmbedding module to plot in 2D the transformations on the data
+points from source and target domains when applying the Riemannian Procrustes
+Analysis to match their statistics.
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -11,9 +17,9 @@ from pyriemann.utils.base import invsqrtm, sqrtm, powm, expm
 
 from sklearn.utils import check_random_state
 
-from pyriemann.transferlearning_yenc import (
-    _encode_domains,  # XXX this is private API it should not be in example
-    _decode_domains,
+from pyriemann.transfer import (
+    encode_domains,
+    decode_domains,
     TLCenter,
     TLRotate,
 )
@@ -109,7 +115,7 @@ def make_example_transfer_learning(N, class_sep=3.0, class_disp=1.0,
     # encode the labels and domains together
     X = np.concatenate([X_source, X_target])
     y = np.concatenate([y_source, y_target])
-    X_enc, y_enc = _encode_domains(X, y, domains)
+    X_enc, y_enc = encode_domains(X, y, domains)
 
     return X_enc, y_enc
 
@@ -129,7 +135,7 @@ X_enc, y_enc = make_example_transfer_learning(
 )
 
 # generate dataset
-X_org, y, domain = _decode_domains(X_enc, y_enc)
+X_org, y, domain = decode_domains(X_enc, y_enc)
 
 # instantiate object for doing spectral embeddings
 emb = SpectralEmbedding(n_components=2, metric='riemann')
@@ -162,7 +168,8 @@ embedded_points['rot'] = S[8*N:-1]
 fig, ax = plt.subplots(figsize=(13.5, 4.4), ncols=3, sharey=True)
 plt.subplots_adjust(wspace=0.10)
 steps = ['origin', 'rct', 'rot']
-for axi, step in zip(ax, steps):
+titles = ['original', 'after recentering', 'after rotation']
+for axi, step, title in zip(ax, steps, titles):
     S_step = embedded_points[step]
     S_source = S_step[domain == 'source_domain']
     y_source = y[domain == 'source_domain']
@@ -171,22 +178,28 @@ for axi, step in zip(ax, steps):
     axi.scatter(
         S_source[y_source == 1][:, 0],
         S_source[y_source == 1][:, 1],
-        c='C0', s=50)
+        c='C0', s=50, alpha=0.50)
     axi.scatter(
         S_source[y_source == 2][:, 0],
         S_source[y_source == 2][:, 1],
-        c='C1', s=50)
+        c='C1', s=50, alpha=0.50)
     axi.scatter(
         S_target[y_target == 1][:, 0],
         S_target[y_target == 1][:, 1],
-        c='C0', s=50, alpha=0.50)
+        c='C0', s=50, alpha=0.30, marker="^")
     axi.scatter(
         S_target[y_target == 2][:, 0],
         S_target[y_target == 2][:, 1],
-        c='C1', s=50, alpha=0.50)
+        c='C1', s=50, alpha=0.30, marker="^")
     axi.scatter(S[-1, 0], S[-1, 1], c='k', s=80, marker="*")
     axi.set_xlim(-0.60, +1.60)
     axi.set_ylim(-1.10, +1.25)
     axi.set_xticks([-0.5, 0.0, 0.5, 1.0, 1.5])
     axi.set_yticks([-1.0, -0.5, 0.0, 0.5, 1.0])
+    axi.set_title(title, fontsize=14)
+ax[2].scatter([], [], c="C0", label="source - class 0")
+ax[2].scatter([], [], c="C1", label="source - class 1")
+ax[2].scatter([], [], marker="^", c="C0", label="target - class 0")
+ax[2].scatter([], [], marker="^", c="C1", label="target - class 1")
+ax[2].legend(loc="lower right")
 fig.show()
