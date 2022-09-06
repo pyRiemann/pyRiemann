@@ -1,4 +1,3 @@
-import warnings
 import numpy as np
 from ..utils.distance import distance
 
@@ -56,7 +55,7 @@ def _grad(Q, X, Y, weights, metric='euclid'):
         raise ValueError("RPA supports only 'euclid' and 'riemann' metrics.")
 
 
-def _warm_start(X, Y, metric='euclid'):
+def _warm_start(X, Y, weights, metric='euclid'):
     """Smart initialization of the minimization procedure
 
     The loss function being optimized is a weighted sum of loss functions with
@@ -88,7 +87,7 @@ def _warm_start(X, Y, metric='euclid'):
         Q0_candidates.append(_get_local_solution(X[i], Y[i]))
 
     i_min = np.argmin(
-        [_loss(Q0_i, X, Y, metric=metric) for Q0_i in Q0_candidates])
+        [_loss(Q0_i, X, Y, weights, metric=metric) for Q0_i in Q0_candidates])
 
     return Q0_candidates[i_min]
 
@@ -122,7 +121,7 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
         'euclid' for Euclidean distance or 'riemann' for the affine-invariant
         Riemannian distance between SPD matrices.
     tol_step : float, default 1e-9
-        TODO
+        Stopping criterion based on the norm of the descent direction.
     maxiter : int, default=10_000
         Maximum number of iterations in the optimization procedure.
     maxiter_linesearch : int, default=32
@@ -150,7 +149,7 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
         weights = np.ones(len(M_source)) / len(M_source)
 
     # initialize the solution with an educated guess
-    Q_1 = _warm_start(M_target, M_source, metric=metric)
+    Q_1 = _warm_start(M_target, M_source, weights, metric=metric)
 
     # loop over iterations
     for _ in range(maxiter):
@@ -168,7 +167,7 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
         tau = 0.50
         r = 1e-4
         Q = _retract(Q_1, -alpha * direction)
-        F = _loss(Q, M_target, M_source, metric=metric)
+        F = _loss(Q, M_target, M_source, weights, metric=metric)
         for iter_linesearch in range(maxiter_linesearch):
             if F_1 - F > r * alpha * np.linalg.norm(direction)**2:
                 break
@@ -184,8 +183,5 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
         # update variables for next iteration
         Q_1 = Q
         F_1 = F
-
-    else:
-        warnings.warn('Convergence not reached.')
 
     return Q

@@ -5,119 +5,23 @@ Plot the data transformations in the Riemannian Procrustes Analysis
 
 Use the SpectralEmbedding module to plot in 2D the transformations on the data
 points from source and target domains when applying the Riemannian Procrustes
-Analysis to match their statistics.
+Analysis [1] to match their statistics.
+
+.. [1] PLC Rodrigues et al “Riemannian Procrustes analysis: transfer learning
+for brain-computer interfaces”. IEEE Transactions on Biomedical Engineering,
+vol. 66, no. 8, pp. 2390-2401, December, 2018
 """
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pyriemann.datasets import sample_gaussian_spd
 from pyriemann.embedding import SpectralEmbedding
-from pyriemann.utils.mean import mean_riemann
-from pyriemann.utils.base import invsqrtm, sqrtm, powm, expm
-
-from sklearn.utils import check_random_state
+from pyriemann.datasets.simulated import make_example_transfer_learning
 
 from pyriemann.transfer import (
-    encode_domains,
     decode_domains,
     TLCenter,
     TLRotate,
 )
-
-
-def make_example_transfer_learning(N, class_sep=3.0, class_disp=1.0,
-                                   domain_sep=5.0, theta=0.0,
-                                   random_state=None):
-    """Generate source and target toy datasets for transfer learning examples
-
-    N : how many matrices to sample on each class for each domain
-    class_sep : how separable the classes from each domain should be
-    class_disp : intra class dispersion
-    domain_sep : distance between global means for each domain
-    theta : angle for rotation
-    random_state : int, RandomState instance or None, default=None
-    Pass an int for reproducible output across multiple function calls.
-    """
-
-    rs = check_random_state(random_state)
-    seeds = rs.randint(100, size=4)
-
-    # the examples considered here are always for 2x2 matrices
-    n_dim = 2
-
-    # create a source dataset with two classes and global mean at identity
-    M1_source = np.eye(n_dim)  # first class mean at Identity at first
-    X1_source = sample_gaussian_spd(
-        n_matrices=N,
-        mean=M1_source,
-        sigma=class_disp,
-        random_state=seeds[0])
-    y1_source = (1*np.ones(N)).astype(int)
-    Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
-    Pv = (Pv + Pv.T)/2  # symmetrize
-    Pv = Pv / np.linalg.norm(Pv)  # normalize
-    P = expm(Pv)  # take it back to the SPD manifold
-    M2_source = powm(P, alpha=class_sep)  # control distance to identity
-    X2_source = sample_gaussian_spd(
-        n_matrices=N,
-        mean=M2_source,
-        sigma=class_disp,
-        random_state=seeds[1])
-    y2_source = (2*np.ones(N)).astype(int)
-    X_source = np.concatenate([X1_source, X2_source])
-    M_source = mean_riemann(X_source)
-    M_source_invsqrt = invsqrtm(M_source)
-    for i in range(len(X_source)):  # center the dataset to Identity
-        X_source[i] = M_source_invsqrt @ X_source[i] @ M_source_invsqrt
-    y_source = np.concatenate([y1_source, y2_source])
-
-    # create target dataset based on the source dataset
-    X1_target = sample_gaussian_spd(
-        n_matrices=N,
-        mean=M1_source,
-        sigma=class_disp,
-        random_state=seeds[2])
-    X2_target = sample_gaussian_spd(
-        n_matrices=N,
-        mean=M2_source,
-        sigma=class_disp,
-        random_state=seeds[3])
-    X_target = np.concatenate([X1_target, X2_target])
-    M_target = mean_riemann(X_target)
-    M_target_invsqrt = invsqrtm(M_target)
-    for i in range(len(X_target)):  # center the dataset to Identity
-        X_target[i] = M_target_invsqrt @ X_target[i] @ M_target_invsqrt
-    y_target = np.copy(y_source)
-
-    # move the points in X_target with a random matrix A = P * Q
-
-    # create SPD matrix for the translation between domains
-    Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
-    Pv = (Pv + Pv.T)/2  # symmetrize
-    Pv /= np.linalg.norm(Pv)  # normalize
-    P = expm(Pv)  # take it to the manifold
-    P = powm(P, alpha=domain_sep)  # control distance to identity
-    P = sqrtm(P)  # transport matrix
-
-    # create orthogonal matrix for the rotation part
-    Q = np.array([[np.cos(theta), -np.sin(theta)],
-                  [np.sin(theta), np.cos(theta)]])
-
-    # transform the data points from the target domain
-    A = P @ Q
-    X_target = A @ X_target @ A.T
-
-    # create array specifying the domain for each epoch
-    domains = np.array(
-        len(X_source)*['source_domain'] + len(X_target)*['target_domain']
-    )
-
-    # encode the labels and domains together
-    X = np.concatenate([X_source, X_target])
-    y = np.concatenate([y_source, y_target])
-    X_enc, y_enc = encode_domains(X, y, domains)
-
-    return X_enc, y_enc
 
 
 # fix seed for reproducible results

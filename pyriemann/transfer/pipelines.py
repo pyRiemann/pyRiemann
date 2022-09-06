@@ -1,90 +1,17 @@
 import numpy as np
 from joblib import Parallel, delayed
-from sklearn.model_selection import StratifiedShuffleSplit
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.metrics import accuracy_score
-from .utils.mean import mean_covariance, mean_riemann
-from .utils.distance import distance
-from .utils.base import invsqrtm, powm, sqrtm
-from .utils.geodesic import geodesic
-from .utils.rotate import get_rotation_matrix
-from .classification import MDM, _check_metric
-from .preprocessing import Whitening
+from ..utils.mean import mean_covariance, mean_riemann
+from ..utils.distance import distance
+from ..utils.base import invsqrtm, powm, sqrtm
+from ..utils.geodesic import geodesic
+from ._rotate import get_rotation_matrix
+from ..classification import MDM, _check_metric
+from ..preprocessing import Whitening
+from .methods import decode_domains
 
 base_clf = MDM()
-
-# Define the helper functions for transfer learning
-
-
-def encode_domains(X, y, domain):
-    y_enc = []
-    for n in range(len(y)):
-        yn = y[n]
-        dn = domain[n]
-        yn_enc = str(yn) + '/' + dn
-        y_enc.append(yn_enc)
-    X_enc = X
-    y_enc = np.array(y_enc)
-    return X_enc, y_enc
-
-
-def decode_domains(X_enc, y_enc):
-    y = []
-    domain = []
-    for n in range(len(y_enc)):
-        yn_enc = y_enc[n]
-        try:
-            yn = int(yn_enc.split('/')[0])
-        except AttributeError:
-            print(yn_enc)
-            yn = 0
-        y.append(yn)
-        dn = yn_enc.split('/')[1]
-        domain.append(dn)
-    X = X_enc
-    y = np.array(y)
-    domain = np.array(domain)
-    return X, y, domain
-
-
-# Define the new classes for Transfer Learning
-
-
-class TLSplitter():
-    def __init__(self,
-                 target_domain,
-                 target_train_frac=0.80,
-                 n_splits=5,
-                 random_state=None):
-
-        self.target_domain = target_domain
-        self.target_train_frac = target_train_frac
-        self.n_splits = n_splits
-        self.random_state = random_state
-
-    def split(self, X, y):
-
-        # decode the domains of the data points
-        X, y, domain = decode_domains(X, y)
-
-        # indentify the indices of the target dataset
-        idx_source = np.where(domain != self.target_domain)[0]
-        idx_target = np.where(domain == self.target_domain)[0]
-        y_target = y[idx_target]
-
-        # index of training-split for the target data points
-        ss_target = StratifiedShuffleSplit(
-            n_splits=self.n_splits,
-            train_size=self.target_train_frac,
-            random_state=self.random_state).split(idx_target, y_target)
-        for train_sub_idx_target, test_sub_idx_target in ss_target:
-            train_idx = np.concatenate(
-                [idx_source, idx_target[train_sub_idx_target]])
-            test_idx = idx_target[test_sub_idx_target]
-            yield train_idx, test_idx
-
-    def get_n_splits(self, X, y):
-        return self.n_splits
 
 
 class TLDummy(BaseEstimator, TransformerMixin):
@@ -253,7 +180,9 @@ class TLRotate(BaseEstimator, TransformerMixin):
     """Rotate data for transfer learning
 
     Rotate the data points from each source domain so to match its class means
-    with those from the target domain.
+    with those from the target domain. The loss function for this matching was
+    first proposed in [1] and the optimization procedure for mininimizing it
+    follows the presentation from [2].
 
     Important: the data points from each domain must have been re-centered
     to the identity before calculating the rotation.
@@ -268,6 +197,15 @@ class TLRotate(BaseEstimator, TransformerMixin):
     metric : {'euclid', 'riemann'}, default='euclid'
         Metric for the distance to minimize between class means. Options are
         either the Euclidean ('euclid') or Riemannian ('riemann') distance.
+
+    References
+    ----------
+    .. [1] PLC Rodrigues et al “Riemannian Procrustes analysis: transfer
+    learning for brain-computer interfaces”. IEEE Transactions on Biomedical
+    Engineering, vol. 66, no. 8, pp. 2390-2401, December, 2018
+
+    ..[2] N Boumal "An introduction to optimization on smooth manifolds". To
+    appear with Cambridge University Press. June, 2022
     """
 
     def __init__(self, target_domain, weights=None, metric='euclid'):
