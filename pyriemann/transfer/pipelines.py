@@ -15,7 +15,7 @@ base_clf = MDM()
 
 
 class TLDummy(BaseEstimator, TransformerMixin):
-    """No transformation on data for transfer learning
+    """No transformation on data for transfer learning.
 
     No transformation of the data points between the domains.
     This is what we call the Direct Center Transfer (DCT) method.
@@ -35,17 +35,17 @@ class TLDummy(BaseEstimator, TransformerMixin):
 
 
 class TLCenter(BaseEstimator, TransformerMixin):
-    """Recenter data for transfer learning
+    """Recenter data for transfer learning.
 
     Recenter the data points from each domain to the Identity on manifold, ie
-    make the geometric mean of the datasets become the identity. This operation
+    make the mean of the datasets become the identity. This operation
     corresponds to a whitening step if the SPD matrices represent the spatial
     covariance matrices of multivariate signals.
 
     Parameters
     ----------
     target_domain : str
-        Which domain to consider as target
+        Domain to consider as target.
     metric : str, default='riemann'
         The metric for mean, can be: 'ale', 'alm', 'euclid', 'harmonic',
         'identity', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
@@ -85,7 +85,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
 
 
 class TLStretch(BaseEstimator, TransformerMixin):
-    """Stretch data for transfer learning
+    """Stretch data for transfer learning.
 
     Change the dispersion of the datapoints around their geometric mean
     for each dataset so that they all have the same desired value.
@@ -96,11 +96,11 @@ class TLStretch(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     target_domain : str
-        Which domain to consider as target
+        Domain to consider as target.
     dispersion : float, default=1.0
-        Which target value for the dispersion of the data points
+        Target value for the dispersion of the data points.
     centered_data : bool, default=False
-        Whether the data has been re-centered to the Identity beforehand
+        Whether the data has been re-centered to the Identity beforehand.
     """
 
     def __init__(self, target_domain, final_dispersion=1.0,
@@ -127,62 +127,66 @@ class TLStretch(BaseEstimator, TransformerMixin):
 
         return self
 
+    def _center(self, X, Mean):
+        Mean_isqrt = invsqrtm(Mean)
+        return Mean_isqrt @ X @ Mean_isqrt
+
+    def _uncenter(self, X, Mean):
+        Mean_sqrt = sqrtm(Mean)
+        return Mean_sqrt @ X @ Mean_sqrt
+
+    def _strech(self, X, dispersion_in, dispersion_out):
+        return powm(X, np.sqrt(dispersion_out / dispersion_in))
+
     def transform(self, X, y=None):
-        # Used during inference, apply recenter from specified target domain.
-        if self.centered_data:
-            num = self.final_dispersion
-            den = self._dispersions[self.target_domain]
-            X_str = powm(X, np.sqrt(num / den))
-        else:
-            # first have to re-center the data to Identity
-            Minvsqrt_target = invsqrtm(self._means[self.target_domain])
-            X_rct = Minvsqrt_target @ X @ Minvsqrt_target
-            # then do the re-stretching
-            num = self.final_dispersion
-            den = self._dispersions[self.target_domain]
-            X_rct_str = powm(X_rct, np.sqrt(num / den))
-            # and re-center back to previous mean
-            Msqrt_target = sqrtm(self._means[self.target_domain])
-            X_str = Msqrt_target @ X_rct_str @ Msqrt_target
+        """Used during inference, apply recenter from specified target domain.
+        """
+        if not self.centered_data:
+            # center matrices to Identity
+            X = self._center(X, self._means[self.target_domain])
+
+        # stretch
+        X_str = self._strech(
+            X, self._dispersions[self.target_domain], self.final_dispersion
+        )
+
+        if not self.centered_data:
+            # re-center back to previous mean
+            X_str = self._uncenter(X_str, self._means[self.target_domain])
+
         return X_str
 
     def fit_transform(self, X, y):
         # used during fit, in pipeline
         self.fit(X, y)
         _, _, domains = decode_domains(X, y)
-        if self.centered_data:
-            X_str = np.zeros_like(X)
-            for d in np.unique(domains):
-                idx = domains == d
-                num = self.final_dispersion
-                den = self._dispersions[d]
-                X_str[idx] = powm(X[idx], np.sqrt(num / den))
-        else:
-            X_rct = np.zeros_like(X)
-            X_rct_str = np.zeros_like(X)
-            X_str = np.zeros_like(X)
-            for d in np.unique(domains):
-                idx = domains == d
-                # first have to re-center the data to Identity
-                Minvsqrt_target = invsqrtm(self._means[d])
-                X_rct[idx] = Minvsqrt_target @ X[idx] @ Minvsqrt_target
-                # then do the re-stretching
-                num = self.final_dispersion
-                den = self._dispersions[d]
-                X_rct_str[idx] = powm(X_rct[idx], np.sqrt(num / den))
-                # and re-center back to previous mean
-                Msqrt_domain = sqrtm(self._means[d])
-                X_str[idx] = Msqrt_domain @ X_rct_str[idx] @ Msqrt_domain
+        X_str = np.zeros_like(X)
+        for d in np.unique(domains):
+            idx = domains == d
+
+            if not self.centered_data:
+                # re-center matrices to Identity
+                X[idx] = self._center(X[idx], self._means[d])
+
+            # stretch
+            X_str[idx] = self._strech(
+                X[idx], self._dispersions[d], self.final_dispersion
+            )
+
+            if not self.centered_data:
+                # re-center back to previous mean
+                X_str[idx] = self._uncenter(X_str[idx], self._means[d])
+
         return X_str
 
 
 class TLRotate(BaseEstimator, TransformerMixin):
-    """Rotate data for transfer learning
+    """Rotate data for transfer learning.
 
     Rotate the data points from each source domain so to match its class means
     with those from the target domain. The loss function for this matching was
-    first proposed in [1] and the optimization procedure for mininimizing it
-    follows the presentation from [2].
+    first proposed in [1]_ and the optimization procedure for mininimizing it
+    follows the presentation from [2]_.
 
     Important: the data points from each domain must have been re-centered
     to the identity before calculating the rotation.
@@ -190,10 +194,10 @@ class TLRotate(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     target_domain : str
-        Which domain to consider as target
-    weights : None | array, shape (L), default=None
-        Set with the weights to assign for each class. If None, then give the
-        same weight for each class
+        Domain to consider as target.
+    weights : None | array, shape (n_classes), default=None
+        Weights to assign for each class. If None, then give the same weight
+        for each class.
     metric : {'euclid', 'riemann'}, default='euclid'
         Metric for the distance to minimize between class means. Options are
         either the Euclidean ('euclid') or Riemannian ('riemann') distance.
@@ -201,11 +205,9 @@ class TLRotate(BaseEstimator, TransformerMixin):
     References
     ----------
     .. [1] PLC Rodrigues et al “Riemannian Procrustes analysis: transfer
-    learning for brain-computer interfaces”. IEEE Transactions on Biomedical
-    Engineering, vol. 66, no. 8, pp. 2390-2401, December, 2018
-
+        learning for brain-computer interfaces”. IEEE TBME, 2018
     ..[2] N Boumal "An introduction to optimization on smooth manifolds". To
-    appear with Cambridge University Press. June, 2022
+        appear with Cambridge University Press. June, 2022
     """
 
     def __init__(self, target_domain, weights=None, metric='euclid'):
@@ -257,10 +259,10 @@ class TLRotate(BaseEstimator, TransformerMixin):
 
 
 class TLClassifier(BaseEstimator, ClassifierMixin):
-    """Classification with extended labels
+    """Classification with extended labels.
 
     This is a wrapper that convert extended labels into class labels to
-    train a classifier of choice
+    train a classifier of choice.
 
     Parameters
     ----------
@@ -274,7 +276,7 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
         self.clf = clf
 
     def fit(self, X, y):
-        """Fit DTClassifier.
+        """Fit TLClassifier.
 
         Parameters
         ----------
