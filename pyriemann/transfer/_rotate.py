@@ -1,3 +1,4 @@
+import warnings
 import numpy as np
 from ..utils.distance import distance
 
@@ -82,12 +83,12 @@ def _warm_start(X, Y, weights, metric='euclid'):
         Qstar = qX @ qY.T
         return Qstar
 
-    Q0_candidates = []
+    Q0_candidates, losses = [], []
     for i in range(len(X)):
         Q0_candidates.append(_get_local_solution(X[i], Y[i]))
+        losses.append(_loss(Q0_candidates[i], X, Y, weights, metric=metric))
 
-    i_min = np.argmin(
-        [_loss(Q0_i, X, Y, weights, metric=metric) for Q0_i in Q0_candidates])
+    i_min = np.argmin(losses)
 
     return Q0_candidates[i_min]
 
@@ -116,7 +117,7 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
     weights : None | array, shape (n_classes,), default=None
         Weights for each class. If None, then give the same weight for each
         class.
-    metric : str, default='euclid'
+    metric : {'euclid', 'riemann'}, default='euclid'
         Which type of distance to minimize between the class means, either
         'euclid' for Euclidean distance or 'riemann' for the affine-invariant
         Riemannian distance between SPD matrices.
@@ -136,7 +137,7 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
     References
     ----------
     .. [1] P. Rodrigues et al. "Riemannian Procrustes Analysis: Transfer
-           Learning for Brain-Computer Interfaces" (2018)
+        Learning for Brain-Computer Interfaces" (2018)
     .. [2] N. Boumal "An introduction to optimization on smooth manifolds"
     """
 
@@ -168,7 +169,7 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
         r = 1e-4
         Q = _retract(Q_1, -alpha * direction)
         F = _loss(Q, M_target, M_source, weights, metric=metric)
-        for iter_linesearch in range(maxiter_linesearch):
+        for _ in range(maxiter_linesearch):
             if F_1 - F > r * alpha * np.linalg.norm(direction)**2:
                 break
             alpha = tau * alpha
@@ -183,5 +184,8 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
         # update variables for next iteration
         Q_1 = Q
         F_1 = F
+
+    else:
+        warnings.warn('Convergence not reached.')
 
     return Q
