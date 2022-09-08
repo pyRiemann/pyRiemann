@@ -78,7 +78,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         X_enc_train, X_enc_test = X_enc[train_idx], X_enc[test_idx]
         y_enc_train, y_enc_test = y_enc[train_idx], y_enc[test_idx]
 
-        # (1) dummy pipeline: no transfer learning at all
+        # (1) Dummy pipeline: no transfer learning at all
 
         # instantiate the pipeline
         step1 = TLDummy()
@@ -102,7 +102,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         scores_cv['dummy'].append(
             pipeline.score(X_enc_test, y_enc_test))
 
-        # (2) rct pipeline: recenter the data from each domain to identity
+        # (2) RCT pipeline: recenter the data from each domain to identity
         # see Zanini et al. "Transfer Learning: A Riemannian Geometry Framework
         # With Applications to Brain–Computer Interfaces". IEEE Transactions on
         # Biomedical Engineering, vol. 65, no. 5, pp. 1107-1116, August, 2017
@@ -130,7 +130,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         # get the accuracy score
         scores_cv['rct'].append(pipeline.score(X_enc_test, y_enc_test))
 
-        # (3) rpa pipeline: recenter, stretch, and rotate
+        # (3) RPA pipeline: recenter, stretch, and rotate
         # see PLC Rodrigues et al “Riemannian Procrustes analysis: transfer
         # learning for brain-computer interfaces”. IEEE Transactions on
         # Biomedical Engineering, vol. 66, no. 8, pp. 2390-2401, December, 2018
@@ -158,7 +158,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         # get the accuracy score
         scores_cv['rpa'].append(pipeline.score(X_enc_test, y_enc_test))
 
-        # (4) tlmdm pipeline -- ??
+        # (4) TLMDM pipeline -- ??
         # clf = TLMDM(transfer_coef=0.3, target_domain=target_domain)
         # pipeline = make_pipeline(clf)
         # pipeline.fit(X_enc_train, y_enc_train)

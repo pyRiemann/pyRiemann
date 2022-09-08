@@ -297,7 +297,7 @@ def make_example_transfer_learning(n_matrices, class_sep=3.0, class_disp=1.0,
     y1_source = (1*np.ones(n_matrices)).astype(int)
     Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
     Pv = (Pv + Pv.T)/2  # symmetrize
-    Pv = Pv / np.linalg.norm(Pv)  # normalize
+    Pv /= np.linalg.norm(Pv)  # normalize
     P = expm(Pv)  # take it back to the SPD manifold
     M2_source = powm(P, alpha=class_sep)  # control distance to identity
     X2_source = sample_gaussian_spd(
