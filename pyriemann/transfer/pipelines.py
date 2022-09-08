@@ -128,12 +128,12 @@ class TLStretch(BaseEstimator, TransformerMixin):
 
         return self
 
-    def _center(self, X, Mean):
-        Mean_isqrt = invsqrtm(Mean)
+    def _center(self, X, mean):
+        Mean_isqrt = invsqrtm(mean)
         return Mean_isqrt @ X @ Mean_isqrt
 
-    def _uncenter(self, X, Mean):
-        Mean_sqrt = sqrtm(Mean)
+    def _uncenter(self, X, mean):
+        Mean_sqrt = sqrtm(mean)
         return Mean_sqrt @ X @ Mean_sqrt
 
     def _strech(self, X, dispersion_in, dispersion_out):
