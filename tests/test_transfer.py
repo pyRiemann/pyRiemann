@@ -11,7 +11,6 @@ from pyriemann.transfer import (
 
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.mean import mean_riemann
-import pytest
 
 
 rndstate = 1234
