@@ -246,18 +246,39 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
     return outliers
 
 
-def make_example_transfer_learning(N, class_sep=3.0, class_disp=1.0,
+def make_example_transfer_learning(n_matrices, class_sep=3.0, class_disp=1.0,
                                    domain_sep=5.0, theta=0.0,
                                    random_state=None):
     """Generate source and target toy datasets for transfer learning examples
 
-    N : how many matrices to sample on each class for each domain
-    class_sep : how separable the classes from each domain should be
-    class_disp : intra class dispersion
-    domain_sep : distance between global means for each domain
-    theta : angle for rotation
+    Generate a dataset with 2x2 SPD matrices drawn from two Riemannian Gaussian
+    distributions. The distributions have the same class dispersions and the
+    distance between their centers of mass is an input parameter. We can also
+    control a rotation matrix that maps the source to the target domains.
+    This function is useful for testing classification or clustering methods on
+    transfer learning applications.
+
+    Parameters
+    ----------
+    n_matrices : int, default=100
+        How many 2x2 matrices to generate for each class on each domain.
+    class_sep : float, default=3.0
+        Distance between the centers of the two classes.
+    class_disp : float, default=1.0
+        Dispersion of the data points to be sampled on each class.
+    domain_sep : float, default=5.0
+        Distance between the global means of each source and target datasets.
+    theta : float, default=0.0
+        Angle of the 2x2 rotation matrix from source to target dataset.
     random_state : int, RandomState instance or None, default=None
-    Pass an int for reproducible output across multiple function calls.
+        Pass an int for reproducible output across multiple function calls.
+
+    Returns
+    -------
+    X_enc : ndarray, shape (4*n_matrices, 2, 2)
+        Set of SPD matrices.
+    y_enc : ndarray, shape (4*n_matrices,)
+        Extended labels for each data point.
     """
 
     rs = check_random_state(random_state)
@@ -269,45 +290,45 @@ def make_example_transfer_learning(N, class_sep=3.0, class_disp=1.0,
     # create a source dataset with two classes and global mean at identity
     M1_source = np.eye(n_dim)  # first class mean at Identity at first
     X1_source = sample_gaussian_spd(
-        n_matrices=N,
+        n_matrices=n_matrices,
         mean=M1_source,
         sigma=class_disp,
         random_state=seeds[0])
-    y1_source = (1*np.ones(N)).astype(int)
+    y1_source = (1*np.ones(n_matrices)).astype(int)
     Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
     Pv = (Pv + Pv.T)/2  # symmetrize
     Pv = Pv / np.linalg.norm(Pv)  # normalize
     P = expm(Pv)  # take it back to the SPD manifold
     M2_source = powm(P, alpha=class_sep)  # control distance to identity
     X2_source = sample_gaussian_spd(
-        n_matrices=N,
+        n_matrices=n_matrices,
         mean=M2_source,
         sigma=class_disp,
         random_state=seeds[1])
-    y2_source = (2*np.ones(N)).astype(int)
+    y2_source = (2*np.ones(n_matrices)).astype(int)
     X_source = np.concatenate([X1_source, X2_source])
     M_source = mean_riemann(X_source)
     M_source_invsqrt = invsqrtm(M_source)
-    for i in range(len(X_source)):  # center the dataset to Identity
-        X_source[i] = M_source_invsqrt @ X_source[i] @ M_source_invsqrt
+    # center the dataset to Identity
+    X_source = M_source_invsqrt @ X_source @ M_source_invsqrt
     y_source = np.concatenate([y1_source, y2_source])
 
     # create target dataset based on the source dataset
     X1_target = sample_gaussian_spd(
-        n_matrices=N,
+        n_matrices=n_matrices,
         mean=M1_source,
         sigma=class_disp,
         random_state=seeds[2])
     X2_target = sample_gaussian_spd(
-        n_matrices=N,
+        n_matrices=n_matrices,
         mean=M2_source,
         sigma=class_disp,
         random_state=seeds[3])
     X_target = np.concatenate([X1_target, X2_target])
     M_target = mean_riemann(X_target)
     M_target_invsqrt = invsqrtm(M_target)
-    for i in range(len(X_target)):  # center the dataset to Identity
-        X_target[i] = M_target_invsqrt @ X_target[i] @ M_target_invsqrt
+    # center the dataset to Identity
+    X_target = M_target_invsqrt @ X_target @ M_target_invsqrt
     y_target = np.copy(y_source)
 
     # move the points in X_target with a random matrix A = P * Q

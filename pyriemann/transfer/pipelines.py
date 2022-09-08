@@ -24,14 +24,14 @@ class TLDummy(BaseEstimator, TransformerMixin):
     def __init__(self):
         pass
 
-    def fit(self, X, y):
+    def fit(self, X, y_enc):
         return self
 
-    def transform(self, X, y=None):
+    def transform(self, X, y_enc=None):
         return X
 
-    def fit_transform(self, X, y):
-        return self.fit(X, y).transform(X, y)
+    def fit_transform(self, X, y_enc):
+        return self.fit(X, y_enc).transform(X, y_enc)
 
 
 class TLCenter(BaseEstimator, TransformerMixin):
@@ -50,7 +50,6 @@ class TLCenter(BaseEstimator, TransformerMixin):
         The metric for mean, can be: 'ale', 'alm', 'euclid', 'harmonic',
         'identity', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
         'wasserstein', or a callable function.
-
     """
 
     def __init__(self, target_domain, metric='riemann'):
@@ -58,25 +57,25 @@ class TLCenter(BaseEstimator, TransformerMixin):
         self.target_domain = target_domain
         self.metric = metric
 
-    def fit(self, X, y):
-        _, _, domains = decode_domains(X, y)
+    def fit(self, X, y_enc):
+        _, _, domains = decode_domains(X, y_enc)
         self.recenter_ = {}
         for d in np.unique(domains):
             idx = domains == d
             self.recenter_[d] = Whitening(metric=self.metric).fit(X[idx])
         return self
 
-    def transform(self, X, y=None):
+    def transform(self, X, y_enc=None):
         # Used during inference, apply recenter from specified target domain.
         return self.recenter_[self.target_domain].transform(X)
 
-    def inverse_transform(self, X, y=None):
+    def inverse_transform(self, X, y_enc=None):
         return self.recenter_[self.target_domain].inverse_transform(X)
 
-    def fit_transform(self, X, y):
+    def fit_transform(self, X, y_enc):
         # used during fit, in pipeline
-        self.fit(X, y)
-        _, _, domains = decode_domains(X, y)
+        self.fit(X, y_enc)
+        _, _, domains = decode_domains(X, y_enc)
         X_rct = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
@@ -90,9 +89,6 @@ class TLStretch(BaseEstimator, TransformerMixin):
     Change the dispersion of the datapoints around their geometric mean
     for each dataset so that they all have the same desired value.
 
-    The dispersion is defined as the squared sum of the AIRM-induced distances
-    of each point with respect to their geometric mean.
-
     Parameters
     ----------
     target_domain : str
@@ -101,27 +97,32 @@ class TLStretch(BaseEstimator, TransformerMixin):
         Target value for the dispersion of the data points.
     centered_data : bool, default=False
         Whether the data has been re-centered to the Identity beforehand.
+    metric : str, default='riemann'
+        The metric for calculating the dispersion can be: 'ale', 'alm',
+        'euclid', 'harmonic', 'identity', 'kullback_sym', 'logdet',
+        'logeuclid', 'riemann', 'wasserstein', or a callable function.
     """
 
     def __init__(self, target_domain, final_dispersion=1.0,
-                 centered_data=False):
+                 centered_data=False, metric='riemann'):
         """Init"""
         self.target_domain = target_domain
         self.final_dispersion = final_dispersion
         self.centered_data = centered_data
+        self.metric = metric
 
-    def fit(self, X, y):
-        _, _, domains = decode_domains(X, y)
-        m = X[0].shape[1]
+    def fit(self, X, y_enc):
+        _, _, domains = decode_domains(X, y_enc)
+        n_dim = X[0].shape[1]
         self._means = {}
         self._dispersions = {}
         for d in np.unique(domains):
             if self.centered_data:
-                self._means[d] = np.eye(m)
+                self._means[d] = np.eye(n_dim)
             else:
                 self._means[d] = mean_riemann(X[domains == d])
             disp_domain = np.sum([distance(
-                Xi, self._means[d], metric='riemann')**2
+                Xi, self._means[d], metric=self.metric)**2
                                  for Xi in X[domains == d]])
             self._dispersions[d] = disp_domain
 
@@ -138,7 +139,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
     def _strech(self, X, dispersion_in, dispersion_out):
         return powm(X, np.sqrt(dispersion_out / dispersion_in))
 
-    def transform(self, X, y=None):
+    def transform(self, X, y_enc=None):
         """Used during inference, apply recenter from specified target domain.
         """
         if not self.centered_data:
@@ -156,10 +157,10 @@ class TLStretch(BaseEstimator, TransformerMixin):
 
         return X_str
 
-    def fit_transform(self, X, y):
+    def fit_transform(self, X, y_enc):
         # used during fit, in pipeline
-        self.fit(X, y)
-        _, _, domains = decode_domains(X, y)
+        self.fit(X, y_enc)
+        _, _, domains = decode_domains(X, y_enc)
         X_str = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
@@ -205,8 +206,9 @@ class TLRotate(BaseEstimator, TransformerMixin):
     References
     ----------
     .. [1] PLC Rodrigues et al “Riemannian Procrustes analysis: transfer
-        learning for brain-computer interfaces”. IEEE TBME, 2018
-    ..[2] N Boumal "An introduction to optimization on smooth manifolds". To
+    learning for brain-computer interfaces”. IEEE Transactions on Biomedical
+    Engineering, vol. 66, no. 8, pp. 2390-2401, December, 2018
+    .. [2] N Boumal "An introduction to optimization on smooth manifolds". To
         appear with Cambridge University Press. June, 2022
     """
 
@@ -216,12 +218,12 @@ class TLRotate(BaseEstimator, TransformerMixin):
         self.weights = weights
         self.metric = metric
 
-    def fit(self, X, y):
+    def fit(self, X, y_enc):
 
-        _, _, domains = decode_domains(X, y)
+        _, _, domains = decode_domains(X, y_enc)
 
         idx = domains == self.target_domain
-        X_target, y_target = X[idx], y[idx]
+        X_target, y_target = X[idx], y_enc[idx]
         M_target = [mean_riemann(X_target[y_target == label])
                     for label in np.unique(y_target)]
 
@@ -229,7 +231,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
         for d in np.unique(domains):
             if d != self.target_domain:
                 idx = domains == d
-                X_source, y_source = X[idx], y[idx]
+                X_source, y_source = X[idx], y_enc[idx]
                 M_source = [mean_riemann(X_source[y_source == label])
                             for label in np.unique(y_source)]
                 self._rotations[d] = get_rotation_matrix(
@@ -240,14 +242,14 @@ class TLRotate(BaseEstimator, TransformerMixin):
 
         return self
 
-    def transform(self, X, y=None):
+    def transform(self, X, y_enc=None):
         # used during inference on target domain
         return X
 
-    def fit_transform(self, X, y):
+    def fit_transform(self, X, y_enc):
         # used during fit in pipeline, rotate each source domain
-        self.fit(X, y)
-        _, _, domains = decode_domains(X, y)
+        self.fit(X, y_enc)
+        _, _, domains = decode_domains(X, y_enc)
         X_rot = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
@@ -261,7 +263,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
 class TLClassifier(BaseEstimator, ClassifierMixin):
     """Classification with extended labels.
 
-    This is a wrapper that convert extended labels into class labels to
+    This is a wrapper that converts extended labels into class labels to
     train a classifier of choice.
 
     Parameters
@@ -275,14 +277,14 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
         self.target_domain = target_domain
         self.clf = clf
 
-    def fit(self, X, y):
+    def fit(self, X, y_enc):
         """Fit TLClassifier.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray, shape (n_matrices,)
+        y_enc : ndarray, shape (n_matrices,)
             Extended labels for each matrix.
 
         Returns
@@ -290,7 +292,7 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
         self : TLClassifier instance
             The TLClassifier instance.
         """
-        X_dec, y_dec, domains = decode_domains(X, y)
+        X_dec, y_dec, domains = decode_domains(X, y_enc)
 
         select = np.where(y_dec != -1)[0]
         X_train = X_dec[select]
@@ -329,22 +331,22 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
         """
         return self.clf.predict_proba(X)
 
-    def score(self, X, y, sample_weight=None):
+    def score(self, X, y_enc, sample_weight=None):
         """Return the mean accuracy on the given test data and labels.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray, shape (n_matrices,)
-            Labels for each matrix.
+        y_enc : ndarray, shape (n_matrices,)
+            Extended labels for each matrix.
 
         Returns
         -------
         score : float
-            Mean accuracy of clf.predict(X) wrt. y.
+            Mean accuracy of clf.predict(X) wrt. y_enc.
         """
-        _, y_true, _ = decode_domains(X, y)
+        _, y_true, _ = decode_domains(X, y_enc)
         y_pred = self.predict(X)
         return accuracy_score(y_true, y_pred)
 
@@ -419,13 +421,13 @@ class TLMDM(MDM):
         self.metric = metric
         self.n_jobs = n_jobs
 
-    def fit(self, X, y, sample_weight=None):
+    def fit(self, X, y_enc, sample_weight=None):
         """Fit (estimates) the centroids.
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices from source and target domain
-        y : ndarray, shape (n_matrices,)
+        y_enc : ndarray, shape (n_matrices,)
             Extended labels for each matrix
         sample_weight : None | ndarray, shape (n_matrices_source,), \
             default=None
@@ -442,7 +444,7 @@ class TLMDM(MDM):
                 'Value transfer_coef must be included in [0, 1] (Got %d)'
                 % self.transfer_coef)
 
-        X_dec, y_dec, domains = decode_domains(X, y)
+        X_dec, y_dec, domains = decode_domains(X, y_enc)
         X_src = X_dec[domains != self.target_domain]
         y_src = y_dec[domains != self.target_domain]
         X_tgt = X_dec[domains == self.target_domain]
@@ -453,7 +455,7 @@ class TLMDM(MDM):
                 raise ValueError(
                     f"classes in source domain must match classes in target \
                     domain. Classes in source are {np.unique(y_src)} while \
-                    classes in target are {np.unique(y)}")
+                    classes in target are {np.unique(y_enc)}")
 
         if sample_weight is not None:
             if (sample_weight.shape != (X_src.shape[0], 1)) and \
@@ -494,21 +496,21 @@ class TLMDM(MDM):
         )
         return self
 
-    def score(self, X, y, sample_weight=None):
+    def score(self, X, y_enc, sample_weight=None):
         """Return the mean accuracy on the given test data and labels.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray, shape (n_matrices,)
-            Labels for each matrix.
+        y_enc : ndarray, shape (n_matrices,)
+            Extended labels for each matrix.
 
         Returns
         -------
         score : float
-            Mean accuracy of clf.predict(X) wrt. y.
+            Mean accuracy of clf.predict(X) wrt. y_enc.
         """
-        _, y_true, _ = decode_domains(X, y)
+        _, y_true, _ = decode_domains(X, y_enc)
         y_pred = self.predict(X)
         return accuracy_score(y_true, y_pred)

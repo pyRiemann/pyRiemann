@@ -60,7 +60,7 @@ def _warm_start(X, Y, weights, metric='euclid'):
     """Smart initialization of the minimization procedure
 
     The loss function being optimized is a weighted sum of loss functions with
-    the same structure and for which we know the exact analytic solution [1].
+    the same structure and for which we know the exact analytic solution [1]_.
 
     As such, a natural way to warm start the optimization procedure is to list
     the minimizers of "local" loss function and set as Q0 the matrix that
@@ -68,8 +68,11 @@ def _warm_start(X, Y, weights, metric='euclid'):
 
     Note that the initialization is the same for both 'euclid' and 'riemann'.
 
-    [1] R. Bhatia and M. Congedo "Procrustes problems in Riemannian manifolds
-    of positive definite matrices" (2019)
+    References
+    ----------
+    .. [1] R. Bhatia and M. Congedo "Procrustes problems in Riemannian
+    manifolds of positive definite matrices". Linear Algebra and its
+    Applications, Elsevier, 2019, 563, pp.440-445.
     """
 
     # obtain the solution of the local loss function
@@ -91,6 +94,50 @@ def _warm_start(X, Y, weights, metric='euclid'):
     i_min = np.argmin(losses)
 
     return Q0_candidates[i_min]
+
+
+def _run_minimization(Q_ini, M_source, M_target, weights=None, metric='euclid',
+                      tol_step=1e-9, maxiter=10_000, maxiter_linesearch=32):
+
+    Q_1 = Q_ini
+
+    # loop over iterations
+    for _ in range(maxiter):
+
+        # get the current value for the loss function
+        F_1 = _loss(Q_1, M_target, M_source, weights, metric=metric)
+
+        # get the direction of steepest descent
+        direction = _project(
+            Q_1, _grad(Q_1, M_target, M_source, weights, metric=metric)
+        )
+
+        # backtracking line search
+        alpha = 1.0
+        tau = 0.50
+        r = 1e-4
+        Q = _retract(Q_1, -alpha * direction)
+        F = _loss(Q, M_target, M_source, weights, metric=metric)
+        for _ in range(maxiter_linesearch):
+            if F_1 - F > r * alpha * np.linalg.norm(direction)**2:
+                break
+            alpha = tau * alpha
+            Q = _retract(Q_1, -alpha * direction)
+            F = _loss(Q, M_target, M_source, weights, metric=metric)
+
+        # test if the step size is small
+        crit = np.linalg.norm(-alpha * direction)
+        if crit <= tol_step:
+            break
+
+        # update variables for next iteration
+        Q_1 = Q
+        F_1 = F
+
+    else:
+        warnings.warn('Convergence not reached.')
+
+    return Q, F
 
 
 def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
@@ -136,9 +183,11 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
 
     References
     ----------
-    .. [1] P. Rodrigues et al. "Riemannian Procrustes Analysis: Transfer
-        Learning for Brain-Computer Interfaces" (2018)
-    .. [2] N. Boumal "An introduction to optimization on smooth manifolds"
+    .. [1] PLC Rodrigues et al “Riemannian Procrustes analysis: transfer
+    learning for brain-computer interfaces”. IEEE Transactions on Biomedical
+    Engineering, vol. 66, no. 8, pp. 2390-2401, December, 2018
+    .. [2] N Boumal "An introduction to optimization on smooth manifolds". To
+        appear with Cambridge University Press. June, 2022
     """
 
     M_source = _check_dimensions(M_source)
@@ -150,42 +199,23 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
         weights = np.ones(len(M_source)) / len(M_source)
 
     # initialize the solution with an educated guess
-    Q_1 = _warm_start(M_target, M_source, weights, metric=metric)
+    Q_ini = _warm_start(M_target, M_source, weights, metric=metric)
+    if np.linalg.det(Q_ini) < 0:  # make sure it is a rotation
+        Q_ini[[0, 1], :] = Q_ini[[1, 0], :]
 
-    # loop over iterations
-    for _ in range(maxiter):
+    # run the optimization procedure on rotation matrices
+    Q_posdet, F_posdet = _run_minimization(
+        Q_ini, M_source, M_target, weights, metric, tol_step, maxiter,
+        maxiter_linesearch)
 
-        # get the current value for the loss function
-        F_1 = _loss(Q_1, M_target, M_source, weights, metric=metric)
+    # run the optimization procedure on reflection matrices
+    Q_ini[[0, 1], :] = Q_ini[[1, 0], :]
+    Q_negdet, F_negdet = _run_minimization(
+        Q_ini, M_source, M_target, weights, metric, tol_step, maxiter,
+        maxiter_linesearch)
 
-        # get the direction of steepest descent
-        direction = _project(
-            Q_1, _grad(Q_1, M_target, M_source, weights, metric=metric)
-        )
-
-        # backtracking line search
-        alpha = 1.0
-        tau = 0.50
-        r = 1e-4
-        Q = _retract(Q_1, -alpha * direction)
-        F = _loss(Q, M_target, M_source, weights, metric=metric)
-        for _ in range(maxiter_linesearch):
-            if F_1 - F > r * alpha * np.linalg.norm(direction)**2:
-                break
-            alpha = tau * alpha
-            Q = _retract(Q_1, -alpha * direction)
-            F = _loss(Q, M_target, M_source, weights, metric=metric)
-
-        # test if the step size is small
-        crit = np.linalg.norm(-alpha * direction)
-        if crit <= tol_step:
-            break
-
-        # update variables for next iteration
-        Q_1 = Q
-        F_1 = F
-
+    # check which of the options yield a smaller loss value
+    if F_posdet < F_negdet:
+        return Q_posdet
     else:
-        warnings.warn('Convergence not reached.')
-
-    return Q
+        return Q_negdet

@@ -28,9 +28,9 @@ from pyriemann.transfer import (
 seed = 66
 
 # create source and target datasets
-N = 50
+n_matrices = 50
 X_enc, y_enc = make_example_transfer_learning(
-    N=N,
+    n_matrices=n_matrices,
     class_sep=2.0,
     class_disp=0.25,
     domain_sep=2.0,
@@ -64,9 +64,9 @@ X_rot = rot.fit_transform(X_rct, y_enc)
 points = np.concatenate([X_org, X_rct, X_rot, np.eye(2)[None, :, :]])
 S = emb.fit_transform(points)
 S = S - S[-1]
-embedded_points['origin'] = S[:4*N]
-embedded_points['rct'] = S[4*N:8*N]
-embedded_points['rot'] = S[8*N:-1]
+embedded_points['origin'] = S[:4*n_matrices]
+embedded_points['rct'] = S[4*n_matrices:8*n_matrices]
+embedded_points['rot'] = S[8*n_matrices:-1]
 
 # plot the results
 fig, ax = plt.subplots(figsize=(13.5, 4.4), ncols=3, sharey=True)
