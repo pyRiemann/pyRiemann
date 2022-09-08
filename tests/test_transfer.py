@@ -11,13 +11,18 @@ from pyriemann.transfer import (
 
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.mean import mean_riemann
+import pytest
 
 
-def test_TLCenter():
+rndstate = 1234
+
+
+def test_TLCenter(rndstate):
     """Test pipeline for recentering data to Identity"""
     # check if the global mean of the domains is indeed Identity
     rct = TLCenter(target_domain='target_domain')
-    X, y_enc = make_example_transfer_learning(n_matrices=25)
+    X, y_enc = make_example_transfer_learning(
+        n_matrices=25, random_state=rndstate)
     X_rct = rct.fit_transform(X, y_enc)
     _, _, domain = decode_domains(X_rct, y_enc)
     for d in np.unique(domain):
@@ -26,11 +31,12 @@ def test_TLCenter():
         assert np.isclose(Md, np.eye(2)).all()
 
 
-def test_TLStretch():
+def test_TLStretch(rndstate):
     """Test pipeline for recentering data to Identity"""
     # check if the dispersion of the dataset indeed decreases to 1
     str = TLStretch(target_domain='target_domain', final_dispersion=1.0)
-    X, y_enc = make_example_transfer_learning(n_matrices=25, class_disp=2.0)
+    X, y_enc = make_example_transfer_learning(
+        n_matrices=25, class_disp=2.0, random_state=rndstate)
     X_str = str.fit_transform(X, y_enc)
     _, _, domain = decode_domains(X_str, y_enc)
     for d in np.unique(domain):
@@ -44,7 +50,7 @@ def test_TLRotate():
     """Test pipeline for rotating the datasets"""
     # check if the distance between the classes of each domain is reduced
     X, y_enc = make_example_transfer_learning(
-        n_matrices=25, class_sep=5, class_disp=1.0)
+        n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate)
     rct = TLCenter(target_domain='target_domain')
     X_rct = rct.fit_transform(X, y_enc)
     rot = TLRotate(target_domain='target_domain', metric='riemann')
