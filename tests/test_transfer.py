@@ -43,7 +43,8 @@ def test_TLStretch():
 def test_TLRotate():
     """Test pipeline for rotating the datasets"""
     # check if the distance between the classes of each domain is reduced
-    X, y_enc = make_example_transfer_learning(n_matrices=25, class_disp=2.0)
+    X, y_enc = make_example_transfer_learning(
+        n_matrices=25, class_sep=5, class_disp=1.0)
     rct = TLCenter(target_domain='target_domain')
     X_rct = rct.fit_transform(X, y_enc)
     rot = TLRotate(target_domain='target_domain', metric='riemann')
