@@ -11,8 +11,6 @@ from ..classification import MDM, _check_metric
 from ..preprocessing import Whitening
 from .methods import decode_domains
 
-base_clf = MDM()
-
 
 class TLDummy(BaseEstimator, TransformerMixin):
     """No transformation on data for transfer learning.
@@ -50,6 +48,11 @@ class TLCenter(BaseEstimator, TransformerMixin):
         The metric for mean, can be: 'ale', 'alm', 'euclid', 'harmonic',
         'identity', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
         'wasserstein', or a callable function.
+
+    Attributes
+    ----------
+    recenter_ : dict
+        Dictionary with key=domain_name and value=domain_mean
     """
 
     def __init__(self, target_domain, metric='riemann'):
@@ -101,6 +104,11 @@ class TLStretch(BaseEstimator, TransformerMixin):
         The metric for calculating the dispersion can be: 'ale', 'alm',
         'euclid', 'harmonic', 'identity', 'kullback_sym', 'logdet',
         'logeuclid', 'riemann', 'wasserstein', or a callable function.
+
+    Attributes
+    ----------
+    dispersions_ : dict
+        Dictionary with key=domain_name and value=domain_dispersion
     """
 
     def __init__(self, target_domain, final_dispersion=1.0,
@@ -115,7 +123,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
         _, _, domains = decode_domains(X, y_enc)
         n_dim = X[0].shape[1]
         self._means = {}
-        self._dispersions = {}
+        self.dispersions_ = {}
         for d in np.unique(domains):
             if self.centered_data:
                 self._means[d] = np.eye(n_dim)
@@ -124,7 +132,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
             disp_domain = np.sum([distance(
                 Xi, self._means[d], metric=self.metric)**2
                                  for Xi in X[domains == d]])
-            self._dispersions[d] = disp_domain
+            self.dispersions_[d] = disp_domain
 
         return self
 
@@ -148,7 +156,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
 
         # stretch
         X_str = self._strech(
-            X, self._dispersions[self.target_domain], self.final_dispersion
+            X, self.dispersions_[self.target_domain], self.final_dispersion
         )
 
         if not self.centered_data:
@@ -171,7 +179,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
 
             # stretch
             X_str[idx] = self._strech(
-                X[idx], self._dispersions[d], self.final_dispersion
+                X[idx], self.dispersions_[d], self.final_dispersion
             )
 
             if not self.centered_data:
@@ -196,12 +204,17 @@ class TLRotate(BaseEstimator, TransformerMixin):
     ----------
     target_domain : str
         Domain to consider as target.
-    weights : None | array, shape (n_classes), default=None
+    weights : None | array, shape (n_classes,), default=None
         Weights to assign for each class. If None, then give the same weight
         for each class.
     metric : {'euclid', 'riemann'}, default='euclid'
         Metric for the distance to minimize between class means. Options are
         either the Euclidean ('euclid') or Riemannian ('riemann') distance.
+
+    Attributes
+    ----------
+    rotations_ : dict
+        Dictionary with key=domain_name and value=domain_rotation_matrix
 
     References
     ----------
@@ -227,14 +240,14 @@ class TLRotate(BaseEstimator, TransformerMixin):
         M_target = [mean_riemann(X_target[y_target == label])
                     for label in np.unique(y_target)]
 
-        self._rotations = {}
+        self.rotations_ = {}
         for d in np.unique(domains):
             if d != self.target_domain:
                 idx = domains == d
                 X_source, y_source = X[idx], y_enc[idx]
                 M_source = [mean_riemann(X_source[y_source == label])
                             for label in np.unique(y_source)]
-                self._rotations[d] = get_rotation_matrix(
+                self.rotations_[d] = get_rotation_matrix(
                     M_source,
                     M_target,
                     self.weights,
@@ -254,7 +267,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
         for d in np.unique(domains):
             idx = domains == d
             if d != self.target_domain:
-                X_rot[idx] = self._rotations[d] @ X[idx] @ self._rotations[d].T
+                X_rot[idx] = self.rotations_[d] @ X[idx] @ self.rotations_[d].T
             else:
                 X_rot[idx] = X[idx]
         return X_rot
@@ -268,11 +281,13 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
 
     Parameters
     ----------
-    clf : pyriemann classifier, default=MDM()
-        The classifier to apply on the manifold, with class label.
+    target_domain : str
+        Domain to consider as target.
+    clf : BaseClassifier, default=MDM()
+        The classifier to apply on the data points.
     """
 
-    def __init__(self, target_domain, clf=base_clf):
+    def __init__(self, target_domain, clf=MDM()):
         """Init."""
         self.target_domain = target_domain
         self.clf = clf
@@ -292,7 +307,7 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
         self : TLClassifier instance
             The TLClassifier instance.
         """
-        X_dec, y_dec, domains = decode_domains(X, y_enc)
+        X_dec, y_dec, _ = decode_domains(X, y_enc)
 
         select = np.where(y_dec != -1)[0]
         X_train = X_dec[select]
