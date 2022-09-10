@@ -218,11 +218,14 @@ class TLRotate(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] PLC Rodrigues et al “Riemannian Procrustes analysis: transfer
-    learning for brain-computer interfaces”. IEEE Transactions on Biomedical
+    .. [1] `Riemannian Procrustes analysis: transfer
+    learning for brain-computer interfaces
+    <https://hal.archives-ouvertes.fr/hal-01971856>`_
+    PLC Rodrigues et al, IEEE Transactions on Biomedical
     Engineering, vol. 66, no. 8, pp. 2390-2401, December, 2018
-    .. [2] N Boumal "An introduction to optimization on smooth manifolds". To
-        appear with Cambridge University Press. June, 2022
+    .. [2] `An introduction to optimization on smooth manifolds
+    <https://www.nicolasboumal.net/book/>`_
+    N. Boumal. To appear with Cambridge University Press. June, 2022
     """
 
     def __init__(self, target_domain, weights=None, metric='euclid'):
@@ -414,14 +417,17 @@ class TLMDM(MDM):
 
     References
     ----------
-    .. [1] E. Kalunga, S. Chevallier and Q. Barthelemy, "Transfer learning for
-        SSVEP-based BCI using Riemannian similarities between users", in 26th
-        European Signal Processing Conference (EUSIPCO), pp. 1685-1689. IEEE,
-        2018.
-    .. [2] S. Khazem, S. Chevallier, Q. Barthelemy, K. Haroun and C. Nous,
-        "Minimizing Subject-dependent Calibration for BCI with Riemannian
-        Transfer Learning", in 10th International IEEE/EMBS Conference on
-        Neural Engineering (NER), pp. 523-526. IEEE, 2021.
+    .. [1] `Transfer learning for SSVEP-based BCI using Riemannian similarities
+        between users
+        <https://hal.archives-ouvertes.fr/hal-01911092/>`_
+        E. Kalunga, S. Chevallier and Q. Barthelemy, in 26th European Signal
+        Processing Conference (EUSIPCO), pp. 1685-1689. IEEE, 2018.
+    .. [2] `Minimizing Subject-dependent Calibration for BCI with Riemannian
+        Transfer Learning
+        <https://hal.archives-ouvertes.fr/hal-03202360/>`_
+        S. Khazem, S. Chevallier, Q. Barthelemy, K. Haroun and C. Nous, 10th
+        International IEEE/EMBS Conference on Neural Engineering (NER), pp.
+        523-526. IEEE, 2021.
     """
 
     def __init__(

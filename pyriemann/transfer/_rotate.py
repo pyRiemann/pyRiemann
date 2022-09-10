@@ -70,9 +70,11 @@ def _warm_start(X, Y, weights, metric='euclid'):
 
     References
     ----------
-    .. [1] R. Bhatia and M. Congedo "Procrustes problems in Riemannian
-    manifolds of positive definite matrices". Linear Algebra and its
-    Applications, Elsevier, 2019, 563, pp.440-445.
+    .. [1] `Procrustes problems in Riemannian manifolds of positive definite
+    matrices
+    <https://hal.archives-ouvertes.fr/hal-02023293>`_
+    R. Bhatia and M. Congedo, Linear Algebra and its Applications, Elsevier,
+    2019, 563, pp.440-445.
     """
 
     # obtain the solution of the local loss function
@@ -183,11 +185,14 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
 
     References
     ----------
-    .. [1] PLC Rodrigues et al “Riemannian Procrustes analysis: transfer
-    learning for brain-computer interfaces”. IEEE Transactions on Biomedical
+    .. [1] `Riemannian Procrustes analysis: transfer
+    learning for brain-computer interfaces
+    <https://hal.archives-ouvertes.fr/hal-01971856>`_
+    PLC Rodrigues et al, IEEE Transactions on Biomedical
     Engineering, vol. 66, no. 8, pp. 2390-2401, December, 2018
-    .. [2] N Boumal "An introduction to optimization on smooth manifolds". To
-        appear with Cambridge University Press. June, 2022
+    .. [2] `An introduction to optimization on smooth manifolds
+    <https://www.nicolasboumal.net/book/>`_
+    N. Boumal. To appear with Cambridge University Press. June, 2022
     """
 
     M_source = _check_dimensions(M_source)
