@@ -81,7 +81,7 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs):
 
 def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
                         return_centers=False, center_dataset=True,
-                        random_state=None, input_centers=None, *, n_jobs=1,
+                        random_state=None, centers=None, *, n_jobs=1,
                         sampling_method='auto'):
     """Generate SPD dataset with two classes sampled from Riemannian Gaussian.
 
@@ -100,7 +100,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         Parameter controlling the separability of the classes.
     class_disp : float, default=1.0
         Intra dispersion of the points sampled from each class.
-    input_centers : ndarray, shape (2, n_dim, n_dim), default=None
+    centers : ndarray, shape (2, n_dim, n_dim), default=None
         List with the centers of mass for each class. If None, the centers are
         sampled randomly based on class_sep.
     return_centers : bool, default=False
@@ -140,7 +140,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     rs = check_random_state(random_state)
     seeds = rs.randint(100, size=2)
 
-    if input_centers is None:
+    if centers is None:
         C0 = np.eye(n_dim)  # first class mean at Identity at first
         Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
         Pv = (Pv + Pv.T)/2   # symmetrize
@@ -149,7 +149,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         C1 = powm(P, alpha=class_sep)  # control distance to Identity
 
     else:
-        C0, C1 = input_centers
+        C0, C1 = centers
 
     # sample data points from class 0
     X0 = sample_gaussian_spd(
@@ -192,7 +192,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     X, y = X[idx], y[idx]
 
     if return_centers:
-        if input_centers is None:
+        if centers is None:
             C0 = mean_riemann(X[y == 0])
             C1 = mean_riemann(X[y == 1])
         centers = np.stack([C0, C1])
@@ -246,9 +246,8 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
     return outliers
 
 
-def make_example_transfer_learning(n_matrices, class_sep=3.0, class_disp=1.0,
-                                   domain_sep=5.0, theta=0.0,
-                                   random_state=None):
+def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
+                                 domain_sep=5.0, theta=0.0, random_state=None):
     """Generate source and target toy datasets for transfer learning examples
 
     Generate a dataset with 2x2 SPD matrices drawn from two Riemannian Gaussian

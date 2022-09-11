@@ -306,17 +306,17 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
     References
     ----------
     .. [1] `The Riemannian Potato: an automatic and adaptive artifact detection
-    method for online experiments using Riemannian geometry
-    <https://hal.archives-ouvertes.fr/hal-00781701>`_
-    A. Barachant, A Andreev, and M. Congedo. TOBI Workshop lV, Jan 2013, Sion,
-    Switzerland. pp.19-20.
+        method for online experiments using Riemannian geometry
+        <https://hal.archives-ouvertes.fr/hal-00781701>`_
+        A. Barachant, A Andreev, and M. Congedo. TOBI Workshop lV, Jan 2013,
+        Sion, Switzerland. pp.19-20.
 
     .. [2] `The Riemannian Potato Field: A Tool for Online Signal Quality Index
-    of EEG
-    <https://hal.archives-ouvertes.fr/hal-02015909>`_
-    Q. Barthélemy, L. Mayaud, D. Ojeda, and M. Congedo. IEEE Transactions
-    on Neural Systems and Rehabilitation Engineering, IEEE Institute of
-    Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
+        of EEG
+        <https://hal.archives-ouvertes.fr/hal-02015909>`_
+        Q. Barthélemy, L. Mayaud, D. Ojeda, and M. Congedo. IEEE Transactions
+        on Neural Systems and Rehabilitation Engineering, IEEE Institute of
+        Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
     """
 
     def __init__(self, metric='riemann', threshold=3, n_iter_max=100,
@@ -555,11 +555,11 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
     References
     ----------
     .. [1] `The Riemannian Potato Field: A Tool for Online Signal Quality Index
-    of EEG
-    <https://hal.archives-ouvertes.fr/hal-02015909>`_
-    Q. Barthélemy, L. Mayaud, D. Ojeda, and M. Congedo. IEEE Transactions
-    on Neural Systems and Rehabilitation Engineering, IEEE Institute of
-    Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
+        of EEG
+        <https://hal.archives-ouvertes.fr/hal-02015909>`_
+        Q. Barthélemy, L. Mayaud, D. Ojeda, and M. Congedo. IEEE Transactions
+        on Neural Systems and Rehabilitation Engineering, IEEE Institute of
+        Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
     """
 
     def __init__(self, n_potatoes=1, p_threshold=0.01, z_threshold=3,

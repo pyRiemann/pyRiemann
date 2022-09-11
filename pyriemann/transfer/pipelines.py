@@ -218,14 +218,14 @@ class TLRotate(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] `Riemannian Procrustes analysis: transfer
-    learning for brain-computer interfaces
-    <https://hal.archives-ouvertes.fr/hal-01971856>`_
-    PLC Rodrigues et al, IEEE Transactions on Biomedical
-    Engineering, vol. 66, no. 8, pp. 2390-2401, December, 2018
+    .. [1] `Riemannian Procrustes analysis: transfer learning for
+        brain-computer interfaces
+        <https://hal.archives-ouvertes.fr/hal-01971856>`_
+        PLC Rodrigues et al, IEEE Transactions on Biomedical Engineering,
+        vol. 66, no. 8, pp. 2390-2401, December, 2018
     .. [2] `An introduction to optimization on smooth manifolds
-    <https://www.nicolasboumal.net/book/>`_
-    N. Boumal. To appear with Cambridge University Press. June, 2022
+        <https://www.nicolasboumal.net/book/>`_
+        N. Boumal. To appear with Cambridge University Press. June, 2022
     """
 
     def __init__(self, target_domain, weights=None, metric='euclid'):

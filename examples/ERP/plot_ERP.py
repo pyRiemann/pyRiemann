@@ -98,7 +98,7 @@ plt.show()
 # References
 # ----------
 # .. [1] `Improved estimation of EEG evoked potentials by jitter compensation
-#    and enhancing spatial filters
-#    <https://ieeexplore.ieee.org/document/6637845>`_
-#    A. Souloumiac and B. Rivet. 2013 IEEE International Conference on
-#    Acoustics, Speech and Signal Processing.
+#   and enhancing spatial filters
+#   <https://ieeexplore.ieee.org/document/6637845>`_
+#   A. Souloumiac and B. Rivet. 2013 IEEE International Conference on
+#   Acoustics, Speech and Signal Processing.
