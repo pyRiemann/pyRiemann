@@ -120,8 +120,8 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] `A Plug & Play P300 BCI Using Information
-        Geometry<https://arxiv.org/abs/1409.0107>`_
+    .. [1] `A Plug and Play P300 BCI Using Information Geometry
+        <https://arxiv.org/abs/1409.0107>`_
         A. Barachant, M. Congedo. Research report, 2014.
 
     .. [2] `A New generation of Brain-Computer Interface Based on Riemannian

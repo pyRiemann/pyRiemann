@@ -576,7 +576,7 @@ class SVC(sklearnSVC):
         Whether to enable probability estimates. This must be enabled prior
         to calling `fit`, will slow down that method as it internally uses
         5-fold cross-validation, and `predict_proba` may be inconsistent with
-        `predict`. Read more in the :ref:`User Guide <scores_probabilities>`.
+        `predict`.
     tol : float, default=1e-3
         Tolerance for stopping criterion.
     cache_size : float, default=200
@@ -604,15 +604,14 @@ class SVC(sklearnSVC):
         The parameter is ignored for binary classification.
     break_ties : bool, default=False
         If true, ``decision_function_shape='ovr'``, and number of classes > 2,
-        :term:`predict` will break ties according to the confidence values of
-        :term:`decision_function`; otherwise the first class among the tied
-        classes is returned. Please note that breaking ties comes at a
-        relatively high computational cost compared to a simple predict.
+        `predict` will break ties according to the confidence values of
+        `decision_function`; otherwise the first class among the tied classes
+        is returned. Please note that breaking ties comes at a relatively high
+        computational cost compared to a simple predict.
     random_state : int, RandomState instance or None, default=None
         Controls the pseudo random number generation for shuffling the data for
         probability estimates. Ignored when `probability` is False.
         Pass an int for reproducible output across multiple function calls.
-        See :term:`Glossary <random_state>`.
 
     Notes
     -----
