@@ -64,9 +64,11 @@ class SVR(sklearnSVR):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo, and C. Jutten.
-        Classification of covariance matrices using a Riemannian-based kernel
-        for BCI applications". In: Neurocomputing 112 (July 2013), pp. 172-178.
+    .. [1] `Classification of covariance matrices using a Riemannian-based
+        kernel for BCI applications
+        <https://hal.archives-ouvertes.fr/hal-00820475/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
+        Elsevier, 2013, 112, pp.172-178.
     .. [2]
         https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html
     """

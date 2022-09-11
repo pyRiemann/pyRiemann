@@ -286,9 +286,15 @@ HTML(potato.to_jshtml(fps=5, default_mode='loop'))
 ###############################################################################
 # References
 # ----------
-# .. [1] Q. Barthélemy, L. Mayaud, D. Ojeda, M. Congedo, "The Riemannian potato
-#    field: a tool for online signal quality index of EEG", IEEE TNSRE, 2019.
+# .. [1] `The Riemannian Potato Field: A Tool for Online Signal Quality Index
+#    of EEG
+#    <https://hal.archives-ouvertes.fr/hal-02015909>`_
+#    Q. Barthélemy, L. Mayaud, D. Ojeda, and M. Congedo. IEEE Transactions
+#    on Neural Systems and Rehabilitation Engineering, IEEE Institute of
+#    Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
 #
-# .. [2] A. Barachant, A. Andreev, M. Congedo, "The Riemannian Potato: an
-#    automatic and adaptive artifact detection method for online experiments
-#    using Riemannian geometry", Proc. TOBI Workshop IV, 2013.
+# .. [2] `The Riemannian Potato: an automatic and adaptive artifact detection
+#    method for online experiments using Riemannian geometry
+#    <https://hal.archives-ouvertes.fr/hal-00781701>`_
+#    A. Barachant, A Andreev, and M. Congedo. TOBI Workshop lV, Jan 2013, Sion,
+#    Switzerland. pp.19-20.

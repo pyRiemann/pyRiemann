@@ -63,9 +63,11 @@ def _sch(X):
 
     References
     ----------
-    .. [1] Schafer, J., and K. Strimmer. 2005. A shrinkage approach to
-        large-scale covariance estimation and implications for functional
-        genomics. Statist. Appl. Genet. Mol. Biol. 4:32.
+    .. [1] `A shrinkage approach to large-scale covariance estimation and
+        implications for functional genomics
+        <https://pubmed.ncbi.nlm.nih.gov/16646851/>`_
+        J. Schafer, and K. Strimmer. Statistical Applications in Genetics and
+        Molecular Biology, Volume 4, Issue 1, November 2005.
     """
     n_times = X.shape[1]
     X_c = (X.T - X.T.mean(axis=0)).T
@@ -216,9 +218,12 @@ def covariances_X(X, estimator='scm', alpha=0.2):
 
     References
     ----------
-    .. [1] M. Congedo and A. Barachant, "A special form of SPD covariance
-        matrix for interpretation and visualization of data manipulated with
-        Riemannian geometry", AIP Conference Proceedings 1641, 2015
+    .. [1] `A special form of SPD covariance matrix for interpretation and
+        visualization of data manipulated with Riemannian geometry
+        <https://hal.archives-ouvertes.fr/hal-01103344/>`_
+        M. Congedo and A. Barachant, MaxEnt - 34th International Workshop on
+        Bayesian Inference and Maximun Entropy Methods in Science and
+        Engineering (MaxEnt'14), Sep 2014, Amboise, France. pp.495
     """
     if alpha <= 0:
         raise ValueError(
@@ -565,9 +570,11 @@ def get_nondiag_weight(X):
 
     References
     ----------
-    .. [1] M. Congedo, C. Gouy-Pailler, C. Jutten, "On the blind source
-        separation of human electroencephalogram by approximate joint
-        diagonalization of second order statistics", Clin Neurophysiol, 2008
+    .. [1] `On the blind source separation of human electroencephalogram by
+        approximate joint diagonalization of second order statistics
+        <https://hal.archives-ouvertes.fr/hal-00343628>`_
+        M. Congedo, C. Gouy-Pailler, C. Jutten. Clinical Neurophysiology,
+        Elsevier, 2008, 119 (12), pp.2677-2686.
     """
     if not is_square(X):
         raise ValueError('Matrices must be square')

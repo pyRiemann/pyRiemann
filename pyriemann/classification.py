@@ -77,15 +77,17 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Multiclass
-        Brain-Computer Interface Classification by Riemannian Geometry," in
-        IEEE Transactions on Biomedical Engineering, vol. 59, no. 4,
-        p. 920-928, 2012.
+    .. [1] `Multiclass Brain-Computer Interface Classification by Riemannian
+        Geometry
+        <https://hal.archives-ouvertes.fr/hal-00681328>`_
+        A. Barachant, S. Bonnet, M. Congedo, and C. Jutten. IEEE Transactions
+        on Biomedical Engineering, vol. 59, no. 4, p. 920-928, 2012.
 
-    .. [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian
-        geometry applied to BCI classification", 9th International Conference
-        Latent Variable Analysis and Signal Separation (LVA/ICA 2010),
-        LNCS vol. 6365, 2010, p. 629-636.
+    .. [2] `Riemannian geometry applied to BCI classification
+        <https://hal.archives-ouvertes.fr/hal-00602700/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. 9th International
+        Conference Latent Variable Analysis and Signal Separation
+        (LVA/ICA 2010), LNCS vol. 6365, 2010, p. 629-636.
     """
 
     def __init__(self, metric='riemann', n_jobs=1):
@@ -241,14 +243,17 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian
-        geometry applied to BCI classification", 9th International Conference
-        Latent Variable Analysis and Signal Separation (LVA/ICA 2010),
-        LNCS vol. 6365, 2010, p. 629-636.
+    .. [1] `Riemannian geometry applied to BCI classification
+        <https://hal.archives-ouvertes.fr/hal-00602700/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. 9th International
+        Conference Latent Variable Analysis and Signal Separation
+        (LVA/ICA 2010), LNCS vol. 6365, 2010, p. 629-636.
 
-    .. [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification
-        of covariance matrices using a Riemannian-based kernel for BCI
-        applications", in NeuroComputing, vol. 112, p. 172-178, 2013.
+    .. [2] `Classification of covariance matrices using a Riemannian-based
+        kernel for BCI applications
+        <https://hal.archives-ouvertes.fr/hal-00820475/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
+        Elsevier, 2013, 112, pp.172-178.
     """
 
     def __init__(self, metric='riemann', tsupdate=False, n_jobs=1):
@@ -615,9 +620,11 @@ class SVC(sklearnSVC):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo, and C. Jutten.
-        Classification of covariance matrices using a Riemannian-based kernel
-        for BCI applications". In: Neurocomputing 112 (July 2013), pp. 172-178.
+    .. [1] `Classification of covariance matrices using a Riemannian-based
+        kernel for BCI applications
+        <https://hal.archives-ouvertes.fr/hal-00820475/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
+        Elsevier, 2013, 112, pp.172-178.
     .. [2]
         https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
     """
@@ -745,8 +752,10 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     References
     ----------
-    .. [1] M Congedo, PLC Rodrigues, C Jutten. "The Riemannian Minimum Distance
-        to Means Field Classifier", BCI Conference 2019
+    .. [1] `The Riemannian Minimum Distance to Means Field Classifier
+        <https://hal.archives-ouvertes.fr/hal-02315131>`_
+        M Congedo, PLC Rodrigues, C Jutten. BCI 2019 - 8th International
+        Brain-Computer Interface Conference, Sep 2019, Graz, Austria.
     """
 
     def __init__(self, power_list=[-1, 0, 1], method_label='sum_means',

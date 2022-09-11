@@ -67,13 +67,17 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Multiclass
-        Brain-Computer Interface Classification by Riemannian Geometry,"" in
-        IEEE Trans Biomed Eng, vol. 59, no. 4, p. 920-928, 2012
+    .. [1] `Multiclass Brain-Computer Interface Classification by Riemannian
+        Geometry
+        <https://hal.archives-ouvertes.fr/hal-00681328>`_
+        A. Barachant, S. Bonnet, M. Congedo, and C. Jutten. IEEE Transactions
+        on Biomedical Engineering, vol. 59, no. 4, p. 920-928, 2012.
 
-    .. [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification
-        of covariance matrices using a Riemannian-based kernel for BCI
-        applications", in NeuroComputing, vol. 112, p. 172-178, 2013.
+    .. [2] `Classification of covariance matrices using a Riemannian-based
+        kernel for BCI applications
+        <https://hal.archives-ouvertes.fr/hal-00820475/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
+        Elsevier, 2013, 112, pp.172-178.
     """
 
     def __init__(self, metric='riemann', tsupdate=False):
@@ -254,14 +258,17 @@ class FGDA(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian
-        geometry applied to BCI classification", 9th International Conference
-        Latent Variable Analysis and Signal Separation (LVA/ICA 2010), LNCS
-        vol. 6365, 2010, p. 629-636.
+    .. [1] `Riemannian geometry applied to BCI classification
+        <https://hal.archives-ouvertes.fr/hal-00602700/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. 9th International
+        Conference Latent Variable Analysis and Signal Separation
+        (LVA/ICA 2010), LNCS vol. 6365, 2010, p. 629-636.
 
-    .. [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification
-        of covariance matrices using a Riemannian-based kernel for BCI
-        applications", in NeuroComputing, vol. 112, p. 172-178, 2013.
+    .. [2] `Classification of covariance matrices using a Riemannian-based
+        kernel for BCI applications
+        <https://hal.archives-ouvertes.fr/hal-00820475/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
+        Elsevier, 2013, 112, pp.172-178.
     """
 
     def __init__(self, metric='riemann', tsupdate=False):

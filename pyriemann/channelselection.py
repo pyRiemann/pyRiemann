@@ -50,9 +50,11 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] A. Barachant and S. Bonnet, "Channel selection procedure using
-        riemannian distance for BCI applications," in 2011 5th International
-        IEEE/EMBS Conference on Neural Engineering (NER), 2011, 348-351
+    .. [1] `Channel selection procedure using riemannian distance for BCI
+        applications
+        <https://hal.archives-ouvertes.fr/hal-00602707>`_
+        A. Barachant and S. Bonnet. The 5th International IEEE EMBS Conference
+        on Neural Engineering, Apr 2011, Cancun, Mexico.
     """
 
     def __init__(self, nelec=16, metric='riemann', n_jobs=1):

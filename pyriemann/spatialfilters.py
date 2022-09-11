@@ -53,15 +53,18 @@ class Xdawn(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] Rivet, B., Souloumiac, A., Attina, V., & Gibert, G. (2009). xDAWN
-        algorithm to enhance evoked potentials: application to brain-computer
-        interface. Biomedical Engineering, IEEE Transactions on, 56(8),
-        2035-2043.
+    .. [1] `xDAWN algorithm to enhance evoked potentials: application to
+        brain-computer interface
+        <https://hal.archives-ouvertes.fr/hal-00454568/fr/>`_
+        B. Rivet, A. Souloumiac, V. Attina, and G. Gibert. IEEE Transactions on
+        Biomedical Engineering, 2009, 56 (8), pp.2035-43.
 
-    .. [2] Rivet, B., Cecotti, H., Souloumiac, A., Maby, E., & Mattout, J.
-        (2011). Theoretical analysis of xDAWN algorithm: application to an
-        efficient sensor selection in a P300 BCI. In Signal Processing
-        Conference, 2011 19th European (pp. 1382-1386). IEEE.
+    .. [2] `Theoretical analysis of xDAWN algorithm: application to an
+        efficient sensor selection in a P300 BCI
+        <https://hal.archives-ouvertes.fr/hal-00619997>`_
+        B. Rivet, H. Cecotti, A. Souloumiac, E. Maby, J. Mattout. EUSIPCO 2011
+        19th European Signal Processing Conference, Aug 2011, Barcelone, Spain.
+        pp.1382-1386.
     """
 
     def __init__(self, nfilter=4, classes=None, estimator='scm',
@@ -272,22 +275,26 @@ class CSP(BilinearFilter):
 
     References
     ----------
-    .. [1] Zoltan J. Koles, Michael S. Lazar, Steven Z. Zhou. Spatial Patterns
-        Underlying Population Differences in the Background EEG. Brain
-        Topography 2(4), 275-284, 1990.
+    .. [1] `Spatial Patterns Underlying Population Differences in the
+        Background EEG
+        <https://link.springer.com/article/10.1007/BF01129656>`_
+        Z. Koles, M. Lazar, and S. Zhou. Brain Topography 2(4), 275-284, 1990.
 
-    .. [2] Benjamin Blankertz, Ryota Tomioka, Steven Lemm, Motoaki Kawanabe,
-        Klaus-Robert Muller. Optimizing Spatial Filters for Robust EEG
-        Single-Trial Analysis. IEEE Signal Processing Magazine 25(1), 41-56,
-        2008.
+    .. [2] `Optimizing Spatial Filters for Robust EEG Single-Trial Analysis
+        <https://ieeexplore.ieee.org/document/4408441>`_
+        B. Blankertz, R. Tomioka, S. Lemm, M. Kawanabe, K-R. Muller. IEEE
+        Signal Processing Magazine 25(1), 41-56, 2008.
 
-    .. [3] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, Common Spatial
-        Pattern revisited by Riemannian geometry, IEEE International Workshop
-        on Multimedia Signal Processing (MMSP), p. 472-476, 2010.
+    .. [3] `Common Spatial Pattern revisited by Riemannian geometry
+        <https://hal.archives-ouvertes.fr/hal-00602686>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. IEEE International
+        Workshop on Multimedia Signal Processing (MMSP), p. 472-476, 2010.
 
-    .. [4] Grosse-Wentrup, Moritz, and Martin Buss. "Multiclass common spatial
-        patterns and information theoretic feature extraction." Biomedical
-        Engineering, IEEE Transactions on 55, no. 8 (2008): 1991-2000.
+    .. [4] `Multiclass common spatial patterns and information theoretic
+        feature extraction
+        <https://ieeexplore.ieee.org/document/4473042>`_
+        IEEE Transactions on Biomedical Engineering, Volume 55, Issue 8,
+        August 2008. pp. 1991 - 2000
     """
 
     def __init__(self, nfilter=4, metric='euclid', log=True):
@@ -421,10 +428,11 @@ class SPoC(CSP):
 
     References
     ----------
-    .. [1] Dahne, S., Meinecke, F. C., Haufe, S., Hohne, J., Tangermann, M.,
-        Muller, K. R., & Nikulin, V. V. (2014). SPoC: a novel framework for
-        relating the amplitude of neuronal oscillations to behaviorally
-        relevant parameters. NeuroImage, 86, 111-122.
+    .. [1] `SPoC: a novel framework for relating the amplitude of neuronal
+        oscillations to behaviorally relevant parameters
+        <https://www.sciencedirect.com/science/article/pii/S1053811913008483>`_
+        S. Dahne, F. C. Meinecke, S. Haufe, J. Hohne, M. Tangermann, K-R.
+        Muller, and V. V. Nikulin. NeuroImage, 86, 111-122, 2014.
     """
 
     def fit(self, X, y):
@@ -565,16 +573,23 @@ class AJDC(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] M. Congedo, C. Gouy-Pailler, C. Jutten, "On the blind source
-        separation of human electroencephalogram by approximate joint
-        diagonalization of second order statistics", Clin Neurophysiol, 2008
+    .. [1] `On the blind source separation of human electroencephalogram by
+        approximate joint diagonalization of second order statistics
+        <https://hal.archives-ouvertes.fr/hal-00343628>`_
+        M. Congedo, C. Gouy-Pailler, C. Jutten. Clinical Neurophysiology,
+        Elsevier, 2008, 119 (12), pp.2677-2686.
 
-    .. [2] M. Congedo, R. John, D. De Ridder, L. Prichep, "Group indepedent
-        component analysis of resting state EEG in large normative samples",
-        Int J Psychophysiol, 2010
+    .. [2] `Group indepedent component analysis of resting state EEG in large
+        normative samples
+        <https://hal.archives-ouvertes.fr/hal-00523200>`_
+        M. Congedo, R. John, D. de Ridder, L. Prichep. International Journal of
+        Psychophysiology, Elsevier, 2010, 78, pp.89-99.
 
-    .. [3] D.-T. Pham, "Joint approximate diagonalization of positive definite
-        Hermitian matrices", SIAM J Matrix Anal Appl, 2001
+    .. [3] `Joint approximate diagonalization of positive definite
+        Hermitian matrices
+        <https://epubs.siam.org/doi/10.1137/S089547980035689X>`_
+        D.-T. Pham. SIAM Journal on Matrix Analysis and Applications, Volume 22
+        Issue 4, 2000
 
     """
 

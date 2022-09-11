@@ -203,9 +203,12 @@ HTML(visu.to_jshtml(fps=5, default_mode='loop'))
 ###############################################################################
 # References
 # ----------
-# .. [1] P.T. Fletcher, C. Lu, S.M. Pizer and S. Joshi, "Principal geodesic
-#    analysis for the study of nonlinear statistics of shape", IEEE Trans Med
-#    Imaging, 2004.
-# .. [2] E. K. Kalunga, S. Chevallier, Q. Barthélemy, K. Djouani, E. Monacelli,
-#     Y. Hamam, "Online SSVEP-based BCI using Riemannian geometry",
-#     Neurocomputing, 2016.
+# .. [1] `Principal geodesic analysis for the study of nonlinear statistics of
+#    shape
+#    <https://ieeexplore.ieee.org/document/1318725>`_
+#    P.T. Fletcher, C. Lu, S. M. Pizer, S. Joshi. IEEE Transactions on Medical
+#    Imaging (Volume: 23, Issue: 8, August 2004).
+# .. [2] `Online SSVEP-based BCI using Riemannian geometry
+#    <https://hal.archives-ouvertes.fr/hal-01351623>`_
+#    E. K. Kalunga, S. Chevallier, Q. Barthélemy, K. Djouani, E. Monacelli,
+#    Y. Hamam. Neurocomputing, Elsevier, 2016, 191, pp.55-68.

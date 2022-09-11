@@ -18,9 +18,10 @@ representation that best preserves locality instead of local linearity in LLE."
 
 References
 ----------
-.. [1] A. Goh and R. Vidal, "Clustering and dimensionality reduction
-    on Riemannian manifolds", 2008 IEEE Conference on Computer Vision
-    and Pattern Recognition, June 2008.
+.. [1] `Clustering and dimensionality reduction on Riemannian manifolds
+    <https://ieeexplore.ieee.org/document/4587422>`_
+    A. Goh and R Vidal, in 2008 IEEE Conference on Computer Vision and Pattern
+    Recognition.
 """
 # Authors:  Pedro Rodrigues <pedro.rodrigues01@gmail.com>,
 #           Gabriel Wagner vom Berg <gabriel@bccn-berlin.de>
