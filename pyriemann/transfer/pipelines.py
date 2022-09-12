@@ -40,6 +40,11 @@ class TLCenter(BaseEstimator, TransformerMixin):
     corresponds to a whitening step if the SPD matrices represent the spatial
     covariance matrices of multivariate signals.
 
+    Important: note that using .fit() and then .transform() will give different
+    results than .fit_transform(). In fact, .fit_transform() should be applied
+    on the training dataset (target and source) and .transform() on the test
+    partition of the target dataset.
+
     Parameters
     ----------
     target_domain : str
@@ -91,6 +96,11 @@ class TLStretch(BaseEstimator, TransformerMixin):
 
     Change the dispersion of the datapoints around their geometric mean
     for each dataset so that they all have the same desired value.
+
+    Important: note that using .fit() and then .transform() will give different
+    results than .fit_transform(). In fact, .fit_transform() should be applied
+    on the training dataset (target and source) and .transform() on the test
+    partition of the target dataset.
 
     Parameters
     ----------
@@ -197,8 +207,13 @@ class TLRotate(BaseEstimator, TransformerMixin):
     first proposed in [1]_ and the optimization procedure for mininimizing it
     follows the presentation from [2]_.
 
-    Important: the data points from each domain must have been re-centered
+    Important 1: the data points from each domain must have been re-centered
     to the identity before calculating the rotation.
+
+    Important 2: note that using .fit() and then .transform() will give
+    different results than .fit_transform(). In fact, .fit_transform() should
+    be applied on the training dataset (target and source) and .transform() on
+    the test partition of the target dataset.
 
     Parameters
     ----------
