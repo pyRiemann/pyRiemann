@@ -193,11 +193,11 @@ print("MDM accuracy: {:.2f}% +/- {:.2f}".format(np.mean(scores)*100,
 # References
 # ----------
 # .. [1] `A New generation of Brain-Computer Interface Based on Riemannian
-#   Geometry
-#   <https://hal.archives-ouvertes.fr/hal-00879050>`_
-#   M. Congedo, A. Barachant, A. Andreev. Research report, 2013.
+#    Geometry
+#    <https://hal.archives-ouvertes.fr/hal-00879050>`_
+#    M. Congedo, A. Barachant, A. Andreev. Research report, 2013.
 # .. [2] `Review of Riemannian distances and divergences, applied to
-#   SSVEP-based BCI
-#   <https://hal.archives-ouvertes.fr/LISV/hal-03015762v1>`
-#   S. Chevallier, E. K. Kalunga, Q. Barthélemy, E. Monacelli.
-#   Neuroinformatics, Springer, 2021, 19 (1), pp.93-106
+#    SSVEP-based BCI
+#    <https://hal.archives-ouvertes.fr/LISV/hal-03015762v1>`
+#    S. Chevallier, E. K. Kalunga, Q. Barthélemy, E. Monacelli.
+#    Neuroinformatics, Springer, 2021, 19 (1), pp.93-106

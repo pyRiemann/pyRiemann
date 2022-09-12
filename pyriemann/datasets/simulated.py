@@ -181,8 +181,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         # re-center the dataset to the Identity
         M = mean_riemann(X)
         M_invsqrt = invsqrtm(M)
-        for i in range(n_matrices):
-            X[i] = M_invsqrt @ X[i] @ M_invsqrt
+        X = M_invsqrt @ X @ M_invsqrt
 
     # concatenate the labels for each class
     y = np.concatenate([y0, y1]).astype(int)

@@ -211,7 +211,7 @@ plt.tight_layout()
 # References
 # ----------
 # .. [1] `Riemannian classification for SSVEP based BCI: offline versus online
-#   implementations
-#   <https://hal.archives-ouvertes.fr/hal-01739877>`_
-#   S. Chevallier, E. Kalunga, Q. Barthélemy, F. Yger. Brain–Computer
-#   Interfaces Handbook: Technological and Theoretical Advances, 2018.
+#    implementations
+#    <https://hal.archives-ouvertes.fr/hal-01739877>`_
+#    S. Chevallier, E. Kalunga, Q. Barthélemy, F. Yger. Brain–Computer
+#    Interfaces Handbook: Technological and Theoretical Advances, 2018.

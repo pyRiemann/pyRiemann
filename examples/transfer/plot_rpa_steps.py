@@ -7,11 +7,6 @@ Use the SpectralEmbedding module to plot in 2D the transformations on the data
 points from source and target domains when applying the Riemannian Procrustes
 Analysis [1]_ to match their statistics.
 
-.. [1] `Riemannian Procrustes analysis: transfer learning for brain-computer
-interfaces
-<https://hal.archives-ouvertes.fr/hal-01971856>`_
-PLC Rodrigues et al, IEEE Transactions on Biomedical Engineering, vol. 66,
-no. 8, pp. 2390-2401, December, 2018
 """
 import numpy as np
 import matplotlib.pyplot as plt
@@ -109,3 +104,11 @@ ax[2].scatter([], [], marker="^", c="C0", label="target - class 0")
 ax[2].scatter([], [], marker="^", c="C1", label="target - class 1")
 ax[2].legend(loc="lower right")
 fig.show()
+
+# References
+# ----------
+# .. [1] `Riemannian Procrustes analysis: transfer learning for
+#    brain-computer interfaces
+#    <https://hal.archives-ouvertes.fr/hal-01971856>`_
+#    PLC Rodrigues et al, IEEE Transactions on Biomedical Engineering, vol. 66,
+#    no. 8, pp. 2390-2401, December, 2018
