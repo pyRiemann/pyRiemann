@@ -310,7 +310,6 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         <https://hal.archives-ouvertes.fr/hal-00781701>`_
         A. Barachant, A Andreev, and M. Congedo. TOBI Workshop lV, Jan 2013,
         Sion, Switzerland. pp.19-20.
-
     .. [2] `The Riemannian Potato Field: A Tool for Online Signal Quality Index
         of EEG
         <https://hal.archives-ouvertes.fr/hal-02015909>`_

@@ -82,7 +82,6 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         <https://hal.archives-ouvertes.fr/hal-00681328>`_
         A. Barachant, S. Bonnet, M. Congedo, and C. Jutten. IEEE Transactions
         on Biomedical Engineering, vol. 59, no. 4, p. 920-928, 2012.
-
     .. [2] `Riemannian geometry applied to BCI classification
         <https://hal.archives-ouvertes.fr/hal-00602700/>`_
         A. Barachant, S. Bonnet, M. Congedo and C. Jutten. 9th International
@@ -248,7 +247,6 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         A. Barachant, S. Bonnet, M. Congedo and C. Jutten. 9th International
         Conference Latent Variable Analysis and Signal Separation
         (LVA/ICA 2010), LNCS vol. 6365, 2010, p. 629-636.
-
     .. [2] `Classification of covariance matrices using a Riemannian-based
         kernel for BCI applications
         <https://hal.archives-ouvertes.fr/hal-00820475/>`_
