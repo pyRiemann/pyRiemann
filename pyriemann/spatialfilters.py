@@ -58,7 +58,6 @@ class Xdawn(BaseEstimator, TransformerMixin):
         <https://hal.archives-ouvertes.fr/hal-00454568/fr/>`_
         B. Rivet, A. Souloumiac, V. Attina, and G. Gibert. IEEE Transactions on
         Biomedical Engineering, 2009, 56 (8), pp.2035-43.
-
     .. [2] `Theoretical analysis of xDAWN algorithm: application to an
         efficient sensor selection in a P300 BCI
         <https://hal.archives-ouvertes.fr/hal-00619997>`_
@@ -279,17 +278,14 @@ class CSP(BilinearFilter):
         Background EEG
         <https://link.springer.com/article/10.1007/BF01129656>`_
         Z. Koles, M. Lazar, and S. Zhou. Brain Topography 2(4), 275-284, 1990.
-
     .. [2] `Optimizing Spatial Filters for Robust EEG Single-Trial Analysis
         <https://ieeexplore.ieee.org/document/4408441>`_
         B. Blankertz, R. Tomioka, S. Lemm, M. Kawanabe, K-R. Muller. IEEE
         Signal Processing Magazine 25(1), 41-56, 2008.
-
     .. [3] `Common Spatial Pattern revisited by Riemannian geometry
         <https://hal.archives-ouvertes.fr/hal-00602686>`_
         A. Barachant, S. Bonnet, M. Congedo and C. Jutten. IEEE International
         Workshop on Multimedia Signal Processing (MMSP), p. 472-476, 2010.
-
     .. [4] `Multiclass common spatial patterns and information theoretic
         feature extraction
         <https://ieeexplore.ieee.org/document/4473042>`_
@@ -578,13 +574,11 @@ class AJDC(BaseEstimator, TransformerMixin):
         <https://hal.archives-ouvertes.fr/hal-00343628>`_
         M. Congedo, C. Gouy-Pailler, C. Jutten. Clinical Neurophysiology,
         Elsevier, 2008, 119 (12), pp.2677-2686.
-
     .. [2] `Group indepedent component analysis of resting state EEG in large
         normative samples
         <https://hal.archives-ouvertes.fr/hal-00523200>`_
         M. Congedo, R. John, D. de Ridder, L. Prichep. International Journal of
         Psychophysiology, Elsevier, 2010, 78, pp.89-99.
-
     .. [3] `Joint approximate diagonalization of positive definite
         Hermitian matrices
         <https://epubs.siam.org/doi/10.1137/S089547980035689X>`_

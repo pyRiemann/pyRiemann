@@ -549,14 +549,12 @@ class Coherences(CospCovariances):
         frequency decomposition
         <https://arxiv.org/ftp/arxiv/papers/0711/0711.1455.pdf>`_
         R. Pascual-Marqui. Technical report, 2007.
-
     .. [2] `Identifying true brain interaction from EEG data using the
         imaginary part of coherency
         <https://doi.org/10.1016/j.clinph.2004.04.029>`_
         G. Nolte, O. Bai, L. Wheaton, Z. Mari, S. Vorbach, M. Hallett.
         Clinical Neurophysioly, Volume 115, Issue 10, October 2004,
         Pages 2292-2307
-
     .. [3] `Non-Parametric Synchronization Measures used in EEG
         and MEG
         <https://hal.archives-ouvertes.fr/hal-01868538v2>`_
