@@ -225,6 +225,10 @@ class TLRotate(BaseEstimator, TransformerMixin):
     metric : {'euclid', 'riemann'}, default='euclid'
         Metric for the distance to minimize between class means. Options are
         either the Euclidean ('euclid') or Riemannian ('riemann') distance.
+    n_jobs : int, default=1
+        The number of jobs to use for the computation. This works by computing
+        the rotation matrix for each source domain in parallel. If -1 all CPUs
+        are used.
 
     Attributes
     ----------
@@ -243,11 +247,12 @@ class TLRotate(BaseEstimator, TransformerMixin):
         N. Boumal. To appear with Cambridge University Press. June, 2022
     """
 
-    def __init__(self, target_domain, weights=None, metric='euclid'):
+    def __init__(self, target_domain, weights=None, metric='euclid', n_jobs=1):
         """Init"""
         self.target_domain = target_domain
         self.weights = weights
         self.metric = metric
+        self.n_jobs = n_jobs
 
     def fit(self, X, y_enc):
 
@@ -258,18 +263,20 @@ class TLRotate(BaseEstimator, TransformerMixin):
         M_target = [mean_riemann(X_target[y_target == label])
                     for label in np.unique(y_target)]
 
+        source_names = np.unique(domains)
+        source_names = source_names[source_names != self.target_domain]
+        rotations = Parallel(n_jobs=self.n_jobs)(
+            delayed(get_rotation_matrix)(
+                [mean_riemann(
+                    X[domains == d][y_enc[domains == d] == label])
+                    for label in np.unique(y_enc[domains == d])],
+                M_target,
+                self.weights,
+                metric=self.metric)
+            for d in source_names)
         self.rotations_ = {}
-        for d in np.unique(domains):
-            if d != self.target_domain:
-                idx = domains == d
-                X_source, y_source = X[idx], y_enc[idx]
-                M_source = [mean_riemann(X_source[y_source == label])
-                            for label in np.unique(y_source)]
-                self.rotations_[d] = get_rotation_matrix(
-                    M_source,
-                    M_target,
-                    self.weights,
-                    metric=self.metric)
+        for di, roti in zip(source_names, rotations):
+            self.rotations_[di] = roti
 
         return self
 
@@ -301,14 +308,20 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
     ----------
     target_domain : str
         Domain to consider as target.
-    clf : BaseClassifier, default=MDM()
-        The classifier to apply on the data points.
+    clf : BaseClassifier, default=None
+        The classifier to apply on the data points. If None, then use the MDM
+        classifier with metric='riemann'.
+    domain_weight : dict, default=None
+        How to combine the samples from each domain to train the classifier.
+        The dict contains key=domain_name and value=weight_to_assign. If 'None'
+        then assign the same weight for all source domains.
     """
 
-    def __init__(self, target_domain, clf=MDM()):
+    def __init__(self, target_domain, clf=None, domain_weight=None):
         """Init."""
         self.target_domain = target_domain
         self.clf = clf
+        self.domain_weight = domain_weight
 
     def fit(self, X, y_enc):
         """Fit TLClassifier.
@@ -325,13 +338,21 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
         self : TLClassifier instance
             The TLClassifier instance.
         """
-        X_dec, y_dec, _ = decode_domains(X, y_enc)
 
-        select = np.where(y_dec != -1)[0]
-        X_train = X_dec[select]
-        y_train = y_dec[select]
+        X_dec, y_dec, domains = decode_domains(X, y_enc)
 
-        self.clf.fit(X_train, y_train)
+        n_samples = len(X_dec)
+
+        w = np.ones(n_samples)
+        if self.domain_weight is not None:
+            for d in np.unique(domains):
+                w[domains == d] = self.domain_weight[d]
+
+        if self.clf is None:
+            self.clf = MDM(metric='riemann')
+
+        self.clf.fit(X_dec, y_dec, sample_weight=w)
+
         return self
 
     def predict(self, X):
