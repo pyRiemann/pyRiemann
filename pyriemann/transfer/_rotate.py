@@ -193,6 +193,10 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
     .. [2] `An introduction to optimization on smooth manifolds
         <https://www.nicolasboumal.net/book/>`_
         N. Boumal. To appear with Cambridge University Press. June, 2022
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
 
     M_source = _check_dimensions(M_source)

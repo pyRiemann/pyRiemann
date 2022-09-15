@@ -27,6 +27,10 @@ def encode_domains(X, y, domain):
         The same set of SPD matrices given as input.
     y_enc : ndarray, shape (n_matrices,)
         Extended labels for each data point.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
     y_enc = [str(y[n]) + '/' + domain[n] for n in range(len(y))]
     return X, np.array(y_enc)
@@ -55,6 +59,10 @@ def decode_domains(X_enc, y_enc):
         Labels for each matrix.
     domain : ndarray, shape (n_matrices,)
         Which domain each data point belongs to.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
     y, domain = [], []
     for n in range(len(y_enc)):
@@ -90,6 +98,10 @@ class TLSplitter():
         Controls the pseudo random number generation for shuffling and
         splitting the data. Pass an int for reproducible output across multiple
         function calls.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
     def __init__(self,
                  target_domain,

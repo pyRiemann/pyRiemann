@@ -277,6 +277,10 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
         Set of SPD matrices.
     y_enc : ndarray, shape (4*n_matrices,)
         Extended labels for each data point.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
 
     rs = check_random_state(random_state)

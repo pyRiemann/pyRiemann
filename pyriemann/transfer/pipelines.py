@@ -17,6 +17,10 @@ class TLDummy(BaseEstimator, TransformerMixin):
 
     No transformation of the data points between the domains.
     This is what we call the Direct Center Transfer (DCT) method.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
 
     def __init__(self):
@@ -58,6 +62,10 @@ class TLCenter(BaseEstimator, TransformerMixin):
     ----------
     recenter_ : dict
         Dictionary with key=domain_name and value=domain_mean
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
 
     def __init__(self, target_domain, metric='riemann'):
@@ -119,6 +127,10 @@ class TLStretch(BaseEstimator, TransformerMixin):
     ----------
     dispersions_ : dict
         Dictionary with key=domain_name and value=domain_dispersion
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
 
     def __init__(self, target_domain, final_dispersion=1.0,
@@ -245,6 +257,10 @@ class TLRotate(BaseEstimator, TransformerMixin):
     .. [2] `An introduction to optimization on smooth manifolds
         <https://www.nicolasboumal.net/book/>`_
         N. Boumal. To appear with Cambridge University Press. June, 2022
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
 
     def __init__(self, target_domain, weights=None, metric='euclid', n_jobs=1):
@@ -315,6 +331,10 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
         How to combine the samples from each domain to train the classifier.
         The dict contains key=domain_name and value=weight_to_assign. If 'None'
         then assign the same weight for all source domains.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
 
     def __init__(self, target_domain, clf=None, domain_weight=None):
@@ -464,6 +484,10 @@ class TLMDM(MDM):
         S. Khazem, S. Chevallier, Q. Barthelemy, K. Haroun and C. Nous, 10th
         International IEEE/EMBS Conference on Neural Engineering (NER), pp.
         523-526. IEEE, 2021.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
     """
 
     def __init__(
