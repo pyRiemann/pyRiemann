@@ -13,13 +13,14 @@ import matplotlib.pyplot as plt
 
 from pyriemann.embedding import SpectralEmbedding
 from pyriemann.datasets.simulated import make_classification_transfer
-
 from pyriemann.transfer import (
     decode_domains,
     TLCenter,
     TLRotate,
 )
 
+
+###############################################################################
 
 # fix seed for reproducible results
 seed = 66
@@ -105,6 +106,8 @@ ax[2].scatter([], [], marker="^", c="C1", label="target - class 1")
 ax[2].legend(loc="lower right")
 fig.show()
 
+
+###############################################################################
 # References
 # ----------
 # .. [1] `Riemannian Procrustes analysis: transfer learning for

@@ -1,18 +1,22 @@
+"""
+====================================================================
+Motor imagery classification by transfer learning
+====================================================================
 
-# general imports
+Classify motor imagery data with transfer learning.
+"""
+
 import numpy as np
 from tqdm import tqdm
 from sklearn.pipeline import make_pipeline
 import matplotlib.pyplot as plt
 
-# mne import
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
 from mne import set_log_level
 
-# pyriemann import
 from pyriemann.classification import MDM
 from pyriemann.estimation import Covariances
 from pyriemann.transfer import (
@@ -23,9 +27,10 @@ from pyriemann.transfer import (
     TLSplitter
 )
 
-
 set_log_level(verbose=False)
 
+
+###############################################################################
 
 def get_subject_dataset(subject):
 
@@ -73,6 +78,8 @@ def get_subject_dataset(subject):
 
     return covs, labels
 
+
+###############################################################################
 
 # We will consider subjects from the Physionet EEG database for which the
 # intra-subject classification has been checked to be > 0.70
@@ -143,9 +150,7 @@ for subject_target_idx in tqdm(range(len(subject_list))):
             pipeline.score(X_enc_test, y_enc_test))
 
         # (2) RCT pipeline: recenter the data from each domain to identity
-        # see Zanini et al. "Transfer Learning: A Riemannian Geometry Framework
-        # With Applications to Brain–Computer Interfaces". IEEE Transactions on
-        # Biomedical Engineering, vol. 65, no. 5, pp. 1107-1116, August, 2017
+        # see [1]_
         # - The classifier is trained only with points from the source domain
         domain_weight_rct = {}
         for d in np.unique(domains):
@@ -178,3 +183,13 @@ ax.set_ylabel('Classification accuracy')
 ax.set_xlabel('Method')
 ax.set_title('Transfer learning with data pooled from 10 subjects')
 fig.show()
+
+
+###############################################################################
+# References
+# ----------
+# .. [1] `Transfer Learning: A Riemannian Geometry Framework With Applications
+#    to Brain–Computer Interfaces
+#    <https://hal.archives-ouvertes.fr/hal-01923278/>`_.
+#    P Zanini et al, IEEE Transactions on Biomedical Engineering, vol. 65,
+#     no. 5, pp. 1107-1116, August, 2017

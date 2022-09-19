@@ -63,6 +63,14 @@ class TLCenter(BaseEstimator, TransformerMixin):
     recenter_ : dict
         Dictionary with key=domain_name and value=domain_mean
 
+    References
+    ----------
+    .. [1] `Transfer Learning: A Riemannian Geometry Framework With
+        Applications to Brain–Computer Interfaces
+        <https://hal.archives-ouvertes.fr/hal-01923278/>`_.
+        P Zanini et al, IEEE Transactions on Biomedical Engineering, vol. 65,
+        no. 5, pp. 1107-1116, August, 2017
+
     Notes
     -----
     .. versionadded:: 0.3.1
@@ -74,6 +82,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
         self.metric = metric
 
     def fit(self, X, y_enc):
+        """TODO"""
         _, _, domains = decode_domains(X, y_enc)
         self.recenter_ = {}
         for d in np.unique(domains):
@@ -82,13 +91,16 @@ class TLCenter(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X, y_enc=None):
+        """TODO"""
         # Used during inference, apply recenter from specified target domain.
         return self.recenter_[self.target_domain].transform(X)
 
     def inverse_transform(self, X, y_enc=None):
+        """TODO"""
         return self.recenter_[self.target_domain].inverse_transform(X)
 
     def fit_transform(self, X, y_enc):
+        """TODO"""
         # used during fit, in pipeline
         self.fit(X, y_enc)
         _, _, domains = decode_domains(X, y_enc)
@@ -126,7 +138,15 @@ class TLStretch(BaseEstimator, TransformerMixin):
     Attributes
     ----------
     dispersions_ : dict
-        Dictionary with key=domain_name and value=domain_dispersion
+        Dictionary with key=domain_name and value=domain_dispersion.
+
+    References
+    ----------
+    .. [1] `Riemannian Procrustes analysis: transfer learning for
+        brain-computer interfaces
+        <https://hal.archives-ouvertes.fr/hal-01971856>`_
+        PLC Rodrigues et al, IEEE Transactions on Biomedical Engineering,
+        vol. 66, no. 8, pp. 2390-2401, December, 2018
 
     Notes
     -----
@@ -142,6 +162,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
         self.metric = metric
 
     def fit(self, X, y_enc):
+        """TODO"""
         _, _, domains = decode_domains(X, y_enc)
         n_dim = X[0].shape[1]
         self._means = {}
@@ -151,9 +172,9 @@ class TLStretch(BaseEstimator, TransformerMixin):
                 self._means[d] = np.eye(n_dim)
             else:
                 self._means[d] = mean_riemann(X[domains == d])
-            disp_domain = np.sum([distance(
-                Xi, self._means[d], metric=self.metric)**2
-                                 for Xi in X[domains == d]])
+            disp_domain = np.sum(distance(
+                X[domains == d], self._means[d], metric=self.metric
+            )**2)
             self.dispersions_[d] = disp_domain
 
         return self
@@ -171,6 +192,8 @@ class TLStretch(BaseEstimator, TransformerMixin):
 
     def transform(self, X, y_enc=None):
         """Used during inference, apply recenter from specified target domain.
+
+        TO COMPLETE
         """
         if not self.centered_data:
             # center matrices to Identity
@@ -188,6 +211,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
         return X_str
 
     def fit_transform(self, X, y_enc):
+        """TODO"""
         # used during fit, in pipeline
         self.fit(X, y_enc)
         _, _, domains = decode_domains(X, y_enc)
@@ -245,7 +269,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
     Attributes
     ----------
     rotations_ : dict
-        Dictionary with key=domain_name and value=domain_rotation_matrix
+        Dictionary with key=domain_name and value=domain_rotation_matrix.
 
     References
     ----------
@@ -271,6 +295,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
         self.n_jobs = n_jobs
 
     def fit(self, X, y_enc):
+        """TODO"""
 
         _, _, domains = decode_domains(X, y_enc)
 
@@ -297,10 +322,12 @@ class TLRotate(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X, y_enc=None):
+        """TODO"""
         # used during inference on target domain
         return X
 
     def fit_transform(self, X, y_enc):
+        """TODO"""
         # used during fit in pipeline, rotate each source domain
         self.fit(X, y_enc)
         _, _, domains = decode_domains(X, y_enc)
@@ -317,17 +344,17 @@ class TLRotate(BaseEstimator, TransformerMixin):
 class TLClassifier(BaseEstimator, ClassifierMixin):
     """Classification with extended labels.
 
-    This is a wrapper that converts extended labels into class labels to
-    train a classifier of choice.
+    This is a wrapper that converts extended labels into class labels to train
+    a classifier of choice.
 
     Parameters
     ----------
     target_domain : str
         Domain to consider as target.
-    clf : BaseClassifier, default=None
+    clf : None | BaseClassifier, default=None
         The classifier to apply on the data points. If None, then use the MDM
         classifier with metric='riemann'.
-    domain_weight : dict, default=None
+    domain_weight : None | dict, default=None
         How to combine the samples from each domain to train the classifier.
         The dict contains key=domain_name and value=weight_to_assign. If 'None'
         then assign the same weight for all source domains.
@@ -430,8 +457,8 @@ class TLMDM(MDM):
 
     Classification by nearest centroid. For each of the given classes, a
     centroid is estimated, according to the chosen metric, as a weighted mean
-    of SPD matrices from the source domain, combined with
-    the class centroid of the target domain [1]_ [2]_.
+    of SPD matrices from the source domain, combined with the class centroid of
+    the target domain [1]_ [2]_.
     For classification, a given new matrix is attibuted to the class whose
     centroid is the nearest according to the chosen metric.
 
@@ -443,7 +470,7 @@ class TLMDM(MDM):
         acquired from the source are used. At 1, this is a calibration-free
         system as no data are required from the source.
     target_domain : string
-        Name of the target domain in extended labels
+        Name of the target domain in extended labels.
     metric : string | dict, default='riemann'
         The type of metric used for centroid and distance estimation.
         see `mean_covariance` for the list of supported metric.
@@ -462,10 +489,11 @@ class TLMDM(MDM):
 
     Attributes
     ----------
-    covmeans_ : list
-        Class centroids, estimated after fit.
-    classes_ : list
-        List of classes, obtained after fit
+    classes_ : ndarray, shape (n_classes,)
+        Labels for each class.
+    covmeans_ : list of ``n_classes`` ndarrays of shape (n_channels, \
+            n_channels)
+        Centroids for each class.
 
     See Also
     --------
@@ -504,16 +532,18 @@ class TLMDM(MDM):
 
     def fit(self, X, y_enc, sample_weight=None):
         """Fit (estimates) the centroids.
+
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices from source and target domain
+            Set of SPD matrices from source and target domain.
         y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix
+            Extended labels for each matrix.
         sample_weight : None | ndarray, shape (n_matrices_source,), \
-            default=None
+                default=None
             Weights for each matrix from the source domains.
             If None, it uses equal weights.
+
         Returns
         -------
         self : TLMDM instance
@@ -543,17 +573,8 @@ class TLMDM(MDM):
                                 (sample_weight.shape != (X_src.shape[0],)):
                 raise ValueError("Parameter sample_weight should either be \
                     None or an ndarray shape (n_matrices, 1)")
-
-        # if X.shape[0] != y.shape[0]:
-        #     raise ValueError("X and y must be for the same number of \
-        #         matrices i.e. n_matrices")
-
-        if sample_weight is None:
+        else:
             sample_weight = np.ones(X_src.shape[0])
-
-        # if not (X_source.shape[0] == y_source.shape[0]):
-        #     raise ValueError("X and y must be for the same number of \
-        #         matrices i.e. n_matrices")
 
         self.classes_ = np.unique(y_src)
 
@@ -573,7 +594,7 @@ class TLMDM(MDM):
             self.target_means_,
             self.source_means_,
             self.transfer_coef,
-            self.metric
+            self.metric_mean
         )
         return self
 

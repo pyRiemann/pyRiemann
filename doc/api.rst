@@ -130,6 +130,27 @@ Channel selection
     ElectrodeSelection
     FlatChannelRemover
 
+Transfer Learning
+-----------------
+.. _transfer_api:
+.. currentmodule:: pyriemann.transfer
+
+.. autosummary::
+    :toctree: generated/
+
+    encode_domains
+    decode_domains
+
+    :template: class.rst
+
+    TLSplitter
+    TLClassifier
+    TLDummy
+    TLCenter
+    TLStretch
+    TLRotate
+    TLMDM
+
 Stats
 ------------------
 .. _stats_api:

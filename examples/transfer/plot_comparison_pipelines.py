@@ -7,15 +7,16 @@ Compare the classificaton performance of four pipelines for transfer learning.
 The data points are all simulated from a toy model based on the Riemannian
 Gaussian distribution.
 """
+
+import warnings
+from tqdm import tqdm
+
 import numpy as np
 import matplotlib.pyplot as plt
+from sklearn.pipeline import make_pipeline
 
 from pyriemann.classification import MDM
 from pyriemann.datasets.simulated import make_classification_transfer
-
-from sklearn.pipeline import make_pipeline
-from tqdm import tqdm
-
 from pyriemann.transfer import (
     TLSplitter,
     TLDummy,
@@ -26,8 +27,10 @@ from pyriemann.transfer import (
     # TLMDM
 )
 
-import warnings
 warnings.filterwarnings("ignore")
+
+
+###############################################################################
 
 # Choose seed for reproducible results
 seed = 100
@@ -94,10 +97,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         scores_cv['dummy'].append(
             pipeline.score(X_enc_test, y_enc_test))
 
-        # (2) RCT pipeline: recenter the data from each domain to identity
-        # see Zanini et al. "Transfer Learning: A Riemannian Geometry Framework
-        # With Applications to Brain–Computer Interfaces". IEEE Transactions on
-        # Biomedical Engineering, vol. 65, no. 5, pp. 1107-1116, August, 2017
+        # (2) RCT pipeline: recenter the data from each domain to identity [1]_
         # - The classifier is trained only with points from the source domain
 
         # Instantiate
@@ -114,10 +114,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         # Get the accuracy score
         scores_cv['rct'].append(pipeline.score(X_enc_test, y_enc_test))
 
-        # (3) RPA pipeline: recenter, stretch, and rotate
-        # see PLC Rodrigues et al “Riemannian Procrustes analysis: transfer
-        # learning for brain-computer interfaces”. IEEE Transactions on
-        # Biomedical Engineering, vol. 66, no. 8, pp. 2390-2401, December, 2018
+        # (3) RPA pipeline: recenter, stretch, and rotate [2]_
         # - The classifier is trained with points from source and target
 
         # Instantiate
@@ -190,3 +187,18 @@ ax.set_xlabel('percentage of training partition in target domain')
 ax.set_ylabel('classification accuracy')
 ax.set_title('comparison of transfer learning pipelines')
 fig.show()
+
+
+###############################################################################
+# References
+# ----------
+# .. [1] `Transfer Learning: A Riemannian Geometry Framework With Applications
+#    to Brain–Computer Interfaces
+#    <https://hal.archives-ouvertes.fr/hal-01923278/>`_.
+#    P Zanini et al, IEEE Transactions on Biomedical Engineering, vol. 65,
+#     no. 5, pp. 1107-1116, August, 2017
+# .. [2] `Riemannian Procrustes analysis: transfer learning for
+#    brain-computer interfaces
+#    <https://hal.archives-ouvertes.fr/hal-01971856>`_
+#    PLC Rodrigues et al, IEEE Transactions on Biomedical Engineering, vol. 66,
+#    no. 8, pp. 2390-2401, December, 2018

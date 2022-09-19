@@ -41,7 +41,7 @@ def test_TLStretch(rndstate):
     for d in np.unique(domain):
         Xd = X_str[domain == d]
         Md = mean_riemann(Xd)
-        disp = np.sum([distance_riemann(Xi, Md)**2 for Xi in Xd])
+        disp = np.sum(distance_riemann(Xd, Md)**2)
         assert np.isclose(disp, 1.0)
 
 

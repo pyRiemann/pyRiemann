@@ -5,7 +5,7 @@ from ..utils.distance import distance
 
 def _project(X, U):
     """
-    Project U on the tangent space of orthogonal matrices with base point X
+    Project U on the tangent space of orthogonal matrices with base point X.
     """
 
     return X @ ((X.T @ U) - (X.T @ U).T) / 2
@@ -14,7 +14,7 @@ def _project(X, U):
 def _retract(X, v):
     """
     Retraction taking tangent vector v at base point X back to manifold of
-    orthogonal matrices
+    orthogonal matrices.
     """
 
     Q, R = np.linalg.qr(X + v)
@@ -57,7 +57,7 @@ def _grad(Q, X, Y, weights, metric='euclid'):
 
 
 def _warm_start(X, Y, weights, metric='euclid'):
-    """Smart initialization of the minimization procedure
+    """Smart initialization of the minimization procedure.
 
     The loss function being optimized is a weighted sum of loss functions with
     the same structure and for which we know the exact analytic solution [1]_.
@@ -146,10 +146,10 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
                         tol_step=1e-9, maxiter=10_000, maxiter_linesearch=32):
     r"""Calculate rotation matrix for the Riemannian Procustes Analysis.
 
-    Get the rotation matrix that minimizes the loss function
+    Get the rotation matrix Q that minimizes the loss function:
 
     .. math::
-        L(Q) = \sum_i w_i delta^2(M_target_i, Q M_source_i Q^T)
+        L(Q) = \sum_i w_i delta^2(M_{target_i}, Q M_{source_i} Q^T)
 
     The solution can then be used to transform the data points from the source
     domain so that their class means are close to the those from the target

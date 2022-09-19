@@ -247,7 +247,7 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
 
 def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
                                  domain_sep=5.0, theta=0.0, random_state=None):
-    """Generate source and target toy datasets for transfer learning examples
+    """Generate source and target toy datasets for transfer learning examples.
 
     Generate a dataset with 2x2 SPD matrices drawn from two Riemannian Gaussian
     distributions. The distributions have the same class dispersions and the
@@ -268,7 +268,7 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
         Distance between the global means of each source and target datasets.
     theta : float, default=0.0
         Angle of the 2x2 rotation matrix from source to target dataset.
-    random_state : int, RandomState instance or None, default=None
+    random_state : None | int | RandomState instance, default=None
         Pass an int for reproducible output across multiple function calls.
 
     Returns

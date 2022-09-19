@@ -3,7 +3,7 @@
 Motor imagery classification
 ====================================================================
 
-Classify Motor imagery data with Riemannian Geometry.
+Classify motor imagery data with Riemannian geometry.
 """
 # generic import
 import numpy as np

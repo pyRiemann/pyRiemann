@@ -1,5 +1,4 @@
 from .methods import encode_domains, decode_domains, TLSplitter
-
 from .pipelines import (
     TLDummy,
     TLCenter,
