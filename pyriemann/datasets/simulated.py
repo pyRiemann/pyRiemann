@@ -255,15 +255,16 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
 
 
 def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
-                                 domain_sep=5.0, theta=0.0, random_state=None):
+                                 domain_sep=5.0, theta=0.0, stretch=1.0,
+                                 random_state=None):
     """Generate source and target toy datasets for transfer learning examples.
 
     Generate a dataset with 2x2 SPD matrices drawn from two Riemannian Gaussian
     distributions. The distributions have the same class dispersions and the
-    distance between their centers of mass is an input parameter. We can also
-    control a rotation matrix that maps the source to the target domains.
-    This function is useful for testing classification or clustering methods on
-    transfer learning applications.
+    distance between their centers of mass is an input parameter. We can
+    stretch the target dataset and control a rotation matrix that maps the
+    source to the target domains. This function is useful for testing
+    classification or clustering methods on transfer learning applications.
 
     Parameters
     ----------
@@ -277,6 +278,10 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
         Distance between the global means of each source and target datasets.
     theta : float, default=0.0
         Angle of the 2x2 rotation matrix from source to target dataset.
+    stretch : float, default=1.0
+        Factor to stretch the data points in target dataset. Note that when it
+        is != 1.0 the class dispersions in target domain will be different than
+        those in source domain (fixed at class_disp).
     random_state : None | int | RandomState instance, default=None
         Pass an int for reproducible output across multiple function calls.
 
@@ -341,6 +346,10 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
     # center the dataset to Identity
     X_target = M_target_invsqrt @ X_target @ M_target_invsqrt
     y_target = np.copy(y_source)
+
+    # stretch the data points in target domain if needed
+    if stretch != 0.0:
+        X_target = powm(X_target, alpha=stretch)
 
     # move the points in X_target with a random matrix A = P * Q
 
