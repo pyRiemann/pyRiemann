@@ -301,16 +301,16 @@ class TLRotate(BaseEstimator, TransformerMixin):
 
         idx = domains == self.target_domain
         X_target, y_target = X[idx], y_enc[idx]
-        M_target = [mean_riemann(X_target[y_target == label])
-                    for label in np.unique(y_target)]
+        M_target = np.stack([mean_riemann(X_target[y_target == label])
+                             for label in np.unique(y_target)])
 
         source_names = np.unique(domains)
         source_names = source_names[source_names != self.target_domain]
         rotations = Parallel(n_jobs=self.n_jobs)(
             delayed(get_rotation_matrix)(
-                [mean_riemann(
+                np.stack([mean_riemann(
                     X[domains == d][y_enc[domains == d] == label])
-                    for label in np.unique(y_enc[domains == d])],
+                    for label in np.unique(y_enc[domains == d])]),
                 M_target,
                 self.weights,
                 metric=self.metric)

@@ -24,15 +24,6 @@ def _retract(X, v):
     return Q
 
 
-def _check_dimensions(M):
-    if isinstance(M, list):
-        M = np.stack(M)
-    if isinstance(M, np.ndarray):
-        if M.ndim == 2:
-            M = M[None, :, :]
-    return M
-
-
 def _loss(Q, X, Y, weights, metric='euclid'):
     """Loss function for estimating the rotation matrix in RPA."""
 
@@ -199,10 +190,10 @@ def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
     .. versionadded:: 0.3.1
     """
 
-    M_source = _check_dimensions(M_source)
-    M_target = _check_dimensions(M_target)
-    if len(M_source) != len(M_target):
+    if M_source.shape[0] != M_target.shape[0]:
         raise ValueError("The number of classes in each domain don't match")
+    if M_source.shape[1:] != M_target.shape[1:]:
+        raise ValueError("The number of channels in each domain don't match")
 
     if weights is None:
         weights = np.ones(len(M_source)) / len(M_source)

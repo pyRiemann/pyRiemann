@@ -80,7 +80,7 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs):
 
 
 def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
-                        return_centers=False, center_dataset=True,
+                        return_centers=False, center_dataset=False,
                         random_state=None, centers=None, *, n_jobs=1,
                         sampling_method='auto'):
     """Generate SPD dataset with two classes sampled from Riemannian Gaussian.
@@ -105,8 +105,9 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         sampled randomly based on class_sep.
     return_centers : bool, default=False
         If True, then return the centers of each cluster
-    center_dataset : bool, default=True
-        If True, re-center the simulated dataset to the Identity
+    center_dataset : bool, default=False
+        If True, re-center the simulated dataset to the Identity. If False,
+        the dataset is centered around a random SPD matrix.
     random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
@@ -141,20 +142,20 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     seeds = rs.randint(100, size=2)
 
     if centers is None:
-        C0 = np.eye(n_dim)  # first class mean at Identity at first
+        C0_in = np.eye(n_dim)  # first class mean at Identity at first
         Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
         Pv = (Pv + Pv.T)/2   # symmetrize
         Pv = Pv / np.linalg.norm(Pv)  # normalize
         P = expm(Pv)  # take it back to the SPD manifold
-        C1 = powm(P, alpha=class_sep)  # control distance to Identity
+        C1_in = powm(P, alpha=class_sep)  # control distance to Identity
 
     else:
-        C0, C1 = centers
+        C0_in, C1_in = centers
 
     # sample data points from class 0
     X0 = sample_gaussian_spd(
         n_matrices=n_matrices,
-        mean=C0,
+        mean=C0_in,
         sigma=class_disp,
         random_state=seeds[0],
         n_jobs=n_jobs,
@@ -165,7 +166,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     # sample data points from class 1
     X1 = sample_gaussian_spd(
         n_matrices=n_matrices,
-        mean=C1,
+        mean=C1_in,
         sigma=class_disp,
         random_state=seeds[1],
         n_jobs=n_jobs,
@@ -177,11 +178,16 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     # concatenate the samples
     X = np.concatenate([X0, X1])
 
-    if center_dataset:
-        # re-center the dataset to the Identity
-        M = mean_riemann(X)
-        M_invsqrt = invsqrtm(M)
-        X = M_invsqrt @ X @ M_invsqrt
+    # re-center the dataset to the Identity
+    M = mean_riemann(X)
+    M_invsqrt = invsqrtm(M)
+    X = M_invsqrt @ X @ M_invsqrt
+
+    if not center_dataset:
+        # center the dataset to a random SPD matrix
+        M = generate_random_spd_matrix(n_dim=n_dim)
+        M_sqrt = sqrtm(M)
+        X = M_sqrt @ X @ M_sqrt
 
     # concatenate the labels for each class
     y = np.concatenate([y0, y1]).astype(int)
@@ -192,9 +198,12 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
 
     if return_centers:
         if centers is None:
-            C0 = mean_riemann(X[y == 0])
-            C1 = mean_riemann(X[y == 1])
-        centers = np.stack([C0, C1])
+            C0_out = mean_riemann(X[y == 0])
+            C1_out = mean_riemann(X[y == 1])
+        else:
+            C0_out = C0_in
+            C1_out = C1_in
+        centers = np.stack([C0_out, C1_out])
         return X, y, centers
     else:
         return X, y

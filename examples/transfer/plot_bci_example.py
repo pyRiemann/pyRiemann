@@ -24,7 +24,7 @@ from pyriemann.transfer import (
     TLDummy,
     TLCenter,
     TLClassifier,
-    TLSplitter
+    TLStratifiedShuffleSplitter
 )
 
 set_log_level(verbose=False)
@@ -101,10 +101,10 @@ X_enc, y_enc = encode_domains(X, y, domains)
 
 # Object for splitting the datasets into training and validation partitions
 n_splits = 5  # How many times to split the target domain into train/test
-cv = TLSplitter(n_splits=n_splits,
-                target_domain='',
-                target_train_frac=0.10,
-                random_state=42)
+cv = TLStratifiedShuffleSplitter(n_splits=n_splits,
+                                 target_domain='',
+                                 target_train_frac=0.10,
+                                 random_state=42)
 
 # We consider two types of pipelines for transfer learning
 # dct : no transformation of dataset between the domains

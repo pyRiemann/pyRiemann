@@ -85,7 +85,7 @@ def decode_domains(X_enc, y_enc):
     return X_enc, np.array(y), np.array(domain)
 
 
-class TLSplitter():
+class TLStratifiedShuffleSplitter():
     """Class for handling the cross-validation splits of multi-domain data.
 
     This is a wrapper to sklearn's StratifiedShuffleSplit [1]_ which ensures

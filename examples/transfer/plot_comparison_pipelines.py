@@ -18,7 +18,7 @@ from sklearn.pipeline import make_pipeline
 from pyriemann.classification import MDM
 from pyriemann.datasets.simulated import make_classification_transfer
 from pyriemann.transfer import (
-    TLSplitter,
+    TLStratifiedShuffleSplitter,
     TLDummy,
     TLCenter,
     TLStretch,
@@ -58,9 +58,9 @@ X_enc, y_enc = make_classification_transfer(n_matrices=100,
 # plus a partition of the target domain whose size we can control
 target_domain = 'target_domain'
 n_splits = 5  # how many times to split the target domain into train/test
-cv = TLSplitter(n_splits=n_splits,
-                target_domain=target_domain,
-                random_state=seed)
+cv = TLStratifiedShuffleSplitter(n_splits=n_splits,
+                                 target_domain=target_domain,
+                                 random_state=seed)
 
 # Vary the proportion of the target domain for training
 target_train_frac_array = np.linspace(0.01, 0.20, 10)

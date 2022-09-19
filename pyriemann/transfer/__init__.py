@@ -1,4 +1,9 @@
-from .methods import encode_domains, decode_domains, TLSplitter
+from .methods import (
+    encode_domains,
+    decode_domains,
+    TLStratifiedShuffleSplitter
+)
+
 from .pipelines import (
     TLDummy,
     TLCenter,
@@ -11,7 +16,7 @@ from .pipelines import (
 __all__ = ["encode_domains",
            "decode_domains",
            "TLDummy",
-           "TLSplitter",
+           "TLStratifiedShuffleSplitter",
            "TLCenter",
            "TLStretch",
            "TLRotate",

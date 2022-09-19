@@ -16,7 +16,7 @@ from pyriemann.utils.mean import mean_riemann
 rndstate = 1234
 
 
-def test_TLCenter(rndstate):
+def test_tlcenter(rndstate):
     """Test pipeline for recentering data to Identity"""
     # check if the global mean of the domains is indeed Identity
     rct = TLCenter(target_domain='target_domain')
@@ -30,8 +30,8 @@ def test_TLCenter(rndstate):
         assert np.isclose(Md, np.eye(2)).all()
 
 
-def test_TLStretch(rndstate):
-    """Test pipeline for recentering data to Identity"""
+def test_tlstretch(rndstate):
+    """Test pipeline for stretching data"""
     # check if the dispersion of the dataset indeed decreases to 1
     str = TLStretch(target_domain='target_domain', final_dispersion=1.0)
     X, y_enc = make_classification_transfer(
@@ -40,12 +40,12 @@ def test_TLStretch(rndstate):
     _, _, domain = decode_domains(X_str, y_enc)
     for d in np.unique(domain):
         Xd = X_str[domain == d]
-        Md = mean_riemann(Xd)
+        Md = np.stack(len(Xd)*[mean_riemann(Xd)])
         disp = np.sum(distance_riemann(Xd, Md)**2)
         assert np.isclose(disp, 1.0)
 
 
-def test_TLRotate():
+def test_tlrotate():
     """Test pipeline for rotating the datasets"""
     # check if the distance between the classes of each domain is reduced
     X, y_enc = make_classification_transfer(
