@@ -1,6 +1,7 @@
 import numpy as np
 from joblib import Parallel, delayed
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
+
 from sklearn.metrics import accuracy_score
 from ..utils.mean import mean_covariance, mean_riemann
 from ..utils.distance import distance
