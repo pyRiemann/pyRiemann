@@ -1,7 +1,10 @@
+
+import pytest
 import numpy as np
 
 from pyriemann.datasets.simulated import make_classification_transfer
-
+from pyriemann.utils.distance import distance, distance_riemann
+from pyriemann.utils.mean import mean_covariance, mean_riemann
 from pyriemann.transfer import (
     TLCenter,
     TLStretch,
@@ -9,50 +12,55 @@ from pyriemann.transfer import (
     decode_domains
 )
 
-from pyriemann.utils.distance import distance_riemann
-from pyriemann.utils.mean import mean_riemann
-
-
 rndstate = 1234
 
 
-def test_tlcenter(rndstate):
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+def test_tlcenter(rndstate, metric):
     """Test pipeline for recentering data to Identity"""
     # check if the global mean of the domains is indeed Identity
-    rct = TLCenter(target_domain='target_domain')
+    rct = TLCenter(target_domain='target_domain', metric=metric)
     X, y_enc = make_classification_transfer(
         n_matrices=25, random_state=rndstate)
     X_rct = rct.fit_transform(X, y_enc)
     _, _, domain = decode_domains(X_rct, y_enc)
     for d in np.unique(domain):
         Xd = X_rct[domain == d]
-        Md = mean_riemann(Xd)
-        assert np.isclose(Md, np.eye(2)).all()
+        Md = mean_covariance(Xd, metric=metric)
+        assert Md == pytest.approx(np.eye(2))
 
 
-def test_tlstretch(rndstate):
+@pytest.mark.parametrize("centered_data", [True, False])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+def test_tlstretch(rndstate, centered_data, metric):
     """Test pipeline for stretching data"""
     # check if the dispersion of the dataset indeed decreases to 1
-    str = TLStretch(target_domain='target_domain', final_dispersion=1.0)
+    tlstr = TLStretch(
+        target_domain='target_domain',
+        final_dispersion=1.0,
+        centered_data=centered_data,
+        metric=metric
+    )
     X, y_enc = make_classification_transfer(
         n_matrices=25, class_disp=2.0, random_state=rndstate)
-    X_str = str.fit_transform(X, y_enc)
+    X_str = tlstr.fit_transform(X, y_enc)
     _, _, domain = decode_domains(X_str, y_enc)
     for d in np.unique(domain):
         Xd = X_str[domain == d]
-        Md = np.stack(len(Xd)*[mean_riemann(Xd)])
-        disp = np.sum(distance_riemann(Xd, Md)**2)
+        Md = mean_riemann(Xd)
+        disp = np.sum(distance(Xd, Md, metric=metric)**2)
         assert np.isclose(disp, 1.0)
 
 
-def test_tlrotate():
+@pytest.mark.parametrize("metric", ["euclid", "riemann"])
+def test_tlrotate(rndstate, metric):
     """Test pipeline for rotating the datasets"""
     # check if the distance between the classes of each domain is reduced
     X, y_enc = make_classification_transfer(
         n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate)
     rct = TLCenter(target_domain='target_domain')
     X_rct = rct.fit_transform(X, y_enc)
-    rot = TLRotate(target_domain='target_domain', metric='riemann')
+    rot = TLRotate(target_domain='target_domain', metric=metric)
     X_rot = rot.fit_transform(X_rct, y_enc)
     _, y, domain = decode_domains(X_rot, y_enc)
     for label in np.unique(y):
