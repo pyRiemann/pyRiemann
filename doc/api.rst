@@ -143,7 +143,7 @@ Transfer Learning
 
     :template: class.rst
 
-    TLSplitter
+    TLStratifiedShuffleSplitter
     TLClassifier
     TLDummy
     TLCenter
