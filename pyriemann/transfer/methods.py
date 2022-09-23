@@ -75,13 +75,10 @@ def decode_domains(X_enc, y_enc):
     y, domain = [], []
     for n in range(len(y_enc)):
         yn_enc = y_enc[n]
-        try:
-            yn = int(yn_enc.split('/')[0])
-        except AttributeError:
-            print(yn_enc)
-            yn = 0
+        yn = yn_enc.split('/')[0]
+        dn = yn_enc.split('/')[1]
         y.append(yn)
-        domain.append(yn_enc.split('/')[1])
+        domain.append(dn)
     return X_enc, np.array(y), np.array(domain)
 
 
