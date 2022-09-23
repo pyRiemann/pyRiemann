@@ -15,7 +15,7 @@ from pyriemann.transfer import (
 rndstate = 1234
 
 
-@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", ["riemann"])
 def test_tlcenter(rndstate, metric):
     """Test pipeline for recentering data to Identity"""
     # check if the global mean of the domains is indeed Identity
@@ -31,7 +31,7 @@ def test_tlcenter(rndstate, metric):
 
 
 @pytest.mark.parametrize("centered_data", [True, False])
-@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", ["riemann"])
 def test_tlstretch(rndstate, centered_data, metric):
     """Test pipeline for stretching data"""
     # check if the dispersion of the dataset indeed decreases to 1
@@ -43,6 +43,9 @@ def test_tlstretch(rndstate, centered_data, metric):
     )
     X, y_enc = make_classification_transfer(
         n_matrices=25, class_disp=2.0, random_state=rndstate)
+    if centered_data:  # ensure that data is indeed centered on each domain
+        tlrct = TLCenter(target_domain='target_domain', metric=metric)
+        X = tlrct.fit_transform(X, y_enc)
     X_str = tlstr.fit_transform(X, y_enc)
     _, _, domain = decode_domains(X_str, y_enc)
     for d in np.unique(domain):
