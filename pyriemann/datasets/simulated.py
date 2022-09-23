@@ -348,7 +348,7 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
     y_target = np.copy(y_source)
 
     # stretch the data points in target domain if needed
-    if stretch != 0.0:
+    if stretch != 1.0:
         X_target = powm(X_target, alpha=stretch)
 
     # move the points in X_target with a random matrix A = P * Q
