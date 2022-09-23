@@ -186,7 +186,8 @@ ax.set_xticklabels([1, 5, 10, 15, 20])
 ax.set_xlabel('percentage of training partition in target domain')
 ax.set_ylabel('classification accuracy')
 ax.set_title('comparison of transfer learning pipelines')
-fig.show()
+
+plt.show()
 
 
 ###############################################################################

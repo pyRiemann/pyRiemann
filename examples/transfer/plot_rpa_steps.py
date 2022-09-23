@@ -78,20 +78,20 @@ for axi, step, title in zip(ax, steps, titles):
     S_target = S_step[domain == 'target_domain']
     y_target = y[domain == 'target_domain']
     axi.scatter(
-        S_source[y_source == 1][:, 0],
-        S_source[y_source == 1][:, 1],
+        S_source[y_source == '1'][:, 0],
+        S_source[y_source == '1'][:, 1],
         c='C0', s=50, alpha=0.50)
     axi.scatter(
-        S_source[y_source == 2][:, 0],
-        S_source[y_source == 2][:, 1],
+        S_source[y_source == '2'][:, 0],
+        S_source[y_source == '2'][:, 1],
         c='C1', s=50, alpha=0.50)
     axi.scatter(
-        S_target[y_target == 1][:, 0],
-        S_target[y_target == 1][:, 1],
+        S_target[y_target == '1'][:, 0],
+        S_target[y_target == '1'][:, 1],
         c='C0', s=50, alpha=0.30, marker="^")
     axi.scatter(
-        S_target[y_target == 2][:, 0],
-        S_target[y_target == 2][:, 1],
+        S_target[y_target == '2'][:, 0],
+        S_target[y_target == '2'][:, 1],
         c='C1', s=50, alpha=0.30, marker="^")
     axi.scatter(S[-1, 0], S[-1, 1], c='k', s=80, marker="*")
     axi.set_xlim(-0.60, +1.60)
@@ -104,7 +104,8 @@ ax[2].scatter([], [], c="C1", label="source - class 1")
 ax[2].scatter([], [], marker="^", c="C0", label="target - class 0")
 ax[2].scatter([], [], marker="^", c="C1", label="target - class 1")
 ax[2].legend(loc="lower right")
-fig.show()
+
+plt.show()
 
 
 ###############################################################################

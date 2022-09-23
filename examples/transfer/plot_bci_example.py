@@ -182,7 +182,8 @@ ax.set_xticklabels(['Dummy', 'RCT'])
 ax.set_ylabel('Classification accuracy')
 ax.set_xlabel('Method')
 ax.set_title('Transfer learning with data pooled from 10 subjects')
-fig.show()
+
+plt.show()
 
 
 ###############################################################################
