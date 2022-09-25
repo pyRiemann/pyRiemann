@@ -1,5 +1,4 @@
 import numpy as np
-from sklearn.model_selection import StratifiedShuffleSplit
 
 
 def encode_domains(X, y, domain):
