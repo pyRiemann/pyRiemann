@@ -1,8 +1,13 @@
 import numpy as np
 from joblib import Parallel, delayed
-from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
-
-from sklearn.metrics import accuracy_score
+from sklearn.base import (
+    BaseEstimator,
+    TransformerMixin,
+    is_classifier,
+    is_regressor
+)
+from sklearn.pipeline import Pipeline
+from sklearn.metrics import accuracy_score, r2_score
 from ..utils.mean import mean_covariance, mean_riemann
 from ..utils.distance import distance
 from ..utils.base import invsqrtm, powm, sqrtm
@@ -342,37 +347,43 @@ class TLRotate(BaseEstimator, TransformerMixin):
         return X_rot
 
 
-class TLClassifier(BaseEstimator, ClassifierMixin):
-    """Classification with extended labels.
+class TLEstimator(BaseEstimator):
+    """Transfer learning wrapper for estimators.
 
-    This is a wrapper that converts extended labels into class labels to train
-    a classifier of choice.
+    This is a wrapper for any BaseEstimator (i.e. classifier or regressor) that
+    converts extended labels used in Transfer Learning into the usual y array
+    to train a classifier/regressor of choice.
 
     Parameters
     ----------
     target_domain : str
         Domain to consider as target.
-    clf : None | BaseClassifier, default=None
-        The classifier to apply on the data points. If None, then use the MDM
-        classifier with metric='riemann'.
+    estimator : BaseEstimator
+        The estimator to apply on the data points. It can be any regressor or
+        classifier from pyRiemann.
     domain_weight : None | dict, default=None
-        How to combine the samples from each domain to train the classifier.
+        How to combine the samples from each domain to train the estimator.
         The dict contains key=domain_name and value=weight_to_assign. If 'None'
-        then assign the same weight for all source domains.
+        then assign the same weight to all domains.
 
     Notes
     -----
     .. versionadded:: 0.3.1
     """
 
-    def __init__(self, target_domain, clf=None, domain_weight=None):
+    def __init__(self, target_domain, estimator, domain_weight=None):
         """Init."""
         self.target_domain = target_domain
-        self.clf = clf
         self.domain_weight = domain_weight
 
+        if is_regressor(estimator) or is_classifier(estimator):
+            self.estimator = estimator
+        else:
+            raise TypeError(
+                'Estimator has to be either a classifier or a regressor.')
+
     def fit(self, X, y_enc):
-        """Fit TLClassifier.
+        """Fit TLEstimator.
 
         Parameters
         ----------
@@ -383,23 +394,30 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
 
         Returns
         -------
-        self : TLClassifier instance
-            The TLClassifier instance.
+        self : TLEstimator instance
+            The TLEstimator instance.
         """
 
         X_dec, y_dec, domains = decode_domains(X, y_enc)
 
-        n_samples = len(X_dec)
+        if is_regressor(self.estimator):
+            y_dec = y_dec.astype(float)
 
-        w = np.ones(n_samples)
         if self.domain_weight is not None:
+            w = np.zeros(len(X_dec))
             for d in np.unique(domains):
                 w[domains == d] = self.domain_weight[d]
+        else:
+            w = None
 
-        if self.clf is None:
-            self.clf = MDM(metric='riemann')
-
-        self.clf.fit(X_dec, y_dec, sample_weight=w)
+        if isinstance(self.estimator, Pipeline):
+            sample_weight = {}
+            for step in self.estimator.steps:
+                step_name = step[0]
+                sample_weight[step_name + '__sample_weight'] = w
+            self.estimator.fit(X_dec, y_dec, **sample_weight)
+        else:
+            self.estimator.fit(X_dec, y_dec, sample_weight=w)
 
         return self
 
@@ -413,28 +431,13 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
 
         Returns
         -------
-        pred : ndarray of int, shape (n_matrices,)
-            Predictions for each matrix according to the classifier
+        pred : ndarray, shape (n_matrices,)
+            Predictions for each matrix according to the estimator
         """
-        return self.clf.predict(X)
+        return self.estimator.predict(X)
 
-    def predict_proba(self, X):
-        """Get the probability.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-
-        Returns
-        -------
-        pred : ndarray of ifloat, shape (n_matrices, n_classes)
-            Predictions for each matrix according to the classifier
-        """
-        return self.clf.predict_proba(X)
-
-    def score(self, X, y_enc, sample_weight=None):
-        """Return the mean accuracy on the given test data and labels.
+    def score(self, X, y_enc):
+        """Return the score of self.estimator
 
         Parameters
         ----------
@@ -446,11 +449,17 @@ class TLClassifier(BaseEstimator, ClassifierMixin):
         Returns
         -------
         score : float
-            Mean accuracy of clf.predict(X) wrt. y_enc.
+            If self.estimator is a classifier, then return the mean accuracy on
+            the given test data and labels. If self.estimator is a regressor,
+            return the coefficient of determination of the prediction.
         """
         _, y_true, _ = decode_domains(X, y_enc)
         y_pred = self.predict(X)
-        return accuracy_score(y_true, y_pred)
+        if is_classifier(self.estimator):
+            return accuracy_score(y_true, y_pred)
+        elif is_regressor(self.estimator):
+            y_true = y_true.astype(float)
+            return r2_score(y_true, y_pred)
 
 
 class TLMDM(MDM):

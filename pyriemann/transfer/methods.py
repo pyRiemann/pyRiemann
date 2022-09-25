@@ -82,31 +82,25 @@ def decode_domains(X_enc, y_enc):
     return X_enc, np.array(y), np.array(domain)
 
 
-class TLStratifiedShuffleSplitter():
+class TLSplitter():
     """Class for handling the cross-validation splits of multi-domain data.
 
-    This is a wrapper to sklearn's StratifiedShuffleSplit [1]_ which ensures
-    the handling of domain information with the data points. In fact, the data
-    coming from source domain is always fully available and the random splits
-    are carried out on the data points from the target domain.
+    This is a wrapper to sklearn's cross validation iterators [1]_ which
+    ensures the handling of domain information with the data points. In fact,
+    the data from source domain is always fully available in the training
+    partition whereas the random splits are done on the data points from the
+    target domain.
 
     Parameters
     ----------
     target_domain : str
         Domain considered as target.
-    target_train_frac : float
-        The fraction of data points in the target domain that should be in the
-        training split during cross-validation.
-    n_splits : int, default=5
-        Number of splits to consider in the cross-validation scheme.
-    random_state : int, RandomState instance or None, default=None
-        Controls the pseudo random number generation for shuffling and
-        splitting the data. Pass an int for reproducible output across multiple
-        function calls.
+    cv_iterator : None | BaseCrossValidator | BaseShuffleSplit, default=None
+        An instance of a cross validation iterator from sklearn.
 
     References
     ----------
-    .. [1] https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.StratifiedShuffleSplit.html
+    .. [1] https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-iterators
 
     Notes
     -----
@@ -114,14 +108,10 @@ class TLStratifiedShuffleSplitter():
     """  # noqa
     def __init__(self,
                  target_domain,
-                 target_train_frac=0.80,
-                 n_splits=5,
-                 random_state=None):
+                 cv_iterator):
 
         self.target_domain = target_domain
-        self.target_train_frac = target_train_frac
-        self.n_splits = n_splits
-        self.random_state = random_state
+        self.cv_iterator = cv_iterator
 
     def split(self, X, y):
         """Generate indices to split data into training and test set.
@@ -150,11 +140,7 @@ class TLStratifiedShuffleSplitter():
         y_target = y[idx_target]
 
         # index of training-split for the target data points
-        ss_target = StratifiedShuffleSplit(
-            n_splits=self.n_splits,
-            train_size=self.target_train_frac,
-            random_state=self.random_state
-        ).split(idx_target, y_target)
+        ss_target = self.cv_iterator.split(idx_target, y_target)
         for train_sub_idx_target, test_sub_idx_target in ss_target:
             train_idx = np.concatenate(
                 [idx_source, idx_target[train_sub_idx_target]])
@@ -176,4 +162,4 @@ class TLStratifiedShuffleSplitter():
         n_splits : int
             Returns the number of splitting iterations in the cross-validator.
         """
-        return self.n_splits
+        return self.cv_iterator.n_splits
