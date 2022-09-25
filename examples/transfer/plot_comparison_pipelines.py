@@ -14,16 +14,17 @@ from tqdm import tqdm
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import StratifiedShuffleSplit
 
 from pyriemann.classification import MDM
 from pyriemann.datasets.simulated import make_classification_transfer
 from pyriemann.transfer import (
-    TLStratifiedShuffleSplitter,
+    TLSplitter,
     TLDummy,
     TLCenter,
     TLStretch,
     TLRotate,
-    TLClassifier,
+    TLEstimator,
     # TLMDM
 )
 
@@ -58,16 +59,16 @@ X_enc, y_enc = make_classification_transfer(n_matrices=100,
 # plus a partition of the target domain whose size we can control
 target_domain = 'target_domain'
 n_splits = 5  # how many times to split the target domain into train/test
-cv = TLStratifiedShuffleSplitter(n_splits=n_splits,
-                                 target_domain=target_domain,
-                                 random_state=seed)
+cv = TLSplitter(
+    target_domain=target_domain,
+    cv_iterator=StratifiedShuffleSplit(n_splits=n_splits, random_state=seed))
 
 # Vary the proportion of the target domain for training
 target_train_frac_array = np.linspace(0.01, 0.20, 10)
 for target_train_frac in tqdm(target_train_frac_array):
 
     # Change fraction of the target training partition
-    cv.target_train_frac = target_train_frac
+    cv.cv_iterator.train_size = target_train_frac
 
     # Create dict for storing results of this particular CV split
     scores_cv = {meth: [] for meth in scores.keys()}
@@ -84,9 +85,9 @@ for target_train_frac in tqdm(target_train_frac_array):
 
         # Instantiate
         step1 = TLDummy()
-        clf = TLClassifier(
+        clf = TLEstimator(
             target_domain=target_domain,
-            clf=MDM(),
+            estimator=MDM(),
             domain_weight={'source_domain': 1.0, 'target_domain': 0.0})
         pipeline = make_pipeline(step1, clf)
 
@@ -102,9 +103,9 @@ for target_train_frac in tqdm(target_train_frac_array):
 
         # Instantiate
         step1 = TLCenter(target_domain=target_domain)
-        clf = TLClassifier(
+        clf = TLEstimator(
             target_domain=target_domain,
-            clf=MDM(),
+            estimator=MDM(),
             domain_weight={'source_domain': 1.0, 'target_domain': 0.0})
         pipeline = make_pipeline(step1, clf)
 
@@ -126,9 +127,9 @@ for target_train_frac in tqdm(target_train_frac_array):
         step3 = TLRotate(
             target_domain=target_domain,
             metric='riemann')
-        clf = TLClassifier(
+        clf = TLEstimator(
             target_domain=target_domain,
-            clf=MDM(),
+            estimator=MDM(),
             domain_weight={'source_domain': 0.5, 'target_domain': 0.5})
         pipeline = make_pipeline(step1, step2, step3, clf)
 
@@ -148,9 +149,9 @@ for target_train_frac in tqdm(target_train_frac_array):
         # - The classifier is trained only with points from the target domain
 
         # Instantiate
-        clf = TLClassifier(
+        clf = TLEstimator(
             target_domain=target_domain,
-            clf=MDM(),
+            estimator=MDM(),
             domain_weight={'source_domain': 0.0, 'target_domain': 1.0})
         pipeline = make_pipeline(clf)
 

@@ -9,6 +9,7 @@ Classify motor imagery data with transfer learning.
 import numpy as np
 from tqdm import tqdm
 from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import StratifiedShuffleSplit
 import matplotlib.pyplot as plt
 
 from mne import Epochs, pick_types, events_from_annotations
@@ -23,8 +24,8 @@ from pyriemann.transfer import (
     encode_domains,
     TLDummy,
     TLCenter,
-    TLClassifier,
-    TLStratifiedShuffleSplitter
+    TLEstimator,
+    TLSplitter
 )
 
 set_log_level(verbose=False)
@@ -101,10 +102,10 @@ X_enc, y_enc = encode_domains(X, y, domains)
 
 # Object for splitting the datasets into training and validation partitions
 n_splits = 5  # How many times to split the target domain into train/test
-cv = TLStratifiedShuffleSplitter(n_splits=n_splits,
-                                 target_domain='',
-                                 target_train_frac=0.10,
-                                 random_state=42)
+cv = TLSplitter(
+    target_domain='',
+    cv_iterator=StratifiedShuffleSplit(
+        n_splits=n_splits, train_size=0.10, random_state=42))
 
 # We consider two types of pipelines for transfer learning
 # dct : no transformation of dataset between the domains
@@ -136,9 +137,9 @@ for subject_target_idx in tqdm(range(len(subject_list))):
 
         # Instantiate
         step1 = TLDummy()
-        clf = TLClassifier(
+        clf = TLEstimator(
             target_domain=cv.target_domain,
-            clf=MDM(),
+            estimator=MDM(),
             domain_weight=domain_weight_dummy)
         pipeline = make_pipeline(step1, clf)
 
@@ -159,9 +160,9 @@ for subject_target_idx in tqdm(range(len(subject_list))):
 
         # Instantiate
         step1 = TLCenter(target_domain=cv.target_domain)
-        clf = TLClassifier(
+        clf = TLEstimator(
             target_domain=cv.target_domain,
-            clf=MDM(),
+            estimator=MDM(),
             domain_weight=domain_weight_rct)
         pipeline = make_pipeline(step1, clf)
 
