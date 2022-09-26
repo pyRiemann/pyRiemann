@@ -121,7 +121,7 @@ class SVR(sklearnSVR):
         """
         self._set_cref(X)
         self._set_kernel()
-        super().fit(X, y)
+        super().fit(X, y, sample_weight)
         return self
 
     def _set_cref(self, X):
@@ -186,7 +186,7 @@ class KNearestNeighborRegressor(MDM):
         self.n_neighbors = n_neighbors
         super().__init__(metric=metric)
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         """Fit (store the training data).
 
         Parameters
@@ -195,6 +195,8 @@ class KNearestNeighborRegressor(MDM):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Target values for each matrix.
+        sample_weight : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------

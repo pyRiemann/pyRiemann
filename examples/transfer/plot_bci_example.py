@@ -112,6 +112,9 @@ cv = TLSplitter(
 # rct : re-center the data points from each domain to the Identity
 scores = {meth: [] for meth in ['dummy', 'rct']}
 
+# Base classifier to be wrapped for transfer learning
+clf_base = MDM()
+
 # Consider different subjects as target
 for subject_target_idx in tqdm(range(len(subject_list))):
 
@@ -139,7 +142,7 @@ for subject_target_idx in tqdm(range(len(subject_list))):
         step1 = TLDummy()
         clf = TLEstimator(
             target_domain=cv.target_domain,
-            estimator=MDM(),
+            estimator=clf_base,
             domain_weight=domain_weight_dummy)
         pipeline = make_pipeline(step1, clf)
 
@@ -162,7 +165,7 @@ for subject_target_idx in tqdm(range(len(subject_list))):
         step1 = TLCenter(target_domain=cv.target_domain)
         clf = TLEstimator(
             target_domain=cv.target_domain,
-            estimator=MDM(),
+            estimator=clf_base,
             domain_weight=domain_weight_rct)
         pipeline = make_pipeline(step1, clf)
 

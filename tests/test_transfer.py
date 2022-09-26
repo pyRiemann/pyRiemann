@@ -1,15 +1,24 @@
 
 import pytest
 import numpy as np
+from sklearn.model_selection import KFold
+from sklearn.pipeline import make_pipeline
 
-from pyriemann.datasets.simulated import make_classification_transfer
+from pyriemann.datasets.simulated import (
+    make_classification_transfer,
+    make_covariances
+)
 from pyriemann.utils.distance import distance, distance_riemann
+from pyriemann.classification import MDM
 from pyriemann.utils.mean import mean_covariance, mean_riemann
 from pyriemann.transfer import (
     TLCenter,
     TLStretch,
     TLRotate,
-    decode_domains
+    decode_domains,
+    encode_domains,
+    TLSplitter,
+    TLEstimator
 )
 
 rndstate = 1234
@@ -80,3 +89,103 @@ def test_tlrotate(rndstate, metric):
         d_rct = distance_riemann(M_rct_label_source, M_rct_label_target)
         d_rot = distance_riemann(M_rot_label_source, M_rot_label_target)
         assert d_rot <= d_rct
+
+
+def test_encode_decode_domains(rndstate):
+    """Test encoding and decoding of domains for data points"""
+    X = make_covariances(n_matrices=4, n_channels=2, rs=rndstate)
+    y = np.array(['left_hand', 'right_hand', 'left_hand', 'right_hand'])
+    domain = np.array(2*['source_domain'] + 2*['target_domain'])
+    X_enc, y_enc = encode_domains(X, y, domain)
+    assert y_enc[0] == 'left_hand/source_domain'
+    assert y_enc[1] == 'right_hand/source_domain'
+    assert y_enc[2] == 'left_hand/target_domain'
+    assert y_enc[3] == 'right_hand/target_domain'
+    _, y_dec, d_dec = decode_domains(X_enc, y_enc)
+    assert (y == y_dec).all()
+    assert (domain == d_dec).all()
+
+
+def test_tlsplitter(rndstate):
+    """Test wrapper for cross-validation in transfer learning"""
+    X, y_enc = make_classification_transfer(
+        n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate)
+    cv = TLSplitter(
+        target_domain="target_domain",
+        cv_iterator=KFold(n_splits=5, shuffle=True, random_state=rndstate))
+    train_idx, test_idx = next(cv.split(X, y_enc))
+    assert len(train_idx) == 90  # 50 from source and 4/5*100 from target
+    assert len(test_idx) == 10  # 1/5*100 from target
+    assert cv.get_n_splits() == 5
+
+
+def test_tlestimator(rndstate):
+    """Test wrapper for estimators in transfer learning"""
+    X, y_enc = make_classification_transfer(
+        n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate)
+
+    X, y, domain = decode_domains(X, y_enc)
+    X_source = X[domain == 'source_domain']
+    y_source = y[domain == 'source_domain']
+    X_target = X[domain == 'target_domain']
+    y_target = y[domain == 'target_domain']
+
+    # consider a simple base classifier
+    base_est = MDM(metric="riemann")
+    tlest = TLEstimator(
+        target_domain="target_domain",
+        estimator=base_est)
+
+    # check covmeans with just source_domain
+    tlest.domain_weight = {"source_domain": 1.0, "target_domain": 0.0}
+    tlest.fit(X, y_enc)
+    assert tlest.estimator.covmeans_[0] == pytest.approx(
+        mean_riemann(X_source[y_source == tlest.estimator.classes_[0]]))
+    assert tlest.estimator.covmeans_[1] == pytest.approx(
+        mean_riemann(X_source[y_source == tlest.estimator.classes_[1]]))
+
+    # check covmeans with just target_domain
+    tlest.domain_weight = {"source_domain": 0.0, "target_domain": 1.0}
+    tlest.fit(X, y_enc)
+    assert tlest.estimator.covmeans_[0] == pytest.approx(
+        mean_riemann(X_target[y_target == tlest.estimator.classes_[0]]))
+    assert tlest.estimator.covmeans_[1] == pytest.approx(
+        mean_riemann(X_target[y_target == tlest.estimator.classes_[1]]))
+
+    # check covmeans with both domains
+    tlest.domain_weight = {"source_domain": 1.0, "target_domain": 1.0}
+    tlest.fit(X, y_enc)
+    assert tlest.estimator.covmeans_[0] == pytest.approx(
+        mean_riemann(X[y == tlest.estimator.classes_[0]]))
+    assert tlest.estimator.covmeans_[1] == pytest.approx(
+        mean_riemann(X[y == tlest.estimator.classes_[1]]))
+
+    # consider a classifier with pipeline
+    base_est = make_pipeline(MDM(metric="riemann"))
+    tlest = TLEstimator(
+        target_domain="target_domain",
+        estimator=base_est)
+
+    # check covmeans with just source_domain
+    tlest.domain_weight = {"source_domain": 1.0, "target_domain": 0.0}
+    tlest.fit(X, y_enc)
+    assert tlest.estimator.steps[0][1].covmeans_[0] == pytest.approx(
+        mean_riemann(X_source[y_source == tlest.estimator.classes_[0]]))
+    assert tlest.estimator.steps[0][1].covmeans_[1] == pytest.approx(
+        mean_riemann(X_source[y_source == tlest.estimator.classes_[1]]))
+
+    # check covmeans with just target_domain
+    tlest.domain_weight = {"source_domain": 0.0, "target_domain": 1.0}
+    tlest.fit(X, y_enc)
+    assert tlest.estimator.steps[0][1].covmeans_[0] == pytest.approx(
+        mean_riemann(X_target[y_target == tlest.estimator.classes_[0]]))
+    assert tlest.estimator.steps[0][1].covmeans_[1] == pytest.approx(
+        mean_riemann(X_target[y_target == tlest.estimator.classes_[1]]))
+
+    # check covmeans with both domains
+    tlest.domain_weight = {"source_domain": 1.0, "target_domain": 1.0}
+    tlest.fit(X, y_enc)
+    assert tlest.estimator.steps[0][1].covmeans_[0] == pytest.approx(
+        mean_riemann(X[y == tlest.estimator.classes_[0]]))
+    assert tlest.estimator.steps[0][1].covmeans_[1] == pytest.approx(
+        mean_riemann(X[y == tlest.estimator.classes_[1]]))

@@ -8,7 +8,7 @@ from .sampling import generate_random_spd_matrix, sample_gaussian_spd
 from ..transfer import encode_domains
 
 
-def make_covariances(n_matrices, n_channels, rs, return_params=False,
+def make_covariances(n_matrices, n_channels, rs=None, return_params=False,
                      evals_mean=2.0, evals_std=0.1):
     """Generate a set of covariances matrices, with the same eigenvectors.
 
@@ -18,7 +18,7 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False,
         Number of matrices to generate.
     n_channels : int
         Number of channels in covariance matrices.
-    rs : RandomState instance
+    rs : RandomState instance, default=None
         Random state for reproducible output across multiple function calls.
     return_params : bool, default=False
         If True, then return parameters.
@@ -38,6 +38,9 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False,
         Eigen vectors used for all covariance matrices.
         Only returned if ``return_params=True``.
     """
+
+    rs = check_random_state(rs)
+
     evals = np.abs(evals_mean + evals_std * rs.randn(n_matrices, n_channels))
     evecs, _ = np.linalg.qr(rs.randn(n_channels, n_channels))
 
@@ -51,7 +54,7 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False,
         return covmats
 
 
-def make_masks(n_masks, n_dim0, n_dim1_min, rs):
+def make_masks(n_masks, n_dim0, n_dim1_min, rs=None):
     """Generate a set of masks, defined as semi-orthogonal matrices.
 
     Parameters
@@ -62,7 +65,7 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs):
         First dimension of masks.
     n_dim1_min : int
         Minimal value for second dimension of masks.
-    rs : RandomState instance
+    rs : RandomState instance, default=None
         Random state for reproducible output across multiple function calls.
 
     Returns
@@ -71,6 +74,9 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs):
             with different n_dim1_i, such that n_dim1_min <= n_dim1_i <= n_dim0
         Masks.
     """
+    
+    rs = check_random_state(rs)
+    
     masks = []
     for _ in range(n_masks):
         n_dim1 = rs.randint(n_dim1_min, n_dim0, size=1)[0]
@@ -185,7 +191,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
 
     if not center_dataset:
         # center the dataset to a random SPD matrix
-        M = generate_random_spd_matrix(n_dim=n_dim)
+        M = generate_random_spd_matrix(n_dim=n_dim, random_state=rs)
         M_sqrt = sqrtm(M)
         X = M_sqrt @ X @ M_sqrt
 

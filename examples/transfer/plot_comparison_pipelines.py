@@ -63,6 +63,9 @@ cv = TLSplitter(
     target_domain=target_domain,
     cv_iterator=StratifiedShuffleSplit(n_splits=n_splits, random_state=seed))
 
+# Which base classifier to consider
+clf_base = MDM()
+
 # Vary the proportion of the target domain for training
 target_train_frac_array = np.linspace(0.01, 0.20, 10)
 for target_train_frac in tqdm(target_train_frac_array):
@@ -87,7 +90,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         step1 = TLDummy()
         clf = TLEstimator(
             target_domain=target_domain,
-            estimator=MDM(),
+            estimator=clf_base,
             domain_weight={'source_domain': 1.0, 'target_domain': 0.0})
         pipeline = make_pipeline(step1, clf)
 
@@ -105,7 +108,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         step1 = TLCenter(target_domain=target_domain)
         clf = TLEstimator(
             target_domain=target_domain,
-            estimator=MDM(),
+            estimator=clf_base,
             domain_weight={'source_domain': 1.0, 'target_domain': 0.0})
         pipeline = make_pipeline(step1, clf)
 
@@ -126,10 +129,10 @@ for target_train_frac in tqdm(target_train_frac_array):
             centered_data=True)
         step3 = TLRotate(
             target_domain=target_domain,
-            metric='riemann')
+            metric='euclid')
         clf = TLEstimator(
             target_domain=target_domain,
-            estimator=MDM(),
+            estimator=clf_base,
             domain_weight={'source_domain': 0.5, 'target_domain': 0.5})
         pipeline = make_pipeline(step1, step2, step3, clf)
 
@@ -151,7 +154,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         # Instantiate
         clf = TLEstimator(
             target_domain=target_domain,
-            estimator=MDM(),
+            estimator=clf_base,
             domain_weight={'source_domain': 0.0, 'target_domain': 1.0})
         pipeline = make_pipeline(clf)
 

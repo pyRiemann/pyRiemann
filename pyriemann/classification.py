@@ -260,7 +260,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.n_jobs = n_jobs
         self.tsupdate = tsupdate
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         """Fit FgMDM.
 
         Parameters
@@ -269,6 +269,8 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -279,8 +281,8 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         self._mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
         self._fgda = FGDA(metric=self.metric, tsupdate=self.tsupdate)
-        cov = self._fgda.fit_transform(X, y)
-        self._mdm.fit(cov, y)
+        cov = self._fgda.fit_transform(X, y, sample_weight=sample_weight)
+        self._mdm.fit(cov, y, sample_weight=sample_weight)
         self.classes_ = self._mdm.classes_
         return self
 
@@ -373,7 +375,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         self.tsupdate = tsupdate
         self.clf = clf
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         """Fit TSclassifier.
 
         Parameters
@@ -382,6 +384,8 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -394,7 +398,11 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
 
         ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
         self._pipe = make_pipeline(ts, self.clf)
-        self._pipe.fit(X, y)
+        sample_weight_dict = {}
+        for step in self._pipe.steps:
+            step_name = step[0]
+            sample_weight_dict[step_name + '__sample_weight'] = sample_weight
+        self._pipe.fit(X, y, **sample_weight_dict)
         return self
 
     def predict(self, X):
@@ -472,7 +480,7 @@ class KNearestNeighbor(MDM):
         self.n_neighbors = n_neighbors
         MDM.__init__(self, metric=metric, n_jobs=n_jobs)
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         """Fit (store the training data).
 
         Parameters
@@ -481,6 +489,8 @@ class KNearestNeighbor(MDM):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
+        sample_weight : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
@@ -682,7 +692,7 @@ class SVC(sklearnSVC):
         """
         self._set_cref(X)
         self._set_kernel()
-        super().fit(X, y)
+        super().fit(X, y, sample_weight)
         return self
 
     def _set_cref(self, X):
