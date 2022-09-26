@@ -74,9 +74,9 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs=None):
             with different n_dim1_i, such that n_dim1_min <= n_dim1_i <= n_dim0
         Masks.
     """
-    
+
     rs = check_random_state(rs)
-    
+
     masks = []
     for _ in range(n_masks):
         n_dim1 = rs.randint(n_dim1_min, n_dim0, size=1)[0]
