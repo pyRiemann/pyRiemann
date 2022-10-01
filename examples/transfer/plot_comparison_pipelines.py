@@ -3,9 +3,9 @@
 Comparison of pipelines for transfer learning
 ====================================================================
 
-Compare the classificaton performance of four pipelines for transfer learning.
-The data points are all simulated from a toy model based on the Riemannian
-Gaussian distribution.
+Compare the classificaton performance of four pipelines for transfer learning
+[1]_ [2]_. The data points are all simulated from a toy model based on the
+Riemannian Gaussian distribution.
 """
 
 import warnings

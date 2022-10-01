@@ -3,7 +3,7 @@
 Motor imagery classification by transfer learning
 ====================================================================
 
-Classify motor imagery data with transfer learning.
+Classify motor imagery data with transfer learning [1]_.
 """
 
 import numpy as np
