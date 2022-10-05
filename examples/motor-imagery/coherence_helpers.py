@@ -2,8 +2,9 @@
 =================================
  Functional Connectivity with MNE
 =================================
-This module is design to compute functional connectivity metrics on
-MOABB datasets
+
+This module is designed to compute functional connectivity metrics on
+MOABB datasets.
 """
 # Authors: Sylvain Chevallier <sylvain.chevallier@uvsq.fr>,
 #          Marie-Constance Corsi <marie.constance.corsi@gmail.com>
