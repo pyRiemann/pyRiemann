@@ -6,7 +6,7 @@ def encode_domains(X, y, domain):
 
     We handle the possibility of having different domains for the datasets by
     extending the labels of the matrices and including this information to
-    them. For instance, if we have a matrix x with class `left_hand` on the
+    them. For instance, if we have a matrix X with class `left_hand` on the
     `domain_01` then its extended label will be `left_hand/domain_01`. Note
     that if the classes were integers at first, they will be converted to
     strings.

@@ -33,12 +33,54 @@ class TLDummy(BaseEstimator, TransformerMixin):
         pass
 
     def fit(self, X, y_enc):
+        """Do nothing.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y_enc : ndarray, shape (n_matrices,)
+            Extended labels for each matrix.
+
+        Returns
+        -------
+        self : TLDummy instance
+            The TLDummy instance.
+        """
         return self
 
     def transform(self, X, y_enc=None):
+        """Do nothing.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y_enc : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        X : ndarray, shape (n_matrices, n_classes)
+            Same set of SPD matrices as in the input.
+        """
         return X
 
     def fit_transform(self, X, y_enc):
+        """Do nothing.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y_enc : ndarray, shape (n_matrices,)
+            Extended labels for each matrix.
+
+        Returns
+        -------
+        X : ndarray, shape (n_matrices, n_classes)
+            Set of SPD matrices with mean in the Identity.
+        """
         return self.fit(X, y_enc).transform(X, y_enc)
 
 
@@ -62,7 +104,9 @@ class TLCenter(BaseEstimator, TransformerMixin):
     metric : str, default='riemann'
         The metric for mean, can be: 'ale', 'alm', 'euclid', 'harmonic',
         'identity', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
-        'wasserstein', or a callable function.
+        'wasserstein', or a callable function. Note, however, that only when
+        using the 'riemann' metric that we are ensured to re-center the data
+        points precisely to the Identity.
 
     Attributes
     ----------
@@ -88,7 +132,22 @@ class TLCenter(BaseEstimator, TransformerMixin):
         self.metric = metric
 
     def fit(self, X, y_enc):
-        """TODO"""
+        """Fit TLCenter.
+
+        Calculate the mean of all matrices in each domain.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y_enc : ndarray, shape (n_matrices,)
+            Extended labels for each matrix.
+
+        Returns
+        -------
+        self : TLCenter instance
+            The TLCenter instance.
+        """
         _, _, domains = decode_domains(X, y_enc)
         self.recenter_ = {}
         for d in np.unique(domains):
@@ -97,17 +156,46 @@ class TLCenter(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X, y_enc=None):
-        """TODO"""
+        """Re-center the data points in the target domain to Identity.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y_enc : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        X : ndarray, shape (n_matrices, n_classes)
+            Set of SPD matrices with mean in the Identity.
+        """
         # Used during inference, apply recenter from specified target domain.
         return self.recenter_[self.target_domain].transform(X)
 
-    def inverse_transform(self, X, y_enc=None):
-        """TODO"""
-        return self.recenter_[self.target_domain].inverse_transform(X)
-
     def fit_transform(self, X, y_enc):
-        """TODO"""
-        # used during fit, in pipeline
+        """Fit TLCenter and then transform data points.
+
+        Calculate the mean of all matrices in each domain and then recenter
+        them to Identity.
+
+        Important: this method is designed for using at training time. The
+        output for .fit_transform() will be different than using .fit() and
+        .transform() separately.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y_enc : ndarray, shape (n_matrices,)
+            Extended labels for each matrix.
+
+        Returns
+        -------
+        X : ndarray, shape (n_matrices, n_classes)
+            Set of SPD matrices with mean in the Identity.
+        """
+        # Used during fit, in pipeline
         self.fit(X, y_enc)
         _, _, domains = decode_domains(X, y_enc)
         X_rct = np.zeros_like(X)
@@ -168,7 +256,23 @@ class TLStretch(BaseEstimator, TransformerMixin):
         self.metric = metric
 
     def fit(self, X, y_enc):
-        """TODO"""
+        """Fit TLStretch.
+
+        Calculate the dispersion around the mean for each domain.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y_enc : ndarray, shape (n_matrices,)
+            Extended labels for each matrix.
+
+        Returns
+        -------
+        self : TLStretch instance
+            The TLStretch instance.
+        """
+
         _, _, domains = decode_domains(X, y_enc)
         n_dim = X[0].shape[1]
         self._means = {}
@@ -197,10 +301,24 @@ class TLStretch(BaseEstimator, TransformerMixin):
         return powm(X, np.sqrt(dispersion_out / dispersion_in))
 
     def transform(self, X, y_enc=None):
-        """Used during inference, apply recenter from specified target domain.
+        """Stretch the data points in the target domain.
 
-        TO COMPLETE
+        Important: the stretching operation is properly defined only for the
+        riemann metric.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y_enc : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        X : ndarray, shape (n_matrices, n_classes)
+            Set of SPD matrices with desired final dispersion.
         """
+
         if not self.centered_data:
             # center matrices to Identity
             X = self._center(X, self._means[self.target_domain])
@@ -217,7 +335,28 @@ class TLStretch(BaseEstimator, TransformerMixin):
         return X_str
 
     def fit_transform(self, X, y_enc):
-        """TODO"""
+        """Fit TLStretch and then transform data points.
+
+        Calculate the dispersion around the mean for each domain and then
+        stretch the data points to the desired final dispersion.
+
+        Important: this method is designed for using at training time. The
+        output for .fit_transform() will be different than using .fit() and
+        .transform() separately.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y_enc : ndarray, shape (n_matrices,)
+            Extended labels for each matrix.
+
+        Returns
+        -------
+        X : ndarray, shape (n_matrices, n_classes)
+            Set of SPD matrices with desired final dispersion.
+        """
+
         # used during fit, in pipeline
         self.fit(X, y_enc)
         _, _, domains = decode_domains(X, y_enc)
@@ -301,7 +440,23 @@ class TLRotate(BaseEstimator, TransformerMixin):
         self.n_jobs = n_jobs
 
     def fit(self, X, y_enc):
-        """TODO"""
+        """Fit TLRotate.
+
+        Calculate the rotations matrices to transform each source domain into
+        the target domain.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y_enc : ndarray, shape (n_matrices,)
+            Extended labels for each matrix.
+
+        Returns
+        -------
+        self : TLRotate instance
+            The TLRotate instance.
+        """
 
         _, _, domains = decode_domains(X, y_enc)
 
@@ -328,12 +483,50 @@ class TLRotate(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X, y_enc=None):
-        """TODO"""
+        """Rotate the data points in the target domain.
+
+        The rotations are done from source to target, so in this step the data
+        points suffer no transformation at all.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y_enc : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        X : ndarray, shape (n_matrices, n_classes)
+            Same set of SPD matrices as in the input.
+        """
+
         # used during inference on target domain
         return X
 
     def fit_transform(self, X, y_enc):
-        """TODO"""
+        """Fit TLRotate and then transform data points.
+
+        Calculate the rotation matrix for matching each source domain to the
+        target domain.
+
+        Important: this method is designed for using at training time. The
+        output for .fit_transform() will be different than using .fit() and
+        .transform() separately.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y_enc : ndarray, shape (n_matrices,)
+            Extended labels for each matrix.
+
+        Returns
+        -------
+        X : ndarray, shape (n_matrices, n_classes)
+            Set of SPD matrices after rotation step.
+        """
+
         # used during fit in pipeline, rotate each source domain
         self.fit(X, y_enc)
         _, _, domains = decode_domains(X, y_enc)
