@@ -73,11 +73,9 @@ def decode_domains(X_enc, y_enc):
     """
     y, domain = [], []
     for n in range(len(y_enc)):
-        yn_enc = y_enc[n]
-        yn = yn_enc.split('/')[0]
-        dn = yn_enc.split('/')[1]
-        y.append(yn)
-        domain.append(dn)
+        yn_enc = y_enc[n].split('/')
+        y.append(yn_enc[0])
+        domain.append(yn_enc[1])
     return X_enc, np.array(y), np.array(domain)
 
 
@@ -105,9 +103,7 @@ class TLSplitter():
     -----
     .. versionadded:: 0.3.1
     """  # noqa
-    def __init__(self,
-                 target_domain,
-                 cv_iterator):
+    def __init__(self, target_domain, cv_iterator):
 
         self.target_domain = target_domain
         self.cv_iterator = cv_iterator

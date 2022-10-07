@@ -3,7 +3,7 @@
 Motor imagery classification by transfer learning
 ====================================================================
 
-Classify motor imagery data with transfer learning [1]_.
+Classify motor imagery data with transfer learning applied to MDM [1]_.
 """
 
 import numpy as np
@@ -25,7 +25,7 @@ from pyriemann.transfer import (
     TLDummy,
     TLCenter,
     TLEstimator,
-    TLSplitter
+    TLSplitter,
 )
 
 set_log_level(verbose=False)
@@ -131,58 +131,57 @@ for subject_target_idx in tqdm(range(len(subject_list))):
         X_enc_train, X_enc_test = X_enc[train_idx], X_enc[test_idx]
         y_enc_train, y_enc_test = y_enc[train_idx], y_enc[test_idx]
 
-        # (1) Dummy pipeline: no transfer learning at all
-        # - The classifier is trained only with points from the source domain
+        # (1) Dummy pipeline: no transfer learning at all.
+        # Classifier is trained only with points from the source domain.
         domain_weight_dummy = {}
         for d in np.unique(domains):
             domain_weight_dummy[d] = 1.0
         domain_weight_dummy[cv.target_domain] = 0.0
 
-        # Instantiate
-        step1 = TLDummy()
-        clf = TLEstimator(
-            target_domain=cv.target_domain,
-            estimator=clf_base,
-            domain_weight=domain_weight_dummy)
-        pipeline = make_pipeline(step1, clf)
+        pipeline = make_pipeline(
+            TLDummy(),
+            TLEstimator(
+                target_domain=cv.target_domain,
+                estimator=clf_base,
+                domain_weight=domain_weight_dummy,
+            ),
+        )
 
-        # Fit
+        # Fit and get accuracy score
         pipeline.fit(X_enc_train, y_enc_train)
+        scores_cv['dummy'].append(pipeline.score(X_enc_test, y_enc_test))
 
-        # Get the accuracy score
-        scores_cv['dummy'].append(
-            pipeline.score(X_enc_test, y_enc_test))
-
-        # (2) RCT pipeline: recenter the data from each domain to identity
-        # see [1]_
-        # - The classifier is trained only with points from the source domain
+        # (2) Recentering pipeline: recenter the data from each domain to
+        # identity [1]_.
+        # Classifier is trained only with points from the source domain.
         domain_weight_rct = {}
         for d in np.unique(domains):
             domain_weight_rct[d] = 1.0
         domain_weight_rct[cv.target_domain] = 0.0
 
-        # Instantiate
-        step1 = TLCenter(target_domain=cv.target_domain)
-        clf = TLEstimator(
-            target_domain=cv.target_domain,
-            estimator=clf_base,
-            domain_weight=domain_weight_rct)
-        pipeline = make_pipeline(step1, clf)
+        pipeline = make_pipeline(
+            TLCenter(target_domain=cv.target_domain),
+            TLEstimator(
+                target_domain=cv.target_domain,
+                estimator=clf_base,
+                domain_weight=domain_weight_rct,
+            ),
+        )
 
-        # Fit pipeline
         pipeline.fit(X_enc_train, y_enc_train)
-
-        # Get the accuracy score
         scores_cv['rct'].append(pipeline.score(X_enc_test, y_enc_test))
 
     for meth in scores.keys():
         scores[meth].append(np.mean(scores_cv[meth]))
 
+
+###############################################################################
+
 # Plot results
 fig, ax = plt.subplots(figsize=(7, 6))
 ax.boxplot(x=[scores[meth] for meth in scores.keys()])
 ax.set_ylim(0.45, 1.00)
-ax.set_xticklabels(['Dummy', 'RCT'])
+ax.set_xticklabels(['Dummy', 'Recentering'])
 ax.set_ylabel('Classification accuracy')
 ax.set_xlabel('Method')
 ax.set_title('Transfer learning with data pooled from 10 subjects')
@@ -195,6 +194,6 @@ plt.show()
 # ----------
 # .. [1] `Transfer Learning: A Riemannian Geometry Framework With Applications
 #    to Brain–Computer Interfaces
-#    <https://hal.archives-ouvertes.fr/hal-01923278/>`_.
+#    <https://hal.archives-ouvertes.fr/hal-01923278/>`_
 #    P Zanini et al, IEEE Transactions on Biomedical Engineering, vol. 65,
-#     no. 5, pp. 1107-1116, August, 2017
+#    no. 5, pp. 1107-1116, August, 2017

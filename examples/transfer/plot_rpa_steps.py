@@ -8,6 +8,7 @@ points from source and target domains when applying the Riemannian Procrustes
 Analysis [1]_ to match their statistics.
 
 """
+
 import numpy as np
 import matplotlib.pyplot as plt
 
@@ -66,6 +67,9 @@ embedded_points['origin'] = S[:4*n_matrices]
 embedded_points['rct'] = S[4*n_matrices:8*n_matrices]
 embedded_points['rot'] = S[8*n_matrices:-1]
 
+
+###############################################################################
+
 # plot the results
 fig, ax = plt.subplots(figsize=(13.5, 4.4), ncols=3, sharey=True)
 plt.subplots_adjust(wspace=0.10)
@@ -99,11 +103,11 @@ for axi, step, title in zip(ax, steps, titles):
     axi.set_xticks([-0.5, 0.0, 0.5, 1.0, 1.5])
     axi.set_yticks([-1.0, -0.5, 0.0, 0.5, 1.0])
     axi.set_title(title, fontsize=14)
-ax[2].scatter([], [], c="C0", label="source - class 0")
-ax[2].scatter([], [], c="C1", label="source - class 1")
-ax[2].scatter([], [], marker="^", c="C0", label="target - class 0")
-ax[2].scatter([], [], marker="^", c="C1", label="target - class 1")
-ax[2].legend(loc="lower right")
+ax[0].scatter([], [], c="C0", label="source - class 0")
+ax[0].scatter([], [], c="C1", label="source - class 1")
+ax[0].scatter([], [], marker="^", c="C0", label="target - class 0")
+ax[0].scatter([], [], marker="^", c="C1", label="target - class 1")
+ax[0].legend(loc="upper right")
 
 plt.show()
 

@@ -8,6 +8,7 @@ from sklearn.base import (
 )
 from sklearn.pipeline import Pipeline
 from sklearn.metrics import accuracy_score, r2_score
+
 from ..utils.mean import mean_covariance, mean_riemann
 from ..utils.distance import distance
 from ..utils.base import invsqrtm, powm, sqrtm
@@ -117,7 +118,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
     ----------
     .. [1] `Transfer Learning: A Riemannian Geometry Framework With
         Applications to Brain–Computer Interfaces
-        <https://hal.archives-ouvertes.fr/hal-01923278/>`_.
+        <https://hal.archives-ouvertes.fr/hal-01923278/>`_
         P Zanini et al, IEEE Transactions on Biomedical Engineering, vol. 65,
         no. 5, pp. 1107-1116, August, 2017
 

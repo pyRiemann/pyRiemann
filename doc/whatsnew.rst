@@ -21,6 +21,8 @@ v0.3.1.dev
 
 - Add parameter ``sampling_method`` to :func:`pyriemann.dataset.sample_gaussian_spd`, with ``rejection`` accelerating 2x2 matrices generation. :pr:`198` by :user:`Artim436`
 
+- Add Transfer Learning module and examples, including RPA and MDWM. :pr:`189` by :user:`plcrodrigues `, :user:`qbarthelemy` and :user:`sylvchev` 
+
 v0.3 (July 2022)
 ----------------
 

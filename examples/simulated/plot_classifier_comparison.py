@@ -264,6 +264,6 @@ plot_classifiers("euclid")
 # .. [1] https://scikit-learn.org/stable/auto_examples/classification/plot_classifier_comparison.html  # noqa
 # .. [2] `Review of Riemannian distances and divergences, applied to
 #    SSVEP-based BCI
-#    <https://hal.archives-ouvertes.fr/LISV/hal-03015762v1>`
+#    <https://hal.archives-ouvertes.fr/LISV/hal-03015762v1>`_
 #    S. Chevallier, E. K. Kalunga, Q. Barthélemy, E. Monacelli.
 #    Neuroinformatics, Springer, 2021, 19 (1), pp.93-106

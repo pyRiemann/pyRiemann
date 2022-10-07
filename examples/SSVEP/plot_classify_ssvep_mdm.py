@@ -198,6 +198,6 @@ print("MDM accuracy: {:.2f}% +/- {:.2f}".format(np.mean(scores)*100,
 #    M. Congedo, A. Barachant, A. Andreev. Research report, 2013.
 # .. [2] `Review of Riemannian distances and divergences, applied to
 #    SSVEP-based BCI
-#    <https://hal.archives-ouvertes.fr/LISV/hal-03015762v1>`
+#    <https://hal.archives-ouvertes.fr/LISV/hal-03015762v1>`_
 #    S. Chevallier, E. K. Kalunga, Q. Barthélemy, E. Monacelli.
 #    Neuroinformatics, Springer, 2021, 19 (1), pp.93-106
