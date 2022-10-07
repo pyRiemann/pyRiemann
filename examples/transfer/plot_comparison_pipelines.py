@@ -145,9 +145,10 @@ for target_train_frac in tqdm(target_train_frac_array):
         # Classifier is trained only with points from the target domain.
         pipeline = make_pipeline(
             TLEstimator(
-            target_domain=target_domain,
-            estimator=clf_base,
-            domain_weight={'source_domain': 0.0, 'target_domain': 1.0}),
+                target_domain=target_domain,
+                estimator=clf_base,
+                domain_weight={'source_domain': 0.0, 'target_domain': 1.0},
+            ),
         )
 
         pipeline.fit(X_enc_train, y_enc_train)
