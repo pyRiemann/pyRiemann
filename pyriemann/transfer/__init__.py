@@ -10,7 +10,7 @@ from .pipelines import (
     TLStretch,
     TLRotate,
     TLEstimator,
-    TLMDM,
+    MDWM,
 )
 
 __all__ = ["encode_domains",
@@ -21,4 +21,4 @@ __all__ = ["encode_domains",
            "TLStretch",
            "TLRotate",
            "TLEstimator",
-           "TLMDM"]
+           "MDWM"]

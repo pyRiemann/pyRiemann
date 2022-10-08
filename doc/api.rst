@@ -149,7 +149,7 @@ Transfer Learning
     TLCenter
     TLStretch
     TLRotate
-    TLMDM
+    MDWM
 
 Stats
 ------------------

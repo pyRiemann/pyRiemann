@@ -1,7 +1,7 @@
 
 import pytest
 import numpy as np
-from sklearn.model_selection import KFold
+from sklearn.model_selection import KFold, StratifiedShuffleSplit
 from sklearn.pipeline import make_pipeline
 
 from pyriemann.datasets.simulated import (
@@ -106,20 +106,24 @@ def test_encode_decode_domains(rndstate):
     assert (domain == d_dec).all()
 
 
-def test_tlsplitter(rndstate):
+@pytest.mark.parametrize("cv_iterator", [KFold(n_splits=5, shuffle=True),
+                                         StratifiedShuffleSplit(
+                                            n_splits=5, train_size=0.80)])
+def test_tlsplitter(rndstate, cv_iterator):
     """Test wrapper for cross-validation in transfer learning"""
     X, y_enc = make_classification_transfer(
         n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate)
     cv = TLSplitter(
         target_domain="target_domain",
-        cv_iterator=KFold(n_splits=5, shuffle=True, random_state=rndstate))
+        cv_iterator=cv_iterator)
     train_idx, test_idx = next(cv.split(X, y_enc))
     assert len(train_idx) == 90  # 50 from source and 4/5*100 from target
     assert len(test_idx) == 10  # 1/5*100 from target
     assert cv.get_n_splits() == 5
 
 
-def test_tlestimator(rndstate):
+@pytest.mark.parametrize("clf", [MDM(metric="riemann")])
+def test_tlestimator(rndstate, clf):
     """Test wrapper for estimators in transfer learning"""
     X, y_enc = make_classification_transfer(
         n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate)
@@ -131,10 +135,9 @@ def test_tlestimator(rndstate):
     y_target = y[domain == 'target_domain']
 
     # consider a simple base classifier
-    base_est = MDM(metric="riemann")
     tlest = TLEstimator(
         target_domain="target_domain",
-        estimator=base_est)
+        estimator=clf)
 
     # check covmeans with just source_domain
     tlest.domain_weight = {"source_domain": 1.0, "target_domain": 0.0}
@@ -161,10 +164,9 @@ def test_tlestimator(rndstate):
         mean_riemann(X[y == tlest.estimator.classes_[1]]))
 
     # consider a classifier with pipeline
-    base_est = make_pipeline(MDM(metric="riemann"))
     tlest = TLEstimator(
         target_domain="target_domain",
-        estimator=base_est)
+        estimator=make_pipeline(clf))
 
     # check covmeans with just source_domain
     tlest.domain_weight = {"source_domain": 1.0, "target_domain": 0.0}

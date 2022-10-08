@@ -656,7 +656,7 @@ class TLEstimator(BaseEstimator):
             return r2_score(y_true, y_pred)
 
 
-class TLMDM(MDM):
+class MDWM(MDM):
     """Classification by Minimum Distance to Weighted Mean.
 
     Classification by nearest centroid. For each of the given classes, a
@@ -750,8 +750,8 @@ class TLMDM(MDM):
 
         Returns
         -------
-        self : TLMDM instance
-            The TLMDM instance.
+        self : MDWM instance
+            The MDWM instance.
         """
         self.metric_mean, self.metric_dist = _check_metric(self.metric)
         if not 0 <= self.transfer_coef <= 1:
@@ -782,17 +782,17 @@ class TLMDM(MDM):
 
         self.classes_ = np.unique(y_src)
 
-        self.target_means_ = Parallel(n_jobs=self.n_jobs)(
+        self.target_means_ = np.stack(Parallel(n_jobs=self.n_jobs)(
             delayed(mean_covariance)(
                 X_tgt[y_tgt == ll],
                 metric=self.metric_mean)
-            for ll in self.classes_)
-        self.source_means_ = Parallel(n_jobs=self.n_jobs)(
+            for ll in self.classes_))
+        self.source_means_ = np.stack(Parallel(n_jobs=self.n_jobs)(
             delayed(mean_covariance)(
                 X_src[y_src == ll],
                 metric=self.metric_mean,
                 sample_weight=sample_weight[y_src == ll])
-            for ll in self.classes_)
+            for ll in self.classes_))
 
         self.covmeans_ = geodesic(
             self.target_means_,
