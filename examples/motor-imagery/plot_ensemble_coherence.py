@@ -119,7 +119,7 @@ param_lr = {
 }
 step_cov = [("cov", Covariances(estimator="lwf")),
             ("tg", TangentSpace(metric="riemann")),
-            ("LogistReg", LogisticRegression(**param_lr))]
+            ("LogReg", LogisticRegression(**param_lr))]
 
 # Functional connectivity-based Riemannian geometry
 param_ft = {"fmin": fmin, "fmax": fmax, "fs": fs}
