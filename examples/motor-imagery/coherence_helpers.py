@@ -99,8 +99,8 @@ class FunctionalTransformer(TransformerMixin, BaseEstimator):
     def transform(self, X):
         Xfc_freq = self.coh.fit_transform(X)
         Xfc = np.empty(Xfc_freq.shape[:-1], dtype=Xfc_freq.dtype)
-        for trial, fc in enumerate(Xfc_freq):
-            Xfc[trial, :, :] = fc.mean(axis=-1)
+        for i, fc in enumerate(Xfc_freq):
+            Xfc[i] = fc.mean(axis=-1)
         return Xfc
 
 
