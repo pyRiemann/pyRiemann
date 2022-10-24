@@ -208,7 +208,7 @@ def test_mdwm(domain_tradeoff):
     X_target = X[domain == 'target_domain']
     y_target = y[domain == 'target_domain']
 
-    clf = MDWM(domain_tradeoff=domain_tradeoff)
+    clf = MDWM(domain_tradeoff=domain_tradeoff, target_domain='target_domain')
     clf.fit(X, y_enc)
 
     if domain_tradeoff == 0.0:
