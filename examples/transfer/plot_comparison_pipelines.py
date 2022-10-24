@@ -136,8 +136,8 @@ for target_train_frac in tqdm(target_train_frac_array):
         scores_cv['rpa'].append(pipeline.score(X_enc_test, y_enc_test))
 
         # (4) MDWM pipeline
-        transfer_coef = 1 - np.exp(-25*target_train_frac)
-        pipeline = MDWM(transfer_coef=target_train_frac,
+        domain_tradeoff = 1 - np.exp(-25*target_train_frac)
+        pipeline = MDWM(domain_tradeoff=domain_tradeoff,
                         target_domain=target_domain)
         pipeline.fit(X_enc_train, y_enc_train)
         scores_cv['mdwm'].append(pipeline.score(X_enc_test, y_enc_test))

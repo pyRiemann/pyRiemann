@@ -668,11 +668,11 @@ class MDWM(MDM):
 
     Parameters
     ----------
-    transfer_coef : float
-        Transfer coefficient in [0,1], controlling the trade-off between
-        source and target data. At 0, there is no transfer, only the data
-        acquired from the source are used. At 1, this is a calibration-free
-        system as no data are required from the source.
+    domain_tradeoff : float
+        Coefficient in [0,1] controlling the trade-off between source and
+        target domains. At 0, there is no transfer, only the data acquired from
+        the source domain are used. At 1, this is a calibration-free system as
+        no data are required from the source domain.
     target_domain : string
         Name of the target domain in extended labels.
     metric : string | dict, default='riemann'
@@ -724,12 +724,12 @@ class MDWM(MDM):
 
     def __init__(
             self,
-            transfer_coef,
+            domain_tradeoff,
             target_domain,
             metric='riemann',
             n_jobs=1):
         """Init."""
-        self.transfer_coef = transfer_coef
+        self.domain_tradeoff = domain_tradeoff
         self.target_domain = target_domain
         self.metric = metric
         self.n_jobs = n_jobs
@@ -754,10 +754,10 @@ class MDWM(MDM):
             The MDWM instance.
         """
         self.metric_mean, self.metric_dist = _check_metric(self.metric)
-        if not 0 <= self.transfer_coef <= 1:
+        if not 0 <= self.domain_tradeoff <= 1:
             raise ValueError(
-                'Value transfer_coef must be included in [0, 1] (Got %d)'
-                % self.transfer_coef)
+                'Value domain_tradeoff must be included in [0, 1] (Got %d)'
+                % self.domain_tradeoff)
 
         X_dec, y_dec, domains = decode_domains(X, y_enc)
         X_src = X_dec[domains != self.target_domain]
@@ -765,7 +765,7 @@ class MDWM(MDM):
         X_tgt = X_dec[domains == self.target_domain]
         y_tgt = y_dec[domains == self.target_domain]
 
-        if self.transfer_coef != 0:
+        if self.domain_tradeoff != 0:
             if set(y_tgt) != set(y_src):
                 raise ValueError(
                     f"classes in source domain must match classes in target \
@@ -797,8 +797,8 @@ class MDWM(MDM):
         self.covmeans_ = geodesic(
             self.target_means_,
             self.source_means_,
-            self.transfer_coef,
-            self.metric_mean
+            self.domain_tradeoff,
+            self.metric_mean,
         )
         return self
 

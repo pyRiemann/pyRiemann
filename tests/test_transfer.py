@@ -1,12 +1,13 @@
 
 import pytest
+from pytest import approx
 import numpy as np
 from sklearn.model_selection import KFold, StratifiedShuffleSplit
 from sklearn.pipeline import make_pipeline, Pipeline
 
 from pyriemann.datasets.simulated import (
     make_classification_transfer,
-    make_covariances
+    make_covariances,
 )
 from pyriemann.utils.distance import distance, distance_riemann
 from pyriemann.classification import MDM
@@ -19,6 +20,7 @@ from pyriemann.transfer import (
     encode_domains,
     TLSplitter,
     TLEstimator,
+    MDWM,
 )
 
 rndstate = 1234
@@ -134,10 +136,19 @@ def test_tlsplitter(rndstate, cv_iterator):
         make_pipeline(MDM(metric="riemann")),
     ]
 )
-def test_tlestimator(rndstate, clf):
+@pytest.mark.parametrize(
+    "source_domain, target_domain",
+    [(1.0, 0.0), (0.0, 1.0), (1.0, 1.0)],
+)
+def test_tlestimator(rndstate, clf, source_domain, target_domain):
     """Test wrapper for estimators in transfer learning"""
+    n_classes, n_matrices = 2, 40
     X, y_enc = make_classification_transfer(
-        n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate)
+        n_matrices=n_matrices // 4,
+        class_sep=5,
+        class_disp=1.0,
+        random_state=rndstate,
+    )
 
     X, y, domain = decode_domains(X, y_enc)
     X_source = X[domain == 'source_domain']
@@ -154,26 +165,67 @@ def test_tlestimator(rndstate, clf):
     elif isinstance(clf, Pipeline):
         est = tlest.estimator.steps[0][1]
 
-    # check covmeans with just source_domain
-    tlest.domain_weight = {"source_domain": 1.0, "target_domain": 0.0}
+    tlest.domain_weight = {
+        "source_domain": source_domain,
+        "target_domain": target_domain,
+    }
     tlest.fit(X, y_enc)
-    assert est.covmeans_[0] == pytest.approx(
-        mean_riemann(X_source[y_source == tlest.estimator.classes_[0]]))
-    assert est.covmeans_[1] == pytest.approx(
-        mean_riemann(X_source[y_source == tlest.estimator.classes_[1]]))
 
-    # check covmeans with just target_domain
-    tlest.domain_weight = {"source_domain": 0.0, "target_domain": 1.0}
-    tlest.fit(X, y_enc)
-    assert est.covmeans_[0] == pytest.approx(
-        mean_riemann(X_target[y_target == tlest.estimator.classes_[0]]))
-    assert est.covmeans_[1] == pytest.approx(
-        mean_riemann(X_target[y_target == tlest.estimator.classes_[1]]))
+    if source_domain == 1.0 and target_domain == 0.0:
+        X_0 = X_source[y_source == tlest.estimator.classes_[0]]
+        X_1 = X_source[y_source == tlest.estimator.classes_[1]]
+    elif source_domain == 0.0 and target_domain == 1.0:
+        X_0 = X_target[y_target == tlest.estimator.classes_[0]]
+        X_1 = X_target[y_target == tlest.estimator.classes_[1]]
+    elif source_domain == 1.0 and target_domain == 1.0:
+        X_0 = X[y == tlest.estimator.classes_[0]]
+        X_1 = X[y == tlest.estimator.classes_[1]]
+    assert est.covmeans_[0] == pytest.approx(mean_riemann(X_0))
+    assert est.covmeans_[1] == pytest.approx(mean_riemann(X_1))
 
-    # check covmeans with both domains
-    tlest.domain_weight = {"source_domain": 1.0, "target_domain": 1.0}
-    tlest.fit(X, y_enc)
-    assert est.covmeans_[0] == pytest.approx(
-        mean_riemann(X[y == tlest.estimator.classes_[0]]))
-    assert est.covmeans_[1] == pytest.approx(
-        mean_riemann(X[y == tlest.estimator.classes_[1]]))
+    predicted = tlest.predict(X)
+    assert predicted.shape == (n_matrices,)
+
+    probabilities = clf.predict_proba(X)
+    assert probabilities.shape == (n_matrices, n_classes)
+    assert probabilities.sum(axis=1) == approx(np.ones(n_matrices))
+
+
+@pytest.mark.parametrize("domain_tradeoff", [0, 0.5, 1])
+def test_mdwm(domain_tradeoff):
+    """Test for MDWM"""
+    n_classes, n_matrices = 2, 40
+    X, y_enc = make_classification_transfer(
+        n_matrices=n_matrices // 4,
+        class_sep=5,
+        class_disp=1.0,
+        random_state=rndstate,
+    )
+
+    X, y, domain = decode_domains(X, y_enc)
+    X_source = X[domain == 'source_domain']
+    y_source = y[domain == 'source_domain']
+    X_target = X[domain == 'target_domain']
+    y_target = y[domain == 'target_domain']
+
+    clf = MDWM(domain_tradeoff=domain_tradeoff)
+    clf.fit(X, y_enc)
+
+    if domain_tradeoff == 0.0:
+        X_0 = X_source[y_source == clf.classes_[0]]
+        X_1 = X_source[y_source == clf.classes_[1]]
+    elif domain_tradeoff == 1.0:
+        X_0 = X_target[y_target == clf.classes_[0]]
+        X_1 = X_target[y_target == clf.classes_[1]]
+    elif domain_tradeoff == 0.5:
+        X_0 = X[y == clf.classes_[0]]
+        X_1 = X[y == clf.classes_[1]]
+    assert clf.covmeans_[0] == pytest.approx(mean_riemann(X_0))
+    assert clf.covmeans_[1] == pytest.approx(mean_riemann(X_1))
+
+    predicted = clf.predict(X)
+    assert predicted.shape == (n_matrices,)
+
+    probabilities = clf.predict_proba(X)
+    assert probabilities.shape == (n_matrices, n_classes)
+    assert probabilities.sum(axis=1) == approx(np.ones(n_matrices))
