@@ -669,10 +669,12 @@ class MDWM(MDM):
     Parameters
     ----------
     domain_tradeoff : float
-        Coefficient in [0,1] controlling the trade-off between source and
-        target domains. At 0, there is no transfer, only the data acquired from
-        the source domain are used. At 1, this is a calibration-free system as
-        no data are required from the source domain.
+        Coefficient in [0,1] controlling the transfer, ie the trade-off between
+        source and target domains.
+        At 0, there is no transfer, only matrices acquired from the source
+        domain are used.
+        At 1, this is a calibration-free system as no matrices are required
+        from the source domain.
     target_domain : string
         Name of the target domain in extended labels.
     metric : string | dict, default='riemann'
@@ -765,12 +767,14 @@ class MDWM(MDM):
         X_tgt = X_dec[domains == self.target_domain]
         y_tgt = y_dec[domains == self.target_domain]
 
+        self.classes_ = np.unique(y_src)
+
         if self.domain_tradeoff != 0:
             if set(y_tgt) != set(y_src):
                 raise ValueError(
                     f"classes in source domain must match classes in target \
-                    domain. Classes in source are {np.unique(y_src)} while \
-                    classes in target are {np.unique(y_enc)}")
+                    domain. Classes in source are {self.classes_} while \
+                    classes in target are {np.unique(y_tgt)}")
 
         if sample_weight is not None:
             if (sample_weight.shape != (X_src.shape[0], 1)) and \
@@ -779,8 +783,6 @@ class MDWM(MDM):
                     None or an ndarray shape (n_matrices, 1)")
         else:
             sample_weight = np.ones(X_src.shape[0])
-
-        self.classes_ = np.unique(y_src)
 
         self.target_means_ = np.stack(Parallel(n_jobs=self.n_jobs)(
             delayed(mean_covariance)(
@@ -795,8 +797,8 @@ class MDWM(MDM):
             for ll in self.classes_))
 
         self.covmeans_ = geodesic(
-            self.target_means_,
             self.source_means_,
+            self.target_means_,
             self.domain_tradeoff,
             self.metric_mean,
         )
