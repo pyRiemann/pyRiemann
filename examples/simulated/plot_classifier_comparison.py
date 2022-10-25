@@ -10,7 +10,7 @@ of different classifiers, used with different metrics [2]_.
 This should be taken with a grain of salt, as the intuition conveyed by
 these examples does not necessarily carry over to real datasets.
 
-The 3D plots show training points in solid colors and testing points
+The 3D plots show training matrices in solid colors and testing matrices
 semi-transparent. The lower right shows the classification accuracy on the test
 set.
 
