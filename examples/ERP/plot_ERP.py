@@ -21,7 +21,7 @@ from pyriemann.utils.viz import plot_waveforms
 # -------------
 
 # Set filenames
-data_path = mne.datasets.sample.data_path()
+data_path = str(mne.datasets.sample.data_path())
 raw_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw.fif"
 event_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif"
 
