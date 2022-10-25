@@ -247,4 +247,3 @@ def test_mdwm(domain_tradeoff, metric):
 
     # test score
     clf.score(X, y_enc)
-
