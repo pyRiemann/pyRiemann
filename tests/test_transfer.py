@@ -239,7 +239,7 @@ def test_tlregressor(rndstate, reg, source_domain, target_domain):
     assert predicted.shape == (n_matrices,)
 
     # test score
-    #tlreg.score(X, y_enc)  # uncomment after merge of PR 205
+    # tlreg.score(X, y_enc)  # uncomment after merge of PR 205
 
 
 @pytest.mark.parametrize("domain_tradeoff", [0, 0.5, 1])
