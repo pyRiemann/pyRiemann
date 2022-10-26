@@ -11,6 +11,7 @@ from pyriemann.datasets.simulated import (
 )
 from pyriemann.utils.distance import distance, distance_riemann
 from pyriemann.classification import MDM
+from pyriemann.regression import KNearestNeighborRegressor
 from pyriemann.utils.mean import mean_covariance, mean_riemann
 from pyriemann.transfer import (
     TLCenter,
@@ -20,6 +21,7 @@ from pyriemann.transfer import (
     encode_domains,
     TLSplitter,
     TLClassifier,
+    TLRegressor,
     MDWM,
 )
 
@@ -193,6 +195,51 @@ def test_tlclassifier(rndstate, clf, source_domain, target_domain):
 
     # test score
     tlclf.score(X, y_enc)
+
+
+@pytest.mark.parametrize(
+    "reg",
+    [
+        KNearestNeighborRegressor(metric="riemann"),
+        make_pipeline(KNearestNeighborRegressor(metric="riemann")),
+    ]
+)
+@pytest.mark.parametrize(
+    "source_domain, target_domain",
+    [(1.0, 0.0), (0.0, 1.0), (1.0, 1.0)],
+)
+def test_tlregressor(rndstate, reg, source_domain, target_domain):
+    """Test wrapper for regressors in transfer learning"""
+
+    def make_regression_transfer(n_matrices, n_channels, rs):
+        X = make_covariances(
+            n_matrices=n_matrices, n_channels=n_channels, rs=rndstate
+        )
+        y = np.random.uniform(low=1.0, high=10.0, size=n_matrices)
+        domain = np.array(20*['source_domain'] + 20*['target_domain'])
+        _, y_enc = encode_domains(X, y, domain)
+        return X, y_enc
+
+    n_matrices, n_channels = 40, 2
+    X, y_enc = make_regression_transfer(
+        n_matrices=n_matrices, n_channels=n_channels, rs=rndstate
+    )
+
+    tlreg = TLRegressor(target_domain="target_domain", estimator=reg)
+    tlreg.domain_weight = {
+        "source_domain": source_domain,
+        "target_domain": target_domain,
+    }
+
+    # test fit
+    tlreg.fit(X, y_enc)
+
+    # test predict
+    predicted = tlreg.predict(X)
+    assert predicted.shape == (n_matrices,)
+
+    # test score
+    #tlreg.score(X, y_enc)  # uncomment after merge of PR 205
 
 
 @pytest.mark.parametrize("domain_tradeoff", [0, 0.5, 1])
