@@ -24,7 +24,7 @@ from pyriemann.transfer import (
     TLCenter,
     TLStretch,
     TLRotate,
-    TLEstimator,
+    TLClassifier,
     MDWM
 )
 
@@ -90,7 +90,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         # Classifier is trained only with samples from the source dataset.
         pipeline = make_pipeline(
             TLDummy(),
-            TLEstimator(
+            TLClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
                 domain_weight={'source_domain': 1.0, 'target_domain': 0.0},
@@ -105,7 +105,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         # Classifier is trained only with points from the source domain.
         pipeline = make_pipeline(
             TLCenter(target_domain=target_domain),
-            TLEstimator(
+            TLClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
                 domain_weight={'source_domain': 1.0, 'target_domain': 0.0},
@@ -125,7 +125,7 @@ for target_train_frac in tqdm(target_train_frac_array):
                 centered_data=True,
             ),
             TLRotate(target_domain=target_domain, metric='euclid'),
-            TLEstimator(
+            TLClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
                 domain_weight={'source_domain': 0.5, 'target_domain': 0.5},
@@ -145,7 +145,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         # (5) Calibration: use only data from target-train partition.
         # Classifier is trained only with points from the target domain.
         pipeline = make_pipeline(
-            TLEstimator(
+            TLClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
                 domain_weight={'source_domain': 0.0, 'target_domain': 1.0},

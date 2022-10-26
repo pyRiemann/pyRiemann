@@ -463,20 +463,24 @@ class TLRotate(BaseEstimator, TransformerMixin):
 
         idx = domains == self.target_domain
         X_target, y_target = X[idx], y_enc[idx]
-        M_target = np.stack([mean_riemann(X_target[y_target == label])
-                             for label in np.unique(y_target)])
+        M_target = np.stack([
+            mean_riemann(X_target[y_target == label])
+            for label in np.unique(y_target)
+        ])
 
         source_names = np.unique(domains)
         source_names = source_names[source_names != self.target_domain]
         rotations = Parallel(n_jobs=self.n_jobs)(
             delayed(get_rotation_matrix)(
-                np.stack([mean_riemann(
-                    X[domains == d][y_enc[domains == d] == label])
-                    for label in np.unique(y_enc[domains == d])]),
+                np.stack([
+                    mean_riemann(X[domains == d][y_enc[domains == d] == label])
+                    for label in np.unique(y_enc[domains == d])
+                ]),
                 M_target,
                 self.weights,
-                metric=self.metric)
-            for d in source_names)
+                metric=self.metric,
+            ) for d in source_names
+        )
         self.rotations_ = {}
         for di, roti in zip(source_names, rotations):
             self.rotations_[di] = roti
@@ -553,12 +557,12 @@ class TLEstimator(BaseEstimator):
     target_domain : str
         Domain to consider as target.
     estimator : BaseEstimator
-        The estimator to apply on the data points. It can be any regressor or
+        The estimator to apply on matrices. It can be any regressor or
         classifier from pyRiemann.
     domain_weight : None | dict, default=None
-        How to combine the samples from each domain to train the estimator.
-        The dict contains key=domain_name and value=weight_to_assign. If 'None'
-        then assign the same weight to all domains.
+        Weights to combine matrices from each domain to train the estimator.
+        The dict contains key=domain_name and value=weight_to_assign.
+        If None, it uses equal weights.
 
     Notes
     -----
@@ -569,12 +573,7 @@ class TLEstimator(BaseEstimator):
         """Init."""
         self.target_domain = target_domain
         self.domain_weight = domain_weight
-
-        if is_regressor(estimator) or is_classifier(estimator):
-            self.estimator = estimator
-        else:
-            raise TypeError(
-                'Estimator has to be either a classifier or a regressor.')
+        self.estimator = estimator
 
     def fit(self, X, y_enc):
         """Fit TLEstimator.
@@ -591,11 +590,15 @@ class TLEstimator(BaseEstimator):
         self : TLEstimator instance
             The TLEstimator instance.
         """
+        if not is_regressor(self.estimator) \
+                and not is_classifier(self.estimator):
+            raise TypeError(
+                'Estimator has to be either a classifier or a regressor.')
 
         X_dec, y_dec, domains = decode_domains(X, y_enc)
 
         if is_regressor(self.estimator):
-            y_dec = y_dec.astype(float)
+            y_dec = y_dec.astype(np.float)
 
         if self.domain_weight is not None:
             w = np.zeros(len(X_dec))
@@ -626,12 +629,35 @@ class TLEstimator(BaseEstimator):
         Returns
         -------
         pred : ndarray, shape (n_matrices,)
-            Predictions for each matrix according to the estimator
+            Predictions for each matrix according to the estimator.
         """
         return self.estimator.predict(X)
 
-    def score(self, X, y_enc):
-        """Return the score of self.estimator
+
+class TLClassifier(TLEstimator):
+    """Transfer learning wrapper for classifiers.
+
+    This is a wrapper for any classifier that converts extended labels used in
+    Transfer Learning into the usual y array to train a classifier of choice.
+
+    Parameters
+    ----------
+    target_domain : str
+        Domain to consider as target.
+    estimator : BaseClassifier
+        The classifier to apply on matrices.
+    domain_weight : None | dict, default=None
+        Weights to combine matrices from each domain to train the classifier.
+        The dict contains key=domain_name and value=weight_to_assign.
+        If None, it uses equal weights.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+    """
+
+    def fit(self, X, y_enc):
+        """Fit TLClassifier.
 
         Parameters
         ----------
@@ -642,18 +668,109 @@ class TLEstimator(BaseEstimator):
 
         Returns
         -------
+        self : TLClassifier instance
+            The TLClassifier instance.
+        """
+        if not is_classifier(self.estimator):
+            raise TypeError('Estimator has to be a classifier.')
+
+        return super().fit(X, y_enc)
+
+    def predict_proba(self, X):
+        """Get the probability.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+
+        Returns
+        -------
+        pred : ndarray, shape (n_matrices, n_classes)
+            Predictions for each matrix.
+        """
+        return self.estimator.predict_proba(X)
+
+    def score(self, X, y_enc):
+        """Return the mean accuracy on the given test data and labels.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Test set of SPD matrices.
+        y_enc : ndarray, shape (n_matrices,)
+            Extended true labels for each matrix.
+
+        Returns
+        -------
         score : float
-            If self.estimator is a classifier, then return the mean accuracy on
-            the given test data and labels. If self.estimator is a regressor,
-            return the coefficient of determination of the prediction.
+            Mean accuracy of self.predict(X) wrt. y.
         """
         _, y_true, _ = decode_domains(X, y_enc)
         y_pred = self.predict(X)
-        if is_classifier(self.estimator):
-            return accuracy_score(y_true, y_pred)
-        elif is_regressor(self.estimator):
-            y_true = y_true.astype(float)
-            return r2_score(y_true, y_pred)
+        return accuracy_score(y_true, y_pred)
+
+
+class TLRegressor(TLEstimator):
+    """Transfer learning wrapper for regressors.
+
+    This is a wrapper for any regressor that converts extended labels used in
+    Transfer Learning into the usual y array to train a regressor of choice.
+
+    Parameters
+    ----------
+    target_domain : str
+        Domain to consider as target.
+    estimator : BaseRegressor
+        The regressor to apply on matrices.
+    domain_weight : None | dict, default=None
+        Weights to combine matrices from each domain to train the regressor.
+        The dict contains key=domain_name and value=weight_to_assign.
+        If None, it uses equal weights.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+    """
+
+    def fit(self, X, y_enc):
+        """Fit TLRegressor.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y_enc : ndarray, shape (n_matrices,)
+            Extended labels for each matrix.
+
+        Returns
+        -------
+        self : TLRegressor instance
+            The TLRegressor instance.
+        """
+        if not is_regressor(self.estimator):
+            raise TypeError('Estimator has to be a regressor.')
+
+        return super().fit(X, y_enc)
+
+    def score(self, X, y_enc):
+        """Return the coefficient of determination of the prediction.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Test set of SPD matrices.
+        y_enc : ndarray, shape (n_matrices,)
+            Extended true values for each matrix.
+
+        Returns
+        -------
+        score : float
+            R2 of self.predict(X) wrt. y.
+        """
+        _, y_true, _ = decode_domains(X, y_enc)
+        y_pred = self.predict(X)
+        return r2_score(y_true.astype(np.float), y_pred)
 
 
 class MDWM(MDM):
@@ -756,6 +873,7 @@ class MDWM(MDM):
             The MDWM instance.
         """
         self.metric_mean, self.metric_dist = _check_metric(self.metric)
+
         if not 0 <= self.domain_tradeoff <= 1:
             raise ValueError(
                 'Value domain_tradeoff must be included in [0, 1] (Got %d)'

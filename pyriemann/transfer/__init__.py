@@ -10,15 +10,21 @@ from .pipelines import (
     TLStretch,
     TLRotate,
     TLEstimator,
+    TLClassifier,
+    TLRegressor,
     MDWM,
 )
 
-__all__ = ["encode_domains",
-           "decode_domains",
-           "TLDummy",
-           "TLSplitter",
-           "TLCenter",
-           "TLStretch",
-           "TLRotate",
-           "TLEstimator",
-           "MDWM"]
+__all__ = [
+    "encode_domains",
+    "decode_domains",
+    "TLDummy",
+    "TLSplitter",
+    "TLCenter",
+    "TLStretch",
+    "TLRotate",
+    "TLEstimator",
+    "TLClassifier",
+    "TLRegressor",
+    "MDWM",
+]

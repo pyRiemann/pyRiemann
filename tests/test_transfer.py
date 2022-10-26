@@ -19,7 +19,7 @@ from pyriemann.transfer import (
     decode_domains,
     encode_domains,
     TLSplitter,
-    TLEstimator,
+    TLClassifier,
     MDWM,
 )
 
@@ -140,8 +140,8 @@ def test_tlsplitter(rndstate, cv_iterator):
     "source_domain, target_domain",
     [(1.0, 0.0), (0.0, 1.0), (1.0, 1.0)],
 )
-def test_tlestimator(rndstate, clf, source_domain, target_domain):
-    """Test wrapper for estimators in transfer learning"""
+def test_tlclassifier(rndstate, clf, source_domain, target_domain):
+    """Test wrapper for classifiers in transfer learning"""
     n_classes, n_matrices = 2, 40
     X, y_enc = make_classification_transfer(
         n_matrices=n_matrices // 4,
@@ -150,19 +150,19 @@ def test_tlestimator(rndstate, clf, source_domain, target_domain):
         random_state=rndstate,
     )
 
-    tlest = TLEstimator(target_domain="target_domain", estimator=clf)
+    tlclf = TLClassifier(target_domain="target_domain", estimator=clf)
     if isinstance(clf, MDM):
-        est = tlest.estimator
+        est = tlclf.estimator
     elif isinstance(clf, Pipeline):
-        est = tlest.estimator.steps[0][1]
+        est = tlclf.estimator.steps[0][1]
 
-    tlest.domain_weight = {
+    tlclf.domain_weight = {
         "source_domain": source_domain,
         "target_domain": target_domain,
     }
 
     # test fit
-    tlest.fit(X, y_enc)
+    tlclf.fit(X, y_enc)
 
     X, y, domain = decode_domains(X, y_enc)
     X_source = X[domain == 'source_domain']
@@ -171,28 +171,28 @@ def test_tlestimator(rndstate, clf, source_domain, target_domain):
     y_target = y[domain == 'target_domain']
 
     if source_domain == 1.0 and target_domain == 0.0:
-        X_0 = X_source[y_source == tlest.estimator.classes_[0]]
-        X_1 = X_source[y_source == tlest.estimator.classes_[1]]
+        X_0 = X_source[y_source == tlclf.estimator.classes_[0]]
+        X_1 = X_source[y_source == tlclf.estimator.classes_[1]]
     elif source_domain == 0.0 and target_domain == 1.0:
-        X_0 = X_target[y_target == tlest.estimator.classes_[0]]
-        X_1 = X_target[y_target == tlest.estimator.classes_[1]]
+        X_0 = X_target[y_target == tlclf.estimator.classes_[0]]
+        X_1 = X_target[y_target == tlclf.estimator.classes_[1]]
     elif source_domain == 1.0 and target_domain == 1.0:
-        X_0 = X[y == tlest.estimator.classes_[0]]
-        X_1 = X[y == tlest.estimator.classes_[1]]
+        X_0 = X[y == tlclf.estimator.classes_[0]]
+        X_1 = X[y == tlclf.estimator.classes_[1]]
     assert est.covmeans_[0] == pytest.approx(mean_riemann(X_0))
     assert est.covmeans_[1] == pytest.approx(mean_riemann(X_1))
 
     # test predict
-    predicted = tlest.predict(X)
+    predicted = tlclf.predict(X)
     assert predicted.shape == (n_matrices,)
 
     # test predict_proba
-    probabilities = tlest.predict_proba(X)
+    probabilities = tlclf.predict_proba(X)
     assert probabilities.shape == (n_matrices, n_classes)
     assert probabilities.sum(axis=1) == approx(np.ones(n_matrices))
 
     # test score
-    tlest.score(X, y_enc)
+    tlclf.score(X, y_enc)
 
 
 @pytest.mark.parametrize("domain_tradeoff", [0, 0.5, 1])

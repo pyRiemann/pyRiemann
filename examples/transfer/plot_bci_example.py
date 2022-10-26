@@ -24,7 +24,7 @@ from pyriemann.transfer import (
     encode_domains,
     TLDummy,
     TLCenter,
-    TLEstimator,
+    TLClassifier,
     TLSplitter,
 )
 
@@ -140,7 +140,7 @@ for subject_target_idx in tqdm(range(len(subject_list))):
 
         pipeline = make_pipeline(
             TLDummy(),
-            TLEstimator(
+            TLClassifier(
                 target_domain=cv.target_domain,
                 estimator=clf_base,
                 domain_weight=domain_weight_dummy,
@@ -161,7 +161,7 @@ for subject_target_idx in tqdm(range(len(subject_list))):
 
         pipeline = make_pipeline(
             TLCenter(target_domain=cv.target_domain),
-            TLEstimator(
+            TLClassifier(
                 target_domain=cv.target_domain,
                 estimator=clf_base,
                 domain_weight=domain_weight_rct,

@@ -145,6 +145,8 @@ Transfer Learning
 
     TLSplitter
     TLEstimator
+    TLClassifier
+    TLRegressor
     TLDummy
     TLCenter
     TLStretch
