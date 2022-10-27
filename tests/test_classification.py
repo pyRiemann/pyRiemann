@@ -1,12 +1,12 @@
 import pickle
 
-from conftest import get_distances, get_means, get_metrics
 import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 from pytest import approx
 from sklearn.dummy import DummyClassifier
 
+from conftest import get_distances, get_means, get_metrics
 from pyriemann.estimation import Covariances
 from pyriemann.utils.kernel import kernel
 from pyriemann.utils.mean import mean_covariance
@@ -28,9 +28,11 @@ class ClassifierTestCase:
         n_classes, n_matrices, n_channels = 2, 6, 3
         covmats = get_covmats(n_matrices, n_channels)
         labels = get_labels(n_matrices, n_classes)
+
         self.clf_predict(classif, covmats, labels)
         self.clf_fit_independence(classif, covmats, labels)
         self.clf_predict_proba(classif, covmats, labels)
+        self.clf_score(classif, covmats, labels)
         self.clf_populate_classes(classif, covmats, labels)
         if classif in (MDM, KNearestNeighbor, MeanField):
             self.clf_fitpredict(classif, covmats, labels)
@@ -45,9 +47,11 @@ class ClassifierTestCase:
         n_classes, n_matrices, n_channels = 3, 9, 3
         covmats = get_covmats(n_matrices, n_channels)
         labels = get_labels(n_matrices, n_classes)
+
         self.clf_predict(classif, covmats, labels)
         self.clf_fit_independence(classif, covmats, labels)
         self.clf_predict_proba(classif, covmats, labels)
+        self.clf_score(classif, covmats, labels)
         self.clf_populate_classes(classif, covmats, labels)
         if classif in (MDM, KNearestNeighbor, MeanField):
             self.clf_fitpredict(classif, covmats, labels)
@@ -82,6 +86,11 @@ class TestClassifier(ClassifierTestCase):
         clf = classif()
         clf.fit_predict(covmats, labels)
         assert_array_equal(clf.classes_, np.unique(labels))
+
+    def clf_score(self, classif, covmats, labels):
+        clf = classif()
+        clf.fit(covmats, labels)
+        clf.score(covmats, labels)
 
     def clf_transform(self, classif, covmats, labels):
         n_matrices = len(labels)

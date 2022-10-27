@@ -130,22 +130,22 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         return self
 
-    def _predict_distances(self, covtest):
+    def _predict_distances(self, X):
         """Helper to predict the distance. Equivalent to transform."""
         n_centroids = len(self.covmeans_)
 
         if self.n_jobs == 1:
-            dist = [distance(covtest, self.covmeans_[m], self.metric_dist)
+            dist = [distance(X, self.covmeans_[m], self.metric_dist)
                     for m in range(n_centroids)]
         else:
             dist = Parallel(n_jobs=self.n_jobs)(delayed(distance)(
-                covtest, self.covmeans_[m], self.metric_dist)
+                X, self.covmeans_[m], self.metric_dist)
                 for m in range(n_centroids))
 
         dist = np.concatenate(dist, axis=1)
         return dist
 
-    def predict(self, covtest):
+    def predict(self, X):
         """Get the predictions.
 
         Parameters
@@ -158,7 +158,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         pred : ndarray of int, shape (n_matrices,)
             Predictions for each matrix according to the closest centroid.
         """
-        dist = self._predict_distances(covtest)
+        dist = self._predict_distances(X)
         return self.classes_[dist.argmin(axis=1)]
 
     def transform(self, X):

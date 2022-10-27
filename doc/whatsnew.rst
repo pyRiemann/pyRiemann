@@ -24,6 +24,8 @@ v0.3.1.dev
 - Add geometric medians for Euclidean and Riemannian metrics: :func:`pyriemann.utils.median_euclid` and :func:`pyriemann.utils.median_riemann`,
   and add an example in gallery to compare means and medians on synthetic datasets. :pr:`200` by :user:`qbarthelemy`
 
+- Add ``score()`` to k-nearest-neighbors regressor. :pr:`205` by :user:`qbarthelemy`
+
 v0.3 (July 2022)
 ----------------
 
