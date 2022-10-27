@@ -598,7 +598,7 @@ class TLEstimator(BaseEstimator):
         X_dec, y_dec, domains = decode_domains(X, y_enc)
 
         if is_regressor(self.estimator):
-            y_dec = y_dec.astype(np.float)
+            y_dec = y_dec.astype(float)
 
         if self.domain_weight is not None:
             w = np.zeros(len(X_dec))
@@ -770,7 +770,7 @@ class TLRegressor(TLEstimator):
         """
         _, y_true, _ = decode_domains(X, y_enc)
         y_pred = self.predict(X)
-        return r2_score(y_true.astype(np.float), y_pred)
+        return r2_score(y_true.astype(float), y_pred)
 
 
 class MDWM(MDM):

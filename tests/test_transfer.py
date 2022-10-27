@@ -9,23 +9,47 @@ from pyriemann.datasets.simulated import (
     make_classification_transfer,
     make_covariances,
 )
-from pyriemann.utils.distance import distance, distance_riemann
-from pyriemann.classification import MDM
-from pyriemann.regression import KNearestNeighborRegressor
-from pyriemann.utils.mean import mean_covariance, mean_riemann
+from pyriemann.classification import (
+    MDM,
+    FgMDM,
+    KNearestNeighbor,
+    TSclassifier,
+    SVC,
+    MeanField,
+)
+from pyriemann.regression import KNearestNeighborRegressor, SVR
 from pyriemann.transfer import (
+    decode_domains,
+    encode_domains,
     TLCenter,
     TLStretch,
     TLRotate,
-    decode_domains,
-    encode_domains,
     TLSplitter,
     TLClassifier,
     TLRegressor,
     MDWM,
 )
+from pyriemann.utils.distance import distance, distance_riemann
+from pyriemann.utils.mean import mean_covariance, mean_riemann
 
 rndstate = 1234
+
+
+def test_encode_decode_domains(rndstate):
+    """Test encoding and decoding of domains for data points"""
+    X = make_covariances(n_matrices=4, n_channels=2, rs=rndstate)
+    y = np.array(['left_hand', 'right_hand', 'left_hand', 'right_hand'])
+    domain = np.array(2*['source_domain'] + 2*['target_domain'])
+
+    X_enc, y_enc = encode_domains(X, y, domain)
+    assert y_enc[0] == 'left_hand/source_domain'
+    assert y_enc[1] == 'right_hand/source_domain'
+    assert y_enc[2] == 'left_hand/target_domain'
+    assert y_enc[3] == 'right_hand/target_domain'
+
+    _, y_dec, d_dec = decode_domains(X_enc, y_enc)
+    assert (y == y_dec).all()
+    assert (domain == d_dec).all()
 
 
 @pytest.mark.parametrize("metric", ["riemann"])
@@ -95,21 +119,6 @@ def test_tlrotate(rndstate, metric):
         assert d_rot <= d_rct
 
 
-def test_encode_decode_domains(rndstate):
-    """Test encoding and decoding of domains for data points"""
-    X = make_covariances(n_matrices=4, n_channels=2, rs=rndstate)
-    y = np.array(['left_hand', 'right_hand', 'left_hand', 'right_hand'])
-    domain = np.array(2*['source_domain'] + 2*['target_domain'])
-    X_enc, y_enc = encode_domains(X, y, domain)
-    assert y_enc[0] == 'left_hand/source_domain'
-    assert y_enc[1] == 'right_hand/source_domain'
-    assert y_enc[2] == 'left_hand/target_domain'
-    assert y_enc[3] == 'right_hand/target_domain'
-    _, y_dec, d_dec = decode_domains(X_enc, y_enc)
-    assert (y == y_dec).all()
-    assert (domain == d_dec).all()
-
-
 @pytest.mark.parametrize(
     "cv_iterator",
     [
@@ -142,9 +151,9 @@ def test_tlsplitter(rndstate, cv_iterator):
     "source_domain, target_domain",
     [(1.0, 0.0), (0.0, 1.0), (1.0, 1.0)],
 )
-def test_tlclassifier(rndstate, clf, source_domain, target_domain):
+def test_tlclassifier_fit(rndstate, clf, source_domain, target_domain):
     """Test wrapper for classifiers in transfer learning"""
-    n_classes, n_matrices = 2, 40
+    n_matrices = 40
     X, y_enc = make_classification_transfer(
         n_matrices=n_matrices // 4,
         class_sep=5,
@@ -162,8 +171,6 @@ def test_tlclassifier(rndstate, clf, source_domain, target_domain):
         "source_domain": source_domain,
         "target_domain": target_domain,
     }
-
-    # test fit
     tlclf.fit(X, y_enc)
 
     X, y, domain = decode_domains(X, y_enc)
@@ -181,8 +188,45 @@ def test_tlclassifier(rndstate, clf, source_domain, target_domain):
     elif source_domain == 1.0 and target_domain == 1.0:
         X_0 = X[y == tlclf.estimator.classes_[0]]
         X_1 = X[y == tlclf.estimator.classes_[1]]
+
     assert est.covmeans_[0] == pytest.approx(mean_riemann(X_0))
     assert est.covmeans_[1] == pytest.approx(mean_riemann(X_1))
+
+
+@pytest.mark.parametrize(
+    "clf",
+    [
+        MDM(metric="logeuclid"),
+        make_pipeline(MDM(metric="riemann")),
+        FgMDM(),
+        make_pipeline(KNearestNeighbor(metric="logeuclid")),
+        TSclassifier(),
+        SVC(metric="riemann"),
+        make_pipeline(MeanField(metric="logeuclid")),
+    ]
+)
+@pytest.mark.parametrize(
+    "source_domain, target_domain",
+    [(1.0, 0.0), (0.0, 1.0), (1.0, 1.0)],
+)
+def test_tlclassifier_predict(rndstate, clf, source_domain, target_domain):
+    """Test wrapper for classifiers in transfer learning"""
+    n_classes, n_matrices = 2, 40
+    X, y_enc = make_classification_transfer(
+        n_matrices=n_matrices // 4,
+        class_sep=5,
+        class_disp=1.0,
+        random_state=rndstate,
+    )
+
+    if hasattr(clf, 'probability'):
+        clf.set_params(**{'probability': True})
+    tlclf = TLClassifier(target_domain="target_domain", estimator=clf)
+    tlclf.domain_weight = {
+        "source_domain": source_domain,
+        "target_domain": target_domain,
+    }
+    tlclf.fit(X, y_enc)
 
     # test predict
     predicted = tlclf.predict(X)
@@ -201,7 +245,8 @@ def test_tlclassifier(rndstate, clf, source_domain, target_domain):
     "reg",
     [
         KNearestNeighborRegressor(metric="riemann"),
-        make_pipeline(KNearestNeighborRegressor(metric="riemann")),
+        make_pipeline(KNearestNeighborRegressor(metric="logeuclid")),
+        SVR(metric="riemann"),
     ]
 )
 @pytest.mark.parametrize(

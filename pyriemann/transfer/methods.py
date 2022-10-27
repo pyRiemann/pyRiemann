@@ -82,7 +82,7 @@ def decode_domains(X_enc, y_enc):
 class TLSplitter():
     """Class for handling the cross-validation splits of multi-domain data.
 
-    This is a wrapper to sklearn's cross validation iterators [1]_ which
+    This is a wrapper to sklearn's cross-validation iterators [1]_ which
     ensures the handling of domain information with the data points. In fact,
     the data from source domain is always fully available in the training
     partition whereas the random splits are done on the data points from the
