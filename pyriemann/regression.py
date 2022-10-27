@@ -86,7 +86,7 @@ class SVR(sklearnSVR):
             cache_size=200,
             verbose=False,
             max_iter=-1,
-        ):
+    ):
         """Init."""
         self.Cref = Cref
         self.metric = metric
