@@ -145,12 +145,12 @@ def test_distance_implementation_logdet(get_covmats):
 
 
 def test_distance_riemann_properties(get_covmats):
-    n_matrices, n_channels = 2, 6
-    covmats = get_covmats(n_matrices, n_channels)
-    A, B = covmats[0], covmats[1]
+    n_channels = 6
+    A = get_covmats(1, n_channels)[0]
+    B = get_covmats(1, n_channels)[0]
     dist_AB = distance_riemann(A, B)
 
-    # Exponential metric increasing property, Eq(6.8) in [Bhatia2007]
+    # exponential metric increasing property, Eq(6.8) in [Bhatia2007]
     assert dist_AB >= np.linalg.norm(logm(A) - logm(B))
 
     # invariance under inversion
