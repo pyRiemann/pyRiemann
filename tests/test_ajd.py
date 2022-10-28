@@ -36,11 +36,11 @@ def test_get_normalized_weight_pos(get_covmats):
 def test_ajd(ajd, init, get_covmats_params):
     """Test ajd algos"""
     n_matrices, n_channels = 5, 3
-    covmats, _, A = get_covmats_params(n_matrices, n_channels)
+    covmats, _, evecs = get_covmats_params(n_matrices, n_channels)
     if init:
         V, D = ajd(covmats)
     else:
-        V, D = ajd(covmats, init=A)
+        V, D = ajd(covmats, init=evecs)
     assert V.shape == (n_channels, n_channels)
     assert D.shape == (n_matrices, n_channels, n_channels)
 
