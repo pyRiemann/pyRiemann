@@ -902,23 +902,30 @@ class MDWM(MDM):
         else:
             sample_weight = np.ones(X_src.shape[0])
 
-        self.target_means_ = np.stack(Parallel(n_jobs=self.n_jobs)(
-            delayed(mean_covariance)(
-                X_tgt[y_tgt == ll],
-                metric=self.metric_mean)
-            for ll in self.classes_))
-        self.source_means_ = np.stack(Parallel(n_jobs=self.n_jobs)(
-            delayed(mean_covariance)(
-                X_src[y_src == ll],
-                metric=self.metric_mean,
-                sample_weight=sample_weight[y_src == ll])
-            for ll in self.classes_))
+        self.source_means_ = np.stack(
+            Parallel(n_jobs=self.n_jobs)(
+                delayed(mean_covariance)(
+                    X_src[y_src == ll],
+                    metric=self.metric_mean,
+                    sample_weight=sample_weight[y_src == ll],
+                ) for ll in self.classes_
+            )
+        )
+
+        self.target_means_ = np.stack(
+            Parallel(n_jobs=self.n_jobs)(
+                delayed(mean_covariance)(
+                    X_tgt[y_tgt == ll],
+                    metric=self.metric_mean,
+                ) for ll in self.classes_
+            )
+        )
 
         self.covmeans_ = geodesic(
             self.source_means_,
             self.target_means_,
             self.domain_tradeoff,
-            self.metric_mean,
+            metric=self.metric_mean,
         )
         return self
 

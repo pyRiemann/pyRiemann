@@ -2,6 +2,7 @@
 import pytest
 from pytest import approx
 import numpy as np
+from numpy.testing import assert_array_equal
 from sklearn.model_selection import KFold, StratifiedShuffleSplit
 from sklearn.pipeline import make_pipeline, Pipeline
 
@@ -151,8 +152,8 @@ def test_tlsplitter(rndstate, cv_iterator):
     "source_domain, target_domain",
     [(1.0, 0.0), (0.0, 1.0), (1.0, 1.0)],
 )
-def test_tlclassifier_fit(rndstate, clf, source_domain, target_domain):
-    """Test wrapper for classifiers in transfer learning"""
+def test_tlclassifier_mdm(rndstate, clf, source_domain, target_domain):
+    """Test wrapper for MDM classifier in transfer learning"""
     n_matrices = 40
     X, y_enc = make_classification_transfer(
         n_matrices=n_matrices // 4,
@@ -162,11 +163,6 @@ def test_tlclassifier_fit(rndstate, clf, source_domain, target_domain):
     )
 
     tlclf = TLClassifier(target_domain="target_domain", estimator=clf)
-    if isinstance(clf, MDM):
-        est = tlclf.estimator
-    elif isinstance(clf, Pipeline):
-        est = tlclf.estimator.steps[0][1]
-
     tlclf.domain_weight = {
         "source_domain": source_domain,
         "target_domain": target_domain,
@@ -189,6 +185,12 @@ def test_tlclassifier_fit(rndstate, clf, source_domain, target_domain):
         X_0 = X[y == tlclf.estimator.classes_[0]]
         X_1 = X[y == tlclf.estimator.classes_[1]]
 
+    if isinstance(clf, MDM):
+        est = tlclf.estimator
+    elif isinstance(clf, Pipeline):
+        est = tlclf.estimator.steps[0][1]
+
+    # test class centroids
     assert est.covmeans_[0] == pytest.approx(mean_riemann(X_0))
     assert est.covmeans_[1] == pytest.approx(mean_riemann(X_1))
 
@@ -209,7 +211,7 @@ def test_tlclassifier_fit(rndstate, clf, source_domain, target_domain):
     "source_domain, target_domain",
     [(1.0, 0.0), (0.0, 1.0), (1.0, 1.0)],
 )
-def test_tlclassifier_predict(rndstate, clf, source_domain, target_domain):
+def test_tlclassifiers(rndstate, clf, source_domain, target_domain):
     """Test wrapper for classifiers in transfer learning"""
     n_classes, n_matrices = 2, 40
     X, y_enc = make_classification_transfer(
@@ -227,6 +229,9 @@ def test_tlclassifier_predict(rndstate, clf, source_domain, target_domain):
         "target_domain": target_domain,
     }
     tlclf.fit(X, y_enc)
+
+    # test fit
+    assert_array_equal(tlclf.estimator.classes_, ['1', '2'])
 
     # test predict
     predicted = tlclf.predict(X)
@@ -253,7 +258,7 @@ def test_tlclassifier_predict(rndstate, clf, source_domain, target_domain):
     "source_domain, target_domain",
     [(1.0, 0.0), (0.0, 1.0), (1.0, 1.0)],
 )
-def test_tlregressor(rndstate, reg, source_domain, target_domain):
+def test_tlregressors(rndstate, reg, source_domain, target_domain):
     """Test wrapper for regressors in transfer learning"""
 
     def make_regression_transfer(n_matrices, n_channels, rs):
@@ -287,9 +292,10 @@ def test_tlregressor(rndstate, reg, source_domain, target_domain):
     # tlreg.score(X, y_enc)  # uncomment after merge of PR 205
 
 
-@pytest.mark.parametrize("domain_tradeoff", [0, 0.5, 1])
+@pytest.mark.parametrize("domain_tradeoff", [0, 1])  # 0.5
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-def test_mdwm(domain_tradeoff, metric):
+@pytest.mark.parametrize("n_jobs", [-1, 1, 2])
+def test_mdwm(rndstate, domain_tradeoff, metric, n_jobs):
     """Test for MDWM"""
     n_classes, n_matrices = 2, 40
     X, y_enc = make_classification_transfer(
@@ -303,10 +309,12 @@ def test_mdwm(domain_tradeoff, metric):
         domain_tradeoff=domain_tradeoff,
         target_domain='target_domain',
         metric=metric,
+        n_jobs=n_jobs,
     )
 
     # test fit
     clf.fit(X, y_enc)
+    assert_array_equal(clf.classes_, ['1', '2'])
 
     X, y, domain = decode_domains(X, y_enc)
     X_source = X[domain == 'source_domain']
