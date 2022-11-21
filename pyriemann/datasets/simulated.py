@@ -262,7 +262,7 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
 
 def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
                                  domain_sep=5.0, theta=0.0, stretch=1.0,
-                                 random_state=None):
+                                 random_state=None, class_names=[1, 2]):
     """Generate source and target toy datasets for transfer learning examples.
 
     Generate a dataset with 2x2 SPD matrices drawn from two Riemannian Gaussian
@@ -290,6 +290,8 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
         those in source domain (fixed at class_disp).
     random_state : None | int | RandomState instance, default=None
         Pass an int for reproducible output across multiple function calls.
+    class_names : list, default=[1, 2]
+        Names of classes.
 
     Returns
     -------
@@ -308,6 +310,8 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
 
     # the examples considered here are always for 2x2 matrices
     n_dim = 2
+    if len(class_names) != n_dim:
+        raise ValueError("class_names must contain 2 elements")
 
     # create a source dataset with two classes and global mean at identity
     M1_source = np.eye(n_dim)  # first class mean at Identity at first
@@ -316,7 +320,7 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
         mean=M1_source,
         sigma=class_disp,
         random_state=seeds[0])
-    y1_source = (1*np.ones(n_matrices)).astype(int)
+    y1_source = [class_names[0]] * n_matrices
     Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
     Pv = (Pv + Pv.T)/2  # symmetrize
     Pv /= np.linalg.norm(Pv)  # normalize
@@ -327,7 +331,7 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
         mean=M2_source,
         sigma=class_disp,
         random_state=seeds[1])
-    y2_source = (2*np.ones(n_matrices)).astype(int)
+    y2_source = [class_names[1]] * n_matrices
     X_source = np.concatenate([X1_source, X2_source])
     M_source = mean_riemann(X_source)
     M_source_invsqrt = invsqrtm(M_source)

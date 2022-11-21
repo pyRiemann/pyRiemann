@@ -43,10 +43,10 @@ def test_encode_decode_domains(rndstate):
     domain = np.array(2*['source_domain'] + 2*['target_domain'])
 
     X_enc, y_enc = encode_domains(X, y, domain)
-    assert y_enc[0] == 'left_hand/source_domain'
-    assert y_enc[1] == 'right_hand/source_domain'
-    assert y_enc[2] == 'left_hand/target_domain'
-    assert y_enc[3] == 'right_hand/target_domain'
+    assert y_enc[0] == 'source_domain/left_hand'
+    assert y_enc[1] == 'source_domain/right_hand'
+    assert y_enc[2] == 'target_domain/left_hand'
+    assert y_enc[3] == 'target_domain/right_hand'
 
     _, y_dec, d_dec = decode_domains(X_enc, y_enc)
     assert (y == y_dec).all()

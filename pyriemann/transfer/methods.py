@@ -7,7 +7,7 @@ def encode_domains(X, y, domain):
     We handle the possibility of having different domains for the datasets by
     extending the labels of the matrices and including this information to
     them. For instance, if we have a matrix X with class `left_hand` on the
-    `domain_01` then its extended label will be `left_hand/domain_01`. Note
+    `domain_01` then its extended label will be `domain_01/left_hand`. Note
     that if the classes were integers at first, they will be converted to
     strings.
 
@@ -35,7 +35,10 @@ def encode_domains(X, y, domain):
     -----
     .. versionadded:: 0.3.1
     """
-    y_enc = [str(y[n]) + '/' + domain[n] for n in range(len(y))]
+    if len(y) != len(domain):
+        raise ValueError("Input lengths don't match")
+
+    y_enc = [str(d_) + '/' + str(y_) for (d_, y_) in zip(domain, y)]
     return X, np.array(y_enc)
 
 
@@ -72,10 +75,10 @@ def decode_domains(X_enc, y_enc):
     .. versionadded:: 0.3.1
     """
     y, domain = [], []
-    for n in range(len(y_enc)):
-        yn_enc = y_enc[n].split('/')
-        y.append(yn_enc[0])
-        domain.append(yn_enc[1])
+    for y_enc_ in y_enc:
+        y_dec_ = y_enc_.split('/')
+        domain.append(y_dec_[-2])
+        y.append(y_dec_[-1])
     return X_enc, np.array(y), np.array(domain)
 
 
