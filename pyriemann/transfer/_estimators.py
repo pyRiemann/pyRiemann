@@ -93,10 +93,11 @@ class TLCenter(BaseEstimator, TransformerMixin):
     corresponds to a whitening step if the SPD matrices represent the spatial
     covariance matrices of multivariate signals.
 
-    .. note: Using .fit() and then .transform() will give different
-    results than .fit_transform(). In fact, .fit_transform() should be applied
-    on the training dataset (target and source) and .transform() on the test
-    partition of the target dataset.
+    .. note::
+       Using .fit() and then .transform() will give different results than
+       .fit_transform(). In fact, .fit_transform() should be applied on the
+       training dataset (target and source) and .transform() on the test
+       partition of the target dataset.
 
     Parameters
     ----------
@@ -180,9 +181,10 @@ class TLCenter(BaseEstimator, TransformerMixin):
         Calculate the mean of all matrices in each domain and then recenter
         them to Identity.
 
-        .. note: This method is designed for using at training time. The
-        output for .fit_transform() will be different than using .fit() and
-        .transform() separately.
+        .. note::
+           This method is designed for using at training time. The output for
+           .fit_transform() will be different than using .fit() and
+           .transform() separately.
 
         Parameters
         ----------
@@ -212,10 +214,11 @@ class TLStretch(BaseEstimator, TransformerMixin):
     Change the dispersion of the datapoints around their geometric mean
     for each dataset so that they all have the same desired value.
 
-    .. note: Using .fit() and then .transform() will give different
-    results than .fit_transform(). In fact, .fit_transform() should be applied
-    on the training dataset (target and source) and .transform() on the test
-    partition of the target dataset.
+    .. note::
+       Using .fit() and then .transform() will give different results than
+       .fit_transform(). In fact, .fit_transform() should be applied on the
+       training dataset (target and source) and .transform() on the test
+       partition of the target dataset.
 
     Parameters
     ----------
@@ -304,8 +307,9 @@ class TLStretch(BaseEstimator, TransformerMixin):
     def transform(self, X, y_enc=None):
         """Stretch the data points in the target domain.
 
-        .. note: The stretching operation is properly defined only for the
-        riemann metric.
+        .. note::
+           The stretching operation is properly defined only for the riemann
+           metric.
 
         Parameters
         ----------
@@ -341,9 +345,10 @@ class TLStretch(BaseEstimator, TransformerMixin):
         Calculate the dispersion around the mean for each domain and then
         stretch the data points to the desired final dispersion.
 
-        .. note: This method is designed for using at training time. The
-        output for .fit_transform() will be different than using .fit() and
-        .transform() separately.
+        .. note::
+           This method is designed for using at training time. The output for
+           .fit_transform() will be different than using .fit() and
+           .transform() separately.
 
         Parameters
         ----------
@@ -389,13 +394,15 @@ class TLRotate(BaseEstimator, TransformerMixin):
     first proposed in [1]_ and the optimization procedure for mininimizing it
     follows the presentation from [2]_.
 
-    .. note: The data points from each domain must have been re-centered
-    to the identity before calculating the rotation.
+    .. note::
+       The data points from each domain must have been re-centered to the
+       identity before calculating the rotation.
 
-    .. note: Using .fit() and then .transform() will give
-    different results than .fit_transform(). In fact, .fit_transform() should
-    be applied on the training dataset (target and source) and .transform() on
-    the test partition of the target dataset.
+    .. note::
+       Using .fit() and then .transform() will give different results than
+       .fit_transform(). In fact, .fit_transform() should be applied on the
+       training dataset (target and source) and .transform() on the test
+       partition of the target dataset.
 
     Parameters
     ----------
@@ -515,9 +522,10 @@ class TLRotate(BaseEstimator, TransformerMixin):
         Calculate the rotation matrix for matching each source domain to the
         target domain.
 
-        .. note: this method is designed for using at training time. The
-        output for .fit_transform() will be different than using .fit() and
-        .transform() separately.
+        .. note::
+           This method is designed for using at training time. The output for
+           .fit_transform() will be different than using .fit() and
+           .transform() separately.
 
         Parameters
         ----------
