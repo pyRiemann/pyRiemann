@@ -64,10 +64,11 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     Attributes
     ----------
-    covmeans_ : list
-        The class centroids.
-    classes_ : list
-        List of classes.
+    classes_ : ndarray, shape (n_classes,)
+        Labels for each class.
+    covmeans_ : list of ``n_classes`` ndarrays of shape (n_channels, \
+            n_channels)
+        Centroids for each class.
 
     See Also
     --------
@@ -130,22 +131,22 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         return self
 
-    def _predict_distances(self, covtest):
+    def _predict_distances(self, X):
         """Helper to predict the distance. Equivalent to transform."""
         n_centroids = len(self.covmeans_)
 
         if self.n_jobs == 1:
-            dist = [distance(covtest, self.covmeans_[m], self.metric_dist)
+            dist = [distance(X, self.covmeans_[m], self.metric_dist)
                     for m in range(n_centroids)]
         else:
             dist = Parallel(n_jobs=self.n_jobs)(delayed(distance)(
-                covtest, self.covmeans_[m], self.metric_dist)
+                X, self.covmeans_[m], self.metric_dist)
                 for m in range(n_centroids))
 
         dist = np.concatenate(dist, axis=1)
         return dist
 
-    def predict(self, covtest):
+    def predict(self, X):
         """Get the predictions.
 
         Parameters
@@ -158,7 +159,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         pred : ndarray of int, shape (n_matrices,)
             Predictions for each matrix according to the closest centroid.
         """
-        dist = self._predict_distances(covtest)
+        dist = self._predict_distances(X)
         return self.classes_[dist.argmin(axis=1)]
 
     def transform(self, X):
@@ -231,8 +232,8 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     Attributes
     ----------
-    classes_ : list
-        List of classes.
+    classes_ : ndarray, shape (n_classes,)
+        Labels for each class.
 
     See Also
     --------
@@ -359,6 +360,11 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
     clf : sklearn classifier, default=LogisticRegression()
         The classifier to apply in the tangent space.
 
+    Attributes
+    ----------
+    classes_ : ndarray, shape (n_classes,)
+        Labels for each class.
+
     See Also
     --------
     TangentSpace
@@ -461,12 +467,12 @@ class KNearestNeighbor(MDM):
 
     Attributes
     ----------
-    classes_ : list
-        List of classes.
-    covmeans_ : list
-        The class centroids.
-    classmeans_ : list
-        List of classes of centroids.
+    classes_ : ndarray, shape (n_classes,)
+        Labels for each class.
+    covmeans_ : ndarray, shape (n_matrices, n_channels, n_channels)
+        Matrices of training set.
+    classmeans_ : ndarray, shape (n_matrices,)
+        Labels of training set.
 
     See Also
     --------
@@ -590,9 +596,8 @@ class SVC(sklearnSVC):
     cache_size : float, default=200
         Specify the size of the kernel cache (in MB).
     class_weight : dict or 'balanced', default=None
-        Set the parameter C of class i to class_weight[i]*C for
-        SVC. If not given, all classes are supposed to have
-        weight one.
+        Set the parameter C of class i to class_weight[i]*C for SVC. If not
+        given, all classes are supposed to have weight one.
         The "balanced" mode uses the values of y to automatically adjust
         weights inversely proportional to class frequencies in the input data
         as ``n_matrices / (n_classes * np.bincount(y))``.
@@ -613,9 +618,9 @@ class SVC(sklearnSVC):
     break_ties : bool, default=False
         If true, ``decision_function_shape='ovr'``, and number of classes > 2,
         `predict` will break ties according to the confidence values of
-        `decision_function`; otherwise the first class among the tied classes
-        is returned. Please note that breaking ties comes at a relatively high
-        computational cost compared to a simple predict.
+        `decision_function`; otherwise the first class among the tied
+        classes is returned. Please note that breaking ties comes at a
+        relatively high computational cost compared to a simple predict.
     random_state : int, RandomState instance or None, default=None
         Controls the pseudo random number generation for shuffling the data for
         probability estimates. Ignored when `probability` is False.
@@ -744,10 +749,11 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     Attributes
     ----------
-    covmeans_ : list of list
-        The class centroids.
-    classes_ : list
-        List of classes.
+    classes_ : ndarray, shape (n_classes,)
+        Labels for each class.
+    covmeans_ : dict of ``n_powers`` lists of ``n_classes`` ndarrays of shape \
+            (n_channels, n_channels)
+        Centroids for each power and each class.
 
     See Also
     --------

@@ -17,7 +17,7 @@ def _get_sample_weight(sample_weight, data):
     """
     if sample_weight is None:
         sample_weight = np.ones(data.shape[0])
-    if len(sample_weight) != data.shape[0]:
+    if sample_weight.shape != (data.shape[0],):
         raise ValueError("len of sample_weight must be equal to len of data.")
     sample_weight /= np.sum(sample_weight)
     return sample_weight
@@ -146,7 +146,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=100, sample_weight=None):
 
 
 def mean_euclid(covmats, sample_weight=None):
-    r"""Mean of SPD matrices according to the Euclidean metric.
+    r"""Mean of matrices according to the Euclidean metric.
 
     .. math::
         \mathbf{C} = \frac{1}{m} \sum_i \mathbf{C}_i
@@ -156,7 +156,7 @@ def mean_euclid(covmats, sample_weight=None):
     Parameters
     ----------
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices.
+        Set of matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -328,14 +328,23 @@ def mean_logeuclid(covmats, sample_weight=None):
 
 
 def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10, maxiter=100):
-    """Power mean of SPD matrices.
+    r"""Power mean of SPD matrices.
+
+    Power mean is the solution of [1]_ [2]_:
+
+    .. math::
+        \mathbf{C} = \frac{1}{m} \sum_i \mathbf{C} \sharp_p \mathbf{C}_i
+
+    where :math:`\mathbf{A} \sharp_p \mathbf{B}` is the geodesic between
+    matrices :math:`\mathbf{A}` and :math:`\mathbf{B}`.
 
     Parameters
     ----------
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
     p : float
-        Exponent, in [-1,+1].
+        Exponent, in [-1,+1]. For p=0, it returns
+        :func:`pyriemann.utils.mean.mean_riemann`.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
     zeta : float, default=10e-10
@@ -410,11 +419,11 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
                  sample_weight=None):
     r"""Mean of SPD matrices according to the Riemannian metric.
 
-    The procedure is similar to a gradient descent minimizing the sum of
-    affine-invariant Riemannian distances :math:`d_R` to the mean [1]_:
+    The affine-invariant Riemannian mean minimizes the sum of squared
+    affine-invariant Riemannian distances :math:`d_R` to all matrices [1]_:
 
     .. math::
-        \mathbf{C} = \arg\min{ \sum_i d_R ( \mathbf{C} , \mathbf{C}_i)^2 }
+         \arg \min_{\mathbf{C}} \sum_i w_i d_R (\mathbf{C}, \mathbf{C}_i)^2
 
     Parameters
     ----------
@@ -452,7 +461,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     nu = 1.0
     tau = np.finfo(np.float64).max
     crit = np.finfo(np.float64).max
-    for k in range(maxiter):
+    for _ in range(maxiter):
         C12, Cm12 = sqrtm(C), invsqrtm(C)
         J = np.einsum('a,abc->bc', sample_weight, logm(Cm12 @ covmats @ Cm12))
         C = C12 @ expm(nu * J) @ C12
@@ -628,7 +637,8 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=100, init=None,
 
     Given masks defined as semi-orthogonal matrices, the masked Riemannian mean
     of SPD matrices is obtained with a gradient descent minimizing the sum of
-    Riemannian distances between masked SPD matrices and the masked mean [1]_.
+    affine-invariant Riemannian distances between masked SPD matrices and the
+    masked mean [1]_.
 
     Parameters
     ----------

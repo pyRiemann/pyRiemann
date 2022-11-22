@@ -1,13 +1,11 @@
 import pickle
 
 import numpy as np
-
-from conftest import get_distances, get_means, get_metrics
 from numpy.testing import assert_array_equal
-from pyriemann.regression import (SVR, KNearestNeighborRegressor)
-
 import pytest
 
+from conftest import get_distances, get_means, get_metrics
+from pyriemann.regression import (SVR, KNearestNeighborRegressor)
 from pyriemann.utils.kernel import kernel
 from pyriemann.utils.mean import mean_covariance
 
@@ -20,8 +18,10 @@ class RegressorTestCase:
         n_matrices, n_channels = 6, 3
         covmats = get_covmats(n_matrices, n_channels)
         targets = get_targets(n_matrices)
+
         self.reg_predict(regres, covmats, targets)
         self.reg_fit_independence(regres, covmats, targets)
+        self.reg_score(regres, covmats, targets)
 
 
 class TestRegressor(RegressorTestCase):
@@ -37,6 +37,11 @@ class TestRegressor(RegressorTestCase):
         # retraining with different size should erase previous fit
         new_covmats = covmats[:, :-1, :-1]
         clf.fit(new_covmats, targets).predict(new_covmats)
+
+    def reg_score(self, regres, covmats, targets):
+        clf = regres()
+        clf.fit(covmats, targets)
+        clf.score(covmats, targets)
 
 
 @pytest.mark.parametrize("regres", [KNearestNeighborRegressor])

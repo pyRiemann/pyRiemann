@@ -9,12 +9,12 @@ try:
 except ImportError:
     # Workaround for scikit-learn v0.24.0rc1+
     # See issue: https://github.com/alexandrebarachant/pyRiemann/issues/92
-    from sklearn.cluster import KMeans
+    from sklearn.cluster import KMeans as _KMeans
 
     def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
         if random_state is not None:
             random_state = np.random.RandomState(random_state)
-        return KMeans(n_clusters=n_clusters, init=init)._init_centroids(
+        return _KMeans(n_clusters=n_clusters, init=init)._init_centroids(
             X,
             x_squared_norms,
             init,
@@ -298,6 +298,11 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
     -----
     .. versionadded:: 0.2.3
 
+    Attributes
+    ----------
+    covmean_ : ndarray, shape (n_channels, n_channels)
+        Centroid of potato.
+
     See Also
     --------
     Kmeans
@@ -357,7 +362,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         y_old = self._check_labels(X, y)
 
-        for n_iter in range(self.n_iter_max):
+        for _ in range(self.n_iter_max):
             ix = (y_old == 1)
             self._mdm.fit(X[ix], y_old[ix])
             y = np.zeros(len(X))
@@ -370,6 +375,8 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
                 break
             else:
                 y_old = y
+
+        self.covmean_ = self._mdm.covmeans_[0]
         return self
 
     def partial_fit(self, X, y=None, alpha=0.1):
@@ -424,6 +431,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
             self._std = np.sqrt(
                 (1 - alpha) * self._std**2 + alpha * (d - self._mean)**2)
 
+        self.covmean_ = self._mdm.covmeans_[0]
         return self
 
     def transform(self, X):

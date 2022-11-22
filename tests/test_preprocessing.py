@@ -1,8 +1,9 @@
 import numpy as np
 from numpy.testing import assert_array_almost_equal
-from pyriemann.spatialfilters import Whitening
 import pytest
 
+from pyriemann.spatialfilters import Whitening
+from pyriemann.utils.mean import mean_covariance
 
 n_components = 3
 expl_var = 0.9
@@ -48,13 +49,14 @@ def test_whitening_error(rndstate, get_covmats):
 
 
 @pytest.mark.parametrize("dim_red", dim_red)
-def test_whitening_dimred(dim_red, rndstate, get_covmats):
-    """Test Whitening"""
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+def test_whitening_fit(dim_red, metric, rndstate, get_covmats):
+    """Test Whitening fit"""
     n_matrices, n_channels = 20, 6
     cov = get_covmats(n_matrices, n_channels)
 
     w = rndstate.rand(n_matrices)
-    whit = Whitening(dim_red=dim_red).fit(cov, sample_weight=w)
+    whit = Whitening(dim_red=dim_red, metric=metric).fit(cov, sample_weight=w)
     if dim_red is None:
         n_comp = n_channels
     else:
@@ -69,12 +71,12 @@ def test_whitening_dimred(dim_red, rndstate, get_covmats):
 
 
 @pytest.mark.parametrize("dim_red", dim_red)
-def test_whitening_transform(dim_red, rndstate, get_covmats):
-    """Test Whitening"""
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+def test_whitening_transform(dim_red, metric, rndstate, get_covmats):
+    """Test Whitening transform"""
     n_matrices, n_channels = 20, 6
     cov = get_covmats(n_matrices, n_channels)
-    # Test transform
-    whit = Whitening().fit(cov)
+    whit = Whitening(metric=metric).fit(cov)
     cov_w = whit.transform(cov)
     if dim_red is None:
         n_comp = n_channels
@@ -82,17 +84,21 @@ def test_whitening_transform(dim_red, rndstate, get_covmats):
         n_comp = whit.n_components_
     assert cov_w.shape == (n_matrices, n_comp, n_comp)
     # after whitening, mean = identity
-    assert_array_almost_equal(cov_w.mean(axis=0), np.eye(n_comp))
+    assert_array_almost_equal(
+        mean_covariance(cov_w, metric=metric),
+        np.eye(n_comp),
+    )
     if dim_red is not None and "max_cond" in dim_red.keys():
         assert np.linalg.cond(cov_w.mean(axis=0)) <= max_cond
 
 
 @pytest.mark.parametrize("dim_red", dim_red)
-def test_whitening_inverse_transform(dim_red, rndstate, get_covmats):
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+def test_whitening_inverse_transform(dim_red, metric, rndstate, get_covmats):
     """Test Whitening inverse transform"""
     n_matrices, n_channels = 20, 6
     cov = get_covmats(n_matrices, n_channels)
-    whit = Whitening(dim_red=dim_red).fit(cov)
+    whit = Whitening(dim_red=dim_red, metric=metric).fit(cov)
     cov_iw = whit.inverse_transform(whit.transform(cov))
     assert cov_iw.shape == (n_matrices, n_channels, n_channels)
     if dim_red is None:

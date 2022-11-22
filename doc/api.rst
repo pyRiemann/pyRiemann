@@ -245,6 +245,17 @@ Means
     maskedmean_riemann
     nanmean_riemann
 
+Medians
+~~~~~~~~~~~~~~~~~~~~~~
+.. _median_api:
+.. currentmodule:: pyriemann.utils
+
+.. autosummary::
+    :toctree: generated/
+
+    median_euclid
+    median_riemann
+
 Geodesics
 ~~~~~~~~~~~~~~~~~~~~~~
 .. _geodesic_api:

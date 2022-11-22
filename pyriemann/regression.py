@@ -3,6 +3,7 @@ import functools
 
 import numpy as np
 
+from sklearn.metrics import r2_score
 from sklearn.svm import SVR as sklearnSVR
 from sklearn.utils.extmath import softmax
 
@@ -177,9 +178,9 @@ class KNearestNeighborRegressor(MDM):
     Attributes
     ----------
     values_ : ndarray, shape (n_matrices,)
-        List of training data target values.
+        Training target values.
     covmeans_ : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices of training dataset.
+        Training set of SPD matrices.
 
     Notes
     -----
@@ -237,3 +238,25 @@ class KNearestNeighborRegressor(MDM):
         knn_values = neighbors_values[:, 0:self.n_neighbors]
         out = np.sum(knn_values*softmax_dist, axis=1)
         return out
+
+    def score(self, X, y):
+        """Return the coefficient of determination of the prediction.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Test set of SPD matrices.
+        y : ndarray, shape (n_matrices,)
+            True values for each matrix.
+
+        Returns
+        -------
+        score : float
+            R2 of self.predict(X) wrt. y.
+
+        Notes
+        -----
+        .. versionadded:: 0.3.1
+        """
+        y_pred = self.predict(X)
+        return r2_score(y, y_pred)

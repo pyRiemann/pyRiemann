@@ -17,6 +17,7 @@ from pyriemann.utils.distance import (
     pairwise_distance,
     _check_distance_method,
 )
+from pyriemann.utils.base import logm
 from pyriemann.utils.geodesic import geodesic
 
 
@@ -141,6 +142,32 @@ def test_distance_implementation_logdet(get_covmats):
     dist = np.sqrt(np.log(np.linalg.det((A + B) / 2.0))
                    - 0.5 * np.log(np.linalg.det(A)*np.linalg.det(B)))
     assert distance_logdet(A, B) == approx(dist)
+
+
+def test_distance_riemann_properties(get_covmats):
+    n_channels = 6
+    A = get_covmats(1, n_channels)[0]
+    B = get_covmats(1, n_channels)[0]
+    dist_AB = distance_riemann(A, B)
+
+    # exponential metric increasing property, Eq(6.8) in [Bhatia2007]
+    assert dist_AB >= np.linalg.norm(logm(A) - logm(B))
+
+    # invariance under inversion
+    assert dist_AB == approx(
+        distance_riemann(np.linalg.inv(A), np.linalg.inv(B))
+    )
+
+    # congruence-invariance
+    W = np.random.normal(size=(n_channels, n_channels))  # must be invertible
+    WAW, WBW = W @ A @ W.T, W @ B @ W.T
+    assert dist_AB == approx(distance_riemann(WAW, WBW))
+
+    # proportionality, Eq(6.12) in [Bhatia2007]
+    alpha = np.random.uniform()
+    dist_1 = distance_riemann(A, geodesic(A, B, alpha, metric='riemann'))
+    dist_2 = alpha * distance_riemann(A, B)
+    assert dist_1 == approx(dist_2)
 
 
 @pytest.mark.parametrize("dist, dfunc", zip(get_distances(), get_dist_func()))

@@ -1,4 +1,5 @@
 import numpy as np
+from scipy.stats import gmean
 import pytest
 from pytest import approx
 
@@ -60,6 +61,50 @@ def test_mean_shape_with_init(mean, get_covmats):
 
 
 @pytest.mark.parametrize(
+    "mean",
+    [
+        mean_euclid,
+        mean_harmonic,
+        mean_kullback_sym,
+        mean_logdet,
+        mean_logeuclid,
+        mean_riemann,
+        mean_wasserstein,
+        nanmean_riemann,
+    ],
+)
+def test_mean_weight_zero(mean, get_covmats):
+    """Setting one weight to almost 0 it's almost like not passing the mat"""
+    n_matrices, n_channels, w_val = 5, 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+    w = w_val * np.ones(n_matrices)
+    C = mean(covmats[1:], sample_weight=w[1:])
+    w[0] = 1e-12
+    Cw = mean(covmats, sample_weight=w)
+    assert C == approx(Cw, rel=1e-6, abs=1e-8)
+
+
+@pytest.mark.parametrize(
+    "mean",
+    [
+        mean_euclid,
+        mean_harmonic,
+        mean_kullback_sym,
+        mean_logdet,
+        mean_logeuclid,
+        mean_riemann,
+        mean_wasserstein,
+        nanmean_riemann,
+    ],
+)
+def test_mean_weight_len_error(mean, get_covmats):
+    n_matrices, n_channels = 3, 2
+    covmats = get_covmats(n_matrices, n_channels)
+    with pytest.raises(ValueError):
+        mean(covmats, sample_weight=np.ones(n_matrices + 1))
+
+
+@pytest.mark.parametrize(
     "mean", [
         mean_ale,
         mean_alm,
@@ -79,6 +124,38 @@ def test_mean_warning_convergence(mean, get_covmats):
             mean(covmats, 0.3, maxiter=0)
         else:
             mean(covmats, maxiter=0)
+
+
+@pytest.mark.parametrize(
+    "mean",
+    [
+        mean_ale,
+        mean_euclid,
+        mean_harmonic,
+        mean_identity,
+        mean_kullback_sym,
+        mean_logdet,
+        mean_logeuclid,
+        mean_power,
+        mean_riemann,
+        mean_wasserstein,
+    ],
+)
+def test_mean_of_means(mean, get_covmats):
+    """Test mean of submeans equal to grand mean"""
+    n_matrices, n_channels = 10, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    if mean == mean_power:
+        C = mean(covmats, 0.42)
+        C1 = mean(covmats[:n_matrices//2], 0.42)
+        C2 = mean(covmats[n_matrices//2:], 0.42)
+        C3 = mean(np.array([C1, C2]), 0.42)
+    else:
+        C = mean(covmats)
+        C1 = mean(covmats[:n_matrices//2])
+        C2 = mean(covmats[n_matrices//2:])
+        C3 = mean(np.array([C1, C2]))
+    assert C3 == approx(C, 6)
 
 
 def test_alm_mean(get_covmats):
@@ -145,14 +222,30 @@ def test_power_mean_errors(get_covmats):
 def test_riemann_mean(init, get_covmats_params):
     """Test the riemannian mean"""
     n_matrices, n_channels = 100, 3
-    covmats, diags, A = get_covmats_params(n_matrices, n_channels)
+    covmats, evals, evecs = get_covmats_params(n_matrices, n_channels)
     if init:
         C = mean_riemann(covmats, init=covmats[0])
     else:
         C = mean_riemann(covmats)
-    Ctrue = np.exp(np.log(diags).mean(0))
-    Ctrue = A @ np.diag(Ctrue) @ A.T
+    Ctrue = np.exp(np.log(evals).mean(0))
+    Ctrue = evecs @ np.diag(Ctrue) @ evecs.T
     assert C == approx(Ctrue)
+
+
+def test_riemann_mean_properties(get_covmats):
+    n_matrices, n_channels = 5, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    C = mean_riemann(covmats)
+
+    # congruence-invariance, P2 in [Moakher2005] or P6 in [Nakamura2009]
+    W = np.random.normal(size=(n_channels, n_channels))  # must be invertible
+    assert W @ C @ W.T == approx(mean_riemann(W @ covmats @ W.T))
+
+    # self-duality, P3 in [Moakher2005] or P8 in [Nakamura2009]
+    assert C == approx(np.linalg.inv(mean_riemann(np.linalg.inv(covmats))))
+
+    # determinant identity, P9 in [Nakamura2009]
+    assert np.linalg.det(C) == approx(gmean(np.linalg.det(covmats)))
 
 
 @pytest.mark.parametrize("init", [True, False])
@@ -202,6 +295,10 @@ def test_riemann_mean_nan_errors(get_covmats):
         nanmean_riemann(covmats_)
 
 
+def callable_np_average(X, sample_weight=None):
+    return np.average(X, axis=0, weights=sample_weight)
+
+
 @pytest.mark.parametrize(
     "metric, mean",
     [
@@ -215,6 +312,7 @@ def test_riemann_mean_nan_errors(get_covmats):
         ("logeuclid", mean_logeuclid),
         ("riemann", mean_riemann),
         ("wasserstein", mean_wasserstein),
+        (callable_np_average, mean_euclid),
     ],
 )
 def test_mean_covariance_metric(metric, mean, get_covmats):

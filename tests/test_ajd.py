@@ -36,11 +36,11 @@ def test_get_normalized_weight_pos(get_covmats):
 def test_ajd(ajd, init, get_covmats_params):
     """Test ajd algos"""
     n_matrices, n_channels = 5, 3
-    covmats, _, A = get_covmats_params(n_matrices, n_channels)
+    covmats, _, evecs = get_covmats_params(n_matrices, n_channels)
     if init:
         V, D = ajd(covmats)
     else:
-        V, D = ajd(covmats, init=A)
+        V, D = ajd(covmats, init=evecs)
     assert V.shape == (n_channels, n_channels)
     assert D.shape == (n_matrices, n_channels, n_channels)
 
@@ -85,14 +85,12 @@ def test_pham_weight_positive(get_covmats):
 
 
 def test_pham_weight_zero(get_covmats):
-    """Test pham's ajd weights: setting one weight to almost zero it's almost
-    like not passing the matrix"""
+    """Setting one weight to almost 0 it's almost like not passing the mat"""
     n_matrices, n_channels, w_val = 5, 3, 2
     covmats = get_covmats(n_matrices, n_channels)
     w = w_val * np.ones(n_matrices)
     V, D = ajd_pham(covmats[1:], sample_weight=w[1:])
     w[0] = 1e-12
-
     Vw, Dw = ajd_pham(covmats, sample_weight=w)
     assert V == approx(Vw, rel=1e-4, abs=1e-8)
     assert D == approx(Dw[1:], rel=1e-4, abs=1e-8)
