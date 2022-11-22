@@ -9,12 +9,12 @@ try:
 except ImportError:
     # Workaround for scikit-learn v0.24.0rc1+
     # See issue: https://github.com/alexandrebarachant/pyRiemann/issues/92
-    from sklearn.cluster import KMeans
+    from sklearn.cluster import KMeans as _KMeans
 
     def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
         if random_state is not None:
             random_state = np.random.RandomState(random_state)
-        return KMeans(n_clusters=n_clusters, init=init)._init_centroids(
+        return _KMeans(n_clusters=n_clusters, init=init)._init_centroids(
             X,
             x_squared_norms,
             init,
