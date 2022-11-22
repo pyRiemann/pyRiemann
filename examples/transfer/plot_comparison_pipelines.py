@@ -3,9 +3,17 @@
 Comparison of pipelines for transfer learning
 ====================================================================
 
-Compare the classificaton performance of five pipelines for transfer learning
-[1]_ [2]_ [3]_. The data points are all simulated from a toy model based on the
-Riemannian Gaussian distribution.
+We compare the classification performance of MDM on five different strategies
+for transfer learning. These include re-centering the datasets as done in [1]_,
+matching the statistical distributions in a semi-supervised way with Riemannian
+Procrustes Analysis [2]_, and improving the MDM classifier with a weighting
+scheme (MDWM) [3]_. All data points are simulated from a toy model based on the
+Riemannian Gaussian distribution and the differences in statistics between
+source and target distributions are determined by a set of parameters that have
+control over the distance between the centers of each dataset, the angle of
+rotation between the means of each class, and the differences in dispersion
+of the data points from each dataset.
+
 """
 
 from tqdm import tqdm

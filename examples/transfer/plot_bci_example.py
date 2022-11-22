@@ -3,7 +3,16 @@
 Motor imagery classification by transfer learning
 ====================================================================
 
-Classify motor imagery data with transfer learning applied to MDM [1]_.
+In this example, we use transfer learning (TL) to classify epochs from a
+subject using a classifier trained on data from another subject. We consider
+TL with a pooling strategy: for each target subject of choice, we use the data
+from several source subjects to train a single classifier using all of their
+data points pooled together. We compare the results of simply mixing all
+covariances from all source subjects without any care (dummy) versus
+transforming the covariances of all subjects so that they are centered around
+the Identity matrix (recenter). We use data from the Physionet BCI database and
+compare the classification performance of MDM with each strategy.
+
 """
 
 import numpy as np
