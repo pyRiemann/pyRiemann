@@ -133,8 +133,8 @@ def _run_minimization(Q_ini, M_source, M_target, weights=None, metric='euclid',
     return Q, F
 
 
-def get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
-                        tol_step=1e-9, maxiter=10_000, maxiter_linesearch=32):
+def _get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
+                         tol_step=1e-9, maxiter=10_000, maxiter_linesearch=32):
     r"""Calculate rotation matrix for the Riemannian Procustes Analysis.
 
     Get the rotation matrix Q that minimizes the loss function:

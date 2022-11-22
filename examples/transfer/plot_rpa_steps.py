@@ -22,8 +22,7 @@ from pyriemann.transfer import (
 
 
 ###############################################################################
-
-# fix seed for reproducible results
+# Fix seed for reproducible results
 seed = 66
 
 # create source and target datasets
@@ -69,8 +68,7 @@ embedded_points['rot'] = S[8*n_matrices:-1]
 
 
 ###############################################################################
-
-# plot the results
+# Plot the results
 fig, ax = plt.subplots(figsize=(13.5, 4.4), ncols=3, sharey=True)
 plt.subplots_adjust(wspace=0.10)
 steps = ['origin', 'rct', 'rot']

@@ -121,19 +121,19 @@ def test_tlrotate(rndstate, metric):
 
 
 @pytest.mark.parametrize(
-    "cv_iterator",
+    "cv",
     [
         KFold(n_splits=5, shuffle=True),
         StratifiedShuffleSplit(n_splits=5, train_size=0.80),
     ]
 )
-def test_tlsplitter(rndstate, cv_iterator):
+def test_tlsplitter(rndstate, cv):
     """Test wrapper for cross-validation in transfer learning"""
     X, y_enc = make_classification_transfer(
         n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate)
     cv = TLSplitter(
         target_domain="target_domain",
-        cv_iterator=cv_iterator,
+        cv=cv,
     )
     train_idx, test_idx = next(cv.split(X, y_enc))
     assert len(train_idx) == 90  # 50 from source and 4/5*100 from target

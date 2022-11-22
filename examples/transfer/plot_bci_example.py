@@ -81,7 +81,6 @@ def get_subject_dataset(subject):
 
 
 ###############################################################################
-
 # We will consider subjects from the Physionet EEG database for which the
 # intra-subject classification has been checked to be > 0.70
 subject_list = [1, 2, 4, 7, 8, 15, 20, 29, 34, 35]
@@ -102,9 +101,9 @@ X_enc, y_enc = encode_domains(X, y, domains)
 
 # Object for splitting the datasets into training and validation partitions
 n_splits = 5  # How many times to split the target domain into train/test
-cv = TLSplitter(
+tl_cv = TLSplitter(
     target_domain='',
-    cv_iterator=StratifiedShuffleSplit(
+    cv=StratifiedShuffleSplit(
         n_splits=n_splits, train_size=0.10, random_state=42))
 
 # We consider two types of pipelines for transfer learning
@@ -119,13 +118,13 @@ clf_base = MDM()
 for subject_target_idx in tqdm(range(len(subject_list))):
 
     # Change the target domain
-    cv.target_domain = f'subject_{subject_list[subject_target_idx]:02}'
+    tl_cv.target_domain = f'subject_{subject_list[subject_target_idx]:02}'
 
     # Create dict for storing results of this particular CV split
     scores_cv = {meth: [] for meth in scores.keys()}
 
     # Carry out the cross-validation
-    for train_idx, test_idx in cv.split(X_enc, y_enc):
+    for train_idx, test_idx in tl_cv.split(X_enc, y_enc):
 
         # Split the dataset into training and testing
         X_enc_train, X_enc_test = X_enc[train_idx], X_enc[test_idx]
@@ -136,12 +135,12 @@ for subject_target_idx in tqdm(range(len(subject_list))):
         domain_weight_dummy = {}
         for d in np.unique(domains):
             domain_weight_dummy[d] = 1.0
-        domain_weight_dummy[cv.target_domain] = 0.0
+        domain_weight_dummy[tl_cv.target_domain] = 0.0
 
         pipeline = make_pipeline(
             TLDummy(),
             TLClassifier(
-                target_domain=cv.target_domain,
+                target_domain=tl_cv.target_domain,
                 estimator=clf_base,
                 domain_weight=domain_weight_dummy,
             ),
@@ -157,12 +156,12 @@ for subject_target_idx in tqdm(range(len(subject_list))):
         domain_weight_rct = {}
         for d in np.unique(domains):
             domain_weight_rct[d] = 1.0
-        domain_weight_rct[cv.target_domain] = 0.0
+        domain_weight_rct[tl_cv.target_domain] = 0.0
 
         pipeline = make_pipeline(
-            TLCenter(target_domain=cv.target_domain),
+            TLCenter(target_domain=tl_cv.target_domain),
             TLClassifier(
-                target_domain=cv.target_domain,
+                target_domain=tl_cv.target_domain,
                 estimator=clf_base,
                 domain_weight=domain_weight_rct,
             ),
@@ -176,7 +175,6 @@ for subject_target_idx in tqdm(range(len(subject_list))):
 
 
 ###############################################################################
-
 # Plot results
 fig, ax = plt.subplots(figsize=(7, 6))
 ax.boxplot(x=[scores[meth] for meth in scores.keys()])

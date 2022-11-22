@@ -13,10 +13,10 @@ from ..utils.mean import mean_covariance, mean_riemann
 from ..utils.distance import distance
 from ..utils.base import invsqrtm, powm, sqrtm
 from ..utils.geodesic import geodesic
-from ._rotate import get_rotation_matrix
+from ._rotate import _get_rotation_matrix
 from ..classification import MDM, _check_metric
 from ..preprocessing import Whitening
-from .methods import decode_domains
+from ._tools import decode_domains
 
 
 class TLDummy(BaseEstimator, TransformerMixin):
@@ -93,7 +93,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
     corresponds to a whitening step if the SPD matrices represent the spatial
     covariance matrices of multivariate signals.
 
-    Important: note that using .fit() and then .transform() will give different
+    .. note: Using .fit() and then .transform() will give different
     results than .fit_transform(). In fact, .fit_transform() should be applied
     on the training dataset (target and source) and .transform() on the test
     partition of the target dataset.
@@ -180,7 +180,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
         Calculate the mean of all matrices in each domain and then recenter
         them to Identity.
 
-        Important: this method is designed for using at training time. The
+        .. note: This method is designed for using at training time. The
         output for .fit_transform() will be different than using .fit() and
         .transform() separately.
 
@@ -212,7 +212,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
     Change the dispersion of the datapoints around their geometric mean
     for each dataset so that they all have the same desired value.
 
-    Important: note that using .fit() and then .transform() will give different
+    .. note: Using .fit() and then .transform() will give different
     results than .fit_transform(). In fact, .fit_transform() should be applied
     on the training dataset (target and source) and .transform() on the test
     partition of the target dataset.
@@ -304,7 +304,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
     def transform(self, X, y_enc=None):
         """Stretch the data points in the target domain.
 
-        Important: the stretching operation is properly defined only for the
+        .. note: The stretching operation is properly defined only for the
         riemann metric.
 
         Parameters
@@ -341,7 +341,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
         Calculate the dispersion around the mean for each domain and then
         stretch the data points to the desired final dispersion.
 
-        Important: this method is designed for using at training time. The
+        .. note: This method is designed for using at training time. The
         output for .fit_transform() will be different than using .fit() and
         .transform() separately.
 
@@ -389,10 +389,10 @@ class TLRotate(BaseEstimator, TransformerMixin):
     first proposed in [1]_ and the optimization procedure for mininimizing it
     follows the presentation from [2]_.
 
-    Important 1: the data points from each domain must have been re-centered
+    .. note: The data points from each domain must have been re-centered
     to the identity before calculating the rotation.
 
-    Important 2: note that using .fit() and then .transform() will give
+    .. note: Using .fit() and then .transform() will give
     different results than .fit_transform(). In fact, .fit_transform() should
     be applied on the training dataset (target and source) and .transform() on
     the test partition of the target dataset.
@@ -471,7 +471,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
         source_names = np.unique(domains)
         source_names = source_names[source_names != self.target_domain]
         rotations = Parallel(n_jobs=self.n_jobs)(
-            delayed(get_rotation_matrix)(
+            delayed(_get_rotation_matrix)(
                 np.stack([
                     mean_riemann(X[domains == d][y_enc[domains == d] == label])
                     for label in np.unique(y_enc[domains == d])
@@ -515,7 +515,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
         Calculate the rotation matrix for matching each source domain to the
         target domain.
 
-        Important: this method is designed for using at training time. The
+        .. note: this method is designed for using at training time. The
         output for .fit_transform() will be different than using .fit() and
         .transform() separately.
 

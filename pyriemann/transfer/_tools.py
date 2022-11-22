@@ -95,7 +95,7 @@ class TLSplitter():
     ----------
     target_domain : str
         Domain considered as target.
-    cv_iterator : None | BaseCrossValidator | BaseShuffleSplit, default=None
+    cv : None | BaseCrossValidator | BaseShuffleSplit, default=None
         An instance of a cross validation iterator from sklearn.
 
     References
@@ -106,10 +106,10 @@ class TLSplitter():
     -----
     .. versionadded:: 0.3.1
     """  # noqa
-    def __init__(self, target_domain, cv_iterator):
+    def __init__(self, target_domain, cv):
 
         self.target_domain = target_domain
-        self.cv_iterator = cv_iterator
+        self.cv = cv
 
     def split(self, X, y):
         """Generate indices to split data into training and test set.
@@ -138,7 +138,7 @@ class TLSplitter():
         y_target = y[idx_target]
 
         # index of training-split for the target data points
-        ss_target = self.cv_iterator.split(idx_target, y_target)
+        ss_target = self.cv.split(idx_target, y_target)
         for train_sub_idx_target, test_sub_idx_target in ss_target:
             train_idx = np.concatenate(
                 [idx_source, idx_target[train_sub_idx_target]])
@@ -160,4 +160,4 @@ class TLSplitter():
         n_splits : int
             Returns the number of splitting iterations in the cross-validator.
         """
-        return self.cv_iterator.n_splits
+        return self.cv.n_splits

@@ -1,10 +1,10 @@
-from .methods import (
+from ._tools import (
     encode_domains,
     decode_domains,
     TLSplitter
 )
 
-from .pipelines import (
+from ._estimators import (
     TLDummy,
     TLCenter,
     TLStretch,

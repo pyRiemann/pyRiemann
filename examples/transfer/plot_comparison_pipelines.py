@@ -8,7 +8,6 @@ Compare the classificaton performance of five pipelines for transfer learning
 Riemannian Gaussian distribution.
 """
 
-import warnings
 from tqdm import tqdm
 
 import numpy as np
@@ -28,11 +27,8 @@ from pyriemann.transfer import (
     MDWM
 )
 
-warnings.filterwarnings("ignore")
-
 
 ###############################################################################
-
 # Choose seed for reproducible results
 seed = 100
 
@@ -61,9 +57,9 @@ X_enc, y_enc = make_classification_transfer(
 # plus a partition of the target domain whose size we can control
 target_domain = 'target_domain'
 n_splits = 5  # how many times to split the target domain into train/test
-cv = TLSplitter(
+tl_cv = TLSplitter(
     target_domain=target_domain,
-    cv_iterator=StratifiedShuffleSplit(n_splits=n_splits, random_state=seed),
+    cv=StratifiedShuffleSplit(n_splits=n_splits, random_state=seed),
 )
 
 # Which base classifier to consider
@@ -74,13 +70,13 @@ target_train_frac_array = np.linspace(0.01, 0.20, 10)
 for target_train_frac in tqdm(target_train_frac_array):
 
     # Change fraction of the target training partition
-    cv.cv_iterator.train_size = target_train_frac
+    tl_cv.cv.train_size = target_train_frac
 
     # Create dict for storing results of this particular CV split
     scores_cv = {meth: [] for meth in scores.keys()}
 
     # Carry out the cross-validation
-    for train_idx, test_idx in cv.split(X_enc, y_enc):
+    for train_idx, test_idx in tl_cv.split(X_enc, y_enc):
 
         # Split the dataset into training and testing
         X_enc_train, X_enc_test = X_enc[train_idx], X_enc[test_idx]
@@ -165,7 +161,6 @@ for meth in scores.keys():
 
 
 ###############################################################################
-
 # Plot the results
 fig, ax = plt.subplots(figsize=(6.7, 5.7))
 for meth in scores.keys():
