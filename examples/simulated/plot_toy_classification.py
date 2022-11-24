@@ -37,7 +37,7 @@ random_state = 42  # ensure reproducibility
 ###############################################################################
 # Loop over different levels of separability between the classes
 scores_array = []
-deltas_array = np.linspace(0, 5*sigma, 5)
+deltas_array = np.linspace(0, 3*sigma, 10)
 
 for delta in deltas_array:
     # generate data points for a classification problem
@@ -61,10 +61,10 @@ scores_array = np.array(scores_array)
 # Plot the results
 fig, ax = plt.subplots(figsize=(7.5, 5.9))
 ax.plot(deltas_array, scores_array, lw=3.0, label=sigma)
-ax.set_xticks([0, 1, 2, 3, 4, 5])
-ax.set_xticklabels([0, 1, 2, 3, 4, 5], fontsize=12)
-ax.set_yticks([0.5, 0.6, 0.7, 0.8, 0.9, 1.0])
-ax.set_yticklabels([0.5, 0.6, 0.7, 0.8, 0.9, 1.0], fontsize=12)
+ax.set_xticks([0, 1, 2, 3])
+ax.set_xticklabels([0, 1, 2, 3], fontsize=12)
+ax.set_yticks([0.6, 0.7, 0.8, 0.9, 1.0])
+ax.set_yticklabels([0.6, 0.7, 0.8, 0.9, 1.0], fontsize=12)
 ax.set_xlabel(r'$\Delta/\sigma$', fontsize=14)
 ax.set_ylabel(r'score', fontsize=12)
 ax.set_title(r'Classification score Vs class separability ($n_{dim} = 4$)',

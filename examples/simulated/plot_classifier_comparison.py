@@ -228,7 +228,7 @@ datasets = [
     ),
     make_gaussian_blobs(
         2*n_matrices, n_channels, random_state=rs, class_sep=.5, class_disp=.5,
-        mat_std=.1, n_jobs=4
+        n_jobs=4
     )
 ]
 n_datasets = len(datasets)
@@ -262,6 +262,8 @@ plot_classifiers("euclid")
 # References
 # ----------
 # .. [1] https://scikit-learn.org/stable/auto_examples/classification/plot_classifier_comparison.html  # noqa
-# .. [2] S. Chevallier, E. Kalunga, Q. Barthélemy and E. Monacelli. "Review of
-#    Riemannian distances and divergences, applied to SSVEP-based BCI",
-#    Neuroinformatics, 2021
+# .. [2] `Review of Riemannian distances and divergences, applied to
+#    SSVEP-based BCI
+#    <https://hal.archives-ouvertes.fr/LISV/hal-03015762v1>`_
+#    S. Chevallier, E. K. Kalunga, Q. Barthélemy, E. Monacelli.
+#    Neuroinformatics, Springer, 2021, 19 (1), pp.93-106

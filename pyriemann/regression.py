@@ -65,39 +65,44 @@ class SVR(sklearnSVR):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo, and C. Jutten.
-        Classification of covariance matrices using a Riemannian-based kernel
-        for BCI applications". In: Neurocomputing 112 (July 2013), pp. 172-178.
+    .. [1] `Classification of covariance matrices using a Riemannian-based
+        kernel for BCI applications
+        <https://hal.archives-ouvertes.fr/hal-00820475/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
+        Elsevier, 2013, 112, pp.172-178.
     .. [2]
         https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVR.html
     """
 
-    def __init__(self,
-                 *,
-                 metric='riemann',
-                 kernel_fct=None,
-                 Cref=None,
-                 tol=1e-3,
-                 C=1.0,
-                 epsilon=0.1,
-                 shrinking=True,
-                 cache_size=200,
-                 verbose=False,
-                 max_iter=-1,
-                 ):
+    def __init__(
+            self,
+            *,
+            metric='riemann',
+            kernel_fct=None,
+            Cref=None,
+            tol=1e-3,
+            C=1.0,
+            epsilon=0.1,
+            shrinking=True,
+            cache_size=200,
+            verbose=False,
+            max_iter=-1,
+    ):
         """Init."""
         self.Cref = Cref
         self.metric = metric
         self.Cref_ = None
         self.kernel_fct = kernel_fct
-        super().__init__(kernel='precomputed',
-                         tol=tol,
-                         C=C,
-                         epsilon=epsilon,
-                         shrinking=shrinking,
-                         cache_size=cache_size,
-                         verbose=verbose,
-                         max_iter=max_iter)
+        super().__init__(
+            kernel='precomputed',
+            tol=tol,
+            C=C,
+            epsilon=epsilon,
+            shrinking=shrinking,
+            cache_size=cache_size,
+            verbose=verbose,
+            max_iter=max_iter,
+        )
 
     def fit(self, X, y, sample_weight=None):
         """Fit.
@@ -120,7 +125,7 @@ class SVR(sklearnSVR):
         """
         self._set_cref(X)
         self._set_kernel()
-        super().fit(X, y)
+        super().fit(X, y, sample_weight)
         return self
 
     def _set_cref(self, X):
@@ -136,14 +141,17 @@ class SVR(sklearnSVR):
 
     def _set_kernel(self):
         if callable(self.kernel_fct):
-            self.kernel = functools.partial(self.kernel_fct,
-                                            Cref=self.Cref_,
-                                            metric=self.metric)
-
+            self.kernel = functools.partial(
+                self.kernel_fct,
+                Cref=self.Cref_,
+                metric=self.metric,
+            )
         elif self.kernel_fct is None:
-            self.kernel = functools.partial(kernel,
-                                            Cref=self.Cref_,
-                                            metric=self.metric)
+            self.kernel = functools.partial(
+                kernel,
+                Cref=self.Cref_,
+                metric=self.metric,
+            )
         else:
             raise TypeError(f"kernel must be 'precomputed' or callable, is "
                             f"{self.kernel}.")
@@ -183,9 +191,10 @@ class KNearestNeighborRegressor(MDM):
     def __init__(self, n_neighbors=5, metric='riemann'):
         """Init."""
         self.n_neighbors = n_neighbors
+        self._estimator_type = "regressor"
         super().__init__(metric=metric)
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         """Fit (store the training data).
 
         Parameters
@@ -194,6 +203,8 @@ class KNearestNeighborRegressor(MDM):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Target values for each matrix.
+        sample_weight : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------

@@ -78,15 +78,16 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Multiclass
-        Brain-Computer Interface Classification by Riemannian Geometry," in
-        IEEE Transactions on Biomedical Engineering, vol. 59, no. 4,
-        p. 920-928, 2012.
-
-    .. [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian
-        geometry applied to BCI classification", 9th International Conference
-        Latent Variable Analysis and Signal Separation (LVA/ICA 2010),
-        LNCS vol. 6365, 2010, p. 629-636.
+    .. [1] `Multiclass Brain-Computer Interface Classification by Riemannian
+        Geometry
+        <https://hal.archives-ouvertes.fr/hal-00681328>`_
+        A. Barachant, S. Bonnet, M. Congedo, and C. Jutten. IEEE Transactions
+        on Biomedical Engineering, vol. 59, no. 4, p. 920-928, 2012.
+    .. [2] `Riemannian geometry applied to BCI classification
+        <https://hal.archives-ouvertes.fr/hal-00602700/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. 9th International
+        Conference Latent Variable Analysis and Signal Separation
+        (LVA/ICA 2010), LNCS vol. 6365, 2010, p. 629-636.
     """
 
     def __init__(self, metric='riemann', n_jobs=1):
@@ -242,14 +243,16 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian
-        geometry applied to BCI classification", 9th International Conference
-        Latent Variable Analysis and Signal Separation (LVA/ICA 2010),
-        LNCS vol. 6365, 2010, p. 629-636.
-
-    .. [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification
-        of covariance matrices using a Riemannian-based kernel for BCI
-        applications", in NeuroComputing, vol. 112, p. 172-178, 2013.
+    .. [1] `Riemannian geometry applied to BCI classification
+        <https://hal.archives-ouvertes.fr/hal-00602700/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. 9th International
+        Conference Latent Variable Analysis and Signal Separation
+        (LVA/ICA 2010), LNCS vol. 6365, 2010, p. 629-636.
+    .. [2] `Classification of covariance matrices using a Riemannian-based
+        kernel for BCI applications
+        <https://hal.archives-ouvertes.fr/hal-00820475/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
+        Elsevier, 2013, 112, pp.172-178.
     """
 
     def __init__(self, metric='riemann', tsupdate=False, n_jobs=1):
@@ -258,7 +261,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.n_jobs = n_jobs
         self.tsupdate = tsupdate
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         """Fit FgMDM.
 
         Parameters
@@ -267,6 +270,8 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -277,8 +282,8 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         self._mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
         self._fgda = FGDA(metric=self.metric, tsupdate=self.tsupdate)
-        cov = self._fgda.fit_transform(X, y)
-        self._mdm.fit(cov, y)
+        cov = self._fgda.fit_transform(X, y, sample_weight=sample_weight)
+        self._mdm.fit(cov, y, sample_weight=sample_weight)
         self.classes_ = self._mdm.classes_
         return self
 
@@ -376,7 +381,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         self.tsupdate = tsupdate
         self.clf = clf
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         """Fit TSclassifier.
 
         Parameters
@@ -385,6 +390,8 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -397,7 +404,11 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
 
         ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
         self._pipe = make_pipeline(ts, self.clf)
-        self._pipe.fit(X, y)
+        sample_weight_dict = {}
+        for step in self._pipe.steps:
+            step_name = step[0]
+            sample_weight_dict[step_name + '__sample_weight'] = sample_weight
+        self._pipe.fit(X, y, **sample_weight_dict)
         return self
 
     def predict(self, X):
@@ -475,7 +486,7 @@ class KNearestNeighbor(MDM):
         self.n_neighbors = n_neighbors
         MDM.__init__(self, metric=metric, n_jobs=n_jobs)
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         """Fit (store the training data).
 
         Parameters
@@ -484,6 +495,8 @@ class KNearestNeighbor(MDM):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
+        sample_weight : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
@@ -619,9 +632,11 @@ class SVC(sklearnSVC):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo, and C. Jutten.
-        Classification of covariance matrices using a Riemannian-based kernel
-        for BCI applications". In: Neurocomputing 112 (July 2013), pp. 172-178.
+    .. [1] `Classification of covariance matrices using a Riemannian-based
+        kernel for BCI applications
+        <https://hal.archives-ouvertes.fr/hal-00820475/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
+        Elsevier, 2013, 112, pp.172-178.
     .. [2]
         https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
     """
@@ -682,7 +697,7 @@ class SVC(sklearnSVC):
         """
         self._set_cref(X)
         self._set_kernel()
-        super().fit(X, y)
+        super().fit(X, y, sample_weight)
         return self
 
     def _set_cref(self, X):
@@ -750,8 +765,10 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     References
     ----------
-    .. [1] M Congedo, PLC Rodrigues, C Jutten. "The Riemannian Minimum Distance
-        to Means Field Classifier", BCI Conference 2019
+    .. [1] `The Riemannian Minimum Distance to Means Field Classifier
+        <https://hal.archives-ouvertes.fr/hal-02315131>`_
+        M Congedo, PLC Rodrigues, C Jutten. BCI 2019 - 8th International
+        Brain-Computer Interface Conference, Sep 2019, Graz, Austria.
     """
 
     def __init__(self, power_list=[-1, 0, 1], method_label='sum_means',

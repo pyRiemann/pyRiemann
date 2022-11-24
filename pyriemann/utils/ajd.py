@@ -64,8 +64,10 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=1000):
 
     References
     ----------
-    .. [1] J.-F. Cardoso and A. Souloumiac, "Jacobi angles for simultaneous
-        diagonalization", SIAM J Matrix Anal Appl, 1996
+    .. [1] `Jacobi angles for simultaneous diagonalization
+        <https://epubs.siam.org/doi/abs/10.1137/S0895479893259546>`_
+        J.-F. Cardoso and A. Souloumiac, SIAM Journal on Matrix Analysis and
+        Applications, Volume 17, Issue 1, Jan. 1996.
     """
 
     # reshape input matrix
@@ -155,8 +157,11 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=15, sample_weight=None):
 
     References
     ----------
-    .. [1] D.-T. Pham, "Joint approximate diagonalization of positive definite
-        Hermitian matrices", SIAM J Matrix Anal Appl, 2001
+    .. [1] `Joint approximate diagonalization of positive definite
+        Hermitian matrices
+        <https://epubs.siam.org/doi/10.1137/S089547980035689X>`_
+        D.-T. Pham. SIAM Journal on Matrix Analysis and Applications, Volume 22
+        Issue 4, 2000
     """
     normalized_weight = _get_normalized_weight(sample_weight, X)  # sum = 1
 
@@ -254,11 +259,16 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
 
     References
     ----------
-    .. [1] P. Tichavsky, A. Yeredor and J. Nielsen, "A Fast Approximate Joint
-        Diagonalization Algorithm Using a Criterion with a Block Diagonal
-        Weight Matrix", ICASSP, 2008
-    .. [2] P. Tichavsky and A. Yeredor, "Fast Approximate Joint Diagonalization
-        Incorporating Weight Matrices", IEEE Trans Signal Process, 2009
+    .. [1] `A Fast Approximate Joint Diagonalization Algorithm Using a
+        Criterion with a Block Diagonal Weight Matrix
+        <https://ieeexplore.ieee.org/abstract/document/4518361>`_
+        P. Tichavsky, A. Yeredor and J. Nielsen. 2008 IEEE International
+        Conference on Acoustics, Speech and Signal ProcessingICASSP.
+    .. [2] `Fast Approximate Joint Diagonalization Incorporating Weight
+        Matrices
+        <https://ieeexplore.ieee.org/document/4671095>`_
+        P. Tichavsky and A. Yeredor. IEEE Transactions on Signal Processing,
+        Volume 57, Issue 3, March 2009.
     """
     n_matrices, d, _ = X.shape
     # reshape input matrix

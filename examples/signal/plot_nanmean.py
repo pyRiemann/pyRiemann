@@ -164,6 +164,8 @@ plt.show()
 ###############################################################################
 # References
 # ----------
-# .. [1] F. Yger, S. Chevallier, Q. Barthélemy, S. Sra. "Geodesically-convex
-#    optimization for averaging partially observed covariance matrices", ACML
-#    2020.
+# .. [1] `Geodesically-convex optimization for averaging partially observed
+#    covariance matrices
+#    <https://hal.archives-ouvertes.fr/hal-02984423>`_
+#    F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
+#    Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.

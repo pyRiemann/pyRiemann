@@ -43,9 +43,11 @@ class SpectralEmbedding(BaseEstimator):
 
     References
     ----------
-    .. [1] M. Belkin and P. Niyogi, "Laplacian Eigenmaps for dimensionality
-        reduction and data representation," in Journal Neural Computation,
-        vol. 15, no. 6, p. 1373-1396 , 2003
+    .. [1] `Laplacian Eigenmaps for dimensionality
+        reduction and data representation
+        <https://ieeexplore.ieee.org/document/6789755>`_
+        M. Belkin and P. Niyogi, in Neural Computation, vol. 15, no. 6,
+        p. 1373-1396 , 2003
 
     """
 
@@ -164,11 +166,16 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] S. Roweis and L. K. Saul, "Nonlinear Dimensionality Reduction by
-       Locally Linear Embedding", in Science, Vol 290, Issue 5500, pp.
-       2323-2326, 2000.
-    .. [2] A. Goh and R. Vidal, "Clustering and dimensionality reduction
-       on Riemannian manifolds", CVPR 2008
+    .. [1] `Nonlinear Dimensionality Reduction by
+        Locally Linear Embedding
+        <https://www.science.org/doi/10.1126/science.290.5500.2323>`_
+        S. Roweis and L. K. Saul, in Science, Vol 290, Issue 5500, pp.
+        2323-2326, 2000.
+    .. [2] `Clustering and dimensionality reduction
+        on Riemannian manifolds
+        <https://ieeexplore.ieee.org/document/4587422>`_
+        A. Goh and R. Vidal, in 2008 IEEE Conference on Computer Vision and
+        Pattern Recognition
     """
 
     def __init__(self, n_components=2, n_neighbors=5, metric='riemann',
@@ -359,9 +366,11 @@ def locally_linear_embedding(X,
 
     References
     ----------
-    .. [1] A. Goh and R. Vidal, "Clustering and dimensionality reduction
-        on Riemannian manifolds", 2008 IEEE Conference on Computer Vision
-        and Pattern Recognition, June 2008
+    .. [1] `Clustering and dimensionality reduction
+        on Riemannian manifolds
+        <https://ieeexplore.ieee.org/document/4587422>`_
+        A. Goh and R. Vidal, in 2008 IEEE Conference on Computer Vision and
+        Pattern Recognition
     """
     n_matrices, n_channels, n_channels = X.shape
     pairwise_distances = pairwise_distance(X, metric=metric)

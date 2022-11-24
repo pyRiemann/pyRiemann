@@ -1,12 +1,14 @@
 import numpy as np
 from sklearn.utils.validation import check_random_state
 
+from ..utils.mean import mean_riemann
 from ..utils.distance import distance_riemann
-from ..utils.base import powm, sqrtm
+from ..utils.base import invsqrtm, powm, sqrtm, expm
 from .sampling import generate_random_spd_matrix, sample_gaussian_spd
+from ..transfer import encode_domains
 
 
-def make_covariances(n_matrices, n_channels, rs, return_params=False,
+def make_covariances(n_matrices, n_channels, rs=None, return_params=False,
                      evals_mean=2.0, evals_std=0.1):
     """Generate a set of covariances matrices, with the same eigenvectors.
 
@@ -16,7 +18,7 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False,
         Number of matrices to generate.
     n_channels : int
         Number of channels in covariance matrices.
-    rs : RandomState instance
+    rs : RandomState instance, default=None
         Random state for reproducible output across multiple function calls.
     return_params : bool, default=False
         If True, then return parameters.
@@ -36,6 +38,9 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False,
         Eigen vectors used for all covariance matrices.
         Only returned if ``return_params=True``.
     """
+
+    rs = check_random_state(rs)
+
     evals = np.abs(evals_mean + evals_std * rs.randn(n_matrices, n_channels))
     evecs, _ = np.linalg.qr(rs.randn(n_channels, n_channels))
 
@@ -49,7 +54,7 @@ def make_covariances(n_matrices, n_channels, rs, return_params=False,
         return covmats
 
 
-def make_masks(n_masks, n_dim0, n_dim1_min, rs):
+def make_masks(n_masks, n_dim0, n_dim1_min, rs=None):
     """Generate a set of masks, defined as semi-orthogonal matrices.
 
     Parameters
@@ -60,7 +65,7 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs):
         First dimension of masks.
     n_dim1_min : int
         Minimal value for second dimension of masks.
-    rs : RandomState instance
+    rs : RandomState instance, default=None
         Random state for reproducible output across multiple function calls.
 
     Returns
@@ -69,6 +74,9 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs):
             with different n_dim1_i, such that n_dim1_min <= n_dim1_i <= n_dim0
         Masks.
     """
+
+    rs = check_random_state(rs)
+
     masks = []
     for _ in range(n_masks):
         n_dim1 = rs.randint(n_dim1_min, n_dim0, size=1)[0]
@@ -78,8 +86,8 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs):
 
 
 def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
-                        return_centers=False, random_state=None, *,
-                        mat_mean=.0, mat_std=1., n_jobs=1,
+                        return_centers=False, center_dataset=False,
+                        random_state=None, centers=None, *, n_jobs=1,
                         sampling_method='auto'):
     """Generate SPD dataset with two classes sampled from Riemannian Gaussian.
 
@@ -98,14 +106,16 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         Parameter controlling the separability of the classes.
     class_disp : float, default=1.0
         Intra dispersion of the points sampled from each class.
+    centers : ndarray, shape (2, n_dim, n_dim), default=None
+        List with the centers of mass for each class. If None, the centers are
+        sampled randomly based on class_sep.
     return_centers : bool, default=False
         If True, then return the centers of each cluster
+    center_dataset : bool, default=False
+        If True, re-center the simulated dataset to the Identity. If False,
+        the dataset is centered around a random SPD matrix.
     random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
-    mat_mean : float, default=0.0
-        Mean of random values to generate matrices.
-    mat_std : float, default=1.0
-        Standard deviation of random values to generate matrices.
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
@@ -135,45 +145,71 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         raise ValueError(f'class_sep must be a float (Got {class_sep})')
 
     rs = check_random_state(random_state)
+    seeds = rs.randint(100, size=2)
 
-    # generate dataset for class 0
-    C0 = generate_random_spd_matrix(
-        n_dim,
-        random_state=random_state,
-        mat_mean=mat_mean,
-        mat_std=mat_std
-    )
+    if centers is None:
+        C0_in = np.eye(n_dim)  # first class mean at Identity at first
+        Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
+        Pv = (Pv + Pv.T)/2   # symmetrize
+        Pv = Pv / np.linalg.norm(Pv)  # normalize
+        P = expm(Pv)  # take it back to the SPD manifold
+        C1_in = powm(P, alpha=class_sep)  # control distance to Identity
+
+    else:
+        C0_in, C1_in = centers
+
+    # sample data points from class 0
     X0 = sample_gaussian_spd(
         n_matrices=n_matrices,
-        mean=C0,
+        mean=C0_in,
         sigma=class_disp,
-        random_state=random_state,
+        random_state=seeds[0],
         n_jobs=n_jobs,
         sampling_method=sampling_method
     )
     y0 = np.zeros(n_matrices)
 
-    # generate dataset for class 1
-    epsilon = np.exp(class_sep / np.sqrt(n_dim))
-    C1 = epsilon * C0
+    # sample data points from class 1
     X1 = sample_gaussian_spd(
         n_matrices=n_matrices,
-        mean=C1,
+        mean=C1_in,
         sigma=class_disp,
-        random_state=random_state,
+        random_state=seeds[1],
         n_jobs=n_jobs,
         sampling_method=sampling_method
     )
+
     y1 = np.ones(n_matrices)
 
+    # concatenate the samples
     X = np.concatenate([X0, X1])
-    y = np.concatenate([y0, y1])
+
+    # re-center the dataset to the Identity
+    M = mean_riemann(X)
+    M_invsqrt = invsqrtm(M)
+    X = M_invsqrt @ X @ M_invsqrt
+
+    if not center_dataset:
+        # center the dataset to a random SPD matrix
+        M = generate_random_spd_matrix(n_dim=n_dim, random_state=rs)
+        M_sqrt = sqrtm(M)
+        X = M_sqrt @ X @ M_sqrt
+
+    # concatenate the labels for each class
+    y = np.concatenate([y0, y1]).astype(int)
+
+    # randomly permute the samples of the dataset
     idx = rs.permutation(len(X))
-    X = X[idx]
-    y = y[idx]
+    X, y = X[idx], y[idx]
 
     if return_centers:
-        centers = np.stack([C0, C1])
+        if centers is None:
+            C0_out = mean_riemann(X[y == 0])
+            C1_out = mean_riemann(X[y == 1])
+        else:
+            C0_out = C0_in
+            C1_out = C1_in
+        centers = np.stack([C0_out, C1_out])
         return X, y, centers
     else:
         return X, y
@@ -222,3 +258,135 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
         outliers[i] = mean_sqrt @ powm(Oi, epsilon) @ mean_sqrt
 
     return outliers
+
+
+def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
+                                 domain_sep=5.0, theta=0.0, stretch=1.0,
+                                 random_state=None, class_names=[1, 2]):
+    """Generate source and target toy datasets for transfer learning examples.
+
+    Generate a dataset with 2x2 SPD matrices drawn from two Riemannian Gaussian
+    distributions. The distributions have the same class dispersions and the
+    distance between their centers of mass is an input parameter. We can
+    stretch the target dataset and control a rotation matrix that maps the
+    source to the target domains. This function is useful for testing
+    classification or clustering methods on transfer learning applications.
+
+    Parameters
+    ----------
+    n_matrices : int, default=100
+        How many 2x2 matrices to generate for each class on each domain.
+    class_sep : float, default=3.0
+        Distance between the centers of the two classes.
+    class_disp : float, default=1.0
+        Dispersion of the data points to be sampled on each class.
+    domain_sep : float, default=5.0
+        Distance between the global means of each source and target datasets.
+    theta : float, default=0.0
+        Angle of the 2x2 rotation matrix from source to target dataset.
+    stretch : float, default=1.0
+        Factor to stretch the data points in target dataset. Note that when it
+        is != 1.0 the class dispersions in target domain will be different than
+        those in source domain (fixed at class_disp).
+    random_state : None | int | RandomState instance, default=None
+        Pass an int for reproducible output across multiple function calls.
+    class_names : list, default=[1, 2]
+        Names of classes.
+
+    Returns
+    -------
+    X_enc : ndarray, shape (4*n_matrices, 2, 2)
+        Set of SPD matrices.
+    y_enc : ndarray, shape (4*n_matrices,)
+        Extended labels for each data point.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+    """
+
+    rs = check_random_state(random_state)
+    seeds = rs.randint(100, size=4)
+
+    # the examples considered here are always for 2x2 matrices
+    n_dim = 2
+    if len(class_names) != n_dim:
+        raise ValueError("class_names must contain 2 elements")
+
+    # create a source dataset with two classes and global mean at identity
+    M1_source = np.eye(n_dim)  # first class mean at Identity at first
+    X1_source = sample_gaussian_spd(
+        n_matrices=n_matrices,
+        mean=M1_source,
+        sigma=class_disp,
+        random_state=seeds[0])
+    y1_source = [class_names[0]] * n_matrices
+    Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
+    Pv = (Pv + Pv.T)/2  # symmetrize
+    Pv /= np.linalg.norm(Pv)  # normalize
+    P = expm(Pv)  # take it back to the SPD manifold
+    M2_source = powm(P, alpha=class_sep)  # control distance to identity
+    X2_source = sample_gaussian_spd(
+        n_matrices=n_matrices,
+        mean=M2_source,
+        sigma=class_disp,
+        random_state=seeds[1])
+    y2_source = [class_names[1]] * n_matrices
+    X_source = np.concatenate([X1_source, X2_source])
+    M_source = mean_riemann(X_source)
+    M_source_invsqrt = invsqrtm(M_source)
+    # center the dataset to Identity
+    X_source = M_source_invsqrt @ X_source @ M_source_invsqrt
+    y_source = np.concatenate([y1_source, y2_source])
+
+    # create target dataset based on the source dataset
+    X1_target = sample_gaussian_spd(
+        n_matrices=n_matrices,
+        mean=M1_source,
+        sigma=class_disp,
+        random_state=seeds[2])
+    X2_target = sample_gaussian_spd(
+        n_matrices=n_matrices,
+        mean=M2_source,
+        sigma=class_disp,
+        random_state=seeds[3])
+    X_target = np.concatenate([X1_target, X2_target])
+    M_target = mean_riemann(X_target)
+    M_target_invsqrt = invsqrtm(M_target)
+    # center the dataset to Identity
+    X_target = M_target_invsqrt @ X_target @ M_target_invsqrt
+    y_target = np.copy(y_source)
+
+    # stretch the data points in target domain if needed
+    if stretch != 1.0:
+        X_target = powm(X_target, alpha=stretch)
+
+    # move the points in X_target with a random matrix A = P * Q
+
+    # create SPD matrix for the translation between domains
+    Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
+    Pv = (Pv + Pv.T)/2  # symmetrize
+    Pv /= np.linalg.norm(Pv)  # normalize
+    P = expm(Pv)  # take it to the manifold
+    P = powm(P, alpha=domain_sep)  # control distance to identity
+    P = sqrtm(P)  # transport matrix
+
+    # create orthogonal matrix for the rotation part
+    Q = np.array([[np.cos(theta), -np.sin(theta)],
+                  [np.sin(theta), np.cos(theta)]])
+
+    # transform the data points from the target domain
+    A = P @ Q
+    X_target = A @ X_target @ A.T
+
+    # create array specifying the domain for each epoch
+    domains = np.array(
+        len(X_source)*['source_domain'] + len(X_target)*['target_domain']
+    )
+
+    # encode the labels and domains together
+    X = np.concatenate([X_source, X_target])
+    y = np.concatenate([y_source, y_target])
+    X_enc, y_enc = encode_domains(X, y, domains)
+
+    return X_enc, y_enc

@@ -120,16 +120,18 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] A. Barachant, M. Congedo ,"A Plug&Play P300 BCI Using Information
-        Geometry", arXiv:1409.0107, 2014.
-
-    .. [2] M. Congedo, A. Barachant, A. Andreev ,"A New generation of
-        Brain-Computer Interface Based on Riemannian Geometry",
-        arXiv:1310.8115, 2013.
-
-    .. [3] A. Barachant, M. Congedo, G. Van Veen, C. Jutten, "Classification de
-        potentiels evoques P300 par geometrie riemannienne pour les interfaces
-        cerveau-machine EEG", 24eme colloque GRETSI, 2013.
+    .. [1] `A Plug and Play P300 BCI Using Information Geometry
+        <https://arxiv.org/abs/1409.0107>`_
+        A. Barachant, M. Congedo. Research report, 2014.
+    .. [2] `A New generation of Brain-Computer Interface Based on Riemannian
+        Geometry
+        <https://hal.archives-ouvertes.fr/hal-00879050>`_
+        M. Congedo, A. Barachant, A. Andreev. Research report, 2013.
+    .. [3] `Classification de potentiels evoques P300 par geometrie
+        riemannienne pour les interfaces cerveau-machine EEG
+        <https://hal.archives-ouvertes.fr/hal-00877447>`_
+        A. Barachant, M. Congedo, G. van Veen, and C. Jutten, 24eme colloque
+        GRETSI, 2013.
     """
 
     def __init__(self, classes=None, estimator='scm', svd=None):
@@ -241,8 +243,11 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] Barachant, A. "MEG decoding using Riemannian Geometry and
-        Unsupervised classification", 2014
+    .. [1] `MEG decoding using Riemannian Geometry and
+        Unsupervised classification
+        <https://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.713.5131>`_
+        A. Barachant. Technical report with the solution of the DecMeg 2014
+        challenge.
     """
 
     def __init__(self,
@@ -537,19 +542,21 @@ class Coherences(CospCovariances):
 
     References
     ----------
-    .. [1] R. Pascual-Marqui, "Instantaneous and lagged measurements of linear
+    .. [1] `Instantaneous and lagged measurements of linear
         and nonlinear dependence between groups of multivariate time series:
-        frequency decomposition", arXiv, 2007.
-        https://arxiv.org/ftp/arxiv/papers/0711/0711.1455.pdf
-
-    .. [2] G. Nolte, O. Bai, L. Wheaton, Z. Mari, S. Vorbach, M. Hallett,
-        "Identifying true brain interaction from EEG data using the imaginary
-        part of coherency", Clin Neurophysiol, 2004.
-        https://doi.org/10.1016/j.clinph.2004.04.029
-
-    .. [3] Congedo, M. "Non-Parametric Synchronization Measures used in EEG
-        and MEG", TechReport, 2018.
-        https://hal.archives-ouvertes.fr/hal-01868538v2/document
+        frequency decomposition
+        <https://arxiv.org/ftp/arxiv/papers/0711/0711.1455.pdf>`_
+        R. Pascual-Marqui. Technical report, 2007.
+    .. [2] `Identifying true brain interaction from EEG data using the
+        imaginary part of coherency
+        <https://doi.org/10.1016/j.clinph.2004.04.029>`_
+        G. Nolte, O. Bai, L. Wheaton, Z. Mari, S. Vorbach, M. Hallett.
+        Clinical Neurophysioly, Volume 115, Issue 10, October 2004,
+        Pages 2292-2307
+    .. [3] `Non-Parametric Synchronization Measures used in EEG
+        and MEG
+        <https://hal.archives-ouvertes.fr/hal-01868538v2>`_
+        M. Congedo. Technical Report, 2018.
     """
 
     def __init__(self, window=128, overlap=0.75, fmin=None, fmax=None,
