@@ -1,4 +1,4 @@
-"""Embedding covariance matrices via manifold learning techniques."""
+"""Embedding SPD matrices via manifold learning techniques."""
 
 import numpy as np
 from scipy.linalg import solve, eigh
@@ -36,7 +36,7 @@ class SpectralEmbedding(BaseEstimator):
         The dimension of the projected subspace.
     metric : string | dict, default='riemann'
         The type of metric to be used for defining pairwise distance between
-        covariance matrices.
+        SPD matrices.
     eps : None | float, default=None
         The scaling of the Gaussian kernel. If none is given it will use the
         square of the median of pairwise distances between points.
@@ -48,7 +48,6 @@ class SpectralEmbedding(BaseEstimator):
         <https://ieeexplore.ieee.org/document/6789755>`_
         M. Belkin and P. Niyogi, in Neural Computation, vol. 15, no. 6,
         p. 1373-1396 , 2003
-
     """
 
     def __init__(self, n_components=2, metric='riemann', eps=None):
@@ -91,17 +90,17 @@ class SpectralEmbedding(BaseEstimator):
             Returns the instance itself.
 
         """
-        _check_dimensions(X,
-                          n_components=self.n_components)
+        _check_dimensions(X, n_components=self.n_components)
 
         affinity_matrix = self._get_affinity_matrix(X, self.eps)
-        embd = spectral_embedding(adjacency=affinity_matrix,
-                                  n_components=self.n_components,
-                                  norm_laplacian=True)
+        embd = spectral_embedding(
+            adjacency=affinity_matrix,
+            n_components=self.n_components,
+            norm_laplacian=True,
+        )
 
         # normalize the embedding between -1 and +1
         embdn = 2*(embd - embd.min(0)) / embd.ptp(0) - 1
-
         self.embedding_ = embdn
 
         return self
@@ -202,15 +201,19 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
         """
         self.data_ = X
-        _check_dimensions(X,
-                          n_components=self.n_components,
-                          n_neighbors=self.n_neighbors)
+        _check_dimensions(
+            X,
+            n_components=self.n_components,
+            n_neighbors=self.n_neighbors,
+        )
 
-        embd, err = locally_linear_embedding(X,
-                                             n_components=self.n_components,
-                                             n_neighbors=self.n_neighbors,
-                                             metric=self.metric,
-                                             reg=self.reg)
+        embd, err = locally_linear_embedding(
+            X,
+            n_components=self.n_components,
+            n_neighbors=self.n_neighbors,
+            metric=self.metric,
+            reg=self.reg,
+        )
 
         self.embedding_, self.error_ = embd, err
         return self
@@ -233,19 +236,19 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         X_new : ndarray, shape (n_matrices, n_components)
             Coordinates of embedded matrices.
         """
-        _check_dimensions(self.data_,
-                          X)
-        pairwise_distances = pairwise_distance(X,
-                                               self.data_,
-                                               metric=self.metric)
-        ind = np.array([np.argsort(dist)[1:self.n_neighbors + 1]
-                        for dist in pairwise_distances])
+        _check_dimensions(self.data_, X)
+        pairwise_dists = pairwise_distance(X, self.data_, metric=self.metric)
+        ind = np.array([
+            np.argsort(dist)[1:self.n_neighbors + 1] for dist in pairwise_dists
+        ])
 
-        weights = barycenter_weights(X,
-                                     self.data_,
-                                     ind,
-                                     metric=self.metric,
-                                     reg=self.reg)
+        weights = barycenter_weights(
+            X,
+            self.data_,
+            ind,
+            metric=self.metric,
+            reg=self.reg,
+        )
 
         X_new = np.empty((X.shape[0], self.n_components))
         for i in range(X.shape[0]):
@@ -380,8 +383,10 @@ def locally_linear_embedding(X,
     B = barycenter_weights(X, X, neighbors, metric=metric, reg=reg)
 
     indptr = np.arange(0, n_matrices * n_neighbors + 1, n_neighbors)
-    W = csr_matrix((B.ravel(), neighbors.ravel(), indptr), shape=(n_matrices,
-                                                                  n_matrices))
+    W = csr_matrix(
+        (B.ravel(), neighbors.ravel(), indptr),
+        shape=(n_matrices, n_matrices),
+    )
     # M = (W - I).T * (W - I) = W.T * W - W.T - W + I
     # calculated in the two following lines
     M = (W.T * W - W.T - W).toarray()
