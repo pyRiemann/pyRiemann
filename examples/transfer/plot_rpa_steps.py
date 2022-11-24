@@ -6,7 +6,6 @@ Plot the data transformations in the Riemannian Procrustes Analysis
 Use the SpectralEmbedding module to plot in 2D the transformations on the data
 points from source and target domains when applying the Riemannian Procrustes
 Analysis [1]_ to match their statistics.
-
 """
 
 import numpy as np
@@ -68,7 +67,8 @@ embedded_points['rot'] = S[8*n_matrices:-1]
 
 
 ###############################################################################
-# Plot the results
+# Plot the results, reproducing the Figure 1 of [1]_.
+
 fig, ax = plt.subplots(figsize=(13.5, 4.4), ncols=3, sharey=True)
 plt.subplots_adjust(wspace=0.10)
 steps = ['origin', 'rct', 'rot']

@@ -10,9 +10,8 @@ from several source subjects to train a single classifier using all of their
 data points pooled together. We compare the results of simply mixing all
 covariances from all source subjects without any care (dummy) versus
 transforming the covariances of all subjects so that they are centered around
-the Identity matrix (recenter). We use data from the Physionet BCI database and
-compare the classification performance of MDM with each strategy.
-
+the Identity matrix (recenter) [1]_. We use data from the Physionet BCI
+database and compare the classification performance of MDM with each strategy.
 """
 
 import numpy as np
@@ -185,6 +184,7 @@ for subject_target_idx in tqdm(range(len(subject_list))):
 
 ###############################################################################
 # Plot results
+
 fig, ax = plt.subplots(figsize=(7, 6))
 ax.boxplot(x=[scores[meth] for meth in scores.keys()])
 ax.set_ylim(0.45, 1.00)

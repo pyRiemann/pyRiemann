@@ -13,7 +13,6 @@ source and target distributions are determined by a set of parameters that have
 control over the distance between the centers of each dataset, the angle of
 rotation between the means of each class, and the differences in dispersion
 of the data points from each dataset.
-
 """
 
 from tqdm import tqdm
@@ -169,7 +168,8 @@ for meth in scores.keys():
 
 
 ###############################################################################
-# Plot the results
+# Plot the results, reproducing Figure 2 of [2]_.
+
 fig, ax = plt.subplots(figsize=(6.7, 5.7))
 for meth in scores.keys():
     ax.plot(
