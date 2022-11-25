@@ -5,7 +5,8 @@ import numpy as np
 
 from .base import sqrtm, invsqrtm, logm, expm
 from .distance import pairwise_distance
-from .mean import _get_sample_weight, mean_euclid
+from .mean import mean_euclid
+from .utils import check_weights
 
 
 def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
@@ -50,7 +51,8 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
         data depth", PNAS, 2000
     .. [3] https://numpy.org/doc/stable/reference/generated/numpy.median.html
     """
-    weights = _get_sample_weight(weights, X)
+    n_matrices, _, _ = X.shape
+    weights = check_weights(weights, n_matrices)
     if init is None:
         M = mean_euclid(X, sample_weight=weights)
     else:
@@ -130,7 +132,8 @@ def median_riemann(X, *, tol=10e-6, maxiter=50, init=None, weights=None,
     if not 0 < step_size <= 2:
         raise ValueError(
             'Value step_size must be included in (0, 2] (Got %d)' % step_size)
-    weights = _get_sample_weight(weights, X)
+    n_matrices, _, _ = X.shape
+    weights = check_weights(weights, n_matrices)
     if init is None:
         M = mean_euclid(X, sample_weight=weights)
     else:

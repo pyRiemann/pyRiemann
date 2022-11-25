@@ -8,19 +8,7 @@ from .ajd import ajd_pham
 from .base import sqrtm, invsqrtm, logm, expm, powm
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann
-
-
-def _get_sample_weight(sample_weight, data):
-    """Get the sample weights.
-
-    If none provided, weights init to 1. otherwise, weights are normalized.
-    """
-    if sample_weight is None:
-        sample_weight = np.ones(data.shape[0])
-    if sample_weight.shape != (data.shape[0],):
-        raise ValueError("len of sample_weight must be equal to len of data.")
-    sample_weight /= np.sum(sample_weight)
-    return sample_weight
+from .utils import check_weights
 
 
 def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
@@ -56,8 +44,9 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
         <https://arxiv.org/abs/1505.07343>`_
         M. Congedo, B. Afsari, A. Barachant, M. Moakher. PLOS ONE, 2015
     """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
-    _, n_channels, _ = covmats.shape
+    n_matrices, n_channels, _ = covmats.shape
+    sample_weight = check_weights(sample_weight, n_matrices)
+
     # init with AJD
     B, _ = ajd_pham(covmats)
 
@@ -121,10 +110,10 @@ def mean_alm(covmats, tol=1e-14, maxiter=100, sample_weight=None):
         T. Ando, C.-K. Li, and R. Mathias. Linear Algebra and its Applications.
         Volume 385, July 2004, Pages 305-334.
     """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
+    n_matrices, _, _ = covmats.shape
+    sample_weight = check_weights(sample_weight, n_matrices)
     C = covmats
     C_iter = np.zeros_like(C)
-    n_matrices, _, _ = covmats.shape
     if n_matrices == 2:
         alpha = sample_weight[1] / sample_weight[0] / 2
         X = geodesic_riemann(covmats[0], covmats[1], alpha=alpha)
@@ -273,7 +262,8 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     C : ndarray, shape (n_channels, n_channels)
         Log-det mean.
     """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
+    n_matrices, _, _ = covmats.shape
+    sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
         C = mean_euclid(covmats, sample_weight=sample_weight)
     else:
@@ -381,8 +371,8 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10, maxiter=100):
     if p == 0:
         return mean_riemann(covmats, sample_weight=sample_weight)
 
-    _, n_channels, _ = covmats.shape
-    sample_weight = _get_sample_weight(sample_weight, covmats)
+    n_matrices, n_channels, _ = covmats.shape
+    sample_weight = check_weights(sample_weight, n_matrices)
     phi = 0.375 / np.abs(p)
 
     G = np.einsum('a,abc->bc', sample_weight, powm(covmats, p))
@@ -452,7 +442,8 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
         M. Moakher, SIAM Journal on Matrix Analysis and Applications.
         Volume 26, Issue 3, 2005
     """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
+    n_matrices, _, _ = covmats.shape
+    sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
         C = mean_euclid(covmats, sample_weight=sample_weight)
     else:
@@ -520,7 +511,8 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
         <https://ieeexplore.ieee.org/document/6042179>`_
         F. Barbaresco. 12th International Radar Symposium (IRS), October 2011
     """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
+    n_matrices, _, _ = covmats.shape
+    sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
         C = mean_euclid(covmats, sample_weight=sample_weight)
     else:
@@ -674,9 +666,9 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=100, init=None,
         F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
         Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
-    maskedcovmats = _apply_masks(covmats, masks)
     n_matrices, n_channels, _ = covmats.shape
+    sample_weight = check_weights(sample_weight, n_matrices)
+    maskedcovmats = _apply_masks(covmats, masks)
     if init is None:
         C = np.eye(n_channels)
     else:
