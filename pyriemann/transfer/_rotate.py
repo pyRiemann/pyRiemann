@@ -1,6 +1,7 @@
 import warnings
 import numpy as np
 from ..utils.distance import distance
+from ..utils.utils import check_weights
 
 
 def _project(X, U):
@@ -195,8 +196,7 @@ def _get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
     if M_source.shape[1:] != M_target.shape[1:]:
         raise ValueError("The number of channels in each domain don't match")
 
-    if weights is None:
-        weights = np.ones(len(M_source)) / len(M_source)
+    weights = check_weights(weights, len(M_source))
 
     # initialize the solution with an educated guess
     Q_ini = _warm_start(M_target, M_source, weights, metric=metric)

@@ -1,23 +1,7 @@
 """Aproximate joint diagonalization algorithms."""
 
 import numpy as np
-
-
-def _get_normalized_weight(sample_weight, data):
-    """Get the normalized sample weights, strictly positive.
-
-    If None provided, weights are initialized to 1. In any case, weights are
-    normalized (sum equal to 1).
-    """
-    if sample_weight is None:
-        sample_weight = np.ones(data.shape[0])
-    else:
-        if len(sample_weight) != data.shape[0]:
-            raise ValueError("len of weight must be equal to len of data.")
-        if any(sample_weight <= 0):
-            raise ValueError("values of weight must be strictly positive.")
-    normalized_weight = sample_weight / np.sum(sample_weight)
-    return normalized_weight
+from .utils import check_weights
 
 
 def _check_init_diag(init, n):
@@ -163,9 +147,13 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=15, sample_weight=None):
         D.-T. Pham. SIAM Journal on Matrix Analysis and Applications, Volume 22
         Issue 4, 2000
     """
-    normalized_weight = _get_normalized_weight(sample_weight, X)  # sum = 1
-
     n_matrices, _, _ = X.shape
+    normalized_weight = check_weights(
+        sample_weight,
+        n_matrices,
+        check_positivity=True,
+    )  # sum = 1
+
     # Reshape input matrix
     A = np.concatenate(X, axis=0).T
 
