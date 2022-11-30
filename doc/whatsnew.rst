@@ -26,7 +26,7 @@ v0.3.1.dev
 
 - Add ``score()`` to :class:`pyriemann.regression.KNearestNeighborRegressor`. :pr:`205` by :user:`qbarthelemy`
 
-- Add Transfer Learning module and examples, including RPA and MDWM. :pr:`189` by :user:`plcrodrigues `, :user:`qbarthelemy` and :user:`sylvchev` 
+- Add Transfer Learning module and examples, including RPA and MDWM. :pr:`189` by :user:`plcrodrigues`, :user:`qbarthelemy` and :user:`sylvchev` 
 
 v0.3 (July 2022)
 ----------------

@@ -143,12 +143,21 @@ plt.show()
 ###############################################################################
 # References
 # ----------
-# .. [1] S. Chevallier, E. Kalunga, Q. Barthélemy and E. Monacelli. "Review of
-#    Riemannian distances and divergences, applied to SSVEP-based BCI",
-#    Neuroinformatics, 2021
-# .. [2] PT. Fletcher, S. Venkatasubramanian S and S. Joshi. "The geometric
-#    median on Riemannian manifolds with application to robust atlas
-#    estimation", NeuroImage, 2009
-# .. [3] M. Congedo. Chap IX of "EEG source analysis", HdR, 2013
-# .. [4] Q. Barthélemy, L. Mayaud, D. Ojeda, M. Congedo, "The Riemannian potato
-#    field: a tool for online signal quality index of EEG", IEEE TNSRE, 2019
+# .. [1] `Review of Riemannian distances and divergences, applied to
+#    SSVEP-based BCI
+#    <https://hal.archives-ouvertes.fr/LISV/hal-03015762v1>`_
+#    S. Chevallier, E. K. Kalunga, Q. Barthélemy, E. Monacelli.
+#    Neuroinformatics, Springer, 2021, 19 (1), pp.93-106
+# .. [2] `The geometric median on Riemannian manifolds with application to
+#    robust atlas estimation
+#    <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2735114/>`_
+#    PT. Fletcher, S. Venkatasubramanian S and S. Joshi.
+#    NeuroImage, 2009, 45(1), S143-S152
+# .. [3] `EEG source analysis
+#    <https://tel.archives-ouvertes.fr/tel-00880483/>`_
+#    M. Congedo. HdR, 2013, Chap IX
+# .. [4] `The Riemannian Potato Field: A Tool for Online Signal Quality Index
+#    of EEG
+#    <https://hal.archives-ouvertes.fr/hal-02015909>`_
+#    Q. Barthélemy, L. Mayaud, D. Ojeda, and M. Congedo. IEEE Transactions
+#    on Neural Systems and Rehabilitation Engineering, 2019, 27 (2), pp.244-255
