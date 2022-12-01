@@ -1,4 +1,4 @@
 Classification of SSVEP
 -----------------------
 
-Using Riemannian geometry for processing Steady-State Visually Evoked Potentials.
+Using Riemannian geometry for classifying Steady-State Visually Evoked Potentials.

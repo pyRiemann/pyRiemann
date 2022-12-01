@@ -54,7 +54,6 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         online implementation. Performance are better when the number of
         matrices for prediction is higher.
 
-
     Attributes
     ----------
     reference_ : ndarray
