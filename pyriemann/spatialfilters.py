@@ -16,11 +16,11 @@ from .preprocessing import Whitening
 class Xdawn(BaseEstimator, TransformerMixin):
     """Xdawn algorithm.
 
-    Xdawn is a spatial filtering method designed to improve the signal
+    Xdawn [1]_ is a spatial filtering method designed to improve the signal
     to signal + noise ratio (SSNR) of the ERP responses. Xdawn was originaly
     designed for P300 evoked potential by enhancing the target response with
-    respect to the non-target response. This implementation is a generalization
-    to any type of ERP.
+    respect to the non-target response [2]_. This implementation is a
+    generalization to any type of ERP.
 
     Parameters
     ----------
@@ -32,19 +32,23 @@ class Xdawn(BaseEstimator, TransformerMixin):
     estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
-    baseline_cov : None | array, shape(n_chan, n_chan), default=None
+    baseline_cov : None | array, shape(n_channels, n_channels), default=None
         Covariance matrix to which the average signals are compared. If None,
         the baseline covariance is computed across all trials and time samples.
 
     Attributes
     ----------
-    filters_ : ndarray
+    classes_ : ndarray, shape (n_classes,)
+        Labels for each class.
+    filters_ : ndarray, shape (n_classes x min(n_channels, n_filters), \
+            n_channels)
         If fit, the Xdawn components used to decompose the data for each event
-        type, concatenated, else empty.
-    patterns_ : ndarray
+        type, concatenated.
+    patterns_ : ndarray, shape (n_classes x min(n_channels, n_filters), \
+            n_channels)
         If fit, the Xdawn patterns used to restore M/EEG signals for each event
-        type, concatenated, else empty.
-    evokeds_ : ndarray
+        type, concatenated.
+    evokeds_ : ndarray, shape (n_classes x min(n_channels, n_filters), n_times)
         If fit, the evoked response for each event type, concatenated.
 
     See Also
@@ -100,10 +104,8 @@ class Xdawn(BaseEstimator, TransformerMixin):
 
         Cx = self.baseline_cov
         if Cx is None:
-            # FIXME : too many reshape operation
-            tmp = X.transpose((1, 2, 0))
             Cx = np.asarray(self.estimator_fn(
-                tmp.reshape(n_channels, n_times * n_trials)
+                X.reshape(n_channels, n_times * n_trials)
             ))
 
         self.evokeds_ = []
@@ -111,7 +113,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
         self.patterns_ = []
         for c in self.classes_:
             # Prototyped response for each class
-            P = np.mean(X[y == c, :, :], axis=0)
+            P = np.mean(X[y == c], axis=0)
 
             # Covariance matrix of the prototyper response & signal
             C = np.asarray(self.estimator_fn(P))
@@ -125,7 +127,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
             # create the reduced prototyped response
             self.filters_.append(V[:, 0:self.nfilter].T)
             self.patterns_.append(A[:, 0:self.nfilter].T)
-            self.evokeds_.append(np.dot(V[:, 0:self.nfilter].T, P))
+            self.evokeds_.append(V[:, 0:self.nfilter].T @ P)
 
         self.evokeds_ = np.concatenate(self.evokeds_, axis=0)
         self.filters_ = np.concatenate(self.filters_, axis=0)
@@ -142,11 +144,11 @@ class Xdawn(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        Xf : ndarray, shape (n_trials, n_filters * n_classes, n_times)
+        Xf : ndarray, shape (n_trials, n_classes x min(n_channels, n_filters),\
+                n_times)
             Set of spatialy filtered trials.
         """
-        X = np.dot(self.filters_, X)
-        X = X.transpose((1, 0, 2))
+        X = self.filters_ @ X
         return X
 
 
@@ -166,7 +168,7 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    filters : ndarray, shape (n_filters x n_channels)
+    filters : ndarray, shape (n_filters, n_channels)
         The filters for bilinear transform.
     log : bool, default=False
         If true, return the log variance, otherwise return the spatially
@@ -174,9 +176,9 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
 
     Attributes
     ----------
-    filters_ : ndarray
+    filters_ : ndarray, shape (n_filters, n_channels)
         If fit, the filter components used to decompose the data for each event
-        type, concatenated, else empty.
+        type, concatenated.
     """
 
     def __init__(self, filters, log=False):
@@ -217,21 +219,21 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        Xf : ndarray, shape (n_trials, n_filters)
-            Set of spatialy filtered log-variance or covariance depending
-            on the 'log' input parameter.
+        Xf : ndarray, shape (n_trials, n_filters) or \
+                ndarray, shape (n_trials, n_filters, n_filters)
+            Set of spatialy filtered log-variance or covariance, depending on
+            the 'log' input parameter.
         """
         if not isinstance(X, (np.ndarray, list)):
             raise TypeError('X must be an array.')
         if X[0].shape[1] != self.filters_.shape[1]:
             raise ValueError("Data and filters dimension must be compatible.")
 
-        X_filt = np.dot(np.dot(self.filters_, X), self.filters_.T)
-        X_filt = X_filt.transpose((1, 0, 2))
+        X_filt = self.filters_ @ X @ self.filters_.T
 
         # if logvariance
         if self.log:
-            out = np.zeros((len(X_filt), len(self.filters_)))
+            out = np.zeros(X_filt.shape[:2])
             for i, x in enumerate(X_filt):
                 out[i] = np.log(np.diag(x))
             return out
@@ -263,10 +265,10 @@ class CSP(BilinearFilter):
 
     Attributes
     ----------
-    filters_ : ndarray
-        If fit, the CSP spatial filters, else None.
-    patterns_ : ndarray
-        If fit, the CSP spatial patterns, else None.
+    filters_ : ndarray, shape (min(n_channels, n_filters), n_channels)
+        If fit, the CSP spatial filters.
+    patterns_ : ndarray, shape (min(n_channels, n_filters), n_channels)
+        If fit, the CSP spatial patterns.
 
     See Also
     --------
@@ -409,10 +411,10 @@ class SPoC(CSP):
 
     Attributes
     ----------
-    filters_ : ndarray
-        If fit, the SPoC spatial filters, else None.
-    patterns_ : ndarray
-        If fit, the SPoC spatial patterns, else None.
+    filters_ : ndarray, shape (min(n_channels, n_filters), n_channels)
+        If fit, the SPoC spatial filters.
+    patterns_ : ndarray, shape (min(n_channels, n_filters), n_channels)
+        If fit, the SPoC spatial patterns.
 
     Notes
     -----
@@ -420,7 +422,7 @@ class SPoC(CSP):
 
     See Also
     --------
-    CSP, SPoC
+    CSP
 
     References
     ----------
@@ -584,7 +586,6 @@ class AJDC(BaseEstimator, TransformerMixin):
         <https://epubs.siam.org/doi/10.1137/S089547980035689X>`_
         D.-T. Pham. SIAM Journal on Matrix Analysis and Applications, Volume 22
         Issue 4, 2000
-
     """
 
     def __init__(self, window=128, overlap=0.5, fmin=None, fmax=None, fs=None,
