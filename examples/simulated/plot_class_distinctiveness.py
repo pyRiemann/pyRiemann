@@ -2,8 +2,10 @@
 =====================================================================
 Select best class-separated SPD matrix dataset on a manifold
 =====================================================================
-Selecting SPD matrix dataset with better separation between two classes on a manifold.
-This could be used as the metric for selecting the best frequency band or time window among multiple choices.
+Selecting SPD matrix dataset with better separation
+between two classes on the manifold.
+This could be used as the metric for selecting the best frequency band
+or time window among multiple choices.
 """
 # Authors: Maria Sayu Yamamoto <maria-sayu.yamamoto@universite-paris-saclay.fr>
 #
@@ -14,8 +16,7 @@ import matplotlib.pyplot as plt
 
 from pyriemann.embedding import SpectralEmbedding
 from pyriemann.datasets import make_gaussian_blobs
-from pyriemann.utils.featureselection import class_distinctiveness
-
+from pyriemann.preprocessing import class_distinctiveness
 
 
 print(__doc__)
@@ -26,35 +27,32 @@ print(__doc__)
 n_matrices = 100  # how many SPD matrices to generate
 n_dim = 2  # number of dimensions of the SPD matrices
 random_state = 42  # ensure reproducibility
-epsilons_array = [.6, .6, .7]  # parameter for controlling the distance between centers
+epsilons_array = [.6, .6, .7]  # parameter for the distance between centers
 sigmas_array = [.2, .7, .2]  # dispersion of the Gaussian distribution
 
 ###############################################################################
 # Generate the samples on three different class separability conditions
 
-# data0...small distance between class centroids and small dispersion within class
-data0_X, data0_y = make_gaussian_blobs(n_matrices=n_matrices,
-                           n_dim=n_dim,
-                           class_sep=epsilons_array[0],
-                           class_disp=sigmas_array[0],
-                           random_state=random_state,
-                           n_jobs=4)
+# data0...small distance between class centroids
+#         and small dispersion within class
+data0_X, data0_y = make_gaussian_blobs(n_matrices=n_matrices, n_dim=n_dim,
+                                       class_sep=epsilons_array[0],
+                                       class_disp=sigmas_array[0],
+                                       random_state=random_state, n_jobs=4)
 
-# data1...small distance between class centroids and large dispersion within class
-data1_X, data1_y = make_gaussian_blobs(n_matrices=n_matrices,
-                           n_dim=n_dim,
-                           class_sep=epsilons_array[1],
-                           class_disp=sigmas_array[1],
-                           random_state=random_state,
-                           n_jobs=4)
+# data1...small distance between class centroids
+#         and large dispersion within class
+data1_X, data1_y = make_gaussian_blobs(n_matrices=n_matrices, n_dim=n_dim,
+                                       class_sep=epsilons_array[1],
+                                       class_disp=sigmas_array[1],
+                                       random_state=random_state, n_jobs=4)
 
-# data2...large distance between class centroids and small dispersion within class
-data2_X, data2_y = make_gaussian_blobs(n_matrices=n_matrices,
-                           n_dim=n_dim,
-                           class_sep=epsilons_array[2],
-                           class_disp=sigmas_array[2],
-                           random_state=random_state,
-                           n_jobs=4)
+# data2...large distance between class centroids
+#         and small dispersion within class
+data2_X, data2_y = make_gaussian_blobs(n_matrices=n_matrices, n_dim=n_dim,
+                                       class_sep=epsilons_array[2],
+                                       class_disp=sigmas_array[2],
+                                       random_state=random_state, n_jobs=4)
 
 datasets = [data0_X, data1_X, data2_X]
 labels = [data0_y, data1_y, data2_y]
@@ -64,9 +62,8 @@ labels = [data0_y, data1_y, data2_y]
 
 all_classDis = []
 for data_ind in range(len(datasets)):
-    C_class1 = datasets[data_ind][labels[data_ind] == 0]
-    C_class2 = datasets[data_ind][labels[data_ind] == 1]
-    classDis, _, _ = class_distinctiveness(C_class1, C_class2)
+    classDis = class_distinctiveness(datasets[data_ind],
+                                     labels[data_ind], nume_denomi=False)
     all_classDis.append(format(classDis, '.4f'))
 
 ###############################################################################
@@ -104,5 +101,6 @@ for axi, step, title in zip(ax, steps, titles):
     axi.set_title(title, fontsize=14)
     axi.legend(loc="upper right")
 
-ax[max_classDis_ind].set_title('best class-separated dataset\n' + titles[max_classDis_ind], fontsize=14)
+ax[max_classDis_ind].set_title('best class-separated dataset\n'
+                               + titles[max_classDis_ind], fontsize=14)
 plt.show()
