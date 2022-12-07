@@ -11,36 +11,58 @@ ensemble learning.
 #          Marie-Constance Corsi <marie.constance.corsi@gmail.com>
 #
 # License: BSD (3-clause)
+import matplotlib.pyplot as plt
 
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
 
-import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 
 from pyriemann.classification import FgMDM
-from pyriemann.estimation import Covariances
+from pyriemann.estimation import Covariances, Coherences
 from pyriemann.spatialfilters import CSP
-
 from pyriemann.tangentspace import TangentSpace
 
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.ensemble import StackingClassifier
+from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
 
-from sklearn.exceptions import ConvergenceWarning
-from warnings import filterwarnings
-
-from coherence_helpers import (
+from helpers.coherence_helpers import (
     EnsureSPD,
-    FunctionalTransformer,
     get_results,
 )
+
+###############################################################################
+# Define connectivity transformer
+# ---------------------------------------
+
+class Connectivities(TransformerMixin, BaseEstimator):
+    """Getting connectivity features from epoch"""
+
+    def __init__(self, method="ordinary", fmin=8, fmax=35, fs=None):
+        self.method = method
+        self.fmin = fmin
+        self.fmax = fmax
+        self.fs = fs
+        self.coh = Coherences(coh=method, fmin=fmin, fmax=fmax, fs=fs)
+
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        Xfc_freq = self.coh.fit_transform(X)
+        Xfc = np.empty(Xfc_freq.shape[:-1], dtype=Xfc_freq.dtype)
+        for i, fc in enumerate(Xfc_freq):
+            Xfc[i] = fc.mean(axis=-1)
+        return Xfc
 
 ###############################################################################
 # Load EEG data
@@ -96,7 +118,8 @@ fmin, fmax = 8, 35
 # Defining pipelines
 # -------------------
 #
-# Compare CSP+SVM, fgMDM on covariance/coherence/imaginary coherence,
+# Compare CSP+SVM, fgMDM on covariance, lag coherence,
+# and instantaneous coherence,
 # and ensemble method
 
 # Baseline evaluation
@@ -135,8 +158,6 @@ step_fc = [("spd", EnsureSPD()),
 # ----------
 #
 
-filterwarnings(action="ignore", category=ConvergenceWarning)
-
 dataset_res = list()
 
 ppl_fc, ppl_ens, ppl_baseline = {}, {}, {}
@@ -154,7 +175,7 @@ for sm in spectral_met:
             steps=[("cov", Covariances(estimator="lwf"))] + step_fc
         )
     else:
-        ft = FunctionalTransformer(**param_ft, method=sm)
+        ft = Connectivities(**param_ft, method=sm)
         ppl_fc[pname] = Pipeline(steps=[("ft", ft)] + step_fc)
 
 # ensemble pipeline
@@ -195,3 +216,13 @@ g = sns.catplot(
     aspect=2,
 )
 plt.show()
+
+
+###############################################################################
+# References
+# ----------
+# .. [1] Corsi, M.-C., Chevallier, S., De Vico Fallani, F. & Yger, F.
+#    `Functional connectivity ensemble method to enhance BCI performance
+#    (FUCONE)
+#    <https://arxiv.org/abs/2111.03122>`_
+#    IEEE TBME, 2022

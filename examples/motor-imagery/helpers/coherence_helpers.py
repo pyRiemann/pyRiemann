@@ -21,7 +21,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.ensemble import StackingClassifier
 
-from pyriemann.estimation import Coherences
+
 
 
 def isPD(B):
@@ -81,27 +81,6 @@ def nearestPD(A, reg=1e-6):
     if np.min(ei) / np.max(ei) < reg:
         A3 = ev @ np.diag(ei + reg) @ ev.T
     return A3
-
-
-class FunctionalTransformer(TransformerMixin, BaseEstimator):
-    """Getting connectivity features from epoch"""
-
-    def __init__(self, method="ordinary", fmin=8, fmax=35, fs=None):
-        self.method = method
-        self.fmin = fmin
-        self.fmax = fmax
-        self.fs = fs
-        self.coh = Coherences(coh=method, fmin=fmin, fmax=fmax, fs=fs)
-
-    def fit(self, X, y=None):
-        return self
-
-    def transform(self, X):
-        Xfc_freq = self.coh.fit_transform(X)
-        Xfc = np.empty(Xfc_freq.shape[:-1], dtype=Xfc_freq.dtype)
-        for i, fc in enumerate(Xfc_freq):
-            Xfc[i] = fc.mean(axis=-1)
-        return Xfc
 
 
 class EnsureSPD(TransformerMixin, BaseEstimator):
