@@ -361,5 +361,5 @@ def test_class_distinctiveness(get_covmats, get_labels, n_classes):
     assert num > 0  # negative numerator value
     assert denom > 0  # negative denominator value
     assert isinstance(class_dis, float), "Unexpected object of class_dis"
-    assert isinstance(num, float) , "Unexpected object of num"
+    assert isinstance(num, float), "Unexpected object of num"
     assert isinstance(denom, float), "Unexpected object of denum"

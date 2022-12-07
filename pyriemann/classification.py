@@ -948,9 +948,11 @@ def class_distinctiveness(X, y, return_num_denom=False):
     class_dis : float
         Class distinctiveness value
     numerator : float
-        Numerator value of class_dis. Returned only if return_num_denom is True.
+        Numerator value of class_dis. Returned only if return_num_denom is
+        True.
     denominator : float
-        Denominator value of class_dis. Returned only if return_num_denom is True.
+        Denominator value of class_dis. Returned only if return_num_denom is
+        True.
 
     References
     ----------
