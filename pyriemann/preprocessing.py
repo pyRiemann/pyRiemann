@@ -2,14 +2,12 @@ import numbers
 
 import numpy as np
 from scipy.linalg import eigh
-from itertools import combinations
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.extmath import stable_cumsum
 
-from .utils.mean import mean_covariance, mean_riemann
+from .utils.mean import mean_covariance
 from .utils.base import sqrtm, invsqrtm
-from .utils.distance import distance_riemann
 
 
 class Whitening(BaseEstimator, TransformerMixin):
@@ -202,63 +200,3 @@ class Whitening(BaseEstimator, TransformerMixin):
         """
         Xiw = self.inv_filters_.T @ X @ self.inv_filters_
         return Xiw
-
-
-def class_distinctiveness(X, y, nume_denomi=False):
-    """Measure class separability between classes on a manifold.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y : ndarray, shape (n_matrices,)
-            Labels for each matrix.
-        nume_denomi : bool, default=False
-            Whether to return numerator and denominator of class_dis.
-
-        Returns
-        -------
-        class_dis : float
-            class distinctiveness value
-        numerator : float
-            Numerator value of class_dis
-        denominator : float
-            Denominator value of class_dis
-
-        References
-        ----------
-        .. [1] `Defining and quantifying users’ mental imagery-based
-        BCI skills: a first step
-        <https://hal.archives-ouvertes.fr/hal-01846434/>`_
-        F. Lotte, and C. Jeunet. Journal of neural engineering,
-        15(4), 046030, 2018.
-        """
-
-    classes = np.unique(y)
-
-    # numerator computation
-    all_dis_between = []
-    covmeans = [mean_riemann(X[y == ll]) for ll in classes]
-    for set in combinations(classes, 2):
-        dis_between = distance_riemann(covmeans[int(set[0])],
-                                       covmeans[int(set[1])])
-        all_dis_between.append(dis_between)
-    numerator = np.sum(all_dis_between)
-
-    # denominator computation
-    all_sigma = []
-    for ll in classes:
-        X_temp = X[y == ll]
-        dis_within = [distance_riemann(X_temp[r, :, :], covmeans[int(ll)])
-                      for r in range(len(X_temp))]
-        sigma = np.sum(dis_within) / len(X_temp)
-        all_sigma.append(sigma)
-    denominator = 0.5 * (np.sum(all_sigma))
-
-    class_dis = numerator / denominator
-
-    if not nume_denomi:
-        return class_dis
-
-    else:
-        return class_dis, numerator, denominator

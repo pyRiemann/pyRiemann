@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 
 from pyriemann.embedding import SpectralEmbedding
 from pyriemann.datasets import make_gaussian_blobs
-from pyriemann.preprocessing import class_distinctiveness
+from pyriemann.classification import class_distinctiveness
 
 
 print(__doc__)
@@ -60,17 +60,17 @@ labels = [data0_y, data1_y, data2_y]
 ###############################################################################
 # Apply classDis for each dataset
 
-all_classDis = []
+all_class_dis = []
 for data_ind in range(len(datasets)):
-    classDis = class_distinctiveness(datasets[data_ind],
-                                     labels[data_ind], nume_denomi=False)
-    all_classDis.append(format(classDis, '.4f'))
+    class_dis = class_distinctiveness(datasets[data_ind],
+                                      labels[data_ind], return_num_denom=False)
+    all_class_dis.append(format(class_dis, '.4f'))
 
 ###############################################################################
 # Select the dataset with the highest classDis value
 
-max_classDis_ind = np.argmax(all_classDis)
-print('Best class-separated dataset is  dataset' + str(max_classDis_ind))
+max_classDis_ind = np.argmax(all_class_dis)
+print('Best class-separated dataset is dataset' + str(max_classDis_ind))
 
 ###############################################################################
 # Plot sample distribution of each dataset
@@ -104,3 +104,14 @@ for axi, step, title in zip(ax, steps, titles):
 ax[max_classDis_ind].set_title('best class-separated dataset\n'
                                + titles[max_classDis_ind], fontsize=14)
 plt.show()
+
+###############################################################################
+# References
+# ----------
+# .. [1] `Class-distinctiveness-based frequency band selection on the
+#    Riemannian manifold for oscillatory activity-based BCIs: preliminary
+#    results
+#    <https://hal.archives-ouvertes.fr/hal-03641137/>`_
+#    M. S. Yamamoto, F. Lotte, F. Yger, and S. Chevallier.
+#    44th Annual International Conference of the IEEE Engineering
+#    in Medicine & Biology Society (EMBC2022), 2022.

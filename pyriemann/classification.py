@@ -11,13 +11,12 @@ from sklearn.pipeline import make_pipeline
 from joblib import Parallel, delayed
 
 from .utils.kernel import kernel
-from .utils.mean import mean_covariance, mean_power
-from .utils.distance import distance
+from .utils.mean import mean_covariance, mean_power, mean_riemann
+from .utils.distance import distance, distance_riemann
 from .tangentspace import FGDA, TangentSpace
 
 
 def _check_metric(metric):
-
     if isinstance(metric, str):
         metric_mean = metric
         metric_dist = metric
@@ -141,7 +140,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         else:
             dist = Parallel(n_jobs=self.n_jobs)(delayed(distance)(
                 X, self.covmeans_[m], self.metric_dist)
-                for m in range(n_centroids))
+                                                for m in range(n_centroids))
 
         dist = np.concatenate(dist, axis=1)
         return dist
@@ -195,7 +194,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         prob : ndarray, shape (n_matrices, n_classes)
             Probabilities for each class.
         """
-        return softmax(-self._predict_distances(X)**2)
+        return softmax(-self._predict_distances(X) ** 2)
 
 
 class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
@@ -547,7 +546,7 @@ class KNearestNeighbor(MDM):
         idx = np.argsort(dist)
         dist_sorted = np.take_along_axis(dist, idx, axis=1)
         neighbors_classes = self.classmeans_[idx]
-        probas = softmax(-dist_sorted[:, 0:self.n_neighbors]**2)
+        probas = softmax(-dist_sorted[:, 0:self.n_neighbors] ** 2)
 
         prob = np.zeros((n_matrices, len(self.classes_)))
         for m in range(n_matrices):
@@ -819,7 +818,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         for ip, p in enumerate(self.power_list):
             for ill, ll in enumerate(labs_unique):
                 m[ip, ill] = distance(
-                    x, self.covmeans_[p][ll], metric=self.metric)**2
+                    x, self.covmeans_[p][ll], metric=self.metric) ** 2
 
         if self.method_label == 'sum_means':
             ipmin = np.argmin(np.sum(m, axis=1))
@@ -848,7 +847,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         pred = Parallel(n_jobs=self.n_jobs)(delayed(self._get_label)(
             x, labs_unique)
-            for x in X)
+                                            for x in X)
         return np.array(pred)
 
     def _predict_distances(self, X):
@@ -863,7 +862,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
                     m[p].append(
                         distance(
                             x, self.covmeans_[p][ll], metric=self.metric
-                        )**2
+                        ) ** 2
                     )
             pmin = min(m.items(), key=lambda x: np.sum(x[1]))[0]
             dist.append(np.array(m[pmin]))
@@ -903,4 +902,105 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         prob : ndarray, shape (n_matrices, n_classes)
             Probabilities for each class.
         """
-        return softmax(-self._predict_distances(X)**2)
+        return softmax(-self._predict_distances(X) ** 2)
+
+
+def class_distinctiveness(X, y, return_num_denom=False):
+    r"""Measure class separability between classes on the manifold.
+
+    For two class problem, the class distinctiveness between class A
+    and B on the manifold is quantified as:
+
+    .. math::
+        classDis(A, B)=\frac{\delta_{R}
+                       \left(\bar{C}^{A}, \bar{C}^{B}\right)}
+                       {\frac{1}{2}
+                       \left( \sigma_{C^{A}} + \sigma_{C^{B}}
+                       \right)}
+
+    where :math:`\bar{C}^{K}` and :math:`\sigma_{C^{K}}` are
+    respectively the mean and the mean absolute deviation of the
+    covariance matrices from class K.
+
+    For more than two classes, it is quantified as:
+
+    .. math::
+        classDis\left(\left\{A_{i}\right\}\right) =
+        \frac{\sum_{i=1}^{N c} \delta_{R}\left(\bar{C}^{A_{i}},
+        \overline{\bar{C}}^{A}\right)}{\sum_{i=1}^{N c} \sigma_{C^{A_{i}}}}
+
+    where :math:`\overline{\bar{C}}^{A}` is the average of the mean covariance
+    matrices of all classes.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    y : ndarray, shape (n_matrices,)
+        Labels for each matrix.
+    return_num_denom : bool, default=False
+        Whether to return numerator and denominator of class_dis.
+
+    Returns
+    -------
+    class_dis : float
+        Class distinctiveness value
+    numerator : float
+        Numerator value of class_dis
+    denominator : float
+        Denominator value of class_dis
+
+    References
+    ----------
+    .. [1] `Defining and quantifying users’ mental imagery-based
+    BCI skills: a first step
+    <https://hal.archives-ouvertes.fr/hal-01846434/>`_
+    F. Lotte, and C. Jeunet. Journal of neural engineering,
+    15(4), 046030, 2018.
+    """
+
+    classes = np.unique(y)
+    if len(classes) <= 1:
+        raise ValueError('X must contain at least two classes')
+
+    elif len(classes) == 2:
+        # numerator computation
+        covmeans = [mean_riemann(X[y == ll]) for ll in classes]
+        numerator = distance_riemann(covmeans[0], covmeans[1])
+
+        # denominator computation
+        all_sigma = []
+        for ll in classes:
+            X_temp = X[y == ll]
+            dis_within = [distance_riemann(X_temp[r], covmeans[int(ll)])
+                          for r in range(len(X_temp))]
+            sigma = np.sum(dis_within) / len(X_temp)
+            all_sigma.append(sigma)
+        denominator = 0.5 * (np.sum(all_sigma))
+
+    else:
+        # numerator computation
+        covmeans = [mean_riemann(X[y == ll]) for ll in classes]
+        covmeans = np.array(covmeans)
+        ave_covmeans = mean_riemann(covmeans)
+        all_dis_between = [distance_riemann(covmeans[int(ll)],
+                                            ave_covmeans) for ll in classes]
+        numerator = np.sum(all_dis_between)
+
+        # denominator computation
+        all_sigma = []
+        for ll in classes:
+            X_temp = X[y == ll]
+            dis_within = [distance_riemann(X_temp[r], covmeans[int(ll)])
+                          for r in range(len(X_temp))]
+            sigma = np.sum(dis_within) / len(X_temp)
+            all_sigma.append(sigma)
+        denominator = np.sum(all_sigma)
+
+    class_dis = numerator / denominator
+
+    if return_num_denom:
+        return class_dis, numerator, denominator
+
+    else:
+        return class_dis
