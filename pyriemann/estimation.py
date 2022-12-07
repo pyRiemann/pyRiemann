@@ -1,11 +1,11 @@
 """Estimation of covariance matrices."""
 import numpy as np
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.covariance import shrunk_covariance
 
 from .spatialfilters import Xdawn
 from .utils.covariance import (covariances, covariances_EP, cospectrum,
                                coherence, block_covariances)
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.covariance import shrunk_covariance
 
 
 def _nextpow2(i):
@@ -82,17 +82,13 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     For each class, a prototyped response is obtained by average across trial:
 
     .. math::
-        \mathbf{P} = \frac{1}{N} \sum_i^N \mathbf{X}_i
+        \mathbf{P} = \frac{1}{m} \sum_{i=1}^{m} \mathbf{X}_i
 
     and a super trial is built using the concatenation of P and the trial X:
 
     .. math::
-        \mathbf{\tilde{X}}_i =  \left[
-                                \begin{array}{c}
-                                \mathbf{P} \\
-                                \mathbf{X}_i
-                                \end{array}
-                                \right]
+        \mathbf{\tilde{X}}_i = \left[ \begin{array}{c} \mathbf{P} \\
+        \mathbf{X}_i \end{array} \right]
 
     This super trial :math:`\mathbf{\tilde{X}}_i` will be used for covariance
     estimation.
@@ -110,6 +106,13 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     svd : int | None, default=None
         If not None, the prototype responses will be reduce using a SVD using
         the number of components passed in SVD.
+
+    Attributes
+    ----------
+    P_ : ndarray, shape (n_components, n_times)
+        If fit, prototyped responses for each class, where `n_components` is
+        equal to `n_classes x n_channels` if `svd` is None,
+        and to `n_classes x min(svd, n_channels)` otherwise.
 
     See Also
     --------
@@ -143,7 +146,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     def fit(self, X, y):
         """Fit.
 
-        Estimate the Prototyped response for each classes.
+        Estimate the prototyped responses for each class.
 
         Parameters
         ----------
@@ -167,13 +170,13 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
         self.P_ = []
         for c in classes:
-            # Prototyped responce for each class
-            P = np.mean(X[y == c, :, :], axis=0)
+            # Prototyped response for each class
+            P = np.mean(X[y == c], axis=0)
 
             # Apply svd if requested
             if self.svd is not None:
-                U, s, V = np.linalg.svd(P)
-                P = np.dot(U[:, 0:self.svd].T, P)
+                U, _, _ = np.linalg.svd(P)
+                P = U[:, 0:self.svd].T @ P
 
             self.P_.append(P)
 
@@ -190,10 +193,11 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        covmats : ndarray, shape (n_matrices, n_c, n_c)
-            Covariance matrices for each input, with n_c the size
-            of covmats equal to n_channels * (n_classes + 1) in case SVD is
-            None and equal to n_channels + n_classes * svd otherwise.
+        covmats : ndarray, shape (n_matrices, n_components, n_components)
+            Covariance matrices for ERP, where the size of matrices
+            `n_components` is equal to `(1 + n_classes) x n_channels` if `svd`
+            is None, and to `n_channels + n_classes x min(svd, n_channels)`
+            otherwise.
         """
         covmats = covariances_EP(X, self.P_, estimator=self.estimator)
         return covmats
@@ -209,13 +213,13 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
     A complete description of the method is available in [1]_.
 
     The advantage of this estimation is to reduce dimensionality of the
-    covariance matrices efficiently.
+    covariance matrices supervisely.
 
     Parameters
     ----------
-    nfilter: int, default=4
+    nfilter : int, default=4
         Number of Xdawn filters per class.
-    applyfilters: bool, default=True
+    applyfilters : bool, default=True
         If set to true, spatial filter are applied to the prototypes and the
         signals. When set to False, filters are applied only to the ERP
         prototypes allowing for a better generalization across subject and
@@ -232,9 +236,14 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         Covariance matrix estimator for `Xdawn` spatial filtering.
         Should be regularized using 'lwf' or 'oas', see
         :func:`pyriemann.utils.covariance.covariances`.
-    baseline_cov : array, shape (n_chan, n_chan) | None, default=None
+    baseline_cov : array, shape (n_channels, n_channels) | None, default=None
         Baseline covariance for `Xdawn` spatial filtering,
         see :class:`pyriemann.spatialfilters.Xdawn`.
+
+    Attributes
+    ----------
+    P_ : ndarray, shape (n_classes x min(n_channels, n_filters), n_times)
+        If fit, the evoked response for each event type, concatenated.
 
     See Also
     --------
@@ -286,7 +295,8 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
             nfilter=self.nfilter,
             classes=self.classes,
             estimator=self.xdawn_estimator,
-            baseline_cov=self.baseline_cov)
+            baseline_cov=self.baseline_cov,
+        )
         self.Xd_.fit(X, y)
         self.P_ = self.Xd_.evokeds_
         return self
@@ -301,8 +311,11 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        covmats : ndarray, shape (n_matrices, n_c, n_c)
-            Covariance matrices.
+        covmats : ndarray, shape (n_matrices, n_components, n_components)
+            Covariance matrices filtered by Xdawn, where n_components is equal
+            to `2 x n_classes x min(n_channels, nfilter)` if `applyfilters` is
+            True, and to `n_channels + n_classes x min(n_channels, nfilter)`
+            otherwise.
         """
         if self.applyfilters:
             X = self.Xd_.transform(X)
@@ -603,13 +616,13 @@ class Coherences(CospCovariances):
 class HankelCovariances(BaseEstimator, TransformerMixin):
     """Estimation of covariance matrix with time delayed Hankel matrices.
 
-    This estimation is usefull to catch spectral dynamics of the signal,
-    similarly to the CSSP method. It is done by concatenating time delayed
-    version of the signal before covariance estimation.
+    Hankel covariance matrices [1]_ are useful to catch spectral dynamics of
+    the signal, similarly to the CSSP method [2]_. It is done by concatenating
+    time delayed version of the signal before covariance estimation.
 
     Parameters
     ----------
-    delays: int | list of int, default=4
+    delays : int | list of int, default=4
         The delays to apply for the Hankel matrices. If `int`, it use a range
         of delays up to the given value. A list of int can be given.
     estimator : string, default='scm'
@@ -622,6 +635,15 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
     ERPCovariances
     XdawnCovariances
     CospCovariances
+
+    References
+    ----------
+    .. [1] https://en.wikipedia.org/wiki/Hankel_matrix
+    .. [2] `Spatio-spectral filters for improving the classification of single
+        trial EEG
+        <http://doc.ml.tu-berlin.de/bbci/publications/LemBlaCurMue05.pdf>`_
+        S. Lemm, B. Blankertz, B. Curio, K-R. Muller. IEEE Transactions on
+        Biomedical Engineering 52(9), 1541-1548, 2005.
     """
 
     def __init__(self, delays=4, estimator='scm'):
@@ -658,17 +680,20 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-            Covariance matrices.
+        covmats : ndarray, shape (n_matrices, n_delays x n_channels, \
+                n_delays x n_channels)
+            Hankel covariance matrices, where n_delays is equal to `delays`
+            when it is a int, and to `1 + len(delays)` when it is a list.
         """
 
         if isinstance(self.delays, int):
             delays = range(1, self.delays)
-        else:
+        elif isinstance(self.delays, list):
             delays = self.delays
+        else:
+            raise ValueError('delays must be an integer or a list')
 
         X2 = []
-
         for x in X:
             tmp = x
             for d in delays:
