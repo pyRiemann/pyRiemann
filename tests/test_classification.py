@@ -343,40 +343,23 @@ def test_meanfield(get_covmats, get_labels, method_label):
     assert transf.shape == (n_matrices, n_classes)
 
 
-def test_two_classes_class_distinctiveness(get_covmats, get_labels):
+@pytest.mark.parametrize("n_classes", [1, 2, 3])
+def test_class_distinctiveness(get_covmats, get_labels, n_classes):
     """Test function for class distinctiveness measure for two class problem"""
-    n_classes, n_matrices, n_channels = 2, 6, 3
+    n_matrices, n_channels = 6, 3
     covmats = get_covmats(n_matrices, n_channels)
     labels = get_labels(n_matrices, n_classes)
+    if n_classes == 1:
+        with pytest.raises(ValueError):
+            class_distinctiveness(covmats, labels)
+        return
+
     class_dis, num, denom = class_distinctiveness(covmats,
                                                   labels,
                                                   return_num_denom=True)
     assert class_dis > 0  # negative class_dis value
     assert num > 0  # negative numerator value
     assert denom > 0  # negative denominator value
-    assert isinstance(class_dis, float)  # Unexpected object of class_dis
-    assert isinstance(num, float)   # Unexpected object of num
-    assert isinstance(denom, float)   # Unexpected object of denom
-    assert class_dis.shape == ()  # class_dis shape mismatch
-    assert num.shape == ()  # num shape mismatch
-    assert denom.shape == ()  # denom shape mismatch
-
-
-def test_multi_classes_class_distinctiveness(get_covmats, get_labels):
-    """Test function for class distinctiveness measure
-    for multi class problem (n_classes=3)"""
-    n_classes, n_matrices, n_channels = 3, 6, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    labels = get_labels(n_matrices, n_classes)
-    class_dis, num, denom = class_distinctiveness(covmats,
-                                                  labels,
-                                                  return_num_denom=True)
-    assert class_dis > 0  # negative class_dis value
-    assert num > 0  # negative numerator value
-    assert denom > 0  # negative denominator value
-    assert isinstance(class_dis, float)  # Unexpected object of class_dis
-    assert isinstance(num, float)   # Unexpected object of num
-    assert isinstance(denom, float)   # Unexpected object of denom
-    assert class_dis.shape == ()  # class_dis shape mismatch
-    assert num.shape == ()  # num shape mismatch
-    assert denom.shape == ()  # denom shape mismatch
+    assert isinstance(class_dis, float), "Unexpected object of class_dis"
+    assert isinstance(num, float) , "Unexpected object of num"
+    assert isinstance(denom, float), "Unexpected object of denum"

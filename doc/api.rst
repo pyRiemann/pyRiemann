@@ -54,6 +54,12 @@ Classification
     SVC
     MeanField
 
+.. autosummary::
+    :toctree: generated/
+    :template: function.rst
+
+    class_distinctiveness
+
 Regression
 --------------
 .. _regression_api:

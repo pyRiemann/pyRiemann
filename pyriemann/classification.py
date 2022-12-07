@@ -912,7 +912,7 @@ def class_distinctiveness(X, y, return_num_denom=False):
     and B on the manifold is quantified as:
 
     .. math::
-        classDis(A, B)=\frac{\delta_{R}
+        \mathrm{classDis}(A, B) = \frac{\delta_{R}
                        \left(\bar{C}^{A}, \bar{C}^{B}\right)}
                        {\frac{1}{2}
                        \left( \sigma_{C^{A}} + \sigma_{C^{B}}
@@ -925,12 +925,14 @@ def class_distinctiveness(X, y, return_num_denom=False):
     For more than two classes, it is quantified as:
 
     .. math::
-        classDis\left(\left\{A_{i}\right\}\right) =
+        \mathrm{classDis}\left(\left\{A_{i}\right\}\right) =
         \frac{\sum_{i=1}^{N c} \delta_{R}\left(\bar{C}^{A_{i}},
         \overline{\bar{C}}^{A}\right)}{\sum_{i=1}^{N c} \sigma_{C^{A_{i}}}}
 
     where :math:`\overline{\bar{C}}^{A}` is the average of the mean covariance
     matrices of all classes.
+
+    See [1]_ for more details.
 
     Parameters
     ----------
@@ -946,19 +948,18 @@ def class_distinctiveness(X, y, return_num_denom=False):
     class_dis : float
         Class distinctiveness value
     numerator : float
-        Numerator value of class_dis
+        Numerator value of class_dis. Returned only if return_num_denom is True.
     denominator : float
-        Denominator value of class_dis
+        Denominator value of class_dis. Returned only if return_num_denom is True.
 
     References
     ----------
     .. [1] `Defining and quantifying users’ mental imagery-based
-    BCI skills: a first step
-    <https://hal.archives-ouvertes.fr/hal-01846434/>`_
-    F. Lotte, and C. Jeunet. Journal of neural engineering,
-    15(4), 046030, 2018.
+       BCI skills: a first step
+       <https://hal.archives-ouvertes.fr/hal-01846434/>`_
+       F. Lotte, and C. Jeunet. Journal of neural engineering,
+       15(4), 046030, 2018.
     """
-
     classes = np.unique(y)
     if len(classes) <= 1:
         raise ValueError('X must contain at least two classes')
@@ -974,26 +975,25 @@ def class_distinctiveness(X, y, return_num_denom=False):
             X_temp = X[y == ll]
             dis_within = [distance_riemann(X_temp[r], covmeans[int(ll)])
                           for r in range(len(X_temp))]
-            sigma = np.sum(dis_within) / len(X_temp)
+            sigma = np.mean(dis_within)
             all_sigma.append(sigma)
-        denominator = 0.5 * (np.sum(all_sigma))
-
+        denominator = 0.5 * np.sum(all_sigma)
     else:
         # numerator computation
         covmeans = [mean_riemann(X[y == ll]) for ll in classes]
         covmeans = np.array(covmeans)
         ave_covmeans = mean_riemann(covmeans)
-        all_dis_between = [distance_riemann(covmeans[int(ll)],
-                                            ave_covmeans) for ll in classes]
+        all_dis_between = [distance_riemann(covmeans[ii], ave_covmeans)
+                           for ii in range(len(classes))]
         numerator = np.sum(all_dis_between)
 
         # denominator computation
         all_sigma = []
-        for ll in classes:
+        for ii, ll in enumerate(classes):
             X_temp = X[y == ll]
-            dis_within = [distance_riemann(X_temp[r], covmeans[int(ll)])
+            dis_within = [distance_riemann(X_temp[r], covmeans[ii])
                           for r in range(len(X_temp))]
-            sigma = np.sum(dis_within) / len(X_temp)
+            sigma = np.mean(dis_within)
             all_sigma.append(sigma)
         denominator = np.sum(all_sigma)
 
@@ -1001,6 +1001,5 @@ def class_distinctiveness(X, y, return_num_denom=False):
 
     if return_num_denom:
         return class_dis, numerator, denominator
-
     else:
         return class_dis

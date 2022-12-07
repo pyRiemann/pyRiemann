@@ -1,18 +1,18 @@
 """
-=====================================================================
-Illustrate classification accuracy and class distinctiveness value
-versus class separability
-=====================================================================
+======================================================================
+Classification accuracy vs class distinctiveness vs class separability
+======================================================================
 
 Generate several datasets containing data points from two-classes. Each class
 is generated with a Riemannian Gaussian distribution centered at the class mean
 and with the same dispersion sigma. The distance between the class means is
 parametrized by Delta, which we make vary between zero and 5*sigma. We
 illustrate how the accuracy of the MDM classifier and the value of the class
-distinctiveness vary when Delta increases.
+distinctiveness [1]_ vary when Delta increases.
 
 """
 # Authors: Pedro Rodrigues <pedro.rodrigues@melix.org>
+#          Maria Sayu Yamamoto <maria-sayu.yamamoto@universite-paris-saclay.fr>
 #
 # License: BSD (3-clause)
 
@@ -24,13 +24,8 @@ from pyriemann.classification import MDM
 from pyriemann.datasets import make_gaussian_blobs
 from pyriemann.classification import class_distinctiveness
 
-
-print(__doc__)
-
-
 ###############################################################################
 # Set general parameters for the illustrations
-
 
 n_matrices = 100  # how many matrices to sample on each class
 n_dim = 4  # dimensionality of the data points
@@ -55,17 +50,16 @@ for delta in deltas_array:
     # measure class distinctiveness of training data for each split
     skf = StratifiedKFold(n_splits=5)
     all_class_dis = []
-    for train_ind, test_ind in skf.split(X, y):
+    for train_ind, _ in skf.split(X, y):
         class_dis = class_distinctiveness(X[train_ind], y[train_ind],
                                           return_num_denom=False)
         all_class_dis.append(class_dis)
-    all_class_dis = np.array(all_class_dis)
 
-    # average class distinctiveness cross splits
+    # average class distinctiveness across splits
     mean_class_dis = np.mean(all_class_dis)
     class_dis_array.append(mean_class_dis)
 
-    # which classifier to consider
+    # Now let's train a MDM classifier and measure its performance
     clf = MDM()
 
     # get the classification score for this setup
@@ -77,32 +71,22 @@ class_dis_array = np.array(class_dis_array)
 
 ###############################################################################
 # Plot the results
-fig, ax1 = plt.subplots(figsize=(7.5, 5.9))
-ax2 = ax1.twinx()
+fig, (ax1, ax2) = plt.subplots(sharex=True, nrows=2)
 
-ax1.plot(deltas_array, scores_array, lw=3.0, label=r'score ($\sigma$=1)')
-ax2.plot(deltas_array, class_dis_array, lw=3.0, color='g', label='class_dis')
+ax1.plot(deltas_array, scores_array, lw=3.0, label=r'ROC AUC score')
+ax2.plot(deltas_array, class_dis_array, lw=3.0, color='g',
+         label='Class Distinctiveness')
 
-ax1.set_xticks([0, 1, 2, 3])
-ax1.set_xticklabels([0, 1, 2, 3], fontsize=12)
-
-ax1.set_yticks([0.6, 0.7, 0.8, 0.9, 1.0])
-ax1.set_yticklabels([0.6, 0.7, 0.8, 0.9, 1.0], fontsize=12)
-
-ax2.set_yticks([0.2, 0.5, 0.8, 1.1, 1.4, 1.7])
-ax2.set_yticklabels([0.2, 0.5, 0.8, 1.1, 1.4, 1.7], fontsize=12)
-
-ax1.set_xlabel(r'$\Delta/\sigma$', fontsize=14)
-ax1.set_ylabel(r'score', fontsize=12)
+ax2.set_xlabel(r'$\Delta/\sigma$', fontsize=14)
+ax1.set_ylabel(r'ROC AUC score', fontsize=12)
 ax2.set_ylabel(r'class distinctiveness', fontsize=12)
-ax1.set_title(r'Classification score and class distinctiveness '
-              r'value Vs class separability ($n_{dim} = 4$)',
+ax1.set_title('Classification score and class distinctiveness value\n'
+              r'vs. class separability ($n_{dim} = 4$)',
               fontsize=12)
-h1, l1 = ax1.get_legend_handles_labels()
-h2, l2 = ax2.get_legend_handles_labels()
-ax1.legend(h1+h2, l1+l2, loc='lower right')
+
 ax1.grid(True)
 ax2.grid(True)
+fig.tight_layout()
 plt.show()
 
 ###############################################################################
