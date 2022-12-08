@@ -7,7 +7,7 @@ This example shows how to compute SPD matrices from functional
 connectivity estimators and how to combine classification with
 ensemble learning.
 """
-# Authors: Sylvain Chevallier <sylvain.chevallier@uvsq.fr>,
+# Authors: Sylvain Chevallier <sylvain.chevallier@universite-paris-saclay.fr>,
 #          Marie-Constance Corsi <marie.constance.corsi@gmail.com>
 #
 # License: BSD (3-clause)
@@ -29,7 +29,6 @@ from pyriemann.tangentspace import TangentSpace
 
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.ensemble import StackingClassifier
-from sklearn.exceptions import ConvergenceWarning
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.pipeline import Pipeline
@@ -40,9 +39,12 @@ from helpers.coherence_helpers import (
     get_results,
 )
 
+
 ###############################################################################
 # Define connectivity transformer
 # ---------------------------------------
+# This estimator computes the functional connectivity from input signal using
+# `pyriemann.estimation.Coherences`
 
 class Connectivities(TransformerMixin, BaseEstimator):
     """Getting connectivity features from epoch"""
@@ -63,6 +65,7 @@ class Connectivities(TransformerMixin, BaseEstimator):
         for i, fc in enumerate(Xfc_freq):
             Xfc[i] = fc.mean(axis=-1)
         return Xfc
+
 
 ###############################################################################
 # Load EEG data
@@ -111,62 +114,49 @@ fs = epochs.info["sfreq"]
 X = 1e6 * epochs.get_data()
 
 # Parameters
-spectral_met = ["cov", "lagged", "instantaneous"]
-fmin, fmax = 8, 35
 
 ###############################################################################
 # Defining pipelines
 # -------------------
 #
-# Compare CSP+SVM, fgMDM on covariance, lag coherence,
-# and instantaneous coherence,
-# and ensemble method
+# Compare CSP+SVM, FgMDM on covariance, tangent space logistic regression with
+# covariance, lag coherence, and instantaneous coherence, along with ensemble
+# method
 
-# Baseline evaluation
+ppl_baseline, ppl_fc, ppl_ens = {}, {}, {}
+
+###############################################################################
+# Baseline algorithms are CSP with optimal SVM and FgMDM based on covariances
+
 param_svm = {"kernel": ("linear", "rbf"), "C": [0.1, 1, 10]}
 step_csp = [
     ("cov", Covariances(estimator="lwf")),
     ("csp", CSP(nfilter=6)),
     ("optsvm", GridSearchCV(SVC(), param_svm, cv=3)),
 ]
+ppl_baseline["CSP+optSVM"] = Pipeline(steps=step_csp)
 
 step_mdm = [("cov", Covariances(estimator="lwf")),
             ("fgmdm", FgMDM(metric="riemann", tsupdate=False))]
+ppl_baseline["FgMDM"] = Pipeline(steps=step_mdm)
 
-# Covariance-based Riemannian geometry
+###############################################################################
+# Functional connectivity pipelines use logistic regression in tangent space.
+# They will be estimated from covariance, lagged coherence and instantaneous
+# coherence.
+
+spectral_met = ["cov", "lagged", "instantaneous"]
+fmin, fmax = 8, 35
 param_lr = {
     "penalty": "elasticnet",
     "l1_ratio": 0.15,
     "intercept_scaling": 1000.0,
     "solver": "saga",
 }
-step_cov = [("cov", Covariances(estimator="lwf")),
-            ("tg", TangentSpace(metric="riemann")),
-            ("LogReg", LogisticRegression(**param_lr))]
-
-# Functional connectivity-based Riemannian geometry
 param_ft = {"fmin": fmin, "fmax": fmax, "fs": fs}
 step_fc = [("spd", EnsureSPD()),
            ("tg", TangentSpace(metric="riemann")),
            ("LogistReg", LogisticRegression(**param_lr))]
-# step_fc = [("spd", EnsureSPD()),
-#            ("fgmdm", FgMDM(metric="riemann", tsupdate=False))]
-
-
-###############################################################################
-# Evaluation
-# ----------
-#
-
-dataset_res = list()
-
-ppl_fc, ppl_ens, ppl_baseline = {}, {}, {}
-
-# baseline pipeline
-ppl_baseline["CSP+optSVM"] = Pipeline(steps=step_csp)
-ppl_baseline["FgMDM"] = Pipeline(steps=step_mdm)
-
-# functionnal connectivity pipeline
 for sm in spectral_met:
     pname = sm + "+elasticnet"
     # pname = sm + "+fgmdm"
@@ -178,7 +168,10 @@ for sm in spectral_met:
         ft = Connectivities(**param_ft, method=sm)
         ppl_fc[pname] = Pipeline(steps=[("ft", ft)] + step_fc)
 
-# ensemble pipeline
+###############################################################################
+# The ensemble classifier stacks a logistic regression on top of the three
+# functional connectivity pipelines to make a global prediction
+
 fc_estim = [(n, ppl_fc[n]) for n in ppl_fc]
 cvkf = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
@@ -190,6 +183,13 @@ ppl_ens["ensemble"] = StackingClassifier(
     final_estimator=lr,
     stack_method="predict_proba",
 )
+
+###############################################################################
+# Evaluation
+# ----------
+#
+
+dataset_res = list()
 all_ppl = {**ppl_baseline, **ppl_ens}
 
 # Compute results

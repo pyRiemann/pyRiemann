@@ -1,10 +1,9 @@
 """
 =================================
- Functional Connectivity with MNE
+ Functional Connectivity Helpers
 =================================
 
-This module is designed to compute functional connectivity metrics on
-MOABB datasets.
+This file contains helper functions for the functional connectivity example
 """
 # Authors: Sylvain Chevallier <sylvain.chevallier@universite-paris-saclay.fr>,
 #          Marie-Constance Corsi <marie.constance.corsi@gmail.com>
