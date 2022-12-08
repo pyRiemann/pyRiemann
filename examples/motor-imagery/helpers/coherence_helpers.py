@@ -6,7 +6,7 @@
 This module is designed to compute functional connectivity metrics on
 MOABB datasets.
 """
-# Authors: Sylvain Chevallier <sylvain.chevallier@uvsq.fr>,
+# Authors: Sylvain Chevallier <sylvain.chevallier@universite-paris-saclay.fr>,
 #          Marie-Constance Corsi <marie.constance.corsi@gmail.com>
 #
 # License: BSD (3-clause)
@@ -14,31 +14,14 @@ MOABB datasets.
 
 import numpy as np
 
+from pyriemann.utils.test import is_pos_def
+
 from sklearn.model_selection import StratifiedKFold
 from sklearn.base import clone
 from sklearn.preprocessing import LabelEncoder
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.metrics import balanced_accuracy_score
 from sklearn.ensemble import StackingClassifier
-
-
-
-
-def isPD(B):
-    """Returns true when input is positive-definite, via Cholesky"""
-    try:
-        _ = np.linalg.cholesky(B)
-        return True
-    except np.linalg.LinAlgError:
-        return False
-
-
-def isPD2(B):
-    """Returns true when input is positive-definite, via eigenvalues"""
-    if np.any(np.linalg.eigvals(B) < 0.0):
-        return False
-    else:
-        return True
 
 
 def nearestPD(A, reg=1e-6):
@@ -61,7 +44,7 @@ def nearestPD(A, reg=1e-6):
 
     A3 = (A2 + A2.T) / 2
 
-    if isPD(A3):
+    if is_pos_def(A3):
         # Regularize if already PD
         ei, ev = np.linalg.eigh(A3)
         if np.min(ei) / np.max(ei) < reg:
@@ -71,7 +54,7 @@ def nearestPD(A, reg=1e-6):
     spacing = np.spacing(np.linalg.norm(A))
     I = np.eye(A.shape[0])  # noqa
     k = 1
-    while not isPD2(A3):
+    while not is_pos_def(A3, fast_mode=False):
         mineig = np.min(np.real(np.linalg.eigvals(A3)))
         A3 += I * (-mineig * k ** 2 + spacing)
         k += 1

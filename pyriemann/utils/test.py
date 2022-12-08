@@ -1,4 +1,3 @@
-
 import numpy as np
 
 
@@ -93,20 +92,34 @@ def is_hermitian(X):
     return is_sym(X.real) and is_skew_sym(X.imag)
 
 
-def is_pos_def(X):
+def is_pos_def(X, fast_mode=True):
     """ Check if all matrices are positive definite.
+
+    Check if all matrices are positive definite, fast verification is done
+    with Cholesky decomposition, while full check compute all eigenvalues
+    to verify that they are positive
 
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
         The set of square matrices, at least 2D ndarray.
+    fast_mode : boolean
+        Use Cholesky decomposition to avoid computing all eigenvalues
+
 
     Returns
     -------
     ret : boolean
         True if all matrices are positive definite.
     """
-    return is_square(X) and np.all(_get_eigenvals(X) > 0.0)
+    if fast_mode:
+        try:
+            _ = np.linalg.cholesky(X)
+            return True
+        except np.linalg.LinAlgError:
+            return False
+    else:
+        return is_square(X) and np.all(_get_eigenvals(X) > 0.0)
 
 
 def is_pos_semi_def(X):
