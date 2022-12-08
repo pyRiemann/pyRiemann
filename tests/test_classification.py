@@ -356,6 +356,7 @@ def test_class_distinctiveness(get_covmats, get_labels, n_classes):
 
     class_dis, num, denom = class_distinctiveness(covmats,
                                                   labels,
+                                                  metric='riemann',
                                                   return_num_denom=True)
     assert class_dis > 0  # negative class_dis value
     assert num > 0  # negative numerator value
