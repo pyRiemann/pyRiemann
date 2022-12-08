@@ -12,8 +12,6 @@ MOABB datasets.
 # License: BSD (3-clause)
 
 
-import numpy as np
-
 from pyriemann.utils.base import nearest_pos_def
 
 from sklearn.model_selection import StratifiedKFold
@@ -25,7 +23,7 @@ from sklearn.ensemble import StackingClassifier
 
 
 class EnsureSPD(TransformerMixin, BaseEstimator):
-    """Getting connectivity features from mat files"""
+    """Transform square matrices to nearest SPD matrices"""
 
     def __init__(self):
         pass
@@ -34,10 +32,7 @@ class EnsureSPD(TransformerMixin, BaseEstimator):
         return self
 
     def transform(self, X):
-        Xspd = np.empty_like(X)
-        for i, mat in enumerate(X):
-            Xspd[i, :, :] = nearest_pos_def(mat)
-        return Xspd
+        return nearest_pos_def(X)
 
     def fit_transform(self, X, y=None):
         transf = self.transform(X)
