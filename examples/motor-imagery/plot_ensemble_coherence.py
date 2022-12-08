@@ -46,6 +46,7 @@ from helpers.coherence_helpers import (
 # This estimator computes the functional connectivity from input signal using
 # `pyriemann.estimation.Coherences`
 
+
 class Connectivities(TransformerMixin, BaseEstimator):
     """Getting connectivity features from epoch"""
 
@@ -79,12 +80,14 @@ subject = 7
 # runs = [6, 10, 14]  # motor imagery: hands vs feet
 runs = [4, 8]  # motor imagery: left vs right hand ,
 
-raw_files = [read_raw_edf(f, preload=True)
-             for f in eegbci.load_data(subject, runs)]
+raw_files = [
+    read_raw_edf(f, preload=True) for f in eegbci.load_data(subject, runs)
+]
 raw = concatenate_raws(raw_files)
 
-picks = pick_types(raw.info, meg=False, eeg=True,
-                   stim=False, eog=False, exclude="bads")
+picks = pick_types(
+    raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads"
+)
 # subsample elecs
 picks = picks[::2]
 
@@ -136,8 +139,10 @@ step_csp = [
 ]
 ppl_baseline["CSP+optSVM"] = Pipeline(steps=step_csp)
 
-step_mdm = [("cov", Covariances(estimator="lwf")),
-            ("fgmdm", FgMDM(metric="riemann", tsupdate=False))]
+step_mdm = [
+    ("cov", Covariances(estimator="lwf")),
+    ("fgmdm", FgMDM(metric="riemann", tsupdate=False)),
+]
 ppl_baseline["FgMDM"] = Pipeline(steps=step_mdm)
 
 ###############################################################################
@@ -154,9 +159,11 @@ param_lr = {
     "solver": "saga",
 }
 param_ft = {"fmin": fmin, "fmax": fmax, "fs": fs}
-step_fc = [("spd", EnsureSPD()),
-           ("tg", TangentSpace(metric="riemann")),
-           ("LogistReg", LogisticRegression(**param_lr))]
+step_fc = [
+    ("spd", EnsureSPD()),
+    ("tg", TangentSpace(metric="riemann")),
+    ("LogistReg", LogisticRegression(**param_lr)),
+]
 for sm in spectral_met:
     pname = sm + "+elasticnet"
     # pname = sm + "+fgmdm"
