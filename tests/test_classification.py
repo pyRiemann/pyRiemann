@@ -344,7 +344,10 @@ def test_meanfield(get_covmats, get_labels, method_label):
 
 
 @pytest.mark.parametrize("n_classes", [1, 2, 3])
-def test_class_distinctiveness(get_covmats, get_labels, n_classes):
+@pytest.mark.parametrize("metric_mean", get_means())
+@pytest.mark.parametrize("metric_dist", get_distances())
+def test_class_distinctiveness(get_covmats, get_labels,
+                               n_classes, metric_mean, metric_dist):
     """Test function for class distinctiveness measure for two class problem"""
     n_matrices, n_channels = 6, 3
     covmats = get_covmats(n_matrices, n_channels)
@@ -354,13 +357,14 @@ def test_class_distinctiveness(get_covmats, get_labels, n_classes):
             class_distinctiveness(covmats, labels)
         return
 
-    class_dis, num, denom = class_distinctiveness(covmats,
-                                                  labels,
-                                                  metric='riemann',
+    class_dis, num, denom = class_distinctiveness(covmats, labels,
+                                                  metric={"mean": metric_mean,
+                                                          "distance":
+                                                              metric_dist},
                                                   return_num_denom=True)
-    assert class_dis > 0  # negative class_dis value
-    assert num > 0  # negative numerator value
-    assert denom > 0  # negative denominator value
+    assert class_dis >= 0  # negative class_dis value
+    assert num >= 0  # negative numerator value
+    assert denom >= 0  # negative denominator value
     assert isinstance(class_dis, float), "Unexpected object of class_dis"
     assert isinstance(num, float), "Unexpected object of num"
     assert isinstance(denom, float), "Unexpected object of denum"
