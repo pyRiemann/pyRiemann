@@ -17,7 +17,7 @@ from pyriemann.classification import (
     TSclassifier,
     SVC,
     MeanField,
-    class_distinctiveness
+    class_distinctiveness,
 )
 
 rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC, MeanField]
@@ -357,11 +357,12 @@ def test_class_distinctiveness(get_covmats, get_labels,
             class_distinctiveness(covmats, labels)
         return
 
-    class_dis, num, denom = class_distinctiveness(covmats, labels,
-                                                  metric={"mean": metric_mean,
-                                                          "distance":
-                                                              metric_dist},
-                                                  return_num_denom=True)
+    class_dis, num, denom = class_distinctiveness(
+        covmats,
+        labels,
+        metric={"mean": metric_mean, "distance": metric_dist},
+        return_num_denom=True,
+    )
     assert class_dis >= 0  # negative class_dis value
     assert num >= 0  # negative numerator value
     assert denom >= 0  # negative denominator value

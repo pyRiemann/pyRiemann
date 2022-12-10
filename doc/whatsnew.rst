@@ -10,9 +10,6 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.3.1.dev
 ----------
 
-- Add class distinctiveness function to measure the distinctiveness between classes on the manifold.
-  :func:`pyriemann.classification.class_distinctiveness`, and add an example in gallery to show how it works on synthetic datasets. :pr:`215` by :user:`MSYamamoto`
-
 - Add exponential and logarithmic maps for three main metrics: 'euclid', 'logeuclid' and 'riemann'.
   :func:`pyriemann.utils.tangentspace.tangent_space` is splitted in two steps: (i) ``log_map_*()`` projecting SPD matrices into tangent space depending on the metric; and (ii) :func:`pyriemann.utils.tangentspace.upper` taking the upper triangular part of matrices.
   Similarly, :func:`pyriemann.utils.tangentspace.untangent_space` is splitted into (i) :func:`pyriemann.utils.tangentspace.unupper` and (ii) ``exp_map_*()``.
@@ -30,6 +27,9 @@ v0.3.1.dev
 - Add ``score()`` to :class:`pyriemann.regression.KNearestNeighborRegressor`. :pr:`205` by :user:`qbarthelemy`
 
 - Add Transfer Learning module and examples, including RPA and MDWM. :pr:`189` by :user:`plcrodrigues`, :user:`qbarthelemy` and :user:`sylvchev` 
+
+- Add class distinctiveness function to measure the distinctiveness between classes on the manifold,
+  :func:`pyriemann.classification.class_distinctiveness`, and complete an example in gallery to show how it works on synthetic datasets. :pr:`215` by :user:`MSYamamoto`
 
 v0.3 (July 2022)
 ----------------
