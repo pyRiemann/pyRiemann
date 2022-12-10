@@ -34,8 +34,7 @@ class EnsureSPD(TransformerMixin, BaseEstimator):
         return nearest_pos_def(X)
 
     def fit_transform(self, X, y=None):
-        transf = self.transform(X)
-        return transf
+        return self.transform(X)
 
 
 def get_results(X, y, all_ppl):

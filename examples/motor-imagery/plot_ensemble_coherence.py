@@ -5,7 +5,7 @@ Ensemble learning on functional connectivity
 
 This example shows how to compute SPD matrices from functional
 connectivity estimators and how to combine classification with
-ensemble learning.
+ensemble learning [1]_.
 """
 # Authors: Sylvain Chevallier <sylvain.chevallier@universite-paris-saclay.fr>,
 #          Marie-Constance Corsi <marie.constance.corsi@gmail.com>
@@ -228,8 +228,7 @@ plt.show()
 ###############################################################################
 # References
 # ----------
-# .. [1] Corsi, M.-C., Chevallier, S., De Vico Fallani, F. & Yger, F.
-#    `Functional connectivity ensemble method to enhance BCI performance
+# .. [1] `Functional connectivity ensemble method to enhance BCI performance
 #    (FUCONE)
 #    <https://arxiv.org/abs/2111.03122>`_
-#    IEEE TBME, 2022
+#    Corsi, M.-C., Chevallier, S., De Vico Fallani, F. & Yger, F. IEEE TBME, 2022

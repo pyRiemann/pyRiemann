@@ -103,8 +103,8 @@ def is_pos_def(X, fast_mode=True):
     ----------
     X : ndarray, shape (..., n, n)
         The set of square matrices, at least 2D ndarray.
-    fast_mode : boolean
-        Use Cholesky decomposition to avoid computing all eigenvalues
+    fast_mode : boolean, default=True
+        Use Cholesky decomposition to avoid computing all eigenvalues.
 
 
     Returns
@@ -114,7 +114,7 @@ def is_pos_def(X, fast_mode=True):
     """
     if fast_mode:
         try:
-            _ = np.linalg.cholesky(X)
+            np.linalg.cholesky(X)
             return True
         except np.linalg.LinAlgError:
             return False

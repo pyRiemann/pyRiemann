@@ -177,7 +177,7 @@ def _nearest_pos_def(S, reg=1e-6):
     A = (S + S.T) / 2
     _, s, V = np.linalg.svd(A)
 
-    H = np.dot(V.T, np.dot(np.diag(s), V))
+    H = V.T @ np.diag(s) @ V
 
     B = (A + H) / 2
 
@@ -205,19 +205,19 @@ def _nearest_pos_def(S, reg=1e-6):
     return P
 
 
-def nearest_pos_def(S, reg=1e-6):
-    """Find the nearest positive-definite matrices to input matrices
+def nearest_pos_def(X, reg=1e-6):
+    """Find the nearest positive-definite matrices to input matrices.
 
     Parameters
     ----------
-    S : ndarray, shape (..., n, n)
-        square matrices, at least 2D ndarray.
+    X : ndarray, shape (..., n, n)
+        Square matrices, at least 2D ndarray.
     reg : float
-        Regularization parameter
+        Regularization parameter.
 
     Returns
     -------
     P : ndarray, shape (..., n, n)
-        Nearest SPD matrices power of S
+        Nearest SPD matrices power of X.
     """
-    return np.array([_nearest_pos_def(mat, reg) for mat in S])
+    return np.array([_nearest_pos_def(x, reg) for x in X])
