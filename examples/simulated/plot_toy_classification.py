@@ -52,7 +52,7 @@ for delta in deltas_array:
     all_class_dis = []
     for train_ind, _ in skf.split(X, y):
         class_dis = class_distinctiveness(X[train_ind], y[train_ind],
-                                          p=1, metric='riemann',
+                                          exponent=1, metric='riemann',
                                           return_num_denom=False)
         all_class_dis.append(class_dis)
 
