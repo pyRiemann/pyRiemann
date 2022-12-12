@@ -346,8 +346,9 @@ def test_meanfield(get_covmats, get_labels, method_label):
 @pytest.mark.parametrize("n_classes", [1, 2, 3])
 @pytest.mark.parametrize("metric_mean", get_means())
 @pytest.mark.parametrize("metric_dist", get_distances())
+@pytest.mark.parametrize("p", [1, 2])
 def test_class_distinctiveness(get_covmats, get_labels,
-                               n_classes, metric_mean, metric_dist):
+                               n_classes, metric_mean, metric_dist, p):
     """Test function for class distinctiveness measure for two class problem"""
     n_matrices, n_channels = 6, 3
     covmats = get_covmats(n_matrices, n_channels)
@@ -360,8 +361,9 @@ def test_class_distinctiveness(get_covmats, get_labels,
     class_dis, num, denom = class_distinctiveness(
         covmats,
         labels,
+        p,
         metric={"mean": metric_mean, "distance": metric_dist},
-        return_num_denom=True,
+        return_num_denom=True
     )
     assert class_dis >= 0  # negative class_dis value
     assert num >= 0  # negative numerator value

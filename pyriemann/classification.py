@@ -905,15 +905,16 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         return softmax(-self._predict_distances(X) ** 2)
 
 
-def class_distinctiveness(X, y, metric='riemann', return_num_denom=False):
+def class_distinctiveness(X, y, p=1, metric='riemann', return_num_denom=False):
     r"""Measure class distinctiveness between classes of SPD matrices.
 
     For two class problem, the class distinctiveness between class A
     and B on the manifold of SPD matrices is quantified as:
 
     .. math::
-        \mathrm{classDis}(A, B) = \frac{d \left(\bar{X}^{A},\bar{X}^{B}\right)}
-        {\frac{1}{2} \left( \sigma_{X^{A}} + \sigma_{X^{B}} \right)}
+        \mathrm{classDis}(A, B, p) = \frac{d \left(\bar{X}^{A},
+        \bar{X}^{B}\right)^p}
+        {\frac{1}{2} \left( \sigma_{X^{A}}^p + \sigma_{X^{B}}^p \right)}
 
     where :math:`\bar{X}^{K}` is the center of class K, ie the mean of matrices
     from class K (see :func:`pyriemann.utils.mean.mean_covariance`) and
@@ -923,14 +924,14 @@ def class_distinctiveness(X, y, metric='riemann', return_num_denom=False):
 
     .. math::
         \sigma_{X^{K}} = \frac{1}{m} \sum_{i=1}^m d
-        \left(X_i, \bar{X}^{K}\right)
+        \left(X_i, \bar{X}^{K}\right)^p
 
     For more than two classes, it is quantified as:
 
     .. math::
-        \mathrm{classDis}\left(\left\{K_{j}\right\}\right) =
-        \frac{\sum_{j=1}^{c} d\left(\bar{X}^{K_{j}}, \tilde{X}\right)}
-        {\sum_{j=1}^{c} \sigma_{X^{K_{j}}}}
+        \mathrm{classDis}\left(\left\{K_{j}\right\}\right, p) =
+        \frac{\sum_{j=1}^{c} d\left(\bar{X}^{K_{j}}, \tilde{X}\right)^p}
+        {\sum_{j=1}^{c} \sigma_{X^{K_{j}}}^p}
 
     where :math:`\tilde{X}` is the mean of centers of class of all :math:`c`
     classes.
@@ -943,6 +944,10 @@ def class_distinctiveness(X, y, metric='riemann', return_num_denom=False):
         Set of SPD matrices.
     y : ndarray, shape (n_matrices,)
         Labels for each matrix.
+    p : int, default=1
+        Parameter for exponentiation of distance
+        p = 1 gives a classDis formula originally defined in [1]_ .
+        p = 2 gives a Fisher criterion generalized on the manifold.
     metric : string | dict, default='riemann'
         The type of metric used for centroid and distance estimation.
         See `mean_covariance` for the list of supported metric.
@@ -984,34 +989,24 @@ def class_distinctiveness(X, y, metric='riemann', return_num_denom=False):
         # numerator
         covmeans = [mean_covariance(X[y == ll], metric=metric_mean)
                     for ll in classes]
-        numerator = distance(covmeans[0], covmeans[1], metric=metric_dist)
+        numerator = distance(covmeans[0], covmeans[1], metric=metric_dist) ** p
 
         # denominator
-        all_sigma = []
-        for ll in classes:
-            dis_within = [distance(x, covmeans[int(ll)], metric=metric_dist)
-                          for x in X[y == ll]]
-            sigma = np.mean(dis_within)
-            all_sigma.append(sigma)
-        denominator = 0.5 * np.sum(all_sigma)
+        sum_sigmas = _get_within(X, y, covmeans, classes, p, metric_dist)
+        denominator = 0.5 * sum_sigmas
+
     else:
         # numerator
         covmeans = np.array([
             mean_covariance(X[y == ll], metric=metric_mean) for ll in classes
         ])
         ave_covmeans = mean_covariance(covmeans, metric=metric_mean)
-        all_dis_between = [distance(c, ave_covmeans, metric=metric_dist)
+        all_dis_between = [distance(c, ave_covmeans, metric=metric_dist) ** p
                            for c in covmeans]
         numerator = np.sum(all_dis_between)
 
         # denominator
-        all_sigma = []
-        for ii, ll in enumerate(classes):
-            dis_within = [distance(x, covmeans[ii], metric=metric_dist)
-                          for x in X[y == ll]]
-            sigma = np.mean(dis_within)
-            all_sigma.append(sigma)
-        denominator = np.sum(all_sigma)
+        denominator = _get_within(X, y, covmeans, classes, p, metric_dist)
 
     class_dis = numerator / denominator
 
@@ -1019,3 +1014,15 @@ def class_distinctiveness(X, y, metric='riemann', return_num_denom=False):
         return class_dis, numerator, denominator
     else:
         return class_dis
+
+
+def _get_within(X, y, covmeans, classes, p, metric_dist):
+    """Private function for class distinctiveness computation."""
+
+    sigmas = []
+    for ii, ll in enumerate(classes):
+        dist_within = [distance(x, covmeans[ii], metric=metric_dist) ** p
+                       for x in X[y == ll]]
+        sigmas.append(np.mean(dist_within))
+    sum_sigmas = np.sum(sigmas)
+    return sum_sigmas
