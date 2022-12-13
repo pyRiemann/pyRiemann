@@ -97,7 +97,7 @@ def is_pos_def(X, fast_mode=True):
 
     Check if all matrices are positive definite, fast verification is done
     with Cholesky decomposition, while full check compute all eigenvalues
-    to verify that they are positive
+    to verify that they are positive.
 
     Parameters
     ----------
