@@ -158,7 +158,7 @@ def _nearest_pos_def(S, reg=1e-6):
     Parameters
     ----------
     S : ndarray, shape (n, n)
-        square matrices, at least 2D ndarray.
+        Square matrix.
     reg : float
         Regularization parameter
 
