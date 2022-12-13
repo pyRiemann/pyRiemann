@@ -17,7 +17,6 @@ from .tangentspace import FGDA, TangentSpace
 
 
 def _check_metric(metric):
-
     if isinstance(metric, str):
         metric_mean = metric
         metric_dist = metric
@@ -195,7 +194,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         prob : ndarray, shape (n_matrices, n_classes)
             Probabilities for each class.
         """
-        return softmax(-self._predict_distances(X)**2)
+        return softmax(-self._predict_distances(X) ** 2)
 
 
 class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
@@ -547,7 +546,7 @@ class KNearestNeighbor(MDM):
         idx = np.argsort(dist)
         dist_sorted = np.take_along_axis(dist, idx, axis=1)
         neighbors_classes = self.classmeans_[idx]
-        probas = softmax(-dist_sorted[:, 0:self.n_neighbors]**2)
+        probas = softmax(-dist_sorted[:, 0:self.n_neighbors] ** 2)
 
         prob = np.zeros((n_matrices, len(self.classes_)))
         for m in range(n_matrices):
@@ -819,7 +818,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         for ip, p in enumerate(self.power_list):
             for ill, ll in enumerate(labs_unique):
                 m[ip, ill] = distance(
-                    x, self.covmeans_[p][ll], metric=self.metric)**2
+                    x, self.covmeans_[p][ll], metric=self.metric) ** 2
 
         if self.method_label == 'sum_means':
             ipmin = np.argmin(np.sum(m, axis=1))
@@ -863,7 +862,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
                     m[p].append(
                         distance(
                             x, self.covmeans_[p][ll], metric=self.metric
-                        )**2
+                        ) ** 2
                     )
             pmin = min(m.items(), key=lambda x: np.sum(x[1]))[0]
             dist.append(np.array(m[pmin]))
@@ -903,4 +902,130 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         prob : ndarray, shape (n_matrices, n_classes)
             Probabilities for each class.
         """
-        return softmax(-self._predict_distances(X)**2)
+        return softmax(-self._predict_distances(X) ** 2)
+
+
+def class_distinctiveness(X, y, exponent=1, metric='riemann',
+                          return_num_denom=False):
+    r"""Measure class distinctiveness between classes of SPD matrices.
+
+    For two class problem, the class distinctiveness between class A
+    and B on the manifold of SPD matrices is quantified as [1]_:
+
+    .. math::
+        \mathrm{classDis}(A, B, p) = \frac{d \left(\bar{X}^{A},
+        \bar{X}^{B}\right)^p}
+        {\frac{1}{2} \left( \sigma_{X^{A}}^p + \sigma_{X^{B}}^p \right)}
+
+    where :math:`\bar{X}^{K}` is the center of class K, ie the mean of matrices
+    from class K (see :func:`pyriemann.utils.mean.mean_covariance`) and
+    :math:`\sigma_{X^{K}}` is the class dispersion, ie the mean of distances
+    between matrices from class K and their center of class
+    :math:`\bar{X}^{K}`:
+
+    .. math::
+        \sigma_{X^{K}}^p = \frac{1}{m} \sum_{i=1}^m d
+        \left(X_i, \bar{X}^{K}\right)^p
+
+    For more than two classes, it is quantified as:
+
+    .. math::
+        \mathrm{classDis}\left(\left\{K_{j}\right\}, p\right) =
+        \frac{\sum_{j=1}^{c} d\left(\bar{X}^{K_{j}}, \tilde{X}\right)^p}
+        {\sum_{j=1}^{c} \sigma_{X^{K_{j}}}^p}
+
+    where :math:`\tilde{X}` is the mean of centers of class of all :math:`c`
+    classes and :math:`p` is the exponentiation of the distance measure
+    named exponent at the input of this function.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    y : ndarray, shape (n_matrices,)
+        Labels for each matrix.
+    exponent : int, default=1
+        Parameter for exponentiation of distances, corresponding to p in the
+        above equations:
+
+        - exponent = 1 gives the formula originally defined in [1]_;
+        - exponent = 2 gives the Fisher criterion generalized on the manifold,
+          ie the ratio of the variance between the classes to the variance
+          within the classes.
+    metric : string | dict, default='riemann'
+        The type of metric used for centroid and distance estimation.
+        See `mean_covariance` for the list of supported metric.
+        The metric could be a dict with two keys, `mean` and `distance` in
+        order to pass different metrics for the centroid estimation and the
+        distance estimation. The original equation of class distinctiveness
+        in [1]_ uses 'riemann' for both the centroid estimation and the
+        distance estimation but you can customize other metrics with your
+        interests.
+    return_num_denom : bool, default=False
+        Whether to return numerator and denominator of class_dis.
+
+    Returns
+    -------
+    class_dis : float
+        Class distinctiveness value.
+    num : float
+        Numerator value of class_dis. Returned only if return_num_denom is
+        True.
+    denom : float
+        Denominator value of class_dis. Returned only if return_num_denom is
+        True.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+
+    References
+    ----------
+    .. [1] `Defining and quantifying users’ mental imagery-based
+       BCI skills: a first step
+       <https://hal.archives-ouvertes.fr/hal-01846434/>`_
+       F. Lotte, and C. Jeunet. Journal of neural engineering,
+       15(4), 046030, 2018.
+    """
+
+    metric_mean, metric_dist = _check_metric(metric)
+    classes = np.unique(y)
+    if len(classes) <= 1:
+        raise ValueError('X must contain at least two classes')
+
+    means = np.array([
+        mean_covariance(X[y == ll], metric=metric_mean) for ll in classes
+    ])
+
+    if len(classes) == 2:
+        num = distance(means[0], means[1], metric=metric_dist) ** exponent
+        denom = 0.5 * _get_within(X, y, means, classes, exponent, metric_dist)
+
+    else:
+        mean_all = mean_covariance(means, metric=metric_mean)
+        dists_between = [
+            distance(m, mean_all, metric=metric_dist) ** exponent
+            for m in means
+        ]
+        num = np.sum(dists_between)
+        denom = _get_within(X, y, means, classes, exponent, metric_dist)
+
+    class_dis = num / denom
+
+    if return_num_denom:
+        return class_dis, num, denom
+    else:
+        return class_dis
+
+
+def _get_within(X, y, means, classes, exponent, metric_dist):
+    """Private function to compute within dispersion."""
+    sigmas = []
+    for ii, ll in enumerate(classes):
+        dists_within = [
+            distance(x, means[ii], metric=metric_dist) ** exponent
+            for x in X[y == ll]
+        ]
+        sigmas.append(np.mean(dists_within))
+    sum_sigmas = np.sum(sigmas)
+    return sum_sigmas

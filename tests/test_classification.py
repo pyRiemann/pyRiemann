@@ -16,7 +16,8 @@ from pyriemann.classification import (
     KNearestNeighbor,
     TSclassifier,
     SVC,
-    MeanField
+    MeanField,
+    class_distinctiveness,
 )
 
 rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC, MeanField]
@@ -340,3 +341,33 @@ def test_meanfield(get_covmats, get_labels, method_label):
     assert proba.shape == (n_matrices, n_classes)
     transf = mf.transform(covmats)
     assert transf.shape == (n_matrices, n_classes)
+
+
+@pytest.mark.parametrize("n_classes", [1, 2, 3])
+@pytest.mark.parametrize("metric_mean", get_means())
+@pytest.mark.parametrize("metric_dist", get_distances())
+@pytest.mark.parametrize("exponent", [1, 2])
+def test_class_distinctiveness(get_covmats, get_labels,
+                               n_classes, metric_mean, metric_dist, exponent):
+    """Test function for class distinctiveness measure for two class problem"""
+    n_matrices, n_channels = 6, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    labels = get_labels(n_matrices, n_classes)
+    if n_classes == 1:
+        with pytest.raises(ValueError):
+            class_distinctiveness(covmats, labels)
+        return
+
+    class_dis, num, denom = class_distinctiveness(
+        covmats,
+        labels,
+        exponent,
+        metric={"mean": metric_mean, "distance": metric_dist},
+        return_num_denom=True
+    )
+    assert class_dis >= 0  # negative class_dis value
+    assert num >= 0  # negative numerator value
+    assert denom >= 0  # negative denominator value
+    assert isinstance(class_dis, float), "Unexpected object of class_dis"
+    assert isinstance(num, float), "Unexpected object of num"
+    assert isinstance(denom, float), "Unexpected object of denum"

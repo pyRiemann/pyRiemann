@@ -28,6 +28,9 @@ v0.3.1.dev
 
 - Add Transfer Learning module and examples, including RPA and MDWM. :pr:`189` by :user:`plcrodrigues`, :user:`qbarthelemy` and :user:`sylvchev` 
 
+- Add class distinctiveness function to measure the distinctiveness between classes on the manifold,
+  :func:`pyriemann.classification.class_distinctiveness`, and complete an example in gallery to show how it works on synthetic datasets. :pr:`215` by :user:`MSYamamoto`
+
 v0.3 (July 2022)
 ----------------
 
