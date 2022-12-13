@@ -935,7 +935,8 @@ def class_distinctiveness(X, y, exponent=1, metric='riemann',
         {\sum_{j=1}^{c} \sigma_{X^{K_{j}}}^p}
 
     where :math:`\tilde{X}` is the mean of centers of class of all :math:`c`
-    classes.
+    classes and :math:`p` is the exponentiation of the distance measure
+    named exponent at the input of this function.
 
     See [1]_ for more details.
 
@@ -947,6 +948,8 @@ def class_distinctiveness(X, y, exponent=1, metric='riemann',
         Labels for each matrix.
     exponent : int, default=1
         Parameter for exponentiation of distance
+        The p in the equation in the above documentation corresponds to
+        this parameter.
         exponent = 1 gives a classDis formula originally defined in [1]_ .
         exponent = 2 gives a Fisher criterion generalized on the manifold.
     metric : string | dict, default='riemann'
