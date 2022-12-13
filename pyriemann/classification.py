@@ -910,7 +910,7 @@ def class_distinctiveness(X, y, exponent=1, metric='riemann',
     r"""Measure class distinctiveness between classes of SPD matrices.
 
     For two class problem, the class distinctiveness between class A
-    and B on the manifold of SPD matrices is quantified as:
+    and B on the manifold of SPD matrices is quantified as [1]_:
 
     .. math::
         \mathrm{classDis}(A, B, p) = \frac{d \left(\bar{X}^{A},
@@ -924,21 +924,19 @@ def class_distinctiveness(X, y, exponent=1, metric='riemann',
     :math:`\bar{X}^{K}`:
 
     .. math::
-        \sigma_{X^{K}} = \frac{1}{m} \sum_{i=1}^m d
+        \sigma_{X^{K}}^p = \frac{1}{m} \sum_{i=1}^m d
         \left(X_i, \bar{X}^{K}\right)^p
 
     For more than two classes, it is quantified as:
 
     .. math::
-        \mathrm{classDis}\left(\left\{K_{j}\right\}\right, p) =
+        \mathrm{classDis}\left(\left\{K_{j}\right\}, p\right) =
         \frac{\sum_{j=1}^{c} d\left(\bar{X}^{K_{j}}, \tilde{X}\right)^p}
         {\sum_{j=1}^{c} \sigma_{X^{K_{j}}}^p}
 
     where :math:`\tilde{X}` is the mean of centers of class of all :math:`c`
     classes and :math:`p` is the exponentiation of the distance measure
     named exponent at the input of this function.
-
-    See [1]_ for more details.
 
     Parameters
     ----------
@@ -947,11 +945,13 @@ def class_distinctiveness(X, y, exponent=1, metric='riemann',
     y : ndarray, shape (n_matrices,)
         Labels for each matrix.
     exponent : int, default=1
-        Parameter for exponentiation of distance
-        The p in the equation in the above documentation corresponds to
-        this parameter.
-        exponent = 1 gives a classDis formula originally defined in [1]_ .
-        exponent = 2 gives a Fisher criterion generalized on the manifold.
+        Parameter for exponentiation of distances, corresponding to p in the
+        above equations:
+
+        - exponent = 1 gives the formula originally defined in [1]_;
+        - exponent = 2 gives the Fisher criterion generalized on the manifold,
+          ie the ratio of the variance between the classes to the variance
+          within the classes.
     metric : string | dict, default='riemann'
         The type of metric used for centroid and distance estimation.
         See `mean_covariance` for the list of supported metric.
@@ -968,12 +968,16 @@ def class_distinctiveness(X, y, exponent=1, metric='riemann',
     -------
     class_dis : float
         Class distinctiveness value.
-    numerator : float
+    num : float
         Numerator value of class_dis. Returned only if return_num_denom is
         True.
-    denominator : float
+    denom : float
         Denominator value of class_dis. Returned only if return_num_denom is
         True.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
 
     References
     ----------
@@ -989,47 +993,39 @@ def class_distinctiveness(X, y, exponent=1, metric='riemann',
     if len(classes) <= 1:
         raise ValueError('X must contain at least two classes')
 
-    elif len(classes) == 2:
-        # numerator
-        covmeans = [mean_covariance(X[y == ll], metric=metric_mean)
-                    for ll in classes]
-        numerator = distance(covmeans[0], covmeans[1],
-                             metric=metric_dist) ** exponent
+    means = np.array([
+        mean_covariance(X[y == ll], metric=metric_mean) for ll in classes
+    ])
 
-        # denominator
-        sum_sigmas = _get_within(X, y, covmeans, classes, exponent,
-                                 metric_dist)
-        denominator = 0.5 * sum_sigmas
+    if len(classes) == 2:
+        num = distance(means[0], means[1], metric=metric_dist) ** exponent
+        denom = 0.5 * _get_within(X, y, means, classes, exponent, metric_dist)
 
     else:
-        # numerator
-        covmeans = np.array([
-            mean_covariance(X[y == ll], metric=metric_mean) for ll in classes
-        ])
-        ave_covmeans = mean_covariance(covmeans, metric=metric_mean)
-        all_dis_between = [distance(c, ave_covmeans, metric=metric_dist)
-                           ** exponent for c in covmeans]
-        numerator = np.sum(all_dis_between)
+        mean_all = mean_covariance(means, metric=metric_mean)
+        dists_between = [
+            distance(m, mean_all, metric=metric_dist) ** exponent
+            for m in means
+        ]
+        num = np.sum(dists_between)
+        denom = _get_within(X, y, means, classes, exponent, metric_dist)
 
-        # denominator
-        denominator = _get_within(X, y, covmeans, classes,
-                                  exponent, metric_dist)
-
-    class_dis = numerator / denominator
+    class_dis = num / denom
 
     if return_num_denom:
-        return class_dis, numerator, denominator
+        return class_dis, num, denom
     else:
         return class_dis
 
 
-def _get_within(X, y, covmeans, classes, exponent, metric_dist):
-    """Private function for class distinctiveness computation."""
-
+def _get_within(X, y, means, classes, exponent, metric_dist):
+    """Private function to compute within dispersion."""
     sigmas = []
     for ii, ll in enumerate(classes):
-        dist_within = [distance(x, covmeans[ii], metric=metric_dist)
-                       ** exponent for x in X[y == ll]]
-        sigmas.append(np.mean(dist_within))
+        dists_within = [
+            distance(x, means[ii], metric=metric_dist) ** exponent
+            for x in X[y == ll]
+        ]
+        sigmas.append(np.mean(dists_within))
     sum_sigmas = np.sum(sigmas)
     return sum_sigmas
