@@ -55,17 +55,20 @@ class Connectivities(TransformerMixin, BaseEstimator):
         self.fmin = fmin
         self.fmax = fmax
         self.fs = fs
-        self.coh = Coherences(coh=method, fmin=fmin, fmax=fmax, fs=fs)
 
     def fit(self, X, y=None):
+        self._coh = Coherences(
+            coh=self.method,
+            fmin=self.fmin,
+            fmax=self.fmax,
+            fs=self.fs,
+        )
         return self
 
     def transform(self, X):
-        Xfc_freq = self.coh.fit_transform(X)
-        Xfc = np.empty(Xfc_freq.shape[:-1], dtype=Xfc_freq.dtype)
-        for i, fc in enumerate(Xfc_freq):
-            Xfc[i] = fc.mean(axis=-1)
-        return Xfc
+        X_coh = self._coh.fit_transform(X)
+        X_con = np.mean(X_coh, axis=-1, keepdims=False)
+        return X_con
 
 
 ###############################################################################
