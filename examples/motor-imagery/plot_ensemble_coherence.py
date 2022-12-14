@@ -11,6 +11,7 @@ ensemble learning [1]_.
 #          Marie-Constance Corsi <marie.constance.corsi@gmail.com>
 #
 # License: BSD (3-clause)
+
 import matplotlib.pyplot as plt
 
 from mne import Epochs, pick_types, events_from_annotations
@@ -42,7 +43,8 @@ from helpers.coherence_helpers import (
 
 ###############################################################################
 # Define connectivity transformer
-# ---------------------------------------
+# -------------------------------
+#
 # This estimator computes the functional connectivity from input signal using
 # `pyriemann.estimation.Coherences`
 
@@ -80,8 +82,7 @@ class Connectivities(TransformerMixin, BaseEstimator):
 tmin, tmax = 1.0, 2.0
 event_id = dict(hands=2, feet=3)
 subject = 7
-# runs = [6, 10, 14]  # motor imagery: hands vs feet
-runs = [4, 8]  # motor imagery: left vs right hand ,
+runs = [4, 8]  # motor imagery: left vs right hand
 
 raw_files = [
     read_raw_edf(f, preload=True) for f in eegbci.load_data(subject, runs)
@@ -114,12 +115,8 @@ epochs = Epochs(
 )
 labels = epochs.events[:, -1] - 2
 fs = epochs.info["sfreq"]
-# nchan = len(epochs.ch_names)
-
-# get epochs
 X = 1e6 * epochs.get_data()
 
-# Parameters
 
 ###############################################################################
 # Defining pipelines
@@ -169,7 +166,6 @@ step_fc = [
 ]
 for sm in spectral_met:
     pname = sm + "+elasticnet"
-    # pname = sm + "+fgmdm"
     if sm == "cov":
         ppl_fc[pname] = Pipeline(
             steps=[("cov", Covariances(estimator="lwf"))] + step_fc
@@ -197,7 +193,6 @@ ppl_ens["ensemble"] = StackingClassifier(
 ###############################################################################
 # Evaluation
 # ----------
-#
 
 dataset_res = list()
 all_ppl = {**ppl_baseline, **ppl_ens}
@@ -210,11 +205,9 @@ results = pd.DataFrame(results)
 ###############################################################################
 # Plot
 # ----
-#
 
-list_fc_ens = ["ensemble", "CSP+optSVM", "FgMDM"] + [
-    sm + "+elasticnet" for sm in spectral_met
-]
+list_fc_ens = ["ensemble", "CSP+optSVM", "FgMDM"] + \
+    [sm + "+elasticnet" for sm in spectral_met]
 
 g = sns.catplot(
     data=results,
@@ -234,4 +227,5 @@ plt.show()
 # .. [1] `Functional connectivity ensemble method to enhance BCI performance
 #    (FUCONE)
 #    <https://arxiv.org/abs/2111.03122>`_
-#    Corsi, M.-C., Chevallier, S., De Vico Fallani, F. & Yger, F. IEEE TBME, 2022
+#    Corsi, M.-C., Chevallier, S., De Vico Fallani, F. & Yger, F. IEEE TBME,
+#    2022

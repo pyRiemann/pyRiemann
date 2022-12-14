@@ -24,6 +24,8 @@ v0.3.1.dev
 - Add geometric medians for Euclidean and Riemannian metrics: :func:`pyriemann.utils.median_euclid` and :func:`pyriemann.utils.median_riemann`,
   and add an example in gallery to compare means and medians on synthetic datasets. :pr:`200` by :user:`qbarthelemy`
 
+- Add example on ensemble learning applied to functional connectivity, and add :func:`pyriemann.utils.base.nearest_pos_def`. :pr:`202` by :user:`mccorsi` and :user:`sylvchev`
+
 v0.3 (July 2022)
 ----------------
 

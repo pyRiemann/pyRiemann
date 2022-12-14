@@ -150,37 +150,24 @@ def powm(C, alpha):
 
 
 def _nearest_pos_def(S, reg=1e-6):
-    """Find the nearest positive-definite matrix to input matrix
-
-    A Python/Numpy port of John D'Errico's `nearestSPD` MATLAB code [1]_, which
-    credits [2]_.
+    """Find the nearest SPD matrix.
 
     Parameters
     ----------
     S : ndarray, shape (n, n)
         Square matrix.
     reg : float
-        Regularization parameter
+        Regularization parameter.
 
     Returns
     -------
     P : ndarray, shape (n, n)
-        Nearest SPD matrix power of S
-
-    References
-    ----------
-    .. [1] John D'Errico, `nearestSPD
-       <https://www.mathworks.com/matlabcentral/fileexchange/42885-nearestspd>`_
-    .. [2]  N.J. Higham, `Computing a nearest symmetric positive semidefinite
-       matrix <htttps://doi.org/10.1016/0024-3795(88)90223-6>`_ , 1988
+        Nearest SPD matrix power of S.
     """
     A = (S + S.T) / 2
     _, s, V = np.linalg.svd(A)
-
     H = V.T @ np.diag(s) @ V
-
     B = (A + H) / 2
-
     P = (B + B.T) / 2
 
     if is_pos_def(P):
@@ -206,7 +193,10 @@ def _nearest_pos_def(S, reg=1e-6):
 
 
 def nearest_pos_def(X, reg=1e-6):
-    """Find the nearest positive-definite matrices to input matrices.
+    """Find the nearest SPD matrices.
+
+    A NumPy port of John D'Errico's `nearestSPD` MATLAB code [1]_,
+    which credits [2]_.
 
     Parameters
     ----------
@@ -219,5 +209,17 @@ def nearest_pos_def(X, reg=1e-6):
     -------
     P : ndarray, shape (..., n, n)
         Nearest SPD matrices power of X.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+
+    References
+    ----------
+    .. [1] John D'Errico, `nearestSPD
+       <https://www.mathworks.com/matlabcentral/fileexchange/42885-nearestspd>`_
+    .. [2] `Computing a nearest symmetric positive semidefinite matrix
+       <htttps://doi.org/10.1016/0024-3795(88)90223-6>`_
+       N.J. Higham, Linear Algebra and its Applications, 1988
     """
     return np.array([_nearest_pos_def(x, reg) for x in X])
