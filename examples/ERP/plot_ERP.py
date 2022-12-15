@@ -21,7 +21,7 @@ from pyriemann.utils.viz import plot_waveforms
 # -------------
 
 # Set filenames
-data_path = mne.datasets.sample.data_path()
+data_path = str(mne.datasets.sample.data_path())
 raw_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw.fif"
 event_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif"
 
@@ -97,6 +97,8 @@ plt.show()
 ###############################################################################
 # References
 # ----------
-# .. [1] A. Souloumiac and B. Rivet, "Improved estimation of EEG evoked
-#    potentials by jitter compensation and enhancing spatial filters", ICASSP,
-#    2013.
+# .. [1] `Improved estimation of EEG evoked potentials by jitter compensation
+#    and enhancing spatial filters
+#    <https://ieeexplore.ieee.org/document/6637845>`_
+#    A. Souloumiac and B. Rivet. 2013 IEEE International Conference on
+#    Acoustics, Speech and Signal Processing.

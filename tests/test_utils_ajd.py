@@ -3,32 +3,7 @@ import numpy as np
 import pytest
 from pytest import approx
 
-from pyriemann.utils.ajd import rjd, ajd_pham, uwedge, _get_normalized_weight
-
-
-def test_get_normalized_weight(get_covmats):
-    """Test get_normalized_weight"""
-    n_matrices, n_channels = 5, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    w = _get_normalized_weight(None, covmats)
-    assert np.sum(w) == approx(1.0, abs=1e-10)
-
-
-def test_get_normalized_weight_length(get_covmats):
-    n_matrices, n_channels = 5, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    w = _get_normalized_weight(None, covmats)
-    with pytest.raises(ValueError):  # not same length
-        _get_normalized_weight(w[: n_matrices // 2], covmats)
-
-
-def test_get_normalized_weight_pos(get_covmats):
-    n_matrices, n_channels = 5, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    w = _get_normalized_weight(None, covmats)
-    with pytest.raises(ValueError):  # not strictly positive weight
-        w[0] = 0
-        _get_normalized_weight(w, covmats)
+from pyriemann.utils.ajd import rjd, ajd_pham, uwedge
 
 
 @pytest.mark.parametrize("ajd", [rjd, ajd_pham, uwedge])
@@ -36,11 +11,11 @@ def test_get_normalized_weight_pos(get_covmats):
 def test_ajd(ajd, init, get_covmats_params):
     """Test ajd algos"""
     n_matrices, n_channels = 5, 3
-    covmats, _, A = get_covmats_params(n_matrices, n_channels)
+    covmats, _, evecs = get_covmats_params(n_matrices, n_channels)
     if init:
         V, D = ajd(covmats)
     else:
-        V, D = ajd(covmats, init=A)
+        V, D = ajd(covmats, init=evecs)
     assert V.shape == (n_channels, n_channels)
     assert D.shape == (n_matrices, n_channels, n_channels)
 

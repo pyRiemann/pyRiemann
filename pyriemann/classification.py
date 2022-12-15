@@ -17,7 +17,6 @@ from .tangentspace import FGDA, TangentSpace
 
 
 def _check_metric(metric):
-
     if isinstance(metric, str):
         metric_mean = metric
         metric_dist = metric
@@ -78,15 +77,16 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Multiclass
-        Brain-Computer Interface Classification by Riemannian Geometry," in
-        IEEE Transactions on Biomedical Engineering, vol. 59, no. 4,
-        p. 920-928, 2012.
-
-    .. [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian
-        geometry applied to BCI classification", 9th International Conference
-        Latent Variable Analysis and Signal Separation (LVA/ICA 2010),
-        LNCS vol. 6365, 2010, p. 629-636.
+    .. [1] `Multiclass Brain-Computer Interface Classification by Riemannian
+        Geometry
+        <https://hal.archives-ouvertes.fr/hal-00681328>`_
+        A. Barachant, S. Bonnet, M. Congedo, and C. Jutten. IEEE Transactions
+        on Biomedical Engineering, vol. 59, no. 4, p. 920-928, 2012.
+    .. [2] `Riemannian geometry applied to BCI classification
+        <https://hal.archives-ouvertes.fr/hal-00602700/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. 9th International
+        Conference Latent Variable Analysis and Signal Separation
+        (LVA/ICA 2010), LNCS vol. 6365, 2010, p. 629-636.
     """
 
     def __init__(self, metric='riemann', n_jobs=1):
@@ -130,22 +130,22 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         return self
 
-    def _predict_distances(self, covtest):
+    def _predict_distances(self, X):
         """Helper to predict the distance. Equivalent to transform."""
         n_centroids = len(self.covmeans_)
 
         if self.n_jobs == 1:
-            dist = [distance(covtest, self.covmeans_[m], self.metric_dist)
+            dist = [distance(X, self.covmeans_[m], self.metric_dist)
                     for m in range(n_centroids)]
         else:
             dist = Parallel(n_jobs=self.n_jobs)(delayed(distance)(
-                covtest, self.covmeans_[m], self.metric_dist)
+                X, self.covmeans_[m], self.metric_dist)
                 for m in range(n_centroids))
 
         dist = np.concatenate(dist, axis=1)
         return dist
 
-    def predict(self, covtest):
+    def predict(self, X):
         """Get the predictions.
 
         Parameters
@@ -158,7 +158,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         pred : ndarray of int, shape (n_matrices,)
             Predictions for each matrix according to the closest centroid.
         """
-        dist = self._predict_distances(covtest)
+        dist = self._predict_distances(X)
         return self.classes_[dist.argmin(axis=1)]
 
     def transform(self, X):
@@ -194,7 +194,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         prob : ndarray, shape (n_matrices, n_classes)
             Probabilities for each class.
         """
-        return softmax(-self._predict_distances(X)**2)
+        return softmax(-self._predict_distances(X) ** 2)
 
 
 class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
@@ -242,14 +242,16 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian
-        geometry applied to BCI classification", 9th International Conference
-        Latent Variable Analysis and Signal Separation (LVA/ICA 2010),
-        LNCS vol. 6365, 2010, p. 629-636.
-
-    .. [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification
-        of covariance matrices using a Riemannian-based kernel for BCI
-        applications", in NeuroComputing, vol. 112, p. 172-178, 2013.
+    .. [1] `Riemannian geometry applied to BCI classification
+        <https://hal.archives-ouvertes.fr/hal-00602700/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. 9th International
+        Conference Latent Variable Analysis and Signal Separation
+        (LVA/ICA 2010), LNCS vol. 6365, 2010, p. 629-636.
+    .. [2] `Classification of covariance matrices using a Riemannian-based
+        kernel for BCI applications
+        <https://hal.archives-ouvertes.fr/hal-00820475/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
+        Elsevier, 2013, 112, pp.172-178.
     """
 
     def __init__(self, metric='riemann', tsupdate=False, n_jobs=1):
@@ -258,7 +260,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.n_jobs = n_jobs
         self.tsupdate = tsupdate
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         """Fit FgMDM.
 
         Parameters
@@ -267,6 +269,8 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -277,8 +281,8 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         self._mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
         self._fgda = FGDA(metric=self.metric, tsupdate=self.tsupdate)
-        cov = self._fgda.fit_transform(X, y)
-        self._mdm.fit(cov, y)
+        cov = self._fgda.fit_transform(X, y, sample_weight=sample_weight)
+        self._mdm.fit(cov, y, sample_weight=sample_weight)
         self.classes_ = self._mdm.classes_
         return self
 
@@ -376,7 +380,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         self.tsupdate = tsupdate
         self.clf = clf
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         """Fit TSclassifier.
 
         Parameters
@@ -385,6 +389,8 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -397,7 +403,11 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
 
         ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
         self._pipe = make_pipeline(ts, self.clf)
-        self._pipe.fit(X, y)
+        sample_weight_dict = {}
+        for step in self._pipe.steps:
+            step_name = step[0]
+            sample_weight_dict[step_name + '__sample_weight'] = sample_weight
+        self._pipe.fit(X, y, **sample_weight_dict)
         return self
 
     def predict(self, X):
@@ -475,7 +485,7 @@ class KNearestNeighbor(MDM):
         self.n_neighbors = n_neighbors
         MDM.__init__(self, metric=metric, n_jobs=n_jobs)
 
-    def fit(self, X, y):
+    def fit(self, X, y, sample_weight=None):
         """Fit (store the training data).
 
         Parameters
@@ -484,6 +494,8 @@ class KNearestNeighbor(MDM):
             Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
+        sample_weight : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
@@ -534,7 +546,7 @@ class KNearestNeighbor(MDM):
         idx = np.argsort(dist)
         dist_sorted = np.take_along_axis(dist, idx, axis=1)
         neighbors_classes = self.classmeans_[idx]
-        probas = softmax(-dist_sorted[:, 0:self.n_neighbors]**2)
+        probas = softmax(-dist_sorted[:, 0:self.n_neighbors] ** 2)
 
         prob = np.zeros((n_matrices, len(self.classes_)))
         for m in range(n_matrices):
@@ -577,15 +589,14 @@ class SVC(sklearnSVC):
         Whether to enable probability estimates. This must be enabled prior
         to calling `fit`, will slow down that method as it internally uses
         5-fold cross-validation, and `predict_proba` may be inconsistent with
-        `predict`. Read more in the :ref:`User Guide <scores_probabilities>`.
+        `predict`.
     tol : float, default=1e-3
         Tolerance for stopping criterion.
     cache_size : float, default=200
         Specify the size of the kernel cache (in MB).
     class_weight : dict or 'balanced', default=None
-        Set the parameter C of class i to class_weight[i]*C for
-        SVC. If not given, all classes are supposed to have
-        weight one.
+        Set the parameter C of class i to class_weight[i]*C for SVC. If not
+        given, all classes are supposed to have weight one.
         The "balanced" mode uses the values of y to automatically adjust
         weights inversely proportional to class frequencies in the input data
         as ``n_matrices / (n_classes * np.bincount(y))``.
@@ -605,15 +616,14 @@ class SVC(sklearnSVC):
         The parameter is ignored for binary classification.
     break_ties : bool, default=False
         If true, ``decision_function_shape='ovr'``, and number of classes > 2,
-        :term:`predict` will break ties according to the confidence values of
-        :term:`decision_function`; otherwise the first class among the tied
+        `predict` will break ties according to the confidence values of
+        `decision_function`; otherwise the first class among the tied
         classes is returned. Please note that breaking ties comes at a
         relatively high computational cost compared to a simple predict.
     random_state : int, RandomState instance or None, default=None
         Controls the pseudo random number generation for shuffling the data for
         probability estimates. Ignored when `probability` is False.
         Pass an int for reproducible output across multiple function calls.
-        See :term:`Glossary <random_state>`.
 
     Notes
     -----
@@ -621,9 +631,11 @@ class SVC(sklearnSVC):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo, and C. Jutten.
-        Classification of covariance matrices using a Riemannian-based kernel
-        for BCI applications". In: Neurocomputing 112 (July 2013), pp. 172-178.
+    .. [1] `Classification of covariance matrices using a Riemannian-based
+        kernel for BCI applications
+        <https://hal.archives-ouvertes.fr/hal-00820475/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
+        Elsevier, 2013, 112, pp.172-178.
     .. [2]
         https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
     """
@@ -684,7 +696,7 @@ class SVC(sklearnSVC):
         """
         self._set_cref(X)
         self._set_kernel()
-        super().fit(X, y)
+        super().fit(X, y, sample_weight)
         return self
 
     def _set_cref(self, X):
@@ -752,8 +764,10 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     References
     ----------
-    .. [1] M Congedo, PLC Rodrigues, C Jutten. "The Riemannian Minimum Distance
-        to Means Field Classifier", BCI Conference 2019
+    .. [1] `The Riemannian Minimum Distance to Means Field Classifier
+        <https://hal.archives-ouvertes.fr/hal-02315131>`_
+        M Congedo, PLC Rodrigues, C Jutten. BCI 2019 - 8th International
+        Brain-Computer Interface Conference, Sep 2019, Graz, Austria.
     """
 
     def __init__(self, power_list=[-1, 0, 1], method_label='sum_means',
@@ -804,7 +818,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         for ip, p in enumerate(self.power_list):
             for ill, ll in enumerate(labs_unique):
                 m[ip, ill] = distance(
-                    x, self.covmeans_[p][ll], metric=self.metric)**2
+                    x, self.covmeans_[p][ll], metric=self.metric) ** 2
 
         if self.method_label == 'sum_means':
             ipmin = np.argmin(np.sum(m, axis=1))
@@ -848,7 +862,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
                     m[p].append(
                         distance(
                             x, self.covmeans_[p][ll], metric=self.metric
-                        )**2
+                        ) ** 2
                     )
             pmin = min(m.items(), key=lambda x: np.sum(x[1]))[0]
             dist.append(np.array(m[pmin]))
@@ -888,4 +902,130 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         prob : ndarray, shape (n_matrices, n_classes)
             Probabilities for each class.
         """
-        return softmax(-self._predict_distances(X)**2)
+        return softmax(-self._predict_distances(X) ** 2)
+
+
+def class_distinctiveness(X, y, exponent=1, metric='riemann',
+                          return_num_denom=False):
+    r"""Measure class distinctiveness between classes of SPD matrices.
+
+    For two class problem, the class distinctiveness between class A
+    and B on the manifold of SPD matrices is quantified as [1]_:
+
+    .. math::
+        \mathrm{classDis}(A, B, p) = \frac{d \left(\bar{X}^{A},
+        \bar{X}^{B}\right)^p}
+        {\frac{1}{2} \left( \sigma_{X^{A}}^p + \sigma_{X^{B}}^p \right)}
+
+    where :math:`\bar{X}^{K}` is the center of class K, ie the mean of matrices
+    from class K (see :func:`pyriemann.utils.mean.mean_covariance`) and
+    :math:`\sigma_{X^{K}}` is the class dispersion, ie the mean of distances
+    between matrices from class K and their center of class
+    :math:`\bar{X}^{K}`:
+
+    .. math::
+        \sigma_{X^{K}}^p = \frac{1}{m} \sum_{i=1}^m d
+        \left(X_i, \bar{X}^{K}\right)^p
+
+    For more than two classes, it is quantified as:
+
+    .. math::
+        \mathrm{classDis}\left(\left\{K_{j}\right\}, p\right) =
+        \frac{\sum_{j=1}^{c} d\left(\bar{X}^{K_{j}}, \tilde{X}\right)^p}
+        {\sum_{j=1}^{c} \sigma_{X^{K_{j}}}^p}
+
+    where :math:`\tilde{X}` is the mean of centers of class of all :math:`c`
+    classes and :math:`p` is the exponentiation of the distance measure
+    named exponent at the input of this function.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    y : ndarray, shape (n_matrices,)
+        Labels for each matrix.
+    exponent : int, default=1
+        Parameter for exponentiation of distances, corresponding to p in the
+        above equations:
+
+        - exponent = 1 gives the formula originally defined in [1]_;
+        - exponent = 2 gives the Fisher criterion generalized on the manifold,
+          ie the ratio of the variance between the classes to the variance
+          within the classes.
+    metric : string | dict, default='riemann'
+        The type of metric used for centroid and distance estimation.
+        See `mean_covariance` for the list of supported metric.
+        The metric could be a dict with two keys, `mean` and `distance` in
+        order to pass different metrics for the centroid estimation and the
+        distance estimation. The original equation of class distinctiveness
+        in [1]_ uses 'riemann' for both the centroid estimation and the
+        distance estimation but you can customize other metrics with your
+        interests.
+    return_num_denom : bool, default=False
+        Whether to return numerator and denominator of class_dis.
+
+    Returns
+    -------
+    class_dis : float
+        Class distinctiveness value.
+    num : float
+        Numerator value of class_dis. Returned only if return_num_denom is
+        True.
+    denom : float
+        Denominator value of class_dis. Returned only if return_num_denom is
+        True.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+
+    References
+    ----------
+    .. [1] `Defining and quantifying users’ mental imagery-based
+       BCI skills: a first step
+       <https://hal.archives-ouvertes.fr/hal-01846434/>`_
+       F. Lotte, and C. Jeunet. Journal of neural engineering,
+       15(4), 046030, 2018.
+    """
+
+    metric_mean, metric_dist = _check_metric(metric)
+    classes = np.unique(y)
+    if len(classes) <= 1:
+        raise ValueError('X must contain at least two classes')
+
+    means = np.array([
+        mean_covariance(X[y == ll], metric=metric_mean) for ll in classes
+    ])
+
+    if len(classes) == 2:
+        num = distance(means[0], means[1], metric=metric_dist) ** exponent
+        denom = 0.5 * _get_within(X, y, means, classes, exponent, metric_dist)
+
+    else:
+        mean_all = mean_covariance(means, metric=metric_mean)
+        dists_between = [
+            distance(m, mean_all, metric=metric_dist) ** exponent
+            for m in means
+        ]
+        num = np.sum(dists_between)
+        denom = _get_within(X, y, means, classes, exponent, metric_dist)
+
+    class_dis = num / denom
+
+    if return_num_denom:
+        return class_dis, num, denom
+    else:
+        return class_dis
+
+
+def _get_within(X, y, means, classes, exponent, metric_dist):
+    """Private function to compute within dispersion."""
+    sigmas = []
+    for ii, ll in enumerate(classes):
+        dists_within = [
+            distance(x, means[ii], metric=metric_dist) ** exponent
+            for x in X[y == ll]
+        ]
+        sigmas.append(np.mean(dists_within))
+    sum_sigmas = np.sum(sigmas)
+    return sum_sigmas

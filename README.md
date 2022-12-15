@@ -124,12 +124,13 @@ See their contribution guidelines before contributing to the repository.
 
 # References
 
-> [1] A. Barachant, M. Congedo ,"A Plug&Play P300 BCI Using Information Geometry", arXiv:1409.0107. [link](http://arxiv.org/abs/1409.0107)
+> [1] A. Barachant, M. Congedo, "A Plug&Play P300 BCI Using Information Geometry", Research report, 2014 [link](http://arxiv.org/abs/1409.0107)
 >
-> [2] M. Congedo, A. Barachant, A. Andreev ,"A New generation of Brain-Computer Interface Based on Riemannian Geometry", arXiv: 1310.8115. [link](http://arxiv.org/abs/1310.8115)
+> [2] M. Congedo, A. Barachant, A. Andreev, "A New generation of Brain-Computer Interface Based on Riemannian Geometry". Research report, 2013. [link](https://hal.archives-ouvertes.fr/hal-00879050)
 >
-> [3] A. Barachant and S. Bonnet, "Channel selection procedure using riemannian distance for BCI applications," in 2011 5th International IEEE/EMBS Conference on Neural Engineering (NER), 2011, 348-351. [pdf](http://hal.archives-ouvertes.fr/docs/00/60/27/07/PDF/NER11_0016_FI.pdf)
+> [3] A. Barachant and S. Bonnet, "Channel selection procedure using riemannian distance for BCI applications" in 2011 5th International IEEE/EMBS Conference on Neural Engineering (NER), 2011, 348-351. [pdf](http://hal.archives-ouvertes.fr/docs/00/60/27/07/PDF/NER11_0016_FI.pdf)
 >
-> [4] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Multiclass Brain-Computer Interface Classification by Riemannian Geometry," in IEEE Transactions on Biomedical Engineering, vol. 59, no. 4, p. 920-928, 2012. [pdf](http://hal.archives-ouvertes.fr/docs/00/68/13/28/PDF/Barachant_tbme_final.pdf)
+> [4] A. Barachant, S. Bonnet, M. Congedo, and C. Jutten, "Multiclass Brain-Computer Interface Classification by Riemannian Geometry" in IEEE Transactions on
+Biomedical Engineering, vol. 59, no. 4, p. 920-928, 2012. [link](https://hal.archives-ouvertes.fr/hal-00681328)
 >
-> [5] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification of covariance matrices using a Riemannian-based kernel for BCI applications", in NeuroComputing, vol. 112, p. 172-178, 2013. [pdf](http://hal.archives-ouvertes.fr/docs/00/82/04/75/PDF/BARACHANT_Neurocomputing_ForHal.pdf)
+> [5] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification of covariance matrices using a Riemannian-based kernel for BCI applications" in Neurocomputing, Elsevier, 2013, 112, pp.172-178. [link](https://hal.archives-ouvertes.fr/hal-00820475/)

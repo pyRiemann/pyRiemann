@@ -175,6 +175,8 @@ ica.plot_components(title='Topographic maps of EEG sources estimated by ICA')
 ###############################################################################
 # References
 # ----------
-# .. [1] Q. Barthélemy, L. Mayaud, Y. Renard, D. Kim, S.-W. Kang, J. Gunkelman
-#    and M. Congedo, "Online denoising of eye-blinks in electroencephalography"
-#    , Neurophysiol Clin, 2017.
+# .. [1] `Online denoising of eye-blinks in electroencephalography
+#    <https://hal.archives-ouvertes.fr/hal-01660666/>`_
+#    Q. Barthélemy, L. Mayaud, Y. Renard, D. Kim, S.-W. Kang, J. Gunkelman
+#    and M. Congedo. Clinical Neurophysiology, Elsevier Masson, 2017, 47
+#    (5-6), pp.371-391

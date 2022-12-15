@@ -97,54 +97,8 @@ class Whitening(BaseEstimator, TransformerMixin):
 
         # whitening with dimension reduction
         elif isinstance(self.dim_red, dict):
-            if len(self.dim_red) > 1:
-                raise ValueError(
-                    'Dictionary dim_red must contain only one element (Got %d)'
-                    % len(self.dim_red))
-            dim_red_key = next(iter(self.dim_red))
-            dim_red_val = self.dim_red.get(dim_red_key)
 
-            eigvals, eigvecs = eigh(Xm, eigvals_only=False)
-            eigvals = eigvals[::-1]       # sort eigvals in descending order
-            eigvecs = np.fliplr(eigvecs)  # idem for eigvecs
-
-            if dim_red_key == 'n_components':
-                if dim_red_val < 1:
-                    raise ValueError(
-                        'Value n_components must be superior to 1 (Got %d)'
-                        % dim_red_val)
-                if not isinstance(dim_red_val, numbers.Integral):
-                    raise ValueError(
-                        'n_components=%d must be of type int (Got %r)'
-                        % (dim_red_val, type(dim_red_val)))
-                self.n_components_ = min(dim_red_val, X.shape[-1])
-
-            elif dim_red_key == 'expl_var':
-                if not 0 < dim_red_val <= 1:
-                    raise ValueError(
-                        'Value expl_var must be included in (0, 1] (Got %d)'
-                        % dim_red_val)
-                cum_expl_var = stable_cumsum(eigvals / eigvals.sum())
-                if self.verbose:
-                    print('Cumulative explained variance: \n %r'
-                          % cum_expl_var)
-                self.n_components_ = np.searchsorted(
-                    cum_expl_var, dim_red_val, side='right') + 1
-
-            elif dim_red_key == 'max_cond':
-                if dim_red_val <= 1:
-                    raise ValueError(
-                        'Value max_cond must be strictly superior to 1 '
-                        '(Got %d)' % dim_red_val)
-                conds = eigvals[0] / eigvals
-                if self.verbose:
-                    print('Condition numbers: \n %r' % conds)
-                self.n_components_ = np.searchsorted(
-                    conds, dim_red_val, side='left')
-
-            else:
-                raise ValueError(
-                    'Unknown key in parameter dim_red: %r' % dim_red_key)
+            eigvals, eigvecs = self._prepare_dimension_reduction(X, Xm)
 
             # dimension reduction
             if self.verbose:
@@ -161,6 +115,59 @@ class Whitening(BaseEstimator, TransformerMixin):
                              % type(self.dim_red))
 
         return self
+
+    def _prepare_dimension_reduction(self, X, Xm):
+        """Prepare dimension reduction."""
+        if len(self.dim_red) > 1:
+            raise ValueError(
+                'Dictionary dim_red must contain only one element (Got %d)'
+                % len(self.dim_red))
+        dim_red_key = next(iter(self.dim_red))
+        dim_red_val = self.dim_red.get(dim_red_key)
+
+        eigvals, eigvecs = eigh(Xm, eigvals_only=False)
+        eigvals = eigvals[::-1]       # sort eigvals in descending order
+        eigvecs = np.fliplr(eigvecs)  # idem for eigvecs
+
+        if dim_red_key == 'n_components':
+            if dim_red_val < 1:
+                raise ValueError(
+                    'Value n_components must be superior to 1 (Got %d)'
+                    % dim_red_val)
+            if not isinstance(dim_red_val, numbers.Integral):
+                raise ValueError(
+                    'n_components=%d must be of type int (Got %r)'
+                    % (dim_red_val, type(dim_red_val)))
+            self.n_components_ = min(dim_red_val, X.shape[-1])
+
+        elif dim_red_key == 'expl_var':
+            if not 0 < dim_red_val <= 1:
+                raise ValueError(
+                    'Value expl_var must be included in (0, 1] (Got %d)'
+                    % dim_red_val)
+            cum_expl_var = stable_cumsum(eigvals / eigvals.sum())
+            if self.verbose:
+                print('Cumulative explained variance: \n %r'
+                      % cum_expl_var)
+            self.n_components_ = np.searchsorted(
+                cum_expl_var, dim_red_val, side='right') + 1
+
+        elif dim_red_key == 'max_cond':
+            if dim_red_val <= 1:
+                raise ValueError(
+                    'Value max_cond must be strictly superior to 1 '
+                    '(Got %d)' % dim_red_val)
+            conds = eigvals[0] / eigvals
+            if self.verbose:
+                print('Condition numbers: \n %r' % conds)
+            self.n_components_ = np.searchsorted(
+                conds, dim_red_val, side='left')
+
+        else:
+            raise ValueError(
+                'Unknown key in parameter dim_red: %r' % dim_red_key)
+
+        return eigvals, eigvecs
 
     def transform(self, X):
         """Apply whitening spatial filters.

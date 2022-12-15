@@ -90,15 +90,12 @@ def test_geodesic_ndarray(geodesic_func, get_covmats):
 @pytest.mark.parametrize("metric", get_geod_name())
 def test_geodesic_wrapper_simple(metric):
     n_channels = 3
+    A = 0.5 * np.eye(n_channels)
     if metric == "euclid":
-        A = 1.0 * np.eye(n_channels)
-        B = 2.0 * np.eye(n_channels)
-        Ctrue = 1.5 * np.eye(n_channels)
+        B = 1.5 * np.eye(n_channels)
     else:
-        A = 0.5 * np.eye(n_channels)
-        B = 2 * np.eye(n_channels)
-        Ctrue = np.eye(n_channels)
-    assert geodesic(A, B, 0.5, metric=metric) == approx(Ctrue)
+        B = 2.0 * np.eye(n_channels)
+    assert geodesic(A, B, 0.5, metric=metric) == approx(np.eye(n_channels))
 
 
 @pytest.mark.parametrize("met, gfunc", zip(get_geod_name(), get_geod_func()))

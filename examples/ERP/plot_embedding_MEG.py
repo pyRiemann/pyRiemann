@@ -7,20 +7,14 @@ Riemannian embeddings via Laplacian Eigenmaps (LE) and Locally Linear
 Embedding (LLE) of a set of ERP data. Embedding via Laplacian Eigenmaps is
 referred to as Spectral Embedding (SE).
 
-"Locally Linear Embedding (LLE) assumes that the  local neighborhood of a
+Locally Linear Embedding (LLE) assumes that the local neighborhood of a
 point on the manifold can be well approximated by  the affine subspace
 spanned by the k-nearest neighbors of the point and finds a low-dimensional
 embedding of the data based on these affine approximations.
 
 Laplacian Eigenmaps (LE) are based on computing the low dimensional
-representation that best preserves locality instead of local linearity in LLE."
-[1]_
-
-References
-----------
-.. [1] A. Goh and R. Vidal, "Clustering and dimensionality reduction
-    on Riemannian manifolds", 2008 IEEE Conference on Computer Vision
-    and Pattern Recognition, June 2008.
+representation that best preserves locality instead of local linearity in LLE
+[1]_.
 """
 # Authors:  Pedro Rodrigues <pedro.rodrigues01@gmail.com>,
 #           Gabriel Wagner vom Berg <gabriel@bccn-berlin.de>
@@ -40,10 +34,10 @@ import matplotlib.pyplot as plt
 
 print(__doc__)
 
-data_path = sample.data_path()
 
 ###############################################################################
 # Set parameters and read data
+data_path = str(sample.data_path())
 raw_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw.fif'
 event_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif'
 tmin, tmax = -0., 1
@@ -89,3 +83,12 @@ plt.show()
 plot_embedding(covs, ytest, metric='riemann', embd_type='LocallyLinear',
                normalize=False)
 plt.show()
+
+
+###############################################################################
+# References
+# ----------
+# .. [1] `Clustering and dimensionality reduction on Riemannian manifolds
+#    <https://ieeexplore.ieee.org/document/4587422>`_
+#    A. Goh and R Vidal, in 2008 IEEE Conference on Computer Vision and Pattern
+#    Recognition.

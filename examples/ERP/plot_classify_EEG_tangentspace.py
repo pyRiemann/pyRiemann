@@ -30,10 +30,10 @@ from matplotlib import pyplot as plt
 
 print(__doc__)
 
-data_path = sample.data_path()
 
 ###############################################################################
 # Set parameters and read data
+data_path = str(sample.data_path())
 raw_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw.fif"
 event_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif"
 tmin, tmax = -0.0, 1

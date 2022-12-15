@@ -45,7 +45,6 @@ class BasePermutation():
         X : array-like
             The data to fit. Can be, for example a list, or an array at
             least 2d.
-
         y : array-like
             The target variable to try to predict in the case of
             supervised learning.
@@ -118,7 +117,6 @@ class BasePermutation():
             If an integer is given, bins + 1 bin edges are returned,
             consistently with np.histogram() for numpy version >= 1.3.
             Unequally spaced bins are supported if bins is a sequence.
-
         range : tuple or None, default=None
             The lower and upper range of the bins. Lower and upper outliers are
             ignored. If not provided, range is (x.min(), x.max()).
@@ -161,10 +159,8 @@ class PermutationModel(BasePermutation):
     n_perms : int, default=100
         The number of permutation. The minimum should be 20 for a resolution of
         0.05 p-value.
-
     model : sklearn compatible model, default=MDM()
         The model for scoring.
-
     cv : int or cross-validation generator or an iterable, default=3
         Determines the cross-validation splitting strategy.
         Possible inputs for cv are:
@@ -177,16 +173,13 @@ class PermutationModel(BasePermutation):
         For integer/None inputs, if the estimator is a classifier and `y` is
         either binary or multiclass, :class:`StratifiedKFold` is used. In all
         other cases, `KFold` is used.
-
     scoring : string or callable or None, default=None
         A string (see model evaluation documentation) or
         a scorer callable object / function with signature
         `scorer(estimator, X, y)`.
-
     n_jobs : integer, default=1
         The number of CPUs to use to do the computation. -1 means
         'all CPUs'.
-
     random_state : int, default=42
         random state for the permutation test.
 
@@ -270,7 +263,6 @@ class PermutationDistance(BasePermutation):
     n_perms : int, default=100
         The number of permutation. The minimum should be 20 for a resolution of
         0.05 p-value.
-
     metric : string | dict, default='riemann'
         The type of metric used for centroid and distance estimation.
         see `distance` anb `mean_covariance` for the list of supported metric.
@@ -279,17 +271,13 @@ class PermutationDistance(BasePermutation):
         distance estimation. Typical usecase is to pass 'logeuclid' metric for
         the mean in order to boost the computional speed and 'riemann' for the
         distance in order to keep the good sensitivity for the classification.
-
     mode : string, default='pairwise'
         Type of statistic to use. could be 'pairwise', 'ttest' of 'ftest'
-
     n_jobs : integer, default=1
         The number of CPUs to use to do the computation. -1 means
         'all CPUs'.
-
     random_state : int, default=42
         random state for the permutation test.
-
     estimator : None or sklearn compatible estimator, default=None
         If provided, data are transformed before every permutation. should
         not be used unless a supervised opperation must be applied on the data.
@@ -309,8 +297,9 @@ class PermutationDistance(BasePermutation):
 
     References
     ----------
-    .. [1] Anderson, J. "A new method for non-parametric multivariate analysis
-        of variance." Austral ecology. 2001.
+    .. [1] `A new method for non-parametric multivariate analysis of variance
+        <https://doi.org/10.1111/j.1442-9993.2001.01070.pp.x>`_
+        M. Anderson. Austral ecology, Volume 26, Issue 1, February 2001.
     """
 
     def __init__(self,
@@ -338,7 +327,6 @@ class PermutationDistance(BasePermutation):
         X : array-like
             The data to fit. Can be, for example a list, or an array at
             least 2d.
-
         y : array-like
             The target variable to try to predict in the case of
             supervised learning.

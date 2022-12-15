@@ -244,7 +244,7 @@ def plot_waveforms(X, display, *, times=None, color='gray', alpha=0.5,
 
 
 def _add_alpha(colors, alphas):
-    ''' Add alphas to RGB channels '''
+    """Add alphas to RGB channels"""
     try:
         from matplotlib.colors import to_rgb
     except ImportError:

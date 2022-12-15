@@ -5,7 +5,8 @@ import numpy as np
 
 from .base import sqrtm, invsqrtm, logm, expm
 from .distance import pairwise_distance
-from .mean import _get_sample_weight, mean_euclid
+from .mean import mean_euclid
+from .utils import check_weights
 
 
 def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
@@ -44,13 +45,18 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
 
     References
     ----------
-    .. [1] Weiszfeld E. "Sur le point pour lequel la somme des distances de n
-        points donnés est minimum", Tohoku Math J, 1937
-    .. [2] Vardi Y and Zhan C-H. "The multivariate L1-median and associated
-        data depth", PNAS, 2000
+    .. [1] `Sur le point pour lequel la somme des distances de n points donnés
+        est minimum
+        <https://www.jstage.jst.go.jp/article/tmj1911/43/0/43_0_355/_pdf>`_
+        E Weiszfeld. Tohoku Mathematical Journal, 1937, 43, pp. 355-386.
+    .. [2] `The multivariate L1-median and associated data depth
+        <https://www.pnas.org/doi/pdf/10.1073/pnas.97.4.1423>`_
+        Y Vardi and C-H Zhan. Proceedings of the National Academy of Sciences,
+        2000, vol. 97, no 4, p. 1423-1426
     .. [3] https://numpy.org/doc/stable/reference/generated/numpy.median.html
     """
-    weights = _get_sample_weight(weights, X)
+    n_matrices, _, _ = X.shape
+    weights = check_weights(weights, n_matrices)
     if init is None:
         M = mean_euclid(X, sample_weight=weights)
     else:
@@ -121,16 +127,22 @@ def median_riemann(X, *, tol=10e-6, maxiter=50, init=None, weights=None,
 
     References
     ----------
-    .. [1] Fletcher PT, Venkatasubramanian S and Joshi S. "The geometric median
-        on Riemannian manifolds with application to robust atlas estimation",
-        NeuroImage, 2009
-    .. [2] Yang L, Arnaudon M and Barbaresco F. "Riemannian median, geometry of
-        covariance matrices and radar target detection", EURAD, 2010
+    .. [1] `The geometric median on Riemannian manifolds with application to
+        robust atlas estimation
+        <https://www.ncbi.nlm.nih.gov/pmc/articles/PMC2735114/>`_
+        PT. Fletcher, S. Venkatasubramanian S and S. Joshi.
+        NeuroImage, 2009, 45(1), S143-S152
+    .. [2] `Riemannian median, geometry of covariance matrices and radar target
+        detection
+        <https://ieeexplore.ieee.org/abstract/document/5615027>`_
+        L Yang, M Arnaudon and F Barbaresco. 7th European Radar Conference,
+        2010, pp. 415-418
     """
     if not 0 < step_size <= 2:
         raise ValueError(
             'Value step_size must be included in (0, 2] (Got %d)' % step_size)
-    weights = _get_sample_weight(weights, X)
+    n_matrices, _, _ = X.shape
+    weights = check_weights(weights, n_matrices)
     if init is None:
         M = mean_euclid(X, sample_weight=weights)
     else:

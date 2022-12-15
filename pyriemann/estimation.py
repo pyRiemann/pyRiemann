@@ -1,11 +1,11 @@
 """Estimation of covariance matrices."""
 import numpy as np
+from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.covariance import shrunk_covariance
 
 from .spatialfilters import Xdawn
 from .utils.covariance import (covariances, covariances_EP, cospectrum,
                                coherence, block_covariances)
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.covariance import shrunk_covariance
 
 
 def _nextpow2(i):
@@ -82,17 +82,13 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     For each class, a prototyped response is obtained by average across trial:
 
     .. math::
-        \mathbf{P} = \frac{1}{N} \sum_i^N \mathbf{X}_i
+        \mathbf{P} = \frac{1}{m} \sum_{i=1}^{m} \mathbf{X}_i
 
     and a super trial is built using the concatenation of P and the trial X:
 
     .. math::
-        \mathbf{\tilde{X}}_i =  \left[
-                                \begin{array}{c}
-                                \mathbf{P} \\
-                                \mathbf{X}_i
-                                \end{array}
-                                \right]
+        \mathbf{\tilde{X}}_i = \left[ \begin{array}{c} \mathbf{P} \\
+        \mathbf{X}_i \end{array} \right]
 
     This super trial :math:`\mathbf{\tilde{X}}_i` will be used for covariance
     estimation.
@@ -111,6 +107,13 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         If not None, the prototype responses will be reduce using a SVD using
         the number of components passed in SVD.
 
+    Attributes
+    ----------
+    P_ : ndarray, shape (n_components, n_times)
+        If fit, prototyped responses for each class, where `n_components` is
+        equal to `n_classes x n_channels` if `svd` is None,
+        and to `n_classes x min(svd, n_channels)` otherwise.
+
     See Also
     --------
     Covariances
@@ -120,16 +123,18 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] A. Barachant, M. Congedo ,"A Plug&Play P300 BCI Using Information
-        Geometry", arXiv:1409.0107, 2014.
-
-    .. [2] M. Congedo, A. Barachant, A. Andreev ,"A New generation of
-        Brain-Computer Interface Based on Riemannian Geometry",
-        arXiv:1310.8115, 2013.
-
-    .. [3] A. Barachant, M. Congedo, G. Van Veen, C. Jutten, "Classification de
-        potentiels evoques P300 par geometrie riemannienne pour les interfaces
-        cerveau-machine EEG", 24eme colloque GRETSI, 2013.
+    .. [1] `A Plug and Play P300 BCI Using Information Geometry
+        <https://arxiv.org/abs/1409.0107>`_
+        A. Barachant, M. Congedo. Research report, 2014.
+    .. [2] `A New generation of Brain-Computer Interface Based on Riemannian
+        Geometry
+        <https://hal.archives-ouvertes.fr/hal-00879050>`_
+        M. Congedo, A. Barachant, A. Andreev. Research report, 2013.
+    .. [3] `Classification de potentiels evoques P300 par geometrie
+        riemannienne pour les interfaces cerveau-machine EEG
+        <https://hal.archives-ouvertes.fr/hal-00877447>`_
+        A. Barachant, M. Congedo, G. van Veen, and C. Jutten, 24eme colloque
+        GRETSI, 2013.
     """
 
     def __init__(self, classes=None, estimator='scm', svd=None):
@@ -141,7 +146,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     def fit(self, X, y):
         """Fit.
 
-        Estimate the Prototyped response for each classes.
+        Estimate the prototyped responses for each class.
 
         Parameters
         ----------
@@ -165,13 +170,13 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
         self.P_ = []
         for c in classes:
-            # Prototyped responce for each class
-            P = np.mean(X[y == c, :, :], axis=0)
+            # Prototyped response for each class
+            P = np.mean(X[y == c], axis=0)
 
             # Apply svd if requested
             if self.svd is not None:
-                U, s, V = np.linalg.svd(P)
-                P = np.dot(U[:, 0:self.svd].T, P)
+                U, _, _ = np.linalg.svd(P)
+                P = U[:, 0:self.svd].T @ P
 
             self.P_.append(P)
 
@@ -188,10 +193,11 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        covmats : ndarray, shape (n_matrices, n_c, n_c)
-            Covariance matrices for each input, with n_c the size
-            of covmats equal to n_channels * (n_classes + 1) in case SVD is
-            None and equal to n_channels + n_classes * svd otherwise.
+        covmats : ndarray, shape (n_matrices, n_components, n_components)
+            Covariance matrices for ERP, where the size of matrices
+            `n_components` is equal to `(1 + n_classes) x n_channels` if `svd`
+            is None, and to `n_channels + n_classes x min(svd, n_channels)`
+            otherwise.
         """
         covmats = covariances_EP(X, self.P_, estimator=self.estimator)
         return covmats
@@ -207,13 +213,13 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
     A complete description of the method is available in [1]_.
 
     The advantage of this estimation is to reduce dimensionality of the
-    covariance matrices efficiently.
+    covariance matrices supervisely.
 
     Parameters
     ----------
-    nfilter: int, default=4
+    nfilter : int, default=4
         Number of Xdawn filters per class.
-    applyfilters: bool, default=True
+    applyfilters : bool, default=True
         If set to true, spatial filter are applied to the prototypes and the
         signals. When set to False, filters are applied only to the ERP
         prototypes allowing for a better generalization across subject and
@@ -230,9 +236,14 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         Covariance matrix estimator for `Xdawn` spatial filtering.
         Should be regularized using 'lwf' or 'oas', see
         :func:`pyriemann.utils.covariance.covariances`.
-    baseline_cov : array, shape (n_chan, n_chan) | None, default=None
+    baseline_cov : array, shape (n_channels, n_channels) | None, default=None
         Baseline covariance for `Xdawn` spatial filtering,
         see :class:`pyriemann.spatialfilters.Xdawn`.
+
+    Attributes
+    ----------
+    P_ : ndarray, shape (n_classes x min(n_channels, n_filters), n_times)
+        If fit, the evoked response for each event type, concatenated.
 
     See Also
     --------
@@ -241,8 +252,11 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] Barachant, A. "MEG decoding using Riemannian Geometry and
-        Unsupervised classification", 2014
+    .. [1] `MEG decoding using Riemannian Geometry and
+        Unsupervised classification
+        <https://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.713.5131>`_
+        A. Barachant. Technical report with the solution of the DecMeg 2014
+        challenge.
     """
 
     def __init__(self,
@@ -281,7 +295,8 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
             nfilter=self.nfilter,
             classes=self.classes,
             estimator=self.xdawn_estimator,
-            baseline_cov=self.baseline_cov)
+            baseline_cov=self.baseline_cov,
+        )
         self.Xd_.fit(X, y)
         self.P_ = self.Xd_.evokeds_
         return self
@@ -296,8 +311,11 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        covmats : ndarray, shape (n_matrices, n_c, n_c)
-            Covariance matrices.
+        covmats : ndarray, shape (n_matrices, n_components, n_components)
+            Covariance matrices filtered by Xdawn, where n_components is equal
+            to `2 x n_classes x min(n_channels, nfilter)` if `applyfilters` is
+            True, and to `n_channels + n_classes x min(n_channels, nfilter)`
+            otherwise.
         """
         if self.applyfilters:
             X = self.Xd_.transform(X)
@@ -537,19 +555,21 @@ class Coherences(CospCovariances):
 
     References
     ----------
-    .. [1] R. Pascual-Marqui, "Instantaneous and lagged measurements of linear
+    .. [1] `Instantaneous and lagged measurements of linear
         and nonlinear dependence between groups of multivariate time series:
-        frequency decomposition", arXiv, 2007.
-        https://arxiv.org/ftp/arxiv/papers/0711/0711.1455.pdf
-
-    .. [2] G. Nolte, O. Bai, L. Wheaton, Z. Mari, S. Vorbach, M. Hallett,
-        "Identifying true brain interaction from EEG data using the imaginary
-        part of coherency", Clin Neurophysiol, 2004.
-        https://doi.org/10.1016/j.clinph.2004.04.029
-
-    .. [3] Congedo, M. "Non-Parametric Synchronization Measures used in EEG
-        and MEG", TechReport, 2018.
-        https://hal.archives-ouvertes.fr/hal-01868538v2/document
+        frequency decomposition
+        <https://arxiv.org/ftp/arxiv/papers/0711/0711.1455.pdf>`_
+        R. Pascual-Marqui. Technical report, 2007.
+    .. [2] `Identifying true brain interaction from EEG data using the
+        imaginary part of coherency
+        <https://doi.org/10.1016/j.clinph.2004.04.029>`_
+        G. Nolte, O. Bai, L. Wheaton, Z. Mari, S. Vorbach, M. Hallett.
+        Clinical Neurophysioly, Volume 115, Issue 10, October 2004,
+        Pages 2292-2307
+    .. [3] `Non-Parametric Synchronization Measures used in EEG
+        and MEG
+        <https://hal.archives-ouvertes.fr/hal-01868538v2>`_
+        M. Congedo. Technical Report, 2018.
     """
 
     def __init__(self, window=128, overlap=0.75, fmin=None, fmax=None,
@@ -596,13 +616,13 @@ class Coherences(CospCovariances):
 class HankelCovariances(BaseEstimator, TransformerMixin):
     """Estimation of covariance matrix with time delayed Hankel matrices.
 
-    This estimation is usefull to catch spectral dynamics of the signal,
-    similarly to the CSSP method. It is done by concatenating time delayed
-    version of the signal before covariance estimation.
+    Hankel covariance matrices [1]_ are useful to catch spectral dynamics of
+    the signal, similarly to the CSSP method [2]_. It is done by concatenating
+    time delayed version of the signal before covariance estimation.
 
     Parameters
     ----------
-    delays: int | list of int, default=4
+    delays : int | list of int, default=4
         The delays to apply for the Hankel matrices. If `int`, it use a range
         of delays up to the given value. A list of int can be given.
     estimator : string, default='scm'
@@ -615,6 +635,15 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
     ERPCovariances
     XdawnCovariances
     CospCovariances
+
+    References
+    ----------
+    .. [1] https://en.wikipedia.org/wiki/Hankel_matrix
+    .. [2] `Spatio-spectral filters for improving the classification of single
+        trial EEG
+        <http://doc.ml.tu-berlin.de/bbci/publications/LemBlaCurMue05.pdf>`_
+        S. Lemm, B. Blankertz, B. Curio, K-R. Muller. IEEE Transactions on
+        Biomedical Engineering 52(9), 1541-1548, 2005.
     """
 
     def __init__(self, delays=4, estimator='scm'):
@@ -651,17 +680,20 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-            Covariance matrices.
+        covmats : ndarray, shape (n_matrices, n_delays x n_channels, \
+                n_delays x n_channels)
+            Hankel covariance matrices, where n_delays is equal to `delays`
+            when it is a int, and to `1 + len(delays)` when it is a list.
         """
 
         if isinstance(self.delays, int):
             delays = range(1, self.delays)
-        else:
+        elif isinstance(self.delays, list):
             delays = self.delays
+        else:
+            raise ValueError('delays must be an integer or a list')
 
         X2 = []
-
         for x in X:
             tmp = x
             for d in delays:

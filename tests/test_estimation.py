@@ -1,3 +1,6 @@
+import numpy as np
+import pytest
+
 from pyriemann.estimation import (
     Covariances,
     ERPCovariances,
@@ -8,8 +11,6 @@ from pyriemann.estimation import (
     Shrinkage,
     BlockCovariances
 )
-import pytest
-
 from pyriemann.utils.test import (is_sym_pos_def as is_spd,
                                   is_sym_pos_semi_def as is_spsd)
 
@@ -22,56 +23,54 @@ def test_covariances(estimator, rndstate):
     """Test Covariances"""
     n_matrices, n_channels, n_times = 2, 3, 100
     x = rndstate.randn(n_matrices, n_channels, n_times)
-    cov = Covariances(estimator=estimator)
-    cov.fit(x)
+    cov = Covariances(estimator=estimator).fit(x)
     covmats = cov.fit_transform(x)
     assert cov.get_params() == dict(estimator=estimator)
     assert covmats.shape == (n_matrices, n_channels, n_channels)
     assert is_spd(covmats)
 
 
-def test_hankel_covariances(rndstate):
-    """Test Hankel Covariances"""
+@pytest.mark.parametrize("delays", [4, [1, 2]])
+def test_hankel_covariances_delays(delays, rndstate):
     n_matrices, n_channels, n_times = 2, 3, 100
     x = rndstate.randn(n_matrices, n_channels, n_times)
-    cov = HankelCovariances()
-    cov.fit(x)
+    cov = HankelCovariances(delays=delays).fit(x)
     covmats = cov.fit_transform(x)
-    assert cov.get_params() == dict(estimator="scm", delays=4)
-    assert covmats.shape == (n_matrices, 4 * n_channels, 4 * n_channels)
-    assert is_spd(covmats)
-
-
-def test_hankel_covariances_delays(rndstate):
-    n_matrices, n_channels, n_times = 2, 3, 100
-    x = rndstate.randn(n_matrices, n_channels, n_times)
-    cov = HankelCovariances(delays=[1, 2])
-    cov.fit(x)
-    covmats = cov.fit_transform(x)
-    assert covmats.shape == (n_matrices, 3 * n_channels, 3 * n_channels)
+    assert cov.get_params() == dict(estimator="scm", delays=delays)
+    if isinstance(delays, list):
+        n_delays = 1 + len(delays)
+    elif isinstance(delays, int):
+        n_delays = delays
+    assert covmats.shape == (n_matrices, n_delays * n_channels,
+                             n_delays * n_channels)
     assert is_spd(covmats)
 
 
 @pytest.mark.parametrize("estimator", estim)
-@pytest.mark.parametrize("svd", [None, 2])
-def test_erp_covariances(estimator, svd, rndstate, get_labels):
+@pytest.mark.parametrize("svd", [None, 2, 3, 4])
+@pytest.mark.parametrize("n_classes", [2, 3, 4])
+def test_erp_covariances(estimator, svd, n_classes, rndstate, get_labels):
     """Test fit ERPCovariances"""
-    n_classes, n_matrices, n_channels, n_times = 2, 4, 3, 100
+    n_matrices, n_channels, n_times = 3 * n_classes, 3, 100
     x = rndstate.randn(n_matrices, n_channels, n_times)
     labels = get_labels(n_matrices, n_classes)
     cov = ERPCovariances(estimator=estimator, svd=svd)
     covmats = cov.fit_transform(x, labels)
-    if svd is None:
-        covsize = (n_classes + 1) * n_channels
-    else:
-        covsize = n_classes * svd + n_channels
     assert cov.get_params() == dict(classes=None, estimator=estimator, svd=svd)
+    if svd is None:
+        protosize = n_classes * n_channels
+        covsize = (1 + n_classes) * n_channels
+    else:
+        protosize = n_classes * min(svd, n_channels)
+        covsize = n_channels + n_classes * min(svd, n_channels)
+    assert cov.P_.shape == (protosize, n_times)
     assert covmats.shape == (n_matrices, covsize, covsize)
     assert is_spsd(covmats)
 
 
-def test_erp_covariances_classes(rndstate, get_labels):
-    n_matrices, n_channels, n_times, n_classes = 4, 3, 100, 2
+@pytest.mark.parametrize("n_classes", [2, 3])
+def test_erp_covariances_classes(n_classes, rndstate, get_labels):
+    n_matrices, n_channels, n_times = 3 * n_classes, 3, 100
     x = rndstate.randn(n_matrices, n_channels, n_times)
     labels = get_labels(n_matrices, n_classes)
     cov = ERPCovariances(classes=[0])
@@ -82,7 +81,7 @@ def test_erp_covariances_classes(rndstate, get_labels):
 
 def test_erp_covariances_svd_error(rndstate, get_labels):
     """ assert raise svd """
-    n_matrices, n_channels, n_times, n_classes = 4, 3, 50, 2
+    n_classes, n_matrices, n_channels, n_times = 2, 4, 3, 10
     x = rndstate.randn(n_matrices, n_channels, n_times)
     labels = get_labels(n_matrices, n_classes)
     with pytest.raises(TypeError):
@@ -90,80 +89,63 @@ def test_erp_covariances_svd_error(rndstate, get_labels):
 
 
 @pytest.mark.parametrize("est", estim)
-def test_xdawn_est(est, rndstate, get_labels):
-    """Test fit XdawnCovariances"""
-    n_classes, nfilter = 2, 2
+@pytest.mark.parametrize("xdawn_est", estim)
+def test_xdawn_covariances_est(est, xdawn_est, rndstate, get_labels):
+    n_classes, nfilter = 2, 3
     n_matrices, n_channels, n_times = 4, 6, 100
     x = rndstate.randn(n_matrices, n_channels, n_times)
     labels = get_labels(n_matrices, n_classes)
-    cov = XdawnCovariances(nfilter, estimator=est)
+    cov = XdawnCovariances(nfilter, estimator=est, xdawn_estimator=xdawn_est)
     covmats = cov.fit_transform(x, labels)
     assert cov.get_params() == dict(
         nfilter=nfilter,
         applyfilters=True,
         classes=None,
         estimator=est,
-        xdawn_estimator="scm",
-        baseline_cov=None,
-    )
-    covsize = 2 * (n_classes * nfilter)
-    assert covmats.shape == (n_matrices, covsize, covsize)
-    assert is_spsd(covmats)
-
-
-@pytest.mark.parametrize("xdawn_est", estim)
-def test_xdawn_covariances_est(xdawn_est, rndstate, get_labels):
-    """Test fit XdawnCovariances"""
-    n_classes, nfilter = 2, 2
-    n_matrices, n_channels, n_times = 4, 6, 100
-    x = rndstate.randn(n_matrices, n_channels, n_times)
-    labels = get_labels(n_matrices, n_classes)
-    cov = XdawnCovariances(nfilter, xdawn_estimator=xdawn_est)
-    covmats = cov.fit_transform(x, labels)
-    assert cov.get_params() == dict(
-        nfilter=nfilter,
-        applyfilters=True,
-        classes=None,
-        estimator="scm",
         xdawn_estimator=xdawn_est,
         baseline_cov=None,
     )
-    covsize = 2 * (n_classes * nfilter)
+    protosize = n_classes * min(n_channels, nfilter)
+    assert cov.P_.shape == (protosize, n_times)
+    covsize = n_channels + n_classes * min(n_channels, nfilter)
     assert covmats.shape == (n_matrices, covsize, covsize)
     assert is_spsd(covmats)
 
 
-@pytest.mark.parametrize("nfilter", [2, 4])
-def test_xdawn_covariances_nfilter(nfilter, rndstate, get_labels):
-    """Test fit XdawnCovariances"""
-    n_classes, n_matrices, n_channels, n_times = 2, 4, 8, 100
+@pytest.mark.parametrize("n_classes", [1, 2, 3])
+@pytest.mark.parametrize("nfilter", [2, 4, 6])
+@pytest.mark.parametrize("applyfilters", [True, False])
+@pytest.mark.parametrize("baseline", [True, False])
+def test_xdawn_covariances_filters(n_classes, nfilter, applyfilters, baseline,
+                                   rndstate, get_labels):
+    n_matrices, n_channels, n_times = 3 * n_classes, 4, 128
     x = rndstate.randn(n_matrices, n_channels, n_times)
     labels = get_labels(n_matrices, n_classes)
-    cov = XdawnCovariances(nfilter=nfilter)
+    if baseline:
+        baseline_cov = np.identity(n_channels)
+    else:
+        baseline_cov = None
+    cov = XdawnCovariances(
+        nfilter=nfilter,
+        applyfilters=applyfilters,
+        baseline_cov=baseline_cov,
+    )
     covmats = cov.fit_transform(x, labels)
     assert cov.get_params() == dict(
         nfilter=nfilter,
-        applyfilters=True,
+        applyfilters=applyfilters,
         classes=None,
         estimator="scm",
         xdawn_estimator="scm",
-        baseline_cov=None,
+        baseline_cov=baseline_cov,
     )
-    covsize = 2 * (n_classes * nfilter)
+    protosize = n_classes * min(n_channels, nfilter)
+    assert cov.P_.shape == (protosize, n_times)
+    if applyfilters:
+        covsize = 2 * n_classes * min(n_channels, nfilter)
+    else:
+        covsize = n_channels + n_classes * min(n_channels, nfilter)
     assert covmats.shape == (n_matrices, covsize, covsize)
-    assert is_spsd(covmats)
-
-
-def test_xdawn_covariances_applyfilters(rndstate, get_labels):
-    n_classes, nfilter = 2, 2
-    n_matrices, n_channels, n_times = 4, 6, 100
-    x = rndstate.randn(n_matrices, n_channels, n_times)
-    labels = get_labels(n_matrices, n_classes)
-    cov = XdawnCovariances(nfilter=nfilter, applyfilters=False)
-    covmats = cov.fit_transform(x, labels)
-    covsize = n_classes * nfilter + n_channels
-    assert covmats.shape == (n_matrices, covsize, covsize)
-    assert is_spsd(covmats)
 
 
 @pytest.mark.parametrize("estimator", estim)

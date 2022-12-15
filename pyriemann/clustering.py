@@ -9,12 +9,12 @@ try:
 except ImportError:
     # Workaround for scikit-learn v0.24.0rc1+
     # See issue: https://github.com/alexandrebarachant/pyRiemann/issues/92
-    from sklearn.cluster import KMeans
+    from sklearn.cluster import KMeans as _KMeans
 
     def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
         if random_state is not None:
             random_state = np.random.RandomState(random_state)
-        return KMeans(n_clusters=n_clusters, init=init)._init_centroids(
+        return _KMeans(n_clusters=n_clusters, init=init)._init_centroids(
             X,
             x_squared_norms,
             init,
@@ -310,14 +310,17 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     References
     ----------
-    .. [1] A. Barachant, A. Andreev and M. Congedo, "The Riemannian Potato: an
-        automatic and adaptive artifact detection method for online experiments
-        using Riemannian geometry", in Proceedings of TOBI Workshop IV,
-        p. 19-20, 2013.
-
-    .. [2] Q. Barthélemy, L. Mayaud, D. Ojeda, M. Congedo, "The Riemannian
-        potato field: a tool for online signal quality index of EEG", IEEE
-        TNSRE, 2019.
+    .. [1] `The Riemannian Potato: an automatic and adaptive artifact detection
+        method for online experiments using Riemannian geometry
+        <https://hal.archives-ouvertes.fr/hal-00781701>`_
+        A. Barachant, A Andreev, and M. Congedo. TOBI Workshop lV, Jan 2013,
+        Sion, Switzerland. pp.19-20.
+    .. [2] `The Riemannian Potato Field: A Tool for Online Signal Quality Index
+        of EEG
+        <https://hal.archives-ouvertes.fr/hal-02015909>`_
+        Q. Barthélemy, L. Mayaud, D. Ojeda, and M. Congedo. IEEE Transactions
+        on Neural Systems and Rehabilitation Engineering, IEEE Institute of
+        Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
     """
 
     def __init__(self, metric='riemann', threshold=3, n_iter_max=100,
@@ -558,9 +561,12 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     References
     ----------
-    .. [1] Q. Barthélemy, L. Mayaud, D. Ojeda, M. Congedo, "The Riemannian
-        potato field: a tool for online signal quality index of EEG", IEEE
-        TNSRE, 2019.
+    .. [1] `The Riemannian Potato Field: A Tool for Online Signal Quality Index
+        of EEG
+        <https://hal.archives-ouvertes.fr/hal-02015909>`_
+        Q. Barthélemy, L. Mayaud, D. Ojeda, and M. Congedo. IEEE Transactions
+        on Neural Systems and Rehabilitation Engineering, IEEE Institute of
+        Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
     """
 
     def __init__(self, n_potatoes=1, p_threshold=0.01, z_threshold=3,

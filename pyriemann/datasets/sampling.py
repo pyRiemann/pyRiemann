@@ -324,10 +324,11 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
 
     References
     ----------
-    .. [1] S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton, “Riemannian
-        Gaussian distributions on the space of symmetric positive definite
-        matrices”, IEEE Trans Inf Theory, vol. 63, pp. 2153–2170, 2017.
-        https://arxiv.org/pdf/1507.01760.pdf
+    .. [1] `Riemannian Gaussian distributions on the space of symmetric
+        positive definite matrices
+        <https://hal.archives-ouvertes.fr/hal-01710191>`_
+        S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton. IEEE Trans Inf
+        Theory, vol. 63, pp. 2153–2170, 2017.
     """
     if sampling_method not in ['slice', 'rejection', 'auto']:
         raise ValueError(f'Unknown sampling method {sampling_method},'
@@ -425,10 +426,11 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
 
     References
     ----------
-    .. [1] S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton, “Riemannian
-        Gaussian distributions on the space of symmetric positive definite
-        matrices”, IEEE Trans Inf Theory, vol. 63, pp. 2153–2170, 2017.
-        https://arxiv.org/pdf/1507.01760.pdf
+    .. [1] `Riemannian Gaussian distributions on the space of symmetric
+        positive definite matrices
+        <https://hal.archives-ouvertes.fr/hal-01710191>`_
+        S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton. IEEE Trans Inf
+        Theory, vol. 63, pp. 2153–2170, 2017.
     """
 
     samples_r = _sample_parameter_r(n_samples=n_matrices,
@@ -494,10 +496,11 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
 
     References
     ----------
-    .. [1] S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton, “Riemannian
-        Gaussian distributions on the space of symmetric positive definite
-        matrices”, IEEE Trans Inf Theory, vol. 63, pp. 2153–2170, 2017.
-        https://arxiv.org/pdf/1507.01760.pdf
+    .. [1] `Riemannian Gaussian distributions on the space of symmetric
+        positive definite matrices
+        <https://hal.archives-ouvertes.fr/hal-01710191>`_
+        S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton. IEEE Trans Inf
+        Theory, vol. 63, pp. 2153–2170, 2017.
     """
 
     n_dim = mean.shape[0]

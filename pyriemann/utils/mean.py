@@ -8,19 +8,7 @@ from .ajd import ajd_pham
 from .base import sqrtm, invsqrtm, logm, expm, powm
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann
-
-
-def _get_sample_weight(sample_weight, data):
-    """Get the sample weights.
-
-    If none provided, weights init to 1. otherwise, weights are normalized.
-    """
-    if sample_weight is None:
-        sample_weight = np.ones(data.shape[0])
-    if sample_weight.shape != (data.shape[0],):
-        raise ValueError("len of sample_weight must be equal to len of data.")
-    sample_weight /= np.sum(sample_weight)
-    return sample_weight
+from .utils import check_weights
 
 
 def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
@@ -51,12 +39,14 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
 
     References
     ----------
-    .. [1] M. Congedo, B. Afsari, A. Barachant, M. Moakher, 'Approximate Joint
-        Diagonalization and Geometric Mean of Symmetric Positive Definite
-        Matrices', PLoS ONE, 2015
+    .. [1] `Approximate Joint Diagonalization and Geometric Mean of Symmetric
+        Positive Definite Matrices
+        <https://arxiv.org/abs/1505.07343>`_
+        M. Congedo, B. Afsari, A. Barachant, M. Moakher. PLOS ONE, 2015
     """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
-    _, n_channels, _ = covmats.shape
+    n_matrices, n_channels, _ = covmats.shape
+    sample_weight = check_weights(sample_weight, n_matrices)
+
     # init with AJD
     B, _ = ajd_pham(covmats)
 
@@ -115,13 +105,15 @@ def mean_alm(covmats, tol=1e-14, maxiter=100, sample_weight=None):
 
     References
     ----------
-    .. [1] T. Ando, C.-K. Li and R. Mathias, "Geometric Means", Linear Algebra
-        Appl. 385 (2004), 305-334.
+    .. [1] `Geometric Means
+        <https://www.sciencedirect.com/science/article/pii/S0024379503008693>`_
+        T. Ando, C.-K. Li, and R. Mathias. Linear Algebra and its Applications.
+        Volume 385, July 2004, Pages 305-334.
     """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
+    n_matrices, _, _ = covmats.shape
+    sample_weight = check_weights(sample_weight, n_matrices)
     C = covmats
     C_iter = np.zeros_like(C)
-    n_matrices, _, _ = covmats.shape
     if n_matrices == 2:
         alpha = sample_weight[1] / sample_weight[0] / 2
         X = geodesic_riemann(covmats[0], covmats[1], alpha=alpha)
@@ -230,9 +222,11 @@ def mean_kullback_sym(covmats, sample_weight=None):
 
     References
     ----------
-    .. [1] Moakher, M, and Philipp G. B. "Symmetric positive-definite matrices:
-        From geometry to applications and visualization", Visualization and
-        Processing of Tensor Fields, pp. 285-298, 2006
+    .. [1] `Symmetric positive-definite matrices: From geometry to applications
+        and visualization
+        <https://link.springer.com/chapter/10.1007/3-540-31272-2_17>`_
+        M. Moakher and P. Batchelor. Visualization and Processing of Tensor
+        Fields, pp. 285-298, 2006
     """
     C_euclid = mean_euclid(covmats, sample_weight=sample_weight)
     C_harmonic = mean_harmonic(covmats, sample_weight=sample_weight)
@@ -268,7 +262,8 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     C : ndarray, shape (n_channels, n_channels)
         Log-det mean.
     """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
+    n_matrices, _, _ = covmats.shape
+    sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
         C = mean_euclid(covmats, sample_weight=sample_weight)
     else:
@@ -312,9 +307,11 @@ def mean_logeuclid(covmats, sample_weight=None):
 
     References
     ----------
-    .. [1] Arsigny V, Fillard P, Pennec X, Ayache N. "Geometric means in a
-        novel vector space structure on symmetric positive-definite matrices",
-        SIAM J Matrix Anal Appl, 2007
+    .. [1] `Geometric means in a novel vector space structure on symmetric
+        positive-definite matrices
+        <https://epubs.siam.org/doi/abs/10.1137/050637996?journalCode=sjmael>`_
+        V. Arsigny, P. Fillard, X. Pennec, and N. Ayache. SIAM Journal on
+        Matrix Analysis and Applications. Volume 29, Issue 1 (2007).
     """
     C = expm(mean_euclid(logm(covmats), sample_weight=sample_weight))
     return C
@@ -356,11 +353,15 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10, maxiter=100):
 
     References
     ----------
-    .. [1] Lim Y and Palfia M. "Matrix Power means and the Karcher mean", J.
-           Funct. Anal., 2012
-    .. [2] Congedo M, Barachant A and Kharati K E. "Fixed Point Algorithms for
-           Estimating Power Means of Positive Definite Matrices", IEEE Trans.
-           Sig. Process., 2017
+    .. [1] `Matrix Power means and the Karcher mean
+        <https://www.sciencedirect.com/science/article/pii/S0022123611004101>`_
+        Y. Lim and M. Palfia. Journal of Functional Analysis, Volume 262,
+        Issue 4, 15 February 2012, Pages 1498-1514.
+    .. [2] `Fixed Point Algorithms for Estimating Power Means of Positive
+        Definite Matrices
+        <https://hal.archives-ouvertes.fr/hal-01500514>`_
+        M. Congedo, A. Barachant, and R. Bhatia. IEEE Transactions on Signal
+        Processing, Volume 65, Issue 9, pp.2211-2220, May 2017
     """
     if not isinstance(p, (int, float)):
         raise ValueError("Power mean only defined for a scalar exponent")
@@ -370,8 +371,8 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10, maxiter=100):
     if p == 0:
         return mean_riemann(covmats, sample_weight=sample_weight)
 
-    _, n_channels, _ = covmats.shape
-    sample_weight = _get_sample_weight(sample_weight, covmats)
+    n_matrices, n_channels, _ = covmats.shape
+    sample_weight = check_weights(sample_weight, n_matrices)
     phi = 0.375 / np.abs(p)
 
     G = np.einsum('a,abc->bc', sample_weight, powm(covmats, p))
@@ -435,10 +436,14 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
 
     References
     ----------
-    .. [1] Moakher M. "A differential geometric approach to the geometric mean
-        of symmetric positive-definite matrices", SIAM J Matrix Anal Appl, 2005
+    .. [1] `A differential geometric approach to the geometric mean of
+        symmetric positive-definite matrices
+        <https://epubs.siam.org/doi/10.1137/S0895479803436937>`_
+        M. Moakher, SIAM Journal on Matrix Analysis and Applications.
+        Volume 26, Issue 3, 2005
     """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
+    n_matrices, _, _ = covmats.shape
+    sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
         C = mean_euclid(covmats, sample_weight=sample_weight)
     else:
@@ -501,10 +506,13 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
 
     References
     ----------
-    .. [1] Barbaresco, F. "Geometric Radar Processing based on Frechet distance
-        : Information geometry versus Optimal Transport Theory", IRS, 2011
+    .. [1] `Geometric Radar Processing based on Frechet distance: Information
+        geometry versus Optimal Transport Theory
+        <https://ieeexplore.ieee.org/document/6042179>`_
+        F. Barbaresco. 12th International Radar Symposium (IRS), October 2011
     """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
+    n_matrices, _, _ = covmats.shape
+    sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
         C = mean_euclid(covmats, sample_weight=sample_weight)
     else:
@@ -652,13 +660,15 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=100, init=None,
 
     References
     ----------
-    .. [1] F. Yger, S. Chevallier, Q. Barthélemy, S. Sra. "Geodesically-convex
-        optimization for averaging partially observed covariance matrices",
-        ACML 2020.
+    .. [1] `Geodesically-convex optimization for averaging partially observed
+        covariance matrices
+        <https://hal.archives-ouvertes.fr/hal-02984423>`_
+        F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
+        Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
-    sample_weight = _get_sample_weight(sample_weight, covmats)
-    maskedcovmats = _apply_masks(covmats, masks)
     n_matrices, n_channels, _ = covmats.shape
+    sample_weight = check_weights(sample_weight, n_matrices)
+    maskedcovmats = _apply_masks(covmats, masks)
     if init is None:
         C = np.eye(n_channels)
     else:
@@ -724,9 +734,11 @@ def nanmean_riemann(covmats, tol=10e-9, maxiter=100, init=None,
 
     References
     ----------
-    .. [1] F. Yger, S. Chevallier, Q. Barthélemy, S. Sra. "Geodesically-convex
-        optimization for averaging partially observed covariance matrices",
-        ACML 2020.
+    .. [1] `Geodesically-convex optimization for averaging partially observed
+        covariance matrices
+        <https://hal.archives-ouvertes.fr/hal-02984423>`_
+        F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
+        Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
     n_matrices, n_channels, _ = covmats.shape
     if init is None:

@@ -70,9 +70,11 @@ def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, Classification
-        of covariance matrices using a Riemannian-based kernel for BCI
-        applications. Neurocomputing, Elsevier, 2013, 112, pp.172-178.
+    .. [1] `Classification of covariance matrices using a Riemannian-based
+        kernel for BCI applications
+        <https://hal.archives-ouvertes.fr/hal-00820475/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
+        Elsevier, 2013, 112, pp.172-178.
     """  # noqa
     def kernelfct(X, Cref):
         return logm(X)
@@ -115,9 +117,11 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, Classification
-        of covariance matrices using a Riemannian-based kernel for BCI
-        applications. Neurocomputing, Elsevier, 2013, 112, pp.172-178.
+    .. [1] `Classification of covariance matrices using a Riemannian-based
+        kernel for BCI applications
+        <https://hal.archives-ouvertes.fr/hal-00820475/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
+        Elsevier, 2013, 112, pp.172-178.
     """  # noqa
     def kernelfct(X, Cref):
         if Cref is None:

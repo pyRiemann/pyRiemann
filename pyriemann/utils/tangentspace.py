@@ -244,9 +244,10 @@ def upper(X):
 
     References
     ----------
-    .. [1] O. Tuzel, F. Porikli, P. Meer, "Pedestrian detection via
-        classification on Riemannian manifolds", IEEE Trans Pattern Anal Mach
-        Intell, 2008
+    .. [1] `Pedestrian detection via classification on Riemannian manifolds
+        <https://ieeexplore.ieee.org/document/4479482>`_
+        O. Tuzel, F. Porikli, and P. Meer. IEEE Transactions on Pattern
+        Analysis and Machine Intelligence, Volume 30, Issue 10, October 2008.
     """
     n_channels = X.shape[-1]
     idx = np.triu_indices_from(np.empty((n_channels, n_channels)))

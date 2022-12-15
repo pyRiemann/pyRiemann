@@ -24,6 +24,13 @@ v0.3.1.dev
 - Add geometric medians for Euclidean and Riemannian metrics: :func:`pyriemann.utils.median_euclid` and :func:`pyriemann.utils.median_riemann`,
   and add an example in gallery to compare means and medians on synthetic datasets. :pr:`200` by :user:`qbarthelemy`
 
+- Add ``score()`` to :class:`pyriemann.regression.KNearestNeighborRegressor`. :pr:`205` by :user:`qbarthelemy`
+
+- Add Transfer Learning module and examples, including RPA and MDWM. :pr:`189` by :user:`plcrodrigues`, :user:`qbarthelemy` and :user:`sylvchev` 
+
+- Add class distinctiveness function to measure the distinctiveness between classes on the manifold,
+  :func:`pyriemann.classification.class_distinctiveness`, and complete an example in gallery to show how it works on synthetic datasets. :pr:`215` by :user:`MSYamamoto`
+
 - Add example on ensemble learning applied to functional connectivity, and add :func:`pyriemann.utils.base.nearest_pos_def`. :pr:`202` by :user:`mccorsi` and :user:`sylvchev`
 
 v0.3 (July 2022)
