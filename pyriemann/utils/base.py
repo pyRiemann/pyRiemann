@@ -216,10 +216,11 @@ def nearest_pos_def(X, reg=1e-6):
 
     References
     ----------
-    .. [1] John D'Errico, `nearestSPD
-       <https://www.mathworks.com/matlabcentral/fileexchange/42885-nearestspd>`_
+    .. [1] `nearestSPD
+        <https://www.mathworks.com/matlabcentral/fileexchange/42885-nearestspd>`_
+        J. D'Errico, MATLAB Central File Exchange
     .. [2] `Computing a nearest symmetric positive semidefinite matrix
-       <htttps://doi.org/10.1016/0024-3795(88)90223-6>`_
-       N.J. Higham, Linear Algebra and its Applications, 1988
+        <https://www.sciencedirect.com/science/article/pii/0024379588902236>`_
+        N.J. Higham, Linear Algebra and its Applications, vol 103, 1988
     """
     return np.array([_nearest_pos_def(x, reg) for x in X])
