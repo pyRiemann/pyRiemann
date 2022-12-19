@@ -8,7 +8,7 @@ from pyriemann.utils.base import (
     logm,
     expm,
     powm,
-    nearest_pos_def,
+    nearest_sym_pos_def,
 )
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.utils.test import is_pos_def
@@ -89,12 +89,12 @@ def test_funm_ndarray(funm):
     test(funm, C_4d)
 
 
-def test_nearest_pos_def(get_covmats):
+def test_nearest_sym_pos_def(get_covmats):
     n_matrices = 3
     covmats = get_covmats(n_matrices, n_channels)
     D = covmats.diagonal(axis1=1, axis2=2)
     psd = np.array([cov - np.diag(d) for cov, d in zip(covmats, D)])
 
-    assert is_pos_def(nearest_pos_def(covmats))
     assert not is_pos_def(psd)
-    assert is_pos_def(nearest_pos_def(psd))
+    assert is_pos_def(nearest_sym_pos_def(covmats))
+    assert is_pos_def(nearest_sym_pos_def(psd))
