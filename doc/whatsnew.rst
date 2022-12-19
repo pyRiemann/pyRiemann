@@ -31,7 +31,7 @@ v0.3.1.dev
 - Add class distinctiveness function to measure the distinctiveness between classes on the manifold,
   :func:`pyriemann.classification.class_distinctiveness`, and complete an example in gallery to show how it works on synthetic datasets. :pr:`215` by :user:`MSYamamoto`
 
-- Add example on ensemble learning applied to functional connectivity, and add :func:`pyriemann.utils.base.nearest_pos_def`. :pr:`202` by :user:`mccorsi` and :user:`sylvchev`
+- Add example on ensemble learning applied to functional connectivity, and add :func:`pyriemann.utils.base.nearest_sym_pos_def`. :pr:`202` by :user:`mccorsi` and :user:`sylvchev`
 
 v0.3 (July 2022)
 ----------------
