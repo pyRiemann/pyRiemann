@@ -320,7 +320,7 @@ Base
     expm
     logm
     powm
-    nearest_pos_def
+    nearest_sym_pos_def
 
 Aproximate Joint Diagonalization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

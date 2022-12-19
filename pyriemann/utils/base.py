@@ -149,7 +149,7 @@ def powm(C, alpha):
     return _matrix_operator(C, power)
 
 
-def _nearest_pos_def(S, reg=1e-6):
+def _nearest_sym_pos_def(S, reg=1e-6):
     """Find the nearest SPD matrix.
 
     Parameters
@@ -162,7 +162,7 @@ def _nearest_pos_def(S, reg=1e-6):
     Returns
     -------
     P : ndarray, shape (n, n)
-        Nearest SPD matrix power of S.
+        Nearest SPD matrix.
     """
     A = (S + S.T) / 2
     _, s, V = np.linalg.svd(A)
@@ -208,7 +208,7 @@ def nearest_sym_pos_def(X, reg=1e-6):
     Returns
     -------
     P : ndarray, shape (..., n, n)
-        Nearest SPD matrices
+        Nearest SPD matrices.
 
     Notes
     -----
@@ -223,4 +223,4 @@ def nearest_sym_pos_def(X, reg=1e-6):
         <https://www.sciencedirect.com/science/article/pii/0024379588902236>`_
         N.J. Higham, Linear Algebra and its Applications, vol 103, 1988
     """
-    return np.array([_nearest_pos_def(x, reg) for x in X])
+    return np.array([_nearest_sym_pos_def(x, reg) for x in X])
