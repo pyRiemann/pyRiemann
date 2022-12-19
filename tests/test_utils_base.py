@@ -11,7 +11,7 @@ from pyriemann.utils.base import (
     nearest_sym_pos_def,
 )
 from pyriemann.utils.mean import mean_riemann
-from pyriemann.utils.test import is_pos_def
+from pyriemann.utils.test import is_pos_def, is_sym_pos_def
 
 
 n_channels = 3
@@ -96,5 +96,5 @@ def test_nearest_sym_pos_def(get_covmats):
     psd = np.array([cov - np.diag(d) for cov, d in zip(covmats, D)])
 
     assert not is_pos_def(psd)
-    assert is_pos_def(nearest_sym_pos_def(covmats))
-    assert is_pos_def(nearest_sym_pos_def(psd))
+    assert is_sym_pos_def(nearest_sym_pos_def(covmats))
+    assert is_sym_pos_def(nearest_sym_pos_def(psd))
