@@ -36,7 +36,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
 
 from helpers.coherence_helpers import (
-    EnsureSPD,
+    NearestSPD,
     get_results,
 )
 
@@ -160,7 +160,7 @@ param_lr = {
 }
 param_ft = {"fmin": fmin, "fmax": fmax, "fs": fs}
 step_fc = [
-    ("spd", EnsureSPD()),
+    ("spd", NearestSPD()),
     ("tg", TangentSpace(metric="riemann")),
     ("LogistReg", LogisticRegression(**param_lr)),
 ]

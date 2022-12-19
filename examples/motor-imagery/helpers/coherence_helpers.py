@@ -11,7 +11,7 @@ This file contains helper functions for the functional connectivity example
 # License: BSD (3-clause)
 
 
-from pyriemann.utils.base import nearest_pos_def
+from pyriemann.utils.base import nearest_sym_pos_def
 
 from sklearn.model_selection import StratifiedKFold
 from sklearn.base import clone
@@ -31,7 +31,7 @@ class NearestSPD(TransformerMixin, BaseEstimator):
         return self
 
     def transform(self, X):
-        return nearest_pos_def(X)
+        return nearest_sym_pos_def(X)
 
     def fit_transform(self, X, y=None):
         return self.transform(X)
