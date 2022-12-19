@@ -5,11 +5,6 @@
 
 This file contains helper functions for the functional connectivity example
 """
-# Authors: Sylvain Chevallier <sylvain.chevallier@universite-paris-saclay.fr>,
-#          Marie-Constance Corsi <marie.constance.corsi@gmail.com>
-#
-# License: BSD (3-clause)
-
 
 from pyriemann.utils.base import nearest_sym_pos_def
 
