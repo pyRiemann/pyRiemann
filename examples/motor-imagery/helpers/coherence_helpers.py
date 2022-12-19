@@ -21,7 +21,7 @@ from sklearn.metrics import balanced_accuracy_score
 from sklearn.ensemble import StackingClassifier
 
 
-class EnsureSPD(TransformerMixin, BaseEstimator):
+class NearestSPD(TransformerMixin, BaseEstimator):
     """Transform square matrices to nearest SPD matrices"""
 
     def __init__(self):

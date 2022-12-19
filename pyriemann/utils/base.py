@@ -192,7 +192,7 @@ def _nearest_pos_def(S, reg=1e-6):
     return P
 
 
-def nearest_pos_def(X, reg=1e-6):
+def nearest_sym_pos_def(X, reg=1e-6):
     """Find the nearest SPD matrices.
 
     A NumPy port of John D'Errico's `nearestSPD` MATLAB code [1]_,
@@ -208,7 +208,7 @@ def nearest_pos_def(X, reg=1e-6):
     Returns
     -------
     P : ndarray, shape (..., n, n)
-        Nearest SPD matrices power of X.
+        Nearest SPD matrices
 
     Notes
     -----

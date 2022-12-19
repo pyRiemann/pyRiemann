@@ -92,7 +92,7 @@ def is_hermitian(X):
     return is_sym(X.real) and is_skew_sym(X.imag)
 
 
-def is_pos_def(X, fast_mode=True):
+def is_pos_def(X, fast_mode=False):
     """ Check if all matrices are positive definite.
 
     Check if all matrices are positive definite, fast verification is done
@@ -103,7 +103,7 @@ def is_pos_def(X, fast_mode=True):
     ----------
     X : ndarray, shape (..., n, n)
         The set of square matrices, at least 2D ndarray.
-    fast_mode : boolean, default=True
+    fast_mode : boolean, default=False
         Use Cholesky decomposition to avoid computing all eigenvalues.
 
 
