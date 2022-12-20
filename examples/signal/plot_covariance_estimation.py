@@ -40,12 +40,12 @@ n_matrices, n_channels, n_times = 10, 5, 1000
 var = 2.0 + 0.1 * rs.randn(n_matrices, n_channels)
 A = 2 * rs.rand(n_channels, n_channels) - 1
 A /= np.linalg.norm(A, axis=1)[:, np.newaxis]
-true_cov = np.empty(shape=(n_matrices, n_channels, n_channels))
+true_covs = np.empty(shape=(n_matrices, n_channels, n_channels))
 X = np.empty(shape=(n_matrices, n_channels, n_times))
 for i in range(n_matrices):
-    true_cov[i] = A @ np.diag(var[i]) @ A.T
+    true_covs[i] = A @ np.diag(var[i]) @ A.T
     X[i] = rs.multivariate_normal(
-        np.array([0.0] * n_channels), true_cov[i], size=n_times
+        np.array([0.0] * n_channels), true_covs[i], size=n_times
     ).T
 
 ###############################################################################
@@ -66,9 +66,9 @@ w_len = np.linspace(10, n_times, 20, dtype=int)
 dfd = list()
 for est in estimators:
     for wl in w_len:
-        cov_est = Covariances(estimator=est).transform(X[:, :, :wl])
-        dist = distance(cov_est, true_cov, metric="riemann")
-        dfd.extend([dict(estimator=est, wlen=wl, dist=d) for d in dist])
+        est_covs = Covariances(estimator=est).transform(X[:, :, :wl])
+        dist = distance(est_covs, true_covs, metric="riemann")
+        dfd.extend([dict(estimator=est, wlen=wl, dist=float(d)) for d in dist])
 dfd = pd.DataFrame(dfd)
 
 ###############################################################################
