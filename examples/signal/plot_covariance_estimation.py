@@ -67,8 +67,8 @@ dfd = list()
 for est in estimators:
     for wl in w_len:
         est_covs = Covariances(estimator=est).transform(X[:, :, :wl])
-        dist = distance(est_covs, true_covs, metric="riemann")
-        dfd.extend([dict(estimator=est, wlen=wl, dist=float(d)) for d in dist])
+        dists = distance(est_covs, true_covs, metric="riemann")
+        dfd.extend([dict(estimator=est, wlen=wl, dist=d) for d in dists])
 dfd = pd.DataFrame(dfd)
 
 ###############################################################################
