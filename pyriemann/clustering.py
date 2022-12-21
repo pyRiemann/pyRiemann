@@ -9,12 +9,12 @@ try:
 except ImportError:
     # Workaround for scikit-learn v0.24.0rc1+
     # See issue: https://github.com/alexandrebarachant/pyRiemann/issues/92
-    from sklearn.cluster import KMeans
+    from sklearn.cluster import KMeans as _KMeans
 
     def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
         if random_state is not None:
             random_state = np.random.RandomState(random_state)
-        return KMeans(n_clusters=n_clusters)._init_centroids(
+        return _KMeans(n_clusters=n_clusters, init=init)._init_centroids(
             X,
             x_squared_norms,
             init,
@@ -24,7 +24,7 @@ except ImportError:
 
 from joblib import Parallel, delayed
 
-from .classification import MDM
+from .classification import MDM, _check_metric
 from .utils.mean import mean_covariance
 from .utils.geodesic import geodesic
 
@@ -36,6 +36,7 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
     """helper to fit a single run of centroid."""
     # init random state if provided
     mdm = MDM(metric=metric, n_jobs=n_jobs)
+    mdm.metric_mean, mdm.metric_dist = _check_metric(metric)
     squared_nomrs = [np.linalg.norm(x, ord='fro')**2 for x in X]
     mdm.covmeans_ = _init_centroids(X, n_clusters, init,
                                     random_state=random_state,
@@ -62,43 +63,44 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
 
 class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
 
-    """Kmean clustering using Riemannian geometry.
+    """Clustering by k-means with SPD matrices as inputs.
 
-    Find clusters that minimize the sum of squared distance to their centroid.
-    This is a direct implementation of the kmean algorithm with a riemanian
+    Find clusters that minimize the sum of squared distance to their centroids.
+    This is a direct implementation of the k-means algorithm with a Riemannian
     metric.
 
     Parameters
     ----------
-    n_cluster: int (default: 2)
-        number of clusters.
-    max_iter : int (default: 100)
+    n_cluster : int, default=2
+        Number of clusters.
+    max_iter : int, default=100
         The maximum number of iteration to reach convergence.
-    metric : string (default: 'riemann')
+    metric : string, default='riemann'
         The type of metric used for centroid and distance estimation.
     random_state : integer or np.RandomState, optional
         The generator used to initialize the centers. If an integer is
         given, it fixes the seed. Defaults to the global numpy random
         number generator.
-    init : 'random' or an ndarray (default 'random')
+    init : 'random' or ndarray, shape (n_clusters, n_channels, n_channels), \
+            default='random'
         Method for initialization of centers.
         'random': choose k observations (rows) at random from data for
         the initial centroids.
         If an ndarray is passed, it should be of shape
         (n_clusters, n_channels, n_channels) and gives the initial centers.
-    n_init : int, (default: 10)
+    n_init : int, default=10
         Number of time the k-means algorithm will be run with different
         centroid seeds. The final results will be the best output of
         n_init consecutive runs in terms of inertia.
-    n_jobs : int, (default: 1)
+    n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the n_init runs in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
         used at all, which is useful for debugging. For n_jobs below -1,
         (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
         are used.
-    tol: float, (default: 1e-4)
-        the stopping criterion to stop convergence, representing the minimum
+    tol : float, default=1e-4
+        The stopping criterion to stop convergence, representing the minimum
         amount of change in labels between two iterations.
 
     Attributes
@@ -106,7 +108,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
     mdm_ : MDM instance.
         MDM instance containing the centroids.
     labels_ :
-        Labels of each point
+        Labels of each point.
     inertia_ : float
         Sum of distances of samples to their closest cluster center.
 
@@ -138,27 +140,17 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
-        y : ndarray | None (default None)
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : ndarray, shape (n_matrices,) | None, default=None
             Not used, here for compatibility with sklearn API.
 
         Returns
         -------
         self : Kmeans instance
-            The Kmean instance.
+            The Kmeans instance.
         """
-        if (self.init != 'random'):
-            # no need to iterate if init is not random
-            labels, inertia, mdm = _fit_single(X, y,
-                                               n_clusters=self.n_clusters,
-                                               init=self.init,
-                                               random_state=self.seed,
-                                               metric=self.metric,
-                                               max_iter=self.max_iter,
-                                               tol=self.tol,
-                                               n_jobs=self.n_jobs)
-        else:
+        if isinstance(self.init, str) and self.init == 'random':
             np.random.seed(self.seed)
             seeds = np.random.randint(
                 np.iinfo(np.int32).max, size=self.n_init)
@@ -192,6 +184,17 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
             labels = labels[best]
             inertia = inertia[best]
 
+        else:
+            # no need to iterate if init is not random
+            labels, inertia, mdm = _fit_single(X, y,
+                                               n_clusters=self.n_clusters,
+                                               init=self.init,
+                                               random_state=self.seed,
+                                               metric=self.metric,
+                                               max_iter=self.max_iter,
+                                               tol=self.tol,
+                                               n_jobs=self.n_jobs)
+
         self.mdm_ = mdm
         self.inertia_ = inertia
         self.labels_ = labels
@@ -199,37 +202,37 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         return self
 
     def predict(self, X):
-        """get the predictions.
+        """Get the predictions.
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        pred : ndarray of int, shape (n_trials, 1)
-            the prediction for each trials according to the closest centroid.
+        pred : ndarray of int, shape (n_matrices,)
+            Prediction for each matrix according to the closest centroid.
         """
         return self.mdm_.predict(X)
 
     def transform(self, X):
-        """get the distance to each centroid.
+        """Get the distance to each centroid.
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        dist : ndarray, shape (n_trials, n_cluster)
-            the distance to each centroid according to the metric.
+        dist : ndarray, shape (n_matrices, n_cluster)
+            The distance to each centroid according to the metric.
         """
         return self.mdm_.transform(X)
 
     def centroids(self):
-        """helper for fast access to the centroid.
+        """Helper for fast access to the centroid.
 
         Returns
         -------
@@ -240,8 +243,12 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
 
 
 class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
+    """Clustering by k-means for each class with SPD matrices as inputs.
 
-    """Run kmeans for each class."""
+    See Also
+    --------
+    Kmeans
+    """
 
     def __init__(self, n_clusters=2, **params):
         """Init."""
@@ -250,7 +257,7 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
         self.metric = self.km.metric
 
     def fit(self, X, y):
-        """fit."""
+        """Fit."""
         self.covmeans_ = []
         self.classes_ = np.unique(y)
         for c in self.classes_:
@@ -259,14 +266,14 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """transform."""
+        """Transform."""
         mdm = MDM(metric=self.metric, n_jobs=self.km.n_jobs)
+        mdm.metric_mean, mdm.metric_dist = _check_metric(self.metric)
         mdm.covmeans_ = self.covmeans_
         return mdm._predict_distances(X)
 
 
 class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
-
     """Artefact detection with the Riemannian Potato.
 
     The Riemannian Potato [1]_ is a clustering method used to detect artifact
@@ -275,21 +282,26 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     Parameters
     ----------
-    metric : string (default 'riemann')
+    metric : string, default='riemann'
         The type of metric used for centroid and distance estimation.
-    threshold : float (default 3)
+    threshold : float, default=3
         Threshold on z-score of distance to reject artifacts. It is the number
         of standard deviations from the mean of distances to the centroid.
-    n_iter_max : int (default 100)
+    n_iter_max : int, default=100
         The maximum number of iteration to reach convergence.
-    pos_label : int (default 1)
+    pos_label : int, default=1
         The positive label corresponding to clean data.
-    neg_label : int (default 0)
+    neg_label : int, default=0
         The negative label corresponding to artifact data.
 
     Notes
     -----
     .. versionadded:: 0.2.3
+
+    Attributes
+    ----------
+    covmean_ : ndarray, shape (n_channels, n_channels)
+        Centroid of potato.
 
     See Also
     --------
@@ -298,14 +310,17 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     References
     ----------
-    .. [1] A. Barachant, A. Andreev and M. Congedo, "The Riemannian Potato: an
-        automatic and adaptive artifact detection method for online experiments
-        using Riemannian geometry", in Proceedings of TOBI Workshop IV,
-        p. 19-20, 2013.
-
-    .. [2] Q. Barthélemy, L. Mayaud, D. Ojeda, M. Congedo, "The Riemannian
-        potato field: a tool for online signal quality index of EEG", IEEE
-        TNSRE, 2019.
+    .. [1] `The Riemannian Potato: an automatic and adaptive artifact detection
+        method for online experiments using Riemannian geometry
+        <https://hal.archives-ouvertes.fr/hal-00781701>`_
+        A. Barachant, A Andreev, and M. Congedo. TOBI Workshop lV, Jan 2013,
+        Sion, Switzerland. pp.19-20.
+    .. [2] `The Riemannian Potato Field: A Tool for Online Signal Quality Index
+        of EEG
+        <https://hal.archives-ouvertes.fr/hal-02015909>`_
+        Q. Barthélemy, L. Mayaud, D. Ojeda, and M. Congedo. IEEE Transactions
+        on Neural Systems and Rehabilitation Engineering, IEEE Institute of
+        Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
     """
 
     def __init__(self, metric='riemann', threshold=3, n_iter_max=100,
@@ -318,17 +333,19 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         self.neg_label = neg_label
 
     def fit(self, X, y=None):
-        """Fit the potato from covariance matrices, with an iterative outlier
+        """Fit the potato from covariance matrices.
+
+        Fit the potato from covariance matrices, with an iterative outlier
         removal to obtain a reliable potato.
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
-        y : ndarray, shape (n_trials,) | None (default None)
-            Labels corresponding to each trial: positive (resp. negative) label
-            corresponds to a clean (resp. artifact) trial. If None, all trials
-            are considered as clean.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None | ndarray, shape (n_matrices,), default=None
+            Labels corresponding to each matrix: positive (resp. negative)
+            label corresponds to a clean (resp. artifact) matrix.
+            If None, all matrices are considered as clean.
 
         Returns
         -------
@@ -339,10 +356,13 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
             raise ValueError("Positive and negative labels must be different")
 
         self._mdm = MDM(metric=self.metric)
+        self._mdm.metric_mean, self._mdm.metric_dist = _check_metric(
+            self.metric
+        )
 
         y_old = self._check_labels(X, y)
 
-        for n_iter in range(self.n_iter_max):
+        for _ in range(self.n_iter_max):
             ix = (y_old == 1)
             self._mdm.fit(X[ix], y_old[ix])
             y = np.zeros(len(X))
@@ -355,6 +375,8 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
                 break
             else:
                 y_old = y
+
+        self.covmean_ = self._mdm.covmeans_[0]
         return self
 
     def partial_fit(self, X, y=None, alpha=0.1):
@@ -365,13 +387,13 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
-        y : ndarray, shape (n_trials,) | None (default None)
-            Labels corresponding to each trial: positive (resp. negative) label
-            corresponds to a clean (resp. artifact) trial. If None, all trials
-            are considered as clean.
-        alpha : float (default 0.1)
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None | ndarray, shape (n_matrices,), default=None
+            Labels corresponding to each matrix: positive (resp. negative)
+            label corresponds to a clean (resp. artifact) matrix.
+            If None, all matrices are considered as clean.
+        alpha : float, default=0.1
             Update rate in [0, 1] for the centroid, and mean and standard
             deviation of log-distances: 0 for no update, 1 for full update.
 
@@ -384,7 +406,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
             raise ValueError(
                 'Partial fit can be called only on an already fitted potato.')
 
-        n_trials, n_channels, _ = X.shape
+        n_matrices, n_channels, _ = X.shape
         if n_channels != self._mdm.covmeans_[0].shape[0]:
             raise ValueError(
                 'X does not have the good number of channels. Should be %d but'
@@ -396,7 +418,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
             raise ValueError('Parameter alpha must be in [0, 1]')
 
         if alpha > 0:
-            if n_trials > 1:  # mini-batch update
+            if n_matrices > 1:  # mini-batch update
                 Xm = mean_covariance(X[(y == self.pos_label)],
                                      metric=self.metric)
             else:             # pure online update
@@ -409,6 +431,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
             self._std = np.sqrt(
                 (1 - alpha) * self._std**2 + alpha * (d - self._mean)**2)
 
+        self.covmean_ = self._mdm.covmeans_[0]
         return self
 
     def transform(self, X):
@@ -416,12 +439,12 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        z : ndarray, shape (n_trials,)
+        z : ndarray, shape (n_matrices,)
             the normalized log-distance to the centroid.
         """
         d = np.squeeze(np.log(self._mdm.transform(X)), axis=1)
@@ -433,14 +456,14 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        pred : ndarray of bool, shape (n_trials,)
-            the artefact detection. True if the trial is clean, and False if
-            the trial contain an artefact.
+        pred : ndarray of bool, shape (n_matrices,)
+            The artefact detection: True if the matrix is clean, and False if
+            the matrix contain an artefact.
         """
         z = self.transform(X)
         pred = z < self.threshold
@@ -456,14 +479,14 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        proba : ndarray, shape (n_trials,)
-            data is considered as normal/clean for high value of proba.
-            data is considered as abnormal/artifacted for low value of proba.
+        proba : ndarray, shape (n_matrices,)
+            Matrix is considered as normal/clean for high value of proba.
+            It is considered as abnormal/artifacted for low value of proba.
         """
         z = self.transform(X)
         proba = self._get_proba(z)
@@ -502,7 +525,6 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
 
 class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
-
     """Artefact detection with the Riemannian Potato Field.
 
     The Riemannian Potato Field [1]_ is a clustering method used to detect
@@ -512,26 +534,26 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     Parameters
     ----------
-    n_potatoes : int (default 1)
+    n_potatoes : int, default=1
         Number of potatoes in the field.
-    p_threshold : float (default 0.01)
+    p_threshold : float, default=0.01
         Threshold on probability to being clean, in (0, 1), combining
         probabilities of potatoes using Fisher's method.
-    z_threshold : float (default 3)
+    z_threshold : float, default=3
         Threshold on z-score of distance to reject artifacts. It is the number
         of standard deviations from the mean of distances to the centroid.
-    metric : string (default 'riemann')
+    metric : string, default='riemann'
         The type of metric used for centroid and distance estimation.
-    n_iter_max : int (default 10)
+    n_iter_max : int, default=10
         The maximum number of iteration to reach convergence.
-    pos_label: int (default 1)
+    pos_label: int, default=1
         The positive label corresponding to clean data.
-    neg_label: int (default 0)
+    neg_label: int, default=0
         The negative label corresponding to artifact data.
 
     Notes
     -----
-    .. versionadded:: 0.2.8
+    .. versionadded:: 0.3
 
     See Also
     --------
@@ -539,9 +561,12 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     References
     ----------
-    .. [1] Q. Barthélemy, L. Mayaud, D. Ojeda, M. Congedo, "The Riemannian
-        potato field: a tool for online signal quality index of EEG", IEEE
-        TNSRE, 2019.
+    .. [1] `The Riemannian Potato Field: A Tool for Online Signal Quality Index
+        of EEG
+        <https://hal.archives-ouvertes.fr/hal-02015909>`_
+        Q. Barthélemy, L. Mayaud, D. Ojeda, and M. Congedo. IEEE Transactions
+        on Neural Systems and Rehabilitation Engineering, IEEE Institute of
+        Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
     """
 
     def __init__(self, n_potatoes=1, p_threshold=0.01, z_threshold=3,
@@ -556,33 +581,35 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         self.neg_label = neg_label
 
     def fit(self, X, y=None):
-        """Fit the potato field from covariance matrices, with iterative
+        """Fit the potato field from covariance matrices.
+
+        Fit the potato field from covariance matrices, with iterative
         outlier removal to obtain reliable potatoes.
 
         Parameters
         ----------
-        X : list of n_potatoes ndarrays of shape (n_trials, n_channels, \
-                n_channels) with same n_trials but potentially different \
+        X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
+                n_channels) with same n_matrices but potentially different \
                 n_channels
-            List of ndarrays of SPD matrices, each corresponding to a different
+            List of sets of SPD matrices, each corresponding to a different
             subset of EEG channels and/or filtering with a specific frequency
             band.
-        y : ndarray, shape (n_trials,) | None (default None)
-            Labels corresponding to each trial: positive (resp. negative) label
-            corresponds to a clean (resp. artifact) trial. If None, all trials
-            are considered as clean.
+        y : None | ndarray, shape (n_matrices,), default=None
+            Labels corresponding to each matrix: positive (resp. negative)
+            label corresponds to a clean (resp. artifact) matrix.
+            If None, all matrices are considered as clean.
 
         Returns
         -------
-        self : Potato field instance
-            The Potato field instance.
+        self : PotatoField instance
+            The PotatoField instance.
         """
         if self.n_potatoes < 1:
             raise ValueError('Parameter n_potatoes must be at least 1')
         if not 0 < self.p_threshold < 1:
             raise ValueError('Parameter p_threshold must be in (0, 1)')
         self._check_length(X)
-        n_trials = X[0].shape[0]
+        n_matrices = X[0].shape[0]
 
         pt = Potato(
             metric=self.metric,
@@ -592,10 +619,10 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
             neg_label=self.neg_label)
         self._potatoes = []
         for i in range(self.n_potatoes):
-            if X[i].shape[0] != n_trials:
+            if X[i].shape[0] != n_matrices:
                 raise ValueError(
-                    'Unequal n_trials between ndarray of X. Should be %d but '
-                    'got %d.' % (n_trials, X[i].shape[0]))
+                    'Unequal n_matrices between ndarray of X. Should be %d but'
+                    ' got %d.' % (n_matrices, X[i].shape[0]))
             self._potatoes.append(clone(pt))
             self._potatoes[i].fit(X[i], y)
 
@@ -609,63 +636,65 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Parameters
         ----------
-        X : list of n_potatoes ndarrays of shape (n_trials, n_channels, \
-                n_channels) with same n_trials but potentially different \
+        X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
+                n_channels) with same n_matrices but potentially different \
                 n_channels
-            List of ndarrays of SPD matrices, each corresponding to a different
+            List of sets of SPD matrices, each corresponding to a different
             subset of EEG channels and/or filtering with a specific frequency
             band.
-        y : ndarray, shape (n_trials,) | None (default None)
-            Labels corresponding to each trial: positive (resp. negative) label
-            corresponds to a clean (resp. artifact) trial. If None, all trials
-            are considered as clean.
-        alpha : float (default 0.1)
+        y : None | ndarray, shape (n_matrices,), default=None
+            Labels corresponding to each matrix: positive (resp. negative)
+            label corresponds to a clean (resp. artifact) matrix.
+            If None, all matrices are considered as clean.
+        alpha : float, default=0.1
             Update rate in [0, 1] for the centroid, and mean and standard
             deviation of log-distances: 0 for no update, 1 for full update.
 
         Returns
         -------
         self : PotatoField instance
-            The Potato Field instance.
+            The PotatoField instance.
         """
         self._check_length(X)
-        n_trials = X[0].shape[0]
+        n_matrices = X[0].shape[0]
 
         for i in range(self.n_potatoes):
-            if X[i].shape[0] != n_trials:
+            if X[i].shape[0] != n_matrices:
                 raise ValueError(
-                    'Unequal n_trials between ndarray of X. Should be %d but '
-                    'got %d.' % (n_trials, X[i].shape[0]))
+                    'Unequal n_matrices between ndarray of X. Should be %d but'
+                    ' got %d.' % (n_matrices, X[i].shape[0]))
             self._potatoes[i].partial_fit(X[i], y, alpha=alpha)
         return self
 
     def transform(self, X):
-        """Return the normalized log-distances to the centroids (ie geometric
-        z-scores of distances).
+        """Return the normalized log-distances to the centroids.
+
+        Return the normalized log-distances to the centroids, ie geometric
+        z-scores of distances.
 
         Parameters
         ----------
-        X : list of n_potatoes ndarrays of shape (n_trials, n_channels, \
-                n_channels) with same n_trials but potentially different \
+        X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
+                n_channels) with same n_matrices but potentially different \
                 n_channels
-            List of ndarrays of SPD matrices, each corresponding to a different
+            List of sets of SPD matrices, each corresponding to a different
             subset of EEG channels and/or filtering with a specific frequency
             band.
 
         Returns
         -------
-        z : ndarray, shape (n_trials, n_potatoes)
-            the normalized log-distances to the centroids.
+        z : ndarray, shape (n_matrices, n_potatoes)
+            The normalized log-distances to the centroids.
         """
         self._check_length(X)
-        n_trials = X[0].shape[0]
+        n_matrices = X[0].shape[0]
 
-        z = np.zeros((n_trials, self.n_potatoes))
+        z = np.zeros((n_matrices, self.n_potatoes))
         for i in range(self.n_potatoes):
-            if X[i].shape[0] != n_trials:
+            if X[i].shape[0] != n_matrices:
                 raise ValueError(
-                    'Unequal n_trials between ndarray of X. Should be %d but '
-                    'got %d.' % (n_trials, X[i].shape[0]))
+                    'Unequal n_matrices between ndarray of X. Should be %d but'
+                    ' got %d.' % (n_matrices, X[i].shape[0]))
             z[:, i] = self._potatoes[i].transform(X[i])
         return z
 
@@ -674,18 +703,18 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Parameters
         ----------
-        X : list of n_potatoes ndarrays of shape (n_trials, n_channels, \
-                n_channels) with same n_trials but potentially different \
+        X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
+                n_channels) with same n_matrices but potentially different \
                 n_channels
-            List of ndarrays of SPD matrices, each corresponding to a different
+            List of sets of SPD matrices, each corresponding to a different
             subset of EEG channels and/or filtering with a specific frequency
             band.
 
         Returns
         -------
-        pred : ndarray of bool, shape (n_trials,)
-            the artefact detection. True if the trial is clean, and False if
-            the trial contain an artefact.
+        pred : ndarray of bool, shape (n_matrices,)
+            The artefact detection: True if the matrix is clean, and False if
+            the matrix contain an artefact.
         """
         p = self.predict_proba(X)
         pred = p > self.p_threshold
@@ -694,33 +723,35 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         return out
 
     def predict_proba(self, X):
-        """Predict probability obtained combining probabilities of potatoes
-        using Fisher's method. A threshold of 0.01 can be used.
+        """Predict probability obtained combining probabilities of potatoes.
+
+        Predict probability obtained combining probabilities of potatoes using
+        Fisher's method. A threshold of 0.01 can be used.
 
         Parameters
         ----------
-        X : list of n_potatoes ndarrays of shape (n_trials, n_channels, \
-                n_channels) with same n_trials but potentially different \
+        X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
+                n_channels) with same n_matrices but potentially different \
                 n_channels
-            List of ndarrays of SPD matrices, each corresponding to a different
+            List of sets of SPD matrices, each corresponding to a different
             subset of EEG channels and/or filtering with a specific frequency
             band.
 
         Returns
         -------
-        proba : ndarray, shape (n_trials,)
-            data is considered as normal/clean for high value of proba.
-            data is considered as abnormal/artifacted for low value of proba.
+        proba : ndarray, shape (n_matrices,)
+            Matrix is considered as normal/clean for high value of proba.
+            It is considered as abnormal/artifacted for low value of proba.
         """
         self._check_length(X)
-        n_trials = X[0].shape[0]
+        n_matrices = X[0].shape[0]
 
-        p = np.zeros((self.n_potatoes, n_trials))
+        p = np.zeros((self.n_potatoes, n_matrices))
         for i in range(self.n_potatoes):
-            if X[i].shape[0] != n_trials:
+            if X[i].shape[0] != n_matrices:
                 raise ValueError(
-                    'Unequal n_trials between ndarray of X. Should be %d but '
-                    'got %d.' % (n_trials, X[i].shape[0]))
+                    'Unequal n_matrices between ndarray of X. Should be %d but'
+                    ' got %d.' % (n_matrices, X[i].shape[0]))
             p[i] = self._potatoes[i].predict_proba(X[i])
         p[p < 1e-10] = 1e-10  # avoid trouble with log
         q = - 2 * np.sum(np.log(p), axis=0)

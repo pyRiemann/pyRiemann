@@ -16,20 +16,20 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
     """Tangent space project TransformerMixin.
 
-    Tangent space projection map a set of covariance matrices to their
+    Tangent space projection map a set of SPD matrices to their
     tangent space according to [1]_. The Tangent space projection can be
     seen as a kernel operation, cf [2]_. After projection, each matrix is
-    represented as a vector of size :math:`N(N+1)/2` where N is the
-    dimension of the covariance matrices.
+    represented as a vector of size :math:`n (n+1)/2`, where :math:`n` is the
+    dimension of the SPD matrices.
 
-    Tangent space projection is useful to convert covariance matrices in
-    euclidean vectors while conserving the inner structure of the manifold.
+    Tangent space projection is useful to convert SPD matrices in
+    Euclidean vectors while conserving the inner structure of the manifold.
     After projection, standard processing and vector-based classification can
     be applied.
 
     Tangent space projection is a local approximation of the manifold. it takes
     one parameter, the reference point, that is usually estimated using the
-    geometric mean of the covariance matrices set you project. if the function
+    geometric mean of the SPD matrices set you project. If the function
     `fit` is not called, the identity matrix will be used as reference point.
     This can lead to serious degradation of performances.
     The approximation will be bigger if the matrices in the set are scattered
@@ -41,15 +41,18 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    metric : string (default: 'riemann')
-        The type of metric used for reference point mean estimation.
-        see `mean_covariance` for the list of supported metric.
-    tsupdate : bool (default False)
+    metric : string | dict, default='riemann'
+        The type of metric used for reference matrix estimation (see
+        `mean_covariance` for the list of supported metric) and for tangent
+        space map (see `tangent_space` for the list of supported metric).
+        The metric could be a dict with two keys, `mean` and `map` in
+        order to pass different metrics for the reference matrix estimation
+        and the tangent space mapping.
+    tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]_. This is not compatible with
-        online implementation. Performance are better when the number of trials
-        for prediction is higher.
-
+        online implementation. Performance are better when the number of
+        matrices for prediction is higher.
 
     Attributes
     ----------
@@ -63,13 +66,16 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Multiclass
-        Brain-Computer Interface Classification by Riemannian Geometry,"" in
-        IEEE Trans Biomed Eng, vol. 59, no. 4, p. 920-928, 2012
-
-    .. [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification
-        of covariance matrices using a Riemannian-based kernel for BCI
-        applications", in NeuroComputing, vol. 112, p. 172-178, 2013.
+    .. [1] `Multiclass Brain-Computer Interface Classification by Riemannian
+        Geometry
+        <https://hal.archives-ouvertes.fr/hal-00681328>`_
+        A. Barachant, S. Bonnet, M. Congedo, and C. Jutten. IEEE Transactions
+        on Biomedical Engineering, vol. 59, no. 4, p. 920-928, 2012.
+    .. [2] `Classification of covariance matrices using a Riemannian-based
+        kernel for BCI applications
+        <https://hal.archives-ouvertes.fr/hal-00820475/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
+        Elsevier, 2013, 112, pp.172-178.
     """
 
     def __init__(self, metric='riemann', tsupdate=False):
@@ -82,32 +88,56 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
-        y : ndarray | None (default None)
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None
             Not used, here for compatibility with sklearn API.
-        sample_weight : ndarray | None (default None)
-            weight of each sample.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
         self : TangentSpace instance
             The TangentSpace instance.
         """
-        # compute mean covariance
-        self.reference_ = mean_covariance(X, metric=self.metric,
-                                          sample_weight=sample_weight)
+        self.metric_mean, self.metric_map = self._check_metric(self.metric)
+
+        self.reference_ = mean_covariance(
+            X,
+            metric=self.metric_mean,
+            sample_weight=sample_weight
+        )
         return self
 
+    def _check_metric(self, metric):
+
+        if isinstance(metric, str):
+            metric_mean = metric
+            metric_map = metric
+
+        elif isinstance(metric, dict):
+            # check keys
+            for key in ['mean', 'map']:
+                if key not in metric.keys():
+                    raise KeyError('metric must contain "mean" and "map"')
+
+            metric_mean = metric['mean']
+            metric_map = metric['map']
+
+        else:
+            raise TypeError('metric must be dict or str')
+
+        return metric_mean, metric_map
+
     def _check_data_dim(self, X):
-        """Check data shape and return the size of cov mat."""
+        """Check data shape and return the size of SPD matrix."""
         shape_X = X.shape
         if len(X.shape) == 2:
-            Ne = (np.sqrt(1 + 8 * shape_X[1]) - 1) / 2
-            if Ne != int(Ne):
+            n_channels = (np.sqrt(1 + 8 * shape_X[1]) - 1) / 2
+            if n_channels != int(n_channels):
                 raise ValueError("Shape of Tangent space vector does not"
                                  " correspond to a square matrix.")
-            return int(Ne)
+            return int(n_channels)
         elif len(X.shape) == 3:
             if shape_X[1] != shape_X[2]:
                 raise ValueError("Matrices must be square")
@@ -131,42 +161,48 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        ts : ndarray, shape (n_trials, n_ts)
-            the tangent space projection of the matrices.
+        ts : ndarray, shape (n_matrices, n_ts)
+            Tangent space projections of SPD matrices.
         """
+        self.metric_mean, self.metric_map = self._check_metric(self.metric)
         self._check_reference_points(X)
+
         if self.tsupdate:
-            Cr = mean_covariance(X, metric=self.metric)
+            Cr = mean_covariance(X, metric=self.metric_mean)
         else:
             Cr = self.reference_
-        return tangent_space(X, Cr)
+        return tangent_space(X, Cr, metric=self.metric_map)
 
     def fit_transform(self, X, y=None, sample_weight=None):
         """Fit and transform in a single function.
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
-        y : ndarray | None (default None)
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None
             Not used, here for compatibility with sklearn API.
-        sample_weight : ndarray | None (default None)
-            weight of each sample.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
-        ts : ndarray, shape (n_trials, n_ts)
-            the tangent space projection of the matrices.
+        ts : ndarray, shape (n_matrices, n_ts)
+            Tangent space projections of SPD matrices.
         """
-        # compute mean covariance
-        self.reference_ = mean_covariance(X, metric=self.metric,
-                                          sample_weight=sample_weight)
-        return tangent_space(X, self.reference_)
+        self.metric_mean, self.metric_map = self._check_metric(self.metric)
+
+        self.reference_ = mean_covariance(
+            X,
+            metric=self.metric_mean,
+            sample_weight=sample_weight
+        )
+        return tangent_space(X, self.reference_, metric=self.metric_map)
 
     def inverse_transform(self, X, y=None):
         """Inverse transform.
@@ -175,18 +211,19 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_ts)
-            ndarray of SPD matrices.
-        y : ndarray | None (default None)
+        X : ndarray, shape (n_matrices, n_ts)
+            Set of tangent space projections of the matrices.
+        y : None
             Not used, here for compatibility with sklearn API.
 
         Returns
         -------
-        cov : ndarray, shape (n_trials, n_channels, n_channels)
-            the covariance matrices corresponding to each of tangent vector.
+        cov : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices corresponding to each of tangent vector.
         """
+        self.metric_mean, self.metric_map = self._check_metric(self.metric)
         self._check_reference_points(X)
-        return untangent_space(X, self.reference_)
+        return untangent_space(X, self.reference_, metric=self.metric_map)
 
 
 class FGDA(BaseEstimator, TransformerMixin):
@@ -199,14 +236,18 @@ class FGDA(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    metric : string (default: 'riemann')
-        The type of metric used for reference point mean estimation.
-        see `mean_covariance` for the list of supported metric.
-    tsupdate : bool (default False)
+    metric : string | dict, default='riemann'
+        The type of metric used for reference matrix estimation (see
+        `mean_covariance` for the list of supported metric) and for tangent
+        space map (see `tangent_space` for the list of supported metric).
+        The metric could be a dict with two keys, `mean` and `map` in
+        order to pass different metrics for the reference matrix estimation
+        and the tangent space mapping.
+    tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]_. This is not compatible with
-        online implementation. Performance are better when the number of trials
-        for prediction is higher.
+        online implementation. Performance are better when the number of
+        matrices for prediction is higher.
 
     See Also
     --------
@@ -215,14 +256,16 @@ class FGDA(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Riemannian
-        geometry applied to BCI classification", 9th International Conference
-        Latent Variable Analysis and Signal Separation (LVA/ICA 2010), LNCS
-        vol. 6365, 2010, p. 629-636.
-
-    .. [2] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification
-        of covariance matrices using a Riemannian-based kernel for BCI
-        applications", in NeuroComputing, vol. 112, p. 172-178, 2013.
+    .. [1] `Riemannian geometry applied to BCI classification
+        <https://hal.archives-ouvertes.fr/hal-00602700/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. 9th International
+        Conference Latent Variable Analysis and Signal Separation
+        (LVA/ICA 2010), LNCS vol. 6365, 2010, p. 629-636.
+    .. [2] `Classification of covariance matrices using a Riemannian-based
+        kernel for BCI applications
+        <https://hal.archives-ouvertes.fr/hal-00820475/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
+        Elsevier, 2013, 112, pp.172-178.
     """
 
     def __init__(self, metric='riemann', tsupdate=False):
@@ -241,13 +284,12 @@ class FGDA(BaseEstimator, TransformerMixin):
         self._lda.fit(ts, y)
 
         W = self._lda.coef_.copy()
-        self._W = np.dot(
-            np.dot(W.T, np.linalg.pinv(np.dot(W, W.T))), W)
+        self._W = W.T @ np.linalg.pinv(W @ W.T) @ W
         return ts
 
     def _retro_project(self, ts):
         """Helper to project back in the manifold."""
-        ts = np.dot(ts, self._W)
+        ts = ts @ self._W
         return self._ts.inverse_transform(ts)
 
     def fit(self, X, y=None, sample_weight=None):
@@ -255,12 +297,12 @@ class FGDA(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
-        y : ndarray | None (default None)
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None
             Not used, here for compatibility with sklearn API.
-        sample_weight : ndarray | None (default None)
-            weight of each sample.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -276,13 +318,13 @@ class FGDA(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
 
         Returns
         -------
-        covs : ndarray, shape (n_trials, n_channels, n_channels)
-            covariances matrices after filtering.
+        covs : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices after filtering.
         """
         ts = self._ts.transform(X)
         return self._retro_project(ts)
@@ -292,17 +334,17 @@ class FGDA(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of SPD matrices.
-        y : ndarray | None (default None)
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None
             Not used, here for compatibility with sklearn API.
-        sample_weight : ndarray | None (default None)
-            weight of each sample.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
-        covs : ndarray, shape (n_trials, n_channels, n_channels)
-            covariances matrices after filtering.
+        covs : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices after filtering.
         """
         self._ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
         ts = self._fit_lda(X, y, sample_weight=sample_weight)

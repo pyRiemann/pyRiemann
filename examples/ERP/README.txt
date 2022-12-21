@@ -1,4 +1,4 @@
 Classification of ERP
 ---------------------
 
-Event related potential classification with RG.
+Using Riemannian geometry for classifying Event Related Potentials.

@@ -108,8 +108,8 @@ rp_epochs = make_fixed_length_epochs(  # epoch time-series
 rp_covs = Covariances(estimator='scm').transform(rp_epochs.get_data())
 
 # RP training
-t = 45               # nb of matrices for training
-train_set = range(t)
+train_covs = 45      # nb of matrices for training
+train_set = range(train_covs)
 rp.fit(rp_covs[train_set])
 
 
@@ -178,8 +178,8 @@ test_time_start = -2    # start time to display signal
 test_time_end = 5       # end time to display signal
 
 test_duration = test_time_end - test_time_start
-time_start = t * interval + test_time_start
-time_end = t * interval + test_time_end
+time_start = train_covs * interval + test_time_start
+time_end = train_covs * interval + test_time_end
 time = np.linspace(time_start, time_end, int((time_end - time_start) * sfreq),
                    endpoint=False)
 raw.filter(l_freq=0.5, h_freq=75., method='iir', verbose=False)
@@ -214,8 +214,8 @@ axp.legend(loc='upper right')
 ###############################################################################
 
 # Prepare animation for online detection
-def online_update(self):
-    global t, time, sig, labels, covs_t, covs_z, covs_p
+def online_detect(t):
+    global time, sig, labels, covs_t, covs_z, covs_p
 
     # Online artifact detection
     rp_label = rp.predict(rp_covs[np.newaxis, t])[0]
@@ -242,7 +242,6 @@ def online_update(self):
     covs_p = np.r_[covs_p, rpf_proba]
     if len(covs_p) > test_covs_visu:
         covs_t, covs_z, covs_p = covs_t[1:], covs_z[:, 1:], covs_p[1:]
-    t += 1
 
     # Update plot
     for c in range(ch_count):
@@ -260,22 +259,41 @@ def online_update(self):
     return pl, pl2, pl3
 
 
-###############################################################################
-# Plot online detection (a dynamic display is required)
-
 interval_display = 1.0  # can be changed for a slower display
 
-potato = FuncAnimation(fig, online_update, frames=test_covs_max,
+potato = FuncAnimation(fig, online_detect,
+                       frames=range(train_covs, test_covs_max),
                        interval=interval_display, blit=False, repeat=False)
+
+
+###############################################################################
+
+# Plot online detection
+
+# Plot complete visu: a dynamic display is required
 plt.show()
+
+# Plot only 10s, for animated documentation
+try:
+    from IPython.display import HTML
+except ImportError:
+    raise ImportError("Install IPython to plot animation in documentation")
+
+plt.rcParams["animation.embed_limit"] = 10
+HTML(potato.to_jshtml(fps=5, default_mode='loop'))
 
 
 ###############################################################################
 # References
 # ----------
-# .. [1] Q. Barthélemy, L. Mayaud, D. Ojeda, M. Congedo, "The Riemannian potato
-#    field: a tool for online signal quality index of EEG", IEEE TNSRE, 2019.
-#
-# .. [2] A. Barachant, A. Andreev, M. Congedo, "The Riemannian Potato: an
-#    automatic and adaptive artifact detection method for online experiments
-#    using Riemannian geometry", Proc. TOBI Workshop IV, 2013.
+# .. [1] `The Riemannian Potato Field: A Tool for Online Signal Quality Index
+#    of EEG
+#    <https://hal.archives-ouvertes.fr/hal-02015909>`_
+#    Q. Barthélemy, L. Mayaud, D. Ojeda, and M. Congedo. IEEE Transactions
+#    on Neural Systems and Rehabilitation Engineering, IEEE Institute of
+#    Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
+# .. [2] `The Riemannian Potato: an automatic and adaptive artifact detection
+#    method for online experiments using Riemannian geometry
+#    <https://hal.archives-ouvertes.fr/hal-00781701>`_
+#    A. Barachant, A Andreev, and M. Congedo. TOBI Workshop lV, Jan 2013, Sion,
+#    Switzerland. pp.19-20.

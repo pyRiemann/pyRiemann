@@ -1,4 +1,6 @@
 """Spatial filtering function."""
+import warnings
+
 import numpy as np
 from scipy.linalg import eigh, inv
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -12,39 +14,42 @@ from .preprocessing import Whitening
 
 
 class Xdawn(BaseEstimator, TransformerMixin):
+    """Xdawn algorithm.
 
-    """Implementation of the Xdawn Algorithm.
-
-    Xdawn is a spatial filtering method designed to improve the signal
+    Xdawn [1]_ is a spatial filtering method designed to improve the signal
     to signal + noise ratio (SSNR) of the ERP responses. Xdawn was originaly
     designed for P300 evoked potential by enhancing the target response with
-    respect to the non-target response. This implementation is a generalization
-    to any type of ERP.
+    respect to the non-target response [2]_. This implementation is a
+    generalization to any type of ERP.
 
     Parameters
     ----------
-    nfilter : int (default 4)
+    nfilter : int, default=4
         The number of components to decompose M/EEG signals.
-    classes : list of int | None (default None)
-        list of classes to take into account for xdawn. If None (default), all
-        classes will be accounted.
-    estimator : str (default 'scm')
-        covariance matrix estimator. For regularization consider 'lwf' or 'oas'
-    baseline_cov : array, shape(n_chan, n_chan) | None (default)
+    classes : list of int | None, default=None
+        List of classes to take into account for Xdawn.
+        If None, all classes will be accounted.
+    estimator : string, default='scm'
+        Covariance matrix estimator, see
+        :func:`pyriemann.utils.covariance.covariances`.
+    baseline_cov : None | array, shape(n_channels, n_channels), default=None
         Covariance matrix to which the average signals are compared. If None,
         the baseline covariance is computed across all trials and time samples.
 
     Attributes
     ----------
-    filters_ : ndarray
+    classes_ : ndarray, shape (n_classes,)
+        Labels for each class.
+    filters_ : ndarray, shape (n_classes x min(n_channels, n_filters), \
+            n_channels)
         If fit, the Xdawn components used to decompose the data for each event
-        type, concatenated, else empty.
-    patterns_ : ndarray
+        type, concatenated.
+    patterns_ : ndarray, shape (n_classes x min(n_channels, n_filters), \
+            n_channels)
         If fit, the Xdawn patterns used to restore M/EEG signals for each event
-        type, concatenated, else empty.
-    evokeds_ : ndarray
+        type, concatenated.
+    evokeds_ : ndarray, shape (n_classes x min(n_channels, n_filters), n_times)
         If fit, the evoked response for each event type, concatenated.
-
 
     See Also
     --------
@@ -52,14 +57,17 @@ class Xdawn(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    [1] Rivet, B., Souloumiac, A., Attina, V., & Gibert, G. (2009). xDAWN
-    algorithm to enhance evoked potentials: application to brain-computer
-    interface. Biomedical Engineering, IEEE Transactions on, 56(8), 2035-2043.
-
-    [2] Rivet, B., Cecotti, H., Souloumiac, A., Maby, E., & Mattout, J. (2011,
-    August). Theoretical analysis of xDAWN algorithm: application to an
-    efficient sensor selection in a P300 BCI. In Signal Processing Conference,
-    2011 19th European (pp. 1382-1386). IEEE.
+    .. [1] `xDAWN algorithm to enhance evoked potentials: application to
+        brain-computer interface
+        <https://hal.archives-ouvertes.fr/hal-00454568/fr/>`_
+        B. Rivet, A. Souloumiac, V. Attina, and G. Gibert. IEEE Transactions on
+        Biomedical Engineering, 2009, 56 (8), pp.2035-43.
+    .. [2] `Theoretical analysis of xDAWN algorithm: application to an
+        efficient sensor selection in a P300 BCI
+        <https://hal.archives-ouvertes.fr/hal-00619997>`_
+        B. Rivet, H. Cecotti, A. Souloumiac, E. Maby, J. Mattout. EUSIPCO 2011
+        19th European Signal Processing Conference, Aug 2011, Barcelone, Spain.
+        pp.1382-1386.
     """
 
     def __init__(self, nfilter=4, classes=None, estimator='scm',
@@ -75,40 +83,40 @@ class Xdawn(BaseEstimator, TransformerMixin):
         return _check_est(self.estimator)
 
     def fit(self, X, y):
-        """Train xdawn spatial filters.
+        """Train Xdawn spatial filters.
 
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_times)
-            ndarray of trials.
-        y : ndarray shape (n_trials, 1)
-            labels corresponding to each trial.
+            Set of trials.
+        y : ndarray, shape (n_trials,)
+            Labels for each trial.
 
         Returns
         -------
         self : Xdawn instance
             The Xdawn instance.
         """
-        Nt, Ne, Ns = X.shape
+        n_trials, n_channels, n_times = X.shape
 
         self.classes_ = (np.unique(y) if self.classes is None else
                          self.classes)
 
         Cx = self.baseline_cov
         if Cx is None:
-            # FIXME : too many reshape operation
-            tmp = X.transpose((1, 2, 0))
-            Cx = np.matrix(self.estimator_fn(tmp.reshape(Ne, Ns * Nt)))
+            Cx = np.asarray(self.estimator_fn(
+                X.reshape(n_channels, n_times * n_trials)
+            ))
 
         self.evokeds_ = []
         self.filters_ = []
         self.patterns_ = []
         for c in self.classes_:
             # Prototyped response for each class
-            P = np.mean(X[y == c, :, :], axis=0)
+            P = np.mean(X[y == c], axis=0)
 
             # Covariance matrix of the prototyper response & signal
-            C = np.matrix(self.estimator_fn(P))
+            C = np.asarray(self.estimator_fn(P))
 
             # Spatial filters
             evals, evecs = eigh(C, Cx)
@@ -119,7 +127,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
             # create the reduced prototyped response
             self.filters_.append(V[:, 0:self.nfilter].T)
             self.patterns_.append(A[:, 0:self.nfilter].T)
-            self.evokeds_.append(np.dot(V[:, 0:self.nfilter].T, P))
+            self.evokeds_.append(V[:, 0:self.nfilter].T @ P)
 
         self.evokeds_ = np.concatenate(self.evokeds_, axis=0)
         self.filters_ = np.concatenate(self.filters_, axis=0)
@@ -132,56 +140,51 @@ class Xdawn(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_times)
-            ndarray of trials.
+            Set of trials.
 
         Returns
         -------
-        Xf : ndarray, shape (n_trials, n_filters * n_classes, n_times)
-            ndarray of spatialy filtered trials.
+        Xf : ndarray, shape (n_trials, n_classes x min(n_channels, n_filters),\
+                n_times)
+            Set of spatialy filtered trials.
         """
-        X = np.dot(self.filters_, X)
-        X = X.transpose((1, 0, 2))
+        X = self.filters_ @ X
         return X
 
 
 class BilinearFilter(BaseEstimator, TransformerMixin):
-    r""" Bilinear spatial filter.
+    r"""Bilinear spatial filter.
 
-    Bilinear spatial filter for covariance matrices.
-    allow to define a custom spatial filter for bilinear projection of the
-    data :
+    Bilinear spatial filter for SPD matrices allows to define a custom spatial
+    filter for bilinear projection of the data:
 
     .. math::
         \mathbf{Cf}_i = \mathbf{V} \mathbf{C}_i \mathbf{V}^T
 
-    if log parameter is set to true, will return the log of the diagonal :
+    If log parameter is set to true, will return the log of the diagonal:
 
     .. math::
         \mathbf{cf}_i = \log [ \mathrm{diag} (\mathbf{Cf}_i) ]
 
     Parameters
     ----------
-    filters: ndarray of shape (n_filters x n_channels)
-        the filters for bilinear transform
-    log : bool (default False)
+    filters : ndarray, shape (n_filters, n_channels)
+        The filters for bilinear transform.
+    log : bool, default=False
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.
 
     Attributes
     ----------
-    filters_ : ndarray
-        If fit, the Xdawn components used to decompose the data for each event
-        type, concatenated, else empty.
+    filters_ : ndarray, shape (n_filters, n_channels)
+        If fit, the filter components used to decompose the data for each event
+        type, concatenated.
     """
 
     def __init__(self, filters, log=False):
         """Init."""
-        if not isinstance(filters, np.ndarray):
-            raise TypeError('filters must be an array.')
         self.filters_ = filters
         self.filters = filters
-        if not isinstance(log, bool):
-            raise TypeError('log must be a boolean')
         self.log = log
 
     def fit(self, X, y):
@@ -190,15 +193,19 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of covariance.
-        y : ndarray shape (n_trials, 1)
-            labels corresponding to each trial.
+            Set of covariance matrices.
+        y : ndarray, shape (n_trials,)
+            Labels for each trial.
 
         Returns
         -------
         self : BilinearFilter instance
             The BilinearFilter instance.
         """
+        if not isinstance(self.filters, np.ndarray):
+            raise TypeError('filters must be an array.')
+        if not isinstance(self.log, bool):
+            raise TypeError('log must be a boolean')
         self.filters_ = self.filters
         return self
 
@@ -208,25 +215,25 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of covariance.
+            Set of covariance matrices.
 
         Returns
         -------
-        Xf : ndarray, shape (n_trials, n_filters)
-             ndarray of spatialy filtered log-variance or covariance depending
-             on the 'log' input paramter.
+        Xf : ndarray, shape (n_trials, n_filters) or \
+                ndarray, shape (n_trials, n_filters, n_filters)
+            Set of spatialy filtered log-variance or covariance, depending on
+            the 'log' input parameter.
         """
         if not isinstance(X, (np.ndarray, list)):
             raise TypeError('X must be an array.')
         if X[0].shape[1] != self.filters_.shape[1]:
             raise ValueError("Data and filters dimension must be compatible.")
 
-        X_filt = np.dot(np.dot(self.filters_, X), self.filters_.T)
-        X_filt = X_filt.transpose((1, 0, 2))
+        X_filt = self.filters_ @ X @ self.filters_.T
 
         # if logvariance
         if self.log:
-            out = np.zeros((len(X_filt), len(self.filters_)))
+            out = np.zeros(X_filt.shape[:2])
             for i, x in enumerate(X_filt):
                 out[i] = np.log(np.diag(x))
             return out
@@ -235,7 +242,7 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
 
 
 class CSP(BilinearFilter):
-    """Implementation of the CSP spatial Filtering with Covariance as input.
+    """CSP spatial filtering with covariance matrices as inputs.
 
     Implementation of the famous Common Spatial Pattern algorithm [1]_ [2]_,
     but with covariance matrices as input. In addition, the implementation
@@ -248,21 +255,20 @@ class CSP(BilinearFilter):
 
     Parameters
     ----------
-    nfilter : int (default 4)
+    nfilter : int, default=4
         The number of components to decompose M/EEG signals.
-    metric : str (default "euclid")
-        The metric for the estimation of mean covariance matrices
-    log : bool (default True)
+    metric : str, default='euclid'
+        The metric for the estimation of mean covariance matrices.
+    log : bool, default=True
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.
 
     Attributes
     ----------
-    filters_ : ndarray
-        If fit, the CSP spatial filters, else None.
-    patterns_ : ndarray
-        If fit, the CSP spatial patterns, else None.
-
+    filters_ : ndarray, shape (min(n_channels, n_filters), n_channels)
+        If fit, the CSP spatial filters.
+    patterns_ : ndarray, shape (min(n_channels, n_filters), n_channels)
+        If fit, the CSP spatial patterns.
 
     See Also
     --------
@@ -270,33 +276,29 @@ class CSP(BilinearFilter):
 
     References
     ----------
-    .. [1] Zoltan J. Koles, Michael S. Lazar, Steven Z. Zhou. Spatial Patterns
-        Underlying Population Differences in the Background EEG. Brain
-        Topography 2(4), 275-284, 1990.
-
-    .. [2] Benjamin Blankertz, Ryota Tomioka, Steven Lemm, Motoaki Kawanabe,
-        Klaus-Robert Muller. Optimizing Spatial Filters for Robust EEG
-        Single-Trial Analysis. IEEE Signal Processing Magazine 25(1), 41-56,
-        2008.
-
-    .. [3] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, Common Spatial
-        Pattern revisited by Riemannian geometry, IEEE International Workshop
-        on Multimedia Signal Processing (MMSP), p. 472-476, 2010.
-
-    .. [4] Grosse-Wentrup, Moritz, and Martin Buss. "Multiclass common spatial
-        patterns and information theoretic feature extraction." Biomedical
-        Engineering, IEEE Transactions on 55, no. 8 (2008): 1991-2000.
+    .. [1] `Spatial Patterns Underlying Population Differences in the
+        Background EEG
+        <https://link.springer.com/article/10.1007/BF01129656>`_
+        Z. Koles, M. Lazar, and S. Zhou. Brain Topography 2(4), 275-284, 1990.
+    .. [2] `Optimizing Spatial Filters for Robust EEG Single-Trial Analysis
+        <https://ieeexplore.ieee.org/document/4408441>`_
+        B. Blankertz, R. Tomioka, S. Lemm, M. Kawanabe, K-R. Muller. IEEE
+        Signal Processing Magazine 25(1), 41-56, 2008.
+    .. [3] `Common Spatial Pattern revisited by Riemannian geometry
+        <https://hal.archives-ouvertes.fr/hal-00602686>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. IEEE International
+        Workshop on Multimedia Signal Processing (MMSP), p. 472-476, 2010.
+    .. [4] `Multiclass common spatial patterns and information theoretic
+        feature extraction
+        <https://ieeexplore.ieee.org/document/4473042>`_
+        IEEE Transactions on Biomedical Engineering, Volume 55, Issue 8,
+        August 2008. pp. 1991 - 2000
     """
 
     def __init__(self, nfilter=4, metric='euclid', log=True):
         """Init."""
-        if not isinstance(nfilter, int):
-            raise TypeError('nfilter must be an integer')
         self.nfilter = nfilter
-        _check_mean_method(metric)
         self.metric = metric
-        if not isinstance(log, bool):
-            raise TypeError('log must be a boolean')
         self.log = log
 
     def fit(self, X, y):
@@ -305,15 +307,21 @@ class CSP(BilinearFilter):
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of covariance.
-        y : ndarray shape (n_trials, 1)
-            labels corresponding to each trial.
+            Set of covariance matrices.
+        y : ndarray, shape (n_trials,)
+            Labels for each trial.
 
         Returns
         -------
         self : CSP instance
             The CSP instance.
         """
+        if not isinstance(self.nfilter, int):
+            raise TypeError('nfilter must be an integer')
+        _check_mean_method(self.metric)
+        if not isinstance(self.log, bool):
+            raise TypeError('log must be a boolean')
+
         if not isinstance(X, (np.ndarray, list)):
             raise TypeError('X must be an array.')
         if not isinstance(y, (np.ndarray, list)):
@@ -326,7 +334,7 @@ class CSP(BilinearFilter):
         if np.squeeze(y).ndim != 1:
             raise ValueError('y must be of shape (n_trials,).')
 
-        Nt, Ne, Ns = X.shape
+        n_trials, n_channels, _ = X.shape
         classes = np.unique(y)
         # estimate class means
         C = []
@@ -341,12 +349,12 @@ class CSP(BilinearFilter):
             ix = np.argsort(np.abs(evals - 0.5))[::-1]
         elif len(classes) > 2:
             evecs, D = ajd_pham(C)
-            Ctot = np.array(mean_covariance(C, self.metric))
+            Ctot = mean_covariance(C, self.metric)
             evecs = evecs.T
 
             # normalize
             for i in range(evecs.shape[1]):
-                tmp = np.dot(np.dot(evecs[:, i].T, Ctot), evecs[:, i])
+                tmp = evecs[:, i].T @ Ctot @ evecs[:, i]
                 evecs[:, i] /= np.sqrt(tmp)
 
             mutual_info = []
@@ -356,8 +364,7 @@ class CSP(BilinearFilter):
                 a = 0
                 b = 0
                 for i, c in enumerate(classes):
-                    tmp = np.dot(np.dot(evecs[:, j].T, C[i]),
-                                 evecs[:, j])
+                    tmp = evecs[:, j].T @ C[i] @ evecs[:, j]
                     a += Pc[i] * np.log(np.sqrt(tmp))
                     b += Pc[i] * (tmp ** 2 - 1)
                 mi = - (a + (3.0 / 16) * (b ** 2))
@@ -379,34 +386,35 @@ class CSP(BilinearFilter):
 
 
 class SPoC(CSP):
-    """Implementation of the SPoC spatial filtering with Covariance as input.
+    """SPoC spatial filtering with covariance matrices as inputs.
 
     Source Power Comodulation (SPoC) [1]_ allows to extract spatial filters and
     patterns by using a target (continuous) variable in the decomposition
     process in order to give preference to components whose power comodulates
     with the target variable.
 
-    SPoC can be seen as an extension of the `CSP` driven by a continuous
+    SPoC can be seen as an extension of the
+    :class:`pyriemann.spatialfilters.CSP` driven by a continuous
     variable rather than a discrete (often binary) variable. Typical
     applications include extraction of motor patterns using EMG power or audio
     paterns using sound envelope.
 
     Parameters
     ----------
-    nfilter : int (default 4)
+    nfilter : int, default=4
         The number of components to decompose M/EEG signals.
-    metric : str (default "euclid")
-        The metric for the estimation of mean covariance matrices
-    log : bool (default True)
+    metric : str, default='euclid'
+        The metric for the estimation of mean covariance matrices.
+    log : bool, default=True
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.
 
     Attributes
     ----------
-    filters_ : ndarray
-        If fit, the SPoC spatial filters, else None.
-    patterns_ : ndarray
-        If fit, the SPoC spatial patterns, else None.
+    filters_ : ndarray, shape (min(n_channels, n_filters), n_channels)
+        If fit, the SPoC spatial filters.
+    patterns_ : ndarray, shape (min(n_channels, n_filters), n_channels)
+        If fit, the SPoC spatial patterns.
 
     Notes
     -----
@@ -414,14 +422,15 @@ class SPoC(CSP):
 
     See Also
     --------
-    CSP, SPoC
+    CSP
 
     References
     ----------
-    .. [1] Dahne, S., Meinecke, F. C., Haufe, S., Hohne, J., Tangermann, M.,
-        Muller, K. R., & Nikulin, V. V. (2014). SPoC: a novel framework for
-        relating the amplitude of neuronal oscillations to behaviorally
-        relevant parameters. NeuroImage, 86, 111-122.
+    .. [1] `SPoC: a novel framework for relating the amplitude of neuronal
+        oscillations to behaviorally relevant parameters
+        <https://www.sciencedirect.com/science/article/pii/S1053811913008483>`_
+        S. Dahne, F. C. Meinecke, S. Haufe, J. Hohne, M. Tangermann, K-R.
+        Muller, and V. V. Nikulin. NeuroImage, 86, 111-122, 2014.
     """
 
     def fit(self, X, y):
@@ -430,9 +439,9 @@ class SPoC(CSP):
         Parameters
         ----------
         X : ndarray, shape (n_trials, n_channels, n_channels)
-            ndarray of covariance.
-        y : ndarray shape (n_trials, 1)
-            target variable corresponding to each trial.
+            Set of covariance matrices.
+        y : ndarray, shape (n_trials,)
+            Target variable for each trial.
 
         Returns
         -------
@@ -471,7 +480,7 @@ class SPoC(CSP):
 
 
 class AJDC(BaseEstimator, TransformerMixin):
-    """Implementation of the AJDC.
+    """AJDC algorithm.
 
     The approximate joint diagonalization of Fourier cospectral matrices (AJDC)
     [1]_ is a versatile tool for blind source separation (BSS) tasks based on
@@ -495,22 +504,44 @@ class AJDC(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    window : int (default 128)
+    window : int, default=128
         The length of the FFT window used for spectral estimation.
-    overlap : float (default 0.5)
+    overlap : float, default=0.5
         The percentage of overlap between window.
-    fmin : float | None, (default None)
+    fmin : float | None, default=None
         The minimal frequency to be returned. Since BSS models assume zero-mean
         processes, the first cospectrum (0 Hz) must be excluded.
-    fmax : float | None, (default None)
+    fmax : float | None, default=None
         The maximal frequency to be returned.
-    fs : float | None, (default None)
+    fs : float | None, default=None
         The sampling frequency of the signal.
-    dim_red : None | dict, (default None)
+    dim_red : None | dict, default=None
         Parameter for dimension reduction of cospectra, because Pham's AJD is
-        sensitive to matrices conditioning. For more details, see parameter
-        ``dim_red`` of :class:`pyriemann.preprocessing.Whitening`.
-    verbose : bool (default True)
+        sensitive to matrices conditioning.
+
+        If ``None`` :
+            no dimension reduction during whitening.
+        If ``{'n_components': val}`` :
+            dimension reduction defining the number of components;
+            ``val`` must be an integer superior to 1.
+        If ``{'expl_var': val}`` :
+            dimension reduction selecting the number of components such that
+            the amount of variance that needs to be explained is greater than
+            the percentage specified by ``val``.
+            ``val`` must be a float in (0,1], typically ``0.99``.
+        If ``{'max_cond': val}`` :
+            dimension reduction selecting the number of components such that
+            the condition number of the mean matrix is lower than ``val``.
+            This threshold has a physiological interpretation, because it can
+            be viewed as the ratio between the power of the strongest component
+            (usually, eye-blink source) and the power of the lowest component
+            you don't want to keep (acquisition sensor noise).
+            ``val`` must be a float strictly superior to 1, typically 100.
+        If ``{'warm_restart': val}`` :
+            dimension reduction defining the number of components from an
+            initial joint diagonalizer, and then run AJD from this solution.
+            ``val`` must be a square ndarray.
+    verbose : bool, default=True
         Verbose flag.
 
     Attributes
@@ -521,6 +552,8 @@ class AJDC(BaseEstimator, TransformerMixin):
         If fit, the frequencies associated to cospectra.
     n_sources_ : int
         If fit, the number of components of the source space.
+    diag_filters_ : ndarray, shape ``(n_sources_, n_sources_)``
+        If fit, the diagonalization filters, also called joint diagonalizer.
     forward_filters_ : ndarray, shape ``(n_sources_, n_channels_)``
         If fit, the spatial filters used to transform signal into source,
         also called deximing or separating matrix.
@@ -538,17 +571,21 @@ class AJDC(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] M. Congedo, C. Gouy-Pailler, C. Jutten, "On the blind source
-        separation of human electroencephalogram by approximate joint
-        diagonalization of second order statistics", Clin Neurophysiol, 2008
-
-    .. [2] M. Congedo, R. John, D. De Ridder, L. Prichep, "Group indepedent
-        component analysis of resting state EEG in large normative samples",
-        Int J Psychophysiol, 2010
-
-    .. [3] D.-T. Pham, "Joint approximate diagonalization of positive definite
-        Hermitian matrices", SIAM J Matrix Anal Appl, 2001
-
+    .. [1] `On the blind source separation of human electroencephalogram by
+        approximate joint diagonalization of second order statistics
+        <https://hal.archives-ouvertes.fr/hal-00343628>`_
+        M. Congedo, C. Gouy-Pailler, C. Jutten. Clinical Neurophysiology,
+        Elsevier, 2008, 119 (12), pp.2677-2686.
+    .. [2] `Group indepedent component analysis of resting state EEG in large
+        normative samples
+        <https://hal.archives-ouvertes.fr/hal-00523200>`_
+        M. Congedo, R. John, D. de Ridder, L. Prichep. International Journal of
+        Psychophysiology, Elsevier, 2010, 78, pp.89-99.
+    .. [3] `Joint approximate diagonalization of positive definite
+        Hermitian matrices
+        <https://epubs.siam.org/doi/10.1137/S089547980035689X>`_
+        D.-T. Pham. SIAM Journal on Matrix Analysis and Applications, Volume 22
+        Issue 4, 2000
     """
 
     def __init__(self, window=128, overlap=0.5, fmin=None, fmax=None, fs=None,
@@ -575,8 +612,8 @@ class AJDC(BaseEstimator, TransformerMixin):
                 list of n_subjects of list of n_conditions ndarray of shape \
                 (n_channels, n_times), with same n_conditions and n_channels \
                 but different n_times
-            Signal in channel space, acquired for different subjects and under
-            different experimental conditions.
+            Multi-channel time-series in channel space, acquired for different
+            subjects and under different experimental conditions.
         y : None
             Currently not used, here for compatibility with sklearn API.
 
@@ -617,6 +654,20 @@ class AJDC(BaseEstimator, TransformerMixin):
         # estimation of non-diagonality weights, Eq(B.1) in [1]
         weights = get_nondiag_weight(self._cosp_channels)
 
+        # initial diagonalizer: if warm restart, dimension reduction defined by
+        # the size of the initial diag filters
+        init = None
+        if self.dim_red is None:
+            warnings.warn('Parameter dim_red should not be let to None')
+        elif isinstance(self.dim_red, dict) and len(self.dim_red) == 1 \
+                and next(iter(self.dim_red)) == 'warm_restart':
+            init = self.dim_red['warm_restart']
+            if init.ndim != 2 or init.shape[0] != init.shape[1]:
+                raise ValueError(
+                    'Initial diagonalizer defined in dim_red is not a 2D '
+                    'square matrix (Got shape = %s).' % (init.shape,))
+            self.dim_red = {'n_components': init.shape[0]}
+
         # dimension reduction and whitening, Eq.(8) in [2], computed on the
         # weighted mean of cospectra across frequencies (and conditions)
         whit = Whitening(
@@ -627,29 +678,32 @@ class AJDC(BaseEstimator, TransformerMixin):
         self.n_sources_ = whit.n_components_
 
         # approximate joint diagonalization, currently by Pham's algorithm [3]
-        diag_filters, self._cosp_sources = ajd_pham(
+        self.diag_filters_, self._cosp_sources = ajd_pham(
             cosp_rw,
+            init=init,
             n_iter_max=100,
             sample_weight=weights)
 
         # computation of forward and backward filters, Eq.(9) and (10) in [2]
-        self.forward_filters_ = diag_filters @ whit.filters_.T
-        self.backward_filters_ = whit.inv_filters_.T @ inv(diag_filters)
+        self.forward_filters_ = self.diag_filters_ @ whit.filters_.T
+        self.backward_filters_ = whit.inv_filters_.T @ inv(self.diag_filters_)
         return self
 
     def transform(self, X):
-        """Transform channel space to source space, applying forward spatial
+        """Transform channel space to source space.
+
+        Transform channel space to source space, applying forward spatial
         filters.
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            Trials in channel space.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series in channel space.
 
         Returns
         -------
-        source : ndarray, shape (n_trials, n_sources, n_times)
-            Trials in source space.
+        source : ndarray, shape (n_matrices, n_sources, n_times)
+            Multi-channel time-series in source space.
         """
         if X.ndim != 3:
             raise ValueError('X must have 3 dimensions (Got %d)' % X.ndim)
@@ -662,21 +716,23 @@ class AJDC(BaseEstimator, TransformerMixin):
         return source
 
     def inverse_transform(self, X, supp=None):
-        """Transform source space to channel space, applying backward spatial
+        """Transform source space to channel space.
+
+        Transform source space to channel space, applying backward spatial
         filters, with the possibility to suppress some sources, like in BSS
         filtering/denoising.
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_sources, n_times)
-            Trials in source space.
-        supp : list of int | None, (default None)
-            Indices of sources to suppress.
+        X : ndarray, shape (n_matrices, n_sources, n_times)
+            Multi-channel time-series in source space.
+        supp : list of int | None, default=None
+            Indices of sources to suppress. If None, no source suppression.
 
         Returns
         -------
-        signal : ndarray, shape (n_trials, n_channels, n_times)
-            Trials in channel space.
+        signal : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series in channel space.
         """
         if X.ndim != 3:
             raise ValueError('X must have 3 dimensions (Got %d)' % X.ndim)
@@ -698,16 +754,18 @@ class AJDC(BaseEstimator, TransformerMixin):
         return signal
 
     def get_src_expl_var(self, X):
-        """Estimate explained variances of sources, Appendix D in [1].
+        """Estimate explained variances of sources.
+
+        Estimate explained variances of sources, see Appendix D in [1].
 
         Parameters
         ----------
-        X : ndarray, shape (n_trials, n_channels, n_times)
-            Trials in channel space.
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series in channel space.
 
         Returns
         -------
-        src_var : ndarray, shape (n_trials, n_sources)
+        src_var : ndarray, shape (n_matrices, n_sources)
             Explained variance for each source.
         """
         if X.ndim != 3:

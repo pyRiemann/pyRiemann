@@ -3,7 +3,7 @@
 Installing pyRiemann
 ====================
 
-The easiest way to install a stable version of pyRiemann is through pypi, the python packege manager :
+The easiest way to install a stable version of pyRiemann is through pypi, the python package manager :
 
 ``pip install pyriemann``
 
@@ -21,7 +21,7 @@ If you use a zsh shell, you need to write `pip install -e .\[docs,tests\]`. If y
 Dependencies
 ~~~~~~~~~~~~
 
--  Python (>= 3.6)
+-  Python (>= 3.7)
 
 Mandatory dependencies
 ^^^^^^^^^^^^^^^^^^^^^^

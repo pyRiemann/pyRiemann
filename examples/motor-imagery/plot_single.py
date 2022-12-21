@@ -3,7 +3,7 @@
 Motor imagery classification
 ====================================================================
 
-Classify Motor imagery data with Riemannian Geometry.
+Classify motor imagery data with Riemannian geometry [1]_.
 """
 # generic import
 import numpy as np
@@ -99,6 +99,7 @@ class_balance = np.mean(labels == labels[0])
 class_balance = max(class_balance, 1. - class_balance)
 print("Tangent space Classification accuracy: %f / Chance level: %f" %
       (np.mean(scores), class_balance))
+
 ###############################################################################
 # Classification with CSP + logistic regression
 
@@ -141,3 +142,12 @@ plt.sca(axes[0])
 plt.xticks(rotation='vertical')
 plt.yticks(rotation='horizontal')
 plt.show()
+
+###############################################################################
+# References
+# ----------
+# .. [1] `Multiclass Brain-Computer Interface Classification by Riemannian
+#    Geometry
+#    <https://hal.archives-ouvertes.fr/hal-00681328>`_
+#    A. Barachant, S. Bonnet, M. Congedo, and C. Jutten. IEEE Transactions
+#    on Biomedical Engineering, vol. 59, no. 4, p. 920-928, 2012.

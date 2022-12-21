@@ -1,9 +1,9 @@
 """
 ===============================================================================
-Estimate covariance mean with NaN values
+Estimate mean of SPD matrices with NaN values
 ===============================================================================
 
-Estimate the mean of covariance matrices corrupted by NaN values [1]_.
+Estimate the mean of SPD matrices corrupted by NaN values [1]_.
 """
 # Author: Quentin Barthélemy, Sylvain Chevallier and Florian Yger
 #
@@ -46,7 +46,7 @@ n_matrices, n_channels = 100, 10
 covmats = make_covariances(
     n_matrices, n_channels, rs, evals_mean=100., evals_std=20.)
 
-# Compute the reference, the Riemannian mean on all covariance matrices
+# Compute the reference, the Riemannian mean on all SPD matrices
 C_ref = mean_riemann(covmats)
 
 # Corrupt data randomly
@@ -75,8 +75,8 @@ plt.show()
 
 
 ###############################################################################
-# Estimate covariance means
-# -------------------------
+# Estimate means of SPD matrices
+# ------------------------------
 #
 # Riemannian mean could only be computed on full-rank matrices. A common
 # strategy is called matrix deletion, that is removing all matrices with
@@ -100,8 +100,8 @@ C_mdriem = mean_riemann(covmats_)
 
 
 ###############################################################################
-# Compare covariance means
-# ------------------------
+# Compare means
+# -------------
 #
 # Compare distances between the different means and the reference.
 
@@ -164,6 +164,8 @@ plt.show()
 ###############################################################################
 # References
 # ----------
-# .. [1] F. Yger, S. Chevallier, Q. Barthélemy, S. Sra. "Geodesically-convex
-#    optimization for averaging partially observed covariance matrices", ACML
-#    2021.
+# .. [1] `Geodesically-convex optimization for averaging partially observed
+#    covariance matrices
+#    <https://hal.archives-ouvertes.fr/hal-02984423>`_
+#    F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
+#    Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.

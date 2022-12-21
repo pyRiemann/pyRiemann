@@ -2,7 +2,7 @@
 import pandas as pd
 import numpy as np
 from sklearn.metrics import confusion_matrix
-from ..embedding import Embedding
+from ..embedding import SpectralEmbedding, LocallyLinearEmbedding
 from . import deprecated
 
 
@@ -33,15 +33,53 @@ def plot_confusion_matrix(
     return g
 
 
-def plot_embedding(
-    X, y=None, metric="riemann", title="Spectral embedding of covariances"
-):
-    """Plot 2D embedding of covariance matrices using Diffusion maps."""
+def plot_embedding(X,
+                   y=None,
+                   *,
+                   metric="riemann",
+                   title="Embedding of covariances",
+                   embd_type='Spectral',
+                   normalize=True):
+    """Plot 2D embedding of SPD matrices.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+    y : None | ndarray, shape (n_matrices,), default=None
+        Labels for each matrix.
+    metric : string, default='riemann'
+        Metric used in the embedding. Can be {'riemann' ,'logeuclid' ,
+        'euclid'} for Locally Linear Embedding and {'riemann' ,'logeuclid' ,
+        'euclid' , 'logdet', 'kullback', 'kullback_right', 'kullback_sym'}
+        for Spectral Embedding.
+    title : str, default="Embedding of covariances"
+        Title string for plot.
+    embd_type : {'Spectral' ,'LocallyLinear'}, default='Spectral'
+        Embedding type.
+    normalize : bool, default=True
+        If True, the plot is normalized from -1 to +1.
+
+    Returns
+    -------
+    fig : matplotlib figure
+        Figure of embedding.
+    """
     try:
         import matplotlib.pyplot as plt
     except ImportError:
         raise ImportError("Install matplotlib to plot embeddings")
-    lapl = Embedding(n_components=2, metric=metric)
+
+    if embd_type == 'Spectral':
+        lapl = SpectralEmbedding(n_components=2, metric=metric)
+    elif embd_type == 'LocallyLinear':
+        lapl = LocallyLinearEmbedding(n_components=2,
+                                      n_neighbors=X.shape[1],
+                                      metric=metric)
+    else:
+        raise ValueError("Invalid embedding type. Valid types are: 'Spectral',"
+                         " 'LocallyLinear'")
+
     embd = lapl.fit_transform(X)
 
     if y is None:
@@ -54,10 +92,11 @@ def plot_embedding(
 
     ax.set_xlabel(r"$\varphi_1$", fontsize=16)
     ax.set_ylabel(r"$\varphi_2$", fontsize=16)
-    ax.set_title(title, fontsize=16)
+    ax.set_title(f'{embd_type} {title}', fontsize=16)
     ax.grid(False)
-    ax.set_xticks([-1.0, -0.5, 0.0, +0.5, 1.0])
-    ax.set_yticks([-1.0, -0.5, 0.0, +0.5, 1.0])
+    if normalize:
+        ax.set_xticks([-1.0, -0.5, 0.0, +0.5, 1.0])
+        ax.set_yticks([-1.0, -0.5, 0.0, +0.5, 1.0])
     ax.legend(list(np.unique(y)))
 
     return fig
@@ -69,7 +108,7 @@ def plot_cospectra(cosp, freqs, *, ylabels=None, title="Cospectra"):
     Parameters
     ----------
     cosp : ndarray, shape (n_freqs, n_channels, n_channels)
-        ndarray of cospectra.
+        Cospectral matrices.
     freqs : ndarray, shape (n_freqs,)
         The frequencies associated to cospectra.
 
@@ -116,7 +155,7 @@ def plot_cospectra(cosp, freqs, *, ylabels=None, title="Cospectra"):
 def plot_waveforms(X, display, *, times=None, color='gray', alpha=0.5,
                    linewidth=1.5, color_mean='k', color_std='gray', n_bins=50,
                    cmap=None):
-    ''' Display repetitions of a multichannel waveform.
+    """ Display repetitions of a multichannel waveform.
 
     Parameters
     ----------
@@ -129,7 +168,7 @@ def plot_waveforms(X, display, *, times=None, color='gray', alpha=0.5,
         * 'mean' for the mean of the repetitions;
         * 'mean+/-std' for the mean +/- standard deviation of the repetitions;
         * 'hist' for the 2D histogram of the repetitions.
-    time : None | ndarray, shape (n_times,) (default None)
+    time : None | ndarray, shape (n_times,), default=None
         Values to display on x-axis.
     color : matplotlib color, optional
         Color of the lines, when ``display=all``.
@@ -153,8 +192,8 @@ def plot_waveforms(X, display, *, times=None, color='gray', alpha=0.5,
 
     Notes
     -----
-    .. versionadded:: 0.2.8
-    '''
+    .. versionadded:: 0.3
+    """
     try:
         import matplotlib.pyplot as plt
     except ImportError:
@@ -202,3 +241,14 @@ def plot_waveforms(X, display, *, times=None, color='gray', alpha=0.5,
         for ax in axes[:-1]:
             ax.set_xticklabels([])  # remove xticklabels
     return fig
+
+
+def _add_alpha(colors, alphas):
+    """Add alphas to RGB channels"""
+    try:
+        from matplotlib.colors import to_rgb
+    except ImportError:
+        raise ImportError("Install matplotlib to add alpha")
+
+    cols = [to_rgb(c) for c in colors]
+    return [(c[0], c[1], c[2], a) for c, a in zip(cols, alphas[-len(cols):])]

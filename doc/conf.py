@@ -21,6 +21,13 @@ import mne
 print(mne.datasets.sample.data_path(update_path=True))
 print(mne.datasets.eegbci.load_data(1, [6, 10, 14], update_path=True))
 
+# If extensions (or modules to document with autodoc) are in another directory,
+# add these directories to sys.path here. If the directory is relative to the
+# documentation root, use os.path.abspath to make it absolute, like shown here.
+curdir = os.path.dirname(__file__)
+sys.path.append(os.path.abspath(os.path.join(curdir, 'sphinxext')))
+
+
 matplotlib.use('Agg')
 import shlex
 import sphinx_gallery
@@ -47,10 +54,11 @@ extensions = [
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
     # 'sphinx.ext.linkcode',
-    # 'sphinx.ext.mathjax',
-    'sphinx.ext.imgmath',
+    'sphinx.ext.mathjax',
+    # 'sphinx.ext.imgmath',
     'sphinx.ext.todo',
     'numpydoc',
+    'sphinx_issues',
     # 'sphinx.ext.ifconfig',
     # 'sphinx.ext.viewcode',
     'sphinx_gallery.gen_gallery',
@@ -71,6 +79,11 @@ autodoc_default_options = {'inherited-members': True}
 autosummary_generate = True
 numpydoc_show_class_members = False
 
+# Config for sphinx_issues
+
+# we use the issues path for PRs since the issues URL will forward
+issues_github_path = "pyRiemann/pyRiemann"
+
 # The suffix(es) of source filenames.
 # You can specify multiple suffix as a list of string:
 # source_suffix = ['.rst', '.md']
@@ -84,7 +97,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pyRiemann'
-copyright = u'2015-2021, pyRiemann Contributors'
+copyright = u'2015-2022, pyRiemann Contributors'
 author = u'Alexandre Barachant'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -103,7 +116,7 @@ release = pyriemann.__version__
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+language = "en"
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -331,5 +344,5 @@ intersphinx_mapping = {'https://docs.python.org/': None}
 
 
 def setup(app):
-    app.add_javascript('copybutton.js')
-    app.add_stylesheet('style.css')
+    app.add_js_file('copybutton.js')
+    app.add_css_file('style.css')

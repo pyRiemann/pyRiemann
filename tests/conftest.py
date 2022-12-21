@@ -63,15 +63,25 @@ def get_masks(rndstate):
     return _gen_masks
 
 
+@pytest.fixture
+def get_targets():
+    def get_targets(n_matrices):
+        return np.random.rand(n_matrices)
+
+    return get_targets
+
+
 def get_distances():
     distances = [
-        "riemann",
-        "logeuclid",
         "euclid",
-        "logdet",
+        "harmonic",
         "kullback",
         "kullback_right",
         "kullback_sym",
+        "logdet",
+        "logeuclid",
+        "riemann",
+        "wasserstein",
     ]
     for dist in distances:
         yield dist
@@ -79,15 +89,15 @@ def get_distances():
 
 def get_means():
     means = [
-        "riemann",
-        "logeuclid",
-        "euclid",
-        "logdet",
-        "identity",
-        "wasserstein",
         "ale",
+        "euclid",
         "harmonic",
+        "identity",
         "kullback_sym",
+        "logdet",
+        "logeuclid",
+        "riemann",
+        "wasserstein",
     ]
     for mean in means:
         yield mean
@@ -95,11 +105,11 @@ def get_means():
 
 def get_metrics():
     metrics = [
-        "riemann",
-        "logeuclid",
         "euclid",
         "logdet",
+        "logeuclid",
         "kullback_sym",
+        "riemann",
     ]
     for met in metrics:
         yield met

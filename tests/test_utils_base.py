@@ -42,9 +42,37 @@ def test_powm():
 
 
 def test_check_raise():
-    """Test chech SPD matrices"""
+    """Test check SPD matrices"""
     C = 2*np.ones((10, 3, 3))
     # This is an indirect check, the riemannian mean must crash when the
     # matrices are not SPD.
+    with pytest.warns(RuntimeWarning):
+        with pytest.raises(ValueError):
+            mean_riemann(C)
+
+
+def test_funm_error():
     with pytest.raises(ValueError):
-        mean_riemann(C)
+        sqrtm(np.ones(5))
+    with pytest.raises(ValueError):
+        invsqrtm(5.1)
+    with pytest.raises(ValueError):
+        logm([5.2])
+
+
+@pytest.mark.parametrize("funm", [sqrtm, invsqrtm, logm, expm, powm])
+def test_funm_ndarray(funm):
+    def test(funm, C):
+        if funm == powm:
+            D = funm(C, 0.2)
+        else:
+            D = funm(C)
+        assert C.shape == D.shape
+
+    n_matrices, n_channels = 6, 3
+    C_3d = np.asarray([np.eye(n_channels) for _ in range(n_matrices)])
+    test(funm, C_3d)
+
+    n_sets = 5
+    C_4d = np.asarray([C_3d for _ in range(n_sets)])
+    test(funm, C_4d)

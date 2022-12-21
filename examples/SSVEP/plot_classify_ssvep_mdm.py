@@ -12,23 +12,17 @@ is trained to predict a 4-class problem for an offline setup.
 #
 # License: BSD (3-clause)
 
-# generic import
-import os
 import numpy as np
 import matplotlib.pyplot as plt
 
-# mne import
-from mne import find_events, create_info, Epochs
-from mne.io import Raw, RawArray
-from mne.datasets import fetch_dataset
+from mne import find_events, Epochs
+from mne.io import Raw
+from sklearn.model_selection import cross_val_score, RepeatedKFold
 
-# pyriemann import
 from pyriemann.estimation import BlockCovariances
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.classification import MDM
-
-# scikit-learn import
-from sklearn.model_selection import cross_val_score, RepeatedKFold
+from helpers.ssvep_helpers import download_data, extend_signal
 
 
 ###############################################################################
@@ -37,60 +31,15 @@ from sklearn.model_selection import cross_val_score, RepeatedKFold
 #
 # The data are loaded through a MNE loader
 
-def download_sample_data(dataset="ssvep", subject=1, session=1):
-    """Download BCI data for example purpose
-
-    Parameters
-    ----------
-    dataset : str
-        type of the dataset, could be "ssvep", "p300" or "imagery"
-        Default is "ssvep", as other are not implemented
-    subject : int
-        Subject id, dataset specific (default: 1)
-    session : int, default 1
-        Session number%load , dataset specific (default: 1)
-
-    Returns
-    -------
-    destination : str
-        Path to downloaded data
-    """
-    if dataset == "ssvep":
-        DATASET_URL = 'https://zenodo.org/record/2392979/files/'
-        url = '{:s}subject{:02d}_run{:d}_raw.fif'.format(DATASET_URL,
-                                                         subject, session + 1)
-        config_key = 'MNE_DATASETS_SSVEPEXO_PATH'
-        folder_name = 'MNE-ssvepexo-data'
-    elif dataset == "p300" or dataset == "imagery":
-        raise NotImplementedError("Not yet implemented")
-
-    # Use MNE fetch_dataset to download EEG file
-    archive_name = url.split('/')[-1]
-    dataset_params = {
-        'dataset_name': dataset,
-        'archive_name': archive_name,
-        'hash': 'md5:ff7f0361a2d41f8df3fb53b9a9bc1220',
-        'url': url,
-        'folder_name': folder_name,
-        'config_key': config_key
-    }
-
-    data_path = fetch_dataset(
-        dataset_params
-    )
-
-    return os.path.join(data_path, archive_name)
-
-
 # Download data
-destination = download_sample_data(dataset="ssvep", subject=12, session=1)
+destination = download_data(subject=12, session=1)
 # Read data in MNE Raw and numpy format
 raw = Raw(destination, preload=True, verbose='ERROR')
 events = find_events(raw, shortest_event=0, verbose=False)
 raw = raw.pick_types(eeg=True)
+
 event_id = {'13 Hz': 2, '17 Hz': 4, '21 Hz': 3, 'resting-state': 1}
 sfreq = int(raw.info['sfreq'])
-
 eeg_data = raw.get_data()
 
 ###############################################################################
@@ -130,35 +79,21 @@ raw.plot(duration=n_seconds, start=0, n_channels=8, scalings={'eeg': 4e-2},
 ###############################################################################
 # Extended signals for spatial covariance
 # ---------------------------------------
-# Using the approach proposed by [1], the SSVEP signal is extended to include
+#
+# Using the approach proposed by [1]_, the SSVEP signal is extended to include
 # the filtered signals for each stimulation frequency. We stack the filtered
 # signals to build an extended signal.
 
 
-def _bandpass_filter(signal, lowcut, highcut):
-    """ Bandpass filter using MNE """
-    return signal.copy().filter(l_freq=lowcut, h_freq=highcut,
-                                method="iir").get_data()
-
-
 # We stack the filtered signals to build an extended signal
-frequencies = [13., 17., 21.]
+frequencies = [13, 17, 21]
 freq_band = 0.1
-ext_signal = np.vstack([_bandpass_filter(raw,
-                                         lowcut=f-freq_band,
-                                         highcut=f+freq_band)
-                        for f in frequencies])
+raw_ext = extend_signal(raw, frequencies, freq_band)
+
 
 ###############################################################################
-# Creating an MNE Raw object from the extended signal and plot it
+# Plot the extended signal
 
-info = create_info(
-    ch_names=sum(list(map(lambda s: [ch+s for ch in raw.ch_names],
-                          ["-13Hz", "-17Hz", "-21Hz"])), []),
-    ch_types=['eeg'] * 24,
-    sfreq=sfreq)
-
-raw_ext = RawArray(ext_signal, info)
 raw_ext.plot(duration=n_seconds, start=14, n_channels=24,
              scalings={'eeg': 5e-4}, color={'eeg': 'steelblue'})
 
@@ -194,6 +129,7 @@ cov_ext_trials = BlockCovariances(estimator='lwf',
                                   block_size=8).transform(epochs.get_data())
 
 # This plot shows an example of a covariance matrix observed for each class:
+ch_names = raw_ext.info['ch_names']
 
 plt.figure(figsize=(7, 7))
 for i, l in enumerate(event_id):
@@ -203,7 +139,7 @@ for i, l in enumerate(event_id):
     plt.title('Cov for class: '+l)
     plt.xticks([])
     if i == 0 or i == 2:
-        plt.yticks(np.arange(len(info['ch_names'])), info['ch_names'])
+        plt.yticks(np.arange(len(ch_names)), ch_names)
         ax.tick_params(axis='both', which='major', labelsize=7)
     else:
         plt.yticks([])
@@ -233,7 +169,7 @@ for i, l in enumerate(event_id):
     plt.title('Cov mean for class: '+l)
     plt.xticks([])
     if i == 0 or i == 2:
-        plt.yticks(np.arange(len(info['ch_names'])), info['ch_names'])
+        plt.yticks(np.arange(len(ch_names)), ch_names)
         ax.tick_params(axis='both', which='major', labelsize=7)
     else:
         plt.yticks([])
@@ -241,7 +177,9 @@ plt.show()
 
 ###############################################################################
 # Minimum distance to mean is a simple and robust algorithm for BCI decoding.
-# It reproduces results of [2] for the first session of subject 12.
+# It reproduces results of [2]_ for the first session of subject 12.
+
+print("Number of trials: {}".format(len(cov_ext_trials)))
 
 cv = RepeatedKFold(n_splits=2, n_repeats=10, random_state=42)
 mdm = MDM(metric=dict(mean='riemann', distance='riemann'))
@@ -249,14 +187,17 @@ scores = cross_val_score(mdm, cov_ext_trials, events[:, 2], cv=cv, n_jobs=1)
 print("MDM accuracy: {:.2f}% +/- {:.2f}".format(np.mean(scores)*100,
                                                 np.std(scores)*100))
 # The obtained results are 80.62% +/- 16.29 for this session, with a repeated
-# k-fold validation.
+# 10-fold validation.
 
 ###############################################################################
 # References
 # ----------
-# [1] M. Congedo, A. Barachant, A. Andreev ,"A New generation of Brain-Computer
-# Interface Based on Riemannian Geometry", arXiv: 1310.8115, 2013.
-#
-# [2] E. K. Kalunga, S. Chevallier, Q. Barthélemy, E. Monacelli,
-# "Review of Riemannian distances and divergences, applied to SSVEP-based BCI",
-# Neuroinformatics, 2020.
+# .. [1] `A New generation of Brain-Computer Interface Based on Riemannian
+#    Geometry
+#    <https://hal.archives-ouvertes.fr/hal-00879050>`_
+#    M. Congedo, A. Barachant, A. Andreev. Research report, 2013.
+# .. [2] `Review of Riemannian distances and divergences, applied to
+#    SSVEP-based BCI
+#    <https://hal.archives-ouvertes.fr/LISV/hal-03015762v1>`_
+#    S. Chevallier, E. K. Kalunga, Q. Barthélemy, E. Monacelli.
+#    Neuroinformatics, Springer, 2021, 19 (1), pp.93-106

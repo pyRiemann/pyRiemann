@@ -12,9 +12,11 @@ from pyriemann.utils.covariance import (
 from pyriemann.utils.test import is_real, is_hermitian
 
 
+estimators = ['corr', 'cov', 'lwf', 'mcd', 'oas', 'sch', 'scm']
+
+
 @pytest.mark.parametrize(
-    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd',
-                  'sch', np.cov, 'truc', None]
+    'estimator', estimators + [np.cov, 'truc', None]
 )
 def test_covariances(estimator, rndstate):
     """Test covariance for multiple estimators"""
@@ -33,7 +35,7 @@ def test_covariances(estimator, rndstate):
 
 
 @pytest.mark.parametrize(
-    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd', 'sch', None]
+    'estimator', estimators + [None]
 )
 def test_covariances_EP(estimator, rndstate):
     """Test covariance_EP for multiple estimators"""
@@ -50,7 +52,7 @@ def test_covariances_EP(estimator, rndstate):
 
 
 @pytest.mark.parametrize(
-    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd', 'sch', None]
+    'estimator', estimators + [None]
 )
 def test_covariances_X(estimator, rndstate):
     """Test covariance_X for multiple estimators"""
@@ -66,8 +68,7 @@ def test_covariances_X(estimator, rndstate):
 
 
 @pytest.mark.parametrize(
-    'estimator', ['oas', 'lwf', 'scm', 'corr', 'mcd',
-                  'sch', np.cov, 'truc', None]
+    'estimator', estimators + [np.cov, 'truc', None]
 )
 def test_block_covariances_est(estimator, rndstate):
     """Test block covariance for multiple estimators"""
@@ -225,24 +226,18 @@ def test_covariances_cospectrum(rndstate):
 
 
 @pytest.mark.parametrize(
-    'coh', ['ordinary', 'instantaneous', 'lagged', 'imaginary', 'foobar']
+    'coh', ['ordinary', 'instantaneous', 'lagged', 'imaginary']
 )
 def test_covariances_coherence(coh, rndstate):
     """Test coherence"""
     n_channels, n_times = 3, 2048
     x = rndstate.randn(n_channels, n_times)
 
-    if coh == 'foobar':
-        with pytest.raises(ValueError):  # unknown coh
-            coherence(x, coh=coh)
-    else:
-        coherence(x, coh=coh)
-        coherence(x, fs=32, window=256, coh=coh)
-        c, freqs = coherence(x, fs=128, fmin=3, fmax=40, coh=coh)
-        assert c.shape[0] == c.shape[1] == n_channels
-        assert c.shape[-1] == freqs.shape[0]
-        # test if coherence in [0,1]
-        assert np.all((0. <= c) & (c <= 1.))
+    c, freqs = coherence(x, fs=128, fmin=3, fmax=40, coh=coh)
+    assert c.shape[0] == c.shape[1] == n_channels
+    assert c.shape[-1] == freqs.shape[0]
+    # test if coherence in [0,1]
+    assert np.all((0. <= c) & (c <= 1.))
 
     # test equivalence between pyriemann and scipy for ordinary coherence
     if coh == 'ordinary':
@@ -266,55 +261,65 @@ def test_covariances_coherence(coh, rndstate):
             coherence(x, coh=coh)
         with pytest.warns(UserWarning):  # not defined for DC and Nyquist bins
             coherence(x, fs=64, coh=coh)
+    else:
+        coherence(x, coh=coh)
+        coherence(x, fs=64, coh=coh)
 
     # test statistical properties of coherence between phase shifted channels
-    if coh in ['ordinary', 'instantaneous', 'lagged', 'imaginary']:
-        fs, ft, n_periods = 16, 4, 20
-        t = np.arange(0, n_periods, 1 / fs)
-        n_times = t.shape[0]
+    fs, ft, n_periods = 16, 4, 20
+    t = np.arange(0, n_periods, 1 / fs)
+    n_times = t.shape[0]
 
-        x = np.empty((4, len(t)))
-        noise = 1e-9
-        # reference channel: a pure sine + small noise (to avoid nan or inf)
-        x[0] = np.sin(2 * np.pi * ft * t) + noise * rndstate.randn((n_times))
-        # pi/4 shifted channel = pi/4 lagged phase
-        x[1] = np.sin(2 * np.pi * ft * t + np.pi / 4) \
-            + noise * rndstate.randn((n_times))
-        # pi/2 shifted channel = quadrature phase
-        x[2] = np.sin(2 * np.pi * ft * t + np.pi / 2) \
-            + noise * rndstate.randn((n_times))
-        # pi shifted channel = opposite phase
-        x[3] = np.sin(2 * np.pi * ft * t + np.pi) \
-            + noise * rndstate.randn((n_times))
+    x, noise = np.empty((4, len(t))), 1e-9
+    # reference channel: a pure sine + small noise (to avoid nan or inf)
+    x[0] = np.sin(2 * np.pi * ft * t) + noise * rndstate.randn((n_times))
+    # pi/4 shifted channel = pi/4 lagged phase
+    x[1] = np.sin(2 * np.pi * ft * t + np.pi / 4) \
+        + noise * rndstate.randn((n_times))
+    # pi/2 shifted channel = quadrature phase
+    x[2] = np.sin(2 * np.pi * ft * t + np.pi / 2) \
+        + noise * rndstate.randn((n_times))
+    # pi shifted channel = opposite phase
+    x[3] = np.sin(2 * np.pi * ft * t + np.pi) \
+        + noise * rndstate.randn((n_times))
 
-        c, freqs = coherence(x, fs=fs, window=fs, overlap=0.5, coh=coh)
-        foi = (freqs == ft)
+    c, freqs = coherence(x, fs=fs, fmin=1, fmax=fs/2-1, window=fs,
+                         overlap=0.5, coh=coh)
+    foi = (freqs == ft)
 
-        if coh == 'ordinary':
-            # ord coh equal 1 between ref and all other channels
-            assert_array_almost_equal(c[..., foi], np.ones_like(c[..., foi]))
+    if coh == 'ordinary':
+        # ord coh equal 1 between ref and all other channels
+        assert_array_almost_equal(c[..., foi], np.ones_like(c[..., foi]))
 
-        elif coh == 'instantaneous':
-            # inst coh equal 0.5 between ref and pi/4 lagged phase channels
-            assert c[0, 1, foi] == pytest.approx(0.5)
-            # inst coh equal 0 between ref and quadrature phase channels
-            assert c[0, 2, foi] == pytest.approx(0.0)
-            # inst coh equal 1 between ref and opposite phase channels
-            assert c[0, 3, foi] == pytest.approx(1.0)
+    elif coh == 'instantaneous':
+        # inst coh equal 0.5 between ref and pi/4 lagged phase channels
+        assert c[0, 1, foi] == pytest.approx(0.5)
+        # inst coh equal 0 between ref and quadrature phase channels
+        assert c[0, 2, foi] == pytest.approx(0.0)
+        # inst coh equal 1 between ref and opposite phase channels
+        assert c[0, 3, foi] == pytest.approx(1.0)
 
-        elif coh == 'lagged':
-            # lagged coh equal 1 between ref and quadrature phase channels
-            assert c[0, 2, foi] == pytest.approx(1.0)
-            # lagged coh equal 0 between ref and opposite phase channels
-            assert c[0, 3, foi] == pytest.approx(0.0, abs=1e-4)
+    elif coh == 'lagged':
+        # lagged coh equal 1 between ref and quadrature phase channels
+        assert c[0, 2, foi] == pytest.approx(1.0)
+        # lagged coh equal 0 between ref and opposite phase channels
+        assert c[0, 3, foi] == pytest.approx(0.0, abs=1e-4)
 
-        elif coh == 'imaginary':
-            # imag coh equal 0.5 between ref and pi/4 lagged phase channels
-            assert c[0, 1, foi] == pytest.approx(0.5)
-            # imag coh equal 1 between ref and quadrature phase channels
-            assert c[0, 2, foi] == pytest.approx(1.0)
-            # imag coh equal 0 between ref and opposite phase channels
-            assert c[0, 3, foi] == pytest.approx(0.0)
+    elif coh == 'imaginary':
+        # imag coh equal 0.5 between ref and pi/4 lagged phase channels
+        assert c[0, 1, foi] == pytest.approx(0.5)
+        # imag coh equal 1 between ref and quadrature phase channels
+        assert c[0, 2, foi] == pytest.approx(1.0)
+        # imag coh equal 0 between ref and opposite phase channels
+        assert c[0, 3, foi] == pytest.approx(0.0)
+
+
+def test_covariances_coherence_error(rndstate):
+    """Test coherence error"""
+    n_channels, n_times = 3, 50
+    x = rndstate.randn(n_channels, n_times)
+    with pytest.raises(ValueError):  # unknown coh
+        coherence(x, coh='foobar')
 
 
 @pytest.mark.parametrize('norm', ['corr', 'trace', 'determinant'])

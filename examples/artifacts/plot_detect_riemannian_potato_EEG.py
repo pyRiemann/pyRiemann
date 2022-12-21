@@ -17,7 +17,6 @@ import os
 
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib.colors import to_rgb
 from matplotlib.animation import FuncAnimation
 
 from mne.datasets import sample
@@ -26,6 +25,7 @@ from mne import make_fixed_length_epochs
 
 from pyriemann.estimation import Covariances
 from pyriemann.clustering import Potato
+from pyriemann.utils.viz import _add_alpha
 
 
 ###############################################################################
@@ -63,11 +63,6 @@ def plot_sig(ax, time, sig):
     return pl
 
 
-def add_alpha(p_cols, alphas):
-    cols = [to_rgb(c) for c in p_cols]
-    return [(c[0], c[1], c[2], a) for c, a in zip(cols, alphas[-len(p_cols):])]
-
-
 ###############################################################################
 # Load EEG data
 # -------------
@@ -95,8 +90,8 @@ raw.filter(1., 35., method='iir', picks=ch_names)
 # Epoch time-series with a sliding window
 duration = 2.5    # duration of epochs
 interval = 0.2    # interval between successive epochs
-epochs = make_fixed_length_epochs(raw, duration=duration,
-                                  overlap=duration - interval, verbose=False)
+epochs = make_fixed_length_epochs(
+    raw, duration=duration, overlap=duration - interval, verbose=False)
 epochs_data = 5e5 * epochs.get_data(picks=ch_names)
 
 # Estimate spatial covariance matrices
@@ -113,14 +108,14 @@ covs = Covariances(estimator='lwf').transform(epochs_data)
 # the potato. It reproduces Fig 1 of reference [2]_.
 
 z_th = 2.0       # z-score threshold
-t = 40           # nb of matrices to train the potato
+train_covs = 40  # nb of matrices to train the potato
 
 
 ###############################################################################
 
 # Calibrate potato by unsupervised training on first matrices: compute a
 # reference matrix, mean and standard deviation of distances to this reference.
-train_set = range(t)
+train_set = range(train_covs)
 rpotato = Potato(metric='riemann', threshold=z_th).fit(covs[train_set])
 rp_center = rpotato._mdm.covmeans_[0]
 epotato = Potato(metric='euclid', threshold=z_th).fit(covs[train_set])
@@ -178,8 +173,8 @@ test_covs_visu = 30     # nb of matrices to display simultaneously
 test_time_start = -2    # start time to display signal
 test_time_end = 5       # end time to display signal
 
-time_start = t * interval + test_time_start
-time_end = t * interval + test_time_end
+time_start = train_covs * interval + test_time_start
+time_end = train_covs * interval + test_time_end
 time = np.linspace(time_start, time_end, int((time_end - time_start) * sfreq),
                    endpoint=False)
 eeg_data = 3e5 * raw.get_data(picks=ch_names)
@@ -210,8 +205,8 @@ p_ep = plot_potato_2D(ax_ep, cax_ep, X, Y, ep_zscores, ep_center, covs_visu,
 ###############################################################################
 
 # Prepare animation for online detection
-def online_update(self):
-    global t, time, sig, covs_visu
+def online_detect(t):
+    global time, sig, covs_visu
 
     # Online artifact detection
     rp_label = rpotato.predict(covs[np.newaxis, t])[0]
@@ -237,9 +232,8 @@ def online_update(self):
         covs_visu = covs_visu[1:]
         rp_colors.pop(0)
         ep_colors.pop(0)
-    rp_colors_ = add_alpha(rp_colors, alphas)
-    ep_colors_ = add_alpha(ep_colors, alphas)
-    t += 1
+    rp_colors_ = _add_alpha(rp_colors, alphas)
+    ep_colors_ = _add_alpha(ep_colors, alphas)
 
     # Update plot
     pl_sig0.set_data(time, sig[0])
@@ -253,22 +247,41 @@ def online_update(self):
     return pl_sig0, pl_sig1, p_rp, p_ep
 
 
-###############################################################################
-# Plot online detection (a dynamic display is required)
-
 interval_display = 1.0  # can be changed for a slower display
 
-potato = FuncAnimation(fig, online_update, frames=test_covs_max,
+potato = FuncAnimation(fig, online_detect,
+                       frames=range(train_covs, test_covs_max),
                        interval=interval_display, blit=False, repeat=False)
+
+
+###############################################################################
+
+# Plot online detection
+
+# Plot complete visu: a dynamic display is required
 plt.show()
+
+# Plot only 10s, for animated documentation
+try:
+    from IPython.display import HTML
+except ImportError:
+    raise ImportError("Install IPython to plot animation in documentation")
+
+plt.rcParams["animation.embed_limit"] = 10
+HTML(potato.to_jshtml(fps=5, default_mode='loop'))
 
 
 ###############################################################################
 # References
 # ----------
-# .. [1] A. Barachant, A. Andreev, M. Congedo, "The Riemannian Potato: an
-#    automatic and adaptive artifact detection method for online experiments
-#    using Riemannian geometry", Proc. TOBI Workshop IV, 2013.
-#
-# .. [2] Q. Barthélemy, L. Mayaud, D. Ojeda, M. Congedo, "The Riemannian potato
-#    field: a tool for online signal quality index of EEG", IEEE TNSRE, 2019.
+# .. [1] `The Riemannian Potato: an automatic and adaptive artifact detection
+#    method for online experiments using Riemannian geometry
+#    <https://hal.archives-ouvertes.fr/hal-00781701>`_
+#    A. Barachant, A Andreev, and M. Congedo. TOBI Workshop lV, Jan 2013, Sion,
+#    Switzerland. pp.19-20
+# .. [2] `The Riemannian Potato Field: A Tool for Online Signal Quality Index
+#    of EEG
+#    <https://hal.archives-ouvertes.fr/hal-02015909>`_
+#    Q. Barthélemy, L. Mayaud, D. Ojeda, and M. Congedo. IEEE Transactions
+#    on Neural Systems and Rehabilitation Engineering, IEEE Institute of
+#    Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
