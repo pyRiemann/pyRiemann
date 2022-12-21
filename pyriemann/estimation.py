@@ -1,7 +1,8 @@
-"""Estimation of covariance matrices."""
+"""Estimation of SPD matrices."""
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.covariance import shrunk_covariance
+from sklearn.metrics.pairwise import pairwise_kernels
 
 from .spatialfilters import Xdawn
 from .utils.covariance import (covariances, covariances_EP, cospectrum,
@@ -79,12 +80,13 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     r"""Estimate special form covariance matrix for ERP.
 
     Estimation of special form covariance matrix dedicated to ERP processing.
-    For each class, a prototyped response is obtained by average across trial:
+    For each class, a prototyped response is obtained by average across trials:
 
     .. math::
         \mathbf{P} = \frac{1}{m} \sum_{i=1}^{m} \mathbf{X}_i
 
-    and a super trial is built using the concatenation of P and the trial X:
+    and a super trial is built using the concatenation of :math:`\mathbf{P}`
+    and the trial :math:`\mathbf{X}_i`:
 
     .. math::
         \mathbf{\tilde{X}}_i = \left[ \begin{array}{c} \mathbf{P} \\
@@ -104,8 +106,8 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
     svd : int | None, default=None
-        If not None, the prototype responses will be reduce using a SVD using
-        the number of components passed in SVD.
+        If not None, number of components of SVD used to reduce prototype
+        responses.
 
     Attributes
     ----------
@@ -633,7 +635,6 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
     --------
     Covariances
     ERPCovariances
-    XdawnCovariances
     CospCovariances
 
     References
@@ -665,8 +666,8 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        self : Covariances instance
-            The Covariances instance.
+        self : HankelCovariances instance
+            The HankelCovariances instance.
         """
         return self
 
@@ -702,6 +703,107 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
         X2 = np.array(X2)
         covmats = covariances(X2, estimator=self.estimator)
         return covmats
+
+
+###############################################################################
+
+
+class Kernels(BaseEstimator, TransformerMixin):
+    """Estimation of kernel matrix between channels of time series.
+
+    Perform a kernel matrix estimation for each given time series, evaluating a
+    kernel function between each pair of channels (rather than between pairs of
+    time samples) and allowing to extract nonlinear channel relationship [1]_.
+
+    For an input time series :math:`X \in \mathbb{R}^{c \times t}`, kernel
+    function :math:`\kappa()` is computed between channels :math:`i` and
+    :math:`j`:
+
+    .. math::
+        K_{i,j} = \kappa \left( X[i], X[j] \right)
+
+    Linear kernel is related to :class:`pyriemann.estimation.Covariances` [1]_,
+    but this class allows to generalize to nonlinear relationships.
+
+    Parameters
+    ----------
+    metric : string, default='linear'
+        The metric to use when computing kernel function between channels [2]_:
+        'linear', 'poly', 'polynomial', 'rbf', 'laplacian', 'cosine'.
+    n_jobs : int, default=None
+        The number of jobs to use for the computation [2]_. This works by
+        breaking down the pairwise matrix into n_jobs even slices and computing
+        them in parallel.
+
+    See Also
+    --------
+    Covariances
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+
+    References
+    ----------
+    .. [1] `Beyond Covariance: Feature Representation with Nonlinear Kernel
+        Matrices
+        <https://www.cv-foundation.org/openaccess/content_iccv_2015/papers/Wang_Beyond_Covariance_Feature_ICCV_2015_paper.pdf>`_
+        L. Wang, J. Zhang, L. Zhou, C. Tang, W Li. ICCV, 2015.
+    .. [2]
+        https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.pairwise_kernels.html
+    """  # noqa
+
+    def __init__(self, metric='linear', n_jobs=None):
+        """Init."""
+        self.metric = metric
+        self.n_jobs = n_jobs
+
+    def fit(self, X, y=None):
+        """Fit.
+
+        Do nothing. For compatibility purpose.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
+        y : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        self : Kernels instance
+            The Kernels instance.
+        """
+        return self
+
+    def transform(self, X):
+        """Estimate kernel matrices from time series.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
+
+        Returns
+        -------
+        K : ndarray, shape (n_matrices, n_channels, n_channels)
+            Kernel matrices.
+        """
+        if self.metric not in [
+                'linear', 'poly', 'polynomial', 'rbf', 'laplacian', 'cosine'
+        ]:
+            raise TypeError('Unsupported metric for kernel estimation.')
+
+        K = [
+            pairwise_kernels(x, None, metric=self.metric, n_jobs=self.n_jobs)
+            for x in X
+        ]
+
+        return np.asarray(K)
+
+
+###############################################################################
 
 
 class Shrinkage(BaseEstimator, TransformerMixin):
