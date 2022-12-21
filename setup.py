@@ -14,7 +14,6 @@ with open(op.join("pyriemann", "_version.py"), "r") as fid:
 if version is None:
     raise RuntimeError("Could not determine version")
 
-# "open" does not provide the parameter "encoding" for python<3
 is_python3 = sys.version_info.major >= 3
 kwargs_open = {"encoding": "utf8"} if is_python3 else {}
 with open('README.md', 'r', **kwargs_open) as fid:
