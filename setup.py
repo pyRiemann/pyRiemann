@@ -1,3 +1,4 @@
+import sys
 import os.path as op
 
 from setuptools import setup, find_packages
@@ -13,7 +14,9 @@ with open(op.join("pyriemann", "_version.py"), "r") as fid:
 if version is None:
     raise RuntimeError("Could not determine version")
 
-with open("README.md", "r", encoding="utf8") as fid:
+is_python3 = sys.version_info.major >= 3
+kwargs_open = {"encoding": "utf8"} if is_python3 else {}
+with open('README.md', 'r', **kwargs_open) as fid:
     long_description = fid.read()
 
 setup(
