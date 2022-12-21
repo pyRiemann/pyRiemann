@@ -1,12 +1,12 @@
 """
 ===============================================================================
-Estimate covariance with different time windows
+Compare covariance and kernel estimators with different time windows
 ===============================================================================
 
-Covariance estimators comparison for different EEG signal lengths and their
-impact on classification [1]_.
+Comparison of covariance estimators for different EEG signal lengths and their
+impact on classification [1]_. Kernel estimators are also compared [2]_.
 """
-# Author: Sylvain Chevallier
+# Authors: Sylvain Chevallier and Quentin Barthélemy
 #
 # License: BSD (3-clause)
 
@@ -22,11 +22,9 @@ from mne.datasets import eegbci
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.pipeline import make_pipeline
 
-from pyriemann.estimation import Covariances
+from pyriemann.estimation import Covariances, Kernels
 from pyriemann.utils.distance import distance
 from pyriemann.classification import MDM
-
-rs = np.random.RandomState(42)
 
 
 ###############################################################################
@@ -36,6 +34,7 @@ rs = np.random.RandomState(42)
 # Generate synthetic data, sampled from a distribution considered as the
 # groundtruth.
 
+rs = np.random.RandomState(42)
 n_matrices, n_channels, n_times = 10, 5, 1000
 var = 2.0 + 0.1 * rs.randn(n_matrices, n_channels)
 A = 2 * rs.rand(n_channels, n_channels) - 1
@@ -49,7 +48,7 @@ for i in range(n_matrices):
     ).T
 
 ###############################################################################
-# `Covariances()` object offers several estimators:
+# `Covariances()` class offers several estimators:
 #
 # - sample covariance matrix (SCM),
 # - Ledoit-Wolf (LWF),
@@ -80,10 +79,12 @@ ax.set_title("Distance to groundtruth covariance matrix")
 ax.set_xlabel("Number of time samples")
 ax.set_ylabel(r"$\delta(\Sigma, \hat{\Sigma})$")
 plt.tight_layout()
+plt.show()
 
 ###############################################################################
 # Choice of estimator for motor imagery data
-# -------------------------------------------
+# ------------------------------------------
+#
 # Loading data from PhysioNet MI dataset, for subject 1.
 
 event_id = dict(hands=2, feet=3)
@@ -104,8 +105,9 @@ events, _ = events_from_annotations(raw, event_id=dict(T1=2, T2=3))
 event_ids = dict(hands=2, feet=3)
 
 ###############################################################################
-# Influence of shrinkage to estimate covariance
-# -----------------------------------------------
+# Influence of shrinkage to estimate matrices
+# -------------------------------------------
+#
 # Sample covariance matrix (SCM) estimation could lead to ill-conditionned
 # matrices depending on the quality and quantity of EEG data available.
 # Matrix condition number is the ratio between the highest and lowest
@@ -113,15 +115,25 @@ event_ids = dict(hands=2, feet=3)
 # suitable for classification.
 # A common approach to mitigate this issue is to regularize covariance matrices
 # by shrinkage, like in Ledoit-Wolf, Schaefer-Strimmer or oracle estimators.
+#
+# In addition to covariance matrices, kernel matrices are computed for three
+# kernel functions:
+#
+# - radial basis function (RBF),
+# - polynomial,
+# - Laplacian.
 
-estimators = ["lwf", "oas", "sch", "scm"]
+estimators = [
+    "cov-lwf", "cov-oas", "cov-sch", "cov-scm",
+    "ker-rbf", "ker-polynomial", "ker-laplacian",
+]
 tmin = -0.2
 w_len = np.linspace(0.2, 2, 10)
 n_matrices = 45
 dfc = list()
 
 for wl in w_len:
-    epochs = Epochs(
+    X = Epochs(
         raw,
         events,
         event_ids,
@@ -130,12 +142,16 @@ for wl in w_len:
         picks=picks,
         preload=True,
         verbose=False,
-    )
+    ).get_data()
     for est in estimators:
-        cov = Covariances(estimator=est).transform(epochs.get_data())
-        for k in range(len(cov)):
-            ev, _ = np.linalg.eigh(cov[k, :, :])
-            dfc.append(dict(estimator=est, wlen=wl, cond=ev[-1] / ev[0]))
+        est_class, est_param = est.split('-')
+        if est_class == "ker":
+            covs = Kernels(metric=est_param).transform(X)
+        else:
+            covs = Covariances(estimator=est_param).transform(X)
+        evals, _ = np.linalg.eigh(covs)
+        dfc.extend([dict(estimator=est, wlen=wl, cond=e[-1] / e[0])
+                    for e in evals])
 dfc = pd.DataFrame(dfc)
 
 ###############################################################################
@@ -143,25 +159,26 @@ dfc = pd.DataFrame(dfc)
 fig, ax = plt.subplots(figsize=(6, 4))
 ax.set(yscale="log")
 sns.lineplot(data=dfc, x="wlen", y="cond", hue="estimator", ax=ax)
-ax.set_title("Condition number of estimated covariance matrices")
+ax.set_title("Condition number of estimated matrices")
 ax.set_xlabel("Epoch length (s)")
 ax.set_ylabel(r"$\lambda_{\max}$/$\lambda_{\min}$")
 plt.tight_layout()
+plt.show()
 
 ###############################################################################
 # Picking a good estimator for classification
-# -----------------------------------------------
-# The choice of covariance estimator have an impact on classification,
-# especially when the covariances are estimated on short time windows.
+# -------------------------------------------
+#
+# The choice of estimator have an impact on classification,
+# especially when the matrices are estimated on short time windows.
 
-estimators = ["lwf", "oas", "sch", "scm"]
 tmin = 0.0
 w_len = np.linspace(0.2, 2.0, 5)
-n_matrices, n_splits = 45, 3
+n_matrices, n_splits = 45, 5
 dfa = list()
 sc = "balanced_accuracy"
 
-cv = StratifiedKFold(n_splits=n_splits, shuffle=True)
+cv = StratifiedKFold(n_splits=n_splits, shuffle=True, random_state=123)
 for wl in w_len:
     epochs = Epochs(
         raw,
@@ -178,7 +195,11 @@ for wl in w_len:
     X = epochs.get_data()
     y = np.array([0 if ev == 2 else 1 for ev in epochs.events[:, -1]])
     for est in estimators:
-        clf = make_pipeline(Covariances(estimator=est), MDM())
+        est_class, est_param = est.split('-')
+        if est_class == "ker":
+            clf = make_pipeline(Kernels(metric=est_param), MDM())
+        else:
+            clf = make_pipeline(Covariances(estimator=est_param), MDM())
         try:
             score = cross_val_score(clf, X, y, cv=cv, scoring=sc)
             dfa += [dict(estimator=est, wlen=wl, accuracy=sc) for sc in score]
@@ -205,6 +226,7 @@ ax.set_title("Accuracy for different estimators and epoch lengths")
 ax.set_xlabel("Epoch length (s)")
 ax.set_ylabel("Classification accuracy")
 plt.tight_layout()
+plt.show()
 
 ###############################################################################
 # References
@@ -214,3 +236,7 @@ plt.tight_layout()
 #    <https://hal.archives-ouvertes.fr/hal-01739877>`_
 #    S. Chevallier, E. Kalunga, Q. Barthélemy, F. Yger. Brain–Computer
 #    Interfaces Handbook: Technological and Theoretical Advances, 2018.
+# .. [2] `Beyond Covariance: Feature Representation with Nonlinear Kernel
+#    Matrices
+#    <https://www.cv-foundation.org/openaccess/content_iccv_2015/papers/Wang_Beyond_Covariance_Feature_ICCV_2015_paper.pdf>`_  # noqa
+#    L. Wang, J. Zhang, L. Zhou, C. Tang, W Li. ICCV, 2015.
