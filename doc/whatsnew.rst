@@ -33,6 +33,8 @@ v0.3.1.dev
 
 - Add example on ensemble learning applied to functional connectivity, and add :func:`pyriemann.utils.base.nearest_sym_pos_def`. :pr:`202` by :user:`mccorsi` and :user:`sylvchev`
 
+- Add kernel matrices representation :class:`pyriemann.estimation.Kernels` and complete example comparing estimators. :pr:`217` by :user:`qbarthelemy`
+
 v0.3 (July 2022)
 ----------------
 

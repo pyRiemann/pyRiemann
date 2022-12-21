@@ -33,6 +33,10 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
     Notes
     -----
     .. versionadded:: 0.3
+
+    See Also
+    --------
+    kernel
     """  # noqa
     def kernelfct(X, Cref):
         return X
@@ -67,6 +71,10 @@ def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
     Notes
     -----
     .. versionadded:: 0.3
+
+    See Also
+    --------
+    kernel
 
     References
     ----------
@@ -114,6 +122,10 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
     Notes
     -----
     .. versionadded:: 0.3
+
+    See Also
+    --------
+    kernel
 
     References
     ----------
@@ -181,7 +193,7 @@ def _apply_matrix_kernel(kernel_fct, X, Y=None, *, Cref=None, reg=1e-10):
 
 
 def kernel(X, Y=None, *, Cref=None, metric='riemann', reg=1e-10):
-    """Kernel matrix according to a specified metric.
+    """Kernel matrix between SPD matrices according to a specified metric.
 
     Calculates the kernel matrix K of inner products of two sets X and Y of
     SPD matrices on the tangent space of Cref according to a specified metric.
@@ -210,6 +222,12 @@ def kernel(X, Y=None, *, Cref=None, metric='riemann', reg=1e-10):
     Notes
     -----
     .. versionadded:: 0.3
+
+    See Also
+    --------
+    kernel_euclid
+    kernel_logeuclid
+    kernel_riemann
     """
     try:
         return globals()[f'kernel_{metric}'](X, Y, Cref=Cref, reg=reg)
