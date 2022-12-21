@@ -19,7 +19,7 @@ with open("README.md", "r", encoding="utf8") as fid:
 setup(
     name="pyriemann",
     version=version,
-    description="Riemannian Geometry for python",
+    description="Biosignals classification with Riemannian geometry",
     url="https://pyriemann.readthedocs.io",
     author="Alexandre Barachant",
     author_email="alexandre.barachant@gmail.com",
@@ -34,7 +34,13 @@ setup(
     },
     platforms="any",
     python_requires=">=3.7",
-    install_requires=["numpy", "scipy", "scikit-learn", "joblib", "pandas"],
+    install_requires=[
+        "numpy!=1.24.0",
+        "scipy",
+        "scikit-learn",
+        "joblib",
+        "pandas"
+    ],
     extras_require={
         "docs": [
             "sphinx-gallery",

@@ -6,6 +6,8 @@ from pyriemann.utils.test import (
     is_sym_pos_def, is_sym_pos_semi_def
 )
 
+import pytest
+
 
 n_channels = 3
 
@@ -48,12 +50,13 @@ def test_is_hermitian(rndstate):
     assert not is_hermitian(np.ones((n_channels, n_channels + 1)))
 
 
-def test_is_pos_def(rndstate):
-    assert is_pos_def(np.eye(n_channels))
+@pytest.mark.parametrize("fast_mode", [True, False])
+def test_is_pos_def(rndstate, fast_mode):
+    assert is_pos_def(np.eye(n_channels), fast_mode)
     A = rndstate.randn(n_channels, 100)
-    assert is_pos_def(A @ A.T + 0.001 * np.eye(n_channels))
-    assert not is_pos_def(-A @ A.T)
-    assert not is_pos_def(np.ones((n_channels, n_channels + 1)))
+    assert is_pos_def(A @ A.T + 0.001 * np.eye(n_channels), fast_mode)
+    assert not is_pos_def(-A @ A.T, fast_mode)
+    assert not is_pos_def(np.ones((n_channels, n_channels + 1)), fast_mode)
 
 
 def test_is_pos_semi_def(rndstate):
