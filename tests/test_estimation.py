@@ -1,5 +1,9 @@
 import numpy as np
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import (
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_raises,
+)
 import pytest
 
 from pyriemann.estimation import (
@@ -272,6 +276,24 @@ def test_kernels_linear(rndstate):
     x = x / np.sqrt(n_times - 1)
     kernels = Kernels(metric='linear').fit_transform(x)
     assert_array_almost_equal(covs, kernels, 6)
+
+
+@pytest.mark.parametrize(
+    "metric, kwds",
+    [
+        ('polynomial', {'degree': 2, 'gamma': 0.5, 'coef0': 0.8}),
+        ('rbf', {'gamma': 0.5}),
+        ('laplacian', {'gamma': 0.5}),
+    ],
+)
+def test_kernels_kwds(metric, kwds, rndstate):
+    n_matrices, n_channels, n_times = 3, 6, 10
+    x = rndstate.randn(n_matrices, n_channels, n_times)
+    kernels_none = Kernels(metric=metric).fit_transform(x)
+    kernels_kwds = Kernels(metric=metric, **kwds).fit_transform(x)
+    assert_raises(
+        AssertionError, assert_array_equal, kernels_none, kernels_kwds
+    )
 
 
 @pytest.mark.parametrize("shrinkage", [0.1, 0.9])

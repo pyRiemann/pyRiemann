@@ -734,6 +734,8 @@ class Kernels(BaseEstimator, TransformerMixin):
         The number of jobs to use for the computation [2]_. This works by
         breaking down the pairwise matrix into n_jobs even slices and computing
         them in parallel.
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the kernel function [2]_.
 
     See Also
     --------
@@ -753,10 +755,11 @@ class Kernels(BaseEstimator, TransformerMixin):
         https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.pairwise_kernels.html
     """  # noqa
 
-    def __init__(self, metric='linear', n_jobs=None):
+    def __init__(self, metric='linear', n_jobs=None, **kwds):
         """Init."""
         self.metric = metric
         self.n_jobs = n_jobs
+        self.kwds = kwds
 
     def fit(self, X, y=None):
         """Fit.
@@ -796,8 +799,13 @@ class Kernels(BaseEstimator, TransformerMixin):
             raise TypeError('Unsupported metric for kernel estimation.')
 
         K = [
-            pairwise_kernels(x, None, metric=self.metric, n_jobs=self.n_jobs)
-            for x in X
+            pairwise_kernels(
+                x,
+                None,
+                metric=self.metric,
+                n_jobs=self.n_jobs,
+                **self.kwds
+            ) for x in X
         ]
 
         return np.asarray(K)
