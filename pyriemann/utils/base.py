@@ -2,6 +2,7 @@
 
 import numpy as np
 from numpy.core.numerictypes import typecodes
+from .test import is_pos_def
 
 
 def _matrix_operator(C, operator):
@@ -146,3 +147,80 @@ def powm(C, alpha):
     """
     def power(x): return x**alpha
     return _matrix_operator(C, power)
+
+
+def _nearest_sym_pos_def(S, reg=1e-6):
+    """Find the nearest SPD matrix.
+
+    Parameters
+    ----------
+    S : ndarray, shape (n, n)
+        Square matrix.
+    reg : float
+        Regularization parameter.
+
+    Returns
+    -------
+    P : ndarray, shape (n, n)
+        Nearest SPD matrix.
+    """
+    A = (S + S.T) / 2
+    _, s, V = np.linalg.svd(A)
+    H = V.T @ np.diag(s) @ V
+    B = (A + H) / 2
+    P = (B + B.T) / 2
+
+    if is_pos_def(P):
+        # Regularize if already PD
+        ei, ev = np.linalg.eigh(P)
+        if np.min(ei) / np.max(ei) < reg:
+            P = ev @ np.diag(ei + reg) @ ev.T
+        return P
+
+    spacing = np.spacing(np.linalg.norm(A))
+    I = np.eye(S.shape[0])  # noqa
+    k = 1
+    while not is_pos_def(P, fast_mode=False):
+        mineig = np.min(np.real(np.linalg.eigvals(P)))
+        P += I * (-mineig * k ** 2 + spacing)
+        k += 1
+
+    # Regularize
+    ei, ev = np.linalg.eigh(P)
+    if np.min(ei) / np.max(ei) < reg:
+        P = ev @ np.diag(ei + reg) @ ev.T
+    return P
+
+
+def nearest_sym_pos_def(X, reg=1e-6):
+    """Find the nearest SPD matrices.
+
+    A NumPy port of John D'Errico's `nearestSPD` MATLAB code [1]_,
+    which credits [2]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        Square matrices, at least 2D ndarray.
+    reg : float
+        Regularization parameter.
+
+    Returns
+    -------
+    P : ndarray, shape (..., n, n)
+        Nearest SPD matrices.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+
+    References
+    ----------
+    .. [1] `nearestSPD
+        <https://www.mathworks.com/matlabcentral/fileexchange/42885-nearestspd>`_
+        J. D'Errico, MATLAB Central File Exchange
+    .. [2] `Computing a nearest symmetric positive semidefinite matrix
+        <https://www.sciencedirect.com/science/article/pii/0024379588902236>`_
+        N.J. Higham, Linear Algebra and its Applications, vol 103, 1988
+    """
+    return np.array([_nearest_sym_pos_def(x, reg) for x in X])

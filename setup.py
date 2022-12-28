@@ -1,3 +1,4 @@
+import sys
 import os.path as op
 
 from setuptools import setup, find_packages
@@ -13,13 +14,15 @@ with open(op.join("pyriemann", "_version.py"), "r") as fid:
 if version is None:
     raise RuntimeError("Could not determine version")
 
-with open("README.md", "r", encoding="utf8") as fid:
+is_python3 = sys.version_info.major >= 3
+kwargs_open = {"encoding": "utf8"} if is_python3 else {}
+with open('README.md', 'r', **kwargs_open) as fid:
     long_description = fid.read()
 
 setup(
     name="pyriemann",
     version=version,
-    description="Riemannian Geometry for python",
+    description="Biosignals classification with Riemannian geometry",
     url="https://pyriemann.readthedocs.io",
     author="Alexandre Barachant",
     author_email="alexandre.barachant@gmail.com",
@@ -34,7 +37,13 @@ setup(
     },
     platforms="any",
     python_requires=">=3.7",
-    install_requires=["numpy", "scipy", "scikit-learn", "joblib", "pandas"],
+    install_requires=[
+        "numpy!=1.24.0",
+        "scipy",
+        "scikit-learn",
+        "joblib",
+        "pandas"
+    ],
     extras_require={
         "docs": [
             "sphinx-gallery",
