@@ -35,7 +35,7 @@ def freq_selection_class_dis(raw, cv, freq_band=[5., 35.], sub_band_width=4,
             An instance of Raw from MNE.
         cv : cross-validation generator
             An instance of a cross validation iterator from sklearn.
-        freq_band : string | dict, default=[5., 35.]
+        freq_band : list, default=[5., 35.]
             Frequency band for band-pass filtering.
         sub_band_width : float, default=4.
             Frequency bandwidth of filter bank.

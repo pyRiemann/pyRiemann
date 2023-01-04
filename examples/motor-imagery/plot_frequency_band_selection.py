@@ -1,6 +1,6 @@
 """
 ====================================================================
-Motor imagery classification with frequency band selection on the manifold
+Frequency band selection on the manifold for motor imagery classification
 ====================================================================
 
 Find optimal frequency band using class distinctiveness measure on
@@ -15,6 +15,7 @@ data to the baseline with no frequency band selection [1]_.
 
 
 import numpy as np
+from time import time
 from matplotlib import pyplot as plt
 
 from mne import Epochs, pick_types, events_from_annotations
@@ -50,10 +51,11 @@ picks = picks[::2]
 cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
 ###############################################################################
-# Baseline pipline without frequency band selection
+# Baseline pipeline without frequency band selection
 # -------------------------------
 #
 # Apply band-pass filter using a wide frequency band
+t0 = time()
 raw_filter = raw.copy().filter(5., 35., method='iir', picks=picks)
 
 events, _ = events_from_annotations(raw_filter, event_id)
@@ -84,6 +86,7 @@ mdm = MDM(metric=dict(mean='riemann', distance='riemann'))
 # Use scikit-learn Pipeline with cross_val_score function
 scores = cross_val_score(mdm, cov_data_baseline, labels, cv=cv, n_jobs=1)
 ave_baseline = np.mean(scores)
+t1 = time() - t0
 
 ###############################################################################
 # Pipeline with a frequency band selection based on the class distinctiveness
@@ -91,6 +94,7 @@ ave_baseline = np.mean(scores)
 #
 # Define parameters of sub frequency bands
 
+t2 = time()
 freq_band = [5., 35.]
 sub_band_width = 4.
 sub_band_step = 2.
@@ -135,6 +139,7 @@ for i, (train_ind, test_ind) in enumerate(cv.split(cov_data_baseline, labels)):
     all_cv_acc.append(acc)
 
 all_cv_acc = np.array(all_cv_acc)
+t3 = time() - t2
 
 ###############################################################################
 # Compare accuracies
@@ -142,14 +147,18 @@ all_cv_acc = np.array(all_cv_acc)
 
 print("Classification accuracy without frequency band selection: %f +/- %f"
       % (np.mean(scores), np.std(scores)))
+print(f"Total computational time without frequency band selection:={t1:.5f}"
+      + " [sec]")
 print("Classification accuracy with frequency band selection: %f +/- %f"
       % (np.mean(all_cv_acc), np.std(all_cv_acc)))
+print(f"Total computational time with frequency band selection:={t3:.5f}"
+      + " [sec]")
 
 ###############################################################################
 # Plot result
 # -------------------------------
 #
-# Plot selected frequency bands.
+# Plot selected frequency bands for each cv-fold.
 
 subband_fmin = list(np.arange(freq_band[0],
                               freq_band[1] - sub_band_width + 1.,
