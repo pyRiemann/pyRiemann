@@ -50,13 +50,14 @@ def freq_selection_class_dis(raw, cv, freq_band=[5., 35.], sub_band_width=4,
             If None (default), all channels will pick.
         event_id : int | list of int | dict, default=None
             The id of the events to consider.
+
             - If dict, the keys can later be used to access associated
-            events.
+              events.
             - If int, a dict will be created with the id as string.
             - If a list, all events with the IDs specified in the list
-            are used.
+              are used.
             - If None, all events will be used and a dict is created
-            with string integer names corresponding to the event id integers.
+              with string integer names corresponding to the event id integers.
         return_class_dis : bool, default=False
             Whether to return class_dis value.
 

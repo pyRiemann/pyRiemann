@@ -4,8 +4,8 @@ Motor imagery classification with frequency band selection on the manifold
 ====================================================================
 
 Find optimal frequency band using class distinctiveness measure on
-the manifold and compare classification performance for Motor imagery
-data to the baseline with no frequency band selection.
+the manifold and compare classification performance for motor imagery
+data to the baseline with no frequency band selection [1]_.
 
 
 """
@@ -86,7 +86,7 @@ scores = cross_val_score(mdm, cov_data_baseline, labels, cv=cv, n_jobs=1)
 ave_baseline = np.mean(scores)
 
 ###############################################################################
-# Pipline with a frequency band selection based on the class distinctiveness
+# Pipeline with a frequency band selection based on the class distinctiveness
 # -------------------------------
 #
 # Define parameters of sub frequency bands
@@ -134,18 +134,22 @@ for i, (train_ind, test_ind) in enumerate(cv.split(cov_data_baseline, labels)):
     acc = mdm.score(cov_data[test_ind], labels[test_ind])
     all_cv_acc.append(acc)
 
-ave_acc = np.array(all_cv_acc).mean()
+all_cv_acc = np.array(all_cv_acc)
 
-print("Classification accuracy without frequency band selection: %f"
-      % (ave_baseline))
-print("Classification accuracy with frequency band selection: %f"
-      % (ave_acc))
+###############################################################################
+# Compare accuracies
+# ---------------------
+
+print("Classification accuracy without frequency band selection: %f +/- %f"
+      % (np.mean(scores), np.std(scores)))
+print("Classification accuracy with frequency band selection: %f +/- %f"
+      % (np.mean(all_cv_acc), np.std(all_cv_acc)))
 
 ###############################################################################
 # Plot result
 # -------------------------------
 #
-# Plot the results
+# Plot selected frequency bands.
 
 subband_fmin = list(np.arange(freq_band[0],
                               freq_band[1] - sub_band_width + 1.,
@@ -160,7 +164,7 @@ for cv in range(len(all_cv_class_dis)):
     freq_start = subband_fmin.index(all_cv_best_freq[cv][0])
     freq_end = subband_fmax.index(all_cv_best_freq[cv][1])
 
-    plt.subplot(2, 3, cv + 1)
+    plt.subplot(3, 2, cv + 1)
     plt.grid()
     plt.plot(x, all_cv_class_dis[cv], marker='o')
     plt.xticks(list(range(0, 14, 1)),
