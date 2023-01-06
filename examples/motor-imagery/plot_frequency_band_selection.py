@@ -142,8 +142,8 @@ all_cv_acc = np.array(all_cv_acc)
 t3 = time() - t2
 
 ###############################################################################
-# Compare accuracies
-# ---------------------
+# Compare pipelines: accuracies and training times
+# ------------------------------------------------
 
 print("Classification accuracy without frequency band selection: %f +/- %f"
       % (np.mean(scores), np.std(scores)))
@@ -168,7 +168,7 @@ subband_fmax = list(np.arange(freq_band[0] + sub_band_width,
 nb_subband = len(subband_fmin)
 all_cv_class_dis = np.array(all_cv_class_dis)
 x = list(range(0, nb_subband, 1))
-fig = plt.figure(figsize=(28, 8))
+fig = plt.figure(figsize=(20, 15))
 for cv in range(len(all_cv_class_dis)):
     freq_start = subband_fmin.index(all_cv_best_freq[cv][0])
     freq_end = subband_fmax.index(all_cv_best_freq[cv][1])
