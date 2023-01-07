@@ -4,8 +4,8 @@
 API reference
 =============
 
-Covariance Estimation
----------------------
+SPD Matrices Estimation
+-----------------------
 .. _estimation_api:
 .. currentmodule:: pyriemann.estimation
 
@@ -20,6 +20,7 @@ Covariance Estimation
     CospCovariances
     Coherences
     HankelCovariances
+    Kernels
     Shrinkage
 
 Embedding
