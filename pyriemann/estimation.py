@@ -709,15 +709,15 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
 
 class Kernels(BaseEstimator, TransformerMixin):
-    """Estimation of kernel matrix between channels of time series.
+    r"""Estimation of kernel matrix between channels of time series.
 
     Perform a kernel matrix estimation for each given time series, evaluating a
     kernel function between each pair of channels (rather than between pairs of
     time samples) and allowing to extract nonlinear channel relationship [1]_.
 
-    For an input time series :math:`X \in \mathbb{R}^{c \times t}`, kernel
-    function :math:`\kappa()` is computed between channels :math:`i` and
-    :math:`j`:
+    For an input time series :math:`X \in \mathbb{R}^{c \times t}`, composed of
+    :math:`c` channels and :math:`t` time samples, kernel function
+    :math:`\kappa()` is computed between channels :math:`i` and :math:`j`:
 
     .. math::
         K_{i,j} = \kappa \left( X[i], X[j] \right)
