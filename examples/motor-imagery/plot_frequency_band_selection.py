@@ -31,7 +31,7 @@ from helpers.frequencybandselection_helpers import freq_selection_class_dis
 
 ###############################################################################
 # Set basic parameters and read data
-# -------------------------------
+# ------------------------------------
 
 tmin, tmax = 0.5, 2.5
 event_id = dict(T1=2, T2=3)
@@ -52,7 +52,7 @@ cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
 ###############################################################################
 # Baseline pipeline without frequency band selection
-# -------------------------------
+# ---------------------------------------------------
 #
 # Apply band-pass filter using a wide frequency band
 t0 = time()
@@ -156,14 +156,14 @@ t3 = time() - t2
 # Compare pipelines: accuracies and training times
 # ------------------------------------------------
 
-print("Classification accuracy without frequency band selection: %f +/- %f"
-      % (np.mean(scores), np.std(scores)))
-print(f"Total computational time without frequency band selection:={t1:.5f}"
-      + " [sec]")
-print("Classification accuracy with frequency band selection: %f +/- %f"
-      % (np.mean(all_cv_acc), np.std(all_cv_acc)))
-print(f"Total computational time with frequency band selection:={t3:.5f}"
-      + " [sec]")
+print("Classification accuracy without frequency band selection: "
+      + f"{np.mean(scores):.02} +/- {np.std(scores):.02f}"
+print("Total computational time without frequency band selection: "
+      + f"{t1:.5f} s")
+print("Classification accuracy with frequency band selection: "
+      + f"{np.mean(all_cv_acc):.02f} +/- {np.std(all_cv_acc):.02f}")
+print(f"Total computational time with frequency band selection: "
+      + f"{t3:.5f} s")
 
 ###############################################################################
 # Plot result
