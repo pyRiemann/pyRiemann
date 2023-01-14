@@ -13,9 +13,11 @@ from pyriemann.estimation import Covariances
 from pyriemann.classification import class_distinctiveness
 
 
-def freq_selection_class_dis(raw, cv, freq_band=[5., 35.], sub_band_width=4,
-                             sub_band_step=2, tmin=0.5, tmax=2.5, picks=None,
-                             event_id=None,
+def freq_selection_class_dis(raw, freq_band=[5., 35.], sub_band_width=4,
+                             sub_band_step=2, tmin=0.5, tmax=2.5,
+                             picks=None, event_id=None,
+                             cv=None, train_ind=None,
+                             method='cross_validation',
                              return_class_dis=False):
     r"""Select optimal frequency band based on class distinctiveness measure.
 
@@ -40,8 +42,6 @@ def freq_selection_class_dis(raw, cv, freq_band=[5., 35.], sub_band_width=4,
         ----------
         raw : Raw object
             An instance of Raw from MNE.
-        cv : cross-validation generator
-            An instance of a cross validation iterator from sklearn.
         freq_band : list, default=[5., 35.]
             Frequency band for band-pass filtering.
         sub_band_width : float, default=4.
@@ -56,7 +56,7 @@ def freq_selection_class_dis(raw, cv, freq_band=[5., 35.], sub_band_width=4,
             interpreted as channel indices.
             If None (default), all channels will pick.
         event_id : int | list of int | dict, default=None
-            The id of the events to consider.
+            Id of the events to consider.
 
             - If dict, the keys can later be used to access associated
               events.
@@ -65,17 +65,32 @@ def freq_selection_class_dis(raw, cv, freq_band=[5., 35.], sub_band_width=4,
               are used.
             - If None, all events will be used and a dict is created
               with string integer names corresponding to the event id integers.
+        cv : cross-validation generator, default=None
+            An instance of a cross validation iterator from sklearn.
+            If method is "cross_validation", cv needs to be defined.
+        train_ind : ndarray, shape (n_training_set,), default=None
+            index of training set.
+            If method is "train_test_split", train_ind needs to be defined.
+        method : str, default="cross_validation",
+            Method of data split either cross_validation or train_test_split.
         return_class_dis : bool, default=False
             Whether to return class_dis value.
 
 
         Returns
         -------
+        If method is "cross_validation",
         all_cv_best_freq : list
             List of the selected frequency band for each hold of
             cross validation.
         all_cv_class_dis : list
             List of class_dis value of each hold of cross validation.
+
+        If method is "train_test_split",
+        best_freq : list
+            Selected frequency band
+        all_class_dis : list
+            List of class_dis value
 
 
         Notes
@@ -113,9 +128,30 @@ def freq_selection_class_dis(raw, cv, freq_band=[5., 35.], sub_band_width=4,
 
     all_cv_best_freq = []
     all_cv_class_dis = []
-    for i, (train_ind, test_ind) in enumerate(cv.split(all_sub_band_cov[0],
-                                                       labels)):
 
+    if method == 'cross_validation':
+        for i, (train_ind, test_ind) in enumerate(cv.split(all_sub_band_cov[0],
+                                                           labels)):
+
+            all_class_dis = []
+            for ii in range(nb_subband):
+                class_dis = class_distinctiveness(
+                    all_sub_band_cov[ii][train_ind], labels[train_ind],
+                    exponent=1, metric='riemann', return_num_denom=False)
+                all_class_dis.append(class_dis)
+            all_cv_class_dis.append(all_class_dis)
+
+            best_freq = _get_best_freq_band(all_class_dis, nb_subband,
+                                            subband_fmin, subband_fmax)
+
+            all_cv_best_freq.append(best_freq)
+
+        if return_class_dis:
+            return all_cv_best_freq, all_cv_class_dis
+        else:
+            return all_cv_best_freq
+
+    elif method == 'train_test_split':
         all_class_dis = []
         for ii in range(nb_subband):
             class_dis = class_distinctiveness(all_sub_band_cov[ii][train_ind],
@@ -123,32 +159,18 @@ def freq_selection_class_dis(raw, cv, freq_band=[5., 35.], sub_band_width=4,
                                               exponent=1, metric='riemann',
                                               return_num_denom=False)
             all_class_dis.append(class_dis)
-        all_cv_class_dis.append(all_class_dis)
 
-        fmaxstart = np.argmax(all_class_dis)
+        best_freq = _get_best_freq_band(all_class_dis, nb_subband,
+                                        subband_fmin, subband_fmax)
 
-        fmin = np.min(all_class_dis)
-        fmax = np.max(all_class_dis)
-        thresold_freq = fmax - (fmax - fmin) * 0.4
+        if return_class_dis:
+            return best_freq, all_class_dis
+        else:
+            return best_freq
 
-        f0 = fmaxstart
-        f1 = fmaxstart
-        while f0 >= 1 and (all_class_dis[f0 - 1] >= thresold_freq):
-            f0 = f0 - 1
-
-        while f1 < nb_subband - 1 and (all_class_dis[f1 + 1] >= thresold_freq):
-            f1 = f1 + 1
-
-        best_freq_f0 = subband_fmin[f0]
-        best_freq_f1 = subband_fmax[f1]
-        best_freq = [best_freq_f0, best_freq_f1]
-
-        all_cv_best_freq.append(best_freq)
-
-    if return_class_dis:
-        return all_cv_best_freq, all_cv_class_dis
     else:
-        return all_cv_best_freq
+        raise TypeError('method must be "cross_validation" or '
+                        '"train_test_split"')
 
 
 def _get_filtered_cov(raw, picks, event_id, fmin, fmax, tmin, tmax):
@@ -177,3 +199,28 @@ def _get_filtered_cov(raw, picks, event_id, fmin, fmax, tmin, tmax):
     cov_data = Covariances().transform(epochs_data)
 
     return cov_data, labels
+
+
+def _get_best_freq_band(all_class_dis, nb_subband, subband_fmin, subband_fmax):
+    """Private function to select frequency bands whose class dis value are
+     higher than the user-specific threshold."""
+
+    fmaxstart = np.argmax(all_class_dis)
+
+    fmin = np.min(all_class_dis)
+    fmax = np.max(all_class_dis)
+    thresold_freq = fmax - (fmax - fmin) * 0.4
+
+    f0 = fmaxstart
+    f1 = fmaxstart
+    while f0 >= 1 and (all_class_dis[f0 - 1] >= thresold_freq):
+        f0 = f0 - 1
+
+    while f1 < nb_subband - 1 and (all_class_dis[f1 + 1] >= thresold_freq):
+        f1 = f1 + 1
+
+    best_freq_f0 = subband_fmin[f0]
+    best_freq_f1 = subband_fmax[f1]
+    best_freq = [best_freq_f0, best_freq_f1]
+
+    return best_freq

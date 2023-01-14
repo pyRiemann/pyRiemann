@@ -91,7 +91,7 @@ t1 = time() - t0
 ###############################################################################
 # Pipeline with a frequency band selection based on the class distinctiveness
 # Step1: Select frequency band for each cv-hold using training set
-# -------------------------------
+# ----------------------------------------------------------------------------
 #
 # Define parameters of sub frequency bands
 
@@ -102,9 +102,11 @@ sub_band_step = 2.
 
 # Select frequency band using training data for each hold of cv
 all_cv_best_freq, all_cv_class_dis = \
-    freq_selection_class_dis(raw, cv, freq_band, sub_band_width,
-                             sub_band_step, tmin, tmax, picks,
-                             event_id, return_class_dis=True)
+    freq_selection_class_dis(raw, freq_band, sub_band_width,
+                             sub_band_step, tmin, tmax,
+                             picks, event_id,
+                             cv, method='cross_validation',
+                             return_class_dis=True)
 
 for i in range(len(all_cv_class_dis)):
     print('Selected frequency band for CV' + str(i + 1) +
@@ -114,7 +116,7 @@ for i in range(len(all_cv_class_dis)):
 ###############################################################################
 # Step2: Train classifier using selected frequency band and evaluate
 # performance using test set
-# ------------------------------------------------
+# -------------------------------------------------------------------
 
 all_cv_acc = []
 for i, (train_ind, test_ind) in enumerate(cv.split(cov_data_baseline, labels)):
@@ -166,11 +168,10 @@ print("Total computational time with frequency band selection: "
       + f"{t3:.5f} s")
 
 ###############################################################################
-# Plot result
-# -------------------------------
-#
 # Plot the class distinctiveness values for each sub_band at each cv-fold,
 # along with the highlight of the finally selected frequency band.
+# -------------------------------------------------------------------------
+
 subband_fmin = list(np.arange(freq_band[0],
                               freq_band[1] - sub_band_width + 1.,
                               sub_band_step))
