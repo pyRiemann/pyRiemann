@@ -157,12 +157,12 @@ t3 = time() - t2
 # ------------------------------------------------
 
 print("Classification accuracy without frequency band selection: "
-      + f"{np.mean(scores):.02} +/- {np.std(scores):.02f}"
+      + f"{np.mean(scores):.02} +/- {np.std(scores):.02f}")
 print("Total computational time without frequency band selection: "
       + f"{t1:.5f} s")
 print("Classification accuracy with frequency band selection: "
       + f"{np.mean(all_cv_acc):.02f} +/- {np.std(all_cv_acc):.02f}")
-print(f"Total computational time with frequency band selection: "
+print("Total computational time with frequency band selection: "
       + f"{t3:.5f} s")
 
 ###############################################################################
