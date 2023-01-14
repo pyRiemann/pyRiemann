@@ -1,9 +1,16 @@
-"""Code for frequency band selection."""
+"""
+=================================
+ Frequency Band Selection Helpers
+=================================
+
+This file contains helper functions for the frequency band selection example
+"""
+
 import numpy as np
 from mne import Epochs, events_from_annotations
 
-from .estimation import Covariances
-from .classification import class_distinctiveness
+from pyriemann.estimation import Covariances
+from pyriemann.classification import class_distinctiveness
 
 
 def freq_selection_class_dis(raw, cv, freq_band=[5., 35.], sub_band_width=4,
@@ -106,7 +113,8 @@ def freq_selection_class_dis(raw, cv, freq_band=[5., 35.], sub_band_width=4,
 
     all_cv_best_freq = []
     all_cv_class_dis = []
-    for train_ind, test_ind in cv.split(all_sub_band_cov[0], labels):
+    for i, (train_ind, test_ind) in enumerate(cv.split(all_sub_band_cov[0],
+                                                       labels)):
 
         all_class_dis = []
         for ii in range(nb_subband):
@@ -134,9 +142,6 @@ def freq_selection_class_dis(raw, cv, freq_band=[5., 35.], sub_band_width=4,
         best_freq_f0 = subband_fmin[f0]
         best_freq_f1 = subband_fmax[f1]
         best_freq = [best_freq_f0, best_freq_f1]
-
-        print('Best frequency band: ' + str(best_freq[0])
-              + '-' + str(best_freq[1]) + ' Hz')
 
         all_cv_best_freq.append(best_freq)
 

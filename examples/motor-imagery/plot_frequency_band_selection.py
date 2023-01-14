@@ -1,7 +1,7 @@
 """
-====================================================================
+=========================================================================
 Frequency band selection on the manifold for motor imagery classification
-====================================================================
+=========================================================================
 
 Find optimal frequency band using class distinctiveness measure on
 the manifold and compare classification performance for motor imagery
@@ -27,7 +27,7 @@ from sklearn.model_selection import cross_val_score, StratifiedKFold
 
 from pyriemann.classification import MDM
 from pyriemann.estimation import Covariances
-from pyriemann.frequencybandselection import freq_selection_class_dis
+from helpers.frequencybandselection_helpers import freq_selection_class_dis
 
 ###############################################################################
 # Set basic parameters and read data
@@ -90,6 +90,7 @@ t1 = time() - t0
 
 ###############################################################################
 # Pipeline with a frequency band selection based on the class distinctiveness
+# Step1: Select frequency band for each cv-hold using training set
 # -------------------------------
 #
 # Define parameters of sub frequency bands
@@ -104,6 +105,16 @@ all_cv_best_freq, all_cv_class_dis = \
     freq_selection_class_dis(raw, cv, freq_band, sub_band_width,
                              sub_band_step, tmin, tmax, picks,
                              event_id, return_class_dis=True)
+
+for i in range(len(all_cv_class_dis)):
+    print('Selected frequency band for CV' + str(i + 1) +
+          ' : ' + str(all_cv_best_freq[i][0])
+          + '-' + str(all_cv_best_freq[i][1]) + ' Hz')
+
+###############################################################################
+# Step2: Train classifier using selected frequency band and evaluate
+# performance using test set
+# ------------------------------------------------
 
 all_cv_acc = []
 for i, (train_ind, test_ind) in enumerate(cv.split(cov_data_baseline, labels)):
@@ -158,8 +169,8 @@ print(f"Total computational time with frequency band selection:={t3:.5f}"
 # Plot result
 # -------------------------------
 #
-# Plot selected frequency bands for each cv-fold.
-
+# Plot the class distinctiveness values for each sub_band at each cv-fold,
+# along with the highlight of the finally selected frequency band.
 subband_fmin = list(np.arange(freq_band[0],
                               freq_band[1] - sub_band_width + 1.,
                               sub_band_step))
@@ -183,10 +194,11 @@ for cv in range(len(all_cv_class_dis)):
     plt.ylim(0.145, 0.180)
 
     plt.axvspan(freq_start, freq_end, color="orange", alpha=0.3,
-                label='Selected frequency band')
+                label='Selected frequency band in this CVfold')
     plt.ylabel('Class distinctiveness')
     plt.xlabel('Filter bank')
-    plt.title('CV{:01d}'.format(cv + 1))
+    plt.title('Class distinctiveness value of each subband in CV{:01d}'
+              .format(cv + 1))
     plt.legend(loc='upper right')
 
 fig.tight_layout()
