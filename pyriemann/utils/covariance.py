@@ -84,7 +84,7 @@ def _scm(X, **kwds):
 def _sch(X):
     r"""Schaefer-Strimmer covariance estimator.
 
-    Shrinkage estimator using method from [1]_:
+    Shrinkage estimator using method:
 
     .. math::
             \hat{\Sigma} = (1 - \gamma)\Sigma_{scm} + \gamma T
@@ -216,7 +216,7 @@ def covariances(X, estimator='cov', **kwds):
     return covmats
 
 
-def covariances_EP(X, P, estimator='cov'):
+def covariances_EP(X, P, estimator='cov', **kwds):
     """Special form covariance matrix, concatenating a prototype P.
 
     Parameters
@@ -225,10 +225,11 @@ def covariances_EP(X, P, estimator='cov'):
         Multi-channel time-series.
     P : ndarray, shape (n_channels_proto, n_times)
         Multi-channel prototype.
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'}, \
-            default='cov'
+    estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the covariance estimator.
 
     Returns
     -------
@@ -245,23 +246,24 @@ def covariances_EP(X, P, estimator='cov'):
     covmats = np.empty((n_matrices, n_channels + n_channels_proto,
                         n_channels + n_channels_proto))
     for i in range(n_matrices):
-        covmats[i] = est(np.concatenate((P, X[i]), axis=0))
+        covmats[i] = est(np.concatenate((P, X[i]), axis=0), **kwds)
     return covmats
 
 
-def covariances_X(X, estimator='scm', alpha=0.2):
+def covariances_X(X, estimator='scm', alpha=0.2, **kwds):
     """Special form covariance matrix, embedding input X.
 
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_times)
         Multi-channel time-series.
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'}, \
-            default='scm'
+    estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
     alpha : float, default=0.2
         Regularization parameter (strictly positive).
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the covariance estimator.
 
     Returns
     -------
@@ -297,11 +299,11 @@ def covariances_X(X, estimator='scm', alpha=0.2):
             np.concatenate((X[i], alpha * np.eye(n_channels)), axis=1),  # top
             np.concatenate((alpha * np.eye(n_times), X[i].T), axis=1)  # bottom
         ), axis=0)  # Eq(9)
-        covmats[i] = est(Y)
+        covmats[i] = est(Y, **kwds)
     return covmats / (2 * alpha)  # Eq(10)
 
 
-def block_covariances(X, blocks, estimator='cov'):
+def block_covariances(X, blocks, estimator='cov', **kwds):
     """Compute block diagonal covariance.
 
     Calculates block diagonal matrices where each block is a covariance
@@ -315,10 +317,11 @@ def block_covariances(X, blocks, estimator='cov'):
         Multi-channel time-series.
     blocks: list of int
         List of block sizes.
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'}, \
-        default='scm'
+    estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the covariance estimator.
 
     Returns
     -------
@@ -336,7 +339,7 @@ def block_covariances(X, blocks, estimator='cov'):
     for i in range(n_matrices):
         blockcov, idx_start = [], 0
         for j in blocks:
-            blockcov.append(est(X[i, idx_start:idx_start+j, :]))
+            blockcov.append(est(X[i, idx_start:idx_start+j, :], **kwds))
             idx_start += j
         covmats[i] = block_diag(*tuple(blockcov))
 

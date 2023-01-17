@@ -111,6 +111,8 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     svd : int | None, default=None
         If not None, number of components of SVD used to reduce prototype
         responses.
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the covariance estimator.
 
     Attributes
     ----------
@@ -142,11 +144,12 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
         GRETSI, 2013.
     """
 
-    def __init__(self, classes=None, estimator='scm', svd=None):
+    def __init__(self, classes=None, estimator='scm', svd=None, **kwds):
         """Init."""
         self.classes = classes
         self.estimator = estimator
         self.svd = svd
+        self.kwds = kwds
 
     def fit(self, X, y):
         """Fit.
@@ -204,7 +207,12 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
             is None, and to `n_channels + n_classes x min(svd, n_channels)`
             otherwise.
         """
-        covmats = covariances_EP(X, self.P_, estimator=self.estimator)
+        covmats = covariances_EP(
+            X,
+            self.P_,
+            estimator=self.estimator,
+            **self.kwds
+        )
         return covmats
 
 
@@ -244,6 +252,8 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
     baseline_cov : array, shape (n_channels, n_channels) | None, default=None
         Baseline covariance for `Xdawn` spatial filtering,
         see :class:`pyriemann.spatialfilters.Xdawn`.
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the covariance estimator.
 
     Attributes
     ----------
@@ -270,7 +280,8 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
                  classes=None,
                  estimator='scm',
                  xdawn_estimator='scm',
-                 baseline_cov=None):
+                 baseline_cov=None,
+                 **kwds):
         """Init."""
         self.applyfilters = applyfilters
         self.estimator = estimator
@@ -278,6 +289,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         self.classes = classes
         self.nfilter = nfilter
         self.baseline_cov = baseline_cov
+        self.kwds = kwds
 
     def fit(self, X, y):
         """Fit.
@@ -325,7 +337,12 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
         if self.applyfilters:
             X = self.Xd_.transform(X)
 
-        covmats = covariances_EP(X, self.P_, estimator=self.estimator)
+        covmats = covariances_EP(
+            X,
+            self.P_,
+            estimator=self.estimator,
+            **self.kwds
+        )
         return covmats
 
 
@@ -349,6 +366,8 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
     estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the covariance estimator.
 
     Notes
     -----
@@ -359,10 +378,11 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
     Covariances
     """
 
-    def __init__(self, block_size, estimator='scm'):
+    def __init__(self, block_size, estimator='scm', **kwds):
         """Init."""
         self.estimator = estimator
         self.block_size = block_size
+        self.kwds = kwds
 
     def fit(self, X, y=None):
         """Fit.
@@ -408,7 +428,7 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
         else:
             raise ValueError("Parameter block_size must be int or list.")
 
-        return block_covariances(X, blocks, self.estimator)
+        return block_covariances(X, blocks, self.estimator, **self.kwds)
 
 
 ###############################################################################
@@ -633,6 +653,8 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
     estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the covariance estimator.
 
     See Also
     --------
@@ -650,10 +672,11 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
         Biomedical Engineering 52(9), 1541-1548, 2005.
     """
 
-    def __init__(self, delays=4, estimator='scm'):
+    def __init__(self, delays=4, estimator='scm', **kwds):
         """Init."""
         self.delays = delays
         self.estimator = estimator
+        self.kwds = kwds
 
     def fit(self, X, y=None):
         """Fit.
@@ -704,7 +727,7 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
                 tmp = np.r_[tmp, np.roll(x, d, axis=-1)]
             X2.append(tmp)
         X2 = np.array(X2)
-        covmats = covariances(X2, estimator=self.estimator)
+        covmats = covariances(X2, estimator=self.estimator, **self.kwds)
         return covmats
 
 
