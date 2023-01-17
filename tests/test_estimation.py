@@ -20,7 +20,7 @@ from pyriemann.estimation import (
 from pyriemann.utils.test import (is_sym_pos_def as is_spd,
                                   is_sym_pos_semi_def as is_spsd)
 
-estim = ["cov", "scm", "lwf", "oas", "mcd", "corr", "sch"]
+estim = ["corr", "cov", "fpcm", "lwf", "mcd", "oas", "sch", "scm"]
 coh = ["ordinary", "instantaneous", "lagged", "imaginary"]
 
 
@@ -35,6 +35,26 @@ def test_covariances(estimator, rndstate):
     assert covmats.shape == (n_matrices, n_channels, n_channels)
     assert is_spd(covmats)
 
+
+@pytest.mark.parametrize(
+    "estimator, kwds",
+    [
+        ('cov', {'bias': True}),
+        ('fpcm', {'tol': 10e-1, 'n_iter_max': 10}),
+        ('lwf', {'assume_centered': True}),
+        ('mcd', {'support_fraction': 0.78}),
+        ('oas', {'assume_centered': True}),
+        ('scm', {'assume_centered': True}),
+    ],
+)
+def test_covariances_kwds(estimator, kwds, rndstate):
+    n_matrices, n_channels, n_times = 3, 6, 10
+    x = rndstate.randn(n_matrices, n_channels, n_times) + 1
+    covs_none = Covariances(estimator=estimator).fit_transform(x)
+    covs_kwds = Covariances(estimator=estimator, **kwds).fit_transform(x)
+    assert_raises(
+        AssertionError, assert_array_equal, covs_none, covs_kwds
+    )
 
 @pytest.mark.parametrize("delays", [4, [1, 2]])
 def test_hankel_covariances_delays(delays, rndstate):

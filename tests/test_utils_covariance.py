@@ -12,7 +12,7 @@ from pyriemann.utils.covariance import (
 from pyriemann.utils.test import is_real, is_hermitian
 
 
-estimators = ['corr', 'cov', 'lwf', 'mcd', 'oas', 'sch', 'scm']
+estimators = ['corr', 'cov', 'fpcm', 'lwf', 'mcd', 'oas', 'sch', 'scm']
 
 
 @pytest.mark.parametrize(

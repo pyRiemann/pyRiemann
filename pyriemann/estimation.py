@@ -24,9 +24,11 @@ class Covariances(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    estimator : string, default=scm'
+    estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the covariance estimator.
 
     See Also
     --------
@@ -36,9 +38,10 @@ class Covariances(BaseEstimator, TransformerMixin):
     HankelCovariances
     """
 
-    def __init__(self, estimator='scm'):
+    def __init__(self, estimator='scm', **kwds):
         """Init."""
         self.estimator = estimator
+        self.kwds = kwds
 
     def fit(self, X, y=None):
         """Fit.
@@ -72,7 +75,7 @@ class Covariances(BaseEstimator, TransformerMixin):
         covmats : ndarray, shape (n_matrices, n_channels, n_channels)
             Covariance matrices.
         """
-        covmats = covariances(X, estimator=self.estimator)
+        covmats = covariances(X, estimator=self.estimator, **self.kwds)
         return covmats
 
 
