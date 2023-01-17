@@ -56,6 +56,7 @@ def test_covariances_kwds(estimator, kwds, rndstate):
         AssertionError, assert_array_equal, covs_none, covs_kwds
     )
 
+
 @pytest.mark.parametrize("delays", [4, [1, 2]])
 def test_hankel_covariances_delays(delays, rndstate):
     n_matrices, n_channels, n_times = 2, 3, 100
