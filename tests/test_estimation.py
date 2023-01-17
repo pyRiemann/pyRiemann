@@ -1,4 +1,9 @@
 import numpy as np
+from numpy.testing import (
+    assert_array_almost_equal,
+    assert_array_equal,
+    assert_raises,
+)
 import pytest
 
 from pyriemann.estimation import (
@@ -9,7 +14,8 @@ from pyriemann.estimation import (
     HankelCovariances,
     Coherences,
     Shrinkage,
-    BlockCovariances
+    BlockCovariances,
+    Kernels,
 )
 from pyriemann.utils.test import (is_sym_pos_def as is_spd,
                                   is_sym_pos_semi_def as is_spsd)
@@ -238,6 +244,56 @@ def test_coherences(coh, rndstate):
     assert covmats.shape == (n_matrices, n_channels, n_channels, n_freqs)
     if coh in ["ordinary", "instantaneous"]:
         assert is_spsd(covmats.transpose(0, 3, 1, 2))
+
+
+@pytest.mark.parametrize(
+    "metric",
+    [
+        'linear',
+        'poly',
+        'polynomial',
+        'rbf',
+        'laplacian',
+        'cosine',
+    ]
+)
+def test_kernels(metric, rndstate):
+    """Test Kernels"""
+    n_matrices, n_channels, n_times = 2, 5, 10
+    x = rndstate.randn(n_matrices, n_channels, n_times)
+    kernels = Kernels(metric=metric).fit_transform(x)
+    assert kernels.shape == (n_matrices, n_channels, n_channels)
+    assert is_spd(kernels)
+
+
+def test_kernels_linear(rndstate):
+    """Test that linear kernels are related to covariances"""
+    n_matrices, n_channels, n_times = 3, 4, 50
+    x = rndstate.randn(n_matrices, n_channels, n_times)
+
+    covs = Covariances(estimator='cov').fit_transform(x)
+    x = x - np.mean(x, axis=-1, keepdims=True)
+    x = x / np.sqrt(n_times - 1)
+    kernels = Kernels(metric='linear').fit_transform(x)
+    assert_array_almost_equal(covs, kernels, 6)
+
+
+@pytest.mark.parametrize(
+    "metric, kwds",
+    [
+        ('polynomial', {'degree': 2, 'gamma': 0.5, 'coef0': 0.8}),
+        ('rbf', {'gamma': 0.5}),
+        ('laplacian', {'gamma': 0.5}),
+    ],
+)
+def test_kernels_kwds(metric, kwds, rndstate):
+    n_matrices, n_channels, n_times = 3, 6, 10
+    x = rndstate.randn(n_matrices, n_channels, n_times)
+    kernels_none = Kernels(metric=metric).fit_transform(x)
+    kernels_kwds = Kernels(metric=metric, **kwds).fit_transform(x)
+    assert_raises(
+        AssertionError, assert_array_equal, kernels_none, kernels_kwds
+    )
 
 
 @pytest.mark.parametrize("shrinkage", [0.1, 0.9])
