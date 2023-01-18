@@ -10,6 +10,9 @@ from .test import is_square
 def _fpcm(X, *, init=None, tol=10e-3, n_iter_max=50, assume_centered=False):
     """Fixed point covariance estimator.
 
+    Fixed point covariance estimator with properties of existence, uniqueness,
+    unbiasedness and consistency.
+
     Parameters
     ----------
     X : ndarray, shape (n_channels, n_times)
@@ -34,6 +37,18 @@ def _fpcm(X, *, init=None, tol=10e-3, n_iter_max=50, assume_centered=False):
     Notes
     -----
     .. versionadded:: 0.3.1
+
+    References
+    ----------
+    .. [1] `Theoretical analysis of an improved covariance matrix estimator in
+        non-Gaussian noise
+        <https://hal.science/hal-02495012/document>`_
+        F. Pascal, P. Forster, J.P. Ovarlez, P. Arzabal. IEEE ICASSP, 2005.
+    .. [2] `Covariance structure maximum-likelihood estimates in compound
+        Gaussian noise: Existence and algorithm analysis
+        <https://hal.science/hal-01816367/document>`_
+        F. Pascal, Y. Chitour, J.P. Ovarlez, P. Forster, P. Arzabal. IEEE
+        Transactions on Signal Processing, 2008.
     """
     n_channels, n_times = X.shape
     if not assume_centered:
@@ -84,7 +99,7 @@ def _scm(X, **kwds):
 def _sch(X):
     r"""Schaefer-Strimmer covariance estimator.
 
-    Shrinkage estimator using method:
+    Shrinkage covariance estimator using method [1]_:
 
     .. math::
             \hat{\Sigma} = (1 - \gamma)\Sigma_{scm} + \gamma T
@@ -109,6 +124,14 @@ def _sch(X):
     Notes
     -----
     .. versionadded:: 0.3
+
+    References
+    ----------
+    .. [1] `A shrinkage approach to large-scale covariance estimation and
+        implications for functional genomics
+        <http://doi.org/10.2202/1544-6115.1175>`_
+        J. Schafer, and K. Strimmer. Statistical Applications in Genetics and
+        Molecular Biology, Volume 4, Issue 1, 2005.
     """
     n_times = X.shape[1]
     X_c = (X.T - X.T.mean(axis=0)).T
@@ -194,10 +217,10 @@ def covariances(X, estimator='cov', **kwds):
     .. [est] https://scikit-learn.org/stable/modules/covariance.html
     .. [corr] https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
     .. [cov] https://numpy.org/doc/stable/reference/generated/numpy.cov.html
-    .. [fpcm] `Theoretical analysis of an improved covariance matrix estimator in
-        non-Gaussian noise
+    .. [fpcm] `Theoretical analysis of an improved covariance matrix estimator
+        in non-Gaussian noise
         <https://hal.science/hal-02495012/document>`_
-        F. Pascal, P. Forster, J.P. Ovarlez, P. Arzabal. ICASSP, 2005.
+        F. Pascal, P. Forster, J.P. Ovarlez, P. Arzabal. IEEE ICASSP, 2005.
     .. [lwf] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
     .. [mcd] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
     .. [oas] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
