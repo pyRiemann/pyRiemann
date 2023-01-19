@@ -93,8 +93,9 @@ t1 = time() - t0
 
 ###############################################################################
 # Pipeline with a frequency band selection based on the class distinctiveness
-# Step1: Select frequency band using training set
 # ----------------------------------------------------------------------------
+#
+# Step1: Select frequency band using training set
 #
 # Define parameters of sub frequency bands
 t2 = time()
@@ -116,7 +117,6 @@ print('Selected frequency band : ' + str(best_freq[0])
 ###############################################################################
 # Step2: Train classifier using selected frequency band and evaluate
 # performance using test set
-# -------------------------------------------------------------------
 
 # Apply band-pass filter using the best frequency band
 best_raw_filter = raw.copy().filter(best_freq[0], best_freq[1],
@@ -163,9 +163,11 @@ print("Total computational time with frequency band selection: "
       + f"{t3:.5f} s")
 
 ###############################################################################
+# Plot selected frequency bands
+# ----------------------------------
+#
 # Plot the class distinctiveness values for each sub_band,
 # along with the highlight of the finally selected frequency band.
-# -------------------------------------------------------------------------
 
 subband_fmin = list(np.arange(freq_band[0],
                               freq_band[1] - sub_band_width + 1.,
