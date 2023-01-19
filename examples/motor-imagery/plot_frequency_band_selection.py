@@ -200,7 +200,7 @@ plt.legend(loc='upper right')
 fig.tight_layout()
 plt.show()
 
-print('Optimal freqency band for this subject is ' + str(best_freq[0])
+print('Optimal frequency band for this subject is ' + str(best_freq[0])
       + '-' + str(best_freq[1]) + ' Hz')
 
 ###############################################################################
