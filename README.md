@@ -125,7 +125,7 @@ See their contribution guidelines before contributing to the repository.
 # How to cite
 
 ```bibtex
-@software{alexandre_barachant_2022_7547583,
+@software{pyriemann,
   author       = {Alexandre Barachant and
                   Quentin Barthélemy and
                   Jean-Rémi KING and
