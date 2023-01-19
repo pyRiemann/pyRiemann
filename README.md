@@ -122,6 +122,35 @@ and [MNE-Python](https://mne.tools/stable/install/contributing.html) conventions
 See their contribution guidelines before contributing to the repository.
 
 
+# How to cite
+
+```bibtex
+@software{alexandre_barachant_2022_7547583,
+  author       = {Alexandre Barachant and
+                  Quentin Barthélemy and
+                  Jean-Rémi KING and
+                  Alexandre Gramfort and
+                  Sylvain Chevallier and
+                  Pedro L. C. Rodrigues and
+                  Emanuele Olivetti and
+                  Vladislav Goncharenko and
+                  Gabriel Wagner vom Berg and
+                  Ghiles Reguig and
+                  Arthur Lebeurrier and
+                  Erik Bjäreholt and
+                  Maria Sayu Yamamoto and
+                  Pierre Clisson and
+                  Marie-Constance Corsi},
+  title        = {pyRiemann/pyRiemann: v0.3},
+  month        = jul,
+  year         = 2022,
+  publisher    = {Zenodo},
+  version      = {v0.3},
+  doi          = {10.5281/zenodo.7547583},
+  url          = {https://doi.org/10.5281/zenodo.7547583}
+}
+```
+
 # References
 
 > [1] A. Barachant, M. Congedo, "A Plug&Play P300 BCI Using Information Geometry", Research report, 2014 [link](http://arxiv.org/abs/1409.0107)
