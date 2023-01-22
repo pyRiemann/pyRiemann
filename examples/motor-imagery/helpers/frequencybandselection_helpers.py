@@ -22,7 +22,7 @@ def freq_selection_class_dis(raw, freq_band=[5., 35.], sub_band_width=4,
     r"""Select optimal frequency band based on class distinctiveness measure.
 
         Optimal frequency band is selected by combining a filter bank with
-        a heuristic based on class distinctiveness on the manifold:
+        a heuristic based on class distinctiveness on the manifold [1]_:
         1. Filter training raw EEG data for each sub-band of a filter bank.
         2. Estimate covariance matrices of filtered EEG for each sub-band.
         3. Measure the class distinctiveness of each sub-band using the
@@ -33,9 +33,6 @@ def freq_selection_class_dis(raw, freq_band=[5., 35.], sub_band_width=4,
 
         .. math::
         th=(max(classDis)−min(classDis))×0.4
-
-
-        This algorithm is described in [1]_.
 
 
         Parameters
@@ -79,18 +76,12 @@ def freq_selection_class_dis(raw, freq_band=[5., 35.], sub_band_width=4,
 
         Returns
         -------
-        If method is "cross_validation",
-        all_cv_best_freq : list
-            List of the selected frequency band for each hold of
-            cross validation.
-        all_cv_class_dis : list
-            List of class_dis value of each hold of cross validation.
-
-        If method is "train_test_split",
-        best_freq : list
-            Selected frequency band
-        all_class_dis : list
-            List of class_dis value
+        best_freqs : list
+            List of the selected frequency band for each hold of cross-validation, if
+            method is "cross_validation"; selected frequency band if method is "train_test_split".
+        class_dists : list
+            List of class_dis value of each hold of cross validation, if
+            method is "cross_validation"; list of class_dis value if method is "train_test_split".
 
 
         Notes

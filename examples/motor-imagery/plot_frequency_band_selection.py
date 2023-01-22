@@ -51,7 +51,8 @@ picks = picks[::2]
 # Baseline pipeline without frequency band selection
 # ---------------------------------------------------
 #
-# Apply band-pass filter using a wide frequency band
+# Apply band-pass filter using a wide frequency band, 5-35 Hz.
+# Train and evaluate classifier.
 t0 = time()
 raw_filter = raw.copy().filter(5., 35., method='iir', picks=picks)
 
@@ -95,7 +96,7 @@ t1 = time() - t0
 # Pipeline with a frequency band selection based on the class distinctiveness
 # ----------------------------------------------------------------------------
 #
-# Step1: Select frequency band using training set
+# Step1: Select frequency band maximizing class distinctiveness on training set.
 #
 # Define parameters of sub frequency bands
 t2 = time()
