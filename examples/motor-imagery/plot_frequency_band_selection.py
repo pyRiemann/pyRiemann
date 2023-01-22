@@ -54,9 +54,11 @@ picks = picks[::2]
 # Apply band-pass filter using a wide frequency band, 5-35 Hz.
 # Train and evaluate classifier.
 t0 = time()
-raw_filter = raw.copy().filter(5., 35., method='iir', picks=picks)
+raw_filter = raw.copy().filter(5., 35., method='iir', picks=picks,
+                               verbose='warning')
 
-events, _ = events_from_annotations(raw_filter, event_id)
+events, _ = events_from_annotations(raw_filter, event_id,
+                                    verbose='warning')
 
 # Read epochs (train will be done only between 0.5 and 2.5 s)
 epochs = Epochs(
@@ -96,21 +98,24 @@ t1 = time() - t0
 # Pipeline with a frequency band selection based on the class distinctiveness
 # ----------------------------------------------------------------------------
 #
-# Step1: Select frequency band maximizing class distinctiveness on training set.
+# Step1: Select frequency band maximizing class distinctiveness on
+# training set.
 #
-# Define parameters of sub frequency bands
+# Define parameters for frequency band selection
 t2 = time()
 freq_band = [5., 35.]
 sub_band_width = 4.
 sub_band_step = 2.
+alpha = 0.4
 
 # Select frequency band using training set
 best_freq, all_class_dis = \
     freq_selection_class_dis(raw, freq_band, sub_band_width,
-                             sub_band_step, tmin, tmax,
+                             sub_band_step, alpha,
+                             tmin, tmax,
                              picks, event_id,
                              train_ind=train_ind, method='train_test_split',
-                             return_class_dis=True)
+                             return_class_dis=True, verbose='warning')
 
 print('Selected frequency band : ' + str(best_freq[0])
       + '-' + str(best_freq[1]) + ' Hz')
@@ -121,9 +126,11 @@ print('Selected frequency band : ' + str(best_freq[0])
 
 # Apply band-pass filter using the best frequency band
 best_raw_filter = raw.copy().filter(best_freq[0], best_freq[1],
-                                    method='iir', picks=picks)
+                                    method='iir', picks=picks,
+                                    verbose='warning')
 
-events, _ = events_from_annotations(best_raw_filter, event_id)
+events, _ = events_from_annotations(best_raw_filter, event_id,
+                                    verbose='warning')
 
 # Read epochs (train will be done only between 0.5 and 2.5s)
 epochs = Epochs(
