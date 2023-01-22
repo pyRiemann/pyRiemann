@@ -115,7 +115,7 @@ best_freq, all_class_dis = \
                              tmin, tmax,
                              picks, event_id,
                              train_ind=train_ind, method='train_test_split',
-                             return_class_dis=True, verbose='warning')
+                             return_class_dis=True, verbose=False)
 
 print('Selected frequency band : ' + str(best_freq[0])
       + '-' + str(best_freq[1]) + ' Hz')
@@ -127,10 +127,10 @@ print('Selected frequency band : ' + str(best_freq[0])
 # Apply band-pass filter using the best frequency band
 best_raw_filter = raw.copy().filter(best_freq[0], best_freq[1],
                                     method='iir', picks=picks,
-                                    verbose='warning')
+                                    verbose=False)
 
 events, _ = events_from_annotations(best_raw_filter, event_id,
-                                    verbose='warning')
+                                    verbose=False)
 
 # Read epochs (train will be done only between 0.5 and 2.5s)
 epochs = Epochs(

@@ -76,7 +76,7 @@ def freq_selection_class_dis(raw, freq_band=[5., 35.], sub_band_width=4,
         return_class_dis : bool, default=False
             Whether to return class_dis value.
         verbose : bool, str, int, default=None
-            Control verbosity of the logging output.
+            Control verbosity of the logging output of filtering and .
             If None, use the default verbosity level.
 
 
@@ -192,7 +192,7 @@ def _get_filtered_cov(raw, picks, event_id, fmin, fmax, tmin, tmax, verbose):
         picks=picks,
         baseline=None,
         preload=True,
-        verbose=False)
+        verbose=verbose)
     labels = epochs.events[:, -1] - 2
 
     epochs_data = 1e6 * epochs.get_data()
