@@ -542,8 +542,7 @@ def normalize(X, norm):
     else:
         raise ValueError("'%s' is not a supported normalization" % norm)
 
-    while denom.ndim != X.ndim:
-        denom = denom[..., np.newaxis]
+    denom = np.expand_dims(denom, axis=tuple(range(denom.ndim, X.ndim)))
     Xn = X / denom
 
     if norm == "corr":
