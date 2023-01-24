@@ -22,91 +22,89 @@ def freq_selection_class_dis(raw, freq_band=[5., 35.], sub_band_width=4,
                              return_class_dis=False, verbose=None):
     r"""Select optimal frequency band based on class distinctiveness measure.
 
-        Optimal frequency band is selected by combining a filter bank with
-        a heuristic based on class distinctiveness on the manifold [1]_:
-        1. Filter training raw EEG data for each sub-band of a filter bank.
-        2. Estimate covariance matrices of filtered EEG for each sub-band.
-        3. Measure the class distinctiveness of each sub-band using the
-        classDis metric.
-        4. Find the optimal frequency band by starting from the sub-band
-        with the largest classDis and expanding the selected frequency band
-        as long as the classDis exceeds the threshold :math:`th`:
+    Optimal frequency band is selected by combining a filter bank with
+    a heuristic based on class distinctiveness on the manifold [1]_:
 
-        .. math::
-        th = max(classDis) - (max(classDis)−min(classDis)) × alpha
+    1. Filter training raw EEG data for each sub-band of a filter bank.
+    2. Estimate covariance matrices of filtered EEG for each sub-band.
+    3. Measure the class distinctiveness of each sub-band using the
+      classDis metric.
+    4. Find the optimal frequency band by starting from the sub-band
+      with the largest classDis and expanding the selected frequency band
+      as long as the classDis exceeds the threshold :math:`th`:
 
-
-        Parameters
-        ----------
-        raw : Raw object
-            An instance of Raw from MNE.
-        freq_band : list, default=[5., 35.]
-            Frequency band for band-pass filtering.
-        sub_band_width : float, default=4.
-            Frequency bandwidth of filter bank.
-        sub_band_step : float, default=2.
-            Step length of each filter bank.
-        alpha : float, default=0.4
-            Parameter to define an appropriate threshold for each individual.
-        tmin, tmax : float, default=0.5, 2.5
-            Start and end time of the epochs in seconds, relative to
-            the time-locked event.
-        picks : str | array_like | slice,  default=None
-            Channels to include. Slices and lists of integers will be
-            interpreted as channel indices.
-            If None (default), all channels will pick.
-        event_id : int | list of int | dict, default=None
-            Id of the events to consider.
-
-            - If dict, the keys can later be used to access associated
-              events.
-            - If int, a dict will be created with the id as string.
-            - If a list, all events with the IDs specified in the list
-              are used.
-            - If None, all events will be used and a dict is created
-              with string integer names corresponding to the event id integers.
-        cv : cross-validation generator, default=None
-            An instance of a cross validation iterator from sklearn.
-            If method is "cross_validation", cv needs to be defined.
-        train_ind : ndarray, shape (n_training_set,), default=None
-            index of training set.
-            If method is "train_test_split", train_ind needs to be defined.
-        method : str, default="cross_validation",
-            Method of data split either cross_validation or train_test_split.
-        return_class_dis : bool, default=False
-            Whether to return class_dis value.
-        verbose : bool, str, int, default=None
-            Control verbosity of the logging output of filtering and .
-            If None, use the default verbosity level.
+    .. math::
+    th = max(classDis) - (max(classDis)−min(classDis)) × alpha
 
 
-        Returns
-        -------
-        best_freqs : list
-            List of the selected frequency band for each hold of
-            cross-validation, if method is "cross_validation"; selected
-            frequency band if method is "train_test_split".
-        class_dists : list
-            List of class_dis value of each hold of cross validation,
-            if method is "cross_validation"; list of class_dis value
-            if method is "train_test_split".
+    Parameters
+    ----------
+    raw : Raw object
+        An instance of Raw from MNE.
+    freq_band : list, default=[5., 35.]
+        Frequency band for band-pass filtering.
+    sub_band_width : float, default=4.
+        Frequency bandwidth of filter bank.
+    sub_band_step : float, default=2.
+        Step length of each filter bank.
+    alpha : float, default=0.4
+        Parameter to define an appropriate threshold for each individual.
+    tmin, tmax : float, default=0.5, 2.5
+        Start and end time of the epochs in seconds, relative to
+        the time-locked event.
+    picks : str | array_like | slice,  default=None
+        Channels to include. Slices and lists of integers will be
+        interpreted as channel indices.
+        If None (default), all channels will pick.
+    event_id : int | list of int | dict, default=None
+        Id of the events to consider.
 
+        - If dict, the keys can later be used to access associated
+          events.
+        - If int, a dict will be created with the id as string.
+        - If a list, all events with the IDs specified in the list
+          are used.
+        - If None, all events will be used and a dict is created
+          with string integer names corresponding to the event id integers.
+    cv : cross-validation generator, default=None
+        An instance of a cross validation iterator from sklearn.
+        If method is "cross_validation", cv needs to be defined.
+    train_ind : ndarray, shape (n_training_set,), default=None
+        index of training set.
+        If method is "train_test_split", train_ind needs to be defined.
+    method : str, default="cross_validation",
+        Method of data split either cross_validation or train_test_split.
+    return_class_dis : bool, default=False
+        Whether to return class_dis value.
+    verbose : bool, str, int, default=None
+        Control verbosity of the logging output of filtering and .
+        If None, use the default verbosity level.
 
-        Notes
-        -----
-        .. versionadded:: 0.3.1
+    Returns
+    -------
+    best_freqs : list
+        List of the selected frequency band for each hold of
+        cross-validation, if method is "cross_validation"; selected
+        frequency band if method is "train_test_split".
+    class_dists : list
+        List of class_dis value of each hold of cross validation,
+        if method is "cross_validation"; list of class_dis value
+        if method is "train_test_split".
 
-        References
-        ----------
-        .. [1] `Class-distinctiveness-based frequency band selection on the
-           Riemannian manifold for oscillatory activity-based BCIs: preliminary
-           results
-           <https://hal.archives-ouvertes.fr/hal-03641137/>`_
-           M. S. Yamamoto, F. Lotte, F. Yger, and S. Chevallier.
-           44th Annual International Conference of the IEEE Engineering
-           in Medicine & Biology Society (EMBC2022), 2022.
+    Notes
+    -----
+    .. versionadded:: 0.3.1
 
-        """
+    References
+    ----------
+    .. [1] `Class-distinctiveness-based frequency band selection on the
+       Riemannian manifold for oscillatory activity-based BCIs: preliminary
+       results
+       <https://hal.archives-ouvertes.fr/hal-03641137/>`_
+       M. S. Yamamoto, F. Lotte, F. Yger, and S. Chevallier.
+       44th Annual International Conference of the IEEE Engineering
+       in Medicine & Biology Society (EMBC2022), 2022.
+    """
 
     subband_fmin = list(np.arange(freq_band[0],
                                   freq_band[1] - sub_band_width + 1.,
