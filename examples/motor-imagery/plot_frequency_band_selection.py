@@ -182,7 +182,7 @@ subband_fmin = list(np.arange(freq_band[0],
                               sub_band_step))
 subband_fmax = list(np.arange(freq_band[0] + sub_band_width,
                               freq_band[1] + 1., sub_band_step))
-nb_subband = len(subband_fmin)
+n_subband = len(subband_fmin)
 
 x = list(range(0, nb_subband, 1))
 fig = plt.figure(figsize=(10, 5))

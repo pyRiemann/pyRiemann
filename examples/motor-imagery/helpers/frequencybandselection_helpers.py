@@ -13,7 +13,7 @@ from pyriemann.estimation import Covariances
 from pyriemann.classification import class_distinctiveness
 
 
-def freq_selection_class_dis(raw, freq_band=[5., 35.], sub_band_width=4,
+def freq_selection_class_dis(raw, freq_band=(5., 35.), sub_band_width=4,
                              sub_band_step=2, alpha=0.4,
                              tmin=0.5, tmax=2.5,
                              picks=None, event_id=None,
@@ -34,14 +34,14 @@ def freq_selection_class_dis(raw, freq_band=[5., 35.], sub_band_width=4,
       as long as the classDis exceeds the threshold :math:`th`:
 
     .. math::
-    th = max(classDis) - (max(classDis)−min(classDis)) × alpha
+      th = max(classDis) - (max(classDis)−min(classDis)) × alpha
 
 
     Parameters
     ----------
     raw : Raw object
         An instance of Raw from MNE.
-    freq_band : list, default=[5., 35.]
+    freq_band : list, default=(5., 35.)
         Frequency band for band-pass filtering.
     sub_band_width : float, default=4.
         Frequency bandwidth of filter bank.
@@ -111,15 +111,15 @@ def freq_selection_class_dis(raw, freq_band=[5., 35.], sub_band_width=4,
                                   sub_band_step))
     subband_fmax = list(np.arange(freq_band[0] + sub_band_width,
                                   freq_band[1] + 1., sub_band_step))
-    nb_subband = len(subband_fmin)
+    n_subband = len(subband_fmin)
 
     all_sub_band_cov = []
 
-    for ii in range(nb_subband):
+    for fmin, fmax in zip(subband_fmin, subband_fmax):
         cov_data, labels = _get_filtered_cov(raw, picks,
                                              event_id,
-                                             subband_fmin[ii],
-                                             subband_fmax[ii],
+                                             fmin,
+                                             fmax,
                                              tmin, tmax, verbose)
         all_sub_band_cov.append(cov_data)
 
@@ -193,7 +193,7 @@ def _get_filtered_cov(raw, picks, event_id, fmin, fmax, tmin, tmax, verbose):
         verbose=verbose)
     labels = epochs.events[:, -1] - 2
 
-    epochs_data = 1e6 * epochs.get_data()
+    epochs_data = epochs.get_data(units="uV")
 
     cov_data = Covariances().transform(epochs_data)
 
