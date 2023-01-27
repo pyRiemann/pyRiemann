@@ -114,8 +114,7 @@ best_freq, all_class_dis = \
                              cv,
                              return_class_dis=True, verbose=False)
 
-print('Selected frequency band : ' + str(best_freq[0][0])
-      + '-' + str(best_freq[0][1]) + ' Hz')
+print(f'Selected frequency band : {best_freq[0][0]} - {best_freq[0][1]} Hz')
 
 ###############################################################################
 # Step2: Train classifier using selected frequency band and evaluate
