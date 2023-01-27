@@ -77,12 +77,9 @@ def freq_selection_class_dis(raw, freq_band=(5., 35.), sub_band_width=4,
     -------
     best_freqs : list
         List of the selected frequency band for each hold of
-        cross-validation, if method is "cross_validation"; selected
-        frequency band if method is "train_test_split".
+        cross validation.
     class_dists : list
-        List of class_dis value of each hold of cross validation,
-        if method is "cross_validation"; list of class_dis value
-        if method is "train_test_split".
+        List of class_dis value of each hold of cross validation.
 
     Notes
     -----
