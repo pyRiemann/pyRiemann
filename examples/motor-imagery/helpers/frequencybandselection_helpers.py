@@ -176,14 +176,14 @@ def _get_best_freq_band(all_class_dis, n_subband, subband_fmin, subband_fmax,
 
     fmin = np.min(all_class_dis)
     fmax = np.max(all_class_dis)
-    thresold_freq = fmax - (fmax - fmin) * alpha
+    threshold_freq = fmax - (fmax - fmin) * alpha
 
     f0 = fmaxstart
     f1 = fmaxstart
-    while f0 >= 1 and (all_class_dis[f0 - 1] >= thresold_freq):
+    while f0 >= 1 and (all_class_dis[f0 - 1] >= threshold_freq):
         f0 = f0 - 1
 
-    while f1 < n_subband - 1 and (all_class_dis[f1 + 1] >= thresold_freq):
+    while f1 < n_subband - 1 and (all_class_dis[f1 + 1] >= threshold_freq):
         f1 = f1 + 1
 
     best_freq_f0 = subband_fmin[f0]
