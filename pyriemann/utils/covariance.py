@@ -52,7 +52,7 @@ def _fpcm(X, *, init=None, tol=10e-3, n_iter_max=50, assume_centered=False):
         <https://hal.science/hal-01816367/document>`_
         F. Pascal, Y. Chitour, J.P. Ovarlez, P. Forster, P. Arzabal. IEEE
         Transactions on Signal Processing, 2008.
-    """  #noqa
+    """  # noqa
     n_channels, n_times = X.shape
     if not assume_centered:
         X -= np.mean(X, axis=1, keepdims=True)
