@@ -10,8 +10,8 @@ from .test import is_square
 def _fpcm(X, *, init=None, tol=10e-3, n_iter_max=50, assume_centered=False):
     """Fixed point covariance estimator.
 
-    Fixed point covariance estimator with properties of existence, uniqueness,
-    unbiasedness and consistency.
+    Distribution-free robust M-estimator [1]_ computed by fixed point
+    covariance estimator [2]_ [3]_.
 
     Parameters
     ----------
@@ -40,16 +40,19 @@ def _fpcm(X, *, init=None, tol=10e-3, n_iter_max=50, assume_centered=False):
 
     References
     ----------
-    .. [1] `Theoretical analysis of an improved covariance matrix estimator in
+    .. [1] `A distribution-free M-estimator of multivariate scatter
+        <https://projecteuclid.org/journals/annals-of-statistics/volume-15/issue-1/A-Distribution-Free-M-Estimator-of-Multivariate-Scatter/10.1214/aos/1176350263.full>`_
+        D. E. Tyler. The Annals of Statistics, 1987.
+    .. [2] `Theoretical analysis of an improved covariance matrix estimator in
         non-Gaussian noise
         <https://hal.science/hal-02495012/document>`_
         F. Pascal, P. Forster, J.P. Ovarlez, P. Arzabal. IEEE ICASSP, 2005.
-    .. [2] `Covariance structure maximum-likelihood estimates in compound
+    .. [3] `Covariance structure maximum-likelihood estimates in compound
         Gaussian noise: Existence and algorithm analysis
         <https://hal.science/hal-01816367/document>`_
         F. Pascal, Y. Chitour, J.P. Ovarlez, P. Forster, P. Arzabal. IEEE
         Transactions on Signal Processing, 2008.
-    """
+    """  #noqa
     n_channels, n_times = X.shape
     if not assume_centered:
         X -= np.mean(X, axis=1, keepdims=True)
@@ -61,7 +64,8 @@ def _fpcm(X, *, init=None, tol=10e-3, n_iter_max=50, assume_centered=False):
     for _ in range(n_iter_max):
         diag_ = np.diag(X.T @ np.linalg.inv(cov) @ X)
         X_ = X / np.sqrt(np.where(diag_ < 1e-10, 1e-10, diag_))
-        cov_new = (n_channels / n_times) * (X_ @ X_.T)
+        cov_ = (n_channels / n_times) * (X_ @ X_.T)  # Eq.(6) of [2]
+        cov_new = (n_channels / np.trace(cov_)) * cov_  # Eq.(8)
 
         crit = np.linalg.norm(cov_new - cov, ord='fro')
         cov = cov_new
@@ -133,7 +137,7 @@ def _sch(X):
         J. Schafer, and K. Strimmer. Statistical Applications in Genetics and
         Molecular Biology, Volume 4, Issue 1, 2005.
     """
-    n_times = X.shape[1]
+    _, n_times = X.shape
     X_c = (X.T - X.T.mean(axis=0)).T
     C_scm = 1. / n_times * X_c @ X_c.T
 
