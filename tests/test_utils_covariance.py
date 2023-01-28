@@ -16,7 +16,7 @@ estimators = ['corr', 'cov', 'lwf', 'mcd', 'oas', 'sch', 'scm']
 
 
 @pytest.mark.parametrize(
-    'estimator', estimators + [np.cov, 'truc', None]
+    'estimator', estimators + [np.cov, 'fpcm', 'truc', None]
 )
 def test_covariances(estimator, rndstate):
     """Test covariance for multiple estimators"""
@@ -32,6 +32,17 @@ def test_covariances(estimator, rndstate):
     else:
         cov = covariances(x, estimator=estimator)
         assert cov.shape == (n_matrices, n_channels, n_channels)
+
+        if estimator == 'corr':
+            assert_array_almost_equal(
+                np.diagonal(cov, axis1=-2, axis2=-1),
+                np.ones((n_matrices, n_channels))
+            )
+        elif estimator == 'fpcm':
+            assert_array_almost_equal(
+                np.trace(cov, axis1=-2, axis2=-1),
+                np.full(n_matrices, n_channels)
+            )
 
 
 @pytest.mark.parametrize(

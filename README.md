@@ -5,7 +5,7 @@
 [![Build Status](https://github.com/pyRiemann/pyRiemann/workflows/testing/badge.svg?branch=master&event=push)](https://github.com/pyRiemann/pyRiemann/actions)
 [![codecov](https://codecov.io/gh/pyRiemann/pyRiemann/branch/master/graph/badge.svg)](https://codecov.io/gh/pyRiemann/pyRiemann)
 [![Documentation Status](https://readthedocs.org/projects/pyriemann/badge/?version=latest)](http://pyriemann.readthedocs.io/en/latest/?badge=latest)
-[![DOI](https://zenodo.org/badge/doi/10.5281/zenodo.18982.svg)](http://dx.doi.org/10.5281/zenodo.18982)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.593816.svg)](https://doi.org/10.5281/zenodo.593816)
 [![Downloads](https://pepy.tech/badge/pot)](https://pepy.tech/project/pyriemann)
 
 pyRiemann is a Python machine learning package based on [scikit-learn](http://scikit-learn.org/stable/modules/classes.html) API.
@@ -121,6 +121,35 @@ The package aims at adopting the [scikit-learn](http://scikit-learn.org/stable/d
 and [MNE-Python](https://mne.tools/stable/install/contributing.html) conventions as much as possible.
 See their contribution guidelines before contributing to the repository.
 
+
+# How to cite
+
+```bibtex
+@software{pyriemann,
+  author       = {Alexandre Barachant and
+                  Quentin Barthélemy and
+                  Jean-Rémi KING and
+                  Alexandre Gramfort and
+                  Sylvain Chevallier and
+                  Pedro L. C. Rodrigues and
+                  Emanuele Olivetti and
+                  Vladislav Goncharenko and
+                  Gabriel Wagner vom Berg and
+                  Ghiles Reguig and
+                  Arthur Lebeurrier and
+                  Erik Bjäreholt and
+                  Maria Sayu Yamamoto and
+                  Pierre Clisson and
+                  Marie-Constance Corsi},
+  title        = {pyRiemann/pyRiemann: v0.3},
+  month        = jul,
+  year         = 2022,
+  publisher    = {Zenodo},
+  version      = {v0.3},
+  doi          = {10.5281/zenodo.7547583},
+  url          = {https://doi.org/10.5281/zenodo.7547583}
+}
+```
 
 # References
 
