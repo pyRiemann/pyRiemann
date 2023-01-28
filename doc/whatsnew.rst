@@ -35,7 +35,7 @@ v0.3.1.dev
 
 - Add kernel matrices representation :class:`pyriemann.estimation.Kernels` and complete example comparing estimators. :pr:`217` by :user:`qbarthelemy`
 
-- Add a new covariance estimator, robust fixed point covariance, and add **kwds arguments for all covariance based functions and classes. :pr:`220` by :user:`qbarthelemy`
+- Add a new covariance estimator, robust fixed point covariance, and add kwds arguments for all covariance based functions and classes. :pr:`220` by :user:`qbarthelemy`
 
 v0.3 (July 2022)
 ----------------
