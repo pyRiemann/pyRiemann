@@ -6,36 +6,104 @@ from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
 
 from .test import is_square
 
-# Mapping different estimator on the sklearn toolbox
+
+def _fpcm(X, *, init=None, tol=10e-3, n_iter_max=50, assume_centered=False):
+    """Fixed point covariance estimator.
+
+    Distribution-free robust M-estimator [1]_ computed by fixed point
+    covariance estimator [2]_ [3]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_channels, n_times)
+        Multi-channel time-series.
+    init : None | ndarray, shape (n_channels, n_channels), default=None
+        A matrix used to initialize the algorithm.
+        If None, the normalized sample covariance matrix is used.
+    tol : float, default=10e-3
+        The tolerance to stop the fixed point estimation.
+    n_iter_max : int, default=50
+        The maximum number of iterations.
+    assume_centered : bool, default=False
+        If `True`, data will not be centered before computation.
+        Useful when working with data whose mean is almost, but not exactly
+        zero. If `False`, data will be centered before computation.
+
+    Returns
+    -------
+    cov : ndarray, shape (n_channels, n_channels)
+        Fixed point covariance matrix.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+
+    References
+    ----------
+    .. [1] `A distribution-free M-estimator of multivariate scatter
+        <https://projecteuclid.org/journals/annals-of-statistics/volume-15/issue-1/A-Distribution-Free-M-Estimator-of-Multivariate-Scatter/10.1214/aos/1176350263.full>`_
+        D. E. Tyler. The Annals of Statistics, 1987.
+    .. [2] `Theoretical analysis of an improved covariance matrix estimator in
+        non-Gaussian noise
+        <https://hal.science/hal-02495012/document>`_
+        F. Pascal, P. Forster, J.P. Ovarlez, P. Arzabal. IEEE ICASSP, 2005.
+    .. [3] `Covariance structure maximum-likelihood estimates in compound
+        Gaussian noise: Existence and algorithm analysis
+        <https://hal.science/hal-01816367/document>`_
+        F. Pascal, Y. Chitour, J.P. Ovarlez, P. Forster, P. Arzabal. IEEE
+        Transactions on Signal Processing, 2008.
+    """  # noqa
+    n_channels, n_times = X.shape
+    if not assume_centered:
+        X -= np.mean(X, axis=1, keepdims=True)
+    if init is None:
+        cov = n_channels * _scm(X, assume_centered=True)
+    else:
+        cov = init
+
+    for _ in range(n_iter_max):
+        diag_ = np.diag(X.T @ np.linalg.inv(cov) @ X)
+        X_ = X / np.sqrt(np.where(diag_ < 1e-10, 1e-10, diag_))
+        cov_ = (n_channels / n_times) * (X_ @ X_.T)  # Eq.(6) of [2]
+        cov_new = (n_channels / np.trace(cov_)) * cov_  # Eq.(8)
+
+        crit = np.linalg.norm(cov_new - cov, ord='fro')
+        cov = cov_new
+        if crit <= tol:
+            break
+    else:
+        warnings.warn('Convergence not reached')
+
+    return cov
 
 
-def _lwf(X):
+def _lwf(X, **kwds):
     """Wrapper for sklearn ledoit wolf covariance estimator"""
-    C, _ = ledoit_wolf(X.T)
+    C, _ = ledoit_wolf(X.T, **kwds)
     return C
 
 
-def _mcd(X):
+def _mcd(X, **kwds):
     """Wrapper for sklearn mcd covariance estimator"""
-    _, C, _, _ = fast_mcd(X.T)
+    _, C, _, _ = fast_mcd(X.T, **kwds)
     return C
 
 
-def _oas(X):
+def _oas(X, **kwds):
     """Wrapper for sklearn oas covariance estimator"""
-    C, _ = oas(X.T)
+    C, _ = oas(X.T, **kwds)
     return C
 
 
-def _scm(X):
+def _scm(X, **kwds):
     """Wrapper for sklearn sample covariance estimator"""
-    return empirical_covariance(X.T)
+    return empirical_covariance(X.T, **kwds)
 
 
 def _sch(X):
     r"""Schaefer-Strimmer covariance estimator.
 
-    Shrinkage estimator using method from [1]_:
+    Shrinkage covariance estimator using method [1]_:
 
     .. math::
             \hat{\Sigma} = (1 - \gamma)\Sigma_{scm} + \gamma T
@@ -65,11 +133,11 @@ def _sch(X):
     ----------
     .. [1] `A shrinkage approach to large-scale covariance estimation and
         implications for functional genomics
-        <https://pubmed.ncbi.nlm.nih.gov/16646851/>`_
+        <http://doi.org/10.2202/1544-6115.1175>`_
         J. Schafer, and K. Strimmer. Statistical Applications in Genetics and
-        Molecular Biology, Volume 4, Issue 1, November 2005.
+        Molecular Biology, Volume 4, Issue 1, 2005.
     """
-    n_times = X.shape[1]
+    _, n_times = X.shape
     X_c = (X.T - X.T.mean(axis=0)).T
     C_scm = 1. / n_times * X_c @ X_c.T
 
@@ -96,6 +164,7 @@ def _check_est(est):
     estimators = {
         'corr': np.corrcoef,
         'cov': np.cov,
+        'fpcm': _fpcm,
         'lwf': _lwf,
         'mcd': _mcd,
         'oas': _oas,
@@ -117,27 +186,30 @@ def _check_est(est):
     return est
 
 
-def covariances(X, estimator='cov'):
+def covariances(X, estimator='cov', **kwds):
     """Estimation of covariance matrix.
 
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_times)
         Multi-channel time-series.
-    estimator : {'corr', 'cov', 'lwf', 'mcd', 'oas', 'sch', 'scm'}, \
+    estimator : {'corr', 'cov', 'fpcm', 'lwf', 'mcd', 'oas', 'sch', 'scm'}, \
             default='scm'
-        Covariance matrix estimator [1]_:
+        Covariance matrix estimator [est]_:
 
-        * 'corr' for correlation coefficient matrix [2]_,
-        * 'cov' for numpy based covariance matrix [3]_,
-        * 'lwf' for shrunk Ledoit-Wolf covariance matrix [4]_,
-        * 'mcd' for minimum covariance determinant matrix [5]_,
-        * 'oas' for oracle approximating shrunk covariance matrix [6]_,
-        * 'sch' for Schaefer-Strimmer covariance matrix [7]_,
-        * 'scm' for sample covariance matrix [8]_,
+        * 'corr' for correlation coefficient matrix [corr]_,
+        * 'cov' for numpy based covariance matrix [cov]_,
+        * 'fpcm' for robust fixed point covariance matrix [fpcm]_,
+        * 'lwf' for shrunk Ledoit-Wolf covariance matrix [lwf]_,
+        * 'mcd' for minimum covariance determinant matrix [mcd]_,
+        * 'oas' for oracle approximating shrunk covariance matrix [oas]_,
+        * 'sch' for Schaefer-Strimmer covariance matrix [sch]_,
+        * 'scm' for sample covariance matrix [scm]_,
         * or a callable function.
 
         For regularization, consider 'lwf' or 'oas'.
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the covariance estimator.
 
     Returns
     -------
@@ -146,24 +218,32 @@ def covariances(X, estimator='cov'):
 
     References
     ----------
-    .. [1] https://scikit-learn.org/stable/modules/covariance.html
-    .. [2] https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
-    .. [3] https://numpy.org/doc/stable/reference/generated/numpy.cov.html
-    .. [4] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
-    .. [5] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
-    .. [6] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
-    .. [7] http://doi.org/10.2202/1544-6115.1175
-    .. [8] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
+    .. [est] https://scikit-learn.org/stable/modules/covariance.html
+    .. [corr] https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
+    .. [cov] https://numpy.org/doc/stable/reference/generated/numpy.cov.html
+    .. [fpcm] `Theoretical analysis of an improved covariance matrix estimator
+        in non-Gaussian noise
+        <https://hal.science/hal-02495012/document>`_
+        F. Pascal, P. Forster, J.P. Ovarlez, P. Arzabal. IEEE ICASSP, 2005.
+    .. [lwf] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
+    .. [mcd] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
+    .. [oas] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
+    .. [sch] `A shrinkage approach to large-scale covariance estimation and
+        implications for functional genomics
+        <http://doi.org/10.2202/1544-6115.1175>`_
+        J. Schafer, and K. Strimmer. Statistical Applications in Genetics and
+        Molecular Biology, Volume 4, Issue 1, 2005.
+    .. [scm] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
     """  # noqa
     est = _check_est(estimator)
     n_matrices, n_channels, n_times = X.shape
     covmats = np.empty((n_matrices, n_channels, n_channels))
     for i in range(n_matrices):
-        covmats[i] = est(X[i])
+        covmats[i] = est(X[i], **kwds)
     return covmats
 
 
-def covariances_EP(X, P, estimator='cov'):
+def covariances_EP(X, P, estimator='cov', **kwds):
     """Special form covariance matrix, concatenating a prototype P.
 
     Parameters
@@ -172,10 +252,11 @@ def covariances_EP(X, P, estimator='cov'):
         Multi-channel time-series.
     P : ndarray, shape (n_channels_proto, n_times)
         Multi-channel prototype.
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'}, \
-            default='cov'
+    estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the covariance estimator.
 
     Returns
     -------
@@ -192,23 +273,24 @@ def covariances_EP(X, P, estimator='cov'):
     covmats = np.empty((n_matrices, n_channels + n_channels_proto,
                         n_channels + n_channels_proto))
     for i in range(n_matrices):
-        covmats[i] = est(np.concatenate((P, X[i]), axis=0))
+        covmats[i] = est(np.concatenate((P, X[i]), axis=0), **kwds)
     return covmats
 
 
-def covariances_X(X, estimator='scm', alpha=0.2):
+def covariances_X(X, estimator='scm', alpha=0.2, **kwds):
     """Special form covariance matrix, embedding input X.
 
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_times)
         Multi-channel time-series.
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'}, \
-            default='scm'
+    estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
     alpha : float, default=0.2
         Regularization parameter (strictly positive).
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the covariance estimator.
 
     Returns
     -------
@@ -244,11 +326,11 @@ def covariances_X(X, estimator='scm', alpha=0.2):
             np.concatenate((X[i], alpha * np.eye(n_channels)), axis=1),  # top
             np.concatenate((alpha * np.eye(n_times), X[i].T), axis=1)  # bottom
         ), axis=0)  # Eq(9)
-        covmats[i] = est(Y)
+        covmats[i] = est(Y, **kwds)
     return covmats / (2 * alpha)  # Eq(10)
 
 
-def block_covariances(X, blocks, estimator='cov'):
+def block_covariances(X, blocks, estimator='cov', **kwds):
     """Compute block diagonal covariance.
 
     Calculates block diagonal matrices where each block is a covariance
@@ -262,10 +344,11 @@ def block_covariances(X, blocks, estimator='cov'):
         Multi-channel time-series.
     blocks: list of int
         List of block sizes.
-    estimator : {'cov', 'scm', 'lwf', 'oas', 'mcd', 'sch', 'corr'}, \
-        default='scm'
+    estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
+    **kwds : optional keyword parameters
+        Any further parameters are passed directly to the covariance estimator.
 
     Returns
     -------
@@ -283,11 +366,14 @@ def block_covariances(X, blocks, estimator='cov'):
     for i in range(n_matrices):
         blockcov, idx_start = [], 0
         for j in blocks:
-            blockcov.append(est(X[i, idx_start:idx_start+j, :]))
+            blockcov.append(est(X[i, idx_start:idx_start+j, :], **kwds))
             idx_start += j
         covmats[i] = block_diag(*tuple(blockcov))
 
     return covmats
+
+
+###############################################################################
 
 
 def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
