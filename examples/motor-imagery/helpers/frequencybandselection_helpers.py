@@ -68,17 +68,17 @@ def freq_selection_class_dis(raw, freq_band=(5., 35.), sub_band_width=4,
     cv : cross-validation generator, default=None
         An instance of a cross validation iterator from sklearn.
     return_class_dis : bool, default=False
-        Whether to return class_dis value.
+        Whether to return all_cv_class_dis value.
     verbose : bool, str, int, default=None
         Control verbosity of the logging output of filtering and .
         If None, use the default verbosity level.
 
     Returns
     -------
-    best_freqs : list
+    all_cv_best_freq : list
         List of the selected frequency band for each hold of
         cross validation.
-    class_dists : list
+    all_cv_class_dis : list, optional
         List of class_dis value of each hold of cross validation.
 
     Notes
