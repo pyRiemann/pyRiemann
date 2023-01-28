@@ -199,7 +199,7 @@ def covariances(X, estimator='cov', **kwds):
 
         * 'corr' for correlation coefficient matrix [corr]_,
         * 'cov' for numpy based covariance matrix [cov]_,
-        * 'fpcm' for fixed point covariance matrix [fpcm]_,
+        * 'fpcm' for robust fixed point covariance matrix [fpcm]_,
         * 'lwf' for shrunk Ledoit-Wolf covariance matrix [lwf]_,
         * 'mcd' for minimum covariance determinant matrix [mcd]_,
         * 'oas' for oracle approximating shrunk covariance matrix [oas]_,
