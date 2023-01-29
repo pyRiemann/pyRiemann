@@ -37,6 +37,8 @@ v0.3.1.dev
 
 - Add a new covariance estimator, robust fixed point covariance, and add kwds arguments for all covariance based functions and classes. :pr:`220` by :user:`qbarthelemy`
 
+- Add example in gallery on frequency band selection using class distinctiveness measure. :pr:`219` by :user:`MSYamamoto`
+
 v0.3 (July 2022)
 ----------------
 
