@@ -1,4 +1,4 @@
-Preprocessing
--------------------
+Covariance estimation
+---------------------
 
-Using pyRiemann for signal processing and covariance estimation.
+Examples for covariance matrix estimation.

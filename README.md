@@ -14,7 +14,10 @@ through the Riemannian geometry of symmetric positive definite (SPD) matrices.
 
 pyRiemann aims at being a generic package for multivariate time series classification
 but has been designed around multichannel biosignals (like EEG, MEG or EMG) manipulation applied to brain-computer interface (BCI),
-transforming multichannel time series into covariance matrices, and classifying them using the Riemannian geometry of SPD matrices.
+transforming multichannel time series into covariance matrices, and classifying them using the Riemannian geometry of SPD matrices [[1]](#1).
+
+For BCI applications, studied paradigms are motor imagery [[2]](#2) [[3]](#3), event-related potentials (ERP) [[4]](#4) and steady-state visually evoked potentials (SSVEP) [[5]](#5).
+Using extended labels, API allows transfer learning between sessions or subjects [[6]](#6).
 
 This code is BSD-licenced (3 clause).
 
@@ -55,7 +58,7 @@ python setup.py develop
 ## How to use it
 
 Most of the functions mimic the scikit-learn API, and therefore can be directly used with sklearn.
-For example, for cross-validation classification of EEG signal using the MDM algorithm described in [4], it is easy as:
+For example, for cross-validation classification of EEG signal using the MDM algorithm described in [[2]](#2), it is easy as:
 
 ```python
 import pyriemann
@@ -78,7 +81,7 @@ print(accuracy.mean())
 ```
 
 You can also pipeline methods using sklearn pipeline framework.
-For example, to classify EEG signal using a SVM classifier in the tangent space, described in [5]:
+For example, to classify EEG signal using a SVM classifier in the tangent space, described in [[3]](#3):
 
 ```python
 from pyriemann.estimation import Covariances
@@ -107,6 +110,12 @@ print(accuracy.mean())
 
 **Check out the example folder for more examples !**
 
+# Contribution Guidelines
+
+The package aims at adopting the [scikit-learn](http://scikit-learn.org/stable/developers/contributing.html#contributing-code)
+and [MNE-Python](https://mne.tools/stable/install/contributing.html) conventions as much as possible.
+See their contribution guidelines before contributing to the repository.
+
 # Testing
 
 If you make a modification, run the test suite before submitting a pull request
@@ -115,20 +124,13 @@ If you make a modification, run the test suite before submitting a pull request
 pytest
 ```
 
-# Contribution Guidelines
-
-The package aims at adopting the [scikit-learn](http://scikit-learn.org/stable/developers/contributing.html#contributing-code)
-and [MNE-Python](https://mne.tools/stable/install/contributing.html) conventions as much as possible.
-See their contribution guidelines before contributing to the repository.
-
-
 # How to cite
 
 ```bibtex
 @software{pyriemann,
   author       = {Alexandre Barachant and
                   Quentin Barthélemy and
-                  Jean-Rémi KING and
+                  Jean-Rémi King and
                   Alexandre Gramfort and
                   Sylvain Chevallier and
                   Pedro L. C. Rodrigues and
@@ -153,13 +155,26 @@ See their contribution guidelines before contributing to the repository.
 
 # References
 
-> [1] A. Barachant, M. Congedo, "A Plug&Play P300 BCI Using Information Geometry", Research report, 2014 [link](http://arxiv.org/abs/1409.0107)
->
-> [2] M. Congedo, A. Barachant, A. Andreev, "A New generation of Brain-Computer Interface Based on Riemannian Geometry". Research report, 2013. [link](https://hal.archives-ouvertes.fr/hal-00879050)
->
-> [3] A. Barachant and S. Bonnet, "Channel selection procedure using riemannian distance for BCI applications" in 2011 5th International IEEE/EMBS Conference on Neural Engineering (NER), 2011, 348-351. [pdf](http://hal.archives-ouvertes.fr/docs/00/60/27/07/PDF/NER11_0016_FI.pdf)
->
-> [4] A. Barachant, S. Bonnet, M. Congedo, and C. Jutten, "Multiclass Brain-Computer Interface Classification by Riemannian Geometry" in IEEE Transactions on
-Biomedical Engineering, vol. 59, no. 4, p. 920-928, 2012. [link](https://hal.archives-ouvertes.fr/hal-00681328)
->
-> [5] A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification of covariance matrices using a Riemannian-based kernel for BCI applications" in Neurocomputing, Elsevier, 2013, 112, pp.172-178. [link](https://hal.archives-ouvertes.fr/hal-00820475/)
+<a id="1">[1]</a>
+M. Congedo, A. Barachant and R. Bhatia, "Riemannian geometry for EEG-based brain-computer interfaces; a primer and a review".
+Brain-Computer Interfaces, 4.3, pp. 155-174, 2017. [link](https://hal.science/hal-01570120/document)
+
+<a id="2">[2]</a>
+A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Multiclass Brain-Computer Interface Classification by Riemannian Geometry".
+IEEE Transactions on Biomedical Engineering, vol. 59, no. 4, pp. 920-928, 2012. [link](https://hal.archives-ouvertes.fr/hal-00681328)
+
+<a id="3">[3]</a>
+A. Barachant, S. Bonnet, M. Congedo and C. Jutten, "Classification of covariance matrices using a Riemannian-based kernel for BCI applications".
+Neurocomputing, 112, pp. 172-178, 2013. [link](https://hal.archives-ouvertes.fr/hal-00820475/)
+
+<a id="4">[4]</a>
+A. Barachant and M. Congedo, "A Plug&Play P300 BCI Using Information Geometry".
+Research report, 2014. [link](http://arxiv.org/abs/1409.0107)
+
+<a id="5">[5]</a>
+EK. Kalunga, S. Chevallier, Q. Barthélemy, K. Djouani, E. Monacelli and Y. Hamam, "Online SSVEP-based BCI using Riemannian geometry".
+Neurocomputing, 191, pp. 55-68, 2014. [link](https://hal.science/hal-01351623/file/Kalunga-Chevallier-Barthelemy-Online%20SSVEP-based%20BCI%20using%20Riemannian%20Geometry-Neurocomputing-16.pdf)
+
+<a id="6">[6]</a>
+PLC. Rodrigues, C. Jutten and M. Congedo, "Riemannian Procrustes analysis: transfer learning for brain-computer interfaces".
+IEEE Transactions on Biomedical Engineering, vol. 66, no. 8, pp. 2390-2401, 2018. [link](https://hal.archives-ouvertes.fr/hal-01971856)
