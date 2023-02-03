@@ -125,6 +125,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     elif m_estimator == 'hub':
         if not 0 < q <= 1:
             raise ValueError(f"Value q must be included in (0, 1] (Got {q})")
+
         def weight_func(x):  # Example 1, Section V-C
             c2 = chi2.ppf(q, n_channels) / 2
             b = chi2.cdf(2*c2, n_channels + 1) + c2 * (1-q) / n_channels
@@ -132,6 +133,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     elif m_estimator == 'stu':
         if nu <= 0:
             raise ValueError(f"Value nu must be strictly positive (Got {nu})")
+
         def weight_func(x):  # Eq.(42)
             return (2*n_channels + nu) / (nu + 2*x)
     else:

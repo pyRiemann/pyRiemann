@@ -20,6 +20,7 @@ from pyriemann.utils.test import (
 estimators = ['corr', 'cov', 'lwf', 'mcd', 'oas', 'sch', 'scm']
 m_estimators = ['hub', 'stu', 'tyl']
 
+
 @pytest.mark.parametrize(
     'estimator', estimators + m_estimators + [np.cov, 'truc', None]
 )

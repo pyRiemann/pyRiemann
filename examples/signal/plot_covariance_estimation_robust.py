@@ -54,7 +54,7 @@ def plot_cov_estimators(ax, X, estimators):
 rs = np.random.RandomState(2023)
 
 n_channels, n_inliers = 2, 50
-C_ref = np.array([[2, 0.4],[0.4, 1]])
+C_ref = np.array([[2, 0.4], [0.4, 1]])
 X = C_ref @ rs.randn(n_channels, n_inliers)
 
 
