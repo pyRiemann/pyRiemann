@@ -202,6 +202,8 @@ Covariance preprocessing
     :toctree: generated/
 
     covariances
+    covariance_mest
+    covariance_sch
     covariances_EP
     covariances_X
     block_covariances

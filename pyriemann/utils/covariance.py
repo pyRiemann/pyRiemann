@@ -2,79 +2,10 @@ import warnings
 
 import numpy as np
 from scipy.linalg import block_diag
+from scipy.stats import chi2
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
 
 from .test import is_square
-
-
-def _fpcm(X, *, init=None, tol=10e-3, n_iter_max=50, assume_centered=False):
-    """Fixed point covariance estimator.
-
-    Distribution-free robust M-estimator [1]_ computed by fixed point
-    covariance estimator [2]_ [3]_.
-
-    Parameters
-    ----------
-    X : ndarray, shape (n_channels, n_times)
-        Multi-channel time-series.
-    init : None | ndarray, shape (n_channels, n_channels), default=None
-        A matrix used to initialize the algorithm.
-        If None, the normalized sample covariance matrix is used.
-    tol : float, default=10e-3
-        The tolerance to stop the fixed point estimation.
-    n_iter_max : int, default=50
-        The maximum number of iterations.
-    assume_centered : bool, default=False
-        If `True`, data will not be centered before computation.
-        Useful when working with data whose mean is almost, but not exactly
-        zero. If `False`, data will be centered before computation.
-
-    Returns
-    -------
-    cov : ndarray, shape (n_channels, n_channels)
-        Fixed point covariance matrix.
-
-    Notes
-    -----
-    .. versionadded:: 0.3.1
-
-    References
-    ----------
-    .. [1] `A distribution-free M-estimator of multivariate scatter
-        <https://projecteuclid.org/journals/annals-of-statistics/volume-15/issue-1/A-Distribution-Free-M-Estimator-of-Multivariate-Scatter/10.1214/aos/1176350263.full>`_
-        D. E. Tyler. The Annals of Statistics, 1987.
-    .. [2] `Theoretical analysis of an improved covariance matrix estimator in
-        non-Gaussian noise
-        <https://hal.science/hal-02495012/document>`_
-        F. Pascal, P. Forster, J.P. Ovarlez, P. Arzabal. IEEE ICASSP, 2005.
-    .. [3] `Covariance structure maximum-likelihood estimates in compound
-        Gaussian noise: Existence and algorithm analysis
-        <https://hal.science/hal-01816367/document>`_
-        F. Pascal, Y. Chitour, J.P. Ovarlez, P. Forster, P. Arzabal. IEEE
-        Transactions on Signal Processing, 2008.
-    """  # noqa
-    n_channels, n_times = X.shape
-    if not assume_centered:
-        X -= np.mean(X, axis=1, keepdims=True)
-    if init is None:
-        cov = n_channels * _scm(X, assume_centered=True)
-    else:
-        cov = init
-
-    for _ in range(n_iter_max):
-        diag_ = np.diag(X.T @ np.linalg.inv(cov) @ X)
-        X_ = X / np.sqrt(np.where(diag_ < 1e-10, 1e-10, diag_))
-        cov_ = (n_channels / n_times) * (X_ @ X_.T)  # Eq.(6) of [2]
-        cov_new = (n_channels / np.trace(cov_)) * cov_  # Eq.(8)
-
-        crit = np.linalg.norm(cov_new - cov, ord='fro')
-        cov = cov_new
-        if crit <= tol:
-            break
-    else:
-        warnings.warn('Convergence not reached')
-
-    return cov
 
 
 def _lwf(X, **kwds):
@@ -100,18 +31,148 @@ def _scm(X, **kwds):
     return empirical_covariance(X.T, **kwds)
 
 
-def _sch(X):
-    r"""Schaefer-Strimmer covariance estimator.
+def _hub(X, **kwds):
+    """Wrapper for Huber's M-estimator"""
+    return covariance_mest(X, 'hub', **kwds)
 
-    Shrinkage covariance estimator using method [1]_:
+
+def _stu(X, **kwds):
+    """Wrapper for Student-t's M-estimator"""
+    return covariance_mest(X, 'stu', **kwds)
+
+
+def _tyl(X, **kwds):
+    """Wrapper for Tyler's M-estimator"""
+    return covariance_mest(X, 'tyl', **kwds)
+
+
+def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
+                    assume_centered=False, q=0.5, nu=5):
+    r"""Robust M-estimators.
+
+    Robust M-estimator based covariance matrix [1]_, computed by fixed point
+    algorithm.
+
+    For an input time series :math:`X \in \mathbb{R}^{c \times t}`, composed of
+    :math:`c` channels and :math:`t` time samples,
 
     .. math::
-            \hat{\Sigma} = (1 - \gamma)\Sigma_{scm} + \gamma T
+        C = \frac{1}{t} \sum_i \varphi(X[:,i]^H C^{-1} X[:,i]) X[:,i] X[:,i]^H
+
+    where :math:`phi()` is the weight function depending on the M-estimator
+    type: Huber, Student-t or Tyler.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_channels, n_times)
+        Multi-channel time-series.
+    m_estimator : {'hub', 'stu', 'tyl'}
+        Type of M-estimator:
+
+        - 'hub' for Huber's M-estimator [2]_;
+        - 'stu' for Student-t's M-estimator [3]_;
+        - 'tyl' for Tyler's M-estimator [4]_.
+    init : None | ndarray, shape (n_channels, n_channels), default=None
+        A matrix used to initialize the algorithm.
+        If None, the sample covariance matrix is used.
+    tol : float, default=10e-3
+        The tolerance to stop the fixed point estimation.
+    n_iter_max : int, default=50
+        The maximum number of iterations.
+    assume_centered : bool, default=False
+        If `True`, data will not be centered before computation.
+        Useful when working with data whose mean is almost, but not exactly
+        zero. If `False`, data will be centered before computation.
+    q : float, default=0.5
+        Using Huber's M-estimator, percentage of samples deemed uncorrupted, in
+        (0, 1].
+    nu : float, default=5
+        Using Student-t's M-estimator, degree of freedom for t-distribution
+        (strictly positive).
+
+    Returns
+    -------
+    cov : ndarray, shape (n_channels, n_channels)
+        Robust M-estimator based covariance matrix.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+
+    References
+    ----------
+    .. [1] `Complex Elliptically Symmetric Distributions: Survey, New Results
+        and Applications
+        <https://www.researchgate.net/profile/H-Vincent-Poor/publication/258658018_Complex_Elliptically_Symmetric_Distributions_Survey_New_Results_and_Applications/links/550480100cf24cee3a0150e2/Complex-Elliptically-Symmetric-Distributions-Survey-New-Results-and-Applications.pdf>`_
+        E. Ollila, D.E. Tyler, V. Koivunen, H.V. Poor. IEEE Transactions on
+        Signal Processing, 2012.
+    .. [2] `Robust antenna array processing using M-estimators of
+        pseudo-covariance
+        <http://lib.tkk.fi/Diss/2010/isbn9789526030319/article5.pdf>`_
+        E. Ollila, V. Koivunen. PIMRC, 2003.
+    .. [3] `Influence functions for array covariance matrix estimators
+        <https://ieeexplore.ieee.org/abstract/document/1289447/>`_
+        E. Ollila, V. Koivunen. IEEE SSP, 2003.
+    .. [4] `A distribution-free M-estimator of multivariate scatter
+        <https://projecteuclid.org/journals/annals-of-statistics/volume-15/issue-1/A-Distribution-Free-M-Estimator-of-Multivariate-Scatter/10.1214/aos/1176350263.full>`_
+        D.E. Tyler. The Annals of Statistics, 1987.
+    """  # noqa
+    n_channels, n_times = X.shape
+
+    if m_estimator == 'tyl':
+        def weight_func(x):  # Example 2, Section V-C in [1]
+            return n_channels / np.where(x < 1e-10, 1e-10, x)
+    elif m_estimator == 'hub':
+        if not 0 < q <= 1:
+            raise ValueError(f"Value q must be included in (0, 1] (Got {q})")
+        def weight_func(x):  # Example 1, Section V-C
+            c2 = chi2.ppf(q, n_channels) / 2
+            b = chi2.cdf(2*c2, n_channels + 1) + c2 * (1-q) / n_channels
+            return np.minimum(1, c2 / x) / b
+    elif m_estimator == 'stu':
+        if nu <= 0:
+            raise ValueError(f"Value nu must be strictly positive (Got {nu})")
+        def weight_func(x):  # Eq.(42)
+            return (2*n_channels + nu) / (nu + 2*x)
+    else:
+        raise ValueError(f"Unsupported m_estimator: {m_estimator}")
+
+    if not assume_centered:
+        X -= np.mean(X, axis=1, keepdims=True)
+    if init is None:
+        cov = _scm(X, assume_centered=True)
+    else:
+        cov = init
+    X_H = X.conj().T
+
+    for _ in range(n_iter_max):
+        powers = np.diag(X_H @ np.linalg.inv(cov) @ X)
+        cov_new = np.einsum('ab,bc->ac', X * weight_func(powers), X_H)
+
+        crit = np.linalg.norm(cov_new - cov, ord='fro')
+        cov = cov_new
+        if crit <= tol:
+            break
+    else:
+        warnings.warn("Convergence not reached")
+
+    cov *= n_channels / np.trace(cov)
+
+    return cov
+
+
+def covariance_sch(X):
+    r"""Schaefer-Strimmer shrunk covariance estimator.
+
+    Shrinkage covariance estimator [1]_:
+
+    .. math::
+        C = (1 - \gamma) C_{scm} + \gamma T
 
     where :math:`T` is the diagonal target matrix:
 
     .. math::
-        T_{i,j} = \{ \Sigma_{scm}^{ii} \text{if} i = j, 0 \text{otherwise} \}
+        T_{i,j} = \{ C_{scm}^{ii} \text{if} i = j, 0 \text{otherwise} \}
 
     Note that the optimal :math:`\gamma` is estimated by the authors' method.
 
@@ -123,7 +184,7 @@ def _sch(X):
     Returns
     -------
     cov : ndarray, shape (n_channels, n_channels)
-        Schaefer-Strimmer shrinkage covariance matrix.
+        Schaefer-Strimmer shrunk covariance matrix.
 
     Notes
     -----
@@ -138,7 +199,7 @@ def _sch(X):
         Molecular Biology, Volume 4, Issue 1, 2005.
     """
     _, n_times = X.shape
-    X_c = (X.T - X.T.mean(axis=0)).T
+    X_c = X - X.mean(axis=1, keepdims=True)
     C_scm = 1. / n_times * X_c @ X_c.T
 
     # Compute optimal gamma, the weigthing between SCM and shrinkage estimator
@@ -164,12 +225,14 @@ def _check_est(est):
     estimators = {
         'corr': np.corrcoef,
         'cov': np.cov,
-        'fpcm': _fpcm,
+        'hub': _hub,
         'lwf': _lwf,
         'mcd': _mcd,
         'oas': _oas,
-        'sch': _sch,
         'scm': _scm,
+        'sch': covariance_sch,
+        'stu': _stu,
+        'tyl': _tyl,
     }
 
     if callable(est):
@@ -193,21 +256,29 @@ def covariances(X, estimator='cov', **kwds):
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_times)
         Multi-channel time-series.
-    estimator : {'corr', 'cov', 'fpcm', 'lwf', 'mcd', 'oas', 'sch', 'scm'}, \
-            default='scm'
+    estimator : {'corr', 'cov', 'hub', 'lwf', 'mcd', 'oas', 'sch', 'scm', \
+            'stu', 'tyl'}, default='scm'
         Covariance matrix estimator [est]_:
 
-        * 'corr' for correlation coefficient matrix [corr]_,
-        * 'cov' for numpy based covariance matrix [cov]_,
-        * 'fpcm' for robust fixed point covariance matrix [fpcm]_,
-        * 'lwf' for shrunk Ledoit-Wolf covariance matrix [lwf]_,
+        * 'corr' for correlation coefficient matrix [corr]_ supporting complex
+          inputs,
+        * 'cov' for numpy based covariance matrix [cov]_ supporting complex
+          inputs,
+        * 'hub' for Huber's M-estimator based covariance matrix [mest]_
+          supporting complex inputs,
+        * 'lwf' for Ledoit-Wolf shrunk covariance matrix [lwf]_,
         * 'mcd' for minimum covariance determinant matrix [mcd]_,
         * 'oas' for oracle approximating shrunk covariance matrix [oas]_,
-        * 'sch' for Schaefer-Strimmer covariance matrix [sch]_,
+        * 'sch' for Schaefer-Strimmer shrunk covariance matrix [sch]_,
         * 'scm' for sample covariance matrix [scm]_,
+        * 'stu' for Student-t's M-estimator based covariance matrix [mest]_
+          supporting complex inputs,
+        * 'tyl' for Tyler's M-estimator based covariance matrix [mest]_
+          supporting complex inputs,
         * or a callable function.
 
         For regularization, consider 'lwf' or 'oas'.
+        For robustness, consider 'hub', 'mcd', 'stu' or 'tyl'.
     **kwds : optional keyword parameters
         Any further parameters are passed directly to the covariance estimator.
 
@@ -221,23 +292,16 @@ def covariances(X, estimator='cov', **kwds):
     .. [est] https://scikit-learn.org/stable/modules/covariance.html
     .. [corr] https://numpy.org/doc/stable/reference/generated/numpy.corrcoef.html
     .. [cov] https://numpy.org/doc/stable/reference/generated/numpy.cov.html
-    .. [fpcm] `Theoretical analysis of an improved covariance matrix estimator
-        in non-Gaussian noise
-        <https://hal.science/hal-02495012/document>`_
-        F. Pascal, P. Forster, J.P. Ovarlez, P. Arzabal. IEEE ICASSP, 2005.
     .. [lwf] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
     .. [mcd] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
+    .. [mest] :func:`pyriemann.utils.covariance.covariance_mest`
     .. [oas] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
-    .. [sch] `A shrinkage approach to large-scale covariance estimation and
-        implications for functional genomics
-        <http://doi.org/10.2202/1544-6115.1175>`_
-        J. Schafer, and K. Strimmer. Statistical Applications in Genetics and
-        Molecular Biology, Volume 4, Issue 1, 2005.
+    .. [sch] :func:`pyriemann.utils.covariance.covariance_sch`
     .. [scm] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
     """  # noqa
     est = _check_est(estimator)
     n_matrices, n_channels, n_times = X.shape
-    covmats = np.empty((n_matrices, n_channels, n_channels))
+    covmats = np.empty((n_matrices, n_channels, n_channels), dtype=X.dtype)
     for i in range(n_matrices):
         covmats[i] = est(X[i], **kwds)
     return covmats
@@ -309,7 +373,7 @@ def covariances_X(X, estimator='scm', alpha=0.2, **kwds):
     """
     if alpha <= 0:
         raise ValueError(
-            'Parameter alpha must be strictly positive (Got %d)' % alpha)
+            f"Parameter alpha must be strictly positive (Got {alpha})")
     est = _check_est(estimator)
     n_matrices, n_channels, n_times = X.shape
 
@@ -359,8 +423,8 @@ def block_covariances(X, blocks, estimator='cov', **kwds):
     n_matrices, n_channels, n_times = X.shape
 
     if np.sum(blocks) != n_channels:
-        raise ValueError('Sum of individual block sizes '
-                         'must match number of channels of X.')
+        raise ValueError("Sum of individual block sizes "
+                         "must match number of channels of X.")
 
     covmats = np.empty((n_matrices, n_channels, n_channels))
     for i in range(n_matrices):
@@ -428,10 +492,10 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     """
     window = int(window)
     if window < 1:
-        raise ValueError('Value window must be a positive integer')
+        raise ValueError("Value window must be a positive integer")
     if not 0 < overlap < 1:
         raise ValueError(
-            'Value overlap must be included in (0, 1) (Got %d)' % overlap)
+            f"Value overlap must be included in (0, 1) (Got {overlap})")
 
     n_channels, n_times = X.shape
     n_freqs = int(window / 2) + 1  # X real signal => compute half-spectrum
@@ -452,18 +516,18 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         if fmax is None:
             fmax = fs / 2
         if fmax <= fmin:
-            raise ValueError('Parameter fmax must be superior to fmin')
+            raise ValueError("Parameter fmax must be superior to fmin")
         if 2.0 * fmax > fs:  # check Nyquist-Shannon
-            raise ValueError('Parameter fmax must be inferior to fs/2')
+            raise ValueError("Parameter fmax must be inferior to fs/2")
         f = np.arange(0, n_freqs, dtype=int) * float(fs / window)
         fix = (f >= fmin) & (f <= fmax)
         fdata = fdata[:, :, fix]
         freqs = f[fix]
     else:
         if fmin is not None:
-            warnings.warn('Parameter fmin not used because fs is None')
+            warnings.warn("Parameter fmin not used because fs is None")
         if fmax is not None:
-            warnings.warn('Parameter fmax not used because fs is None')
+            warnings.warn("Parameter fmax not used because fs is None")
         freqs = None
 
     n_freqs = fdata.shape[2]
@@ -563,13 +627,13 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
     if coh == 'lagged':
         if freqs is None:
             f_inds = np.arange(1, C.shape[-1] - 1, dtype=int)
-            warnings.warn('DC and Nyquist bins are not defined for lagged-'
-                          'coherence: filled with zeros')
+            warnings.warn("DC and Nyquist bins are not defined for lagged-"
+                          "coherence: filled with zeros")
         else:
             f_inds_ = f_inds[(freqs > 0) & (freqs < fs / 2)]
             if not np.array_equal(f_inds_, f_inds):
-                warnings.warn('DC and Nyquist bins are not defined for lagged-'
-                              'coherence: filled with zeros')
+                warnings.warn("DC and Nyquist bins are not defined for lagged-"
+                              "coherence: filled with zeros")
             f_inds = f_inds_
 
     for f in f_inds:
@@ -585,7 +649,7 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         elif coh == 'imaginary':
             C[..., f] = (S[..., f].imag)**2 / psd_prod
         else:
-            raise ValueError("'%s' is not a supported coherence" % coh)
+            raise ValueError(f"{coh} is not a supported coherence")
 
     return C, freqs
 
@@ -616,7 +680,7 @@ def normalize(X, norm):
         The set of normalized matrices, same dimensions as X.
     """
     if not is_square(X):
-        raise ValueError('Matrices must be square')
+        raise ValueError("Matrices must be square")
 
     if norm == "corr":
         stddev = np.sqrt(np.abs(np.diagonal(X, axis1=-2, axis2=-1)))
@@ -626,7 +690,7 @@ def normalize(X, norm):
     elif norm == "determinant":
         denom = np.abs(np.linalg.det(X)) ** (1 / X.shape[-1])
     else:
-        raise ValueError("'%s' is not a supported normalization" % norm)
+        raise ValueError(f"{norm} is not a supported normalization")
 
     denom = np.expand_dims(denom, axis=tuple(range(denom.ndim, X.ndim)))
     Xn = X / denom
@@ -662,7 +726,7 @@ def get_nondiag_weight(X):
         Elsevier, 2008, 119 (12), pp.2677-2686.
     """
     if not is_square(X):
-        raise ValueError('Matrices must be square')
+        raise ValueError("Matrices must be square")
 
     X2 = X**2
     # sum of squared diagonal elements

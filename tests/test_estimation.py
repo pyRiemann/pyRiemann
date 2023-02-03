@@ -20,7 +20,7 @@ from pyriemann.estimation import (
 from pyriemann.utils.test import (is_sym_pos_def as is_spd,
                                   is_sym_pos_semi_def as is_spsd)
 
-estim = ["corr", "cov", "fpcm", "lwf", "mcd", "oas", "sch", "scm"]
+estim = ["corr", "cov", "hub", "lwf", "mcd", "oas", "sch", "scm", "stu", "tyl"]
 coh = ["ordinary", "instantaneous", "lagged", "imaginary"]
 
 
@@ -40,7 +40,7 @@ def test_covariances(estimator, rndstate):
     "estimator, kwds",
     [
         ('cov', {'bias': True}),
-        ('fpcm', {'tol': 10e-1, 'n_iter_max': 10}),
+        ('hub', {'tol': 10e-2, 'n_iter_max': 10}),
         ('lwf', {'assume_centered': True}),
         ('mcd', {'support_fraction': 0.78}),
         ('oas', {'assume_centered': True}),
