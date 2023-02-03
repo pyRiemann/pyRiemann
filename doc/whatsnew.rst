@@ -39,6 +39,9 @@ v0.3.1.dev
 
 - Add example in gallery on frequency band selection using class distinctiveness measure. :pr:`219` by :user:`MSYamamoto`
 
+- Add :func:`pyriemann.utils.covariance.covariance_mest` supporting three robust M-estimators (Huber, Student-t and Tyler)
+  and add an example on robust covariance estimation for corrupted data. :pr:`223` by :user:`qbarthelemy`
+
 v0.3 (July 2022)
 ----------------
 
