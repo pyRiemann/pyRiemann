@@ -40,7 +40,7 @@ def plot_cov_estimators(ax, X, estimators):
     plot_cov_ellipse(ax, C_ref, edgecolor="C0", label='Reference')
     for i, est in enumerate(estimators):
         C = Covariances(estimator=est).transform(X[np.newaxis, ...])[0]
-        plot_cov_ellipse(ax, C, edgecolor="C"+str(i+2), label=est)
+        plot_cov_ellipse(ax, C, edgecolor=f"C{i+2}", label=est)
     return ax
 
 
