@@ -5,6 +5,7 @@ from scipy.linalg import block_diag
 from scipy.stats import chi2
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
 
+from .distance import distance_mahalanobis
 from .test import is_square
 
 
@@ -59,8 +60,9 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     .. math::
         C = \frac{1}{t} \sum_i \varphi(X[:,i]^H C^{-1} X[:,i]) X[:,i] X[:,i]^H
 
-    where :math:`phi()` is the weight function depending on the M-estimator
-    type: Huber, Student-t or Tyler.
+    where :math:`phi()` is a function allowing to weight the squared
+    Mahalanobis distance depending on the M-estimator type: Huber, Student-t or
+    Tyler.
 
     Parameters
     ----------
@@ -121,7 +123,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
 
     if m_estimator == 'tyl':
         def weight_func(x):  # Example 2, Section V-C in [1]
-            return n_channels / np.where(x < 1e-10, 1e-10, x)
+            return n_channels / np.maximum(x, 1e-10)
     elif m_estimator == 'hub':
         if not 0 < q <= 1:
             raise ValueError(f"Value q must be included in (0, 1] (Got {q})")
@@ -142,14 +144,15 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     if not assume_centered:
         X -= np.mean(X, axis=1, keepdims=True)
     if init is None:
-        cov = _scm(X, assume_centered=True)
+        cov = X @ X.conj().T / n_times
     else:
         cov = init
-    X_H = X.conj().T
 
     for _ in range(n_iter_max):
-        powers = np.diag(X_H @ np.linalg.inv(cov) @ X)
-        cov_new = np.einsum('ab,bc->ac', X * weight_func(powers), X_H)
+
+        dist2 = distance_mahalanobis(X, cov)
+        Xw = np.sqrt(weight_func(dist2)) * X
+        cov_new = Xw @ Xw.conj().T / n_times
 
         crit = np.linalg.norm(cov_new - cov, ord='fro')
         cov = cov_new

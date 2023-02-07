@@ -1,9 +1,12 @@
 from conftest import get_distances
 import numpy as np
+from numpy.testing import assert_array_almost_equal
+from scipy.spatial.distance import mahalanobis
 import pytest
 from pytest import approx
 
 from pyriemann.utils.distance import (
+    _check_distance_method,
     distance_euclid,
     distance_harmonic,
     distance_kullback,
@@ -15,7 +18,7 @@ from pyriemann.utils.distance import (
     distance_wasserstein,
     distance,
     pairwise_distance,
-    _check_distance_method,
+    distance_mahalanobis,
 )
 from pyriemann.utils.base import logm
 from pyriemann.utils.geodesic import geodesic
@@ -197,3 +200,23 @@ def test_pairwise_distance_matrix(get_covmats):
     A, B = covmats[:n_subset], covmats[n_subset:]
     pdist = pairwise_distance(A, B)
     assert pdist.shape == (n_subset, 2)
+
+
+@pytest.mark.parametrize("mean", [True, None])
+def test_mahalanobis_distance(rndstate, get_covmats, mean):
+    """Test equivalence between pyriemann and scipy for real data"""
+    n_channels, n_times = 3, 100
+    X = rndstate.randn(n_channels, n_times)
+    C = get_covmats(1, n_channels)[0]
+
+    Cinv = np.linalg.inv(C)
+    y = np.zeros(n_channels)
+    dist2_sp = [mahalanobis(x, y, Cinv)**2 for x in X.T]
+
+    if mean:
+        mean = np.zeros((n_channels, 1))
+    else:
+        mean = None
+    dist2_pr = distance_mahalanobis(X, C, mean=mean)
+
+    assert_array_almost_equal(dist2_sp, dist2_pr)

@@ -23,6 +23,10 @@ def test_sqrtm():
     Ctrue = np.sqrt(2) * np.eye(n_channels)
     assert_array_almost_equal(sqrtm(C), Ctrue)
 
+    C = np.array([[1, -1j], [1j, 1]])
+    Ctrue = np.sqrt(2) / 2 * C
+    assert_array_almost_equal(sqrtm(C), Ctrue)
+
 
 def test_invsqrtm():
     """Test matrix inverse square root"""

@@ -17,14 +17,17 @@ from pyriemann.estimation import (
     BlockCovariances,
     Kernels,
 )
-from pyriemann.utils.test import (is_sym_pos_def as is_spd,
-                                  is_sym_pos_semi_def as is_spsd)
+from pyriemann.utils.test import (
+    is_sym_pos_def as is_spd,
+    is_sym_pos_semi_def as is_spsd,
+)
 
-estim = ["corr", "cov", "hub", "lwf", "mcd", "oas", "sch", "scm", "stu", "tyl"]
+estim = ['corr', 'cov', 'lwf', 'mcd', 'oas', 'sch', 'scm']
+m_estim = ['hub', 'stu', 'tyl']
 coh = ["ordinary", "instantaneous", "lagged", "imaginary"]
 
 
-@pytest.mark.parametrize("estimator", estim)
+@pytest.mark.parametrize("estimator", estim + m_estim)
 def test_covariances(estimator, rndstate):
     """Test Covariances"""
     n_matrices, n_channels, n_times = 2, 3, 100
@@ -40,11 +43,13 @@ def test_covariances(estimator, rndstate):
     "estimator, kwds",
     [
         ('cov', {'bias': True}),
-        ('hub', {'tol': 10e-2, 'n_iter_max': 10}),
+        ('hub', {'q': 0.8}),
         ('lwf', {'assume_centered': True}),
         ('mcd', {'support_fraction': 0.78}),
         ('oas', {'assume_centered': True}),
         ('scm', {'assume_centered': True}),
+        ('stu', {'nu': 2}),
+        ('tyl', {'tol': 10e-2, 'n_iter_max': 20}),
     ],
 )
 def test_covariances_kwds(estimator, kwds, rndstate):
