@@ -52,9 +52,7 @@ def test_covariances(estimator, rndstate):
             )
 
 
-@pytest.mark.parametrize(
-    'estimator', ['corr', 'cov'] + m_estimators
-)
+@pytest.mark.parametrize('estimator', ['corr', 'cov'] + m_estimators)
 def test_covariances_complex(estimator, rndstate):
     """Test covariance for complex inputs"""
     n_matrices, n_channels, n_times = 2, 3, 100

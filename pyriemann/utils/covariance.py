@@ -88,9 +88,13 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     q : float, default=0.5
         Using Huber's M-estimator, percentage of samples deemed uncorrupted, in
         (0, 1].
+        This estimator is a trade-off between Tyler's estimator (q=0) and the
+        sample covariance matrix (q=1).
     nu : float, default=5
         Using Student-t's M-estimator, degree of freedom for t-distribution
         (strictly positive).
+        This estimator is a trade-off between Tyler's estimator (nu->0) and the
+        sample covariance matrix (nu->inf).
 
     Returns
     -------

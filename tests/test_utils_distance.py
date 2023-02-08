@@ -202,8 +202,19 @@ def test_pairwise_distance_matrix(get_covmats):
     assert pdist.shape == (n_subset, 2)
 
 
+@pytest.mark.parametrize("complex_valued", [True, False])
+def test_distance_mahalanobis(rndstate, complex_valued):
+    n_channels, n_times = 3, 100
+    X = rndstate.randn(n_channels, n_times)
+    if complex_valued:
+        X = X + 1j * rndstate.randn(n_channels, n_times)
+    dist = distance_mahalanobis(X, np.cov(X))
+    assert dist.shape == (n_times,)
+    assert np.all(np.isreal(dist))
+
+
 @pytest.mark.parametrize("mean", [True, None])
-def test_mahalanobis_distance(rndstate, get_covmats, mean):
+def test_distance_mahalanobis_scipy(rndstate, get_covmats, mean):
     """Test equivalence between pyriemann and scipy for real data"""
     n_channels, n_times = 3, 100
     X = rndstate.randn(n_channels, n_times)
