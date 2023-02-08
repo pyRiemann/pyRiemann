@@ -231,6 +231,8 @@ Distances
     distance_riemann
     distance_wasserstein
 
+    distance_mahalanobis
+
 Means
 ~~~~~~~~~~~~~~~~~~~~~~
 .. _mean_api:

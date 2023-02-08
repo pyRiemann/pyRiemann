@@ -60,7 +60,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     .. math::
         C = \frac{1}{t} \sum_i \varphi(X[:,i]^H C^{-1} X[:,i]) X[:,i] X[:,i]^H
 
-    where :math:`phi()` is a function allowing to weight the squared
+    where :math:`\varphi()` is a function allowing to weight the squared
     Mahalanobis distance depending on the M-estimator type: Huber, Student-t or
     Tyler.
 
@@ -123,21 +123,21 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
 
     if m_estimator == 'tyl':
         def weight_func(x):  # Example 2, Section V-C in [1]
-            return n_channels / np.maximum(x, 1e-10)
+            return n_channels / x
     elif m_estimator == 'hub':
         if not 0 < q <= 1:
             raise ValueError(f"Value q must be included in (0, 1] (Got {q})")
 
         def weight_func(x):  # Example 1, Section V-C
             c2 = chi2.ppf(q, n_channels) / 2
-            b = chi2.cdf(2*c2, n_channels + 1) + c2 * (1-q) / n_channels
+            b = chi2.cdf(2 * c2, n_channels + 1) + c2 * (1 - q) / n_channels
             return np.minimum(1, c2 / x) / b
     elif m_estimator == 'stu':
         if nu <= 0:
             raise ValueError(f"Value nu must be strictly positive (Got {nu})")
 
         def weight_func(x):  # Eq.(42)
-            return (2*n_channels + nu) / (nu + 2*x)
+            return (2 * n_channels + nu) / (nu + 2 * x)
     else:
         raise ValueError(f"Unsupported m_estimator: {m_estimator}")
 
@@ -172,12 +172,12 @@ def covariance_sch(X):
     Shrinkage covariance estimator [1]_:
 
     .. math::
-        C = (1 - \gamma) C_{scm} + \gamma T
+        C = (1 - \gamma) C_\text{scm} + \gamma T
 
     where :math:`T` is the diagonal target matrix:
 
     .. math::
-        T_{i,j} = \{ C_{scm}^{ii} \text{if} i = j, 0 \text{otherwise} \}
+        T[i,j] = \{ C_\text{scm}[i,i] \ \text{if} i = j, 0 \text{otherwise} \}
 
     Note that the optimal :math:`\gamma` is estimated by the authors' method.
 

@@ -367,7 +367,7 @@ def distance_mahalanobis(X, cov, mean=None):
 
     Returns
     -------
-    d2 : ndarray, shape (n_vectors,)
+    d : ndarray, shape (n_vectors,)
         Mahalanobis distances.
 
     Notes
