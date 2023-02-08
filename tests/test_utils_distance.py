@@ -211,12 +211,12 @@ def test_mahalanobis_distance(rndstate, get_covmats, mean):
 
     Cinv = np.linalg.inv(C)
     y = np.zeros(n_channels)
-    dist2_sp = [mahalanobis(x, y, Cinv)**2 for x in X.T]
+    dist_sp = [mahalanobis(x, y, Cinv) for x in X.T]
 
     if mean:
         mean = np.zeros((n_channels, 1))
     else:
         mean = None
-    dist2_pr = distance_mahalanobis(X, C, mean=mean)
+    dist_pr = distance_mahalanobis(X, C, mean=mean)
 
-    assert_array_almost_equal(dist2_sp, dist2_pr)
+    assert_array_almost_equal(dist_sp, dist_pr)

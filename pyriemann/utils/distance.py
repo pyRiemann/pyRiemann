@@ -348,12 +348,12 @@ def pairwise_distance(X, Y=None, metric='riemann'):
 def distance_mahalanobis(X, cov, mean=None):
     r"""Mahalanobis distance between vectors and a Gaussian distribution.
 
-    The squared Mahalanobis distance between a vector :math:`x` and a Gaussian
+    The Mahalanobis distance between a vector :math:`x` and a Gaussian
     distribution :math:`\mathcal{N}(\mu, C)`, with mean :math:`\mu` and
     covariance matrix :math:`C`, is:
 
     .. math::
-        d(x, \mathcal{N}(\mu, C))^2 = (x - \mu)^H C^{-1} (x - \mu)
+        d(x, \mathcal{N}(\mu, C)) = \sqrt{ (x - \mu)^H C^{-1} (x - \mu) }
 
     Parameters
     ----------
@@ -368,7 +368,7 @@ def distance_mahalanobis(X, cov, mean=None):
     Returns
     -------
     d2 : ndarray, shape (n_vectors,)
-        Squared Mahalanobis distances.
+        Mahalanobis distances.
 
     Notes
     -----
@@ -382,5 +382,5 @@ def distance_mahalanobis(X, cov, mean=None):
         X -= mean
 
     Xw = invsqrtm(cov) @ X
-    d2 = np.einsum('ij,ji->i', Xw.conj().T, Xw)
-    return d2
+    dist2 = np.einsum('ij,ji->i', Xw.conj().T, Xw)
+    return np.sqrt(dist2)

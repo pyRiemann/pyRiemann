@@ -150,7 +150,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
 
     for _ in range(n_iter_max):
 
-        dist2 = distance_mahalanobis(X, cov)
+        dist2 = distance_mahalanobis(X, cov) ** 2
         Xw = np.sqrt(weight_func(dist2)) * X
         cov_new = Xw @ Xw.conj().T / n_times
 
