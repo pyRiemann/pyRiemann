@@ -45,7 +45,7 @@ def test_covariances(estimator, rndstate):
                 np.diagonal(cov, axis1=-2, axis2=-1),
                 np.ones((n_matrices, n_channels))
             )
-        elif estimator in m_estimators:
+        elif estimator == 'tyl':
             assert_array_almost_equal(
                 np.trace(cov, axis1=-2, axis2=-1),
                 np.full(n_matrices, n_channels)

@@ -49,7 +49,7 @@ def test_covariances(estimator, rndstate):
         ('oas', {'assume_centered': True}),
         ('scm', {'assume_centered': True}),
         ('stu', {'nu': 2}),
-        ('tyl', {'tol': 10e-2, 'n_iter_max': 20}),
+        ('tyl', {'tol': 10e-2, 'n_iter_max': 20, 'norm': "determinant"}),
     ],
 )
 def test_covariances_kwds(estimator, kwds, rndstate):

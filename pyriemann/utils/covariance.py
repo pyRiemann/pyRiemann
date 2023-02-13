@@ -48,7 +48,7 @@ def _tyl(X, **kwds):
 
 
 def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
-                    assume_centered=False, q=0.5, nu=5):
+                    assume_centered=False, q=0.5, nu=5, norm="trace"):
     r"""Robust M-estimators.
 
     Robust M-estimator based covariance matrix [1]_, computed by fixed point
@@ -86,8 +86,9 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         Useful when working with data whose mean is almost, but not exactly
         zero. If `False`, data will be centered before computation.
     q : float, default=0.5
-        Using Huber's M-estimator, percentage of samples deemed uncorrupted, in
-        (0, 1].
+        Using Huber's M-estimator, q is the percentage in (0, 1] of inputs
+        deemed uncorrupted, while (1-q) is the percentage of inputs treated as
+        outliers w.r.t a Gaussian distribution.
         This estimator is a trade-off between Tyler's estimator (q=0) and the
         sample covariance matrix (q=1).
     nu : float, default=5
@@ -95,6 +96,11 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         (strictly positive).
         This estimator is a trade-off between Tyler's estimator (nu->0) and the
         sample covariance matrix (nu->inf).
+    norm : {"trace", "determinant"}, default="trace"
+         Using Tyler's M-estimator, the type of normalization:
+
+        * 'trace': trace of covariance matrix is ``n_channels``;
+        * 'determinant': determinant of covariance matrix is 1.
 
     Returns
     -------
@@ -165,7 +171,10 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     else:
         warnings.warn("Convergence not reached")
 
-    cov *= n_channels / np.trace(cov)
+    if m_estimator == 'tyl':
+        cov = normalize(cov, norm)
+        if norm == "trace":
+            cov *= n_channels
 
     return cov
 
