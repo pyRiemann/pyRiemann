@@ -3,7 +3,7 @@
 import numpy as np
 from scipy.linalg import eigvalsh, solve
 
-from .base import logm, sqrtm
+from .base import logm, sqrtm, invsqrtm
 
 
 def _check_inputs(A, B):
@@ -24,6 +24,10 @@ def _recursive(fun, A, B, *args, **kwargs):
         return np.asarray(
             [_recursive(fun, a, b, *args, **kwargs) for a, b in zip(A, B)]
         )
+
+
+###############################################################################
+# Distances between matrices
 
 
 def distance_euclid(A, B):
@@ -335,3 +339,48 @@ def pairwise_distance(X, Y=None, metric='riemann'):
             for j in range(n_matrices_Y):
                 dist[i, j] = distance(X[i], Y[j], metric)
     return dist
+
+
+###############################################################################
+# Distances between vectors and matrices
+
+
+def distance_mahalanobis(X, cov, mean=None):
+    r"""Mahalanobis distance between vectors and a Gaussian distribution.
+
+    The Mahalanobis distance between a vector :math:`x` and a Gaussian
+    distribution :math:`\mathcal{N}(\mu, C)`, with mean :math:`\mu` and
+    covariance matrix :math:`C`, is:
+
+    .. math::
+        d(x, \mathcal{N}(\mu, C)) = \sqrt{ (x - \mu)^H C^{-1} (x - \mu) }
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_channels, n_vectors)
+        Multi-channel vectors.
+    cov : ndarray, shape (n_channels, n_channels)
+        Covariance matrix of the Gaussian distribution.
+    mean : None | ndarray, shape (n_channels, 1), default=None
+        Mean of the Gaussian distribution. If None, distribution is considered
+        as centered.
+
+    Returns
+    -------
+    d : ndarray, shape (n_vectors,)
+        Mahalanobis distances.
+
+    Notes
+    -----
+    .. versionadded:: 0.3.1
+
+    References
+    ----------
+    .. [1] https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.mahalanobis.html
+    """  # noqa
+    if mean is not None:
+        X -= mean
+
+    Xw = invsqrtm(cov) @ X
+    dist2 = np.einsum('ij,ji->i', Xw.conj().T, Xw)
+    return np.sqrt(dist2)

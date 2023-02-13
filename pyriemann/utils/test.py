@@ -168,3 +168,19 @@ def is_sym_pos_semi_def(X):
         True if all matrices are symmetric positive semi-definite.
     """
     return is_sym(X) and is_pos_semi_def(X)
+
+
+def is_herm_pos_def(X):
+    """ Check if all matrices are Hermitian positive-definite.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        The set of square matrices, at least 2D ndarray.
+
+    Returns
+    -------
+    ret : boolean
+        True if all matrices are Hermitian positive-definite.
+    """
+    return is_hermitian(X) and is_pos_def(X)

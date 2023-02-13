@@ -18,7 +18,7 @@ def _matrix_operator(C, operator):
     eigvals = operator(eigvals)
     if C.ndim >= 3:
         eigvals = np.expand_dims(eigvals, -2)
-    D = (eigvecs * eigvals) @ np.swapaxes(eigvecs, -2, -1)
+    D = (eigvecs * eigvals) @ np.swapaxes(eigvecs.conj(), -2, -1)
     return D
 
 

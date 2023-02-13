@@ -202,6 +202,8 @@ Covariance preprocessing
     :toctree: generated/
 
     covariances
+    covariance_mest
+    covariance_sch
     covariances_EP
     covariances_X
     block_covariances
@@ -228,6 +230,8 @@ Distances
     distance_logeuclid
     distance_riemann
     distance_wasserstein
+
+    distance_mahalanobis
 
 Means
 ~~~~~~~~~~~~~~~~~~~~~~

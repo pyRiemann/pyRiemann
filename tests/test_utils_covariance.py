@@ -9,14 +9,20 @@ from pyriemann.utils.covariance import (
     cross_spectrum, cospectrum, coherence,
     normalize, get_nondiag_weight, block_covariances
 )
-from pyriemann.utils.test import is_real, is_hermitian
+from pyriemann.utils.test import (
+    is_real,
+    is_hermitian,
+    is_sym_pos_def,
+    is_herm_pos_def
+)
 
 
 estimators = ['corr', 'cov', 'lwf', 'mcd', 'oas', 'sch', 'scm']
+m_estimators = ['hub', 'stu', 'tyl']
 
 
 @pytest.mark.parametrize(
-    'estimator', estimators + [np.cov, 'fpcm', 'truc', None]
+    'estimator', estimators + m_estimators + [np.cov, 'truc', None]
 )
 def test_covariances(estimator, rndstate):
     """Test covariance for multiple estimators"""
@@ -32,17 +38,30 @@ def test_covariances(estimator, rndstate):
     else:
         cov = covariances(x, estimator=estimator)
         assert cov.shape == (n_matrices, n_channels, n_channels)
+        assert is_sym_pos_def(cov)
 
         if estimator == 'corr':
             assert_array_almost_equal(
                 np.diagonal(cov, axis1=-2, axis2=-1),
                 np.ones((n_matrices, n_channels))
             )
-        elif estimator == 'fpcm':
+        elif estimator == 'tyl':
             assert_array_almost_equal(
                 np.trace(cov, axis1=-2, axis2=-1),
                 np.full(n_matrices, n_channels)
             )
+
+
+@pytest.mark.parametrize('estimator', ['corr', 'cov'] + m_estimators)
+def test_covariances_complex(estimator, rndstate):
+    """Test covariance for complex inputs"""
+    n_matrices, n_channels, n_times = 2, 3, 100
+    x = rndstate.randn(n_matrices, n_channels, n_times) \
+        + 1j * rndstate.randn(n_matrices, n_channels, n_times)
+
+    cov = covariances(x, estimator=estimator)
+    assert cov.shape == (n_matrices, n_channels, n_channels)
+    assert is_herm_pos_def(cov)
 
 
 @pytest.mark.parametrize(
