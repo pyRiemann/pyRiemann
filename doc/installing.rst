@@ -30,9 +30,7 @@ Mandatory dependencies
 
 -  `scipy <http://www.scipy.org/>`__
 
--  `scikit-learn >=0.17 <http://scikit-learn.org/>`__
-
--  `pandas <http://pandas.pydata.org/>`__
+-  `scikit-learn >=0.22 <http://scikit-learn.org/>`__
 
 -  `joblib <https://joblib.readthedocs.io/>`__
 
@@ -46,3 +44,5 @@ These dependencies are recommanded to use the plotting functions of pyriemann or
 -  `matplotlib <https://matplotlib.org/>`__
 
 -  `seaborn <https://seaborn.pydata.org>`__
+
+-  `pandas <http://pandas.pydata.org/>`__

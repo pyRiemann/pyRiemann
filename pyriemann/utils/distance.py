@@ -7,7 +7,6 @@ from .base import logm, sqrtm, invsqrtm
 
 
 def _check_inputs(A, B):
-    """Recursive function with two inputs."""
     if not isinstance(A, np.ndarray) or not isinstance(B, np.ndarray):
         raise ValueError('Inputs must be ndarrays')
     if not A.shape == B.shape:
@@ -372,7 +371,7 @@ def distance_mahalanobis(X, cov, mean=None):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
 
     References
     ----------

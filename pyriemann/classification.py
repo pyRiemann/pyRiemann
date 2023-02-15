@@ -977,7 +977,7 @@ def class_distinctiveness(X, y, exponent=1, metric='riemann',
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
 
     References
     ----------

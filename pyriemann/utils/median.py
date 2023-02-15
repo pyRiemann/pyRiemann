@@ -41,7 +41,7 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
 
     References
     ----------
@@ -123,7 +123,7 @@ def median_riemann(X, *, tol=10e-6, maxiter=50, init=None, weights=None,
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
 
     References
     ----------

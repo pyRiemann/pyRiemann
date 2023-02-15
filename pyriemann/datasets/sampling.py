@@ -62,7 +62,7 @@ def _rejection_sampling_2D_gfunction_plus(sigma, r_sample):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
 
     """
     mu_a = np.array([sigma**2 / 2, -(sigma**2) / 2])
@@ -98,7 +98,7 @@ def _rejection_sampling_2D_gfunction_minus(sigma, r_sample):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
 
     """
     mu_b = np.array([-(sigma**2) / 2, sigma**2 / 2])
@@ -137,7 +137,7 @@ def _rejection_sampling_2D(n_samples, sigma, random_state=None):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
 
     """
     mu_a = np.array([sigma**2 / 2, -(sigma**2) / 2])
@@ -315,7 +315,7 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
         will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
 
-        .. versionadded:: 0.3.1
+        .. versionadded:: 0.4
 
     Returns
     -------
@@ -413,7 +413,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
         will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
 
-        .. versionadded:: 0.3.1
+        .. versionadded:: 0.4
 
     Returns
     -------
@@ -483,7 +483,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
 
-        .. versionadded:: 0.3.1
+        .. versionadded:: 0.4
 
     Returns
     -------

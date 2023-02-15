@@ -3,7 +3,6 @@ import numpy as np
 import pytest
 
 from pyriemann.utils.viz import (
-    plot_confusion_matrix,
     plot_embedding,
     plot_cospectra,
     plot_waveforms
@@ -27,16 +26,6 @@ def test_embedding_error_raise(get_covmats):
     covmats = get_covmats(n_matrices, n_channels)
     with pytest.raises(ValueError):
         plot_embedding(covmats, y=None, metric="euclid", embd_type='foo')
-
-
-@requires_matplotlib
-def test_confusion_matrix():
-    """Test confusion_matrix"""
-    target = np.array([0, 1] * 10)
-    preds = np.array([0, 1] * 10)
-    with pytest.warns(DeprecationWarning,
-                      match="plot_confusion_matrix is deprecated"):
-        plot_confusion_matrix(target, preds, ["a", "b"])
 
 
 @requires_matplotlib

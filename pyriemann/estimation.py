@@ -769,7 +769,7 @@ class Kernels(BaseEstimator, TransformerMixin):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
 
     References
     ----------

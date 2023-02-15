@@ -365,7 +365,6 @@ Visualization
 .. autosummary::
     :toctree: generated/
 
-    plot_confusion_matrix
     plot_embedding
     plot_cospectra
     plot_waveforms

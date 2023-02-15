@@ -7,17 +7,8 @@ from scipy.sparse import csr_matrix
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.manifold import spectral_embedding
 
-from .utils import deprecated
 from .utils.kernel import kernel
 from .utils.distance import pairwise_distance
-
-
-@deprecated(
-    "Embedding is deprecated and will be removed in 0.4.0; "
-    "please use SpectralEmbedding."
-)
-class Embedding(BaseEstimator):
-    pass
 
 
 class SpectralEmbedding(BaseEstimator):

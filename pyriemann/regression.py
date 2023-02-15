@@ -256,7 +256,7 @@ class KNearestNeighborRegressor(MDM):
 
         Notes
         -----
-        .. versionadded:: 0.3.1
+        .. versionadded:: 0.4
         """
         y_pred = self.predict(X)
         return r2_score(y, y_pred)
