@@ -7,6 +7,11 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
+v0.5.dev
+--------
+
+- ...
+
 v0.4 (Feb 2023)
 ---------------
 
