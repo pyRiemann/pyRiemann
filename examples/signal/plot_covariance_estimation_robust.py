@@ -69,9 +69,9 @@ X = C_ref @ rs.randn(n_channels, n_inliers)
 # - Ledoit-Wolf shrunk covariance matrix (lwf),
 # - oracle approximating shrunk covariance matrix (oas),
 # - minimum covariance determinant matrix (mcd),
-# - robust Tyler's M-estimator based covariance matrix (tyl).
+# - robust Huber's M-estimator based covariance matrix (hub).
 
-estimators = ["scm", "lwf", "oas", "mcd", "tyl"]
+estimators = ["scm", "lwf", "oas", "mcd", "hub"]
 
 fig, ax = plt.subplots(figsize=(7, 7))
 ax.set_title("Covariance estimations on dataset")
