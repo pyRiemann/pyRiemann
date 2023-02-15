@@ -48,7 +48,7 @@ def _tyl(X, **kwds):
 
 
 def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
-                    assume_centered=False, q=0.5, nu=5, norm="trace"):
+                    assume_centered=False, q=0.9, nu=5, norm="trace"):
     r"""Robust M-estimators.
 
     Robust M-estimator based covariance matrix [1]_, computed by fixed point
@@ -67,7 +67,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     Parameters
     ----------
     X : ndarray, shape (n_channels, n_times)
-        Multi-channel time-series.
+        Multi-channel time-series, real or complex-valued.
     m_estimator : {'hub', 'stu', 'tyl'}
         Type of M-estimator:
 
@@ -85,19 +85,19 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         If `True`, data will not be centered before computation.
         Useful when working with data whose mean is almost, but not exactly
         zero. If `False`, data will be centered before computation.
-    q : float, default=0.5
+    q : float, default=0.9
         Using Huber's M-estimator, q is the percentage in (0, 1] of inputs
         deemed uncorrupted, while (1-q) is the percentage of inputs treated as
         outliers w.r.t a Gaussian distribution.
         This estimator is a trade-off between Tyler's estimator (q=0) and the
         sample covariance matrix (q=1).
-    nu : float, default=5
+    nu : int, default=5
         Using Student-t's M-estimator, degree of freedom for t-distribution
         (strictly positive).
         This estimator is a trade-off between Tyler's estimator (nu->0) and the
         sample covariance matrix (nu->inf).
     norm : {"trace", "determinant"}, default="trace"
-         Using Tyler's M-estimator, the type of normalization:
+        Using Tyler's M-estimator, the type of normalization:
 
         * 'trace': trace of covariance matrix is ``n_channels``;
         * 'determinant': determinant of covariance matrix is 1.
@@ -131,14 +131,11 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     """  # noqa
     n_channels, n_times = X.shape
 
-    if m_estimator == 'tyl':
-        def weight_func(x):  # Example 2, Section V-C in [1]
-            return n_channels / x
-    elif m_estimator == 'hub':
+    if m_estimator == 'hub':
         if not 0 < q <= 1:
             raise ValueError(f"Value q must be included in (0, 1] (Got {q})")
 
-        def weight_func(x):  # Example 1, Section V-C
+        def weight_func(x):  # Example 1, Section V-C in [1]
             c2 = chi2.ppf(q, n_channels) / 2
             b = chi2.cdf(2 * c2, n_channels + 1) + c2 * (1 - q) / n_channels
             return np.minimum(1, c2 / x) / b
@@ -146,8 +143,11 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         if nu <= 0:
             raise ValueError(f"Value nu must be strictly positive (Got {nu})")
 
-        def weight_func(x):  # Eq.(42)
+        def weight_func(x):  # Eq.(42) in [1]
             return (2 * n_channels + nu) / (nu + 2 * x)
+    elif m_estimator == 'tyl':
+        def weight_func(x):  # Example 2, Section V-C in [1]
+            return n_channels / x
     else:
         raise ValueError(f"Unsupported m_estimator: {m_estimator}")
 
@@ -164,9 +164,10 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         Xw = np.sqrt(weight_func(dist2)) * X
         cov_new = Xw @ Xw.conj().T / n_times
 
-        crit = np.linalg.norm(cov_new - cov, ord='fro')
+        norm_delta = np.linalg.norm(cov_new - cov, ord='fro')
+        norm_cov = np.linalg.norm(cov, ord='fro')
         cov = cov_new
-        if crit <= tol:
+        if (norm_delta / norm_cov) <= tol:
             break
     else:
         warnings.warn("Convergence not reached")

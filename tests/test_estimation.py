@@ -43,17 +43,17 @@ def test_covariances(estimator, rndstate):
     "estimator, kwds",
     [
         ('cov', {'bias': True}),
-        ('hub', {'q': 0.8}),
+        ('hub', {'tol': 10e-2, 'q': 0.95}),
         ('lwf', {'assume_centered': True}),
         ('mcd', {'support_fraction': 0.78}),
         ('oas', {'assume_centered': True}),
         ('scm', {'assume_centered': True}),
         ('stu', {'nu': 2}),
-        ('tyl', {'tol': 10e-2, 'n_iter_max': 20, 'norm': "determinant"}),
+        ('tyl', {'n_iter_max': 20, 'norm': "determinant"}),
     ],
 )
 def test_covariances_kwds(estimator, kwds, rndstate):
-    n_matrices, n_channels, n_times = 3, 6, 10
+    n_matrices, n_channels, n_times = 3, 3, 100
     x = rndstate.randn(n_matrices, n_channels, n_times) + 1
     covs_none = Covariances(estimator=estimator).fit_transform(x)
     covs_kwds = Covariances(estimator=estimator, **kwds).fit_transform(x)
