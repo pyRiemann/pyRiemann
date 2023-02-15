@@ -7,8 +7,8 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.3.1.dev
-----------
+v0.4 (Feb 2023)
+---------------
 
 - Add exponential and logarithmic maps for three main metrics: 'euclid', 'logeuclid' and 'riemann'.
   :func:`pyriemann.utils.tangentspace.tangent_space` is splitted in two steps: (i) ``log_map_*()`` projecting SPD matrices into tangent space depending on the metric; and (ii) :func:`pyriemann.utils.tangentspace.upper` taking the upper triangular part of matrices.
