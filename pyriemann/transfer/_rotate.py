@@ -188,7 +188,7 @@ def _get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
 
     if M_source.shape[0] != M_target.shape[0]:

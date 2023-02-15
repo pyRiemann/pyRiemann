@@ -212,7 +212,7 @@ def nearest_sym_pos_def(X, reg=1e-6):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
 
     References
     ----------

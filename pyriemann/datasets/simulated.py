@@ -125,7 +125,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         will be equal to 'slice' for n_dim != 2 and equal to
         'rejection' for n_dim = 2.
 
-        .. versionadded:: 0.3.1
+        .. versionadded:: 0.4
 
     Returns
     -------
@@ -302,7 +302,7 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
 
     rs = check_random_state(random_state)

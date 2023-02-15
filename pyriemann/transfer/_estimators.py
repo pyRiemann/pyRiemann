@@ -27,7 +27,7 @@ class TLDummy(BaseEstimator, TransformerMixin):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
 
     def __init__(self):
@@ -125,7 +125,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
 
     def __init__(self, target_domain, metric='riemann'):
@@ -248,7 +248,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
 
     def __init__(self, target_domain, final_dispersion=1.0,
@@ -437,7 +437,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
 
     def __init__(self, target_domain, weights=None, metric='euclid', n_jobs=1):
@@ -574,7 +574,7 @@ class TLEstimator(BaseEstimator):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
 
     def __init__(self, target_domain, estimator, domain_weight=None):
@@ -661,7 +661,7 @@ class TLClassifier(TLEstimator):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
 
     def fit(self, X, y_enc):
@@ -738,7 +738,7 @@ class TLRegressor(TLEstimator):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
 
     def fit(self, X, y_enc):
@@ -846,7 +846,7 @@ class MDWM(MDM):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
 
     def __init__(

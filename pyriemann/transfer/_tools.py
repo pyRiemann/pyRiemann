@@ -33,7 +33,7 @@ def encode_domains(X, y, domain):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
     if len(y) != len(domain):
         raise ValueError("Input lengths don't match")
@@ -72,7 +72,7 @@ def decode_domains(X_enc, y_enc):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
     y, domain = [], []
     for y_enc_ in y_enc:
@@ -104,7 +104,7 @@ class TLSplitter():
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """  # noqa
     def __init__(self, target_domain, cv):
 

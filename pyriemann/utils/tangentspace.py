@@ -37,7 +37,7 @@ def exp_map_euclid(X, Cref):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
     return X + Cref
 
@@ -67,7 +67,7 @@ def exp_map_logeuclid(X, Cref):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
     return expm(X + logm(Cref))
 
@@ -106,7 +106,7 @@ def exp_map_riemann(X, Cref, Cm12=False):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
     if Cm12:
         Cm12 = invsqrtm(Cref)
@@ -139,7 +139,7 @@ def log_map_euclid(X, Cref):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
     _check_dimensions(X, Cref)
     return X - Cref
@@ -169,7 +169,7 @@ def log_map_logeuclid(X, Cref):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
     _check_dimensions(X, Cref)
     return logm(X) - logm(Cref)
@@ -209,7 +209,7 @@ def log_map_riemann(X, Cref, C12=False):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
     _check_dimensions(X, Cref)
     Cm12 = invsqrtm(Cref)
@@ -240,7 +240,7 @@ def upper(X):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
 
     References
     ----------
@@ -279,7 +279,7 @@ def unupper(T):
 
     Notes
     -----
-    .. versionadded:: 0.3.1
+    .. versionadded:: 0.4
     """
     dims = T.shape
     n_channels = int((np.sqrt(1 + 8 * dims[-1]) - 1) / 2)
