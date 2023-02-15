@@ -1,36 +1,6 @@
 """Helpers for vizualization."""
-import pandas as pd
 import numpy as np
-from sklearn.metrics import confusion_matrix
 from ..embedding import SpectralEmbedding, LocallyLinearEmbedding
-from . import deprecated
-
-
-@deprecated(
-    "plot_confusion_matrix is deprecated and will be remove in 0.4.0; "
-    "please use sklearn confusion_matrix and ConfusionMatrixDisplay; "
-    "see examples/ERP/plot_classify_EEG_tangentspace.py"
-)
-def plot_confusion_matrix(
-    targets, predictions, target_names, title="Confusion matrix", cmap="Blues"
-):
-    """Plot Confusion Matrix."""
-    try:
-        import seaborn as sns
-    except ImportError:
-        raise ImportError("Install seaborn to plot confusion matrix")
-
-    cm = confusion_matrix(targets, predictions)
-    cm = 100 * cm.astype("float") / cm.sum(axis=1)[:, np.newaxis]
-
-    df = pd.DataFrame(data=cm, columns=target_names, index=target_names)
-    g = sns.heatmap(
-        df, annot=True, fmt=".1f", linewidths=0.5, vmin=0, vmax=100, cmap=cmap
-    )
-    g.set_title(title)
-    g.set_ylabel("True label")
-    g.set_xlabel("Predicted label")
-    return g
 
 
 def plot_embedding(X,

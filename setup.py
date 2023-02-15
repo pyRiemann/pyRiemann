@@ -42,7 +42,6 @@ setup(
         "scipy",
         "scikit-learn",
         "joblib",
-        "pandas"
     ],
     extras_require={
         "docs": [
@@ -51,6 +50,7 @@ setup(
             "numpydoc",
             "mne",
             "seaborn",
+            "pandas",
         ],
         "tests": ["pytest", "seaborn", "flake8"],
     },
