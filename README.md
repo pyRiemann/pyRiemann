@@ -38,21 +38,28 @@ or using pip+git for the latest version of the code :
 pip install git+https://github.com/pyRiemann/pyRiemann
 ```
 
-Anaconda is not currently supported, if you want to use anaconda, you need to create a virtual environment in anaconda,
-activate it and use the above command to install it.
+#### Using conda
+
+The package is distributed via [conda-forge](https://conda-forge.org).
+We recommend installing it into a new, dedicated environment.
+The following command will create an environment named `pyriemann`.
+
+```shell
+conda create --name=pyriemann --channel=conda-forge --override-channels pyriemann
+```
 
 #### From sources
 
-For the latest version, you can install the package from the sources using the setup.py script
+For the latest version, you can install the package from the sources using ``pip``:
 
-```
-python setup.py install
+```shell
+pip install .
 ```
 
-or in developer mode to be able to modify the sources.
+or in editable mode to be able to modify the sources:
 
-```
-python setup.py develop
+```shell
+pip install -e .
 ```
 
 ## How to use it
