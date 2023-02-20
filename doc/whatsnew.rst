@@ -10,7 +10,8 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.5.dev
 --------
 
-- ...
+- Correct :func:`pyriemann.utils.distance.pairwise_distance` for non-symmetric metrics. :pr:`229` by :user:`qbarthelemy`
+
 
 v0.4 (Feb 2023)
 ---------------
