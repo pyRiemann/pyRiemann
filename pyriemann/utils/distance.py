@@ -325,6 +325,10 @@ def pairwise_distance(X, Y=None, metric='riemann'):
     """
     n_matrices_X, _, _ = X.shape
 
+    # compute full pairwise matrix for non-symmetric metrics
+    if Y is None and metric in ["kullback", "kullback_right"]:
+        Y = X
+
     if Y is None:
         dist = np.zeros((n_matrices_X, n_matrices_X))
         for i in range(n_matrices_X):
@@ -337,6 +341,7 @@ def pairwise_distance(X, Y=None, metric='riemann'):
         for i in range(n_matrices_X):
             for j in range(n_matrices_Y):
                 dist[i, j] = distance(X[i], Y[j], metric)
+
     return dist
 
 

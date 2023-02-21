@@ -22,6 +22,7 @@ from pyriemann.utils.distance import (
 )
 from pyriemann.utils.base import logm
 from pyriemann.utils.geodesic import geodesic
+from pyriemann.utils.test import is_sym
 
 
 def get_dist_func():
@@ -193,13 +194,23 @@ def test_distance_wrapper_between_set_and_matrix(dist, get_covmats):
         distance(covs_4d, covmats, metric=dist)
 
 
-def test_pairwise_distance_matrix(get_covmats):
-    n_matrices, n_channels = 6, 5
-    covmats = get_covmats(n_matrices, n_channels)
-    n_subset = 4
-    A, B = covmats[:n_subset], covmats[n_subset:]
-    pdist = pairwise_distance(A, B)
-    assert pdist.shape == (n_subset, 2)
+@pytest.mark.parametrize("dist", get_distances())
+@pytest.mark.parametrize("Y", [None, True])
+def test_pairwise_distance_matrix(get_covmats, dist, Y):
+    n_matrices_X, n_matrices_Y, n_channels = 6, 4, 5
+    X = get_covmats(n_matrices_X, n_channels)
+    if Y is None:
+        n_matrices_Y = n_matrices_X
+    else:
+        Y = get_covmats(n_matrices_Y, n_channels)
+
+    pdist = pairwise_distance(X, Y, metric=dist)
+    assert pdist.shape == (n_matrices_X, n_matrices_Y)
+
+    if Y is None and dist not in ["kullback", "kullback_right"]:
+        assert is_sym(pdist)
+    else:
+        assert not is_sym(pdist)
 
 
 @pytest.mark.parametrize("complex_valued", [True, False])
