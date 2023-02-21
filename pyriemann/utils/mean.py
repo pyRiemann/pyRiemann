@@ -564,7 +564,7 @@ def _check_mean_method(method):
     return method
 
 
-def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
+def mean_covariance(covmats, metric='riemann', sample_weight=None, **kwargs):
     """Mean of SPD matrices according to a metric.
 
     Parameters
@@ -577,8 +577,8 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
         'wasserstein', or a callable function.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
-    args : list of params
-        The arguments passed to the sub function.
+    kwargs : list of params
+        The keyword arguments passed to the sub function.
 
     Returns
     -------
@@ -586,9 +586,13 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, *args):
         Mean of SPD matrices.
     """
     if callable(metric):
-        C = metric(covmats, sample_weight=sample_weight, *args)
+        C = metric(covmats, sample_weight=sample_weight, **kwargs)
     else:
-        C = mean_methods[metric](covmats, sample_weight=sample_weight, *args)
+        C = mean_methods[metric](
+            covmats,
+            sample_weight=sample_weight,
+            **kwargs,
+        )
     return C
 
 
