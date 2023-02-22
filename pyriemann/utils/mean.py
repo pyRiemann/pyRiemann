@@ -577,7 +577,7 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, **kwargs):
         'wasserstein', or a callable function.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
-    kwargs : list of params
+    **kwargs : dict
         The keyword arguments passed to the sub function.
 
     Returns
