@@ -12,6 +12,8 @@ v0.5.dev
 
 - Correct :func:`pyriemann.utils.distance.pairwise_distance` for non-symmetric metrics. :pr:`229` by :user:`qbarthelemy`
 
+- Correct :func:`pyriemann.utils.mean.mean_covariances` used with keyword arguments. :pr:`230` by :user:`qbarthelemy`
+
 
 v0.4 (Feb 2023)
 ---------------

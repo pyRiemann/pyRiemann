@@ -231,6 +231,8 @@ def test_riemann_mean(init, get_covmats_params):
     Ctrue = evecs @ np.diag(Ctrue) @ evecs.T
     assert C == approx(Ctrue)
 
+    mean_covariance(covmats, metric='riemann', maxiter=10)
+
 
 def test_riemann_mean_properties(get_covmats):
     n_matrices, n_channels = 5, 3
