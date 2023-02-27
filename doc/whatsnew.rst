@@ -14,6 +14,8 @@ v0.5.dev
 
 - Correct :func:`pyriemann.utils.mean.mean_covariances` used with keyword arguments. :pr:`230` by :user:`qbarthelemy`
 
+- Add functions to test HPD and HPSD matrices, :func:`pyriemann.utils.test.is_herm_pos_def` and :func:`pyriemann.utils.test.is_herm_pos_semi_def`. :pr:`231` by :user:`qbarthelemy`
+
 
 v0.4 (Feb 2023)
 ---------------
