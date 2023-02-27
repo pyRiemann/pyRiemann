@@ -356,6 +356,8 @@ Matrix Tests
     is_pos_semi_def
     is_sym_pos_def
     is_sym_pos_semi_def
+    is_herm_pos_def
+    is_herm_pos_semi_def
 
 Visualization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
