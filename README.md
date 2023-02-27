@@ -41,11 +41,10 @@ pip install git+https://github.com/pyRiemann/pyRiemann
 #### Using conda
 
 The package is distributed via [conda-forge](https://conda-forge.org).
-We recommend installing it into a new, dedicated environment.
-The following command will create an environment named `pyriemann`.
+You could install it in your working environment, with the following command:
 
 ```shell
-conda create --name=pyriemann --channel=conda-forge --override-channels pyriemann
+conda install -c conda-forge pyriemann
 ```
 
 #### From sources

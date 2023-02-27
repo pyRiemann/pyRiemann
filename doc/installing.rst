@@ -7,9 +7,9 @@ The easiest way to install a stable version of pyRiemann is through ``pip``, the
 
 ``pip install pyriemann``
 
-or via ``conda`` into a new, dedicated environment::
+or via ``conda``::
 
-``conda create --name=pyriemann --channel=conda-forge --override-channels pyriemann``
+``conda install -c conda-forge pyriemann``
 
 For a bleeding edge version, you can clone the source code on `github <https://github.com/pyRiemann/pyRiemann>`__ and install directly the package from source.
 
