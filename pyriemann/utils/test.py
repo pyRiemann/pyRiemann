@@ -8,7 +8,7 @@ def _get_eigenvals(X):
 
 
 def is_square(X):
-    """ Check if matrices are square.
+    """Check if matrices are square.
 
     Parameters
     ----------
@@ -24,7 +24,7 @@ def is_square(X):
 
 
 def is_sym(X):
-    """ Check if all matrices are symmetric.
+    """Check if all matrices are symmetric.
 
     Parameters
     ----------
@@ -62,7 +62,7 @@ def is_real(X):
 
     Parameters
     ----------
-    X : ndarray
+    X : ndarray, shape (..., n, m)
         The set of matrices.
 
     Returns
@@ -92,8 +92,8 @@ def is_hermitian(X):
     return is_sym(X.real) and is_skew_sym(X.imag)
 
 
-def is_pos_def(X, fast_mode=False):
-    """ Check if all matrices are positive definite.
+def is_pos_def(X, tol=0.0, fast_mode=False):
+    """Check if all matrices are positive definite (PD).
 
     Check if all matrices are positive definite, fast verification is done
     with Cholesky decomposition, while full check compute all eigenvalues
@@ -103,9 +103,10 @@ def is_pos_def(X, fast_mode=False):
     ----------
     X : ndarray, shape (..., n, n)
         The set of square matrices, at least 2D ndarray.
+    tol : float, default 0.0
+        Threshold below which eigen values are considered zero.
     fast_mode : boolean, default=False
         Use Cholesky decomposition to avoid computing all eigenvalues.
-
 
     Returns
     -------
@@ -119,11 +120,11 @@ def is_pos_def(X, fast_mode=False):
         except np.linalg.LinAlgError:
             return False
     else:
-        return is_square(X) and np.all(_get_eigenvals(X) > 0.0)
+        return is_square(X) and np.all(_get_eigenvals(X) > tol)
 
 
 def is_pos_semi_def(X):
-    """ Check if all matrices are positive semi-definite.
+    """Check if all matrices are positive semi-definite (PSD).
 
     Parameters
     ----------
@@ -138,24 +139,26 @@ def is_pos_semi_def(X):
     return is_square(X) and np.all(_get_eigenvals(X) >= 0.0)
 
 
-def is_sym_pos_def(X):
-    """ Check if all matrices are symmetric positive-definite.
+def is_sym_pos_def(X, tol=0.0):
+    """Check if all matrices are symmetric positive-definite (SPD).
 
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
         The set of square matrices, at least 2D ndarray.
+    tol : float, default 0.0
+        Threshold below which eigen values are considered zero.
 
     Returns
     -------
     ret : boolean
         True if all matrices are symmetric positive-definite.
     """
-    return is_sym(X) and is_pos_def(X)
+    return is_sym(X) and is_pos_def(X, tol=tol)
 
 
 def is_sym_pos_semi_def(X):
-    """ Check if all matrices are symmetric positive semi-definite.
+    """Check if all matrices are symmetric positive semi-definite (SPSD).
 
     Parameters
     ----------
@@ -170,8 +173,26 @@ def is_sym_pos_semi_def(X):
     return is_sym(X) and is_pos_semi_def(X)
 
 
-def is_herm_pos_def(X):
-    """ Check if all matrices are Hermitian positive-definite.
+def is_herm_pos_def(X, tol=0.0):
+    """Check if all matrices are Hermitian positive-definite (HPD).
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        The set of square matrices, at least 2D ndarray.
+    tol : float, default 0.0
+        Threshold below which eigen values are considered zero.
+
+    Returns
+    -------
+    ret : boolean
+        True if all matrices are Hermitian positive-definite.
+    """
+    return is_hermitian(X) and is_pos_def(X, tol=tol)
+
+
+def is_herm_pos_semi_def(X):
+    """Check if all matrices are Hermitian positive semi-definite (HPSD).
 
     Parameters
     ----------
@@ -181,6 +202,6 @@ def is_herm_pos_def(X):
     Returns
     -------
     ret : boolean
-        True if all matrices are Hermitian positive-definite.
+        True if all matrices are Hermitian positive semi-definite.
     """
-    return is_hermitian(X) and is_pos_def(X)
+    return is_hermitian(X) and is_pos_semi_def(X)
