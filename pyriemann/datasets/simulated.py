@@ -6,8 +6,13 @@ from ..utils.distance import distance_riemann
 from ..utils.base import invsqrtm, powm, sqrtm, expm
 from .sampling import generate_random_spd_matrix, sample_gaussian_spd
 from ..transfer import encode_domains
+from ..utils import deprecated
 
 
+@deprecated(
+    "make_covariances is deprecated and will be removed in 0.6.0; "
+    "please use make_matrices."
+)
 def make_covariances(n_matrices, n_channels, rs=None, return_params=False,
                      evals_mean=2.0, evals_std=0.1):
     """Generate a set of covariances matrices, with the same eigenvectors.
@@ -38,7 +43,6 @@ def make_covariances(n_matrices, n_channels, rs=None, return_params=False,
         Eigen vectors used for all covariance matrices.
         Only returned if ``return_params=True``.
     """
-
     rs = check_random_state(rs)
 
     evals = np.abs(evals_mean + evals_std * rs.randn(n_matrices, n_channels))
@@ -52,6 +56,97 @@ def make_covariances(n_matrices, n_channels, rs=None, return_params=False,
         return covmats, evals, evecs
     else:
         return covmats
+
+
+def make_matrices(n_matrices, n_dim, mtype, rs=None, return_params=False,
+                  evals_low=0.5, evals_high=2.0, eigvecs_same=False):
+    """Generate a set of matrices, with specific properties.
+
+    Parameters
+    ----------
+    n_matrices : int
+        Number of matrices to generate.
+    n_dim : int
+        Dimension of square matrices to generate.
+    mtype : {'real', 'comp', 'spd', 'spsd', 'hpd', 'hpsd'}
+        Type of matrices to generate:
+
+        - 'real' for real matrices;
+        - 'comp' for complex matrices;
+        - 'spd' for SPD matrices;
+        - 'spsd' for SPSD matrices;
+        - 'hpd' for HPD matrices;
+        - 'hpsd' for HPSD matrices.
+    rs : RandomState instance, default=None
+        Random state for reproducible output across multiple function calls.
+    return_params : bool, default=False
+        If True, then returns evals and evecs for 'spd', 'spsd', 'hpd' and
+        'hpsd'.
+    evals_low : float, default=0.5
+        Lowest value of the uniform distribution to draw eigen values.
+    evals_high : float, default=2.0
+        Highest value of the uniform distribution to draw eigen values.
+    eigvecs_same : bool, default False
+        If True, then uses the same eigen vectors for all matrices.
+
+    Returns
+    -------
+    mats : ndarray, shape (n_matrices, n_dim, n_dim)
+        Generated matrices.
+    evals : ndarray, shape (n_matrices, n_dim)
+        Eigen values used for SPD/HPD matrices.
+        Only returned if ``return_params=True``.
+    evecs : ndarray, shape (n_matrices, n_dim, n_dim) or (n_dim, n_dim)
+        Eigen vectors used for SPD/HPD matrices.
+        Only returned if ``return_params=True``.
+
+    Notes
+    -----
+    .. versionadded:: 0.5
+    """
+    if mtype not in ["real", "comp", "spd", "spsd", "hpd", "hpsd"]:
+        raise ValueError(f"Unsupported matrix type: {mtype}")
+
+    rs = check_random_state(rs)
+    X = rs.randn(n_matrices, n_dim, n_dim)
+    if mtype == "real":
+        return X
+
+    if mtype in ["comp", "hpd", "hpsd"]:
+        X = X + 1j * rs.randn(n_matrices, n_dim, n_dim)
+        if mtype == "comp":
+            return X
+
+    # eigen values
+    if evals_low <= 0.0:
+        raise ValueError("Lowest value must be strictly positive.")
+    if evals_high <= evals_low:
+        raise ValueError("Highest value must be superior to lowest value.")
+    evals = evals_low + evals_high * rs.rand(n_matrices, n_dim)
+    if mtype in ["spsd", "hpsd"]:  # one eval to 0 for semi-definite matrices
+        evals[..., -1] = 0
+
+    # eigen vectors
+    if eigvecs_same:
+        X = X[0]
+    if np.__version__ < '1.22.0' and X.ndim > 2:
+        evecs = np.array([np.linalg.qr(x)[0] for x in X])
+    else:
+        evecs = np.linalg.qr(X)[0]
+
+    # conjugation
+    if eigvecs_same:
+        mats = np.empty((n_matrices, n_dim, n_dim), dtype=X.dtype)
+        for i in range(n_matrices):
+            mats[i] = (evecs * evals[i]) @ evecs.conj().T
+    else:
+        mats = (evecs * evals[..., np.newaxis]) @ np.swapaxes(evecs.conj(),
+                                                              -2, -1)
+
+    if return_params:
+        return mats, evals, evecs
+    else:
+        return mats
 
 
 def make_masks(n_masks, n_dim0, n_dim1_min, rs=None):
@@ -73,8 +168,11 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs=None):
     masks : list of n_masks ndarray of shape (n_dim0, n_dim1_i), \
             with different n_dim1_i, such that n_dim1_min <= n_dim1_i <= n_dim0
         Masks.
-    """
 
+    Notes
+    -----
+    .. versionadded:: 0.3
+    """
     rs = check_random_state(rs)
 
     masks = []
@@ -142,7 +240,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
 
     """
     if not isinstance(class_sep, float):
-        raise ValueError(f'class_sep must be a float (Got {class_sep})')
+        raise ValueError(f"class_sep must be a float (Got {class_sep})")
 
     rs = check_random_state(random_state)
     seeds = rs.randint(100, size=2)
