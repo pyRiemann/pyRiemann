@@ -49,8 +49,8 @@ def get_covmats_params(rndstate):
 
 @pytest.fixture
 def get_mats(rndstate):
-    def _gen_mat(n_matrices, n_dim, mtype):
-        return make_matrices(n_matrices, n_dim, mtype, rndstate,
+    def _gen_mat(n_matrices, n_dim, kind):
+        return make_matrices(n_matrices, n_dim, kind, rndstate,
                              return_params=False)
 
     return _gen_mat

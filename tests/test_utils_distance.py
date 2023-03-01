@@ -5,6 +5,7 @@ from scipy.spatial.distance import mahalanobis
 import pytest
 from pytest import approx
 
+from pyriemann.datasets.simulated import make_matrices
 from pyriemann.utils.distance import (
     _check_distance_method,
     distance_euclid,
@@ -148,9 +149,10 @@ def test_distance_implementation_logdet(get_covmats):
     assert distance_logdet(A, B) == approx(dist)
 
 
-def test_distance_riemann_properties(get_covmats):
+def test_distance_riemann_properties(rndstate):
     n_channels = 6
-    M = get_covmats(2, n_channels)
+    M = make_matrices(2, n_channels, "spd", rs=rndstate,
+                      evals_low=2, evals_high=10)
     A, B = M[0], M[1]
     dist_AB = distance_riemann(A, B)
 

@@ -31,46 +31,48 @@ def test_make_covariances(rndstate):
 
 
 @pytest.mark.parametrize(
-    "mtype", ["real", "comp", "spd", "spsd", "hpd", "hpsd"]
+    "kind", ["real", "comp", "spd", "spsd", "hpd", "hpsd"]
 )
-def test_make_matrices(rndstate, mtype):
+def test_make_matrices(rndstate, kind):
     """Test function for make matrices."""
     n_matrices, n_dim = 5, 4
     X = make_matrices(
         n_matrices=n_matrices,
         n_dim=n_dim,
-        mtype=mtype,
+        kind=kind,
         return_params=False,
         eigvecs_same=False,
         rs=rndstate,
     )
     assert X.shape == (n_matrices, n_dim, n_dim)
 
-    if mtype == "real":
+    if kind == "real":
         assert is_real(X)
-    elif mtype == "comp":
+    elif kind == "comp":
         assert not is_real(X)
-    elif mtype == "spd":
+    elif kind == "spd":
         assert is_spd(X)
-    elif mtype == "spsd":
+        assert is_spsd(X)
+    elif kind == "spsd":
         assert is_spsd(X)
         assert not is_spd(X)
-    elif mtype == "hpd":
+    elif kind == "hpd":
         assert is_hpd(X)
+        assert is_hpsd(X)
     else:  # hpsd
         assert is_hpsd(X)
         assert not is_hpd(X)
 
 
-@pytest.mark.parametrize("mtype", ["spd", "spsd", "hpd", "hpsd"])
+@pytest.mark.parametrize("kind", ["spd", "spsd", "hpd", "hpsd"])
 @pytest.mark.parametrize("eigvecs_same", [False, True])
-def test_make_matrices_return(rndstate, mtype, eigvecs_same):
+def test_make_matrices_return(rndstate, kind, eigvecs_same):
     """Test function for make matrices."""
     n_matrices, n_dim = 5, 4
     X, evals, evecs = make_matrices(
         n_matrices=n_matrices,
         n_dim=n_dim,
-        mtype=mtype,
+        kind=kind,
         return_params=True,
         eigvecs_same=eigvecs_same,
         rs=rndstate,

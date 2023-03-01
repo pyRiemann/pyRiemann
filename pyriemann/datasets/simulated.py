@@ -58,7 +58,7 @@ def make_covariances(n_matrices, n_channels, rs=None, return_params=False,
         return covmats
 
 
-def make_matrices(n_matrices, n_dim, mtype, rs=None, return_params=False,
+def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
                   evals_low=0.5, evals_high=2.0, eigvecs_same=False):
     """Generate a set of matrices, with specific properties.
 
@@ -68,8 +68,8 @@ def make_matrices(n_matrices, n_dim, mtype, rs=None, return_params=False,
         Number of matrices to generate.
     n_dim : int
         Dimension of square matrices to generate.
-    mtype : {'real', 'comp', 'spd', 'spsd', 'hpd', 'hpsd'}
-        Type of matrices to generate:
+    kind : {'real', 'comp', 'spd', 'spsd', 'hpd', 'hpsd'}
+        Kind of matrices to generate:
 
         - 'real' for real matrices;
         - 'comp' for complex matrices;
@@ -94,36 +94,39 @@ def make_matrices(n_matrices, n_dim, mtype, rs=None, return_params=False,
     mats : ndarray, shape (n_matrices, n_dim, n_dim)
         Generated matrices.
     evals : ndarray, shape (n_matrices, n_dim)
-        Eigen values used for SPD/HPD matrices.
+        Eigen values used for 'spd', 'spsd', 'hpd' and 'hpsd'.
         Only returned if ``return_params=True``.
     evecs : ndarray, shape (n_matrices, n_dim, n_dim) or (n_dim, n_dim)
-        Eigen vectors used for SPD/HPD matrices.
+        Eigen vectors used for 'spd', 'spsd', 'hpd' and 'hpsd'.
         Only returned if ``return_params=True``.
 
     Notes
     -----
     .. versionadded:: 0.5
     """
-    if mtype not in ["real", "comp", "spd", "spsd", "hpd", "hpsd"]:
-        raise ValueError(f"Unsupported matrix type: {mtype}")
+    if kind not in ("real", "comp", "spd", "spsd", "hpd", "hpsd"):
+        raise ValueError(f"Unsupported matrix kind: {kind}")
 
     rs = check_random_state(rs)
     X = rs.randn(n_matrices, n_dim, n_dim)
-    if mtype == "real":
+    if kind == "real":
         return X
 
-    if mtype in ["comp", "hpd", "hpsd"]:
+    if kind in ("comp", "hpd", "hpsd"):
         X = X + 1j * rs.randn(n_matrices, n_dim, n_dim)
-        if mtype == "comp":
+        if kind == "comp":
             return X
 
     # eigen values
     if evals_low <= 0.0:
-        raise ValueError("Lowest value must be strictly positive.")
+        raise ValueError(
+            f"Lowest value must be strictly positive (Got {evals_low}).")
     if evals_high <= evals_low:
-        raise ValueError("Highest value must be superior to lowest value.")
+        raise ValueError(
+            "Highest value must be superior to lowest value "
+            f"(Got {evals_high} and {evals_low}).")
     evals = evals_low + evals_high * rs.rand(n_matrices, n_dim)
-    if mtype in ["spsd", "hpsd"]:  # one eval to 0 for semi-definite matrices
+    if kind in ("spsd", "hpsd"):  # one eval to 0 for semi-definite matrices
         evals[..., -1] = 0
 
     # eigen vectors
