@@ -150,8 +150,8 @@ def test_distance_implementation_logdet(get_covmats):
 
 def test_distance_riemann_properties(get_covmats):
     n_channels = 6
-    A = get_covmats(1, n_channels)[0]
-    B = get_covmats(1, n_channels)[0]
+    M = get_covmats(2, n_channels)
+    A, B = M[0], M[1]
     dist_AB = distance_riemann(A, B)
 
     # exponential metric increasing property, Eq(6.8) in [Bhatia2007]
