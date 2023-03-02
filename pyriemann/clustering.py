@@ -364,6 +364,9 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         for _ in range(self.n_iter_max):
             ix = (y_old == 1)
+            if not any(ix):
+                raise ValueError("Iterative outlier removal has rejected all "
+                                 "matrices. Choose a higher threshold.")
             self._mdm.fit(X[ix], y_old[ix])
             y = np.zeros(len(X))
             d = np.squeeze(np.log(self._mdm.transform(X[ix])))
