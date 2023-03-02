@@ -8,7 +8,7 @@ from sklearn.pipeline import make_pipeline, Pipeline
 
 from pyriemann.datasets.simulated import (
     make_classification_transfer,
-    make_covariances,
+    make_matrices,
 )
 from pyriemann.classification import (
     MDM,
@@ -38,7 +38,8 @@ rndstate = 1234
 
 def test_encode_decode_domains(rndstate):
     """Test encoding and decoding of domains for data points"""
-    X = make_covariances(n_matrices=4, n_channels=2, rs=rndstate)
+    n_matrices, n_channels = 4, 2
+    X = make_matrices(n_matrices, n_channels, "spd", rs=rndstate)
     y = np.array(['left_hand', 'right_hand', 'left_hand', 'right_hand'])
     domain = np.array(2*['source_domain'] + 2*['target_domain'])
 
@@ -262,8 +263,8 @@ def test_tlregressors(rndstate, reg, source_domain, target_domain):
     """Test wrapper for regressors in transfer learning"""
 
     def make_regression_transfer(n_matrices, n_channels, rs):
-        X = make_covariances(
-            n_matrices=n_matrices, n_channels=n_channels, rs=rndstate
+        X = make_matrices(
+            n_matrices, n_channels, "spd", rs=rndstate
         )
         y = np.random.uniform(low=1.0, high=10.0, size=n_matrices)
         domain = np.array(20*['source_domain'] + 20*['target_domain'])

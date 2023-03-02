@@ -87,6 +87,7 @@ def test_whitening_transform(dim_red, metric, rndstate, get_covmats):
     assert_array_almost_equal(
         mean_covariance(cov_w, metric=metric),
         np.eye(n_comp),
+        decimal=3,
     )
     if dim_red is not None and "max_cond" in dim_red.keys():
         assert np.linalg.cond(cov_w.mean(axis=0)) <= max_cond

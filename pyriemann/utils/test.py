@@ -2,7 +2,7 @@ import numpy as np
 
 
 def _get_eigenvals(X):
-    """ Private function to compute eigen values. """
+    """Private function to compute all eigen values."""
     n = X.shape[-1]
     return np.linalg.eigvals(X.reshape((-1, n, n)))
 
@@ -56,7 +56,7 @@ def is_skew_sym(X):
 
 
 def is_real(X):
-    """Check if all complex matrices are strictly real.
+    """Check if all matrices are strictly real.
 
     Better management of numerical imprecisions than np.all(np.isreal()).
 
@@ -68,7 +68,7 @@ def is_real(X):
     Returns
     -------
     ret : boolean
-        True if all complex matrices are strictly real.
+        True if all matrices are strictly real.
     """
     return np.allclose(X.imag, np.zeros_like(X.imag))
 

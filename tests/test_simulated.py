@@ -4,11 +4,18 @@ import numpy as np
 from pyriemann.datasets.sampling import generate_random_spd_matrix
 from pyriemann.datasets.simulated import (
     make_covariances,
+    make_matrices,
     make_masks,
     make_gaussian_blobs,
     make_outliers,
 )
-from pyriemann.utils.test import is_sym_pos_def as is_spd
+from pyriemann.utils.test import (
+    is_real,
+    is_sym_pos_def as is_spd,
+    is_sym_pos_semi_def as is_spsd,
+    is_herm_pos_def as is_hpd,
+    is_herm_pos_semi_def as is_hpsd,
+)
 
 
 def test_make_covariances(rndstate):
@@ -21,6 +28,61 @@ def test_make_covariances(rndstate):
     assert X.shape == (n_matrices, n_channels, n_channels)  # X shape mismatch
     assert evals.shape == (n_matrices, n_channels)  # evals shape mismatch
     assert evecs.shape == (n_channels, n_channels)  # evecs shape mismatch
+
+
+@pytest.mark.parametrize(
+    "kind", ["real", "comp", "spd", "spsd", "hpd", "hpsd"]
+)
+def test_make_matrices(rndstate, kind):
+    """Test function for make matrices."""
+    n_matrices, n_dim = 5, 4
+    X = make_matrices(
+        n_matrices=n_matrices,
+        n_dim=n_dim,
+        kind=kind,
+        return_params=False,
+        eigvecs_same=False,
+        rs=rndstate,
+    )
+    assert X.shape == (n_matrices, n_dim, n_dim)
+
+    if kind == "real":
+        assert is_real(X)
+    elif kind == "comp":
+        assert not is_real(X)
+    elif kind == "spd":
+        assert is_spd(X)
+        assert is_spsd(X)
+    elif kind == "spsd":
+        assert is_spsd(X)
+        assert not is_spd(X, tol=1e-9)
+    elif kind == "hpd":
+        assert is_hpd(X)
+        assert is_hpsd(X)
+    else:  # hpsd
+        assert is_hpsd(X)
+        assert not is_hpd(X, tol=1e-9)
+
+
+@pytest.mark.parametrize("kind", ["spd", "spsd", "hpd", "hpsd"])
+@pytest.mark.parametrize("eigvecs_same", [False, True])
+def test_make_matrices_return(rndstate, kind, eigvecs_same):
+    """Test function for make matrices."""
+    n_matrices, n_dim = 5, 4
+    X, evals, evecs = make_matrices(
+        n_matrices=n_matrices,
+        n_dim=n_dim,
+        kind=kind,
+        return_params=True,
+        eigvecs_same=eigvecs_same,
+        rs=rndstate,
+    )
+    assert X.shape == (n_matrices, n_dim, n_dim)
+    assert evals.shape == (n_matrices, n_dim)
+    if eigvecs_same:
+        assert evecs.shape == (n_dim, n_dim)
+    else:
+        assert evecs.shape == (n_matrices, n_dim, n_dim)
 
 
 def test_make_masks(rndstate):

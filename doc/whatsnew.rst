@@ -16,6 +16,9 @@ v0.5.dev
 
 - Add functions to test HPD and HPSD matrices, :func:`pyriemann.utils.test.is_herm_pos_def` and :func:`pyriemann.utils.test.is_herm_pos_semi_def`. :pr:`231` by :user:`qbarthelemy`
 
+- Add function :func:`pyriemann.datasets.simulated.make_matrices` to generate SPD, SPSD, HPD and HPSD matrices.
+  Deprecate function :func:`pyriemann.datasets.simulated.make_covariances`. :pr:`232` by :user:`qbarthelemy`
+
 
 v0.4 (Feb 2023)
 ---------------
