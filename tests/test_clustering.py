@@ -246,14 +246,14 @@ def test_potato_1channel(get_covmats):
 def test_potato_threshold(get_covmats):
     n_matrices, n_channels = 6, 3
     covmats = get_covmats(n_matrices, n_channels)
-    pt = Potato(threshold=1)
+    pt = Potato(threshold=2.5)
     pt.fit(covmats)
 
 
 def test_potato_specific_labels(get_covmats):
     n_matrices, n_channels = 6, 3
     covmats = get_covmats(n_matrices, n_channels)
-    pt = Potato(threshold=1, pos_label=2, neg_label=7)
+    pt = Potato(pos_label=2, neg_label=7)
     pt.fit(covmats)
     assert_array_equal(np.unique(pt.predict(covmats)), [2, 7])
     # fit with custom positive label
