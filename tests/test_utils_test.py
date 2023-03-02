@@ -79,7 +79,7 @@ def test_is_sym_pos_def(rndstate):
     assert not is_sym_pos_def(np.ones((n_channels, n_channels + 1)))
 
     B = A - np.mean(A, axis=0)
-    assert not is_sym_pos_def(B @ B.T, tol=10e-10)
+    assert not is_sym_pos_def(B @ B.T, tol=1e-9)
 
 
 def test_is_sym_pos_semi_def(rndstate):
@@ -102,7 +102,7 @@ def test_is_herm_pos_def(rndstate):
     assert not is_herm_pos_def(np.ones((n_channels, n_channels + 1)))
 
     B = A - np.mean(A, axis=0)
-    assert not is_herm_pos_def(B @ B.conj().T, tol=10e-10)
+    assert not is_herm_pos_def(B @ B.conj().T, tol=1e-9)
 
 
 def test_is_herm_pos_semi_def(rndstate):

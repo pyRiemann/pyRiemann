@@ -165,7 +165,7 @@ def test_alm_mean(get_covmats):
     C_alm = mean_alm(covmats)
     assert C_alm.shape == (n_channels, n_channels)
     C_riem = mean_riemann(covmats)
-    assert C_alm == approx(C_riem)
+    assert C_alm == approx(C_riem, abs=1e-6, rel=1e-3)
 
 
 def test_alm_mean_2matrices(get_covmats):

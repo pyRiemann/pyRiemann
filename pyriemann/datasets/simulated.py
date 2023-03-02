@@ -71,12 +71,12 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
     kind : {'real', 'comp', 'spd', 'spsd', 'hpd', 'hpsd'}
         Kind of matrices to generate:
 
-        - 'real' for real matrices;
-        - 'comp' for complex matrices;
-        - 'spd' for SPD matrices;
-        - 'spsd' for SPSD matrices;
-        - 'hpd' for HPD matrices;
-        - 'hpsd' for HPSD matrices.
+        - 'real' for real-valued matrices;
+        - 'comp' for complex-valued matrices;
+        - 'spd' for symmetric positive-definite matrices;
+        - 'spsd' for symmetric positive semi-definite matrices;
+        - 'hpd' for Hermitian positive-definite matrices;
+        - 'hpsd' for Hermitian positive semi-definite matrices.
     rs : RandomState instance, default=None
         Random state for reproducible output across multiple function calls.
     return_params : bool, default=False
@@ -125,9 +125,9 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
         raise ValueError(
             "Highest value must be superior to lowest value "
             f"(Got {evals_high} and {evals_low}).")
-    evals = evals_low + evals_high * rs.rand(n_matrices, n_dim)
-    if kind in ("spsd", "hpsd"):  # one eval to 0 for semi-definite matrices
-        evals[..., -1] = 0
+    evals = rs.uniform(evals_low, evals_high, size=(n_matrices, n_dim))
+    if kind in ("spsd", "hpsd"):
+        evals[..., -1] = 1e-10  # last eigen value set to almost zero
 
     # eigen vectors
     if eigvecs_same:
@@ -143,8 +143,8 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
         for i in range(n_matrices):
             mats[i] = (evecs * evals[i]) @ evecs.conj().T
     else:
-        mats = (evecs * evals[..., np.newaxis]) @ np.swapaxes(evecs.conj(),
-                                                              -2, -1)
+        mats = (evecs * evals[:, np.newaxis, :]) @ np.swapaxes(evecs.conj(),
+                                                               -2, -1)
 
     if return_params:
         return mats, evals, evecs

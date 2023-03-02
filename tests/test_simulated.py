@@ -55,13 +55,13 @@ def test_make_matrices(rndstate, kind):
         assert is_spsd(X)
     elif kind == "spsd":
         assert is_spsd(X)
-        assert not is_spd(X)
+        assert not is_spd(X, tol=1e-9)
     elif kind == "hpd":
         assert is_hpd(X)
         assert is_hpsd(X)
     else:  # hpsd
         assert is_hpsd(X)
-        assert not is_hpd(X)
+        assert not is_hpd(X, tol=1e-9)
 
 
 @pytest.mark.parametrize("kind", ["spd", "spsd", "hpd", "hpsd"])
