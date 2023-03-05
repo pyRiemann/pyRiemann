@@ -279,7 +279,8 @@ def test_potato_field_fit(get_covmats):
         pf.fit([covmats1, covmats2[:1]])
 
 
-@pytest.mark.parametrize("method", ["partial_fit", "transform", "predict_proba"])
+@pytest.mark.parametrize("method",
+                         ["partial_fit", "transform", "predict_proba"])
 def test_potato_field_method(get_covmats, method):
     n_potatoes, n_matrices, n_channels = 2, 6, 3
     covmats1 = get_covmats(n_matrices, n_channels)
