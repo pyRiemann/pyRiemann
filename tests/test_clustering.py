@@ -279,37 +279,14 @@ def test_potato_field_fit(get_covmats):
         pf.fit([covmats1, covmats2[:1]])
 
 
-def test_potato_field_partialfit(get_covmats):
+@pytest.mark.parametrize("method", ["partial_fit", "transform", "predict_proba"])
+def test_potato_field_method(get_covmats, method):
     n_potatoes, n_matrices, n_channels = 2, 6, 3
     covmats1 = get_covmats(n_matrices, n_channels)
     covmats2 = get_covmats(n_matrices, n_channels + 1)
     covmats = [covmats1, covmats2]
     pf = PotatoField(n_potatoes=n_potatoes).fit(covmats)
     with pytest.raises(ValueError):  # n_potatoes not equal to input length
-        pf.partial_fit([covmats1, covmats1, covmats2])
+        getattr(pf, method)([covmats1, covmats1, covmats2])
     with pytest.raises(ValueError):  # n_matrices not equal
-        pf.partial_fit([covmats1, covmats2[:1]])
-
-
-def test_potato_field_transform(get_covmats):
-    n_potatoes, n_matrices, n_channels = 2, 6, 3
-    covmats1 = get_covmats(n_matrices, n_channels)
-    covmats2 = get_covmats(n_matrices, n_channels + 1)
-    covmats = [covmats1, covmats2]
-    pf = PotatoField(n_potatoes=n_potatoes).fit(covmats)
-    with pytest.raises(ValueError):  # n_potatoes not equal to input length
-        pf.transform([covmats1, covmats1, covmats2])
-    with pytest.raises(ValueError):  # n_matrices not equal
-        pf.transform([covmats1, covmats2[:1]])
-
-
-def test_potato_field_predictproba(get_covmats):
-    n_potatoes, n_matrices, n_channels = 2, 6, 3
-    covmats1 = get_covmats(n_matrices, n_channels)
-    covmats2 = get_covmats(n_matrices, n_channels + 1)
-    covmats = [covmats1, covmats2]
-    pf = PotatoField(n_potatoes=n_potatoes).fit(covmats)
-    with pytest.raises(ValueError):  # n_potatoes not equal to input length
-        pf.predict_proba([covmats1, covmats1, covmats2])
-    with pytest.raises(ValueError):  # n_matrices not equal
-        pf.predict_proba([covmats1, covmats2[:1]])
+        getattr(pf, method)([covmats1, covmats2[:1]])
