@@ -527,6 +527,14 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         return proba
 
 
+def _check_n_matrices(X, n_matrices):
+    """Check number of matrices in ndarray."""
+    if X.shape[0] != n_matrices:
+        raise ValueError(
+            'Unequal n_matrices between ndarray of X. Should be %d but'
+            ' got %d.' % (n_matrices, X.shape[0]))
+
+
 class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
     """Artefact detection with the Riemannian Potato Field.
 
@@ -622,10 +630,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
             neg_label=self.neg_label)
         self._potatoes = []
         for i in range(self.n_potatoes):
-            if X[i].shape[0] != n_matrices:
-                raise ValueError(
-                    'Unequal n_matrices between ndarray of X. Should be %d but'
-                    ' got %d.' % (n_matrices, X[i].shape[0]))
+            _check_n_matrices(X[i], n_matrices)
             self._potatoes.append(clone(pt))
             self._potatoes[i].fit(X[i], y)
 
@@ -662,10 +667,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         n_matrices = X[0].shape[0]
 
         for i in range(self.n_potatoes):
-            if X[i].shape[0] != n_matrices:
-                raise ValueError(
-                    'Unequal n_matrices between ndarray of X. Should be %d but'
-                    ' got %d.' % (n_matrices, X[i].shape[0]))
+            _check_n_matrices(X[i], n_matrices)
             self._potatoes[i].partial_fit(X[i], y, alpha=alpha)
         return self
 
@@ -694,10 +696,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         z = np.zeros((n_matrices, self.n_potatoes))
         for i in range(self.n_potatoes):
-            if X[i].shape[0] != n_matrices:
-                raise ValueError(
-                    'Unequal n_matrices between ndarray of X. Should be %d but'
-                    ' got %d.' % (n_matrices, X[i].shape[0]))
+            _check_n_matrices(X[i], n_matrices)
             z[:, i] = self._potatoes[i].transform(X[i])
         return z
 
@@ -751,10 +750,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         p = np.zeros((self.n_potatoes, n_matrices))
         for i in range(self.n_potatoes):
-            if X[i].shape[0] != n_matrices:
-                raise ValueError(
-                    'Unequal n_matrices between ndarray of X. Should be %d but'
-                    ' got %d.' % (n_matrices, X[i].shape[0]))
+            _check_n_matrices(X[i], n_matrices)
             p[i] = self._potatoes[i].predict_proba(X[i])
         p[p < 1e-10] = 1e-10  # avoid trouble with log
         q = - 2 * np.sum(np.log(p), axis=0)

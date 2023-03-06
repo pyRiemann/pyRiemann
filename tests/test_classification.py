@@ -23,104 +23,96 @@ from pyriemann.classification import (
 rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC, MeanField]
 
 
+@pytest.mark.parametrize("n_classes", [2, 3])
 @pytest.mark.parametrize("classif", rclf)
-class ClassifierTestCase:
-    def test_two_classes(self, classif, get_covmats, get_labels):
-        n_classes, n_matrices, n_channels = 2, 6, 3
-        covmats = get_covmats(n_matrices, n_channels)
-        labels = get_labels(n_matrices, n_classes)
+def test_classifier(n_classes, classif, get_covmats, get_labels):
+    if n_classes == 2:
+        n_matrices, n_channels = 6, 3
+    else:
+        assert n_classes == 3
+        n_matrices, n_channels = 9, 3
+    covmats = get_covmats(n_matrices, n_channels)
+    labels = get_labels(n_matrices, n_classes)
 
-        self.clf_predict(classif, covmats, labels)
-        self.clf_fit_independence(classif, covmats, labels)
-        self.clf_predict_proba(classif, covmats, labels)
-        self.clf_score(classif, covmats, labels)
-        self.clf_populate_classes(classif, covmats, labels)
-        if classif in (MDM, KNearestNeighbor, MeanField):
-            self.clf_fitpredict(classif, covmats, labels)
-        if classif in (MDM, FgMDM):
-            self.clf_transform(classif, covmats, labels)
-        if hasattr(classif(), 'n_jobs'):
-            self.clf_jobs(classif, covmats, labels)
-        if hasattr(classif(), 'tsupdate'):
-            self.clf_tsupdate(classif, covmats, labels)
-
-    def test_multi_classes(self, classif, get_covmats, get_labels):
-        n_classes, n_matrices, n_channels = 3, 9, 3
-        covmats = get_covmats(n_matrices, n_channels)
-        labels = get_labels(n_matrices, n_classes)
-
-        self.clf_predict(classif, covmats, labels)
-        self.clf_fit_independence(classif, covmats, labels)
-        self.clf_predict_proba(classif, covmats, labels)
-        self.clf_score(classif, covmats, labels)
-        self.clf_populate_classes(classif, covmats, labels)
-        if classif in (MDM, KNearestNeighbor, MeanField):
-            self.clf_fitpredict(classif, covmats, labels)
-        if classif in (MDM, FgMDM):
-            self.clf_transform(classif, covmats, labels)
-        if hasattr(classif(), 'n_jobs'):
-            self.clf_jobs(classif, covmats, labels)
-        if hasattr(classif(), 'tsupdate'):
-            self.clf_tsupdate(classif, covmats, labels)
+    clf_predict(classif, covmats, labels)
+    clf_fit_independence(classif, covmats, labels)
+    clf_predict_proba(classif, covmats, labels)
+    clf_score(classif, covmats, labels)
+    clf_populate_classes(classif, covmats, labels)
+    if classif in (MDM, KNearestNeighbor, MeanField):
+        clf_fitpredict(classif, covmats, labels)
+    if classif in (MDM, FgMDM):
+        clf_transform(classif, covmats, labels)
+    if hasattr(classif(), 'n_jobs'):
+        clf_jobs(classif, covmats, labels)
+    if hasattr(classif(), 'tsupdate'):
+        clf_tsupdate(classif, covmats, labels)
 
 
-class TestClassifier(ClassifierTestCase):
-    def clf_predict(self, classif, covmats, labels):
-        n_matrices = len(labels)
-        clf = classif()
-        clf.fit(covmats, labels)
-        predicted = clf.predict(covmats)
-        assert predicted.shape == (n_matrices,)
+def clf_predict(classif, covmats, labels):
+    n_matrices = len(labels)
+    clf = classif()
+    clf.fit(covmats, labels)
+    predicted = clf.predict(covmats)
+    assert predicted.shape == (n_matrices,)
 
-    def clf_predict_proba(self, classif, covmats, labels):
-        n_matrices = len(labels)
-        n_classes = len(np.unique(labels))
-        clf = classif()
-        if hasattr(clf, 'probability'):
-            clf.set_params(**{'probability': True})
-        clf.fit(covmats, labels)
-        probabilities = clf.predict_proba(covmats)
-        assert probabilities.shape == (n_matrices, n_classes)
-        assert probabilities.sum(axis=1) == approx(np.ones(n_matrices))
 
-    def clf_fitpredict(self, classif, covmats, labels):
-        clf = classif()
-        clf.fit_predict(covmats, labels)
-        assert_array_equal(clf.classes_, np.unique(labels))
+def clf_predict_proba(classif, covmats, labels):
+    n_matrices = len(labels)
+    n_classes = len(np.unique(labels))
+    clf = classif()
+    if hasattr(clf, 'probability'):
+        clf.set_params(**{'probability': True})
+    clf.fit(covmats, labels)
+    probabilities = clf.predict_proba(covmats)
+    assert probabilities.shape == (n_matrices, n_classes)
+    assert probabilities.sum(axis=1) == approx(np.ones(n_matrices))
 
-    def clf_score(self, classif, covmats, labels):
-        clf = classif()
-        clf.fit(covmats, labels)
-        clf.score(covmats, labels)
 
-    def clf_transform(self, classif, covmats, labels):
-        n_matrices = len(labels)
-        n_classes = len(np.unique(labels))
-        clf = classif()
-        clf.fit(covmats, labels)
-        transformed = clf.transform(covmats)
-        assert transformed.shape == (n_matrices, n_classes)
+def clf_fitpredict(classif, covmats, labels):
+    clf = classif()
+    clf.fit_predict(covmats, labels)
+    assert_array_equal(clf.classes_, np.unique(labels))
 
-    def clf_fit_independence(self, classif, covmats, labels):
-        clf = classif()
-        clf.fit(covmats, labels).predict(covmats)
-        # retraining with different size should erase previous fit
-        new_covmats = covmats[:, :-1, :-1]
-        clf.fit(new_covmats, labels).predict(new_covmats)
 
-    def clf_jobs(self, classif, covmats, labels):
-        clf = classif(n_jobs=2)
-        clf.fit(covmats, labels)
-        clf.predict(covmats)
+def clf_score(classif, covmats, labels):
+    clf = classif()
+    clf.fit(covmats, labels)
+    clf.score(covmats, labels)
 
-    def clf_populate_classes(self, classif, covmats, labels):
-        clf = classif()
-        clf.fit(covmats, labels)
-        assert_array_equal(clf.classes_, np.unique(labels))
 
-    def clf_tsupdate(self, classif, covmats, labels):
-        clf = classif(tsupdate=True)
-        clf.fit(covmats, labels).predict(covmats)
+def clf_transform(classif, covmats, labels):
+    n_matrices = len(labels)
+    n_classes = len(np.unique(labels))
+    clf = classif()
+    clf.fit(covmats, labels)
+    transformed = clf.transform(covmats)
+    assert transformed.shape == (n_matrices, n_classes)
+
+
+def clf_fit_independence(classif, covmats, labels):
+    clf = classif()
+    clf.fit(covmats, labels).predict(covmats)
+    # retraining with different size should erase previous fit
+    new_covmats = covmats[:, :-1, :-1]
+    clf.fit(new_covmats, labels).predict(new_covmats)
+
+
+def clf_jobs(classif, covmats, labels):
+    clf = classif(n_jobs=2)
+    clf.fit(covmats, labels)
+    clf.predict(covmats)
+
+
+def clf_populate_classes(classif, covmats, labels):
+    clf = classif()
+    clf.fit(covmats, labels)
+    assert_array_equal(clf.classes_, np.unique(labels))
+
+
+def clf_tsupdate(classif, covmats, labels):
+    clf = classif(tsupdate=True)
+    clf.fit(covmats, labels).predict(covmats)
 
 
 @pytest.mark.parametrize("classif", rclf)
