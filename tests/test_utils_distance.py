@@ -129,12 +129,22 @@ def test_distances_all_triangle_inequality(kind, dist, get_mats):
 
 @pytest.mark.parametrize("complex_valued", [True, False])
 def test_distance_euclid(rndstate, complex_valued):
+    """Test Euclidean distance for generic matrices"""
     n_matrices, n_dim0, n_dim1 = 2, 3, 4
     mats = rndstate.randn(n_matrices, n_dim0, n_dim1)
     if complex_valued:
         mats = mats + 1j * rndstate.randn(n_matrices, n_dim0, n_dim1)
     A, B = mats[0], mats[1]
     distance_euclid(A, B)
+
+
+@pytest.mark.parametrize("kind", ["real", "comp"])
+def test_distance_harmonic(kind, get_mats):
+    """Test harmonic distance for invertible matrices"""
+    n_matrices, n_channels = 2, 5
+    mats = get_mats(n_matrices, n_channels, kind)
+    A, B = mats[0], mats[1]
+    distance_harmonic(A, B)
 
 
 def test_distance_kullback_implementation(get_covmats):
