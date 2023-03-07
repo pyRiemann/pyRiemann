@@ -19,6 +19,8 @@ v0.5.dev
 - Add function :func:`pyriemann.datasets.simulated.make_matrices` to generate SPD, SPSD, HPD and HPSD matrices.
   Deprecate function :func:`pyriemann.datasets.simulated.make_covariances`. :pr:`232` by :user:`qbarthelemy`
 
+- Add tests for matrix operators and distances for HPD matrices, complete doc and add references. :pr:`234` by :user:`qbarthelemy`
+
 
 v0.4 (Feb 2023)
 ---------------

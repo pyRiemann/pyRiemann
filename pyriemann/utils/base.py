@@ -1,4 +1,4 @@
-"""Base functions for SPD matrices."""
+"""Base functions for SPD/HPD matrices."""
 
 import numpy as np
 from numpy.core.numerictypes import typecodes
@@ -8,7 +8,7 @@ from .test import is_pos_def
 def _matrix_operator(C, operator):
     """Matrix function."""
     if not isinstance(C, np.ndarray) or C.ndim < 2:
-        raise ValueError('Input must be at least a 2D ndarray')
+        raise ValueError("Input must be at least a 2D ndarray")
     if C.dtype.char in typecodes['AllFloat'] and (
             np.isinf(C).any() or np.isnan(C).any()):
         raise ValueError(
@@ -22,62 +22,13 @@ def _matrix_operator(C, operator):
     return D
 
 
-def sqrtm(C):
-    r"""Square root of SPD matrices.
-
-    The matrix square root of a SPD matrix C is defined by:
-
-    .. math::
-        \mathbf{D} =
-        \mathbf{V} \left( \mathbf{\Lambda} \right)^{1/2} \mathbf{V}^\top
-
-    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
-    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}`.
-
-    Parameters
-    ----------
-    C : ndarray, shape (..., n, n)
-        SPD matrices, at least 2D ndarray.
-
-    Returns
-    -------
-    D : ndarray, shape (..., n, n)
-        Matrix square root of C.
-    """
-    return _matrix_operator(C, np.sqrt)
-
-
-def logm(C):
-    r"""Logarithm of SPD matrices.
-
-    The matrix logarithm of a SPD matrix C is defined by:
-
-    .. math::
-        \mathbf{D} = \mathbf{V} \log{(\mathbf{\Lambda})} \mathbf{V}^\top
-
-    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
-    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}`.
-
-    Parameters
-    ----------
-    C : ndarray, shape (..., n, n)
-        SPD matrices, at least 2D ndarray.
-
-    Returns
-    -------
-    D : ndarray, shape (..., n, n)
-        Matrix logarithm of C.
-    """
-    return _matrix_operator(C, np.log)
-
-
 def expm(C):
-    r"""Exponential of SPD matrices.
+    r"""Exponential of SPD/HPD matrices.
 
-    The matrix exponential of a SPD matrix C is defined by:
+    The symmetric matrix exponential of a SPD/HPD matrix C is defined by:
 
     .. math::
-        \mathbf{D} = \mathbf{V} \exp{(\mathbf{\Lambda})} \mathbf{V}^\top
+        \mathbf{D} = \mathbf{V} \exp{(\mathbf{\Lambda})} \mathbf{V}^H
 
     where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
     and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}`.
@@ -85,7 +36,7 @@ def expm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD matrices, at least 2D ndarray.
+        SPD/HPD matrices, at least 2D ndarray.
 
     Returns
     -------
@@ -96,13 +47,14 @@ def expm(C):
 
 
 def invsqrtm(C):
-    r"""Inverse square root of SPD matrices.
+    r"""Inverse square root of SPD/HPD matrices.
 
-    The matrix inverse square root of a SPD matrix C is defined by:
+    The symmetric matrix inverse square root of a SPD/HPD matrix C is
+    defined by:
 
     .. math::
         \mathbf{D} =
-        \mathbf{V} \left( \mathbf{\Lambda} \right)^{-1/2} \mathbf{V}^\top
+        \mathbf{V} \left( \mathbf{\Lambda} \right)^{-1/2} \mathbf{V}^H
 
     where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
     and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}`.
@@ -110,7 +62,7 @@ def invsqrtm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD matrices, at least 2D ndarray.
+        SPD/HPD matrices, at least 2D ndarray.
 
     Returns
     -------
@@ -121,14 +73,13 @@ def invsqrtm(C):
     return _matrix_operator(C, isqrt)
 
 
-def powm(C, alpha):
-    r"""Power of SPD matrices.
+def logm(C):
+    r"""Logarithm of SPD/HPD matrices.
 
-    The matrix power :math:`\alpha` of a SPD matrix C is defined by:
+    The symmetric matrix logarithm of a SPD/HPD matrix C is defined by:
 
     .. math::
-        \mathbf{D} =
-        \mathbf{V} \left( \mathbf{\Lambda} \right)^{\alpha} \mathbf{V}^\top
+        \mathbf{D} = \mathbf{V} \log{(\mathbf{\Lambda})} \mathbf{V}^H
 
     where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
     and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}`.
@@ -136,7 +87,33 @@ def powm(C, alpha):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD matrices, at least 2D ndarray.
+        SPD/HPD matrices, at least 2D ndarray.
+
+    Returns
+    -------
+    D : ndarray, shape (..., n, n)
+        Matrix logarithm of C.
+    """
+    return _matrix_operator(C, np.log)
+
+
+def powm(C, alpha):
+    r"""Power of SPD/HPD matrices.
+
+    The symmetric matrix power :math:`\alpha` of a SPD/HPD matrix C is defined
+    by:
+
+    .. math::
+        \mathbf{D} =
+        \mathbf{V} \left( \mathbf{\Lambda} \right)^{\alpha} \mathbf{V}^H
+
+    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
+    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}`.
+
+    Parameters
+    ----------
+    C : ndarray, shape (..., n, n)
+        SPD/HPD matrices, at least 2D ndarray.
     alpha : float
         The power to apply.
 
@@ -147,6 +124,35 @@ def powm(C, alpha):
     """
     def power(x): return x**alpha
     return _matrix_operator(C, power)
+
+
+def sqrtm(C):
+    r"""Square root of SPD/HPD matrices.
+
+    The symmetric matrix square root of a SPD/HPD matrix C is defined
+    by:
+
+    .. math::
+        \mathbf{D} =
+        \mathbf{V} \left( \mathbf{\Lambda} \right)^{1/2} \mathbf{V}^H
+
+    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
+    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}`.
+
+    Parameters
+    ----------
+    C : ndarray, shape (..., n, n)
+        SPD/HPD matrices, at least 2D ndarray.
+
+    Returns
+    -------
+    D : ndarray, shape (..., n, n)
+        Matrix square root of C.
+    """
+    return _matrix_operator(C, np.sqrt)
+
+
+###############################################################################
 
 
 def _nearest_sym_pos_def(S, reg=1e-6):

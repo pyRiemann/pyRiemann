@@ -1,5 +1,6 @@
 import pytest
 import numpy as np
+from numpy.testing import assert_array_almost_equal
 
 from pyriemann.datasets.sampling import generate_random_spd_matrix
 from pyriemann.datasets.simulated import (
@@ -53,12 +54,14 @@ def test_make_matrices(rndstate, kind):
     elif kind == "spd":
         assert is_spd(X)
         assert is_spsd(X)
+        assert_array_almost_equal(X, np.swapaxes(X, -2, -1))
     elif kind == "spsd":
         assert is_spsd(X)
         assert not is_spd(X, tol=1e-9)
     elif kind == "hpd":
         assert is_hpd(X)
         assert is_hpsd(X)
+        assert_array_almost_equal(X, np.swapaxes(X.conj(), -2, -1))
     else:  # hpsd
         assert is_hpsd(X)
         assert not is_hpd(X, tol=1e-9)

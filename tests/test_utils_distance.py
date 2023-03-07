@@ -59,7 +59,7 @@ def test_check_distance_error():
 
 
 @pytest.mark.parametrize("dist", get_dist_func())
-def test_distance_error(dist, get_covmats):
+def test_distances_all_error(dist, get_covmats):
     n_matrices, n_channels = 5, 3
     A = get_covmats(n_matrices, n_channels)
     with pytest.raises(ValueError):
@@ -67,7 +67,7 @@ def test_distance_error(dist, get_covmats):
 
 
 @pytest.mark.parametrize("dist", get_dist_func())
-def test_distance_func_ndarray(dist, get_covmats):
+def test_distances_all_ndarray(dist, get_covmats):
     n_matrices, n_channels = 5, 3
     A = get_covmats(n_matrices, n_channels)
     B = get_covmats(n_matrices, n_channels)
@@ -80,30 +80,26 @@ def test_distance_func_ndarray(dist, get_covmats):
     assert dist(C, D).shape == (n_sets, n_matrices,)  # 4D arrays
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("dist", get_dist_func())
-def test_distance_func_eye(dist):
-    n_channels = 3
-    A = 2 * np.eye(n_channels)
-    B = 2 * np.eye(n_channels)
-    assert dist(A, B) == approx(0)
-
-
-@pytest.mark.parametrize("dist", get_dist_func())
-def test_distance_func_geodesic(dist, get_covmats):
+def test_distances_all_geodesic(kind, dist, get_mats):
     n_matrices, n_channels = 2, 6
-    covmats = get_covmats(n_matrices, n_channels)
-    A, C = covmats[0], covmats[1]
+    mats = get_mats(n_matrices, n_channels, kind)
+    A, C = mats[0], mats[1]
     B = geodesic(A, C, alpha=0.5)
     assert dist(A, B) < dist(A, C)
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("dist", get_dist_func())
-def test_distance_func_separability(dist, get_covmats):
+def test_distances_all_separability(kind, dist, get_mats):
     n_matrices, n_channels = 1, 6
-    covmats = get_covmats(n_matrices, n_channels)
-    assert dist(covmats[0], covmats[0]) == approx(0, abs=2e-7)
+    mats = get_mats(n_matrices, n_channels, kind)
+    assert dist(mats[0], mats[0]) == approx(0, abs=2e-7)
+    assert dist(np.eye(n_channels), np.eye(n_channels)) == approx(0)
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize(
     "dist", [
         distance_euclid,
@@ -115,43 +111,55 @@ def test_distance_func_separability(dist, get_covmats):
         distance_wasserstein,
     ]
 )
-def test_distance_func_symmetry(dist, get_covmats):
+def test_distances_all_symmetry(kind, dist, get_mats):
     n_matrices, n_channels = 2, 5
-    covmats = get_covmats(n_matrices, n_channels)
-    A, B = covmats[0], covmats[1]
+    mats = get_mats(n_matrices, n_channels, kind)
+    A, B = mats[0], mats[1]
     assert dist(A, B) == approx(dist(B, A))
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("dist", get_dist_func())
-def test_distance_func_triangle_inequality(dist, get_covmats):
+def test_distances_all_triangle_inequality(kind, dist, get_mats):
     n_matrices, n_channels = 3, 4
-    covmats = get_covmats(n_matrices, n_channels)
-    A, B, C = covmats[0], covmats[1], covmats[2]
+    mats = get_mats(n_matrices, n_channels, kind)
+    A, B, C = mats[0], mats[1], mats[2]
     assert dist(A, B) <= dist(A, C) + dist(C, B)
 
 
-def test_distance_implementation_kullback(get_covmats):
+@pytest.mark.parametrize("complex_valued", [True, False])
+def test_distance_euclid(rndstate, complex_valued):
+    n_matrices, n_dim0, n_dim1 = 2, 3, 4
+    mats = rndstate.randn(n_matrices, n_dim0, n_dim1)
+    if complex_valued:
+        mats = mats + 1j * rndstate.randn(n_matrices, n_dim0, n_dim1)
+    A, B = mats[0], mats[1]
+    distance_euclid(A, B)
+
+
+def test_distance_kullback_implementation(get_covmats):
     n_matrices, n_channels = 2, 6
-    covmats = get_covmats(n_matrices, n_channels)
-    A, B = covmats[0], covmats[1]
+    mats = get_covmats(n_matrices, n_channels)
+    A, B = mats[0], mats[1]
     dist = 0.5*(np.trace(np.linalg.inv(B) @ A) - n_channels
                 + np.log(np.linalg.det(B) / np.linalg.det(A)))
     assert distance_kullback(A, B) == approx(dist)
 
 
-def test_distance_implementation_logdet(get_covmats):
+def test_distance_logdet_implementation(get_covmats):
     n_matrices, n_channels = 2, 6
-    covmats = get_covmats(n_matrices, n_channels)
-    A, B = covmats[0], covmats[1]
+    mats = get_covmats(n_matrices, n_channels)
+    A, B = mats[0], mats[1]
     dist = np.sqrt(np.log(np.linalg.det((A + B) / 2.0))
                    - 0.5 * np.log(np.linalg.det(A)*np.linalg.det(B)))
     assert distance_logdet(A, B) == approx(dist)
 
 
-def test_distance_riemann_properties(get_covmats):
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_distance_riemann_properties(kind, get_mats):
     n_channels = 6
-    M = get_covmats(2, n_channels)
-    A, B = M[0], M[1]
+    mats = get_mats(2, n_channels, kind)
+    A, B = mats[0], mats[1]
     dist_AB = distance_riemann(A, B)
 
     # exponential metric increasing property, Eq(6.8) in [Bhatia2007]
@@ -177,21 +185,21 @@ def test_distance_riemann_properties(get_covmats):
 @pytest.mark.parametrize("dist, dfunc", zip(get_distances(), get_dist_func()))
 def test_distance_wrapper(dist, dfunc, get_covmats):
     n_matrices, n_channels = 2, 5
-    covmats = get_covmats(n_matrices, n_channels)
-    A, B = covmats[0], covmats[1]
+    mats = get_covmats(n_matrices, n_channels)
+    A, B = mats[0], mats[1]
     assert distance(A, B, metric=dist) == dfunc(A, B)
 
 
 @pytest.mark.parametrize("dist", get_dist_func())
 def test_distance_wrapper_between_set_and_matrix(dist, get_covmats):
     n_matrices, n_channels = 10, 4
-    covmats = get_covmats(n_matrices, n_channels)
-    assert distance(covmats, covmats[-1], metric=dist).shape == (n_matrices, 1)
+    mats = get_covmats(n_matrices, n_channels)
+    assert distance(mats, mats[-1], metric=dist).shape == (n_matrices, 1)
 
     n_sets = 5
-    covs_4d = np.asarray([covmats for _ in range(n_sets)])
+    covs_4d = np.asarray([mats for _ in range(n_sets)])
     with pytest.raises(ValueError):
-        distance(covs_4d, covmats, metric=dist)
+        distance(covs_4d, mats, metric=dist)
 
 
 @pytest.mark.parametrize("dist", get_distances())
