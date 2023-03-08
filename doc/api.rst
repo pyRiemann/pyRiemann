@@ -321,11 +321,11 @@ Base
 .. autosummary::
     :toctree: generated/
 
-    sqrtm
-    invsqrtm
     expm
+    invsqrtm
     logm
     powm
+    sqrtm
     nearest_sym_pos_def
 
 Aproximate Joint Diagonalization

@@ -1,4 +1,4 @@
-"""Distances between SPD matrices."""
+"""Distances between SPD/HPD matrices."""
 
 import numpy as np
 from scipy.linalg import eigvalsh, solve
@@ -8,11 +8,11 @@ from .base import logm, sqrtm, invsqrtm
 
 def _check_inputs(A, B):
     if not isinstance(A, np.ndarray) or not isinstance(B, np.ndarray):
-        raise ValueError('Inputs must be ndarrays')
+        raise ValueError("Inputs must be ndarrays")
     if not A.shape == B.shape:
-        raise ValueError('Inputs must have equal dimensions')
+        raise ValueError("Inputs must have equal dimensions")
     if A.ndim < 2:
-        raise ValueError('Inputs must be at least a 2D ndarray')
+        raise ValueError("Inputs must be at least a 2D ndarray")
 
 
 def _recursive(fun, A, B, *args, **kwargs):
@@ -30,9 +30,9 @@ def _recursive(fun, A, B, *args, **kwargs):
 
 
 def distance_euclid(A, B):
-    r"""Euclidean distance between SPD matrices.
+    r"""Euclidean distance between matrices.
 
-    The Euclidean distance between two SPD matrices A and B is defined
+    The Euclidean distance between two matrices A and B is defined
     as the Frobenius norm of the difference of the two matrices:
 
     .. math::
@@ -40,10 +40,10 @@ def distance_euclid(A, B):
 
     Parameters
     ----------
-    A : ndarray, shape (..., n, n)
-        First SPD matrices, at least 2D ndarray.
-    B : ndarray, shape (..., n, n)
-        Second SPD matrices, same dimensions as A.
+    A : ndarray, shape (..., n, m)
+        First matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, m)
+        Second matrices, same dimensions as A.
 
     Returns
     -------
@@ -55,9 +55,9 @@ def distance_euclid(A, B):
 
 
 def distance_harmonic(A, B):
-    r"""Harmonic distance between SPD matrices.
+    r"""Harmonic distance between invertible matrices.
 
-    The harmonic distance between two SPD matrices A and B is:
+    The harmonic distance between two invertible matrices A and B is:
 
     .. math::
         d(\mathbf{A},\mathbf{B}) =
@@ -66,9 +66,9 @@ def distance_harmonic(A, B):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First SPD matrices, at least 2D ndarray.
+        First invertible matrices, at least 2D ndarray.
     B : ndarray, shape (..., n, n)
-        Second SPD matrices, same dimensions as A.
+        Second invertible matrices, same dimensions as A.
 
     Returns
     -------
@@ -79,9 +79,10 @@ def distance_harmonic(A, B):
 
 
 def distance_kullback(A, B):
-    r"""Kullback-Leibler divergence between SPD matrices.
+    r"""Kullback-Leibler divergence between SPD/HPD matrices.
 
-    The left Kullback-Leibler divergence between two SPD matrices A and B is:
+    The left Kullback-Leibler divergence between two SPD/HPD matrices A and B
+    is [1]_:
 
     .. math::
         d(\mathbf{A},\mathbf{B}) =
@@ -91,14 +92,21 @@ def distance_kullback(A, B):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First SPD matrices, at least 2D ndarray.
+        First SPD/HPD matrices, at least 2D ndarray.
     B : ndarray, shape (..., n, n)
-        Second SPD matrices, same dimensions as A.
+        Second SPD/HPD matrices, same dimensions as A.
 
     Returns
     -------
     d : ndarray, shape (...,) or float
         Left Kullback-Leibler divergence between A and B.
+
+    References
+    ----------
+    .. [1] `On information and sufficiency
+        <https://www.jstor.org/stable/2236703>`_
+        S. Kullback S, R. Leibler.
+        The Annals of Mathematical Statistics, 1951, 22 (1), pp. 79-86
     """
     _check_inputs(A, B)
     n = A.shape[-1]
@@ -113,18 +121,39 @@ def distance_kullback_right(A, B):
 
 
 def distance_kullback_sym(A, B):
-    """Symmetrized Kullback-Leibler divergence between SPD matrices.
+    """Symmetrized Kullback-Leibler divergence between SPD/HPD matrices.
 
-    The symmetrized Kullback-Leibler divergence between two SPD matrices A and
-    B is the sum of left and right Kullback-Leibler divergences.
+    The symmetrized Kullback-Leibler divergence between two SPD/HPD matrices A
+    and B is the sum of left and right Kullback-Leibler divergences. It is also
+    called Jeffreys divergence [1]_.
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices, same dimensions as A.
+
+    Returns
+    -------
+    d : ndarray, shape (...,) or float
+        Symmetrized Kullback-Leibler divergence between A and B.
+
+    References
+    ----------
+    .. [1] `An invariant form for the prior probability in estimation problems
+        <https://www.jstor.org/stable/97883>`_
+        H. Jeffreys.
+        Proceedings of the Royal Society of London A: mathematical, physical
+        and engineering sciences, 1946, 186 (1007), pp. 453-461
     """
     return distance_kullback(A, B) + distance_kullback_right(A, B)
 
 
 def distance_logdet(A, B):
-    r"""Log-det distance between SPD matrices.
+    r"""Log-det distance between SPD/HPD matrices.
 
-    The log-det distance between two SPD matrices A and B is:
+    The log-det distance between two SPD/HPD matrices A and B is [1]_:
 
     .. math::
         d(\mathbf{A},\mathbf{B}) =
@@ -134,14 +163,21 @@ def distance_logdet(A, B):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First SPD matrices, at least 2D ndarray.
+        First SPD/HPD matrices, at least 2D ndarray.
     B : ndarray, shape (..., n, n)
-        Second SPD matrices, same dimensions as A.
+        Second SPD/HPD matrices, same dimensions as A.
 
     Returns
     -------
     d : ndarray, shape (...,) or float
         Log-det distance between A and B.
+
+    References
+    ----------
+    .. [1] `Matrix nearness problems with Bregman divergences
+        <https://epubs.siam.org/doi/abs/10.1137/060649021>`_
+        I.S. Dhillon, J.A. Tropp.
+        SIAM J Matrix Anal Appl, 2007, 29 (4), pp. 1120-1146
     """
     _check_inputs(A, B)
     logdet_ApB = np.linalg.slogdet((A + B) / 2.0)[1]
@@ -152,9 +188,9 @@ def distance_logdet(A, B):
 
 
 def distance_logeuclid(A, B):
-    r"""Log-Euclidean distance between SPD matrices.
+    r"""Log-Euclidean distance between SPD/HPD matrices.
 
-    The Log-Euclidean distance between two SPD matrices A and B is:
+    The Log-Euclidean distance between two SPD/HPD matrices A and B is [1]_:
 
     .. math::
         d(\mathbf{A},\mathbf{B}) =
@@ -163,23 +199,31 @@ def distance_logeuclid(A, B):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First SPD matrices, at least 2D ndarray.
+        First SPD/HPD matrices, at least 2D ndarray.
     B : ndarray, shape (..., n, n)
-        Second SPD matrices, same dimensions as A.
+        Second SPD/HPD matrices, same dimensions as A.
 
     Returns
     -------
     d : ndarray, shape (...,) or float
         Log-Euclidean distance between A and B.
+
+    References
+    ----------
+    .. [1] `Geometric means in a novel vector space structure on symmetric
+        positive-definite matrices
+        <https://epubs.siam.org/doi/abs/10.1137/050637996>`_
+        V. Arsigny, P. Fillard, X. Pennec, N. Ayache.
+        SIAM J Matrix Anal Appl, 2007, 29 (1), pp. 328-347
     """
     return distance_euclid(logm(A), logm(B))
 
 
 def distance_riemann(A, B):
-    r"""Affine-invariant Riemannian distance between SPD matrices.
+    r"""Affine-invariant Riemannian distance between SPD/HPD matrices.
 
-    The affine-invariant Riemannian distance between two SPD matrices A and B
-    is:
+    The affine-invariant Riemannian distance between two SPD/HPD matrices A and
+    B is [1]_:
 
     .. math::
         d(\mathbf{A},\mathbf{B}) =
@@ -191,23 +235,31 @@ def distance_riemann(A, B):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First SPD matrices, at least 2D ndarray.
+        First SPD/HPD matrices, at least 2D ndarray.
     B : ndarray, shape (..., n, n)
-        Second SPD matrices, same dimensions as A.
+        Second SPD/HPD matrices, same dimensions as A.
 
     Returns
     -------
     d : ndarray, shape (...,) or float
         Affine-invariant Riemannian distance between A and B.
+
+    References
+    ----------
+    .. [1] `A differential geometric approach to the geometric mean of
+        symmetric positive-definite matrices
+        <https://epubs.siam.org/doi/10.1137/S0895479803436937>`_
+        M. Moakher. SIAM J Matrix Anal Appl, 2005, 26 (3), pp. 735-747
     """
     _check_inputs(A, B)
     return np.sqrt((np.log(_recursive(eigvalsh, A, B))**2).sum(axis=-1))
 
 
 def distance_wasserstein(A, B):
-    r"""Wasserstein distance between SPD matrices.
+    r"""Wasserstein distance between SPSD/HPSD matrices.
 
-    The Wasserstein distance between two SPD matrices A and B is:
+    The Wasserstein distance between two SPSD/HPSD matrices A and B is [1]_
+    [2]_:
 
     .. math::
         d(\mathbf{A},\mathbf{B}) =
@@ -216,15 +268,25 @@ def distance_wasserstein(A, B):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First SPD matrices, at least 2D ndarray.
+        First SPSD/HPSD matrices, at least 2D ndarray.
     B : ndarray, shape (..., n, n)
-        Second SPD matrices, same dimensions as A.
+        Second SPSD/HPSD matrices, same dimensions as A.
 
     Returns
     -------
     d : ndarray, shape (...,) or float
         Wasserstein distance between A and B.
-    """
+
+    References
+    ----------
+    .. [1] `Optimal transport: old and new
+        <https://link.springer.com/book/10.1007/978-3-540-71050-9>`_
+        C. Villani. Springer Science & Business Media, 2008, vol. 338
+    .. [2] `An extension of Kakutani's theorem on infinite product measures to
+        the tensor product of semifinite w*-algebras
+        <https://www.ams.org/journals/tran/1969-135-00/S0002-9947-1969-0236719-2/S0002-9947-1969-0236719-2.pdf>`_
+        D. Bures. Trans Am Math Soc, 1969, 135, pp. 199-212
+    """  # noqa
     _check_inputs(A, B)
     B12 = sqrtm(B)
     dist2 = np.trace(A + B - 2 * sqrtm(B12 @ A @ B12), axis1=-2, axis2=-1)
@@ -252,26 +314,26 @@ def _check_distance_method(method):
     """Check distance methods."""
     if isinstance(method, str):
         if method not in distance_methods.keys():
-            raise ValueError('Unknown distance method')
+            raise ValueError("Unknown distance method")
         else:
             method = distance_methods[method]
     elif not hasattr(method, '__call__'):
-        raise ValueError('Distance method must be a function or a string.')
+        raise ValueError("Distance method must be a function or a string.")
     return method
 
 
 def distance(A, B, metric='riemann'):
-    """Distance between SPD matrices according to a metric.
+    """Distance between matrices according to a metric.
 
-    Compute the distance between two SPD matrices A and B according to a
-    metric, or between a set of SPD matrices A and a SPD matrix B.
+    Compute the distance between two matrices A and B according to a metric
+    [1]_, or between a set of matrices A and another matrix B.
 
     Parameters
     ----------
     A : ndarray, shape (n, n) or shape (n_matrices, n, n)
-        First SPD matrix.
+        First matrix, or set of matrices.
     B : ndarray, shape (n, n)
-        Second SPD matrix.
+        Second matrix.
     metric : string, default='riemann'
         The metric for distance, can be: 'euclid', 'harmonic', 'kullback',
         'kullback_right', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
@@ -281,6 +343,14 @@ def distance(A, B, metric='riemann'):
     -------
     d : float or ndarray, shape (n_matrices, 1)
         The distance(s) between A and B.
+
+    References
+    ----------
+    .. [1] `Review of Riemannian distances and divergences, applied to
+        SSVEP-based BCI
+        <https://hal.archives-ouvertes.fr/LISV/hal-03015762v1>`_
+        S. Chevallier, E. K. Kalunga, Q. Barthélemy, E. Monacelli.
+        Neuroinformatics, Springer, 2021, 19 (1), pp.93-106
     """
     if callable(metric):
         distance_function = metric
@@ -308,9 +378,9 @@ def pairwise_distance(X, Y=None, metric='riemann'):
     Parameters
     ----------
     X : ndarray, shape (n_matrices_X, n, n)
-        First set of SPD matrices.
+        First set of matrices.
     Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
-        Second set of SPD matrices. If None, Y is set to X.
+        Second set of matrices. If None, Y is set to X.
     metric : string, default='riemann'
         The metric for distance, can be: 'euclid', 'harmonic', 'kullback',
         'kullback_right', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
