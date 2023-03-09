@@ -1,4 +1,4 @@
-""" Tangent space for SPD matrices. """
+"""Tangent space for SPD/HPD matrices."""
 
 import numpy as np
 
@@ -7,17 +7,17 @@ from .mean import mean_covariance
 
 
 def _check_dimensions(X, Cref):
-    n_channels_1, n_channels_2 = X.shape[-2:]
-    n_channels_3, n_channels_4 = Cref.shape
-    if not (n_channels_1 == n_channels_2 == n_channels_3 == n_channels_4):
+    n_1, n_2 = X.shape[-2:]
+    n_3, n_4 = Cref.shape
+    if not (n_1 == n_2 == n_3 == n_4):
         raise ValueError("Inputs have incompatible dimensions.")
 
 
 def exp_map_euclid(X, Cref):
-    r"""Project matrices back to SPD manifold by Euclidean exponential map.
+    r"""Project matrices back to manifold by Euclidean exponential map.
 
-    The projection of a matrix X back to the SPD manifold with Euclidean
-    exponential map according to a reference matrix
+    The projection of a matrix X from tangent space to manifold
+    with Euclidean exponential map according to a reference matrix
     :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
@@ -25,15 +25,15 @@ def exp_map_euclid(X, Cref):
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_channels, n_channels)
+    X : ndarray, shape (..., n, m)
         Matrices in tangent space.
-    Cref : ndarray, shape (n_channels, n_channels)
-        The reference SPD matrix.
+    Cref : ndarray, shape (n, m)
+        The reference matrix.
 
     Returns
     -------
-    X_original : ndarray, shape (..., n_channels, n_channels)
-        SPD matrices.
+    X_original : ndarray, shape (..., n, m)
+        Matrices in manifold.
 
     Notes
     -----
@@ -43,10 +43,10 @@ def exp_map_euclid(X, Cref):
 
 
 def exp_map_logeuclid(X, Cref):
-    r"""Project matrices back to SPD manifold by Log-Euclidean exponential map.
+    r"""Project matrices back to manifold by Log-Euclidean exponential map.
 
-    The projection of a matrix X back to the SPD manifold with Log-Euclidean
-    exponential map according to a reference matrix
+    The projection of a matrix X from tangent space to SPD/HPD manifold
+    with Log-Euclidean exponential map according to a reference SPD/HPD matrix
     :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
@@ -55,15 +55,15 @@ def exp_map_logeuclid(X, Cref):
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_channels, n_channels)
+    X : ndarray, shape (..., n, n)
         Matrices in tangent space.
-    Cref : ndarray, shape (n_channels, n_channels)
-        The reference SPD matrix.
+    Cref : ndarray, shape (n, n)
+        The reference SPD/HPD matrix.
 
     Returns
     -------
-    X_original : ndarray, shape (..., n_channels, n_channels)
-        SPD matrices.
+    X_original : ndarray, shape (..., n, n)
+        Matrices in SPD/HPD manifold.
 
     Notes
     -----
@@ -73,10 +73,10 @@ def exp_map_logeuclid(X, Cref):
 
 
 def exp_map_riemann(X, Cref, Cm12=False):
-    r"""Project matrices back to SPD manifold by Riemannian exponential map.
+    r"""Project matrices back to manifold by Riemannian exponential map.
 
-    The projection of a matrix X back to the SPD manifold with Riemannian
-    exponential map according to a reference matrix
+    The projection of a matrix X from tangent space to SPD/HPD manifold
+    with Riemannian exponential map according to a reference SPD/HPD matrix
     :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
@@ -92,17 +92,17 @@ def exp_map_riemann(X, Cref, Cm12=False):
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_channels, n_channels)
+    X : ndarray, shape (..., n, n)
         Matrices in tangent space.
-    Cref : ndarray, shape (n_channels, n_channels)
-        The reference SPD matrix.
+    Cref : ndarray, shape (n, n)
+        The reference SPD/HPD matrix.
     Cm12 : bool, default=False
         If True, it returns the full Riemannian exponential map.
 
     Returns
     -------
-    X_original : ndarray, shape (..., n_channels, n_channels)
-        SPD matrices.
+    X_original : ndarray, shape (..., n, n)
+        Matrices in SPD/HPD manifold.
 
     Notes
     -----
@@ -116,10 +116,10 @@ def exp_map_riemann(X, Cref, Cm12=False):
 
 
 def log_map_euclid(X, Cref):
-    r"""Project SPD matrices in tangent space by Euclidean logarithmic map.
+    r"""Project matrices in tangent space by Euclidean logarithmic map.
 
-    The projection of a SPD matrix X in the tangent space by Euclidean
-    logarithmic map according to a reference matrix
+    The projection of a matrix X from manifold to tangent space
+    by Euclidean logarithmic map according to a reference matrix
     :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
@@ -127,29 +127,28 @@ def log_map_euclid(X, Cref):
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_channels, n_channels)
-        SPD matrices.
-    Cref : ndarray, shape (n_channels, n_channels)
-        The reference SPD matrix.
+    X : ndarray, shape (..., n, m)
+        Matrices in manidold.
+    Cref : ndarray, shape (n, m)
+        The reference matrix.
 
     Returns
     -------
-    X_new : ndarray, shape (..., n_channels, n_channels)
-        SPD matrices projected in tangent space.
+    X_new : ndarray, shape (..., n, m)
+        Matrices projected in tangent space.
 
     Notes
     -----
     .. versionadded:: 0.4
     """
-    _check_dimensions(X, Cref)
     return X - Cref
 
 
 def log_map_logeuclid(X, Cref):
-    r"""Project SPD matrices in tangent space by Log-Euclidean logarithmic map.
+    r"""Project matrices in tangent space by Log-Euclidean logarithmic map.
 
-    The projection of a SPD matrix X in the tangent space by Log-Euclidean
-    logarithmic map according to a reference matrix
+    The projection of a matrix X from SPD/HPD manifold to tangent space
+    by Log-Euclidean logarithmic map according to a SPD/HPD reference matrix
     :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
@@ -157,15 +156,15 @@ def log_map_logeuclid(X, Cref):
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_channels, n_channels)
-        SPD matrices.
-    Cref : ndarray, shape (n_channels, n_channels)
+    X : ndarray, shape (..., n, n)
+        Matrices in SPD/HPD manidold.
+    Cref : ndarray, shape (n, n)
         The reference SPD matrix.
 
     Returns
     -------
-    X_new : ndarray, shape (..., n_channels, n_channels)
-        SPD matrices projected in tangent space.
+    X_new : ndarray, shape (..., n, n)
+        Matrices projected in tangent space.
 
     Notes
     -----
@@ -178,8 +177,8 @@ def log_map_logeuclid(X, Cref):
 def log_map_riemann(X, Cref, C12=False):
     r"""Project SPD matrices in tangent space by Riemannian logarithmic map.
 
-    The projection of a SPD matrix X in the tangent space by Riemannian
-    logarithmic map according to a reference matrix
+    The projection of a matrix X from SPD/HPD manifold to tangent space
+    by Riemannian logarithmic map according to a SPD/HPD reference matrix
     :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
@@ -195,17 +194,17 @@ def log_map_riemann(X, Cref, C12=False):
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_channels, n_channels)
-        SPD matrices.
-    Cref : ndarray, shape (n_channels, n_channels)
-        The reference SPD matrix.
+    X : ndarray, shape (..., n, n)
+        Matrices in SPD/HPD manidold.
+    Cref : ndarray, shape (n, n)
+        The reference SPD/HPD matrix.
     C12 : bool, default=False
         If True, it returns the full Riemannian logarithmic map.
 
     Returns
     -------
-    X_new : ndarray, shape (..., n_channels, n_channels)
-        SPD matrices projected in tangent space.
+    X_new : ndarray, shape (..., n, n)
+        Matrices projected in tangent space.
 
     Notes
     -----
@@ -221,22 +220,22 @@ def log_map_riemann(X, Cref, C12=False):
 
 
 def upper(X):
-    r"""Return the weighted upper triangular part of symmetric matrices.
+    r"""Return the weighted upper triangular part of matrices.
 
     This function computes the minimal representation of a matrix in tangent
-    space [1]_: it keeps the upper triangular part of the symmetric matrix and
-    vectorizes it by applying unity weight for diagonal elements and
+    space [1]_: it keeps the upper triangular part of the symmetric/Hermitian
+    matrix and vectorizes it by applying unity weight for diagonal elements and
     :math:`\sqrt{2}` weight for out-of-diagonal elements.
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_channels, n_channels)
-        Symmetric matrices.
+    X : ndarray, shape (..., n, n)
+        Symmetric/Hermitian matrices.
 
     Returns
     -------
-    T : ndarray, shape (..., n_channels * (n_channels + 1) / 2)
-        Weighted upper triangular parts of symmetric matrices.
+    T : ndarray, shape (..., n * (n + 1) / 2)
+        Weighted upper triangular parts of symmetric/Hermitian matrices.
 
     Notes
     -----
@@ -249,10 +248,9 @@ def upper(X):
         O. Tuzel, F. Porikli, and P. Meer. IEEE Transactions on Pattern
         Analysis and Machine Intelligence, Volume 30, Issue 10, October 2008.
     """
-    n_channels = X.shape[-1]
-    idx = np.triu_indices_from(np.empty((n_channels, n_channels)))
-    coeffs = (np.sqrt(2) * np.triu(np.ones((n_channels, n_channels)), 1) +
-              np.eye(n_channels))[idx]
+    n = X.shape[-1]
+    idx = np.triu_indices_from(np.empty((n, n)))
+    coeffs = (np.sqrt(2) * np.triu(np.ones((n, n)), 1) + np.eye(n))[idx]
     T = coeffs * X[..., idx[0], idx[1]]
     return T
 
@@ -260,18 +258,18 @@ def upper(X):
 def unupper(T):
     """Inverse upper function.
 
-    This function is the inverse of upper function: it computes symmetric
-    matrices from their weighted upper triangular parts.
+    This function is the inverse of upper function: it reconstructs symmetric/
+    Hermitian matrices from their weighted upper triangular parts.
 
     Parameters
     ----------
-    T : ndarray, shape (..., n_channels * (n_channels + 1) / 2)
-        Weighted upper triangular parts of symmetric matrices.
+    T : ndarray, shape (..., n * (n + 1) / 2)
+        Weighted upper triangular parts of symmetric/Hermitian matrices.
 
     Returns
     -------
-    X : ndarray, shape (..., n_channels, n_channels)
-        Symmetric matrices.
+    X : ndarray, shape (..., n, n)
+        Symmetric/Hermitian matrices.
 
     See Also
     --------
@@ -282,35 +280,35 @@ def unupper(T):
     .. versionadded:: 0.4
     """
     dims = T.shape
-    n_channels = int((np.sqrt(1 + 8 * dims[-1]) - 1) / 2)
-    X = np.empty((*dims[:-1], n_channels, n_channels))
-    idx = np.triu_indices_from(np.empty((n_channels, n_channels)))
+    n = int((np.sqrt(1 + 8 * dims[-1]) - 1) / 2)
+    X = np.empty((*dims[:-1], n, n), dtype=T.dtype)
+    idx = np.triu_indices_from(np.empty((n, n)))
     X[..., idx[0], idx[1]] = T
-    idx = np.triu_indices_from(np.empty((n_channels, n_channels)), k=1)
+    idx = np.triu_indices_from(np.empty((n, n)), k=1)
     X[..., idx[0], idx[1]] /= np.sqrt(2)
-    X[..., idx[1], idx[0]] = X[..., idx[0], idx[1]]
+    X[..., idx[1], idx[0]] = X[..., idx[0], idx[1]].conj()
     return X
 
 
 def tangent_space(X, Cref, *, metric='riemann'):
-    """Transform SPD matrices into tangent vectors.
+    """Transform matrices into tangent vectors.
 
-    Transform SPD matrices into tangent vectors, according to a reference
+    Transform matrices into tangent vectors, according to a reference
     matrix Cref and to a specific logarithmic map.
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_channels, n_channels)
-        SPD matrices.
-    Cref : ndarray, shape (n_channels, n_channels)
-        The reference SPD matrix.
+    X : ndarray, shape (..., n, n)
+        Matrices in manidold.
+    Cref : ndarray, shape (n, n)
+        The reference matrix.
     metric : string, default='riemann'
         The metric used for logarithmic map, can be: 'euclid', 'logeuclid',
         'riemann'.
 
     Returns
     -------
-    T : ndarray, shape (..., n_channels * (n_channels + 1) / 2)
+    T : ndarray, shape (..., n * (n + 1) / 2)
         Tangent vectors.
 
     See Also
@@ -332,25 +330,25 @@ def tangent_space(X, Cref, *, metric='riemann'):
 
 
 def untangent_space(T, Cref, *, metric='riemann'):
-    """Transform tangent vectors back to SPD matrices.
+    """Transform tangent vectors back to matrices.
 
-    Transform tangent vectors back to SPD matrices, according to a reference
+    Transform tangent vectors back to matrices, according to a reference
     matrix Cref and to a specific exponential map.
 
     Parameters
     ----------
-    T : ndarray, shape (..., n_channels * (n_channels + 1) / 2)
+    T : ndarray, shape (..., n * (n + 1) / 2)
         Tangent vectors.
-    Cref : ndarray, shape (n_channels, n_channels)
-        The reference SPD matrix.
+    Cref : ndarray, shape (n, n)
+        The reference matrix.
     metric : string, default='riemann'
         The metric used for exponential map, can be: 'euclid', 'logeuclid',
         'riemann'.
 
     Returns
     -------
-    X : ndarray, shape (..., n_channels, n_channels)
-        SPD matrices.
+    X : ndarray, shape (..., n, n)
+        Matrices in manidold.
 
     See Also
     --------
@@ -373,21 +371,22 @@ def untangent_space(T, Cref, *, metric='riemann'):
 ###############################################################################
 
 
+# NOT IN API
 def transport(Covs, Cref, metric='riemann'):
     """Parallel transport of a set of SPD matrices towards a reference matrix.
 
     Parameters
     ----------
-    Covs : ndarray, shape (n_matrices, n_channels, n_channels)
+    Covs : ndarray, shape (n_matrices, n, n)
         Set of SPD matrices.
-    Cref : ndarray, shape (n_channels, n_channels)
+    Cref : ndarray, shape (n, n)
         The reference SPD matrix.
     metric : string, default='riemann'
         The metric used for mean, can be: 'euclid', 'logeuclid', 'riemann'.
 
     Returns
     -------
-    out : ndarray, shape (n_matrices, n_channels, n_channels)
+    out : ndarray, shape (n_matrices, n, n)
         Set of transported SPD matrices.
     """
     C = mean_covariance(Covs, metric=metric)
