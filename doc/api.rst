@@ -231,6 +231,7 @@ Distances
     distance_logeuclid
     distance_riemann
     distance_wasserstein
+    pairwise_distance
 
     distance_mahalanobis
 

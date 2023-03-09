@@ -10,14 +10,14 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.5.dev
 --------
 
-- Correct :func:`pyriemann.utils.distance.pairwise_distance` for non-symmetric metrics. :pr:`229` by :user:`qbarthelemy`
+- Fix :func:`pyriemann.utils.distance.pairwise_distance` for non-symmetric metrics. :pr:`229` by :user:`qbarthelemy`
 
-- Correct :func:`pyriemann.utils.mean.mean_covariances` used with keyword arguments. :pr:`230` by :user:`qbarthelemy`
+- Fix :func:`pyriemann.utils.mean.mean_covariance` used with keyword arguments. :pr:`230` by :user:`qbarthelemy`
 
 - Add functions to test HPD and HPSD matrices, :func:`pyriemann.utils.test.is_herm_pos_def` and :func:`pyriemann.utils.test.is_herm_pos_semi_def`. :pr:`231` by :user:`qbarthelemy`
 
-- Add function :func:`pyriemann.datasets.simulated.make_matrices` to generate SPD, SPSD, HPD and HPSD matrices.
-  Deprecate function :func:`pyriemann.datasets.simulated.make_covariances`. :pr:`232` by :user:`qbarthelemy`
+- Add function :func:`pyriemann.datasets.make_matrices` to generate SPD, SPSD, HPD and HPSD matrices.
+  Deprecate function :func:`pyriemann.datasets.make_covariances`. :pr:`232` by :user:`qbarthelemy`
 
 - Add tests for matrix operators and distances for HPD matrices, complete doc and add references. :pr:`234` by :user:`qbarthelemy`
 
