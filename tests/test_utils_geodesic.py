@@ -27,64 +27,74 @@ def get_geod_name():
         yield gn
 
 
-@pytest.mark.parametrize(
-    "geodesic_func", [geodesic_euclid, geodesic_logeuclid, geodesic_riemann]
-)
-class GeodesicFuncTestCase:
-    def test_simple_mat(self, geodesic_func, get_covmats):
-        n_channels = 3
-        if geodesic_func is geodesic_euclid:
-            A = 1.0 * np.eye(n_channels)
-            B = 2.0 * np.eye(n_channels)
-            Ctrue = 1.5 * np.eye(n_channels)
-        else:
-            A = 0.5 * np.eye(n_channels)
-            B = 2 * np.eye(n_channels)
-            Ctrue = np.eye(n_channels)
-        self.geodesic_0(geodesic_func, A, B)
-        self.geodesic_1(geodesic_func, A, B)
-        self.geodesic_middle(geodesic_func, A, B, Ctrue)
-
-    def test_random_mat(self, geodesic_func, get_covmats):
-        n_matrices, n_channels = 2, 5
-        covmats = get_covmats(n_matrices, n_channels)
-        A, B = covmats[0], covmats[1]
-        if geodesic_func is geodesic_euclid:
-            Ctrue = mean_euclid(covmats)
-        elif geodesic_func is geodesic_logeuclid:
-            Ctrue = mean_logeuclid(covmats)
-        elif geodesic_func is geodesic_riemann:
-            Ctrue = mean_riemann(covmats)
-        self.geodesic_0(geodesic_func, A, B)
-        self.geodesic_1(geodesic_func, A, B)
-        self.geodesic_middle(geodesic_func, A, B, Ctrue)
+def geodesic_0(gfun, A, B):
+    assert gfun(A, B, 0) == approx(A)
 
 
-class TestGeodesicFunc(GeodesicFuncTestCase):
-    def geodesic_0(self, geodesic_func, A, B):
-        assert geodesic_func(A, B, 0) == approx(A)
-
-    def geodesic_1(self, geodesic_func, A, B):
-        assert geodesic_func(A, B, 1) == approx(B)
-
-    def geodesic_middle(self, geodesic_func, A, B, Ctrue):
-        assert geodesic_func(A, B, 0.5) == approx(Ctrue)
+def geodesic_1(gfun, A, B):
+    assert gfun(A, B, 1) == approx(B)
 
 
-@pytest.mark.parametrize(
-    "geodesic_func", [geodesic_euclid, geodesic_logeuclid, geodesic_riemann]
-)
-def test_geodesic_ndarray(geodesic_func, get_covmats):
+def geodesic_middle(gfun, A, B, Ctrue):
+    assert gfun(A, B, 0.5) == approx(Ctrue)
+
+
+@pytest.mark.parametrize("gfun", get_geod_func())
+def test_geodesic_all_simple(gfun):
+    n_channels = 3
+    if gfun is geodesic_euclid:
+        A = 1.0 * np.eye(n_channels)
+        B = 2.0 * np.eye(n_channels)
+        Ctrue = 1.5 * np.eye(n_channels)
+    else:
+        A = 0.5 * np.eye(n_channels)
+        B = 2 * np.eye(n_channels)
+        Ctrue = np.eye(n_channels)
+    geodesic_0(gfun, A, B)
+    geodesic_1(gfun, A, B)
+    geodesic_middle(gfun, A, B, Ctrue)
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("gfun", get_geod_func())
+def test_geodesic_all_random(kind, gfun, get_mats):
+    n_matrices, n_channels = 2, 5
+    mats = get_mats(n_matrices, n_channels, kind)
+    A, B = mats[0], mats[1]
+    if gfun is geodesic_euclid:
+        Ctrue = mean_euclid(mats)
+    elif gfun is geodesic_logeuclid:
+        Ctrue = mean_logeuclid(mats)
+    elif gfun is geodesic_riemann:
+        Ctrue = mean_riemann(mats)
+    geodesic_0(gfun, A, B)
+    geodesic_1(gfun, A, B)
+    geodesic_middle(gfun, A, B, Ctrue)
+
+
+@pytest.mark.parametrize("complex_valued", [True, False])
+def test_geodesic_euclid(rndstate, complex_valued):
+    """Test Euclidean geodesic for generic matrices"""
+    n_matrices, n_dim0, n_dim1 = 2, 3, 4
+    mats = rndstate.randn(n_matrices, n_dim0, n_dim1)
+    if complex_valued:
+        mats = mats + 1j * rndstate.randn(n_matrices, n_dim0, n_dim1)
+    A, B = mats[0], mats[1]
+    assert geodesic_euclid(A, B).shape == A.shape
+
+
+@pytest.mark.parametrize("metric", get_geod_name())
+def test_geodesic_wrapper_ndarray(metric, get_covmats):
     n_matrices, n_channels = 5, 3
     A = get_covmats(n_matrices, n_channels)
     B = get_covmats(n_matrices, n_channels)
-    assert geodesic_func(A[0], B[0]).shape == A[0].shape  # 2D arrays
-    assert geodesic_func(A, B).shape == A.shape  # 3D arrays
+    assert geodesic(A[0], B[0], .3, metric=metric).shape == A[0].shape
+    assert geodesic(A, B, .2, metric=metric).shape == A.shape  # 3D arrays
 
-    n_sets = 5
+    n_sets = 4
     C = np.asarray([A for _ in range(n_sets)])
     D = np.asarray([B for _ in range(n_sets)])
-    assert geodesic_func(C, D).shape == C.shape  # 4D arrays
+    assert geodesic(C, D, .7, metric=metric).shape == C.shape  # 4D arrays
 
 
 @pytest.mark.parametrize("metric", get_geod_name())
@@ -98,15 +108,15 @@ def test_geodesic_wrapper_simple(metric):
     assert geodesic(A, B, 0.5, metric=metric) == approx(np.eye(n_channels))
 
 
-@pytest.mark.parametrize("met, gfunc", zip(get_geod_name(), get_geod_func()))
-def test_geodesic_wrapper_random(met, gfunc, get_covmats):
+@pytest.mark.parametrize("metric, gfun", zip(get_geod_name(), get_geod_func()))
+def test_geodesic_wrapper_random(metric, gfun, get_covmats):
     n_matrices, n_channels = 2, 5
-    covmats = get_covmats(n_matrices, n_channels)
-    A, B = covmats[0], covmats[1]
-    if gfunc is geodesic_euclid:
-        Ctrue = mean_euclid(covmats)
-    elif gfunc is geodesic_logeuclid:
-        Ctrue = mean_logeuclid(covmats)
-    elif gfunc is geodesic_riemann:
-        Ctrue = mean_riemann(covmats)
-    assert geodesic(A, B, 0.5, metric=met) == approx(Ctrue)
+    mats = get_covmats(n_matrices, n_channels)
+    A, B = mats[0], mats[1]
+    if gfun is geodesic_euclid:
+        Ctrue = mean_euclid(mats)
+    elif gfun is geodesic_logeuclid:
+        Ctrue = mean_logeuclid(mats)
+    elif gfun is geodesic_riemann:
+        Ctrue = mean_riemann(mats)
+    assert geodesic(A, B, 0.5, metric=metric) == approx(Ctrue)
