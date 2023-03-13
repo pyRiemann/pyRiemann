@@ -60,8 +60,8 @@ def check_weights(weights, n_weights, *, check_positivity=False):
         weights = np.asarray(weights)
         if weights.shape != (n_weights,):
             raise ValueError(
-                'Weights do not have the good shape. Should be (%d,) but got '
-                '%s.' % (n_weights, weights.shape,)
+                "Weights do not have the good shape. Should be (%d,) but got "
+                "%s." % (n_weights, weights.shape,)
             )
         if check_positivity and any(weights <= 0):
             raise ValueError("Weights must be strictly positive.")
