@@ -249,6 +249,8 @@ def upper(X):
         Analysis and Machine Intelligence, Volume 30, Issue 10, October 2008.
     """
     n = X.shape[-1]
+    if X.shape[-2] != n:
+        raise ValueError("Matrices must be square")
     idx = np.triu_indices_from(np.empty((n, n)))
     coeffs = (np.sqrt(2) * np.triu(np.ones((n, n)), 1) + np.eye(n))[idx]
     T = coeffs * X[..., idx[0], idx[1]]

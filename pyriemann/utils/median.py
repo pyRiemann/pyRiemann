@@ -1,4 +1,4 @@
-"""Medians of SPD matrices."""
+"""Medians of SPD/HPD matrices."""
 
 import warnings
 import numpy as np
@@ -16,19 +16,20 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
     :math:`d_E` to all matrices [1]_ [2]_:
 
     .. math::
-        \arg \min_{\mathbf{M}} \sum_i w_i d_E (\mathbf{M}, \mathbf{X}_i)
+        \arg \min_{\mathbf{M}} \sum_i w_i \ d_E (\mathbf{M}, \mathbf{X}_i)
 
-    It is different from the marginal median provided by NumPy [3]_.
+    Geometric median is different from the marginal median provided by NumPy
+    [3]_.
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_channels, n_channels)
+    X : ndarray, shape (n_matrices, n, m)
         Set of matrices.
     tol : float, default=10e-6
         The tolerance to stop the iterative algorithm.
     maxiter : int, default=50
         The maximum number of iterations.
-    init : None | ndarray, shape (n_channels, n_channels), default=None
+    init : None | ndarray, shape (n, m), default=None
         A matrix used to initialize the iterative algorithm.
         If None, the weighted Euclidean mean is used.
     weights : None | ndarray, shape (n_matrices,), default=None
@@ -36,7 +37,7 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
 
     Returns
     -------
-    M : ndarray, shape (n_channels, n_channels)
+    M : ndarray, shape (n, m)
         Euclidean geometric median.
 
     Notes
@@ -85,31 +86,32 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
         if crit <= tol:
             break
     else:
-        warnings.warn('Convergence not reached')
+        warnings.warn("Convergence not reached")
 
     return M
 
 
 def median_riemann(X, *, tol=10e-6, maxiter=50, init=None, weights=None,
                    step_size=1):
-    r"""Affine-invariant Riemannian geometric median of SPD matrices.
+    r"""Affine-invariant Riemannian geometric median of SPD/HPD matrices.
 
     The affine-invariant Riemannian geometric median minimizes the sum of
-    affine-invariant Riemannian distances :math:`d_R` to all SPD matrices [1]_:
+    affine-invariant Riemannian distances :math:`d_R` to all SPD/HPD matrices
+    [1]_:
 
     .. math::
-        \arg \min_{\mathbf{M}} \sum_i w_i d_R (\mathbf{M}, \mathbf{X}_i)
+        \arg \min_{\mathbf{M}} \sum_i w_i \ d_R (\mathbf{M}, \mathbf{X}_i)
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices.
+    X : ndarray, shape (n_matrices, n, n)
+        Set of SPD/HPD matrices.
     tol : float, default=10e-6
         The tolerance to stop the gradient descent.
     maxiter : int, default=50
         The maximum number of iterations.
-    init : None | ndarray, shape (n_channels, n_channels), default=None
-        A SPD matrix used to initialize the gradient descent.
+    init : None | ndarray, shape (n, n), default=None
+        A SPD/HPD matrix used to initialize the gradient descent.
         If None, the weighted Euclidean mean is used.
     weights : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
@@ -118,7 +120,7 @@ def median_riemann(X, *, tol=10e-6, maxiter=50, init=None, weights=None,
 
     Returns
     -------
-    M : ndarray, shape (n_channels, n_channels)
+    M : ndarray, shape (n, n)
         Affine-invariant Riemannian geometric median.
 
     Notes
@@ -140,7 +142,7 @@ def median_riemann(X, *, tol=10e-6, maxiter=50, init=None, weights=None,
     """
     if not 0 < step_size <= 2:
         raise ValueError(
-            'Value step_size must be included in (0, 2] (Got %d)' % step_size)
+            f"Value step_size must be included in (0, 2] (Got {step_size})")
     n_matrices, _, _ = X.shape
     weights = check_weights(weights, n_matrices)
     if init is None:
@@ -167,6 +169,6 @@ def median_riemann(X, *, tol=10e-6, maxiter=50, init=None, weights=None,
         if crit <= tol:
             break
     else:
-        warnings.warn('Convergence not reached')
+        warnings.warn("Convergence not reached")
 
     return M

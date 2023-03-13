@@ -8,33 +8,36 @@ from pyriemann.utils.median import (
 )
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("median", [median_euclid, median_riemann])
-def test_median_shape(median, get_covmats):
+def test_median_shape(kind, median, get_mats):
     """Test the shape of median"""
-    n_matrices, n_channels = 5, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    C = median(covmats)
+    n_matrices, n_channels = 3, 4
+    mats = get_mats(n_matrices, n_channels, kind)
+    C = median(mats)
     assert C.shape == (n_channels, n_channels)
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("median", [median_euclid, median_riemann])
-def test_median_shape_with_init(median, get_covmats):
+def test_median_shape_with_init(kind, median, get_mats):
     """Test the shape of median with init"""
     n_matrices, n_channels = 5, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    C = median(covmats, init=covmats[0])
+    mats = get_mats(n_matrices, n_channels, kind)
+    C = median(mats, init=mats[0])
     assert C.shape == (n_channels, n_channels)
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("median", [median_euclid, median_riemann])
-def test_median_weight_zero(median, get_covmats):
+def test_median_weight_zero(kind, median, get_mats):
     """Setting one weight to almost 0 it's almost like not passing the mat"""
     n_matrices, n_channels, w_val = 5, 3, 2
-    covmats = get_covmats(n_matrices, n_channels)
+    mats = get_mats(n_matrices, n_channels, kind)
     w = w_val * np.ones(n_matrices)
-    C = median(covmats[1:], weights=w[1:])
+    C = median(mats[1:], weights=w[1:])
     w[0] = 1e-12
-    Cw = median(covmats, weights=w)
+    Cw = median(mats, weights=w)
     assert C == approx(Cw, rel=1e-6, abs=1e-8)
 
 
@@ -42,9 +45,9 @@ def test_median_weight_zero(median, get_covmats):
 def test_median_warning_convergence(median, get_covmats):
     """Test warning for convergence not reached"""
     n_matrices, n_channels = 3, 2
-    covmats = get_covmats(n_matrices, n_channels)
+    mats = get_covmats(n_matrices, n_channels)
     with pytest.warns(UserWarning):
-        median(covmats, maxiter=0)
+        median(mats, maxiter=0)
 
 
 @pytest.mark.parametrize("n_values", [3, 5, 7])
@@ -56,9 +59,19 @@ def test_median_euclid_1d(n_values, rndstate):
     assert np_med == approx(py_med)
 
 
+@pytest.mark.parametrize("complex_valued", [True, False])
+def test_median_euclid(rndstate, complex_valued):
+    """Test the Euclidean median for generic matrices"""
+    n_matrices, n_dim0, n_dim1 = 10, 3, 4
+    mats = rndstate.randn(n_matrices, n_dim0, n_dim1)
+    if complex_valued:
+        mats = mats + 1j * rndstate.randn(n_matrices, n_dim0, n_dim1)
+    assert median_euclid(mats).shape == (n_dim0, n_dim1)
+
+
 @pytest.mark.parametrize("step_size", [0, 2.5])
 def test_median_riemann_stepsize_error(step_size, get_covmats):
     n_matrices, n_channels = 1, 2
-    covmats = get_covmats(n_matrices, n_channels)
+    mats = get_covmats(n_matrices, n_channels)
     with pytest.raises(ValueError):
-        median_riemann(covmats, step_size=step_size)
+        median_riemann(mats, step_size=step_size)
