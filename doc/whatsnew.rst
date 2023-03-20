@@ -49,6 +49,8 @@ v0.5 (Jun 2023)
 
 - Fix :func:`pyriemann.datasets.sample_gaussian_spd` used with ``sampling_method=rejection`` on 2D matrices. :pr:`250` by :user:`mhurte`
 
+- Add a generic :func:`pyriemann.utils.ajd.ajd` function, enhance func:`pyriemann.utils.ajd.ajd_pham` to process HPD matrices, and complete tests. :pr:`237` by :user:`qbarthelemy`
+
 v0.4 (Feb 2023)
 ---------------
 

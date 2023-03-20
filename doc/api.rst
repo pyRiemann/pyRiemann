@@ -338,6 +338,7 @@ Aproximate Joint Diagonalization
 .. autosummary::
     :toctree: generated/
 
+    ajd
     ajd_pham
     rjd
     uwedge
