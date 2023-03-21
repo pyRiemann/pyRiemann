@@ -300,13 +300,13 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
             C1[:, i] = np.sum(Ms[:, i:n_matrices_x_n:n] * Rs, axis=1)
 
         D0 = B * B.T - np.outer(np.diag(B), np.diag(B))
-        A0 = (C1 * B - np.diag(np.diag(B)) @ C1.T) / (D0 + np.eye(n))
-        A0 += np.eye(n)
+        A0 = (C1 * B - np.diag(B)[:, np.newaxis] * C1.T) / (D0 + np.eye(n))
+        A0.flat[:: n + 1] += 1
         V = np.linalg.solve(A0, V)
 
         Raux = V @ M[:, 0:n] @ V.T
         aux = 1. / np.sqrt(np.abs(np.diag(Raux)))
-        V = np.diag(aux) @ V
+        V = aux[:, np.newaxis] * V
 
         for k in range(n_matrices):
             ini = k * n
@@ -326,26 +326,28 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
 ###############################################################################
 
 
-ajd_methods = {
+ajd_functions = {
     'ajd_pham': ajd_pham,
     'rjd': rjd,
     'uwedge': uwedge,
 }
 
 
-def _check_ajd_method(method):
-    """Check ajd methods."""
+def _check_ajd_function(method):
+    """Check ajd function."""
     if isinstance(method, str):
-        if method not in ajd_methods.keys():
-            raise ValueError("Unknown ajd method")
+        if method not in ajd_functions.keys():
+            raise ValueError(f"Unknown ajd method '{method}'. Must be one of "
+                             f"{' '.join(ajd_functions.keys())}")
         else:
-            method = ajd_methods[method]
+            method = ajd_functions[method]
     elif not hasattr(method, '__call__'):
-        raise ValueError("Ajd method must be a function or a string.")
+        raise ValueError("Ajd method must be a function or a string "
+                         f"(Got {type(method)}.")
     return method
 
 
-def ajd(X, method="ajd_pham", init=None, eps=1e-6, n_iter_max=50, **kwargs):
+def ajd(X, method="ajd_pham", init=None, eps=1e-6, n_iter_max=100, **kwargs):
     """Aproximate joint diagonalization (AJD) according to a method.
 
     Parameters
@@ -359,7 +361,7 @@ def ajd(X, method="ajd_pham", init=None, eps=1e-6, n_iter_max=50, **kwargs):
         Initialization for the diagonalizer.
     eps : float, default=1e-6
         Tolerance for stopping criterion.
-    n_iter_max : int, default=50
+    n_iter_max : int, default=100
         The maximum number of iterations to reach convergence.
     kwargs : dict
         The keyword arguments passed to the sub function.
@@ -381,14 +383,12 @@ def ajd(X, method="ajd_pham", init=None, eps=1e-6, n_iter_max=50, **kwargs):
     rjd
     uwedge
     """
-    if callable(method):
-        V, D = method(X, init=init, eps=eps, n_iter_max=n_iter_max, **kwargs)
-    else:
-        V, D = ajd_methods[method](
-            X,
-            init=init,
-            eps=eps,
-            n_iter_max=n_iter_max,
-            **kwargs,
-        )
+    ajd_function = _check_ajd_function(method)
+    V, D = ajd_function(
+        X,
+        init=init,
+        eps=eps,
+        n_iter_max=n_iter_max,
+        **kwargs,
+    )
     return V, D

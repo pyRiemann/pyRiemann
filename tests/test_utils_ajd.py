@@ -61,6 +61,12 @@ def test_ajd_init_error(method, get_covmats):
         ajd(mats, method=method, init=np.ones((2, 2)))
 
 
+@pytest.mark.parametrize("method", ["abc", 42])
+def test_ajd_method_error(method):
+    with pytest.raises(ValueError):
+        ajd(np.ones((3, 2, 2)), method=method)
+
+
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_ajd_pham(kind, get_mats):
     """Test pham's ajd"""
