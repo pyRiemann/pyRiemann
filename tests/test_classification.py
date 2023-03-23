@@ -123,7 +123,7 @@ def test_metric_dict_error(classif, mean, dist, get_covmats, get_labels):
     labels = get_labels(n_matrices, n_classes)
     covmats = get_covmats(n_matrices, n_channels)
     clf = classif(metric={"mean": mean, "distance": dist})
-    with pytest.raises((TypeError, KeyError)):
+    with pytest.raises((TypeError, KeyError, ValueError)):
         clf.fit(covmats, labels).predict(covmats)
 
 

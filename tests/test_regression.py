@@ -48,10 +48,10 @@ class TestRegressor(RegressorTestCase):
 @pytest.mark.parametrize("mean", ["faulty", 42])
 @pytest.mark.parametrize("dist", ["not_real", 27])
 def test_metric_dict_error(regres, mean, dist, get_covmats, get_targets):
-    with pytest.raises((TypeError, KeyError)):
-        n_matrices, n_channels = 6, 3
-        targets = get_targets(n_matrices)
-        covmats = get_covmats(n_matrices, n_channels)
+    n_matrices, n_channels = 6, 3
+    targets = get_targets(n_matrices)
+    covmats = get_covmats(n_matrices, n_channels)
+    with pytest.raises(ValueError):
         clf = regres(metric={"mean": mean, "distance": dist})
         clf.fit(covmats, targets).predict(covmats)
 
@@ -70,10 +70,10 @@ def test_metric_dist(regres, mean, dist, get_covmats, get_targets):
 @pytest.mark.parametrize("regres", regs)
 @pytest.mark.parametrize("metric", [42, "faulty", {"foo": "bar"}])
 def test_metric_wrong_keys(regres, metric, get_covmats, get_targets):
+    n_matrices, n_channels = 6, 3
+    targets = get_targets(n_matrices)
+    covmats = get_covmats(n_matrices, n_channels)
     with pytest.raises((TypeError, KeyError, ValueError)):
-        n_matrices, n_channels = 6, 3
-        targets = get_targets(n_matrices)
-        covmats = get_covmats(n_matrices, n_channels)
         clf = regres(metric=metric)
         clf.fit(covmats, targets).predict(covmats)
 
@@ -96,10 +96,10 @@ def test_metric_str(regres, metric, get_covmats, get_targets):
 
 @pytest.mark.parametrize("dist", ["not_real", 42])
 def test_knn_dict_dist(dist, get_covmats, get_targets):
+    n_matrices, n_channels = 6, 3
+    targets = get_targets(n_matrices)
+    covmats = get_covmats(n_matrices, n_channels)
     with pytest.raises(KeyError):
-        n_matrices, n_channels = 6, 3
-        targets = get_targets(n_matrices)
-        covmats = get_covmats(n_matrices, n_channels)
         clf = KNearestNeighborRegressor(metric={"distance": dist})
         clf.fit(covmats, targets).predict(covmats)
 

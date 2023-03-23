@@ -297,7 +297,7 @@ def distance_wasserstein(A, B):
 ###############################################################################
 
 
-distance_methods = {
+distance_functions = {
     'euclid': distance_euclid,
     'harmonic': distance_harmonic,
     'kullback': distance_kullback,
@@ -310,16 +310,17 @@ distance_methods = {
 }
 
 
-def _check_distance_method(method):
-    """Check distance methods."""
-    if isinstance(method, str):
-        if method not in distance_methods.keys():
-            raise ValueError("Unknown distance method")
+def _check_distance_function(metric):
+    """Check distance function."""
+    if isinstance(metric, str):
+        if metric not in distance_functions.keys():
+            raise ValueError(f"Unknown distance metric '{metric}'")
         else:
-            method = distance_methods[method]
-    elif not hasattr(method, '__call__'):
-        raise ValueError("Distance method must be a function or a string.")
-    return method
+            metric = distance_functions[metric]
+    elif not hasattr(metric, '__call__'):
+        raise ValueError("Distance metric must be a function or a string "
+                         f"(Got {type(metric)}.")
+    return metric
 
 
 def distance(A, B, metric='riemann'):
@@ -352,10 +353,7 @@ def distance(A, B, metric='riemann'):
         S. Chevallier, E. K. Kalunga, Q. Barthélemy, E. Monacelli.
         Neuroinformatics, Springer, 2021, 19 (1), pp.93-106
     """
-    if callable(metric):
-        distance_function = metric
-    else:
-        distance_function = distance_methods[metric]
+    distance_function = _check_distance_function(metric)
 
     shape_A = A.shape
     if len(shape_A) == B.ndim:
@@ -431,11 +429,11 @@ def distance_mahalanobis(X, cov, mean=None):
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_vectors)
-        Multi-channel vectors.
-    cov : ndarray, shape (n_channels, n_channels)
+    X : ndarray, shape (n, n_vectors)
+        Vectors.
+    cov : ndarray, shape (n, n)
         Covariance matrix of the Gaussian distribution.
-    mean : None | ndarray, shape (n_channels, 1), default=None
+    mean : None | ndarray, shape (n, 1), default=None
         Mean of the Gaussian distribution. If None, distribution is considered
         as centered.
 

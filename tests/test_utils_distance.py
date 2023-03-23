@@ -6,7 +6,6 @@ import pytest
 from pytest import approx
 
 from pyriemann.utils.distance import (
-    _check_distance_method,
     distance_euclid,
     distance_harmonic,
     distance_kullback,
@@ -42,25 +41,31 @@ def get_dist_func():
 
 
 @pytest.mark.parametrize("dist", get_distances())
-def test_check_distance_str(dist):
-    _check_distance_method(dist)
+def test_distances_metric_str(dist, get_covmats):
+    n_matrices, n_channels = 2, 2
+    A = get_covmats(n_matrices, n_channels)
+    distance(A[0], A[1], metric=dist)
 
 
 @pytest.mark.parametrize("dist", get_dist_func())
-def test_check_distance_func(dist):
-    _check_distance_method(dist)
+def test_distances_metric_func(dist, get_covmats):
+    n_matrices, n_channels = 2, 2
+    A = get_covmats(n_matrices, n_channels)
+    distance(A[0], A[1], metric=dist)
 
 
-def test_check_distance_error():
+def test_distances_metric_error(get_covmats):
+    n_matrices, n_channels = 2, 2
+    A = get_covmats(n_matrices, n_channels)
     with pytest.raises(ValueError):
-        _check_distance_method("universe")
+        distance(A[0], A[1], metric="universe")
     with pytest.raises(ValueError):
-        _check_distance_method(42)
+        distance(A[0], A[1], metric=42)
 
 
 @pytest.mark.parametrize("dist", get_dist_func())
 def test_distances_all_error(dist, get_covmats):
-    n_matrices, n_channels = 5, 3
+    n_matrices, n_channels = 3, 3
     A = get_covmats(n_matrices, n_channels)
     with pytest.raises(ValueError):
         dist(A, A[0])
