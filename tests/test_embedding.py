@@ -65,7 +65,7 @@ class TestEmbedding(EmbeddingTestCase):
         assert embd.embedding_.shape == (n_matrices - 1, n_components)
 
     def embd_metric_error(self, embedding, covmats, n_components):
-        with pytest.raises(KeyError):
+        with pytest.raises(ValueError):
             embd = embedding(n_components=n_components, metric='foooo')
             embd.fit(covmats)
 
