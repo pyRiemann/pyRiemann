@@ -265,8 +265,8 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
     .. [2] `Fast Approximate Joint Diagonalization Incorporating Weight
         Matrices
         <https://ieeexplore.ieee.org/document/4671095>`_
-        P. Tichavsky and A. Yeredor. IEEE Transactions on Signal Processing,
-        Volume 57, Issue 3, 2009.
+        P. Tichavsky and A. Yeredor. IEEE Trans Signal Process, 57(3), pp.
+        878 - 891, 2009.
     """
     n_matrices, _, _ = X.shape
     # reshape input matrix
@@ -350,6 +350,9 @@ def _check_ajd_function(method):
 def ajd(X, method="ajd_pham", init=None, eps=1e-6, n_iter_max=100, **kwargs):
     """Aproximate joint diagonalization (AJD) according to a method.
 
+    Compute the AJD of a set of matrices according to a method [1]_, estimating
+    the joint diagonalizer matrix, diagonalizing the set as much as possible.
+
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n, n)
@@ -382,6 +385,14 @@ def ajd(X, method="ajd_pham", init=None, eps=1e-6, n_iter_max=100, **kwargs):
     ajd_pham
     rjd
     uwedge
+
+    References
+    ----------
+    .. [1] `Joint Matrices Decompositions and Blind Source Separation: A survey
+        of methods, identification, and applications
+        <http://library.utia.cas.cz/separaty/2014/SI/tichavsky-0427607.pdf>`_
+        G. Chabriel, M. Kleinsteuber, E. Moreau, H. Shen; P. Tichavsky and A.
+        Yeredor. IEEE Signal Process Mag, 31(3), pp. 34-43, 2014.
     """
     ajd_function = _check_ajd_function(method)
     V, D = ajd_function(
