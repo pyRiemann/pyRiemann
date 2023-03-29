@@ -17,7 +17,7 @@ def exp_map_euclid(X, Cref):
     r"""Project matrices back to manifold by Euclidean exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
-    to manifold with Euclidean exponential map 
+    to manifold with Euclidean exponential map
     according to a reference matrix :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
