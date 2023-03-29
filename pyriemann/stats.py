@@ -171,7 +171,7 @@ class PermutationModel(BasePermutation):
         - an iterable yielding train, test splits.
 
         For integer/None inputs, if the estimator is a classifier and `y` is
-        either binary or multiclass, :class:`StratifiedKFold` is used. In all
+        either binary or multiclass, `StratifiedKFold` is used. In all
         other cases, `KFold` is used.
     scoring : string or callable or None, default=None
         A string (see model evaluation documentation) or

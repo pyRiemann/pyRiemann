@@ -25,7 +25,8 @@ def _matrix_operator(C, operator):
 def expm(C):
     r"""Exponential of SPD/HPD matrices.
 
-    The symmetric matrix exponential of a SPD/HPD matrix C is defined by:
+    The symmetric matrix exponential of a SPD/HPD matrix
+    :math:`\mathbf{C}` is defined by:
 
     .. math::
         \mathbf{D} = \mathbf{V} \exp{(\mathbf{\Lambda})} \mathbf{V}^H
@@ -49,8 +50,8 @@ def expm(C):
 def invsqrtm(C):
     r"""Inverse square root of SPD/HPD matrices.
 
-    The symmetric matrix inverse square root of a SPD/HPD matrix C is
-    defined by:
+    The symmetric matrix inverse square root of a SPD/HPD matrix
+    :math:`\mathbf{C}` is defined by:
 
     .. math::
         \mathbf{D} =
@@ -76,7 +77,8 @@ def invsqrtm(C):
 def logm(C):
     r"""Logarithm of SPD/HPD matrices.
 
-    The symmetric matrix logarithm of a SPD/HPD matrix C is defined by:
+    The symmetric matrix logarithm of a SPD/HPD matrix
+    :math:`\mathbf{C}` is defined by:
 
     .. math::
         \mathbf{D} = \mathbf{V} \log{(\mathbf{\Lambda})} \mathbf{V}^H
@@ -100,8 +102,8 @@ def logm(C):
 def powm(C, alpha):
     r"""Power of SPD/HPD matrices.
 
-    The symmetric matrix power :math:`\alpha` of a SPD/HPD matrix C is defined
-    by:
+    The symmetric matrix power :math:`\alpha` of a SPD/HPD matrix
+    :math:`\mathbf{C}` is defined by:
 
     .. math::
         \mathbf{D} =
@@ -129,8 +131,8 @@ def powm(C, alpha):
 def sqrtm(C):
     r"""Square root of SPD/HPD matrices.
 
-    The symmetric matrix square root of a SPD/HPD matrix C is defined
-    by:
+    The symmetric matrix square root of a SPD/HPD matrix
+    :math:`\mathbf{C}` is defined by:
 
     .. math::
         \mathbf{D} =
