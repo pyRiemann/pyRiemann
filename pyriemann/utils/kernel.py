@@ -10,8 +10,8 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
     r"""Euclidean kernel between two sets of matrices.
 
     Calculates the Euclidean kernel matrix math:`\mathbf{K}` of inner products
-    of two sets math:`\mathbf{X}` and math:`\mathbf{Y}` of matrices by
-    calculating pairwise:
+    of two sets math:`\mathbf{X}` and math:`\mathbf{Y}` of matrices in
+    :math:`\mathbb{R}^{n \times m}` by calculating pairwise products:
 
     .. math::
         \mathbf{K}_{i,j} = \text{tr}(\mathbf{X}_i^T \mathbf{Y}_j)
@@ -50,7 +50,8 @@ def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
 
     Calculates the Log-Euclidean kernel matrix math:`\mathbf{K}` of inner
     products of two sets math:`\mathbf{X}` and math:`\mathbf{Y}` of SPD
-    matrices by calculating pairwise [1]_:
+    matrices in :math:`\mathbb{R}^{n \times n}` by calculating pairwise
+    products [1]_:
 
     .. math::
         \mathbf{K}_{i,j} = \text{tr}(\log(\mathbf{X}_i) \log(\mathbf{Y}_j))
@@ -97,8 +98,8 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
 
     Calculates the affine-invariant Riemannian kernel matrix math:`\mathbf{K}`
     of inner products of two sets math:`\mathbf{X}` and math:`\mathbf{Y}` of
-    SPD matrices on tangent space of :math:`\mathbf{C}_\text{ref}` by
-    calculating pairwise [1]_:
+    SPD matrices in :math:`\mathbb{R}^{n \times n}` on tangent space at
+    :math:`\mathbf{C}_\text{ref}` by calculating pairwise products [1]_:
 
     .. math::
         \mathbf{K}_{i,j} = \text{tr}( \log( \mathbf{C}_\text{ref}^{-1/2}
@@ -195,7 +196,7 @@ def kernel(X, Y=None, *, Cref=None, metric='riemann', reg=1e-10):
     """Kernel matrix between matrices according to a specified metric.
 
     Calculates the kernel matrix K of inner products of two sets X and Y of
-    matrices on the tangent space of Cref according to a specified metric.
+    matrices on the tangent space at Cref according to a specified metric.
 
     Parameters
     ----------
