@@ -104,8 +104,9 @@ class Xdawn(BaseEstimator, TransformerMixin):
 
         Cx = self.baseline_cov
         if Cx is None:
+            tmp = X.transpose((1, 2, 0))
             Cx = np.asarray(self.estimator_fn(
-                X.reshape(n_channels, n_times * n_trials)
+                tmp.reshape(n_channels, n_times * n_trials)
             ))
 
         self.evokeds_ = []
