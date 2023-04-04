@@ -122,10 +122,10 @@ def geodesic(A, B, alpha, metric='riemann'):
     C : ndarray, shape (..., n, n)
         Matrices on the geodesic.
     """
-    options = {
+    geodesic_functions = {
         'euclid': geodesic_euclid,
         'logeuclid': geodesic_logeuclid,
         'riemann': geodesic_riemann,
     }
-    C = options[metric](A, B, alpha)
+    C = geodesic_functions[metric](A, B, alpha)
     return C

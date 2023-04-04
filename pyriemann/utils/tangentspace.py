@@ -320,12 +320,12 @@ def tangent_space(X, Cref, *, metric='riemann'):
     log_map_riemann
     upper
     """
-    options = {
+    log_map_functions = {
         'euclid': log_map_euclid,
         'logeuclid': log_map_logeuclid,
         'riemann': log_map_riemann,
     }
-    X_ = options[metric](X, Cref)
+    X_ = log_map_functions[metric](X, Cref)
     T = upper(X_)
 
     return T
@@ -360,12 +360,12 @@ def untangent_space(T, Cref, *, metric='riemann'):
     exp_map_riemann
     """
     X_ = unupper(T)
-    options = {
+    exp_map_functions = {
         'euclid': exp_map_euclid,
         'logeuclid': exp_map_logeuclid,
         'riemann': exp_map_riemann,
     }
-    X = options[metric](X_, Cref)
+    X = exp_map_functions[metric](X_, Cref)
 
     return X
 
