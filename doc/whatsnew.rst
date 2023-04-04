@@ -23,7 +23,7 @@ v0.5.dev
 
 - Enhance tangent space module to process HPD matrices, and complete tests. :pr:`236` by :user:`qbarthelemy`
 
-- Fix regression introduced in :func:`pyriemann.spatialfilters.Xdawn`. :pr:`242` by :user:`qbarthelemy`
+- Fix regression introduced in :func:`pyriemann.spatialfilters.Xdawn` by :pr:`214`. :pr:`242` by :user:`qbarthelemy`
 
 
 v0.4 (Feb 2023)
