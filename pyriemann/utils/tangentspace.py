@@ -16,9 +16,9 @@ def _check_dimensions(X, Cref):
 def exp_map_euclid(X, Cref):
     r"""Project matrices back to manifold by Euclidean exponential map.
 
-    The projection of a matrix X from tangent space to manifold
-    with Euclidean exponential map according to a reference matrix
-    :math:`\mathbf{C}_\text{ref}` is:
+    The projection of a matrix :math:`\mathbf{X}` from tangent space
+    to manifold with Euclidean exponential map
+    according to a reference matrix :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
         \mathbf{X}_\text{original} = \mathbf{X} + \mathbf{C}_\text{ref}
@@ -45,9 +45,9 @@ def exp_map_euclid(X, Cref):
 def exp_map_logeuclid(X, Cref):
     r"""Project matrices back to manifold by Log-Euclidean exponential map.
 
-    The projection of a matrix X from tangent space to SPD/HPD manifold
-    with Log-Euclidean exponential map according to a reference SPD/HPD matrix
-    :math:`\mathbf{C}_\text{ref}` is:
+    The projection of a matrix :math:`\mathbf{X}` from tangent space
+    to SPD/HPD manifold with Log-Euclidean exponential map
+    according to a reference SPD/HPD matrix :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
         \mathbf{X}_\text{original} =
@@ -75,9 +75,9 @@ def exp_map_logeuclid(X, Cref):
 def exp_map_riemann(X, Cref, Cm12=False):
     r"""Project matrices back to manifold by Riemannian exponential map.
 
-    The projection of a matrix X from tangent space to SPD/HPD manifold
-    with Riemannian exponential map according to a reference SPD/HPD matrix
-    :math:`\mathbf{C}_\text{ref}` is:
+    The projection of a matrix :math:`\mathbf{X}` from tangent space
+    to SPD/HPD manifold with Riemannian exponential map
+    according to a reference SPD/HPD matrix :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
         \mathbf{X}_\text{original} = \mathbf{C}_\text{ref}^{1/2}
@@ -118,9 +118,9 @@ def exp_map_riemann(X, Cref, Cm12=False):
 def log_map_euclid(X, Cref):
     r"""Project matrices in tangent space by Euclidean logarithmic map.
 
-    The projection of a matrix X from manifold to tangent space
-    by Euclidean logarithmic map according to a reference matrix
-    :math:`\mathbf{C}_\text{ref}` is:
+    The projection of a matrix :math:`\mathbf{X}` from manifold
+    to tangent space by Euclidean logarithmic map
+    according to a reference matrix :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
         \mathbf{X}_\text{new} = \mathbf{X} - \mathbf{C}_\text{ref}
@@ -147,9 +147,9 @@ def log_map_euclid(X, Cref):
 def log_map_logeuclid(X, Cref):
     r"""Project matrices in tangent space by Log-Euclidean logarithmic map.
 
-    The projection of a matrix X from SPD/HPD manifold to tangent space
-    by Log-Euclidean logarithmic map according to a SPD/HPD reference matrix
-    :math:`\mathbf{C}_\text{ref}` is:
+    The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
+    to tangent space by Log-Euclidean logarithmic map
+    according to a SPD/HPD reference matrix :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
         \mathbf{X}_\text{new} = \log(\mathbf{X}) - \log(\mathbf{C}_\text{ref})
@@ -175,11 +175,11 @@ def log_map_logeuclid(X, Cref):
 
 
 def log_map_riemann(X, Cref, C12=False):
-    r"""Project SPD matrices in tangent space by Riemannian logarithmic map.
+    r"""Project matrices in tangent space by Riemannian logarithmic map.
 
-    The projection of a matrix X from SPD/HPD manifold to tangent space
-    by Riemannian logarithmic map according to a SPD/HPD reference matrix
-    :math:`\mathbf{C}_\text{ref}` is:
+    The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
+    to tangent space by Riemannian logarithmic map
+    according to a SPD/HPD reference matrix :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
         \mathbf{X}_\text{new} = \log ( \mathbf{C}_\text{ref}^{-1/2}
@@ -320,12 +320,12 @@ def tangent_space(X, Cref, *, metric='riemann'):
     log_map_riemann
     upper
     """
-    options = {
+    log_map_functions = {
         'euclid': log_map_euclid,
         'logeuclid': log_map_logeuclid,
         'riemann': log_map_riemann,
     }
-    X_ = options[metric](X, Cref)
+    X_ = log_map_functions[metric](X, Cref)
     T = upper(X_)
 
     return T
@@ -360,12 +360,12 @@ def untangent_space(T, Cref, *, metric='riemann'):
     exp_map_riemann
     """
     X_ = unupper(T)
-    options = {
+    exp_map_functions = {
         'euclid': exp_map_euclid,
         'logeuclid': exp_map_logeuclid,
         'riemann': exp_map_riemann,
     }
-    X = options[metric](X_, Cref)
+    X = exp_map_functions[metric](X_, Cref)
 
     return X
 

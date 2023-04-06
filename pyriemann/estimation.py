@@ -27,7 +27,7 @@ class Covariances(BaseEstimator, TransformerMixin):
     estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
-    **kwds : optional keyword parameters
+    **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
 
     See Also
@@ -111,7 +111,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     svd : int | None, default=None
         If not None, number of components of SVD used to reduce prototype
         responses.
-    **kwds : optional keyword parameters
+    **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
 
     Attributes
@@ -252,7 +252,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
     baseline_cov : array, shape (n_channels, n_channels) | None, default=None
         Baseline covariance for `Xdawn` spatial filtering,
         see :class:`pyriemann.spatialfilters.Xdawn`.
-    **kwds : optional keyword parameters
+    **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
 
     Attributes
@@ -366,7 +366,7 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
     estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
-    **kwds : optional keyword parameters
+    **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
 
     Notes
@@ -653,7 +653,7 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
     estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
-    **kwds : optional keyword parameters
+    **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
 
     See Also
@@ -760,7 +760,7 @@ class Kernels(BaseEstimator, TransformerMixin):
         The number of jobs to use for the computation [2]_. This works by
         breaking down the pairwise matrix into n_jobs even slices and computing
         them in parallel.
-    **kwds : optional keyword parameters
+    **kwds : dict
         Any further parameters are passed directly to the kernel function [2]_.
 
     See Also

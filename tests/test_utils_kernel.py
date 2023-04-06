@@ -18,11 +18,11 @@ rker_fct = [kernel_euclid, kernel_logeuclid, kernel_riemann]
 
 
 @pytest.mark.parametrize("ker", rker_fct)
-def test_kernel(ker, rndstate, get_covmats):
+def test_kernel_x_x(ker, rndstate, get_covmats):
     """Test Kernel build"""
     n_matrices, n_channels = 12, 3
-    cov = get_covmats(n_matrices, n_channels)
-    K = ker(cov, cov)
+    X = get_covmats(n_matrices, n_channels)
+    K = ker(X, X)
     assert is_spsd(K)
     assert K.shape == (n_matrices, n_matrices)
 
@@ -31,10 +31,10 @@ def test_kernel(ker, rndstate, get_covmats):
 def test_kernel_cref(ker, rndstate, get_covmats):
     """Test Kernel reference"""
     n_matrices, n_channels = 5, 3
-    cov = get_covmats(n_matrices, n_channels)
-    cref = mean_covariance(cov, metric=ker)
-    K = kernel(cov, cov, metric=ker)
-    K1 = kernel(cov, cov, Cref=cref, metric=ker)
+    X = get_covmats(n_matrices, n_channels)
+    cref = mean_covariance(X, metric=ker)
+    K = kernel(X, X, metric=ker)
+    K1 = kernel(X, X, Cref=cref, metric=ker)
     assert_array_equal(K, K1)
 
 
@@ -42,10 +42,9 @@ def test_kernel_cref(ker, rndstate, get_covmats):
 def test_kernel_x_y(ker, rndstate, get_covmats):
     """Test Kernel for different X and Y."""
     n_matrices, n_channels = 5, 3
-    cov = get_covmats(n_matrices, n_channels)
-    cov2 = get_covmats(n_matrices + 1, n_channels)
-    K = kernel(cov, cov2, metric=ker)
-
+    X = get_covmats(n_matrices, n_channels)
+    Y = get_covmats(n_matrices + 1, n_channels)
+    K = kernel(X, Y, metric=ker)
     assert K.shape == (n_matrices, n_matrices + 1)
 
 
@@ -53,41 +52,49 @@ def test_kernel_x_y(ker, rndstate, get_covmats):
 def test_metric_string(ker, rndstate, get_covmats):
     """Test generic Kernel function."""
     n_matrices, n_channels = 5, 3
-    cov = get_covmats(n_matrices, n_channels)
-    K = globals()[f'kernel_{ker}'](cov)
-    K1 = kernel(cov, metric=ker)
+    X = get_covmats(n_matrices, n_channels)
+    K = globals()[f'kernel_{ker}'](X)
+    K1 = kernel(X, metric=ker)
     assert_array_equal(K, K1)
 
 
 def test_metric_string_error(rndstate, get_covmats):
     """Test generic Kernel function error raise."""
     n_matrices, n_channels = 5, 3
-    cov = get_covmats(n_matrices, n_channels)
+    X = get_covmats(n_matrices, n_channels)
     with pytest.raises(ValueError):
-        kernel(cov, metric='foo')
+        kernel(X, metric='foo')
 
 
 @pytest.mark.parametrize("ker", rker_str)
 def test_input_dimension_error(ker, rndstate, get_covmats):
     """Test errors for incorrect dimension."""
     n_matrices, n_channels = 5, 3
-    cov = get_covmats(n_matrices, n_channels)
-    cov2 = get_covmats(n_matrices, n_channels+1)
-    cref = get_covmats(1, n_channels+1)[0]
+    X = get_covmats(n_matrices, n_channels)
+    Y = get_covmats(n_matrices, n_channels + 1)
+    cref = get_covmats(1, n_channels + 1)[0]
     if ker == 'riemann':
         with pytest.raises(AssertionError):
-            kernel(cov, Cref=cref, metric=ker)
+            kernel(X, Cref=cref, metric=ker)
     with pytest.raises(AssertionError):
-        kernel(cov, cov2, metric=ker)
+        kernel(X, Y, metric=ker)
+
+
+def test_euclid(rndstate):
+    """Test the Euclidean kernel for generic matrices"""
+    n_matrices_X, n_matrices_Y, n_dim0, n_dim1 = 10, 8, 3, 4
+    X = rndstate.randn(n_matrices_X, n_dim0, n_dim1)
+    Y = rndstate.randn(n_matrices_Y, n_dim0, n_dim1)
+    assert kernel_euclid(X, Y).shape == (n_matrices_X, n_matrices_Y)
 
 
 def test_riemann_correctness(rndstate, get_covmats):
     """Test example correctness of Riemann kernel."""
     n_matrices, n_channels = 5, 3
-    cov = get_covmats(n_matrices, n_channels)
-    K = kernel_riemann(cov, Cref=eye(n_channels), reg=0)
+    X = get_covmats(n_matrices, n_channels)
+    K = kernel_riemann(X, Cref=eye(n_channels), reg=0)
 
-    log_cov = logm(cov)
-    tensor = tensordot(log_cov, log_cov.T, axes=1)
+    log_X = logm(X)
+    tensor = tensordot(log_X, log_X.T, axes=1)
     K1 = trace(tensor, axis1=1, axis2=2)
     assert_array_almost_equal(K, K1)
