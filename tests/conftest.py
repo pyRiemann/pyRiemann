@@ -57,6 +57,15 @@ def get_mats(rndstate):
 
 
 @pytest.fixture
+def get_mats_params(rndstate):
+    def _gen_mat_params(n_matrices, n_dim, kind):
+        return make_matrices(n_matrices, n_dim, kind, rndstate,
+                             return_params=True, eigvecs_same=True)
+
+    return _gen_mat_params
+
+
+@pytest.fixture
 def get_labels():
     def _get_labels(n_matrices, n_classes):
         return np.arange(n_classes).repeat(n_matrices // n_classes)
