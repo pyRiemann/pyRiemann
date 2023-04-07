@@ -6,14 +6,14 @@ from .base import sqrtm, invsqrtm, powm, logm, expm
 def geodesic_euclid(A, B, alpha=0.5):
     r"""Euclidean geodesic between matrices.
 
-    The matrix at the position math:`\alpha` on the Euclidean geodesic
-    between two matrices math:`\mathbf{A}` and :math:`\mathbf{B}` is:
+    The matrix at the position :math:`\alpha` on the Euclidean geodesic
+    between two matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is:
 
     .. math::
         \mathbf{C} = (1-\alpha) \mathbf{A} + \alpha \mathbf{B}
 
-    math:`\mathbf{C}` is equal to math:`\mathbf{A}` if math:`\alpha` = 0,
-    and math:`\mathbf{B}` if math:`\alpha` = 1.
+    :math:`\mathbf{C}` is equal to :math:`\mathbf{A}` if :math:`\alpha` = 0,
+    and :math:`\mathbf{B}` if :math:`\alpha` = 1.
 
     Parameters
     ----------
@@ -35,15 +35,15 @@ def geodesic_euclid(A, B, alpha=0.5):
 def geodesic_logeuclid(A, B, alpha=0.5):
     r"""Log-Euclidean geodesic between SPD/HPD matrices.
 
-    The matrix at the position math:`\alpha` on the Log-Euclidean geodesic
-    between two SPD/HPD matrices math:`\mathbf{A}` and :math:`\mathbf{B}` is:
+    The matrix at the position :math:`\alpha` on the Log-Euclidean geodesic
+    between two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is:
 
     .. math::
         \mathbf{C} = \exp \left( (1-\alpha) \log(\mathbf{A})
                      + \alpha \log(\mathbf{B}) \right)
 
-    math:`\mathbf{C}` is equal to math:`\mathbf{A}` if math:`\alpha` = 0,
-    and math:`\mathbf{B}` if math:`\alpha` = 1.
+    :math:`\mathbf{C}` is equal to :math:`\mathbf{A}` if :math:`\alpha` = 0,
+    and :math:`\mathbf{B}` if :math:`\alpha` = 1.
 
     Parameters
     ----------
@@ -65,16 +65,16 @@ def geodesic_logeuclid(A, B, alpha=0.5):
 def geodesic_riemann(A, B, alpha=0.5):
     r"""Affine-invariant Riemannian geodesic between SPD/HPD matrices.
 
-    The matrix at the position math:`\alpha` on the affine-invariant Riemannian
-    geodesic between two SPD/HPD matrices math:`\mathbf{A}` and
+    The matrix at the position :math:`\alpha` on the affine-invariant Riemannian
+    geodesic between two SPD/HPD matrices :math:`\mathbf{A}` and
     :math:`\mathbf{B}` is:
 
     .. math::
         \mathbf{C} = \mathbf{A}^{1/2} \left( \mathbf{A}^{-1/2} \mathbf{B}
                      \mathbf{A}^{-1/2} \right)^\alpha \mathbf{A}^{1/2}
 
-    math:`\mathbf{C}` is equal to math:`\mathbf{A}` if math:`\alpha` = 0,
-    and math:`\mathbf{B}` if math:`\alpha` = 1.
+    :math:`\mathbf{C}` is equal to :math:`\mathbf{A}` if :math:`\alpha` = 0,
+    and :math:`\mathbf{B}` if :math:`\alpha` = 1.
 
     Parameters
     ----------

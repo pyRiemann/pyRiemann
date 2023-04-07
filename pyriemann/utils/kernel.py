@@ -9,8 +9,8 @@ from .mean import mean_riemann
 def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
     r"""Euclidean kernel between two sets of matrices.
 
-    Calculates the Euclidean kernel matrix math:`\mathbf{K}` of inner products
-    of two sets math:`\mathbf{X}` and math:`\mathbf{Y}` of matrices in
+    Calculates the Euclidean kernel matrix :math:`\mathbf{K}` of inner products
+    of two sets :math:`\mathbf{X}` and :math:`\mathbf{Y}` of matrices in
     :math:`\mathbb{R}^{n \times m}` by calculating pairwise products:
 
     .. math::
@@ -48,8 +48,8 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
 def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
     r"""Log-Euclidean kernel between two sets of SPD matrices.
 
-    Calculates the Log-Euclidean kernel matrix math:`\mathbf{K}` of inner
-    products of two sets math:`\mathbf{X}` and math:`\mathbf{Y}` of SPD
+    Calculates the Log-Euclidean kernel matrix :math:`\mathbf{K}` of inner
+    products of two sets :math:`\mathbf{X}` and :math:`\mathbf{Y}` of SPD
     matrices in :math:`\mathbb{R}^{n \times n}` by calculating pairwise
     products [1]_:
 
@@ -96,8 +96,8 @@ def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
 def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
     r"""Affine-invariant Riemannian kernel between two sets of SPD matrices.
 
-    Calculates the affine-invariant Riemannian kernel matrix math:`\mathbf{K}`
-    of inner products of two sets math:`\mathbf{X}` and math:`\mathbf{Y}` of
+    Calculates the affine-invariant Riemannian kernel matrix :math:`\mathbf{K}`
+    of inner products of two sets :math:`\mathbf{X}` and :math:`\mathbf{Y}` of
     SPD matrices in :math:`\mathbb{R}^{n \times n}` on tangent space at
     :math:`\mathbf{C}_\text{ref}` by calculating pairwise products [1]_:
 
