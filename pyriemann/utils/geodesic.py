@@ -6,7 +6,7 @@ from .base import sqrtm, invsqrtm, powm, logm, expm
 def geodesic_euclid(A, B, alpha=0.5):
     r"""Euclidean geodesic between matrices.
 
-    The matrix at the position :math:`\alpha` on the Euclidean geodesic
+    The matrix at position :math:`\alpha` on the Euclidean geodesic
     between two matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is:
 
     .. math::
@@ -35,7 +35,7 @@ def geodesic_euclid(A, B, alpha=0.5):
 def geodesic_logeuclid(A, B, alpha=0.5):
     r"""Log-Euclidean geodesic between SPD/HPD matrices.
 
-    The matrix at the position :math:`\alpha` on the Log-Euclidean geodesic
+    The matrix at position :math:`\alpha` on the Log-Euclidean geodesic
     between two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is:
 
     .. math::
@@ -65,7 +65,7 @@ def geodesic_logeuclid(A, B, alpha=0.5):
 def geodesic_riemann(A, B, alpha=0.5):
     r"""Affine-invariant Riemannian geodesic between SPD/HPD matrices.
 
-    The matrix at the position :math:`\alpha` on the affine-invariant Riemannian
+    The matrix at position :math:`\alpha` on the affine-invariant Riemannian
     geodesic between two SPD/HPD matrices :math:`\mathbf{A}` and
     :math:`\mathbf{B}` is:
 
