@@ -86,9 +86,6 @@ def mean_alm(covmats, tol=1e-14, maxiter=100, sample_weight=None):
                      X_1^{-\frac{1}{2}})^{\frac{1}{2}} X_1^{\frac{1}{2}}
 
     and requiring a high number of iterations.
-
-    This is the adaptation of the Matlab code proposed by Dario Bini and
-    Bruno Iannazzo, http://bezout.dm.unipi.it/software/mmtoolbox/ .
     Extremely slow, due to the recursive formulation.
 
     Parameters
