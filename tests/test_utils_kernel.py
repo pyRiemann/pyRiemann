@@ -1,4 +1,4 @@
-from numpy import eye
+import numpy as np
 from numpy.core import tensordot, trace
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
@@ -80,19 +80,22 @@ def test_input_dimension_error(ker, rndstate, get_covmats):
         kernel(X, Y, metric=ker)
 
 
-def test_euclid(rndstate):
+@pytest.mark.parametrize("n_dim0, n_dim1", [(4, 4), (4, 5), (5, 4)])
+def test_euclid(n_dim0, n_dim1, rndstate):
     """Test the Euclidean kernel for generic matrices"""
-    n_matrices_X, n_matrices_Y, n_dim0, n_dim1 = 10, 8, 3, 4
+    n_matrices_X, n_matrices_Y = 2, 3
     X = rndstate.randn(n_matrices_X, n_dim0, n_dim1)
     Y = rndstate.randn(n_matrices_Y, n_dim0, n_dim1)
-    assert kernel_euclid(X, Y).shape == (n_matrices_X, n_matrices_Y)
+    K = kernel_euclid(X, Y)
+    assert K.shape == (n_matrices_X, n_matrices_Y)
+    assert_array_almost_equal(K[0, 0], np.trace(X[0].T @ Y[0]))
 
 
 def test_riemann_correctness(rndstate, get_covmats):
     """Test example correctness of Riemann kernel."""
     n_matrices, n_channels = 5, 3
     X = get_covmats(n_matrices, n_channels)
-    K = kernel_riemann(X, Cref=eye(n_channels), reg=0)
+    K = kernel_riemann(X, Cref=np.eye(n_channels), reg=0)
 
     log_X = logm(X)
     tensor = tensordot(log_X, log_X.T, axes=1)

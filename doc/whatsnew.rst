@@ -25,6 +25,8 @@ v0.5.dev
 
 - Fix regression introduced in :func:`pyriemann.spatialfilters.Xdawn` by :pr:`214`. :pr:`242` by :user:`qbarthelemy`
 
+- Fix :func:`pyriemann.utils.kernel.kernel_euclid` applied on non-symmetric matrices. :pr:`244` by :user:`qbarthelemy`
+
 
 v0.4 (Feb 2023)
 ---------------

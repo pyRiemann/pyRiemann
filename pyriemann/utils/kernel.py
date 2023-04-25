@@ -183,7 +183,8 @@ def _apply_matrix_kernel(kernel_fct, X, Y=None, *, Cref=None, reg=1e-10):
         Y_ = kernel_fct(Y, Cref)
 
     # calculate scalar products: K[i,j] = np.trace(X_[i]^T @ Y_[j])
-    K = np.einsum('abc,dbc->ad', X_, Y_, optimize=True)
+    X_T = X_.transpose((0, 2, 1))
+    K = np.einsum('acb,dbc->ad', X_T, Y_, optimize=True)
 
     # regularization due to numerical errors
     if np.array_equal(X_, Y_):
