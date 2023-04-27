@@ -1,5 +1,4 @@
 import numpy as np
-from numpy.core import tensordot, trace
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
 
@@ -18,18 +17,19 @@ rker_fct = [kernel_euclid, kernel_logeuclid, kernel_riemann]
 
 
 @pytest.mark.parametrize("ker", rker_fct)
-def test_kernel_x_x(ker, rndstate, get_covmats):
-    """Test Kernel build"""
-    n_matrices, n_channels = 12, 3
+def test_kernel_x_x(ker, get_covmats):
+    """Test kernel build"""
+    n_matrices, n_channels = 7, 3
     X = get_covmats(n_matrices, n_channels)
     K = ker(X, X)
-    assert is_spsd(K)
     assert K.shape == (n_matrices, n_matrices)
+    assert is_spsd(K)
+    assert_array_almost_equal(K, ker(X))
 
 
 @pytest.mark.parametrize("ker", rker_str)
-def test_kernel_cref(ker, rndstate, get_covmats):
-    """Test Kernel reference"""
+def test_kernel_cref(ker, get_covmats):
+    """Test kernel reference"""
     n_matrices, n_channels = 5, 3
     X = get_covmats(n_matrices, n_channels)
     cref = mean_covariance(X, metric=ker)
@@ -39,18 +39,18 @@ def test_kernel_cref(ker, rndstate, get_covmats):
 
 
 @pytest.mark.parametrize("ker", rker_str)
-def test_kernel_x_y(ker, rndstate, get_covmats):
-    """Test Kernel for different X and Y."""
-    n_matrices, n_channels = 5, 3
-    X = get_covmats(n_matrices, n_channels)
-    Y = get_covmats(n_matrices + 1, n_channels)
+def test_kernel_x_y(ker, get_covmats):
+    """Test kernel for different X and Y"""
+    n_matrices_X, n_matrices_Y, n_channels = 6, 5, 3
+    X = get_covmats(n_matrices_X, n_channels)
+    Y = get_covmats(n_matrices_Y, n_channels)
     K = kernel(X, Y, metric=ker)
-    assert K.shape == (n_matrices, n_matrices + 1)
+    assert K.shape == (n_matrices_X, n_matrices_Y)
 
 
 @pytest.mark.parametrize("ker", rker_str)
-def test_metric_string(ker, rndstate, get_covmats):
-    """Test generic Kernel function."""
+def test_metric_string(ker, get_covmats):
+    """Test generic kernel function"""
     n_matrices, n_channels = 5, 3
     X = get_covmats(n_matrices, n_channels)
     K = globals()[f'kernel_{ker}'](X)
@@ -58,8 +58,8 @@ def test_metric_string(ker, rndstate, get_covmats):
     assert_array_equal(K, K1)
 
 
-def test_metric_string_error(rndstate, get_covmats):
-    """Test generic Kernel function error raise."""
+def test_metric_string_error(get_covmats):
+    """Test generic kernel function error raise"""
     n_matrices, n_channels = 5, 3
     X = get_covmats(n_matrices, n_channels)
     with pytest.raises(ValueError):
@@ -67,8 +67,8 @@ def test_metric_string_error(rndstate, get_covmats):
 
 
 @pytest.mark.parametrize("ker", rker_str)
-def test_input_dimension_error(ker, rndstate, get_covmats):
-    """Test errors for incorrect dimension."""
+def test_input_dimension_error(ker, get_covmats):
+    """Test errors for incorrect dimension"""
     n_matrices, n_channels = 5, 3
     X = get_covmats(n_matrices, n_channels)
     Y = get_covmats(n_matrices, n_channels + 1)
@@ -82,22 +82,27 @@ def test_input_dimension_error(ker, rndstate, get_covmats):
 
 @pytest.mark.parametrize("n_dim0, n_dim1", [(4, 4), (4, 5), (5, 4)])
 def test_euclid(n_dim0, n_dim1, rndstate):
-    """Test the Euclidean kernel for generic matrices"""
+    """Test Euclidean kernel for generic matrices"""
     n_matrices_X, n_matrices_Y = 2, 3
     X = rndstate.randn(n_matrices_X, n_dim0, n_dim1)
     Y = rndstate.randn(n_matrices_Y, n_dim0, n_dim1)
     K = kernel_euclid(X, Y)
     assert K.shape == (n_matrices_X, n_matrices_Y)
-    assert_array_almost_equal(K[0, 0], np.trace(X[0].T @ Y[0]))
+
+    K1 = np.empty((n_matrices_X, n_matrices_Y))
+    for i in range(n_matrices_X):
+        for j in range (n_matrices_Y):
+            K1[i, j] = np.trace(X[i].T @ Y[j])
+    assert_array_almost_equal(K, K1)
 
 
-def test_riemann_correctness(rndstate, get_covmats):
-    """Test example correctness of Riemann kernel."""
+def test_riemann_correctness(get_covmats):
+    """Test Riemannian kernel correctness"""
     n_matrices, n_channels = 5, 3
     X = get_covmats(n_matrices, n_channels)
     K = kernel_riemann(X, Cref=np.eye(n_channels), reg=0)
 
     log_X = logm(X)
-    tensor = tensordot(log_X, log_X.T, axes=1)
-    K1 = trace(tensor, axis1=1, axis2=2)
+    tensor = np.tensordot(log_X, log_X.T, axes=1)
+    K1 = np.trace(tensor, axis1=1, axis2=2)
     assert_array_almost_equal(K, K1)
