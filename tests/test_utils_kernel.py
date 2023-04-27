@@ -91,7 +91,7 @@ def test_euclid(n_dim0, n_dim1, rndstate):
 
     K1 = np.empty((n_matrices_X, n_matrices_Y))
     for i in range(n_matrices_X):
-        for j in range (n_matrices_Y):
+        for j in range(n_matrices_Y):
             K1[i, j] = np.trace(X[i].T @ Y[j])
     assert_array_almost_equal(K, K1)
 
