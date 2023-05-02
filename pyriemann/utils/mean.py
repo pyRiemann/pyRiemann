@@ -54,6 +54,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
     # init with AJD
     B = ajd_pham(covmats)[0]
 
+    eye_n = np.eye(n)
     crit = np.inf
     for _ in range(maxiter):
         J = np.einsum(
@@ -64,7 +65,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
         delta = np.real(np.diag(expm(J)))
         B = (np.abs(delta) ** -.5)[:, np.newaxis] * B
 
-        crit = distance_riemann(np.eye(n), np.diag(delta))
+        crit = distance_riemann(eye_n, np.diag(delta))
         if crit <= tol:
             break
     else:
@@ -362,6 +363,7 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10, maxiter=100):
 
     where :math:`\mathbf{A} \sharp_p \mathbf{B}` is the geodesic between
     matrices :math:`\mathbf{A}` and :math:`\mathbf{B}`.
+
     Parameters
     ----------
     covmats : ndarray, shape (n_matrices, n, n)
