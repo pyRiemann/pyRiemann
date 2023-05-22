@@ -198,7 +198,7 @@ ax[0].set_yticklabels(ch_names)
 pl = ax[0].plot(time, sig.T + eeg_offset.T, lw=0.75)
 labels = []
 
-ax[1].set(ylabel='Z-scores of distances to references')
+ax[1].set(xlabel='Time (s)', ylabel='Z-scores of distances to references')
 pl2 = ax[1].plot(covs_t, covs_z.T, lw=0.75)
 for c, l in enumerate(['RP'] + [*rpf_config]):
     pl2[c].set_label(l)
