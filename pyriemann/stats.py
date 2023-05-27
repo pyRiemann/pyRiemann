@@ -359,7 +359,7 @@ class PermutationDistance(BasePermutation):
         if self.mode == 'ftest':
             self.global_mean = mean_covariance(X, metric=self.mdm.metric_mean)
         elif self.mode == 'pairwise':
-            X = pairwise_distance(X, metric=self.mdm.metric_dist)**2
+            X = pairwise_distance(X, metric=self.mdm.metric_dist, squared=True)
         return X
 
     def _score_ftest(self, X, y):
@@ -372,16 +372,23 @@ class PermutationDistance(BasePermutation):
         between = 0
         for ix, classe in enumerate(mdm.classes_):
             di = distance(
-                covmeans[ix], self.global_mean, metric=mdm.metric_dist)**2
+                covmeans[ix],
+                self.global_mean,
+                metric=mdm.metric_dist,
+                squared=True,
+            )
             between += np.sum(y == classe) * di
         between /= (n_classes - 1)
 
         # estimates within class variability
         within = 0
         for ix, classe in enumerate(mdm.classes_):
-            within += (distance(
-                X[y == classe], covmeans[ix], metric=mdm.metric_dist)
-                ** 2).sum()
+            within += distance(
+                X[y == classe],
+                covmeans[ix],
+                metric=mdm.metric_dist,
+                squared=True,
+                ).sum()
         within /= (len(y) - n_classes)
 
         score = between / within
@@ -400,9 +407,12 @@ class PermutationDistance(BasePermutation):
 
         dist = 0
         for ix, classe in enumerate(mdm.classes_):
-            di = (distance(
-                X[y == classe], covmeans[ix], metric=mdm.metric_dist)
-                ** 2).mean()
+            di = distance(
+                X[y == classe],
+                covmeans[ix],
+                metric=mdm.metric_dist,
+                squared=True,
+            ).mean()
             dist += (di / np.sum(y == classe))
         score = mean_dist / np.sqrt(dist)
         return score
