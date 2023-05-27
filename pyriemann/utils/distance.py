@@ -149,7 +149,7 @@ def distance_kullback_right(A, B, squared=False):
 
 
 def distance_kullback_sym(A, B, squared=False):
-    """Symmetrized Kullback-Leibler divergence between SPD/HPD matrices.
+    r"""Symmetrized Kullback-Leibler divergence between SPD/HPD matrices.
 
     The symmetrized Kullback-Leibler divergence between two SPD/HPD matrices
     :math:`\mathbf{A}` and :math:`\mathbf{B}` is the sum of left and right

@@ -27,6 +27,7 @@ v0.5.dev
 
 - Fix :func:`pyriemann.utils.kernel.kernel_euclid` applied on non-symmetric matrices. :pr:`245` by :user:`qbarthelemy`
 
+- Add argument ``squared`` to all distances. :pr:`246` by :user:`qbarthelemy`
 
 v0.4 (Feb 2023)
 ---------------
