@@ -388,7 +388,7 @@ class PermutationDistance(BasePermutation):
                 covmeans[ix],
                 metric=mdm.metric_dist,
                 squared=True,
-                ).sum()
+            ).sum()
         within /= (len(y) - n_classes)
 
         score = between / within
