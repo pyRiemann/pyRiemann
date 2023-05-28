@@ -1,7 +1,7 @@
 from conftest import get_distances
 import numpy as np
 from numpy.testing import assert_array_almost_equal
-from scipy.spatial.distance import mahalanobis
+from scipy.spatial.distance import euclidean, mahalanobis
 import pytest
 from pytest import approx
 
@@ -40,18 +40,34 @@ def get_dist_func():
         yield df
 
 
-@pytest.mark.parametrize("dist", get_distances())
-def test_distances_metric_str(dist, get_covmats):
-    n_matrices, n_channels = 2, 2
-    A = get_covmats(n_matrices, n_channels)
-    distance(A[0], A[1], metric=dist)
+def callable_sp_euclidean(A, B, squared=False):
+    return euclidean(A.flatten(), B.flatten())
 
 
-@pytest.mark.parametrize("dist", get_dist_func())
-def test_distances_metric_func(dist, get_covmats):
-    n_matrices, n_channels = 2, 2
-    A = get_covmats(n_matrices, n_channels)
-    distance(A[0], A[1], metric=dist)
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize(
+    "metric, dist",
+    [
+        ("euclid", distance_euclid),
+        ("harmonic", distance_harmonic),
+        ("kullback", distance_kullback),
+        ("kullback_right", distance_kullback_right),
+        ("kullback_sym", distance_kullback_sym),
+        ("logdet", distance_logdet),
+        ("logeuclid", distance_logeuclid),
+        ("riemann", distance_riemann),
+        ("wasserstein", distance_wasserstein),
+        (callable_sp_euclidean, distance_euclid),
+    ],
+)
+def test_distances_metric(kind, metric, dist, get_mats):
+    """Test distance for metric"""
+    n_matrices, n_channels = 2, 3
+    mats = get_mats(n_matrices, n_channels, kind)
+    A, B = mats[0], mats[1]
+    d = distance(A, B, metric=metric)
+    dtrue = dist(A, B)
+    assert d == approx(dtrue)
 
 
 def test_distances_metric_error(get_covmats):
@@ -61,6 +77,15 @@ def test_distances_metric_error(get_covmats):
         distance(A[0], A[1], metric="universe")
     with pytest.raises(ValueError):
         distance(A[0], A[1], metric=42)
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("dist", get_dist_func())
+def test_distances_squared(kind, dist, get_mats):
+    n_matrices, n_channels = 2, 5
+    mats = get_mats(n_matrices, n_channels, kind)
+    A, B = mats[0], mats[1]
+    assert dist(A, B, squared=True) == approx(dist(A, B) ** 2)
 
 
 @pytest.mark.parametrize("dist", get_dist_func())
