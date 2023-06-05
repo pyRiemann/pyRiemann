@@ -182,7 +182,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         return self.predict(X)
 
     def predict_proba(self, X):
-        """Predict proba using softmax.
+        """Predict proba using softmax of negative squared distances.
 
         Parameters
         ----------
@@ -864,7 +864,6 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
                             x,
                             self.covmeans_[p][ll],
                             metric=self.metric,
-                            squared=True,
                         )
                     )
             pmin = min(m.items(), key=lambda x: np.sum(x[1]))[0]
@@ -893,7 +892,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         return self.predict(X)
 
     def predict_proba(self, X):
-        """Predict proba using softmax.
+        """Predict proba using softmax of negative squared distances.
 
         Parameters
         ----------

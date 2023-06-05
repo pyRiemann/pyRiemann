@@ -29,6 +29,8 @@ v0.5.dev
 
 - Add argument ``squared`` to all distances. :pr:`246` by :user:`qbarthelemy`
 
+- Correct transform and predict_proba of :class:`pyriemann.classification.MeanField`. :pr:`247` by :user:`qbarthelemy`
+
 v0.4 (Feb 2023)
 ---------------
 
