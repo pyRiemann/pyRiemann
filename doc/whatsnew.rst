@@ -29,6 +29,8 @@ v0.5.dev
 
 - Add argument ``squared`` to all distances. :pr:`246` by :user:`qbarthelemy`
 
+- Correct :func:`pyriemann.utils.distance.distance_mahalanobis`, keeping only real part. :pr:`248` by :user:`qbarthelemy`
+
 v0.4 (Feb 2023)
 ---------------
 
