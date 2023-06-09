@@ -286,9 +286,12 @@ class TLStretch(BaseEstimator, TransformerMixin):
                 self._means[d] = np.eye(n_dim)
             else:
                 self._means[d] = mean_riemann(X[domains == d])
-            disp_domain = np.sum(distance(
-                X[domains == d], self._means[d], metric=self.metric
-            )**2)
+            disp_domain = distance(
+                X[domains == d],
+                self._means[d],
+                metric=self.metric,
+                squared=True,
+            ).sum()
             self.dispersions_[d] = disp_domain
 
         return self

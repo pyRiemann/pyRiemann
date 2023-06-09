@@ -354,7 +354,7 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
     for i in range(n_matrices):
         Oi = generate_random_spd_matrix(n_dim=n_dim, random_state=random_state)
         epsilon_num = outlier_coeff * sigma * n_dim
-        epsilon_den = distance_riemann(Oi, np.eye(n_dim))**2
+        epsilon_den = distance_riemann(Oi, np.eye(n_dim), squared=True)
         epsilon = np.sqrt(epsilon_num / epsilon_den)
         outliers[i] = mean_sqrt @ powm(Oi, epsilon) @ mean_sqrt
 

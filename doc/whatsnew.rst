@@ -27,8 +27,11 @@ v0.5.dev
 
 - Fix :func:`pyriemann.utils.kernel.kernel_euclid` applied on non-symmetric matrices. :pr:`245` by :user:`qbarthelemy`
 
-- Enhance mean module to process HPD matrices, and complete tests. :pr:`243` by :user:`qbarthelemy`
+- Add argument ``squared`` to all distances. :pr:`246` by :user:`qbarthelemy`
 
+- Correct transform and predict_proba of :class:`pyriemann.classification.MeanField`. :pr:`247` by :user:`qbarthelemy`
+
+- Enhance mean module to process HPD matrices, and complete tests. :pr:`243` by :user:`qbarthelemy`
 
 v0.4 (Feb 2023)
 ---------------
