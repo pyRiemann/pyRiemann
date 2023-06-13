@@ -4,7 +4,7 @@ import warnings
 import numpy as np
 
 from .base import sqrtm, invsqrtm, logm, expm
-from .distance import pairwise_distance
+from .distance import distance
 from .mean import mean_euclid
 from .utils import check_weights
 
@@ -64,11 +64,7 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
         M = init
 
     for _ in range(maxiter):
-        dists = pairwise_distance(
-            X,
-            M[np.newaxis, ...],
-            metric='euclid'
-        )[:, 0]
+        dists = distance(X, M, metric='euclid')[:, 0]
         is_zero = (dists == 0)
 
         w = weights[~is_zero] / dists[~is_zero]
@@ -151,11 +147,7 @@ def median_riemann(X, *, tol=10e-6, maxiter=50, init=None, weights=None,
         M = init
 
     for _ in range(maxiter):
-        dists = pairwise_distance(
-            X,
-            M[np.newaxis, ...],
-            metric='riemann'
-        )[:, 0]
+        dists = distance(X, M, metric='riemann')[:, 0]
         is_zero = (dists == 0)
         w = weights[~is_zero] / dists[~is_zero]
 

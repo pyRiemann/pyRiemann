@@ -22,6 +22,7 @@ from pyriemann.utils.mean import (
 )
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize(
     "mean",
     [
@@ -38,28 +39,30 @@ from pyriemann.utils.mean import (
         nanmean_riemann,
     ],
 )
-def test_mean_shape(mean, get_covmats):
+def test_mean_shape(kind, mean, get_mats):
     """Test the shape of mean"""
     n_matrices, n_channels = 5, 3
-    covmats = get_covmats(n_matrices, n_channels)
+    mats = get_mats(n_matrices, n_channels, kind)
     if mean == mean_power:
-        C = mean(covmats, 0.42)
+        C = mean(mats, 0.42)
     else:
-        C = mean(covmats)
+        C = mean(mats)
     assert C.shape == (n_channels, n_channels)
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize(
     "mean", [mean_logdet, mean_riemann, mean_wasserstein, nanmean_riemann]
 )
-def test_mean_shape_with_init(mean, get_covmats):
+def test_mean_shape_with_init(kind, mean, get_mats):
     """Test the shape of mean with init"""
     n_matrices, n_channels = 5, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    C = mean(covmats, init=covmats[0])
+    mats = get_mats(n_matrices, n_channels, kind)
+    C = mean(mats, init=mats[0])
     assert C.shape == (n_channels, n_channels)
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize(
     "mean",
     [
@@ -73,14 +76,14 @@ def test_mean_shape_with_init(mean, get_covmats):
         nanmean_riemann,
     ],
 )
-def test_mean_weight_zero(mean, get_covmats):
+def test_mean_weight_zero(kind, mean, get_mats):
     """Setting one weight to almost 0 it's almost like not passing the mat"""
-    n_matrices, n_channels, w_val = 5, 3, 2
-    covmats = get_covmats(n_matrices, n_channels)
-    w = w_val * np.ones(n_matrices)
-    C = mean(covmats[1:], sample_weight=w[1:])
+    n_matrices, n_channels = 5, 3
+    mats = get_mats(n_matrices, n_channels, kind)
+    w = 2.3 * np.ones(n_matrices)
+    C = mean(mats[1:], sample_weight=w[1:])
     w[0] = 1e-12
-    Cw = mean(covmats, sample_weight=w)
+    Cw = mean(mats, sample_weight=w)
     assert C == approx(Cw, rel=1e-6, abs=1e-8)
 
 
@@ -99,9 +102,9 @@ def test_mean_weight_zero(mean, get_covmats):
 )
 def test_mean_weight_len_error(mean, get_covmats):
     n_matrices, n_channels = 3, 2
-    covmats = get_covmats(n_matrices, n_channels)
+    mats = get_covmats(n_matrices, n_channels)
     with pytest.raises(ValueError):
-        mean(covmats, sample_weight=np.ones(n_matrices + 1))
+        mean(mats, sample_weight=np.ones(n_matrices + 1))
 
 
 @pytest.mark.parametrize(
@@ -118,14 +121,15 @@ def test_mean_weight_len_error(mean, get_covmats):
 def test_mean_warning_convergence(mean, get_covmats):
     """Test warning for convergence not reached """
     n_matrices, n_channels = 3, 2
-    covmats = get_covmats(n_matrices, n_channels)
+    mats = get_covmats(n_matrices, n_channels)
     with pytest.warns(UserWarning):
         if mean == mean_power:
-            mean(covmats, 0.3, maxiter=0)
+            mean(mats, 0.3, maxiter=0)
         else:
-            mean(covmats, maxiter=0)
+            mean(mats, maxiter=0)
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize(
     "mean",
     [
@@ -141,160 +145,162 @@ def test_mean_warning_convergence(mean, get_covmats):
         mean_wasserstein,
     ],
 )
-def test_mean_of_means(mean, get_covmats):
+def test_mean_of_means(kind, mean, get_mats):
     """Test mean of submeans equal to grand mean"""
     n_matrices, n_channels = 10, 3
-    covmats = get_covmats(n_matrices, n_channels)
+    mats = get_mats(n_matrices, n_channels, kind)
+    if mean is mean_ale and kind == "hpd":
+        return True
     if mean == mean_power:
-        C = mean(covmats, 0.42)
-        C1 = mean(covmats[:n_matrices//2], 0.42)
-        C2 = mean(covmats[n_matrices//2:], 0.42)
-        C3 = mean(np.array([C1, C2]), 0.42)
+        p = -0.42
+        C = mean(mats, p)
+        C1 = mean(mats[:n_matrices//2], p)
+        C2 = mean(mats[n_matrices//2:], p)
+        C3 = mean(np.array([C1, C2]), p)
     else:
-        C = mean(covmats)
-        C1 = mean(covmats[:n_matrices//2])
-        C2 = mean(covmats[n_matrices//2:])
+        C = mean(mats)
+        C1 = mean(mats[:n_matrices//2])
+        C2 = mean(mats[n_matrices//2:])
         C3 = mean(np.array([C1, C2]))
     assert C3 == approx(C, 6)
 
 
-def test_alm_mean(get_covmats):
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_mean_alm(kind, get_mats):
     """Test the ALM mean"""
     n_matrices, n_channels = 3, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    C_alm = mean_alm(covmats)
+    mats = get_mats(n_matrices, n_channels, kind)
+    C_alm = mean_alm(mats)
     assert C_alm.shape == (n_channels, n_channels)
-    C_riem = mean_riemann(covmats)
+    C_riem = mean_riemann(mats)
     assert C_alm == approx(C_riem, abs=1e-6, rel=1e-3)
 
 
-def test_alm_mean_2matrices(get_covmats):
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_mean_alm_2matrices(kind, get_mats):
     """Test the ALM mean with 2 matrices"""
     n_matrices, n_channels = 2, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    C = mean_alm(covmats)
-    assert np.all(C == geodesic_riemann(covmats[0], covmats[1], alpha=0.5))
+    mats = get_mats(n_matrices, n_channels, kind)
+    C = mean_alm(mats)
+    assert np.all(C == geodesic_riemann(mats[0], mats[1], alpha=0.5))
 
 
-def test_euclid_mean(get_covmats):
-    """Test the euclidean mean"""
-    n_matrices, n_channels = 10, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    C = mean_euclid(covmats)
-    assert C == approx(covmats.mean(axis=0))
+@pytest.mark.parametrize("complex_valued", [True, False])
+def test_mean_euclid(rndstate, complex_valued):
+    """Test the Euclidean mean for generic matrices"""
+    n_matrices, n_dim0, n_dim1 = 10, 3, 4
+    mats = rndstate.randn(n_matrices, n_dim0, n_dim1)
+    if complex_valued:
+        mats = mats + 1j * rndstate.randn(n_matrices, n_dim0, n_dim1)
+    assert mean_euclid(mats) == approx(mats.mean(axis=0))
 
 
-def test_identity_mean(get_covmats):
+def test_mean_identity(get_covmats):
     """Test the identity mean"""
-    n_matrices, n_channels = 10, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    C = mean_identity(covmats)
+    n_matrices, n_channels = 2, 3
+    mats = get_covmats(n_matrices, n_channels)
+    C = mean_identity(mats)
     assert np.all(C == np.eye(n_channels))
 
 
-def test_power_mean(get_covmats):
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_mean_power(kind, get_mats):
     """Test the power mean"""
     n_matrices, n_channels = 3, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    C_power_1 = mean_power(covmats, 1)
-    C_power_0 = mean_power(covmats, 0)
-    C_power_m1 = mean_power(covmats, -1)
-    C_arithm = mean_euclid(covmats)
-    C_geom = mean_riemann(covmats)
-    C_harm = mean_harmonic(covmats)
-    assert C_power_1 == approx(C_arithm)
-    assert C_power_0 == approx(C_geom)
-    assert C_power_m1 == approx(C_harm)
+    mats = get_mats(n_matrices, n_channels, kind)
+    assert mean_power(mats, 1) == approx(mean_euclid(mats))
+    assert mean_power(mats, 0) == approx(mean_riemann(mats))
+    assert mean_power(mats, -1) == approx(mean_harmonic(mats))
 
 
-def test_power_mean_errors(get_covmats):
+def test_mean_power_errors(get_covmats):
     """Test the power mean errors"""
     n_matrices, n_channels = 3, 2
-    covmats = get_covmats(n_matrices, n_channels)
+    mats = get_covmats(n_matrices, n_channels)
 
     with pytest.raises(ValueError):  # exponent is not a scalar
-        mean_power(covmats, [1])
+        mean_power(mats, [1])
     with pytest.raises(ValueError):  # exponent is not in [-1,1]
-        mean_power(covmats, 3)
+        mean_power(mats, 3)
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("init", [True, False])
-def test_riemann_mean(init, get_covmats_params):
-    """Test the riemannian mean"""
-    n_matrices, n_channels = 100, 3
-    covmats, evals, evecs = get_covmats_params(n_matrices, n_channels)
+def test_mean_riemann(kind, init, get_mats_params):
+    """Test the Riemannian mean with same eigen vectors"""
+    n_matrices, n_channels = 10, 3
+    mats, eigvals, eigvecs = get_mats_params(n_matrices, n_channels, kind)
     if init:
-        C = mean_riemann(covmats, init=covmats[0])
+        C = mean_riemann(mats, init=mats[0])
     else:
-        C = mean_riemann(covmats)
-    Ctrue = np.exp(np.log(evals).mean(0))
-    Ctrue = evecs @ np.diag(Ctrue) @ evecs.T
+        C = mean_riemann(mats)
+    eigval = np.exp(np.mean(np.log(eigvals), axis=0))
+    Ctrue = eigvecs @ np.diag(eigval) @ eigvecs.conj().T
     assert C == approx(Ctrue)
 
-    mean_covariance(covmats, metric='riemann', maxiter=10)
 
-
-def test_riemann_mean_properties(get_covmats):
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_mean_riemann_properties(kind, get_mats):
     n_matrices, n_channels = 5, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    C = mean_riemann(covmats)
+    mats = get_mats(n_matrices, n_channels, kind)
+    C = mean_riemann(mats)
 
     # congruence-invariance, P2 in [Moakher2005] or P6 in [Nakamura2009]
     W = np.random.normal(size=(n_channels, n_channels))  # must be invertible
-    assert W @ C @ W.T == approx(mean_riemann(W @ covmats @ W.T))
+    assert W @ C @ W.T == approx(mean_riemann(W @ mats @ W.T))
 
     # self-duality, P3 in [Moakher2005] or P8 in [Nakamura2009]
-    assert C == approx(np.linalg.inv(mean_riemann(np.linalg.inv(covmats))))
+    assert C == approx(np.linalg.inv(mean_riemann(np.linalg.inv(mats))))
 
     # determinant identity, P9 in [Nakamura2009]
-    assert np.linalg.det(C) == approx(gmean(np.linalg.det(covmats)))
+    assert np.linalg.det(C) == approx(gmean(np.linalg.det(mats)))
 
 
 @pytest.mark.parametrize("init", [True, False])
-def test_riemann_mean_masked_shape(init, get_covmats, get_masks):
-    """Test the masked riemann mean"""
+def test_mean_masked_riemann_shape(init, get_covmats, get_masks):
+    """Test the masked Riemannian mean"""
     n_matrices, n_channels = 5, 3
-    covmats = get_covmats(n_matrices, n_channels)
+    mats = get_covmats(n_matrices, n_channels)
     masks = get_masks(n_matrices, n_channels)
     if init:
-        C = maskedmean_riemann(covmats, masks, tol=10e-3, init=covmats[0])
+        C = maskedmean_riemann(mats, masks, tol=10e-3, init=mats[0])
     else:
-        C = maskedmean_riemann(covmats, masks, tol=10e-3)
+        C = maskedmean_riemann(mats, masks, tol=10e-3)
     assert C.shape == (n_channels, n_channels)
 
 
 @pytest.mark.parametrize("init", [True, False])
-def test_riemann_mean_nan_shape(init, get_covmats, rndstate):
-    """Test the riemann nan mean shape"""
+def test_mean_nan_riemann_shape(init, get_covmats, rndstate):
+    """Test the Riemannian NaN-mean"""
     n_matrices, n_channels = 10, 6
-    covmats = get_covmats(n_matrices, n_channels)
-    emean = np.mean(covmats, axis=0)
+    mats = get_covmats(n_matrices, n_channels)
+    emean = np.mean(mats, axis=0)
     for i in range(n_matrices):
         corrup_channels = rndstate.choice(
             np.arange(0, n_channels), size=n_channels // 3, replace=False)
         for j in corrup_channels:
-            covmats[i, j] = np.nan
-            covmats[i, :, j] = np.nan
+            mats[i, j] = np.nan
+            mats[i, :, j] = np.nan
     if init:
-        C = nanmean_riemann(covmats, tol=10e-3, init=emean)
+        C = nanmean_riemann(mats, tol=10e-3, init=emean)
     else:
-        C = nanmean_riemann(covmats, tol=10e-3)
+        C = nanmean_riemann(mats, tol=10e-3)
     assert C.shape == (n_channels, n_channels)
 
 
-def test_riemann_mean_nan_errors(get_covmats):
-    """Test the riemann nan mean errors"""
+def test_mean_nan_riemann_errors(get_covmats):
+    """Test the Riemannian NaN-mean errors"""
     n_matrices, n_channels = 5, 4
-    covmats = get_covmats(n_matrices, n_channels)
+    mats = get_covmats(n_matrices, n_channels)
 
     with pytest.raises(ValueError):  # not symmetric NaN values
-        covmats_ = covmats.copy()
-        covmats_[0, 0] = np.nan  # corrup only a row, not its corresp column
-        nanmean_riemann(covmats_)
+        mats_ = mats.copy()
+        mats_[0, 0] = np.nan  # corrup only a row, not its corresp column
+        nanmean_riemann(mats_)
     with pytest.raises(ValueError):  # not rows and columns NaN values
-        covmats_ = covmats.copy()
-        covmats_[1, 0, 1] = np.nan  # corrup an off-diagonal value
-        nanmean_riemann(covmats_)
+        mats_ = mats.copy()
+        mats_[1, 0, 1] = np.nan  # corrup an off-diagonal value
+        nanmean_riemann(mats_)
 
 
 def callable_np_average(X, sample_weight=None):
@@ -320,7 +326,16 @@ def callable_np_average(X, sample_weight=None):
 def test_mean_covariance_metric(metric, mean, get_covmats):
     """Test mean_covariance for metric"""
     n_matrices, n_channels = 3, 3
-    covmats = get_covmats(n_matrices, n_channels)
-    C = mean_covariance(covmats, metric=metric)
-    Ctrue = mean(covmats)
+    mats = get_covmats(n_matrices, n_channels)
+    C = mean_covariance(mats, metric=metric)
+    Ctrue = mean(mats)
     assert np.all(C == Ctrue)
+
+
+def test_mean_covariance_args(get_covmats):
+    """Test mean_covariance with different arguments"""
+    n_matrices, n_channels = 3, 3
+    mats = get_covmats(n_matrices, n_channels)
+    mean_covariance(mats, metric='ale', maxiter=5)
+    mean_covariance(mats, metric='logdet', tol=10e-3)
+    mean_covariance(mats, metric='riemann', init=np.eye(n_channels))

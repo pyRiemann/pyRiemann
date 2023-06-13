@@ -31,6 +31,8 @@ v0.5.dev
 
 - Correct transform and predict_proba of :class:`pyriemann.classification.MeanField`. :pr:`247` by :user:`qbarthelemy`
 
+- Enhance mean module to process HPD matrices, and complete tests. :pr:`243` by :user:`qbarthelemy`
+
 v0.4 (Feb 2023)
 ---------------
 

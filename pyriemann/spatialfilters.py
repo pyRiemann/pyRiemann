@@ -8,7 +8,6 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from .utils.covariance import _check_est, normalize, get_nondiag_weight
 from .utils.mean import mean_covariance
 from .utils.ajd import ajd_pham
-from .utils.mean import _check_mean_method
 from . import estimation as est
 from .preprocessing import Whitening
 
@@ -319,7 +318,6 @@ class CSP(BilinearFilter):
         """
         if not isinstance(self.nfilter, int):
             raise TypeError('nfilter must be an integer')
-        _check_mean_method(self.metric)
         if not isinstance(self.log, bool):
             raise TypeError('log must be a boolean')
 
