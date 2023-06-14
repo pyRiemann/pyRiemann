@@ -12,15 +12,15 @@ from .utils import check_weights
 
 
 def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
-    """AJD-based log-Euclidean (ALE) mean of SPD matrices.
+    """AJD-based log-Euclidean (ALE) mean of SPD/HPD matrices.
 
-    Return the mean of a set of SPD matrices using the approximate joint
+    Return the mean of a set of SPD/HPD matrices using the approximate joint
     diagonalization (AJD) based log-Euclidean (ALE) mean [1]_.
 
     Parameters
     ----------
     covmats : ndarray, shape (n_matrices, n, n)
-        Set of SPD matrices.
+        Set of SPD/HPD matrices.
     tol : float, default=10e-7
         The tolerance to stop the gradient descent.
     maxiter : int, default=50
