@@ -2,6 +2,7 @@ from numpy.testing import assert_array_almost_equal
 import numpy as np
 from scipy.linalg import block_diag
 from scipy.signal import welch, csd, coherence as coherence_sp
+from sklearn.covariance import empirical_covariance
 import pytest
 
 from pyriemann.utils.covariance import (
@@ -52,10 +53,21 @@ def test_covariances(estimator, rndstate):
             )
 
 
-@pytest.mark.parametrize('estimator', ['corr', 'cov'] + m_estimators)
+@pytest.mark.parametrize('estimator', ['scm'])
+def test_covariances_real_vs_sklearn(estimator, rndstate):
+    """Test equivalence with scikit-learn for real inputs"""
+    n_matrices, n_channels, n_times = 1, 3, 100
+    x = rndstate.randn(n_matrices, n_channels, n_times)
+    cov = covariances(x, estimator=estimator)
+
+    if estimator == 'scm':
+        assert_array_almost_equal(cov[0], empirical_covariance(x[0].T), 10)
+
+
+@pytest.mark.parametrize('estimator', ['corr', 'cov', 'scm'] + m_estimators)
 def test_covariances_complex(estimator, rndstate):
     """Test covariance for complex inputs"""
-    n_matrices, n_channels, n_times = 2, 3, 100
+    n_matrices, n_channels, n_times = 3, 4, 100
     x = rndstate.randn(n_matrices, n_channels, n_times) \
         + 1j * rndstate.randn(n_matrices, n_channels, n_times)
 

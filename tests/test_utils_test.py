@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from pyriemann.utils.test import (
-    is_square, is_sym, is_skew_sym, is_real, is_hermitian,
+    is_square, is_sym, is_skew_sym, is_real, is_real_type, is_hermitian,
     is_pos_def, is_pos_semi_def,
     is_sym_pos_def, is_sym_pos_semi_def,
     is_herm_pos_def, is_herm_pos_semi_def,
@@ -45,12 +45,20 @@ def test_is_real(rndstate):
     assert not is_real(B)
 
 
+def test_is_real_type(rndstate):
+    A = np.zeros((n, n + 1))
+    assert is_real_type(A)
+
+    B = np.zeros((n, n + 2), dtype=complex)
+    assert not is_real_type(B)
+
+
 def test_is_hermitian(rndstate):
     A = rndstate.randn(n, n)
     B = np.zeros((n, n), dtype=complex)
     B.real, B.imag = A + A.T, A - A.T
     assert is_hermitian(B)
-    assert not is_hermitian(np.ones((n, n + 1)))
+    assert not is_hermitian(np.ones((n, n)) + 1j * np.ones((n, n)))
 
 
 @pytest.mark.parametrize("fast_mode", [True, False])

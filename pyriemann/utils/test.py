@@ -73,6 +73,22 @@ def is_real(X):
     return np.allclose(X.imag, np.zeros_like(X.imag))
 
 
+def is_real_type(X):
+    """Check if matrices are real type.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, m)
+        The set of matrices.
+
+    Returns
+    -------
+    ret : boolean
+        True if matrices are real type.
+    """
+    return np.isrealobj(X)
+
+
 def is_hermitian(X):
     """Check if all matrices are Hermitian.
 

@@ -9,12 +9,14 @@
 [![Downloads](https://pepy.tech/badge/pot)](https://pepy.tech/project/pyriemann)
 
 pyRiemann is a Python machine learning package based on [scikit-learn](http://scikit-learn.org/stable/modules/classes.html) API.
-It provides a high-level interface for processing and classification of multivariate time series
-through the Riemannian geometry of symmetric positive definite (SPD) matrices.
+It provides a high-level interface for processing and classification of real (*resp*. complex)-valued multivariate data
+through the Riemannian geometry of symmetric (*resp*. Hermitian) 
+[positive definite](https://en.wikipedia.org/wiki/Definite_matrix) (SPD) (*resp*. HPD) matrices.
 
-pyRiemann aims at being a generic package for multivariate time series classification
-but has been designed around multichannel biosignals (like EEG, MEG or EMG) manipulation applied to brain-computer interface (BCI),
-transforming multichannel time series into covariance matrices, and classifying them using the Riemannian geometry of SPD matrices [[1]](#1).
+pyRiemann aims at being a generic package for multivariate data analysis
+but has been designed around [biosignals](https://en.wikipedia.org/wiki/Biosignal) (like EEG, MEG or EMG)
+manipulation applied to [brain-computer interface](https://en.wikipedia.org/wiki/Brain%E2%80%93computer_interface) (BCI),
+estimating covariance matrices from multichannel time series, and classifying them using the Riemannian geometry of SPD matrices [[1]](#1).
 
 For BCI applications, studied paradigms are motor imagery [[2]](#2) [[3]](#3), event-related potentials (ERP) [[4]](#4) and steady-state visually evoked potentials (SSVEP) [[5]](#5).
 Using extended labels, API allows transfer learning between sessions or subjects [[6]](#6).
@@ -25,14 +27,14 @@ This code is BSD-licenced (3 clause).
 
 The documentation is available on http://pyriemann.readthedocs.io/en/latest/
 
-## Install
+# Installation
 
 #### Using PyPI
 
 ```
 pip install pyriemann
 ```
-or using pip+git for the latest version of the code :
+or using pip+git for the latest version of the code:
 
 ```
 pip install git+https://github.com/pyRiemann/pyRiemann
@@ -61,7 +63,7 @@ or in editable mode to be able to modify the sources:
 pip install -e .
 ```
 
-## How to use it
+# How to use
 
 Most of the functions mimic the scikit-learn API, and therefore can be directly used with sklearn.
 For example, for cross-validation classification of EEG signal using the MDM algorithm described in [[2]](#2), it is easy as:
@@ -114,7 +116,7 @@ print(accuracy.mean())
 
 ```
 
-**Check out the example folder for more examples !**
+**Check out the example folder for more examples.**
 
 # Contribution Guidelines
 

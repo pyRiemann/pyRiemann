@@ -57,12 +57,12 @@ pyRiemann: Biosignals classification with Riemannian geometry
        <div class="col-md-9">
 
 pyRiemann is a Python machine learning package based on scikit-learn API.
-It provides a high-level interface for processing and classification of multivariate time series
-through the Riemannian geometry of symmetric positive definite (SPD) matrices.
+It provides a high-level interface for processing and classification of real (resp. complex)-valued multivariate data
+through the Riemannian geometry of symmetric (resp. Hermitian) positive definite (SPD) (resp. HPD) matrices.
 
-pyRiemann aims at being a generic package for multivariate time series classification
-but has been designed around multichannel biosignals (like EEG, MEG or EMG) manipulation applied to brain-computer interface (BCI),
-transforming multichannel time series into covariance matrices, and classifying them using the Riemannian geometry of SPD matrices.
+pyRiemann aims at being a generic package for multivariate data analysis
+but has been designed around biosignals (like EEG, MEG or EMG) manipulation applied to brain-computer interface (BCI),
+estimating covariance matrices from multichannel time series, and classifying them using the Riemannian geometry of SPD matrices.
 
 For a brief introduction to the ideas behind the package, you can read the
 :ref:`introductory notes <introduction>`. More practical information is on the
