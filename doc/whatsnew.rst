@@ -34,8 +34,11 @@ v0.5.dev
 - Enhance mean module to process HPD matrices. :pr:`243` by :user:`qbarthelemy`
 
 - Correct :func:`pyriemann.utils.distance.distance_mahalanobis`, keeping only real part. :pr:`249` by :user:`qbarthelemy`
+<<<<<<< HEAD
 
 - Fix an issue in :func:`pyriemann.datasets.sampling._rejection_sampling_2D`. :pr:`250` by :user: `mhurte` 
+=======
+>>>>>>> 672b6b5 (correct last pr number in whatsnew)
 
 v0.4 (Feb 2023)
 ---------------
