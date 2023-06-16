@@ -21,7 +21,7 @@ v0.5.dev
 
 - Add tests for matrix operators and distances for HPD matrices, complete doc and add references. :pr:`234` by :user:`qbarthelemy`
 
-- Enhance tangent space module to process HPD matrices, and complete tests. :pr:`236` by :user:`qbarthelemy`
+- Enhance tangent space module to process HPD matrices. :pr:`236` by :user:`qbarthelemy`
 
 - Fix regression introduced in :func:`pyriemann.spatialfilters.Xdawn` by :pr:`214`. :pr:`242` by :user:`qbarthelemy`
 
@@ -31,9 +31,9 @@ v0.5.dev
 
 - Correct transform and predict_proba of :class:`pyriemann.classification.MeanField`. :pr:`247` by :user:`qbarthelemy`
 
-- Enhance mean module to process HPD matrices, and complete tests. :pr:`243` by :user:`qbarthelemy`
+- Enhance mean module to process HPD matrices. :pr:`243` by :user:`qbarthelemy`
 
-- Correct :func:`pyriemann.utils.distance.distance_mahalanobis`, keeping only real part. :pr:`248` by :user:`qbarthelemy`
+- Correct :func:`pyriemann.utils.distance.distance_mahalanobis`, keeping only real part. :pr:`249` by :user:`qbarthelemy`
 
 v0.4 (Feb 2023)
 ---------------
