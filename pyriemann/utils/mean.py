@@ -366,7 +366,7 @@ def mean_logeuclid(X=None, sample_weight=None, covmats=None):
     return M
 
 
-def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
+def mean_power(X=None, p=None, *, sample_weight=None, zeta=10e-10, maxiter=100,
                covmats=None):
     r"""Power mean of SPD/HPD matrices.
 
@@ -417,6 +417,8 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
         M. Congedo, A. Barachant, and R. Bhatia. IEEE Transactions on Signal
         Processing, Volume 65, Issue 9, pp.2211-2220, May 2017
     """
+    if p is None:
+        raise ValueError("Input p can not be None")
     X = _deprecate_covmats(covmats, X)
     if not isinstance(p, (int, float)):
         raise ValueError("Power mean only defined for a scalar exponent")
@@ -711,7 +713,7 @@ def _apply_masks(X, masks):
     return maskedX
 
 
-def maskedmean_riemann(X, masks, tol=10e-9, maxiter=100, init=None,
+def maskedmean_riemann(X=None, masks=None, tol=10e-9, maxiter=100, init=None,
                        sample_weight=None, covmats=None):
     """Masked Riemannian mean of SPD/HPD matrices.
 
@@ -759,6 +761,8 @@ def maskedmean_riemann(X, masks, tol=10e-9, maxiter=100, init=None,
         F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
         Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
+    if masks is None:
+        raise ValueError("Input masks can not be None")
     X = _deprecate_covmats(covmats, X)
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
