@@ -99,7 +99,7 @@ def test_tlrotate(rndstate, metric):
     """Test pipeline for rotating the datasets"""
     # check if the distance between the classes of each domain is reduced
     X, y_enc = make_classification_transfer(
-        n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate)
+        n_matrices=50, class_sep=3, class_disp=1.0, random_state=rndstate)
     rct = TLCenter(target_domain='target_domain')
     X_rct = rct.fit_transform(X, y_enc)
     rot = TLRotate(target_domain='target_domain', metric=metric)
