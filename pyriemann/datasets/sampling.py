@@ -135,7 +135,8 @@ def _rejection_sampling_2D(n_samples, sigma, random_state=None,
     r_samples : ndarray, shape (n_samples, n_dim)
         Samples of the r parameters of the Riemannian Gaussian distribution.
     acceptance_rate : float
-        acceptance rate empirically computed for the generation of the sample
+        Acceptance rate empirically computed for the generation of the sample.
+        Only returned if ``return_acceptance_rate=True``.
 
     Notes
     -----
