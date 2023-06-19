@@ -35,6 +35,8 @@ v0.5.dev
 
 - Correct :func:`pyriemann.utils.distance.distance_mahalanobis`, keeping only real part. :pr:`249` by :user:`qbarthelemy`
 
+- Fix an issue in :func:`pyriemann.datasets.sampling._rejection_sampling_2D`. :pr:`250` by :user: `mhurte`
+
 v0.4 (Feb 2023)
 ---------------
 
