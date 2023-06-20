@@ -263,7 +263,7 @@ def covariance_scm(X, *, assume_centered=False):
 
     Notes
     -----
-    .. versionadded:: 0.5
+    .. versionadded:: 0.6
 
     References
     ----------

@@ -85,6 +85,10 @@ def is_real_type(X):
     -------
     ret : boolean
         True if matrices are real type.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
     """
     return np.isrealobj(X)
 

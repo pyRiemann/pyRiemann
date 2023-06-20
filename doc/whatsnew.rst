@@ -12,7 +12,11 @@ v0.6.dev
 
 - Update pyRiemann from Python 3.7 to 3.8. pr`254` by :user:`qbarthelemy`
 
-- Speedup pairwise distance function :func:`pyriemann.utils.distance.pairwise_distance` by adding individual functions for 'euclid', 'harmonic', 'logeuclid' and 'riemann' metrics. :pr:`256` by :user:`gabelstein`
+- Speedup pairwise distance function :func:`pyriemann.utils.distance.pairwise_distance`
+  by adding individual functions for 'euclid', 'harmonic', 'logeuclid' and 'riemann' metrics. :pr:`256` by :user:`gabelstein`
+
+- Add :func:`pyriemann.utils.test.is_real_type` to check the type of input arrays and
+  add :func:`pyriemann.utils.covariance.covariance_scm` allowing to process complex-valued inputs for 'scm' covariance estimator. :pr:`251` by :user:`qbarthelemy`
 
 
 v0.5 (Jun 2023)
@@ -44,9 +48,6 @@ v0.5 (Jun 2023)
 - Correct :func:`pyriemann.utils.distance.distance_mahalanobis`, keeping only real part. :pr:`249` by :user:`qbarthelemy`
 
 - Fix :func:`pyriemann.datasets.sample_gaussian_spd` used with ``sampling_method=rejection`` on 2D matrices. :pr:`250` by :user:`mhurte`
-
-- Add :func:`pyriemann.utils.test.is_real_type` to check the type of input arrays and
-  add :func:`pyriemann.utils.covariance.covariance_scm` allowing to process complex-valued inputs for 'scm' covariance estimator. :pr:`251` by :user:`qbarthelemy`
 
 v0.4 (Feb 2023)
 ---------------
