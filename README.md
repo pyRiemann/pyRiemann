@@ -16,7 +16,8 @@ through the Riemannian geometry of symmetric (*resp*. Hermitian)
 pyRiemann aims at being a generic package for multivariate data analysis
 but has been designed around [biosignals](https://en.wikipedia.org/wiki/Biosignal) (like EEG, MEG or EMG)
 manipulation applied to [brain-computer interface](https://en.wikipedia.org/wiki/Brain%E2%80%93computer_interface) (BCI),
-estimating covariance matrices from multichannel time series, and classifying them using the Riemannian geometry of SPD matrices [[1]](#1).
+estimating [covariance matrices](https://en.wikipedia.org/wiki/Covariance_matrix) from multichannel time series,
+and classifying them using the Riemannian geometry of SPD matrices [[1]](#1).
 
 For BCI applications, studied paradigms are motor imagery [[2]](#2) [[3]](#3), event-related potentials (ERP) [[4]](#4) and steady-state visually evoked potentials (SSVEP) [[5]](#5).
 Using extended labels, API allows transfer learning between sessions or subjects [[6]](#6).
