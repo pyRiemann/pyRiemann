@@ -14,7 +14,7 @@ from .utils import check_weights
 def _deprecate_covmats(covmats, X):
     if covmats is not None:
         print("DeprecationWarning: input covmats has been renamed into X and "
-              "will be removed in 0.6.0.")
+              "will be removed in 0.7.0.")
         X = covmats
     return X
 
