@@ -7,8 +7,12 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.5.dev
+v0.6.dev
 --------
+
+
+v0.5 (Jun 2023)
+---------------
 
 - Fix :func:`pyriemann.utils.distance.pairwise_distance` for non-symmetric metrics. :pr:`229` by :user:`qbarthelemy`
 
