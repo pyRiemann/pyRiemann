@@ -149,13 +149,13 @@ pytest
                   Maria Sayu Yamamoto and
                   Pierre Clisson and
                   Marie-Constance Corsi},
-  title        = {pyRiemann/pyRiemann: v0.3},
-  month        = jul,
-  year         = 2022,
+  title        = {pyRiemann/pyRiemann: v0.5},
+  month        = june,
+  year         = 2023,
   publisher    = {Zenodo},
-  version      = {v0.3},
-  doi          = {10.5281/zenodo.7547583},
-  url          = {https://doi.org/10.5281/zenodo.7547583}
+  version      = {v0.5},
+  doi          = {10.5281/zenodo.8059038},
+  url          = {https://doi.org/10.5281/zenodo.8059038}
 }
 ```
 
