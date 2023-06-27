@@ -150,7 +150,7 @@ def test_mean_of_means(kind, mean, get_mats):
     n_matrices, n_channels = 10, 3
     mats = get_mats(n_matrices, n_channels, kind)
     if mean is mean_ale and kind == "hpd":
-        return True
+        pytest.skip()
     if mean == mean_power:
         p = -0.42
         C = mean(mats, p)
