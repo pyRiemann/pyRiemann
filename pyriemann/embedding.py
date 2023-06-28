@@ -384,7 +384,7 @@ def locally_linear_embedding(X,
     M.flat[:: M.shape[0] + 1] += 1
 
     eigen_values, eigen_vectors = eigh(
-        M, eigvals=(1, n_components), overwrite_a=True
+        M, subset_by_index=(1, n_components), overwrite_a=True
     )
     index = np.argsort(np.abs(eigen_values))
     embd, error = eigen_vectors[:, index], np.sum(eigen_values)
