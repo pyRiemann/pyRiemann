@@ -2,7 +2,6 @@
 import functools
 
 import numpy as np
-from scipy import stats
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.svm import SVC as sklearnSVC
 from sklearn.utils.extmath import softmax
@@ -524,7 +523,7 @@ class KNearestNeighbor(MDM):
         """
         dist = self._predict_distances(covtest)
         neighbors_classes = self.classmeans_[np.argsort(dist)]
-        out, _ = stats.mode(neighbors_classes[:, 0:self.n_neighbors], axis=1)
+        out = np.unique(neighbors_classes[:, 0:self.n_neighbors], axis=1)[:, 0]
         return out.ravel()
 
     def predict_proba(self, X):

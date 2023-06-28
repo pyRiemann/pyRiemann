@@ -609,8 +609,6 @@ class TLEstimator(BaseEstimator):
 
         if is_regressor(self.estimator):
             y_dec = y_dec.astype(float)
-        if is_classifier(self.estimator):
-            y_dec = y_dec.astype(int)
 
         if self.domain_weight is not None:
             w = np.zeros(len(X_dec))

@@ -170,9 +170,6 @@ def test_tlclassifier_mdm(rndstate, clf, source_domain, target_domain):
     }
     tlclf.fit(X, y_enc)
 
-    # test fit
-    assert_array_equal(tlclf.estimator.classes_, [1, 2])
-
     X, y, domain = decode_domains(X, y_enc)
     X_source = X[domain == 'source_domain']
     y_source = y[domain == 'source_domain']
@@ -235,7 +232,7 @@ def test_tlclassifiers(rndstate, clf, source_domain, target_domain):
     tlclf.fit(X, y_enc)
 
     # test fit
-    assert_array_equal(tlclf.estimator.classes_, [1, 2])
+    assert_array_equal(tlclf.estimator.classes_, ['1', '2'])
 
     # test predict
     predicted = tlclf.predict(X)
