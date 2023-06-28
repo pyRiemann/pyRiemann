@@ -524,7 +524,7 @@ class KNearestNeighbor(MDM):
         dist = self._predict_distances(covtest)
         neighbors_classes = self.classmeans_[np.argsort(dist)]
         out = np.unique(neighbors_classes[:, 0:self.n_neighbors], axis=1)[:, 0]
-        return out.ravel()
+        return out
 
     def predict_proba(self, X):
         """Predict proba using softmax.
