@@ -35,6 +35,17 @@ def _check_metric(metric):
     return metric_mean, metric_dist
 
 
+def _mode_1d(X):
+    vals, counts = np.unique(X, return_counts=True)
+    mode = vals[counts.argmax()]
+    return mode
+
+
+def _mode_2d(X, axis=1):
+    mode = np.apply_along_axis(_mode_1d, axis, X)
+    return mode
+
+
 class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
     """Classification by Minimum Distance to Mean.
 
@@ -523,8 +534,8 @@ class KNearestNeighbor(MDM):
         """
         dist = self._predict_distances(covtest)
         neighbors_classes = self.classmeans_[np.argsort(dist)]
-        out = np.unique(neighbors_classes[:, 0:self.n_neighbors], axis=1)[:, 0]
-        return out
+        pred = _mode_2d(neighbors_classes[:, 0:self.n_neighbors], axis=1)
+        return pred
 
     def predict_proba(self, X):
         """Predict proba using softmax.

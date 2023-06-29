@@ -4,6 +4,7 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 from pytest import approx
+from scipy.stats import mode
 from sklearn.dummy import DummyClassifier
 
 from conftest import get_distances, get_means, get_metrics
@@ -11,6 +12,7 @@ from pyriemann.estimation import Covariances
 from pyriemann.utils.kernel import kernel
 from pyriemann.utils.mean import mean_covariance
 from pyriemann.classification import (
+    _mode_2d,
     MDM,
     FgMDM,
     KNearestNeighbor,
@@ -21,6 +23,35 @@ from pyriemann.classification import (
 )
 
 rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC, MeanField]
+
+
+@pytest.mark.parametrize(
+    "X, axis, expected",
+    [
+        (
+            np.array([[0, 5], [1, 7], [0, 6], [2, 7]]),
+            0,
+            np.array([0, 7]),
+        ),
+        (
+            np.array([[0, 1, 2, 1, 1, 0], [7, 5, 7, 6, 7, 6]]),
+            1,
+            np.array([1, 7]),
+        ),
+        (
+            np.array([['a', 'b', 'a', 'c', 'a'], ['d', 'e', 'f', 'e', 'e']]),
+            1,
+            np.array(['a', 'e']),
+        ),
+    ],
+)
+def test_mode(X, axis, expected):
+    actual = _mode_2d(X, axis=axis)
+    assert_array_equal(actual, expected)
+
+    if np.issubdtype(X.dtype, np.number):
+        sp, _ = mode(X, axis=axis)
+        assert_array_equal(actual, sp.ravel())
 
 
 @pytest.mark.parametrize("n_classes", [2, 3])

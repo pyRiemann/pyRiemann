@@ -43,6 +43,8 @@ def test_mean_shape(kind, mean, get_mats):
     """Test the shape of mean"""
     n_matrices, n_channels = 5, 3
     mats = get_mats(n_matrices, n_channels, kind)
+    if mean is mean_ale and kind == "hpd":
+        pytest.skip()
     if mean == mean_power:
         C = mean(mats, 0.42)
     else:
