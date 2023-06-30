@@ -4,7 +4,6 @@ import os.path as op
 from setuptools import setup, find_packages
 
 
-# get the version (don't import mne here, so dependencies are not needed)
 version = None
 with open(op.join("pyriemann", "_version.py"), "r") as fid:
     for line in (line.strip() for line in fid):
@@ -41,7 +40,7 @@ setup(
         "numpy!=1.24.0",
         "scipy",
         "scikit-learn",
-        "joblib",
+        "joblib<=1.2.0",
     ],
     extras_require={
         "docs": [
