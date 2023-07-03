@@ -6,6 +6,11 @@ from sklearn.base import (BaseEstimator, ClassifierMixin, TransformerMixin,
                           ClusterMixin, clone)
 from sklearn.cluster import KMeans as _KMeans
 
+from .classification import MDM, _check_metric
+from .utils.mean import mean_covariance
+from .utils.geodesic import geodesic
+
+
 def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
     if random_state is not None:
         random_state = np.random.RandomState(random_state)
@@ -26,10 +31,6 @@ def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
             sample_weight=np.ones(n_samples) / n_samples,
         )
 
-
-from .classification import MDM, _check_metric
-from .utils.mean import mean_covariance
-from .utils.geodesic import geodesic
 
 #######################################################################
 
