@@ -1,6 +1,5 @@
 import sys
 import os.path as op
-
 from setuptools import setup, find_packages
 
 
@@ -39,7 +38,7 @@ setup(
     install_requires=[
         "numpy!=1.24.0",
         "scipy",
-        "scikit-learn",
+        "scikit-learn>=0.24",
         "joblib<=1.2.0",
     ],
     extras_require={

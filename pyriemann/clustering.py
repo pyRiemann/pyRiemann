@@ -1,28 +1,31 @@
 """Clustering functions."""
 import numpy as np
+from joblib import Parallel, delayed
 from scipy.stats import norm, chi2
 from sklearn.base import (BaseEstimator, ClassifierMixin, TransformerMixin,
                           ClusterMixin, clone)
+from sklearn.cluster import KMeans as _KMeans
 
-try:
-    from sklearn.cluster._kmeans import _init_centroids
-except ImportError:
-    # Workaround for scikit-learn v0.24.0rc1+
-    # See issue: https://github.com/alexandrebarachant/pyRiemann/issues/92
-    from sklearn.cluster import KMeans as _KMeans
-
-    def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
-        if random_state is not None:
-            random_state = np.random.RandomState(random_state)
+def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
+    if random_state is not None:
+        random_state = np.random.RandomState(random_state)
+    try:
         return _KMeans(n_clusters=n_clusters, init=init)._init_centroids(
             X,
             x_squared_norms,
             init,
             random_state,
         )
+    except AttributeError:  # from sklearn 1.3.0
+        n_samples = X.shape[0]
+        return _KMeans(n_clusters=n_clusters, init=init)._init_centroids(
+            X,
+            x_squared_norms,
+            init,
+            random_state,
+            sample_weight=np.ones(n_samples) / n_samples,
+        )
 
-
-from joblib import Parallel, delayed
 
 from .classification import MDM, _check_metric
 from .utils.mean import mean_covariance
@@ -37,10 +40,10 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
     # init random state if provided
     mdm = MDM(metric=metric, n_jobs=n_jobs)
     mdm.metric_mean, mdm.metric_dist = _check_metric(metric)
-    squared_nomrs = [np.linalg.norm(x, ord='fro')**2 for x in X]
+    squared_norms = [np.linalg.norm(x, ord='fro')**2 for x in X]
     mdm.covmeans_ = _init_centroids(X, n_clusters, init,
                                     random_state=random_state,
-                                    x_squared_norms=squared_nomrs)
+                                    x_squared_norms=squared_norms)
     if y is not None:
         mdm.classes_ = np.unique(y)
     else:
