@@ -2,6 +2,7 @@
 import numpy as np
 from joblib import Parallel, delayed
 from scipy.stats import norm, chi2
+import sklearn
 from sklearn.base import (BaseEstimator, ClassifierMixin, TransformerMixin,
                           ClusterMixin, clone)
 from sklearn.cluster import KMeans as _KMeans
@@ -14,14 +15,14 @@ from .utils.geodesic import geodesic
 def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
     if random_state is not None:
         random_state = np.random.RandomState(random_state)
-    try:
+    if sklearn.__version__ < '1.3.0':
         return _KMeans(n_clusters=n_clusters, init=init)._init_centroids(
             X,
             x_squared_norms,
             init,
             random_state,
         )
-    except AttributeError:  # from sklearn 1.3.0
+    else:
         n_samples = X.shape[0]
         return _KMeans(n_clusters=n_clusters, init=init)._init_centroids(
             X,
