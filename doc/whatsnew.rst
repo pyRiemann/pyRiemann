@@ -10,6 +10,8 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.6.dev
 --------
 
+- Update pyRiemann from Python 3.7 to 3.8. pr`254` by :user:`qbarthelemy`
+
 
 v0.5 (Jun 2023)
 ---------------
