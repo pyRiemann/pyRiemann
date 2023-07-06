@@ -34,12 +34,12 @@ setup(
         "Tracker": "https://github.com/pyRiemann/pyRiemann/issues/",
     },
     platforms="any",
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=[
         "numpy!=1.24.0",
         "scipy",
         "scikit-learn>=0.24",
-        "joblib<=1.2.0",
+        "joblib",
     ],
     extras_require={
         "docs": [
