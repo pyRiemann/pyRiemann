@@ -2,6 +2,7 @@
 
 import numpy as np
 from scipy.linalg import eigvalsh, solve
+from sklearn.metrics import euclidean_distances
 
 from .base import logm, sqrtm, invsqrtm
 
@@ -446,6 +447,178 @@ def distance(A, B, metric='riemann', squared=False):
     return d
 
 
+def pairwise_distance_euclid(X, Y=None, squared=False):
+    """Pairwise Euclidean distance matrix.
+
+    Compute the matrix of Euclidan distances between pairs of elements of X and
+    Y.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices_X, n, n)
+        First set of matrices.
+    Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
+        Second set of matrices. If None, Y is set to X.
+    squared : bool, default False
+        Return squared distance.
+
+    Returns
+    -------
+    dist : ndarray, shape (n_matrices_X, n_matrices_X) or (n_matrices_X, \
+            n_matrices_Y)
+        Euclidean Distances between pairs of elements of X if Y is None, or
+        between elements of X and Y.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
+
+    See Also
+    --------
+    pairwise_distance
+    distance_euclid
+    """
+    if isinstance(Y, type(None)) or np.array_equal(X, Y):
+        dist = euclidean_distances(X.reshape(len(X), -1), squared=squared)
+        np.fill_diagonal(dist, 0)  # diagonal is not exactly 0
+    else:
+        dist = euclidean_distances(X.reshape(len(X), -1),
+                                   Y.reshape(len(Y), -1),
+                                   squared=squared)
+    return dist
+
+
+def pairwise_distance_harmonic(X, Y=None, squared=False):
+    """Pairwise harmonic distance matrix.
+
+    Compute the matrix of harmonic distances between pairs of elements of X and
+    Y.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices_X, n, n)
+        First set of matrices.
+    Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
+        Second set of matrices. If None, Y is set to X.
+    squared : bool, default False
+        Return squared distance.
+
+    Returns
+    -------
+    dist : ndarray, shape (n_matrices_X, n_matrices_X) or (n_matrices_X, \
+            n_matrices_Y)
+        Harmonic Distances between pairs of elements of X if Y is None, or
+        between elements of X and Y.
+    Notes
+    -----
+    .. versionadded:: 0.6
+
+    See Also
+    --------
+    pairwise_distance
+    distance_harmonic
+    """
+    if isinstance(Y, type(None)) or np.array_equal(X, Y):
+        invY = invX = np.linalg.inv(X)
+    else:
+        invX = np.linalg.inv(X)
+        invY = np.linalg.inv(Y)
+
+    return pairwise_distance_euclid(invX, invY, squared=squared)
+
+
+def pairwise_distance_logeuclid(X, Y=None, squared=False):
+    """Pairwise Log-Euclidean distance matrix.
+
+    Compute the matrix of Log-Euclidan distances between pairs of elements of X
+    and Y.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices_X, n, n)
+        First set of matrices.
+    Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
+        Second set of matrices. If None, Y is set to X.
+    squared : bool, default False
+        Return squared distance.
+
+    Returns
+    -------
+    dist : ndarray, shape (n_matrices_X, n_matrices_X) or (n_matrices_X, \
+            n_matrices_Y)
+        Log-Euclidean Distances between pairs of elements of X if Y is None, or
+        between elements of X and Y.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
+
+    See Also
+    --------
+    pairwise_distance
+    distance_logeuclid
+    """
+    if isinstance(Y, type(None)) or np.array_equal(X, Y):
+        logY = logX = logm(X)
+    else:
+        logX = logm(X)
+        logY = logm(Y)
+
+    return pairwise_distance_euclid(logX, logY, squared=squared)
+
+
+def pairwise_distance_riemann(X, Y=None, squared=False):
+    """Pairwise Riemann distance matrix.
+
+    Compute the matrix of Riemann distances between pairs of elements of X
+    and Y.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices_X, n, n)
+        First set of matrices.
+    Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
+        Second set of matrices. If None, Y is set to X.
+    squared : bool, default False
+        Return squared distance.
+
+    Returns
+    -------
+    dist : ndarray, shape (n_matrices_X, n_matrices_X) or (n_matrices_X, \
+            n_matrices_Y)
+        Riemann Distances between pairs of elements of X if Y is None, or
+        between elements of X and Y.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
+
+    See Also
+    --------
+    pairwise_distance
+    distance_riemann
+    """
+    XisY = False
+    if isinstance(Y, type(None)) or np.array_equal(X, Y):
+        XisY = True
+        Y = X
+
+    n_matrices_X, n_matrices_Y = len(X), len(Y)
+    Xinv12 = invsqrtm(X)
+    res = np.zeros((n_matrices_X, n_matrices_Y))
+
+    # row by row so it fits in memory
+    for i, x_ in enumerate(Xinv12):
+        evals_ = np.linalg.eigvalsh(x_ @ Y[i * XisY:] @ x_)
+        res_ = np.sum(np.log(evals_) ** 2, -1)
+        res[i, i * XisY:] = res_
+
+    if XisY:
+        res = res + res.T
+
+    return res if squared else np.sqrt(res)
+
+
 def pairwise_distance(X, Y=None, metric='riemann', squared=False):
     """Pairwise distance matrix.
 
@@ -477,6 +650,15 @@ def pairwise_distance(X, Y=None, metric='riemann', squared=False):
     --------
     distance
     """
+    if metric == 'euclid':
+        return pairwise_distance_euclid(X, Y=Y, squared=squared)
+    elif metric == 'harmonic':
+        return pairwise_distance_harmonic(X, Y=Y, squared=squared)
+    elif metric == 'logeuclid':
+        return pairwise_distance_logeuclid(X, Y=Y, squared=squared)
+    elif metric == 'riemann':
+        return pairwise_distance_riemann(X, Y=Y, squared=squared)
+
     n_matrices_X, _, _ = X.shape
 
     # compute full pairwise matrix for non-symmetric metrics

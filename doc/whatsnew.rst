@@ -10,6 +10,7 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.6.dev
 --------
 
+- Speedup pairwise distance function :func:`pyriemann.utils.distance.pairwise_distance` by adding individual functions.
 
 v0.5 (Jun 2023)
 ---------------
