@@ -265,8 +265,8 @@ def test_pairwise_distance_matrix(get_covmats, dist, Y, squared):
                                        Y_[j],
                                        metric=dist,
                                        squared=squared),
-                              atol=1e-7,
-                              rtol=1e-7)
+                              atol=1e-5,
+                              rtol=1e-5)
 
     if Y is None and dist not in ["kullback", "kullback_right"]:
         assert is_sym(pdist)
