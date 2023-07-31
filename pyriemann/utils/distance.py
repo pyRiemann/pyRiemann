@@ -478,9 +478,8 @@ def pairwise_distance_euclid(X, Y=None, squared=False):
     pairwise_distance
     distance_euclid
     """
-    if isinstance(Y, type(None)) or np.array_equal(X, Y):
+    if Y is None:
         dist = euclidean_distances(X.reshape(len(X), -1), squared=squared)
-        np.fill_diagonal(dist, 0)  # diagonal is not exactly 0
     else:
         dist = euclidean_distances(X.reshape(len(X), -1),
                                    Y.reshape(len(Y), -1),
