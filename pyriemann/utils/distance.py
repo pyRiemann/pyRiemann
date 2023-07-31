@@ -517,7 +517,7 @@ def pairwise_distance_harmonic(X, Y=None, squared=False):
     pairwise_distance
     distance_harmonic
     """
-    if isinstance(Y, type(None)) or np.array_equal(X, Y):
+    if isinstance(Y, type(None)):
         invY = invX = np.linalg.inv(X)
     else:
         invX = np.linalg.inv(X)
@@ -557,7 +557,7 @@ def pairwise_distance_logeuclid(X, Y=None, squared=False):
     pairwise_distance
     distance_logeuclid
     """
-    if isinstance(Y, type(None)) or np.array_equal(X, Y):
+    if isinstance(Y, type(None)):
         logY = logX = logm(X)
     else:
         logX = logm(X)
@@ -598,7 +598,7 @@ def pairwise_distance_riemann(X, Y=None, squared=False):
     distance_riemann
     """
     XisY = False
-    if isinstance(Y, type(None)) or np.array_equal(X, Y):
+    if isinstance(Y, type(None)):
         XisY = True
         Y = X
 
