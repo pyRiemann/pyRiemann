@@ -232,10 +232,6 @@ Distances
     distance_riemann
     distance_wasserstein
     pairwise_distance
-    pairwise_distance_euclid
-    pairwise_distance_harmonic
-    pairwise_distance_logeuclid
-    pairwise_distance_riemann
 
     distance_mahalanobis
 
