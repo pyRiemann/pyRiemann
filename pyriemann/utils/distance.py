@@ -447,7 +447,7 @@ def distance(A, B, metric='riemann', squared=False):
     return d
 
 
-def pairwise_distance_euclid(X, Y=None, squared=False):
+def _pairwise_distance_euclid(X, Y=None, squared=False):
     """Pairwise Euclidean distance matrix.
 
     Compute the matrix of Euclidan distances between pairs of elements of X and
@@ -487,7 +487,7 @@ def pairwise_distance_euclid(X, Y=None, squared=False):
     return dist
 
 
-def pairwise_distance_harmonic(X, Y=None, squared=False):
+def _pairwise_distance_harmonic(X, Y=None, squared=False):
     """Pairwise harmonic distance matrix.
 
     Compute the matrix of harmonic distances between pairs of elements of X and
@@ -523,10 +523,10 @@ def pairwise_distance_harmonic(X, Y=None, squared=False):
         invX = np.linalg.inv(X)
         invY = np.linalg.inv(Y)
 
-    return pairwise_distance_euclid(invX, invY, squared=squared)
+    return _pairwise_distance_euclid(invX, invY, squared=squared)
 
 
-def pairwise_distance_logeuclid(X, Y=None, squared=False):
+def _pairwise_distance_logeuclid(X, Y=None, squared=False):
     """Pairwise Log-Euclidean distance matrix.
 
     Compute the matrix of Log-Euclidan distances between pairs of elements of X
@@ -563,10 +563,10 @@ def pairwise_distance_logeuclid(X, Y=None, squared=False):
         logX = logm(X)
         logY = logm(Y)
 
-    return pairwise_distance_euclid(logX, logY, squared=squared)
+    return _pairwise_distance_euclid(logX, logY, squared=squared)
 
 
-def pairwise_distance_riemann(X, Y=None, squared=False):
+def _pairwise_distance_riemann(X, Y=None, squared=False):
     """Pairwise Riemann distance matrix.
 
     Compute the matrix of Riemann distances between pairs of elements of X
@@ -650,13 +650,13 @@ def pairwise_distance(X, Y=None, metric='riemann', squared=False):
     distance
     """
     if metric == 'euclid':
-        return pairwise_distance_euclid(X, Y=Y, squared=squared)
+        return _pairwise_distance_euclid(X, Y=Y, squared=squared)
     elif metric == 'harmonic':
-        return pairwise_distance_harmonic(X, Y=Y, squared=squared)
+        return _pairwise_distance_harmonic(X, Y=Y, squared=squared)
     elif metric == 'logeuclid':
-        return pairwise_distance_logeuclid(X, Y=Y, squared=squared)
+        return _pairwise_distance_logeuclid(X, Y=Y, squared=squared)
     elif metric == 'riemann':
-        return pairwise_distance_riemann(X, Y=Y, squared=squared)
+        return _pairwise_distance_riemann(X, Y=Y, squared=squared)
 
     n_matrices_X, _, _ = X.shape
 
