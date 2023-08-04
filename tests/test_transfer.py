@@ -90,7 +90,7 @@ def test_tlstretch(rndstate, centered_data, metric):
     for d in np.unique(domain):
         Xd = X_str[domain == d]
         Md = mean_riemann(Xd)
-        disp = np.sum(distance(Xd, Md, metric=metric)**2)
+        disp = np.mean(distance(Xd, Md, metric=metric)**2)
         assert np.isclose(disp, 1.0)
 
 
