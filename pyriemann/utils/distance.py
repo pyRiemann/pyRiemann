@@ -469,10 +469,6 @@ def _pairwise_distance_euclid(X, Y=None, squared=False):
         Euclidean Distances between pairs of elements of X if Y is None, or
         between elements of X and Y.
 
-    Notes
-    -----
-    .. versionadded:: 0.6
-
     See Also
     --------
     pairwise_distance
@@ -508,16 +504,13 @@ def _pairwise_distance_harmonic(X, Y=None, squared=False):
             n_matrices_Y)
         Harmonic Distances between pairs of elements of X if Y is None, or
         between elements of X and Y.
-    Notes
-    -----
-    .. versionadded:: 0.6
 
     See Also
     --------
     pairwise_distance
     distance_harmonic
     """
-    if isinstance(Y, type(None)):
+    if Y is None:
         invY = invX = np.linalg.inv(X)
     else:
         invX = np.linalg.inv(X)
@@ -548,16 +541,12 @@ def _pairwise_distance_logeuclid(X, Y=None, squared=False):
         Log-Euclidean Distances between pairs of elements of X if Y is None, or
         between elements of X and Y.
 
-    Notes
-    -----
-    .. versionadded:: 0.6
-
     See Also
     --------
     pairwise_distance
     distance_logeuclid
     """
-    if isinstance(Y, type(None)):
+    if Y is None:
         logY = logX = logm(X)
     else:
         logX = logm(X)
@@ -588,17 +577,13 @@ def _pairwise_distance_riemann(X, Y=None, squared=False):
         Riemann Distances between pairs of elements of X if Y is None, or
         between elements of X and Y.
 
-    Notes
-    -----
-    .. versionadded:: 0.6
-
     See Also
     --------
     pairwise_distance
     distance_riemann
     """
     XisY = False
-    if isinstance(Y, type(None)):
+    if Y is None:
         XisY = True
         Y = X
 
