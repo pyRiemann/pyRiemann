@@ -43,7 +43,7 @@ setup(
     ],
     extras_require={
         "docs": [
-            "sphinx<=7.0.1",
+            "sphinx>=6.0.0,<=7.0.1",
             "sphinx-gallery",
             "sphinx-bootstrap_theme",
             "numpydoc",
