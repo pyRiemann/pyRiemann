@@ -1,10 +1,8 @@
 import sys
 import os.path as op
-
 from setuptools import setup, find_packages
 
 
-# get the version (don't import mne here, so dependencies are not needed)
 version = None
 with open(op.join("pyriemann", "_version.py"), "r") as fid:
     for line in (line.strip() for line in fid):
@@ -36,15 +34,16 @@ setup(
         "Tracker": "https://github.com/pyRiemann/pyRiemann/issues/",
     },
     platforms="any",
-    python_requires=">=3.7",
+    python_requires=">=3.8",
     install_requires=[
         "numpy!=1.24.0",
         "scipy",
-        "scikit-learn",
+        "scikit-learn>=0.24",
         "joblib",
     ],
     extras_require={
         "docs": [
+            "sphinx>=6.0.0,<=7.0.1",
             "sphinx-gallery",
             "sphinx-bootstrap_theme",
             "numpydoc",
