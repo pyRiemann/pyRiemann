@@ -2,7 +2,6 @@
 import functools
 
 import numpy as np
-from scipy import stats
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.svm import SVC as sklearnSVC
 from sklearn.utils.extmath import softmax
@@ -34,6 +33,17 @@ def _check_metric(metric):
         raise TypeError('metric must be dict or str')
 
     return metric_mean, metric_dist
+
+
+def _mode_1d(X):
+    vals, counts = np.unique(X, return_counts=True)
+    mode = vals[counts.argmax()]
+    return mode
+
+
+def _mode_2d(X, axis=1):
+    mode = np.apply_along_axis(_mode_1d, axis, X)
+    return mode
 
 
 class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
@@ -524,8 +534,8 @@ class KNearestNeighbor(MDM):
         """
         dist = self._predict_distances(covtest)
         neighbors_classes = self.classmeans_[np.argsort(dist)]
-        out, _ = stats.mode(neighbors_classes[:, 0:self.n_neighbors], axis=1)
-        return out.ravel()
+        pred = _mode_2d(neighbors_classes[:, 0:self.n_neighbors], axis=1)
+        return pred
 
     def predict_proba(self, X):
         """Predict proba using softmax.

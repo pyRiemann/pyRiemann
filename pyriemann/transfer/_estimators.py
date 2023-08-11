@@ -601,8 +601,7 @@ class TLEstimator(BaseEstimator):
         self : TLEstimator instance
             The TLEstimator instance.
         """
-        if not is_regressor(self.estimator) \
-                and not is_classifier(self.estimator):
+        if not (is_regressor(self.estimator) or is_classifier(self.estimator)):
             raise TypeError(
                 'Estimator has to be either a classifier or a regressor.')
 
