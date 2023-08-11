@@ -512,7 +512,7 @@ def _pairwise_distance_harmonic(X, Y=None, squared=False):
     """
     invX = np.linalg.inv(X)
     if Y is None:
-        invY = invX
+        invY = None
     else:
         invY = np.linalg.inv(Y)
 
@@ -548,7 +548,7 @@ def _pairwise_distance_logeuclid(X, Y=None, squared=False):
     """
     logX = logm(X)
     if Y is None:
-        logY = logX
+        logY = None
     else:
         logY = logm(Y)
 
