@@ -12,6 +12,8 @@ v0.6.dev
 
 - Update pyRiemann from Python 3.7 to 3.8. pr`254` by :user:`qbarthelemy`
 
+- Speedup pairwise distance function :func:`pyriemann.utils.distance.pairwise_distance` by adding individual functions for 'euclid', 'harmonic', 'logeuclid' and 'riemann' metrics. :pr:`256` by :user:`gabelstein`
+
 
 v0.5 (Jun 2023)
 ---------------

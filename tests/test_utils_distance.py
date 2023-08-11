@@ -244,16 +244,29 @@ def test_distance_wrapper_between_set_and_matrix(dist, get_covmats):
 
 @pytest.mark.parametrize("dist", get_distances())
 @pytest.mark.parametrize("Y", [None, True])
-def test_pairwise_distance_matrix(get_covmats, dist, Y):
+@pytest.mark.parametrize("squared", [False, True])
+def test_pairwise_distance_matrix(get_covmats, dist, Y, squared):
     n_matrices_X, n_matrices_Y, n_channels = 6, 4, 5
     X = get_covmats(n_matrices_X, n_channels)
     if Y is None:
         n_matrices_Y = n_matrices_X
+        Y_ = X
     else:
         Y = get_covmats(n_matrices_Y, n_channels)
+        Y_ = Y
 
-    pdist = pairwise_distance(X, Y, metric=dist)
+    pdist = pairwise_distance(X, Y, metric=dist, squared=squared)
     assert pdist.shape == (n_matrices_X, n_matrices_Y)
+
+    for i in range(n_matrices_X):
+        for j in range(n_matrices_Y):
+            assert np.isclose(pdist[i, j],
+                              distance(X[i],
+                                       Y_[j],
+                                       metric=dist,
+                                       squared=squared),
+                              atol=1e-5,
+                              rtol=1e-5)
 
     if Y is None and dist not in ["kullback", "kullback_right"]:
         assert is_sym(pdist)
