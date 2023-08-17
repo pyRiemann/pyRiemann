@@ -205,6 +205,7 @@ Covariance preprocessing
     covariances
     covariance_mest
     covariance_sch
+    covariance_scm
     covariances_EP
     covariances_X
     block_covariances
@@ -353,6 +354,7 @@ Matrix Tests
     is_sym
     is_skew_sym
     is_real
+    is_real_type
     is_hermitian
     is_pos_def
     is_pos_semi_def

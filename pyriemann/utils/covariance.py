@@ -3,33 +3,34 @@ import warnings
 import numpy as np
 from scipy.linalg import block_diag
 from scipy.stats import chi2
-from sklearn.covariance import oas, ledoit_wolf, fast_mcd, empirical_covariance
+from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
 from .distance import distance_mahalanobis
-from .test import is_square
+from .test import is_square, is_real_type
 
 
 def _lwf(X, **kwds):
     """Wrapper for sklearn ledoit wolf covariance estimator"""
+    if not is_real_type(X):
+        raise ValueError("Input must be real-valued.")
     C, _ = ledoit_wolf(X.T, **kwds)
     return C
 
 
 def _mcd(X, **kwds):
     """Wrapper for sklearn mcd covariance estimator"""
+    if not is_real_type(X):
+        raise ValueError("Input must be real-valued.")
     _, C, _, _ = fast_mcd(X.T, **kwds)
     return C
 
 
 def _oas(X, **kwds):
     """Wrapper for sklearn oas covariance estimator"""
+    if not is_real_type(X):
+        raise ValueError("Input must be real-valued.")
     C, _ = oas(X.T, **kwds)
     return C
-
-
-def _scm(X, **kwds):
-    """Wrapper for sklearn sample covariance estimator"""
-    return empirical_covariance(X.T, **kwds)
 
 
 def _hub(X, **kwds):
@@ -160,7 +161,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
 
     for _ in range(n_iter_max):
 
-        dist2 = distance_mahalanobis(X, cov) ** 2
+        dist2 = distance_mahalanobis(X, cov, squared=True)
         Xw = np.sqrt(weight_func(dist2)) * X
         cov_new = Xw @ Xw.conj().T / n_times
 
@@ -198,7 +199,7 @@ def covariance_sch(X):
     Parameters
     ----------
     X : ndarray, shape (n_channels, n_times)
-        Multi-channel time-series.
+        Multi-channel time-series, real-valued.
 
     Returns
     -------
@@ -217,9 +218,11 @@ def covariance_sch(X):
         J. Schafer, and K. Strimmer. Statistical Applications in Genetics and
         Molecular Biology, Volume 4, Issue 1, 2005.
     """
+    if not is_real_type(X):
+        raise ValueError("Input must be real-valued.")
     _, n_times = X.shape
     X_c = X - X.mean(axis=1, keepdims=True)
-    C_scm = 1. / n_times * X_c @ X_c.T
+    C_scm = X_c @ X_c.T / n_times
 
     # Compute optimal gamma, the weigthing between SCM and shrinkage estimator
     R = (n_times / ((n_times - 1.) * np.outer(X.std(axis=1), X.std(axis=1))))
@@ -237,34 +240,72 @@ def covariance_sch(X):
     return sigma + shrinkage
 
 
-def _check_est(est):
-    """Check if a given estimator is valid."""
+def covariance_scm(X, *, assume_centered=False):
+    """Sample covariance estimator.
 
-    # Check estimator exist and return the correct function
-    estimators = {
-        'corr': np.corrcoef,
-        'cov': np.cov,
-        'hub': _hub,
-        'lwf': _lwf,
-        'mcd': _mcd,
-        'oas': _oas,
-        'scm': _scm,
-        'sch': covariance_sch,
-        'stu': _stu,
-        'tyl': _tyl,
-    }
+    Sample covariance estimator, re-implementing `empirical_covariance` of
+    scikit-learn [1]_, but supporting real and complex-valued data.
 
-    if callable(est):
-        # All good (cross your fingers)
-        pass
-    elif est in estimators.keys():
-        # Map the corresponding estimator
-        est = estimators[est]
+    Parameters
+    ----------
+    X : ndarray, shape (n_channels, n_times)
+        Multi-channel time-series, real or complex-valued.
+    assume_centered : bool, default=False
+        If `True`, data will not be centered before computation.
+        Useful when working with data whose mean is almost, but not exactly
+        zero.
+        If `False`, data will be centered before computation.
+
+    Returns
+    -------
+    cov : ndarray, shape (n_channels, n_channels)
+        Sample covariance matrix.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
+
+    References
+    ----------
+    .. [1] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
+    """  # noqa
+    _, n_times = X.shape
+
+    if assume_centered:
+        cov = X @ X.conj().T / n_times
     else:
-        # raise an error
-        raise ValueError(
-            """%s is not an valid estimator ! Valid estimators are : %s or a
-             callable function""" % (est, (' , ').join(estimators.keys())))
+        cov = np.cov(X, bias=1)
+
+    return cov
+
+
+###############################################################################
+
+
+cov_est_functions = {
+    'corr': np.corrcoef,
+    'cov': np.cov,
+    'hub': _hub,
+    'lwf': _lwf,
+    'mcd': _mcd,
+    'oas': _oas,
+    'sch': covariance_sch,
+    'scm': covariance_scm,
+    'stu': _stu,
+    'tyl': _tyl,
+}
+
+
+def _check_cov_est_function(est):
+    """Check covariance estimator function."""
+    if isinstance(est, str):
+        if est not in cov_est_functions.keys():
+            raise ValueError(f"Unknown covariance estimator '{est}'")
+        else:
+            est = cov_est_functions[est]
+    elif not hasattr(est, '__call__'):
+        raise ValueError("Covariance estimator must be a function or a string "
+                         f"(Got {type(est)}.")
     return est
 
 
@@ -274,31 +315,30 @@ def covariances(X, estimator='cov', **kwds):
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_times)
-        Multi-channel time-series.
+        Multi-channel time-series, real or complex-valued.
     estimator : {'corr', 'cov', 'hub', 'lwf', 'mcd', 'oas', 'sch', 'scm', \
             'stu', 'tyl'}, default='scm'
         Covariance matrix estimator [est]_:
 
-        * 'corr' for correlation coefficient matrix [corr]_ supporting complex
-          inputs,
-        * 'cov' for numpy based covariance matrix [cov]_ supporting complex
-          inputs,
-        * 'hub' for Huber's M-estimator based covariance matrix [mest]_
-          supporting complex inputs,
-        * 'lwf' for Ledoit-Wolf shrunk covariance matrix [lwf]_,
-        * 'mcd' for minimum covariance determinant matrix [mcd]_,
-        * 'oas' for oracle approximating shrunk covariance matrix [oas]_,
-        * 'sch' for Schaefer-Strimmer shrunk covariance matrix [sch]_,
+        * 'corr' for correlation coefficient matrix [corr]_,
+        * 'cov' for NumPy based covariance matrix [cov]_,
+        * 'hub' for Huber's M-estimator based covariance matrix [mest]_,
+        * 'lwf' for Ledoit-Wolf shrunk covariance matrix [lwf]_
+          only for real-valued inputs,
+        * 'mcd' for minimum covariance determinant matrix [mcd]_
+          only for real-valued inputs,
+        * 'oas' for oracle approximating shrunk covariance matrix [oas]_
+          only for real-valued inputs,
+        * 'sch' for Schaefer-Strimmer shrunk covariance matrix [sch]_
+          only for real-valued inputs,
         * 'scm' for sample covariance matrix [scm]_,
-        * 'stu' for Student-t's M-estimator based covariance matrix [mest]_
-          supporting complex inputs,
-        * 'tyl' for Tyler's M-estimator based covariance matrix [mest]_
-          supporting complex inputs,
+        * 'stu' for Student-t's M-estimator based covariance matrix [mest]_,
+        * 'tyl' for Tyler's M-estimator based covariance matrix [mest]_,
         * or a callable function.
 
         For regularization, consider 'lwf' or 'oas'.
         For robustness, consider 'hub', 'mcd', 'stu' or 'tyl'.
-    **kwds : optional keyword parameters
+    **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
 
     Returns
@@ -314,11 +354,11 @@ def covariances(X, estimator='cov', **kwds):
     .. [lwf] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
     .. [mcd] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
     .. [mest] :func:`pyriemann.utils.covariance.covariance_mest`
-    .. [oas] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.OAS.html
+    .. [oas] https://scikit-learn.org/stable/modules/generated/oas-function.html
     .. [sch] :func:`pyriemann.utils.covariance.covariance_sch`
-    .. [scm] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
+    .. [scm] :func:`pyriemann.utils.covariance.covariance_scm`
     """  # noqa
-    est = _check_est(estimator)
+    est = _check_cov_est_function(estimator)
     n_matrices, n_channels, n_times = X.shape
     covmats = np.empty((n_matrices, n_channels, n_channels), dtype=X.dtype)
     for i in range(n_matrices):
@@ -347,7 +387,7 @@ def covariances_EP(X, P, estimator='cov', **kwds):
             n_channels + n_channels_proto)
         Covariance matrices.
     """
-    est = _check_est(estimator)
+    est = _check_cov_est_function(estimator)
     n_matrices, n_channels, n_times = X.shape
     n_channels_proto, n_times_p = P.shape
     if n_times_p != n_times:
@@ -393,7 +433,7 @@ def covariances_X(X, estimator='scm', alpha=0.2, **kwds):
     if alpha <= 0:
         raise ValueError(
             f"Parameter alpha must be strictly positive (Got {alpha})")
-    est = _check_est(estimator)
+    est = _check_cov_est_function(estimator)
     n_matrices, n_channels, n_times = X.shape
 
     Hchannels = np.eye(n_channels) \
@@ -435,10 +475,10 @@ def block_covariances(X, blocks, estimator='cov', **kwds):
 
     Returns
     -------
-    C : ndarray, shape (n_matrices, n_channels, n_channels)
+    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Block diagonal covariance matrices.
     """
-    est = _check_est(estimator)
+    est = _check_cov_est_function(estimator)
     n_matrices, n_channels, n_times = X.shape
 
     if np.sum(blocks) != n_channels:
@@ -461,7 +501,7 @@ def block_covariances(X, blocks, estimator='cov', **kwds):
 
 def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
     """Convert EEG signal to covariance using sliding window."""
-    est = _check_est(estimator)
+    est = _check_cov_est_function(estimator)
     X = []
     if padding:
         padd = np.zeros((int(window / 2), sig.shape[1]))
@@ -486,7 +526,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     Parameters
     ----------
     X : ndarray, shape (n_channels, n_times)
-        Multi-channel time-series.
+        Multi-channel time-series, real-valued.
     window : int, default=128
         The length of the FFT window used for spectral estimation.
     overlap : float, default=0.75
@@ -509,6 +549,8 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     ----------
     .. [1] https://en.wikipedia.org/wiki/Cross-spectrum
     """
+    if not is_real_type(X):
+        raise ValueError("Input must be real-valued.")
     window = int(window)
     if window < 1:
         raise ValueError("Value window must be a positive integer")
@@ -571,7 +613,7 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     Parameters
     ----------
     X : ndarray, shape (n_channels, n_times)
-        Multi-channel time-series.
+        Multi-channel time-series, real-valued.
     window : int, default=128
         The length of the FFT window used for spectral estimation.
     overlap : float, default=0.75
@@ -608,7 +650,7 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
     Parameters
     ----------
     X : ndarray, shape (n_channels, n_times)
-        Multi-channel time-series.
+        Multi-channel time-series, real-valued.
     window : int, default=128
         The length of the FFT window used for spectral estimation.
     overlap : float, default=0.75

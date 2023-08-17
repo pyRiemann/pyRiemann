@@ -5,7 +5,8 @@ import numpy as np
 from scipy.linalg import eigh, inv
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from .utils.covariance import _check_est, normalize, get_nondiag_weight
+from .utils.covariance import (_check_cov_est_function, normalize,
+                               get_nondiag_weight)
 from .utils.mean import mean_covariance
 from .utils.ajd import ajd_pham
 from . import estimation as est
@@ -79,7 +80,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
 
     @property
     def estimator_fn(self):
-        return _check_est(self.estimator)
+        return _check_cov_est_function(self.estimator)
 
     def fit(self, X, y):
         """Train Xdawn spatial filters.
