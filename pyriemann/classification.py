@@ -8,6 +8,7 @@ from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 from joblib import Parallel, delayed
+import warnings
 
 from .utils.kernel import kernel
 from .utils.mean import mean_covariance, mean_power
@@ -533,8 +534,8 @@ class KNearestNeighbor(MDM):
             Predictions for each matrix according to the closest centroid.
         """
         if covtest is not None:
-            print("DeprecationWarning: input covtest has been renamed into X "
-                  "and will be removed in 0.8.0.")
+            warnings.warn("Input covtest has been renamed into X and will be "
+                          "removed in 0.8.0.", category=DeprecationWarning)
             X = covtest
 
         dist = self._predict_distances(X)
