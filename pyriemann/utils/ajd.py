@@ -372,7 +372,7 @@ def ajd(X, method="ajd_pham", init=None, eps=1e-6, n_iter_max=100, **kwargs):
 
     Notes
     -----
-    .. versionadded:: 0.5
+    .. versionadded:: 0.6
 
     See Also
     --------
