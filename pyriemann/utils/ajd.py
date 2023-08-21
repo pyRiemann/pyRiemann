@@ -107,7 +107,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     return V, D
 
 
-def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=100, sample_weight=None):
+def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=15, sample_weight=None):
     """Approximate joint diagonalization based on Pham's algorithm.
 
     This is a direct implementation of the AJD algorithm [1]_, optimizing a
@@ -116,7 +116,7 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=100, sample_weight=None):
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n, n)
-        Set of SPD/HPD matrices to diagonalize.
+        Set of SPD matrices to diagonalize.
     init : None | ndarray, shape (n, n), default=None
         Initialization for the diagonalizer.
     eps : float, default=1e-6
@@ -132,7 +132,7 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=100, sample_weight=None):
     V : ndarray, shape (n, n)
         The diagonalizer, an invertible matrix.
     D : ndarray, shape (n_matrices, n, n)
-        Set of quasi diagonal matrices, D = V X V^H.
+        Set of quasi diagonal matrices, D = V X V^T.
 
     Notes
     -----
@@ -166,7 +166,6 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=100, sample_weight=None):
         V = np.eye(n)
     else:
         V = _check_init_diag(init, n)
-    V = V.astype(X.dtype)
     epsilon = n * (n - 1) * eps
 
     for _ in range(n_iter_max):
@@ -188,9 +187,7 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=100, sample_weight=None):
 
                 tmp = np.sqrt(omega21 / omega12)
                 tmp1 = (tmp * g12 + g21) / (omega + 1)
-                if np.isrealobj(X):
-                    omega = max(omega - 1, 1e-9)
-                tmp2 = (tmp * g12 - g21) / omega
+                tmp2 = (tmp * g12 - g21) / max(omega - 1, 1e-9)
 
                 h12 = tmp1 + tmp2
                 h21 = np.conj((tmp1 - tmp2) / tmp)
@@ -198,13 +195,10 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=100, sample_weight=None):
                 decr += n_matrices * (g12 * np.conj(h12) + g21 * h21) / 2.0
 
                 tmp = 1 + 0.5j * np.imag(h12 * h21)
-                tmp = tmp + np.sqrt(tmp ** 2 - h12 * h21)
-                if np.isrealobj(X):
-                    tmp = np.real(tmp)
-                tau = np.array([[1, np.conj(-h12 / tmp)],
-                                [np.conj(-h21 / tmp), 1]])
+                tmp = np.real(tmp + np.sqrt(tmp ** 2 - h12 * h21))
+                tau = np.array([[1, -h12 / tmp], [-h21 / tmp, 1]])
 
-                A[[ii, jj], :] = tau.conj() @ A[[ii, jj], :]
+                A[[ii, jj], :] = tau @ A[[ii, jj], :]
                 tmp = np.c_[A[:, Ii], A[:, Ij]]
                 tmp = np.reshape(tmp, (n * n_matrices, 2), order='F')
                 tmp = tmp @ tau.T
@@ -218,8 +212,8 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=100, sample_weight=None):
     else:
         warnings.warn("Convergence not reached")
 
-    D = np.reshape(A, (n, -1, n)).transpose(1, 0, 2).conj()
-    return V.astype(X.dtype), D.astype(X.dtype)
+    D = np.reshape(A, (n, -1, n)).transpose(1, 0, 2)
+    return V, D
 
 
 def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
