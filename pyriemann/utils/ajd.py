@@ -107,7 +107,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     return V, D
 
 
-def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=15, sample_weight=None):
+def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=100, sample_weight=None):
     """Approximate joint diagonalization based on Pham's algorithm.
 
     This is a direct implementation of the AJD algorithm [1]_, optimizing a

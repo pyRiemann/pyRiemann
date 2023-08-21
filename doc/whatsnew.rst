@@ -18,7 +18,7 @@ v0.6.dev
 - Add :func:`pyriemann.utils.test.is_real_type` to check the type of input arrays and
   add :func:`pyriemann.utils.covariance.covariance_scm` allowing to process complex-valued inputs for 'scm' covariance estimator. :pr:`251` by :user:`qbarthelemy`
 
-- Add a generic :func:`pyriemann.utils.ajd.ajd` function. :pr:`238` by :user:`qbarthelemy`
+- Enhance ajd module and add a generic :func:`pyriemann.utils.ajd.ajd` function. :pr:`238` by :user:`qbarthelemy`
 
 
 v0.5 (Jun 2023)
@@ -50,7 +50,6 @@ v0.5 (Jun 2023)
 - Correct :func:`pyriemann.utils.distance.distance_mahalanobis`, keeping only real part. :pr:`249` by :user:`qbarthelemy`
 
 - Fix :func:`pyriemann.datasets.sample_gaussian_spd` used with ``sampling_method=rejection`` on 2D matrices. :pr:`250` by :user:`mhurte`
-
 
 v0.4 (Feb 2023)
 ---------------
