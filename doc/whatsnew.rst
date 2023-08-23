@@ -18,6 +18,8 @@ v0.6.dev
 - Add :func:`pyriemann.utils.test.is_real_type` to check the type of input arrays and
   add :func:`pyriemann.utils.covariance.covariance_scm` allowing to process complex-valued inputs for 'scm' covariance estimator. :pr:`251` by :user:`qbarthelemy`
 
+- Update to Read the Docs v2. :pr:`260` by :user:`qbarthelemy`
+
 
 v0.5 (Jun 2023)
 ---------------
