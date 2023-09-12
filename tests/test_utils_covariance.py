@@ -64,16 +64,21 @@ def test_covariances_real_vs_sklearn(estimator, rndstate):
         assert_array_almost_equal(cov[0], empirical_covariance(x[0].T), 10)
 
 
-@pytest.mark.parametrize('estimator', ['corr', 'cov', 'scm'] + m_estimators)
+@pytest.mark.parametrize('estimator', estimators + m_estimators)
 def test_covariances_complex(estimator, rndstate):
     """Test covariance for complex inputs"""
-    n_matrices, n_channels, n_times = 3, 4, 100
+    n_matrices, n_channels, n_times = 3, 4, 50
     x = rndstate.randn(n_matrices, n_channels, n_times) \
         + 1j * rndstate.randn(n_matrices, n_channels, n_times)
 
-    cov = covariances(x, estimator=estimator)
-    assert cov.shape == (n_matrices, n_channels, n_channels)
-    assert is_herm_pos_def(cov)
+    if estimator in ['lwf', 'mcd', 'oas', 'sch']:
+        with pytest.raises(ValueError):
+            covariances(x, estimator=estimator)
+
+    else:
+        cov = covariances(x, estimator=estimator)
+        assert cov.shape == (n_matrices, n_channels, n_channels)
+        assert is_herm_pos_def(cov)
 
 
 @pytest.mark.parametrize(
