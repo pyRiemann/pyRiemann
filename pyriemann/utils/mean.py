@@ -417,9 +417,9 @@ def mean_power(X=None, p=None, *, sample_weight=None, zeta=10e-10, maxiter=100,
         M. Congedo, A. Barachant, and R. Bhatia. IEEE Transactions on Signal
         Processing, Volume 65, Issue 9, pp.2211-2220, May 2017
     """
+    X = _deprecate_covmats(covmats, X)
     if p is None:
         raise ValueError("Input p can not be None")
-    X = _deprecate_covmats(covmats, X)
     if not isinstance(p, (int, float)):
         raise ValueError("Power mean only defined for a scalar exponent")
     if p < -1 or 1 < p:
