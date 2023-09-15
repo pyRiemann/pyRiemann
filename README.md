@@ -22,7 +22,7 @@ and classifying them using the Riemannian geometry of SPD matrices [[1]](#1).
 For BCI applications, studied paradigms are motor imagery [[2]](#2) [[3]](#3), event-related potentials (ERP) [[4]](#4) and steady-state visually evoked potentials (SSVEP) [[5]](#5).
 Using extended labels, API allows transfer learning between sessions or subjects [[6]](#6).
 
-This code is BSD-licenced (3 clause).
+This code is BSD-licensed (3 clause).
 
 ## Documentation
 
