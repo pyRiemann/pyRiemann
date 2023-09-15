@@ -291,7 +291,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
                 self._means[d],
                 metric=self.metric,
                 squared=True,
-            ).sum()
+            ).mean()
             self.dispersions_[d] = disp_domain
 
         return self
