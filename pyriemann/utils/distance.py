@@ -140,7 +140,7 @@ def distance_kullback(A, B, squared=False):
     n = A.shape[-1]
     tr = np.trace(_recursive(solve, B, A, assume_a='pos'), axis1=-2, axis2=-1)
     logdet = np.linalg.slogdet(B)[1] - np.linalg.slogdet(A)[1]
-    d = 0.5 * (tr - n + logdet)
+    d = 0.5 * (tr - n + logdet).real
     return d ** 2 if squared else d
 
 
@@ -365,7 +365,7 @@ def distance_wasserstein(A, B, squared=False):
     _check_inputs(A, B)
     B12 = sqrtm(B)
     d2 = np.trace(A + B - 2 * sqrtm(B12 @ A @ B12), axis1=-2, axis2=-1)
-    d2 = np.maximum(0, d2)
+    d2 = np.maximum(0, d2.real)
     return d2 if squared else np.sqrt(d2)
 
 

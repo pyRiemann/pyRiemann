@@ -66,8 +66,8 @@ def test_distances_metric(kind, metric, dist, get_mats):
     mats = get_mats(n_matrices, n_channels, kind)
     A, B = mats[0], mats[1]
     d = distance(A, B, metric=metric)
-    dtrue = dist(A, B)
-    assert d == approx(dtrue)
+    assert d == approx(dist(A, B))
+    assert np.isreal(d)
 
 
 def test_distances_metric_error(get_covmats):
@@ -181,18 +181,18 @@ def test_distance_kullback_implementation(get_covmats):
     n_matrices, n_channels = 2, 6
     mats = get_covmats(n_matrices, n_channels)
     A, B = mats[0], mats[1]
-    dist = 0.5*(np.trace(np.linalg.inv(B) @ A) - n_channels
-                + np.log(np.linalg.det(B) / np.linalg.det(A)))
-    assert distance_kullback(A, B) == approx(dist)
+    d = 0.5*(np.trace(np.linalg.inv(B) @ A) - n_channels
+             + np.log(np.linalg.det(B) / np.linalg.det(A)))
+    assert distance_kullback(A, B) == approx(d)
 
 
 def test_distance_logdet_implementation(get_covmats):
     n_matrices, n_channels = 2, 6
     mats = get_covmats(n_matrices, n_channels)
     A, B = mats[0], mats[1]
-    dist = np.sqrt(np.log(np.linalg.det((A + B) / 2.0))
-                   - 0.5 * np.log(np.linalg.det(A)*np.linalg.det(B)))
-    assert distance_logdet(A, B) == approx(dist)
+    d = np.sqrt(np.log(np.linalg.det((A + B) / 2.0))
+                - 0.5 * np.log(np.linalg.det(A)*np.linalg.det(B)))
+    assert distance_logdet(A, B) == approx(d)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -280,9 +280,9 @@ def test_distance_mahalanobis(rndstate, complex_valued):
     X = rndstate.randn(n_channels, n_times)
     if complex_valued:
         X = X + 1j * rndstate.randn(n_channels, n_times)
-    dist = distance_mahalanobis(X, np.cov(X))
-    assert dist.shape == (n_times,)
-    assert np.all(np.isreal(dist))
+    d = distance_mahalanobis(X, np.cov(X))
+    assert d.shape == (n_times,)
+    assert np.all(np.isreal(d))
 
 
 @pytest.mark.parametrize("mean", [True, None])
