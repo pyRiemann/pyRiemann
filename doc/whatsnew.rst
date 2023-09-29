@@ -20,6 +20,8 @@ v0.6.dev
 
 - Update to Read the Docs v2. :pr:`260` by :user:`qbarthelemy`
 
+- Correct :func:`pyriemann.utils.distance.distance_wasserstein` and :func:`pyriemann.utils.distance.distance_kullback`, keeping only real part. :pr:`267` by :user:`qbarthelemy`
+
 
 v0.5 (Jun 2023)
 ---------------
