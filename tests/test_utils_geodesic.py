@@ -84,10 +84,10 @@ def test_geodesic_euclid(rndstate, complex_valued):
 
 
 @pytest.mark.parametrize("metric", get_geod_name())
-def test_geodesic_wrapper_ndarray(metric, get_covmats):
+def test_geodesic_wrapper_ndarray(metric, get_mats):
     n_matrices, n_channels = 5, 3
-    A = get_covmats(n_matrices, n_channels)
-    B = get_covmats(n_matrices, n_channels)
+    A = get_mats(n_matrices, n_channels, "spd")
+    B = get_mats(n_matrices, n_channels, "spd")
     assert geodesic(A[0], B[0], .3, metric=metric).shape == A[0].shape
     assert geodesic(A, B, .2, metric=metric).shape == A.shape  # 3D arrays
 
@@ -109,9 +109,9 @@ def test_geodesic_wrapper_simple(metric):
 
 
 @pytest.mark.parametrize("metric, gfun", zip(get_geod_name(), get_geod_func()))
-def test_geodesic_wrapper_random(metric, gfun, get_covmats):
+def test_geodesic_wrapper_random(metric, gfun, get_mats):
     n_matrices, n_channels = 2, 5
-    mats = get_covmats(n_matrices, n_channels)
+    mats = get_mats(n_matrices, n_channels, "spd")
     A, B = mats[0], mats[1]
     if gfun is geodesic_euclid:
         Ctrue = mean_euclid(mats)

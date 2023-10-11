@@ -388,12 +388,12 @@ def test_normalize_shapes(norm, rndstate):
     assert mat.shape == mat_n.shape
 
 
-def test_normalize_values(rndstate, get_covmats):
+def test_normalize_values(rndstate, get_mats):
     """Test normalize values"""
     n_matrices, n_channels = 20, 3
 
     # after corr-normalization => diags = 1 and values in [-1, 1]
-    mat = get_covmats(n_channels, n_channels)
+    mat = get_mats(n_channels, n_channels, "spd")
     mat_cn = normalize(mat, "corr")
     assert_array_almost_equal(np.ones(mat_cn.shape[:-1]),
                               np.diagonal(mat_cn, axis1=-2, axis2=-1))

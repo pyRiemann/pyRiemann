@@ -70,9 +70,9 @@ def test_distances_metric(kind, metric, dist, get_mats):
     assert np.isreal(d)
 
 
-def test_distances_metric_error(get_covmats):
+def test_distances_metric_error(get_mats):
     n_matrices, n_channels = 2, 2
-    A = get_covmats(n_matrices, n_channels)
+    A = get_mats(n_matrices, n_channels, "spd")
     with pytest.raises(ValueError):
         distance(A[0], A[1], metric="universe")
     with pytest.raises(ValueError):
@@ -89,18 +89,18 @@ def test_distances_squared(kind, dist, get_mats):
 
 
 @pytest.mark.parametrize("dist", get_dist_func())
-def test_distances_all_error(dist, get_covmats):
+def test_distances_all_error(dist, get_mats):
     n_matrices, n_channels = 3, 3
-    A = get_covmats(n_matrices, n_channels)
+    A = get_mats(n_matrices, n_channels, "spd")
     with pytest.raises(ValueError):
         dist(A, A[0])
 
 
 @pytest.mark.parametrize("dist", get_dist_func())
-def test_distances_all_ndarray(dist, get_covmats):
+def test_distances_all_ndarray(dist, get_mats):
     n_matrices, n_channels = 5, 3
-    A = get_covmats(n_matrices, n_channels)
-    B = get_covmats(n_matrices, n_channels)
+    A = get_mats(n_matrices, n_channels, "spd")
+    B = get_mats(n_matrices, n_channels, "spd")
     assert isinstance(dist(A[0], B[0]), float)  # 2D arrays
     assert dist(A, B).shape == (n_matrices,)  # 3D arrays
 
@@ -177,18 +177,18 @@ def test_distance_harmonic(kind, get_mats):
     distance_harmonic(A, B)
 
 
-def test_distance_kullback_implementation(get_covmats):
+def test_distance_kullback_implementation(get_mats):
     n_matrices, n_channels = 2, 6
-    mats = get_covmats(n_matrices, n_channels)
+    mats = get_mats(n_matrices, n_channels, "spd")
     A, B = mats[0], mats[1]
     d = 0.5*(np.trace(np.linalg.inv(B) @ A) - n_channels
              + np.log(np.linalg.det(B) / np.linalg.det(A)))
     assert distance_kullback(A, B) == approx(d)
 
 
-def test_distance_logdet_implementation(get_covmats):
+def test_distance_logdet_implementation(get_mats):
     n_matrices, n_channels = 2, 6
-    mats = get_covmats(n_matrices, n_channels)
+    mats = get_mats(n_matrices, n_channels, "spd")
     A, B = mats[0], mats[1]
     d = np.sqrt(np.log(np.linalg.det((A + B) / 2.0))
                 - 0.5 * np.log(np.linalg.det(A)*np.linalg.det(B)))
@@ -223,17 +223,17 @@ def test_distance_riemann_properties(kind, get_mats):
 
 
 @pytest.mark.parametrize("dist, dfunc", zip(get_distances(), get_dist_func()))
-def test_distance_wrapper(dist, dfunc, get_covmats):
+def test_distance_wrapper(dist, dfunc, get_mats):
     n_matrices, n_channels = 2, 5
-    mats = get_covmats(n_matrices, n_channels)
+    mats = get_mats(n_matrices, n_channels, "spd")
     A, B = mats[0], mats[1]
     assert distance(A, B, metric=dist) == dfunc(A, B)
 
 
 @pytest.mark.parametrize("dist", get_dist_func())
-def test_distance_wrapper_between_set_and_matrix(dist, get_covmats):
+def test_distance_wrapper_between_set_and_matrix(dist, get_mats):
     n_matrices, n_channels = 10, 4
-    mats = get_covmats(n_matrices, n_channels)
+    mats = get_mats(n_matrices, n_channels, "spd")
     assert distance(mats, mats[-1], metric=dist).shape == (n_matrices, 1)
 
     n_sets = 5
@@ -245,14 +245,14 @@ def test_distance_wrapper_between_set_and_matrix(dist, get_covmats):
 @pytest.mark.parametrize("dist", get_distances())
 @pytest.mark.parametrize("Y", [None, True])
 @pytest.mark.parametrize("squared", [False, True])
-def test_pairwise_distance_matrix(get_covmats, dist, Y, squared):
+def test_pairwise_distance_matrix(get_mats, dist, Y, squared):
     n_matrices_X, n_matrices_Y, n_channels = 6, 4, 5
-    X = get_covmats(n_matrices_X, n_channels)
+    X = get_mats(n_matrices_X, n_channels, "spd")
     if Y is None:
         n_matrices_Y = n_matrices_X
         Y_ = X
     else:
-        Y = get_covmats(n_matrices_Y, n_channels)
+        Y = get_mats(n_matrices_Y, n_channels, "spd")
         Y_ = Y
 
     pdist = pairwise_distance(X, Y, metric=dist, squared=squared)
@@ -286,11 +286,11 @@ def test_distance_mahalanobis(rndstate, complex_valued):
 
 
 @pytest.mark.parametrize("mean", [True, None])
-def test_distance_mahalanobis_scipy(rndstate, get_covmats, mean):
+def test_distance_mahalanobis_scipy(rndstate, get_mats, mean):
     """Test equivalence between pyriemann and scipy for real data"""
     n_channels, n_times = 3, 100
     X = rndstate.randn(n_channels, n_times)
-    C = get_covmats(1, n_channels)[0]
+    C = get_mats(1, n_channels, "spd")[0]
 
     Cinv = np.linalg.inv(C)
     y = np.zeros(n_channels)
