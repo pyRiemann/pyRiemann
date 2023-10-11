@@ -42,10 +42,10 @@ def test_median_weight_zero(kind, median, get_mats):
 
 
 @pytest.mark.parametrize("median", [median_euclid, median_riemann])
-def test_median_warning_convergence(median, get_covmats):
+def test_median_warning_convergence(median, get_mats):
     """Test warning for convergence not reached"""
     n_matrices, n_channels = 3, 2
-    mats = get_covmats(n_matrices, n_channels)
+    mats = get_mats(n_matrices, n_channels, "spd")
     with pytest.warns(UserWarning):
         median(mats, maxiter=0)
 
@@ -70,8 +70,8 @@ def test_median_euclid(rndstate, complex_valued):
 
 
 @pytest.mark.parametrize("step_size", [0, 2.5])
-def test_median_riemann_stepsize_error(step_size, get_covmats):
+def test_median_riemann_stepsize_error(step_size, get_mats):
     n_matrices, n_channels = 1, 2
-    mats = get_covmats(n_matrices, n_channels)
+    mats = get_mats(n_matrices, n_channels, "spd")
     with pytest.raises(ValueError):
         median_riemann(mats, step_size=step_size)
