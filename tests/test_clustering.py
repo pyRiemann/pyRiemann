@@ -10,10 +10,10 @@ from pyriemann.clustering import (Kmeans, KmeansPerClassTransform, Potato,
     "clust", [Kmeans, KmeansPerClassTransform, Potato, PotatoField]
 )
 class ClusteringTestCase:
-    def test_two_clusters(self, clust, get_covmats, get_labels):
+    def test_two_clusters(self, clust, get_mats, get_labels):
         n_clusters = 2
         n_matrices, n_channels = 6, 4
-        covmats = get_covmats(n_matrices, n_channels)
+        covmats = get_mats(n_matrices, n_channels, "spd")
         if clust is Kmeans:
             self.clf_predict(clust, covmats, n_clusters)
             self.clf_transform(clust, covmats, n_clusters)
@@ -34,19 +34,19 @@ class ClusteringTestCase:
             self.clf_fit_independence(clust, covmats)
         if clust is PotatoField:
             n_potatoes = 3
-            covmats = [get_covmats(n_matrices, n_channels),
-                       get_covmats(n_matrices, n_channels + 2),
-                       get_covmats(n_matrices, n_channels + 1)]
+            covmats = [get_mats(n_matrices, n_channels, "spd"),
+                       get_mats(n_matrices, n_channels + 2, "spd"),
+                       get_mats(n_matrices, n_channels + 1, "spd")]
             self.clf_transform(clust, covmats, n_potatoes)
             self.clf_predict(clust, covmats, n_potatoes)
             self.clf_predict_proba(clust, covmats, n_potatoes)
             self.clf_partial_fit(clust, covmats, n_potatoes)
             self.clf_fit_independence(clust, covmats, n_potatoes)
 
-    def test_three_clusters(self, clust, get_covmats, get_labels):
+    def test_three_clusters(self, clust, get_mats, get_labels):
         n_clusters = 3
         n_matrices, n_channels = 6, 3
-        covmats = get_covmats(n_matrices, n_channels)
+        covmats = get_mats(n_matrices, n_channels, "spd")
         if clust is Kmeans:
             self.clf_predict(clust, covmats, n_clusters)
             self.clf_transform(clust, covmats, n_clusters)
@@ -164,9 +164,9 @@ class TestRiemannianClustering(ClusteringTestCase):
 @pytest.mark.parametrize("init", ["random", "ndarray"])
 @pytest.mark.parametrize("n_init", [1, 5])
 @pytest.mark.parametrize("metric", get_metrics())
-def test_km_init_metric(clust, init, n_init, metric, get_covmats, get_labels):
+def test_km_init_metric(clust, init, n_init, metric, get_mats, get_labels):
     n_clusters, n_matrices, n_channels = 2, 6, 3
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_clusters)
     if init == "ndarray":
         clf = clust(
@@ -184,40 +184,40 @@ def test_km_init_metric(clust, init, n_init, metric, get_covmats, get_labels):
     assert len(transformed) == n_matrices
 
 
-def test_potato_fit_equal_labels(get_covmats):
+def test_potato_fit_equal_labels(get_mats):
     n_matrices, n_channels = 6, 3
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     with pytest.raises(ValueError):
         Potato(pos_label=0).fit(covmats)
 
 
 @pytest.mark.parametrize("y_fail", [[1], [0] * 6, [0] * 7, [0, 1, 2] * 2])
-def test_potato_fit_error(y_fail, get_covmats):
+def test_potato_fit_error(y_fail, get_mats):
     n_matrices, n_channels = 6, 3
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     with pytest.raises(ValueError):
         Potato().fit(covmats, y=y_fail)
 
 
-def test_potato_partial_fit_not_fitted(get_covmats):
+def test_potato_partial_fit_not_fitted(get_mats):
     n_matrices, n_channels = 6, 3
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     with pytest.raises(ValueError):  # potato not fitted
         Potato().partial_fit(covmats)
 
 
-def test_potato_partial_fit_diff_channels(get_covmats, get_labels):
+def test_potato_partial_fit_diff_channels(get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
     pt = Potato().fit(covmats, labels)
     with pytest.raises(ValueError):  # unequal # of chans
-        pt.partial_fit(get_covmats(2, n_channels + 1))
+        pt.partial_fit(get_mats(2, n_channels + 1, "spd"))
 
 
-def test_potato_partial_fit_no_poslabel(get_covmats, get_labels):
+def test_potato_partial_fit_no_poslabel(get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
     pt = Potato().fit(covmats, labels)
     with pytest.raises(ValueError):  # no positive labels
@@ -225,34 +225,34 @@ def test_potato_partial_fit_no_poslabel(get_covmats, get_labels):
 
 
 @pytest.mark.parametrize("alpha", [-0.1, 1.1])
-def test_potato_partial_fit_alpha(alpha, get_covmats, get_labels):
+def test_potato_partial_fit_alpha(alpha, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
     pt = Potato().fit(covmats, labels)
     with pytest.raises(ValueError):
         pt.partial_fit(covmats, labels, alpha=alpha)
 
 
-def test_potato_1channel(get_covmats):
+def test_potato_1channel(get_mats):
     n_matrices, n_channels = 6, 1
-    covmats_1chan = get_covmats(n_matrices, n_channels)
+    covmats_1chan = get_mats(n_matrices, n_channels, "spd")
     pt = Potato()
     pt.fit_transform(covmats_1chan)
     pt.predict(covmats_1chan)
     pt.predict_proba(covmats_1chan)
 
 
-def test_potato_threshold(get_covmats):
+def test_potato_threshold(get_mats):
     n_matrices, n_channels = 6, 3
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     pt = Potato(threshold=2.5)
     pt.fit(covmats)
 
 
-def test_potato_specific_labels(get_covmats):
+def test_potato_specific_labels(get_mats):
     n_matrices, n_channels = 10, 3
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     covmats[-1] = 10 * np.eye(n_channels)
     pt = Potato(threshold=2.0, pos_label=2, neg_label=7)
     pt.fit(covmats)
@@ -261,10 +261,10 @@ def test_potato_specific_labels(get_covmats):
     pt.fit(covmats, y=[2] * n_matrices)
 
 
-def test_potato_field_fit(get_covmats):
+def test_potato_field_fit(get_mats):
     n_potatoes, n_matrices, n_channels = 2, 6, 3
-    covmats1 = get_covmats(n_matrices, n_channels)
-    covmats2 = get_covmats(n_matrices, n_channels + 1)
+    covmats1 = get_mats(n_matrices, n_channels, "spd")
+    covmats2 = get_mats(n_matrices, n_channels + 1, "spd")
     covmats = [covmats1, covmats2]
     with pytest.raises(ValueError):  # n_potatoes too low
         PotatoField(n_potatoes=0).fit(covmats)
@@ -281,10 +281,10 @@ def test_potato_field_fit(get_covmats):
 
 @pytest.mark.parametrize("method",
                          ["partial_fit", "transform", "predict_proba"])
-def test_potato_field_method(get_covmats, method):
+def test_potato_field_method(get_mats, method):
     n_potatoes, n_matrices, n_channels = 2, 6, 3
-    covmats1 = get_covmats(n_matrices, n_channels)
-    covmats2 = get_covmats(n_matrices, n_channels + 1)
+    covmats1 = get_mats(n_matrices, n_channels, "spd")
+    covmats2 = get_mats(n_matrices, n_channels + 1, "spd")
     covmats = [covmats1, covmats2]
     pf = PotatoField(n_potatoes=n_potatoes).fit(covmats)
     with pytest.raises(ValueError):  # n_potatoes not equal to input length
