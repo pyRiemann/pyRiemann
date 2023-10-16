@@ -159,30 +159,17 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
             np.random.seed(self.seed)
             seeds = np.random.randint(
                 np.iinfo(np.int32).max, size=self.n_init)
-            if self.n_jobs == 1:
-                res = []
-                for i in range(self.n_init):
-                    res.append(_fit_single(X, y,
-                                           n_clusters=self.n_clusters,
-                                           init=self.init,
-                                           random_state=seeds[i],
-                                           metric=self.metric,
-                                           max_iter=self.max_iter,
-                                           tol=self.tol))
-                labels, inertia, mdm = zip(*res)
-            else:
+            res = []
+            for i in range(self.n_init):
+                res.append(_fit_single(X, y,
+                                       n_clusters=self.n_clusters,
+                                       init=self.init,
+                                       random_state=seeds[i],
+                                       metric=self.metric,
+                                       max_iter=self.max_iter,
+                                       tol=self.tol))
+            labels, inertia, mdm = zip(*res)
 
-                res = Parallel(n_jobs=self.n_jobs, verbose=0)(
-                    delayed(_fit_single)(X, y,
-                                         n_clusters=self.n_clusters,
-                                         init=self.init,
-                                         random_state=seed,
-                                         metric=self.metric,
-                                         max_iter=self.max_iter,
-                                         tol=self.tol,
-                                         n_jobs=1)
-                    for seed in seeds)
-                labels, inertia, mdm = zip(*res)
 
             best = np.argmin(inertia)
             mdm = mdm[best]

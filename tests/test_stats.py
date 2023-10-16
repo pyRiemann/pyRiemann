@@ -37,7 +37,7 @@ def test_permutation_pairwise(get_covmats, get_labels):
 def test_permutation_pairwise_estimator(get_covmats, get_labels):
     """Test one way permutation with estimator"""
     n_matrices, n_channels, n_classes = 6, 3, 2
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = np.asarray(get_covmats(n_matrices, n_channels))
     labels = get_labels(n_matrices, n_classes)
     # with custom estimator
     p = PermutationDistance(10, mode="pairwise", estimator=CSP(2, log=False))

@@ -5,6 +5,7 @@ from scipy.linalg import block_diag
 from scipy.stats import chi2
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
+from .base import BlockMatrix
 from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
 
@@ -453,7 +454,7 @@ def covariances_X(X, estimator='scm', alpha=0.2, **kwds):
     return covmats / (2 * alpha)  # Eq(10)
 
 
-def block_covariances(X, blocks, estimator='cov', **kwds):
+def block_covariances(X, block_size, estimator='cov', **kwds):
     """Compute block diagonal covariance.
 
     Calculates block diagonal matrices where each block is a covariance
@@ -480,19 +481,13 @@ def block_covariances(X, blocks, estimator='cov', **kwds):
     """
     est = _check_cov_est_function(estimator)
     n_matrices, n_channels, n_times = X.shape
-
-    if np.sum(blocks) != n_channels:
-        raise ValueError("Sum of individual block sizes "
-                         "must match number of channels of X.")
-
-    covmats = np.empty((n_matrices, n_channels, n_channels))
-    for i in range(n_matrices):
-        blockcov, idx_start = [], 0
-        for j in blocks:
-            blockcov.append(est(X[i, idx_start:idx_start+j, :], **kwds))
-            idx_start += j
-        covmats[i] = block_diag(*tuple(blockcov))
-
+    covmats = BlockMatrix(np.zeros((n_matrices,
+                                    n_channels,
+                                    n_channels)),
+                          block_size=block_size)
+    full_cov = covariances(X, estimator, **kwds)
+    full_cov = BlockMatrix(full_cov, block_size=block_size)
+    covmats._insert_blocks(full_cov._extract_blocks())
     return covmats
 
 

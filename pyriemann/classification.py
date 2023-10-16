@@ -11,7 +11,7 @@ from joblib import Parallel, delayed
 
 from .utils.kernel import kernel
 from .utils.mean import mean_covariance, mean_power
-from .utils.distance import distance
+from .utils.distance import distance, pairwise_distance
 from .tangentspace import FGDA, TangentSpace
 
 
@@ -137,22 +137,12 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
                 delayed(mean_covariance)(X[y == ll], metric=self.metric_mean,
                                          sample_weight=sample_weight[y == ll])
                 for ll in self.classes_)
-
+        self.covmeans_ = np.asarray(self.covmeans_)
         return self
 
     def _predict_distances(self, X):
         """Helper to predict the distance. Equivalent to transform."""
-        n_centroids = len(self.covmeans_)
-
-        if self.n_jobs == 1:
-            dist = [distance(X, self.covmeans_[m], self.metric_dist)
-                    for m in range(n_centroids)]
-        else:
-            dist = Parallel(n_jobs=self.n_jobs)(delayed(distance)(
-                X, self.covmeans_[m], self.metric_dist)
-                for m in range(n_centroids))
-
-        dist = np.concatenate(dist, axis=1)
+        dist = pairwise_distance(X, np.asarray(self.covmeans_), self.metric_dist)
         return dist
 
     def predict(self, X):
@@ -853,11 +843,9 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         pred : ndarray of int, shape (n_matrices,)
             Predictions for each matrix according to the closest means field.
         """
-        labs_unique = sorted(self.covmeans_[self.power_list[0]].keys())
+        labs_unique = np.asarray(sorted(self.covmeans_[self.power_list[0]].keys()))
 
-        pred = Parallel(n_jobs=self.n_jobs)(delayed(self._get_label)(
-            x, labs_unique)
-            for x in X)
+        pred = [self._get_label(x, labs_unique) for x in X]
         return np.array(pred)
 
     def _predict_distances(self, X):

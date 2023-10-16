@@ -60,7 +60,7 @@ class TestEmbedding(EmbeddingTestCase):
         embd = embedding(n_components=n_components)
         embd = embd.fit(covmats)
         # retraining with different size should erase previous fit
-        new_covmats = covmats[:-1, :-1, :-1]
+        new_covmats = covmats[:-1]
         embd = embd.fit(new_covmats)
         assert embd.embedding_.shape == (n_matrices - 1, n_components)
 

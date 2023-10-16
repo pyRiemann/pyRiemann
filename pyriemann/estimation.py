@@ -416,19 +416,9 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
         covmats : ndarray, shape (n_matrices, n_channels, n_channels)
             Covariance matrices.
         """
-        n_matrices, n_channels, n_times = X.shape
-
-        if isinstance(self.block_size, int):
-            n_blocks = n_channels // self.block_size
-            blocks = [self.block_size for b in range(n_blocks)]
-
-        elif isinstance(self.block_size, (list, np.ndarray)):
-            blocks = self.block_size
-
-        else:
-            raise ValueError("Parameter block_size must be int or list.")
-
-        return block_covariances(X, blocks, self.estimator, **self.kwds)
+        if not isinstance(self.block_size, int):
+            raise ValueError("Parameter block_size must be integer.")
+        return block_covariances(X, self.block_size, self.estimator, **self.kwds)
 
 
 ###############################################################################

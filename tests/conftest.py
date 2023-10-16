@@ -3,6 +3,7 @@ import numpy as np
 from functools import partial
 
 from pyriemann.datasets import make_matrices, make_masks
+from pyriemann.utils.base import BlockMatrix
 
 
 def requires_module(function, name, call=None):
@@ -32,8 +33,13 @@ def rndstate():
 @pytest.fixture
 def get_covmats(rndstate):
     def _gen_cov(n_matrices, n_channels):
-        return make_matrices(n_matrices, n_channels, "spd", rndstate,
+        res =  make_matrices(n_matrices, n_channels, "spd", rndstate,
                              return_params=False, eigvecs_same=False)
+        res = BlockMatrix(res, block_size=-1)
+        block_res = np.zeros_like(res)
+        block_res._insert_blocks(res._extract_blocks())
+        return block_res
+
 
     return _gen_cov
 

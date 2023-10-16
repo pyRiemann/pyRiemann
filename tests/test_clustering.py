@@ -36,7 +36,7 @@ class ClusteringTestCase:
             n_potatoes = 3
             covmats = [get_covmats(n_matrices, n_channels),
                        get_covmats(n_matrices, n_channels + 2),
-                       get_covmats(n_matrices, n_channels + 1)]
+                       get_covmats(n_matrices, n_channels + 4)]
             self.clf_transform(clust, covmats, n_potatoes)
             self.clf_predict(clust, covmats, n_potatoes)
             self.clf_predict_proba(clust, covmats, n_potatoes)
@@ -45,7 +45,7 @@ class ClusteringTestCase:
 
     def test_three_clusters(self, clust, get_covmats, get_labels):
         n_clusters = 3
-        n_matrices, n_channels = 6, 3
+        n_matrices, n_channels = 6, 4
         covmats = get_covmats(n_matrices, n_channels)
         if clust is Kmeans:
             self.clf_predict(clust, covmats, n_clusters)
@@ -147,16 +147,16 @@ class TestRiemannianClustering(ClusteringTestCase):
         clf.fit(covmats).transform(covmats)
         # retraining with different size should erase previous fit
         if n is None:
-            new_covmats = covmats[:, :-1, :-1]
+            new_covmats = covmats[:-1]
         else:
-            new_covmats = [c[:, :-1, :-1] for c in covmats]
+            new_covmats = [c[:-1] for c in covmats]
         clf.fit(new_covmats).transform(new_covmats)
 
     def clf_fit_labels_independence(self, clust, covmats, labels):
         clf = clust()
         clf.fit(covmats, labels).transform(covmats)
         # retraining with different size should erase previous fit
-        new_covmats = covmats[:, :-1, :-1]
+        new_covmats = covmats[:, ::-1, ::-1]
         clf.fit(new_covmats, labels).transform(new_covmats)
 
 

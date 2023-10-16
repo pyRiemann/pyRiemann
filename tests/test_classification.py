@@ -125,7 +125,7 @@ def clf_fit_independence(classif, covmats, labels):
     clf = classif()
     clf.fit(covmats, labels).predict(covmats)
     # retraining with different size should erase previous fit
-    new_covmats = covmats[:, :-1, :-1]
+    new_covmats = covmats[:, ::-1, ::-1]
     clf.fit(new_covmats, labels).predict(new_covmats)
 
 

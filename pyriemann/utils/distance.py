@@ -25,6 +25,9 @@ def _recursive(fun, A, B, *args, **kwargs):
             [_recursive(fun, a, b, *args, **kwargs) for a, b in zip(A, B)]
         )
 
+def _eigvalsh(A, B):
+    Binv12 = invsqrtm(B)
+    return np.linalg.eigvalsh(Binv12 @ A @ Binv12)
 
 ###############################################################################
 # Distances between matrices
@@ -317,7 +320,7 @@ def distance_riemann(A, B, squared=False):
         M. Moakher. SIAM J Matrix Anal Appl, 2005, 26 (3), pp. 735-747
     """
     _check_inputs(A, B)
-    d2 = (np.log(_recursive(eigvalsh, A, B))**2).sum(axis=-1)
+    d2 = (np.log(_eigvalsh(A, B))**2).sum(axis=-1)
     return d2 if squared else np.sqrt(d2)
 
 

@@ -1,4 +1,4 @@
-from numpy.testing import assert_array_almost_equal
+from numpy.testing import assert_array_almost_equal, assert_allclose
 import numpy as np
 from scipy.linalg import block_diag
 from scipy.signal import welch, csd, coherence as coherence_sp
@@ -123,13 +123,13 @@ def test_block_covariances_est(estimator, rndstate):
     x = rndstate.randn(n_matrices, n_channels, n_times)
 
     if estimator is None:
-        cov = block_covariances(x, [4, 4, 4])
+        cov = block_covariances(x, 4)
         assert cov.shape == (n_matrices, n_channels, n_channels)
     elif estimator == 'truc':
         with pytest.raises(ValueError):
-            block_covariances(x, [4, 4, 4], estimator=estimator)
+            block_covariances(x, 4, estimator=estimator)
     else:
-        cov = block_covariances(x, [4, 4, 4], estimator=estimator)
+        cov = block_covariances(x, 4, estimator=estimator)
         assert cov.shape == (n_matrices, n_channels, n_channels)
 
 
@@ -138,20 +138,14 @@ def test_block_covariances(rndstate):
     n_matrices, n_channels, n_times = 2, 12, 100
     x = rndstate.randn(n_matrices, n_channels, n_times)
 
-    cov = block_covariances(x, [12], estimator='cov')
-    assert_array_almost_equal(cov, covariances(x, estimator='cov'))
+    cov1 = block_covariances(x, -1, estimator='cov')
+    cov2 = covariances(x, estimator='cov')
+    assert_allclose(np.asarray(cov1), cov2)
 
-    cov = block_covariances(x, [6, 6], estimator='cov')
+    cov = block_covariances(x, 6, estimator='cov')
     cov2 = covariances(x, estimator='cov')
     covcomp = block_diag(*(cov2[0, :6, :6], cov2[0, 6:12, 6:12]))
-    assert_array_almost_equal(cov[0], covcomp)
-
-    cov = block_covariances(x, [3, 5, 4], estimator='cov')
-    cov2 = covariances(x, estimator='cov')
-    covcomp = block_diag(*(cov2[0, :3, :3],
-                           cov2[0, 3:8, 3:8],
-                           cov2[0, 8:12, 8:12]))
-    assert_array_almost_equal(cov[0], covcomp)
+    assert_allclose(np.asarray(cov[0]), covcomp)
 
 
 def test_covariances_eegtocov(rndstate):
