@@ -232,3 +232,31 @@ def nearest_sym_pos_def(X, reg=1e-6):
         N.J. Higham, Linear Algebra and its Applications, vol 103, 1988
     """
     return np.array([_nearest_sym_pos_def(x, reg) for x in X])
+
+
+def first_divided_difference(d, fun, der, atol=1e-6, rtol=1e-6):
+    """First divided difference of a matrix function.
+
+    Parameters
+    ----------
+    S : ndarray, shape (n, n)
+        Square matrix.
+    function : callable
+        Function to apply.
+    derivative : function
+        Derivative of the function to apply.
+    precision : float
+        Precision of the approximation.
+
+    Returns
+
+
+    """
+    n = len(d)
+    dif = np.zeros((n, n))
+    dif += d
+    close_ = np.isclose(dif, dif.T, atol=atol, rtol=rtol)
+    dif[close_] = der(dif[close_])
+    dif[~close_] = (fun(dif[~close_]) -
+                    fun(dif.T[~close_])) / (dif[~close_] - dif.T[~close_])
+    return dif
