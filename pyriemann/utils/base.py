@@ -15,9 +15,13 @@ def _matrix_operator(C, operator):
             "Matrices must be positive definite. Add "
             "regularization to avoid this error.")
     if type(C) is BlockMatrix:
-        res = np.zeros_like(C)
+        shape_C = C.shape
+        block_size = C.block_size
         blocks = C._extract_blocks()
+        del C
         D = _apply_operator(blocks, operator)
+        del blocks
+        res = BlockMatrix(np.zeros(shape_C), block_size=block_size)
         res._insert_blocks(D)
         return res
 
