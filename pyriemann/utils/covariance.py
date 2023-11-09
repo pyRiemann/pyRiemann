@@ -1,7 +1,6 @@
 import warnings
 
 import numpy as np
-from scipy.linalg import block_diag
 from scipy.stats import chi2
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 

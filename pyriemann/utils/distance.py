@@ -1,7 +1,7 @@
 """Distances between SPD/HPD matrices."""
 
 import numpy as np
-from scipy.linalg import eigvalsh, solve
+from scipy.linalg import solve
 from sklearn.metrics import euclidean_distances
 
 from .base import logm, sqrtm, invsqrtm
@@ -24,6 +24,7 @@ def _recursive(fun, A, B, *args, **kwargs):
         return np.asarray(
             [_recursive(fun, a, b, *args, **kwargs) for a, b in zip(A, B)]
         )
+
 
 def _eigvalsh(A, B):
     Binv12 = invsqrtm(B)
