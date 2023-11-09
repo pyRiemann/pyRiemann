@@ -45,7 +45,7 @@ class TestTangentSpace(TangentSpaceTestCase):
         ts = tspace()
         ts.fit(covmats, labels)
         # retraining with different size should erase previous fit
-        new_covmats = covmats[:, ::-1, ::-1]
+        new_covmats = covmats[:, :-1, :-1]
         ts.fit(new_covmats, labels)
         # fit_transform should work as well
         ts.fit_transform(covmats, labels)

@@ -479,13 +479,16 @@ def block_covariances(X, block_size, estimator='cov', **kwds):
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Block diagonal covariance matrices.
     """
-    est = _check_cov_est_function(estimator)
     n_matrices, n_channels, n_times = X.shape
-    n_blocks = int(block_size//n_channels)
+    if block_size == -1:
+        block_size = n_channels
+    n_blocks = int(n_channels//block_size)
     blocks = []
     for i in range(n_blocks):
-        blocks.append(est(X[:, i*block_size:(i+1)*block_size, :], **kwds))
-    blocks = np.array(blocks)
+        blocks.append(covariances(X[:, i*block_size:(i+1)*block_size, :],
+                                  estimator,
+                                  **kwds))
+    blocks = np.swapaxes(np.array(blocks), 0, 1)
 
     covmats = BlockMatrix(np.zeros((n_matrices,
                                     n_channels,

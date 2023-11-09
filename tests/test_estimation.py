@@ -185,10 +185,10 @@ def test_block_covariances_est(estimator, rndstate):
     """Test BlockCovariances estimators"""
     n_matrices, n_channels, n_times = 2, 12, 100
     x = rndstate.randn(n_matrices, n_channels, n_times)
-    cov = BlockCovariances(block_size=2, estimator=estimator)
+    cov = BlockCovariances(block_size=6, estimator=estimator)
     cov.fit(x)
     covmats = cov.fit_transform(x)
-    assert cov.get_params() == dict(block_size=2, estimator=estimator)
+    assert cov.get_params() == dict(block_size=6, estimator=estimator)
     assert covmats.shape == (n_matrices, n_channels, n_channels)
     assert is_spd(covmats)
 

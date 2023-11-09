@@ -35,7 +35,7 @@ class TestRegressor(RegressorTestCase):
         clf = regres()
         clf.fit(covmats, targets).predict(covmats)
         # retraining with different size should erase previous fit
-        new_covmats = covmats[:, ::-1, ::-1]
+        new_covmats = covmats[:, :-1, :-1]
         clf.fit(new_covmats, targets).predict(new_covmats)
 
     def reg_score(self, regres, covmats, targets):

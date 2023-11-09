@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_array_almost_equal, assert_allclose
+from numpy.testing import assert_array_almost_equal
 import pytest
 
 from pyriemann.spatialfilters import Whitening
@@ -84,10 +84,10 @@ def test_whitening_transform(dim_red, metric, rndstate, get_mats):
         n_comp = whit.n_components_
     assert cov_w.shape == (n_matrices, n_comp, n_comp)
     # after whitening, mean = identity
-    assert np.allclose(
+    assert_array_almost_equal(
         mean_covariance(cov_w, metric=metric),
         np.eye(n_comp),
-        atol=1.e-3,
+        decimal=3,
     )
     if dim_red is not None and "max_cond" in dim_red.keys():
         assert np.linalg.cond(cov_w.mean(axis=0)) <= max_cond
@@ -103,4 +103,4 @@ def test_whitening_inverse_transform(dim_red, metric, rndstate, get_mats):
     cov_iw = whit.inverse_transform(whit.transform(cov))
     assert cov_iw.shape == (n_matrices, n_channels, n_channels)
     if dim_red is None:
-        assert np.allclose(cov, cov_iw)
+        assert_array_almost_equal(cov, cov_iw)
