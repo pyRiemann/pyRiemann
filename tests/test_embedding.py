@@ -15,9 +15,9 @@ n_comp = [2, 4, 100]
 
 @pytest.mark.parametrize("embd", rembd)
 class EmbeddingTestCase:
-    def test_embedding_build(self, embd, get_covmats):
+    def test_embedding_build(self, embd, get_mats):
         n_matrices, n_channels, n_comp = 8, 3, 4
-        covmats = get_covmats(n_matrices, n_channels)
+        covmats = get_mats(n_matrices, n_channels, "spd")
 
         self.embd_fit(embd, covmats, n_comp)
         self.embd_fit_transform(embd, covmats, n_comp)
@@ -83,9 +83,9 @@ class TestEmbedding(EmbeddingTestCase):
 
 @pytest.mark.parametrize("n_components", n_comp)
 @pytest.mark.parametrize("embd", rembd)
-def embd_n_comp(n_components, embd, get_covmats):
+def embd_n_comp(n_components, embd, get_mats):
     n_matrices, n_channels = 8, 3
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     embd = embd(n_components=n_components)
     if n_matrices <= n_components:
         with pytest.raises(AssertionError):
@@ -96,10 +96,10 @@ def embd_n_comp(n_components, embd, get_covmats):
 
 @pytest.mark.parametrize("metric", get_metrics())
 @pytest.mark.parametrize("eps", [None, 0.1])
-def test_spectral_embedding_parameters(metric, eps, get_covmats):
+def test_spectral_embedding_parameters(metric, eps, get_mats):
     """Test SpectralEmbedding."""
     n_matrices, n_channels, n_comp = 6, 3, 2
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     embd = SpectralEmbedding(metric=metric, n_components=n_comp, eps=eps)
     covembd = embd.fit_transform(covmats)
     assert covembd.shape == (n_matrices, n_comp)
@@ -108,10 +108,10 @@ def test_spectral_embedding_parameters(metric, eps, get_covmats):
 @pytest.mark.parametrize("metric", ['riemann', 'euclid', 'logeuclid'])
 @pytest.mark.parametrize("n_neighbors", [2, 4, 8, 16])
 @pytest.mark.parametrize("reg", [1e-3, 0])
-def test_locally_linear_parameters(metric, n_neighbors, reg, get_covmats):
-    """Test SpectralEmbedding."""
+def test_locally_linear_parameters(metric, n_neighbors, reg, get_mats):
+    """Test LocallyLinearEmbedding."""
     n_matrices, n_channels, n_comp = 6, 3, 2
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
 
     if n_matrices <= n_neighbors:
         with pytest.raises(AssertionError):
@@ -127,19 +127,19 @@ def test_locally_linear_parameters(metric, n_neighbors, reg, get_covmats):
         assert covembd.shape == (n_matrices, n_comp)
 
 
-def test_barycenter_weights(get_covmats):
+def test_barycenter_weights(get_mats):
     """Test barycenter_weights helper function."""
     n_matrices, n_channels = 4, 3
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     weights = barycenter_weights(covmats, covmats, np.array([[1, 2], [2, 3],
                                                              [3, 0], [0, 1]]))
     assert weights.shape == (n_matrices, 2)
 
 
-def test_locally_linear_embedding(get_covmats):
+def test_locally_linear_embedding(get_mats):
     """Test locally_linear_embedding helper function."""
     n_matrices, n_channels, n_comps, n_neighbors = 4, 3, 2, 2
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     embedding, error = locally_linear_embedding(covmats,
                                                 n_neighbors=n_neighbors,
                                                 n_components=n_comps)
