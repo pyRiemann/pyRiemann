@@ -466,8 +466,8 @@ def block_covariances(X, block_size, estimator='cov', **kwds):
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_times)
         Multi-channel time-series.
-    blocks: list of int
-        List of block sizes.
+    block_size: int
+        Block size.
     estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
@@ -481,13 +481,17 @@ def block_covariances(X, block_size, estimator='cov', **kwds):
     """
     est = _check_cov_est_function(estimator)
     n_matrices, n_channels, n_times = X.shape
+    n_blocks = int(block_size//n_channels)
+    blocks = []
+    for i in range(n_blocks):
+        blocks.append(est(X[:, i*block_size:(i+1)*block_size, :], **kwds))
+    blocks = np.array(blocks)
+
     covmats = BlockMatrix(np.zeros((n_matrices,
                                     n_channels,
                                     n_channels)),
                           block_size=block_size)
-    full_cov = covariances(X, estimator, **kwds)
-    full_cov = BlockMatrix(full_cov, block_size=block_size)
-    covmats._insert_blocks(full_cov._extract_blocks())
+    covmats._insert_blocks(blocks)
     return covmats
 
 

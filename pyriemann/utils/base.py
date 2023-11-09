@@ -255,35 +255,30 @@ class BlockMatrix(np.ndarray):
         return obj
 
     def __array_finalize__(self, obj):
-        # see InfoArray.__array_finalize__ for comments
         if obj is None: return
         self.block_size = getattr(obj, 'block_size', obj.shape[-1])
 
     def _extract_blocks(self):
 
-        n_matrices, *a, n_channels = self.shape
-        if n_channels % self.block_size != 0:
+        if self.shape[-1] % self.block_size != 0:
+            raise ValueError(
+                "Number of channels must be a multiple of n_blocks")
 
-            raise ValueError("Number of channels must be a multiple of n_blocks")
+        n_blocks = self.shape[-1] // self.block_size
+        new_shape = (*(self.shape[:-2]),
+                     n_blocks,
+                     self.block_size,
+                     self.block_size)
 
-        if self.ndim == 2:
-            n_blocks = self.shape[1] // self.block_size
-            new_shape = (n_blocks, self.block_size, self.block_size)
-            new_strides = (self.block_size * self.strides[0] + self.block_size * self.strides[1],
-                           self.strides[0], self.strides[1])
-        else:
-            n_blocks = self.shape[1] // self.block_size
-            # New shape and strides for the block extraction
-            new_shape = (n_matrices, n_blocks, self.block_size, self.block_size)
-            new_strides = (self.strides[0],
-                           self.block_size * self.strides[1] + self.block_size *
-                           self.strides[2],
-                           self.strides[1], self.strides[2])
+        new_strides = (*(self.strides[:-2]),
+                       self.block_size * self.strides[-2] + self.block_size *
+                       self.strides[-1],
+                       self.strides[-2], self.strides[-1])
+
         view = np.lib.stride_tricks.as_strided(self, new_shape,
-                                        new_strides)
+                                               new_strides)
         return view
 
     def _insert_blocks(self, blocks):
         block_view = self._extract_blocks()
         block_view += blocks
-

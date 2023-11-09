@@ -414,11 +414,14 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
         Returns
         -------
         covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-            Covariance matrices.
+            Block Covariance matrices.
         """
         if not isinstance(self.block_size, int):
             raise ValueError("Parameter block_size must be integer.")
-        return block_covariances(X, self.block_size, self.estimator, **self.kwds)
+        return block_covariances(X,
+                                 self.block_size,
+                                 self.estimator,
+                                 **self.kwds)
 
 
 ###############################################################################
