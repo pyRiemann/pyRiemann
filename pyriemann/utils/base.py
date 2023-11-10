@@ -15,13 +15,10 @@ def _matrix_operator(C, operator):
             "Matrices must be positive definite. Add "
             "regularization to avoid this error.")
     if type(C) is BlockMatrix:
-        shape_C = C.shape
-        block_size = C.block_size
         blocks = C._extract_blocks()
-        del C
         D = _apply_operator(blocks, operator)
         del blocks
-        res = BlockMatrix(np.zeros(shape_C), block_size=block_size)
+        res = BlockMatrix(np.zeros(C.shape), block_size=C.block_size)
         res._insert_blocks(D)
         return res
 
@@ -256,6 +253,9 @@ class BlockMatrix(np.ndarray):
         if block_size == -1:
             block_size = obj.shape[-1]
         obj.block_size = block_size
+        if not isinstance(block_size, int) or block_size < 1:
+            raise ValueError("Parameter block_size must be a positive "
+                             "integer or -1.")
         return obj
 
     def __array_finalize__(self, obj):
@@ -269,7 +269,8 @@ class BlockMatrix(np.ndarray):
 
         if self.shape[-1] % self.block_size != 0:
             raise ValueError(
-                "Number of channels must be a multiple of n_blocks")
+                f"Number of channels ({self.shape[-1]}) "
+                f"must be a multiple of n_blocks ({self.block_size}).")
 
         n_blocks = self.shape[-1] // self.block_size
         new_shape = (*(self.shape[:-2]),
@@ -288,4 +289,4 @@ class BlockMatrix(np.ndarray):
 
     def _insert_blocks(self, blocks):
         block_view = self._extract_blocks()
-        block_view += blocks
+        block_view[:] = blocks

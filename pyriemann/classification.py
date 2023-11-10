@@ -142,7 +142,9 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     def _predict_distances(self, X):
         """Helper to predict the distance. Equivalent to transform."""
-        dist = pairwise_distance(X, np.asarray(self.covmeans_), self.metric_dist)
+        dist = pairwise_distance(X,
+                                 np.asarray(self.covmeans_),
+                                 self.metric_dist)
         return dist
 
     def predict(self, X):
@@ -843,7 +845,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         pred : ndarray of int, shape (n_matrices,)
             Predictions for each matrix according to the closest means field.
         """
-        labs_unique = np.asarray(sorted(self.covmeans_[self.power_list[0]].keys()))
+        labs_unique = np.asarray(sorted(self.covmeans_[self.power_list[0]].keys())) # noqa
 
         pred = [self._get_label(x, labs_unique) for x in X]
         return np.array(pred)

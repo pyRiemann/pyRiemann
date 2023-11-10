@@ -170,7 +170,6 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
                                        tol=self.tol))
             labels, inertia, mdm = zip(*res)
 
-
             best = np.argmin(inertia)
             mdm = mdm[best]
             labels = labels[best]

@@ -213,6 +213,9 @@ def test_block_covariances_int_value_error(rndstate):
     cov = BlockCovariances(block_size=5)
     with pytest.raises(ValueError):
         cov.fit_transform(x)
+    cov = BlockCovariances(block_size=-5)
+    with pytest.raises(ValueError):
+        cov.fit_transform(x)
 
 
 def test_block_covariances_block_size_type_error(rndstate):

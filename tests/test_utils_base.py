@@ -9,6 +9,7 @@ from pyriemann.utils.base import (
     powm,
     sqrtm,
     nearest_sym_pos_def,
+    BlockMatrix
 )
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.utils.test import is_pos_def, is_sym_pos_def
@@ -158,3 +159,63 @@ def test_nearest_sym_pos_def(get_mats):
     assert not is_pos_def(psd)
     assert is_sym_pos_def(nearest_sym_pos_def(mats))
     assert is_sym_pos_def(nearest_sym_pos_def(psd))
+
+
+def test_block_matrix_construction(get_mats):
+    """Test correct construction of BlockMatrix"""
+    n_matrices, n_channels = 1, 4
+    mats = get_mats(n_matrices, n_channels, "spd")
+    block_size = 2
+    assert BlockMatrix(mats, block_size=-1).block_size == n_channels
+
+    mats = BlockMatrix(mats, block_size=block_size)
+    block_matrices = BlockMatrix(np.zeros_like(mats), block_size=block_size)
+    block_matrices._insert_blocks(mats._extract_blocks())
+    assert mats.shape == block_matrices.shape
+    assert block_matrices.block_size == block_size
+    assert_array_almost_equal(block_matrices[0, :2, :2], mats[0, :2, :2])
+    assert_array_almost_equal(block_matrices._extract_blocks()[0, 0],
+                              mats[0, :2, :2])
+
+    # Test that the block matrices are not copied
+    block_matrices[0, 0, 0] = 1
+    blocks = block_matrices._extract_blocks()
+    blocks += 5
+    assert block_matrices[0, 0, 0] == 6
+    blocks[0, 0, 0] = 10
+    assert block_matrices[0, 0, 0] == 10
+
+
+def test_block_matrix_error(get_mats):
+    """Test correct construction of BlockMatrix"""
+    n_matrices, n_channels = 1, 4
+    mats = get_mats(n_matrices, n_channels, "spd")
+    block_size = 2
+    with pytest.raises(ValueError):
+        BlockMatrix(mats, block_size=2.5)
+    with pytest.raises(ValueError):
+        BlockMatrix(mats, block_size=-5)
+    with pytest.raises(ValueError):
+        BlockMatrix(mats, block_size='5')
+    with pytest.raises(ValueError):
+        BlockMatrix(mats, block_size=[5, 4])
+
+    block_matrix = BlockMatrix(mats, block_size=3)
+    with pytest.raises(ValueError):
+        block_matrix._extract_blocks()
+    block_matrix = BlockMatrix(mats, block_size=2)
+    with pytest.raises(ValueError):
+        block_matrix._insert_blocks(mats)
+    block_matrix = BlockMatrix(None, block_size=2)
+    with pytest.raises(IndexError):
+        block_matrix._insert_blocks(mats)
+
+def test_block_matrix_operator(get_mats):
+    """Test correct construction of BlockMatrix"""
+    n_matrices, n_channels = 1, 4
+    mats = get_mats(n_matrices, n_channels, "spd")
+    block_size = 2
+    block_matrix = BlockMatrix(mats, block_size=block_size)
+    log_block = logm(block_matrix)
+    log_mats = logm(mats[:, :2, :2])
+    assert_array_almost_equal(log_block[0, :2, :2], log_mats[0])
