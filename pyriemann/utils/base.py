@@ -261,6 +261,8 @@ class BlockMatrix(np.ndarray):
     def __array_finalize__(self, obj):
         if obj is None:
             return
+        if len(obj.shape) == 0:
+            return
         self.block_size = getattr(obj, 'block_size', obj.shape[-1])
 
     def _extract_blocks(self):
