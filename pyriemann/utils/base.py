@@ -248,6 +248,29 @@ def nearest_sym_pos_def(X, reg=1e-6):
 
 
 class BlockMatrix(np.ndarray):
+    """Block matrix class.
+
+    A subclass of numpy.ndarray to handle matrices divided into equal-sized
+    blocks.
+
+    Parameters
+    ----------
+    input_array : ndarray, shape (..., n, n)
+        An array-like object to be converted into a BlockMatrix.
+    block_size : int, default=-1
+        The size of the blocks. If -1, the block size is set to the
+        last dimension of input_array.
+
+    Attributes
+    ----------
+    block_size : int
+        The size of the blocks in the matrix.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
+    """
+
     def __new__(cls, input_array, block_size=-1):
         obj = np.asarray(input_array).view(cls)
         if block_size == -1:
@@ -266,6 +289,20 @@ class BlockMatrix(np.ndarray):
         self.block_size = getattr(obj, 'block_size', obj.shape[-1])
 
     def _extract_blocks(self):
+        """
+        Extracts blocks from the matrix based on the block size.
+
+        Returns
+        -------
+        blocks: ndarray, shape (..., n_blocks, block_size, block_size)
+            A view of the matrix with blocks rearranged as the last two
+            dimensions.
+
+        Raises
+        ------
+        ValueError
+            If the last dimension of the matrix is not a multiple of block size.
+        """
 
         if self.shape[-1] % self.block_size != 0:
             raise ValueError(
@@ -288,5 +325,19 @@ class BlockMatrix(np.ndarray):
         return view
 
     def _insert_blocks(self, blocks):
+        """
+        Inserts blocks into the matrix.
+
+        Parameters
+        ----------
+        blocks : numpy.ndarray
+            Blocks to be inserted into the matrix. The shape of 'blocks' must be
+            compatible with the current block structure of the matrix.
+
+        Raises
+        ------
+        ValueError
+            If the shape of 'blocks' is not compatible with the matrix.
+        """
         block_view = self._extract_blocks()
         block_view[:] = blocks
