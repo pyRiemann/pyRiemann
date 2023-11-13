@@ -458,15 +458,15 @@ def block_covariances(X, block_size, estimator='cov', **kwds):
 
     Calculates block diagonal matrices where each block is a covariance
     matrix of a subset of channels.
-    Block sizes are passed as a list of integers and can vary. The sum
-    of block sizes must equal the number of channels in X.
+    Block sizes are passed as integers. The block_size must be a divisor of
+    n_channels of X.
 
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_times)
         Multi-channel time-series.
     block_size: int
-        Block size.
+        Block size. If -1, the block size is set to n_channels.
     estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.

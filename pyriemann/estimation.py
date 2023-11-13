@@ -354,15 +354,12 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
 
     The blocks on the diagonal are calculated as individual covariance
     matrices for a subset of channels using the given the estimator.
-    Varying block sized possible by passing a list to allow incorporation
-    of different modalities with different number of channels (e.g. EEG,
-    ECoG, LFP, EMG) with their own respective covariance matrices.
 
     Parameters
     ----------
-    block_size : int | list of int
-        Sizes of individual blocks given as int for same-size block, or list
-        for varying block sizes.
+    block_size : int
+        Sizes of same-size blocks given as int. If -1, the block size is set to
+        the last dimension of the input array.
     estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
