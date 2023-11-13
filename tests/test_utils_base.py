@@ -190,7 +190,6 @@ def test_block_matrix_error(get_mats):
     """Test correct construction of BlockMatrix"""
     n_matrices, n_channels = 1, 4
     mats = get_mats(n_matrices, n_channels, "spd")
-    block_size = 2
     with pytest.raises(ValueError):
         BlockMatrix(mats, block_size=2.5)
     with pytest.raises(ValueError):
@@ -209,6 +208,7 @@ def test_block_matrix_error(get_mats):
     block_matrix = BlockMatrix(None, block_size=2)
     with pytest.raises(IndexError):
         block_matrix._insert_blocks(mats)
+
 
 def test_block_matrix_operator(get_mats):
     """Test correct construction of BlockMatrix"""
