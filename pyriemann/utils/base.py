@@ -301,7 +301,8 @@ class BlockMatrix(np.ndarray):
         Raises
         ------
         ValueError
-            If the last dimension of the matrix is not a multiple of block size.
+            If the last dimension of the matrix is not a multiple of block
+            size.
         """
 
         if self.shape[-1] % self.block_size != 0:
@@ -331,8 +332,8 @@ class BlockMatrix(np.ndarray):
         Parameters
         ----------
         blocks : numpy.ndarray
-            Blocks to be inserted into the matrix. The shape of 'blocks' must be
-            compatible with the current block structure of the matrix.
+            Blocks to be inserted into the matrix. The shape of 'blocks' must
+            be compatible with the current block structure of the matrix.
 
         Raises
         ------

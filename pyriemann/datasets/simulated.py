@@ -3,7 +3,7 @@ from sklearn.utils.validation import check_random_state
 
 from ..utils.mean import mean_riemann
 from ..utils.distance import distance_riemann
-from ..utils.base import invsqrtm, powm, sqrtm, expm
+from ..utils.base import invsqrtm, powm, sqrtm, expm, BlockMatrix
 from .sampling import generate_random_spd_matrix, sample_gaussian_spd
 from ..transfer import encode_domains
 from ..utils import deprecated
@@ -147,9 +147,9 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
                                                                -2, -1)
 
     if return_params:
-        return mats, evals, evecs
+        return BlockMatrix(mats, block_size=-1), evals, evecs
     else:
-        return mats
+        return BlockMatrix(mats, block_size=-1)
 
 
 def make_masks(n_masks, n_dim0, n_dim1_min, rs=None):
