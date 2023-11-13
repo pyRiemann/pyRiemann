@@ -846,8 +846,12 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
             Predictions for each matrix according to the closest means field.
         """
         labs_unique = np.asarray(sorted(self.covmeans_[self.power_list[0]].keys())) # noqa
-
-        pred = [self._get_label(x, labs_unique) for x in X]
+        if self.n_jobs == 1:
+            pred = [self._get_label(x, labs_unique) for x in X]
+        else:
+            pred = Parallel(n_jobs=self.n_jobs)(delayed(self._get_label)(
+                x, labs_unique)
+                                                for x in X)
         return np.array(pred)
 
     def _predict_distances(self, X):
