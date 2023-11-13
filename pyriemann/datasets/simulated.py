@@ -147,9 +147,9 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
                                                                -2, -1)
 
     if return_params:
-        return BlockMatrix(mats, block_size=-1), evals, evecs
+        return mats, evals, evecs
     else:
-        return BlockMatrix(mats, block_size=-1)
+        return mats
 
 
 def make_masks(n_masks, n_dim0, n_dim1_min, rs=None):
