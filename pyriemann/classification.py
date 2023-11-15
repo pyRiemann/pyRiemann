@@ -583,16 +583,16 @@ class SVC(sklearnSVC):
 
     Parameters
     ----------
-    metric : {'riemann', 'euclid', 'logeuclid'}, default='riemann'
+    metric : {"riemann", "euclid", "logeuclid"}, default="riemann"
         Metric for kernel matrix computation.
     Cref : None | callable | ndarray, shape (n_channels, n_channels)
         Reference point for kernel matrix computation.
         If None, the mean of the training data according to the metric is used.
         If callable, the function is called on the training data to calculate
         Cref.
-    kernel_fct : None | 'precomputed' | callable
-        If 'precomputed', the kernel matrix for datasets X and Y is estimated
-        according to `pyriemann.utils.kernel(X, Y, Cref, metric)`.
+    kernel_fct : None | "precomputed" | callable
+        If None or "precomputed", the kernel matrix for datasets X and Y is
+        estimated according to `pyriemann.utils.kernel(X, Y, Cref, metric)`.
         If callable, the callable is passed as the kernel parameter to
         `sklearn.svm.SVC()` [2]_. The callable has to be of the form
         `kernel(X, Y, Cref, metric)`.
@@ -659,7 +659,7 @@ class SVC(sklearnSVC):
 
     def __init__(self,
                  *,
-                 metric='riemann',
+                 metric="riemann",
                  kernel_fct=None,
                  Cref=None,
                  C=1.0,
@@ -678,7 +678,7 @@ class SVC(sklearnSVC):
         self.metric = metric
         self.Cref_ = None
         self.kernel_fct = kernel_fct
-        super().__init__(kernel='precomputed',
+        super().__init__(kernel="precomputed",
                          C=C,
                          shrinking=shrinking,
                          probability=probability,
@@ -724,22 +724,23 @@ class SVC(sklearnSVC):
         elif isinstance(self.Cref, np.ndarray):
             self.Cref_ = self.Cref
         else:
-            raise TypeError(f'Cref must be np.ndarray, callable or None, is'
-                            f' {self.Cref}.')
+            raise TypeError(f"Cref must be np.ndarray, callable or None, is "
+                            f"{self.Cref}.")
 
     def _set_kernel(self):
         if callable(self.kernel_fct):
             self.kernel = functools.partial(self.kernel_fct,
                                             Cref=self.Cref_,
                                             metric=self.metric)
-
-        elif self.kernel_fct is None:
+        elif self.kernel_fct is None or self.kernel_fct is "precomputed":
             self.kernel = functools.partial(kernel,
                                             Cref=self.Cref_,
                                             metric=self.metric)
         else:
-            raise TypeError(f"kernel must be 'precomputed' or callable, is "
-                            f"{self.kernel}.")
+            raise TypeError(
+                "kernel_fct must be None, 'precomputed' or callable, is "
+                f"{self.kernel}."
+            )
 
 
 class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
