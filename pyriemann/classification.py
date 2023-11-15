@@ -732,7 +732,8 @@ class SVC(sklearnSVC):
             self.kernel = functools.partial(self.kernel_fct,
                                             Cref=self.Cref_,
                                             metric=self.metric)
-        elif self.kernel_fct is None or self.kernel_fct is "precomputed":
+        elif self.kernel_fct is None or (isinstance(self.kernel_fct, str) \
+                and self.kernel_fct == "precomputed"):
             self.kernel = functools.partial(kernel,
                                             Cref=self.Cref_,
                                             metric=self.metric)
