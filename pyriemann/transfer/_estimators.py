@@ -289,20 +289,23 @@ class TLStretch(BaseEstimator, TransformerMixin):
         n_matrices, _, _ = X.shape
         sample_weight = check_weights(sample_weight, n_matrices)
         for d in np.unique(domains):
+            idx = domains == d
+            sample_weight_ = check_weights(sample_weight[idx], np.sum(idx))
             if self.centered_data:
                 self._means[d] = np.eye(n_dim)
             else:
-                idx = domains == d
                 self._means[d] = mean_riemann(
-                    X[idx], sample_weight=sample_weight[idx]
+                    X[idx], sample_weight=sample_weight_
                 )
-            disp_domain = distance(
-                X[domains == d],
+            dist_domain = distance(
+                X[idx],
                 self._means[d],
                 metric=self.metric,
                 squared=True,
-            ).mean()
-            self.dispersions_[d] = disp_domain
+            )
+            self.dispersions_[d] = (
+                sample_weight_ * np.squeeze(dist_domain)
+            ).sum()
 
         return self
 
@@ -486,7 +489,8 @@ class TLRotate(BaseEstimator, TransformerMixin):
         idx = domains == self.target_domain
         X_target, y_target = X[idx], y_enc[idx]
         M_target = np.stack([
-            mean_riemann(X_target[y_target == label])
+            mean_riemann(X_target[y_target == label],
+                         sample_weight=sample_weight[idx][y_target == label])
             for label in np.unique(y_target)
         ])
 
