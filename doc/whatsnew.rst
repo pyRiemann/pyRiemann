@@ -22,6 +22,7 @@ v0.6.dev
 
 - Correct :func:`pyriemann.utils.distance.distance_wasserstein` and :func:`pyriemann.utils.distance.distance_kullback`, keeping only real part. :pr:`267` by :user:`qbarthelemy`
 
+- Add ``sample_weight`` parameter in TLCenter, TLStretch and TLRotate. :pr:`273` by :user:`apmellot`
 
 v0.5 (Jun 2023)
 ---------------
