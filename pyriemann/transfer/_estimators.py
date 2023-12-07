@@ -520,9 +520,10 @@ class TLRotate(BaseEstimator, TransformerMixin):
                 metric=self.metric,
             ) for d in source_domains
         )
+
         self.rotations_ = {}
-        for di, roti in zip(source_domains, rotations):
-            self.rotations_[di] = roti
+        for d, rot in zip(source_domains, rotations):
+            self.rotations_[d] = rot
 
         return self
 
