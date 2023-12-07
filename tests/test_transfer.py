@@ -32,6 +32,7 @@ from pyriemann.transfer import (
 )
 from pyriemann.utils.distance import distance, distance_riemann
 from pyriemann.utils.mean import mean_covariance, mean_riemann
+from pyriemann.utils.utils import check_weights
 
 rndstate = 1234
 
@@ -55,23 +56,35 @@ def test_encode_decode_domains(rndstate):
 
 
 @pytest.mark.parametrize("metric", ["riemann"])
-def test_tlcenter(rndstate, metric):
+@pytest.mark.parametrize("sample_weight", [True, False])
+def test_tlcenter(rndstate, metric, sample_weight):
     """Test pipeline for recentering data to Identity"""
     # check if the global mean of the domains is indeed Identity
     rct = TLCenter(target_domain='target_domain', metric=metric)
     X, y_enc = make_classification_transfer(
         n_matrices=25, random_state=rndstate)
-    X_rct = rct.fit_transform(X, y_enc)
+    if sample_weight:
+        sample_weight_ = np.random.rand(len(y_enc))
+    else:
+        sample_weight_ = None
+    X_rct = rct.fit_transform(X, y_enc, sample_weight_)
     _, _, domain = decode_domains(X_rct, y_enc)
     for d in np.unique(domain):
-        Xd = X_rct[domain == d]
-        Md = mean_covariance(Xd, metric=metric)
+        idx = domain == d
+        Xd = X_rct[idx]
+        if sample_weight:
+            sample_weight_d = check_weights(sample_weight_[idx], np.sum(idx))
+            Md = mean_covariance(Xd, metric='riemann',
+                                 sample_weight=sample_weight_d)
+        else:
+            Md = mean_covariance(Xd, metric='riemann')
         assert Md == pytest.approx(np.eye(2))
 
 
 @pytest.mark.parametrize("centered_data", [True, False])
 @pytest.mark.parametrize("metric", ["riemann"])
-def test_tlstretch(rndstate, centered_data, metric):
+@pytest.mark.parametrize("sample_weight", [True, False])
+def test_tlstretch(rndstate, centered_data, metric, sample_weight):
     """Test pipeline for stretching data"""
     # check if the dispersion of the dataset indeed decreases to 1
     tlstr = TLStretch(
@@ -82,40 +95,66 @@ def test_tlstretch(rndstate, centered_data, metric):
     )
     X, y_enc = make_classification_transfer(
         n_matrices=25, class_disp=2.0, random_state=rndstate)
+
+    if sample_weight:
+        sample_weight_ = np.random.rand(len(y_enc))
+    else:
+        sample_weight_ = None
     if centered_data:  # ensure that data is indeed centered on each domain
         tlrct = TLCenter(target_domain='target_domain', metric=metric)
-        X = tlrct.fit_transform(X, y_enc)
-    X_str = tlstr.fit_transform(X, y_enc)
+        X = tlrct.fit_transform(X, y_enc, sample_weight=sample_weight_)
+
+    X_str = tlstr.fit_transform(X, y_enc, sample_weight=sample_weight_)
+
     _, _, domain = decode_domains(X_str, y_enc)
     for d in np.unique(domain):
-        Xd = X_str[domain == d]
-        Md = mean_riemann(Xd)
-        disp = np.mean(distance(Xd, Md, metric=metric, squared=True))
+        idx = domain == d
+        Xd = X_str[idx]
+        if sample_weight:
+            sample_weight_d = check_weights(sample_weight_[idx], np.sum(idx))
+            Md = mean_riemann(Xd, sample_weight=sample_weight_d)
+            dist = distance(Xd, Md, metric=metric, squared=True)
+            disp = np.sum(sample_weight_d * np.squeeze(dist))
+        else:
+            Md = mean_riemann(Xd)
+            disp = np.mean(distance(Xd, Md, metric=metric, squared=True))
         assert np.isclose(disp, 1.0)
 
 
 @pytest.mark.parametrize("metric", ["euclid", "riemann"])
-def test_tlrotate(rndstate, metric):
-    """Test pipeline for rotating the datasets"""
+@pytest.mark.parametrize("sample_weight", [True, False])
+def test_tlrotate_fit_transform(rndstate, metric, sample_weight):
+    """Test fit_transform method for rotating the datasets"""
     # check if the distance between the classes of each domain is reduced
     X, y_enc = make_classification_transfer(
         n_matrices=50, class_sep=3, class_disp=1.0, random_state=rndstate)
     rct = TLCenter(target_domain='target_domain')
     X_rct = rct.fit_transform(X, y_enc)
     rot = TLRotate(target_domain='target_domain', metric=metric)
-    X_rot = rot.fit_transform(X_rct, y_enc)
+
+    if sample_weight:
+        sample_weight_ = np.random.rand(len(y_enc))
+    else:
+        sample_weight_ = None
+    sample_weight_ = check_weights(sample_weight_, len(y_enc))
+    X_rot = rot.fit_transform(X_rct, y_enc, sample_weight=sample_weight_)
+
     _, y, domain = decode_domains(X_rot, y_enc)
     for label in np.unique(y):
         d = 'source_domain'
         M_rct_label_source = mean_riemann(
-            X_rct[domain == d][y[domain == d] == label])
+            X_rct[domain == d][y[domain == d] == label],
+            sample_weight=sample_weight_[domain == d][y[domain == d] == label])
         M_rot_label_source = mean_riemann(
-            X_rot[domain == d][y[domain == d] == label])
+            X_rot[domain == d][y[domain == d] == label],
+            sample_weight=sample_weight_[domain == d][y[domain == d] == label])
         d = 'target_domain'
         M_rct_label_target = mean_riemann(
-            X_rct[domain == d][y[domain == d] == label])
+            X_rct[domain == d][y[domain == d] == label],
+            sample_weight=sample_weight_[domain == d][y[domain == d] == label])
         M_rot_label_target = mean_riemann(
-            X_rot[domain == d][y[domain == d] == label])
+            X_rot[domain == d][y[domain == d] == label],
+            sample_weight=sample_weight_[domain == d][y[domain == d] == label])
         d_rct = distance_riemann(M_rct_label_source, M_rct_label_target)
         d_rot = distance_riemann(M_rot_label_source, M_rot_label_target)
         assert d_rot <= d_rct
