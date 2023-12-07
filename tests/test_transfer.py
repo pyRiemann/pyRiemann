@@ -128,15 +128,16 @@ def test_tlrotate_fit_transform(rndstate, metric, sample_weight):
     # check if the distance between the classes of each domain is reduced
     X, y_enc = make_classification_transfer(
         n_matrices=50, class_sep=3, class_disp=1.0, random_state=rndstate)
-    rct = TLCenter(target_domain='target_domain')
-    X_rct = rct.fit_transform(X, y_enc)
-    rot = TLRotate(target_domain='target_domain', metric=metric)
 
     if sample_weight:
         sample_weight_ = np.random.rand(len(y_enc))
     else:
         sample_weight_ = None
     sample_weight_ = check_weights(sample_weight_, len(y_enc))
+
+    rct = TLCenter(target_domain='target_domain')
+    X_rct = rct.fit_transform(X, y_enc, sample_weight_)
+    rot = TLRotate(target_domain='target_domain', metric=metric)
     X_rot = rot.fit_transform(X_rct, y_enc, sample_weight=sample_weight_)
 
     _, y, domain = decode_domains(X_rot, y_enc)
