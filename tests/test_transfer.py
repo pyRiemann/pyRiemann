@@ -135,8 +135,8 @@ def test_tlrotate_fit_transform(rndstate, metric, sample_weight):
         sample_weight_ = None
     sample_weight_ = check_weights(sample_weight_, len(y_enc))
 
-    rct = TLCenter(target_domain='target_domain')
-    X_rct = rct.fit_transform(X, y_enc, sample_weight_)
+    rct = TLCenter(target_domain='target_domain', metric=metric)
+    X_rct = rct.fit_transform(X, y_enc, sample_weight=sample_weight_)
     rot = TLRotate(target_domain='target_domain', metric=metric)
     X_rot = rot.fit_transform(X_rct, y_enc, sample_weight=sample_weight_)
 
