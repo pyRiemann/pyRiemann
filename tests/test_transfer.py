@@ -127,7 +127,8 @@ def test_tlrotate_fit_transform(rndstate, metric, sample_weight):
     """Test fit_transform method for rotating the datasets"""
     # check if the distance between the classes of each domain is reduced
     X, y_enc = make_classification_transfer(
-        n_matrices=50, class_sep=3, class_disp=1.0, random_state=rndstate)
+        n_matrices=50, class_sep=3, class_disp=1.0, theta=np.pi/2,
+        random_state=rndstate)
 
     if sample_weight:
         sample_weight_ = np.random.rand(len(y_enc))
