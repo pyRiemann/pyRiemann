@@ -114,7 +114,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
     Attributes
     ----------
     recenter_ : dict
-        Dictionary with key=domain_name and value=domain_mean
+        Dictionary with key=domain_name and value=domain_mean.
 
     References
     ----------
@@ -303,15 +303,13 @@ class TLStretch(BaseEstimator, TransformerMixin):
                 self._means[d] = mean_riemann(
                     X[idx], sample_weight=sample_weight_d
                 )
-            dist_domain = distance(
+            dist = distance(
                 X[idx],
                 self._means[d],
                 metric=self.metric,
                 squared=True,
             )
-            self.dispersions_[d] = (
-                sample_weight_d * np.squeeze(dist_domain)
-            ).sum()
+            self.dispersions_[d] = np.sum(sample_weight_d * np.squeeze(dist))
 
         return self
 
@@ -505,8 +503,8 @@ class TLRotate(BaseEstimator, TransformerMixin):
             for label in np.unique(y_target)
         ])
 
-        source_names = np.unique(domains)
-        source_names = source_names[source_names != self.target_domain]
+        source_domains = np.unique(domains)
+        source_domains = source_domains[source_domains != self.target_domain]
         rotations = Parallel(n_jobs=self.n_jobs)(
             delayed(_get_rotation_matrix)(
                 np.stack([
@@ -520,10 +518,10 @@ class TLRotate(BaseEstimator, TransformerMixin):
                 M_target,
                 self.weights,
                 metric=self.metric,
-            ) for d in source_names
+            ) for d in source_domains
         )
         self.rotations_ = {}
-        for di, roti in zip(source_names, rotations):
+        for di, roti in zip(source_domains, rotations):
             self.rotations_[di] = roti
 
         return self
