@@ -64,7 +64,7 @@ def test_tlcenter(rndstate, metric, sample_weight):
     X, y_enc = make_classification_transfer(
         n_matrices=25, random_state=rndstate)
     if sample_weight:
-        sample_weight_ = np.random.rand(len(y_enc))
+        sample_weight_ = rndstate.rand(len(y_enc))
     else:
         sample_weight_ = None
     X_rct = rct.fit_transform(X, y_enc, sample_weight_)
@@ -97,7 +97,7 @@ def test_tlstretch(rndstate, centered_data, metric, sample_weight):
         n_matrices=25, class_disp=2.0, random_state=rndstate)
 
     if sample_weight:
-        sample_weight_ = np.random.rand(len(y_enc))
+        sample_weight_ = rndstate.rand(len(y_enc))
     else:
         sample_weight_ = None
     if centered_data:  # ensure that data is indeed centered on each domain
@@ -123,7 +123,7 @@ def test_tlstretch(rndstate, centered_data, metric, sample_weight):
 
 @pytest.mark.parametrize("metric", ["euclid", "riemann"])
 @pytest.mark.parametrize("sample_weight", [True, False])
-def test_tlrotate_fit_transform(rndstate, metric, sample_weight):
+def test_tlrotate(rndstate, metric, sample_weight):
     """Test fit_transform method for rotating the datasets"""
     # check if the distance between the classes of each domain is reduced
     X, y_enc = make_classification_transfer(
@@ -131,7 +131,7 @@ def test_tlrotate_fit_transform(rndstate, metric, sample_weight):
         random_state=rndstate)
 
     if sample_weight:
-        sample_weight_ = np.random.rand(len(y_enc))
+        sample_weight_ = rndstate.rand(len(y_enc))
     else:
         sample_weight_ = None
     sample_weight_ = check_weights(sample_weight_, len(y_enc))
