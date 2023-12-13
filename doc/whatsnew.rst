@@ -22,6 +22,7 @@ v0.6.dev
 
 - Correct :func:`pyriemann.utils.distance.distance_wasserstein` and :func:`pyriemann.utils.distance.distance_kullback`, keeping only real part. :pr:`267` by :user:`qbarthelemy`
 
+- Deprecate input ``covmats`` for mean functions, renamed into ``X``. :pr:`252` by :user:`qbarthelemy`
 
 v0.5 (Jun 2023)
 ---------------
