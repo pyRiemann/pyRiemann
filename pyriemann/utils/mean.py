@@ -184,7 +184,7 @@ def mean_harmonic(X=None, sample_weight=None, covmats=None):
     r"""Harmonic mean of invertible matrices.
 
     .. math::
-        \mathbf{M} = \left( \sum_i wi \ {\mathbf{X}_i}^{-1} \right)^{-1}
+        \mathbf{M} = \left( \sum_i w_i \ {\mathbf{X}_i}^{-1} \right)^{-1}
 
     Parameters
     ----------
