@@ -11,41 +11,69 @@ from .test import is_square, is_real_type
 
 def _lwf(X, **kwds):
     """Wrapper for sklearn ledoit wolf covariance estimator"""
-    if not is_real_type(X):
-        raise ValueError("Input must be real-valued.")
+    iscomplex = np.iscomplexobj(X)
+    if iscomplex:
+        X = np.concatenate((X.real, X.imag), axis=0)
     C, _ = ledoit_wolf(X.T, **kwds)
+    if iscomplex:
+        C = _make_complex_covariance(C)
     return C
 
 
 def _mcd(X, **kwds):
     """Wrapper for sklearn mcd covariance estimator"""
-    if not is_real_type(X):
-        raise ValueError("Input must be real-valued.")
+    iscomplex = np.iscomplexobj(X)
+    if iscomplex:
+        X = np.concatenate((X.real, X.imag), axis=0)
     _, C, _, _ = fast_mcd(X.T, **kwds)
+    if iscomplex:
+        C = _make_complex_covariance(C)
     return C
 
 
 def _oas(X, **kwds):
     """Wrapper for sklearn oas covariance estimator"""
-    if not is_real_type(X):
-        raise ValueError("Input must be real-valued.")
+    iscomplex = np.iscomplexobj(X)
+    if iscomplex:
+        X = np.concatenate((X.real, X.imag), axis=0)
     C, _ = oas(X.T, **kwds)
+    if iscomplex:
+        C = _make_complex_covariance(C)
     return C
 
 
 def _hub(X, **kwds):
     """Wrapper for Huber's M-estimator"""
-    return covariance_mest(X, 'hub', **kwds)
+    iscomplex = np.iscomplexobj(X)
+    if iscomplex:
+        X = np.concatenate((X.real, X.imag), axis=0)
+    C = covariance_mest(X, 'hub', **kwds)
+    if iscomplex:
+        C = _make_complex_covariance(C)
+    return C
 
 
 def _stu(X, **kwds):
     """Wrapper for Student-t's M-estimator"""
-    return covariance_mest(X, 'stu', **kwds)
+    iscomplex = np.iscomplexobj(X)
+    if iscomplex:
+        X = np.concatenate((X.real, X.imag), axis=0)
+    C = covariance_mest(X, 'stu', **kwds)
+    if iscomplex:
+        C = _make_complex_covariance(C)
+
+    return C
 
 
 def _tyl(X, **kwds):
     """Wrapper for Tyler's M-estimator"""
-    return covariance_mest(X, 'tyl', **kwds)
+    iscomplex = np.iscomplexobj(X)
+    if iscomplex:
+        X = np.concatenate((X.real, X.imag), axis=0)
+    C = covariance_mest(X, 'tyl', **kwds)
+    if iscomplex:
+        C = _make_complex_covariance(C)
+    return C
 
 
 def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
@@ -218,8 +246,10 @@ def covariance_sch(X):
         J. Schafer, and K. Strimmer. Statistical Applications in Genetics and
         Molecular Biology, Volume 4, Issue 1, 2005.
     """
-    if not is_real_type(X):
-        raise ValueError("Input must be real-valued.")
+    iscomplex = np.iscomplexobj(X)
+    if iscomplex:
+        X = np.concatenate((X.real, X.imag), axis=0)
+
     _, n_times = X.shape
     X_c = X - X.mean(axis=1, keepdims=True)
     C_scm = X_c @ X_c.T / n_times
@@ -237,7 +267,10 @@ def covariance_sch(X):
 
     sigma = (1. - gamma) * (n_times / (n_times - 1.)) * C_scm
     shrinkage = gamma * (n_times / (n_times - 1.)) * np.diag(np.diag(C_scm))
-    return sigma + shrinkage
+    C = sigma + shrinkage
+    if iscomplex:
+        C = _make_complex_covariance(C)
+    return C
 
 
 def covariance_scm(X, *, assume_centered=False):
@@ -368,17 +401,9 @@ def covariances(X, estimator='cov', **kwds):
         Conference on Acoustics, Speech and Signal Processing, Volume 2, 2007.
     """  # noqa
     est = _check_cov_est_function(estimator)
-    iscomplex = np.iscomplexobj(X)
-    if iscomplex:
-        X = np.concatenate((X.real, X.imag), axis=1)
-
     n_matrices, n_channels, n_times = X.shape
-    covmats = np.empty((n_matrices, n_channels, n_channels), dtype=X.dtype)
-    for i in range(n_matrices):
-        covmats[i] = est(X[i], **kwds)
-
-    if iscomplex:
-        covmats = _make_complex_covariances(covmats)
+    covmats = np.asarray([est(X[i], **kwds)
+                          for i in range(n_matrices)])
     return covmats
 
 
@@ -404,22 +429,14 @@ def covariances_EP(X, P, estimator='cov', **kwds):
         Covariance matrices.
     """
     est = _check_cov_est_function(estimator)
-    iscomplex = np.iscomplexobj(X)
-    if iscomplex:
-        X = np.concatenate((X.real, X.imag), axis=1)
-        P = np.concatenate((P.real, P.imag), axis=0)
     n_matrices, n_channels, n_times = X.shape
     n_channels_proto, n_times_p = P.shape
     if n_times_p != n_times:
         raise ValueError(
             f"X and P do not have the same n_times: {n_times} and {n_times_p}")
-    n_channels_sum = n_channels + n_channels_proto
-    covmats = np.empty((n_matrices, n_channels_sum, n_channels_sum))
-    for i in range(n_matrices):
-        covmats[i] = est(np.concatenate((P, X[i]), axis=0), **kwds)
+    covmats = np.asarray([est(np.concatenate((P, X[i]), axis=0), **kwds)
+                          for i in range(n_matrices)])
 
-    if iscomplex:
-        covmats = _make_complex_covariances(covmats)
     return covmats
 
 
@@ -820,7 +837,7 @@ def get_nondiag_weight(X):
     return weights
 
 
-def _make_complex_covariances(covmats):
+def _make_complex_covariance(covmats):
     """Convert real-valued covariance matrices to complex-valued.
 
     Converts the stacked real-valued covariance matrices to complex-valued
@@ -849,10 +866,10 @@ def _make_complex_covariances(covmats):
         Conference on Acoustics, Speech and Signal Processing, Volume 2, 2007.
     """
 
-    n_matrices, n_channels, n_channels = covmats.shape
-    complex_covmats = covmats[:, :n_channels // 2, :n_channels // 2] \
-        + covmats[:, n_channels // 2:, n_channels // 2:] \
-        + 1j * (covmats[:, n_channels // 2:, :n_channels // 2]
-                - covmats[:, :n_channels // 2, n_channels // 2:])
+    n_channels, n_channels = covmats.shape
+    complex_covmats = covmats[:n_channels // 2, :n_channels // 2] \
+        + covmats[n_channels // 2:, n_channels // 2:] \
+        + 1j * (covmats[n_channels // 2:, :n_channels // 2]
+                - covmats[:n_channels // 2, n_channels // 2:])
 
     return complex_covmats
