@@ -84,7 +84,24 @@ def test_covariances_EP(estimator, rndstate):
     n_matrices, n_channels_x, n_channels_p, n_times = 2, 3, 3, 100
     x = rndstate.randn(n_matrices, n_channels_x, n_times)
     p = rndstate.randn(n_channels_p, n_times)
+    if estimator is None:
+        cov = covariances_EP(x, p)
+    else:
+        cov = covariances_EP(x, p, estimator=estimator)
+    n_dim_cov = n_channels_x + n_channels_p
+    assert cov.shape == (n_matrices, n_dim_cov, n_dim_cov)
 
+
+@pytest.mark.parametrize(
+    'estimator', estimators + [None]
+)
+def test_covariances_EP_complex(estimator, rndstate):
+    """Test covariance_EP for complex input"""
+    n_matrices, n_channels_x, n_channels_p, n_times = 2, 3, 3, 100
+    x = rndstate.randn(n_matrices, n_channels_x, n_times) \
+        + 1j * rndstate.randn(n_matrices, n_channels_x, n_times)
+    p = rndstate.randn(n_channels_p, n_times) \
+        + 1j * rndstate.randn(n_channels_p, n_times)
     if estimator is None:
         cov = covariances_EP(x, p)
     else:
@@ -100,7 +117,6 @@ def test_covariances_X(estimator, rndstate):
     """Test covariance_X for multiple estimators"""
     n_matrices, n_channels, n_times = 3, 5, 15
     x = rndstate.randn(n_matrices, n_channels, n_times)
-
     if estimator is None:
         cov = covariances_X(x, alpha=5.)
     else:

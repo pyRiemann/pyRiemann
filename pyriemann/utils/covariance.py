@@ -379,7 +379,6 @@ def covariances(X, estimator='cov', **kwds):
 
     if iscomplex:
         covmats = _make_complex_covariances(covmats)
-
     return covmats
 
 
@@ -458,10 +457,6 @@ def covariances_X(X, estimator='scm', alpha=0.2, **kwds):
         raise ValueError(
             f"Parameter alpha must be strictly positive (Got {alpha})")
     est = _check_cov_est_function(estimator)
-    iscomplex = np.iscomplexobj(X)
-    if iscomplex:
-        X = np.concatenate((X.real, X.imag), axis=1)
-
     n_matrices, n_channels, n_times = X.shape
 
     Hchannels = np.eye(n_channels) \
@@ -478,9 +473,6 @@ def covariances_X(X, estimator='scm', alpha=0.2, **kwds):
             np.concatenate((alpha * np.eye(n_times), X[i].T), axis=1)  # bottom
         ), axis=0)  # Eq(9)
         covmats[i] = est(Y, **kwds)
-
-    if iscomplex:
-        covmats = _make_complex_covariances(covmats)
     return covmats / (2 * alpha)  # Eq(10)
 
 
@@ -510,9 +502,6 @@ def block_covariances(X, blocks, estimator='cov', **kwds):
         Block diagonal covariance matrices.
     """
     est = _check_cov_est_function(estimator)
-    iscomplex = np.iscomplexobj(X)
-    if iscomplex:
-        X = np.concatenate((X.real, X.imag), axis=1)
     n_matrices, n_channels, n_times = X.shape
 
     if np.sum(blocks) != n_channels:
@@ -526,9 +515,6 @@ def block_covariances(X, blocks, estimator='cov', **kwds):
             blockcov.append(est(X[i, idx_start:idx_start+j, :], **kwds))
             idx_start += j
         covmats[i] = block_diag(*tuple(blockcov))
-
-    if iscomplex:
-        covmats = _make_complex_covariances(covmats)
     return covmats
 
 
