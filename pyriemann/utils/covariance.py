@@ -311,6 +311,10 @@ def _check_cov_est_function(est):
 
 def covariances(X, estimator='cov', **kwds):
     """Estimation of covariance matrix.
+    
+    Estimates covariance matrices from multi-channel time series according to
+    a covariance estimator. Supports real and complex-valued data. For complex 
+    data, the covariance matrices are estimated according to Section 3 in [1]_.
 
     Parameters
     ----------
@@ -357,12 +361,25 @@ def covariances(X, estimator='cov', **kwds):
     .. [oas] https://scikit-learn.org/stable/modules/generated/oas-function.html
     .. [sch] :func:`pyriemann.utils.covariance.covariance_sch`
     .. [scm] :func:`pyriemann.utils.covariance.covariance_scm`
+    .. [1] `A shrinkage approach to large-scale covariance estimation and
+        implications for functional genomics
+        <https://doi.org/10.1109/ICASSP.2007.366399>`_
+        R. Abrahamsson, Y. Selen and P. Stoica. 2007 IEEE International
+        Conference on Acoustics, Speech and Signal Processing, Volume 2, 2007.
     """  # noqa
     est = _check_cov_est_function(estimator)
+    iscomplex = np.iscomplexobj(X)
+    if iscomplex:
+        X = np.concatenate((X.real, X.imag), axis=1)
+
     n_matrices, n_channels, n_times = X.shape
     covmats = np.empty((n_matrices, n_channels, n_channels), dtype=X.dtype)
     for i in range(n_matrices):
         covmats[i] = est(X[i], **kwds)
+
+    if iscomplex:
+        covmats = _make_complex_covariances(covmats)
+
     return covmats
 
 
@@ -388,15 +405,22 @@ def covariances_EP(X, P, estimator='cov', **kwds):
         Covariance matrices.
     """
     est = _check_cov_est_function(estimator)
+    iscomplex = np.iscomplexobj(X)
+    if iscomplex:
+        X = np.concatenate((X.real, X.imag), axis=1)
+        P = np.concatenate((P.real, P.imag), axis=0)
     n_matrices, n_channels, n_times = X.shape
     n_channels_proto, n_times_p = P.shape
     if n_times_p != n_times:
         raise ValueError(
             f"X and P do not have the same n_times: {n_times} and {n_times_p}")
-    covmats = np.empty((n_matrices, n_channels + n_channels_proto,
-                        n_channels + n_channels_proto))
+    n_channels_sum = n_channels + n_channels_proto
+    covmats = np.empty((n_matrices, n_channels_sum, n_channels_sum))
     for i in range(n_matrices):
         covmats[i] = est(np.concatenate((P, X[i]), axis=0), **kwds)
+
+    if iscomplex:
+        covmats = _make_complex_covariances(covmats)
     return covmats
 
 
@@ -434,6 +458,10 @@ def covariances_X(X, estimator='scm', alpha=0.2, **kwds):
         raise ValueError(
             f"Parameter alpha must be strictly positive (Got {alpha})")
     est = _check_cov_est_function(estimator)
+    iscomplex = np.iscomplexobj(X)
+    if iscomplex:
+        X = np.concatenate((X.real, X.imag), axis=1)
+
     n_matrices, n_channels, n_times = X.shape
 
     Hchannels = np.eye(n_channels) \
@@ -450,6 +478,9 @@ def covariances_X(X, estimator='scm', alpha=0.2, **kwds):
             np.concatenate((alpha * np.eye(n_times), X[i].T), axis=1)  # bottom
         ), axis=0)  # Eq(9)
         covmats[i] = est(Y, **kwds)
+
+    if iscomplex:
+        covmats = _make_complex_covariances(covmats)
     return covmats / (2 * alpha)  # Eq(10)
 
 
@@ -479,6 +510,9 @@ def block_covariances(X, blocks, estimator='cov', **kwds):
         Block diagonal covariance matrices.
     """
     est = _check_cov_est_function(estimator)
+    iscomplex = np.iscomplexobj(X)
+    if iscomplex:
+        X = np.concatenate((X.real, X.imag), axis=1)
     n_matrices, n_channels, n_times = X.shape
 
     if np.sum(blocks) != n_channels:
@@ -493,6 +527,8 @@ def block_covariances(X, blocks, estimator='cov', **kwds):
             idx_start += j
         covmats[i] = block_diag(*tuple(blockcov))
 
+    if iscomplex:
+        covmats = _make_complex_covariances(covmats)
     return covmats
 
 
@@ -796,3 +832,41 @@ def get_nondiag_weight(X):
     num = np.sum(X2, axis=(-2, -1)) - denom
     weights = (1.0 / (X.shape[-1] - 1)) * (num / denom)
     return weights
+
+
+def _make_complex_covariances(covmats):
+    """Convert real-valued covariance matrices to complex-valued.
+
+    Converts the stacked real-valued covariance matrices to complex-valued
+    covariance matrices, following Section 3 in [1]_.
+
+    Parameters
+    ----------
+    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+        Covariance matrices, real-valued.
+
+    Returns
+    -------
+    complex_covmats : ndarray, shape (n_matrices, n_channels/2, n_channels/2)
+        Covariance matrices, complex-valued.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
+
+    References
+    ----------
+    .. [1] `A shrinkage approach to large-scale covariance estimation and
+        implications for functional genomics
+        <https://doi.org/10.1109/ICASSP.2007.366399>`_
+        R. Abrahamsson, Y. Selen and P. Stoica. 2007 IEEE International
+        Conference on Acoustics, Speech and Signal Processing, Volume 2, 2007.
+    """
+
+    n_matrices, n_channels, n_channels = covmats.shape
+    complex_covmats = covmats[:, :n_channels // 2, :n_channels // 2] \
+        + covmats[:, n_channels // 2:, n_channels // 2:] \
+        + 1j * (covmats[:, n_channels // 2:, :n_channels // 2]
+                - covmats[:, :n_channels // 2, n_channels // 2:])
+
+    return complex_covmats

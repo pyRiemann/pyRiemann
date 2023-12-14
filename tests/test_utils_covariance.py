@@ -71,14 +71,9 @@ def test_covariances_complex(estimator, rndstate):
     x = rndstate.randn(n_matrices, n_channels, n_times) \
         + 1j * rndstate.randn(n_matrices, n_channels, n_times)
 
-    if estimator in ['lwf', 'mcd', 'oas', 'sch']:
-        with pytest.raises(ValueError):
-            covariances(x, estimator=estimator)
-
-    else:
-        cov = covariances(x, estimator=estimator)
-        assert cov.shape == (n_matrices, n_channels, n_channels)
-        assert is_herm_pos_def(cov)
+    cov = covariances(x, estimator=estimator)
+    assert cov.shape == (n_matrices, n_channels, n_channels)
+    assert is_herm_pos_def(cov)
 
 
 @pytest.mark.parametrize(
