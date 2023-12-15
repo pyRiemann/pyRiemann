@@ -79,6 +79,7 @@ def test_covariance_scm_complex(rndstate):
         + 1j * rndstate.randn(n_matrices, n_channels, n_times)
 
     cov = covariances(x, estimator='scm', assume_centered=True)
+
     @_complex_estimator
     def complex_scm_sklearn(x):
         return scm_sklearn(x, assume_centered=True)
