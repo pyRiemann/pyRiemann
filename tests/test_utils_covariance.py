@@ -476,4 +476,3 @@ def test_complex_decorator(rndstate):
 
     cov_complex = np.asarray([covariances_complex(xi) for xi in x])
     assert_array_almost_equal(cov, cov_complex)
-
