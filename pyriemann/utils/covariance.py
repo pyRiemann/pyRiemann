@@ -1,4 +1,5 @@
 import warnings
+from functools import wraps
 
 import numpy as np
 from scipy.linalg import block_diag
@@ -9,71 +10,73 @@ from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
 
 
+def _complex_decorator(func):
+    """Decorator for complex-valued covariance matrices.
+
+    Estimates complex Covariances according to Section 3 in [1]_.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
+
+
+    References
+    ----------
+    .. [1] `Enhanced Covariance Matrix Estimators in Adaptive Beamforming
+        <https://doi.org/10.1109/ICASSP.2007.366399>`_
+        R. Abrahamsson, Y. Selen and P. Stoica. 2007 IEEE International
+        Conference on Acoustics, Speech and Signal Processing, Volume 2, 2007.
+    """
+    @wraps(func)
+    def wrapper(X, **kwds):
+        iscomplex = np.iscomplexobj(X)
+        if iscomplex:
+            n_channels, n_times = X.shape
+            X = np.concatenate((X.real, X.imag), axis=0)
+        cov = func(X, **kwds)
+        if iscomplex:
+            cov = cov[:n_channels, :n_channels] \
+                + cov[n_channels:, n_channels:] \
+                + 1j * (cov[n_channels:, :n_channels]
+                        - cov[:n_channels, n_channels:])
+        return cov
+    return wrapper
+
+
+@_complex_decorator
 def _lwf(X, **kwds):
     """Wrapper for sklearn ledoit wolf covariance estimator"""
-    iscomplex = np.iscomplexobj(X)
-    if iscomplex:
-        X = np.concatenate((X.real, X.imag), axis=0)
     C, _ = ledoit_wolf(X.T, **kwds)
-    if iscomplex:
-        C = _make_complex_covariance(C)
     return C
 
 
+@_complex_decorator
 def _mcd(X, **kwds):
     """Wrapper for sklearn mcd covariance estimator"""
-    iscomplex = np.iscomplexobj(X)
-    if iscomplex:
-        X = np.concatenate((X.real, X.imag), axis=0)
     _, C, _, _ = fast_mcd(X.T, **kwds)
-    if iscomplex:
-        C = _make_complex_covariance(C)
     return C
 
 
+@_complex_decorator
 def _oas(X, **kwds):
     """Wrapper for sklearn oas covariance estimator"""
-    iscomplex = np.iscomplexobj(X)
-    if iscomplex:
-        X = np.concatenate((X.real, X.imag), axis=0)
     C, _ = oas(X.T, **kwds)
-    if iscomplex:
-        C = _make_complex_covariance(C)
     return C
 
 
 def _hub(X, **kwds):
     """Wrapper for Huber's M-estimator"""
-    iscomplex = np.iscomplexobj(X)
-    if iscomplex:
-        X = np.concatenate((X.real, X.imag), axis=0)
-    C = covariance_mest(X, 'hub', **kwds)
-    if iscomplex:
-        C = _make_complex_covariance(C)
-    return C
+    return covariance_mest(X, 'hub', **kwds)
 
 
 def _stu(X, **kwds):
     """Wrapper for Student-t's M-estimator"""
-    iscomplex = np.iscomplexobj(X)
-    if iscomplex:
-        X = np.concatenate((X.real, X.imag), axis=0)
-    C = covariance_mest(X, 'stu', **kwds)
-    if iscomplex:
-        C = _make_complex_covariance(C)
-
-    return C
+    return covariance_mest(X, 'stu', **kwds)
 
 
 def _tyl(X, **kwds):
     """Wrapper for Tyler's M-estimator"""
-    iscomplex = np.iscomplexobj(X)
-    if iscomplex:
-        X = np.concatenate((X.real, X.imag), axis=0)
-    C = covariance_mest(X, 'tyl', **kwds)
-    if iscomplex:
-        C = _make_complex_covariance(C)
-    return C
+    return covariance_mest(X, 'tyl', **kwds)
 
 
 def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
@@ -209,6 +212,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     return cov
 
 
+@_complex_decorator
 def covariance_sch(X):
     r"""Schaefer-Strimmer shrunk covariance estimator.
 
@@ -246,10 +250,6 @@ def covariance_sch(X):
         J. Schafer, and K. Strimmer. Statistical Applications in Genetics and
         Molecular Biology, Volume 4, Issue 1, 2005.
     """
-    iscomplex = np.iscomplexobj(X)
-    if iscomplex:
-        X = np.concatenate((X.real, X.imag), axis=0)
-
     _, n_times = X.shape
     X_c = X - X.mean(axis=1, keepdims=True)
     C_scm = X_c @ X_c.T / n_times
@@ -267,10 +267,7 @@ def covariance_sch(X):
 
     sigma = (1. - gamma) * (n_times / (n_times - 1.)) * C_scm
     shrinkage = gamma * (n_times / (n_times - 1.)) * np.diag(np.diag(C_scm))
-    C = sigma + shrinkage
-    if iscomplex:
-        C = _make_complex_covariance(C)
-    return C
+    return sigma + shrinkage
 
 
 def covariance_scm(X, *, assume_centered=False):
@@ -402,8 +399,9 @@ def covariances(X, estimator='cov', **kwds):
     """  # noqa
     est = _check_cov_est_function(estimator)
     n_matrices, n_channels, n_times = X.shape
-    covmats = np.asarray([est(X[i], **kwds)
-                          for i in range(n_matrices)])
+    covmats = np.empty((n_matrices, n_channels, n_channels), dtype=X.dtype)
+    for i in range(n_matrices):
+        covmats[i] = est(X[i], **kwds)
     return covmats
 
 
@@ -434,9 +432,10 @@ def covariances_EP(X, P, estimator='cov', **kwds):
     if n_times_p != n_times:
         raise ValueError(
             f"X and P do not have the same n_times: {n_times} and {n_times_p}")
-    covmats = np.asarray([est(np.concatenate((P, X[i]), axis=0), **kwds)
-                          for i in range(n_matrices)])
-
+    covmats = np.empty((n_matrices, n_channels + n_channels_proto,
+                        n_channels + n_channels_proto))
+    for i in range(n_matrices):
+        covmats[i] = est(np.concatenate((P, X[i]), axis=0), **kwds)
     return covmats
 
 
@@ -532,6 +531,7 @@ def block_covariances(X, blocks, estimator='cov', **kwds):
             blockcov.append(est(X[i, idx_start:idx_start+j, :], **kwds))
             idx_start += j
         covmats[i] = block_diag(*tuple(blockcov))
+
     return covmats
 
 
@@ -835,41 +835,3 @@ def get_nondiag_weight(X):
     num = np.sum(X2, axis=(-2, -1)) - denom
     weights = (1.0 / (X.shape[-1] - 1)) * (num / denom)
     return weights
-
-
-def _make_complex_covariance(X):
-    """Convert real-valued covariance matrices to complex-valued.
-
-    Converts the stacked real-valued covariance matrices to complex-valued
-    covariance matrices, following Section 3 in [1]_.
-
-    Parameters
-    ----------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-        Covariance matrices, real-valued.
-
-    Returns
-    -------
-    complex_covmats : ndarray, shape (n_matrices, n_channels/2, n_channels/2)
-        Covariance matrices, complex-valued.
-
-    Notes
-    -----
-    .. versionadded:: 0.6
-
-    References
-    ----------
-    .. [1] `Enhanced Covariance Matrix Estimators in Adaptive Beamforming
-        <https://doi.org/10.1109/ICASSP.2007.366399>`_
-        R. Abrahamsson, Y. Selen and P. Stoica. 2007 IEEE International
-        Conference on Acoustics, Speech and Signal Processing, Volume 2, 2007.
-    """
-
-    n_2_channels, n_2_channels = covmats.shape
-    n_channels = n_2_channels // 2
-    complex_covmats = covmats[:n_channels, :n_channels] \
-        + covmats[n_channels:, n_channels:] \
-        + 1j * (covmats[n_channels:, :n_channels]
-                - covmats[:n_channels, n_channels:])
-
-    return complex_covmats
