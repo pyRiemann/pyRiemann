@@ -345,9 +345,10 @@ def _check_cov_est_function(est):
 def covariances(X, estimator='cov', **kwds):
     """Estimation of covariance matrix.
     
-    Estimates covariance matrices from multi-channel time series according to
-    a covariance estimator. Supports real and complex-valued data. For complex 
-    data, the covariance matrices are estimated according to Section 3 in [1]_.
+    Estimates covariance matrices from multi-channel time-series according to
+    a covariance estimator. It supports real and complex-valued data. 
+    For 'lwf', 'mcd', 'oas' and 'sch' estimators, 
+    complex covariance matrices are estimated according to [comp]_.
 
     Parameters
     ----------
@@ -394,8 +395,7 @@ def covariances(X, estimator='cov', **kwds):
     .. [oas] https://scikit-learn.org/stable/modules/generated/oas-function.html
     .. [sch] :func:`pyriemann.utils.covariance.covariance_sch`
     .. [scm] :func:`pyriemann.utils.covariance.covariance_scm`
-    .. [1] `A shrinkage approach to large-scale covariance estimation and
-        implications for functional genomics
+    .. [comp] `Enhanced Covariance Matrix Estimators in Adaptive Beamforming
         <https://doi.org/10.1109/ICASSP.2007.366399>`_
         R. Abrahamsson, Y. Selen and P. Stoica. 2007 IEEE International
         Conference on Acoustics, Speech and Signal Processing, Volume 2, 2007.
@@ -837,7 +837,7 @@ def get_nondiag_weight(X):
     return weights
 
 
-def _make_complex_covariance(covmats):
+def _make_complex_covariance(X):
     """Convert real-valued covariance matrices to complex-valued.
 
     Converts the stacked real-valued covariance matrices to complex-valued
@@ -859,17 +859,17 @@ def _make_complex_covariance(covmats):
 
     References
     ----------
-    .. [1] `A shrinkage approach to large-scale covariance estimation and
-        implications for functional genomics
+    .. [1] `Enhanced Covariance Matrix Estimators in Adaptive Beamforming
         <https://doi.org/10.1109/ICASSP.2007.366399>`_
         R. Abrahamsson, Y. Selen and P. Stoica. 2007 IEEE International
         Conference on Acoustics, Speech and Signal Processing, Volume 2, 2007.
     """
 
-    n_channels, n_channels = covmats.shape
-    complex_covmats = covmats[:n_channels // 2, :n_channels // 2] \
-        + covmats[n_channels // 2:, n_channels // 2:] \
-        + 1j * (covmats[n_channels // 2:, :n_channels // 2]
-                - covmats[:n_channels // 2, n_channels // 2:])
+    n_2_channels, n_2_channels = covmats.shape
+    n_channels = n_2_channels // 2
+    complex_covmats = covmats[:n_channels, :n_channels] \
+        + covmats[n_channels:, n_channels:] \
+        + 1j * (covmats[n_channels:, :n_channels]
+                - covmats[:n_channels, n_channels:])
 
     return complex_covmats
