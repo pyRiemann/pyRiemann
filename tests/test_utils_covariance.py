@@ -53,15 +53,13 @@ def test_covariances(estimator, rndstate):
             )
 
 
-@pytest.mark.parametrize('estimator', ['scm'])
-def test_covariances_real_vs_sklearn(estimator, rndstate):
+def test_covariance_scm_vs_sklearn(rndstate):
     """Test equivalence with scikit-learn for real inputs"""
     n_matrices, n_channels, n_times = 1, 3, 100
     x = rndstate.randn(n_matrices, n_channels, n_times)
-    cov = covariances(x, estimator=estimator)
+    cov = covariances(x, estimator='scm')
 
-    if estimator == 'scm':
-        assert_array_almost_equal(cov[0], empirical_covariance(x[0].T), 10)
+    assert_array_almost_equal(cov[0], empirical_covariance(x[0].T), 10)
 
 
 @pytest.mark.parametrize('estimator', estimators + m_estimators)

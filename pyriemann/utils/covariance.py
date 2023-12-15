@@ -13,12 +13,13 @@ from .test import is_square, is_real_type
 def _complex_decorator(func):
     """Decorator for complex-valued covariance matrices.
 
-    Estimates complex Covariances according to Section 3 in [1]_.
+    Using a real-valued covariance estimator, this decorator allows to estimate
+    complex covariance matrices from complex-valued multi-channel time-series.
+    See Eq.(4) in [1]_.
 
     Notes
     -----
     .. versionadded:: 0.6
-
 
     References
     ----------
@@ -340,12 +341,10 @@ def _check_cov_est_function(est):
 
 
 def covariances(X, estimator='cov', **kwds):
-    """Estimation of covariance matrix.
-    
+    """Estimation of covariance matrices.
+
     Estimates covariance matrices from multi-channel time-series according to
-    a covariance estimator. It supports real and complex-valued data. 
-    For 'lwf', 'mcd', 'oas' and 'sch' estimators, 
-    complex covariance matrices are estimated according to [comp]_.
+    a covariance estimator. It supports real and complex-valued data.
 
     Parameters
     ----------
@@ -358,21 +357,21 @@ def covariances(X, estimator='cov', **kwds):
         * 'corr' for correlation coefficient matrix [corr]_,
         * 'cov' for NumPy based covariance matrix [cov]_,
         * 'hub' for Huber's M-estimator based covariance matrix [mest]_,
-        * 'lwf' for Ledoit-Wolf shrunk covariance matrix [lwf]_
-          only for real-valued inputs,
-        * 'mcd' for minimum covariance determinant matrix [mcd]_
-          only for real-valued inputs,
-        * 'oas' for oracle approximating shrunk covariance matrix [oas]_
-          only for real-valued inputs,
-        * 'sch' for Schaefer-Strimmer shrunk covariance matrix [sch]_
-          only for real-valued inputs,
+        * 'lwf' for Ledoit-Wolf shrunk covariance matrix [lwf]_,
+        * 'mcd' for minimum covariance determinant matrix [mcd]_,
+        * 'oas' for oracle approximating shrunk covariance matrix [oas]_,
+        * 'sch' for Schaefer-Strimmer shrunk covariance matrix [sch]_,
         * 'scm' for sample covariance matrix [scm]_,
         * 'stu' for Student-t's M-estimator based covariance matrix [mest]_,
         * 'tyl' for Tyler's M-estimator based covariance matrix [mest]_,
         * or a callable function.
 
         For regularization, consider 'lwf' or 'oas'.
+
         For robustness, consider 'hub', 'mcd', 'stu' or 'tyl'.
+
+        For 'lwf', 'mcd', 'oas' and 'sch' estimators,
+        complex covariance matrices are estimated according to [comp]_.
     **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
 
