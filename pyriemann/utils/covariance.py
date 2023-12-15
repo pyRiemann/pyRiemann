@@ -10,12 +10,22 @@ from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
 
 
-def _complex_decorator(func):
-    """Decorator for complex-valued covariance matrices.
+def _complex_estimator(func):
+    """Decorator to extend a real-valued covariance estimator to complex data.
 
-    Using a real-valued covariance estimator, this decorator allows to estimate
-    complex covariance matrices from complex-valued multi-channel time-series.
-    See Eq.(4) in [1]_.
+    Applied to a real-valued covariance estimator, this decorator allows to
+    estimate complex covariance matrices from complex-valued multi-channel
+    time-series. See Eq.(4) in [1]_.
+
+    Parameters
+    ----------
+    func : callable
+        Real-valued covariance estimator.
+
+    Returns
+    -------
+    output : callable
+        Complex-valued covariance estimator.
 
     Notes
     -----
@@ -44,21 +54,21 @@ def _complex_decorator(func):
     return wrapper
 
 
-@_complex_decorator
+@_complex_estimator
 def _lwf(X, **kwds):
     """Wrapper for sklearn ledoit wolf covariance estimator"""
     C, _ = ledoit_wolf(X.T, **kwds)
     return C
 
 
-@_complex_decorator
+@_complex_estimator
 def _mcd(X, **kwds):
     """Wrapper for sklearn mcd covariance estimator"""
     _, C, _, _ = fast_mcd(X.T, **kwds)
     return C
 
 
-@_complex_decorator
+@_complex_estimator
 def _oas(X, **kwds):
     """Wrapper for sklearn oas covariance estimator"""
     C, _ = oas(X.T, **kwds)
@@ -213,7 +223,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     return cov
 
 
-@_complex_decorator
+@_complex_estimator
 def covariance_sch(X):
     r"""Schaefer-Strimmer shrunk covariance estimator.
 

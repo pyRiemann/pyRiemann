@@ -8,7 +8,7 @@ import pytest
 from pyriemann.utils.covariance import (
     covariances, covariances_EP, covariances_X, eegtocov,
     cross_spectrum, cospectrum, coherence,
-    normalize, get_nondiag_weight, block_covariances, _complex_decorator
+    normalize, get_nondiag_weight, block_covariances, _complex_estimator
 )
 from pyriemann.utils.test import (
     is_real,
@@ -53,13 +53,37 @@ def test_covariances(estimator, rndstate):
             )
 
 
-def test_covariance_scm_vs_sklearn(rndstate):
-    """Test equivalence with scikit-learn for real inputs"""
-    n_matrices, n_channels, n_times = 1, 3, 100
-    x = rndstate.randn(n_matrices, n_channels, n_times)
-    cov = covariances(x, estimator='scm')
+def scm_sklearn(x, assume_centered):
+    """Function to test equivalence with empirical_covariance of sklearn"""
+    return np.asarray([
+        empirical_covariance(x_.T, assume_centered=assume_centered)
+        for x_ in x
+    ])
 
-    assert_array_almost_equal(cov[0], empirical_covariance(x[0].T), 10)
+
+@pytest.mark.parametrize('assume_centered', [True, False])
+def test_covariance_scm_real(rndstate, assume_centered):
+    """Test equivalence between pyriemann and sklearn estimator on real data"""
+    n_matrices, n_channels, n_times = 3, 4, 50
+    x = rndstate.randn(n_matrices, n_channels, n_times)
+
+    cov = covariances(x, estimator='scm', assume_centered=assume_centered)
+    cov_sklearn = scm_sklearn(x, assume_centered=assume_centered)
+    assert_array_almost_equal(cov, cov_sklearn, 10)
+
+
+def test_covariance_scm_complex(rndstate):
+    """ Test correctness of decorator for complex estimator on complex data"""
+    n_matrices, n_channels, n_times = 4, 3, 60
+    x = rndstate.randn(n_matrices, n_channels, n_times) \
+        + 1j * rndstate.randn(n_matrices, n_channels, n_times)
+
+    cov = covariances(x, estimator='scm', assume_centered=True)
+    @_complex_estimator
+    def complex_scm_sklearn(x):
+        return scm_sklearn(x, assume_centered=True)
+    cov_decorator = complex_scm_sklearn(x)
+    assert_array_almost_equal(cov, cov_decorator)
 
 
 @pytest.mark.parametrize('estimator', estimators + m_estimators)
@@ -458,19 +482,3 @@ def test_get_nondiag_weight(rndstate):
     with pytest.raises(ValueError):  # not square
         shape = (n_matrices, n_channels, n_channels + 2)
         get_nondiag_weight(rndstate.randn(*shape))
-
-
-def test_complex_decorator(rndstate):
-    """Test complex decorator and algorithm correctness using np.cov."""
-    n_matrices, n_channels, n_times = 3, 4, 50
-    x = rndstate.randn(n_matrices, n_channels, n_times) \
-        + 1j * rndstate.randn(n_matrices, n_channels, n_times)
-
-    cov = covariances(x, estimator='cov')
-
-    @_complex_decorator
-    def covariances_complex(X):
-        return np.cov(X)
-
-    cov_complex = np.asarray([covariances_complex(xi) for xi in x])
-    assert_array_almost_equal(cov, cov_complex)
