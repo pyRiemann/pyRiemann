@@ -24,6 +24,8 @@ v0.6.dev
 
 - Deprecate input ``covmats`` for mean functions, renamed into ``X``. :pr:`252` by :user:`qbarthelemy`
 
+- Add support for complex covariance estimation for 'lwf', 'mcd', 'oas' and 'sch' estimators. :pr:`274` by :user:`gabelstein`
+
 v0.5 (Jun 2023)
 ---------------
 
