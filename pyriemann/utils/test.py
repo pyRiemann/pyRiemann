@@ -72,13 +72,13 @@ def is_hankel(X):
         return False
     n, _ = X.shape
 
-    for i in range(0, n):
-        for j in range(0, n):
+    for i in range(n):
+        for j in range(n):
 
             if (i + j < n):
                 if (X[i, j] != X[i + j, 0]):
                     return False
-            else :
+            else:
                 if (X[i, j] != X[i + j - n + 1, n - 1]):
                     return False
 
