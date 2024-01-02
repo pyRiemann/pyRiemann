@@ -55,6 +55,36 @@ def is_skew_sym(X):
     return is_square(X) and np.allclose(X, -np.swapaxes(X, -2, -1))
 
 
+def is_hankel(X):
+    """Check if matrix is an Hankel matrix.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n, n)
+        Square matrix.
+
+    Returns
+    -------
+    ret : boolean
+        True if Hankel matrix.
+    """
+    if not is_square(X) or X.ndim != 2:
+        return False
+    n, _ = X.shape
+
+    for i in range(0, n):
+        for j in range(0, n):
+
+            if (i + j < n):
+                if (X[i, j] != X[i + j, 0]):
+                    return False
+            else :
+                if (X[i, j] != X[i + j - n + 1, n - 1]):
+                    return False
+
+    return True
+
+
 def is_real(X):
     """Check if all matrices are strictly real.
 
