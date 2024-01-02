@@ -442,7 +442,7 @@ def covariances_EP(X, P, estimator='cov', **kwds):
         raise ValueError(
             f"X and P do not have the same n_times: {n_times} and {n_times_p}")
     covmats = np.empty((n_matrices, n_channels + n_channels_proto,
-                        n_channels + n_channels_proto))
+                        n_channels + n_channels_proto), dtype=X.dtype)
     for i in range(n_matrices):
         covmats[i] = est(np.concatenate((P, X[i]), axis=0), **kwds)
     return covmats
