@@ -32,6 +32,8 @@ v0.6.dev
 
 - Correct check for `kernel_fct` param of :class:`pyriemann.classification.SVC`. :pr:`272` by :user:`qbarthelemy`
 
+- Deprecate ``HankelCovariances``, renamed into :class:`pyriemann.estimation.TimeDelayCovariances`. :pr:`275` by :user:`qbarthelemy`
+
 v0.5 (Jun 2023)
 ---------------
 
