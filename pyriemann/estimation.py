@@ -7,6 +7,7 @@ from sklearn.metrics.pairwise import pairwise_kernels
 from .spatialfilters import Xdawn
 from .utils.covariance import (covariances, covariances_EP, cospectrum,
                                coherence, block_covariances)
+from .utils import deprecated
 
 
 def _nextpow2(i):
@@ -82,7 +83,8 @@ class Covariances(BaseEstimator, TransformerMixin):
 class ERPCovariances(BaseEstimator, TransformerMixin):
     r"""Estimate special form covariance matrix for ERP.
 
-    Estimation of special form covariance matrix dedicated to ERP processing.
+    Estimation of special form covariance matrix dedicated to event-related
+    potentials (ERP) processing.
     For each class, a prototyped response is obtained by average across trials:
 
     .. math::
@@ -638,11 +640,19 @@ class Coherences(CospCovariances):
         return np.array(out)
 
 
+@deprecated(
+    "HankelCovariances is deprecated and will be removed in 0.8.0; "
+    "please use TimeDelayCovariances."
+)
 class HankelCovariances(BaseEstimator, TransformerMixin):
-    """Estimation of covariance matrix with time delayed Hankel matrices.
+    pass
 
-    Hankel covariance matrices [1]_ are useful to catch spectral dynamics of
-    the signal, similarly to the CSSP method [2]_. It is done by concatenating
+
+class TimeDelayCovariances(BaseEstimator, TransformerMixin):
+    """Estimation of covariance matrix with time delay matrices.
+
+    Time delay covariance matrices are useful to catch spectral dynamics of
+    the signal, similarly to the CSSP method [1]_. It is done by concatenating
     time delayed version of the signal before covariance estimation.
 
     Parameters
@@ -664,8 +674,7 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] https://en.wikipedia.org/wiki/Hankel_matrix
-    .. [2] `Spatio-spectral filters for improving the classification of single
+    .. [1] `Spatio-spectral filters for improving the classification of single
         trial EEG
         <http://doc.ml.tu-berlin.de/bbci/publications/LemBlaCurMue05.pdf>`_
         S. Lemm, B. Blankertz, B. Curio, K-R. Muller. IEEE Transactions on
@@ -692,13 +701,13 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        self : HankelCovariances instance
-            The HankelCovariances instance.
+        self : TimeDelayCovariances instance
+            The TimeDelayCovariances instance.
         """
         return self
 
     def transform(self, X):
-        """Estimate the Hankel covariance matrices.
+        """Estimate the time delay covariance matrices.
 
         Parameters
         ----------
@@ -709,7 +718,7 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
         -------
         covmats : ndarray, shape (n_matrices, n_delays x n_channels, \
                 n_delays x n_channels)
-            Hankel covariance matrices, where n_delays is equal to `delays`
+            Time delay covariance matrices, where n_delays is equal to `delays`
             when it is a int, and to `1 + len(delays)` when it is a list.
         """
 
