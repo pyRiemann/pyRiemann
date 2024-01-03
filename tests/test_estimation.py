@@ -12,6 +12,7 @@ from pyriemann.estimation import (
     XdawnCovariances,
     CospCovariances,
     TimeDelayCovariances,
+    HankelCovariances,
     Coherences,
     Shrinkage,
     BlockCovariances,
@@ -78,6 +79,15 @@ def test_time_delay_covariances(delays, rndstate):
                              n_delays * n_channels)
     assert is_spd(covmats)
     assert ~is_hankel(covmats[0])
+
+
+def test_hankel_covariances():
+    import warnings
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        HankelCovariances()
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
 
 
 @pytest.mark.parametrize("estimator", estim)
