@@ -536,6 +536,7 @@ class KNearestNeighbor(MDM):
         if covtest is not None:
             warnings.warn("Input covtest has been renamed into X and will be "
                           "removed in 0.8.0.", category=DeprecationWarning)
+            assert (X is None)
             X = covtest
 
         dist = self._predict_distances(X)
