@@ -2,19 +2,19 @@ from numpy.testing import assert_array_equal
 from pyriemann.channelselection import ElectrodeSelection, FlatChannelRemover
 
 
-def test_electrodeselection(get_covmats, get_labels):
+def test_electrodeselection(get_mats, get_labels):
     """Test transform of channelselection."""
     n_matrices, n_channels, n_classes = 10, 30, 2
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
     se = ElectrodeSelection()
     se.fit(covmats, labels)
     se.transform(covmats)
 
 
-def test_electrodeselection_nonelabel(get_covmats):
+def test_electrodeselection_nonelabel(get_mats):
     n_matrices, n_channels = 1, 3
-    covmats, labels = get_covmats(n_matrices, n_channels), None
+    covmats, labels = get_mats(n_matrices, n_channels, "spd"), None
     se = ElectrodeSelection()
     se.fit(covmats, labels)
     se.transform(covmats)

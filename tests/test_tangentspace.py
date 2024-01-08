@@ -7,9 +7,9 @@ from pytest import approx
 
 @pytest.mark.parametrize("tspace", [TangentSpace, FGDA])
 class TangentSpaceTestCase:
-    def test_tangentspace(self, tspace, get_covmats, get_labels):
+    def test_tangentspace(self, tspace, get_mats, get_labels):
         n_classes, n_matrices, n_channels = 2, 6, 3
-        covmats = get_covmats(n_matrices, n_channels)
+        covmats = get_mats(n_matrices, n_channels, "spd")
         labels = get_labels(n_matrices, n_classes)
         self.clf_transform(tspace, covmats, labels)
         self.clf_fit_transform(tspace, covmats, labels)
@@ -69,11 +69,10 @@ class TestTangentSpace(TangentSpaceTestCase):
 @pytest.mark.parametrize("tsupdate", [True, False])
 @pytest.mark.parametrize("metric_mean", get_metrics())
 @pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
-def test_TangentSpace_init(fit, tsupdate, metric_mean, metric_map,
-                           get_covmats):
+def test_TangentSpace_init(fit, tsupdate, metric_mean, metric_map, get_mats):
     n_matrices, n_channels = 4, 3
     n_ts = (n_channels * (n_channels + 1)) // 2
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     ts = TangentSpace(
         metric={"mean": metric_mean, "map": metric_map},
         tsupdate=tsupdate
@@ -87,10 +86,10 @@ def test_TangentSpace_init(fit, tsupdate, metric_mean, metric_map,
 @pytest.mark.parametrize("tsupdate", [True, False])
 @pytest.mark.parametrize("metric_mean", get_metrics())
 @pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
-def test_FGDA_init(tsupdate, metric_mean, metric_map, get_covmats, get_labels):
+def test_FGDA_init(tsupdate, metric_mean, metric_map, get_mats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 3
     labels = get_labels(n_matrices, n_classes)
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     ts = FGDA(
         metric={"mean": metric_mean, "map": metric_map},
         tsupdate=tsupdate
@@ -102,16 +101,16 @@ def test_FGDA_init(tsupdate, metric_mean, metric_map, get_covmats, get_labels):
 
 @pytest.mark.parametrize("tspace", [TangentSpace, FGDA])
 @pytest.mark.parametrize("metric", [42, "faulty", {"foo": "bar"}])
-def test_metric_wrong_keys(tspace, metric, get_covmats, get_labels):
+def test_metric_wrong_keys(tspace, metric, get_mats, get_labels):
     with pytest.raises((TypeError, KeyError, ValueError)):
         n_classes, n_matrices, n_channels = 2, 6, 3
         labels = get_labels(n_matrices, n_classes)
-        covmats = get_covmats(n_matrices, n_channels)
+        covmats = get_mats(n_matrices, n_channels, "spd")
         clf = tspace(metric=metric)
         clf.fit(covmats, labels).transform(covmats)
 
 
-def test_TS_vecdim_error(get_covmats, rndstate):
+def test_TS_vecdim_error():
     n_matrices, n_ts = 4, 6
     ts = TangentSpace()
     with pytest.raises(ValueError):
@@ -119,7 +118,7 @@ def test_TS_vecdim_error(get_covmats, rndstate):
         ts.transform(tsvectors_wrong)
 
 
-def test_TS_matdim_error(get_covmats):
+def test_TS_matdim_error():
     n_matrices, n_channels = 4, 3
     ts = TangentSpace()
     with pytest.raises(ValueError):

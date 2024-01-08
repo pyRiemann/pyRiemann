@@ -20,8 +20,13 @@ v0.6.dev
 
 - Update to Read the Docs v2. :pr:`260` by :user:`qbarthelemy`
 
-- Deprecate input ``covtest`` for predict of :class:`pyriemann.classification.KNearestNeighbor`, renamed into ``X``. :pr:`259` by :user:`qbarthelemy`
+- Correct :func:`pyriemann.utils.distance.distance_wasserstein` and :func:`pyriemann.utils.distance.distance_kullback`, keeping only real part. :pr:`267` by :user:`qbarthelemy`
 
+- Deprecate input ``covmats`` for mean functions, renamed into ``X``. :pr:`252` by :user:`qbarthelemy`
+
+- Add support for complex covariance estimation for 'lwf', 'mcd', 'oas' and 'sch' estimators. :pr:`274` by :user:`gabelstein`
+
+- Deprecate input ``covtest`` for predict of :class:`pyriemann.classification.KNearestNeighbor`, renamed into ``X``. :pr:`259` by :user:`qbarthelemy`
 
 v0.5 (Jun 2023)
 ---------------

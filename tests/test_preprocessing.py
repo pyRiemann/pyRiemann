@@ -23,10 +23,10 @@ def test_whitening_init():
     assert not whit.verbose
 
 
-def test_whitening_error(rndstate, get_covmats):
+def test_whitening_error(rndstate, get_mats):
     """Test Whitening"""
     n_matrices, n_channels = 20, 6
-    cov = get_covmats(n_matrices, n_channels)
+    cov = get_mats(n_matrices, n_channels, "spd")
     # Test Fit
     with pytest.raises(ValueError):  # len dim_red not equal to 1
         Whitening(dim_red={"n_components": 2, "expl_var": 0.5}).fit(cov)
@@ -50,10 +50,10 @@ def test_whitening_error(rndstate, get_covmats):
 
 @pytest.mark.parametrize("dim_red", dim_red)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-def test_whitening_fit(dim_red, metric, rndstate, get_covmats):
+def test_whitening_fit(dim_red, metric, rndstate, get_mats):
     """Test Whitening fit"""
     n_matrices, n_channels = 20, 6
-    cov = get_covmats(n_matrices, n_channels)
+    cov = get_mats(n_matrices, n_channels, "spd")
 
     w = rndstate.rand(n_matrices)
     whit = Whitening(dim_red=dim_red, metric=metric).fit(cov, sample_weight=w)
@@ -72,10 +72,10 @@ def test_whitening_fit(dim_red, metric, rndstate, get_covmats):
 
 @pytest.mark.parametrize("dim_red", dim_red)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-def test_whitening_transform(dim_red, metric, rndstate, get_covmats):
+def test_whitening_transform(dim_red, metric, rndstate, get_mats):
     """Test Whitening transform"""
     n_matrices, n_channels = 20, 6
-    cov = get_covmats(n_matrices, n_channels)
+    cov = get_mats(n_matrices, n_channels, "spd")
     whit = Whitening(metric=metric).fit(cov)
     cov_w = whit.transform(cov)
     if dim_red is None:
@@ -95,10 +95,10 @@ def test_whitening_transform(dim_red, metric, rndstate, get_covmats):
 
 @pytest.mark.parametrize("dim_red", dim_red)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-def test_whitening_inverse_transform(dim_red, metric, rndstate, get_covmats):
+def test_whitening_inverse_transform(dim_red, metric, rndstate, get_mats):
     """Test Whitening inverse transform"""
     n_matrices, n_channels = 20, 6
-    cov = get_covmats(n_matrices, n_channels)
+    cov = get_mats(n_matrices, n_channels, "spd")
     whit = Whitening(dim_red=dim_red, metric=metric).fit(cov)
     cov_iw = whit.inverse_transform(whit.transform(cov))
     assert cov_iw.shape == (n_matrices, n_channels, n_channels)
