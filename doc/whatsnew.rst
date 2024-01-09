@@ -26,6 +26,8 @@ v0.6.dev
 
 - Add support for complex covariance estimation for 'lwf', 'mcd', 'oas' and 'sch' estimators. :pr:`274` by :user:`gabelstein`
 
+- Deprecate input ``covtest`` for predict of :class:`pyriemann.classification.KNearestNeighbor`, renamed into ``X``. :pr:`259` by :user:`qbarthelemy`
+
 v0.5 (Jun 2023)
 ---------------
 
