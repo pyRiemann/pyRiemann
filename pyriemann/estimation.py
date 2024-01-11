@@ -640,14 +640,6 @@ class Coherences(CospCovariances):
         return np.array(out)
 
 
-@deprecated(
-    "HankelCovariances is deprecated and will be removed in 0.8.0; "
-    "please use TimeDelayCovariances."
-)
-class HankelCovariances(BaseEstimator, TransformerMixin):
-    pass
-
-
 class TimeDelayCovariances(BaseEstimator, TransformerMixin):
     """Estimation of covariance matrix with time delay matrices.
 
@@ -738,6 +730,14 @@ class TimeDelayCovariances(BaseEstimator, TransformerMixin):
         X2 = np.array(X2)
         covmats = covariances(X2, estimator=self.estimator, **self.kwds)
         return covmats
+
+
+@deprecated(
+    "HankelCovariances is deprecated and will be removed in 0.8.0; "
+    "please use TimeDelayCovariances."
+)
+class HankelCovariances(TimeDelayCovariances):
+    pass
 
 
 ###############################################################################
