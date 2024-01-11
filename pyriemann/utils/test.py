@@ -17,7 +17,7 @@ def is_square(X):
 
     Returns
     -------
-    ret : boolean
+    ret : bool
         True if matrices are square.
     """
     return X.ndim >= 2 and X.shape[-2] == X.shape[-1]
@@ -33,7 +33,7 @@ def is_sym(X):
 
     Returns
     -------
-    ret : boolean
+    ret : bool
         True if all matrices are symmetric.
     """
     return is_square(X) and np.allclose(X, np.swapaxes(X, -2, -1))
@@ -49,7 +49,7 @@ def is_skew_sym(X):
 
     Returns
     -------
-    ret : boolean
+    ret : bool
         True if all matrices are skew-symmetric.
     """
     return is_square(X) and np.allclose(X, -np.swapaxes(X, -2, -1))
@@ -65,7 +65,7 @@ def is_hankel(X):
 
     Returns
     -------
-    ret : boolean
+    ret : bool
         True if Hankel matrix.
     """
     if not is_square(X) or X.ndim != 2:
@@ -74,7 +74,6 @@ def is_hankel(X):
 
     for i in range(n):
         for j in range(n):
-
             if (i + j < n):
                 if (X[i, j] != X[i + j, 0]):
                     return False
@@ -97,7 +96,7 @@ def is_real(X):
 
     Returns
     -------
-    ret : boolean
+    ret : bool
         True if all matrices are strictly real.
     """
     return np.allclose(X.imag, np.zeros_like(X.imag))
@@ -113,7 +112,7 @@ def is_real_type(X):
 
     Returns
     -------
-    ret : boolean
+    ret : bool
         True if matrices are real type.
 
     Notes
@@ -136,7 +135,7 @@ def is_hermitian(X):
 
     Returns
     -------
-    ret : boolean
+    ret : bool
         True if all matrices are Hermitian.
     """
     return is_sym(X.real) and is_skew_sym(X.imag)
@@ -155,12 +154,12 @@ def is_pos_def(X, tol=0.0, fast_mode=False):
         The set of square matrices, at least 2D ndarray.
     tol : float, default 0.0
         Threshold below which eigen values are considered zero.
-    fast_mode : boolean, default=False
+    fast_mode : bool, default=False
         Use Cholesky decomposition to avoid computing all eigenvalues.
 
     Returns
     -------
-    ret : boolean
+    ret : bool
         True if all matrices are positive definite.
     """
     if fast_mode:
@@ -183,7 +182,7 @@ def is_pos_semi_def(X):
 
     Returns
     -------
-    ret : boolean
+    ret : bool
         True if all matrices are positive semi-definite.
     """
     return is_square(X) and np.all(_get_eigenvals(X) >= 0.0)
@@ -201,7 +200,7 @@ def is_sym_pos_def(X, tol=0.0):
 
     Returns
     -------
-    ret : boolean
+    ret : bool
         True if all matrices are symmetric positive-definite.
     """
     return is_sym(X) and is_pos_def(X, tol=tol)
@@ -217,7 +216,7 @@ def is_sym_pos_semi_def(X):
 
     Returns
     -------
-    ret : boolean
+    ret : bool
         True if all matrices are symmetric positive semi-definite.
     """
     return is_sym(X) and is_pos_semi_def(X)
@@ -235,7 +234,7 @@ def is_herm_pos_def(X, tol=0.0):
 
     Returns
     -------
-    ret : boolean
+    ret : bool
         True if all matrices are Hermitian positive-definite.
     """
     return is_hermitian(X) and is_pos_def(X, tol=tol)
@@ -251,7 +250,7 @@ def is_herm_pos_semi_def(X):
 
     Returns
     -------
-    ret : boolean
+    ret : bool
         True if all matrices are Hermitian positive semi-definite.
     """
     return is_hermitian(X) and is_pos_semi_def(X)
