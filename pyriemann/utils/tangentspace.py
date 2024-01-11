@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from .base import sqrtm, invsqrtm, logm, expm
+from .base import sqrtm, invsqrtm, logm, expm, first_divided_difference
 from .mean import mean_covariance
 from .utils import check_function
 
@@ -121,7 +121,9 @@ def exp_map_logeuclid(X, Cref):
     -----
     .. versionadded:: 0.4
     """
-    return expm(X + logm(Cref))
+    d, V = np.linalg.eigh(Cref)
+    logfdd = first_divided_difference(d, np.log, lambda x: 1 / x)
+    return expm(logm(Cref) + V @ (logfdd * (V.T @ X @ V)) @ V.T)
 
 
 def exp_map_riemann(X, Cref, Cm12=False):
@@ -270,7 +272,11 @@ def log_map_logeuclid(X, Cref):
     .. versionadded:: 0.4
     """
     _check_dimensions(X, Cref)
-    return logm(X) - logm(Cref)
+    logX = logm(X)
+    logCref = logm(Cref)
+    d, V = np.linalg.eigh(Cref)
+    expfdd = first_divided_difference(np.log(d), np.exp, np.exp)
+    return V @ (expfdd * (V.T @ (logX - logCref) @ V)) @ V.T
 
 
 def log_map_riemann(X, Cref, C12=False):
@@ -485,6 +491,9 @@ def untangent_space(T, Cref, *, metric="riemann"):
 # NOT IN API
 def transport(Covs, Cref, metric="riemann"):
     """Parallel transport of a set of SPD matrices towards a reference matrix.
+
+    This only works for the 'riemann' metric. parallel transport for other
+    metrics is different.
 
     Parameters
     ----------
