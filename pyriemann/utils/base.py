@@ -234,29 +234,57 @@ def nearest_sym_pos_def(X, reg=1e-6):
     return np.array([_nearest_sym_pos_def(x, reg) for x in X])
 
 
-def first_divided_difference(d, fun, der, atol=1e-6, rtol=1e-6):
+def first_divided_difference(S, fun, der, atol=1e-6, rtol=1e-6):
     """First divided difference of a matrix function.
+
+    First divided difference of a matrix function applied to the eigenvalues
+    of a symmetric matrix. The first divided difference is defined as [1]_:
+
+    .. math::
+
+       [F^{[1]}(\Lambda_S)]_{i,j} =
+           \begin{cases}
+           \frac{f(\lambda_i)-f(\lambda_j)}{\lambda_i-\lambda_j}, & \lambda_i \neq \lambda_j\\
+           f'(\lambda_i),
+           & \lambda_i = \lambda_j
+           \end{cases}
+
 
     Parameters
     ----------
     S : ndarray, shape (n, n)
-        Square matrix.
+        Eigenvalues of a Symmetric matrix.
     function : callable
-        Function to apply.
+        Function to apply to eigenvalues of S. Has to be defined for all
+        possible eigenvalues of S.
     derivative : function
-        Derivative of the function to apply.
+        Derivative of the function to apply. Has to be defined for all
+        possible eigenvalues of S.
     precision : float
-        Precision of the approximation.
+        Precision cutoff of differences of eigenvalues under which the
+        derivative is applied instead of the function.
 
     Returns
+    -------
+    D : ndarray, shape (n, n)
+        First divided difference of the function applied to the eigenvalues
+        of S.
 
+    Notes
+    -----
+    .. versionadded:: 0.6
 
+    References
+    ----------
+    .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
+        R. Bhatia, Springer, 1997
     """
-    n = len(d)
+    n = len(S)
     dif = np.zeros((n, n))
-    dif += d
+    dif += S
     close_ = np.isclose(dif, dif.T, atol=atol, rtol=rtol)
     dif[close_] = der(dif[close_])
     dif[~close_] = (fun(dif[~close_]) -
                     fun(dif.T[~close_])) / (dif[~close_] - dif.T[~close_])
     return dif
+
