@@ -8,7 +8,7 @@ import pytest
 from pyriemann.utils.covariance import (
     covariances, covariances_EP, covariances_X, eegtocov,
     cross_spectrum, cospectrum, coherence,
-    normalize, get_nondiag_weight, block_covariances
+    normalize, get_nondiag_weight, block_covariances, _complex_estimator
 )
 from pyriemann.utils.test import (
     is_real,
@@ -53,15 +53,33 @@ def test_covariances(estimator, rndstate):
             )
 
 
-@pytest.mark.parametrize('estimator', ['scm'])
-def test_covariances_real_vs_sklearn(estimator, rndstate):
-    """Test equivalence with scikit-learn for real inputs"""
-    n_matrices, n_channels, n_times = 1, 3, 100
+@pytest.mark.parametrize('assume_centered', [True, False])
+def test_covariance_scm_real(rndstate, assume_centered):
+    """Test equivalence between pyriemann and sklearn estimator on real data"""
+    n_matrices, n_channels, n_times = 3, 4, 50
     x = rndstate.randn(n_matrices, n_channels, n_times)
-    cov = covariances(x, estimator=estimator)
 
-    if estimator == 'scm':
-        assert_array_almost_equal(cov[0], empirical_covariance(x[0].T), 10)
+    cov = covariances(x, estimator='scm', assume_centered=assume_centered)
+    cov_sklearn = np.asarray([
+        empirical_covariance(x_.T, assume_centered=assume_centered)
+        for x_ in x
+    ])
+    assert_array_almost_equal(cov, cov_sklearn, 10)
+
+
+def test_covariance_scm_complex(rndstate):
+    """ Test correctness of decorator for complex estimator on complex data"""
+    n_matrices, n_channels, n_times = 4, 3, 60
+    x = rndstate.randn(n_matrices, n_channels, n_times) \
+        + 1j * rndstate.randn(n_matrices, n_channels, n_times)
+
+    cov = covariances(x, estimator='scm', assume_centered=True)
+
+    @_complex_estimator
+    def complex_scm_sklearn(x):
+        return empirical_covariance(x.T, assume_centered=True)
+    cov_decorator = np.asarray([complex_scm_sklearn(x_) for x_ in x])
+    assert_array_almost_equal(cov, cov_decorator, 10)
 
 
 @pytest.mark.parametrize('estimator', estimators + m_estimators)
@@ -71,14 +89,9 @@ def test_covariances_complex(estimator, rndstate):
     x = rndstate.randn(n_matrices, n_channels, n_times) \
         + 1j * rndstate.randn(n_matrices, n_channels, n_times)
 
-    if estimator in ['lwf', 'mcd', 'oas', 'sch']:
-        with pytest.raises(ValueError):
-            covariances(x, estimator=estimator)
-
-    else:
-        cov = covariances(x, estimator=estimator)
-        assert cov.shape == (n_matrices, n_channels, n_channels)
-        assert is_herm_pos_def(cov)
+    cov = covariances(x, estimator=estimator)
+    assert cov.shape == (n_matrices, n_channels, n_channels)
+    assert is_herm_pos_def(cov)
 
 
 @pytest.mark.parametrize(
@@ -89,7 +102,24 @@ def test_covariances_EP(estimator, rndstate):
     n_matrices, n_channels_x, n_channels_p, n_times = 2, 3, 3, 100
     x = rndstate.randn(n_matrices, n_channels_x, n_times)
     p = rndstate.randn(n_channels_p, n_times)
+    if estimator is None:
+        cov = covariances_EP(x, p)
+    else:
+        cov = covariances_EP(x, p, estimator=estimator)
+    n_dim_cov = n_channels_x + n_channels_p
+    assert cov.shape == (n_matrices, n_dim_cov, n_dim_cov)
 
+
+@pytest.mark.parametrize(
+    'estimator', estimators + [None]
+)
+def test_covariances_EP_complex(estimator, rndstate):
+    """Test covariance_EP for complex input"""
+    n_matrices, n_channels_x, n_channels_p, n_times = 2, 3, 3, 100
+    x = rndstate.randn(n_matrices, n_channels_x, n_times) \
+        + 1j * rndstate.randn(n_matrices, n_channels_x, n_times)
+    p = rndstate.randn(n_channels_p, n_times) \
+        + 1j * rndstate.randn(n_channels_p, n_times)
     if estimator is None:
         cov = covariances_EP(x, p)
     else:
@@ -105,7 +135,6 @@ def test_covariances_X(estimator, rndstate):
     """Test covariance_X for multiple estimators"""
     n_matrices, n_channels, n_times = 3, 5, 15
     x = rndstate.randn(n_matrices, n_channels, n_times)
-
     if estimator is None:
         cov = covariances_X(x, alpha=5.)
     else:
