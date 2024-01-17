@@ -25,7 +25,7 @@ from pyriemann.estimation import Covariances
 # sklearn imports
 from sklearn.model_selection import cross_val_score, StratifiedKFold, GridSearchCV
 from sklearn.pipeline import Pipeline
-from pyriemann.preprocessing import AugmentedDataset
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.svm import SVC
 from pyriemann.classification import MDM
 from pyriemann.classification import FgMDM
@@ -33,6 +33,42 @@ from pyriemann.tangentspace import TangentSpace
 import pandas as pd
 from sklearn.base import clone
 import seaborn as sns
+
+###############################################################################
+# Define the Augmented Dataset
+# -------------------------------
+class AugmentedDataset(BaseEstimator, TransformerMixin):
+    """This transformation allow to create an embedding version of the current dataset.
+    The implementation and the application is described in [1]_.
+    """
+
+    def __init__(self, order=1, lag=1):
+        self.order = order
+        self.lag = lag
+
+    def fit(self, X, y):
+        return self
+
+    def transform(self, X):
+        if self.order == 1:
+            X_fin = X
+        else:
+            X_fin = []
+
+            for i in np.arange(X.shape[0]):
+                X_p = X[i][:, : -self.order * self.lag]
+                X_p = np.concatenate(
+                    [X_p]
+                    + [
+                        X[i][:, p * self.lag : -(self.order - p) * self.lag]
+                        for p in range(1, self.order)
+                    ],
+                    axis=0,
+                )
+                X_fin.append(X_p)
+            X_fin = np.array(X_fin)
+
+        return X_fin
 
 ###############################################################################
 # Load EEG data
