@@ -1,37 +1,42 @@
 """
 ====================================================================
-Motor imagery classification
+Augmented Covariance Method (ACM)
 ====================================================================
 
-Classify motor imagery data with Riemannian geometry [1]_.
+This example shows how to use the ACM classifier [1]_.
 """
+# Authors: Igor Carrara <igor.carrara@inria.fr>
+#
+# License: BSD (3-clause)
+
 # generic import
 import numpy as np
-import pandas as pd
-import seaborn as sns
-from matplotlib import pyplot as plt
+import matplotlib.pyplot as plt
 
 # mne import
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
-from mne.decoding import CSP
 
 # pyriemann import
-from pyriemann.classification import MDM, TSclassifier
 from pyriemann.estimation import Covariances
 
 # sklearn imports
 from sklearn.model_selection import cross_val_score, StratifiedKFold, GridSearchCV
 from sklearn.pipeline import Pipeline
-from sklearn.linear_model import LogisticRegression
 from pyriemann.preprocessing import AugmentedDataset
 from sklearn.svm import SVC
+from pyriemann.classification import MDM
+from pyriemann.classification import FgMDM
 from pyriemann.tangentspace import TangentSpace
+import pandas as pd
+from sklearn.base import clone
+import seaborn as sns
 
 ###############################################################################
-# Set parameters and read data
+# Load EEG data
+# -------------
 
 # avoid classification of evoked responses by using epochs that start 1s after
 # cue onset.
@@ -74,11 +79,22 @@ X = 1e6 * epochs.get_data()
 y = epochs.events[:, -1] - 2
 
 ###########################################################################################
+# Defining Cross Validation Scheme
+# -------------------
+#
+# Define the inner and outer CV scheme for implemented the Nested Cross Validation for hyper-parameter search
+
 outer_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
 inner_cv = StratifiedKFold(3, shuffle=True, random_state=42)
 
 #################################################################
+# Defining pipelines
+# -------------------
+#
+# Compare TGSP+SVM, FgMDM, MDM and ACM+TGSP+SVM
+
+# Define the standard pipeline TGSP+SVM as baseline with standard covariance
 pipelines = {}
 pipelines["TGSP+SVM"] = Pipeline(steps=[
     ("Covariances", Covariances("oas")),
@@ -86,19 +102,21 @@ pipelines["TGSP+SVM"] = Pipeline(steps=[
     ("SVM", SVC(kernel="linear"))
 ])
 
-###############################################################################
-# Use scikit-learn Pipeline with cross_val_score function
-scores = cross_val_score(pipelines["TGSP+SVM"], X, y, cv=outer_cv, n_jobs=-1)
+pipelines["FgMDM"] = Pipeline(steps=[
+    ("Covariances", Covariances("cov")),
+    ("fgmdm", FgMDM(metric="riemann", tsupdate=False))
+])
 
-# Printing the results
-class_balance = np.mean(y == y[0])
-class_balance = max(class_balance, 1. - class_balance)
-print("TGSP+SVM Classification accuracy: %f / Chance level: %f" % (np.mean(scores),
-                                                              class_balance))
+pipelines["MDM"] = Pipeline(steps=[
+    ("Covariances", Covariances("cov")),
+    ("MDM", MDM(metric=dict(mean='riemann', distance='riemann')))
+])
 
 #################################################################
-pipelines = {}
-pipelines["ACM+TGSP+SVM(Grid)"] = Pipeline(steps=[
+# Define the ACM pipeline, the approach is based on the expansion of the current EEG signal using theory of
+# phase space reconstruction
+pipelines_ = {}
+pipelines_["ACM+TGSP+SVM(Grid)"] = Pipeline(steps=[
     ("augmenteddataset", AugmentedDataset()),
     ("Covariances", Covariances("oas")),
     ("Tangent_Space", TangentSpace(metric="riemann")),
@@ -106,13 +124,14 @@ pipelines["ACM+TGSP+SVM(Grid)"] = Pipeline(steps=[
 ])
 
 param_grid = {}
+# Define the parameter to test in the Nested Cross Validation
 param_grid["ACM+TGSP+SVM(Grid)"] = {
     'augmenteddataset__order': [1, 2, 3, 4, 5, 6, 7],
     'augmenteddataset__lag': [1, 2, 3, 4, 5, 6, 7],
 }
 
-search = GridSearchCV(
-    pipelines["ACM+TGSP+SVM(Grid)"],
+pipelines["ACM+TGSP+SVM(Grid)"] = GridSearchCV(
+    pipelines_["ACM+TGSP+SVM(Grid)"],
     param_grid["ACM+TGSP+SVM(Grid)"],
     refit=True,
     cv=inner_cv,
@@ -121,16 +140,47 @@ search = GridSearchCV(
     return_train_score=True,
 )
 
+###############################################################################
+# Evaluation
+# ----------
+#
+results = []
+for ppn, ppl in pipelines.items():
+    cvclf = clone(ppl)
+    score = cross_val_score(cvclf, X, y, cv=outer_cv, n_jobs=-1)
+    res = {
+        "score": score,
+        "pipeline": ppn,
+    }
+    results.append(res)
+
+results = pd.DataFrame(results)
+
+# Flatten the 'score' lists into individual rows
+flattened_results = results.explode('score')
+flattened_results['score'] = pd.to_numeric(flattened_results['score'])
+
+# Calculate the mean score and standard deviation for each pipeline
+pipeline_stats = flattened_results.groupby('pipeline')['score'].agg(['mean', 'std']).sort_values(by='mean', ascending=False)
+
+for pipeline, stats in pipeline_stats.iterrows():
+    print(f"Pipeline: {pipeline}, Mean Score: {stats['mean']:.4f} +/- {stats['std']:.4f}")
 
 ###############################################################################
-# Use scikit-learn Pipeline with cross_val_score function
-scores = cross_val_score(search, X, y, cv=outer_cv, n_jobs=-1)
+# Plot
+# ----
+order = ["ACM+TGSP+SVM(Grid)", "FgMDM", "TGSP+SVM", "MDM"]
 
-# Printing the results
-class_balance = np.mean(y == y[0])
-class_balance = max(class_balance, 1. - class_balance)
-print("ACM+TGSP+SVM(Grid) Classification accuracy: %f / Chance level: %f" % (np.mean(scores),
-                                                              class_balance))
+g = sns.catplot(
+    data=flattened_results,
+    x="pipeline",
+    y="score",
+    order=order,
+    kind="bar",
+    height=7,
+    aspect=2,
+)
+plt.show()
 
 
 ###############################################################################
