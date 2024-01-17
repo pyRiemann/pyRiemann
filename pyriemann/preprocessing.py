@@ -200,3 +200,48 @@ class Whitening(BaseEstimator, TransformerMixin):
         """
         Xiw = self.inv_filters_.T @ X @ self.inv_filters_
         return Xiw
+
+class Iterative_Whitener():
+    '''Object designed to whiten covariance matrices tick by tick,
+    eg during online / closed loop experiments or when simulating online experiments.
+    
+    Takes in a square covariance matrix of shape (1, electrodes, electrodes).
+    Returns a whitened matrix of shape (electrodes, electrodes).
+    
+    This is based on pyriemann.preprocessing.Whitening using the euclidean setting
+    
+    It is designed to be initialized before use, and then to be called with the .fit_transform method on each tick.
+    
+    On each tick it adds that ticks data to the ongoing estimator and then uses the estimator to transform that ticks data.
+    
+    Usage example:
+    
+    #Initialize online whitener
+    whitener = Iterative_Whitener()
+    #Then each tick of the online application whiten the cov matrix
+    whitened_data = whitener.fit_transform(covariance_matrix)'''
+    
+    def __init__(self):
+        self.tick_count = 0
+        
+    def fit_transform(self, tick_data):
+        #Check that tick_data conforms to correct shape of (1, electrodes, electrodes)
+        if (len(tick_data.shape) != 3) or (tick_data.shape[0] != 1) or (tick_data.shape[1] != tick_data.shape[2]):
+            raise ValueError("Data must be covariance matrix of shape (1, electrodes, electrodes)")
+        
+        self.tick_count += 1
+        #Remove empty first dimension
+        tick_data = np.squeeze(tick_data, axis=0)
+        
+        #Calculate running average
+        if self.tick_count == 1:
+            self.mean = tick_data
+        else:
+            delta = tick_data - self.mean
+            self.mean += (delta / self.tick_count)
+            
+        #Create filter based on matrix square root of average
+        filter_ = invsqrtm(self.mean)
+        #Return whitened data
+        tick_data = np.expand_dims(tick_data, 0)
+        return filter_.T @ tick_data @ filter_
