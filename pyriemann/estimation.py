@@ -658,6 +658,12 @@ class TimeDelayCovariances(BaseEstimator, TransformerMixin):
     **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
 
+    Attributes
+    ----------
+    Xtd_ : ndarray, shape (n_matrices, n_channels x n_delays, n_times)
+        Time delay multi-channel time-series, where `n_delays` is equal to:
+        `delays` when it is a int, and `1 + len(delays)` when it is a list.
+
     See Also
     --------
     Covariances
@@ -708,10 +714,10 @@ class TimeDelayCovariances(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        covmats : ndarray, shape (n_matrices, n_delays x n_channels, \
-                n_delays x n_channels)
-            Time delay covariance matrices, where n_delays is equal to `delays`
-            when it is a int, and to `1 + len(delays)` when it is a list.
+        covmats : ndarray, shape (n_matrices, n_channels x n_delays, \
+                n_channels x n_delays)
+            Time delay covariance matrices, where `n_delays` is equal to:
+            `delays` when it is a int, and `1 + len(delays)` when it is a list.
         """
 
         if isinstance(self.delays, int):
@@ -721,14 +727,15 @@ class TimeDelayCovariances(BaseEstimator, TransformerMixin):
         else:
             raise ValueError('delays must be an integer or a list')
 
-        X2 = []
+        Xtd = []
         for x in X:
             tmp = x
             for d in delays:
                 tmp = np.r_[tmp, np.roll(x, d, axis=-1)]
-            X2.append(tmp)
-        X2 = np.array(X2)
-        covmats = covariances(X2, estimator=self.estimator, **self.kwds)
+            Xtd.append(tmp)
+        self.Xtd_ = np.array(Xtd)
+
+        covmats = covariances(self.Xtd_, estimator=self.estimator, **self.kwds)
         return covmats
 
 
