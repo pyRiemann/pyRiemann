@@ -9,36 +9,35 @@ This example shows how to use the ACM classifier [1]_.
 #
 # License: BSD (3-clause)
 
-# generic import
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
+import seaborn as sns
 
-# mne import
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
 
-# pyriemann import
-from pyriemann.estimation import Covariances
-
-# sklearn imports
-from sklearn.model_selection import cross_val_score, StratifiedKFold, GridSearchCV
+from sklearn.base import clone
+from sklearn.model_selection import (cross_val_score, StratifiedKFold,
+                                     GridSearchCV)
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.svm import SVC
+
 from pyriemann.classification import MDM
+from pyriemann.estimation import Covariances
 from pyriemann.classification import FgMDM
 from pyriemann.tangentspace import TangentSpace
-import pandas as pd
-from sklearn.base import clone
-import seaborn as sns
+
 
 ###############################################################################
 # Define the Augmented Dataset
-# -------------------------------
+# ----------------------------
+
 class AugmentedDataset(BaseEstimator, TransformerMixin):
-    """This transformation allow to create an embedding version of the current dataset.
+    """This transformation creates an embedding version of the current dataset.
     The implementation and the application is described in [1]_.
     """
 
@@ -51,24 +50,25 @@ class AugmentedDataset(BaseEstimator, TransformerMixin):
 
     def transform(self, X):
         if self.order == 1:
-            X_fin = X
-        else:
-            X_fin = []
+            return X
 
-            for i in np.arange(X.shape[0]):
-                X_p = X[i][:, : -self.order * self.lag]
-                X_p = np.concatenate(
-                    [X_p]
-                    + [
-                        X[i][:, p * self.lag : -(self.order - p) * self.lag]
-                        for p in range(1, self.order)
-                    ],
-                    axis=0,
-                )
-                X_fin.append(X_p)
-            X_fin = np.array(X_fin)
+        X_fin = []
+
+        for i in np.arange(X.shape[0]):
+            X_p = X[i][:, : -self.order * self.lag]
+            X_p = np.concatenate(
+                [X_p]
+                + [
+                    X[i][:, p * self.lag: -(self.order - p) * self.lag]
+                    for p in range(1, self.order)
+                ],
+                axis=0,
+            )
+            X_fin.append(X_p)
+        X_fin = np.array(X_fin)
 
         return X_fin
+
 
 ###############################################################################
 # Load EEG data
@@ -114,19 +114,22 @@ epochs = Epochs(
 X = 1e6 * epochs.get_data()
 y = epochs.events[:, -1] - 2
 
-###########################################################################################
-# Defining Cross Validation Scheme
-# -------------------
+
+###############################################################################
+# Defining cross-validation schemes
+# ---------------------------------
 #
-# Define the inner and outer CV scheme for implemented the Nested Cross Validation for hyper-parameter search
+# Define the inner and outer CV scheme for implemented the nested cross-
+# validation for hyper-parameter search
 
 outer_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
 inner_cv = StratifiedKFold(3, shuffle=True, random_state=42)
 
-#################################################################
+
+###############################################################################
 # Defining pipelines
-# -------------------
+# ------------------
 #
 # Compare TGSP+SVM, FgMDM, MDM and ACM+TGSP+SVM
 
@@ -148,9 +151,11 @@ pipelines["MDM"] = Pipeline(steps=[
     ("MDM", MDM(metric=dict(mean='riemann', distance='riemann')))
 ])
 
-#################################################################
-# Define the ACM pipeline, the approach is based on the expansion of the current EEG signal using theory of
-# phase space reconstruction
+
+###############################################################################
+# Define the ACM pipeline, the approach is based on the expansion of the
+# current EEG signal using theory of phase space reconstruction
+
 pipelines_ = {}
 pipelines_["ACM+TGSP+SVM(Grid)"] = Pipeline(steps=[
     ("augmenteddataset", AugmentedDataset()),
@@ -176,10 +181,11 @@ pipelines["ACM+TGSP+SVM(Grid)"] = GridSearchCV(
     return_train_score=True,
 )
 
+
 ###############################################################################
 # Evaluation
 # ----------
-#
+
 results = []
 for ppn, ppl in pipelines.items():
     cvclf = clone(ppl)
@@ -197,14 +203,17 @@ flattened_results = results.explode('score')
 flattened_results['score'] = pd.to_numeric(flattened_results['score'])
 
 # Calculate the mean score and standard deviation for each pipeline
-pipeline_stats = flattened_results.groupby('pipeline')['score'].agg(['mean', 'std']).sort_values(by='mean', ascending=False)
+pipeline_stats = flattened_results.groupby('pipeline')['score'].agg(
+    ['mean', 'std']).sort_values(by='mean', ascending=False)
 
 for pipeline, stats in pipeline_stats.iterrows():
-    print(f"Pipeline: {pipeline}, Mean Score: {stats['mean']:.4f} +/- {stats['std']:.4f}")
+    print(f"{pipeline}, score: {stats['mean']:.4f} +/- {stats['std']:.4f}")
+
 
 ###############################################################################
 # Plot
 # ----
+
 order = ["ACM+TGSP+SVM(Grid)", "FgMDM", "TGSP+SVM", "MDM"]
 
 g = sns.catplot(
@@ -222,6 +231,6 @@ plt.show()
 ###############################################################################
 # References
 # ----------
-# .. [1] Carrara, I., & Papadopoulo, T. (2023). Classification of BCI-EEG based on augmented covariance matrix.
-#        arXiv preprint arXiv:2302.04508.
-#        https://doi.org/10.48550/arXiv.2302.04508
+# .. [1] `Classification of BCI-EEG based on augmented covariance matrix
+#    <https://doi.org/10.48550/arXiv.2302.04508>`_
+#    Carrara, I., & Papadopoulo, T., arXiv, 2023
