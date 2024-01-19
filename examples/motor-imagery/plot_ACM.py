@@ -131,7 +131,7 @@ inner_cv = StratifiedKFold(3, shuffle=True, random_state=42)
 # Defining pipelines
 # ------------------
 #
-# Compare TGSP+SVM, FgMDM, MDM and ACM+TGSP+SVM
+# Compare TGSP+SVM, MDM versus ACM+TGSP+SVM(Grid) and ACM+MDM(Grid)
 
 # Define the standard pipeline TGSP+SVM as baseline with standard covariance
 pipelines = {}
@@ -139,11 +139,6 @@ pipelines["TGSP+SVM"] = Pipeline(steps=[
     ("Covariances", Covariances("oas")),
     ("Tangent_Space", TangentSpace(metric="riemann")),
     ("SVM", SVC(kernel="linear"))
-])
-
-pipelines["FgMDM"] = Pipeline(steps=[
-    ("Covariances", Covariances("cov")),
-    ("fgmdm", FgMDM(metric="riemann", tsupdate=False))
 ])
 
 pipelines["MDM"] = Pipeline(steps=[
@@ -164,9 +159,20 @@ pipelines_["ACM+TGSP+SVM(Grid)"] = Pipeline(steps=[
     ("SVM", SVC(kernel="linear"))
 ])
 
+pipelines_["ACM+MDM(Grid)"] = Pipeline(steps=[
+    ("augmenteddataset", AugmentedDataset()),
+    ("Covariances", Covariances("oas")),
+    ("MDM", MDM(metric=dict(mean='riemann', distance='riemann')))
+])
+
 param_grid = {}
 # Define the parameter to test in the Nested Cross Validation
 param_grid["ACM+TGSP+SVM(Grid)"] = {
+    'augmenteddataset__order': [1, 2, 3, 4, 5, 6, 7],
+    'augmenteddataset__lag': [1, 2, 3, 4, 5, 6, 7],
+}
+
+param_grid["ACM+MDM(Grid)"] = {
     'augmenteddataset__order': [1, 2, 3, 4, 5, 6, 7],
     'augmenteddataset__lag': [1, 2, 3, 4, 5, 6, 7],
 }
@@ -178,7 +184,15 @@ pipelines["ACM+TGSP+SVM(Grid)"] = GridSearchCV(
     cv=inner_cv,
     n_jobs=-1,
     scoring="accuracy",
-    return_train_score=True,
+)
+
+pipelines["ACM+MDM(Grid)"] = GridSearchCV(
+    pipelines_["ACM+MDM(Grid)"],
+    param_grid["ACM+MDM(Grid)"],
+    refit=True,
+    cv=inner_cv,
+    n_jobs=-1,
+    scoring="accuracy",
 )
 
 
@@ -214,7 +228,7 @@ for pipeline, stats in pipeline_stats.iterrows():
 # Plot
 # ----
 
-order = ["ACM+TGSP+SVM(Grid)", "FgMDM", "TGSP+SVM", "MDM"]
+order = ["ACM+TGSP+SVM(Grid)", "TGSP+SVM", "ACM+MDM(Grid)", "MDM"]
 
 g = sns.catplot(
     data=flattened_results,
