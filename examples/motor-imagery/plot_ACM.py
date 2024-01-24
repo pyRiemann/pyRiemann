@@ -1,9 +1,10 @@
 """
 ====================================================================
-Augmented Covariance Method (ACM)
+Augmented Covariance Method
 ====================================================================
 
-This example shows how to use the ACM classifier [1]_.
+This example shows how to use the Augmented Covariance Method (ACM)
+classifier [1]_.
 """
 # Authors: Igor Carrara <igor.carrara@inria.fr>
 #
@@ -73,7 +74,7 @@ class AugmentedDataset(BaseEstimator, TransformerMixin):
 # Load EEG data
 # -------------
 
-# avoid classification of evoked responses by using epochs that start 1s after
+# Avoid classification of evoked responses by using epochs that start 1s after
 # cue onset.
 tmin, tmax = 1., 2.
 event_id = dict(hands=2, feet=3)
@@ -115,24 +116,12 @@ y = epochs.events[:, -1] - 2
 
 
 ###############################################################################
-# Defining cross-validation schemes
-# ---------------------------------
-#
-# Define the inner and outer CV scheme for implemented the nested cross-
-# validation for hyper-parameter search
-
-outer_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
-
-inner_cv = StratifiedKFold(3, shuffle=True, random_state=42)
-
-
-###############################################################################
 # Defining pipelines
 # ------------------
 #
 # Compare TGSP+SVM, MDM versus ACM+TGSP+SVM(Grid) and ACM+MDM(Grid)
-
-# Define the standard pipeline TGSP+SVM as baseline with standard covariance
+#
+# Define the standard pipelines with standard covariance matrix
 pipelines = {}
 pipelines["TGSP+SVM"] = Pipeline(steps=[
     ("Covariances", Covariances("oas")),
@@ -147,38 +136,27 @@ pipelines["MDM"] = Pipeline(steps=[
 
 
 ###############################################################################
-# Define the ACM pipeline, the approach is based on the expansion of the
+# Define the ACM pipelines, based on the expansion of the
 # current EEG signal using theory of phase space reconstruction
 
-pipelines_ = {}
-pipelines_["ACM+TGSP+SVM(Grid)"] = Pipeline(steps=[
-    ("augmenteddataset", AugmentedDataset()),
-    ("Covariances", Covariances("oas")),
-    ("Tangent_Space", TangentSpace(metric="riemann")),
-    ("SVM", SVC(kernel="linear"))
-])
+# Define the inner CV scheme for the nested cross-validation of
+# hyper-parameter search
+inner_cv = StratifiedKFold(3, shuffle=True, random_state=42)
 
-pipelines_["ACM+MDM(Grid)"] = Pipeline(steps=[
-    ("augmenteddataset", AugmentedDataset()),
-    ("Covariances", Covariances("oas")),
-    ("MDM", MDM(metric=dict(mean='riemann', distance='riemann')))
-])
-
-param_grid = {}
-# Define the parameter to test in the Nested Cross Validation
-param_grid["ACM+TGSP+SVM(Grid)"] = {
-    'augmenteddataset__order': [1, 2, 3, 4, 5, 6, 7],
-    'augmenteddataset__lag': [1, 2, 3, 4, 5, 6, 7],
-}
-
-param_grid["ACM+MDM(Grid)"] = {
+# Define the hyper-parameters to test in the nested cross-validation
+param_grid = {
     'augmenteddataset__order': [1, 2, 3, 4, 5, 6, 7],
     'augmenteddataset__lag': [1, 2, 3, 4, 5, 6, 7],
 }
 
 pipelines["ACM+TGSP+SVM(Grid)"] = GridSearchCV(
-    pipelines_["ACM+TGSP+SVM(Grid)"],
-    param_grid["ACM+TGSP+SVM(Grid)"],
+    Pipeline(steps=[
+        ("augmenteddataset", AugmentedDataset()),
+        ("Covariances", Covariances("oas")),
+        ("Tangent_Space", TangentSpace(metric="riemann")),
+        ("SVM", SVC(kernel="linear"))
+    ]),
+    param_grid,
     refit=True,
     cv=inner_cv,
     n_jobs=-1,
@@ -186,8 +164,12 @@ pipelines["ACM+TGSP+SVM(Grid)"] = GridSearchCV(
 )
 
 pipelines["ACM+MDM(Grid)"] = GridSearchCV(
-    pipelines_["ACM+MDM(Grid)"],
-    param_grid["ACM+MDM(Grid)"],
+    Pipeline(steps=[
+        ("augmenteddataset", AugmentedDataset()),
+        ("Covariances", Covariances("oas")),
+        ("MDM", MDM(metric=dict(mean='riemann', distance='riemann')))
+    ]),
+    param_grid,
     refit=True,
     cv=inner_cv,
     n_jobs=-1,
@@ -198,6 +180,9 @@ pipelines["ACM+MDM(Grid)"] = GridSearchCV(
 ###############################################################################
 # Evaluation
 # ----------
+#
+# Define the outer CV scheme for cross-validated scores
+outer_cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
 
 results = []
 for ppn, ppl in pipelines.items():
@@ -246,4 +231,4 @@ plt.show()
 # ----------
 # .. [1] `Classification of BCI-EEG based on augmented covariance matrix
 #    <https://doi.org/10.48550/arXiv.2302.04508>`_
-#    Carrara, I., & Papadopoulo, T., arXiv, 2023
+#    Carrara, I. & Papadopoulo, T., arXiv, 2023
