@@ -28,7 +28,6 @@ from sklearn.svm import SVC
 
 from pyriemann.classification import MDM
 from pyriemann.estimation import Covariances
-from pyriemann.classification import FgMDM
 from pyriemann.tangentspace import TangentSpace
 
 
