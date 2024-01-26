@@ -131,14 +131,14 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_
 # current EEG signal using theory of phase space reconstruction
 
 pipelines = {}
-pipelines["ACM+TGSP+SVM(Grid)"] = Pipeline(steps=[
+pipelines["ACM(Grid)+TGSP+SVM"] = Pipeline(steps=[
     ("augmenteddataset", AugmentedDataset()),
     ("Covariances", Covariances("oas")),
     ("Tangent_Space", TangentSpace(metric="riemann")),
     ("SVM", SVC(kernel="linear"))
 ])
 
-pipelines["ACM+MDM(Grid)"] = Pipeline(steps=[
+pipelines["ACM(Grid)+MDM"] = Pipeline(steps=[
     ("augmenteddataset", AugmentedDataset()),
     ("Covariances", Covariances("oas")),
     ("MDM", MDM(metric=dict(mean='riemann', distance='riemann')))
@@ -146,29 +146,29 @@ pipelines["ACM+MDM(Grid)"] = Pipeline(steps=[
 
 param_grid = {}
 # Define the parameter to test in the Nested Cross Validation
-param_grid["ACM+TGSP+SVM(Grid)"] = {
+param_grid["ACM(Grid)+TGSP+SVM"] = {
     'augmenteddataset__order': [1, 2, 3, 4, 5, 6, 7],
     'augmenteddataset__lag': [1, 2, 3, 4, 5, 6, 7],
 }
 
-param_grid["ACM+MDM(Grid)"] = {
+param_grid["ACM(Grid)+MDM"] = {
     'augmenteddataset__order': [1, 2, 3, 4, 5, 6, 7],
     'augmenteddataset__lag': [1, 2, 3, 4, 5, 6, 7],
 }
 
 pipelines_grid = {}
-pipelines_grid["ACM+TGSP+SVM(Grid)"] = GridSearchCV(
-    pipelines["ACM+TGSP+SVM(Grid)"],
-    param_grid["ACM+TGSP+SVM(Grid)"],
+pipelines_grid["ACM(Grid)+TGSP+SVM"] = GridSearchCV(
+    pipelines["ACM(Grid)+TGSP+SVM"],
+    param_grid["ACM(Grid)+TGSP+SVM"],
     refit=True,
     cv=inner_cv,
     n_jobs=-1,
     scoring="accuracy",
 )
 
-pipelines_grid["ACM+MDM(Grid)"] = GridSearchCV(
-    pipelines["ACM+MDM(Grid)"],
-    param_grid["ACM+MDM(Grid)"],
+pipelines_grid["ACM(Grid)+MDM"] = GridSearchCV(
+    pipelines["ACM(Grid)+MDM"],
+    param_grid["ACM(Grid)+MDM"],
     refit=True,
     cv=inner_cv,
     n_jobs=-1,
@@ -177,6 +177,7 @@ pipelines_grid["ACM+MDM(Grid)"] = GridSearchCV(
 
 # Run the inner CV for getting the hyper-parameter
 results_grid = []
+best_estimator = []
 for ppn, ppl in pipelines_grid.items():
     cvclf = clone(ppl)
     score = cvclf.fit(X_train, y_train)
@@ -185,23 +186,30 @@ for ppn, ppl in pipelines_grid.items():
         "order": score.best_params_["augmenteddataset__order"],
         "lag": score.best_params_["augmenteddataset__lag"]
     }
+
+    res_best = {
+        "pipeline": ppn,
+        "best_estimator": score.best_estimator_
+    }
+    best_estimator.append(res_best)
     results_grid.append(res)
 
 results_grid = pd.DataFrame(results_grid)
+best_estimator = pd.DataFrame(best_estimator)
 print(results_grid)
 
-# Update the pipeline with the best hyper-parameter
-pipelines["ACM+TGSP+SVM(Grid)"].steps[0][1].order = results_grid.loc[results_grid['pipeline'] == "ACM+TGSP+SVM(Grid)", "order"].values[0]
-pipelines["ACM+TGSP+SVM(Grid)"].steps[0][1].lag = results_grid.loc[results_grid['pipeline'] == "ACM+TGSP+SVM(Grid)", "lag"].values[0]
+# Update the pipeline with the best pipeline obtained by the GridSearch process
+pipelines["ACM(Grid)+TGSP+SVM"] = best_estimator.loc[best_estimator['pipeline'] ==
+                                                     "ACM(Grid)+TGSP+SVM", "best_estimator"].values[0]
 
-pipelines["ACM+MDM(Grid)"].steps[0][1].order = results_grid.loc[results_grid['pipeline'] == "ACM+MDM(Grid)", "order"].values[0]
-pipelines["ACM+MDM(Grid)"].steps[0][1].lag = results_grid.loc[results_grid['pipeline'] == "ACM+MDM(Grid)", "lag"].values[0]
+pipelines["ACM(Grid)+MDM"] = best_estimator.loc[best_estimator['pipeline'] ==
+                                                "ACM(Grid)+MDM", "best_estimator"].values[0]
 
 ###############################################################################
 # Defining pipelines
 # ------------------
 #
-# Compare TGSP+SVM, MDM versus ACM+TGSP+SVM(Grid) and ACM+MDM(Grid)
+# Compare TGSP+SVM, MDM versus ACM(Grid)+TGSP+SVM and ACM(Grid)+MDM
 
 # Define the standard pipeline TGSP+SVM as baseline with standard covariance
 pipelines["TGSP+SVM"] = Pipeline(steps=[
@@ -245,7 +253,7 @@ for pipeline, stats in pipeline_stats.iterrows():
 # Plot
 # ----
 
-order = ["ACM+TGSP+SVM(Grid)", "TGSP+SVM", "ACM+MDM(Grid)", "MDM"]
+order = ["ACM(Grid)+TGSP+SVM", "TGSP+SVM", "ACM(Grid)+MDM", "MDM"]
 
 g = sns.catplot(
     data=results,
