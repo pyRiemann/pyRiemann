@@ -120,11 +120,16 @@ y = epochs.events[:, -1] - 2
 # Defining cross-validation schemes
 # ---------------------------------
 #
-# Define the inner CV scheme for implemented the cross validation for hyper-parameter search
+# Define the inner CV scheme for implemented the cross validation for
+# hyper-parameter search
 
 inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
 
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=0, shuffle=True, stratify=y)
+X_train, X_test, y_train, y_test = train_test_split(X, y,
+                                                    test_size=0.3,
+                                                    random_state=0,
+                                                    shuffle=True,
+                                                    stratify=y)
 
 ###############################################################################
 # Define the ACM pipeline, the approach is based on the expansion of the
@@ -198,12 +203,14 @@ results_grid = pd.DataFrame(results_grid)
 best_estimator = pd.DataFrame(best_estimator)
 print(results_grid)
 
-# Update the pipeline with the best pipeline obtained by the GridSearch process
-pipelines["ACM(Grid)+TGSP+SVM"] = best_estimator.loc[best_estimator['pipeline'] ==
-                                                     "ACM(Grid)+TGSP+SVM", "best_estimator"].values[0]
+# Update the pipeline with the best pipeline obtained with GridSearch process
+pipelines["ACM(Grid)+TGSP+SVM"] = best_estimator.loc[
+    best_estimator['pipeline'] == "ACM(Grid)+TGSP+SVM",
+    "best_estimator"].values[0]
 
-pipelines["ACM(Grid)+MDM"] = best_estimator.loc[best_estimator['pipeline'] ==
-                                                "ACM(Grid)+MDM", "best_estimator"].values[0]
+pipelines["ACM(Grid)+MDM"] = best_estimator.loc[
+    best_estimator['pipeline'] == "ACM(Grid)+MDM",
+    "best_estimator"].values[0]
 
 ###############################################################################
 # Defining pipelines
