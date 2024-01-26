@@ -249,11 +249,8 @@ for ppn, ppl in pipelines.items():
 results = pd.DataFrame(results)
 
 # Calculate the mean score for each pipelines
-pipeline_stats = results.groupby('pipeline')['score'].agg(
-    ['mean']).sort_values(by='mean', ascending=False)
-
-for pipeline, stats in pipeline_stats.iterrows():
-    print(f"{pipeline}, score: {stats['mean']:.4f}")
+for _, row in results.sort_values(by='score', ascending=False).iterrows():
+    print(f"{row.pipeline}, score: {row.score:.4f}")
 
 
 ###############################################################################
