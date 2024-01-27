@@ -32,6 +32,8 @@ v0.6.dev
 
 - Correct check for `kernel_fct` param of :class:`pyriemann.classification.SVC`. :pr:`272` by :user:`qbarthelemy`
 
+- Add an example on augmented covariance matrix. :pr:`276` by :user:`carraraig`
+
 v0.5 (Jun 2023)
 ---------------
 

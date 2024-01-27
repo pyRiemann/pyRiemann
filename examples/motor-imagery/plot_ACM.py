@@ -1,9 +1,10 @@
 """
 ====================================================================
-Augmented Covariance Method (ACM)
+Augmented Covariance Matrix
 ====================================================================
 
-This example shows how to use the ACM classifier [1]_.
+This example compares classification pipelines based on covariance maxtrix (CM)
+versus augmented covariance matrix (ACM) [1]_.
 """
 # Authors: Igor Carrara <igor.carrara@inria.fr>
 #
@@ -34,14 +35,13 @@ from pyriemann.tangentspace import TangentSpace
 
 
 ###############################################################################
-# Define the Augmented Dataset
-# ----------------------------
+# Define the Augmented Covariance
+# -------------------------------
 
 class AugmentedDataset(BaseEstimator, TransformerMixin):
     """This transformation creates an embedding version of the current dataset.
     The implementation and the application is described in [1]_.
     """
-
     def __init__(self, order=1, lag=1):
         self.order = order
         self.lag = lag
@@ -54,7 +54,6 @@ class AugmentedDataset(BaseEstimator, TransformerMixin):
             return X
 
         X_fin = []
-
         for i in np.arange(X.shape[0]):
             X_p = X[i][:, : -self.order * self.lag]
             X_p = np.concatenate(
@@ -75,7 +74,7 @@ class AugmentedDataset(BaseEstimator, TransformerMixin):
 # Load EEG data
 # -------------
 
-# avoid classification of evoked responses by using epochs that start 1s after
+# Avoid classification of evoked responses by using epochs that start 1s after
 # cue onset.
 tmin, tmax = 1., 2.
 event_id = dict(hands=2, feet=3)
@@ -115,25 +114,20 @@ epochs = Epochs(
 X = 1e6 * epochs.get_data()
 y = epochs.events[:, -1] - 2
 
-
-###############################################################################
-# Defining cross-validation schemes
-# ---------------------------------
-#
-# Define the inner CV scheme for implemented the cross validation for
-# hyper-parameter search
-
-inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
-
 X_train, X_test, y_train, y_test = train_test_split(X, y,
                                                     test_size=0.3,
                                                     random_state=0,
                                                     shuffle=True,
                                                     stratify=y)
 
+
 ###############################################################################
-# Define the ACM pipeline, the approach is based on the expansion of the
-# current EEG signal using theory of phase space reconstruction
+# Defining pipelines
+# ------------------
+#
+# Define pipelines based on augmented covariance matrix (ACM),
+# which is an expansion of the current EEG signal using theory of phase space
+# reconstruction [1]_
 
 pipelines = {}
 pipelines["ACM(Grid)+TGSP+SVM"] = Pipeline(steps=[
@@ -149,14 +143,12 @@ pipelines["ACM(Grid)+MDM"] = Pipeline(steps=[
     ("MDM", MDM(metric=dict(mean='riemann', distance='riemann')))
 ])
 
-param_grid = {}
-# Define the parameter to test in the Nested Cross Validation
-param_grid["ACM(Grid)+TGSP+SVM"] = {
-    'augmenteddataset__order': [1, 2, 3, 4, 5, 6, 7],
-    'augmenteddataset__lag': [1, 2, 3, 4, 5, 6, 7],
-}
+# Define the inner CV scheme for the nested cross-validation of
+# hyper-parameter search
+inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
 
-param_grid["ACM(Grid)+MDM"] = {
+# Define the hyper-parameters to test in the nested cross-validation
+param_grid = {
     'augmenteddataset__order': [1, 2, 3, 4, 5, 6, 7],
     'augmenteddataset__lag': [1, 2, 3, 4, 5, 6, 7],
 }
@@ -164,7 +156,7 @@ param_grid["ACM(Grid)+MDM"] = {
 pipelines_grid = {}
 pipelines_grid["ACM(Grid)+TGSP+SVM"] = GridSearchCV(
     pipelines["ACM(Grid)+TGSP+SVM"],
-    param_grid["ACM(Grid)+TGSP+SVM"],
+    param_grid,
     refit=True,
     cv=inner_cv,
     n_jobs=-1,
@@ -173,13 +165,15 @@ pipelines_grid["ACM(Grid)+TGSP+SVM"] = GridSearchCV(
 
 pipelines_grid["ACM(Grid)+MDM"] = GridSearchCV(
     pipelines["ACM(Grid)+MDM"],
-    param_grid["ACM(Grid)+MDM"],
+    param_grid,
     refit=True,
     cv=inner_cv,
     n_jobs=-1,
     scoring="accuracy",
 )
 
+
+###############################################################################
 # Run the inner CV for getting the hyper-parameter
 results_grid = []
 best_estimator = []
@@ -212,27 +206,29 @@ pipelines["ACM(Grid)+MDM"] = best_estimator.loc[
     best_estimator['pipeline'] == "ACM(Grid)+MDM",
     "best_estimator"].values[0]
 
-###############################################################################
-# Defining pipelines
-# ------------------
-#
-# Compare TGSP+SVM, MDM versus ACM(Grid)+TGSP+SVM and ACM(Grid)+MDM
 
-# Define the standard pipeline TGSP+SVM as baseline with standard covariance
-pipelines["TGSP+SVM"] = Pipeline(steps=[
+###############################################################################
+# Define pipelines with usual covariance matrix (CM)
+pipelines["CM+TGSP+SVM"] = Pipeline(steps=[
     ("Covariances", Covariances("oas")),
     ("Tangent_Space", TangentSpace(metric="riemann")),
     ("SVM", SVC(kernel="linear"))
 ])
 
-pipelines["MDM"] = Pipeline(steps=[
+pipelines["CM+MDM"] = Pipeline(steps=[
     ("Covariances", Covariances("cov")),
     ("MDM", MDM(metric=dict(mean='riemann', distance='riemann')))
 ])
 
+
 ###############################################################################
 # Evaluation
 # ----------
+#
+# Compare classification pipelines:
+#
+# - CM+TGSP+SVM versus ACM(Grid)+TGSP+SVM
+# - CM+MDM versus ACM(Grid)+MDM
 
 results = []
 for ppn, ppl in pipelines.items():
@@ -243,12 +239,12 @@ for ppn, ppl in pipelines.items():
     res = {
         "score": score,
         "pipeline": ppn,
+        "Features": ppn.split('+')[0],
+        "Classifiers": ppn.split('+', 1)[1]
     }
     results.append(res)
-
 results = pd.DataFrame(results)
 
-# Calculate the mean score for each pipelines
 for _, row in results.sort_values(by='score', ascending=False).iterrows():
     print(f"{row.pipeline}, score: {row.score:.4f}")
 
@@ -257,16 +253,12 @@ for _, row in results.sort_values(by='score', ascending=False).iterrows():
 # Plot
 # ----
 
-order = ["ACM(Grid)+TGSP+SVM", "TGSP+SVM", "ACM(Grid)+MDM", "MDM"]
-
-g = sns.catplot(
+sns.pointplot(
     data=results,
-    x="pipeline",
+    x="Features",
     y="score",
-    order=order,
-    kind="bar",
-    height=7,
-    aspect=2,
+    hue="Classifiers",
+    order=["CM", "ACM(Grid)"]
 )
 plt.show()
 
