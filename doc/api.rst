@@ -19,7 +19,7 @@ SPD Matrices Estimation
     BlockCovariances
     CospCovariances
     Coherences
-    HankelCovariances
+    TimeDelayCovariances
     Kernels
     Shrinkage
 

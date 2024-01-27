@@ -22,8 +22,6 @@ v0.6.dev
 
 - Correct :func:`pyriemann.utils.distance.distance_wasserstein` and :func:`pyriemann.utils.distance.distance_kullback`, keeping only real part. :pr:`267` by :user:`qbarthelemy`
 
-- Add ``sample_weight`` parameter in TLCenter, TLStretch and TLRotate. :pr:`273` by :user:`apmellot`
-
 - Deprecate input ``covmats`` for mean functions, renamed into ``X``. :pr:`252` by :user:`qbarthelemy`
 
 - Add support for complex covariance estimation for 'lwf', 'mcd', 'oas' and 'sch' estimators. :pr:`274` by :user:`gabelstein`
@@ -31,6 +29,10 @@ v0.6.dev
 - Deprecate input ``covtest`` for predict of :class:`pyriemann.classification.KNearestNeighbor`, renamed into ``X``. :pr:`259` by :user:`qbarthelemy`
 
 - Correct check for `kernel_fct` param of :class:`pyriemann.classification.SVC`. :pr:`272` by :user:`qbarthelemy`
+
+- Add ``sample_weight`` parameter in TLCenter, TLStretch and TLRotate. :pr:`273` by :user:`apmellot`
+
+- Deprecate ``HankelCovariances``, renamed into :class:`pyriemann.estimation.TimeDelayCovariances`. :pr:`275` by :user:`qbarthelemy`
 
 - Add an example on augmented covariance matrix. :pr:`276` by :user:`carraraig`
 
