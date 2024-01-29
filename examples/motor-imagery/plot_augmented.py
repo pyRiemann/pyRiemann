@@ -40,34 +40,29 @@ from pyriemann.tangentspace import TangentSpace
 
 class AugmentedDataset(BaseEstimator, TransformerMixin):
     """This transformation creates an embedding version of the current dataset.
+
     The implementation and the application is described in [1]_.
     """
     def __init__(self, order=1, lag=1):
         self.order = order
         self.lag = lag
 
-    def fit(self, X, y):
+    def fit(self, X, y=None):
         return self
 
     def transform(self, X):
         if self.order == 1:
             return X
 
-        X_fin = []
-        for i in np.arange(X.shape[0]):
-            X_p = X[i][:, : -self.order * self.lag]
-            X_p = np.concatenate(
-                [X_p]
-                + [
-                    X[i][:, p * self.lag: -(self.order - p) * self.lag]
-                    for p in range(1, self.order)
-                ],
-                axis=0,
-            )
-            X_fin.append(X_p)
-        X_fin = np.array(X_fin)
+        X_new = np.concatenate(
+            [
+                X[:, :, p * self.lag: -(self.order - p) * self.lag]
+                for p in range(0, self.order)
+            ],
+            axis=1,
+        )
 
-        return X_fin
+        return X_new
 
 
 ###############################################################################
