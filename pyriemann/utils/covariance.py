@@ -1,4 +1,5 @@
 import warnings
+from functools import wraps
 
 import numpy as np
 from scipy.stats import chi2
@@ -9,26 +10,67 @@ from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
 
 
+def _complex_estimator(func):
+    """Decorator to extend a real-valued covariance estimator to complex data.
+
+    Applied to a real-valued covariance estimator, this decorator allows to
+    estimate complex covariance matrices from complex-valued multi-channel
+    time-series. See Eq.(4) in [1]_.
+
+    Parameters
+    ----------
+    func : callable
+        Real-valued covariance estimator.
+
+    Returns
+    -------
+    output : callable
+        Complex-valued covariance estimator.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
+
+    References
+    ----------
+    .. [1] `Enhanced Covariance Matrix Estimators in Adaptive Beamforming
+        <https://doi.org/10.1109/ICASSP.2007.366399>`_
+        R. Abrahamsson, Y. Selen and P. Stoica. 2007 IEEE International
+        Conference on Acoustics, Speech and Signal Processing, Volume 2, 2007.
+    """
+    @wraps(func)
+    def wrapper(X, **kwds):
+        iscomplex = np.iscomplexobj(X)
+        if iscomplex:
+            n_channels, n_times = X.shape
+            X = np.concatenate((X.real, X.imag), axis=0)
+        cov = func(X, **kwds)
+        if iscomplex:
+            cov = cov[:n_channels, :n_channels] \
+                + cov[n_channels:, n_channels:] \
+                + 1j * (cov[n_channels:, :n_channels]
+                        - cov[:n_channels, n_channels:])
+        return cov
+    return wrapper
+
+
+@_complex_estimator
 def _lwf(X, **kwds):
     """Wrapper for sklearn ledoit wolf covariance estimator"""
-    if not is_real_type(X):
-        raise ValueError("Input must be real-valued.")
     C, _ = ledoit_wolf(X.T, **kwds)
     return C
 
 
+@_complex_estimator
 def _mcd(X, **kwds):
     """Wrapper for sklearn mcd covariance estimator"""
-    if not is_real_type(X):
-        raise ValueError("Input must be real-valued.")
     _, C, _, _ = fast_mcd(X.T, **kwds)
     return C
 
 
+@_complex_estimator
 def _oas(X, **kwds):
     """Wrapper for sklearn oas covariance estimator"""
-    if not is_real_type(X):
-        raise ValueError("Input must be real-valued.")
     C, _ = oas(X.T, **kwds)
     return C
 
@@ -181,6 +223,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     return cov
 
 
+@_complex_estimator
 def covariance_sch(X):
     r"""Schaefer-Strimmer shrunk covariance estimator.
 
@@ -218,8 +261,6 @@ def covariance_sch(X):
         J. Schafer, and K. Strimmer. Statistical Applications in Genetics and
         Molecular Biology, Volume 4, Issue 1, 2005.
     """
-    if not is_real_type(X):
-        raise ValueError("Input must be real-valued.")
     _, n_times = X.shape
     X_c = X - X.mean(axis=1, keepdims=True)
     C_scm = X_c @ X_c.T / n_times
@@ -310,7 +351,10 @@ def _check_cov_est_function(est):
 
 
 def covariances(X, estimator='cov', **kwds):
-    """Estimation of covariance matrix.
+    """Estimation of covariance matrices.
+
+    Estimates covariance matrices from multi-channel time-series according to
+    a covariance estimator. It supports real and complex-valued data.
 
     Parameters
     ----------
@@ -323,21 +367,21 @@ def covariances(X, estimator='cov', **kwds):
         * 'corr' for correlation coefficient matrix [corr]_,
         * 'cov' for NumPy based covariance matrix [cov]_,
         * 'hub' for Huber's M-estimator based covariance matrix [mest]_,
-        * 'lwf' for Ledoit-Wolf shrunk covariance matrix [lwf]_
-          only for real-valued inputs,
-        * 'mcd' for minimum covariance determinant matrix [mcd]_
-          only for real-valued inputs,
-        * 'oas' for oracle approximating shrunk covariance matrix [oas]_
-          only for real-valued inputs,
-        * 'sch' for Schaefer-Strimmer shrunk covariance matrix [sch]_
-          only for real-valued inputs,
+        * 'lwf' for Ledoit-Wolf shrunk covariance matrix [lwf]_,
+        * 'mcd' for minimum covariance determinant matrix [mcd]_,
+        * 'oas' for oracle approximating shrunk covariance matrix [oas]_,
+        * 'sch' for Schaefer-Strimmer shrunk covariance matrix [sch]_,
         * 'scm' for sample covariance matrix [scm]_,
         * 'stu' for Student-t's M-estimator based covariance matrix [mest]_,
         * 'tyl' for Tyler's M-estimator based covariance matrix [mest]_,
         * or a callable function.
 
         For regularization, consider 'lwf' or 'oas'.
+
         For robustness, consider 'hub', 'mcd', 'stu' or 'tyl'.
+
+        For 'lwf', 'mcd', 'oas' and 'sch' estimators,
+        complex covariance matrices are estimated according to [comp]_.
     **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
 
@@ -357,6 +401,10 @@ def covariances(X, estimator='cov', **kwds):
     .. [oas] https://scikit-learn.org/stable/modules/generated/oas-function.html
     .. [sch] :func:`pyriemann.utils.covariance.covariance_sch`
     .. [scm] :func:`pyriemann.utils.covariance.covariance_scm`
+    .. [comp] `Enhanced Covariance Matrix Estimators in Adaptive Beamforming
+        <https://doi.org/10.1109/ICASSP.2007.366399>`_
+        R. Abrahamsson, Y. Selen and P. Stoica. 2007 IEEE International
+        Conference on Acoustics, Speech and Signal Processing, Volume 2, 2007.
     """  # noqa
     est = _check_cov_est_function(estimator)
     n_matrices, n_channels, n_times = X.shape
@@ -394,7 +442,7 @@ def covariances_EP(X, P, estimator='cov', **kwds):
         raise ValueError(
             f"X and P do not have the same n_times: {n_times} and {n_times_p}")
     covmats = np.empty((n_matrices, n_channels + n_channels_proto,
-                        n_channels + n_channels_proto))
+                        n_channels + n_channels_proto), dtype=X.dtype)
     for i in range(n_matrices):
         covmats[i] = est(np.concatenate((P, X[i]), axis=0), **kwds)
     return covmats

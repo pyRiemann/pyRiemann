@@ -13,6 +13,7 @@ from ..utils.mean import mean_covariance, mean_riemann
 from ..utils.distance import distance
 from ..utils.base import invsqrtm, powm, sqrtm
 from ..utils.geodesic import geodesic
+from ..utils.utils import check_weights
 from ._rotate import _get_rotation_matrix
 from ..classification import MDM, _check_metric
 from ..preprocessing import Whitening
@@ -113,7 +114,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
     Attributes
     ----------
     recenter_ : dict
-        Dictionary with key=domain_name and value=domain_mean
+        Dictionary with key=domain_name and value=domain_mean.
 
     References
     ----------
@@ -133,7 +134,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
         self.target_domain = target_domain
         self.metric = metric
 
-    def fit(self, X, y_enc):
+    def fit(self, X, y_enc, sample_weight=None):
         """Fit TLCenter.
 
         Calculate the mean of all matrices in each domain.
@@ -144,6 +145,8 @@ class TLCenter(BaseEstimator, TransformerMixin):
             Set of SPD matrices.
         y_enc : ndarray, shape (n_matrices,)
             Extended labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -151,10 +154,15 @@ class TLCenter(BaseEstimator, TransformerMixin):
             The TLCenter instance.
         """
         _, _, domains = decode_domains(X, y_enc)
+        n_matrices, _, _ = X.shape
+        sample_weight = check_weights(sample_weight, n_matrices)
+
         self.recenter_ = {}
         for d in np.unique(domains):
             idx = domains == d
-            self.recenter_[d] = Whitening(metric=self.metric).fit(X[idx])
+            self.recenter_[d] = Whitening(metric=self.metric).fit(
+                X[idx], sample_weight=sample_weight[idx]
+            )
         return self
 
     def transform(self, X, y_enc=None):
@@ -175,7 +183,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
         # Used during inference, apply recenter from specified target domain.
         return self.recenter_[self.target_domain].transform(X)
 
-    def fit_transform(self, X, y_enc):
+    def fit_transform(self, X, y_enc, sample_weight=None):
         """Fit TLCenter and then transform data points.
 
         Calculate the mean of all matrices in each domain and then recenter
@@ -192,6 +200,8 @@ class TLCenter(BaseEstimator, TransformerMixin):
             Set of SPD matrices.
         y_enc : ndarray, shape (n_matrices,)
             Extended labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -199,8 +209,9 @@ class TLCenter(BaseEstimator, TransformerMixin):
             Set of SPD matrices with mean in the Identity.
         """
         # Used during fit, in pipeline
-        self.fit(X, y_enc)
+        self.fit(X, y_enc, sample_weight)
         _, _, domains = decode_domains(X, y_enc)
+
         X_rct = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
@@ -259,7 +270,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
         self.centered_data = centered_data
         self.metric = metric
 
-    def fit(self, X, y_enc):
+    def fit(self, X, y_enc, sample_weight=None):
         """Fit TLStretch.
 
         Calculate the dispersion around the mean for each domain.
@@ -270,29 +281,35 @@ class TLStretch(BaseEstimator, TransformerMixin):
             Set of SPD matrices.
         y_enc : ndarray, shape (n_matrices,)
             Extended labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
         self : TLStretch instance
             The TLStretch instance.
         """
-
         _, _, domains = decode_domains(X, y_enc)
-        n_dim = X[0].shape[1]
-        self._means = {}
-        self.dispersions_ = {}
+        n_matrices, n_channels, _ = X.shape
+        sample_weight = check_weights(sample_weight, n_matrices)
+
+        self._means, self.dispersions_ = {}, {}
         for d in np.unique(domains):
+            idx = domains == d
+            sample_weight_d = check_weights(sample_weight[idx], np.sum(idx))
             if self.centered_data:
-                self._means[d] = np.eye(n_dim)
+                self._means[d] = np.eye(n_channels)
             else:
-                self._means[d] = mean_riemann(X[domains == d])
-            disp_domain = distance(
-                X[domains == d],
+                self._means[d] = mean_riemann(
+                    X[idx], sample_weight=sample_weight_d
+                )
+            dist = distance(
+                X[idx],
                 self._means[d],
                 metric=self.metric,
                 squared=True,
-            ).mean()
-            self.dispersions_[d] = disp_domain
+            )
+            self.dispersions_[d] = np.sum(sample_weight_d * np.squeeze(dist))
 
         return self
 
@@ -342,7 +359,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
 
         return X_str
 
-    def fit_transform(self, X, y_enc):
+    def fit_transform(self, X, y_enc, sample_weight=None):
         """Fit TLStretch and then transform data points.
 
         Calculate the dispersion around the mean for each domain and then
@@ -359,6 +376,8 @@ class TLStretch(BaseEstimator, TransformerMixin):
             Set of SPD matrices.
         y_enc : ndarray, shape (n_matrices,)
             Extended labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -367,8 +386,9 @@ class TLStretch(BaseEstimator, TransformerMixin):
         """
 
         # used during fit, in pipeline
-        self.fit(X, y_enc)
+        self.fit(X, y_enc, sample_weight)
         _, _, domains = decode_domains(X, y_enc)
+
         X_str = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
@@ -450,7 +470,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
         self.metric = metric
         self.n_jobs = n_jobs
 
-    def fit(self, X, y_enc):
+    def fit(self, X, y_enc, sample_weight=None):
         """Fit TLRotate.
 
         Calculate the rotations matrices to transform each source domain into
@@ -462,6 +482,8 @@ class TLRotate(BaseEstimator, TransformerMixin):
             Set of SPD matrices.
         y_enc : ndarray, shape (n_matrices,)
             Extended labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -470,30 +492,38 @@ class TLRotate(BaseEstimator, TransformerMixin):
         """
 
         _, _, domains = decode_domains(X, y_enc)
+        n_matrices, _, _ = X.shape
+        sample_weight = check_weights(sample_weight, n_matrices)
 
         idx = domains == self.target_domain
         X_target, y_target = X[idx], y_enc[idx]
         M_target = np.stack([
-            mean_riemann(X_target[y_target == label])
+            mean_riemann(X_target[y_target == label],
+                         sample_weight=sample_weight[idx][y_target == label])
             for label in np.unique(y_target)
         ])
 
-        source_names = np.unique(domains)
-        source_names = source_names[source_names != self.target_domain]
+        source_domains = np.unique(domains)
+        source_domains = source_domains[source_domains != self.target_domain]
         rotations = Parallel(n_jobs=self.n_jobs)(
             delayed(_get_rotation_matrix)(
                 np.stack([
-                    mean_riemann(X[domains == d][y_enc[domains == d] == label])
-                    for label in np.unique(y_enc[domains == d])
+                    mean_riemann(
+                        X[domains == d][y_enc[domains == d] == label],
+                        sample_weight=sample_weight[domains == d][
+                            y_enc[domains == d] == label
+                        ]
+                    ) for label in np.unique(y_enc[domains == d])
                 ]),
                 M_target,
                 self.weights,
                 metric=self.metric,
-            ) for d in source_names
+            ) for d in source_domains
         )
+
         self.rotations_ = {}
-        for di, roti in zip(source_names, rotations):
-            self.rotations_[di] = roti
+        for d, rot in zip(source_domains, rotations):
+            self.rotations_[d] = rot
 
         return self
 
@@ -519,7 +549,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
         # used during inference on target domain
         return X
 
-    def fit_transform(self, X, y_enc):
+    def fit_transform(self, X, y_enc, sample_weight=None):
         """Fit TLRotate and then transform data points.
 
         Calculate the rotation matrix for matching each source domain to the
@@ -536,6 +566,8 @@ class TLRotate(BaseEstimator, TransformerMixin):
             Set of SPD matrices.
         y_enc : ndarray, shape (n_matrices,)
             Extended labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -544,8 +576,9 @@ class TLRotate(BaseEstimator, TransformerMixin):
         """
 
         # used during fit in pipeline, rotate each source domain
-        self.fit(X, y_enc)
+        self.fit(X, y_enc, sample_weight)
         _, _, domains = decode_domains(X, y_enc)
+
         X_rot = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
