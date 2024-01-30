@@ -34,6 +34,8 @@ v0.6.dev
 
 - Deprecate ``HankelCovariances``, renamed into :class:`pyriemann.estimation.TimeDelayCovariances`. :pr:`275` by :user:`qbarthelemy`
 
+- Add an example on augmented covariance matrix. :pr:`276` by :user:`carraraig`
+
 v0.5 (Jun 2023)
 ---------------
 
