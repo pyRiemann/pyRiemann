@@ -2,10 +2,10 @@ import warnings
 from functools import wraps
 
 import numpy as np
-from scipy.linalg import block_diag
 from scipy.stats import chi2
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
+from .base import BlockMatrix
 from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
 
@@ -501,20 +501,20 @@ def covariances_X(X, estimator='scm', alpha=0.2, **kwds):
     return covmats / (2 * alpha)  # Eq(10)
 
 
-def block_covariances(X, blocks, estimator='cov', **kwds):
+def block_covariances(X, block_size, estimator='cov', **kwds):
     """Compute block diagonal covariance.
 
     Calculates block diagonal matrices where each block is a covariance
     matrix of a subset of channels.
-    Block sizes are passed as a list of integers and can vary. The sum
-    of block sizes must equal the number of channels in X.
+    Block sizes are passed as integers. The block_size must be a divisor of
+    n_channels of X.
 
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_times)
         Multi-channel time-series.
-    blocks: list of int
-        List of block sizes.
+    block_size: int
+        Block size. If -1, the block size is set to n_channels.
     estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
@@ -526,21 +526,22 @@ def block_covariances(X, blocks, estimator='cov', **kwds):
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Block diagonal covariance matrices.
     """
-    est = _check_cov_est_function(estimator)
     n_matrices, n_channels, n_times = X.shape
+    if block_size == -1:
+        block_size = n_channels
+    n_blocks = int(n_channels//block_size)
+    blocks = []
+    for i in range(n_blocks):
+        blocks.append(covariances(X[:, i*block_size:(i+1)*block_size, :],
+                                  estimator,
+                                  **kwds))
+    blocks = np.swapaxes(np.array(blocks), 0, 1)
 
-    if np.sum(blocks) != n_channels:
-        raise ValueError("Sum of individual block sizes "
-                         "must match number of channels of X.")
-
-    covmats = np.empty((n_matrices, n_channels, n_channels))
-    for i in range(n_matrices):
-        blockcov, idx_start = [], 0
-        for j in blocks:
-            blockcov.append(est(X[i, idx_start:idx_start+j, :], **kwds))
-            idx_start += j
-        covmats[i] = block_diag(*tuple(blockcov))
-
+    covmats = BlockMatrix(np.zeros((n_matrices,
+                                    n_channels,
+                                    n_channels)),
+                          block_size=block_size)
+    covmats._insert_blocks(blocks)
     return covmats
 
 

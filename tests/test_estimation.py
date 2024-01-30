@@ -217,7 +217,7 @@ def test_block_covariances_est(estimator, rndstate):
     assert is_spd(covmats)
 
 
-@pytest.mark.parametrize("block_size", [1, 6, [4, 8]])
+@pytest.mark.parametrize("block_size", [1, 2, 6, 12])
 def test_block_covariances_blocks(block_size, rndstate):
     """Test BlockCovariances fit"""
     n_matrices, n_channels, n_times = 2, 12, 100
@@ -237,13 +237,7 @@ def test_block_covariances_int_value_error(rndstate):
     cov = BlockCovariances(block_size=5)
     with pytest.raises(ValueError):
         cov.fit_transform(x)
-
-
-def test_block_covariances_array_value_error(rndstate):
-    """Test BlockCovariances error"""
-    n_matrices, n_channels, n_times = 2, 12, 100
-    x = rndstate.randn(n_matrices, n_channels, n_times)
-    cov = BlockCovariances(block_size=[4, 4, 5])
+    cov = BlockCovariances(block_size=-5)
     with pytest.raises(ValueError):
         cov.fit_transform(x)
 

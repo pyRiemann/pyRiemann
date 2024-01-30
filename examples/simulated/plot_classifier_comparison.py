@@ -42,8 +42,9 @@ from pyriemann.classification import (
 @partial(np.vectorize, excluded=['clf'])
 def get_proba(cov_00, cov_01, cov_11, clf):
     cov = np.array([[cov_00, cov_01], [cov_01, cov_11]])
-    with np.testing.suppress_warnings() as sup:
-        sup.filter(RuntimeWarning)
+    if np.linalg.eigvalsh(cov).min() < 0:
+        return np.nan
+    else:
         return clf.predict_proba(cov[np.newaxis, ...])[0, 1]
 
 

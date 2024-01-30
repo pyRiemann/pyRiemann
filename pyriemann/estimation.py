@@ -356,15 +356,12 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
 
     The blocks on the diagonal are calculated as individual covariance
     matrices for a subset of channels using the given the estimator.
-    Varying block sized possible by passing a list to allow incorporation
-    of different modalities with different number of channels (e.g. EEG,
-    ECoG, LFP, EMG) with their own respective covariance matrices.
 
     Parameters
     ----------
-    block_size : int | list of int
-        Sizes of individual blocks given as int for same-size block, or list
-        for varying block sizes.
+    block_size : int
+        Sizes of same-size blocks given as int. If -1, the block size is set to
+        the last dimension of the input array.
     estimator : string, default='scm'
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
@@ -416,21 +413,15 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
         Returns
         -------
         covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-            Covariance matrices.
+            Block Covariance matrices.
         """
-        n_matrices, n_channels, n_times = X.shape
-
-        if isinstance(self.block_size, int):
-            n_blocks = n_channels // self.block_size
-            blocks = [self.block_size for b in range(n_blocks)]
-
-        elif isinstance(self.block_size, (list, np.ndarray)):
-            blocks = self.block_size
-
-        else:
-            raise ValueError("Parameter block_size must be int or list.")
-
-        return block_covariances(X, blocks, self.estimator, **self.kwds)
+        if not isinstance(self.block_size, int) or self.block_size < -1:
+            raise ValueError("Parameter block_size must be a positive "
+                             "integer or -1.")
+        return block_covariances(X,
+                                 self.block_size,
+                                 self.estimator,
+                                 **self.kwds)
 
 
 ###############################################################################

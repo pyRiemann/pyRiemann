@@ -14,6 +14,19 @@ def _matrix_operator(C, operator):
         raise ValueError(
             "Matrices must be positive definite. Add "
             "regularization to avoid this error.")
+    if type(C) is BlockMatrix:
+        blocks = C._extract_blocks()
+        D = _apply_operator(blocks, operator)
+        del blocks
+        res = BlockMatrix(np.zeros(C.shape), block_size=C.block_size)
+        res._insert_blocks(D)
+        return res
+
+    else:
+        return _apply_operator(C, operator)
+
+
+def _apply_operator(C, operator):
     eigvals, eigvecs = np.linalg.eigh(C)
     eigvals = operator(eigvals)
     if C.ndim >= 3:
@@ -232,3 +245,100 @@ def nearest_sym_pos_def(X, reg=1e-6):
         N.J. Higham, Linear Algebra and its Applications, vol 103, 1988
     """
     return np.array([_nearest_sym_pos_def(x, reg) for x in X])
+
+
+class BlockMatrix(np.ndarray):
+    """Block matrix class.
+
+    A subclass of numpy.ndarray to handle matrices divided into equal-sized
+    blocks.
+
+    Parameters
+    ----------
+    input_array : ndarray, shape (..., n, n)
+        An array-like object to be converted into a BlockMatrix.
+    block_size : int, default=-1
+        The size of the blocks. If -1, the block size is set to the
+        last dimension of input_array.
+
+    Attributes
+    ----------
+    block_size : int
+        The size of the blocks in the matrix.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
+    """
+
+    def __new__(cls, input_array, block_size=-1):
+        obj = np.asarray(input_array).view(cls)
+        if block_size == -1:
+            block_size = obj.shape[-1]
+        obj.block_size = block_size
+        if not isinstance(block_size, int) or block_size < 1:
+            raise ValueError("Parameter block_size must be a positive "
+                             "integer or -1.")
+        return obj
+
+    def __array_finalize__(self, obj):
+        if obj is None:
+            return
+        if len(obj.shape) == 0:
+            return
+        self.block_size = getattr(obj, 'block_size', obj.shape[-1])
+
+    def _extract_blocks(self):
+        """
+        Extracts blocks from the matrix based on the block size.
+
+        Returns
+        -------
+        blocks: ndarray, shape (..., n_blocks, block_size, block_size)
+            A view of the matrix with blocks rearranged as the last two
+            dimensions.
+
+        Raises
+        ------
+        ValueError
+            If the last dimension of the matrix is not a multiple of block
+            size.
+        """
+
+        if self.shape[-1] % self.block_size != 0:
+            raise ValueError(
+                f"Number of channels ({self.shape[-1]}) "
+                f"must be a multiple of n_blocks ({self.block_size}).")
+
+        n_blocks = self.shape[-1] // self.block_size
+        new_shape = (*(self.shape[:-2]),
+                     n_blocks,
+                     self.block_size,
+                     self.block_size)
+
+        new_strides = (*(self.strides[:-2]),
+                       self.block_size * self.strides[-2] + self.block_size *
+                       self.strides[-1],
+                       self.strides[-2], self.strides[-1])
+
+        view = np.lib.stride_tricks.as_strided(self, new_shape,
+                                               new_strides)
+        return view
+
+    def _insert_blocks(self, blocks):
+        """
+        Inserts blocks into the matrix.
+
+        Parameters
+        ----------
+        blocks : numpy.ndarray
+            Blocks to be inserted into the matrix. The shape of 'blocks' must
+            be compatible with the current block structure of the matrix.
+
+        Raises
+        ------
+        ValueError
+            If the shape of 'blocks' is not compatible with the matrix.
+        """
+        block_view = self._extract_blocks()
+        block_view[:] = blocks
