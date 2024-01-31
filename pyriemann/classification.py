@@ -76,8 +76,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
     ----------
     classes_ : ndarray, shape (n_classes,)
         Labels for each class.
-    covmeans_ : list of ``n_classes`` ndarrays of shape (n_channels, \
-            n_channels)
+    covmeans_ : ndarray, shape (n_classes, n_channels, n_channels)
         Centroids for each class.
 
     See Also
@@ -138,6 +137,8 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
                 delayed(mean_covariance)(X[y == ll], metric=self.metric_mean,
                                          sample_weight=sample_weight[y == ll])
                 for ll in self.classes_)
+
+        self.covmeans_ = np.stack(self.covmeans_, axis=0)
 
         return self
 
