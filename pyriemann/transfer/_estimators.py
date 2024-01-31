@@ -857,8 +857,7 @@ class MDWM(MDM):
     ----------
     classes_ : ndarray, shape (n_classes,)
         Labels for each class.
-    covmeans_ : list of ``n_classes`` ndarrays of shape (n_channels, \
-            n_channels)
+    covmeans_ : ndarray, shape (n_classes, n_channels, n_channels)
         Centroids for each class.
 
     See Also
@@ -930,20 +929,14 @@ class MDWM(MDM):
 
         self.classes_ = np.unique(y_src)
 
-        if self.domain_tradeoff != 0:
-            if set(y_tgt) != set(y_src):
-                raise ValueError(
-                    f"classes in source domain must match classes in target \
-                    domain. Classes in source are {self.classes_} while \
-                    classes in target are {np.unique(y_tgt)}")
+        if self.domain_tradeoff != 0 and set(y_tgt) != set(y_src):
+            raise ValueError(
+                "Classes in source domain must match classes in target domain."
+                f"Classes in source are {self.classes_} while classes in "
+                f"target are {np.unique(y_tgt)}"
+            )
 
-        if sample_weight is not None:
-            if (sample_weight.shape != (X_src.shape[0], 1)) and \
-                                (sample_weight.shape != (X_src.shape[0],)):
-                raise ValueError("Parameter sample_weight should either be \
-                    None or an ndarray shape (n_matrices, 1)")
-        else:
-            sample_weight = np.ones(X_src.shape[0])
+        sample_weight = check_weights(sample_weight, X_src.shape[0])
 
         self.source_means_ = np.stack(
             Parallel(n_jobs=self.n_jobs)(
