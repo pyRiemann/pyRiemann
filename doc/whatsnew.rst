@@ -36,6 +36,8 @@ v0.6.dev
 
 - Add an example on augmented covariance matrix. :pr:`276` by :user:`carraraig`
 
+- Remove function `make_covariances`. :pr:`280` by :user:`qbarthelemy`
+
 v0.5 (Jun 2023)
 ---------------
 
