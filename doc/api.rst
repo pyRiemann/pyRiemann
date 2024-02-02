@@ -182,7 +182,6 @@ Datasets
 
     make_gaussian_blobs
     make_outliers
-    make_covariances
     make_matrices
     make_masks
     sample_gaussian_spd
