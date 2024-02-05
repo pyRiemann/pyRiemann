@@ -727,13 +727,10 @@ class TimeDelayCovariances(BaseEstimator, TransformerMixin):
         else:
             raise ValueError('delays must be an integer or a list')
 
-        Xtd = []
-        for x in X:
-            tmp = x
-            for d in delays:
-                tmp = np.r_[tmp, np.roll(x, d, axis=-1)]
-            Xtd.append(tmp)
-        self.Xtd_ = np.array(Xtd)
+        Xtd = X
+        for d in delays:
+            Xtd = np.concatenate((Xtd, np.roll(X, d, axis=-1)), axis=-2)
+        self.Xtd_ = Xtd
 
         covmats = covariances(self.Xtd_, estimator=self.estimator, **self.kwds)
         return covmats
