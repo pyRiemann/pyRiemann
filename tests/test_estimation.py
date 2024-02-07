@@ -65,13 +65,20 @@ def test_covariances_kwds(estimator, kwds, rndstate):
 
 
 def test_time_delay_covariances_xtd():
-    x = np.array([[[1, 2, 3, 4, 5], [11, 12, 13, 14, 15]]])
+    x = np.array([
+        [[1, 2, 3, 4, 5], [11, 12, 13, 14, 15]],
+        [[-1, -2, -3, -4, -5], [-11, -12, -13, -14, -15]]
+    ])
     cov = TimeDelayCovariances(delays=[1])
     cov.fit_transform(x)
 
-    xtd = np.array([[1, 2, 3, 4, 5], [11, 12, 13, 14, 15],
-                    [5, 1, 2, 3, 4], [15, 11, 12, 13, 14]])
-    assert_array_equal(cov.Xtd_[0], xtd)
+    xtd = np.array([
+        [[1, 2, 3, 4, 5], [11, 12, 13, 14, 15],
+         [5, 1, 2, 3, 4], [15, 11, 12, 13, 14]],
+        [[-1, -2, -3, -4, -5], [-11, -12, -13, -14, -15],
+         [-5, -1, -2, -3, -4], [-15, -11, -12, -13, -14]]
+    ])
+    assert_array_equal(cov.Xtd_, xtd)
 
 
 @pytest.mark.parametrize("delays", [4, [1, 5]])
