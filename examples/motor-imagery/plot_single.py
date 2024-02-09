@@ -5,27 +5,23 @@ Motor imagery classification
 
 Classify motor imagery data with Riemannian geometry [1]_.
 """
-# generic import
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-# mne import
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
 from mne.decoding import CSP
-
-# pyriemann import
-from pyriemann.classification import MDM, TSclassifier
-from pyriemann.estimation import Covariances
-
-# sklearn imports
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
+
+from pyriemann.classification import MDM, TSclassifier
+from pyriemann.estimation import Covariances
 
 ###############################################################################
 # Set parameters and read data

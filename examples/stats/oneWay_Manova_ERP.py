@@ -8,21 +8,19 @@ Manova for ERP data
 #
 # License: BSD (3-clause)
 
-import seaborn as sns
-
 from time import time
 from matplotlib import pyplot as plt
+import seaborn as sns
 
 import mne
 from mne import io
 from mne.datasets import sample
+from sklearn.pipeline import make_pipeline
+from sklearn.linear_model import LogisticRegression
 
 from pyriemann.stats import PermutationDistance, PermutationModel
 from pyriemann.estimation import XdawnCovariances
 from pyriemann.tangentspace import TangentSpace
-
-from sklearn.pipeline import make_pipeline
-from sklearn.linear_model import LogisticRegression
 
 print(__doc__)
 sns.set_style('whitegrid')
