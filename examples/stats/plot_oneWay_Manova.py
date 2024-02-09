@@ -5,22 +5,20 @@ One Way manova
 
 One way manova to compare Left vs Right.
 """
-import seaborn as sns
-
 from time import time
 from matplotlib import pyplot as plt
+import seaborn as sns
 
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
+from sklearn.pipeline import make_pipeline
+from sklearn.linear_model import LogisticRegression
 
 from pyriemann.stats import PermutationDistance, PermutationModel
 from pyriemann.estimation import Covariances
 from pyriemann.spatialfilters import CSP
-
-from sklearn.pipeline import make_pipeline
-from sklearn.linear_model import LogisticRegression
 
 sns.set_style('whitegrid')
 ###############################################################################
