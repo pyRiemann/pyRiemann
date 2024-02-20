@@ -48,11 +48,15 @@ def _mode_2d(X, axis=1):
 
 
 class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
-    """Classification by Minimum Distance to Mean.
+    r"""Classification by Minimum Distance to Mean.
 
-    Classification by nearest centroid. For each of the given classes, a
-    centroid is estimated according to the chosen metric. Then, for each new
-    point, the class is affected according to the nearest centroid.
+    For each of the given classes :math:`k = 1, \ldots, K`, a centroid
+    :math:`\mathbf{M}^k` is estimated according to the chosen metric.
+    Then, for each new matrix :math:`\mathbf{X}`, the class is affected
+    according to the nearest centroid [1]_:
+
+    .. math::
+        \hat{k} = \arg \min_{k} d (\mathbf{X}, \mathbf{M}^k)
 
     Parameters
     ----------
@@ -931,34 +935,36 @@ def class_distinctiveness(X, y, exponent=1, metric='riemann',
                           return_num_denom=False):
     r"""Measure class distinctiveness between classes of SPD matrices.
 
-    For two class problem, the class distinctiveness between class A
-    and B on the manifold of SPD matrices is quantified as [1]_:
+    For two class problem, the class distinctiveness between class :math:`K_1`
+    and :math:`K_2` on the manifold of SPD matrices is quantified as [1]_:
 
     .. math::
-        \mathrm{classDis}(A, B, p) = \frac{d \left(\bar{X}^{A},
-        \bar{X}^{B}\right)^p}
-        {\frac{1}{2} \left( \sigma_{X^{A}}^p + \sigma_{X^{B}}^p \right)}
+        \mathrm{classDis}(K_1, K_2, p) =
+        \frac{d \left( \mathbf{M}_{K_1}, \mathbf{M}_{K_2} \right)^p}
+        {\frac{1}{2} \left( \sigma_{K_1}^p + \sigma_{K_2}^p \right)}
 
-    where :math:`\bar{X}^{K}` is the center of class K, ie the mean of matrices
-    from class K (see :func:`pyriemann.utils.mean.mean_covariance`) and
-    :math:`\sigma_{X^{K}}` is the class dispersion, ie the mean of distances
-    between matrices from class K and their center of class
-    :math:`\bar{X}^{K}`:
+    where :math:`\mathbf{M}_K` is the center of class :math:`K`, ie the mean of
+    matrices from class :math:`K`
+    (see :func:`pyriemann.utils.mean.mean_covariance`); and
+    :math:`\sigma_K` is the class dispersion, ie the mean of distances between
+    matrices from class :math:`K` and their center of class
+    :math:`\mathbf{M}_K`:
 
     .. math::
-        \sigma_{X^{K}}^p = \frac{1}{m} \sum_{i=1}^m d
-        \left(X_i, \bar{X}^{K}\right)^p
+        \sigma_K^p = \frac{1}{m} \sum_{i=1}^m d
+        \left(X_i, \mathbf{M}_K \right)^p
+
+    and :math:`p` is the exponentiation of the distance.
 
     For more than two classes, it is quantified as:
 
     .. math::
-        \mathrm{classDis}\left(\left\{K_{j}\right\}, p\right) =
-        \frac{\sum_{j=1}^{c} d\left(\bar{X}^{K_{j}}, \tilde{X}\right)^p}
-        {\sum_{j=1}^{c} \sigma_{X^{K_{j}}}^p}
+        \mathrm{classDis} \left( \left\{K_{j} \right\}_{j=1}^c, p \right) =
+        \frac{\sum_{j=1}^c d\left(\mathbf{M}_{K_{j}},\bar{\mathbf{M}}\right)^p}
+        {\sum_{j=1}^c \sigma_{K_{j}}^p}
 
-    where :math:`\tilde{X}` is the mean of centers of class of all :math:`c`
-    classes and :math:`p` is the exponentiation of the distance measure
-    named exponent at the input of this function.
+    where :math:`\bar{\mathbf{M}}` is the mean of centers of class of all
+    :math:`c` classes.
 
     Parameters
     ----------
