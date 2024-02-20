@@ -92,7 +92,7 @@ duration = 2.5    # duration of epochs
 interval = 0.2    # interval between successive epochs
 epochs = make_fixed_length_epochs(
     raw, duration=duration, overlap=duration - interval, verbose=False)
-epochs_data = 5e5 * epochs.get_data(picks=ch_names)
+epochs_data = 5e5 * epochs.get_data(picks=ch_names, copy=False)
 
 # Estimate spatial covariance matrices
 covs = Covariances(estimator='lwf').transform(epochs_data)
@@ -255,8 +255,8 @@ potato = FuncAnimation(fig, online_detect,
 
 
 ###############################################################################
-
 # Plot online detection
+# ---------------------
 
 # Plot complete visu: a dynamic display is required
 plt.show()

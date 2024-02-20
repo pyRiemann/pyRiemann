@@ -28,7 +28,8 @@ data_path = sample.data_path()
 
 ###############################################################################
 # Set parameters and read data
-###############################################################################
+# ----------------------------
+
 raw_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw.fif'
 event_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif'
 tmin, tmax = -0., 1
@@ -50,12 +51,13 @@ epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=False,
 labels = epochs.events[::5, -1]
 
 # get epochs
-epochs_data = epochs.get_data()[::5]
+epochs_data = epochs.get_data(copy=False)[::5]
 
 n_perms = 100
 ###############################################################################
 # Pairwise distance based permutation test
-###############################################################################
+# ----------------------------------------
+
 t_init = time()
 p_test = PermutationDistance(n_perms, metric='riemann', mode='pairwise',
                              estimator=XdawnCovariances(2))
@@ -72,7 +74,7 @@ plt.show()
 
 ###############################################################################
 # t-test distance based permutation test
-###############################################################################
+# --------------------------------------
 
 t_init = time()
 p_test = PermutationDistance(n_perms, metric='riemann', mode='ttest',
@@ -90,7 +92,7 @@ plt.show()
 
 ###############################################################################
 # F-test distance based permutation test
-###############################################################################
+# --------------------------------------
 
 t_init = time()
 p_test = PermutationDistance(n_perms, metric='riemann', mode='ftest',
@@ -108,7 +110,7 @@ plt.show()
 
 ###############################################################################
 # Classification based permutation test
-###############################################################################
+# -------------------------------------
 
 clf = make_pipeline(XdawnCovariances(2), TangentSpace('logeuclid'),
                     LogisticRegression())

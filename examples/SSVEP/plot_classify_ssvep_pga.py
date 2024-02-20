@@ -64,13 +64,15 @@ interval = 0.25   # interval between successive epochs for online processing
 # Training set
 raw = Raw(download_data(subject=12, session=1), preload=True, verbose=False)
 events = find_events(raw, shortest_event=0, verbose=False)
-raw = raw.pick_types(eeg=True)
+raw = raw.pick("eeg")
 ch_count = len(raw.info['ch_names'])
 raw_ext = extend_signal(raw, frequencies, freq_band)
 epochs = Epochs(
-    raw_ext, events, events_id, tmin=2, tmax=5, baseline=None, verbose=False)
+    raw_ext, events, events_id, tmin=2, tmax=5, baseline=None, verbose=False
+).get_data(copy=False)
 x_train = BlockCovariances(
-    estimator='lwf', block_size=ch_count).transform(epochs.get_data())
+    estimator='lwf', block_size=ch_count
+).transform(epochs)
 y_train = events[:, 2]
 
 # Testing set
@@ -78,9 +80,11 @@ raw = Raw(download_data(subject=12, session=4), preload=True, verbose=False)
 raw = raw.pick_types(eeg=True)
 raw_ext = extend_signal(raw, frequencies, freq_band)
 epochs = make_fixed_length_epochs(
-    raw_ext, duration=duration, overlap=duration - interval, verbose=False)
+    raw_ext, duration=duration, overlap=duration - interval, verbose=False
+).get_data(copy=False)
 x_test = BlockCovariances(
-    estimator='lwf', block_size=ch_count).transform(epochs.get_data())
+    estimator='lwf', block_size=ch_count
+).transform(epochs)
 
 
 ###############################################################################

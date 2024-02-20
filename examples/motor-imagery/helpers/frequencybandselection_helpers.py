@@ -160,7 +160,7 @@ def _get_filtered_cov(raw, picks, event_id, fmin, fmax, tmin, tmax, verbose):
         verbose=verbose)
     labels = epochs.events[:, -1] - 2
 
-    epochs_data = epochs.get_data(units="uV")
+    epochs_data = epochs.get_data(units="uV", copy=False)
 
     cov_data = Covariances().transform(epochs_data)
 

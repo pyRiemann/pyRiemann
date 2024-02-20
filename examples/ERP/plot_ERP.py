@@ -37,7 +37,7 @@ tmin, tmax = -0.1, 0.8
 epochs = mne.Epochs(
     raw, mne.read_events(event_fname), {'vis_l': 3}, tmin, tmax, proj=False,
     baseline=None, preload=True, verbose=False)
-X = 5e5 * epochs.get_data()
+X = 5e5 * epochs.get_data(copy=False)
 print('Number of trials:', X.shape[0])
 times = np.linspace(tmin, tmax, num=X.shape[2])
 
