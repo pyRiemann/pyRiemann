@@ -160,12 +160,12 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
     filter for bilinear projection of the data:
 
     .. math::
-        \mathbf{Cf}_i = \mathbf{V} \mathbf{C}_i \mathbf{V}^T
+        \mathbf{Xf}_i = \mathbf{V} \mathbf{X}_i \mathbf{V}^T
 
     If log parameter is set to true, will return the log of the diagonal:
 
     .. math::
-        \mathbf{cf}_i = \log [ \mathrm{diag} (\mathbf{Cf}_i) ]
+        \mathbf{xf}_i = \log ( \mathrm{diag} (\mathbf{Xf}_i) )
 
     Parameters
     ----------
