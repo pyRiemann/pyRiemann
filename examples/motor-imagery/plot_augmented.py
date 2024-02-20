@@ -106,7 +106,7 @@ epochs = Epochs(
     verbose=False)
 
 # get epochs
-X = 1e6 * epochs.get_data()
+X = 1e6 * epochs.get_data(copy=False)
 y = epochs.events[:, -1] - 2
 
 X_train, X_test, y_train, y_test = train_test_split(X, y,
