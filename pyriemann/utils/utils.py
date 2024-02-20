@@ -14,7 +14,9 @@ def _strip_dev(version):
 def _compare_version(version_a, operator, version_b):
     from packaging.version import parse
 
-    mapping = {"<": "lt", "<=": "le", "==": "eq", "!=": "ne", ">=": "ge", ">": "gt"}
+    mapping = {
+        "<": "lt", "<=": "le", "==": "eq", "!=": "ne", ">=": "ge", ">": "gt"
+    }
     with warnings.catch_warnings(record=True):
         warnings.simplefilter("ignore")
         ver_a = parse(version_a)
