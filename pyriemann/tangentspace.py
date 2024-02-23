@@ -3,7 +3,6 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 
-from .utils.utils import check_version
 from .utils.mean import mean_covariance
 from .utils.tangentspace import tangent_space, untangent_space
 
