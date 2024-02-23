@@ -3,7 +3,6 @@ import math
 import numpy as np
 from sklearn.model_selection import cross_val_score
 
-from .utils.utils import check_version
 from .utils.distance import distance, pairwise_distance
 from .utils.mean import mean_covariance
 from .classification import MDM, _check_metric
