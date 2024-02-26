@@ -2,14 +2,14 @@
 import functools
 
 import numpy as np
-
 from sklearn.metrics import r2_score
 from sklearn.svm import SVR as sklearnSVR
 from sklearn.utils.extmath import softmax
 
 from .utils.kernel import kernel
-from .classification import MDM, _check_metric
+from .classification import MDM
 from .utils.mean import mean_covariance
+from .utils.utils import check_metric
 
 
 class SVR(sklearnSVR):
@@ -21,7 +21,7 @@ class SVR(sklearnSVR):
 
     Parameters
     ----------
-    metric : {'riemann', 'euclid', 'logeuclid'}, default='riemann'
+    metric : {"euclid", "logeuclid", "riemann"}, default="riemann"
         Metric for kernel matrix computation.
     Cref : None | ndarray, shape (n_channels, n_channels)
         Reference point for kernel matrix computation. If None, the mean of
@@ -171,9 +171,13 @@ class KNearestNeighborRegressor(MDM):
     ----------
     n_neighbors : int, default=5
         Number of neighbors.
-    metric : string | dict, default='riemann'
-        The type of metric used for distance estimation.
-        See `distance` for the list of supported metric.
+    metric : string | dict, default="riemann"
+        Metric used for mean estimation (for the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for distance estimation
+        (see :func:`pyriemann.utils.distance.distance`).
+        The metric can be a dict with two keys, `mean` and `distance`
+        in order to pass different metrics.
 
     Attributes
     ----------
@@ -188,7 +192,7 @@ class KNearestNeighborRegressor(MDM):
 
     """
 
-    def __init__(self, n_neighbors=5, metric='riemann'):
+    def __init__(self, n_neighbors=5, metric="riemann"):
         """Init."""
         self.n_neighbors = n_neighbors
         self._estimator_type = "regressor"
@@ -211,7 +215,9 @@ class KNearestNeighborRegressor(MDM):
         self : KNearestNeighborRegressor instance
             The KNearestNeighborRegressor instance.
         """
-        self.metric_mean, self.metric_dist = _check_metric(self.metric)
+        self.metric_mean, self.metric_dist = check_metric(
+            self.metric, ['mean', 'distance']
+        )
         self.values_ = y
         self.covmeans_ = X
 

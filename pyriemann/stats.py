@@ -5,7 +5,8 @@ from sklearn.model_selection import cross_val_score
 
 from .utils.distance import distance, pairwise_distance
 from .utils.mean import mean_covariance
-from .classification import MDM, _check_metric
+from .utils.utils import check_metric
+from .classification import MDM
 
 
 def multiset_perm_number(y):
@@ -258,14 +259,13 @@ class PermutationDistance(BasePermutation):
     n_perms : int, default=100
         The number of permutation. The minimum should be 20 for a resolution of
         0.05 p-value.
-    metric : string | dict, default='riemann'
-        The type of metric used for centroid and distance estimation.
-        see `distance` anb `mean_covariance` for the list of supported metric.
-        the metric could be a dict with two keys, `mean` and `distance` in
-        order to pass different metric for the centroid estimation and the
-        distance estimation. Typical usecase is to pass 'logeuclid' metric for
-        the mean in order to boost the computional speed and 'riemann' for the
-        distance in order to keep the good sensitivity for the classification.
+    metric : string | dict, default="riemann"
+        Metric used for mean estimation (for the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for distance estimation
+        (see :func:`pyriemann.utils.distance.distance`).
+        The metric can be a dict with two keys, `mean` and `distance`
+        in order to pass different metrics.
     mode : string, default='pairwise'
         Type of statistic to use. could be 'pairwise', 'ttest' of 'ftest'
     n_jobs : integer, default=1
@@ -299,7 +299,7 @@ class PermutationDistance(BasePermutation):
 
     def __init__(self,
                  n_perms=100,
-                 metric='riemann',
+                 metric="riemann",
                  mode='pairwise',
                  n_jobs=1,
                  random_state=42,
@@ -348,8 +348,8 @@ class PermutationDistance(BasePermutation):
     def __init_transform(self, X):
         """Init tr"""
         self.mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
-        self.mdm.metric_mean, self.mdm.metric_dist = _check_metric(
-            self.metric
+        self.mdm.metric_mean, self.mdm.metric_dist = check_metric(
+            self.metric, ['mean', 'distance']
         )
         if self.mode == 'ftest':
             self.global_mean = mean_covariance(X, metric=self.mdm.metric_mean)
