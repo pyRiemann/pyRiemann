@@ -208,7 +208,7 @@ def kernel(X, Y=None, *, Cref=None, metric="riemann", reg=1e-10):
     Cref : None | ndarray, shape (n, n), default=None
         Reference point for the tangent space and inner product
         calculation. Only used if metric='riemann'.
-    metric : str, default="riemann"
+    metric : string, default="riemann"
         Metric used for tangent space and mean estimation, can be:
         "euclid", "logeuclid", "riemann".
     reg : float, default=1e-10

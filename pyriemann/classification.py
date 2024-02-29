@@ -110,7 +110,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
             The MDM instance.
         """
         self.metric_mean, self.metric_dist = check_metric(
-            self.metric, ['mean', 'distance']
+            self.metric, ["mean", "distance"]
         )
         self.classes_ = np.unique(y)
 
@@ -509,7 +509,7 @@ class KNearestNeighbor(MDM):
             The NearestNeighbor instance.
         """
         self.metric_mean, self.metric_dist = check_metric(
-            self.metric, ['mean', 'distance']
+            self.metric, ["mean", "distance"]
         )
         self.covmeans_ = X
         self.classmeans_ = y

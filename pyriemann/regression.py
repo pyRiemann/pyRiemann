@@ -216,7 +216,7 @@ class KNearestNeighborRegressor(MDM):
             The KNearestNeighborRegressor instance.
         """
         self.metric_mean, self.metric_dist = check_metric(
-            self.metric, ['mean', 'distance']
+            self.metric, ["mean", "distance"]
         )
         self.values_ = y
         self.covmeans_ = X

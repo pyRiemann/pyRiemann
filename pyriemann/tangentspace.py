@@ -98,7 +98,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             The TangentSpace instance.
         """
         self.metric_mean, self.metric_map = check_metric(
-            self.metric, ['mean', 'map']
+            self.metric, ["mean", "map"]
         )
 
         self.reference_ = mean_covariance(
@@ -149,7 +149,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             Tangent space projections of SPD matrices.
         """
         self.metric_mean, self.metric_map = check_metric(
-            self.metric, ['mean', 'map']
+            self.metric, ["mean", "map"]
         )
         self._check_reference_points(X)
 
@@ -177,7 +177,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             Tangent space projections of SPD matrices.
         """
         self.metric_mean, self.metric_map = check_metric(
-            self.metric, ['mean', 'map']
+            self.metric, ["mean", "map"]
         )
 
         self.reference_ = mean_covariance(
@@ -205,7 +205,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             Set of SPD matrices corresponding to each of tangent vector.
         """
         self.metric_mean, self.metric_map = check_metric(
-            self.metric, ['mean', 'map']
+            self.metric, ["mean", "map"]
         )
         self._check_reference_points(X)
         return untangent_space(X, self.reference_, metric=self.metric_map)

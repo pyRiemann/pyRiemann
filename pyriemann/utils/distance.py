@@ -633,13 +633,13 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
     --------
     distance
     """
-    if metric == 'euclid':
+    if metric == "euclid":
         return _pairwise_distance_euclid(X, Y=Y, squared=squared)
-    elif metric == 'harmonic':
+    elif metric == "harmonic":
         return _pairwise_distance_harmonic(X, Y=Y, squared=squared)
-    elif metric == 'logeuclid':
+    elif metric == "logeuclid":
         return _pairwise_distance_logeuclid(X, Y=Y, squared=squared)
-    elif metric == 'riemann':
+    elif metric == "riemann":
         return _pairwise_distance_riemann(X, Y=Y, squared=squared)
 
     n_matrices_X, _, _ = X.shape

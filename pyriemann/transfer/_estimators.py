@@ -912,7 +912,7 @@ class MDWM(MDM):
             The MDWM instance.
         """
         self.metric_mean, self.metric_dist = check_metric(
-            self.metric, ['mean', 'distance']
+            self.metric, ["mean", "distance"]
         )
 
         if not 0 <= self.domain_tradeoff <= 1:
