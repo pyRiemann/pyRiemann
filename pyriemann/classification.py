@@ -33,6 +33,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     For each of the given classes :math:`k = 1, \ldots, K`, a centroid
     :math:`\mathbf{M}^k` is estimated according to the chosen metric.
+
     Then, for each new matrix :math:`\mathbf{X}`, the class is affected
     according to the nearest centroid [1]_:
 
@@ -46,11 +47,11 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         see :func:`pyriemann.utils.mean.mean_covariance`) and
         for distance estimation
         (see :func:`pyriemann.utils.distance.distance`).
-        The metric can be a dict with two keys, `mean` and `distance`
+        The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
-        Typical usecase is to pass 'logeuclid' metric for the mean
-        in order to boost the computional speed and 'riemann' for the
-        distance in order to keep the good sensitivity for the classification.
+        Typical usecase is to pass "logeuclid" metric for the "mean" in order
+        to boost the computional speed, and "riemann" for the "distance" in
+        order to keep the good sensitivity for the classification.
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.

@@ -102,24 +102,24 @@ def check_weights(weights, n_weights, *, check_positivity=False):
     return weights
 
 
-def check_metric(metric, expected_keys=['mean', 'distance']):
+def check_metric(metric, expected_keys=["mean", "distance"]):
     """Check metric argument.
 
     Parameters
     ----------
-     metric : str or dict
-        Metric used in the algorithm: it can be a string, or a dictionary defining
-        different metrics for the different steps of the algorithm.
-        Typical usecase is to pass 'logeuclid' metric for
-        the mean in order to boost the computional speed of training, and 'riemann' for the
-        distance in order to keep the good sensitivity for the classification.
-     expected_keys : list, default  ['mean', 'distance']
-        List of names of the steps of the algorithm requiring a metric argument.
+     metric : str | dict
+        Metric to check in the algorithm: it can be a string, or a dictionary
+        defining different metrics for the different steps of the algorithm.
+        Typical usecase is to pass "logeuclid" metric for the "mean" in order
+        to boost the computional speed, and "riemann" for the "distance" in
+        order to keep the good sensitivity for the classification.
+     expected_keys : list of str, default ["mean", "distance"]
+        Names of the steps of the algorithm requiring a metric argument.
 
     Returns
     -------
-     metric : list
-        List of metrics for each expected key.
+     metric : list of str
+        Metrics for each expected key.
     """
     if isinstance(metric, str):
         return [metric] * len(expected_keys)

@@ -39,13 +39,13 @@ def test_check_metric_str():
 
 
 def test_check_metric_dict():
-    given_dict = {"mean": "aaa", "distance": "bbb" }
+    given_dict = {"mean": "aaa", "distance": "bbb"}
     expected_keys = ['mean', 'distance']
     metrics = check_metric(given_dict, expected_keys)
     assert len(metrics) == len(expected_keys)
 
     with pytest.raises(KeyError):
-        check_metric({"mean": "aaa", "map": "bbb" }, expected_keys)
+        check_metric({"mean": "aaa", "map": "bbb"}, expected_keys)
 
 
 def test_check_metric_errortype():
