@@ -216,7 +216,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         for distance estimation (see :func:`pyriemann.utils.distance.distance`)
         and for tangent space map
         (see :func:`pyriemann.utils.tangent_space.tangent_space`).
-        The metric can be a dict with three keys, `mean`, `dist` and `map` in
+        The metric can be a dict with three keys, "mean", "dist" and "map" in
         order to pass different metrics.
     tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
@@ -347,12 +347,13 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
     Parameters
     ----------
     metric : string | dict, default="riemann"
-        The type of metric used for reference matrix estimation (see
-        `mean_covariance` for the list of supported metric) and for tangent
-        space map (see `tangent_space` for the list of supported metric).
-        The metric could be a dict with two keys, `mean` and `map` in
-        order to pass different metrics for the reference matrix estimation
-        and the tangent space mapping.
+        The type of metric used
+        for reference matrix estimation (for the list of supported metrics
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for tangent space map
+        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        The metric can be a dict with two keys, "mean" and "map"
+        in order to pass different metrics.
     tsupdate : bool, default=False
         Activate tangent space update for covariate shift correction between
         training and test, as described in [2]. This is not compatible with
@@ -460,7 +461,7 @@ class KNearestNeighbor(MDM):
         see :func:`pyriemann.utils.mean.mean_covariance`) and
         for distance estimation
         (see :func:`pyriemann.utils.distance.distance`).
-        The metric can be a dict with two keys, `mean` and `distance`
+        The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
@@ -977,7 +978,7 @@ def class_distinctiveness(X, y, exponent=1, metric='riemann',
         see :func:`pyriemann.utils.mean.mean_covariance`) and
         for distance estimation
         (see :func:`pyriemann.utils.distance.distance`).
-        The metric can be a dict with two keys, `mean` and `distance`
+        The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
         The original equation of class distinctiveness in [1]_ uses "riemann"
         for both the centroid estimation and the distance estimation but you
@@ -1009,10 +1010,10 @@ def class_distinctiveness(X, y, exponent=1, metric='riemann',
        15(4), 046030, 2018.
     """
 
-    metric_mean, metric_dist = check_metric(metric, ['mean', 'distance'])
+    metric_mean, metric_dist = check_metric(metric, ["mean", "distance"])
     classes = np.unique(y)
     if len(classes) <= 1:
-        raise ValueError('X must contain at least two classes')
+        raise ValueError("X must contain at least two classes")
 
     means = np.array([
         mean_covariance(X[y == ll], metric=metric_mean) for ll in classes

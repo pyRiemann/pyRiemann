@@ -43,7 +43,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         see :func:`pyriemann.utils.mean.mean_covariance`) and
         for tangent space map
         (see :func:`pyriemann.utils.tangent_space.tangent_space`).
-        The metric can be a dict with two keys, `mean` and `map`
+        The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
     tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
@@ -227,7 +227,7 @@ class FGDA(BaseEstimator, TransformerMixin):
         see :func:`pyriemann.utils.mean.mean_covariance`) and
         for tangent space map
         (see :func:`pyriemann.utils.tangent_space.tangent_space`).
-        The metric can be a dict with two keys, `mean` and `map`
+        The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
     tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
