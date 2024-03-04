@@ -107,7 +107,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     return V, D
 
 
-def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=100, sample_weight=None):
+def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     """Approximate joint diagonalization based on Pham's algorithm.
 
     This is a direct implementation of the AJD algorithm [1]_, optimizing a
@@ -121,7 +121,7 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=100, sample_weight=None):
         Initialization for the diagonalizer.
     eps : float, default=1e-6
         Tolerance for stoping criterion.
-    n_iter_max : int, default=100
+    n_iter_max : int, default=20
         The maximum number of iterations to reach convergence.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix, strictly positive.
