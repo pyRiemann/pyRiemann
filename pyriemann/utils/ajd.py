@@ -20,7 +20,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     This is an implementation of the orthogonal AJD algorithm [1]_: joint
     approximate diagonalization of eigen-matrices (JADE), based on Jacobi
     angles.
-    The code is a translation of the Matlab code provided in the author
+    The code is a translation of the Matlab code provided on the author's website.
     website.
 
     Parameters
@@ -221,7 +221,7 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
 
     This is an implementation of the AJD algorithm [1]_ [2]_: uniformly
     weighted exhaustive diagonalization using Gauss iterations (U-WEDGE).
-    This is a translation from the Matlab code provided by the authors.
+    It is a translation from the Matlab code provided by the authors.
 
     Parameters
     ----------
@@ -337,7 +337,7 @@ def _check_ajd_function(method):
             method = ajd_functions[method]
     elif not hasattr(method, '__call__'):
         raise ValueError("Ajd method must be a function or a string "
-                         f"(Got {type(method)}.")
+                         f"(Got {type(method)}).")
     return method
 
 
