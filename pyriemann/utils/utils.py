@@ -100,3 +100,37 @@ def check_weights(weights, n_weights, *, check_positivity=False):
 
     weights /= np.sum(weights)
     return weights
+
+
+def check_metric(metric, expected_keys=["mean", "distance"]):
+    """Check metric argument.
+
+    Parameters
+    ----------
+     metric : string | dict
+        Metric to check in the algorithm: it can be a string, or a dictionary
+        defining different metrics for the different steps of the algorithm.
+        Typical usecase is to pass "logeuclid" metric for the "mean" in order
+        to boost the computional speed, and "riemann" for the "distance" in
+        order to keep the good sensitivity for the classification.
+     expected_keys : list of str, default=["mean", "distance"]
+        Names of the steps of the algorithm requiring a metric argument.
+
+    Returns
+    -------
+     metric : list of str
+        Metrics for each expected key.
+    """
+    if isinstance(metric, str):
+        return [metric] * len(expected_keys)
+
+    elif isinstance(metric, dict):
+        if not all(k in metric.keys() for k in expected_keys):
+            raise KeyError(
+                f"metric must contain {expected_keys}, but got {metric.keys()}"
+            )
+
+        return [metric[k] for k in expected_keys]
+
+    else:
+        raise TypeError("metric must be str or dict, but got {type(metric)}")

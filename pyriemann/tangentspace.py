@@ -5,6 +5,7 @@ from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 
 from .utils.mean import mean_covariance
 from .utils.tangentspace import tangent_space, untangent_space
+from .utils.utils import check_metric
 
 
 class TangentSpace(BaseEstimator, TransformerMixin):
@@ -37,12 +38,13 @@ class TangentSpace(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     metric : string | dict, default='riemann'
-        The type of metric used for reference matrix estimation (see
-        `mean_covariance` for the list of supported metric) and for tangent
-        space map (see `tangent_space` for the list of supported metric).
-        The metric could be a dict with two keys, `mean` and `map` in
-        order to pass different metrics for the reference matrix estimation
-        and the tangent space mapping.
+        The type of metric used
+        for reference matrix estimation (for the list of supported metrics
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for tangent space map
+        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        The metric can be a dict with two keys, "mean" and "map"
+        in order to pass different metrics.
     tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]_. This is not compatible with
@@ -95,7 +97,9 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         self : TangentSpace instance
             The TangentSpace instance.
         """
-        self.metric_mean, self.metric_map = self._check_metric(self.metric)
+        self.metric_mean, self.metric_map = check_metric(
+            self.metric, ["mean", "map"]
+        )
 
         self.reference_ = mean_covariance(
             X,
@@ -103,26 +107,6 @@ class TangentSpace(BaseEstimator, TransformerMixin):
             sample_weight=sample_weight
         )
         return self
-
-    def _check_metric(self, metric):
-
-        if isinstance(metric, str):
-            metric_mean = metric
-            metric_map = metric
-
-        elif isinstance(metric, dict):
-            # check keys
-            for key in ['mean', 'map']:
-                if key not in metric.keys():
-                    raise KeyError('metric must contain "mean" and "map"')
-
-            metric_mean = metric['mean']
-            metric_map = metric['map']
-
-        else:
-            raise TypeError('metric must be dict or str')
-
-        return metric_mean, metric_map
 
     def _check_data_dim(self, X):
         """Check data shape and return the size of SPD matrix."""
@@ -164,7 +148,9 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         ts : ndarray, shape (n_matrices, n_ts)
             Tangent space projections of SPD matrices.
         """
-        self.metric_mean, self.metric_map = self._check_metric(self.metric)
+        self.metric_mean, self.metric_map = check_metric(
+            self.metric, ["mean", "map"]
+        )
         self._check_reference_points(X)
 
         if self.tsupdate:
@@ -190,7 +176,9 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         ts : ndarray, shape (n_matrices, n_ts)
             Tangent space projections of SPD matrices.
         """
-        self.metric_mean, self.metric_map = self._check_metric(self.metric)
+        self.metric_mean, self.metric_map = check_metric(
+            self.metric, ["mean", "map"]
+        )
 
         self.reference_ = mean_covariance(
             X,
@@ -216,7 +204,9 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         cov : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices corresponding to each of tangent vector.
         """
-        self.metric_mean, self.metric_map = self._check_metric(self.metric)
+        self.metric_mean, self.metric_map = check_metric(
+            self.metric, ["mean", "map"]
+        )
         self._check_reference_points(X)
         return untangent_space(X, self.reference_, metric=self.metric_map)
 
@@ -231,13 +221,14 @@ class FGDA(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    metric : string | dict, default='riemann'
-        The type of metric used for reference matrix estimation (see
-        `mean_covariance` for the list of supported metric) and for tangent
-        space map (see `tangent_space` for the list of supported metric).
-        The metric could be a dict with two keys, `mean` and `map` in
-        order to pass different metrics for the reference matrix estimation
-        and the tangent space mapping.
+    metric : string | dict, default="riemann"
+        The type of metric used
+        for reference matrix estimation (for the list of supported metrics
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for tangent space map
+        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        The metric can be a dict with two keys, "mean" and "map"
+        in order to pass different metrics.
     tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]_. This is not compatible with
@@ -263,7 +254,7 @@ class FGDA(BaseEstimator, TransformerMixin):
         Elsevier, 2013, 112, pp.172-178.
     """
 
-    def __init__(self, metric='riemann', tsupdate=False):
+    def __init__(self, metric="riemann", tsupdate=False):
         """Init."""
         self.metric = metric
         self.tsupdate = tsupdate

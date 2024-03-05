@@ -258,8 +258,10 @@ class CSP(BilinearFilter):
     ----------
     nfilter : int, default=4
         The number of components to decompose M/EEG signals.
-    metric : str, default='euclid'
-        The metric for the estimation of mean covariance matrices.
+    metric : str, default="euclid"
+        Metric used for the estimation of mean covariance matrices.
+        For the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`.
     log : bool, default=True
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.
@@ -296,7 +298,7 @@ class CSP(BilinearFilter):
         August 2008. pp. 1991 - 2000
     """
 
-    def __init__(self, nfilter=4, metric='euclid', log=True):
+    def __init__(self, nfilter=4, metric="euclid", log=True):
         """Init."""
         self.nfilter = nfilter
         self.metric = metric
@@ -403,8 +405,10 @@ class SPoC(CSP):
     ----------
     nfilter : int, default=4
         The number of components to decompose M/EEG signals.
-    metric : str, default='euclid'
-        The metric for the estimation of mean covariance matrices.
+    metric : str, default="euclid"
+        Metric used for the estimation of mean covariance matrices.
+        For the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`.
     log : bool, default=True
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.

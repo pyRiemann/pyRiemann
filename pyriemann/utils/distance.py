@@ -395,7 +395,7 @@ def _check_distance_function(metric):
     return metric
 
 
-def distance(A, B, metric='riemann', squared=False):
+def distance(A, B, metric="riemann", squared=False):
     """Distance between matrices according to a metric.
 
     Compute the distance between two matrices A and B according to a metric
@@ -407,10 +407,10 @@ def distance(A, B, metric='riemann', squared=False):
         First matrix, or set of matrices.
     B : ndarray, shape (n, n)
         Second matrix.
-    metric : string, default='riemann'
-        The metric for distance, can be: 'euclid', 'harmonic', 'kullback',
-        'kullback_right', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
-        'wasserstein', or a callable function.
+    metric : string, default="riemann"
+        Metric for distance, can be: "euclid", "harmonic", "kullback",
+        "kullback_right", "kullback_sym", "logdet", "logeuclid", "riemann",
+        "wasserstein", or a callable function.
     squared : bool, default False
         Return squared distance.
 
@@ -603,7 +603,7 @@ def _pairwise_distance_riemann(X, Y=None, squared=False):
     return dist if squared else np.sqrt(dist)
 
 
-def pairwise_distance(X, Y=None, metric='riemann', squared=False):
+def pairwise_distance(X, Y=None, metric="riemann", squared=False):
     """Pairwise distance matrix.
 
     Compute the matrix of distances between pairs of elements of X and Y.
@@ -615,9 +615,8 @@ def pairwise_distance(X, Y=None, metric='riemann', squared=False):
     Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
         Second set of matrices. If None, Y is set to X.
     metric : string, default='riemann'
-        The metric for distance, can be: 'euclid', 'harmonic', 'kullback',
-        'kullback_right', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
-        'wasserstein', or a callable function.
+        Metric for pairwise distance. For the list of supported metrics,
+        see :func:`pyriemann.utils.distance.distance`.
     squared : bool, default False
         Return squared distances.
 
@@ -634,13 +633,13 @@ def pairwise_distance(X, Y=None, metric='riemann', squared=False):
     --------
     distance
     """
-    if metric == 'euclid':
+    if metric == "euclid":
         return _pairwise_distance_euclid(X, Y=Y, squared=squared)
-    elif metric == 'harmonic':
+    elif metric == "harmonic":
         return _pairwise_distance_harmonic(X, Y=Y, squared=squared)
-    elif metric == 'logeuclid':
+    elif metric == "logeuclid":
         return _pairwise_distance_logeuclid(X, Y=Y, squared=squared)
-    elif metric == 'riemann':
+    elif metric == "riemann":
         return _pairwise_distance_riemann(X, Y=Y, squared=squared)
 
     n_matrices_X, _, _ = X.shape

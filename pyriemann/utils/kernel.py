@@ -193,7 +193,7 @@ def _apply_matrix_kernel(kernel_fct, X, Y=None, *, Cref=None, reg=1e-10):
     return K
 
 
-def kernel(X, Y=None, *, Cref=None, metric='riemann', reg=1e-10):
+def kernel(X, Y=None, *, Cref=None, metric="riemann", reg=1e-10):
     """Kernel matrix between matrices according to a specified metric.
 
     Calculates the kernel matrix K of inner products of two sets X and Y of
@@ -208,8 +208,9 @@ def kernel(X, Y=None, *, Cref=None, metric='riemann', reg=1e-10):
     Cref : None | ndarray, shape (n, n), default=None
         Reference point for the tangent space and inner product
         calculation. Only used if metric='riemann'.
-    metric : {'euclid', 'logeuclid', 'riemann'}, default='riemann'
-        The type of metric used for tangent space and mean estimation.
+    metric : string, default="riemann"
+        Metric used for tangent space and mean estimation, can be:
+        "euclid", "logeuclid", "riemann".
     reg : float, default=1e-10
         Regularization parameter to mitigate numerical errors in kernel
         matrix estimation, to provide a positive-definite kernel matrix.
