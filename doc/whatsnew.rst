@@ -10,7 +10,7 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.6.dev
 --------
 
-- Update pyRiemann from Python 3.7 to 3.8. pr`254` by :user:`qbarthelemy`
+- Update pyRiemann from Python 3.7 to 3.8. :pr:`254` by :user:`qbarthelemy`
 
 - Speedup pairwise distance function :func:`pyriemann.utils.distance.pairwise_distance`
   by adding individual functions for 'euclid', 'harmonic', 'logeuclid' and 'riemann' metrics. :pr:`256` by :user:`gabelstein`
@@ -18,8 +18,29 @@ v0.6.dev
 - Add :func:`pyriemann.utils.test.is_real_type` to check the type of input arrays and
   add :func:`pyriemann.utils.covariance.covariance_scm` allowing to process complex-valued inputs for 'scm' covariance estimator. :pr:`251` by :user:`qbarthelemy`
 
-- Enhance ajd module and add a generic :func:`pyriemann.utils.ajd.ajd` function. :pr:`238` by :user:`qbarthelemy`
+- Update to Read the Docs v2. :pr:`260` by :user:`qbarthelemy`
 
+- Correct :func:`pyriemann.utils.distance.distance_wasserstein` and :func:`pyriemann.utils.distance.distance_kullback`, keeping only real part. :pr:`267` by :user:`qbarthelemy`
+
+- Deprecate input ``covmats`` for mean functions, renamed into ``X``. :pr:`252` by :user:`qbarthelemy`
+
+- Add support for complex covariance estimation for 'lwf', 'mcd', 'oas' and 'sch' estimators. :pr:`274` by :user:`gabelstein`
+
+- Deprecate input ``covtest`` for predict of :class:`pyriemann.classification.KNearestNeighbor`, renamed into ``X``. :pr:`259` by :user:`qbarthelemy`
+
+- Correct check for `kernel_fct` param of :class:`pyriemann.classification.SVC`. :pr:`272` by :user:`qbarthelemy`
+
+- Add ``sample_weight`` parameter in TLCenter, TLStretch and TLRotate. :pr:`273` by :user:`apmellot`
+
+- Deprecate ``HankelCovariances``, renamed into :class:`pyriemann.estimation.TimeDelayCovariances`. :pr:`275` by :user:`qbarthelemy`
+
+- Add an example on augmented covariance matrix. :pr:`276` by :user:`carraraig`
+
+- Remove function `make_covariances`. :pr:`280` by :user:`qbarthelemy`
+
+- Speedup :class:`pyriemann.estimation.TimeDelayCovariances`. :pr:`281` by :user:`qbarthelemy`
+
+- Enhance ajd module and add a generic :func:`pyriemann.utils.ajd.ajd` function. :pr:`238` by :user:`qbarthelemy`
 
 v0.5 (Jun 2023)
 ---------------

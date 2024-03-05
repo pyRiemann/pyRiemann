@@ -10,7 +10,7 @@ from pyriemann.spatialfilters import Xdawn, CSP, SPoC, BilinearFilter, AJDC
 @pytest.mark.parametrize("n_channels", [3, 5, 7])
 @pytest.mark.parametrize("n_classes", [2, 3])
 def test_spatial_filters(spfilt, n_channels,
-                         get_covmats, rndstate, get_labels, n_classes):
+                         get_mats, rndstate, get_labels, n_classes):
     if n_classes == 2:
         n_matrices, n_times = 10, 256
     else:
@@ -19,7 +19,7 @@ def test_spatial_filters(spfilt, n_channels,
     if spfilt is Xdawn:
         X = rndstate.randn(n_matrices, n_channels, n_times)
     elif spfilt in (CSP, SPoC, BilinearFilter):
-        X = get_covmats(n_matrices, n_channels)
+        X = get_mats(n_matrices, n_channels, "spd")
     elif spfilt is AJDC:
         n_subjects, n_conditions = 2, 2
         X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
@@ -154,9 +154,9 @@ def test_xdawn_baselinecov(n_channels, baseline_cov, rndstate, get_labels):
 @pytest.mark.parametrize("n_filters", [3, 4, 5])
 @pytest.mark.parametrize("metric", get_metrics())
 @pytest.mark.parametrize("log", [True, False])
-def test_csp_init(n_filters, metric, log, get_covmats, get_labels):
+def test_csp_init(n_filters, metric, log, get_mats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 4
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
     csp = CSP(nfilter=n_filters, metric=metric, log=log)
     Xtr = csp.fit(covmats, labels).transform(covmats)
@@ -169,17 +169,17 @@ def test_csp_init(n_filters, metric, log, get_covmats, get_labels):
     assert csp.patterns_.shape == (n_components, n_channels)
 
 
-def test_bilinearfilter_filter_error(get_covmats, get_labels):
+def test_bilinearfilter_filter_error(get_mats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 3
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
     with pytest.raises(TypeError):
         BilinearFilter("foo").fit(covmats, labels)
 
 
-def test_bilinearfilter_log_error(get_covmats, get_labels):
+def test_bilinearfilter_log_error(get_mats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 3
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
     with pytest.raises(TypeError):
         BilinearFilter(np.eye(3), log="foo").fit(covmats, labels)
@@ -187,9 +187,9 @@ def test_bilinearfilter_log_error(get_covmats, get_labels):
 
 @pytest.mark.parametrize("n_filters", [3, 4])
 @pytest.mark.parametrize("log", [True, False])
-def test_bilinearfilter_log(n_filters, log, get_covmats, get_labels):
+def test_bilinearfilter_log(n_filters, log, get_mats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 4
-    covmats = get_covmats(n_matrices, n_channels)
+    covmats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
     bf = BilinearFilter(np.eye(n_filters, n_channels), log=log)
     Xtr = bf.fit(covmats, labels).transform(covmats)

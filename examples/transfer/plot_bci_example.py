@@ -83,7 +83,7 @@ def get_subject_dataset(subject):
     labels = epochs.events[:, -1] - 2
 
     # Compute covariance matrices on scaled data
-    covs = Covariances().fit_transform(1e6 * epochs.get_data())
+    covs = Covariances().fit_transform(1e6 * epochs.get_data(copy=False))
 
     return covs, labels
 
@@ -106,6 +106,8 @@ domains = np.array(d)
 
 # Encode the data for transfer learning purposes
 X_enc, y_enc = encode_domains(X, y, domains)
+
+###############################################################################
 
 # Object for splitting the datasets into training and validation partitions
 n_splits = 5  # How many times to split the target domain into train/test

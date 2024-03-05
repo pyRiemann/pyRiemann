@@ -22,7 +22,7 @@ def geodesic_euclid(A, B, alpha=0.5):
     B : ndarray, shape (..., n, m)
         Second matrices.
     alpha : float, default=0.5
-        The position on the geodesic.
+        Position on the geodesic.
 
     Returns
     -------
@@ -52,7 +52,7 @@ def geodesic_logeuclid(A, B, alpha=0.5):
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices.
     alpha : float, default=0.5
-        The position on the geodesic.
+        Position on the geodesic.
 
     Returns
     -------
@@ -83,7 +83,7 @@ def geodesic_riemann(A, B, alpha=0.5):
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices.
     alpha : float, default=0.5
-        The position on the geodesic.
+        Position on the geodesic.
 
     Returns
     -------
@@ -100,7 +100,7 @@ def geodesic_riemann(A, B, alpha=0.5):
 ###############################################################################
 
 
-def geodesic(A, B, alpha, metric='riemann'):
+def geodesic(A, B, alpha, metric="riemann"):
     """Geodesic between matrices according to a metric.
 
     Return the matrix at the position alpha on the geodesic between matrices
@@ -113,9 +113,9 @@ def geodesic(A, B, alpha, metric='riemann'):
     B : ndarray, shape (..., n, n)
         Second matrices.
     alpha : float
-        The position on the geodesic.
-    metric : string, default='riemann'
-        The metric used for geodesic, can be: 'euclid', 'logeuclid', 'riemann'.
+        Position on the geodesic.
+    metric : string, default="riemann"
+        Metric used for geodesic, can be: "euclid", "logeuclid", "riemann".
 
     Returns
     -------

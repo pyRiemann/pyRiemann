@@ -1,8 +1,30 @@
-from distutils.version import LooseVersion
+import operator as operator_module
+import re
+import warnings
+
 import numpy as np
 
 
-def check_version(library, min_version):
+def _strip_dev(version):
+    exp = r"^([0-9]+(?:\.[0-9]+)*)\.?(?:dev|rc|\+)[0-9+a-g\.\-]+$"
+    match = re.match(exp, version)
+    return match.groups()[0] if match is not None else version
+
+
+def _compare_version(version_a, operator, version_b):
+    from packaging.version import parse
+
+    mapping = {
+        "<": "lt", "<=": "le", "==": "eq", "!=": "ne", ">=": "ge", ">": "gt"
+    }
+    with warnings.catch_warnings(record=True):
+        warnings.simplefilter("ignore")
+        ver_a = parse(version_a)
+        ver_b = parse(version_b)
+        return getattr(operator_module, mapping[operator])(ver_a, ver_b)
+
+
+def check_version(library, min_version, strip=True):
     """Check minimum library version required
 
     Parameters
@@ -12,6 +34,13 @@ def check_version(library, min_version):
     min_version : str
         The minimum version string. Anything that matches
         ``'(\\d+ | [a-z]+ | \\.)'``
+    strip : bool
+        If True (default), then PEP440 development markers like ``.devN``
+        will be stripped from the version. This makes it so that
+        ``check_version('mne', '1.1')`` will be ``True`` even when on version
+        ``'1.1.dev0'`` (prerelease/dev version). This option is provided for
+        backward compatibility with the behavior of ``LooseVersion``, and
+        diverges from how modern parsing in ``packaging.version.parse`` works.
 
     Returns
     -------
@@ -26,8 +55,11 @@ def check_version(library, min_version):
     except ImportError:
         ok = False
     else:
-        this_version = LooseVersion(library.__version__)
-        if this_version < min_version:
+        check_version = min_version and min_version != "0.0"
+        version = library.__version__
+        if strip:
+            version = _strip_dev(version)
+        if check_version and _compare_version(version, "<", min_version):
             ok = False
     return ok
 
@@ -68,3 +100,37 @@ def check_weights(weights, n_weights, *, check_positivity=False):
 
     weights /= np.sum(weights)
     return weights
+
+
+def check_metric(metric, expected_keys=["mean", "distance"]):
+    """Check metric argument.
+
+    Parameters
+    ----------
+     metric : string | dict
+        Metric to check in the algorithm: it can be a string, or a dictionary
+        defining different metrics for the different steps of the algorithm.
+        Typical usecase is to pass "logeuclid" metric for the "mean" in order
+        to boost the computional speed, and "riemann" for the "distance" in
+        order to keep the good sensitivity for the classification.
+     expected_keys : list of str, default=["mean", "distance"]
+        Names of the steps of the algorithm requiring a metric argument.
+
+    Returns
+    -------
+     metric : list of str
+        Metrics for each expected key.
+    """
+    if isinstance(metric, str):
+        return [metric] * len(expected_keys)
+
+    elif isinstance(metric, dict):
+        if not all(k in metric.keys() for k in expected_keys):
+            raise KeyError(
+                f"metric must contain {expected_keys}, but got {metric.keys()}"
+            )
+
+        return [metric[k] for k in expected_keys]
+
+    else:
+        raise TypeError("metric must be str or dict, but got {type(metric)}")

@@ -21,7 +21,7 @@ from pyriemann.estimation import CospCovariances
 sns.set_style('whitegrid')
 ###############################################################################
 # Set parameters and read data
-###############################################################################
+# ----------------------------
 
 # avoid classification of evoked responses by using epochs that start 1s after
 # cue onset.
@@ -56,7 +56,7 @@ epochs = Epochs(
 labels = epochs.events[:, -1] - 2
 
 # get epochs
-epochs_data = epochs.get_data()
+epochs_data = epochs.get_data(copy=False)
 
 # compute cospectral covariance matrices
 fmin = 2.0
@@ -70,7 +70,8 @@ fr = fr[(fr >= fmin) & (fr <= fmax)]
 
 ###############################################################################
 # Pairwise distance based permutation test
-###############################################################################
+# ----------------------------------------
+
 pv = []
 Fv = []
 # For each frequency bin, estimate the stats

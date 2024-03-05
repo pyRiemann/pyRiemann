@@ -25,7 +25,7 @@ If you use a zsh shell, you need to write `pip install -e .\[docs,tests\]`. If y
 Dependencies
 ~~~~~~~~~~~~
 
--  Python (>= 3.7)
+-  Python >= 3.8
 
 Mandatory dependencies
 ^^^^^^^^^^^^^^^^^^^^^^
@@ -34,14 +34,13 @@ Mandatory dependencies
 
 -  `scipy <http://www.scipy.org/>`__
 
--  `scikit-learn >=0.22 <http://scikit-learn.org/>`__
+-  `scikit-learn >=0.24 <http://scikit-learn.org/>`__
 
 -  `joblib <https://joblib.readthedocs.io/>`__
 
-
 Recommended dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^
-These dependencies are recommanded to use the plotting functions of pyriemann or to run examples and tutorials, but they are not mandatory:
+These dependencies are recommanded to use the plotting functions of pyRiemann or to run examples and tutorials, but they are not mandatory:
 
 - `mne-python <http://mne-tools.github.io/>`__
 

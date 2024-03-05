@@ -27,7 +27,7 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 from sklearn.model_selection import train_test_split
 
-from pyriemann.datasets import make_covariances, make_gaussian_blobs
+from pyriemann.datasets import make_matrices, make_gaussian_blobs
 from pyriemann.classification import (
     MDM,
     KNearestNeighbor,
@@ -202,28 +202,28 @@ y = np.concatenate([np.zeros(n_matrices), np.ones(n_matrices)])
 datasets = [
     (
         np.concatenate([
-            make_covariances(
-                n_matrices, n_channels, rs, evals_mean=10, evals_std=1
+            make_matrices(
+                n_matrices, n_channels, "spd", rs, evals_low=10, evals_high=14
             ),
-            make_covariances(
-                n_matrices, n_channels, rs, evals_mean=15, evals_std=1
+            make_matrices(
+                n_matrices, n_channels, "spd", rs, evals_low=13, evals_high=17
             )
         ]),
         y
     ),
     (
         np.concatenate([
-            make_covariances(
-                n_matrices, n_channels, rs, evals_mean=10, evals_std=2
+            make_matrices(
+                n_matrices, n_channels, "spd", rs, evals_low=10, evals_high=14
             ),
-            make_covariances(
-                n_matrices, n_channels, rs, evals_mean=12, evals_std=2
+            make_matrices(
+                n_matrices, n_channels, "spd", rs, evals_low=11, evals_high=15
             )
         ]),
         y
     ),
     make_gaussian_blobs(
-        2*n_matrices, n_channels, random_state=rs, class_sep=1., class_disp=.2,
+        2*n_matrices, n_channels, random_state=rs, class_sep=1., class_disp=.5,
         n_jobs=4
     ),
     make_gaussian_blobs(

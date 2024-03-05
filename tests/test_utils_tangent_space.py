@@ -15,10 +15,10 @@ from pyriemann.utils.tangentspace import (
     "fun_map", [exp_map_euclid, exp_map_logeuclid, exp_map_riemann,
                 log_map_euclid, log_map_logeuclid, log_map_riemann]
 )
-def test_maps_ndarray(fun_map, get_covmats):
+def test_maps_ndarray(fun_map, get_mats):
     """Test log and exp maps"""
     n_matrices, n_channels = 6, 3
-    mats = get_covmats(n_matrices, n_channels)
+    mats = get_mats(n_matrices, n_channels, "spd")
     Xt = fun_map(mats, np.eye(n_channels))
     assert Xt.shape == (n_matrices, n_channels, n_channels)
 
@@ -39,14 +39,13 @@ def test_maps_log_exp(kind, log_map, exp_map, get_mats):
     """Test log then exp maps should be identity"""
     n_matrices, n_channels = 10, 3
     mats = get_mats(n_matrices, n_channels, kind)
-    X, C = mats[:n_matrices - 1], mats[-1]
-    X_log_exp = exp_map(log_map(X, C), C)
-    assert X_log_exp == approx(X)
+    X, C = mats[:-1], mats[-1]
+    assert exp_map(log_map(X, C), C) == approx(X)
 
 
 @pytest.mark.parametrize("complex_valued", [True, False])
 def test_map_euclid(rndstate, complex_valued):
-    """Test Euclidean maps for generic matrices"""
+    """Test Euclidean map for generic matrices"""
     n_matrices, n_dim0, n_dim1 = 5, 3, 4
     mats = rndstate.randn(n_matrices, n_dim0, n_dim1)
     if complex_valued:
@@ -60,21 +59,19 @@ def test_upper_and_unupper(kind, get_mats):
     """Test upper then unupper should be identity"""
     n_matrices, n_channels = 7, 3
     mats = get_mats(n_matrices, n_channels, kind)
-    mats_ut = unupper(upper(mats))
-    assert mats_ut == approx(mats)
+    assert unupper(upper(mats)) == approx(mats)
 
     n_sets = 2
     mats_4d = np.asarray([mats for _ in range(n_sets)])
-    mats_4d_ut = unupper(upper(mats_4d))
-    assert mats_4d_ut == approx(mats_4d)
+    assert unupper(upper(mats_4d)) == approx(mats_4d)
 
 
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-def test_tangent_space_ndarray(metric, get_covmats):
+def test_tangent_space_ndarray(metric, get_mats):
     """Test tangent space projection"""
     n_matrices, n_channels = 6, 3
     n_ts = (n_channels * (n_channels + 1)) // 2
-    X = get_covmats(n_matrices, n_channels)
+    X = get_mats(n_matrices, n_channels, "spd")
     Xts = tangent_space(X, np.eye(n_channels), metric=metric)
     assert Xts.shape == (n_matrices, n_ts)
 
@@ -124,8 +121,8 @@ def test_tangent_and_untangent_space(kind, metric, get_mats):
 
 
 @pytest.mark.parametrize("metric", get_metrics())
-def test_transport(metric, get_covmats):
+def test_transport(metric, get_mats):
     n_matrices, n_channels = 10, 3
-    X = get_covmats(n_matrices, n_channels)
+    X = get_mats(n_matrices, n_channels, "spd")
     X_tr = transport(X, np.eye(n_channels), metric=metric)
     assert X_tr.shape == (n_matrices, n_channels, n_channels)

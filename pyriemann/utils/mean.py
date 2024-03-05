@@ -11,7 +11,15 @@ from .geodesic import geodesic_riemann
 from .utils import check_weights
 
 
-def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
+def _deprecate_covmats(covmats, X):
+    if covmats is not None:
+        print("DeprecationWarning: input covmats has been renamed into X and "
+              "will be removed in 0.8.0.")
+        X = covmats
+    return X
+
+
+def mean_ale(X=None, tol=10e-7, maxiter=50, sample_weight=None, covmats=None):
     """AJD-based log-Euclidean (ALE) mean of SPD matrices.
 
     Return the mean of a set of SPD matrices using the approximate joint
@@ -19,7 +27,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
 
     Parameters
     ----------
-    covmats : ndarray, shape (n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD matrices.
     tol : float, default=10e-7
         The tolerance to stop the gradient descent.
@@ -30,7 +38,7 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
 
     Returns
     -------
-    C : ndarray, shape (n, n)
+    M : ndarray, shape (n, n)
         ALE mean.
 
     Notes
@@ -48,20 +56,17 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
         <https://arxiv.org/abs/1505.07343>`_
         M. Congedo, B. Afsari, A. Barachant, M. Moakher. PLOS ONE, 2015
     """
-    n_matrices, n, _ = covmats.shape
+    X = _deprecate_covmats(covmats, X)
+    n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
 
     # init with AJD
-    B = ajd_pham(covmats)[0]
+    B = ajd_pham(X)[0]
 
     eye_n = np.eye(n)
     crit = np.inf
     for _ in range(maxiter):
-        J = np.einsum(
-            'a,abc->bc',
-            sample_weight,
-            logm(B @ covmats @ B.conj().T)
-        )
+        J = np.einsum('a,abc->bc', sample_weight, logm(B @ X @ B.conj().T))
         delta = np.real(np.diag(expm(J)))
         B = (np.abs(delta) ** -.5)[:, np.newaxis] * B
 
@@ -71,19 +76,19 @@ def mean_ale(covmats, tol=10e-7, maxiter=50, sample_weight=None):
     else:
         warnings.warn("Convergence not reached")
 
-    J = np.einsum('a,abc->bc', sample_weight, logm(B @ covmats @ B.conj().T))
+    J = np.einsum('a,abc->bc', sample_weight, logm(B @ X @ B.conj().T))
     A = np.linalg.inv(B)
-    C = A @ expm(J) @ A.conj().T
-    return C
+    M = A @ expm(J) @ A.conj().T
+    return M
 
 
-def mean_alm(covmats, tol=1e-14, maxiter=100, sample_weight=None):
+def mean_alm(X=None, tol=1e-14, maxiter=100, sample_weight=None, covmats=None):
     r"""Ando-Li-Mathias (ALM) mean of SPD/HPD matrices.
 
     Return the geometric mean recursively [1]_, generalizing from:
 
     .. math::
-        \mathbf{C} = X_1^{\frac{1}{2}} (X_1^{-\frac{1}{2}}X_2^{\frac{1}{2}}
+        \mathbf{M} = X_1^{\frac{1}{2}} (X_1^{-\frac{1}{2}}X_2^{\frac{1}{2}}
                      X_1^{-\frac{1}{2}})^{\frac{1}{2}} X_1^{\frac{1}{2}}
 
     and requiring a high number of iterations.
@@ -91,7 +96,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=100, sample_weight=None):
 
     Parameters
     ----------
-    covmats : ndarray, shape (n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=10e-14
         The tolerance to stop the gradient descent.
@@ -102,7 +107,7 @@ def mean_alm(covmats, tol=1e-14, maxiter=100, sample_weight=None):
 
     Returns
     -------
-    C : ndarray, shape (n, n)
+    M : ndarray, shape (n, n)
         ALM mean.
 
     Notes
@@ -120,113 +125,117 @@ def mean_alm(covmats, tol=1e-14, maxiter=100, sample_weight=None):
         T. Ando, C.-K. Li, and R. Mathias. Linear Algebra and its Applications.
         Volume 385, July 2004, Pages 305-334.
     """
-    n_matrices, _, _ = covmats.shape
+    X = _deprecate_covmats(covmats, X)
+    n_matrices, _, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
 
     if n_matrices == 2:
         alpha = sample_weight[1] / sample_weight[0] / 2
-        C = geodesic_riemann(covmats[0], covmats[1], alpha=alpha)
-        return C
+        M = geodesic_riemann(X[0], X[1], alpha=alpha)
+        return M
 
-    C = covmats
-    C_iter = np.zeros_like(C)
+    M = X
+    M_iter = np.zeros_like(M)
     for _ in range(maxiter):
         for h in range(n_matrices):
             s = np.mod(np.arange(h, h + n_matrices - 1) + 1, n_matrices)
-            C_iter[h] = mean_alm(C[s], sample_weight=sample_weight[s])
+            M_iter[h] = mean_alm(M[s], sample_weight=sample_weight[s])
 
-        norm_iter = np.linalg.norm(C_iter[0] - C[0], 2)
-        norm_c = np.linalg.norm(C[0], 2)
+        norm_iter = np.linalg.norm(M_iter[0] - M[0], 2)
+        norm_c = np.linalg.norm(M[0], 2)
         if (norm_iter / norm_c) < tol:
             break
-        C = deepcopy(C_iter)
+        M = deepcopy(M_iter)
     else:
         warnings.warn("Convergence not reached")
 
-    return C_iter.mean(axis=0)
+    return M_iter.mean(axis=0)
 
 
-def mean_euclid(covmats, sample_weight=None):
+def mean_euclid(X=None, sample_weight=None, covmats=None):
     r"""Mean of matrices according to the Euclidean metric.
 
     .. math::
-        \mathbf{C} = \sum_i w_i \ \mathbf{X}_i
+        \mathbf{M} = \sum_i w_i \ \mathbf{X}_i
 
     This mean is also called arithmetic.
 
     Parameters
     ----------
-    covmats : ndarray, shape (n_matrices, n, m)
+    X : ndarray, shape (n_matrices, n, m)
         Set of matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
     -------
-    C : ndarray, shape (n, m)
+    M : ndarray, shape (n, m)
         Euclidean mean.
 
     See Also
     --------
     mean_covariance
     """
-    return np.average(covmats, axis=0, weights=sample_weight)
+    X = _deprecate_covmats(covmats, X)
+    return np.average(X, axis=0, weights=sample_weight)
 
 
-def mean_harmonic(covmats, sample_weight=None):
+def mean_harmonic(X=None, sample_weight=None, covmats=None):
     r"""Harmonic mean of invertible matrices.
 
     .. math::
-        \mathbf{C} = \left( \sum_i wi \ {\mathbf{X}_i}^{-1} \right)^{-1}
+        \mathbf{M} = \left( \sum_i w_i \ {\mathbf{X}_i}^{-1} \right)^{-1}
 
     Parameters
     ----------
-    covmats : ndarray, shape (n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of invertible matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
     -------
-    C : ndarray, shape (n, n)
+    M : ndarray, shape (n, n)
         Harmonic mean.
 
     See Also
     --------
     mean_covariance
     """
-    T = mean_euclid(np.linalg.inv(covmats), sample_weight=sample_weight)
-    C = np.linalg.inv(T)
-    return C
+    X = _deprecate_covmats(covmats, X)
+    T = mean_euclid(np.linalg.inv(X), sample_weight=sample_weight)
+    M = np.linalg.inv(T)
+    return M
 
 
-def mean_identity(covmats, sample_weight=None):
+def mean_identity(X=None, sample_weight=None, covmats=None):
     r"""Identity matrix corresponding to the matrices dimension.
 
     .. math::
-        \mathbf{C} = \mathbf{I}_n
+        \mathbf{M} = \mathbf{I}_n
 
     Parameters
     ----------
-    covmats : ndarray, shape (n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of square matrices.
     sample_weight : None
         Not used, here for compatibility with other means.
 
     Returns
     -------
-    C : ndarray, shape (n, n)
+    M : ndarray, shape (n, n)
         Identity matrix.
 
     See Also
     --------
     mean_covariance
     """
-    C = np.eye(covmats.shape[-1])
-    return C
+    X = _deprecate_covmats(covmats, X)
+    M = np.eye(X.shape[-1])
+    return M
 
 
-def mean_kullback_sym(covmats, sample_weight=None):
+def mean_kullback_sym(X=None, sample_weight=None, covmats=None):
     """Mean of SPD/HPD matrices according to Kullback-Leibler divergence.
 
     Symmetrized Kullback-Leibler mean is the geometric mean between the
@@ -234,14 +243,14 @@ def mean_kullback_sym(covmats, sample_weight=None):
 
     Parameters
     ----------
-    covmats : ndarray, shape (n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
     -------
-    C : ndarray, shape (n, n)
+    M : ndarray, shape (n, n)
         Symmetrized Kullback-Leibler mean.
 
     See Also
@@ -256,24 +265,26 @@ def mean_kullback_sym(covmats, sample_weight=None):
         M. Moakher and P. Batchelor. Visualization and Processing of Tensor
         Fields, pp. 285-298, 2006
     """
-    C_euclid = mean_euclid(covmats, sample_weight=sample_weight)
-    C_harmonic = mean_harmonic(covmats, sample_weight=sample_weight)
-    C = geodesic_riemann(C_euclid, C_harmonic, 0.5)
-    return C
+    X = _deprecate_covmats(covmats, X)
+    M_euclid = mean_euclid(X, sample_weight=sample_weight)
+    M_harmonic = mean_harmonic(X, sample_weight=sample_weight)
+    M = geodesic_riemann(M_euclid, M_harmonic, 0.5)
+    return M
 
 
-def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
+def mean_logdet(X=None, tol=10e-5, maxiter=50, init=None, sample_weight=None,
+                covmats=None):
     r"""Mean of SPD/HPD matrices according to the log-det metric.
 
     Log-det mean is obtained by an iterative procedure where the update is:
 
     .. math::
-        \mathbf{C} = \left( \sum_i w_i \ \left( 0.5 \mathbf{C}
+        \mathbf{M} = \left( \sum_i w_i \ \left( 0.5 \mathbf{M}
                      + 0.5 \mathbf{X}_i \right)^{-1} \right)^{-1}
 
     Parameters
     ----------
-    covmats : ndarray, shape (n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=10e-5
         The tolerance to stop the gradient descent.
@@ -287,54 +298,55 @@ def mean_logdet(covmats, tol=10e-5, maxiter=50, init=None, sample_weight=None):
 
     Returns
     -------
-    C : ndarray, shape (n, n)
+    M : ndarray, shape (n, n)
         Log-det mean.
 
     See Also
     --------
     mean_covariance
     """
-    n_matrices, _, _ = covmats.shape
+    X = _deprecate_covmats(covmats, X)
+    n_matrices, _, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
-        C = mean_euclid(covmats, sample_weight=sample_weight)
+        M = mean_euclid(X, sample_weight=sample_weight)
     else:
-        C = init
+        M = init
 
     crit = np.finfo(np.float64).max
     for _ in range(maxiter):
-        icovmats = np.linalg.inv(0.5 * covmats + 0.5 * C)
-        J = np.einsum('a,abc->bc', sample_weight, icovmats)
-        Cnew = np.linalg.inv(J)
+        invX = np.linalg.inv(0.5 * X + 0.5 * M)
+        J = np.einsum('a,abc->bc', sample_weight, invX)
+        Mnew = np.linalg.inv(J)
 
-        crit = np.linalg.norm(Cnew - C, ord='fro')
-        C = Cnew
+        crit = np.linalg.norm(Mnew - M, ord='fro')
+        M = Mnew
         if crit <= tol:
             break
     else:
         warnings.warn("Convergence not reached")
 
-    return C
+    return M
 
 
-def mean_logeuclid(covmats, sample_weight=None):
+def mean_logeuclid(X=None, sample_weight=None, covmats=None):
     r"""Mean of SPD/HPD matrices according to the log-Euclidean metric.
 
     Log-Euclidean mean is [1]_:
 
     .. math::
-        \mathbf{C} = \exp{ \left( \sum_i w_i \ \log{\mathbf{X}_i} \right) }
+        \mathbf{M} = \exp{ \left( \sum_i w_i \ \log{\mathbf{X}_i} \right) }
 
     Parameters
     ----------
-    covmats : ndarray, shape (n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
     -------
-    C : ndarray, shape (n, n)
+    M : ndarray, shape (n, n)
         Log-Euclidean mean.
 
     See Also
@@ -349,24 +361,26 @@ def mean_logeuclid(covmats, sample_weight=None):
         V. Arsigny, P. Fillard, X. Pennec, and N. Ayache. SIAM Journal on
         Matrix Analysis and Applications. Volume 29, Issue 1 (2007).
     """
-    C = expm(mean_euclid(logm(covmats), sample_weight=sample_weight))
-    return C
+    X = _deprecate_covmats(covmats, X)
+    M = expm(mean_euclid(logm(X), sample_weight=sample_weight))
+    return M
 
 
-def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10, maxiter=100):
+def mean_power(X=None, p=None, *, sample_weight=None, zeta=10e-10, maxiter=100,
+               covmats=None):
     r"""Power mean of SPD/HPD matrices.
 
     Power mean of order p is the solution of [1]_ [2]_:
 
     .. math::
-        \mathbf{C} = \sum_i w_i \ \mathbf{C} \sharp_p \mathbf{X}_i
+        \mathbf{M} = \sum_i w_i \ \mathbf{M} \sharp_p \mathbf{X}_i
 
     where :math:`\mathbf{A} \sharp_p \mathbf{B}` is the geodesic between
     matrices :math:`\mathbf{A}` and :math:`\mathbf{B}`.
 
     Parameters
     ----------
-    covmats : ndarray, shape (n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     p : float
         Exponent, in [-1,+1]. For p=0, it returns
@@ -380,7 +394,7 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10, maxiter=100):
 
     Returns
     -------
-    C : ndarray, shape (n, n)
+    M : ndarray, shape (n, n)
         Power mean.
 
     Notes
@@ -403,27 +417,30 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10, maxiter=100):
         M. Congedo, A. Barachant, and R. Bhatia. IEEE Transactions on Signal
         Processing, Volume 65, Issue 9, pp.2211-2220, May 2017
     """
+    X = _deprecate_covmats(covmats, X)
+    if p is None:
+        raise ValueError("Input p can not be None")
     if not isinstance(p, (int, float)):
         raise ValueError("Power mean only defined for a scalar exponent")
     if p < -1 or 1 < p:
         raise ValueError("Exponent must be in [-1,+1]")
 
     if p == 1:
-        return mean_euclid(covmats, sample_weight=sample_weight)
+        return mean_euclid(X, sample_weight=sample_weight)
     elif p == 0:
-        return mean_riemann(covmats, sample_weight=sample_weight)
+        return mean_riemann(X, sample_weight=sample_weight)
     elif p == -1:
-        return mean_harmonic(covmats, sample_weight=sample_weight)
+        return mean_harmonic(X, sample_weight=sample_weight)
 
-    n_matrices, n, _ = covmats.shape
+    n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
     phi = 0.375 / np.abs(p)
 
-    G = np.einsum('a,abc->bc', sample_weight, powm(covmats, p))
+    G = np.einsum('a,abc->bc', sample_weight, powm(X, p))
     if p > 0:
-        X = invsqrtm(G)
+        K = invsqrtm(G)
     else:
-        X = sqrtm(G)
+        K = sqrtm(G)
 
     eye_n, sqrt_n = np.eye(n), np.sqrt(n)
     crit = 10 * zeta
@@ -431,9 +448,9 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10, maxiter=100):
         H = np.einsum(
             'a,abc->bc',
             sample_weight,
-            powm(X @ powm(covmats, np.sign(p)) @ X.conj().T, np.abs(p))
+            powm(K @ powm(X, np.sign(p)) @ K.conj().T, np.abs(p))
         )
-        X = powm(H, -phi) @ X
+        K = powm(H, -phi) @ K
 
         crit = np.linalg.norm(H - eye_n) / sqrt_n
         if crit <= zeta:
@@ -441,15 +458,15 @@ def mean_power(covmats, p, *, sample_weight=None, zeta=10e-10, maxiter=100):
     else:
         warnings.warn("Convergence not reached")
 
-    C = X.conj().T @ X
+    M = K.conj().T @ K
     if p > 0:
-        C = np.linalg.inv(C)
+        M = np.linalg.inv(M)
 
-    return C
+    return M
 
 
-def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
-                 sample_weight=None):
+def mean_riemann(X=None, tol=10e-9, maxiter=50, init=None, sample_weight=None,
+                 covmats=None):
     r"""Mean of SPD/HPD matrices according to the Riemannian metric.
 
     The affine-invariant Riemannian mean minimizes the sum of squared
@@ -457,11 +474,11 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     [1]_ [2]_:
 
     .. math::
-         \arg \min_{\mathbf{C}} \sum_i w_i \ d_R (\mathbf{C}, \mathbf{X}_i)^2
+         \arg \min_{\mathbf{M}} \sum_i w_i \ d_R (\mathbf{M}, \mathbf{X}_i)^2
 
     Parameters
     ----------
-    covmats : ndarray, shape (n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=10e-9
         The tolerance to stop the gradient descent.
@@ -475,7 +492,7 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
 
     Returns
     -------
-    C : ndarray, shape (n, n)
+    M : ndarray, shape (n, n)
         Affine-invariant Riemannian mean.
 
     See Also
@@ -494,20 +511,21 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
         <https://epubs.siam.org/doi/10.1137/S0895479803436937>`_
         M. Moakher. SIAM J Matrix Anal Appl, 2005, 26 (3), pp. 735-747
     """
-    n_matrices, _, _ = covmats.shape
+    X = _deprecate_covmats(covmats, X)
+    n_matrices, _, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
-        C = mean_euclid(covmats, sample_weight=sample_weight)
+        M = mean_euclid(X, sample_weight=sample_weight)
     else:
-        C = init
+        M = init
 
     nu = 1.0
     tau = np.finfo(np.float64).max
     crit = np.finfo(np.float64).max
     for _ in range(maxiter):
-        C12, Cm12 = sqrtm(C), invsqrtm(C)
-        J = np.einsum('a,abc->bc', sample_weight, logm(Cm12 @ covmats @ Cm12))
-        C = C12 @ expm(nu * J) @ C12
+        M12, Mm12 = sqrtm(M), invsqrtm(M)
+        J = np.einsum('a,abc->bc', sample_weight, logm(Mm12 @ X @ Mm12))
+        M = M12 @ expm(nu * J) @ M12
 
         crit = np.linalg.norm(J, ord='fro')
         h = nu * crit
@@ -521,11 +539,11 @@ def mean_riemann(covmats, tol=10e-9, maxiter=50, init=None,
     else:
         warnings.warn("Convergence not reached")
 
-    return C
+    return M
 
 
-def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
-                     sample_weight=None):
+def mean_wasserstein(X=None, tol=10e-4, maxiter=50, init=None,
+                     sample_weight=None, covmats=None):
     r"""Mean of SPD/HPD matrices according to the Wasserstein metric.
 
     Wasserstein mean is obtained by an iterative procedure where the update is
@@ -535,11 +553,11 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
         \mathbf{K} = \left( \sum_i w_i \ \left( \mathbf{K} \mathbf{X}_i
                      \mathbf{K} \right)^{1/2} \right)^{1/2}
 
-    with :math:`\mathbf{K} = \mathbf{C}^{1/2}`.
+    with :math:`\mathbf{K} = \mathbf{M}^{1/2}`.
 
     Parameters
     ----------
-    covmats : ndarray, shape (n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=10e-4
         The tolerance to stop the gradient descent.
@@ -553,7 +571,7 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
 
     Returns
     -------
-    C : ndarray, shape (n, n)
+    M : ndarray, shape (n, n)
         Wasserstein mean.
 
     See Also
@@ -567,17 +585,18 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
         <https://ieeexplore.ieee.org/document/6042179>`_
         F. Barbaresco. 12th International Radar Symposium (IRS), October 2011
     """
-    n_matrices, _, _ = covmats.shape
+    X = _deprecate_covmats(covmats, X)
+    n_matrices, _, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
-        C = mean_euclid(covmats, sample_weight=sample_weight)
+        M = mean_euclid(X, sample_weight=sample_weight)
     else:
-        C = init
-    K = sqrtm(C)
+        M = init
+    K = sqrtm(M)
 
     crit = np.finfo(np.float64).max
     for _ in range(maxiter):
-        J = np.einsum('a,abc->bc', sample_weight, sqrtm(K @ covmats @ K))
+        J = np.einsum('a,abc->bc', sample_weight, sqrtm(K @ X @ K))
         Knew = sqrtm(J)
 
         crit = np.linalg.norm(Knew - K, ord='fro')
@@ -587,8 +606,8 @@ def mean_wasserstein(covmats, tol=10e-4, maxiter=50, init=None,
     else:
         warnings.warn("Convergence not reached")
 
-    C = K @ K
-    return C
+    M = K @ K
+    return M
 
 
 ###############################################################################
@@ -621,19 +640,20 @@ def _check_mean_function(metric):
     return metric
 
 
-def mean_covariance(covmats, metric='riemann', sample_weight=None, **kwargs):
+def mean_covariance(X=None, metric="riemann", sample_weight=None, covmats=None,
+                    **kwargs):
     """Mean of matrices according to a metric.
 
     Compute the mean of a set of matrices according to a metric [1]_.
 
     Parameters
     ----------
-    covmats : ndarray, shape (n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of matrices.
-    metric : string, default='riemann'
-        The metric for mean, can be: 'ale', 'alm', 'euclid', 'harmonic',
-        'identity', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
-        'wasserstein', or a callable function.
+    metric : string, default="riemann"
+        Metric for mean estimation, can be: "ale", "alm", "euclid", "harmonic",
+        "identity", "kullback_sym", "logdet", "logeuclid", "riemann",
+        "wasserstein", or a callable function.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
     **kwargs : dict
@@ -641,7 +661,7 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, **kwargs):
 
     Returns
     -------
-    C : ndarray, shape (n, n)
+    M : ndarray, shape (n, n)
         Mean of matrices.
 
     References
@@ -652,48 +672,49 @@ def mean_covariance(covmats, metric='riemann', sample_weight=None, **kwargs):
         S. Chevallier, E. K. Kalunga, Q. Barthélemy, E. Monacelli.
         Neuroinformatics, Springer, 2021, 19 (1), pp.93-106
     """
+    X = _deprecate_covmats(covmats, X)
     mean_function = _check_mean_function(metric)
-    C = mean_function(
-        covmats,
+    M = mean_function(
+        X,
         sample_weight=sample_weight,
         **kwargs,
     )
-    return C
+    return M
 
 
 ###############################################################################
 
 
-def _get_mask_from_nan(covmat):
-    nan_col = np.all(np.isnan(covmat), axis=0)
-    nan_row = np.all(np.isnan(covmat), axis=1)
+def _get_mask_from_nan(X):
+    nan_col = np.all(np.isnan(X), axis=0)
+    nan_row = np.all(np.isnan(X), axis=1)
     if not np.array_equal(nan_col, nan_row):
         raise ValueError("NaN values are not symmetric.")
     nan_inds = np.where(nan_col)
-    subcovmat_ = np.delete(covmat, nan_inds, axis=0)
-    subcovmat = np.delete(subcovmat_, nan_inds, axis=1)
-    if np.any(np.isnan(subcovmat)):
+    subX_ = np.delete(X, nan_inds, axis=0)
+    subX = np.delete(subX_, nan_inds, axis=1)
+    if np.any(np.isnan(subX)):
         raise ValueError("NaN values must fill rows and columns.")
-    mask = np.delete(np.eye(covmat.shape[0]), nan_inds, axis=1)
+    mask = np.delete(np.eye(X.shape[0]), nan_inds, axis=1)
     return mask
 
 
-def _get_masks_from_nan(covmats):
+def _get_masks_from_nan(X):
     masks = []
-    for i in range(len(covmats)):
-        masks.append(_get_mask_from_nan(covmats[i]))
+    for i in range(len(X)):
+        masks.append(_get_mask_from_nan(X[i]))
     return masks
 
 
-def _apply_masks(covmats, masks):
-    maskedcovmats = []
-    for i in range(len(covmats)):
-        maskedcovmats.append(masks[i].T @ covmats[i] @ masks[i])
-    return maskedcovmats
+def _apply_masks(X, masks):
+    maskedX = []
+    for i in range(len(X)):
+        maskedX.append(masks[i].T @ X[i] @ masks[i])
+    return maskedX
 
 
-def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=100, init=None,
-                       sample_weight=None):
+def maskedmean_riemann(X=None, masks=None, tol=10e-9, maxiter=100, init=None,
+                       sample_weight=None, covmats=None):
     """Masked Riemannian mean of SPD/HPD matrices.
 
     Given masks defined as semi-orthogonal matrices, the masked Riemannian mean
@@ -703,7 +724,7 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=100, init=None,
 
     Parameters
     ----------
-    covmats : ndarray, shape (n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     masks : list of n_matrices ndarray of shape (n, n_i), \
             with different n_i, such that n_i <= n
@@ -720,7 +741,7 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=100, init=None,
 
     Returns
     -------
-    C : ndarray, shape (n, n)
+    M : ndarray, shape (n, n)
         Masked Riemannian mean.
 
     Notes
@@ -740,26 +761,29 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=100, init=None,
         F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
         Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
-    n_matrices, n, _ = covmats.shape
+    if masks is None:
+        raise ValueError("Input masks can not be None")
+    X = _deprecate_covmats(covmats, X)
+    n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
-    maskedcovmats = _apply_masks(covmats, masks)
+    maskedX = _apply_masks(X, masks)
     if init is None:
-        C = np.eye(n)
+        M = np.eye(n)
     else:
-        C = init
+        M = init
 
     nu = 1.0
     tau = np.finfo(np.float64).max
     crit = np.finfo(np.float64).max
     for _ in range(maxiter):
-        maskedC = _apply_masks(np.tile(C, (n_matrices, 1, 1)), masks)
-        J = np.zeros((n, n), dtype=covmats.dtype)
+        maskedM = _apply_masks(np.tile(M, (n_matrices, 1, 1)), masks)
+        J = np.zeros((n, n), dtype=X.dtype)
         for i in range(n_matrices):
-            C12, Cm12 = sqrtm(maskedC[i]), invsqrtm(maskedC[i])
-            tmp = C12 @ logm(Cm12 @ maskedcovmats[i] @ Cm12) @ C12
+            M12, Mm12 = sqrtm(maskedM[i]), invsqrtm(maskedM[i])
+            tmp = M12 @ logm(Mm12 @ maskedX[i] @ Mm12) @ M12
             J += sample_weight[i] * masks[i] @ tmp @ masks[i].T
-        C12, Cm12 = sqrtm(C), invsqrtm(C)
-        C = C12 @ expm(Cm12 @ (nu * J) @ Cm12) @ C12
+        M12, Mm12 = sqrtm(M), invsqrtm(M)
+        M = M12 @ expm(Mm12 @ (nu * J) @ Mm12) @ M12
 
         crit = np.linalg.norm(J, ord='fro')
         h = nu * crit
@@ -773,11 +797,11 @@ def maskedmean_riemann(covmats, masks, tol=10e-9, maxiter=100, init=None,
     else:
         warnings.warn("Convergence not reached")
 
-    return C
+    return M
 
 
-def nanmean_riemann(covmats, tol=10e-9, maxiter=100, init=None,
-                    sample_weight=None):
+def nanmean_riemann(X=None, tol=10e-9, maxiter=100, init=None,
+                    sample_weight=None, covmats=None):
     """Riemannian NaN-mean of SPD/HPD matrices.
 
     The Riemannian NaN-mean is the masked Riemannian mean applied to SPD/HPD
@@ -785,7 +809,7 @@ def nanmean_riemann(covmats, tol=10e-9, maxiter=100, init=None,
 
     Parameters
     ----------
-    covmats : ndarray, shape (n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices, corrupted by symmetric NaN values [1]_.
     tol : float, default=10e-9
         The tolerance to stop the gradient descent.
@@ -799,7 +823,7 @@ def nanmean_riemann(covmats, tol=10e-9, maxiter=100, init=None,
 
     Returns
     -------
-    C : ndarray, shape (n, n)
+    M : ndarray, shape (n, n)
         Riemannian NaN-mean.
 
     Notes
@@ -819,18 +843,19 @@ def nanmean_riemann(covmats, tol=10e-9, maxiter=100, init=None,
         F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
         Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
-    n_matrices, n, _ = covmats.shape
+    X = _deprecate_covmats(covmats, X)
+    n_matrices, n, _ = X.shape
     if init is None:
-        Cinit = np.nanmean(covmats, axis=0) + 1e-6 * np.eye(n)
+        Minit = np.nanmean(X, axis=0) + 1e-6 * np.eye(n)
     else:
-        Cinit = init
+        Minit = init
 
-    C = maskedmean_riemann(
-        np.nan_to_num(covmats),  # avoid nan contamination in matmul
-        _get_masks_from_nan(covmats),
+    M = maskedmean_riemann(
+        np.nan_to_num(X),  # avoid nan contamination in matmul
+        _get_masks_from_nan(X),
         tol=tol,
         maxiter=maxiter,
-        init=Cinit,
+        init=Minit,
         sample_weight=sample_weight
     )
-    return C
+    return M

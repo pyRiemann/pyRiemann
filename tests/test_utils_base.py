@@ -149,9 +149,9 @@ def test_check_raise():
             mean_riemann(C)
 
 
-def test_nearest_sym_pos_def(get_covmats):
+def test_nearest_sym_pos_def(get_mats):
     n_matrices = 3
-    mats = get_covmats(n_matrices, n_channels)
+    mats = get_mats(n_matrices, n_channels, "spd")
     D = mats.diagonal(axis1=1, axis2=2)
     psd = np.array([mat - np.diag(d) for mat, d in zip(mats, D)])
 

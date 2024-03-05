@@ -33,6 +33,8 @@ print(__doc__)
 
 ###############################################################################
 # Set parameters and read data
+# ----------------------------
+
 data_path = str(sample.data_path())
 raw_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw.fif"
 event_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif"
@@ -65,16 +67,16 @@ epochs = mne.Epochs(
 
 labels = epochs.events[:, -1]
 evoked = epochs.average()
+epochs_data = epochs.get_data(copy=False)
 
 ###############################################################################
 # Decoding in tangent space with a logistic regression
+# ----------------------------------------------------
 
 n_components = 2  # pick some components
 
 # Define a monte-carlo cross-validation generator (reduce variance):
 cv = KFold(n_splits=10, shuffle=True, random_state=42)
-epochs_data = epochs.get_data()
-
 
 clf = make_pipeline(
     XdawnCovariances(n_components),
