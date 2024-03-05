@@ -109,9 +109,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : MDM instance
             The MDM instance.
         """
-        self.metric_mean, self.metric_dist = check_metric(
-            self.metric, ["mean", "distance"]
-        )
+        self.metric_mean, self.metric_dist = check_metric(self.metric)
         self.classes_ = np.unique(y)
 
         if sample_weight is None:
@@ -509,9 +507,7 @@ class KNearestNeighbor(MDM):
         self : NearestNeighbor instance
             The NearestNeighbor instance.
         """
-        self.metric_mean, self.metric_dist = check_metric(
-            self.metric, ["mean", "distance"]
-        )
+        self.metric_mean, self.metric_dist = check_metric(self.metric)
         self.covmeans_ = X
         self.classmeans_ = y
         self.classes_ = np.unique(y)
@@ -925,7 +921,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         return softmax(-self._predict_distances(X) ** 2)
 
 
-def class_distinctiveness(X, y, exponent=1, metric='riemann',
+def class_distinctiveness(X, y, exponent=1, metric="riemann",
                           return_num_denom=False):
     r"""Measure class distinctiveness between classes of SPD matrices.
 
@@ -982,7 +978,7 @@ def class_distinctiveness(X, y, exponent=1, metric='riemann',
         in order to pass different metrics.
         The original equation of class distinctiveness in [1]_ uses "riemann"
         for both the centroid estimation and the distance estimation but you
-        can customize other metrics with your interests.
+        can provide other metrics depending on your interests.
     return_num_denom : bool, default=False
         Whether to return numerator and denominator of class_dis.
 
@@ -1010,7 +1006,7 @@ def class_distinctiveness(X, y, exponent=1, metric='riemann',
        15(4), 046030, 2018.
     """
 
-    metric_mean, metric_dist = check_metric(metric, ["mean", "distance"])
+    metric_mean, metric_dist = check_metric(metric)
     classes = np.unique(y)
     if len(classes) <= 1:
         raise ValueError("X must contain at least two classes")

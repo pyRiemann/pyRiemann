@@ -911,13 +911,11 @@ class MDWM(MDM):
         self : MDWM instance
             The MDWM instance.
         """
-        self.metric_mean, self.metric_dist = check_metric(
-            self.metric, ["mean", "distance"]
-        )
+        self.metric_mean, self.metric_dist = check_metric(self.metric)
 
         if not 0 <= self.domain_tradeoff <= 1:
             raise ValueError(
-                'Value domain_tradeoff must be included in [0, 1] (Got %d)'
+                "Value domain_tradeoff must be included in [0, 1] (Got %d)"
                 % self.domain_tradeoff)
 
         X_dec, y_dec, domains = decode_domains(X, y_enc)

@@ -348,9 +348,7 @@ class PermutationDistance(BasePermutation):
     def __init_transform(self, X):
         """Init tr"""
         self.mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
-        self.mdm.metric_mean, self.mdm.metric_dist = check_metric(
-            self.metric, ["mean", "distance"]
-        )
+        self.mdm.metric_mean, self.mdm.metric_dist = check_metric(self.metric)
         if self.mode == 'ftest':
             self.global_mean = mean_covariance(X, metric=self.mdm.metric_mean)
         elif self.mode == 'pairwise':

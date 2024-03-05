@@ -42,9 +42,7 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
     """helper to fit a single run of centroid."""
     # init random state if provided
     mdm = MDM(metric=metric, n_jobs=n_jobs)
-    mdm.metric_mean, mdm.metric_dist = check_metric(
-        metric, ["mean", "distance"]
-    )
+    mdm.metric_mean, mdm.metric_dist = check_metric(metric)
     squared_norms = [np.linalg.norm(x, ord='fro')**2 for x in X]
     mdm.covmeans_ = _init_centroids(X, n_clusters, init,
                                     random_state=random_state,
@@ -281,9 +279,7 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
     def transform(self, X):
         """Transform."""
         mdm = MDM(metric=self.metric, n_jobs=self.km.n_jobs)
-        mdm.metric_mean, mdm.metric_dist = check_metric(
-            self.metric, ["mean", "distance"]
-        )
+        mdm.metric_mean, mdm.metric_dist = check_metric(self.metric)
         mdm.covmeans_ = self.covmeans_
         return mdm._predict_distances(X)
 
@@ -377,7 +373,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         self._mdm = MDM(metric=self.metric)
         self._mdm.metric_mean, self._mdm.metric_dist = check_metric(
-            self.metric, ["mean", "distance"]
+            self.metric
         )
 
         y_old = self._check_labels(X, y)
