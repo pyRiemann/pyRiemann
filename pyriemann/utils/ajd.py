@@ -20,7 +20,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     This is an implementation of the orthogonal AJD algorithm [1]_: joint
     approximate diagonalization of eigen-matrices (JADE), based on Jacobi
     angles.
-    The code is a translation of the Matlab code provided on the author's website.
+    The code is a translation of the Matlab code provided on the author's
     website.
 
     Parameters
