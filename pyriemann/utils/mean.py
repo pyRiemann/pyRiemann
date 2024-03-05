@@ -640,7 +640,7 @@ def _check_mean_function(metric):
     return metric
 
 
-def mean_covariance(X=None, metric='riemann', sample_weight=None, covmats=None,
+def mean_covariance(X=None, metric="riemann", sample_weight=None, covmats=None,
                     **kwargs):
     """Mean of matrices according to a metric.
 
@@ -650,10 +650,10 @@ def mean_covariance(X=None, metric='riemann', sample_weight=None, covmats=None,
     ----------
     X : ndarray, shape (n_matrices, n, n)
         Set of matrices.
-    metric : string, default='riemann'
-        The metric for mean, can be: 'ale', 'alm', 'euclid', 'harmonic',
-        'identity', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
-        'wasserstein', or a callable function.
+    metric : string, default="riemann"
+        Metric for mean estimation, can be: "ale", "alm", "euclid", "harmonic",
+        "identity", "kullback_sym", "logdet", "logeuclid", "riemann",
+        "wasserstein", or a callable function.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
     **kwargs : dict
