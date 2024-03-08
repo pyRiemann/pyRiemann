@@ -4,6 +4,7 @@ import numpy as np
 
 from .base import invsqrtm, logm
 from .mean import mean_riemann
+from .utils import check_function
 
 
 def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
@@ -193,6 +194,13 @@ def _apply_matrix_kernel(kernel_fct, X, Y=None, *, Cref=None, reg=1e-10):
     return K
 
 
+kernel_functions = {
+    "euclid": kernel_euclid,
+    "logeuclid": kernel_logeuclid,
+    "riemann": kernel_riemann,
+}
+
+
 def kernel(X, Y=None, *, Cref=None, metric="riemann", reg=1e-10):
     """Kernel matrix between matrices according to a specified metric.
 
@@ -207,10 +215,10 @@ def kernel(X, Y=None, *, Cref=None, metric="riemann", reg=1e-10):
         Second set of matrices. If None, Y is set to X.
     Cref : None | ndarray, shape (n, n), default=None
         Reference point for the tangent space and inner product
-        calculation. Only used if metric='riemann'.
-    metric : string, default="riemann"
+        calculation. Only used if metric="riemann".
+    metric : string | callable, default="riemann"
         Metric used for tangent space and mean estimation, can be:
-        "euclid", "logeuclid", "riemann".
+        "euclid", "logeuclid", "riemann", or a callable function.
     reg : float, default=1e-10
         Regularization parameter to mitigate numerical errors in kernel
         matrix estimation, to provide a positive-definite kernel matrix.
@@ -230,8 +238,6 @@ def kernel(X, Y=None, *, Cref=None, metric="riemann", reg=1e-10):
     kernel_logeuclid
     kernel_riemann
     """
-    try:
-        return globals()[f'kernel_{metric}'](X, Y, Cref=Cref, reg=reg)
-    except KeyError:
-        raise ValueError("Kernel metric must be 'euclid', 'logeuclid', or "
-                         "'riemann'.")
+    kernel_function = check_function(metric, kernel_functions)
+    K = kernel_function(X, Y, Cref=Cref, reg=reg)
+    return K

@@ -84,6 +84,10 @@ def check_weights(weights, n_weights, *, check_positivity=False):
     -------
     weights : ndarray, shape (n_weights,)
         Output checked weights.
+
+    Notes
+    -----
+    .. versionadded:: 0.4
     """
     if weights is None:
         weights = np.ones(n_weights)
@@ -120,6 +124,10 @@ def check_metric(metric, expected_keys=["mean", "distance"]):
     -------
      metric : list of str
         Metrics for each expected key.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
     """
     if isinstance(metric, str):
         return [metric] * len(expected_keys)
@@ -134,3 +142,34 @@ def check_metric(metric, expected_keys=["mean", "distance"]):
 
     else:
         raise TypeError("metric must be str or dict, but got {type(metric)}")
+
+
+def check_function(fun, functions):
+    """Check the function to use.
+
+    Parameters
+    ----------
+    fun : string | callable
+        Function to check.
+    functions : dict
+        Functions available in API.
+
+    Returns
+    -------
+    fun : callable
+        Function to use.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
+    """
+    if isinstance(fun, str):
+        if fun not in functions.keys():
+            raise ValueError(f"Unknown function name '{fun}'. Must be one of "
+                             f"{' '.join(functions.keys())}")
+        else:
+            fun = functions[fun]
+    elif not hasattr(fun, '__call__'):
+        raise ValueError("Argument must be a string or a callable "
+                         f"(Got {type(fun)}).")
+    return fun

@@ -3,7 +3,7 @@
 import numpy as np
 import warnings
 
-from .utils import check_weights
+from .utils import check_weights, check_function
 
 
 def _check_init_diag(init, n):
@@ -321,24 +321,10 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
 
 
 ajd_functions = {
-    'ajd_pham': ajd_pham,
-    'rjd': rjd,
-    'uwedge': uwedge,
+    "ajd_pham": ajd_pham,
+    "rjd": rjd,
+    "uwedge": uwedge,
 }
-
-
-def _check_ajd_function(method):
-    """Check ajd function."""
-    if isinstance(method, str):
-        if method not in ajd_functions.keys():
-            raise ValueError(f"Unknown ajd method '{method}'. Must be one of "
-                             f"{' '.join(ajd_functions.keys())}")
-        else:
-            method = ajd_functions[method]
-    elif not hasattr(method, '__call__'):
-        raise ValueError("Ajd method must be a function or a string "
-                         f"(Got {type(method)}).")
-    return method
 
 
 def ajd(X, method="ajd_pham", init=None, eps=1e-6, n_iter_max=100, **kwargs):
@@ -351,8 +337,8 @@ def ajd(X, method="ajd_pham", init=None, eps=1e-6, n_iter_max=100, **kwargs):
     ----------
     X : ndarray, shape (n_matrices, n, n)
         Set of symmetric matrices to diagonalize.
-    method : string, default='ajd_pham'
-        The method for ajd, can be: 'ajd_pham', 'rjd', 'uwedge', or a callable
+    method : string | callable, default="ajd_pham"
+        Method for AJD, can be: "ajd_pham", "rjd", "uwedge", or a callable
         function.
     init : None | ndarray, shape (n, n), default=None
         Initialization for the diagonalizer.
@@ -388,7 +374,7 @@ def ajd(X, method="ajd_pham", init=None, eps=1e-6, n_iter_max=100, **kwargs):
         G. Chabriel, M. Kleinsteuber, E. Moreau, H. Shen; P. Tichavsky and A.
         Yeredor. IEEE Signal Process Mag, 31(3), pp. 34-43, 2014.
     """
-    ajd_function = _check_ajd_function(method)
+    ajd_function = check_function(method, ajd_functions)
     V, D = ajd_function(
         X,
         init=init,

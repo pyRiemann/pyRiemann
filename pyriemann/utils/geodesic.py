@@ -1,6 +1,7 @@
 """Geodesics for SPD/HPD matrices."""
 
 from .base import sqrtm, invsqrtm, powm, logm, expm
+from .utils import check_function
 
 
 def geodesic_euclid(A, B, alpha=0.5):
@@ -100,6 +101,13 @@ def geodesic_riemann(A, B, alpha=0.5):
 ###############################################################################
 
 
+geodesic_functions = {
+    "euclid": geodesic_euclid,
+    "logeuclid": geodesic_logeuclid,
+    "riemann": geodesic_riemann,
+}
+
+
 def geodesic(A, B, alpha, metric="riemann"):
     """Geodesic between matrices according to a metric.
 
@@ -114,18 +122,15 @@ def geodesic(A, B, alpha, metric="riemann"):
         Second matrices.
     alpha : float
         Position on the geodesic.
-    metric : string, default="riemann"
-        Metric used for geodesic, can be: "euclid", "logeuclid", "riemann".
+    metric : string | callable, default="riemann"
+        Metric used for geodesic, can be: "euclid", "logeuclid", "riemann",
+        or a callable function.
 
     Returns
     -------
     C : ndarray, shape (..., n, n)
         Matrices on the geodesic.
     """
-    geodesic_functions = {
-        'euclid': geodesic_euclid,
-        'logeuclid': geodesic_logeuclid,
-        'riemann': geodesic_riemann,
-    }
-    C = geodesic_functions[metric](A, B, alpha)
+    geodesic_function = check_function(metric, geodesic_functions)
+    C = geodesic_function(A, B, alpha)
     return C
