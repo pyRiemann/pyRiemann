@@ -5,6 +5,7 @@ from scipy.linalg import eigvalsh, solve
 from sklearn.metrics import euclidean_distances
 
 from .base import logm, sqrtm, invsqrtm
+from .utils import check_function
 
 
 def _check_inputs(A, B):
@@ -370,29 +371,16 @@ def distance_wasserstein(A, B, squared=False):
 
 
 distance_functions = {
-    'euclid': distance_euclid,
-    'harmonic': distance_harmonic,
-    'kullback': distance_kullback,
-    'kullback_right': distance_kullback_right,
-    'kullback_sym': distance_kullback_sym,
-    'logdet': distance_logdet,
-    'logeuclid': distance_logeuclid,
-    'riemann': distance_riemann,
-    'wasserstein': distance_wasserstein,
+    "euclid": distance_euclid,
+    "harmonic": distance_harmonic,
+    "kullback": distance_kullback,
+    "kullback_right": distance_kullback_right,
+    "kullback_sym": distance_kullback_sym,
+    "logdet": distance_logdet,
+    "logeuclid": distance_logeuclid,
+    "riemann": distance_riemann,
+    "wasserstein": distance_wasserstein,
 }
-
-
-def _check_distance_function(metric):
-    """Check distance function."""
-    if isinstance(metric, str):
-        if metric not in distance_functions.keys():
-            raise ValueError(f"Unknown distance metric '{metric}'")
-        else:
-            metric = distance_functions[metric]
-    elif not hasattr(metric, '__call__'):
-        raise ValueError("Distance metric must be a function or a string "
-                         f"(Got {type(metric)}.")
-    return metric
 
 
 def distance(A, B, metric="riemann", squared=False):
@@ -407,7 +395,7 @@ def distance(A, B, metric="riemann", squared=False):
         First matrix, or set of matrices.
     B : ndarray, shape (n, n)
         Second matrix.
-    metric : string, default="riemann"
+    metric : string | callable, default="riemann"
         Metric for distance, can be: "euclid", "harmonic", "kullback",
         "kullback_right", "kullback_sym", "logdet", "logeuclid", "riemann",
         "wasserstein", or a callable function.
@@ -429,7 +417,7 @@ def distance(A, B, metric="riemann", squared=False):
         S. Chevallier, E. K. Kalunga, Q. Barthélemy, E. Monacelli.
         Neuroinformatics, Springer, 2021, 19 (1), pp.93-106
     """
-    distance_function = _check_distance_function(metric)
+    distance_function = check_function(metric, distance_functions)
 
     shape_A, shape_B = A.shape, B.shape
     if shape_A == shape_B:
