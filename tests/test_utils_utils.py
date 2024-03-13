@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pyriemann.utils.utils import check_weights, check_metric
+from pyriemann.utils.utils import check_weights, check_metric, check_function
 
 
 @pytest.mark.parametrize("n_matrices", [3, 4, 5])
@@ -51,3 +51,21 @@ def test_check_metric_dict():
 def test_check_metric_errortype():
     with pytest.raises(TypeError):
         check_metric(3)
+
+
+def test_check_function():
+    def aaa(): return True
+    def bbb(): return False
+    available_funs = {"aaa": aaa, "bbb": bbb}
+
+    fun = check_function("aaa", available_funs)
+    assert hasattr(fun, '__call__')
+
+    fun = check_function(aaa, available_funs)
+    assert hasattr(fun, '__call__')
+
+    with pytest.raises(ValueError):  # unkown function name
+        check_function("abc", available_funs)
+
+    with pytest.raises(ValueError):  # not str or callable
+        check_function(0.5, available_funs)
