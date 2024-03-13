@@ -1,16 +1,17 @@
-from conftest import get_metrics
 import numpy as np
+import pytest
 from sklearn.neighbors import NearestCentroid
 
+from conftest import get_metrics
 from pyriemann.datasets import make_gaussian_blobs
-from pyriemann.embedding import (SpectralEmbedding,
-                                 LocallyLinearEmbedding,
-                                 barycenter_weights,
-                                 locally_linear_embedding)
-import pytest
+from pyriemann.embedding import (
+    SpectralEmbedding,
+    LocallyLinearEmbedding,
+    barycenter_weights,
+    locally_linear_embedding,
+)
 
 rembd = [SpectralEmbedding, LocallyLinearEmbedding]
-n_comp = [2, 4, 100]
 
 
 @pytest.mark.parametrize("embd", rembd)
@@ -81,7 +82,7 @@ class TestEmbedding(EmbeddingTestCase):
         assert score == 1.
 
 
-@pytest.mark.parametrize("n_components", n_comp)
+@pytest.mark.parametrize("n_components", [2, 4, 100])
 @pytest.mark.parametrize("embd", rembd)
 def embd_n_comp(n_components, embd, get_mats):
     n_matrices, n_channels = 8, 3
