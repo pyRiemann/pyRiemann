@@ -31,6 +31,7 @@ from pyriemann.classification import MDM
 from pyriemann.estimation import Covariances
 from pyriemann.tangentspace import TangentSpace
 
+
 ###############################################################################
 # Define the Augmented Covariance
 # -------------------------------
