@@ -16,8 +16,6 @@ database and compare the classification performance of MDM with each strategy.
 
 import numpy as np
 from tqdm import tqdm
-from sklearn.pipeline import make_pipeline
-from sklearn.model_selection import StratifiedShuffleSplit
 import matplotlib.pyplot as plt
 
 from mne import Epochs, pick_types, events_from_annotations
@@ -25,6 +23,8 @@ from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
 from mne import set_log_level
+from sklearn.pipeline import make_pipeline
+from sklearn.model_selection import StratifiedShuffleSplit
 
 from pyriemann.classification import MDM
 from pyriemann.estimation import Covariances
@@ -35,7 +35,6 @@ from pyriemann.transfer import (
     TLClassifier,
     TLSplitter,
 )
-
 set_log_level(verbose=False)
 
 

@@ -19,10 +19,8 @@ from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
-
 from sklearn.base import clone
-from sklearn.model_selection import (StratifiedKFold,
-                                     GridSearchCV)
+from sklearn.model_selection import StratifiedKFold, GridSearchCV
 from sklearn.pipeline import Pipeline
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.svm import SVC
@@ -32,7 +30,6 @@ from sklearn.metrics import accuracy_score
 from pyriemann.classification import MDM
 from pyriemann.estimation import Covariances
 from pyriemann.tangentspace import TangentSpace
-
 
 ###############################################################################
 # Define the Augmented Covariance
