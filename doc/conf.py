@@ -27,10 +27,7 @@ print(mne.datasets.eegbci.load_data(1, [6, 10, 14], update_path=True))
 curdir = os.path.dirname(__file__)
 sys.path.append(os.path.abspath(os.path.join(curdir, 'sphinxext')))
 
-
 matplotlib.use('Agg')
-import shlex
-import sphinx_gallery
 import sphinx_bootstrap_theme
 
 # If extensions (or modules to document with autodoc) are in another directory,
