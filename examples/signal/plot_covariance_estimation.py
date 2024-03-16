@@ -128,7 +128,7 @@ estimators = [
     "ker-rbf", "ker-polynomial", "ker-laplacian",
 ]
 tmin = -0.2
-w_len = np.linspace(0.2, 2, 10)
+w_len = np.linspace(0.5, 2.5, 5)
 n_matrices = 45
 dfc = list()
 
@@ -173,7 +173,7 @@ plt.show()
 # especially when the matrices are estimated on short time windows.
 
 tmin = 0.0
-w_len = np.linspace(0.2, 2.0, 5)
+w_len = np.linspace(0.5, 2.5, 5)
 n_matrices, n_splits = 45, 5
 dfa = list()
 sc = "balanced_accuracy"
