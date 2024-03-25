@@ -1,7 +1,7 @@
-import sys
 import os.path as op
-from setuptools import setup, find_packages
+import sys
 
+from setuptools import find_packages, setup
 
 version = None
 with open(op.join("pyriemann", "_version.py"), "r") as fid:
