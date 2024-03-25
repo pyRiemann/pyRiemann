@@ -191,10 +191,10 @@ Datasets
 Utils function
 --------------
 
-Utils functions are low level functions that implement most base components of Riemannian Geometry.
+Utils functions are low level functions that implement most base components of Riemannian geometry.
 
-Covariance preprocessing
-~~~~~~~~~~~~~~~~~~~~~~~~
+Covariance processing
+~~~~~~~~~~~~~~~~~~~~~
 .. _covariance_api:
 .. currentmodule:: pyriemann.utils.covariance
 
