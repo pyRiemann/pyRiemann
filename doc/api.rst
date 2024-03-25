@@ -376,3 +376,4 @@ Visualization
     plot_cov_ellipse
     plot_embedding
     plot_waveforms
+    plot_scatter
