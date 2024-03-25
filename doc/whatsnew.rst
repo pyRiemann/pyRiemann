@@ -42,6 +42,8 @@ v0.6.dev
 
 - Enhance ajd module and add a generic :func:`pyriemann.utils.ajd.ajd` function. :pr:`238` by :user:`qbarthelemy`
 
+- Add :func:`pyriemann.utils.viz.plot_bihist`, :func:`pyriemann.utils.viz.plot_cov_ellipse` for display. :pr:`287` by :user:`qbarthelemy`
+
 v0.5 (Jun 2023)
 ---------------
 
