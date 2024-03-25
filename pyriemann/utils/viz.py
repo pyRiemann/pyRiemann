@@ -321,8 +321,8 @@ def plot_bihist(X, y, n_bins=10, title="Histogram"):
     return fig
 
 
-def plot_scatter(X, y):
-    """Scatter plot of distances.
+def plot_biscatter(X, y):
+    """Plot scatter of bi-class predictions.
 
     Parameters
     ----------
@@ -346,16 +346,19 @@ def plot_scatter(X, y):
     if X.shape[1] != 2:
         raise ValueError("Input X has not 2 classes")
 
-    fig, ax = plt.subplots(figsize=(7, 7))
-
     classes = np.unique(y)
-    class0 = X[y == classes[0]]
-    class1 = X[y == classes[1]]
-    ax.scatter(class0[:, 0], class0[:, 1], alpha=1, color="red", label=classes[0])
-    ax.scatter(class1[:, 0], class1[:, 1], alpha=0.5, color="blue", label=classes[1])
+    if classes.shape[0] != 2:
+        raise ValueError("Input y has not 2 labels")
 
-    ax.legend(title="Classes", loc="upper center")
+    X0 = X[y == classes[0]]
+    X1 = X[y == classes[1]]
 
+    fig, ax = plt.subplots(figsize=(7, 7))
+    ax.scatter(X0[:, 0], X0[:, 1], alpha=1, color="red", label=classes[0])
+    ax.scatter(X1[:, 0], X1[:, 1], alpha=0.5, color="blue", label=classes[1])
     ax.plot(ax.get_xlim(), ax.get_ylim(), color="black")
-    return fig
+    ax.set_xlabel(f"Distances to class {classes[0]}")
+    ax.set_ylabel(f"Distances to class {classes[1]}")
+    ax.legend(title="Classes", loc="upper left")
 
+    return fig
