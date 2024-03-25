@@ -5,11 +5,11 @@ One Way manova time
 
 One way manova to compare Left vs Right in time.
 """
-import numpy as np
-import seaborn as sns
-
 from time import time
+
+import numpy as np
 from pylab import plt
+import seaborn as sns
 
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws

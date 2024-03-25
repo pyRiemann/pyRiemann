@@ -9,6 +9,7 @@ Manova for ERP data
 # License: BSD (3-clause)
 
 from time import time
+
 from matplotlib import pyplot as plt
 import seaborn as sns
 

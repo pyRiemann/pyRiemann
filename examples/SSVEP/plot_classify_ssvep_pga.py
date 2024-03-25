@@ -16,7 +16,6 @@ before this example.
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-
 from mne import find_events, Epochs, make_fixed_length_epochs
 from mne.io import Raw
 from sklearn.pipeline import make_pipeline

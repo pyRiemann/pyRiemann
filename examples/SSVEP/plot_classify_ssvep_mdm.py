@@ -14,7 +14,6 @@ is trained to predict a 4-class problem for an offline setup.
 
 import numpy as np
 import matplotlib.pyplot as plt
-
 from mne import find_events, Epochs
 from mne.io import Raw
 from sklearn.model_selection import cross_val_score, RepeatedKFold

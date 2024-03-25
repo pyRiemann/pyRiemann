@@ -13,16 +13,14 @@ data to the baseline with no frequency band selection [1]_.
 #
 # License: BSD (3-clause)
 
+from time import time
 
 import numpy as np
-from time import time
 from matplotlib import pyplot as plt
-
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
-
 from sklearn.model_selection import cross_val_score, ShuffleSplit
 
 from pyriemann.classification import MDM
