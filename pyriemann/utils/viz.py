@@ -1,8 +1,5 @@
 """Helpers for vizualization."""
-try:
-    import matplotlib.pyplot as plt
-except ImportError:
-    raise ImportError("Install matplotlib to use viz module")
+import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 import numpy as np
