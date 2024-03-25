@@ -242,7 +242,11 @@ def plot_cov_ellipse(ax, X, n_std=2.5, **kwds):
     Notes
     -----
     .. versionadded:: 0.6
-    """
+
+    References
+    ----------
+    .. [1] https://matplotlib.org/stable/gallery/statistics/confidence_ellipse.html
+    """   # noqa
     if X.shape != (2, 2):
         raise ValueError("Input X must be a 2x2 covariance matrix")
 
