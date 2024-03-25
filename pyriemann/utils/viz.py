@@ -1,12 +1,13 @@
 """Helpers for vizualization."""
-import numpy as np
-
-from ..embedding import SpectralEmbedding, LocallyLinearEmbedding
-
 try:
     import matplotlib.pyplot as plt
 except ImportError:
     raise ImportError("Install matplotlib to use viz module")
+from matplotlib.patches import Ellipse
+import matplotlib.transforms as transforms
+import numpy as np
+
+from ..embedding import SpectralEmbedding, LocallyLinearEmbedding
 
 
 def plot_embedding(X,
@@ -217,3 +218,42 @@ def _add_alpha(colors, alphas):
 
     cols = [to_rgb(c) for c in colors]
     return [(c[0], c[1], c[2], a) for c, a in zip(cols, alphas[-len(cols):])]
+
+
+def plot_cov_ellipse(ax, X, n_std=2.5, **kwds):
+    """Plot 2x2 covariance matrix as an ellipse.
+
+    Parameters
+    ----------
+    ax : matplotlib axis
+        Axis of figure.
+    X : ndarray, shape (2, 2)
+        Covariance matrix.
+    n_std : float, default=2.5
+        Number of standard deviations.
+    **kwds : dict
+        Any further parameters are passed directly to the Ellipse.
+
+    Returns
+    -------
+    ax : matplotlib axis
+        Axis of figure.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
+    """
+    if X.shape != (2, 2):
+        raise ValueError("Input X must be a 2x2 covariance matrix")
+
+    pearson = X[0, 1] / np.sqrt(X[0, 0] * X[1, 1])
+    ell_radius_x = np.sqrt(1 + pearson)
+    ell_radius_y = np.sqrt(1 - pearson)
+    ellipse = Ellipse((0, 0), width=ell_radius_x * 2, height=ell_radius_y * 2,
+                      facecolor='none', **kwds)
+    scale_x = np.sqrt(X[0, 0]) * n_std
+    scale_y = np.sqrt(X[1, 1]) * n_std
+    transf = transforms.Affine2D().rotate_deg(45).scale(scale_x, scale_y)
+    ellipse.set_transform(transf + ax.transData)
+
+    return ax.add_patch(ellipse)
