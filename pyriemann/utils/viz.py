@@ -31,7 +31,7 @@ def plot_embedding(X,
         "euclid", "logdet", "kullback", "kullback_right", "kullback_sym"}
         for Spectral Embedding.
     title : str, default="Embedding of covariances"
-        Title string for plot.
+        Title of figure.
     embd_type : {"Spectral", "LocallyLinear"}, default="Spectral"
         Embedding type.
     normalize : bool, default=True
@@ -87,6 +87,10 @@ def plot_cospectra(X, freqs, *, ylabels=None, title="Cospectra"):
         Cospectral matrices.
     freqs : ndarray, shape (n_freqs,)
         The frequencies associated to cospectra.
+    ylabels : list of str, default=None
+        ylabels of figure.
+    title : str, default="Cospectra"
+        Title of figure.
 
     Returns
     -------
@@ -246,7 +250,7 @@ def plot_cov_ellipse(ax, X, n_std=2.5, **kwds):
     References
     ----------
     .. [1] https://matplotlib.org/stable/gallery/statistics/confidence_ellipse.html
-    """   # noqa
+    """  # noqa
     if X.shape != (2, 2):
         raise ValueError("Input X must be a 2x2 covariance matrix")
 
@@ -263,7 +267,7 @@ def plot_cov_ellipse(ax, X, n_std=2.5, **kwds):
     return ax.add_patch(ellipse)
 
 
-def plot_bihist(X, y):
+def plot_bihist(X, y, n_bins=10, title="Histogram"):
     """Plot histogram of bi-class predictions.
 
     Parameters
@@ -272,6 +276,10 @@ def plot_bihist(X, y):
         Predictions, distances or probabilities.
     y : ndarray, shape (n_matrices,)
         Labels for each matrix.
+    n_bins : int, default=10
+        Number of bins of histogram.
+    title : str, default="Histogram"
+        Title of figure.
 
     Returns
     -------
@@ -289,19 +297,28 @@ def plot_bihist(X, y):
 
     classes = np.unique(y)
     if classes.shape[0] != 2:
-        raise ValueError("Input y has not 2 classes")
+        raise ValueError("Input y has not 2 labels")
 
     X = X / np.sum(X, axis=1, keepdims=True)
+    X0 = X[y == classes[0], 0]
+    X1 = 1 - X[y == classes[1], 1]
+
+    def get_bins(X, n_bins, target=0.5):
+        """Estimate bins with the garantee to have target value in bin edges"""
+        bins = np.histogram_bin_edges(X, bins=n_bins)
+        idx = (np.abs(bins - target)).argmin()
+        bins[idx] = target
+        return bins
 
     fig, ax = plt.subplots(figsize=(6, 5))
     ax.axvline(x=0.5, c="k", linestyle=":")
-    ax.hist(X[y == classes[0], 0], label=classes[0], alpha=0.5)
-    ax.hist(1 - X[y == classes[1], 1], label=classes[1], alpha=0.5)
+    ax.hist(X0, bins=get_bins(X0, n_bins), label=classes[0], alpha=0.5)
+    ax.hist(X1, bins=get_bins(X1, n_bins), label=classes[1], alpha=0.5)
 
     (Xmin, Xmax) = ax.get_xlim()
     Xm = min(Xmin, 1 - Xmax)
-    ax.set_xlim(Xm, 1-Xm)
-    ax.set(xlabel="Distances", ylabel="Frequency")
+    ax.set_xlim(Xm, 1 - Xm)
+    ax.set(xlabel="Rescaled distances", ylabel="Frequency", title=title)
     ax.legend(title="Classes", loc="upper center")
 
     return fig
