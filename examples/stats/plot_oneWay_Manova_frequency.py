@@ -5,11 +5,12 @@ One Way manova with Frequenty
 
 One way manova to compare Left vs Right for each frequency.
 """
+from time import time
+
 import numpy as np
+from pylab import plt
 import seaborn as sns
 
-from time import time
-from pylab import plt
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
