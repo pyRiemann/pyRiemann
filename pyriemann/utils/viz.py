@@ -257,3 +257,47 @@ def plot_cov_ellipse(ax, X, n_std=2.5, **kwds):
     ellipse.set_transform(transf + ax.transData)
 
     return ax.add_patch(ellipse)
+
+
+def plot_bihist(X, y):
+    """Plot histogram of bi-class predictions.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, 2)
+        Predictions, distances or probabilities.
+    y : ndarray, shape (n_matrices,)
+        Labels for each matrix.
+
+    Returns
+    -------
+    fig : matplotlib figure
+        Figure of histogram.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
+    """
+    if X.ndim != 2:
+        raise ValueError("Input X has not 2 dimensions")
+    if X.shape[1] != 2:
+        raise ValueError("Input X has not 2 classes")
+
+    classes = np.unique(y)
+    if classes.shape[0] != 2:
+        raise ValueError("Input y has not 2 classes")
+
+    X = X / np.sum(X, axis=1, keepdims=True)
+
+    fig, ax = plt.subplots(figsize=(6, 5))
+    ax.axvline(x=0.5, c="k", linestyle=":")
+    ax.hist(X[y == classes[0], 0], label=classes[0], alpha=0.5)
+    ax.hist(1 - X[y == classes[1], 1], label=classes[1], alpha=0.5)
+
+    (Xmin, Xmax) = ax.get_xlim()
+    Xm = min(Xmin, 1 - Xmax)
+    ax.set_xlim(Xm, 1-Xm)
+    ax.set(xlabel="Distances", ylabel="Frequency")
+    ax.legend(title="Classes", loc="upper center")
+
+    return fig
