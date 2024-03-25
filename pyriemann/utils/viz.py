@@ -1,6 +1,12 @@
 """Helpers for vizualization."""
 import numpy as np
+
 from ..embedding import SpectralEmbedding, LocallyLinearEmbedding
+
+try:
+    import matplotlib.pyplot as plt
+except ImportError:
+    raise ImportError("Install matplotlib to use viz module")
 
 
 def plot_embedding(X,
@@ -8,7 +14,7 @@ def plot_embedding(X,
                    *,
                    metric="riemann",
                    title="Embedding of covariances",
-                   embd_type='Spectral',
+                   embd_type="Spectral",
                    normalize=True):
     """Plot 2D embedding of SPD matrices.
 
@@ -18,14 +24,14 @@ def plot_embedding(X,
         Set of SPD matrices.
     y : None | ndarray, shape (n_matrices,), default=None
         Labels for each matrix.
-    metric : string, default='riemann'
-        Metric used in the embedding. Can be {'riemann' ,'logeuclid' ,
-        'euclid'} for Locally Linear Embedding and {'riemann' ,'logeuclid' ,
-        'euclid' , 'logdet', 'kullback', 'kullback_right', 'kullback_sym'}
+    metric : string, default="riemann"
+        Metric used in the embedding. Can be {"riemann", "logeuclid",
+        "euclid"} for Locally Linear Embedding, and {"riemann", "logeuclid",
+        "euclid", "logdet", "kullback", "kullback_right", "kullback_sym"}
         for Spectral Embedding.
     title : str, default="Embedding of covariances"
         Title string for plot.
-    embd_type : {'Spectral' ,'LocallyLinear'}, default='Spectral'
+    embd_type : {"Spectral", "LocallyLinear"}, default="Spectral"
         Embedding type.
     normalize : bool, default=True
         If True, the plot is normalized from -1 to +1.
@@ -34,21 +40,20 @@ def plot_embedding(X,
     -------
     fig : matplotlib figure
         Figure of embedding.
-    """
-    try:
-        import matplotlib.pyplot as plt
-    except ImportError:
-        raise ImportError("Install matplotlib to plot embeddings")
 
-    if embd_type == 'Spectral':
+    Notes
+    -----
+    .. versionadded:: 0.2.6
+    """
+    if embd_type == "Spectral":
         lapl = SpectralEmbedding(n_components=2, metric=metric)
-    elif embd_type == 'LocallyLinear':
+    elif embd_type == "LocallyLinear":
         lapl = LocallyLinearEmbedding(n_components=2,
                                       n_neighbors=X.shape[1],
                                       metric=metric)
     else:
-        raise ValueError("Invalid embedding type. Valid types are: 'Spectral',"
-                         " 'LocallyLinear'")
+        raise ValueError(f"Unknown embedding type {embd_type}. "
+                         "Valid types are: 'Spectral', 'LocallyLinear'.")
 
     embd = lapl.fit_transform(X)
 
@@ -62,7 +67,7 @@ def plot_embedding(X,
 
     ax.set_xlabel(r"$\varphi_1$", fontsize=16)
     ax.set_ylabel(r"$\varphi_2$", fontsize=16)
-    ax.set_title(f'{embd_type} {title}', fontsize=16)
+    ax.set_title(f"{embd_type} {title}", fontsize=16)
     ax.grid(False)
     if normalize:
         ax.set_xticks([-1.0, -0.5, 0.0, +0.5, 1.0])
@@ -72,12 +77,12 @@ def plot_embedding(X,
     return fig
 
 
-def plot_cospectra(cosp, freqs, *, ylabels=None, title="Cospectra"):
+def plot_cospectra(X, freqs, *, ylabels=None, title="Cospectra"):
     """Plot cospectral matrices.
 
     Parameters
     ----------
-    cosp : ndarray, shape (n_freqs, n_channels, n_channels)
+    X : ndarray, shape (n_freqs, n_channels, n_channels)
         Cospectral matrices.
     freqs : ndarray, shape (n_freqs,)
         The frequencies associated to cospectra.
@@ -91,23 +96,18 @@ def plot_cospectra(cosp, freqs, *, ylabels=None, title="Cospectra"):
     -----
     .. versionadded:: 0.2.7
     """
-    try:
-        import matplotlib.pyplot as plt
-    except ImportError:
-        raise ImportError("Install matplotlib to plot cospectra")
-
-    if cosp.ndim != 3:
-        raise Exception('Input cosp has not 3 dimensions')
-    n_freqs, n_channels, _ = cosp.shape
+    if X.ndim != 3:
+        raise ValueError("Input X has not 3 dimensions")
+    n_freqs, n_channels, _ = X.shape
     if freqs.shape != (n_freqs,):
-        raise Exception(
-            'Input freqs has not the same number of frequencies as cosp')
+        raise ValueError(
+            "Input freqs has not the same number of frequencies as X")
 
     fig = plt.figure(figsize=(12, 7))
     fig.suptitle(title)
     for f in range(n_freqs):
         ax = plt.subplot((n_freqs - 1) // 8 + 1, 8, f + 1)
-        plt.imshow(cosp[f], cmap=plt.get_cmap("Reds"))
+        plt.imshow(X[f], cmap=plt.get_cmap("Reds"))
         plt.title("{} Hz".format(freqs[f]))
         plt.xticks([])
         if ylabels and f == 0:
@@ -122,22 +122,22 @@ def plot_cospectra(cosp, freqs, *, ylabels=None, title="Cospectra"):
     return fig
 
 
-def plot_waveforms(X, display, *, times=None, color='gray', alpha=0.5,
-                   linewidth=1.5, color_mean='k', color_std='gray', n_bins=50,
+def plot_waveforms(X, display, *, times=None, color="gray", alpha=0.5,
+                   linewidth=1.5, color_mean="k", color_std="gray", n_bins=50,
                    cmap=None):
-    """ Display repetitions of a multichannel waveform.
+    """Plot repetitions of a multichannel waveform.
 
     Parameters
     ----------
     X : ndarray, shape (n_reps, n_channels, n_times)
         Repetitions of the multichannel waveform.
-    display : {'all', 'mean', 'mean+/-std', 'hist'}
+    display : {"all", "mean", "mean+/-std", "hist"}
         Type of display:
 
-        * 'all' for all the repetitions;
-        * 'mean' for the mean of the repetitions;
-        * 'mean+/-std' for the mean +/- standard deviation of the repetitions;
-        * 'hist' for the 2D histogram of the repetitions.
+        * "all" for all the repetitions;
+        * "mean" for the mean of the repetitions;
+        * "mean+/-std" for the mean +/- standard deviation of the repetitions;
+        * "hist" for the 2D histogram of the repetitions.
     time : None | ndarray, shape (n_times,), default=None
         Values to display on x-axis.
     color : matplotlib color, optional
@@ -164,48 +164,43 @@ def plot_waveforms(X, display, *, times=None, color='gray', alpha=0.5,
     -----
     .. versionadded:: 0.3
     """
-    try:
-        import matplotlib.pyplot as plt
-    except ImportError:
-        raise ImportError("Install matplotlib to plot waveforms")
-
     if X.ndim != 3:
-        raise Exception('Input X has not 3 dimensions')
+        raise ValueError("Input X has not 3 dimensions")
     n_reps, n_channels, n_times = X.shape
     if times is None:
         times = np.arange(n_times)
     elif times.shape != (n_times,):
-        raise Exception(
-            'Parameter times has not the same number of values as X')
+        raise ValueError(
+            "Parameter times has not the same number of values as X")
 
     fig, axes = plt.subplots(nrows=n_channels, ncols=1)
     if n_channels == 1:
         axes = [axes]
     channels = np.arange(n_channels)
 
-    if display == 'all':
+    if display == "all":
         for (channel, ax) in zip(channels, axes):
             for i_rep in range(n_reps):
                 ax.plot(times, X[i_rep, channel], c=color, alpha=alpha)
 
-    elif display in ['mean', 'mean+/-std']:
+    elif display in ["mean", "mean+/-std"]:
         mean = np.mean(X, axis=0)
         for (channel, ax) in zip(channels, axes):
             ax.plot(times, mean[channel], c=color_mean, lw=linewidth)
-        if display == 'mean+/-std':
+        if display == "mean+/-std":
             std = np.std(X, axis=0)
             for (channel, ax) in zip(channels, axes):
                 ax.fill_between(times, mean[channel] - std[channel],
                                 mean[channel] + std[channel], color=color_std)
 
-    elif display == 'hist':
+    elif display == "hist":
         times_rep = np.repeat(times[np.newaxis, :], n_reps, axis=0)
         for (channel, ax) in zip(channels, axes):
             ax.hist2d(times_rep.ravel(), X[:, channel, :].ravel(),
                       bins=(n_times, n_bins), cmap=cmap)
 
     else:
-        raise Exception('Parameter display unknown %s' % display)
+        raise ValueError(f"Unknown parameter display {display}")
 
     if n_channels > 1:
         for ax in axes[:-1]:
