@@ -315,8 +315,8 @@ def plot_bihist(X, y, n_bins=10, title="Histogram"):
     (Xmin, Xmax) = ax.get_xlim()
     Xm = min(Xmin, 1 - Xmax)
     ax.set_xlim(Xm, 1 - Xm)
-    ax.set(xlabel="Rescaled distances", ylabel="Frequency", title=title)
-    ax.legend(title="Classes", loc="upper center")
+    ax.set(xlabel="Rescaled predictions", ylabel="Frequency", title=title)
+    ax.legend(title="Classes", loc="upper left")
 
     return fig
 
@@ -354,11 +354,15 @@ def plot_biscatter(X, y):
     X1 = X[y == classes[1]]
 
     fig, ax = plt.subplots(figsize=(7, 7))
-    ax.scatter(X0[:, 0], X0[:, 1], alpha=1, color="red", label=classes[0])
-    ax.scatter(X1[:, 0], X1[:, 1], alpha=0.5, color="blue", label=classes[1])
-    ax.plot(ax.get_xlim(), ax.get_ylim(), color="black")
-    ax.set_xlabel(f"Distances to class {classes[0]}")
-    ax.set_ylabel(f"Distances to class {classes[1]}")
+    ax.scatter(X0[:, 0], X0[:, 1], label=classes[0], alpha=1)
+    ax.scatter(X1[:, 0], X1[:, 1], label=classes[1], alpha=0.5)
     ax.legend(title="Classes", loc="upper left")
+
+    (Xmin, Xmax) = ax.get_xlim()
+    (Ymin, Ymax) = ax.get_ylim()
+    XYmin, XYmax = min(Xmin, Ymin), max(Xmax, Ymax)
+    ax.plot([XYmin, XYmax], [XYmin, XYmax], c="k", linestyle=":")
+    ax.set_xlim([XYmin, XYmax])
+    ax.set_ylim([XYmin, XYmax])
 
     return fig
