@@ -371,6 +371,9 @@ Visualization
 .. autosummary::
     :toctree: generated/
 
-    plot_embedding
+    plot_bihist
+    plot_biscatter
     plot_cospectra
+    plot_cov_ellipse
+    plot_embedding
     plot_waveforms
