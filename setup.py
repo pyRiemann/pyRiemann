@@ -40,6 +40,7 @@ setup(
         "scipy",
         "scikit-learn>=0.24",
         "joblib",
+        "matplotlib",
     ],
     extras_require={
         "docs": [
