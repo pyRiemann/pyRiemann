@@ -535,7 +535,7 @@ class CoSpectra(CrossSpectra):
 
     Co-spectral matrices are SPD matrices estimated as the real part of the
     spectrum covariance in the frequency domain. It returns a 4-d array with a
-    o-spectral matrix for each input and in each frequency bin of the
+    co-spectral matrix for each input and in each frequency bin of the
     Fourier transform.
 
     Parameters
