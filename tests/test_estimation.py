@@ -284,6 +284,7 @@ def test_xspectra(estim, rndstate):
     else:
         assert is_hpsd(mats.transpose(0, 3, 1, 2))
 
+
 def test_cosp_covariances():
     import warnings
     with warnings.catch_warnings(record=True) as w:
