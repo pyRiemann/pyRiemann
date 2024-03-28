@@ -2,7 +2,8 @@ import numpy as np
 import pytest
 
 from pyriemann.utils.test import (
-    is_square, is_sym, is_skew_sym, is_real, is_real_type, is_hermitian,
+    is_square, is_sym, is_skew_sym, is_hankel,
+    is_real, is_real_type, is_hermitian,
     is_pos_def, is_pos_semi_def,
     is_sym_pos_def, is_sym_pos_semi_def,
     is_herm_pos_def, is_herm_pos_semi_def,
@@ -32,6 +33,12 @@ def test_is_skew_sym(rndstate):
     assert not is_skew_sym(np.eye(n))
     assert not is_skew_sym(A + A.T)
     assert not is_skew_sym(np.ones((n, n + 1)))
+
+
+def test_is_hankel():
+    assert is_hankel(np.array([[1, 2, 3], [2, 3, 4], [3, 4, 5]]))
+    assert not is_hankel(np.array([[1, 2, 3], [1, 3, 4], [3, 4, 5]]))
+    assert not is_hankel(np.array([[1, 2, 3], [2, 3, 3], [3, 4, 5]]))
 
 
 def test_is_real(rndstate):

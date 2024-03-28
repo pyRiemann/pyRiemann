@@ -5,9 +5,9 @@ import numpy as np
 from scipy.linalg import eigh, inv
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from .utils.covariance import (_check_cov_est_function, normalize,
-                               get_nondiag_weight)
+from .utils.covariance import normalize, get_nondiag_weight, cov_est_functions
 from .utils.mean import mean_covariance
+from .utils.utils import check_function
 from .utils.ajd import ajd_pham
 from . import estimation as est
 from .preprocessing import Whitening
@@ -80,7 +80,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
 
     @property
     def estimator_fn(self):
-        return _check_cov_est_function(self.estimator)
+        return check_function(self.estimator, cov_est_functions)
 
     def fit(self, X, y):
         """Train Xdawn spatial filters.
@@ -160,12 +160,12 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
     filter for bilinear projection of the data:
 
     .. math::
-        \mathbf{Cf}_i = \mathbf{V} \mathbf{C}_i \mathbf{V}^T
+        \mathbf{Xf}_i = \mathbf{V} \mathbf{X}_i \mathbf{V}^T
 
     If log parameter is set to true, will return the log of the diagonal:
 
     .. math::
-        \mathbf{cf}_i = \log [ \mathrm{diag} (\mathbf{Cf}_i) ]
+        \mathbf{xf}_i = \log ( \mathrm{diag} (\mathbf{Xf}_i) )
 
     Parameters
     ----------
@@ -258,8 +258,10 @@ class CSP(BilinearFilter):
     ----------
     nfilter : int, default=4
         The number of components to decompose M/EEG signals.
-    metric : str, default='euclid'
-        The metric for the estimation of mean covariance matrices.
+    metric : str, default="euclid"
+        Metric used for the estimation of mean covariance matrices.
+        For the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`.
     log : bool, default=True
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.
@@ -296,7 +298,7 @@ class CSP(BilinearFilter):
         August 2008. pp. 1991 - 2000
     """
 
-    def __init__(self, nfilter=4, metric='euclid', log=True):
+    def __init__(self, nfilter=4, metric="euclid", log=True):
         """Init."""
         self.nfilter = nfilter
         self.metric = metric
@@ -403,8 +405,10 @@ class SPoC(CSP):
     ----------
     nfilter : int, default=4
         The number of components to decompose M/EEG signals.
-    metric : str, default='euclid'
-        The metric for the estimation of mean covariance matrices.
+    metric : str, default="euclid"
+        Metric used for the estimation of mean covariance matrices.
+        For the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`.
     log : bool, default=True
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.

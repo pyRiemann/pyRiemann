@@ -1,8 +1,7 @@
-
-import pytest
-from pytest import approx
 import numpy as np
 from numpy.testing import assert_array_equal
+import pytest
+from pytest import approx
 from sklearn.model_selection import KFold, StratifiedShuffleSplit
 from sklearn.pipeline import make_pipeline, Pipeline
 
@@ -357,6 +356,7 @@ def test_mdwm(rndstate, domain_tradeoff, metric, n_jobs):
     # test fit
     clf.fit(X, y_enc)
     assert_array_equal(clf.classes_, ['1', '2'])
+    assert clf.covmeans_.shape == (n_classes, 2, 2)
 
     X, y, domain = decode_domains(X, y_enc)
     X_source = X[domain == 'source_domain']
@@ -389,3 +389,21 @@ def test_mdwm(rndstate, domain_tradeoff, metric, n_jobs):
 
     # test score
     clf.score(X, y_enc)
+
+
+def test_mdwm_weights(rndstate):
+    n_classes, n_matrices = 2, 40
+    X, y_enc = make_classification_transfer(
+        n_matrices=n_matrices // 4,
+        class_sep=5,
+        class_disp=1.0,
+        random_state=rndstate,
+    )
+    weights = rndstate.rand(n_matrices // n_classes)
+
+    clf = MDWM(
+        domain_tradeoff=0.5,
+        target_domain='target_domain',
+        metric="riemann",
+    )
+    clf.fit(X, y_enc, sample_weight=weights)

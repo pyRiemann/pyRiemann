@@ -6,56 +6,6 @@ from ..utils.distance import distance_riemann
 from ..utils.base import invsqrtm, powm, sqrtm, expm
 from .sampling import generate_random_spd_matrix, sample_gaussian_spd
 from ..transfer import encode_domains
-from ..utils import deprecated
-
-
-@deprecated(
-    "make_covariances is deprecated and will be removed in 0.6.0; "
-    "please use make_matrices."
-)
-def make_covariances(n_matrices, n_channels, rs=None, return_params=False,
-                     evals_mean=2.0, evals_std=0.1):
-    """Generate a set of covariances matrices, with the same eigenvectors.
-
-    Parameters
-    ----------
-    n_matrices : int
-        Number of matrices to generate.
-    n_channels : int
-        Number of channels in covariance matrices.
-    rs : RandomState instance, default=None
-        Random state for reproducible output across multiple function calls.
-    return_params : bool, default=False
-        If True, then return parameters.
-    evals_mean : float, default=2.0
-        Mean of eigen values.
-    evals_std : float, default=0.1
-        Standard deviation of eigen values.
-
-    Returns
-    -------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-        Covariances matrices.
-    evals : ndarray, shape (n_matrices, n_channels)
-        Eigen values used for each covariance matrix.
-        Only returned if ``return_params=True``.
-    evecs : ndarray, shape (n_channels, n_channels)
-        Eigen vectors used for all covariance matrices.
-        Only returned if ``return_params=True``.
-    """
-    rs = check_random_state(rs)
-
-    evals = np.abs(evals_mean + evals_std * rs.randn(n_matrices, n_channels))
-    evecs, _ = np.linalg.qr(rs.randn(n_channels, n_channels))
-
-    covmats = np.empty((n_matrices, n_channels, n_channels))
-    for i in range(n_matrices):
-        covmats[i] = evecs @ np.diag(evals[i]) @ evecs.T
-
-    if return_params:
-        return covmats, evals, evecs
-    else:
-        return covmats
 
 
 def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,

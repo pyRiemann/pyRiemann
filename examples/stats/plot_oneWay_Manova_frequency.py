@@ -5,11 +5,12 @@ One Way manova with Frequenty
 
 One way manova to compare Left vs Right for each frequency.
 """
+from time import time
+
 import numpy as np
+from pylab import plt
 import seaborn as sns
 
-from time import time
-from pylab import plt
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
@@ -21,7 +22,7 @@ from pyriemann.estimation import CospCovariances
 sns.set_style('whitegrid')
 ###############################################################################
 # Set parameters and read data
-###############################################################################
+# ----------------------------
 
 # avoid classification of evoked responses by using epochs that start 1s after
 # cue onset.
@@ -56,7 +57,7 @@ epochs = Epochs(
 labels = epochs.events[:, -1] - 2
 
 # get epochs
-epochs_data = epochs.get_data()
+epochs_data = epochs.get_data(copy=False)
 
 # compute cospectral covariance matrices
 fmin = 2.0
@@ -70,7 +71,8 @@ fr = fr[(fr >= fmin) & (fr <= fmax)]
 
 ###############################################################################
 # Pairwise distance based permutation test
-###############################################################################
+# ----------------------------------------
+
 pv = []
 Fv = []
 # For each frequency bin, estimate the stats
