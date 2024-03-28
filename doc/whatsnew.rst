@@ -32,6 +32,8 @@ v0.6.dev
 
 - Correct check for `kernel_fct` param of :class:`pyriemann.classification.SVC`. :pr:`272` by :user:`qbarthelemy`
 
+- Add `partial_fit` function to :class:`pyriemann.preprocessing.Whitening` for online applications. :pr:`277` by :user:`qbarthelemy` and :user:`brentgaisford`
+
 v0.5 (Jun 2023)
 ---------------
 

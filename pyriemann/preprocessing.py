@@ -190,6 +190,10 @@ class Whitening(BaseEstimator, TransformerMixin):
         -------
         self : Whitening instance
             The Whitening instance.
+
+        Notes
+        -----
+        .. versionadded:: 0.6
         """
         n_matrices, n_channels, _ = X.shape
         if n_channels != self._mean.shape[-1]:
