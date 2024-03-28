@@ -10,6 +10,8 @@ from pyriemann.estimation import (
     Covariances,
     ERPCovariances,
     XdawnCovariances,
+    CrossSpectra,
+    CoSpectra,
     CospCovariances,
     TimeDelayCovariances,
     HankelCovariances,
@@ -21,6 +23,7 @@ from pyriemann.estimation import (
 from pyriemann.utils.test import (
     is_sym_pos_def as is_spd,
     is_sym_pos_semi_def as is_spsd,
+    is_herm_pos_semi_def as is_hpsd,
     is_hankel
 )
 
@@ -264,19 +267,31 @@ def test_block_covariances_block_size_type_error(rndstate):
         cov.fit_transform(x)
 
 
-def test_cosp_covariances(rndstate):
-    """Test fit CospCovariances"""
+@pytest.mark.parametrize("estim", [CrossSpectra, CoSpectra])
+def test_xspectra(estim, rndstate):
+    """Test CrossSpectra and CoSpectra"""
     n_matrices, n_channels, n_times = 2, 3, 1000
     x = rndstate.randn(n_matrices, n_channels, n_times)
-    cov = CospCovariances()
-    cov.fit(x)
-    covmats = cov.transform(x)
-    assert cov.get_params() == dict(
+    spectra = estim().fit(x)
+    mats = spectra.transform(x)
+    assert spectra.get_params() == dict(
         window=128, overlap=0.75, fmin=None, fmax=None, fs=None
     )
     n_freqs = 65
-    assert covmats.shape == (n_matrices, n_channels, n_channels, n_freqs)
-    assert is_spsd(covmats.transpose(0, 3, 1, 2))
+    assert mats.shape == (n_matrices, n_channels, n_channels, n_freqs)
+    if estim is CoSpectra:
+        assert is_spsd(mats.transpose(0, 3, 1, 2))
+    else:
+        assert is_hpsd(mats.transpose(0, 3, 1, 2))
+
+
+def test_cosp_covariances():
+    import warnings
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        CospCovariances()
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
 
 
 @pytest.mark.parametrize("coh", coh)
