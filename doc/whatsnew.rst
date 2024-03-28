@@ -45,6 +45,8 @@ v0.6.dev
 - Add :func:`pyriemann.utils.viz.plot_bihist`, :func:`pyriemann.utils.viz.plot_biscatter` and :func:`pyriemann.utils.viz.plot_cov_ellipse` for display. :pr:`287` 
   by :user:`qbarthelemy` and :user:`gcattan`
 
+- Add `partial_fit` function to :class:`pyriemann.preprocessing.Whitening` for online applications. :pr:`277` by :user:`qbarthelemy` and :user:`brentgaisford`
+
 v0.5 (Jun 2023)
 ---------------
 

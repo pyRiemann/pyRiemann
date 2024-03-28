@@ -26,26 +26,26 @@ def test_whitening_init():
 def test_whitening_error(rndstate, get_mats):
     """Test Whitening"""
     n_matrices, n_channels = 20, 6
-    cov = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
     # Test Fit
     with pytest.raises(ValueError):  # len dim_red not equal to 1
-        Whitening(dim_red={"n_components": 2, "expl_var": 0.5}).fit(cov)
+        Whitening(dim_red={"n_components": 2, "expl_var": 0.5}).fit(mats)
     with pytest.raises(ValueError):  # n_components not superior to 1
-        Whitening(dim_red={"n_components": 0}).fit(cov)
+        Whitening(dim_red={"n_components": 0}).fit(mats)
     with pytest.raises(ValueError):  # n_components not a int
-        Whitening(dim_red={"n_components": 2.5}).fit(cov)
+        Whitening(dim_red={"n_components": 2.5}).fit(mats)
     with pytest.raises(ValueError):  # expl_var out of bound
-        Whitening(dim_red={"expl_var": 0}).fit(cov)
+        Whitening(dim_red={"expl_var": 0}).fit(mats)
     with pytest.raises(ValueError):  # expl_var out of bound
-        Whitening(dim_red={"expl_var": 1.1}).fit(cov)
+        Whitening(dim_red={"expl_var": 1.1}).fit(mats)
     with pytest.raises(ValueError):  # max_cond not strictly superior to 1
-        Whitening(dim_red={"max_cond": 1}).fit(cov)
+        Whitening(dim_red={"max_cond": 1}).fit(mats)
     with pytest.raises(ValueError):  # unknown key
-        Whitening(dim_red={"abc": 42}).fit(cov)
+        Whitening(dim_red={"abc": 42}).fit(mats)
     with pytest.raises(ValueError):  # unknown type
-        Whitening(dim_red="max_cond").fit(cov)
+        Whitening(dim_red="max_cond").fit(mats)
     with pytest.raises(ValueError):  # unknown type
-        Whitening(dim_red=20).fit(cov)
+        Whitening(dim_red=20).fit(mats)
 
 
 @pytest.mark.parametrize("dim_red", dim_red)
@@ -53,10 +53,10 @@ def test_whitening_error(rndstate, get_mats):
 def test_whitening_fit(dim_red, metric, rndstate, get_mats):
     """Test Whitening fit"""
     n_matrices, n_channels = 20, 6
-    cov = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
 
     w = rndstate.rand(n_matrices)
-    whit = Whitening(dim_red=dim_red, metric=metric).fit(cov, sample_weight=w)
+    whit = Whitening(dim_red=dim_red, metric=metric).fit(mats, sample_weight=w)
     if dim_red is None:
         n_comp = n_channels
     else:
@@ -70,27 +70,42 @@ def test_whitening_fit(dim_red, metric, rndstate, get_mats):
     assert whit.inv_filters_.shape == (n_comp, n_channels)
 
 
+@pytest.mark.parametrize("alpha", [0, 0.5, 1])
+@pytest.mark.parametrize("dim_red", dim_red)
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+def test_whitening_partial_fit(alpha, dim_red, metric, get_mats):
+    """Test Whitening partial_fit"""
+    n_matrices, n_channels = 10, 5
+    mats = get_mats(n_matrices, n_channels, "spd")
+    whit = Whitening(dim_red=dim_red, metric=metric).fit(mats)
+
+    whit.partial_fit(get_mats(n_matrices, n_channels, "spd"), alpha=alpha)
+
+    with pytest.raises(ValueError):
+        whit.partial_fit(get_mats(2, n_channels + 1, "spd"), alpha=alpha)
+
+
 @pytest.mark.parametrize("dim_red", dim_red)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_whitening_transform(dim_red, metric, rndstate, get_mats):
     """Test Whitening transform"""
     n_matrices, n_channels = 20, 6
-    cov = get_mats(n_matrices, n_channels, "spd")
-    whit = Whitening(metric=metric).fit(cov)
-    cov_w = whit.transform(cov)
+    mats = get_mats(n_matrices, n_channels, "spd")
+    whit = Whitening(metric=metric).fit(mats)
+    mats_w = whit.transform(mats)
     if dim_red is None:
         n_comp = n_channels
     else:
         n_comp = whit.n_components_
-    assert cov_w.shape == (n_matrices, n_comp, n_comp)
+    assert mats_w.shape == (n_matrices, n_comp, n_comp)
     # after whitening, mean = identity
     assert_array_almost_equal(
-        mean_covariance(cov_w, metric=metric),
+        mean_covariance(mats_w, metric=metric),
         np.eye(n_comp),
         decimal=3,
     )
     if dim_red is not None and "max_cond" in dim_red.keys():
-        assert np.linalg.cond(cov_w.mean(axis=0)) <= max_cond
+        assert np.linalg.cond(mats_w.mean(axis=0)) <= max_cond
 
 
 @pytest.mark.parametrize("dim_red", dim_red)
@@ -98,9 +113,9 @@ def test_whitening_transform(dim_red, metric, rndstate, get_mats):
 def test_whitening_inverse_transform(dim_red, metric, rndstate, get_mats):
     """Test Whitening inverse transform"""
     n_matrices, n_channels = 20, 6
-    cov = get_mats(n_matrices, n_channels, "spd")
-    whit = Whitening(dim_red=dim_red, metric=metric).fit(cov)
-    cov_iw = whit.inverse_transform(whit.transform(cov))
-    assert cov_iw.shape == (n_matrices, n_channels, n_channels)
+    mats = get_mats(n_matrices, n_channels, "spd")
+    whit = Whitening(dim_red=dim_red, metric=metric).fit(mats)
+    mats_iw = whit.inverse_transform(whit.transform(mats))
+    assert mats_iw.shape == (n_matrices, n_channels, n_channels)
     if dim_red is None:
-        assert_array_almost_equal(cov, cov_iw)
+        assert_array_almost_equal(mats, mats_iw)
