@@ -436,7 +436,7 @@ class CrossSpectra(BaseEstimator, TransformerMixin):
     """Estimation of cross-spectral matrices.
 
     Complex cross-spectral matrices are HPD matrices estimated as the spectrum
-    covariance in the frequency domain. It returns a 4-d array with a
+    covariance in the frequency domain [1]_. It returns a 4-d array with a
     cross-spectral matrix for each input and in each frequency bin of the
     Fourier transform.
 
@@ -534,7 +534,7 @@ class CoSpectra(CrossSpectra):
     """Estimation of co-spectral matrices.
 
     Co-spectral matrices are SPD matrices estimated as the real part of the
-    spectrum covariance in the frequency domain. It returns a 4-d array with a
+    :class:`pyriemann.estimation.CrossSpectra`. It returns a 4-d array with a
     co-spectral matrix for each input and in each frequency bin of the
     Fourier transform.
 
