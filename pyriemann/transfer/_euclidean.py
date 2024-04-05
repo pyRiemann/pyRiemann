@@ -3,7 +3,7 @@ import numpy as np
 from scipy.linalg import sqrtm, inv
 from numpy import iscomplexobj, real, any, isfinite
 from sklearn.base import BaseEstimator, TransformerMixin
-from pyriemann.estimation import Covariances, covariances
+from pyriemann.estimation import covariances
 
 from pyriemann.utils.mean import mean_covariance
 from pyriemann.transfer import decode_domains
@@ -74,7 +74,7 @@ class TransformEA(BaseEstimator, TransformerMixin):
     ----------
 
     dtype: str
-    Type of input data, it can be 'cov' for covariance or 'raw' for raw trials
+    Type of input data, it can be 'covmat' for covariance or 'raw' for raw trials
 
     estimator: str
     If dtype=='raw', it represents the covariance estimator
@@ -97,7 +97,7 @@ class TransformEA(BaseEstimator, TransformerMixin):
         He He and Dongrui Wu, IEEE Transactions on Biomedical Engineering, 2019
 
     """
-    def __init__(self, estimator='lwf', dtype='raw'):
+    def __init__(self, estimator='lwf', dtype='covmat'):
         self.estimator = estimator
         self.dtype = dtype
         self._ref = list()
