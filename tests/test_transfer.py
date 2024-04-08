@@ -29,6 +29,7 @@ from pyriemann.transfer import (
     TLRegressor,
     MDWM,
 )
+from pyriemann.transfer.euclidean import EuclideanAlignment
 from pyriemann.utils.distance import distance, distance_riemann
 from pyriemann.utils.mean import mean_covariance, mean_riemann
 from pyriemann.utils.utils import check_weights
@@ -41,7 +42,7 @@ def test_encode_decode_domains(rndstate):
     n_matrices, n_channels = 4, 2
     X = make_matrices(n_matrices, n_channels, "spd", rs=rndstate)
     y = np.array(['left_hand', 'right_hand', 'left_hand', 'right_hand'])
-    domain = np.array(2*['source_domain'] + 2*['target_domain'])
+    domain = np.array(2 * ['source_domain'] + 2 * ['target_domain'])
 
     X_enc, y_enc = encode_domains(X, y, domain)
     assert y_enc[0] == 'source_domain/left_hand'
@@ -77,6 +78,21 @@ def test_tlcenter(rndstate, metric, sample_weight):
                                  sample_weight=sample_weight_d)
         else:
             Md = mean_covariance(Xd, metric='riemann')
+        assert Md == pytest.approx(np.eye(2))
+
+
+def test_ea(rndstate):
+    """Test Euclidean Alignment for recentering data to Identity"""
+    # check if the global mean of the domains is indeed Identity
+    rct = EuclideanAlignment()
+    X, y_enc = make_classification_transfer(
+        n_matrices=25, random_state=rndstate)
+    X_rct = rct.fit_transform(X, y_enc)
+    _, _, domain = decode_domains(X_rct, y_enc)
+    for d in np.unique(domain):
+        idx = domain == d
+        Xd = X_rct[idx]
+        Md = mean_covariance(Xd, metric='euclidean')
         assert Md == pytest.approx(np.eye(2))
 
 
@@ -126,7 +142,7 @@ def test_tlrotate(rndstate, metric, sample_weight):
     """Test fit_transform method for rotating the datasets"""
     # check if the distance between the classes of each domain is reduced
     X, y_enc = make_classification_transfer(
-        n_matrices=50, class_sep=3, class_disp=1.0, theta=np.pi/2,
+        n_matrices=50, class_sep=3, class_disp=1.0, theta=np.pi / 2,
         random_state=rndstate)
 
     if sample_weight:
@@ -307,7 +323,7 @@ def test_tlregressors(rndstate, reg, source_domain, target_domain):
             n_matrices, n_channels, "spd", rs=rndstate
         )
         y = np.random.uniform(low=1.0, high=10.0, size=n_matrices)
-        domain = np.array(20*['source_domain'] + 20*['target_domain'])
+        domain = np.array(20 * ['source_domain'] + 20 * ['target_domain'])
         _, y_enc = encode_domains(X, y, domain)
         return X, y_enc
 
