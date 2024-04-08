@@ -159,6 +159,7 @@ Transfer Learning
     TLStretch
     TLRotate
     MDWM
+    EuclideanAlignment
 
 Stats
 ------------------
