@@ -13,13 +13,12 @@ Fourier cospectra (AJDC), applied to artifact correction of EEG [1]_.
 
 import gzip
 import numpy as np
-from scipy.signal import welch
 from matplotlib import pyplot as plt
-
 from mne import create_info
 from mne.io import RawArray
 from mne.viz import plot_topomap
 from mne.preprocessing import ICA
+from scipy.signal import welch
 
 from pyriemann.spatialfilters import AJDC
 from pyriemann.utils.viz import plot_cospectra

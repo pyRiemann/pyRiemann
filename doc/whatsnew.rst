@@ -40,6 +40,13 @@ v0.6.dev
 
 - Speedup :class:`pyriemann.estimation.TimeDelayCovariances`. :pr:`281` by :user:`qbarthelemy`
 
+- Enhance ajd module and add a generic :func:`pyriemann.utils.ajd.ajd` function. :pr:`238` by :user:`qbarthelemy`
+
+- Add :func:`pyriemann.utils.viz.plot_bihist`, :func:`pyriemann.utils.viz.plot_biscatter` and :func:`pyriemann.utils.viz.plot_cov_ellipse` for display. :pr:`287` 
+  by :user:`qbarthelemy` and :user:`gcattan`
+
+- Add :class:`pyriemann.estimation.CrossSpectra` and deprecate `CospCovariances` renamed into :class:`pyriemann.estimation.CoSpectra`. :pr:`288` by :user:`qbarthelemy`
+
 v0.5 (Jun 2023)
 ---------------
 

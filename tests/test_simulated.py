@@ -1,6 +1,6 @@
-import pytest
 import numpy as np
 from numpy.testing import assert_array_almost_equal
+import pytest
 
 from pyriemann.datasets.sampling import generate_random_spd_matrix
 from pyriemann.datasets.simulated import (

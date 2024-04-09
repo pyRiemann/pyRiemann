@@ -12,7 +12,6 @@ intuitive visualizations.
 # License: BSD (3-clause)
 
 from functools import partial
-
 import os
 
 import numpy as np
