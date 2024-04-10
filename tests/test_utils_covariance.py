@@ -1,9 +1,10 @@
-from numpy.testing import assert_array_almost_equal
 import numpy as np
+from numpy.testing import assert_array_almost_equal
+import pytest
 from scipy.linalg import block_diag
 from scipy.signal import welch, csd, coherence as coherence_sp
 from sklearn.covariance import empirical_covariance
-import pytest
+
 
 from pyriemann.utils.covariance import (
     covariances, covariances_EP, covariances_X, eegtocov,

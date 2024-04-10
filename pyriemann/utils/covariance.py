@@ -8,6 +8,7 @@ from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
 from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
+from .utils import check_function
 
 
 def _complex_estimator(func):
@@ -111,12 +112,12 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     ----------
     X : ndarray, shape (n_channels, n_times)
         Multi-channel time-series, real or complex-valued.
-    m_estimator : {'hub', 'stu', 'tyl'}
+    m_estimator : {"hub", "stu", "tyl"}
         Type of M-estimator:
 
-        - 'hub' for Huber's M-estimator [2]_;
-        - 'stu' for Student-t's M-estimator [3]_;
-        - 'tyl' for Tyler's M-estimator [4]_.
+        - "hub" for Huber's M-estimator [2]_;
+        - "stu" for Student-t's M-estimator [3]_;
+        - "tyl" for Tyler's M-estimator [4]_.
     init : None | ndarray, shape (n_channels, n_channels), default=None
         A matrix used to initialize the algorithm.
         If None, the sample covariance matrix is used.
@@ -324,33 +325,20 @@ def covariance_scm(X, *, assume_centered=False):
 
 
 cov_est_functions = {
-    'corr': np.corrcoef,
-    'cov': np.cov,
-    'hub': _hub,
-    'lwf': _lwf,
-    'mcd': _mcd,
-    'oas': _oas,
-    'sch': covariance_sch,
-    'scm': covariance_scm,
-    'stu': _stu,
-    'tyl': _tyl,
+    "corr": np.corrcoef,
+    "cov": np.cov,
+    "hub": _hub,
+    "lwf": _lwf,
+    "mcd": _mcd,
+    "oas": _oas,
+    "sch": covariance_sch,
+    "scm": covariance_scm,
+    "stu": _stu,
+    "tyl": _tyl,
 }
 
 
-def _check_cov_est_function(est):
-    """Check covariance estimator function."""
-    if isinstance(est, str):
-        if est not in cov_est_functions.keys():
-            raise ValueError(f"Unknown covariance estimator '{est}'")
-        else:
-            est = cov_est_functions[est]
-    elif not hasattr(est, '__call__'):
-        raise ValueError("Covariance estimator must be a function or a string "
-                         f"(Got {type(est)}.")
-    return est
-
-
-def covariances(X, estimator='cov', **kwds):
+def covariances(X, estimator="cov", **kwds):
     """Estimation of covariance matrices.
 
     Estimates covariance matrices from multi-channel time-series according to
@@ -360,27 +348,26 @@ def covariances(X, estimator='cov', **kwds):
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_times)
         Multi-channel time-series, real or complex-valued.
-    estimator : {'corr', 'cov', 'hub', 'lwf', 'mcd', 'oas', 'sch', 'scm', \
-            'stu', 'tyl'}, default='scm'
+    estimator : string | callable, default="cov"
         Covariance matrix estimator [est]_:
 
-        * 'corr' for correlation coefficient matrix [corr]_,
-        * 'cov' for NumPy based covariance matrix [cov]_,
-        * 'hub' for Huber's M-estimator based covariance matrix [mest]_,
-        * 'lwf' for Ledoit-Wolf shrunk covariance matrix [lwf]_,
-        * 'mcd' for minimum covariance determinant matrix [mcd]_,
-        * 'oas' for oracle approximating shrunk covariance matrix [oas]_,
-        * 'sch' for Schaefer-Strimmer shrunk covariance matrix [sch]_,
-        * 'scm' for sample covariance matrix [scm]_,
-        * 'stu' for Student-t's M-estimator based covariance matrix [mest]_,
-        * 'tyl' for Tyler's M-estimator based covariance matrix [mest]_,
+        * "corr" for correlation coefficient matrix [corr]_,
+        * "cov" for NumPy based covariance matrix [cov]_,
+        * "hub" for Huber's M-estimator based covariance matrix [mest]_,
+        * "lwf" for Ledoit-Wolf shrunk covariance matrix [lwf]_,
+        * "mcd" for minimum covariance determinant matrix [mcd]_,
+        * "oas" for oracle approximating shrunk covariance matrix [oas]_,
+        * "sch" for Schaefer-Strimmer shrunk covariance matrix [sch]_,
+        * "scm" for sample covariance matrix [scm]_,
+        * "stu" for Student-t's M-estimator based covariance matrix [mest]_,
+        * "tyl" for Tyler's M-estimator based covariance matrix [mest]_,
         * or a callable function.
 
-        For regularization, consider 'lwf' or 'oas'.
+        For regularization, consider "lwf" or "oas".
 
-        For robustness, consider 'hub', 'mcd', 'stu' or 'tyl'.
+        For robustness, consider "hub", "mcd", "stu" or "tyl".
 
-        For 'lwf', 'mcd', 'oas' and 'sch' estimators,
+        For "lwf", "mcd", "oas" and "sch" estimators,
         complex covariance matrices are estimated according to [comp]_.
     **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
@@ -406,7 +393,7 @@ def covariances(X, estimator='cov', **kwds):
         R. Abrahamsson, Y. Selen and P. Stoica. 2007 IEEE International
         Conference on Acoustics, Speech and Signal Processing, Volume 2, 2007.
     """  # noqa
-    est = _check_cov_est_function(estimator)
+    est = check_function(estimator, cov_est_functions)
     n_matrices, n_channels, n_times = X.shape
     covmats = np.empty((n_matrices, n_channels, n_channels), dtype=X.dtype)
     for i in range(n_matrices):
@@ -414,7 +401,7 @@ def covariances(X, estimator='cov', **kwds):
     return covmats
 
 
-def covariances_EP(X, P, estimator='cov', **kwds):
+def covariances_EP(X, P, estimator="cov", **kwds):
     """Special form covariance matrix, concatenating a prototype P.
 
     Parameters
@@ -423,7 +410,7 @@ def covariances_EP(X, P, estimator='cov', **kwds):
         Multi-channel time-series.
     P : ndarray, shape (n_channels_proto, n_times)
         Multi-channel prototype.
-    estimator : string, default='scm'
+    estimator : string, default="cov"
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
     **kwds : optional keyword parameters
@@ -435,7 +422,7 @@ def covariances_EP(X, P, estimator='cov', **kwds):
             n_channels + n_channels_proto)
         Covariance matrices.
     """
-    est = _check_cov_est_function(estimator)
+    est = check_function(estimator, cov_est_functions)
     n_matrices, n_channels, n_times = X.shape
     n_channels_proto, n_times_p = P.shape
     if n_times_p != n_times:
@@ -448,14 +435,14 @@ def covariances_EP(X, P, estimator='cov', **kwds):
     return covmats
 
 
-def covariances_X(X, estimator='scm', alpha=0.2, **kwds):
+def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
     """Special form covariance matrix, embedding input X.
 
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_times)
         Multi-channel time-series.
-    estimator : string, default='scm'
+    estimator : string, default="cov"
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
     alpha : float, default=0.2
@@ -481,7 +468,7 @@ def covariances_X(X, estimator='scm', alpha=0.2, **kwds):
     if alpha <= 0:
         raise ValueError(
             f"Parameter alpha must be strictly positive (Got {alpha})")
-    est = _check_cov_est_function(estimator)
+    est = check_function(estimator, cov_est_functions)
     n_matrices, n_channels, n_times = X.shape
 
     Hchannels = np.eye(n_channels) \
@@ -501,7 +488,7 @@ def covariances_X(X, estimator='scm', alpha=0.2, **kwds):
     return covmats / (2 * alpha)  # Eq(10)
 
 
-def block_covariances(X, blocks, estimator='cov', **kwds):
+def block_covariances(X, blocks, estimator="cov", **kwds):
     """Compute block diagonal covariance.
 
     Calculates block diagonal matrices where each block is a covariance
@@ -515,7 +502,7 @@ def block_covariances(X, blocks, estimator='cov', **kwds):
         Multi-channel time-series.
     blocks: list of int
         List of block sizes.
-    estimator : string, default='scm'
+    estimator : string, default="cov"
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
     **kwds : optional keyword parameters
@@ -526,7 +513,7 @@ def block_covariances(X, blocks, estimator='cov', **kwds):
     covmats : ndarray, shape (n_matrices, n_channels, n_channels)
         Block diagonal covariance matrices.
     """
-    est = _check_cov_est_function(estimator)
+    est = check_function(estimator, cov_est_functions)
     n_matrices, n_channels, n_times = X.shape
 
     if np.sum(blocks) != n_channels:
@@ -547,9 +534,9 @@ def block_covariances(X, blocks, estimator='cov', **kwds):
 ###############################################################################
 
 
-def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator='cov'):
+def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator="cov"):
     """Convert EEG signal to covariance using sliding window."""
-    est = _check_cov_est_function(estimator)
+    est = check_function(estimator, cov_est_functions)
     X = []
     if padding:
         padd = np.zeros((int(window / 2), sig.shape[1]))

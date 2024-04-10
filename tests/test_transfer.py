@@ -1,7 +1,7 @@
-import pytest
-from pytest import approx
 import numpy as np
 from numpy.testing import assert_array_equal
+import pytest
+from pytest import approx
 from sklearn.model_selection import KFold, StratifiedShuffleSplit
 from sklearn.pipeline import make_pipeline, Pipeline
 

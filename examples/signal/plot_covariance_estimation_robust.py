@@ -12,28 +12,12 @@ low-dimensional dataset. See also [1]_.
 
 import numpy as np
 from matplotlib import pyplot as plt
-from matplotlib.patches import Ellipse
-import matplotlib.transforms as transforms
 
 from pyriemann.estimation import Covariances
+from pyriemann.utils.viz import plot_cov_ellipse
 
 
 ###############################################################################
-
-def plot_cov_ellipse(ax, cov, n_std=2.5, **kwargs):
-    """Inspired by
-    https://matplotlib.org/stable/gallery/statistics/confidence_ellipse.html
-    """
-    pearson = cov[0, 1] / np.sqrt(cov[0, 0] * cov[1, 1])
-    ell_radius_x = np.sqrt(1 + pearson)
-    ell_radius_y = np.sqrt(1 - pearson)
-    ellipse = Ellipse((0, 0), width=ell_radius_x * 2, height=ell_radius_y * 2,
-                      facecolor='none', **kwargs)
-    scale_x = np.sqrt(cov[0, 0]) * n_std
-    scale_y = np.sqrt(cov[1, 1]) * n_std
-    transf = transforms.Affine2D().rotate_deg(45).scale(scale_x, scale_y)
-    ellipse.set_transform(transf + ax.transData)
-    return ax.add_patch(ellipse)
 
 
 def plot_cov_estimators(ax, X, estimators):

@@ -13,9 +13,9 @@ from ..utils.mean import mean_covariance, mean_riemann
 from ..utils.distance import distance
 from ..utils.base import invsqrtm, powm, sqrtm
 from ..utils.geodesic import geodesic
-from ..utils.utils import check_weights
+from ..utils.utils import check_weights, check_metric
 from ._rotate import _get_rotation_matrix
-from ..classification import MDM, _check_metric
+from ..classification import MDM
 from ..preprocessing import Whitening
 from ._tools import decode_domains
 
@@ -104,12 +104,11 @@ class TLCenter(BaseEstimator, TransformerMixin):
     ----------
     target_domain : str
         Domain to consider as target.
-    metric : str, default='riemann'
-        The metric for mean, can be: 'ale', 'alm', 'euclid', 'harmonic',
-        'identity', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
-        'wasserstein', or a callable function. Note, however, that only when
-        using the 'riemann' metric that we are ensured to re-center the data
-        points precisely to the Identity.
+    metric : str, default="riemann"
+        Metric used for mean estimation. For the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`.
+        Note, however, that only when using the "riemann" metric that we are
+        ensured to re-center the data points precisely to the Identity.
 
     Attributes
     ----------
@@ -252,10 +251,10 @@ class TLStretch(BaseEstimator, TransformerMixin):
         Target value for the dispersion of the data points.
     centered_data : bool, default=False
         Whether the data has been re-centered to the Identity beforehand.
-    metric : str, default='riemann'
-        The metric for calculating the dispersion can be: 'ale', 'alm',
-        'euclid', 'harmonic', 'identity', 'kullback_sym', 'logdet',
-        'logeuclid', 'riemann', 'wasserstein', or a callable function.
+    metric : str, default="riemann"
+        Metric used for calculating the dispersion.
+        For the list of supported metrics,
+        see :func:`pyriemann.utils.distance.distance`.
 
     Attributes
     ----------
@@ -276,7 +275,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
     """
 
     def __init__(self, target_domain, final_dispersion=1.0,
-                 centered_data=False, metric='riemann'):
+                 centered_data=False, metric="riemann"):
         """Init"""
         self.target_domain = target_domain
         self.final_dispersion = final_dispersion
@@ -447,9 +446,8 @@ class TLRotate(BaseEstimator, TransformerMixin):
     weights : None | array, shape (n_classes,), default=None
         Weights to assign for each class. If None, then give the same weight
         for each class.
-    metric : {'euclid', 'riemann'}, default='euclid'
-        Metric for the distance to minimize between class means. Options are
-        either the Euclidean ('euclid') or Riemannian ('riemann') distance.
+    metric : {"euclid", "riemann"}, default="euclid"
+        Metric for the distance to minimize between class means.
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         the rotation matrix for each source domain in parallel. If -1 all CPUs
@@ -850,14 +848,13 @@ class MDWM(MDM):
         from the source domain.
     target_domain : string
         Name of the target domain in extended labels.
-    metric : string | dict, default='riemann'
-        The type of metric used for centroid and distance estimation.
-        see `mean_covariance` for the list of supported metric.
-        the metric could be a dict with two keys, `mean` and `distance` in
-        order to pass different metric for the centroid estimation and the
-        distance estimation. Typical usecase is to pass 'logeuclid' metric for
-        the mean in order to boost the computional speed and 'riemann' for the
-        distance in order to keep the good sensitivity for the classification.
+    metric : string | dict, default="riemann"
+        Metric used for mean estimation (for the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for distance estimation
+        (see :func:`pyriemann.utils.distance.distance`).
+        The metric can be a dict with two keys, "mean" and "distance"
+        in order to pass different metrics.
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
@@ -900,7 +897,7 @@ class MDWM(MDM):
             self,
             domain_tradeoff,
             target_domain,
-            metric='riemann',
+            metric="riemann",
             n_jobs=1):
         """Init."""
         self.domain_tradeoff = domain_tradeoff
@@ -927,11 +924,11 @@ class MDWM(MDM):
         self : MDWM instance
             The MDWM instance.
         """
-        self.metric_mean, self.metric_dist = _check_metric(self.metric)
+        self.metric_mean, self.metric_dist = check_metric(self.metric)
 
         if not 0 <= self.domain_tradeoff <= 1:
             raise ValueError(
-                'Value domain_tradeoff must be included in [0, 1] (Got %d)'
+                "Value domain_tradeoff must be included in [0, 1] (Got %d)"
                 % self.domain_tradeoff)
 
         X_dec, y_dec, domains = decode_domains(X, y_enc)

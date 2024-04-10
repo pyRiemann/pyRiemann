@@ -4,6 +4,7 @@ import numpy as np
 
 from .base import sqrtm, invsqrtm, logm, expm
 from .mean import mean_covariance
+from .utils import check_function
 
 
 def _check_dimensions(X, Cref):
@@ -28,7 +29,7 @@ def exp_map_euclid(X, Cref):
     X : ndarray, shape (..., n, m)
         Matrices in tangent space.
     Cref : ndarray, shape (n, m)
-        The reference matrix.
+        Reference matrix.
 
     Returns
     -------
@@ -58,7 +59,7 @@ def exp_map_logeuclid(X, Cref):
     X : ndarray, shape (..., n, n)
         Matrices in tangent space.
     Cref : ndarray, shape (n, n)
-        The reference SPD/HPD matrix.
+        Reference SPD/HPD matrix.
 
     Returns
     -------
@@ -95,7 +96,7 @@ def exp_map_riemann(X, Cref, Cm12=False):
     X : ndarray, shape (..., n, n)
         Matrices in tangent space.
     Cref : ndarray, shape (n, n)
-        The reference SPD/HPD matrix.
+        Reference SPD/HPD matrix.
     Cm12 : bool, default=False
         If True, it returns the full Riemannian exponential map.
 
@@ -128,9 +129,9 @@ def log_map_euclid(X, Cref):
     Parameters
     ----------
     X : ndarray, shape (..., n, m)
-        Matrices in manidold.
+        Matrices in manifold.
     Cref : ndarray, shape (n, m)
-        The reference matrix.
+        Reference matrix.
 
     Returns
     -------
@@ -157,9 +158,9 @@ def log_map_logeuclid(X, Cref):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        Matrices in SPD/HPD manidold.
+        Matrices in SPD/HPD manifold.
     Cref : ndarray, shape (n, n)
-        The reference SPD matrix.
+        Reference SPD matrix.
 
     Returns
     -------
@@ -195,9 +196,9 @@ def log_map_riemann(X, Cref, C12=False):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        Matrices in SPD/HPD manidold.
+        Matrices in SPD/HPD manifold.
     Cref : ndarray, shape (n, n)
-        The reference SPD/HPD matrix.
+        Reference SPD/HPD matrix.
     C12 : bool, default=False
         If True, it returns the full Riemannian logarithmic map.
 
@@ -292,7 +293,14 @@ def unupper(T):
     return X
 
 
-def tangent_space(X, Cref, *, metric='riemann'):
+log_map_functions = {
+    "euclid": log_map_euclid,
+    "logeuclid": log_map_logeuclid,
+    "riemann": log_map_riemann,
+}
+
+
+def tangent_space(X, Cref, *, metric="riemann"):
     """Transform matrices into tangent vectors.
 
     Transform matrices into tangent vectors, according to a reference
@@ -301,12 +309,12 @@ def tangent_space(X, Cref, *, metric='riemann'):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        Matrices in manidold.
+        Matrices in manifold.
     Cref : ndarray, shape (n, n)
-        The reference matrix.
-    metric : string, default='riemann'
-        The metric used for logarithmic map, can be: 'euclid', 'logeuclid',
-        'riemann'.
+        Reference matrix.
+    metric : string | callable, default="riemann"
+        Metric used for logarithmic map, can be:
+        "euclid", "logeuclid", "riemann", or a callable function.
 
     Returns
     -------
@@ -320,18 +328,21 @@ def tangent_space(X, Cref, *, metric='riemann'):
     log_map_riemann
     upper
     """
-    log_map_functions = {
-        'euclid': log_map_euclid,
-        'logeuclid': log_map_logeuclid,
-        'riemann': log_map_riemann,
-    }
-    X_ = log_map_functions[metric](X, Cref)
+    log_map_function = check_function(metric, log_map_functions)
+    X_ = log_map_function(X, Cref)
     T = upper(X_)
 
     return T
 
 
-def untangent_space(T, Cref, *, metric='riemann'):
+exp_map_functions = {
+    "euclid": exp_map_euclid,
+    "logeuclid": exp_map_logeuclid,
+    "riemann": exp_map_riemann,
+}
+
+
+def untangent_space(T, Cref, *, metric="riemann"):
     """Transform tangent vectors back to matrices.
 
     Transform tangent vectors back to matrices, according to a reference
@@ -342,15 +353,15 @@ def untangent_space(T, Cref, *, metric='riemann'):
     T : ndarray, shape (..., n * (n + 1) / 2)
         Tangent vectors.
     Cref : ndarray, shape (n, n)
-        The reference matrix.
-    metric : string, default='riemann'
-        The metric used for exponential map, can be: 'euclid', 'logeuclid',
-        'riemann'.
+        Reference matrix.
+    metric : string | callable, default="riemann"
+        Metric used for exponential map, can be:
+        "euclid", "logeuclid", "riemann", or a callable function.
 
     Returns
     -------
     X : ndarray, shape (..., n, n)
-        Matrices in manidold.
+        Matrices in manifold.
 
     See Also
     --------
@@ -360,12 +371,8 @@ def untangent_space(T, Cref, *, metric='riemann'):
     exp_map_riemann
     """
     X_ = unupper(T)
-    exp_map_functions = {
-        'euclid': exp_map_euclid,
-        'logeuclid': exp_map_logeuclid,
-        'riemann': exp_map_riemann,
-    }
-    X = exp_map_functions[metric](X_, Cref)
+    exp_map_function = check_function(metric, exp_map_functions)
+    X = exp_map_function(X_, Cref)
 
     return X
 
@@ -374,7 +381,7 @@ def untangent_space(T, Cref, *, metric='riemann'):
 
 
 # NOT IN API
-def transport(Covs, Cref, metric='riemann'):
+def transport(Covs, Cref, metric="riemann"):
     """Parallel transport of a set of SPD matrices towards a reference matrix.
 
     Parameters
@@ -383,8 +390,8 @@ def transport(Covs, Cref, metric='riemann'):
         Set of SPD matrices.
     Cref : ndarray, shape (n, n)
         The reference SPD matrix.
-    metric : string, default='riemann'
-        The metric used for mean, can be: 'euclid', 'logeuclid', 'riemann'.
+    metric : string, default="riemann"
+        The metric used for mean, can be: "euclid", "logeuclid", "riemann".
 
     Returns
     -------

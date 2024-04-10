@@ -6,6 +6,7 @@ One Way manova
 One way manova to compare Left vs Right.
 """
 from time import time
+
 from matplotlib import pyplot as plt
 import seaborn as sns
 

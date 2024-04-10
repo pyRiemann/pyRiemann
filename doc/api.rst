@@ -17,7 +17,8 @@ SPD Matrices Estimation
     ERPCovariances
     XdawnCovariances
     BlockCovariances
-    CospCovariances
+    CrossSpectra
+    CoSpectra
     Coherences
     TimeDelayCovariances
     Kernels
@@ -191,10 +192,10 @@ Datasets
 Utils function
 --------------
 
-Utils functions are low level functions that implement most base components of Riemannian Geometry.
+Utils functions are low level functions that implement most base components of Riemannian geometry.
 
-Covariance preprocessing
-~~~~~~~~~~~~~~~~~~~~~~~~
+Covariance processing
+~~~~~~~~~~~~~~~~~~~~~
 .. _covariance_api:
 .. currentmodule:: pyriemann.utils.covariance
 
@@ -337,6 +338,7 @@ Aproximate Joint Diagonalization
 .. autosummary::
     :toctree: generated/
 
+    ajd
     ajd_pham
     rjd
     uwedge
@@ -370,6 +372,9 @@ Visualization
 .. autosummary::
     :toctree: generated/
 
-    plot_embedding
+    plot_bihist
+    plot_biscatter
     plot_cospectra
+    plot_cov_ellipse
+    plot_embedding
     plot_waveforms

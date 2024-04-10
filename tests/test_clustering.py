@@ -1,9 +1,14 @@
-from conftest import get_metrics
 import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
-from pyriemann.clustering import (Kmeans, KmeansPerClassTransform, Potato,
-                                  PotatoField)
+
+from conftest import get_metrics
+from pyriemann.clustering import (
+    Kmeans,
+    KmeansPerClassTransform,
+    Potato,
+    PotatoField,
+)
 
 
 @pytest.mark.parametrize(
