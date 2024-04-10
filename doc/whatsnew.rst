@@ -7,8 +7,8 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.6.dev
---------
+v0.6 (April 2024)
+-----------------
 
 - Update pyRiemann from Python 3.7 to 3.8. :pr:`254` by :user:`qbarthelemy`
 
