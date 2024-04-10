@@ -5,7 +5,7 @@ from warnings import warn
 from scipy.linalg import sqrtm, inv
 from numpy import iscomplexobj, real, any, isfinite
 from sklearn.base import BaseEstimator, TransformerMixin
-from pyriemann.estimation import covariances
+from ..estimation import covariances
 
 from ..utils.mean import mean_covariance
 from ..transfer import decode_domains

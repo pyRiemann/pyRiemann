@@ -129,7 +129,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
     .. versionadded:: 0.4
     """
 
-    def __init__(self, target_domain, metric='riemann'):
+    def __init__(self, target_domain="", metric='riemann'):
         """Init"""
         self.target_domain = target_domain
         self.metric = metric
@@ -181,7 +181,20 @@ class TLCenter(BaseEstimator, TransformerMixin):
             Set of SPD matrices with mean in the Identity.
         """
         # Used during inference, apply recenter from specified target domain.
-        return self.recenter_[self.target_domain].transform(X)
+
+        # Therefore, if you specified before the target
+        if self.target_domain != "":
+            recenter = self.recenter_[self.target_domain].transform(X)
+
+        # If you didn't specified, you must have fitted before on calibration
+        else:
+            keys = list(self.recenter_.keys())
+
+            # Get last reference matrix (after fitting on the calibration)
+            last = keys[-1]
+            recenter = self.recenter_[last].transform(X)
+
+        return recenter
 
     def fit_transform(self, X, y_enc, sample_weight=None):
         """Fit TLCenter and then transform data points.

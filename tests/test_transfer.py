@@ -55,18 +55,21 @@ def test_encode_decode_domains(rndstate):
     assert (domain == d_dec).all()
 
 
-@pytest.mark.parametrize("metric", ["riemann"])
+@pytest.mark.parametrize("metric", ["riemann", "euclid"])
 @pytest.mark.parametrize("sample_weight", [True, False])
-def test_tlcenter(rndstate, metric, sample_weight):
+@pytest.mark.parametrize("target_domain", ['target_domain', None])
+def test_tlcenter(rndstate, metric, sample_weight, target_domain):
     """Test pipeline for recentering data to Identity"""
     # check if the global mean of the domains is indeed Identity
-    rct = TLCenter(target_domain='target_domain', metric=metric)
+    rct = TLCenter(target_domain=target_domain, metric=metric)
     X, y_enc = make_classification_transfer(
         n_matrices=25, random_state=rndstate)
     if sample_weight:
         sample_weight_ = rndstate.rand(len(y_enc))
     else:
         sample_weight_ = None
+
+    # Test fit_transform
     X_rct = rct.fit_transform(X, y_enc, sample_weight_)
     _, _, domain = decode_domains(X_rct, y_enc)
     for d in np.unique(domain):
@@ -74,27 +77,53 @@ def test_tlcenter(rndstate, metric, sample_weight):
         Xd = X_rct[idx]
         if sample_weight:
             sample_weight_d = check_weights(sample_weight_[idx], np.sum(idx))
-            Md = mean_covariance(Xd, metric='riemann',
+            Md = mean_covariance(Xd, metric=metric,
                                  sample_weight=sample_weight_d)
         else:
-            Md = mean_covariance(Xd, metric='riemann')
+            Md = mean_covariance(Xd, metric=metric)
         assert Md == pytest.approx(np.eye(2))
 
 
-def test_ea(rndstate):
-    """Test Euclidean Alignment for recentering data to Identity"""
+@pytest.mark.parametrize("metric", ["riemann", "euclid"])
+@pytest.mark.parametrize("sample_weight", [True, False])
+@pytest.mark.parametrize("target_domain", ['target_domain', ''])
+def test_tlcenter_fit(rndstate, metric, sample_weight, target_domain):
+    """Test pipeline for recentering data to Identity"""
     # check if the global mean of the domains is indeed Identity
-    rct = EuclideanAlignment()
+    rct = TLCenter(target_domain=target_domain, metric=metric)
     X, y_enc = make_classification_transfer(
         n_matrices=25, random_state=rndstate)
-    X_rct = rct.fit_transform(X, y_enc)
-    _, _, domain = decode_domains(X_rct, y_enc)
+    if sample_weight:
+        sample_weight_ = rndstate.rand(len(y_enc))
+        sample_weight_1, sample_weight_2 = sample_weight_[:50], sample_weight_[50:]
+    else:
+        sample_weight_1, sample_weight_2 = None, None
+
+    _, _, domain = decode_domains(X, y_enc)
+
+    # Test fitting calibration and then test
+    X1, y1 = X[:50], y_enc[:50]
+    X2, y2 = X[50:], y_enc[50:]
+
+    X1_rct = rct.fit_transform(X1, y1, sample_weight=sample_weight_1)
+    rct.fit(X2, y2, sample_weight=sample_weight_2)
+    X2_rct = rct.transform(X2)
+
+    print(rct.recenter_.keys())
+
+    X_rct = np.concatenate((X1_rct, X2_rct))
+
     for d in np.unique(domain):
         idx = domain == d
         Xd = X_rct[idx]
-        Md = mean_covariance(Xd, metric='euclidean')
+        if sample_weight:
+            sample_weight_ = np.concatenate((sample_weight_1, sample_weight_2))
+            sample_weight_d = check_weights(sample_weight_[idx], np.sum(idx))
+            Md = mean_covariance(Xd, metric=metric,
+                                 sample_weight=sample_weight_d)
+        else:
+            Md = mean_covariance(Xd, metric=metric)
         assert Md == pytest.approx(np.eye(2))
-
 
 @pytest.mark.parametrize("centered_data", [True, False])
 @pytest.mark.parametrize("metric", ["riemann"])
