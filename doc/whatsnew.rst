@@ -7,7 +7,6 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-=======
 v0.7.dev
 --------
 
