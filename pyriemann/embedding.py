@@ -1,11 +1,10 @@
 """Embedding SPD matrices via manifold learning techniques."""
 
-import numpy as np
 import warnings
 
+import numpy as np
 from scipy.linalg import solve, eigh
 from scipy.sparse import csr_matrix
-
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.manifold import spectral_embedding
 
@@ -135,13 +134,13 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    n_components : int, default=2
-        Dimensionality of projected space. If None, n_components is set to
-        n_matrices - 1.
-    n_neighbors : int, default=5
-        Number of neighbors for reconstruction of each point. If None, all
-        available points are used. If n_neighbors > n_matrices, n_neighbors
-        is set to n_matrices - 1.
+    n_components : int | None, default=2
+        Dimensionality of projected space.
+        If None, ``n_components`` is set to ``n_matrices - 1``.
+    n_neighbors : int | None, default=5
+        Number of neighbors for reconstruction of each matrix.
+        If None, all available matrices are used.
+        If ``n_neighbors > n_matrices``, ``n_neighbors`` is set to ``n_matrices - 1``.
     metric : {"euclid", "logeuclid", "riemann"}, default: "riemann"
         Metric used for KNN and Kernel estimation.
     kernel : callable, default=None
