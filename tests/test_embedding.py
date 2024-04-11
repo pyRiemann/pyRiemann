@@ -11,6 +11,8 @@ from pyriemann.embedding import (
     locally_linear_embedding,
 )
 
+from pyriemann.utils.kernel import kernel
+
 rembd = [SpectralEmbedding, LocallyLinearEmbedding]
 
 
@@ -109,23 +111,18 @@ def test_spectral_embedding_parameters(metric, eps, get_mats):
 @pytest.mark.parametrize("metric", ['riemann', 'euclid', 'logeuclid'])
 @pytest.mark.parametrize("n_neighbors", [2, 4, 8, 16])
 @pytest.mark.parametrize("reg", [1e-3, 0])
-def test_locally_linear_parameters(metric, n_neighbors, reg, get_mats):
+@pytest.mark.parametrize("kernel_fct", [kernel, None])
+def test_locally_linear_parameters(metric, n_neighbors, reg, kernel_fct,
+                                   get_mats):
     """Test LocallyLinearEmbedding."""
-    n_matrices, n_channels, n_comp = 6, 3, 2
+    n_matrices, n_channels, n_components = 6, 3, 2
     covmats = get_mats(n_matrices, n_channels, "spd")
-
-    if n_matrices <= n_neighbors:
-        with pytest.raises(AssertionError):
-            embd = LocallyLinearEmbedding(metric=metric,
-                                          n_components=n_comp,
-                                          n_neighbors=n_neighbors)
-            embd.fit(covmats)
-    else:
-        embd = LocallyLinearEmbedding(metric=metric,
-                                      n_components=n_comp,
-                                      n_neighbors=n_neighbors)
-        covembd = embd.fit_transform(covmats)
-        assert covembd.shape == (n_matrices, n_comp)
+    embd = LocallyLinearEmbedding(metric=metric,
+                                  n_components=n_components,
+                                  n_neighbors=n_neighbors,
+                                  kernel=kernel_fct)
+    covembd = embd.fit_transform(covmats)
+    assert covembd.shape == (n_matrices, n_components)
 
 
 def test_barycenter_weights(get_mats):
