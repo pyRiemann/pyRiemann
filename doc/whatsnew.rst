@@ -7,6 +7,12 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
+v0.7
+-----------------
+
+- Add kernel option to LocallyLinearEmbedding. :pr:`293` by :user:`gabelstein`
+
+
 v0.6 (April 2024)
 -----------------
 
