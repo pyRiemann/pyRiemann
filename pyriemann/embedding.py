@@ -140,7 +140,8 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
     n_neighbors : int | None, default=5
         Number of neighbors for reconstruction of each matrix.
         If None, all available matrices are used.
-        If ``n_neighbors > n_matrices``, ``n_neighbors`` is set to ``n_matrices - 1``.
+        If ``n_neighbors > n_matrices``, ``n_neighbors`` is set to
+        ``n_matrices - 1``.
     metric : {"euclid", "logeuclid", "riemann"}, default: "riemann"
         Metric used for KNN and Kernel estimation.
     kernel : callable, default=None
