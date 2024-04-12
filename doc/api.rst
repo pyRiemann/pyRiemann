@@ -17,7 +17,8 @@ SPD Matrices Estimation
     ERPCovariances
     XdawnCovariances
     BlockCovariances
-    CospCovariances
+    CrossSpectra
+    CoSpectra
     Coherences
     TimeDelayCovariances
     Kernels

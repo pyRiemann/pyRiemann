@@ -52,7 +52,11 @@ setup(
             "seaborn",
             "pandas",
         ],
-        "tests": ["pytest", "seaborn", "flake8"],
+        "tests": [
+            "pytest",
+            "seaborn",
+            "flake8"
+        ],
     },
     zip_safe=False,
 )
