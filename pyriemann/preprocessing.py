@@ -195,7 +195,7 @@ class Whitening(BaseEstimator, TransformerMixin):
 
         Notes
         -----
-        .. versionadded:: 0.6
+        .. versionadded:: 0.7
         """
         n_matrices, n_channels, _ = X.shape
         if n_channels != self._mean.shape[-1]:
