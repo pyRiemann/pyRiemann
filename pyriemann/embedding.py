@@ -304,7 +304,7 @@ def barycenter_weights(X, Y, indices, metric="riemann", kernel=None, reg=1e-3):
         takes the arguments (X, Cref, metric).
     reg : float, default=1e-3
         Amount of regularization to add for the problem to be
-        well-posed in the case of n_neighbors > n_channels.
+        well-posed in the case of ``n_neighbors > n_channels``.
 
     Returns
     -------
