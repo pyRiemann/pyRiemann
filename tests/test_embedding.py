@@ -12,9 +12,9 @@ from pyriemann.embedding import (
 )
 
 from pyriemann.utils.kernel import (kernel,
-                                    kernel_euclid, # noqa
-                                    kernel_logeuclid, # noqa
-                                    kernel_riemann) # noqa
+                                    kernel_euclid,
+                                    kernel_logeuclid,
+                                    kernel_riemann)
 
 rembd = [SpectralEmbedding, LocallyLinearEmbedding]
 
