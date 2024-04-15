@@ -12,9 +12,7 @@ from pyriemann.embedding import (
 )
 
 from pyriemann.utils.kernel import (kernel,
-                                    kernel_euclid,
-                                    kernel_logeuclid,
-                                    kernel_riemann)
+                                    kernel_functions)
 
 rembd = [SpectralEmbedding, LocallyLinearEmbedding]
 
@@ -153,10 +151,9 @@ def test_locally_linear_none_kernel(metric, get_mats):
     """Test LocallyLinearEmbedding."""
     n_matrices, n_channels, n_components = 6, 3, 2
     covmats = get_mats(n_matrices, n_channels, "spd")
-    kernel_fun = globals()[f'kernel_{metric}']
 
     def kfun(X, Y=None, Cref=None, metric=None):
-        return kernel_fun(X, Y, Cref=Cref)
+        return kernel_functions[metric](X, Y, Cref=Cref)
 
     embd = LocallyLinearEmbedding(metric=metric,
                                   n_components=n_components,
