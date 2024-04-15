@@ -92,6 +92,7 @@ def test_spectral_embedding_parameters(metric, eps, get_mats):
     covembd = embd.fit_transform(covmats)
     assert covembd.shape == (n_matrices, n_comp)
 
+
 @pytest.mark.parametrize("n_components", [2, 4, 100])
 @pytest.mark.parametrize("embd", rembd)
 def test_embd_n_comp(n_components, embd, get_mats):
