@@ -362,12 +362,13 @@ def locally_linear_embedding(X,
     X : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
     n_components : int, default=2
-        Dimensionality of projected space. If None, n_components is set to
-        n_matrices - 1.
+        Dimensionality of projected space.
+        If None, ``n_components`` is set to ``n_matrices - 1``.
     n_neighbors : int, default=5
-        Number of neighbors for reconstruction of each point. If None, all
-        available points are used. If n_neighbors > n_matrices, n_neighbors
-        is set to n_matrices - 1.
+        Number of neighbors for reconstruction of each point.
+        If None, all available matrices are used.
+        If ``n_neighbors > n_matrices``, ``n_neighbors`` is set to
+        ``n_matrices - 1``.
     metric : {"euclid", "logeuclid", "riemann"}, default: "riemann"
         Metric used for KNN and Kernel estimation.
     kernel : callable, default=None
