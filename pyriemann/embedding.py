@@ -144,7 +144,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         ``n_matrices - 1``.
     metric : {"euclid", "logeuclid", "riemann"}, default: "riemann"
         Metric used for KNN and Kernel estimation.
-    kernel : callable, default=None
+    kernel : callable | None, default=None
         Kernel function to use for the embedding. If None, the canonical
         kernel specified by the metric is used. Must be a function that
         takes the arguments (X, Cref, metric).

@@ -11,7 +11,10 @@ from pyriemann.embedding import (
     locally_linear_embedding,
 )
 
-from pyriemann.utils.kernel import kernel
+from pyriemann.utils.kernel import (kernel,
+                                    kernel_euclid,
+                                    kernel_logeuclid,
+                                    kernel_riemann)
 
 rembd = [SpectralEmbedding, LocallyLinearEmbedding]
 
@@ -143,3 +146,24 @@ def test_locally_linear_embedding(get_mats):
                                                 n_components=n_comps)
     assert embedding.shape == (n_matrices, n_comps)
     assert isinstance(error, float)
+
+
+@pytest.mark.parametrize("metric", ['riemann', 'euclid', 'logeuclid'])
+def test_locally_linear_none_kernel(metric, get_mats):
+    """Test LocallyLinearEmbedding."""
+    n_matrices, n_channels, n_components = 6, 3, 2
+    covmats = get_mats(n_matrices, n_channels, "spd")
+    kernel_fun = globals()[f'kernel_{metric}']
+    kfun = lambda X, Y=None, Cref=None, metric=None: kernel_fun(X, Y, Cref=Cref)
+
+    embd = LocallyLinearEmbedding(metric=metric,
+                                  n_components=n_components,
+                                  kernel=kfun)
+    covembd = embd.fit_transform(covmats)
+
+    embd2 = LocallyLinearEmbedding(metric=metric,
+                                  n_components=n_components,
+                                  kernel=None)
+    covembd2 = embd2.fit_transform(covmats)
+
+    assert np.array_equal(covembd, covembd2)
