@@ -56,7 +56,7 @@ class TestEmbedding(EmbeddingTestCase):
     def embd_transform_error(self, embedding, covmats, n_components):
         embd = embedding(n_components=n_components)
         embd = embd.fit(covmats)
-        with pytest.raises(AssertionError):
+        with pytest.raises(ValueError):
             embd.transform(covmats[:-1, :-1, :-1])
 
     def embd_fit_independence(self, embedding, covmats, n_components):
@@ -85,19 +85,6 @@ class TestEmbedding(EmbeddingTestCase):
         assert score == 1.
 
 
-@pytest.mark.parametrize("n_components", [2, 4, 100])
-@pytest.mark.parametrize("embd", rembd)
-def embd_n_comp(n_components, embd, get_mats):
-    n_matrices, n_channels = 8, 3
-    covmats = get_mats(n_matrices, n_channels, "spd")
-    embd = embd(n_components=n_components)
-    if n_matrices <= n_components:
-        with pytest.raises(AssertionError):
-            embd.fit(covmats)
-    else:
-        embd.fit(covmats)
-
-
 @pytest.mark.parametrize("metric", get_metrics())
 @pytest.mark.parametrize("eps", [None, 0.1])
 def test_spectral_embedding_parameters(metric, eps, get_mats):
@@ -107,6 +94,18 @@ def test_spectral_embedding_parameters(metric, eps, get_mats):
     embd = SpectralEmbedding(metric=metric, n_components=n_comp, eps=eps)
     covembd = embd.fit_transform(covmats)
     assert covembd.shape == (n_matrices, n_comp)
+
+@pytest.mark.parametrize("n_components", [2, 4, 100])
+@pytest.mark.parametrize("embd", rembd)
+def test_embd_n_comp(n_components, embd, get_mats):
+    n_matrices, n_channels = 8, 3
+    covmats = get_mats(n_matrices, n_channels, "spd")
+    embd = embd(n_components=n_components)
+    if n_matrices <= n_components:
+        with pytest.raises(ValueError):
+            embd.fit(covmats)
+    else:
+        embd.fit(covmats)
 
 
 @pytest.mark.parametrize("metric", ['riemann', 'euclid', 'logeuclid'])

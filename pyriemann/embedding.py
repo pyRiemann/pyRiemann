@@ -429,18 +429,18 @@ def locally_linear_embedding(X,
 def _check_dimensions(X, Y=None, n_components=None, n_neighbors=None):
     n_matrices, n_channels, n_channels = X.shape
 
-    if Y is not None:
+    if Y is not None and Y.shape[1:] != (n_channels, n_channels):
         msg = f"Dimension of matrices in data to be transformed must match " \
               f"dimension of data used for fitting. Expected " \
               f"{(n_channels, n_channels)}, got {Y.shape[1:]}."
-        assert Y.shape[1:] == (n_channels, n_channels), msg
+        raise ValueError(msg)
 
     if n_components is None:
         n_components = n_matrices - 1
-    else:
+    elif n_components >= n_matrices:
         msg = f"n_components (is {n_components}) must be smaller than " \
               f"n_matrices (is {n_matrices})."
-        assert n_components < n_matrices, msg
+        raise ValueError(msg)
 
     if n_neighbors is None:
         n_neighbors = n_matrices - 1
