@@ -20,7 +20,7 @@ class Whitening(BaseEstimator, TransformerMixin):
     ----------
     metric : str, default='euclid'
         The metric for the estimation of mean matrix used for whitening and
-        dimension reduction.
+        dimension reduction. See list of available metrics in utils.mean
     dim_red : None | dict, default=None
         If ``None`` :
             no dimension reduction during whitening.
@@ -63,6 +63,7 @@ class Whitening(BaseEstimator, TransformerMixin):
         self.metric = metric
         self.dim_red = dim_red
         self.verbose = verbose
+        self.total_matrices_fit = None
 
     def fit(self, X, y=None, sample_weight=None):
         """Train whitening spatial filters.
@@ -105,6 +106,9 @@ class Whitening(BaseEstimator, TransformerMixin):
             raise ValueError("Unknown type for parameter dim_red: %r"
                              % type(self.dim_red))
 
+        #Save number of samples in this first fit in case partial fits follow
+        self.total_matrices_fit = X.shape[0]
+        
         return self
 
     def _get_eig(self):
@@ -173,7 +177,7 @@ class Whitening(BaseEstimator, TransformerMixin):
         self.filters_ = pca_filters * (1. / pca_sqrtvals)[np.newaxis, :]
         self.inv_filters_ = pca_sqrtvals[:, np.newaxis] * pca_filters.T
 
-    def partial_fit(self, X, y=None, alpha=0.1):
+    def partial_fit(self, X, y=None, alpha=None):
         """Partially fit whitening spatial filters.
 
         Parameters
@@ -182,16 +186,42 @@ class Whitening(BaseEstimator, TransformerMixin):
             Set of SPD matrices.
         y : None
             Ignored as unsupervised.
-        alpha : float, default=0.1
+        alpha : float, default=None
             Update rate in [0, 1] for the mean: 0 for no update, 1 for full
-            update.
+            update. If set to default, None, will track how many samples have 
+            been fit and give them proportional weight allowing for whitening 
+            in real-time, online applications.
+            I.e., alpha will be automatically set to 1/(n_matrices fit in total)
 
+        Note: Dimension reduction is not currently supported with a partial fit
+        
         Returns
         -------
         self : Whitening instance
             The Whitening instance.
         """
+        #Check if dimension reduction is set and partial_fit called
+        if self.dim_red:
+            raise ValueError(
+                "Dimension reduction not currently supported in a partial fit")
+        
+        #If alpha = None then keep track of total samples that have been fit
+        if not alpha:
+            #If number of matrices fit so far not yet tracked, begin tracking
+            if not self.total_matrices_fit:
+                self.total_matrices_fit = X.shape[0]
+            else:
+                self.total_matrices_fit += X.shape[0]
+
+            alpha = X.shape[0] / self.total_matrices_fit
+
         n_matrices, n_channels, _ = X.shape
+        
+        #If first time being fit, need to set existing mean
+        if not hasattr(self, '_mean'):
+            self._mean = mean_covariance(X, metric=self.metric)
+
+        #Check if number of channels matches previous fit
         if n_channels != self._mean.shape[-1]:
             raise ValueError(
                 "X does not have the good number of channels. Should be %d but"
@@ -206,8 +236,8 @@ class Whitening(BaseEstimator, TransformerMixin):
             else:               # pure online update
                 Xm = X[0]
             self._mean = geodesic(self._mean, Xm, alpha, metric=self.metric)
-            self._get_eig()
-            self._reduce_and_whiten()
+            self.filters_ = invsqrtm(self._mean)
+            self.inv_filters_ = sqrtm(self._mean)
 
         return self
 
