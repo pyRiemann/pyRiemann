@@ -94,7 +94,8 @@ def test_tlcenter_fit(rndstate, metric, sample_weight, target_domain):
         n_matrices=25, random_state=rndstate)
     if sample_weight:
         sample_weight_ = rndstate.rand(len(y_enc))
-        sample_weight_1, sample_weight_2 = sample_weight_[:50], sample_weight_[50:]
+        sample_weight_1 = sample_weight_[:50]
+        sample_weight_2 = sample_weight_[50:]
     else:
         sample_weight_1, sample_weight_2 = None, None
 
@@ -123,6 +124,7 @@ def test_tlcenter_fit(rndstate, metric, sample_weight, target_domain):
         else:
             Md = mean_covariance(Xd, metric=metric)
         assert Md == pytest.approx(np.eye(2))
+
 
 @pytest.mark.parametrize("centered_data", [True, False])
 @pytest.mark.parametrize("metric", ["riemann"])
