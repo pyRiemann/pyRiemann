@@ -103,7 +103,8 @@ def exp_map_logeuclid(X, Cref):
 
     .. math::
         \mathbf{X}_\text{original} =
-        \exp(\mathbf{X} + \log(\mathbf{C}_\text{ref}))
+        \exp(\log(\mathbf{C}_\text{ref}) +
+        [\text{D}_{\mathbf{C}_\text{ref}}\log](X))
 
     Parameters
     ----------
@@ -253,7 +254,8 @@ def log_map_logeuclid(X, Cref):
     according to a SPD/HPD reference matrix :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
-        \mathbf{X}_\text{new} = \log(\mathbf{X}) - \log(\mathbf{C}_\text{ref})
+        \mathbf{X}_\text{new} = [\text{D}_{\log(\mathbf{C}_\text{ref})}\exp]
+        (\log(\mathbf{X}) - \log(\mathbf{C}_\text{ref}))
 
     Parameters
     ----------
