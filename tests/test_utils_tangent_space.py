@@ -1,8 +1,8 @@
-from conftest import get_metrics
 import numpy as np
 import pytest
 from pytest import approx
 
+from conftest import get_metrics
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.tangentspace import (
     exp_map_euclid, exp_map_logeuclid, exp_map_riemann,

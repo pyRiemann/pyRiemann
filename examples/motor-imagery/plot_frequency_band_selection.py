@@ -13,16 +13,14 @@ data to the baseline with no frequency band selection [1]_.
 #
 # License: BSD (3-clause)
 
+from time import time
 
 import numpy as np
-from time import time
 from matplotlib import pyplot as plt
-
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
-
 from sklearn.model_selection import cross_val_score, ShuffleSplit
 
 from pyriemann.classification import MDM
@@ -31,7 +29,7 @@ from helpers.frequencybandselection_helpers import freq_selection_class_dis
 
 ###############################################################################
 # Set basic parameters and read data
-# ------------------------------------
+# ----------------------------------
 
 tmin, tmax = 0.5, 2.5
 event_id = dict(T1=2, T2=3)
@@ -78,7 +76,7 @@ epochs = Epochs(
 labels = epochs.events[:, -1] - 2
 
 # Get epochs
-epochs_data_baseline = epochs.get_data(units="uV")
+epochs_data_baseline = epochs.get_data(units="uV", copy=False)
 
 # Compute covariance matrices
 cov_data_baseline = Covariances().transform(epochs_data_baseline)
@@ -93,7 +91,7 @@ t1 = time() - t0
 
 ###############################################################################
 # Pipeline with a frequency band selection based on the class distinctiveness
-# ----------------------------------------------------------------------------
+# ---------------------------------------------------------------------------
 #
 # Step1: Select frequency band maximizing class distinctiveness on
 # training set.
@@ -125,8 +123,7 @@ best_raw_filter = raw.copy().filter(best_freq[0][0], best_freq[0][1],
                                     method='iir', picks=picks,
                                     verbose=False)
 
-events, _ = events_from_annotations(best_raw_filter, event_id,
-                                    verbose=False)
+events, _ = events_from_annotations(best_raw_filter, event_id, verbose=False)
 
 # Read epochs (train will be done only between 0.5 and 2.5s)
 epochs = Epochs(
@@ -142,7 +139,7 @@ epochs = Epochs(
     verbose=False)
 
 # Get epochs
-epochs_data_train = epochs.get_data(units="uV")
+epochs_data_train = epochs.get_data(units="uV", copy=False)
 
 # Estimate covariance matrices
 cov_data = Covariances().transform(epochs_data_train)
@@ -166,7 +163,7 @@ print("Total computational time with frequency band selection: "
 
 ###############################################################################
 # Plot selected frequency bands
-# ----------------------------------
+# -----------------------------
 #
 # Plot the class distinctiveness values for each sub_band,
 # along with the highlight of the finally selected frequency band.

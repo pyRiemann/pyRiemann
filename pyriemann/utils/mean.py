@@ -8,7 +8,7 @@ from .ajd import ajd_pham
 from .base import sqrtm, invsqrtm, logm, expm, powm
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann
-from .utils import check_weights
+from .utils import check_weights, check_function
 
 
 def _deprecate_covmats(covmats, X):
@@ -614,33 +614,20 @@ def mean_wasserstein(X=None, tol=10e-4, maxiter=50, init=None,
 
 
 mean_functions = {
-    'ale': mean_ale,
-    'alm': mean_alm,
-    'euclid': mean_euclid,
-    'harmonic': mean_harmonic,
-    'identity': mean_identity,
-    'kullback_sym': mean_kullback_sym,
-    'logdet': mean_logdet,
-    'logeuclid': mean_logeuclid,
-    'riemann': mean_riemann,
-    'wasserstein': mean_wasserstein,
+    "ale": mean_ale,
+    "alm": mean_alm,
+    "euclid": mean_euclid,
+    "harmonic": mean_harmonic,
+    "identity": mean_identity,
+    "kullback_sym": mean_kullback_sym,
+    "logdet": mean_logdet,
+    "logeuclid": mean_logeuclid,
+    "riemann": mean_riemann,
+    "wasserstein": mean_wasserstein,
 }
 
 
-def _check_mean_function(metric):
-    """Check mean function."""
-    if isinstance(metric, str):
-        if metric not in mean_functions.keys():
-            raise ValueError(f"Unknown mean metric '{metric}'")
-        else:
-            metric = mean_functions[metric]
-    elif not hasattr(metric, '__call__'):
-        raise ValueError("Mean metric must be a function or a string "
-                         f"(Got {type(metric)}.")
-    return metric
-
-
-def mean_covariance(X=None, metric='riemann', sample_weight=None, covmats=None,
+def mean_covariance(X=None, metric="riemann", sample_weight=None, covmats=None,
                     **kwargs):
     """Mean of matrices according to a metric.
 
@@ -650,10 +637,10 @@ def mean_covariance(X=None, metric='riemann', sample_weight=None, covmats=None,
     ----------
     X : ndarray, shape (n_matrices, n, n)
         Set of matrices.
-    metric : string, default='riemann'
-        The metric for mean, can be: 'ale', 'alm', 'euclid', 'harmonic',
-        'identity', 'kullback_sym', 'logdet', 'logeuclid', 'riemann',
-        'wasserstein', or a callable function.
+    metric : string | callable, default="riemann"
+        Metric for mean estimation, can be: "ale", "alm", "euclid", "harmonic",
+        "identity", "kullback_sym", "logdet", "logeuclid", "riemann",
+        "wasserstein", or a callable function.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
     **kwargs : dict
@@ -673,7 +660,7 @@ def mean_covariance(X=None, metric='riemann', sample_weight=None, covmats=None,
         Neuroinformatics, Springer, 2021, 19 (1), pp.93-106
     """
     X = _deprecate_covmats(covmats, X)
-    mean_function = _check_mean_function(metric)
+    mean_function = check_function(metric, mean_functions)
     M = mean_function(
         X,
         sample_weight=sample_weight,

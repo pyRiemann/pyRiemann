@@ -14,7 +14,6 @@ is trained to predict a 4-class problem for an offline setup.
 
 import numpy as np
 import matplotlib.pyplot as plt
-
 from mne import find_events, Epochs
 from mne.io import Raw
 from sklearn.model_selection import cross_val_score, RepeatedKFold
@@ -36,7 +35,7 @@ destination = download_data(subject=12, session=1)
 # Read data in MNE Raw and numpy format
 raw = Raw(destination, preload=True, verbose='ERROR')
 events = find_events(raw, shortest_event=0, verbose=False)
-raw = raw.pick_types(eeg=True)
+raw = raw.pick("eeg")
 
 event_id = {'13 Hz': 2, '17 Hz': 4, '21 Hz': 3, 'resting-state': 1}
 sfreq = int(raw.info['sfreq'])
@@ -100,7 +99,9 @@ raw_ext.plot(duration=n_seconds, start=14, n_channels=24,
 ###############################################################################
 # Building Epochs and plotting 3 s of the signal from electrode Oz for a trial
 
-epochs = Epochs(raw_ext, events, event_id, tmin=2, tmax=5, baseline=None)
+epochs = Epochs(
+    raw_ext, events, event_id, tmin=2, tmax=5, baseline=None
+).get_data(copy=False)
 
 n_seconds = 3
 time = np.linspace(0, n_seconds, n_seconds * sfreq,
@@ -108,7 +109,7 @@ time = np.linspace(0, n_seconds, n_seconds * sfreq,
 channels = range(0, len(raw_ext.ch_names), len(raw.ch_names))
 plt.figure(figsize=(7, 5))
 for f, c in zip(frequencies, channels):
-    plt.plot(epochs.get_data()[5, c, :].T, label=str(int(f))+' Hz')
+    plt.plot(epochs[5, c, :].T, label=str(int(f))+' Hz')
 plt.xlabel("Time (s)")
 plt.ylabel(r"Oz after filtering ($\mu$V)")
 plt.legend(loc='upper right')
@@ -125,8 +126,9 @@ plt.show()
 # The covariance matrices will be estimated using the Ledoit-Wolf shrinkage
 # estimator on the extended signal.
 
-cov_ext_trials = BlockCovariances(estimator='lwf',
-                                  block_size=8).transform(epochs.get_data())
+cov_ext_trials = BlockCovariances(
+    estimator='lwf', block_size=8
+).transform(epochs)
 
 # This plot shows an example of a covariance matrix observed for each class:
 ch_names = raw_ext.info['ch_names']

@@ -10,7 +10,10 @@ from pyriemann.estimation import (
     Covariances,
     ERPCovariances,
     XdawnCovariances,
+    CrossSpectra,
+    CoSpectra,
     CospCovariances,
+    TimeDelayCovariances,
     HankelCovariances,
     Coherences,
     Shrinkage,
@@ -20,6 +23,8 @@ from pyriemann.estimation import (
 from pyriemann.utils.test import (
     is_sym_pos_def as is_spd,
     is_sym_pos_semi_def as is_spsd,
+    is_herm_pos_semi_def as is_hpsd,
+    is_hankel
 )
 
 estim = ['corr', 'cov', 'lwf', 'mcd', 'oas', 'sch', 'scm']
@@ -62,20 +67,49 @@ def test_covariances_kwds(estimator, kwds, rndstate):
     )
 
 
-@pytest.mark.parametrize("delays", [4, [1, 2]])
-def test_hankel_covariances_delays(delays, rndstate):
+def test_time_delay_covariances_xtd():
+    x = np.array([
+        [[1, 2, 3, 4, 5], [11, 12, 13, 14, 15]],
+        [[-1, -2, -3, -4, -5], [-11, -12, -13, -14, -15]]
+    ])
+    cov = TimeDelayCovariances(delays=[1])
+    cov.fit_transform(x)
+
+    xtd = np.array([
+        [[1, 2, 3, 4, 5], [11, 12, 13, 14, 15],
+         [5, 1, 2, 3, 4], [15, 11, 12, 13, 14]],
+        [[-1, -2, -3, -4, -5], [-11, -12, -13, -14, -15],
+         [-5, -1, -2, -3, -4], [-15, -11, -12, -13, -14]]
+    ])
+    assert_array_equal(cov.Xtd_, xtd)
+
+
+@pytest.mark.parametrize("delays", [4, [1, 5]])
+def test_time_delay_covariances(delays, rndstate):
     n_matrices, n_channels, n_times = 2, 3, 100
     x = rndstate.randn(n_matrices, n_channels, n_times)
-    cov = HankelCovariances(delays=delays).fit(x)
+    cov = TimeDelayCovariances(delays=delays)
     covmats = cov.fit_transform(x)
     assert cov.get_params() == dict(estimator="scm", delays=delays)
-    if isinstance(delays, list):
-        n_delays = 1 + len(delays)
-    elif isinstance(delays, int):
+    if isinstance(delays, int):
         n_delays = delays
+    elif isinstance(delays, list):
+        n_delays = 1 + len(delays)
+
     assert covmats.shape == (n_matrices, n_delays * n_channels,
                              n_delays * n_channels)
+    assert cov.Xtd_.shape == (n_matrices, n_delays * n_channels, n_times)
     assert is_spd(covmats)
+    assert ~is_hankel(covmats[0])
+
+
+def test_hankel_covariances():
+    import warnings
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        HankelCovariances()
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
 
 
 @pytest.mark.parametrize("estimator", estim)
@@ -233,19 +267,31 @@ def test_block_covariances_block_size_type_error(rndstate):
         cov.fit_transform(x)
 
 
-def test_cosp_covariances(rndstate):
-    """Test fit CospCovariances"""
+@pytest.mark.parametrize("estim", [CrossSpectra, CoSpectra])
+def test_xspectra(estim, rndstate):
+    """Test CrossSpectra and CoSpectra"""
     n_matrices, n_channels, n_times = 2, 3, 1000
     x = rndstate.randn(n_matrices, n_channels, n_times)
-    cov = CospCovariances()
-    cov.fit(x)
-    covmats = cov.transform(x)
-    assert cov.get_params() == dict(
+    spectra = estim().fit(x)
+    mats = spectra.transform(x)
+    assert spectra.get_params() == dict(
         window=128, overlap=0.75, fmin=None, fmax=None, fs=None
     )
     n_freqs = 65
-    assert covmats.shape == (n_matrices, n_channels, n_channels, n_freqs)
-    assert is_spsd(covmats.transpose(0, 3, 1, 2))
+    assert mats.shape == (n_matrices, n_channels, n_channels, n_freqs)
+    if estim is CoSpectra:
+        assert is_spsd(mats.transpose(0, 3, 1, 2))
+    else:
+        assert is_hpsd(mats.transpose(0, 3, 1, 2))
+
+
+def test_cosp_covariances():
+    import warnings
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        CospCovariances()
+        assert len(w) == 1
+        assert issubclass(w[-1].category, DeprecationWarning)
 
 
 @pytest.mark.parametrize("coh", coh)

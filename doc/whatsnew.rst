@@ -7,8 +7,13 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.6.dev
+v0.7.dev
 --------
+
+- Add `partial_fit` function to :class:`pyriemann.preprocessing.Whitening` for online applications. :pr:`277` by :user:`qbarthelemy` and :user:`brentgaisford`
+
+v0.6 (April 2024)
+-----------------
 
 - Update pyRiemann from Python 3.7 to 3.8. :pr:`254` by :user:`qbarthelemy`
 
@@ -22,8 +27,6 @@ v0.6.dev
 
 - Correct :func:`pyriemann.utils.distance.distance_wasserstein` and :func:`pyriemann.utils.distance.distance_kullback`, keeping only real part. :pr:`267` by :user:`qbarthelemy`
 
-- Add ``sample_weight`` parameter in TLCenter, TLStretch and TLRotate. :pr:`273` by :user:`apmellot`
-
 - Deprecate input ``covmats`` for mean functions, renamed into ``X``. :pr:`252` by :user:`qbarthelemy`
 
 - Add support for complex covariance estimation for 'lwf', 'mcd', 'oas' and 'sch' estimators. :pr:`274` by :user:`gabelstein`
@@ -31,6 +34,23 @@ v0.6.dev
 - Deprecate input ``covtest`` for predict of :class:`pyriemann.classification.KNearestNeighbor`, renamed into ``X``. :pr:`259` by :user:`qbarthelemy`
 
 - Correct check for `kernel_fct` param of :class:`pyriemann.classification.SVC`. :pr:`272` by :user:`qbarthelemy`
+
+- Add ``sample_weight`` parameter in TLCenter, TLStretch and TLRotate. :pr:`273` by :user:`apmellot`
+
+- Deprecate ``HankelCovariances``, renamed into :class:`pyriemann.estimation.TimeDelayCovariances`. :pr:`275` by :user:`qbarthelemy`
+
+- Add an example on augmented covariance matrix. :pr:`276` by :user:`carraraig`
+
+- Remove function `make_covariances`. :pr:`280` by :user:`qbarthelemy`
+
+- Speedup :class:`pyriemann.estimation.TimeDelayCovariances`. :pr:`281` by :user:`qbarthelemy`
+
+- Enhance ajd module and add a generic :func:`pyriemann.utils.ajd.ajd` function. :pr:`238` by :user:`qbarthelemy`
+
+- Add :func:`pyriemann.utils.viz.plot_bihist`, :func:`pyriemann.utils.viz.plot_biscatter` and :func:`pyriemann.utils.viz.plot_cov_ellipse` for display. :pr:`287` 
+  by :user:`qbarthelemy` and :user:`gcattan`
+
+- Add :class:`pyriemann.estimation.CrossSpectra` and deprecate `CospCovariances` renamed into :class:`pyriemann.estimation.CoSpectra`. :pr:`288` by :user:`qbarthelemy`
 
 v0.5 (Jun 2023)
 ---------------

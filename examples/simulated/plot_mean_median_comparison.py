@@ -13,8 +13,8 @@ Riemannian geometric medians [2]_, on low-dimensional synthetic datasets.
 
 import numpy as np
 import matplotlib.pyplot as plt
-
 from sklearn.datasets import make_blobs
+
 from pyriemann.datasets import make_outliers
 from pyriemann.utils import mean_euclid, mean_riemann
 from pyriemann.utils import median_euclid, median_riemann

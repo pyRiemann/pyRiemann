@@ -5,7 +5,7 @@ Estimate mean of SPD matrices with NaN values
 
 Estimate the mean of SPD matrices corrupted by NaN values [1]_.
 """
-# Author: Quentin Barthélemy, Sylvain Chevallier and Florian Yger
+# Authors: Quentin Barthélemy, Sylvain Chevallier and Florian Yger
 #
 # License: BSD (3-clause)
 
@@ -14,7 +14,7 @@ from matplotlib import pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from pyriemann.datasets import make_covariances
+from pyriemann.datasets import make_matrices
 from pyriemann.utils.mean import mean_riemann, nanmean_riemann
 from pyriemann.utils.distance import distance_riemann
 
@@ -22,19 +22,19 @@ from pyriemann.utils.distance import distance_riemann
 ###############################################################################
 
 
-def corrupt(covmats, n_corrup_channels_max, rs):
-    n_matrices, n_channels, _ = covmats.shape
+def corrupt(mats, n_corrup_channels_max, rs):
+    n_matrices, n_channels, _ = mats.shape
     all_n_corrup_channels, all_corrup_channels = np.zeros(n_matrices), []
     for i_matrix in range(n_matrices):
         n_corrupt_channels = rs.randint(n_corrup_channels_max + 1, size=1)
         corrup_channels = rs.choice(
             np.arange(0, n_channels), size=n_corrupt_channels, replace=False)
         for i_channel in corrup_channels:
-            covmats[i_matrix, i_channel] = np.nan
-            covmats[i_matrix, :, i_channel] = np.nan
+            mats[i_matrix, i_channel] = np.nan
+            mats[i_matrix, :, i_channel] = np.nan
             all_corrup_channels.append(i_channel)
         all_n_corrup_channels[i_matrix] = n_corrupt_channels
-    return covmats, all_n_corrup_channels, all_corrup_channels
+    return mats, all_n_corrup_channels, all_corrup_channels
 
 
 ###############################################################################
@@ -43,19 +43,19 @@ def corrupt(covmats, n_corrup_channels_max, rs):
 
 rs = np.random.RandomState(42)
 n_matrices, n_channels = 100, 10
-covmats = make_covariances(
-    n_matrices, n_channels, rs, evals_mean=100., evals_std=20.)
+mats = make_matrices(
+    n_matrices, n_channels, "spd", rs, evals_low=50, evals_high=130)
 
 # Compute the reference, the Riemannian mean on all SPD matrices
-C_ref = mean_riemann(covmats)
+C_ref = mean_riemann(mats)
 
 # Corrupt data randomly
 n_corrup_channels_max = n_channels // 2
 print("Maximum number of corrupted channels: {} over {}".format(
     n_corrup_channels_max, n_channels))
 
-covmats, all_n_corrup_channels, all_corrup_channels = corrupt(
-    covmats, n_corrup_channels_max, rs)
+mats, all_n_corrup_channels, all_corrup_channels = corrupt(
+    mats, n_corrup_channels_max, rs)
 
 fig, ax = plt.subplots(nrows=1, ncols=1)
 ax.set(title='Histogram of the number of corrupted channels',
@@ -86,17 +86,17 @@ plt.show()
 # Nan-mean uses as much information as possible to estimate the mean [1]_.
 
 # Euclidean NaN-mean
-C_naneucl = np.nanmean(covmats, axis=0)
+C_naneucl = np.nanmean(mats, axis=0)
 
 # Riemannian NaN-mean
-C_nanriem = nanmean_riemann(covmats)
+C_nanriem = nanmean_riemann(mats)
 
 # Riemannian mean, after matrix deletion: average only uncorrupted matrices
-isnan = np.isnan(np.sum(covmats, axis=(1, 2)))
-covmats_ = np.delete(covmats, np.where(isnan), axis=0)
-perc = len(covmats_) / n_matrices * 100
+isnan = np.isnan(np.sum(mats, axis=(1, 2)))
+mats_ = np.delete(mats, np.where(isnan), axis=0)
+perc = len(mats_) / n_matrices * 100
 print("Percentage of uncorrupted matrices: {:.2f} %".format(perc))
-C_mdriem = mean_riemann(covmats_)
+C_mdriem = mean_riemann(mats_)
 
 
 ###############################################################################
@@ -125,20 +125,20 @@ print(f"Riemannian mean after deletion, distance to ref = {d_mdriem:.3f}")
 # Repeat the previous experiment, varying the maximum number of corrupted
 # channels [1]_.
 
-covmats_orig = make_covariances(
-    n_matrices, n_channels, rs, evals_mean=100., evals_std=20.)
-C_ref = mean_riemann(covmats_orig)
+mats_orig = make_matrices(
+    n_matrices, n_channels, "spd", rs, evals_low=50, evals_high=130)
+C_ref = mean_riemann(mats_orig)
 
 df = []
 for n_corrup_channels_max in range(0, n_channels // 2 + 1):
-    covmats = np.copy(covmats_orig)
-    covmats, _, _ = corrupt(covmats, n_corrup_channels_max, rs)
+    mats = np.copy(mats_orig)
+    mats, _, _ = corrupt(mats, n_corrup_channels_max, rs)
 
-    C_naneucl = np.nanmean(covmats, axis=0)
-    C_nanriem = nanmean_riemann(covmats)
-    isnan = np.isnan(np.sum(covmats, axis=(1, 2)))
-    covmats_ = np.delete(covmats, np.where(isnan), axis=0)
-    C_mdriem = mean_riemann(covmats_)
+    C_naneucl = np.nanmean(mats, axis=0)
+    C_nanriem = nanmean_riemann(mats)
+    isnan = np.isnan(np.sum(mats, axis=(1, 2)))
+    mats_ = np.delete(mats, np.where(isnan), axis=0)
+    C_mdriem = mean_riemann(mats_)
 
     res_naneucl = {'n_corrupt': n_corrup_channels_max,
                    'dist': distance_riemann(C_ref, C_naneucl),

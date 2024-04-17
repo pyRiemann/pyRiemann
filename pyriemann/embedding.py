@@ -25,9 +25,10 @@ class SpectralEmbedding(BaseEstimator):
     ----------
     n_components : integer, default=2
         The dimension of the projected subspace.
-    metric : string | dict, default='riemann'
-        The type of metric to be used for defining pairwise distance between
-        SPD matrices.
+    metric : string, default="riemann"
+        Metric used for defining pairwise distance between SPD matrices.
+        For the list of supported metrics,
+        see :func:`pyriemann.utils.distance.pairwise_distance`.
     eps : None | float, default=None
         The scaling of the Gaussian kernel. If none is given it will use the
         square of the median of pairwise distances between points.
@@ -41,7 +42,7 @@ class SpectralEmbedding(BaseEstimator):
         p. 1373-1396 , 2003
     """
 
-    def __init__(self, n_components=2, metric='riemann', eps=None):
+    def __init__(self, n_components=2, metric="riemann", eps=None):
         """Init."""
         self.metric = metric
         self.n_components = n_components
@@ -136,7 +137,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         Dimensionality of projected space.
     n_neighbors : int, default=5
         Number of neighbors for reconstruction of each point.
-    metric : {'riemann', 'logeuclid', 'euclid'}, default: 'riemann'
+    metric : {"euclid", "logeuclid", "riemann"}, default: "riemann"
         Metric used for KNN and Kernel estimation.
     reg : float, default=1e-3
         Regularization parameter.
@@ -168,7 +169,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         Pattern Recognition
     """
 
-    def __init__(self, n_components=2, n_neighbors=5, metric='riemann',
+    def __init__(self, n_components=2, n_neighbors=5, metric="riemann",
                  reg=1e-3):
         self.n_components = n_components
         self.n_neighbors = n_neighbors
@@ -265,7 +266,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         return self.embedding_
 
 
-def barycenter_weights(X, Y, indices, metric='riemann', reg=1e-3):
+def barycenter_weights(X, Y, indices, metric="riemann", reg=1e-3):
     """Compute Riemannian barycenter weights of X from Y along the first axis.
 
     Estimates the weights to assign to each point in Y[indices] to recover
@@ -279,7 +280,7 @@ def barycenter_weights(X, Y, indices, metric='riemann', reg=1e-3):
         Set of SPD matrices.
     indices : ndarray, shape (n_matrices, n_neighbors)
         Indices of the points in Y used to compute the barycenter
-    metric : {'riemann', 'logeuclid', 'euclid'}, default='riemann'
+    metric : {"euclid", "logeuclid", "riemann"}, default="riemann"
         Kernel metric.
     reg : float, default=1e-3
         Amount of regularization to add for the problem to be
@@ -320,7 +321,7 @@ def locally_linear_embedding(X,
                              *,
                              n_components=2,
                              n_neighbors=5,
-                             metric='riemann',
+                             metric="riemann",
                              reg=1e-3):
     """Perform a Locally Linear Embedding (LLE) of SPD matrices.
 
@@ -342,7 +343,7 @@ def locally_linear_embedding(X,
         Dimensionality of projected space.
     n_neighbors : int, default=5
         Number of neighbors for reconstruction of each point.
-    metric : {'riemann', 'logeuclid', 'euclid'}, default: 'riemann'
+    metric : {"euclid", "logeuclid", "riemann"}, default: "riemann"
         Metric used for KNN and Kernel estimation.
     reg : float, default=1e-3
         Regularization parameter.

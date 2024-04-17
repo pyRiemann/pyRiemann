@@ -1,6 +1,6 @@
 """
 ===============================================================================
-Compare covariance and kernel estimators with different time windows
+Compare covariance and kernel estimators
 ===============================================================================
 
 Comparison of covariance estimators for different EEG signal lengths and their
@@ -128,7 +128,7 @@ estimators = [
     "ker-rbf", "ker-polynomial", "ker-laplacian",
 ]
 tmin = -0.2
-w_len = np.linspace(0.2, 2, 10)
+w_len = np.linspace(0.5, 2.5, 5)
 n_matrices = 45
 dfc = list()
 
@@ -136,13 +136,13 @@ for wl in w_len:
     X = Epochs(
         raw,
         events,
-        event_ids,
-        tmin,
-        tmin + wl,
+        event_id=event_ids,
+        tmin=tmin,
+        tmax=tmin + wl,
         picks=picks,
         preload=True,
         verbose=False,
-    ).get_data()
+    ).get_data(copy=False)
     for est in estimators:
         est_class, est_param = est.split('-')
         if est_class == "ker":
@@ -150,7 +150,7 @@ for wl in w_len:
         else:
             covs = Covariances(estimator=est_param).transform(X)
         evals, _ = np.linalg.eigh(covs)
-        dfc.extend([dict(estimator=est, wlen=wl, cond=e[-1] / e[0])
+        dfc.extend([dict(estimator=est, wlen=wl, cond=max(e) / min(e))
                     for e in evals])
 dfc = pd.DataFrame(dfc)
 
@@ -173,7 +173,7 @@ plt.show()
 # especially when the matrices are estimated on short time windows.
 
 tmin = 0.0
-w_len = np.linspace(0.2, 2.0, 5)
+w_len = np.linspace(0.5, 2.5, 5)
 n_matrices, n_splits = 45, 5
 dfa = list()
 sc = "balanced_accuracy"
@@ -192,7 +192,7 @@ for wl in w_len:
         baseline=None,
         verbose=False,
     )
-    X = epochs.get_data()
+    X = epochs.get_data(copy=False)
     y = np.array([0 if ev == 2 else 1 for ev in epochs.events[:, -1]])
     for est in estimators:
         est_class, est_param = est.split('-')
@@ -218,7 +218,7 @@ sns.lineplot(
     hue="estimator",
     style="estimator",
     ax=ax,
-    ci=None,
+    errorbar=None,
     markers=True,
     dashes=False,
 )

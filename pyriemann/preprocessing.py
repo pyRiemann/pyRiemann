@@ -18,9 +18,11 @@ class Whitening(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    metric : str, default='euclid'
-        The metric for the estimation of mean matrix used for whitening and
-        dimension reduction. See list of available metrics in utils.mean
+    metric : str, default="euclid"
+        Metric for the estimation of mean matrix used for whitening and
+        dimension reduction.
+        For the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`.
     dim_red : None | dict, default=None
         If ``None`` :
             no dimension reduction during whitening.
@@ -58,7 +60,7 @@ class Whitening(BaseEstimator, TransformerMixin):
 
     """
 
-    def __init__(self, metric='euclid', dim_red=None, verbose=False):
+    def __init__(self, metric="euclid", dim_red=None, verbose=False):
         """Init."""
         self.metric = metric
         self.dim_red = dim_red
@@ -199,6 +201,10 @@ class Whitening(BaseEstimator, TransformerMixin):
         -------
         self : Whitening instance
             The Whitening instance.
+
+        Notes
+        -----
+        .. versionadded:: 0.7
         """
         #Check if dimension reduction is set and partial_fit called
         if self.dim_red:

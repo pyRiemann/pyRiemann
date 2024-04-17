@@ -187,12 +187,15 @@ def test_metric_str(classif, metric, get_mats, get_labels):
 
 @pytest.mark.parametrize("metric_mean", get_means())
 @pytest.mark.parametrize("metric_dist", get_distances())
-def test_metric_mdm(metric_mean, metric_dist, get_mats, get_labels):
-    n_matrices, n_channels, n_classes = 4, 3, 2
+@pytest.mark.parametrize("n_classes", [2, 3, 4])
+def test_metric_mdm(metric_mean, metric_dist, n_classes, get_mats, get_labels):
+    n_matrices, n_channels = 4 * n_classes, 3
     labels = get_labels(n_matrices, n_classes)
     covmats = get_mats(n_matrices, n_channels, "spd")
     clf = MDM(metric={"mean": metric_mean, "distance": metric_dist})
     clf.fit(covmats, labels).predict(covmats)
+    assert clf.classes_.shape == (n_classes,)
+    assert clf.covmeans_.shape == (n_classes, n_channels, n_channels)
 
 
 @pytest.mark.parametrize("metric_mean", get_means())

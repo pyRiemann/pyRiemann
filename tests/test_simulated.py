@@ -1,10 +1,9 @@
-import pytest
 import numpy as np
 from numpy.testing import assert_array_almost_equal
+import pytest
 
 from pyriemann.datasets.sampling import generate_random_spd_matrix
 from pyriemann.datasets.simulated import (
-    make_covariances,
     make_matrices,
     make_masks,
     make_gaussian_blobs,
@@ -17,18 +16,6 @@ from pyriemann.utils.test import (
     is_herm_pos_def as is_hpd,
     is_herm_pos_semi_def as is_hpsd,
 )
-
-
-def test_make_covariances(rndstate):
-    """Test function for make covariances."""
-    n_matrices, n_channels = 5, 4
-    X, evals, evecs = make_covariances(n_matrices=n_matrices,
-                                       n_channels=n_channels,
-                                       return_params=True,
-                                       rs=rndstate)
-    assert X.shape == (n_matrices, n_channels, n_channels)  # X shape mismatch
-    assert evals.shape == (n_matrices, n_channels)  # evals shape mismatch
-    assert evecs.shape == (n_channels, n_channels)  # evecs shape mismatch
 
 
 @pytest.mark.parametrize(

@@ -13,27 +13,8 @@ import warnings
 from .utils.kernel import kernel
 from .utils.mean import mean_covariance, mean_power
 from .utils.distance import distance
+from .utils.utils import check_metric
 from .tangentspace import FGDA, TangentSpace
-
-
-def _check_metric(metric):
-    if isinstance(metric, str):
-        metric_mean = metric
-        metric_dist = metric
-
-    elif isinstance(metric, dict):
-        # check keys
-        for key in ['mean', 'distance']:
-            if key not in metric.keys():
-                raise KeyError('metric must contain "mean" and "distance"')
-
-        metric_mean = metric['mean']
-        metric_dist = metric['distance']
-
-    else:
-        raise TypeError('metric must be dict or str')
-
-    return metric_mean, metric_dist
 
 
 def _mode_1d(X):
@@ -48,22 +29,29 @@ def _mode_2d(X, axis=1):
 
 
 class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
-    """Classification by Minimum Distance to Mean.
+    r"""Classification by Minimum Distance to Mean.
 
-    Classification by nearest centroid. For each of the given classes, a
-    centroid is estimated according to the chosen metric. Then, for each new
-    point, the class is affected according to the nearest centroid.
+    For each of the given classes :math:`k = 1, \ldots, K`, a centroid
+    :math:`\mathbf{M}^k` is estimated according to the chosen metric.
+
+    Then, for each new matrix :math:`\mathbf{X}`, the class is affected
+    according to the nearest centroid [1]_:
+
+    .. math::
+        \hat{k} = \arg \min_{k} d (\mathbf{X}, \mathbf{M}^k)
 
     Parameters
     ----------
-    metric : string | dict, default='riemann'
-        The type of metric used for centroid and distance estimation.
-        see `mean_covariance` for the list of supported metric.
-        the metric could be a dict with two keys, `mean` and `distance` in
-        order to pass different metrics for the centroid estimation and the
-        distance estimation. Typical usecase is to pass 'logeuclid' metric for
-        the mean in order to boost the computional speed and 'riemann' for the
-        distance in order to keep the good sensitivity for the classification.
+    metric : string | dict, default="riemann"
+        Metric used for mean estimation (for the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for distance estimation
+        (see :func:`pyriemann.utils.distance.distance`).
+        The metric can be a dict with two keys, "mean" and "distance"
+        in order to pass different metrics.
+        Typical usecase is to pass "logeuclid" metric for the "mean" in order
+        to boost the computional speed, and "riemann" for the "distance" in
+        order to keep the good sensitivity for the classification.
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
@@ -76,8 +64,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
     ----------
     classes_ : ndarray, shape (n_classes,)
         Labels for each class.
-    covmeans_ : list of ``n_classes`` ndarrays of shape (n_channels, \
-            n_channels)
+    covmeans_ : ndarray, shape (n_classes, n_channels, n_channels)
         Centroids for each class.
 
     See Also
@@ -100,7 +87,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         (LVA/ICA 2010), LNCS vol. 6365, 2010, p. 629-636.
     """
 
-    def __init__(self, metric='riemann', n_jobs=1):
+    def __init__(self, metric="riemann", n_jobs=1):
         """Init."""
         self.metric = metric
         self.n_jobs = n_jobs
@@ -122,7 +109,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : MDM instance
             The MDM instance.
         """
-        self.metric_mean, self.metric_dist = _check_metric(self.metric)
+        self.metric_mean, self.metric_dist = check_metric(self.metric)
         self.classes_ = np.unique(y)
 
         if sample_weight is None:
@@ -138,6 +125,8 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
                 delayed(mean_covariance)(X[y == ll], metric=self.metric_mean,
                                          sample_weight=sample_weight[y == ll])
                 for ll in self.classes_)
+
+        self.covmeans_ = np.stack(self.covmeans_, axis=0)
 
         return self
 
@@ -219,14 +208,14 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     Parameters
     ----------
-    metric : string | dict, default='riemann'
-        The type of metric used for reference matrix estimation (see
-        `mean_covariance` for the list of supported metric), for distance
-        estimation, and for tangent space map (see `tangent_space` for the list
-        of supported metric).
-        The metric could be a dict with three keys, `mean`, `dist` and `map` in
-        order to pass different metrics for the reference matrix estimation,
-        the distance estimation, and the tangent space mapping.
+    metric : string | dict, default="riemann"
+        Metric used for reference matrix estimation (for the list of supported
+        metrics, see :func:`pyriemann.utils.mean.mean_covariance`),
+        for distance estimation (see :func:`pyriemann.utils.distance.distance`)
+        and for tangent space map
+        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        The metric can be a dict with three keys, "mean", "dist" and "map" in
+        order to pass different metrics.
     tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]_. This is not compatible with
@@ -265,7 +254,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         Elsevier, 2013, 112, pp.172-178.
     """
 
-    def __init__(self, metric='riemann', tsupdate=False, n_jobs=1):
+    def __init__(self, metric="riemann", tsupdate=False, n_jobs=1):
         """Init."""
         self.metric = metric
         self.n_jobs = n_jobs
@@ -355,13 +344,14 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
 
     Parameters
     ----------
-    metric : string | dict, default='riemann'
-        The type of metric used for reference matrix estimation (see
-        `mean_covariance` for the list of supported metric) and for tangent
-        space map (see `tangent_space` for the list of supported metric).
-        The metric could be a dict with two keys, `mean` and `map` in
-        order to pass different metrics for the reference matrix estimation
-        and the tangent space mapping.
+    metric : string | dict, default="riemann"
+        The type of metric used
+        for reference matrix estimation (for the list of supported metrics
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for tangent space map
+        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        The metric can be a dict with two keys, "mean" and "map"
+        in order to pass different metrics.
     tsupdate : bool, default=False
         Activate tangent space update for covariate shift correction between
         training and test, as described in [2]. This is not compatible with
@@ -384,7 +374,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
     .. versionadded:: 0.2.4
     """
 
-    def __init__(self, metric='riemann', tsupdate=False,
+    def __init__(self, metric="riemann", tsupdate=False,
                  clf=LogisticRegression()):
         """Init."""
         self.metric = metric
@@ -464,9 +454,13 @@ class KNearestNeighbor(MDM):
     ----------
     n_neighbors : int, default=5
         Number of neighbors.
-    metric : string | dict, default='riemann'
-        The type of metric used for distance estimation.
-        see `distance` for the list of supported metric.
+    metric : string | dict, default="riemann"
+        Metric used for means estimation (for the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for distance estimation
+        (see :func:`pyriemann.utils.distance.distance`).
+        The metric can be a dict with two keys, "mean" and "distance"
+        in order to pass different metrics.
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the distance to the training set in parallel.
@@ -491,7 +485,7 @@ class KNearestNeighbor(MDM):
 
     """
 
-    def __init__(self, n_neighbors=5, metric='riemann', n_jobs=1):
+    def __init__(self, n_neighbors=5, metric="riemann", n_jobs=1):
         """Init."""
         self.n_neighbors = n_neighbors
         MDM.__init__(self, metric=metric, n_jobs=n_jobs)
@@ -513,7 +507,7 @@ class KNearestNeighbor(MDM):
         self : NearestNeighbor instance
             The NearestNeighbor instance.
         """
-        self.metric_mean, self.metric_dist = _check_metric(self.metric)
+        self.metric_mean, self.metric_dist = check_metric(self.metric)
         self.covmeans_ = X
         self.classmeans_ = y
         self.classes_ = np.unique(y)
@@ -583,7 +577,7 @@ class SVC(sklearnSVC):
 
     Parameters
     ----------
-    metric : {"riemann", "euclid", "logeuclid"}, default="riemann"
+    metric : {"euclid", "logeuclid", "riemann"}, default="riemann"
         Metric for kernel matrix computation.
     Cref : None | callable | ndarray, shape (n_channels, n_channels)
         Reference point for kernel matrix computation.
@@ -761,9 +755,10 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
           distances to means of the field is the lowest;
         * inf_means: it assigns the covariance to the class of the closest mean
           of the field.
-    metric : string | dict, default='riemann'
-        The type of metric used for distance estimation during prediction.
-        See `distance` for the list of supported metric.
+    metric : string, default="riemann"
+        Metric used for distance estimation during prediction.
+        For the list of supported metrics,
+        see :func:`pyriemann.utils.distance.distance`.
 
     Attributes
     ----------
@@ -790,7 +785,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
     """
 
     def __init__(self, power_list=[-1, 0, 1], method_label='sum_means',
-                 metric='riemann', n_jobs=1):
+                 metric="riemann", n_jobs=1):
         """Init."""
         self.power_list = power_list
         self.method_label = method_label
@@ -926,38 +921,39 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         return softmax(-self._predict_distances(X) ** 2)
 
 
-def class_distinctiveness(X, y, exponent=1, metric='riemann',
+def class_distinctiveness(X, y, exponent=1, metric="riemann",
                           return_num_denom=False):
     r"""Measure class distinctiveness between classes of SPD matrices.
 
-    For two class problem, the class distinctiveness between class A
-    and B on the manifold of SPD matrices is quantified as [1]_:
+    For two class problem, the class distinctiveness between class :math:`K_1`
+    and :math:`K_2` on the manifold of SPD matrices is quantified as [1]_:
 
     .. math::
-        \mathrm{classDis}(A, B, p) = \frac{d \left(\bar{X}^{A},
-        \bar{X}^{B}\right)^p}
-        {\frac{1}{2} \left( \sigma_{X^{A}}^p + \sigma_{X^{B}}^p \right)}
+        \mathrm{classDis}(K_1, K_2, p) =
+        \frac{d \left( \mathbf{M}_{K_1}, \mathbf{M}_{K_2} \right)^p}
+        {\frac{1}{2} \left( \sigma_{K_1}^p + \sigma_{K_2}^p \right)}
 
-    where :math:`\bar{X}^{K}` is the center of class K, ie the mean of matrices
-    from class K (see :func:`pyriemann.utils.mean.mean_covariance`) and
-    :math:`\sigma_{X^{K}}` is the class dispersion, ie the mean of distances
-    between matrices from class K and their center of class
-    :math:`\bar{X}^{K}`:
+    where :math:`\mathbf{M}_K` is the center of class :math:`K`, ie the mean of
+    matrices from class :math:`K`; and
+    :math:`\sigma_K` is the class dispersion, ie the mean of distances between
+    matrices from class :math:`K` and their center of class
+    :math:`\mathbf{M}_K`:
 
     .. math::
-        \sigma_{X^{K}}^p = \frac{1}{m} \sum_{i=1}^m d
-        \left(X_i, \bar{X}^{K}\right)^p
+        \sigma_K^p = \frac{1}{m} \sum_{i=1}^m d
+        \left(X_i, \mathbf{M}_K \right)^p
+
+    and :math:`p` is the exponentiation of the distance.
 
     For more than two classes, it is quantified as:
 
     .. math::
-        \mathrm{classDis}\left(\left\{K_{j}\right\}, p\right) =
-        \frac{\sum_{j=1}^{c} d\left(\bar{X}^{K_{j}}, \tilde{X}\right)^p}
-        {\sum_{j=1}^{c} \sigma_{X^{K_{j}}}^p}
+        \mathrm{classDis} \left( \left\{K_{j} \right\}_{j=1}^c, p \right) =
+        \frac{\sum_{j=1}^c d\left(\mathbf{M}_{K_{j}},\bar{\mathbf{M}}\right)^p}
+        {\sum_{j=1}^c \sigma_{K_{j}}^p}
 
-    where :math:`\tilde{X}` is the mean of centers of class of all :math:`c`
-    classes and :math:`p` is the exponentiation of the distance measure
-    named exponent at the input of this function.
+    where :math:`\bar{\mathbf{M}}` is the mean of centers of class of all
+    :math:`c` classes.
 
     Parameters
     ----------
@@ -973,15 +969,16 @@ def class_distinctiveness(X, y, exponent=1, metric='riemann',
         - exponent = 2 gives the Fisher criterion generalized on the manifold,
           ie the ratio of the variance between the classes to the variance
           within the classes.
-    metric : string | dict, default='riemann'
-        The type of metric used for centroid and distance estimation.
-        See `mean_covariance` for the list of supported metric.
-        The metric could be a dict with two keys, `mean` and `distance` in
-        order to pass different metrics for the centroid estimation and the
-        distance estimation. The original equation of class distinctiveness
-        in [1]_ uses 'riemann' for both the centroid estimation and the
-        distance estimation but you can customize other metrics with your
-        interests.
+    metric : string | dict, default="riemann"
+        Metric used for mean estimation (for the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for distance estimation
+        (see :func:`pyriemann.utils.distance.distance`).
+        The metric can be a dict with two keys, "mean" and "distance"
+        in order to pass different metrics.
+        The original equation of class distinctiveness in [1]_ uses "riemann"
+        for both the centroid estimation and the distance estimation but you
+        can provide other metrics depending on your interests.
     return_num_denom : bool, default=False
         Whether to return numerator and denominator of class_dis.
 
@@ -1009,10 +1006,10 @@ def class_distinctiveness(X, y, exponent=1, metric='riemann',
        15(4), 046030, 2018.
     """
 
-    metric_mean, metric_dist = _check_metric(metric)
+    metric_mean, metric_dist = check_metric(metric)
     classes = np.unique(y)
     if len(classes) <= 1:
-        raise ValueError('X must contain at least two classes')
+        raise ValueError("X must contain at least two classes")
 
     means = np.array([
         mean_covariance(X[y == ll], metric=metric_mean) for ll in classes
