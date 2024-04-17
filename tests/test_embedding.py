@@ -113,7 +113,7 @@ def test_embd_n_comp(n_components, embd, get_mats):
 def test_locally_linear_parameters(metric, n_neighbors, reg, kernel_fct,
                                    get_mats):
     """Test LocallyLinearEmbedding."""
-    n_matrices, n_channels, n_components = 6, 3, 2
+    n_matrices, n_channels, n_components = n_neighbors + 5, 3, 2
     covmats = get_mats(n_matrices, n_channels, "spd")
     embd = LocallyLinearEmbedding(metric=metric,
                                   n_components=n_components,
