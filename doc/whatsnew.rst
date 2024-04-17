@@ -52,6 +52,8 @@ v0.6 (April 2024)
 
 - Add :class:`pyriemann.estimation.CrossSpectra` and deprecate `CospCovariances` renamed into :class:`pyriemann.estimation.CoSpectra`. :pr:`288` by :user:`qbarthelemy`
 
+- Adapt :class:`pyriemann.transfer._estimators.TLCenter` to allow integration with MOABB pipelines and evaluations. :pr:`292` by :user:`brunaafl`
+
 v0.5 (Jun 2023)
 ---------------
 

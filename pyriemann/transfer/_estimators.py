@@ -103,17 +103,21 @@ class TLCenter(BaseEstimator, TransformerMixin):
     Parameters
     ----------
     target_domain : str
-        Domain to consider as target.
+        Domain to consider as target in ``transform()`` function:
+
+        * if not empty, ``transform()`` recenters matrices to the specified
+          target domain;
+        * else, ``transform()`` recenters matrices to the last fitted domain.
     metric : str, default="riemann"
         Metric used for mean estimation. For the list of supported metrics,
         see :func:`pyriemann.utils.mean.mean_covariance`.
         Note, however, that only when using the "riemann" metric that we are
-        ensured to re-center the data points precisely to the Identity.
+        ensured to re-center the matrices precisely to the Identity.
 
     Attributes
     ----------
     recenter_ : dict
-        Dictionary with key=domain_name and value=domain_mean.
+        If fit, dictionary with key=domain_name and value=domain_mean.
 
     References
     ----------
@@ -122,6 +126,10 @@ class TLCenter(BaseEstimator, TransformerMixin):
         <https://hal.archives-ouvertes.fr/hal-01923278/>`_
         P Zanini et al, IEEE Transactions on Biomedical Engineering, vol. 65,
         no. 5, pp. 1107-1116, August, 2017
+    .. [2] `Transfer Learning for Brain-Computer Interfaces:
+        A Euclidean Space Data Alignment Approach
+        <https://arxiv.org/abs/1808.05464>`_
+        He He and Dongrui Wu, IEEE Transactions on Biomedical Engineering, 2019
 
     Notes
     -----
@@ -136,7 +144,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
     def fit(self, X, y_enc, sample_weight=None):
         """Fit TLCenter.
 
-        Calculate the mean of all matrices in each domain.
+        For each domain, calculates the mean of matrices of this domain.
 
         Parameters
         ----------
@@ -165,7 +173,11 @@ class TLCenter(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X, y_enc=None):
-        """Re-center the data points in the target domain to Identity.
+        """Re-center matrices in the target domain.
+
+        .. note::
+           This method is designed for using at test time,
+           recentering all matrices in target domain.
 
         Parameters
         ----------
@@ -177,16 +189,24 @@ class TLCenter(BaseEstimator, TransformerMixin):
         Returns
         -------
         X : ndarray, shape (n_matrices, n_classes)
-            Set of SPD matrices with mean in the Identity.
+            Set of recentered SPD matrices.
         """
-        # Used during inference, apply recenter from specified target domain.
-        return self.recenter_[self.target_domain].transform(X)
+        # if target domain is specified, use it
+        if self.target_domain != "":
+            target_domain = self.target_domain
+        # else, use last calibrated domain as target domain
+        else:
+            keys = list(self.recenter_.keys())
+            target_domain = keys[-1]
+
+        X_rct = self.recenter_[target_domain].transform(X)
+        return X_rct
 
     def fit_transform(self, X, y_enc, sample_weight=None):
-        """Fit TLCenter and then transform data points.
+        """Fit TLCenter and then transform matrices.
 
-        Calculate the mean of all matrices in each domain and then recenter
-        them to Identity.
+        For each domain, calculates the mean of matrices of this domain and
+        then recenters them to Identity.
 
         .. note::
            This method is designed for using at training time. The output for
@@ -205,9 +225,8 @@ class TLCenter(BaseEstimator, TransformerMixin):
         Returns
         -------
         X : ndarray, shape (n_matrices, n_classes)
-            Set of SPD matrices with mean in the Identity.
+            Set of recentered SPD matrices.
         """
-        # Used during fit, in pipeline
         self.fit(X, y_enc, sample_weight)
         _, _, domains = decode_domains(X, y_enc)
 
