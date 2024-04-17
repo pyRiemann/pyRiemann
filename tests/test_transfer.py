@@ -29,7 +29,6 @@ from pyriemann.transfer import (
     TLRegressor,
     MDWM,
 )
-from pyriemann.transfer.euclidean import EuclideanAlignment
 from pyriemann.utils.distance import distance, distance_riemann
 from pyriemann.utils.mean import mean_covariance, mean_riemann
 from pyriemann.utils.utils import check_weights
