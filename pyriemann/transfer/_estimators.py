@@ -196,8 +196,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
             target_domain = self.target_domain
         # else, use last calibrated domain as target domain
         else:
-            keys = list(self.recenter_.keys())
-            target_domain = keys[-1]
+            target_domain = list(self.recenter_.keys())[-1]
 
         X_rct = self.recenter_[target_domain].transform(X)
         return X_rct

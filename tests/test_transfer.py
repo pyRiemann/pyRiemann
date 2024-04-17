@@ -56,7 +56,7 @@ def test_encode_decode_domains(rndstate):
 
 @pytest.mark.parametrize("metric", ["riemann", "euclid"])
 @pytest.mark.parametrize("sample_weight", [True, False])
-@pytest.mark.parametrize("target_domain", ['target_domain', None])
+@pytest.mark.parametrize("target_domain", ["target_domain", ""])
 def test_tlcenter(rndstate, metric, sample_weight, target_domain):
     """Test pipeline for recentering data to Identity"""
     # check if the global mean of the domains is indeed Identity
@@ -85,9 +85,9 @@ def test_tlcenter(rndstate, metric, sample_weight, target_domain):
 
 @pytest.mark.parametrize("metric", ["riemann", "euclid"])
 @pytest.mark.parametrize("sample_weight", [True, False])
-@pytest.mark.parametrize("target_domain", ['target_domain', ''])
-def test_tlcenter_fit(rndstate, metric, sample_weight, target_domain):
-    """Test pipeline for recentering data to Identity"""
+@pytest.mark.parametrize("target_domain", ["target_domain", ""])
+def test_tlcenter_fit_transf(rndstate, metric, sample_weight, target_domain):
+    """Test .fit_transform() versus .fit().transform()"""
     # check if the global mean of the domains is indeed Identity
     rct = TLCenter(target_domain=target_domain, metric=metric)
     X, y_enc = make_classification_transfer(
@@ -106,11 +106,7 @@ def test_tlcenter_fit(rndstate, metric, sample_weight, target_domain):
     X2, y2 = X[50:], y_enc[50:]
 
     X1_rct = rct.fit_transform(X1, y1, sample_weight=sample_weight_1)
-    rct.fit(X2, y2, sample_weight=sample_weight_2)
-    X2_rct = rct.transform(X2)
-
-    print(rct.recenter_.keys())
-
+    X2_rct = rct.fit(X2, y2, sample_weight=sample_weight_2).transform(X2)
     X_rct = np.concatenate((X1_rct, X2_rct))
 
     for d in np.unique(domain):
