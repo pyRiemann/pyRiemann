@@ -10,7 +10,9 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.7.dev
 --------
 
-- Add kernel option to :class:`pyriemann.embedding.LocallyLinearEmbedding`. :pr:`293` by :user:`gabelstein`
+- Add ``kernel`` parameter to :class:`pyriemann.embedding.LocallyLinearEmbedding`. :pr:`293` by :user:`gabelstein`
+
+- Add possibility for ``target_domain`` parameter of :class:`pyriemann.transfer._estimators.TLCenter` to be empty, forcing ``transform()`` to recenter matrices to the last fitted domain. :pr:`292` by :user:`brunaafl`
 
 v0.6 (April 2024)
 -----------------
