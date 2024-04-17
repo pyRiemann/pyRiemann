@@ -234,8 +234,8 @@ def nearest_sym_pos_def(X, reg=1e-6):
     return np.array([_nearest_sym_pos_def(x, reg) for x in X])
 
 
-def first_divided_difference(S, fun, der, atol=1e-6, rtol=1e-6):
-    """First divided difference of a matrix function.
+def first_divided_difference(d, function, derivative, atol=1e-14, rtol=1e-14):
+    r"""First divided difference of a matrix function.
 
     First divided difference of a matrix function applied to the eigenvalues
     of a symmetric matrix. The first divided difference is defined as [1]_:
@@ -244,7 +244,8 @@ def first_divided_difference(S, fun, der, atol=1e-6, rtol=1e-6):
 
        [F^{[1]}(\Lambda_S)]_{i,j} =
            \begin{cases}
-           \frac{f(\lambda_i)-f(\lambda_j)}{\lambda_i-\lambda_j}, & \lambda_i \neq \lambda_j\\
+           \frac{f(\lambda_i)-f(\lambda_j)}{\lambda_i-\lambda_j}, & \lambda_i
+           \neq \lambda_j\\
            f'(\lambda_i),
            & \lambda_i = \lambda_j
            \end{cases}
@@ -252,17 +253,18 @@ def first_divided_difference(S, fun, der, atol=1e-6, rtol=1e-6):
 
     Parameters
     ----------
-    S : ndarray, shape (n, n)
+    d : ndarray, shape (n,)
         Eigenvalues of a Symmetric matrix.
     function : callable
-        Function to apply to eigenvalues of S. Has to be defined for all
-        possible eigenvalues of S.
-    derivative : function
+        Function to apply to eigenvalues of d. Has to be defined for all
+        possible eigenvalues of d.
+    derivative : callable
         Derivative of the function to apply. Has to be defined for all
-        possible eigenvalues of S.
-    precision : float
-        Precision cutoff of differences of eigenvalues under which the
-        derivative is applied instead of the function.
+        possible eigenvalues of d.
+    atol : float, default=1e-10
+        Absolute tolerance for equality of eigenvalues.
+    rtol : float, default=1e-10
+        Relative tolerance for equality of eigenvalues.
 
     Returns
     -------
@@ -279,12 +281,11 @@ def first_divided_difference(S, fun, der, atol=1e-6, rtol=1e-6):
     .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
         R. Bhatia, Springer, 1997
     """
-    n = len(S)
+    n = len(d)
     dif = np.zeros((n, n))
-    dif += S
+    dif += d
     close_ = np.isclose(dif, dif.T, atol=atol, rtol=rtol)
-    dif[close_] = der(dif[close_])
-    dif[~close_] = (fun(dif[~close_]) -
-                    fun(dif.T[~close_])) / (dif[~close_] - dif.T[~close_])
+    dif[close_] = derivative(dif[close_])
+    dif[~close_] = (function(dif[~close_]) -
+                    function(dif.T[~close_])) / (dif[~close_] - dif.T[~close_])
     return dif
-
