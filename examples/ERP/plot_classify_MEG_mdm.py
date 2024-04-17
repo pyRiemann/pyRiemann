@@ -17,13 +17,9 @@ for mean-covariance matrices used by the classification algorithm.
 
 import numpy as np
 from matplotlib import pyplot as plt
-from pyriemann.estimation import XdawnCovariances
-from pyriemann.classification import MDM
-
 import mne
 from mne import io
 from mne.datasets import sample
-
 from sklearn.metrics import (
     classification_report,
     confusion_matrix,
@@ -31,6 +27,9 @@ from sklearn.metrics import (
 )
 from sklearn.model_selection import KFold
 from sklearn.pipeline import make_pipeline
+
+from pyriemann.classification import MDM
+from pyriemann.estimation import XdawnCovariances
 
 print(__doc__)
 

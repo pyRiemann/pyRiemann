@@ -1,8 +1,9 @@
-from conftest import requires_matplotlib
 import numpy as np
+import pytest
+
+from conftest import requires_matplotlib
 from pyriemann.stats import PermutationDistance, PermutationModel
 from pyriemann.spatialfilters import CSP
-import pytest
 
 
 def test_permutation_badmode():

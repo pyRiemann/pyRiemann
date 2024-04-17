@@ -1,41 +1,45 @@
 """Aproximate joint diagonalization algorithms."""
 
 import numpy as np
-from .utils import check_weights
+import warnings
+
+from .utils import check_weights, check_function
 
 
 def _check_init_diag(init, n):
     if init.shape != (n, n):
         raise ValueError(
-            'Initial diagonalizer shape must be %d x % d (Got %s).'
+            "Initial diagonalizer shape must be %d x % d (Got %s)."
             % (n, n, init.shape,))
     return init
 
 
-def rjd(X, *, init=None, eps=1e-8, n_iter_max=1000):
-    """Approximate joint diagonalization based on Jacobi angles.
+def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
+    """Approximate joint diagonalization based on JADE.
 
-    This is a direct implementation of the AJD algorithm by Cardoso and
-    Souloumiac [1]_ used in JADE. The code is a translation of the Matlab code
-    provided in the author website.
+    This is an implementation of the orthogonal AJD algorithm [1]_: joint
+    approximate diagonalization of eigen-matrices (JADE), based on Jacobi
+    angles.
+    The code is a translation of the Matlab code provided on the author's
+    website.
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_channels, n_channels)
+    X : ndarray, shape (n_matrices, n, n)
         Set of symmetric matrices to diagonalize.
-    init : None | ndarray, shape (n_channels, n_channels), default=None
+    init : None | ndarray, shape (n, n), default=None
         Initialization for the diagonalizer.
     eps : float, default=1e-8
         Tolerance for stopping criterion.
-    n_iter_max : int, default=1000
+    n_iter_max : int, default=100
         The maximum number of iterations to reach convergence.
 
     Returns
     -------
-    V : ndarray, shape (n_channels, n_channels)
+    V : ndarray, shape (n, n)
         The diagonalizer, an orthogonal matrix.
-    D : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of quasi diagonal matrices.
+    D : ndarray, shape (n_matrices, n, n)
+        Set of quasi diagonal matrices, D = V^T X V.
 
     Notes
     -----
@@ -43,26 +47,25 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=1000):
 
     See Also
     --------
-    ajd_pham
-    uwedge
+    ajd
 
     References
     ----------
     .. [1] `Jacobi angles for simultaneous diagonalization
         <https://epubs.siam.org/doi/abs/10.1137/S0895479893259546>`_
         J.-F. Cardoso and A. Souloumiac, SIAM Journal on Matrix Analysis and
-        Applications, Volume 17, Issue 1, Jan. 1996.
+        Applications, 17(1), pp. 161–164, 1996.
     """
-
+    n_matrices, _, _ = X.shape
     # reshape input matrix
     A = np.concatenate(X, 0).T
+    n, n_matrices_x_n = A.shape
 
     # init variables
-    m, nm = A.shape  # n_channels, n_matrices_x_channels
     if init is None:
-        V = np.eye(m)
+        V = np.eye(n)
     else:
-        V = _check_init_diag(init, m)
+        V = _check_init_diag(init, n)
     encore = True
     k = 0
 
@@ -71,15 +74,15 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=1000):
         k += 1
         if k > n_iter_max:
             break
-        for p in range(m - 1):
-            for q in range(p + 1, m):
+        for p in range(n - 1):
+            for q in range(p + 1, n):
 
-                Ip = np.arange(p, nm, m)
-                Iq = np.arange(q, nm, m)
+                Ip = np.arange(p, n_matrices_x_n, n)
+                Iq = np.arange(q, n_matrices_x_n, n)
 
                 # computation of Givens angle
                 g = np.array([A[p, Ip] - A[q, Iq], A[p, Iq] + A[q, Ip]])
-                gg = np.dot(g, g.T)
+                gg = g @ g.T
                 ton = gg[0, 0] - gg[1, 1]
                 toff = gg[0, 1] + gg[1, 0]
                 theta = 0.5 * np.arctan2(
@@ -100,24 +103,25 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=1000):
                     V[:, p] = c * V[:, p] + s * V[:, q]
                     V[:, q] = c * V[:, q] - s * tmp
 
-    D = np.reshape(A, (m, int(nm / m), m)).transpose(1, 0, 2)
+    D = np.reshape(A, (n, n_matrices, n)).transpose(1, 0, 2)
     return V, D
 
 
-def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=15, sample_weight=None):
+def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     """Approximate joint diagonalization based on Pham's algorithm.
 
-    This is a direct implementation of the Pham's AJD algorithm [1]_.
+    This is a direct implementation of the AJD algorithm [1]_, optimizing a
+    log-likelihood criterion based on the Kullback-Leibler divergence.
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_channels, n_channels)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD matrices to diagonalize.
-    init : None | ndarray, shape (n_channels, n_channels), default=None
+    init : None | ndarray, shape (n, n), default=None
         Initialization for the diagonalizer.
     eps : float, default=1e-6
         Tolerance for stoping criterion.
-    n_iter_max : int, default=15
+    n_iter_max : int, default=20
         The maximum number of iterations to reach convergence.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix, strictly positive.
@@ -125,10 +129,10 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=15, sample_weight=None):
 
     Returns
     -------
-    V : ndarray, shape (n_channels, n_channels)
+    V : ndarray, shape (n, n)
         The diagonalizer, an invertible matrix.
-    D : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of quasi diagonal matrices.
+    D : ndarray, shape (n_matrices, n, n)
+        Set of quasi diagonal matrices, D = V X V^T.
 
     Notes
     -----
@@ -136,16 +140,15 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=15, sample_weight=None):
 
     See Also
     --------
-    rjd
-    uwedge
+    ajd
 
     References
     ----------
     .. [1] `Joint approximate diagonalization of positive definite
         Hermitian matrices
         <https://epubs.siam.org/doi/10.1137/S089547980035689X>`_
-        D.-T. Pham. SIAM Journal on Matrix Analysis and Applications, Volume 22
-        Issue 4, 2000
+        D.-T. Pham. SIAM Journal on Matrix Analysis and Applications, 22(4),
+        pp. 1136-1152, 2000.
     """
     n_matrices, _, _ = X.shape
     normalized_weight = check_weights(
@@ -154,23 +157,23 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=15, sample_weight=None):
         check_positivity=True,
     )  # sum = 1
 
-    # Reshape input matrix
+    # reshape input matrix
     A = np.concatenate(X, axis=0).T
+    n, n_matrices_x_n = A.shape
 
-    # Init variables
-    n_channels, n_matrices_x_channels = A.shape
+    # init variables
     if init is None:
-        V = np.eye(n_channels)
+        V = np.eye(n)
     else:
-        V = _check_init_diag(init, n_channels)
-    epsilon = n_channels * (n_channels - 1) * eps
+        V = _check_init_diag(init, n)
+    epsilon = n * (n - 1) * eps
 
-    for it in range(n_iter_max):
+    for _ in range(n_iter_max):
         decr = 0
-        for ii in range(1, n_channels):
+        for ii in range(1, n):
             for jj in range(ii):
-                Ii = np.arange(ii, n_matrices_x_channels, n_channels)
-                Ij = np.arange(jj, n_matrices_x_channels, n_channels)
+                Ii = np.arange(ii, n_matrices_x_n, n)
+                Ij = np.arange(jj, n_matrices_x_n, n)
 
                 c1 = A[ii, Ii]
                 c2 = A[jj, Ij]
@@ -191,38 +194,40 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=15, sample_weight=None):
 
                 decr += n_matrices * (g12 * np.conj(h12) + g21 * h21) / 2.0
 
-                tmp = 1 + 1.j * 0.5 * np.imag(h12 * h21)
+                tmp = 1 + 0.5j * np.imag(h12 * h21)
                 tmp = np.real(tmp + np.sqrt(tmp ** 2 - h12 * h21))
                 tau = np.array([[1, -h12 / tmp], [-h21 / tmp, 1]])
 
-                A[[ii, jj], :] = np.dot(tau, A[[ii, jj], :])
+                A[[ii, jj], :] = tau @ A[[ii, jj], :]
                 tmp = np.c_[A[:, Ii], A[:, Ij]]
-                tmp = np.reshape(tmp, (n_channels * n_matrices, 2), order='F')
-                tmp = np.dot(tmp, tau.T)
+                tmp = np.reshape(tmp, (n * n_matrices, 2), order='F')
+                tmp = tmp @ tau.T
 
-                tmp = np.reshape(tmp, (n_channels, n_matrices * 2), order='F')
+                tmp = np.reshape(tmp, (n, n_matrices * 2), order='F')
                 A[:, Ii] = tmp[:, :n_matrices]
                 A[:, Ij] = tmp[:, n_matrices:]
-                V[[ii, jj], :] = np.dot(tau, V[[ii, jj], :])
+                V[[ii, jj], :] = tau @ V[[ii, jj], :]
         if decr < epsilon:
             break
-    D = np.reshape(A, (n_channels, -1, n_channels)).transpose(1, 0, 2)
+    else:
+        warnings.warn("Convergence not reached")
+
+    D = np.reshape(A, (n, -1, n)).transpose(1, 0, 2)
     return V, D
 
 
 def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
     """Approximate joint diagonalization based on UWEDGE.
 
-    Implementation of the AJD algorithm by Tichavsky and Yeredor [1]_ [2]_:
-    uniformly weighted exhaustive diagonalization using Gauss iterations
-    (U-WEDGE). This is a translation from the matlab code provided by the
-    authors.
+    This is an implementation of the AJD algorithm [1]_ [2]_: uniformly
+    weighted exhaustive diagonalization using Gauss iterations (U-WEDGE).
+    It is a translation from the Matlab code provided by the authors.
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_channels, n_channels)
+    X : ndarray, shape (n_matrices, n, n)
         Set of symmetric matrices to diagonalize.
-    init : None | ndarray, shape (n_channels, n_channels), default=None
+    init : None | ndarray, shape (n, n), default=None
         Initialization for the diagonalizer.
     eps : float, default=1e-7
         Tolerance for stoping criterion.
@@ -231,10 +236,10 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
 
     Returns
     -------
-    V : ndarray, shape (n_channels, n_channels)
+    V : ndarray, shape (n, n)
         The diagonalizer.
-    D : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of quasi diagonal matrices.
+    D : ndarray, shape (n_matrices, n, n)
+        Set of quasi diagonal matrices, D = V X V^T.
 
     Notes
     -----
@@ -242,8 +247,7 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
 
     See Also
     --------
-    ajd_pham
-    rjd
+    ajd
 
     References
     ----------
@@ -251,64 +255,131 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
         Criterion with a Block Diagonal Weight Matrix
         <https://ieeexplore.ieee.org/abstract/document/4518361>`_
         P. Tichavsky, A. Yeredor and J. Nielsen. 2008 IEEE International
-        Conference on Acoustics, Speech and Signal ProcessingICASSP.
+        Conference on Acoustics, Speech and Signal Processing ICASSP.
     .. [2] `Fast Approximate Joint Diagonalization Incorporating Weight
         Matrices
         <https://ieeexplore.ieee.org/document/4671095>`_
-        P. Tichavsky and A. Yeredor. IEEE Transactions on Signal Processing,
-        Volume 57, Issue 3, March 2009.
+        P. Tichavsky and A. Yeredor. IEEE Trans Signal Process, 57(3), pp.
+        878 - 891, 2009.
     """
-    n_matrices, d, _ = X.shape
+    n_matrices, _, _ = X.shape
     # reshape input matrix
     M = np.concatenate(X, 0).T
+    n, n_matrices_x_n = M.shape
 
     # init variables
-    d, Md = M.shape  # n_channels, n_matrices_x_channels
     iteration = 0
     improve = 10
-
     if init is None:
-        E, H = np.linalg.eig(M[:, 0:d])
-        W_est = H.T / np.sqrt(np.abs(E))[:, np.newaxis]
+        E, H = np.linalg.eig(M[:, 0:n])
+        V = H.T / np.sqrt(np.abs(E))[:, np.newaxis]
     else:
-        W_est = _check_init_diag(init, d)
+        V = _check_init_diag(init, n)
 
     Ms = np.array(M)
-    Rs = np.zeros((d, n_matrices))
+    Rs = np.zeros((n, n_matrices))
 
     for k in range(n_matrices):
-        ini = k*d
-        Il = np.arange(ini, ini + d)
-        M[:, Il] = 0.5*(M[:, Il] + M[:, Il].T)
-        Ms[:, Il] = np.dot(np.dot(W_est, M[:, Il]), W_est.T)
+        ini = k * n
+        Il = np.arange(ini, ini + n)
+        M[:, Il] = 0.5 * (M[:, Il] + M[:, Il].T)
+        Ms[:, Il] = V @ M[:, Il] @ V.T
         Rs[:, k] = np.diag(Ms[:, Il])
 
-    crit = np.sum(Ms**2) - np.sum(Rs**2)
+    crit = np.sum(Ms ** 2) - np.sum(Rs ** 2)
     while (improve > eps) & (iteration < n_iter_max):
         B = Rs @ Rs.T
-        C1 = np.zeros((d, d))
-        for i in range(d):
-            C1[:, i] = np.sum(Ms[:, i:Md:d]*Rs, axis=1)
+        C1 = np.zeros((n, n))
+        for i in range(n):
+            C1[:, i] = np.sum(Ms[:, i:n_matrices_x_n:n] * Rs, axis=1)
 
         D0 = B * B.T - np.outer(np.diag(B), np.diag(B))
-        A0 = (C1 * B - np.diag(np.diag(B)) @ C1.T) / (D0 + np.eye(d))
-        A0 += np.eye(d)
-        W_est = np.linalg.solve(A0, W_est)
+        A0 = (C1 * B - np.diag(B)[:, np.newaxis] * C1.T) / (D0 + np.eye(n))
+        A0.flat[:: n + 1] += 1
+        V = np.linalg.solve(A0, V)
 
-        Raux = np.dot(np.dot(W_est, M[:, 0:d]), W_est.T)
+        Raux = V @ M[:, 0:n] @ V.T
         aux = 1. / np.sqrt(np.abs(np.diag(Raux)))
-        W_est = np.diag(aux) @ W_est
+        V = aux[:, np.newaxis] * V
 
         for k in range(n_matrices):
-            ini = k*d
-            Il = np.arange(ini, ini + d)
-            Ms[:, Il] = np.dot(np.dot(W_est, M[:, Il]), W_est.T)
+            ini = k * n
+            Il = np.arange(ini, ini + n)
+            Ms[:, Il] = V @ M[:, Il] @ V.T
             Rs[:, k] = np.diag(Ms[:, Il])
 
-        crit_new = np.sum(Ms**2) - np.sum(Rs**2)
+        crit_new = np.sum(Ms ** 2) - np.sum(Rs ** 2)
         improve = np.abs(crit_new - crit)
         crit = crit_new
         iteration += 1
 
-    D = np.reshape(Ms, (d, n_matrices, d)).transpose(1, 0, 2)
-    return W_est, D
+    D = np.reshape(Ms, (n, n_matrices, n)).transpose(1, 0, 2)
+    return V, D
+
+
+###############################################################################
+
+
+ajd_functions = {
+    "ajd_pham": ajd_pham,
+    "rjd": rjd,
+    "uwedge": uwedge,
+}
+
+
+def ajd(X, method="ajd_pham", init=None, eps=1e-6, n_iter_max=100, **kwargs):
+    """Aproximate joint diagonalization (AJD) according to a method.
+
+    Compute the AJD of a set of matrices according to a method [1]_, estimating
+    the joint diagonalizer matrix, diagonalizing the set as much as possible.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n, n)
+        Set of symmetric matrices to diagonalize.
+    method : string | callable, default="ajd_pham"
+        Method for AJD, can be: "ajd_pham", "rjd", "uwedge", or a callable
+        function.
+    init : None | ndarray, shape (n, n), default=None
+        Initialization for the diagonalizer.
+    eps : float, default=1e-6
+        Tolerance for stopping criterion.
+    n_iter_max : int, default=100
+        The maximum number of iterations to reach convergence.
+    kwargs : dict
+        The keyword arguments passed to the sub function.
+
+    Returns
+    -------
+    V : ndarray, shape (n, n)
+        The diagonalizer.
+    D : ndarray, shape (n_matrices, n, n)
+        Set of quasi diagonal matrices.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
+
+    See Also
+    --------
+    ajd_pham
+    rjd
+    uwedge
+
+    References
+    ----------
+    .. [1] `Joint Matrices Decompositions and Blind Source Separation: A survey
+        of methods, identification, and applications
+        <http://library.utia.cas.cz/separaty/2014/SI/tichavsky-0427607.pdf>`_
+        G. Chabriel, M. Kleinsteuber, E. Moreau, H. Shen; P. Tichavsky and A.
+        Yeredor. IEEE Signal Process Mag, 31(3), pp. 34-43, 2014.
+    """
+    ajd_function = check_function(method, ajd_functions)
+    V, D = ajd_function(
+        X,
+        init=init,
+        eps=eps,
+        n_iter_max=n_iter_max,
+        **kwargs,
+    )
+    return V, D

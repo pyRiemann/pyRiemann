@@ -1,7 +1,7 @@
 import numpy as np
-from scipy.stats import gmean
 import pytest
 from pytest import approx
+from scipy.stats import gmean
 
 from pyriemann.utils.geodesic import geodesic_riemann
 from pyriemann.utils.mean import (

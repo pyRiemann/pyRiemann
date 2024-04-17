@@ -21,13 +21,12 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
     nelec : int, default=16
         The number of electrode to keep in the final subset.
     metric : string | dict, default='riemann'
-        The type of metric used for centroid and distance estimation.
-        see `mean_covariance` for the list of supported metric.
-        the metric could be a dict with two keys, `mean` and `distance` in
-        order to pass different metric for the centroid estimation and the
-        distance estimation. Typical usecase is to pass 'logeuclid' metric for
-        the mean in order to boost the computional speed and 'riemann' for the
-        distance in order to keep the good sensitivity for the selection.
+        Metric used for mean estimation (for the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for distance estimation
+        (see :func:`pyriemann.utils.distance.distance`).
+        The metric can be a dict with two keys, "mean" and "distance"
+        in order to pass different metrics.
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
@@ -57,7 +56,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         on Neural Engineering, Apr 2011, Cancun, Mexico.
     """
 
-    def __init__(self, nelec=16, metric='riemann', n_jobs=1):
+    def __init__(self, nelec=16, metric="riemann", n_jobs=1):
         """Init."""
         self.nelec = nelec
         self.metric = metric

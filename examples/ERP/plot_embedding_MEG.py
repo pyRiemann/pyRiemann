@@ -20,23 +20,22 @@ representation that best preserves locality instead of local linearity in LLE
 #           Gabriel Wagner vom Berg <gabriel@bccn-berlin.de>
 # License: BSD (3-clause)
 
-from pyriemann.estimation import XdawnCovariances
-from pyriemann.utils.viz import plot_embedding
-
+import matplotlib.pyplot as plt
 import mne
 from mne import io
 from mne.datasets import sample
-
 from sklearn.model_selection import train_test_split
 
-import matplotlib.pyplot as plt
-
+from pyriemann.estimation import XdawnCovariances
+from pyriemann.utils.viz import plot_embedding
 
 print(__doc__)
 
 
 ###############################################################################
 # Set parameters and read data
+# ----------------------------
+
 data_path = str(sample.data_path())
 raw_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw.fif'
 event_fname = data_path + '/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif'
@@ -56,11 +55,12 @@ picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False, eog=False,
 epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=False,
                     picks=picks, baseline=None, preload=True, verbose=False)
 
-X = epochs.get_data()
+X = epochs.get_data(copy=False)
 y = epochs.events[:, -1]
 
 ###############################################################################
 # Embedding of Xdawn covariance matrices
+# --------------------------------------
 
 nfilter = 4
 xdwn = XdawnCovariances(estimator='scm', nfilter=nfilter)

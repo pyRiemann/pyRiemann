@@ -177,7 +177,7 @@ for meth in scores.keys():
         scores[meth],
         label=meth,
         lw=3.0)
-ax.legend(loc='upper right')
+ax.legend(loc='lower right')
 ax.set_ylim(0.45, 0.75)
 ax.set_yticks([0.5, 0.6, 0.7])
 ax.set_xlim(0.00, 0.21)

@@ -187,12 +187,15 @@ def test_metric_str(classif, metric, get_mats, get_labels):
 
 @pytest.mark.parametrize("metric_mean", get_means())
 @pytest.mark.parametrize("metric_dist", get_distances())
-def test_metric_mdm(metric_mean, metric_dist, get_mats, get_labels):
-    n_matrices, n_channels, n_classes = 4, 3, 2
+@pytest.mark.parametrize("n_classes", [2, 3, 4])
+def test_metric_mdm(metric_mean, metric_dist, n_classes, get_mats, get_labels):
+    n_matrices, n_channels = 4 * n_classes, 3
     labels = get_labels(n_matrices, n_classes)
     covmats = get_mats(n_matrices, n_channels, "spd")
     clf = MDM(metric={"mean": metric_mean, "distance": metric_dist})
     clf.fit(covmats, labels).predict(covmats)
+    assert clf.classes_.shape == (n_classes,)
+    assert clf.covmeans_.shape == (n_classes, n_channels, n_channels)
 
 
 @pytest.mark.parametrize("metric_mean", get_means())
@@ -326,8 +329,7 @@ def test_svc_kernel_callable(get_mats, get_labels, metric):
     covmats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
 
-    rsvc = SVC(kernel_fct=kernel,
-               metric=metric).fit(covmats, labels)
+    rsvc = SVC(kernel_fct=kernel, metric=metric).fit(covmats, labels)
     rsvc_1 = SVC(metric=metric).fit(covmats, labels)
     p1 = rsvc.predict(covmats[:-1])
     p2 = rsvc_1.predict(covmats[:-1])
@@ -338,18 +340,34 @@ def test_svc_kernel_callable(get_mats, get_labels, metric):
     SVC(kernel_fct=custom_kernel,
         metric=metric).fit(covmats, labels).predict(covmats[:-1])
 
-    def custom_kernel(X, Y, Cref):
-        return np.ones((len(X), len(Y)))
-    with pytest.raises(TypeError):
-        SVC(kernel_fct=custom_kernel, metric=metric).fit(covmats, labels)
-
-    custom_kernel = np.array([1, 2])
-    with pytest.raises(TypeError):
-        SVC(kernel_fct=custom_kernel, metric=metric).fit(covmats, labels)
-
     # check if pickleable
     pickle.dumps(rsvc)
     pickle.dumps(rsvc_1)
+
+
+@pytest.mark.parametrize("kernel_fct", [None, "precomputed"])
+@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+def test_svc_kernel_precomputed(get_mats, get_labels, kernel_fct, metric):
+    n_matrices, n_channels, n_classes = 6, 3, 2
+    covmats = get_mats(n_matrices, n_channels, "spd")
+    labels = get_labels(n_matrices, n_classes)
+
+    SVC(kernel_fct=kernel_fct, metric=metric).fit(covmats, labels)
+
+
+def test_svc_kernel_error(get_mats, get_labels):
+    n_matrices, n_channels, n_classes = 4, 2, 2
+    covmats = get_mats(n_matrices, n_channels, "spd")
+    labels = get_labels(n_matrices, n_classes)
+
+    def custom_kernel(X, Y, Cref):
+        return np.ones((len(X), len(Y)))
+    with pytest.raises(TypeError):
+        SVC(kernel_fct=custom_kernel, metric="euclid").fit(covmats, labels)
+
+    custom_kernel = np.array([1, 2])
+    with pytest.raises(TypeError):
+        SVC(kernel_fct=custom_kernel, metric="riemann").fit(covmats, labels)
 
 
 @pytest.mark.parametrize("method_label", ["sum_means", "inf_means"])

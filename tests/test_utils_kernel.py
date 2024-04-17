@@ -90,10 +90,13 @@ def test_euclid(n_dim0, n_dim1, rndstate):
     assert K.shape == (n_matrices_X, n_matrices_Y)
 
     K1 = np.empty((n_matrices_X, n_matrices_Y))
+    K2 = np.empty((n_matrices_X, n_matrices_Y))
     for i in range(n_matrices_X):
         for j in range(n_matrices_Y):
             K1[i, j] = np.trace(X[i].T @ Y[j])
+            K2[i, j] = np.dot(X[i].flatten(), Y[j].flatten())
     assert_array_almost_equal(K, K1)
+    assert_array_almost_equal(K, K2)
 
 
 def test_riemann_correctness(get_mats):

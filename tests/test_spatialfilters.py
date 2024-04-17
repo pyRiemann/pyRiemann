@@ -1,8 +1,8 @@
-from conftest import get_metrics
-import pytest
 import numpy as np
 from numpy.testing import assert_array_equal
+import pytest
 
+from conftest import get_metrics
 from pyriemann.spatialfilters import Xdawn, CSP, SPoC, BilinearFilter, AJDC
 
 

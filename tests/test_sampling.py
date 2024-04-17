@@ -1,5 +1,5 @@
-import pytest
 import numpy as np
+import pytest
 
 from pyriemann.datasets.sampling import (sample_gaussian_spd,
                                          generate_random_spd_matrix)

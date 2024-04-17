@@ -13,26 +13,25 @@ the tangent space and classified with a logistic regression.
 # License: BSD (3-clause)
 
 import numpy as np
-
-from pyriemann.estimation import XdawnCovariances
-from pyriemann.tangentspace import TangentSpace
-
+from matplotlib import pyplot as plt
 import mne
 from mne import io
 from mne.datasets import sample
-
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import KFold
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 from sklearn.pipeline import make_pipeline
 
-from matplotlib import pyplot as plt
+from pyriemann.estimation import XdawnCovariances
+from pyriemann.tangentspace import TangentSpace
 
 print(__doc__)
 
 
 ###############################################################################
 # Set parameters and read data
+# ----------------------------
+
 data_path = str(sample.data_path())
 raw_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw.fif"
 event_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif"
@@ -65,16 +64,16 @@ epochs = mne.Epochs(
 
 labels = epochs.events[:, -1]
 evoked = epochs.average()
+epochs_data = epochs.get_data(copy=False)
 
 ###############################################################################
 # Decoding in tangent space with a logistic regression
+# ----------------------------------------------------
 
 n_components = 2  # pick some components
 
 # Define a monte-carlo cross-validation generator (reduce variance):
 cv = KFold(n_splits=10, shuffle=True, random_state=42)
-epochs_data = epochs.get_data()
-
 
 clf = make_pipeline(
     XdawnCovariances(n_components),

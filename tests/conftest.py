@@ -1,8 +1,9 @@
-import pytest
-import numpy as np
 from functools import partial
 
-from pyriemann.datasets import make_matrices, make_masks
+import numpy as np
+import pytest
+
+from pyriemann.datasets import make_masks, make_matrices
 
 
 def requires_module(function, name, call=None):
@@ -27,24 +28,6 @@ requires_seaborn = partial(requires_module, name="seaborn")
 @pytest.fixture
 def rndstate():
     return np.random.RandomState(1234)
-
-
-@pytest.fixture
-def get_covmats(rndstate):
-    def _gen_cov(n_matrices, n_channels):
-        return make_matrices(n_matrices, n_channels, "spd", rndstate,
-                             return_params=False, eigvecs_same=False)
-
-    return _gen_cov
-
-
-@pytest.fixture
-def get_covmats_params(rndstate):
-    def _gen_cov_params(n_matrices, n_channels):
-        return make_matrices(n_matrices, n_channels, "spd", rndstate,
-                             return_params=True, eigvecs_same=True)
-
-    return _gen_cov_params
 
 
 @pytest.fixture
@@ -83,10 +66,10 @@ def get_masks(rndstate):
 
 @pytest.fixture
 def get_targets():
-    def get_targets(n_matrices):
+    def _gen_targets(n_matrices):
         return np.random.rand(n_matrices)
 
-    return get_targets
+    return _gen_targets
 
 
 def get_distances():

@@ -7,9 +7,10 @@ from sklearn.base import (BaseEstimator, ClassifierMixin, TransformerMixin,
                           ClusterMixin, clone)
 from sklearn.cluster import KMeans as _KMeans
 
-from .classification import MDM, _check_metric
+from .classification import MDM
 from .utils.mean import mean_covariance
 from .utils.geodesic import geodesic
+from .utils.utils import check_metric
 
 
 def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
@@ -41,7 +42,7 @@ def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
     """helper to fit a single run of centroid."""
     # init random state if provided
     mdm = MDM(metric=metric, n_jobs=n_jobs)
-    mdm.metric_mean, mdm.metric_dist = _check_metric(metric)
+    mdm.metric_mean, mdm.metric_dist = check_metric(metric)
     squared_norms = [np.linalg.norm(x, ord='fro')**2 for x in X]
     mdm.covmeans_ = _init_centroids(X, n_clusters, init,
                                     random_state=random_state,
@@ -80,8 +81,13 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         Number of clusters.
     max_iter : int, default=100
         The maximum number of iteration to reach convergence.
-    metric : string, default='riemann'
-        The type of metric used for centroid and distance estimation.
+    metric : string | dict, default="riemann"
+        Metric used for mean estimation (for the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for distance estimation
+        (see :func:`pyriemann.utils.distance.distance`).
+        The metric can be a dict with two keys, "mean" and "distance"
+        in order to pass different metrics.
     random_state : integer or np.RandomState, optional
         The generator used to initialize the centers. If an integer is
         given, it fixes the seed. Defaults to the global numpy random
@@ -127,7 +133,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
     MDM
     """
 
-    def __init__(self, n_clusters=2, max_iter=100, metric='riemann',
+    def __init__(self, n_clusters=2, max_iter=100, metric="riemann",
                  random_state=None, init='random', n_init=10, n_jobs=1,
                  tol=1e-4):
         """Init."""
@@ -273,7 +279,7 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
     def transform(self, X):
         """Transform."""
         mdm = MDM(metric=self.metric, n_jobs=self.km.n_jobs)
-        mdm.metric_mean, mdm.metric_dist = _check_metric(self.metric)
+        mdm.metric_mean, mdm.metric_dist = check_metric(self.metric)
         mdm.covmeans_ = self.covmeans_
         return mdm._predict_distances(X)
 
@@ -287,8 +293,13 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     Parameters
     ----------
-    metric : string, default='riemann'
-        The type of metric used for centroid and distance estimation.
+    metric : string | dict, default="riemann"
+        Metric used for mean estimation (for the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for distance estimation
+        (see :func:`pyriemann.utils.distance.distance`).
+        The metric can be a dict with two keys, "mean" and "distance"
+        in order to pass different metrics.
     threshold : float, default=3
         Threshold on z-score of distance to reject artifacts. It is the number
         of standard deviations from the mean of distances to the centroid.
@@ -361,7 +372,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
             raise ValueError("Positive and negative labels must be different")
 
         self._mdm = MDM(metric=self.metric)
-        self._mdm.metric_mean, self._mdm.metric_dist = _check_metric(
+        self._mdm.metric_mean, self._mdm.metric_dist = check_metric(
             self.metric
         )
 
@@ -558,8 +569,13 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
     z_threshold : float, default=3
         Threshold on z-score of distance to reject artifacts. It is the number
         of standard deviations from the mean of distances to the centroid.
-    metric : string, default='riemann'
-        The type of metric used for centroid and distance estimation.
+    metric : string | dict, default="riemann"
+        Metric used for mean estimation (for the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for distance estimation
+        (see :func:`pyriemann.utils.distance.distance`).
+        The metric can be a dict with two keys, "mean" and "distance"
+        in order to pass different metrics.
     n_iter_max : int, default=10
         The maximum number of iteration to reach convergence.
     pos_label: int, default=1
@@ -586,7 +602,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
     """
 
     def __init__(self, n_potatoes=1, p_threshold=0.01, z_threshold=3,
-                 metric='riemann', n_iter_max=10, pos_label=1, neg_label=0):
+                 metric="riemann", n_iter_max=10, pos_label=1, neg_label=0):
         """Init."""
         self.n_potatoes = int(n_potatoes)
         self.p_threshold = p_threshold

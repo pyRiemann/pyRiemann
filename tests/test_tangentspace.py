@@ -1,8 +1,9 @@
-from conftest import get_metrics
 import numpy as np
-from pyriemann.tangentspace import TangentSpace, FGDA
 import pytest
 from pytest import approx
+
+from conftest import get_metrics
+from pyriemann.tangentspace import TangentSpace, FGDA
 
 
 @pytest.mark.parametrize("tspace", [TangentSpace, FGDA])

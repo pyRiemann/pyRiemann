@@ -13,21 +13,14 @@ ensemble learning [1]_.
 # License: BSD (3-clause)
 
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import seaborn as sns
 
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
-
-import numpy as np
-import pandas as pd
-import seaborn as sns
-
-from pyriemann.classification import FgMDM
-from pyriemann.estimation import Covariances, Coherences
-from pyriemann.spatialfilters import CSP
-from pyriemann.tangentspace import TangentSpace
-
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.ensemble import StackingClassifier
 from sklearn.linear_model import LogisticRegression
@@ -35,10 +28,11 @@ from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.pipeline import Pipeline
 from sklearn.svm import SVC
 
-from helpers.coherence_helpers import (
-    NearestSPD,
-    get_results,
-)
+from pyriemann.classification import FgMDM
+from pyriemann.estimation import Coherences, Covariances
+from pyriemann.spatialfilters import CSP
+from pyriemann.tangentspace import TangentSpace
+from helpers.coherence_helpers import NearestSPD, get_results
 
 
 ###############################################################################

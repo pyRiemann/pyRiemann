@@ -1,7 +1,7 @@
-from conftest import requires_matplotlib
 import numpy as np
 import pytest
 
+from conftest import requires_matplotlib
 from pyriemann.utils.viz import (
     plot_embedding,
     plot_cospectra,

@@ -104,8 +104,9 @@ rp = Potato(metric='riemann', threshold=z_th)
 # EEG processing for RP
 rp_sig = filter_bandpass(raw, low_freq, high_freq)  # band-pass filter
 rp_epochs = make_fixed_length_epochs(  # epoch time-series
-    rp_sig, duration=duration, overlap=duration - interval, verbose=False)
-rp_covs = Covariances(estimator='scm').transform(rp_epochs.get_data())
+    rp_sig, duration=duration, overlap=duration - interval, verbose=False
+).get_data(copy=False)
+rp_covs = Covariances(estimator='scm').transform(rp_epochs)
 
 # RP training
 train_covs = 45      # nb of matrices for training
@@ -152,8 +153,9 @@ for p in rpf_config.values():  # loop on potatoes
     rpf_sig = filter_bandpass(raw, p.get('low_freq'), p.get('high_freq'),
                               channels=p.get('ch_names'))
     rpf_epochs = make_fixed_length_epochs(
-        rpf_sig, duration=duration, overlap=duration - interval, verbose=False)
-    covs_ = Covariances(estimator='scm').transform(rpf_epochs.get_data())
+        rpf_sig, duration=duration, overlap=duration - interval, verbose=False
+    ).get_data(copy=False)
+    covs_ = Covariances(estimator='scm').transform(rpf_epochs)
     if p.get('cov_normalization'):
         covs_ = normalize(covs_, p.get('cov_normalization'))
     rpf_covs.append(covs_)
@@ -267,8 +269,8 @@ potato = FuncAnimation(fig, online_detect,
 
 
 ###############################################################################
-
 # Plot online detection
+# ---------------------
 
 # Plot complete visu: a dynamic display is required
 plt.show()

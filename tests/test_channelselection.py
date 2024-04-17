@@ -1,4 +1,5 @@
 from numpy.testing import assert_array_equal
+
 from pyriemann.channelselection import ElectrodeSelection, FlatChannelRemover
 
 

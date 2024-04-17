@@ -5,30 +5,27 @@ Motor imagery classification
 
 Classify motor imagery data with Riemannian geometry [1]_.
 """
-# generic import
+
 import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib import pyplot as plt
 
-# mne import
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
 from mne.decoding import CSP
-
-# pyriemann import
-from pyriemann.classification import MDM, TSclassifier
-from pyriemann.estimation import Covariances
-
-# sklearn imports
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
 
+from pyriemann.classification import MDM, TSclassifier
+from pyriemann.estimation import Covariances
+
 ###############################################################################
 # Set parameters and read data
+# ----------------------------
 
 # avoid classification of evoked responses by using epochs that start 1s after
 # cue onset.
@@ -70,13 +67,15 @@ labels = epochs.events[:, -1] - 2
 # cross validation
 cv = KFold(n_splits=10, shuffle=True, random_state=42)
 # get epochs
-epochs_data_train = 1e6 * epochs.get_data()
+epochs_data_train = 1e6 * epochs.get_data(copy=False)
 
 # compute covariance matrices
 cov_data_train = Covariances().transform(epochs_data_train)
 
 ###############################################################################
-# Classification with Minimum distance to mean
+# Classification with Minimum Distance to Mean
+# --------------------------------------------
+
 mdm = MDM(metric=dict(mean='riemann', distance='riemann'))
 
 # Use scikit-learn Pipeline with cross_val_score function
@@ -90,6 +89,8 @@ print("MDM Classification accuracy: %f / Chance level: %f" % (np.mean(scores),
 
 ###############################################################################
 # Classification with Tangent Space Logistic Regression
+# -----------------------------------------------------
+
 clf = TSclassifier()
 # Use scikit-learn Pipeline with cross_val_score function
 scores = cross_val_score(clf, cov_data_train, labels, cv=cv, n_jobs=1)
@@ -102,6 +103,7 @@ print("Tangent space Classification accuracy: %f / Chance level: %f" %
 
 ###############################################################################
 # Classification with CSP + logistic regression
+# ---------------------------------------------
 
 # Assemble a classifier
 lr = LogisticRegression()
@@ -117,7 +119,8 @@ print("CSP + LDA Classification accuracy: %f / Chance level: %f" %
       (np.mean(scores), class_balance))
 
 ###############################################################################
-# Display MDM centroid
+# Display MDM centroids
+# ---------------------
 
 mdm = MDM()
 mdm.fit(cov_data_train, labels)

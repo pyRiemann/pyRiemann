@@ -5,8 +5,9 @@ from sklearn.covariance import shrunk_covariance
 from sklearn.metrics.pairwise import pairwise_kernels
 
 from .spatialfilters import Xdawn
-from .utils.covariance import (covariances, covariances_EP, cospectrum,
+from .utils.covariance import (covariances, covariances_EP, cross_spectrum,
                                coherence, block_covariances)
+from .utils import deprecated
 
 
 def _nextpow2(i):
@@ -18,7 +19,7 @@ def _nextpow2(i):
 
 
 class Covariances(BaseEstimator, TransformerMixin):
-    """Estimation of covariance matrix.
+    """Estimation of covariance matrices.
 
     Perform a simple covariance matrix estimation for each given input.
 
@@ -34,8 +35,6 @@ class Covariances(BaseEstimator, TransformerMixin):
     --------
     ERPCovariances
     XdawnCovariances
-    CospCovariances
-    HankelCovariances
     """
 
     def __init__(self, estimator='scm', **kwds):
@@ -80,9 +79,10 @@ class Covariances(BaseEstimator, TransformerMixin):
 
 
 class ERPCovariances(BaseEstimator, TransformerMixin):
-    r"""Estimate special form covariance matrix for ERP.
+    r"""Estimate special form covariance matrices for ERP.
 
-    Estimation of special form covariance matrix dedicated to ERP processing.
+    Estimation of special form covariance matrix dedicated to event-related
+    potentials (ERP) processing.
     For each class, a prototyped response is obtained by average across trials:
 
     .. math::
@@ -125,8 +125,6 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
     --------
     Covariances
     XdawnCovariances
-    CospCovariances
-    HankelCovariances
 
     References
     ----------
@@ -217,7 +215,7 @@ class ERPCovariances(BaseEstimator, TransformerMixin):
 
 
 class XdawnCovariances(BaseEstimator, TransformerMixin):
-    """Estimate special form covariance matrix for ERP combined with Xdawn.
+    """Estimate special form covariance matrices for ERP combined with Xdawn.
 
     Estimation of special form covariance matrix dedicated to ERP processing
     combined with `Xdawn` spatial filtering.
@@ -347,7 +345,7 @@ class XdawnCovariances(BaseEstimator, TransformerMixin):
 
 
 class BlockCovariances(BaseEstimator, TransformerMixin):
-    """Estimation of block covariance matrix.
+    """Estimation of block covariance matrices.
 
     Perform a block covariance estimation for each given matrix. The
     resulting matrices are block diagonal matrices.
@@ -434,14 +432,13 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
 ###############################################################################
 
 
-class CospCovariances(BaseEstimator, TransformerMixin):
-    """Estimation of cospectral covariance matrix.
+class CrossSpectra(BaseEstimator, TransformerMixin):
+    """Estimation of cross-spectral matrices.
 
-    Co-spectral matrices are the real part of complex cross-spectral matrices
-    (see :func:`pyriemann.utils.covariance.cross_spectrum`), estimated as the
-    spectrum covariance in the frequency domain. This method returns a 4-d
-    array with a cospectral covariance matrix for each input and in each
-    frequency bin of the FFT.
+    Complex cross-spectral matrices are HPD matrices estimated as the spectrum
+    covariance in the frequency domain [1]_. It returns a 4-d array with a
+    cross-spectral matrix for each input and in each frequency bin of the
+    Fourier transform.
 
     Parameters
     ----------
@@ -459,14 +456,21 @@ class CospCovariances(BaseEstimator, TransformerMixin):
     Attributes
     ----------
     freqs_ : ndarray, shape (n_freqs,)
-        If transformed, the frequencies associated to cospectra.
+        If transformed, the frequencies associated to cross-spectra.
         None if ``fs`` is None.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
 
     See Also
     --------
-    Covariances
-    HankelCovariances
+    CoSpectra
     Coherences
+
+    References
+    ----------
+    .. [1] https://en.wikipedia.org/wiki/Cross-spectrum
     """
 
     def __init__(self, window=128, overlap=0.75, fmin=None, fmax=None,
@@ -492,13 +496,13 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        self : CospCovariances instance
-            The CospCovariances instance.
+        self : CrossSpectra instance
+            The CrossSpectra instance.
         """
         return self
 
     def transform(self, X):
-        """Estimate the cospectral covariance matrices.
+        """Estimate cross-spectral matrices.
 
         Parameters
         ----------
@@ -507,23 +511,81 @@ class CospCovariances(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        covmats : ndarray, shape (n_matrices, n_channels, n_channels, n_freqs)
-            Covariance matrices for each input and for each frequency bin.
+        X_new : ndarray, shape (n_matrices, n_channels, n_channels, n_freqs)
+            Cross-spectral matrices for each input and for each frequency bin.
         """
-        out = []
+        X_new = []
 
         for i in range(len(X)):
-            S, freqs = cospectrum(
+            S, freqs = cross_spectrum(
                 X[i],
                 window=self.window,
                 overlap=self.overlap,
                 fmin=self.fmin,
                 fmax=self.fmax,
                 fs=self.fs)
-            out.append(S)
+            X_new.append(S)
         self.freqs_ = freqs
 
-        return np.array(out)
+        return np.array(X_new)
+
+
+class CoSpectra(CrossSpectra):
+    """Estimation of co-spectral matrices.
+
+    Co-spectral matrices are SPD matrices estimated as the real part of the
+    :class:`pyriemann.estimation.CrossSpectra`. It returns a 4-d array with a
+    co-spectral matrix for each input and in each frequency bin of the
+    Fourier transform.
+
+    Parameters
+    ----------
+    window : int, default=128
+        The length of the FFT window used for spectral estimation.
+    overlap : float, default=0.75
+        The percentage of overlap between window.
+    fmin : float | None, default=None
+        The minimal frequency to be returned.
+    fmax : float | None, default=None
+        The maximal frequency to be returned.
+    fs : float | None, default=None
+        The sampling frequency of the signal.
+
+    Attributes
+    ----------
+    freqs_ : ndarray, shape (n_freqs,)
+        If transformed, the frequencies associated to cospectra.
+        None if ``fs`` is None.
+
+    See Also
+    --------
+    CrossSpectra
+    Coherences
+    """
+
+    def transform(self, X):
+        """Estimate co-spectral matrices.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_times)
+            Multi-channel time-series.
+
+        Returns
+        -------
+        X_new : ndarray, shape (n_matrices, n_channels, n_channels, n_freqs)
+            Co-spectral matrices for each input and for each frequency bin.
+        """
+        X_new = super().transform(X)
+        return X_new.real
+
+
+@deprecated(
+    "CospCovariances is deprecated and will be removed in 0.8.0; "
+    "please use CoSpectra."
+)
+class CospCovariances(CoSpectra):
+    pass
 
 
 class Coherences(CospCovariances):
@@ -574,9 +636,8 @@ class Coherences(CospCovariances):
 
     See Also
     --------
-    Covariances
-    HankelCovariances
-    CospCovariances
+    CrossSpectra
+    TimeDelayCovariances
 
     References
     ----------
@@ -638,11 +699,11 @@ class Coherences(CospCovariances):
         return np.array(out)
 
 
-class HankelCovariances(BaseEstimator, TransformerMixin):
-    """Estimation of covariance matrix with time delayed Hankel matrices.
+class TimeDelayCovariances(BaseEstimator, TransformerMixin):
+    """Estimation of covariance matrices with time delay matrices.
 
-    Hankel covariance matrices [1]_ are useful to catch spectral dynamics of
-    the signal, similarly to the CSSP method [2]_. It is done by concatenating
+    Time delay covariance matrices are useful to catch spectral dynamics of
+    the signal, similarly to the CSSP method [1]_. It is done by concatenating
     time delayed version of the signal before covariance estimation.
 
     Parameters
@@ -656,6 +717,12 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
     **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
 
+    Attributes
+    ----------
+    Xtd_ : ndarray, shape (n_matrices, n_channels x n_delays, n_times)
+        Time delay multi-channel time-series, where `n_delays` is equal to:
+        `delays` when it is a int, and `1 + len(delays)` when it is a list.
+
     See Also
     --------
     Covariances
@@ -664,8 +731,7 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] https://en.wikipedia.org/wiki/Hankel_matrix
-    .. [2] `Spatio-spectral filters for improving the classification of single
+    .. [1] `Spatio-spectral filters for improving the classification of single
         trial EEG
         <http://doc.ml.tu-berlin.de/bbci/publications/LemBlaCurMue05.pdf>`_
         S. Lemm, B. Blankertz, B. Curio, K-R. Muller. IEEE Transactions on
@@ -692,13 +758,13 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        self : HankelCovariances instance
-            The HankelCovariances instance.
+        self : TimeDelayCovariances instance
+            The TimeDelayCovariances instance.
         """
         return self
 
     def transform(self, X):
-        """Estimate the Hankel covariance matrices.
+        """Estimate the time delay covariance matrices.
 
         Parameters
         ----------
@@ -707,10 +773,10 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        covmats : ndarray, shape (n_matrices, n_delays x n_channels, \
-                n_delays x n_channels)
-            Hankel covariance matrices, where n_delays is equal to `delays`
-            when it is a int, and to `1 + len(delays)` when it is a list.
+        covmats : ndarray, shape (n_matrices, n_channels x n_delays, \
+                n_channels x n_delays)
+            Time delay covariance matrices, where `n_delays` is equal to:
+            `delays` when it is a int, and `1 + len(delays)` when it is a list.
         """
 
         if isinstance(self.delays, int):
@@ -720,22 +786,28 @@ class HankelCovariances(BaseEstimator, TransformerMixin):
         else:
             raise ValueError('delays must be an integer or a list')
 
-        X2 = []
-        for x in X:
-            tmp = x
-            for d in delays:
-                tmp = np.r_[tmp, np.roll(x, d, axis=-1)]
-            X2.append(tmp)
-        X2 = np.array(X2)
-        covmats = covariances(X2, estimator=self.estimator, **self.kwds)
+        Xtd = [X]
+        for d in delays:
+            Xtd.append(np.roll(X, d, axis=-1))
+        self.Xtd_ = np.concatenate(Xtd, axis=-2)
+
+        covmats = covariances(self.Xtd_, estimator=self.estimator, **self.kwds)
         return covmats
+
+
+@deprecated(
+    "HankelCovariances is deprecated and will be removed in 0.8.0; "
+    "please use TimeDelayCovariances."
+)
+class HankelCovariances(TimeDelayCovariances):
+    pass
 
 
 ###############################################################################
 
 
 class Kernels(BaseEstimator, TransformerMixin):
-    r"""Estimation of kernel matrix between channels of time series.
+    r"""Estimation of kernel matrices between channels of time series.
 
     Perform a kernel matrix estimation for each given time series, evaluating a
     kernel function between each pair of channels (rather than between pairs of
