@@ -5,9 +5,9 @@ from scipy.linalg import eigh
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.extmath import stable_cumsum
 
+from .utils.base import sqrtm, invsqrtm
 from .utils.geodesic import geodesic
 from .utils.mean import mean_covariance
-from .utils.base import sqrtm, invsqrtm
 
 
 class Whitening(BaseEstimator, TransformerMixin):
@@ -65,7 +65,7 @@ class Whitening(BaseEstimator, TransformerMixin):
         self.metric = metric
         self.dim_red = dim_red
         self.verbose = verbose
-        self.total_matrices_fit = None
+        self._n_matrices_cum = 0
 
     def fit(self, X, y=None, sample_weight=None):
         """Train whitening spatial filters.
@@ -108,9 +108,8 @@ class Whitening(BaseEstimator, TransformerMixin):
             raise ValueError("Unknown type for parameter dim_red: %r"
                              % type(self.dim_red))
 
-        #Save number of samples in this first fit in case partial fits follow
-        self.total_matrices_fit = X.shape[0]
-        
+        self._n_matrices_cum = X.shape[0]
+
         return self
 
     def _get_eig(self):
@@ -188,15 +187,12 @@ class Whitening(BaseEstimator, TransformerMixin):
             Set of SPD matrices.
         y : None
             Ignored as unsupervised.
-        alpha : float, default=None
+        alpha : float | None, default=None
             Update rate in [0, 1] for the mean: 0 for no update, 1 for full
-            update. If set to default, None, will track how many samples have 
-            been fit and give them proportional weight allowing for whitening 
-            in real-time, online applications.
-            I.e., alpha will be automatically set to 1/(n_matrices fit in total)
+            update.
+            If None, ``alpha`` is defined as ``n_matrices`` divided by the
+            number of matrices that have been already used for fit.
 
-        Note: Dimension reduction is not currently supported with a partial fit
-        
         Returns
         -------
         self : Whitening instance
@@ -206,44 +202,29 @@ class Whitening(BaseEstimator, TransformerMixin):
         -----
         .. versionadded:: 0.7
         """
-        #Check if dimension reduction is set and partial_fit called
-        if self.dim_red:
-            raise ValueError(
-                "Dimension reduction not currently supported in a partial fit")
-        
-        #If alpha = None then keep track of total samples that have been fit
-        if not alpha:
-            #If number of matrices fit so far not yet tracked, begin tracking
-            if not self.total_matrices_fit:
-                self.total_matrices_fit = X.shape[0]
-            else:
-                self.total_matrices_fit += X.shape[0]
-
-            alpha = X.shape[0] / self.total_matrices_fit
-
         n_matrices, n_channels, _ = X.shape
-        
-        #If first time being fit, need to set existing mean
-        if not hasattr(self, '_mean'):
-            self._mean = mean_covariance(X, metric=self.metric)
+        self._n_matrices_cum += n_matrices
 
-        #Check if number of channels matches previous fit
-        if n_channels != self._mean.shape[-1]:
+        if alpha is None:
+            alpha = n_matrices / self._n_matrices_cum
+        if not 0 <= alpha <= 1:
+            raise ValueError("Parameter alpha must be in [0, 1]")
+        if alpha == 0:
+            return self
+
+        if not hasattr(self, "_mean"):
+            self._mean = mean_covariance(X, metric=self.metric)
+            self.n_components_ = n_channels
+        elif n_channels != self._mean.shape[-1]:
             raise ValueError(
                 "X does not have the good number of channels. Should be %d but"
                 " got %d." % (self._mean.shape[-1], n_channels))
-
-        if not 0 <= alpha <= 1:
-            raise ValueError("Parameter alpha must be in [0, 1]")
-
-        if alpha > 0:
-            if n_matrices > 1:  # mini-batch update
-                Xm = mean_covariance(X, metric=self.metric)
-            else:               # pure online update
-                Xm = X[0]
+        else:
+            Xm = mean_covariance(X, metric=self.metric)
             self._mean = geodesic(self._mean, Xm, alpha, metric=self.metric)
-            self.filters_ = invsqrtm(self._mean)
-            self.inv_filters_ = sqrtm(self._mean)
+
+        self._get_eig()
+        self._reduce_and_whiten()
 
         return self
 

@@ -54,35 +54,44 @@ def test_whitening_fit(dim_red, metric, rndstate, get_mats):
     """Test Whitening fit"""
     n_matrices, n_channels = 20, 6
     mats = get_mats(n_matrices, n_channels, "spd")
-
     w = rndstate.rand(n_matrices)
+
     whit = Whitening(dim_red=dim_red, metric=metric).fit(mats, sample_weight=w)
+
+    n_components = whit.n_components_
     if dim_red is None:
-        n_comp = n_channels
+        assert n_components == n_channels
     else:
-        n_comp = whit.n_components_
+        assert n_components <= n_channels
 
-    if dim_red and list(dim_red.keys())[0] in ["expl_var", "max_cond"]:
-        assert whit.n_components_ <= n_channels
-    else:
-        assert whit.n_components_ == n_comp
-    assert whit.filters_.shape == (n_channels, n_comp)
-    assert whit.inv_filters_.shape == (n_comp, n_channels)
+    assert whit.filters_.shape == (n_channels, n_components)
+    assert whit.inv_filters_.shape == (n_components, n_channels)
 
 
-@pytest.mark.parametrize("alpha", [0, 0.5, 1])
+@pytest.mark.parametrize("alpha", [0, 0.5, 1, None])
 @pytest.mark.parametrize("dim_red", dim_red)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_whitening_partial_fit(alpha, dim_red, metric, get_mats):
     """Test Whitening partial_fit"""
-    n_matrices, n_channels = 10, 5
+    n_matrices, n_channels = 6, 5
     mats = get_mats(n_matrices, n_channels, "spd")
-    whit = Whitening(dim_red=dim_red, metric=metric).fit(mats)
 
-    whit.partial_fit(get_mats(n_matrices, n_channels, "spd"), alpha=alpha)
+    whit = Whitening(dim_red=dim_red, metric=metric).fit(mats)
+    whit.partial_fit(get_mats(1, n_channels, "spd"), alpha=alpha)
+
+    whit = Whitening(dim_red=dim_red, metric=metric)
+    whit.partial_fit(mats, alpha=alpha)
+
+
+def test_whitening_partial_fit_errors(get_mats):
+    n_matrices, n_channels = 3, 3
+    mats = get_mats(n_matrices, n_channels, "spd")
+    whit = Whitening(dim_red=None, metric="riemann").partial_fit(mats)
 
     with pytest.raises(ValueError):
-        whit.partial_fit(get_mats(2, n_channels + 1, "spd"), alpha=alpha)
+        whit.partial_fit(get_mats(2, n_channels + 1, "spd"))
+    with pytest.raises(ValueError):
+        whit.partial_fit(mats, alpha=42)
 
 
 @pytest.mark.parametrize("dim_red", dim_red)
