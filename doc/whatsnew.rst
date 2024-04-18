@@ -10,6 +10,10 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.7.dev
 --------
 
+- Add ``kernel`` parameter to :class:`pyriemann.embedding.LocallyLinearEmbedding`. :pr:`293` by :user:`gabelstein`
+
+- Add possibility for ``target_domain`` parameter of :class:`pyriemann.transfer._estimators.TLCenter` to be empty, forcing ``transform()`` to recenter matrices to the last fitted domain. :pr:`292` by :user:`brunaafl`
+
 - Add `partial_fit` function to :class:`pyriemann.preprocessing.Whitening` for online applications. :pr:`277` by :user:`qbarthelemy` and :user:`brentgaisford`
 
 v0.6 (April 2024)

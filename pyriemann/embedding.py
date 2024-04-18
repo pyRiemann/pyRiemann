@@ -1,14 +1,15 @@
 """Embedding SPD matrices via manifold learning techniques."""
 
+import warnings
+
 import numpy as np
 from scipy.linalg import solve, eigh
 from scipy.sparse import csr_matrix
-
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.manifold import spectral_embedding
 
-from .utils.kernel import kernel
 from .utils.distance import pairwise_distance
+from .utils.kernel import kernel as kernel_fct
 
 
 class SpectralEmbedding(BaseEstimator):
@@ -133,12 +134,20 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    n_components : int, default=2
+    n_components : int | None, default=2
         Dimensionality of projected space.
-    n_neighbors : int, default=5
-        Number of neighbors for reconstruction of each point.
+        If None, ``n_components`` is set to ``n_matrices - 1``.
+    n_neighbors : int | None, default=5
+        Number of neighbors for reconstruction of each matrix.
+        If None, all available matrices are used.
+        If ``n_neighbors > n_matrices``, ``n_neighbors`` is set to
+        ``n_matrices - 1``.
     metric : {"euclid", "logeuclid", "riemann"}, default: "riemann"
         Metric used for KNN and Kernel estimation.
+    kernel : callable | None, default=None
+        Kernel function to use for the embedding. If None, the canonical
+        kernel specified by the metric is used. Must be a function that
+        takes the arguments (X, Cref, metric).
     reg : float, default=1e-3
         Regularization parameter.
 
@@ -169,12 +178,17 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         Pattern Recognition
     """
 
-    def __init__(self, n_components=2, n_neighbors=5, metric="riemann",
-                 reg=1e-3):
+    def __init__(self, n_components=2,
+                 n_neighbors=5,
+                 metric="riemann",
+                 kernel=None,
+                 reg=1e-3
+                 ):
         self.n_components = n_components
         self.n_neighbors = n_neighbors
         self.metric = metric
         self.reg = reg
+        self.kernel = kernel
 
     def fit(self, X, y=None):
         """Fit the model from data in X.
@@ -193,7 +207,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
         """
         self.data_ = X
-        _check_dimensions(
+        self.n_components, self.n_neighbors = _check_dimensions(
             X,
             n_components=self.n_components,
             n_neighbors=self.n_neighbors,
@@ -205,6 +219,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
             n_neighbors=self.n_neighbors,
             metric=self.metric,
             reg=self.reg,
+            kernel=self.kernel
         )
 
         self.embedding_, self.error_ = embd, err
@@ -240,6 +255,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
             ind,
             metric=self.metric,
             reg=self.reg,
+            kernel=self.kernel
         )
 
         X_new = np.empty((X.shape[0], self.n_components))
@@ -266,7 +282,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         return self.embedding_
 
 
-def barycenter_weights(X, Y, indices, metric="riemann", reg=1e-3):
+def barycenter_weights(X, Y, indices, metric="riemann", kernel=None, reg=1e-3):
     """Compute Riemannian barycenter weights of X from Y along the first axis.
 
     Estimates the weights to assign to each point in Y[indices] to recover
@@ -282,9 +298,13 @@ def barycenter_weights(X, Y, indices, metric="riemann", reg=1e-3):
         Indices of the points in Y used to compute the barycenter
     metric : {"euclid", "logeuclid", "riemann"}, default="riemann"
         Kernel metric.
+    kernel : callable | None, default=None
+        Kernel function to use for the embedding. If None, the canonical
+        kernel specified by the metric is used. Must be a function that
+        takes the arguments (X, Cref, metric).
     reg : float, default=1e-3
         Amount of regularization to add for the problem to be
-        well-posed in the case of n_neighbors > n_channels.
+        well-posed in the case of ``n_neighbors > n_channels``.
 
     Returns
     -------
@@ -299,7 +319,8 @@ def barycenter_weights(X, Y, indices, metric="riemann", reg=1e-3):
     msg = f"Number of index-sets in indices (is {n_matrices}) must match " \
           f"number of matrices in X (is {X.shape[0]})."
     assert X.shape[0] == n_matrices, msg
-
+    if kernel is None:
+        kernel = kernel_fct
     B = np.empty((n_matrices, n_neighbors), dtype=X.dtype)
     v = np.ones(n_neighbors, dtype=X.dtype)
 
@@ -322,6 +343,7 @@ def locally_linear_embedding(X,
                              n_components=2,
                              n_neighbors=5,
                              metric="riemann",
+                             kernel=None,
                              reg=1e-3):
     """Perform a Locally Linear Embedding (LLE) of SPD matrices.
 
@@ -341,10 +363,18 @@ def locally_linear_embedding(X,
         Set of SPD matrices.
     n_components : int, default=2
         Dimensionality of projected space.
+        If None, ``n_components`` is set to ``n_matrices - 1``.
     n_neighbors : int, default=5
         Number of neighbors for reconstruction of each point.
+        If None, all available matrices are used.
+        If ``n_neighbors > n_matrices``, ``n_neighbors`` is set to
+        ``n_matrices - 1``.
     metric : {"euclid", "logeuclid", "riemann"}, default: "riemann"
         Metric used for KNN and Kernel estimation.
+    kernel : callable | None, default=None
+        Kernel function to use for the embedding. If None, the canonical
+        kernel specified by the metric is used. Must be a function that
+        takes the arguments (X, Cref, metric).
     reg : float, default=1e-3
         Regularization parameter.
 
@@ -372,7 +402,10 @@ def locally_linear_embedding(X,
     neighbors = np.array([np.argsort(dist)[1:n_neighbors + 1]
                           for dist in pairwise_distances])
 
-    B = barycenter_weights(X, X, neighbors, metric=metric, reg=reg)
+    B = barycenter_weights(X, X, neighbors,
+                           metric=metric,
+                           reg=reg,
+                           kernel=kernel)
 
     indptr = np.arange(0, n_matrices * n_neighbors + 1, n_neighbors)
     W = csr_matrix(
@@ -396,18 +429,25 @@ def locally_linear_embedding(X,
 def _check_dimensions(X, Y=None, n_components=None, n_neighbors=None):
     n_matrices, n_channels, n_channels = X.shape
 
-    if not isinstance(Y, type(None)):
+    if Y is not None and Y.shape[1:] != (n_channels, n_channels):
         msg = f"Dimension of matrices in data to be transformed must match " \
               f"dimension of data used for fitting. Expected " \
               f"{(n_channels, n_channels)}, got {Y.shape[1:]}."
-        assert Y.shape[1:] == (n_channels, n_channels), msg
+        raise ValueError(msg)
 
-    if not isinstance(n_neighbors, type(None)):
-        msg = f"n_neighbors (is {n_neighbors}) must be smaller than " \
-              f"n_matrices (is {n_matrices})."
-        assert n_matrices > n_neighbors, msg
-
-    if not isinstance(n_components, type(None)):
+    if n_components is None:
+        n_components = n_matrices - 1
+    elif n_components >= n_matrices:
         msg = f"n_components (is {n_components}) must be smaller than " \
               f"n_matrices (is {n_matrices})."
-        assert n_components < n_matrices, msg
+        raise ValueError(msg)
+
+    if n_neighbors is None:
+        n_neighbors = n_matrices - 1
+    elif n_matrices <= n_neighbors:
+        n_neighbors = n_matrices - 1
+        warnings.warn(f"n_neighbors (is {n_neighbors}) must be smaller than "
+                      f"n_matrices (is {n_matrices}). Setting n_neighbors to "
+                      f"{n_matrices - 1}.")
+
+    return n_components, n_neighbors
