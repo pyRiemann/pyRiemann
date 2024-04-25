@@ -445,9 +445,9 @@ def _check_dimensions(X, Y=None, n_components=None, n_neighbors=None):
     if n_neighbors is None:
         n_neighbors = n_matrices - 1
     elif n_matrices <= n_neighbors:
-        n_neighbors = n_matrices - 1
         warnings.warn(f"n_neighbors (is {n_neighbors}) must be smaller than "
                       f"n_matrices (is {n_matrices}). Setting n_neighbors to "
                       f"{n_matrices - 1}.")
+        n_neighbors = n_matrices - 1
 
     return n_components, n_neighbors
