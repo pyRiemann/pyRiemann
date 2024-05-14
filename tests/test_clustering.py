@@ -40,8 +40,8 @@ class ClusteringTestCase:
         if clust is PotatoField:
             n_potatoes = 3
             mats = [get_mats(n_matrices, n_channels, "spd"),
-                       get_mats(n_matrices, n_channels + 2, "spd"),
-                       get_mats(n_matrices, n_channels + 1, "spd")]
+                    get_mats(n_matrices, n_channels + 2, "spd"),
+                    get_mats(n_matrices, n_channels + 1, "spd")]
             self.clf_transform(clust, mats, n_potatoes)
             self.clf_predict(clust, mats, n_potatoes)
             self.clf_predict_proba(clust, mats, n_potatoes)
@@ -77,11 +77,11 @@ class TestRiemannianClustering(ClusteringTestCase):
         else:
             clf = clust(n_clusters=n_clusters)
         clf.fit(mats)
-        transformed = clf.transform(mats)
+        transf = clf.transform(mats)
         if n_clusters is None:
-            assert transformed.shape == (n_matrices,)
+            assert transf.shape == (n_matrices,)
         else:
-            assert transformed.shape == (n_matrices, n_clusters)
+            assert transf.shape == (n_matrices, n_clusters)
 
     def clf_jobs(self, clust, mats, n_clusters, labels=None):
         n_matrices = mats.shape[0]
@@ -90,23 +90,22 @@ class TestRiemannianClustering(ClusteringTestCase):
             clf.fit(mats)
         else:
             clf.fit(mats, labels)
-        transformed = clf.transform(mats)
-        assert len(transformed) == (n_matrices)
+        transf = clf.transform(mats)
+        assert len(transf) == (n_matrices)
 
     def clf_centroids(self, clust, mats, n_clusters):
         _, n_channels, n_channels = mats.shape
         clf = clust(n_clusters=n_clusters).fit(mats)
         centroids = clf.centroids()
-        shape = (n_clusters, n_channels, n_channels)
-        assert np.array(centroids).shape == shape
+        assert centroids.shape == (n_clusters, n_channels, n_channels)
 
     def clf_transform_per_class(self, clust, mats, n_clusters, labels):
         n_classes = len(np.unique(labels))
         n_matrices = mats.shape[0]
         clf = clust(n_clusters=n_clusters)
         clf.fit(mats, labels)
-        transformed = clf.transform(mats)
-        assert transformed.shape == (n_matrices, n_classes * n_clusters)
+        transf = clf.transform(mats)
+        assert transf.shape == (n_matrices, n_classes * n_clusters)
 
     def clf_predict(self, clust, mats, n_clusters=None):
         n_matrices = len(mats)
@@ -118,8 +117,8 @@ class TestRiemannianClustering(ClusteringTestCase):
         else:
             clf = clust(n_clusters=n_clusters)
         clf.fit(mats)
-        predicted = clf.predict(mats)
-        assert predicted.shape == (n_matrices,)
+        pred = clf.predict(mats)
+        assert pred.shape == (n_matrices,)
 
     def clf_predict_proba(self, clust, mats, n=None):
         if n is None:
@@ -129,8 +128,8 @@ class TestRiemannianClustering(ClusteringTestCase):
             n_matrices = len(mats[0])
             clf = clust(n_potatoes=n)
         clf.fit(mats)
-        probabilities = clf.predict(mats)
-        assert probabilities.shape == (n_matrices,)
+        proba = clf.predict_proba(mats)
+        assert proba.shape == (n_matrices,)
 
     def clf_partial_fit(self, clust, mats, n=None):
         if n is None:
