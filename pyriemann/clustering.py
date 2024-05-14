@@ -37,20 +37,17 @@ def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
 #######################################################################
 
 
-def _fit_single(X, y=None, n_clusters=2, init='random', random_state=None,
-                metric='riemann', max_iter=100, tol=1e-4, n_jobs=1):
+def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,
+                metric="riemann", max_iter=100, tol=1e-4, n_jobs=1):
     """helper to fit a single run of centroid."""
     # init random state if provided
     mdm = MDM(metric=metric, n_jobs=n_jobs)
     mdm.metric_mean, mdm.metric_dist = check_metric(metric)
-    squared_norms = [np.linalg.norm(x, ord='fro')**2 for x in X]
+    squared_norms = [np.linalg.norm(x, ord="fro")**2 for x in X]
     mdm.covmeans_ = _init_centroids(X, n_clusters, init,
                                     random_state=random_state,
                                     x_squared_norms=squared_norms)
-    if y is not None:
-        mdm.classes_ = np.unique(y)
-    else:
-        mdm.classes_ = np.arange(n_clusters)
+    mdm.classes_ = np.arange(n_clusters)
 
     labels = mdm.predict(X)
     k = 0
@@ -77,7 +74,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
 
     Parameters
     ----------
-    n_cluster : int, default=2
+    n_clusters : int, default=2
         Number of clusters.
     max_iter : int, default=100
         The maximum number of iteration to reach convergence.
@@ -92,11 +89,10 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         The generator used to initialize the centers. If an integer is
         given, it fixes the seed. Defaults to the global numpy random
         number generator.
-    init : 'random' or ndarray, shape (n_clusters, n_channels, n_channels), \
-            default='random'
+    init : "random" | ndarray, shape (n_clusters, n_channels, n_channels), \
+            default="random"
         Method for initialization of centers.
-        'random': choose k observations (rows) at random from data for
-        the initial centroids.
+        If "random", it chooses k matrices at random for the initial centroids.
         If an ndarray is passed, it should be of shape
         (n_clusters, n_channels, n_channels) and gives the initial centers.
     n_init : int, default=10
@@ -118,10 +114,10 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
     ----------
     mdm_ : MDM instance.
         MDM instance containing the centroids.
-    labels_ :
-        Labels of each point.
+    labels_ : ndarray, shape (n_matrices,)
+        Labels of each matrix of training set.
     inertia_ : float
-        Sum of distances of samples to their closest cluster center.
+        Sum of distances of matrices to their closest cluster center.
 
     Notes
     -----
@@ -134,7 +130,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
     """
 
     def __init__(self, n_clusters=2, max_iter=100, metric="riemann",
-                 random_state=None, init='random', n_init=10, n_jobs=1,
+                 random_state=None, init="random", n_init=10, n_jobs=1,
                  tol=1e-4):
         """Init."""
         self.metric = metric
@@ -153,7 +149,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : ndarray, shape (n_matrices,) | None, default=None
+        y : None | ndarray, shape (n_matrices,), default=None
             Not used, here for compatibility with sklearn API.
 
         Returns
@@ -161,7 +157,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         self : Kmeans instance
             The Kmeans instance.
         """
-        if isinstance(self.init, str) and self.init == 'random':
+        if isinstance(self.init, str) and self.init == "random":
             np.random.seed(self.seed)
             seeds = np.random.randint(
                 np.iinfo(np.int32).max, size=self.n_init)
@@ -237,24 +233,36 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
 
         Returns
         -------
-        dist : ndarray, shape (n_matrices, n_cluster)
+        dist : ndarray, shape (n_matrices, n_clusters)
             The distance to each centroid according to the metric.
         """
         return self.mdm_.transform(X)
 
     def centroids(self):
-        """Helper for fast access to the centroid.
+        """Helper for fast access to the centroids.
 
         Returns
         -------
-        centroids : list of SPD matrices, len (n_cluster)
-            Return a list containing the centroid of each cluster.
+        centroids : ndarray, shape (n_clusters, n_channels, n_channels)
+            Centroids of each cluster.
         """
         return self.mdm_.covmeans_
 
 
 class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
     """Clustering by k-means for each class with SPD matrices as inputs.
+
+    Parameters
+    ----------
+    n_clusters : int, default=2
+        Number of clusters.
+
+    Attributes
+    ----------
+    classes_ : ndarray, shape (n_classes,)
+        Labels for each class.
+    covmeans_ : ndarray, shape (n_centroids, n_channels, n_channels)
+        Centroids of each cluster of each class.
 
     See Also
     --------
@@ -263,21 +271,46 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
 
     def __init__(self, n_clusters=2, **params):
         """Init."""
-        params['n_clusters'] = n_clusters
+        params["n_clusters"] = n_clusters
         self.km = Kmeans(**params)
         self.metric = self.km.metric
 
     def fit(self, X, y):
-        """Fit."""
-        self.covmeans_ = []
+        """Fit the clusters for each class.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : ndarray, shape (n_matrices,)
+            Labels corresponding to each matrix.
+
+        Returns
+        -------
+        self : KmeansPerClassTransform instance
+            The KmeansPerClassTransform instance.
+        """
+        covmeans = []
         self.classes_ = np.unique(y)
         for c in self.classes_:
             self.km.fit(X[y == c])
-            self.covmeans_.extend(self.km.centroids())
+            covmeans.extend(self.km.centroids())
+        self.covmeans_ = np.stack(covmeans, axis=0)
         return self
 
     def transform(self, X):
-        """Transform."""
+        """Get the distance to each centroid.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+
+        Returns
+        -------
+        dist : ndarray, shape (n_matrices, n_centroids)
+            The distance to each centroid according to the metric.
+        """
         mdm = MDM(metric=self.metric, n_jobs=self.km.n_jobs)
         mdm.metric_mean, mdm.metric_dist = check_metric(self.metric)
         mdm.covmeans_ = self.covmeans_
@@ -339,7 +372,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
     """
 
-    def __init__(self, metric='riemann', threshold=3, n_iter_max=100,
+    def __init__(self, metric="riemann", threshold=3, n_iter_max=100,
                  pos_label=1, neg_label=0):
         """Init."""
         self.metric = metric
@@ -372,9 +405,6 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
             raise ValueError("Positive and negative labels must be different")
 
         self._mdm = MDM(metric=self.metric)
-        self._mdm.metric_mean, self._mdm.metric_dist = check_metric(
-            self.metric
-        )
 
         y_old = self._check_labels(X, y)
 
@@ -421,34 +451,31 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         self : Potato instance
             The Potato instance.
         """
-        if not hasattr(self, '_mdm'):
+        if not hasattr(self, "_mdm"):
             raise ValueError(
-                'Partial fit can be called only on an already fitted potato.')
+                "partial_fit can be called only on an already fitted potato.")
 
         n_matrices, n_channels, _ = X.shape
         if n_channels != self._mdm.covmeans_[0].shape[0]:
             raise ValueError(
-                'X does not have the good number of channels. Should be %d but'
-                ' got %d.' % (self._mdm.covmeans_[0].shape[0], n_channels))
+                "X does not have the good number of channels. Should be %d but"
+                " got %d." % (self._mdm.covmeans_[0].shape[0], n_channels))
 
         y = self._check_labels(X, y)
 
         if not 0 <= alpha <= 1:
-            raise ValueError('Parameter alpha must be in [0, 1]')
+            raise ValueError("Parameter alpha must be in [0, 1]")
+        if alpha == 0:
+            return self
 
-        if alpha > 0:
-            if n_matrices > 1:  # mini-batch update
-                Xm = mean_covariance(X[(y == self.pos_label)],
-                                     metric=self.metric)
-            else:             # pure online update
-                Xm = X[0]
-            self._mdm.covmeans_[0] = geodesic(
-                self._mdm.covmeans_[0], Xm, alpha, metric=self.metric)
+        Xm = mean_covariance(X[(y == self.pos_label)], metric=self.metric)
+        self._mdm.covmeans_[0] = geodesic(
+            self._mdm.covmeans_[0], Xm, alpha, metric=self.metric)
 
-            d = np.squeeze(np.log(self._mdm.transform(Xm[np.newaxis, ...])))
-            self._mean = (1 - alpha) * self._mean + alpha * d
-            self._std = np.sqrt(
-                (1 - alpha) * self._std**2 + alpha * (d - self._mean)**2)
+        d = np.squeeze(np.log(self._mdm.transform(Xm[np.newaxis, ...])))
+        self._mean = (1 - alpha) * self._mean + alpha * d
+        self._std = np.sqrt(
+            (1 - alpha) * self._std**2 + alpha * (d - self._mean)**2)
 
         self.covmean_ = self._mdm.covmeans_[0]
         return self
@@ -464,7 +491,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         Returns
         -------
         z : ndarray, shape (n_matrices,)
-            the normalized log-distance to the centroid.
+            The normalized log-distance to the centroid.
         """
         d = np.squeeze(np.log(self._mdm.transform(X)), axis=1)
         z = self._get_z_score(d)
@@ -515,15 +542,15 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         """Check validity of labels."""
         if y is not None:
             if len(y) != len(X):
-                raise ValueError('y must be the same length of X')
+                raise ValueError("y must be the same length of X")
 
             classes = np.int32(np.unique(y))
 
             if len(classes) > 2:
-                raise ValueError('number of classes must be maximum 2')
+                raise ValueError("number of classes must be maximum 2")
 
             if self.pos_label not in classes:
-                raise ValueError('y must contain a positive class')
+                raise ValueError("y must contain a positive class")
 
             y = np.int32(np.array(y) == self.pos_label)
 
@@ -547,8 +574,8 @@ def _check_n_matrices(X, n_matrices):
     """Check number of matrices in ndarray."""
     if X.shape[0] != n_matrices:
         raise ValueError(
-            'Unequal n_matrices between ndarray of X. Should be %d but'
-            ' got %d.' % (n_matrices, X.shape[0]))
+            "Unequal n_matrices between ndarray of X. Should be %d but"
+            " got %d." % (n_matrices, X.shape[0]))
 
 
 class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
@@ -637,9 +664,9 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
             The PotatoField instance.
         """
         if self.n_potatoes < 1:
-            raise ValueError('Parameter n_potatoes must be at least 1')
+            raise ValueError("Parameter n_potatoes must be at least 1")
         if not 0 < self.p_threshold < 1:
-            raise ValueError('Parameter p_threshold must be in (0, 1)')
+            raise ValueError("Parameter p_threshold must be in (0, 1)")
         self._check_length(X)
         n_matrices = X[0].shape[0]
 
@@ -684,6 +711,10 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         self : PotatoField instance
             The PotatoField instance.
         """
+        if not hasattr(self, "_potatoes"):
+            raise ValueError("partial_fit can be called only on an already "
+                             "fitted potato field.")
+
         self._check_length(X)
         n_matrices = X[0].shape[0]
 
@@ -782,8 +813,8 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         """Check validity of input length."""
         if len(X) != self.n_potatoes:
             raise ValueError(
-                'Length of X is not equal to n_potatoes. Should be %d but got '
-                '%d.' % (self.n_potatoes, len(X)))
+                "Length of X is not equal to n_potatoes. Should be %d but got "
+                "%d." % (self.n_potatoes, len(X)))
 
     def _get_proba(self, q):
         """Get proba from a chi-squared value q."""

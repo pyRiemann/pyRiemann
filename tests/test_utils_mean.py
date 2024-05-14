@@ -167,6 +167,33 @@ def test_mean_of_means(kind, mean, get_mats):
     assert C3 == approx(C, 6)
 
 
+@pytest.mark.parametrize(
+    "mean",
+    [
+        mean_ale,
+        mean_alm,
+        mean_euclid,
+        mean_harmonic,
+        mean_kullback_sym,
+        mean_logdet,
+        mean_logeuclid,
+        mean_power,
+        mean_riemann,
+        mean_wasserstein,
+        nanmean_riemann,
+    ],
+)
+def test_mean_of_single_matrix(mean, get_mats):
+    """Test the mean of a single matrix"""
+    n_channels = 3
+    mats = get_mats(1, n_channels, "spd")
+    if mean == mean_power:
+        M = mean(mats, 0.42)
+    else:
+        M = mean(mats)
+    assert M == approx(mats[0])
+
+
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_mean_alm(kind, get_mats):
     """Test the ALM mean"""
