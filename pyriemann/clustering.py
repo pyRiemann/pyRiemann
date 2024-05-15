@@ -65,9 +65,10 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
     """Clustering by k-means with SPD matrices as inputs.
 
     The k-means is a clustering method used to find clusters that minimize the
-    sum of squared distances to their centroids.
-    This is a direct implementation of the k-means algorithm with a Riemannian
-    metric [1]_.
+    sum of squared distances between centroids and SPD matrices [1]_.
+
+    Then, for each new matrix, the class is affected according to the nearest
+    centroid.
 
     Parameters
     ----------
@@ -129,9 +130,9 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
     ----------
     .. [1] `Commande robuste d'un effecteur par une interface cerveau machine
         EEG asynchrone
-        <https://theses.hal.science/tel-01196752/file/BARACHANT_2012_archivage.pdf>`_
+        <https://theses.hal.science/tel-01196752/>`_
         A. Barachant, Thesis, 2012
-    """  # noqa
+    """
 
     def __init__(self, n_clusters=2, max_iter=100, metric="riemann",
                  random_state=None, init="random", n_init=10, n_jobs=1,
@@ -322,7 +323,7 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
 
 
 class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
-    """Artefact detection with the Riemannian Potato.
+    """Artifact detection with the Riemannian Potato.
 
     The Riemannian Potato [1]_ is a clustering method used to detect artifact
     in multichannel signals. Processing SPD matrices,
@@ -487,7 +488,10 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         return self
 
     def transform(self, X):
-        """Return the normalized log-distance to the centroid (z-score).
+        """Return the standardized log-distance to the centroid.
+
+        Return the standardized log-distances to the centroids, ie geometric
+        z-scores of distances.
 
         Parameters
         ----------
@@ -497,14 +501,14 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         Returns
         -------
         z : ndarray, shape (n_matrices,)
-            The normalized log-distance to the centroid.
+            The standardized log-distance to the centroid.
         """
         d = np.squeeze(np.log(self._mdm.transform(X)), axis=1)
         z = self._get_z_score(d)
         return z
 
     def predict(self, X):
-        """Predict artefact from data.
+        """Predict artifact from data.
 
         Parameters
         ----------
@@ -514,8 +518,8 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         Returns
         -------
         pred : ndarray of bool, shape (n_matrices,)
-            The artefact detection: True if the matrix is clean, and False if
-            the matrix contain an artefact.
+            The artifact detection: True if the matrix is clean, and False if
+            the matrix contain an artifact.
         """
         z = self.transform(X)
         pred = z < self.threshold
@@ -585,7 +589,7 @@ def _check_n_matrices(X, n_matrices):
 
 
 class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
-    """Artefact detection with the Riemannian Potato Field.
+    """Artifact detection with the Riemannian Potato Field.
 
     The Riemannian Potato Field [1]_ is a clustering method used to detect
     artifact in multichannel signals. Processing SPD matrices,
@@ -729,9 +733,9 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         return self
 
     def transform(self, X):
-        """Return the normalized log-distances to the centroids.
+        """Return the standardized log-distances to the centroids.
 
-        Return the normalized log-distances to the centroids, ie geometric
+        Return the standardized log-distances to the centroids, ie geometric
         z-scores of distances.
 
         Parameters
@@ -745,7 +749,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         Returns
         -------
         z : ndarray, shape (n_matrices, n_potatoes)
-            The normalized log-distances to the centroids.
+            The standardized log-distances to the centroids.
         """
         self._check_length(X)
         n_matrices = X[0].shape[0]
@@ -757,7 +761,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         return z
 
     def predict(self, X):
-        """Predict artefact from data.
+        """Predict artifact from data.
 
         Parameters
         ----------
@@ -770,8 +774,8 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         Returns
         -------
         pred : ndarray of bool, shape (n_matrices,)
-            The artefact detection: True if the matrix is clean, and False if
-            the matrix contain an artefact.
+            The artifact detection: True if the matrix is clean, and False if
+            the matrix contain an artifact.
         """
         p = self.predict_proba(X)
         pred = p > self.p_threshold
