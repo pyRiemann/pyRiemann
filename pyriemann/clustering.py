@@ -472,12 +472,14 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         Xm = mean_covariance(X[(y == self.pos_label)], metric=self.metric)
         self._mdm.covmeans_[0] = geodesic(
-            self._mdm.covmeans_[0], Xm, alpha, metric=self.metric)
+            self._mdm.covmeans_[0], Xm, alpha, metric=self.metric
+        )
 
         d = np.squeeze(np.log(self._mdm.transform(Xm[np.newaxis, ...])))
         self._mean = (1 - alpha) * self._mean + alpha * d
         self._std = np.sqrt(
-            (1 - alpha) * self._std**2 + alpha * (d - self._mean)**2)
+            (1 - alpha) * self._std**2 + alpha * (d - self._mean)**2
+        )
 
         self.covmean_ = self._mdm.covmeans_[0]
         return self
