@@ -64,7 +64,8 @@ def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,
 class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
     """Clustering by k-means with SPD matrices as inputs.
 
-    Find clusters that minimize the sum of squared distance to their centroids.
+    The k-means is a clustering method used to find clusters that minimize the
+    sum of squared distances to their centroids.
     This is a direct implementation of the k-means algorithm with a Riemannian
     metric [1]_.
 
@@ -324,8 +325,9 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
     """Artefact detection with the Riemannian Potato.
 
     The Riemannian Potato [1]_ is a clustering method used to detect artifact
-    in EEG signals. The algorithm iteratively estimates the centroid of clean
-    signal by rejecting every trial that is too far from it.
+    in multichannel signals. Processing SPD matrices,
+    the algorithm iteratively estimates the centroid of clean
+    matrices by rejecting every matrix that is too far from it.
 
     Parameters
     ----------
@@ -384,9 +386,9 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         self.neg_label = neg_label
 
     def fit(self, X, y=None):
-        """Fit the potato from covariance matrices.
+        """Fit the potato from SPD matrices.
 
-        Fit the potato from covariance matrices, with an iterative outlier
+        Fit the potato from SPD matrices, with an iterative outlier
         removal to obtain a reliable potato.
 
         Parameters
@@ -431,10 +433,10 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         return self
 
     def partial_fit(self, X, y=None, alpha=0.1):
-        """Partially fit the potato from covariance matrices.
+        """Partially fit the potato from SPD matrices.
 
         This partial fit can be used to update dynamic or semi-dymanic online
-        potatoes with clean EEG.
+        potatoes with clean matrices.
 
         Parameters
         ----------
@@ -470,7 +472,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         if alpha == 0:
             return self
 
-        Xm = mean_covariance(X[(y == self.pos_label)], metric=self.metric)
+        Xm = mean_covariance(X[y == self.pos_label], metric=self.metric)
         self._mdm.covmeans_[0] = geodesic(
             self._mdm.covmeans_[0], Xm, alpha, metric=self.metric
         )
@@ -586,8 +588,9 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
     """Artefact detection with the Riemannian Potato Field.
 
     The Riemannian Potato Field [1]_ is a clustering method used to detect
-    artifact in EEG signals. The algorithm combines several potatoes of low
-    dimension, each one being designed to capture specific artifact typically
+    artifact in multichannel signals. Processing SPD matrices,
+    the algorithm combines several potatoes of low dimension,
+    each one being designed to capture specific artifact typically
     affecting specific subsets of channels and/or specific frequency bands.
 
     Parameters
@@ -609,9 +612,9 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         in order to pass different metrics.
     n_iter_max : int, default=10
         The maximum number of iteration to reach convergence.
-    pos_label: int, default=1
+    pos_label : int, default=1
         The positive label corresponding to clean data.
-    neg_label: int, default=0
+    neg_label : int, default=0
         The negative label corresponding to artifact data.
 
     Notes
@@ -644,9 +647,9 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         self.neg_label = neg_label
 
     def fit(self, X, y=None):
-        """Fit the potato field from covariance matrices.
+        """Fit the potato field from SPD matrices.
 
-        Fit the potato field from covariance matrices, with iterative
+        Fit the potato field from SPD matrices, with iterative
         outlier removal to obtain reliable potatoes.
 
         Parameters
@@ -655,8 +658,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
                 n_channels) with same n_matrices but potentially different \
                 n_channels
             List of sets of SPD matrices, each corresponding to a different
-            subset of EEG channels and/or filtering with a specific frequency
-            band.
+            subset of channels and/or filtering with a specific frequency band.
         y : None | ndarray, shape (n_matrices,), default=None
             Labels corresponding to each matrix: positive (resp. negative)
             label corresponds to a clean (resp. artifact) matrix.
@@ -689,10 +691,10 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         return self
 
     def partial_fit(self, X, y=None, alpha=0.1):
-        """Partially fit the potato field from covariance matrices.
+        """Partially fit the potato field from SPD matrices.
 
         This partial fit can be used to update dynamic or semi-dymanic online
-        potatoes with clean EEG.
+        potatoes with clean matrices.
 
         Parameters
         ----------
@@ -700,8 +702,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
                 n_channels) with same n_matrices but potentially different \
                 n_channels
             List of sets of SPD matrices, each corresponding to a different
-            subset of EEG channels and/or filtering with a specific frequency
-            band.
+            subset of channels and/or filtering with a specific frequency band.
         y : None | ndarray, shape (n_matrices,), default=None
             Labels corresponding to each matrix: positive (resp. negative)
             label corresponds to a clean (resp. artifact) matrix.
@@ -739,8 +740,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
                 n_channels) with same n_matrices but potentially different \
                 n_channels
             List of sets of SPD matrices, each corresponding to a different
-            subset of EEG channels and/or filtering with a specific frequency
-            band.
+            subset of channels and/or filtering with a specific frequency band.
 
         Returns
         -------
@@ -765,8 +765,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
                 n_channels) with same n_matrices but potentially different \
                 n_channels
             List of sets of SPD matrices, each corresponding to a different
-            subset of EEG channels and/or filtering with a specific frequency
-            band.
+            subset of channels and/or filtering with a specific frequency band.
 
         Returns
         -------
@@ -792,8 +791,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
                 n_channels) with same n_matrices but potentially different \
                 n_channels
             List of sets of SPD matrices, each corresponding to a different
-            subset of EEG channels and/or filtering with a specific frequency
-            band.
+            subset of channels and/or filtering with a specific frequency band.
 
         Returns
         -------
