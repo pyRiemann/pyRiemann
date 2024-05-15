@@ -24,17 +24,14 @@ def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
             random_state,
         )
     else:
-        n_samples = X.shape[0]
+        n_matrices = X.shape[0]
         return _KMeans(n_clusters=n_clusters, init=init)._init_centroids(
             X,
             x_squared_norms,
             init,
             random_state,
-            sample_weight=np.ones(n_samples) / n_samples,
+            sample_weight=np.ones(n_matrices) / n_matrices,
         )
-
-
-#######################################################################
 
 
 def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,
@@ -43,7 +40,7 @@ def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,
     # init random state if provided
     mdm = MDM(metric=metric, n_jobs=n_jobs)
     mdm.metric_mean, mdm.metric_dist = check_metric(metric)
-    squared_norms = [np.linalg.norm(x, ord="fro")**2 for x in X]
+    squared_norms = np.linalg.norm(X, ord="fro", axis=(1, 2))**2
     mdm.covmeans_ = _init_centroids(X, n_clusters, init,
                                     random_state=random_state,
                                     x_squared_norms=squared_norms)
@@ -65,12 +62,11 @@ def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,
 
 
 class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
-
     """Clustering by k-means with SPD matrices as inputs.
 
     Find clusters that minimize the sum of squared distance to their centroids.
     This is a direct implementation of the k-means algorithm with a Riemannian
-    metric.
+    metric [1]_.
 
     Parameters
     ----------
@@ -86,15 +82,15 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
     random_state : integer or np.RandomState, optional
-        The generator used to initialize the centers. If an integer is
+        The generator used to initialize the centroids. If an integer is
         given, it fixes the seed. Defaults to the global numpy random
         number generator.
     init : "random" | ndarray, shape (n_clusters, n_channels, n_channels), \
             default="random"
-        Method for initialization of centers.
+        Method for initialization of centroids.
         If "random", it chooses k matrices at random for the initial centroids.
         If an ndarray is passed, it should be of shape
-        (n_clusters, n_channels, n_channels) and gives the initial centers.
+        (n_clusters, n_channels, n_channels) and gives the initial centroids.
     n_init : int, default=10
         Number of time the k-means algorithm will be run with different
         centroid seeds. The final results will be the best output of
@@ -112,12 +108,12 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
 
     Attributes
     ----------
-    mdm_ : MDM instance.
+    mdm_ : MDM instance
         MDM instance containing the centroids.
     labels_ : ndarray, shape (n_matrices,)
-        Labels of each matrix of training set.
+        Labels, ie centroid index, of each matrix of training set.
     inertia_ : float
-        Sum of distances of matrices to their closest cluster center.
+        Sum of distances of matrices to their closest cluster centroids.
 
     Notes
     -----
@@ -127,7 +123,14 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
     --------
     Kmeans
     MDM
-    """
+
+    References
+    ----------
+    .. [1] `Commande robuste d'un effecteur par une interface cerveau machine
+        EEG asynchrone
+        <https://theses.hal.science/tel-01196752/file/BARACHANT_2012_archivage.pdf>`_
+        A. Barachant, Thesis, 2012
+    """  # noqa
 
     def __init__(self, n_clusters=2, max_iter=100, metric="riemann",
                  random_state=None, init="random", n_init=10, n_jobs=1,
@@ -354,7 +357,6 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
 
     See Also
     --------
-    Kmeans
     MDM
 
     References
