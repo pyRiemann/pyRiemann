@@ -129,6 +129,9 @@ def mean_alm(X=None, tol=1e-14, maxiter=100, sample_weight=None, covmats=None):
     n_matrices, _, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
 
+    if n_matrices == 1:
+        return X[0]
+
     if n_matrices == 2:
         alpha = sample_weight[1] / sample_weight[0] / 2
         M = geodesic_riemann(X[0], X[1], alpha=alpha)
