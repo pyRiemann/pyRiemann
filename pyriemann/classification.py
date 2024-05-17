@@ -667,23 +667,23 @@ class SVC(sklearnSVC):
     """
 
     def __init__(
-            self,
-            *,
-            metric="riemann",
-            kernel_fct=None,
-            Cref=None,
-            C=1.0,
-            shrinking=True,
-            probability=False,
-            tol=1e-3,
-            cache_size=200,
-            class_weight=None,
-            verbose=False,
-            max_iter=-1,
-            decision_function_shape="ovr",
-            break_ties=False,
-            random_state=None
-        ):
+        self,
+        *,
+        metric="riemann",
+        kernel_fct=None,
+        Cref=None,
+        C=1.0,
+        shrinking=True,
+        probability=False,
+        tol=1e-3,
+        cache_size=200,
+        class_weight=None,
+        verbose=False,
+        max_iter=-1,
+        decision_function_shape="ovr",
+        break_ties=False,
+        random_state=None
+    ):
         """Init."""
         self.Cref = Cref
         self.metric = metric
