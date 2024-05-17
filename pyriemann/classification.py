@@ -1,14 +1,14 @@
 """Module for classification function."""
 import functools
+import warnings
 
+from joblib import Parallel, delayed
 import numpy as np
 from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.svm import SVC as sklearnSVC
 from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
-from joblib import Parallel, delayed
-import warnings
 
 from .utils.kernel import kernel
 from .utils.mean import mean_covariance, mean_power
@@ -98,7 +98,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
@@ -117,14 +117,20 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         if self.n_jobs == 1:
             self.covmeans_ = [
-                mean_covariance(X[y == ll], metric=self.metric_mean,
-                                sample_weight=sample_weight[y == ll])
-                for ll in self.classes_]
+                mean_covariance(
+                    X[y == c],
+                    metric=self.metric_mean,
+                    sample_weight=sample_weight[y == c]
+                ) for c in self.classes_
+            ]
         else:
             self.covmeans_ = Parallel(n_jobs=self.n_jobs)(
-                delayed(mean_covariance)(X[y == ll], metric=self.metric_mean,
-                                         sample_weight=sample_weight[y == ll])
-                for ll in self.classes_)
+                delayed(mean_covariance)(
+                    X[y == c],
+                    metric=self.metric_mean,
+                    sample_weight=sample_weight[y == c]
+                ) for c in self.classes_
+            )
 
         self.covmeans_ = np.stack(self.covmeans_, axis=0)
 
@@ -132,15 +138,18 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     def _predict_distances(self, X):
         """Helper to predict the distance. Equivalent to transform."""
-        n_centroids = len(self.covmeans_)
 
         if self.n_jobs == 1:
-            dist = [distance(X, self.covmeans_[m], self.metric_dist)
-                    for m in range(n_centroids)]
+            dist = [
+                distance(X, covmean, self.metric_dist)
+                for covmean in self.covmeans_
+            ]
         else:
-            dist = Parallel(n_jobs=self.n_jobs)(delayed(distance)(
-                X, self.covmeans_[m], self.metric_dist)
-                for m in range(n_centroids))
+            dist = Parallel(n_jobs=self.n_jobs)(
+                delayed(distance)(
+                    X, covmean, self.metric_dist
+                ) for covmean in self.covmeans_
+            )
 
         dist = np.concatenate(dist, axis=1)
         return dist
@@ -151,12 +160,12 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
         pred : ndarray of int, shape (n_matrices,)
-            Predictions for each matrix according to the closest centroid.
+            Predictions for each matrix according to the nearest centroid.
         """
         dist = self._predict_distances(X)
         return self.classes_[dist.argmin(axis=1)]
@@ -167,7 +176,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -187,7 +196,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -277,8 +286,6 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : FgMDM instance
             The FgMDM instance.
         """
-        self.classes_ = np.unique(y)
-
         self._mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
         self._fgda = FGDA(metric=self.metric, tsupdate=self.tsupdate)
         cov = self._fgda.fit_transform(X, y, sample_weight=sample_weight)
@@ -297,7 +304,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices,)
-            Predictions for each matrix according to the closest centroid.
+            Predictions for each matrix according to the nearest centroid.
         """
         cov = self._fgda.transform(X)
         return self._mdm.predict(cov)
@@ -340,7 +347,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
 
     Project data in the tangent space and apply a classifier on the projected
     data. This is a simple helper to pipeline the tangent space projection and
-    a classifier. Default classifier is LogisticRegression
+    a classifier. Default classifier is LogisticRegression.
 
     Parameters
     ----------
@@ -354,7 +361,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         in order to pass different metrics.
     tsupdate : bool, default=False
         Activate tangent space update for covariate shift correction between
-        training and test, as described in [2]. This is not compatible with
+        training and test, as described in [1]_. This is not compatible with
         online implementation. Performance are better when the number of
         matrices for prediction is higher.
     clf : sklearn classifier, default=LogisticRegression()
@@ -372,6 +379,14 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
     Notes
     -----
     .. versionadded:: 0.2.4
+
+    References
+    ----------
+    .. [1] `Classification of covariance matrices using a Riemannian-based
+        kernel for BCI applications
+        <https://hal.archives-ouvertes.fr/hal-00820475/>`_
+        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
+        Elsevier, 2013, 112, pp.172-178.
     """
 
     def __init__(self, metric="riemann", tsupdate=False,
@@ -399,7 +414,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
             The TSclassifier instance.
         """
         if not isinstance(self.clf, ClassifierMixin):
-            raise TypeError('clf must be a ClassifierMixin')
+            raise TypeError("clf must be a ClassifierMixin")
         self.classes_ = np.unique(y)
 
         ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
@@ -407,7 +422,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         sample_weight_dict = {}
         for step in self._pipe.steps:
             step_name = step[0]
-            sample_weight_dict[step_name + '__sample_weight'] = sample_weight
+            sample_weight_dict[step_name + "__sample_weight"] = sample_weight
         self._pipe.fit(X, y, **sample_weight_dict)
         return self
 
@@ -422,7 +437,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices,)
-            Predictions for each matrix according to the closest centroid.
+            Predictions for each matrix.
         """
         return self._pipe.predict(X)
 
@@ -437,7 +452,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         Returns
         -------
         pred : ndarray of ifloat, shape (n_matrices, n_classes)
-            Predictions for each matrix according to the closest centroid.
+            Predictions for each matrix.
         """
         return self._pipe.predict_proba(X)
 
@@ -487,8 +502,8 @@ class KNearestNeighbor(MDM):
 
     def __init__(self, n_neighbors=5, metric="riemann", n_jobs=1):
         """Init."""
+        super().__init__(metric=metric, n_jobs=n_jobs)
         self.n_neighbors = n_neighbors
-        MDM.__init__(self, metric=metric, n_jobs=n_jobs)
 
     def fit(self, X, y, sample_weight=None):
         """Fit (store the training data).
@@ -525,7 +540,7 @@ class KNearestNeighbor(MDM):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices,)
-            Predictions for each matrix according to the closest centroid.
+            Predictions for each matrix according to the nearest neighbors.
         """
         if covtest is not None:
             warnings.warn("Input covtest has been renamed into X and will be "
@@ -561,9 +576,9 @@ class KNearestNeighbor(MDM):
 
         prob = np.zeros((n_matrices, len(self.classes_)))
         for m in range(n_matrices):
-            for il, ll in enumerate(self.classes_):
-                prob[m, il] = np.sum(
-                    probas[m, neighbors_classes[m, 0:self.n_neighbors] == ll]
+            for ic, c in enumerate(self.classes_):
+                prob[m, ic] = np.sum(
+                    probas[m, neighbors_classes[m, 0:self.n_neighbors] == c]
                 )
 
         return prob
@@ -605,7 +620,7 @@ class SVC(sklearnSVC):
         Tolerance for stopping criterion.
     cache_size : float, default=200
         Specify the size of the kernel cache (in MB).
-    class_weight : dict or 'balanced', default=None
+    class_weight : dict or "balanced", default=None
         Set the parameter C of class i to class_weight[i]*C for SVC. If not
         given, all classes are supposed to have weight one.
         The "balanced" mode uses the values of y to automatically adjust
@@ -617,16 +632,16 @@ class SVC(sklearnSVC):
         properly in a multithreaded context.
     max_iter : int, default=-1
         Hard limit on iterations within solver, or -1 for no limit.
-    decision_function_shape : {'ovo', 'ovr'}, default='ovr'
-        Whether to return a one-vs-rest ('ovr') decision function of shape
+    decision_function_shape : {"ovo", "ovr"}, default="ovr"
+        Whether to return a one-vs-rest ("ovr") decision function of shape
         (n_matrices, n_classes) as all other classifiers, or the original
-        one-vs-one ('ovo') decision function of libsvm which has shape
+        one-vs-one ("ovo") decision function of libsvm which has shape
         (n_matrices, n_classes * (n_classes - 1) / 2). However, note that
-        internally, one-vs-one ('ovo') is always used as a multi-class strategy
+        internally, one-vs-one ("ovo") is always used as a multi-class strategy
         to train models; an ovr matrix is only constructed from the ovo matrix.
         The parameter is ignored for binary classification.
     break_ties : bool, default=False
-        If true, ``decision_function_shape='ovr'``, and number of classes > 2,
+        If true, ``decision_function_shape="ovr"``, and number of classes > 2,
         `predict` will break ties according to the confidence values of
         `decision_function`; otherwise the first class among the tied
         classes is returned. Please note that breaking ties comes at a
@@ -651,40 +666,43 @@ class SVC(sklearnSVC):
         https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
     """
 
-    def __init__(self,
-                 *,
-                 metric="riemann",
-                 kernel_fct=None,
-                 Cref=None,
-                 C=1.0,
-                 shrinking=True,
-                 probability=False,
-                 tol=1e-3,
-                 cache_size=200,
-                 class_weight=None,
-                 verbose=False,
-                 max_iter=-1,
-                 decision_function_shape="ovr",
-                 break_ties=False,
-                 random_state=None):
+    def __init__(
+        self,
+        *,
+        metric="riemann",
+        kernel_fct=None,
+        Cref=None,
+        C=1.0,
+        shrinking=True,
+        probability=False,
+        tol=1e-3,
+        cache_size=200,
+        class_weight=None,
+        verbose=False,
+        max_iter=-1,
+        decision_function_shape="ovr",
+        break_ties=False,
+        random_state=None
+    ):
         """Init."""
         self.Cref = Cref
         self.metric = metric
         self.Cref_ = None
         self.kernel_fct = kernel_fct
-        super().__init__(kernel="precomputed",
-                         C=C,
-                         shrinking=shrinking,
-                         probability=probability,
-                         tol=tol,
-                         cache_size=cache_size,
-                         class_weight=class_weight,
-                         verbose=verbose,
-                         max_iter=max_iter,
-                         decision_function_shape=decision_function_shape,
-                         break_ties=break_ties,
-                         random_state=random_state
-                         )
+        super().__init__(
+            kernel="precomputed",
+            C=C,
+            shrinking=shrinking,
+            probability=probability,
+            tol=tol,
+            cache_size=cache_size,
+            class_weight=class_weight,
+            verbose=verbose,
+            max_iter=max_iter,
+            decision_function_shape=decision_function_shape,
+            break_ties=break_ties,
+            random_state=random_state
+        )
 
     def fit(self, X, y, sample_weight=None):
         """Fit.
@@ -723,14 +741,18 @@ class SVC(sklearnSVC):
 
     def _set_kernel(self):
         if callable(self.kernel_fct):
-            self.kernel = functools.partial(self.kernel_fct,
-                                            Cref=self.Cref_,
-                                            metric=self.metric)
+            self.kernel = functools.partial(
+                self.kernel_fct,
+                Cref=self.Cref_,
+                metric=self.metric
+            )
         elif self.kernel_fct is None or (isinstance(self.kernel_fct, str) and
                                          self.kernel_fct == "precomputed"):
-            self.kernel = functools.partial(kernel,
-                                            Cref=self.Cref_,
-                                            metric=self.metric)
+            self.kernel = functools.partial(
+                kernel,
+                Cref=self.Cref_,
+                metric=self.metric
+            )
         else:
             raise TypeError(
                 "kernel_fct must be None, 'precomputed' or callable, is "
@@ -748,12 +770,12 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
     ----------
     power_list : list of float, default=[-1,0,+1]
         Exponents of power means.
-    method_label : {'sum_means', 'inf_means'}, default='sum_means'
+    method_label : {"sum_means", "inf_means"}, default="sum_means"
         Method to combine labels:
 
-        * sum_means: it assigns the covariance to the class whom the sum of
+        * sum_means: it assigns the matrix to the class whom the sum of
           distances to means of the field is the lowest;
-        * inf_means: it assigns the covariance to the class of the closest mean
+        * inf_means: it assigns the matrix to the class of the nearest mean
           of the field.
     metric : string, default="riemann"
         Metric used for distance estimation during prediction.
@@ -764,7 +786,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
     ----------
     classes_ : ndarray, shape (n_classes,)
         Labels for each class.
-    covmeans_ : dict of ``n_powers`` lists of ``n_classes`` ndarrays of shape \
+    covmeans_ : dict of ``n_powers`` dicts of ``n_classes`` ndarrays of shape \
             (n_channels, n_channels)
         Centroids for each power and each class.
 
@@ -784,7 +806,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         Brain-Computer Interface Conference, Sep 2019, Graz, Austria.
     """
 
-    def __init__(self, power_list=[-1, 0, 1], method_label='sum_means',
+    def __init__(self, power_list=[-1, 0, 1], method_label="sum_means",
                  metric="riemann", n_jobs=1):
         """Init."""
         self.power_list = power_list
@@ -817,31 +839,32 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.covmeans_ = {}
         for p in self.power_list:
             means_p = {}
-            for ll in self.classes_:
-                means_p[ll] = mean_power(
-                    X[y == ll],
+            for c in self.classes_:
+                means_p[c] = mean_power(
+                    X[y == c],
                     p,
-                    sample_weight=sample_weight[y == ll]
+                    sample_weight=sample_weight[y == c]
                 )
             self.covmeans_[p] = means_p
 
         return self
 
-    def _get_label(self, x, labs_unique):
-        m = np.zeros((len(self.power_list), len(labs_unique)))
+    def _get_label(self, x):
+        m = np.zeros((len(self.power_list), len(self.classes_)))
         for ip, p in enumerate(self.power_list):
-            for ill, ll in enumerate(labs_unique):
-                m[ip, ill] = distance(
-                    x, self.covmeans_[p][ll], metric=self.metric, squared=True)
+            for ic, c in enumerate(self.classes_):
+                m[ip, ic] = distance(
+                    x, self.covmeans_[p][c], metric=self.metric, squared=True
+                )
 
-        if self.method_label == 'sum_means':
+        if self.method_label == "sum_means":
             ipmin = np.argmin(np.sum(m, axis=1))
-        elif self.method_label == 'inf_means':
+        elif self.method_label == "inf_means":
             ipmin = np.where(m == np.min(m))[0][0]
         else:
-            raise TypeError('method_label must be sum_means or inf_means')
+            raise TypeError("method_label must be sum_means or inf_means")
 
-        y = labs_unique[np.argmin(m[ipmin])]
+        y = self.classes_[np.argmin(m[ipmin])]
         return y
 
     def predict(self, X):
@@ -855,13 +878,11 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices,)
-            Predictions for each matrix according to the closest means field.
+            Predictions for each matrix according to the nearest means field.
         """
-        labs_unique = sorted(self.covmeans_[self.power_list[0]].keys())
-
-        pred = Parallel(n_jobs=self.n_jobs)(delayed(self._get_label)(
-            x, labs_unique)
-            for x in X)
+        pred = Parallel(n_jobs=self.n_jobs)(
+            delayed(self._get_label)(x) for x in X
+        )
         return np.array(pred)
 
     def _predict_distances(self, X):
@@ -872,11 +893,11 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
             m = {}
             for p in self.power_list:
                 m[p] = []
-                for ll in self.classes_:
+                for c in self.classes_:
                     m[p].append(
                         distance(
                             x,
-                            self.covmeans_[p][ll],
+                            self.covmeans_[p][c],
                             metric=self.metric,
                         )
                     )
@@ -976,9 +997,6 @@ def class_distinctiveness(X, y, exponent=1, metric="riemann",
         (see :func:`pyriemann.utils.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
-        The original equation of class distinctiveness in [1]_ uses "riemann"
-        for both the centroid estimation and the distance estimation but you
-        can provide other metrics depending on your interests.
     return_num_denom : bool, default=False
         Whether to return numerator and denominator of class_dis.
 
@@ -1009,10 +1027,10 @@ def class_distinctiveness(X, y, exponent=1, metric="riemann",
     metric_mean, metric_dist = check_metric(metric)
     classes = np.unique(y)
     if len(classes) <= 1:
-        raise ValueError("X must contain at least two classes")
+        raise ValueError("y must contain at least two classes")
 
     means = np.array([
-        mean_covariance(X[y == ll], metric=metric_mean) for ll in classes
+        mean_covariance(X[y == c], metric=metric_mean) for c in classes
     ])
 
     if len(classes) == 2:
@@ -1036,13 +1054,13 @@ def class_distinctiveness(X, y, exponent=1, metric="riemann",
         return class_dis
 
 
-def _get_within(X, y, means, classes, exponent, metric_dist):
+def _get_within(X, y, means, classes, exponent, metric):
     """Private function to compute within dispersion."""
     sigmas = []
-    for ii, ll in enumerate(classes):
+    for ic, c in enumerate(classes):
         dists_within = [
-            distance(x, means[ii], metric=metric_dist) ** exponent
-            for x in X[y == ll]
+            distance(x, means[ic], metric=metric) ** exponent
+            for x in X[y == c]
         ]
         sigmas.append(np.mean(dists_within))
     sum_sigmas = np.sum(sigmas)
