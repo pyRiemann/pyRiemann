@@ -224,8 +224,7 @@ def test_mdm_hpd(kind, metric, get_mats, get_labels):
 @pytest.mark.parametrize("metric_mean", get_means())
 @pytest.mark.parametrize("metric_dist", get_distances())
 @pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
-def test_fgmdm(metric_mean, metric_dist, metric_map, get_mats,
-                      get_labels):
+def test_fgmdm(metric_mean, metric_dist, metric_map, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 4, 3, 2
     labels = get_labels(n_matrices, n_classes)
     mats = get_mats(n_matrices, n_channels, "spd")
