@@ -140,12 +140,16 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         """Helper to predict the distance. Equivalent to transform."""
 
         if self.n_jobs == 1:
-            dist = [distance(X, covmean, self.metric_dist)
-                    for covmean in self.covmeans_]
+            dist = [
+                distance(X, covmean, self.metric_dist)
+                for covmean in self.covmeans_
+            ]
         else:
-            dist = Parallel(n_jobs=self.n_jobs)(delayed(distance)(
-                X, covmean, self.metric_dist
-            ) for covmean in self.covmeans_)
+            dist = Parallel(n_jobs=self.n_jobs)(
+                delayed(distance)(
+                    X, covmean, self.metric_dist
+                ) for covmean in self.covmeans_
+            )
 
         dist = np.concatenate(dist, axis=1)
         return dist
@@ -662,40 +666,43 @@ class SVC(sklearnSVC):
         https://scikit-learn.org/stable/modules/generated/sklearn.svm.SVC.html
     """
 
-    def __init__(self,
-                 *,
-                 metric="riemann",
-                 kernel_fct=None,
-                 Cref=None,
-                 C=1.0,
-                 shrinking=True,
-                 probability=False,
-                 tol=1e-3,
-                 cache_size=200,
-                 class_weight=None,
-                 verbose=False,
-                 max_iter=-1,
-                 decision_function_shape="ovr",
-                 break_ties=False,
-                 random_state=None):
+    def __init__(
+            self,
+            *,
+            metric="riemann",
+            kernel_fct=None,
+            Cref=None,
+            C=1.0,
+            shrinking=True,
+            probability=False,
+            tol=1e-3,
+            cache_size=200,
+            class_weight=None,
+            verbose=False,
+            max_iter=-1,
+            decision_function_shape="ovr",
+            break_ties=False,
+            random_state=None
+        ):
         """Init."""
         self.Cref = Cref
         self.metric = metric
         self.Cref_ = None
         self.kernel_fct = kernel_fct
-        super().__init__(kernel="precomputed",
-                         C=C,
-                         shrinking=shrinking,
-                         probability=probability,
-                         tol=tol,
-                         cache_size=cache_size,
-                         class_weight=class_weight,
-                         verbose=verbose,
-                         max_iter=max_iter,
-                         decision_function_shape=decision_function_shape,
-                         break_ties=break_ties,
-                         random_state=random_state
-                         )
+        super().__init__(
+            kernel="precomputed",
+            C=C,
+            shrinking=shrinking,
+            probability=probability,
+            tol=tol,
+            cache_size=cache_size,
+            class_weight=class_weight,
+            verbose=verbose,
+            max_iter=max_iter,
+            decision_function_shape=decision_function_shape,
+            break_ties=break_ties,
+            random_state=random_state
+        )
 
     def fit(self, X, y, sample_weight=None):
         """Fit.
@@ -734,14 +741,18 @@ class SVC(sklearnSVC):
 
     def _set_kernel(self):
         if callable(self.kernel_fct):
-            self.kernel = functools.partial(self.kernel_fct,
-                                            Cref=self.Cref_,
-                                            metric=self.metric)
+            self.kernel = functools.partial(
+                self.kernel_fct,
+                Cref=self.Cref_,
+                metric=self.metric
+            )
         elif self.kernel_fct is None or (isinstance(self.kernel_fct, str) and
                                          self.kernel_fct == "precomputed"):
-            self.kernel = functools.partial(kernel,
-                                            Cref=self.Cref_,
-                                            metric=self.metric)
+            self.kernel = functools.partial(
+                kernel,
+                Cref=self.Cref_,
+                metric=self.metric
+            )
         else:
             raise TypeError(
                 "kernel_fct must be None, 'precomputed' or callable, is "
@@ -869,9 +880,9 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         pred : ndarray of int, shape (n_matrices,)
             Predictions for each matrix according to the nearest means field.
         """
-        pred = Parallel(n_jobs=self.n_jobs)(delayed(self._get_label)(
-            x
-        ) for x in X)
+        pred = Parallel(n_jobs=self.n_jobs)(
+            delayed(self._get_label)(x) for x in X
+        )
         return np.array(pred)
 
     def _predict_distances(self, X):
