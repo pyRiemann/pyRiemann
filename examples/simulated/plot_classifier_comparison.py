@@ -33,6 +33,7 @@ from pyriemann.classification import (
     KNearestNeighbor,
     SVC,
     MeanField,
+    MeanFieldTS
 )
 
 
@@ -186,12 +187,14 @@ names = [
     "k-NN",
     "SVC",
     "MeanField",
+    "MeanFieldTS"
 ]
 classifiers = [
     MDM(),
     KNearestNeighbor(n_neighbors=3),
     SVC(probability=True),
     MeanField(power_list=[-1, 0, 1]),
+    MeanFieldTS(power_list=[-1, 0, 1])
 ]
 n_classifs = len(classifiers)
 
