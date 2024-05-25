@@ -854,7 +854,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         return distance(
                     x, covmean, metric=self.metric, squared=squared
                 )
-    
+
     def _get_label(self, x):
         m = np.zeros((len(self.power_list), len(self.classes_)))
         for ip, p in enumerate(self.power_list):
@@ -946,6 +946,7 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         """
         return softmax(-self._predict_distances(X) ** 2)
 
+
 class MeanFieldTS(MeanField):
     """Classification by Minimum Distance to Mean Field with Tangent Space
 
@@ -953,8 +954,9 @@ class MeanFieldTS(MeanField):
     power means for each class.
 
     Trials are projected to the tangent space of each mean.
-    The distance between the trial and a mean, is the norm of the vector, resulting
-    from the projection of the trial into the tangent space of each mean.
+    The distance between the trial and a mean, is the norm of the vector,
+    resulting from the projection of the trial into the tangent space
+    of each mean.
 
     Parameters
     ----------
@@ -1000,6 +1002,7 @@ class MeanFieldTS(MeanField):
         vec = tangent_space(x, covmean, metric=self.metric)
         dists = np.linalg.norm(vec)
         return dists
+
 
 def class_distinctiveness(X, y, exponent=1, metric="riemann",
                           return_num_denom=False):

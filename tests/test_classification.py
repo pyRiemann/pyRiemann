@@ -24,7 +24,13 @@ from pyriemann.classification import (
     class_distinctiveness,
 )
 
-rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC, MeanField, MeanFieldTS]
+rclf = [MDM,
+        FgMDM,
+        KNearestNeighbor,
+        TSclassifier,
+        SVC,
+        MeanField,
+        MeanFieldTS]
 
 
 @pytest.mark.parametrize(
@@ -404,7 +410,12 @@ def test_svc_kernel_error(get_mats, get_labels):
 @pytest.mark.parametrize("method_label", ["sum_means", "inf_means"])
 @pytest.mark.parametrize("metric", get_distances())
 @pytest.mark.parametrize("mf_clf", [MeanField, MeanFieldTS])
-def test_meanfield(get_mats, get_labels, power_list, method_label, metric, mf_clf):
+def test_meanfield(get_mats,
+                   get_labels,
+                   power_list,
+                   method_label,
+                   metric,
+                   mf_clf):
     n_powers = len(power_list)
     n_matrices, n_channels, n_classes = 8, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
@@ -428,10 +439,12 @@ def test_meanfield(get_mats, get_labels, power_list, method_label, metric, mf_cl
     except ValueError as err:
         is_ts_metric = metric in ['riemann', 'euclid', 'logeuclid']
         if type(mf) is MeanFieldTS and not is_ts_metric:
-            # This is expected as TS compatible with riemann, euclid or logeuclid metric.
+            # This is expected as TS compatible with
+            # riemann, euclid or logeuclid metric.
             pass
         else:
             raise err
+
 
 @pytest.mark.parametrize("n_classes", [1, 2, 3])
 @pytest.mark.parametrize("metric_mean", get_means())
