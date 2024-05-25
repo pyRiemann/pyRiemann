@@ -849,12 +849,17 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         return self
 
+    def _distance(self, x, covmean, squared=False):
+        return distance(
+                    x, covmean, metric=self.metric, squared=squared
+                )
+    
     def _get_label(self, x):
         m = np.zeros((len(self.power_list), len(self.classes_)))
         for ip, p in enumerate(self.power_list):
             for ic, c in enumerate(self.classes_):
-                m[ip, ic] = distance(
-                    x, self.covmeans_[p][c], metric=self.metric, squared=True
+                m[ip, ic] = self._distance(
+                    x, self.covmeans_[p][c], squared=True
                 )
 
         if self.method_label == "sum_means":
@@ -895,10 +900,9 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
                 m[p] = []
                 for c in self.classes_:
                     m[p].append(
-                        distance(
+                        self._distance(
                             x,
                             self.covmeans_[p][c],
-                            metric=self.metric,
                         )
                     )
             pmin = min(m.items(), key=lambda x: np.sum(x[1]))[0]
