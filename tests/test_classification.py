@@ -20,10 +20,11 @@ from pyriemann.classification import (
     TSclassifier,
     SVC,
     MeanField,
+    MeanFieldTS,
     class_distinctiveness,
 )
 
-rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC, MeanField]
+rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC, MeanField, MeanFieldTS]
 
 
 @pytest.mark.parametrize(
@@ -72,7 +73,7 @@ def test_classifier(n_classes, classif, get_mats, get_labels):
     clf_predict_proba(classif, mats, labels)
     clf_score(classif, mats, labels)
     clf_populate_classes(classif, mats, labels)
-    if classif in (MDM, KNearestNeighbor, MeanField):
+    if classif in (MDM, KNearestNeighbor, MeanField, MeanFieldTS):
         clf_fitpredict(classif, mats, labels)
     if classif in (MDM, FgMDM):
         clf_transform(classif, mats, labels)
@@ -181,7 +182,7 @@ def test_metric_str(classif, metric, get_mats, get_labels):
     mats = get_mats(n_matrices, n_channels, "spd")
     clf = classif(metric=metric)
 
-    if classif in [SVC, FgMDM, TSclassifier] \
+    if classif in [SVC, FgMDM, TSclassifier, MeanFieldTS] \
             and metric not in ["euclid", "logeuclid", "riemann"]:
         with pytest.raises((KeyError, ValueError)):
             clf.fit(mats, labels).predict(mats)
@@ -402,13 +403,14 @@ def test_svc_kernel_error(get_mats, get_labels):
 @pytest.mark.parametrize("power_list", [[-1, 0, 1], [0, 0.1]])
 @pytest.mark.parametrize("method_label", ["sum_means", "inf_means"])
 @pytest.mark.parametrize("metric", get_distances())
-def test_meanfield(get_mats, get_labels, power_list, method_label, metric):
+@pytest.mark.parametrize("mf_clf", [MeanField, MeanFieldTS])
+def test_meanfield(get_mats, get_labels, power_list, method_label, metric, mf_clf):
     n_powers = len(power_list)
     n_matrices, n_channels, n_classes = 8, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
 
-    mf = MeanField(
+    mf = mf_clf(
         power_list=power_list,
         method_label=method_label,
         metric=metric,
@@ -418,11 +420,18 @@ def test_meanfield(get_mats, get_labels, power_list, method_label, metric):
     assert len(covmeans[power_list[0]]) == n_classes
     assert covmeans[power_list[0]][labels[0]].shape == (n_channels, n_channels)
 
-    proba = mf.predict_proba(mats)
-    assert proba.shape == (n_matrices, n_classes)
-    transf = mf.transform(mats)
-    assert transf.shape == (n_matrices, n_classes)
-
+    try:
+        proba = mf.predict_proba(mats)
+        assert proba.shape == (n_matrices, n_classes)
+        transf = mf.transform(mats)
+        assert transf.shape == (n_matrices, n_classes)
+    except ValueError as err:
+        is_ts_metric = metric in ['riemann', 'euclid', 'logeuclid']
+        if type(mf) is MeanFieldTS and not is_ts_metric:
+            # This is expected as TS compatible with riemann, euclid or logeuclid metric.
+            pass
+        else:
+            raise err
 
 @pytest.mark.parametrize("n_classes", [1, 2, 3])
 @pytest.mark.parametrize("metric_mean", get_means())

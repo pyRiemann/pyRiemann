@@ -14,6 +14,7 @@ from .utils.kernel import kernel
 from .utils.mean import mean_covariance, mean_power
 from .utils.distance import distance
 from .utils.utils import check_metric
+from .utils.tangentspace import tangent_space
 from .tangentspace import FGDA, TangentSpace
 
 
@@ -945,6 +946,13 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         """
         return softmax(-self._predict_distances(X) ** 2)
 
+class MeanFieldTS(MeanField):
+    def _distance(self, x, covmean, squared=False):
+        vec = tangent_space(x, covmean, metric=self.metric)
+        print(vec)
+        dists = np.linalg.norm(vec)
+        print(dists)
+        return dists
 
 def class_distinctiveness(X, y, exponent=1, metric="riemann",
                           return_num_denom=False):
