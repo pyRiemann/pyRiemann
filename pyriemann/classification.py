@@ -947,11 +947,58 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         return softmax(-self._predict_distances(X) ** 2)
 
 class MeanFieldTS(MeanField):
+    """Classification by Minimum Distance to Mean Field with Tangent Space
+
+    Classification by Minimum Distance to Mean Field [1]_, defining several
+    power means for each class.
+
+    Trials are projected to the tangent space of each mean.
+    The distance between the trial and a mean, is the norm of the vector, resulting
+    from the projection of the trial into the tangent space of each mean.
+
+    Parameters
+    ----------
+    power_list : list of float, default=[-1,0,+1]
+        Exponents of power means.
+    method_label : {"sum_means", "inf_means"}, default="sum_means"
+        Method to combine labels:
+
+        * sum_means: it assigns the matrix to the class whom the sum of
+          distances to means of the field is the lowest;
+        * inf_means: it assigns the matrix to the class of the nearest mean
+          of the field.
+    metric : string, default="riemann"
+        Metric used for distance estimation during prediction.
+        For the list of supported metrics,
+        see :func:`pyriemann.utils.distance.distance`.
+
+    Attributes
+    ----------
+    classes_ : ndarray, shape (n_classes,)
+        Labels for each class.
+    covmeans_ : dict of ``n_powers`` dicts of ``n_classes`` ndarrays of shape \
+            (n_channels, n_channels)
+        Centroids for each power and each class.
+
+    See Also
+    --------
+    MDM
+
+    Notes
+    -----
+    .. versionadded:: 0.7
+
+    References
+    -----------
+    .. [1] `The Riemannian Minimum Distance to Means Field Classifier
+        <https://hal.archives-ouvertes.fr/hal-02315131>`_
+        M Congedo, PLC Rodrigues, C Jutten. BCI 2019 - 8th International
+        Brain-Computer Interface Conference, Sep 2019, Graz, Austria.
+    """
+
     def _distance(self, x, covmean, squared=False):
         vec = tangent_space(x, covmean, metric=self.metric)
-        print(vec)
         dists = np.linalg.norm(vec)
-        print(dists)
         return dists
 
 def class_distinctiveness(X, y, exponent=1, metric="riemann",

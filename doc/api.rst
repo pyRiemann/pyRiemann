@@ -55,6 +55,7 @@ Classification
     KNearestNeighbor
     SVC
     MeanField
+    MeanFieldTS
 
 .. autosummary::
     :toctree: generated/
