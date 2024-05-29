@@ -15,8 +15,8 @@ from .utils.utils import check_metric
 class SVR(sklearnSVR):
     """Regression by support-vector machine.
 
-    Support-vector machine (SVM) regression with precomputed Riemannian kernel
-    matrix according to different metrics, extending the idea described in [1]_
+    Support-vector machine (SVM) regression with a precomputed kernel matrix
+    according to different metrics, extending the idea described in [1]_
     to regression.
 
     Parameters
@@ -26,8 +26,8 @@ class SVR(sklearnSVR):
     Cref : None | ndarray, shape (n_channels, n_channels)
         Reference point for kernel matrix computation. If None, the mean of
         the training data according to the metric is used.
-    kernel_fct : 'precomputed' | callable
-        If 'precomputed', the kernel matrix for datasets X and Y is estimated
+    kernel_fct : "precomputed" | callable
+        If "precomputed", the kernel matrix for datasets X and Y is estimated
         according to `pyriemann.utils.kernel(X, Y, Cref, metric)`.
         If callable, the callable is passed as the kernel parameter to
         `sklearn.svm.SVC()` [2]_. The callable has to be of the form
@@ -75,18 +75,18 @@ class SVR(sklearnSVR):
     """
 
     def __init__(
-            self,
-            *,
-            metric='riemann',
-            kernel_fct=None,
-            Cref=None,
-            tol=1e-3,
-            C=1.0,
-            epsilon=0.1,
-            shrinking=True,
-            cache_size=200,
-            verbose=False,
-            max_iter=-1,
+        self,
+        *,
+        metric="riemann",
+        kernel_fct=None,
+        Cref=None,
+        tol=1e-3,
+        C=1.0,
+        epsilon=0.1,
+        shrinking=True,
+        cache_size=200,
+        verbose=False,
+        max_iter=-1,
     ):
         """Init."""
         self.Cref = Cref
@@ -94,7 +94,7 @@ class SVR(sklearnSVR):
         self.Cref_ = None
         self.kernel_fct = kernel_fct
         super().__init__(
-            kernel='precomputed',
+            kernel="precomputed",
             tol=tol,
             C=C,
             epsilon=epsilon,
@@ -136,8 +136,8 @@ class SVR(sklearnSVR):
         elif isinstance(self.Cref, np.ndarray):
             self.Cref_ = self.Cref
         else:
-            raise TypeError(f'Cref has to be np.ndarray, callable or None. But'
-                            f' has type {type(self.Cref)}.')
+            raise TypeError("Cref has to be np.ndarray, callable or None. But "
+                            f"has type {type(self.Cref)}.")
 
     def _set_kernel(self):
         if callable(self.kernel_fct):
@@ -160,12 +160,13 @@ class SVR(sklearnSVR):
 class KNearestNeighborRegressor(MDM):
     """Regression by k-nearest-neighbors.
 
-    Regression by k-nearest neighbors (k-NN). For each point of the test set,
-    the pairwise distance to each element of the training set is estimated. The
-    value is calculated according to the softmax average w.r.t. distance of
+    Regression by k-nearest neighbors (k-NN). For each matrix of the test set,
+    the pairwise distance to each matrix of the training set is estimated.
+    The value is calculated according to the softmax average w.r.t. distance of
     the k-nearest neighbors.
 
-    DISCLAIMER: This is an unpublished algorithm.
+    .. note::
+       DISCLAIMER: this is an unpublished algorithm.
 
     Parameters
     ----------
