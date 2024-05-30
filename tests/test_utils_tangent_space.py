@@ -23,8 +23,8 @@ def test_maps_ndarray(fun_map, get_mats):
     assert Xt.shape == (n_matrices, n_channels, n_channels)
 
     n_sets = 2
-    covmats_4d = np.asarray([mats for _ in range(n_sets)])
-    Xt = fun_map(covmats_4d, np.eye(n_channels))
+    mats_4d = np.asarray([mats for _ in range(n_sets)])
+    Xt = fun_map(mats_4d, np.eye(n_channels))
     assert Xt.shape == (n_sets, n_matrices, n_channels, n_channels)
 
 
@@ -89,7 +89,7 @@ def test_tangent_space_riemann_properties(kind, get_mats):
 
     # equivalent definitions of Riemannian distance, Eq(7) in [Barachant2012]
     dist = distance_riemann(A, B)
-    s = tangent_space(A, B, metric='riemann')
+    s = tangent_space(A, B, metric="riemann")
     assert dist == approx(np.linalg.norm(s))
 
 

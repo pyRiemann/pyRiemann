@@ -40,14 +40,14 @@ def test_encode_decode_domains(rndstate):
     """Test encoding and decoding of domains for data points"""
     n_matrices, n_channels = 4, 2
     X = make_matrices(n_matrices, n_channels, "spd", rs=rndstate)
-    y = np.array(['left_hand', 'right_hand', 'left_hand', 'right_hand'])
-    domain = np.array(2 * ['source_domain'] + 2 * ['target_domain'])
+    y = np.array(["left_hand", "right_hand", "left_hand", "right_hand"])
+    domain = np.array(2 * ["source_domain"] + 2 * ["target_domain"])
 
     X_enc, y_enc = encode_domains(X, y, domain)
-    assert y_enc[0] == 'source_domain/left_hand'
-    assert y_enc[1] == 'source_domain/right_hand'
-    assert y_enc[2] == 'target_domain/left_hand'
-    assert y_enc[3] == 'target_domain/right_hand'
+    assert y_enc[0] == "source_domain/left_hand"
+    assert y_enc[1] == "source_domain/right_hand"
+    assert y_enc[2] == "target_domain/left_hand"
+    assert y_enc[3] == "target_domain/right_hand"
 
     _, y_dec, d_dec = decode_domains(X_enc, y_enc)
     assert (y == y_dec).all()
@@ -129,7 +129,7 @@ def test_tlstretch(rndstate, centered_data, metric, sample_weight):
     """Test pipeline for stretching data"""
     # check if the dispersion of the dataset indeed decreases to 1
     tlstr = TLStretch(
-        target_domain='target_domain',
+        target_domain="target_domain",
         final_dispersion=1.0,
         centered_data=centered_data,
         metric=metric
@@ -142,7 +142,7 @@ def test_tlstretch(rndstate, centered_data, metric, sample_weight):
     else:
         sample_weight_ = None
     if centered_data:  # ensure that data is indeed centered on each domain
-        tlrct = TLCenter(target_domain='target_domain', metric=metric)
+        tlrct = TLCenter(target_domain="target_domain", metric=metric)
         X = tlrct.fit_transform(X, y_enc, sample_weight=sample_weight_)
 
     X_str = tlstr.fit_transform(X, y_enc, sample_weight=sample_weight_)
@@ -177,21 +177,21 @@ def test_tlrotate(rndstate, metric, sample_weight):
         sample_weight_ = None
     sample_weight_ = check_weights(sample_weight_, len(y_enc))
 
-    rct = TLCenter(target_domain='target_domain', metric=metric)
+    rct = TLCenter(target_domain="target_domain", metric=metric)
     X_rct = rct.fit_transform(X, y_enc, sample_weight=sample_weight_)
-    rot = TLRotate(target_domain='target_domain', metric=metric)
+    rot = TLRotate(target_domain="target_domain", metric=metric)
     X_rot = rot.fit_transform(X_rct, y_enc, sample_weight=sample_weight_)
 
     _, y, domain = decode_domains(X_rot, y_enc)
     for label in np.unique(y):
-        d = 'source_domain'
+        d = "source_domain"
         M_rct_label_source = mean_riemann(
             X_rct[domain == d][y[domain == d] == label],
             sample_weight=sample_weight_[domain == d][y[domain == d] == label])
         M_rot_label_source = mean_riemann(
             X_rot[domain == d][y[domain == d] == label],
             sample_weight=sample_weight_[domain == d][y[domain == d] == label])
-        d = 'target_domain'
+        d = "target_domain"
         M_rct_label_target = mean_riemann(
             X_rct[domain == d][y[domain == d] == label],
             sample_weight=sample_weight_[domain == d][y[domain == d] == label])
@@ -253,10 +253,10 @@ def test_tlclassifier_mdm(rndstate, clf, source_domain, target_domain):
     tlclf.fit(X, y_enc)
 
     X, y, domain = decode_domains(X, y_enc)
-    X_source = X[domain == 'source_domain']
-    y_source = y[domain == 'source_domain']
-    X_target = X[domain == 'target_domain']
-    y_target = y[domain == 'target_domain']
+    X_source = X[domain == "source_domain"]
+    y_source = y[domain == "source_domain"]
+    X_target = X[domain == "target_domain"]
+    y_target = y[domain == "target_domain"]
 
     if source_domain == 1.0 and target_domain == 0.0:
         X_0 = X_source[y_source == tlclf.estimator.classes_[0]]
@@ -304,8 +304,8 @@ def test_tlclassifiers(rndstate, clf, source_domain, target_domain):
         random_state=rndstate,
     )
 
-    if hasattr(clf, 'probability'):
-        clf.set_params(**{'probability': True})
+    if hasattr(clf, "probability"):
+        clf.set_params(**{"probability": True})
     tlclf = TLClassifier(target_domain="target_domain", estimator=clf)
     tlclf.domain_weight = {
         "source_domain": source_domain,
@@ -314,7 +314,7 @@ def test_tlclassifiers(rndstate, clf, source_domain, target_domain):
     tlclf.fit(X, y_enc)
 
     # test fit
-    assert_array_equal(tlclf.estimator.classes_, ['1', '2'])
+    assert_array_equal(tlclf.estimator.classes_, ["1", "2"])
 
     # test predict
     predicted = tlclf.predict(X)
@@ -349,7 +349,7 @@ def test_tlregressors(rndstate, reg, source_domain, target_domain):
             n_matrices, n_channels, "spd", rs=rndstate
         )
         y = np.random.uniform(low=1.0, high=10.0, size=n_matrices)
-        domain = np.array(20 * ['source_domain'] + 20 * ['target_domain'])
+        domain = np.array(20 * ["source_domain"] + 20 * ["target_domain"])
         _, y_enc = encode_domains(X, y, domain)
         return X, y_enc
 
@@ -390,21 +390,21 @@ def test_mdwm(rndstate, domain_tradeoff, metric, n_jobs):
 
     clf = MDWM(
         domain_tradeoff=domain_tradeoff,
-        target_domain='target_domain',
+        target_domain="target_domain",
         metric=metric,
         n_jobs=n_jobs,
     )
 
     # test fit
     clf.fit(X, y_enc)
-    assert_array_equal(clf.classes_, ['1', '2'])
+    assert_array_equal(clf.classes_, ["1", "2"])
     assert clf.covmeans_.shape == (n_classes, 2, 2)
 
     X, y, domain = decode_domains(X, y_enc)
-    X_source = X[domain == 'source_domain']
-    y_source = y[domain == 'source_domain']
-    X_target = X[domain == 'target_domain']
-    y_target = y[domain == 'target_domain']
+    X_source = X[domain == "source_domain"]
+    y_source = y[domain == "source_domain"]
+    X_target = X[domain == "target_domain"]
+    y_target = y[domain == "target_domain"]
 
     if domain_tradeoff == 0.0:
         X_0 = X_source[y_source == clf.classes_[0]]
@@ -445,7 +445,7 @@ def test_mdwm_weights(rndstate):
 
     clf = MDWM(
         domain_tradeoff=0.5,
-        target_domain='target_domain',
+        target_domain="target_domain",
         metric="riemann",
     )
     clf.fit(X, y_enc, sample_weight=weights)

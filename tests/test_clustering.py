@@ -14,154 +14,166 @@ from pyriemann.clustering import (
 @pytest.mark.parametrize(
     "clust", [Kmeans, KmeansPerClassTransform, Potato, PotatoField]
 )
-class ClusteringTestCase:
-    def test_two_clusters(self, clust, get_mats, get_labels):
-        n_clusters = 2
-        n_matrices, n_channels = 6, 4
-        mats = get_mats(n_matrices, n_channels, "spd")
-        if clust is Kmeans:
-            self.clf_predict(clust, mats, n_clusters)
-            self.clf_transform(clust, mats, n_clusters)
-            self.clf_jobs(clust, mats, n_clusters)
-            self.clf_centroids(clust, mats, n_clusters)
-            self.clf_fit_independence(clust, mats)
-        if clust is KmeansPerClassTransform:
-            n_classes = 2
-            labels = get_labels(n_matrices, n_classes)
-            self.clf_transform_per_class(clust, mats, n_clusters, labels)
-            self.clf_jobs(clust, mats, n_clusters, labels)
-            self.clf_fit_labels_independence(clust, mats, labels)
-        if clust is Potato:
-            self.clf_transform(clust, mats)
-            self.clf_predict(clust, mats)
-            self.clf_predict_proba(clust, mats)
-            self.clf_partial_fit(clust, mats)
-            self.clf_fit_independence(clust, mats)
-        if clust is PotatoField:
-            n_potatoes = 3
-            mats = [get_mats(n_matrices, n_channels, "spd"),
-                    get_mats(n_matrices, n_channels + 2, "spd"),
-                    get_mats(n_matrices, n_channels + 1, "spd")]
-            self.clf_transform(clust, mats, n_potatoes)
-            self.clf_predict(clust, mats, n_potatoes)
-            self.clf_predict_proba(clust, mats, n_potatoes)
-            self.clf_partial_fit(clust, mats, n_potatoes)
-            self.clf_fit_independence(clust, mats, n_potatoes)
+def test_clustering_two_clusters(clust, get_mats, get_labels):
+    n_clusters = 2
+    n_matrices, n_channels = 6, 4
+    mats = get_mats(n_matrices, n_channels, "spd")
 
-    def test_three_clusters(self, clust, get_mats, get_labels):
-        n_clusters = 3
-        n_matrices, n_channels = 6, 3
-        mats = get_mats(n_matrices, n_channels, "spd")
-        if clust is Kmeans:
-            self.clf_predict(clust, mats, n_clusters)
-            self.clf_transform(clust, mats, n_clusters)
-            self.clf_jobs(clust, mats, n_clusters)
-            self.clf_centroids(clust, mats, n_clusters)
-            self.clf_fit_independence(clust, mats)
-        if clust is KmeansPerClassTransform:
-            n_classes = 2
-            labels = get_labels(n_matrices, n_classes)
-            self.clf_transform_per_class(clust, mats, n_clusters, labels)
-            self.clf_jobs(clust, mats, n_clusters, labels)
-            self.clf_fit_labels_independence(clust, mats, labels)
+    if clust is Kmeans:
+        clf_predict(clust, mats, n_clusters)
+        clf_transform(clust, mats, n_clusters)
+        clf_jobs(clust, mats, n_clusters)
+        clf_centroids(clust, mats, n_clusters)
+        clf_fit_independence(clust, mats)
+    if clust is KmeansPerClassTransform:
+        n_classes = 2
+        labels = get_labels(n_matrices, n_classes)
+        clf_transform_per_class(clust, mats, n_clusters, labels)
+        clf_jobs(clust, mats, n_clusters, labels)
+        clf_fit_labels_independence(clust, mats, labels)
+    if clust is Potato:
+        clf_transform(clust, mats)
+        clf_predict(clust, mats)
+        clf_predict_proba(clust, mats)
+        clf_partial_fit(clust, mats)
+        clf_fit_independence(clust, mats)
+    if clust is PotatoField:
+        n_potatoes = 3
+        mats = [get_mats(n_matrices, n_channels, "spd"),
+                get_mats(n_matrices, n_channels + 2, "spd"),
+                get_mats(n_matrices, n_channels + 1, "spd")]
+        clf_transform(clust, mats, n_potatoes)
+        clf_predict(clust, mats, n_potatoes)
+        clf_predict_proba(clust, mats, n_potatoes)
+        clf_partial_fit(clust, mats, n_potatoes)
+        clf_fit_independence(clust, mats, n_potatoes)
 
 
-class TestRiemannianClustering(ClusteringTestCase):
-    def clf_transform(self, clust, mats, n_clusters=None):
-        n_matrices = len(mats)
-        if n_clusters is None:
-            clf = clust()
-        elif clust is PotatoField:
-            n_matrices = len(mats[0])
-            clf = clust(n_potatoes=n_clusters)
-        else:
-            clf = clust(n_clusters=n_clusters)
-        clf.fit(mats)
-        transf = clf.transform(mats)
-        if n_clusters is None:
-            assert transf.shape == (n_matrices,)
-        else:
-            assert transf.shape == (n_matrices, n_clusters)
+@pytest.mark.parametrize(
+    "clust", [Kmeans, KmeansPerClassTransform, Potato, PotatoField]
+)
+def test_clustering_three_clusters(clust, get_mats, get_labels):
+    n_clusters = 3
+    n_matrices, n_channels = 6, 3
+    mats = get_mats(n_matrices, n_channels, "spd")
 
-    def clf_jobs(self, clust, mats, n_clusters, labels=None):
-        n_matrices = mats.shape[0]
-        clf = clust(n_clusters=n_clusters, n_jobs=2)
-        if labels is None:
-            clf.fit(mats)
-        else:
-            clf.fit(mats, labels)
-        transf = clf.transform(mats)
-        assert len(transf) == (n_matrices)
+    if clust is Kmeans:
+        clf_predict(clust, mats, n_clusters)
+        clf_transform(clust, mats, n_clusters)
+        clf_jobs(clust, mats, n_clusters)
+        clf_centroids(clust, mats, n_clusters)
+        clf_fit_independence(clust, mats)
+    if clust is KmeansPerClassTransform:
+        n_classes = 2
+        labels = get_labels(n_matrices, n_classes)
+        clf_transform_per_class(clust, mats, n_clusters, labels)
+        clf_jobs(clust, mats, n_clusters, labels)
+        clf_fit_labels_independence(clust, mats, labels)
 
-    def clf_centroids(self, clust, mats, n_clusters):
-        _, n_channels, n_channels = mats.shape
-        clf = clust(n_clusters=n_clusters).fit(mats)
-        centroids = clf.centroids()
-        assert centroids.shape == (n_clusters, n_channels, n_channels)
 
-    def clf_transform_per_class(self, clust, mats, n_clusters, labels):
-        n_classes = len(np.unique(labels))
-        n_matrices = mats.shape[0]
-        clf = clust(n_clusters=n_clusters)
-        clf.fit(mats, labels)
-        transf = clf.transform(mats)
-        assert transf.shape == (n_matrices, n_classes * n_clusters)
-
-    def clf_predict(self, clust, mats, n_clusters=None):
-        n_matrices = len(mats)
-        if n_clusters is None:
-            clf = clust()
-        elif clust is PotatoField:
-            n_matrices = len(mats[0])
-            clf = clust(n_potatoes=n_clusters)
-        else:
-            clf = clust(n_clusters=n_clusters)
-        clf.fit(mats)
-        pred = clf.predict(mats)
-        assert pred.shape == (n_matrices,)
-
-    def clf_predict_proba(self, clust, mats, n=None):
-        if n is None:
-            n_matrices = len(mats)
-            clf = clust()
-        else:  # PotatoField
-            n_matrices = len(mats[0])
-            clf = clust(n_potatoes=n)
-        clf.fit(mats)
-        proba = clf.predict_proba(mats)
-        assert proba.shape == (n_matrices,)
-
-    def clf_partial_fit(self, clust, mats, n=None):
-        if n is None:
-            clf = clust()
-        else:  # PotatoField
-            clf = clust(n_potatoes=n)
-        clf.fit(mats)
-        clf.partial_fit(mats)
-        if n is None:
-            clf.partial_fit(mats[np.newaxis, 0])  # fit one covmat at a time
-        else:
-            clf.partial_fit([c[np.newaxis, 0] for c in mats])
-
-    def clf_fit_independence(self, clust, mats, n=None):
-        if n is None:
-            clf = clust()
-        else:  # PotatoField
-            clf = clust(n_potatoes=n)
-        clf.fit(mats).transform(mats)
-        # retraining with different size should erase previous fit
-        if n is None:
-            new_mats = mats[:, :-1, :-1]
-        else:
-            new_mats = [c[:, :-1, :-1] for c in mats]
-        clf.fit(new_mats).transform(new_mats)
-
-    def clf_fit_labels_independence(self, clust, mats, labels):
+def clf_transform(clust, mats, n_clusters=None):
+    n_matrices = len(mats)
+    if n_clusters is None:
         clf = clust()
-        clf.fit(mats, labels).transform(mats)
-        # retraining with different size should erase previous fit
+    elif clust is PotatoField:
+        n_matrices = len(mats[0])
+        clf = clust(n_potatoes=n_clusters)
+    else:
+        clf = clust(n_clusters=n_clusters)
+    clf.fit(mats)
+    transf = clf.transform(mats)
+    if n_clusters is None:
+        assert transf.shape == (n_matrices,)
+    else:
+        assert transf.shape == (n_matrices, n_clusters)
+
+
+def clf_jobs(clust, mats, n_clusters, labels=None):
+    n_matrices = mats.shape[0]
+    clf = clust(n_clusters=n_clusters, n_jobs=2)
+    if labels is None:
+        clf.fit(mats)
+    else:
+        clf.fit(mats, labels)
+    transf = clf.transform(mats)
+    assert len(transf) == (n_matrices)
+
+
+def clf_centroids(clust, mats, n_clusters):
+    _, n_channels, n_channels = mats.shape
+    clf = clust(n_clusters=n_clusters).fit(mats)
+    centroids = clf.centroids()
+    assert centroids.shape == (n_clusters, n_channels, n_channels)
+
+
+def clf_transform_per_class(clust, mats, n_clusters, labels):
+    n_classes = len(np.unique(labels))
+    n_matrices = mats.shape[0]
+    clf = clust(n_clusters=n_clusters)
+    clf.fit(mats, labels)
+    transf = clf.transform(mats)
+    assert transf.shape == (n_matrices, n_classes * n_clusters)
+
+
+def clf_predict(clust, mats, n_clusters=None):
+    n_matrices = len(mats)
+    if n_clusters is None:
+        clf = clust()
+    elif clust is PotatoField:
+        n_matrices = len(mats[0])
+        clf = clust(n_potatoes=n_clusters)
+    else:
+        clf = clust(n_clusters=n_clusters)
+    clf.fit(mats)
+    pred = clf.predict(mats)
+    assert pred.shape == (n_matrices,)
+
+
+def clf_predict_proba(clust, mats, n=None):
+    if n is None:
+        n_matrices = len(mats)
+        clf = clust()
+    else:  # PotatoField
+        n_matrices = len(mats[0])
+        clf = clust(n_potatoes=n)
+    clf.fit(mats)
+    proba = clf.predict_proba(mats)
+    assert proba.shape == (n_matrices,)
+
+
+def clf_partial_fit(clust, mats, n=None):
+    if n is None:
+        clf = clust()
+    else:  # PotatoField
+        clf = clust(n_potatoes=n)
+    clf.fit(mats)
+    clf.partial_fit(mats)
+    if n is None:
+        clf.partial_fit(mats[np.newaxis, 0])  # fit one covmat at a time
+    else:
+        clf.partial_fit([m[np.newaxis, 0] for m in mats])
+
+
+def clf_fit_independence(clust, mats, n=None):
+    if n is None:
+        clf = clust()
+    else:  # PotatoField
+        clf = clust(n_potatoes=n)
+    clf.fit(mats).transform(mats)
+    # retraining with different size should erase previous fit
+    if n is None:
         new_mats = mats[:, :-1, :-1]
-        clf.fit(new_mats, labels).transform(new_mats)
+    else:
+        new_mats = [m[:, :-1, :-1] for m in mats]
+    clf.fit(new_mats).transform(new_mats)
+
+
+def clf_fit_labels_independence(clust, mats, labels):
+    clf = clust()
+    clf.fit(mats, labels).transform(mats)
+    # retraining with different size should erase previous fit
+    new_mats = mats[:, :-1, :-1]
+    clf.fit(new_mats, labels).transform(new_mats)
 
 
 @pytest.mark.parametrize("clust", [Kmeans, KmeansPerClassTransform])
@@ -300,8 +312,9 @@ def test_potato_field_fit(get_mats):
         pf.fit([mats1, mats2[:1]])
 
 
-@pytest.mark.parametrize("method",
-                         ["partial_fit", "transform", "predict_proba"])
+@pytest.mark.parametrize(
+    "method", ["partial_fit", "transform", "predict_proba"]
+)
 def test_potato_field_method(get_mats, method):
     n_potatoes, n_matrices, n_channels = 2, 6, 3
     mats1 = get_mats(n_matrices, n_channels, "spd")
