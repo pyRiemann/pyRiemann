@@ -32,8 +32,8 @@ def test_ajd(method, algo, get_mats):
         assert D == approx(V @ mats @ V.T)
 
     V_, D_ = algo(mats, eps=eps, n_iter_max=n_iter_max)
-    assert np.all(V == V_)
-    assert np.all(D == D_)
+    assert_array_equal(V, V_)
+    assert_array_equal(D, D_)
 
 
 @pytest.mark.parametrize("method", ["rjd", "ajd_pham", "uwedge"])
@@ -67,18 +67,20 @@ def test_ajd_method_error(method):
         ajd(np.ones((3, 2, 2)), method=method)
 
 
-def test_ajd_pham(get_mats):
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_ajd_pham(kind, get_mats):
     """Test pham's ajd"""
     n_matrices, n_channels = 7, 4
-    mats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, kind)
     V, D = ajd_pham(mats)
     assert D == approx(V @ mats @ V.conj().T)
 
 
-def test_ajd_pham_weight_none_equivalent_uniform(get_mats):
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_ajd_pham_weight_none_equivalent_uniform(kind, get_mats):
     """Test pham's ajd weights: none is equivalent to uniform values"""
     n_matrices, n_channels = 5, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, kind)
     V, D = ajd_pham(mats)
     Vw, Dw = ajd_pham(mats, sample_weight=np.ones(n_matrices))
     assert_array_equal(V, Vw)  # same result as ajd_pham without weight
@@ -97,10 +99,11 @@ def test_ajd_pham_weight_positive(get_mats):
         ajd_pham(mats, sample_weight=w)
 
 
-def test_ajd_pham_weight_zero(get_mats):
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_ajd_pham_weight_zero(kind, get_mats):
     """Setting one weight to almost 0 it's almost like not passing the mat"""
     n_matrices, n_channels = 5, 4
-    mats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, kind)
     w = 4.32 * np.ones(n_matrices)
     V, D = ajd_pham(mats[1:], sample_weight=w[1:])
     w[0] = 1e-12
