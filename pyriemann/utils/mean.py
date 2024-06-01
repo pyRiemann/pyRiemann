@@ -28,7 +28,7 @@ def mean_ale(X=None, tol=10e-7, maxiter=50, sample_weight=None, covmats=None):
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n, n)
-        Set of SPD matrices.
+        Set of SPD/HPD matrices.
     tol : float, default=10e-7
         The tolerance to stop the gradient descent.
     maxiter : int, default=50
