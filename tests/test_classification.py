@@ -40,9 +40,9 @@ rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC, MeanField]
             np.array([1, 7]),
         ),
         (
-            np.array([['a', 'b', 'a', 'c', 'a'], ['d', 'e', 'f', 'e', 'e']]),
+            np.array([["a", "b", "a", "c", "a"], ["d", "e", "f", "e", "e"]]),
             1,
-            np.array(['a', 'e']),
+            np.array(["a", "e"]),
         ),
     ],
 )
@@ -285,12 +285,12 @@ def test_tsclassifier_clf_error(get_mats, get_labels):
 
 def test_svc_params():
     rsvc = SVC()
-    assert rsvc.metric == 'riemann'
+    assert rsvc.metric == "riemann"
 
-    rsvc.set_params(**{'metric': 'logeuclid'})
-    assert rsvc.metric == 'logeuclid'
+    rsvc.set_params(**{"metric": "logeuclid"})
+    assert rsvc.metric == "logeuclid"
 
-    rsvc.set_params(**{'max_iter': 501})
+    rsvc.set_params(**{"max_iter": 501})
     assert rsvc.max_iter == 501
 
 
@@ -300,13 +300,13 @@ def test_svc_params_error(get_mats, get_labels):
     labels = get_labels(n_matrices, n_classes)
 
     with pytest.raises(TypeError):
-        SVC(C='hello').fit(mats, labels)
+        SVC(C="hello").fit(mats, labels)
 
     with pytest.raises(TypeError):
         SVC(foo=5)
 
 
-@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_cref_metric(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
@@ -318,7 +318,7 @@ def test_svc_cref_metric(get_mats, get_labels, metric):
     assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
 
 
-@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_cref_callable(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
@@ -336,7 +336,7 @@ def test_svc_cref_callable(get_mats, get_labels, metric):
     assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
 
 
-@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_cref_error(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
@@ -352,7 +352,7 @@ def test_svc_cref_error(get_mats, get_labels, metric):
         SVC(Cref=Cref).fit(mats, labels)
 
 
-@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_kernel_callable(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
@@ -375,7 +375,7 @@ def test_svc_kernel_callable(get_mats, get_labels, metric):
 
 
 @pytest.mark.parametrize("kernel_fct", [None, "precomputed"])
-@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_kernel_precomputed(get_mats, get_labels, kernel_fct, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
@@ -428,8 +428,8 @@ def test_meanfield(get_mats, get_labels, power_list, method_label, metric):
 @pytest.mark.parametrize("metric_mean", get_means())
 @pytest.mark.parametrize("metric_dist", get_distances())
 @pytest.mark.parametrize("exponent", [1, 2])
-def test_class_distinctiveness(get_mats, get_labels,
-                               n_classes, metric_mean, metric_dist, exponent):
+def test_class_distinctiveness(n_classes, metric_mean, metric_dist, exponent,
+                               get_mats, get_labels):
     """Test function for class distinctiveness measure for two class problem"""
     n_matrices, n_channels = 6, 3
     mats = get_mats(n_matrices, n_channels, "spd")
