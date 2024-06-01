@@ -365,6 +365,6 @@ def test_mean_covariance_args(get_mats):
     """Test mean_covariance with different arguments"""
     n_matrices, n_channels = 3, 3
     mats = get_mats(n_matrices, n_channels, "spd")
-    mean_covariance(mats, metric='ale', maxiter=5)
-    mean_covariance(mats, metric='logdet', tol=10e-3)
-    mean_covariance(mats, metric='riemann', init=np.eye(n_channels))
+    mean_covariance(mats, metric="ale", maxiter=5)
+    mean_covariance(mats, metric="logdet", tol=10e-3)
+    mean_covariance(mats, metric="riemann", init=np.eye(n_channels))

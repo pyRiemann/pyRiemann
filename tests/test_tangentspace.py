@@ -7,63 +7,66 @@ from pyriemann.tangentspace import TangentSpace, FGDA
 
 
 @pytest.mark.parametrize("tspace", [TangentSpace, FGDA])
-class TangentSpaceTestCase:
-    def test_tangentspace(self, tspace, get_mats, get_labels):
-        n_classes, n_matrices, n_channels = 2, 6, 3
-        covmats = get_mats(n_matrices, n_channels, "spd")
-        labels = get_labels(n_matrices, n_classes)
-        self.clf_transform(tspace, covmats, labels)
-        self.clf_fit_transform(tspace, covmats, labels)
-        self.clf_fit_transform_independence(tspace, covmats, labels)
-        if tspace is TangentSpace:
-            self.clf_transform_wo_fit(tspace, covmats)
-            self.clf_inversetransform(tspace, covmats)
+def test_tangentspace(tspace, get_mats, get_labels):
+    n_classes, n_matrices, n_channels = 2, 6, 3
+    mats = get_mats(n_matrices, n_channels, "spd")
+    labels = get_labels(n_matrices, n_classes)
+
+    clf_transform(tspace, mats, labels)
+    clf_fit_transform(tspace, mats, labels)
+    clf_fit_transform_independence(tspace, mats, labels)
+    if tspace is TangentSpace:
+        clf_transform_wo_fit(tspace, mats)
+        clf_inversetransform(tspace, mats)
 
 
-class TestTangentSpace(TangentSpaceTestCase):
-    def clf_transform(self, tspace, covmats, labels):
-        n_matrices, n_channels, n_channels = covmats.shape
-        ts = tspace().fit(covmats, labels)
-        Xtr = ts.transform(covmats)
-        if tspace is TangentSpace:
-            n_ts = (n_channels * (n_channels + 1)) // 2
-            assert Xtr.shape == (n_matrices, n_ts)
-        else:
-            assert Xtr.shape == (n_matrices, n_channels, n_channels)
-
-    def clf_fit_transform(self, tspace, covmats, labels):
-        n_matrices, n_channels, n_channels = covmats.shape
-        ts = tspace()
-        Xtr = ts.fit_transform(covmats, labels)
-        if tspace is TangentSpace:
-            n_ts = (n_channels * (n_channels + 1)) // 2
-            assert Xtr.shape == (n_matrices, n_ts)
-        else:
-            assert Xtr.shape == (n_matrices, n_channels, n_channels)
-
-    def clf_fit_transform_independence(self, tspace, covmats, labels):
-        n_matrices, n_channels, n_channels = covmats.shape
-        ts = tspace()
-        ts.fit(covmats, labels)
-        # retraining with different size should erase previous fit
-        new_covmats = covmats[:, :-1, :-1]
-        ts.fit(new_covmats, labels)
-        # fit_transform should work as well
-        ts.fit_transform(covmats, labels)
-
-    def clf_transform_wo_fit(self, tspace, covmats):
-        n_matrices, n_channels, n_channels = covmats.shape
+def clf_transform(tspace, mats, labels):
+    n_matrices, n_channels, n_channels = mats.shape
+    ts = tspace().fit(mats, labels)
+    Xtr = ts.transform(mats)
+    if tspace is TangentSpace:
         n_ts = (n_channels * (n_channels + 1)) // 2
-        ts = tspace()
-        Xtr = ts.transform(covmats)
         assert Xtr.shape == (n_matrices, n_ts)
+    else:
+        assert Xtr.shape == (n_matrices, n_channels, n_channels)
 
-    def clf_inversetransform(self, tspace, covmats):
-        n_matrices, n_channels, n_channels = covmats.shape
-        ts = tspace().fit(covmats)
-        Xtr = ts.transform(covmats)
-        covinv = ts.inverse_transform(Xtr)
-        assert covinv == approx(covmats)
+
+def clf_fit_transform(tspace, mats, labels):
+    n_matrices, n_channels, n_channels = mats.shape
+    ts = tspace()
+    Xtr = ts.fit_transform(mats, labels)
+    if tspace is TangentSpace:
+        n_ts = (n_channels * (n_channels + 1)) // 2
+        assert Xtr.shape == (n_matrices, n_ts)
+    else:
+        assert Xtr.shape == (n_matrices, n_channels, n_channels)
+
+
+def clf_fit_transform_independence(tspace, mats, labels):
+    n_matrices, n_channels, n_channels = mats.shape
+    ts = tspace()
+    ts.fit(mats, labels)
+    # retraining with different size should erase previous fit
+    new_mats = mats[:, :-1, :-1]
+    ts.fit(new_mats, labels)
+    # fit_transform should work as well
+    ts.fit_transform(mats, labels)
+
+
+def clf_transform_wo_fit(tspace, mats):
+    n_matrices, n_channels, n_channels = mats.shape
+    n_ts = (n_channels * (n_channels + 1)) // 2
+    ts = tspace()
+    Xtr = ts.transform(mats)
+    assert Xtr.shape == (n_matrices, n_ts)
+
+
+def clf_inversetransform(tspace, mats):
+    n_matrices, n_channels, n_channels = mats.shape
+    ts = tspace().fit(mats)
+    Xtr = ts.transform(mats)
+    invmats = ts.inverse_transform(Xtr)
+    assert invmats == approx(mats)
 
 
 @pytest.mark.parametrize("fit", [True, False])
@@ -73,14 +76,15 @@ class TestTangentSpace(TangentSpaceTestCase):
 def test_TangentSpace_init(fit, tsupdate, metric_mean, metric_map, get_mats):
     n_matrices, n_channels = 4, 3
     n_ts = (n_channels * (n_channels + 1)) // 2
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
+
     ts = TangentSpace(
         metric={"mean": metric_mean, "map": metric_map},
-        tsupdate=tsupdate
+        tsupdate=tsupdate,
     )
     if fit:
-        ts.fit(covmats)
-    Xtr = ts.transform(covmats)
+        ts.fit(mats)
+    Xtr = ts.transform(mats)
     assert Xtr.shape == (n_matrices, n_ts)
 
 
@@ -90,13 +94,14 @@ def test_TangentSpace_init(fit, tsupdate, metric_mean, metric_map, get_mats):
 def test_FGDA_init(tsupdate, metric_mean, metric_map, get_mats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 3
     labels = get_labels(n_matrices, n_classes)
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
+
     ts = FGDA(
         metric={"mean": metric_mean, "map": metric_map},
-        tsupdate=tsupdate
+        tsupdate=tsupdate,
     )
-    ts.fit(covmats, labels)
-    Xtr = ts.transform(covmats)
+    ts.fit(mats, labels)
+    Xtr = ts.transform(mats)
     assert Xtr.shape == (n_matrices, n_channels, n_channels)
 
 
@@ -106,9 +111,9 @@ def test_metric_wrong_keys(tspace, metric, get_mats, get_labels):
     with pytest.raises((TypeError, KeyError, ValueError)):
         n_classes, n_matrices, n_channels = 2, 6, 3
         labels = get_labels(n_matrices, n_classes)
-        covmats = get_mats(n_matrices, n_channels, "spd")
+        mats = get_mats(n_matrices, n_channels, "spd")
         clf = tspace(metric=metric)
-        clf.fit(covmats, labels).transform(covmats)
+        clf.fit(mats, labels).transform(mats)
 
 
 def test_TS_vecdim_error():
