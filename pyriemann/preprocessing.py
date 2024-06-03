@@ -2,12 +2,12 @@ import numbers
 
 import numpy as np
 from scipy.linalg import eigh
-
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.utils.extmath import stable_cumsum
 
-from .utils.mean import mean_covariance
 from .utils.base import sqrtm, invsqrtm
+from .utils.geodesic import geodesic
+from .utils.mean import mean_covariance
 
 
 class Whitening(BaseEstimator, TransformerMixin):
@@ -49,9 +49,9 @@ class Whitening(BaseEstimator, TransformerMixin):
     ----------
     n_components_ : int
         If fit, the number of components after dimension reduction.
-    filters_ : ndarray, shape ``(n_channels_, n_components_)``
+    filters_ : ndarray, shape ``(n_channels, n_components_)``
         If fit, the spatial filters to whiten SPD matrices.
-    inv_filters_ : ndarray, shape ``(n_components_, n_channels_)``
+    inv_filters_ : ndarray, shape ``(n_components_, n_channels)``
         If fit, the spatial filters to unwhiten SPD matrices.
 
     Notes
@@ -65,6 +65,7 @@ class Whitening(BaseEstimator, TransformerMixin):
         self.metric = metric
         self.dim_red = dim_red
         self.verbose = verbose
+        self._n_matrices_cum = 0
 
     def fit(self, X, y=None, sample_weight=None):
         """Train whitening spatial filters.
@@ -84,8 +85,8 @@ class Whitening(BaseEstimator, TransformerMixin):
         self : Whitening instance
             The Whitening instance.
         """
-        # weighted mean of input SPD matrices
-        Xm = mean_covariance(
+        # weighted mean of input matrices
+        self._mean = mean_covariance(
             X,
             metric=self.metric,
             sample_weight=sample_weight
@@ -94,82 +95,138 @@ class Whitening(BaseEstimator, TransformerMixin):
         # whitening without dimension reduction
         if self.dim_red is None:
             self.n_components_ = X.shape[-1]
-            self.filters_ = invsqrtm(Xm)
-            self.inv_filters_ = sqrtm(Xm)
+            self.filters_ = invsqrtm(self._mean)
+            self.inv_filters_ = sqrtm(self._mean)
 
         # whitening with dimension reduction
         elif isinstance(self.dim_red, dict):
-
-            eigvals, eigvecs = self._prepare_dimension_reduction(X, Xm)
-
-            # dimension reduction
-            if self.verbose:
-                print('Dimension reduction of Whitening on %d components'
-                      % self.n_components_)
-            pca_filters = eigvecs[:, :self.n_components_]
-            pca_sqrtvals = np.sqrt(eigvals[:self.n_components_])
-            # whitening
-            self.filters_ = pca_filters @ np.diag(1. / pca_sqrtvals)
-            self.inv_filters_ = np.diag(pca_sqrtvals).T @ pca_filters.T
+            self._get_eig()
+            self._get_n_components(X)
+            self._reduce_and_whiten()
 
         else:
-            raise ValueError('Unknown type for parameter dim_red: %r'
+            raise ValueError("Unknown type for parameter dim_red: %r"
                              % type(self.dim_red))
+
+        self._n_matrices_cum = X.shape[0]
 
         return self
 
-    def _prepare_dimension_reduction(self, X, Xm):
-        """Prepare dimension reduction."""
+    def _get_eig(self):
+        """Compute eigen values and eigen vectors."""
+        eigvals, eigvecs = eigh(self._mean, eigvals_only=False)
+        self._eigvals = eigvals[::-1]       # sort eigvals in descending order
+        self._eigvecs = np.fliplr(eigvecs)  # idem for eigvecs
+
+    def _get_n_components(self, X):
+        """Compute the number of components for dimension reduction."""
         if len(self.dim_red) > 1:
             raise ValueError(
-                'Dictionary dim_red must contain only one element (Got %d)'
+                "Dictionary dim_red must contain only one element (Got %d)"
                 % len(self.dim_red))
         dim_red_key = next(iter(self.dim_red))
         dim_red_val = self.dim_red.get(dim_red_key)
 
-        eigvals, eigvecs = eigh(Xm, eigvals_only=False)
-        eigvals = eigvals[::-1]       # sort eigvals in descending order
-        eigvecs = np.fliplr(eigvecs)  # idem for eigvecs
-
-        if dim_red_key == 'n_components':
+        if dim_red_key == "n_components":
             if dim_red_val < 1:
                 raise ValueError(
-                    'Value n_components must be superior to 1 (Got %d)'
+                    "Value n_components must be superior to 1 (Got %d)"
                     % dim_red_val)
             if not isinstance(dim_red_val, numbers.Integral):
                 raise ValueError(
-                    'n_components=%d must be of type int (Got %r)'
+                    "n_components=%d must be of type int (Got %r)"
                     % (dim_red_val, type(dim_red_val)))
             self.n_components_ = min(dim_red_val, X.shape[-1])
 
-        elif dim_red_key == 'expl_var':
+        elif dim_red_key == "expl_var":
             if not 0 < dim_red_val <= 1:
                 raise ValueError(
-                    'Value expl_var must be included in (0, 1] (Got %d)'
+                    "Value expl_var must be included in (0, 1] (Got %d)"
                     % dim_red_val)
-            cum_expl_var = stable_cumsum(eigvals / eigvals.sum())
+            cum_expl_var = stable_cumsum(self._eigvals / self._eigvals.sum())
             if self.verbose:
-                print('Cumulative explained variance: \n %r'
+                print("Cumulative explained variance: \n %r"
                       % cum_expl_var)
             self.n_components_ = np.searchsorted(
-                cum_expl_var, dim_red_val, side='right') + 1
+                cum_expl_var, dim_red_val, side="right") + 1
 
-        elif dim_red_key == 'max_cond':
+        elif dim_red_key == "max_cond":
             if dim_red_val <= 1:
                 raise ValueError(
-                    'Value max_cond must be strictly superior to 1 '
-                    '(Got %d)' % dim_red_val)
-            conds = eigvals[0] / eigvals
+                    "Value max_cond must be strictly superior to 1 "
+                    "(Got %d)" % dim_red_val)
+            conds = self._eigvals[0] / self._eigvals
             if self.verbose:
-                print('Condition numbers: \n %r' % conds)
+                print("Condition numbers: \n %r" % conds)
             self.n_components_ = np.searchsorted(
-                conds, dim_red_val, side='left')
+                conds, dim_red_val, side="left")
 
         else:
             raise ValueError(
-                'Unknown key in parameter dim_red: %r' % dim_red_key)
+                "Unknown key in parameter dim_red: %r" % dim_red_key)
 
-        return eigvals, eigvecs
+        if self.verbose:
+            print("Dimension reduction of Whitening on %d components"
+                  % self.n_components_)
+
+    def _reduce_and_whiten(self):
+        """Compute spatial filters to reduce and whiten matrices."""
+        # dimension reduction
+        pca_filters = self._eigvecs[:, :self.n_components_]
+        pca_sqrtvals = np.sqrt(self._eigvals[:self.n_components_])
+        # whitening
+        self.filters_ = pca_filters * (1. / pca_sqrtvals)[np.newaxis, :]
+        self.inv_filters_ = pca_sqrtvals[:, np.newaxis] * pca_filters.T
+
+    def partial_fit(self, X, y=None, alpha=None):
+        """Partially fit whitening spatial filters.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None
+            Ignored as unsupervised.
+        alpha : float | None, default=None
+            Update rate in [0, 1] for the mean: 0 for no update, 1 for full
+            update.
+            If None, ``alpha`` is defined as ``n_matrices`` divided by the
+            number of matrices that have been already used for fit.
+
+        Returns
+        -------
+        self : Whitening instance
+            The Whitening instance.
+
+        Notes
+        -----
+        .. versionadded:: 0.7
+        """
+        n_matrices, n_channels, _ = X.shape
+        self._n_matrices_cum += n_matrices
+
+        if alpha is None:
+            alpha = n_matrices / self._n_matrices_cum
+        if not 0 <= alpha <= 1:
+            raise ValueError("Parameter alpha must be in [0, 1]")
+        if alpha == 0:
+            return self
+
+        if not hasattr(self, "_mean"):
+            self._mean = mean_covariance(X, metric=self.metric)
+            self.n_components_ = n_channels
+        elif n_channels != self._mean.shape[-1]:
+            raise ValueError(
+                "X does not have the good number of channels. Should be %d but"
+                " got %d." % (self._mean.shape[-1], n_channels))
+        else:
+            Xm = mean_covariance(X, metric=self.metric)
+            self._mean = geodesic(self._mean, Xm, alpha, metric=self.metric)
+
+        self._get_eig()
+        self._reduce_and_whiten()
+
+        return self
 
     def transform(self, X):
         """Apply whitening spatial filters.
