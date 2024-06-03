@@ -25,7 +25,7 @@ def test_embedding_error_raise(get_mats):
     n_matrices, n_channels = 5, 3
     mats = get_mats(n_matrices, n_channels, "spd")
     with pytest.raises(ValueError):
-        plot_embedding(mats, y=None, metric="euclid", embd_type='foo')
+        plot_embedding(mats, y=None, metric="euclid", embd_type="foo")
 
 
 @requires_matplotlib

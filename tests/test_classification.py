@@ -4,6 +4,7 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 from pytest import approx
+from scipy.spatial.distance import euclidean
 from scipy.stats import mode
 from sklearn.dummy import DummyClassifier
 
@@ -39,9 +40,9 @@ rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC, MeanField]
             np.array([1, 7]),
         ),
         (
-            np.array([['a', 'b', 'a', 'c', 'a'], ['d', 'e', 'f', 'e', 'e']]),
+            np.array([["a", "b", "a", "c", "a"], ["d", "e", "f", "e", "e"]]),
             1,
-            np.array(['a', 'e']),
+            np.array(["a", "e"]),
         ),
     ],
 )
@@ -62,88 +63,91 @@ def test_classifier(n_classes, classif, get_mats, get_labels):
     else:
         assert n_classes == 3
         n_matrices, n_channels = 9, 3
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
 
-    clf_predict(classif, covmats, labels)
-    clf_fit_independence(classif, covmats, labels)
-    clf_predict_proba(classif, covmats, labels)
-    clf_score(classif, covmats, labels)
-    clf_populate_classes(classif, covmats, labels)
+    clf_fit(classif, mats, labels)
+    clf_predict(classif, mats, labels)
+    clf_fit_independence(classif, mats, labels)
+    clf_predict_proba(classif, mats, labels)
+    clf_score(classif, mats, labels)
+    clf_populate_classes(classif, mats, labels)
     if classif in (MDM, KNearestNeighbor, MeanField):
-        clf_fitpredict(classif, covmats, labels)
+        clf_fitpredict(classif, mats, labels)
     if classif in (MDM, FgMDM):
-        clf_transform(classif, covmats, labels)
-    if hasattr(classif(), 'n_jobs'):
-        clf_jobs(classif, covmats, labels)
-    if hasattr(classif(), 'tsupdate'):
-        clf_tsupdate(classif, covmats, labels)
+        clf_transform(classif, mats, labels)
+    if hasattr(classif(), "n_jobs"):
+        clf_jobs(classif, mats, labels)
+    if hasattr(classif(), "tsupdate"):
+        clf_tsupdate(classif, mats, labels)
 
 
-def clf_predict(classif, covmats, labels):
+def clf_fit(classif, mats, labels):
+    n_matrices, n_classes = len(labels), len(np.unique(labels))
+    clf = classif()
+    clf.fit(mats, labels)
+    assert clf.classes_.shape == (n_classes,)
+
+    clf.fit(mats, labels, sample_weight=np.random.uniform(size=n_matrices))
+
+
+def clf_predict(classif, mats, labels):
     n_matrices = len(labels)
     clf = classif()
-    clf.fit(covmats, labels)
-    predicted = clf.predict(covmats)
-    assert predicted.shape == (n_matrices,)
+    pred = clf.fit(mats, labels).predict(mats)
+    assert pred.shape == (n_matrices,)
 
 
-def clf_predict_proba(classif, covmats, labels):
-    n_matrices = len(labels)
-    n_classes = len(np.unique(labels))
+def clf_predict_proba(classif, mats, labels):
+    n_matrices, n_classes = len(labels), len(np.unique(labels))
     clf = classif()
-    if hasattr(clf, 'probability'):
-        clf.set_params(**{'probability': True})
-    clf.fit(covmats, labels)
-    probabilities = clf.predict_proba(covmats)
-    assert probabilities.shape == (n_matrices, n_classes)
-    assert probabilities.sum(axis=1) == approx(np.ones(n_matrices))
+    if hasattr(clf, "probability"):
+        clf.set_params(**{"probability": True})
+    proba = clf.fit(mats, labels).predict_proba(mats)
+    assert proba.shape == (n_matrices, n_classes)
+    assert proba.sum(axis=1) == approx(np.ones(n_matrices))
 
 
-def clf_fitpredict(classif, covmats, labels):
+def clf_fitpredict(classif, mats, labels):
     clf = classif()
-    clf.fit_predict(covmats, labels)
+    clf.fit_predict(mats, labels)
     assert_array_equal(clf.classes_, np.unique(labels))
 
 
-def clf_score(classif, covmats, labels):
+def clf_score(classif, mats, labels):
     clf = classif()
-    clf.fit(covmats, labels)
-    clf.score(covmats, labels)
+    clf.fit(mats, labels).score(mats, labels)
 
 
-def clf_transform(classif, covmats, labels):
-    n_matrices = len(labels)
-    n_classes = len(np.unique(labels))
+def clf_transform(classif, mats, labels):
+    n_matrices, n_classes = len(labels), len(np.unique(labels))
     clf = classif()
-    clf.fit(covmats, labels)
-    transformed = clf.transform(covmats)
-    assert transformed.shape == (n_matrices, n_classes)
+    transf = clf.fit(mats, labels).transform(mats)
+    assert transf.shape == (n_matrices, n_classes)
 
 
-def clf_fit_independence(classif, covmats, labels):
+def clf_fit_independence(classif, mats, labels):
     clf = classif()
-    clf.fit(covmats, labels).predict(covmats)
+    clf.fit(mats, labels).predict(mats)
     # retraining with different size should erase previous fit
-    new_covmats = covmats[:, :-1, :-1]
-    clf.fit(new_covmats, labels).predict(new_covmats)
+    new_mats = mats[:, :-1, :-1]
+    clf.fit(new_mats, labels).predict(new_mats)
 
 
-def clf_jobs(classif, covmats, labels):
+def clf_jobs(classif, mats, labels):
     clf = classif(n_jobs=2)
-    clf.fit(covmats, labels)
-    clf.predict(covmats)
+    clf.fit(mats, labels).predict(mats)
 
 
-def clf_populate_classes(classif, covmats, labels):
+def clf_populate_classes(classif, mats, labels):
     clf = classif()
-    clf.fit(covmats, labels)
+    clf.fit(mats, labels)
     assert_array_equal(clf.classes_, np.unique(labels))
 
 
-def clf_tsupdate(classif, covmats, labels):
+def clf_tsupdate(classif, mats, labels):
     clf = classif(tsupdate=True)
-    clf.fit(covmats, labels).predict(covmats)
+    clf.fit(mats, labels).predict(mats)
 
 
 @pytest.mark.parametrize("classif", rclf)
@@ -152,10 +156,10 @@ def clf_tsupdate(classif, covmats, labels):
 def test_metric_dict_error(classif, mean, dist, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
     labels = get_labels(n_matrices, n_classes)
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
     clf = classif(metric={"mean": mean, "distance": dist})
     with pytest.raises((TypeError, KeyError, ValueError)):
-        clf.fit(covmats, labels).predict(covmats)
+        clf.fit(mats, labels).predict(mats)
 
 
 @pytest.mark.parametrize("classif", rclf)
@@ -163,10 +167,10 @@ def test_metric_dict_error(classif, mean, dist, get_mats, get_labels):
 def test_metric_errors(classif, metric, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
     labels = get_labels(n_matrices, n_classes)
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
     clf = classif(metric=metric)
     with pytest.raises((TypeError, KeyError, ValueError)):
-        clf.fit(covmats, labels).predict(covmats)
+        clf.fit(mats, labels).predict(mats)
 
 
 @pytest.mark.parametrize("classif", rclf)
@@ -174,171 +178,196 @@ def test_metric_errors(classif, metric, get_mats, get_labels):
 def test_metric_str(classif, metric, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
     labels = get_labels(n_matrices, n_classes)
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
     clf = classif(metric=metric)
 
     if classif in [SVC, FgMDM, TSclassifier] \
-            and metric not in ['riemann', 'euclid', 'logeuclid']:
+            and metric not in ["euclid", "logeuclid", "riemann"]:
         with pytest.raises((KeyError, ValueError)):
-            clf.fit(covmats, labels).predict(covmats)
+            clf.fit(mats, labels).predict(mats)
     else:
-        clf.fit(covmats, labels).predict(covmats)
+        clf.fit(mats, labels).predict(mats)
 
 
-@pytest.mark.parametrize("metric_mean", get_means())
-@pytest.mark.parametrize("metric_dist", get_distances())
+def call_mean(X, sample_weight=None):
+    return np.average(X, axis=0, weights=sample_weight)
+
+
+def call_dist(A, B, squared=False):
+    return euclidean(A.flatten(), B.flatten())
+
+
+@pytest.mark.parametrize("metric_mean", list(get_means()) + [call_mean])
+@pytest.mark.parametrize("metric_dist", list(get_distances()) + [call_dist])
 @pytest.mark.parametrize("n_classes", [2, 3, 4])
-def test_metric_mdm(metric_mean, metric_dist, n_classes, get_mats, get_labels):
+def test_mdm(metric_mean, metric_dist, n_classes, get_mats, get_labels):
     n_matrices, n_channels = 4 * n_classes, 3
     labels = get_labels(n_matrices, n_classes)
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
+
     clf = MDM(metric={"mean": metric_mean, "distance": metric_dist})
-    clf.fit(covmats, labels).predict(covmats)
-    assert clf.classes_.shape == (n_classes,)
+    clf.fit(mats, labels).predict(mats)
     assert clf.covmeans_.shape == (n_classes, n_channels, n_channels)
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+def test_mdm_hpd(kind, metric, get_mats, get_labels):
+    n_matrices, n_channels, n_classes = 6, 4, 2
+    labels = get_labels(n_matrices, n_classes)
+    mats = get_mats(n_matrices, n_channels, kind)
+
+    clf = MDM(metric="riemann")
+    clf.fit(mats, labels).predict_proba(mats)
 
 
 @pytest.mark.parametrize("metric_mean", get_means())
 @pytest.mark.parametrize("metric_dist", get_distances())
 @pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
-def test_metric_fgmdm(metric_mean, metric_dist, metric_map, get_mats,
-                      get_labels):
+def test_fgmdm(metric_mean, metric_dist, metric_map, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 4, 3, 2
     labels = get_labels(n_matrices, n_classes)
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
+
     clf = FgMDM(metric={
         "mean": metric_mean,
         "distance": metric_dist,
         "map": metric_map
     })
-    clf.fit(covmats, labels).predict(covmats)
+    clf.fit(mats, labels).predict(mats)
+
+
+@pytest.mark.parametrize("k", [1, 3, 4])
+def test_knn(k, get_mats, get_labels):
+    n_matrices, n_channels, n_classes = 9, 3, 3
+    mats = get_mats(n_matrices, n_channels, "spd")
+    labels = get_labels(n_matrices, n_classes)
+
+    knn = KNearestNeighbor(k, metric="riemann")
+    knn.fit(mats, labels)
+    assert knn.covmeans_.shape == (n_matrices, n_channels, n_channels)
+    assert knn.classmeans_.shape == (n_matrices,)
+
+    preds = knn.predict(mats)
+    if k == 1:
+        assert_array_equal(labels, preds)
 
 
 @pytest.mark.parametrize("metric_mean", get_means())
 @pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
-def test_metric_tsclassifier(metric_mean, metric_map, get_mats, get_labels):
+def test_tsclassifier(metric_mean, metric_map, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 4, 3, 2
     labels = get_labels(n_matrices, n_classes)
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
+
     clf = TSclassifier(metric={"mean": metric_mean, "map": metric_map})
-    clf.fit(covmats, labels).predict(covmats)
-
-
-def test_1nn(get_mats, get_labels):
-    """Test KNearestNeighbor with K=1"""
-    n_matrices, n_channels, n_classes = 9, 3, 3
-    covmats = get_mats(n_matrices, n_channels, "spd")
-    labels = get_labels(n_matrices, n_classes)
-
-    knn = KNearestNeighbor(1, metric="riemann")
-    knn.fit(covmats, labels)
-    preds = knn.predict(covmats)
-    assert_array_equal(labels, preds)
+    clf.fit(mats, labels).predict(mats)
 
 
 def test_tsclassifier_fit(get_mats, get_labels):
     """Test TS Classifier"""
-    n_matrices, n_channels, n_classes = 6, 3, 2
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    n_matrices, n_channels, n_classes = 6, 3, 3
+    mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
+
     clf = TSclassifier(clf=DummyClassifier())
-    clf.fit(covmats, labels).predict(covmats)
+    clf.fit(mats, labels).predict(mats)
 
 
 def test_tsclassifier_clf_error(get_mats, get_labels):
     """Test TS if not Classifier"""
     n_matrices, n_channels, n_classes = 6, 3, 2
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
     with pytest.raises(TypeError):
-        TSclassifier(clf=Covariances()).fit(covmats, labels)
+        TSclassifier(clf=Covariances()).fit(mats, labels)
 
 
 def test_svc_params():
     rsvc = SVC()
-    assert rsvc.metric == 'riemann'
+    assert rsvc.metric == "riemann"
 
-    rsvc.set_params(**{'metric': 'logeuclid'})
-    assert rsvc.metric == 'logeuclid'
+    rsvc.set_params(**{"metric": "logeuclid"})
+    assert rsvc.metric == "logeuclid"
 
-    rsvc.set_params(**{'max_iter': 501})
+    rsvc.set_params(**{"max_iter": 501})
     assert rsvc.max_iter == 501
 
 
 def test_svc_params_error(get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
 
     with pytest.raises(TypeError):
-        SVC(C='hello').fit(covmats, labels)
+        SVC(C="hello").fit(mats, labels)
 
     with pytest.raises(TypeError):
         SVC(foo=5)
 
 
-@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_cref_metric(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
-    Cref = mean_covariance(covmats, metric=metric)
+    Cref = mean_covariance(mats, metric=metric)
 
-    rsvc = SVC(Cref=Cref).fit(covmats, labels)
-    rsvc_1 = SVC(Cref=None, metric=metric).fit(covmats, labels)
+    rsvc = SVC(Cref=Cref).fit(mats, labels)
+    rsvc_1 = SVC(Cref=None, metric=metric).fit(mats, labels)
     assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
 
 
-@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_cref_callable(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
     def Cref(X): return mean_covariance(X, metric=metric)
 
-    rsvc = SVC(Cref=Cref).fit(covmats, labels)
-    rsvc_1 = SVC(metric=metric).fit(covmats, labels)
+    rsvc = SVC(Cref=Cref).fit(mats, labels)
+    rsvc_1 = SVC(metric=metric).fit(mats, labels)
     assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
 
-    rsvc = SVC(Cref=Cref).fit(covmats, labels)
-    rsvc.predict(covmats)
-    rsvc_1 = SVC(metric=metric).fit(covmats, labels)
-    rsvc_1.predict(covmats)
+    rsvc = SVC(Cref=Cref).fit(mats, labels)
+    rsvc.predict(mats)
+    rsvc_1 = SVC(metric=metric).fit(mats, labels)
+    rsvc_1.predict(mats)
     assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
 
 
-@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_cref_error(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
     def Cref(X, met): mean_covariance(X, metric=met)
 
     with pytest.raises(TypeError):
-        SVC(Cref=Cref).fit(covmats, labels)
+        SVC(Cref=Cref).fit(mats, labels)
 
     Cref = metric
 
     with pytest.raises(TypeError):
-        SVC(Cref=Cref).fit(covmats, labels)
+        SVC(Cref=Cref).fit(mats, labels)
 
 
-@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_kernel_callable(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
 
-    rsvc = SVC(kernel_fct=kernel, metric=metric).fit(covmats, labels)
-    rsvc_1 = SVC(metric=metric).fit(covmats, labels)
-    p1 = rsvc.predict(covmats[:-1])
-    p2 = rsvc_1.predict(covmats[:-1])
+    rsvc = SVC(kernel_fct=kernel, metric=metric).fit(mats, labels)
+    rsvc_1 = SVC(metric=metric).fit(mats, labels)
+    p1 = rsvc.predict(mats[:-1])
+    p2 = rsvc_1.predict(mats[:-1])
     assert np.array_equal(p1, p2)
 
     def custom_kernel(X, Y, Cref, metric):
         return np.ones((len(X), len(Y)))
     SVC(kernel_fct=custom_kernel,
-        metric=metric).fit(covmats, labels).predict(covmats[:-1])
+        metric=metric).fit(mats, labels).predict(mats[:-1])
 
     # check if pickleable
     pickle.dumps(rsvc)
@@ -346,41 +375,52 @@ def test_svc_kernel_callable(get_mats, get_labels, metric):
 
 
 @pytest.mark.parametrize("kernel_fct", [None, "precomputed"])
-@pytest.mark.parametrize("metric", ["riemann", "euclid", "logeuclid"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_kernel_precomputed(get_mats, get_labels, kernel_fct, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
 
-    SVC(kernel_fct=kernel_fct, metric=metric).fit(covmats, labels)
+    SVC(kernel_fct=kernel_fct, metric=metric).fit(mats, labels)
 
 
 def test_svc_kernel_error(get_mats, get_labels):
     n_matrices, n_channels, n_classes = 4, 2, 2
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
 
     def custom_kernel(X, Y, Cref):
         return np.ones((len(X), len(Y)))
     with pytest.raises(TypeError):
-        SVC(kernel_fct=custom_kernel, metric="euclid").fit(covmats, labels)
+        SVC(kernel_fct=custom_kernel, metric="euclid").fit(mats, labels)
 
     custom_kernel = np.array([1, 2])
     with pytest.raises(TypeError):
-        SVC(kernel_fct=custom_kernel, metric="riemann").fit(covmats, labels)
+        SVC(kernel_fct=custom_kernel, metric="riemann").fit(mats, labels)
 
 
+@pytest.mark.parametrize("power_list", [[-1, 0, 1], [0, 0.1]])
 @pytest.mark.parametrize("method_label", ["sum_means", "inf_means"])
-def test_meanfield(get_mats, get_labels, method_label):
-    n_matrices, n_channels, n_classes = 6, 3, 2
-    covmats = get_mats(n_matrices, n_channels, "spd")
+@pytest.mark.parametrize("metric", get_distances())
+def test_meanfield(get_mats, get_labels, power_list, method_label, metric):
+    n_powers = len(power_list)
+    n_matrices, n_channels, n_classes = 8, 3, 2
+    mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
-    mf = MeanField(method_label=method_label).fit(covmats, labels)
-    pred = mf.predict(covmats)
-    assert pred.shape == (n_matrices,)
-    proba = mf.predict_proba(covmats)
+
+    mf = MeanField(
+        power_list=power_list,
+        method_label=method_label,
+        metric=metric,
+    ).fit(mats, labels)
+    covmeans = mf.covmeans_
+    assert len(covmeans) == n_powers
+    assert len(covmeans[power_list[0]]) == n_classes
+    assert covmeans[power_list[0]][labels[0]].shape == (n_channels, n_channels)
+
+    proba = mf.predict_proba(mats)
     assert proba.shape == (n_matrices, n_classes)
-    transf = mf.transform(covmats)
+    transf = mf.transform(mats)
     assert transf.shape == (n_matrices, n_classes)
 
 
@@ -388,19 +428,19 @@ def test_meanfield(get_mats, get_labels, method_label):
 @pytest.mark.parametrize("metric_mean", get_means())
 @pytest.mark.parametrize("metric_dist", get_distances())
 @pytest.mark.parametrize("exponent", [1, 2])
-def test_class_distinctiveness(get_mats, get_labels,
-                               n_classes, metric_mean, metric_dist, exponent):
+def test_class_distinctiveness(n_classes, metric_mean, metric_dist, exponent,
+                               get_mats, get_labels):
     """Test function for class distinctiveness measure for two class problem"""
     n_matrices, n_channels = 6, 3
-    covmats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
     if n_classes == 1:
         with pytest.raises(ValueError):
-            class_distinctiveness(covmats, labels)
+            class_distinctiveness(mats, labels)
         return
 
     class_dis, num, denom = class_distinctiveness(
-        covmats,
+        mats,
         labels,
         exponent,
         metric={"mean": metric_mean, "distance": metric_dist},

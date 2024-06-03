@@ -33,14 +33,14 @@ def test_check_weights_error_positivity():
 
 def test_check_metric_str():
     given_metric = "abc"
-    expected_keys = ['mean', 'distance']
+    expected_keys = ["mean", "distance"]
     metrics = check_metric(given_metric, expected_keys)
     assert len(metrics) == len(expected_keys)
 
 
 def test_check_metric_dict():
     given_dict = {"mean": "aaa", "distance": "bbb"}
-    expected_keys = ['mean', 'distance']
+    expected_keys = ["mean", "distance"]
     metrics = check_metric(given_dict, expected_keys)
     assert len(metrics) == len(expected_keys)
 
@@ -59,10 +59,10 @@ def test_check_function():
     available_funs = {"aaa": aaa, "bbb": bbb}
 
     fun = check_function("aaa", available_funs)
-    assert hasattr(fun, '__call__')
+    assert hasattr(fun, "__call__")
 
     fun = check_function(aaa, available_funs)
-    assert hasattr(fun, '__call__')
+    assert hasattr(fun, "__call__")
 
     with pytest.raises(ValueError):  # unkown function name
         check_function("abc", available_funs)

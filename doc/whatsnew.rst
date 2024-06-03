@@ -14,6 +14,8 @@ v0.7.dev
 
 - Add possibility for ``target_domain`` parameter of :class:`pyriemann.transfer._estimators.TLCenter` to be empty, forcing ``transform()`` to recenter matrices to the last fitted domain. :pr:`292` by :user:`brunaafl`
 
+- Enhance :func:`pyriemann.utils.ajd.ajd_pham` and :func:`pyriemann.utils.mean.mean_ale` functions to process HPD matrices. :pr:`299` by :user:`qbarthelemy`
+
 - Add ``partial_fit`` function to :class:`pyriemann.preprocessing.Whitening` for online applications. :pr:`277` by :user:`qbarthelemy` and :user:`brentgaisford`
 
 v0.6 (April 2024)

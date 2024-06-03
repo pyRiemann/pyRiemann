@@ -43,8 +43,6 @@ def test_mean_shape(kind, mean, get_mats):
     """Test the shape of mean"""
     n_matrices, n_channels = 5, 3
     mats = get_mats(n_matrices, n_channels, kind)
-    if mean is mean_ale and kind == "hpd":
-        pytest.skip()
     if mean == mean_power:
         C = mean(mats, 0.42)
     else:
@@ -151,8 +149,6 @@ def test_mean_of_means(kind, mean, get_mats):
     """Test mean of submeans equal to grand mean"""
     n_matrices, n_channels = 10, 3
     mats = get_mats(n_matrices, n_channels, kind)
-    if mean is mean_ale and kind == "hpd":
-        pytest.skip()
     if mean == mean_power:
         p = -0.42
         C = mean(mats, p)
@@ -165,6 +161,33 @@ def test_mean_of_means(kind, mean, get_mats):
         C2 = mean(mats[n_matrices//2:])
         C3 = mean(np.array([C1, C2]))
     assert C3 == approx(C, 6)
+
+
+@pytest.mark.parametrize(
+    "mean",
+    [
+        mean_ale,
+        mean_alm,
+        mean_euclid,
+        mean_harmonic,
+        mean_kullback_sym,
+        mean_logdet,
+        mean_logeuclid,
+        mean_power,
+        mean_riemann,
+        mean_wasserstein,
+        nanmean_riemann,
+    ],
+)
+def test_mean_of_single_matrix(mean, get_mats):
+    """Test the mean of a single matrix"""
+    n_channels = 3
+    mats = get_mats(1, n_channels, "spd")
+    if mean == mean_power:
+        M = mean(mats, 0.42)
+    else:
+        M = mean(mats)
+    assert M == approx(mats[0])
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -338,6 +361,6 @@ def test_mean_covariance_args(get_mats):
     """Test mean_covariance with different arguments"""
     n_matrices, n_channels = 3, 3
     mats = get_mats(n_matrices, n_channels, "spd")
-    mean_covariance(mats, metric='ale', maxiter=5)
-    mean_covariance(mats, metric='logdet', tol=10e-3)
-    mean_covariance(mats, metric='riemann', init=np.eye(n_channels))
+    mean_covariance(mats, metric="ale", maxiter=5)
+    mean_covariance(mats, metric="logdet", tol=10e-3)
+    mean_covariance(mats, metric="riemann", init=np.eye(n_channels))

@@ -28,7 +28,7 @@ def mean_ale(X=None, tol=10e-7, maxiter=50, sample_weight=None, covmats=None):
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n, n)
-        Set of SPD matrices.
+        Set of SPD/HPD matrices.
     tol : float, default=10e-7
         The tolerance to stop the gradient descent.
     maxiter : int, default=50
@@ -128,6 +128,9 @@ def mean_alm(X=None, tol=1e-14, maxiter=100, sample_weight=None, covmats=None):
     X = _deprecate_covmats(covmats, X)
     n_matrices, _, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
+
+    if n_matrices == 1:
+        return X[0]
 
     if n_matrices == 2:
         alpha = sample_weight[1] / sample_weight[0] / 2

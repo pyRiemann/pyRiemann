@@ -23,11 +23,11 @@ def test_whitening_init():
     assert not whit.verbose
 
 
-def test_whitening_error(rndstate, get_mats):
+def test_whitening_fit_errors(rndstate, get_mats):
     """Test Whitening"""
-    n_matrices, n_channels = 20, 6
+    n_matrices, n_channels = 2, 6
     mats = get_mats(n_matrices, n_channels, "spd")
-    # Test Fit
+
     with pytest.raises(ValueError):  # len dim_red not equal to 1
         Whitening(dim_red={"n_components": 2, "expl_var": 0.5}).fit(mats)
     with pytest.raises(ValueError):  # n_components not superior to 1
@@ -57,15 +57,17 @@ def test_whitening_fit(dim_red, metric, rndstate, get_mats):
     w = rndstate.rand(n_matrices)
 
     whit = Whitening(dim_red=dim_red, metric=metric).fit(mats, sample_weight=w)
-
-    n_components = whit.n_components_
     if dim_red is None:
-        assert n_components == n_channels
+        n_comp = n_channels
     else:
-        assert n_components <= n_channels
+        n_comp = whit.n_components_
 
-    assert whit.filters_.shape == (n_channels, n_components)
-    assert whit.inv_filters_.shape == (n_components, n_channels)
+    if dim_red and list(dim_red.keys())[0] in ["expl_var", "max_cond"]:
+        assert whit.n_components_ <= n_channels
+    else:
+        assert whit.n_components_ == n_comp
+    assert whit.filters_.shape == (n_channels, n_comp)
+    assert whit.inv_filters_.shape == (n_comp, n_channels)
 
 
 @pytest.mark.parametrize("alpha", [0, 0.5, 1, None])
@@ -100,21 +102,22 @@ def test_whitening_transform(dim_red, metric, rndstate, get_mats):
     """Test Whitening transform"""
     n_matrices, n_channels = 20, 6
     mats = get_mats(n_matrices, n_channels, "spd")
+
     whit = Whitening(metric=metric).fit(mats)
-    mats_w = whit.transform(mats)
+    whitmats = whit.transform(mats)
     if dim_red is None:
         n_comp = n_channels
     else:
         n_comp = whit.n_components_
-    assert mats_w.shape == (n_matrices, n_comp, n_comp)
+    assert whitmats.shape == (n_matrices, n_comp, n_comp)
     # after whitening, mean = identity
     assert_array_almost_equal(
-        mean_covariance(mats_w, metric=metric),
+        mean_covariance(whitmats, metric=metric),
         np.eye(n_comp),
         decimal=3,
     )
     if dim_red is not None and "max_cond" in dim_red.keys():
-        assert np.linalg.cond(mats_w.mean(axis=0)) <= max_cond
+        assert np.linalg.cond(whitmats.mean(axis=0)) <= max_cond
 
 
 @pytest.mark.parametrize("dim_red", dim_red)
@@ -123,8 +126,9 @@ def test_whitening_inverse_transform(dim_red, metric, rndstate, get_mats):
     """Test Whitening inverse transform"""
     n_matrices, n_channels = 20, 6
     mats = get_mats(n_matrices, n_channels, "spd")
+
     whit = Whitening(dim_red=dim_red, metric=metric).fit(mats)
-    mats_iw = whit.inverse_transform(whit.transform(mats))
-    assert mats_iw.shape == (n_matrices, n_channels, n_channels)
+    invwhitmats = whit.inverse_transform(whit.transform(mats))
+    assert invwhitmats.shape == (n_matrices, n_channels, n_channels)
     if dim_red is None:
-        assert_array_almost_equal(mats, mats_iw)
+        assert_array_almost_equal(mats, invwhitmats)

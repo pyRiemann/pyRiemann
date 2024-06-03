@@ -260,13 +260,12 @@ def test_pairwise_distance_matrix(get_mats, dist, Y, squared):
 
     for i in range(n_matrices_X):
         for j in range(n_matrices_Y):
-            assert np.isclose(pdist[i, j],
-                              distance(X[i],
-                                       Y_[j],
-                                       metric=dist,
-                                       squared=squared),
-                              atol=1e-5,
-                              rtol=1e-5)
+            assert np.isclose(
+                pdist[i, j],
+                distance(X[i], Y_[j], metric=dist, squared=squared),
+                atol=1e-5,
+                rtol=1e-5,
+            )
 
     if Y is None and dist not in ["kullback", "kullback_right"]:
         assert is_sym(pdist)
