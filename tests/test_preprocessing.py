@@ -70,6 +70,32 @@ def test_whitening_fit(dim_red, metric, rndstate, get_mats):
     assert whit.inv_filters_.shape == (n_comp, n_channels)
 
 
+@pytest.mark.parametrize("alpha", [0, 0.5, 1, None])
+@pytest.mark.parametrize("dim_red", dim_red)
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+def test_whitening_partial_fit(alpha, dim_red, metric, get_mats):
+    """Test Whitening partial_fit"""
+    n_matrices, n_channels = 6, 5
+    mats = get_mats(n_matrices, n_channels, "spd")
+
+    whit = Whitening(dim_red=dim_red, metric=metric).fit(mats)
+    whit.partial_fit(get_mats(1, n_channels, "spd"), alpha=alpha)
+
+    whit = Whitening(dim_red=dim_red, metric=metric)
+    whit.partial_fit(mats, alpha=alpha)
+
+
+def test_whitening_partial_fit_errors(get_mats):
+    n_matrices, n_channels = 3, 3
+    mats = get_mats(n_matrices, n_channels, "spd")
+    whit = Whitening(dim_red=None, metric="riemann").partial_fit(mats)
+
+    with pytest.raises(ValueError):
+        whit.partial_fit(get_mats(2, n_channels + 1, "spd"))
+    with pytest.raises(ValueError):
+        whit.partial_fit(mats, alpha=42)
+
+
 @pytest.mark.parametrize("dim_red", dim_red)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_whitening_transform(dim_red, metric, rndstate, get_mats):
