@@ -10,10 +10,10 @@ from .utils.utils import check_metric
 
 class TangentSpace(BaseEstimator, TransformerMixin):
 
-    """Tangent space project TransformerMixin.
+    """Tangent space projection.
 
-    Tangent space projection map a set of SPD matrices to their
-    tangent space according to [1]_. The Tangent space projection can be
+    Tangent space projection maps a set of SPD matrices to their
+    tangent space according to [1]_. The tangent space projection can be
     seen as a kernel operation, cf [2]_. After projection, each matrix is
     represented as a vector of size :math:`n (n+1)/2`, where :math:`n` is the
     dimension of the SPD matrices.
@@ -23,10 +23,10 @@ class TangentSpace(BaseEstimator, TransformerMixin):
     After projection, standard processing and vector-based classification can
     be applied.
 
-    Tangent space projection is a local approximation of the manifold. it takes
-    one parameter, the reference point, that is usually estimated using the
+    Tangent space projection is a local approximation of the manifold. It takes
+    one parameter, the reference matrix, that is usually estimated using the
     geometric mean of the SPD matrices set you project. If the function
-    `fit` is not called, the identity matrix will be used as reference point.
+    `fit` is not called, the identity matrix will be used as reference matrix.
     This can lead to serious degradation of performances.
     The approximation will be bigger if the matrices in the set are scattered
     in the manifold, and lower if they are grouped in a small region of the
@@ -37,7 +37,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    metric : string | dict, default='riemann'
+    metric : string | dict, default="riemann"
         The type of metric used
         for reference matrix estimation (for the list of supported metrics
         see :func:`pyriemann.utils.mean.mean_covariance`) and
@@ -53,8 +53,8 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
     Attributes
     ----------
-    reference_ : ndarray
-        If fit, the reference point for tangent space mapping.
+    reference_ : ndarray, shape (n_channels, n_channels)
+        If fit, the reference matrix for tangent space mapping.
 
     See Also
     --------
@@ -75,13 +75,13 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         Elsevier, 2013, 112, pp.172-178.
     """
 
-    def __init__(self, metric='riemann', tsupdate=False):
+    def __init__(self, metric="riemann", tsupdate=False):
         """Init."""
         self.metric = metric
         self.tsupdate = tsupdate
 
     def fit(self, X, y=None, sample_weight=None):
-        """Fit (estimates) the reference point.
+        """Fit (estimates) the reference matrix.
 
         Parameters
         ----------
@@ -114,7 +114,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         if len(X.shape) == 2:
             n_channels = (np.sqrt(1 + 8 * shape_X[1]) - 1) / 2
             if n_channels != int(n_channels):
-                raise ValueError("Shape of Tangent space vector does not"
+                raise ValueError("Shape of tangent space vector does not"
                                  " correspond to a square matrix.")
             return int(n_channels)
         elif len(X.shape) == 3:
@@ -126,14 +126,14 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
     def _check_reference_points(self, X):
         """Check reference point status, and force it to identity if not."""
-        if not hasattr(self, 'reference_'):
+        if not hasattr(self, "reference_"):
             self.reference_ = np.eye(self._check_data_dim(X))
         else:
             shape_cr = self.reference_.shape[0]
             shape_X = self._check_data_dim(X)
 
             if shape_cr != shape_X:
-                raise ValueError('Data must be same size of reference point.')
+                raise ValueError("Data must be same size of reference matrix.")
 
     def transform(self, X):
         """Tangent space projection.
@@ -201,7 +201,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        cov : ndarray, shape (n_matrices, n_channels, n_channels)
+        X_new : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices corresponding to each of tangent vector.
         """
         self.metric_mean, self.metric_map = check_metric(
@@ -213,11 +213,12 @@ class TangentSpace(BaseEstimator, TransformerMixin):
 
 class FGDA(BaseEstimator, TransformerMixin):
 
-    """Fisher Geodesic Discriminant analysis.
+    """Fisher geodesic discriminant analysis.
 
-    Project data in Tangent space, apply a FLDA to reduce dimention, and
-    project filtered data back in the manifold.
-    For a complete description of the algorithm, see [1]_.
+    Fisher geodesic discriminant analysis (FGDA)
+    projects matrices in tangent space,
+    applies a Fisher linear discriminant analysis (FLDA) to reduce dimention,
+    and project filtered tangent vectors back in the manifold [1]_.
 
     Parameters
     ----------
@@ -234,6 +235,11 @@ class FGDA(BaseEstimator, TransformerMixin):
         training and test, as described in [2]_. This is not compatible with
         online implementation. Performance are better when the number of
         matrices for prediction is higher.
+
+    Attributes
+    ----------
+    classes_ : ndarray, shape (n_classes,)
+        Labels for each class.
 
     See Also
     --------
@@ -262,9 +268,11 @@ class FGDA(BaseEstimator, TransformerMixin):
     def _fit_lda(self, X, y, sample_weight=None):
         """Helper to fit LDA."""
         self.classes_ = np.unique(y)
-        self._lda = LDA(n_components=len(self.classes_) - 1,
-                        solver='lsqr',
-                        shrinkage='auto')
+        self._lda = LDA(
+            n_components=len(self.classes_) - 1,
+            solver="lsqr",
+            shrinkage="auto",
+        )
 
         ts = self._ts.fit_transform(X, sample_weight=sample_weight)
         self._lda.fit(ts, y)
@@ -279,7 +287,7 @@ class FGDA(BaseEstimator, TransformerMixin):
         return self._ts.inverse_transform(ts)
 
     def fit(self, X, y=None, sample_weight=None):
-        """Fit (estimates) the reference point and the FLDA.
+        """Fit (estimates) the reference matrix and the FLDA.
 
         Parameters
         ----------
@@ -309,7 +317,7 @@ class FGDA(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        covs : ndarray, shape (n_matrices, n_channels, n_channels)
+        X_new : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices after filtering.
         """
         ts = self._ts.transform(X)
@@ -329,7 +337,7 @@ class FGDA(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        covs : ndarray, shape (n_matrices, n_channels, n_channels)
+        X_new : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices after filtering.
         """
         self._ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
