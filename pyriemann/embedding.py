@@ -17,7 +17,7 @@ class SpectralEmbedding(BaseEstimator):
 
     It uses Laplacian Eigenmaps [1]_ to embed SPD matrices into an Euclidean
     space of smaller dimension. The basic hypothesis is that high-dimensional
-    data lives in a low-dimensional manifold, whose intrinsic geometry can be
+    data live in a low-dimensional manifold, whose intrinsic geometry can be
     described via the Laplacian matrix of a graph. The vertices of this graph
     are the SPD matrices and the weights of the links are determined by the
     Riemannian distance between each pair of them.
@@ -32,7 +32,7 @@ class SpectralEmbedding(BaseEstimator):
         see :func:`pyriemann.utils.distance.pairwise_distance`.
     eps : None | float, default=None
         The scaling of the Gaussian kernel. If none is given it will use the
-        square of the median of pairwise distances between points.
+        square of the median of pairwise distances between matrices.
 
     Attributes
     ----------
@@ -56,18 +56,18 @@ class SpectralEmbedding(BaseEstimator):
 
     def _get_affinity_matrix(self, X, eps):
 
-        # make matrix with pairwise distances between points
+        # make matrix with pairwise distances between matrices
         distmatrix = pairwise_distance(X, metric=self.metric)
 
         # determine which scale for the gaussian kernel
-        if self.eps is None:
+        if eps is None:
             eps = np.median(distmatrix)**2 / 2
 
         # make kernel matrix from the distance matrix
         kernel = np.exp(-distmatrix**2 / (4 * eps))
 
         # normalize the kernel matrix
-        q = np.dot(kernel, np.ones(len(kernel)))
+        q = kernel @ np.ones(len(kernel))
         kernel_n = np.divide(kernel, np.outer(q, q))
 
         return kernel_n
@@ -97,13 +97,13 @@ class SpectralEmbedding(BaseEstimator):
         )
 
         # normalize the embedding between -1 and +1
-        embdn = 2*(embd - embd.min(0)) / embd.ptp(0) - 1
+        embdn = 2 * (embd - embd.min(0)) / embd.ptp(0) - 1
         self.embedding_ = embdn
 
         return self
 
     def fit_transform(self, X, y=None):
-        """Calculate the coordinates of the embedded points.
+        """Calculate the coordinates of the embedded matrices.
 
         Parameters
         ----------
@@ -127,11 +127,11 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
     As proposed in [1]_, Locally Linear Embedding (LLE) is a non-linear,
     neighborhood-preserving dimensionality reduction algorithm which
-    consists of three main steps. For each point x,
+    consists of three main steps. For each matrix X[i],
 
-    1.  find its k nearest neighbors KNN(x) and
-    2.  calculate the best reconstruction of x based on its KNN.
-    3.  Then calculate a low-dimensional embedding for all points based on
+    1.  find its k-nearest neighbors k-NN(X[i]),
+    2.  calculate the best reconstruction of X[i] based on its k-NN,
+    3.  calculate a low-dimensional embedding for all matrices based on
         the weights in step 2.
 
     This implementation using SPD matrices is based on [2]_.
@@ -147,7 +147,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         If ``n_neighbors > n_matrices``, ``n_neighbors`` is set to
         ``n_matrices - 1``.
     metric : {"euclid", "logeuclid", "riemann"}, default: "riemann"
-        Metric used for KNN and Kernel estimation.
+        Metric used for k-NN and kernel estimation.
     kernel : callable | None, default=None
         Kernel function to use for the embedding. If None, the canonical
         kernel specified by the metric is used. Must be a function that
@@ -170,13 +170,11 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
     References
     ----------
-    .. [1] `Nonlinear Dimensionality Reduction by
-        Locally Linear Embedding
+    .. [1] `Nonlinear Dimensionality Reduction by Locally Linear Embedding
         <https://www.science.org/doi/10.1126/science.290.5500.2323>`_
         S. Roweis and L. K. Saul, in Science, Vol 290, Issue 5500, pp.
         2323-2326, 2000.
-    .. [2] `Clustering and dimensionality reduction
-        on Riemannian manifolds
+    .. [2] `Clustering and dimensionality reduction on Riemannian manifolds
         <https://ieeexplore.ieee.org/document/4587422>`_
         A. Goh and R. Vidal, in 2008 IEEE Conference on Computer Vision and
         Pattern Recognition
@@ -218,16 +216,15 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
             n_neighbors=self.n_neighbors,
         )
 
-        embd, err = locally_linear_embedding(
+        self.embedding_, self.error_ = locally_linear_embedding(
             X,
             n_components=self.n_components,
             n_neighbors=self.n_neighbors,
             metric=self.metric,
             reg=self.reg,
-            kernel=self.kernel
+            kernel=self.kernel,
         )
 
-        self.embedding_, self.error_ = embd, err
         return self
 
     def transform(self, X, y=None):
@@ -260,16 +257,16 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
             ind,
             metric=self.metric,
             reg=self.reg,
-            kernel=self.kernel
+            kernel=self.kernel,
         )
 
         X_new = np.empty((X.shape[0], self.n_components))
         for i in range(X.shape[0]):
-            X_new[i] = np.dot(self.embedding_[ind[i]].T, weights[i])
+            X_new[i] = self.embedding_[ind[i]].T @ weights[i]
         return X_new
 
     def fit_transform(self, X, y=None):
-        """Calculate the coordinates of the embedded matrices.
+        """Fit and calculate the coordinates of the embedded matrices.
 
         Parameters
         ----------
@@ -290,8 +287,8 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 def barycenter_weights(X, Y, indices, metric="riemann", kernel=None, reg=1e-3):
     """Compute Riemannian barycenter weights of X from Y along the first axis.
 
-    Estimates the weights to assign to each point in Y[indices] to recover
-    the point X[i] by geodesic interpolation. The barycenter weights sum to 1.
+    Estimates the weights to assign to each matrix in Y[indices] to recover
+    the matrix X[i] by geodesic interpolation. The barycenter weights sum to 1.
 
     Parameters
     ----------
@@ -300,7 +297,7 @@ def barycenter_weights(X, Y, indices, metric="riemann", kernel=None, reg=1e-3):
     Y : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
     indices : ndarray, shape (n_matrices, n_neighbors)
-        Indices of the points in Y used to compute the barycenter.
+        Indices of matrices in Y used to compute the barycenter.
     metric : {"euclid", "logeuclid", "riemann"}, default="riemann"
         Kernel metric.
     kernel : callable | None, default=None
@@ -338,7 +335,7 @@ def barycenter_weights(X, Y, indices, metric="riemann", kernel=None, reg=1e-3):
         else:
             R = reg
         G.flat[:: n_neighbors + 1] += R
-        w = solve(G, v, assume_a='pos')
+        w = solve(G, v, assume_a="pos")
         B[i] = w / np.sum(w)
     return B
 
@@ -354,14 +351,14 @@ def locally_linear_embedding(
 ):
     """Perform a Locally Linear Embedding (LLE) of SPD matrices.
 
-    As proposed in [1]_, Locally Linear Embedding (LLE) is a non-linear,
+    Locally Linear Embedding (LLE) is a non-linear,
     neighborhood-preserving dimensionality reduction algorithm which consists
-    of three main steps. For each point X[i],
+    of three main steps [1]_. For each matrix X[i],
 
-    1.  find its k nearest neighbors KNN(X[i]),
+    1.  find its k-nearest neighbors k-NN(X[i]),
     2.  calculate the best reconstruction of X[i] based on its
         k-nearest neighbors (Eq.9 in [1]_),
-    3.  calculate a low-dimensional embedding for all points based on
+    3.  calculate a low-dimensional embedding for all matrices based on
         the weights in step 2.
 
     Parameters
@@ -372,12 +369,12 @@ def locally_linear_embedding(
         Dimensionality of projected space.
         If None, ``n_components`` is set to ``n_matrices - 1``.
     n_neighbors : int, default=5
-        Number of neighbors for reconstruction of each point.
+        Number of neighbors for reconstruction of each matrix.
         If None, all available matrices are used.
         If ``n_neighbors > n_matrices``, ``n_neighbors`` is set to
         ``n_matrices - 1``.
     metric : {"euclid", "logeuclid", "riemann"}, default: "riemann"
-        Metric used for KNN and Kernel estimation.
+        Metric used for k-NN and kernel estimation.
     kernel : callable | None, default=None
         Kernel function to use for the embedding. If None, the canonical
         kernel specified by the metric is used. Must be a function that
@@ -398,16 +395,16 @@ def locally_linear_embedding(
 
     References
     ----------
-    .. [1] `Clustering and dimensionality reduction
-        on Riemannian manifolds
+    .. [1] `Clustering and dimensionality reduction on Riemannian manifolds
         <https://ieeexplore.ieee.org/document/4587422>`_
         A. Goh and R. Vidal, in 2008 IEEE Conference on Computer Vision and
         Pattern Recognition
     """
     n_matrices, n_channels, n_channels = X.shape
     pairwise_distances = pairwise_distance(X, metric=metric)
-    neighbors = np.array([np.argsort(dist)[1:n_neighbors + 1]
-                          for dist in pairwise_distances])
+    neighbors = np.array(
+        [np.argsort(dist)[1:n_neighbors + 1] for dist in pairwise_distances]
+    )
 
     B = barycenter_weights(
         X,
