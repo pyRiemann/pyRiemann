@@ -13,8 +13,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
     For each class, a centroid is estimated, and the channel selection is based
     on the maximization of the distance between centroids. This is done by a
     backward elimination where the electrode that carries the less distance is
-    removed from the subset at each iteration.
-    This algorithm is described in [1]_.
+    removed from the subset at each iteration [1]_.
 
     Parameters
     ----------
@@ -128,7 +127,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
 
 
 class FlatChannelRemover(BaseEstimator, TransformerMixin):
-    """Finds and removes flat channels.
+    """Flat channel removal.
 
     Attributes
     ----------
