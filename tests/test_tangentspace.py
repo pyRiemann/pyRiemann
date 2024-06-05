@@ -12,12 +12,24 @@ def test_tangentspace(tspace, get_mats, get_labels):
     mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
 
+    clf_fit(tspace, mats, labels)
     clf_transform(tspace, mats, labels)
     clf_fit_transform(tspace, mats, labels)
     clf_fit_transform_independence(tspace, mats, labels)
     if tspace is TangentSpace:
         clf_transform_wo_fit(tspace, mats)
         clf_inversetransform(tspace, mats)
+
+
+def clf_fit(tspace, mats, labels):
+    clf = tspace().fit(mats, labels)
+
+    if tspace is TangentSpace:
+        n_channels = mats.shape[-1]
+        assert clf.reference_.shape == (n_channels, n_channels)
+    elif tspace is FGDA:
+        n_classes = len(np.unique(labels))
+        assert clf.classes_.shape == (n_classes,)
 
 
 def clf_transform(tspace, mats, labels):
