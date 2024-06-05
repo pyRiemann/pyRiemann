@@ -34,6 +34,11 @@ class SpectralEmbedding(BaseEstimator):
         The scaling of the Gaussian kernel. If none is given it will use the
         square of the median of pairwise distances between points.
 
+    Attributes
+    ----------
+    embedding_ : ndarray, shape (n_matrices, n_components)
+        Embedding vectors of the training set.
+
     References
     ----------
     .. [1] `Laplacian Eigenmaps for dimensionality
@@ -79,9 +84,8 @@ class SpectralEmbedding(BaseEstimator):
 
         Returns
         -------
-        self : object
-            Returns the instance itself.
-
+        self : SpectralEmbedding instance
+            The SpectralEmbedding instance.
         """
         _check_dimensions(X, n_components=self.n_components)
 
@@ -154,11 +158,11 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
     Attributes
     ----------
     embedding_ : ndarray, shape (n_matrices, n_components)
-        Stores the embedding vectors.
+        Embedding vectors of the training set.
     error_ : float
         Reconstruction error associated with `embedding_`.
     data_ : ndarray, shape (n_matrices, n_channels, n_channels)
-        Training data.
+        Training set.
 
     Notes
     -----
@@ -178,12 +182,14 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         Pattern Recognition
     """
 
-    def __init__(self, n_components=2,
-                 n_neighbors=5,
-                 metric="riemann",
-                 kernel=None,
-                 reg=1e-3
-                 ):
+    def __init__(
+        self,
+        n_components=2,
+        n_neighbors=5,
+        metric="riemann",
+        kernel=None,
+        reg=1e-3,
+    ):
         self.n_components = n_components
         self.n_neighbors = n_neighbors
         self.metric = metric
@@ -191,7 +197,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         self.kernel = kernel
 
     def fit(self, X, y=None):
-        """Fit the model from data in X.
+        """Fit the model from X.
 
         Parameters
         ----------
@@ -202,9 +208,8 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        self : object
-            Returns the instance itself.
-
+        self : LocallyLinearEmbedding instance
+            The LocallyLinearEmbedding instance.
         """
         self.data_ = X
         self.n_components, self.n_neighbors = _check_dimensions(
@@ -228,8 +233,8 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
     def transform(self, X, y=None):
         """Calculate embedding coordinates.
 
-        Calculate embedding coordinates for new data points based on fitted
-        points.
+        Calculate embedding coordinates for new matrices based on fitted
+        matrices.
 
         Parameters
         ----------
@@ -264,7 +269,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         return X_new
 
     def fit_transform(self, X, y=None):
-        """Calculate the coordinates of the embedded points.
+        """Calculate the coordinates of the embedded matrices.
 
         Parameters
         ----------
@@ -295,7 +300,7 @@ def barycenter_weights(X, Y, indices, metric="riemann", kernel=None, reg=1e-3):
     Y : ndarray, shape (n_matrices, n_channels, n_channels)
         Set of SPD matrices.
     indices : ndarray, shape (n_matrices, n_neighbors)
-        Indices of the points in Y used to compute the barycenter
+        Indices of the points in Y used to compute the barycenter.
     metric : {"euclid", "logeuclid", "riemann"}, default="riemann"
         Kernel metric.
     kernel : callable | None, default=None
@@ -338,20 +343,22 @@ def barycenter_weights(X, Y, indices, metric="riemann", kernel=None, reg=1e-3):
     return B
 
 
-def locally_linear_embedding(X,
-                             *,
-                             n_components=2,
-                             n_neighbors=5,
-                             metric="riemann",
-                             kernel=None,
-                             reg=1e-3):
+def locally_linear_embedding(
+    X,
+    *,
+    n_components=2,
+    n_neighbors=5,
+    metric="riemann",
+    kernel=None,
+    reg=1e-3,
+):
     """Perform a Locally Linear Embedding (LLE) of SPD matrices.
 
     As proposed in [1]_, Locally Linear Embedding (LLE) is a non-linear,
     neighborhood-preserving dimensionality reduction algorithm which consists
-    of three main steps. For each point xi,
+    of three main steps. For each point X[i],
 
-    1.  find its k nearest neighbors KNN(xi),
+    1.  find its k nearest neighbors KNN(X[i]),
     2.  calculate the best reconstruction of xi based on its
         k-nearest neighbors (Eq.9 in [1]_),
     3.  calculate a low-dimensional embedding for all points based on
@@ -402,10 +409,14 @@ def locally_linear_embedding(X,
     neighbors = np.array([np.argsort(dist)[1:n_neighbors + 1]
                           for dist in pairwise_distances])
 
-    B = barycenter_weights(X, X, neighbors,
-                           metric=metric,
-                           reg=reg,
-                           kernel=kernel)
+    B = barycenter_weights(
+        X,
+        X,
+        neighbors,
+        metric=metric,
+        reg=reg,
+        kernel=kernel,
+    )
 
     indptr = np.arange(0, n_matrices * n_neighbors + 1, n_neighbors)
     W = csr_matrix(
