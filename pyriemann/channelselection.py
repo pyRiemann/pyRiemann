@@ -40,7 +40,7 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
     covmeans_ : ndarray, shape (n_classes, n_channels, n_channels)
         Centroids for each class.
     dist_ : list
-        Distance at each interation.
+        Distance at each iteration.
     self.subelec_ : list
         Indices of selected channels.
 
