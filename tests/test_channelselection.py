@@ -1,26 +1,29 @@
 from numpy.testing import assert_array_equal
+import pytest
 
 from pyriemann.channelselection import ElectrodeSelection, FlatChannelRemover
 
 
-def test_electrodeselection(get_mats, get_labels):
-    """Test transform of channelselection."""
+@pytest.mark.parametrize("labels", [True, False])
+def test_electrodeselection(labels, get_mats, get_labels):
+    """Test ElectrodeSelection"""
     n_matrices, n_channels, n_classes = 10, 30, 2
     mats = get_mats(n_matrices, n_channels, "spd")
-    labels = get_labels(n_matrices, n_classes)
+    if labels:
+        labels = get_labels(n_matrices, n_classes)
+    else:
+        labels, n_classes = None, 1
 
-    se = ElectrodeSelection()
+    nelec = 16
+    se = ElectrodeSelection(nelec=nelec)
+
     se.fit(mats, labels)
-    se.transform(mats)
+    assert se.covmeans_.shape == (n_classes, n_channels, n_channels)
+    assert isinstance(se.dist_, list)
+    assert len(se.subelec_) == nelec
 
-
-def test_electrodeselection_nonelabel(get_mats):
-    n_matrices, n_channels = 1, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
-
-    se = ElectrodeSelection()
-    se.fit(mats, None)
-    se.transform(mats)
+    mats_tf = se.transform(mats)
+    assert mats_tf.shape == (n_matrices, nelec, nelec)
 
 
 def test_flatchannelremover(rndstate):
@@ -29,7 +32,9 @@ def test_flatchannelremover(rndstate):
     X[:, 0, :] = 999
 
     fcr = FlatChannelRemover()
+
     fcr.fit(X)
     assert_array_equal(fcr.channels_, range(1, 10))
+
     Xt = fcr.fit_transform(X)
     assert_array_equal(Xt, X[:, 1:, :])

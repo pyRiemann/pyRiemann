@@ -13,14 +13,13 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
     For each class, a centroid is estimated, and the channel selection is based
     on the maximization of the distance between centroids. This is done by a
     backward elimination where the electrode that carries the less distance is
-    removed from the subset at each iteration.
-    This algorithm is described in [1]_.
+    removed from the subset at each iteration [1]_.
 
     Parameters
     ----------
     nelec : int, default=16
         The number of electrode to keep in the final subset.
-    metric : string | dict, default='riemann'
+    metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
         see :func:`pyriemann.utils.mean.mean_covariance`) and
         for distance estimation
@@ -37,10 +36,12 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
 
     Attributes
     ----------
-    covmeans_ : list
-        The class centroids.
+    covmeans_ : ndarray, shape (n_classes, n_channels, n_channels)
+        Centroids for each class.
     dist_ : list
-        List of distance at each interation.
+        Distance at each iteration.
+    self.subelec_ : list
+        Indices of selected channels.
 
     See Also
     --------
@@ -86,22 +87,24 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         mdm.fit(X, y, sample_weight=sample_weight)
         self.covmeans_ = mdm.covmeans_
 
-        n_channels, _ = self.covmeans_[0].shape
+        n_classes, n_channels, _ = self.covmeans_.shape
 
         self.dist_ = []
-        self.subelec_ = list(range(0, n_channels, 1))
+        self.subelec_ = list(range(n_channels))
         while (len(self.subelec_)) > self.nelec:
             di = np.zeros((len(self.subelec_), 1))
             for idx in range(len(self.subelec_)):
                 sub = self.subelec_[:]
                 sub.pop(idx)
                 di[idx] = 0
-                for i in range(len(self.covmeans_)):
-                    for j in range(i + 1, len(self.covmeans_)):
-                        di[idx] += distance(self.covmeans_[i][:, sub][sub, :],
-                                            self.covmeans_[j][:, sub][sub, :],
-                                            metric=mdm.metric_dist)
-            # print di
+                for i in range(n_classes):
+                    for j in range(i + 1, n_classes):
+                        di[idx] += distance(
+                            self.covmeans_[i][:, sub][sub, :],
+                            self.covmeans_[j][:, sub][sub, :],
+                            metric=mdm.metric_dist,
+                        )
+
             torm = di.argmax()
             self.dist_.append(di.max())
             self.subelec_.pop(torm)
@@ -117,19 +120,19 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        covs : ndarray, shape (n_matrices, n_elec, n_elec)
+        X_new : ndarray, shape (n_matrices, n_elec, n_elec)
             Set of SPD matrices after reduction of the number of channels.
         """
         return X[:, self.subelec_, :][:, :, self.subelec_]
 
 
 class FlatChannelRemover(BaseEstimator, TransformerMixin):
-    """Finds and removes flat channels.
+    """Flat channel removal.
 
     Attributes
     ----------
-    channels_ : ndarray, shape (n_good_channels)
-        The indices of the non-flat channels.
+    channels_ : ndarray, shape (n_good_channels,)
+        Indices of the non-flat channels.
     """
 
     def fit(self, X, y=None):
@@ -144,8 +147,8 @@ class FlatChannelRemover(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_good_channels, n_times)
-            Multi-channel time-series without flat channels.
+        self : FlatChannelRemover instance
+            The FlatChannelRemover instance.
         """
         std = np.mean(np.std(X, axis=2) ** 2, 0)
         self.channels_ = np.where(std)[0]
@@ -161,7 +164,7 @@ class FlatChannelRemover(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_good_channels, n_times)
+        X_new : ndarray, shape (n_matrices, n_good_channels, n_times)
             Multi-channel time-series without flat channels.
         """
         return X[:, self.channels_, :]
@@ -178,7 +181,7 @@ class FlatChannelRemover(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_good_channels, n_times)
+        X_new : ndarray, shape (n_matrices, n_good_channels, n_times)
             Multi-channel time-series without flat channels.
         """
         self.fit(X, y)
