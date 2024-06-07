@@ -54,17 +54,19 @@ class SpectralEmbedding(BaseEstimator):
         self.n_components = n_components
         self.eps = eps
 
-    def _get_affinity_matrix(self, X, eps):
+    def _get_affinity_matrix(self, X):
 
         # make matrix with pairwise distances between matrices
         distmatrix = pairwise_distance(X, metric=self.metric)
 
         # determine which scale for the gaussian kernel
-        if eps is None:
-            eps = np.median(distmatrix)**2 / 2
+        if self.eps is None:
+            eps = np.median(distmatrix) ** 2 / 2
+        else:
+            eps = self.eps
 
         # make kernel matrix from the distance matrix
-        kernel = np.exp(-distmatrix**2 / (4 * eps))
+        kernel = np.exp(-distmatrix ** 2 / (4 * eps))
 
         # normalize the kernel matrix
         q = kernel @ np.ones(len(kernel))
@@ -89,7 +91,7 @@ class SpectralEmbedding(BaseEstimator):
         """
         _check_dimensions(X, n_components=self.n_components)
 
-        affinity_matrix = self._get_affinity_matrix(X, self.eps)
+        affinity_matrix = self._get_affinity_matrix(X)
         embd = spectral_embedding(
             adjacency=affinity_matrix,
             n_components=self.n_components,
