@@ -36,6 +36,10 @@ def embd_fit(embedding, mats, n_components):
     embd.fit(mats)
     assert embd.embedding_.shape == (n_matrices, n_components)
 
+    if embedding is LocallyLinearEmbedding:
+        assert embd.data_.shape == (n_matrices, n_channels, n_channels)
+        assert isinstance(embd.error_, float)
+
 
 def embd_fit_transform(embedding, mats, n_components):
     n_matrices, n_channels, n_channels = mats.shape
