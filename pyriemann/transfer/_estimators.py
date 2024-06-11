@@ -279,8 +279,13 @@ class TLStretch(BaseEstimator, TransformerMixin):
     .. versionadded:: 0.4
     """
 
-    def __init__(self, target_domain, final_dispersion=1.0,
-                 centered_data=False, metric="riemann"):
+    def __init__(
+        self,
+        target_domain,
+        final_dispersion=1.0,
+        centered_data=False,
+        metric="riemann",
+    ):
         """Init"""
         self.target_domain = target_domain
         self.final_dispersion = final_dispersion
@@ -479,7 +484,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
     .. versionadded:: 0.4
     """
 
-    def __init__(self, target_domain, weights=None, metric='euclid', n_jobs=1):
+    def __init__(self, target_domain, weights=None, metric="euclid", n_jobs=1):
         """Init"""
         self.target_domain = target_domain
         self.weights = weights
@@ -652,7 +657,8 @@ class TLEstimator(BaseEstimator):
         """
         if not (is_regressor(self.estimator) or is_classifier(self.estimator)):
             raise TypeError(
-                'Estimator has to be either a classifier or a regressor.')
+                "Estimator has to be either a classifier or a regressor."
+            )
 
         X_dec, y_dec, domains = decode_domains(X, y_enc)
 
@@ -660,20 +666,20 @@ class TLEstimator(BaseEstimator):
             y_dec = y_dec.astype(float)
 
         if self.domain_weight is not None:
-            w = np.zeros(len(X_dec))
+            weights = np.zeros(len(X_dec))
             for d in np.unique(domains):
-                w[domains == d] = self.domain_weight[d]
+                weights[domains == d] = self.domain_weight[d]
         else:
-            w = None
+            weights = None
 
         if isinstance(self.estimator, Pipeline):
             sample_weight = {}
             for step in self.estimator.steps:
                 step_name = step[0]
-                sample_weight[step_name + '__sample_weight'] = w
+                sample_weight[step_name + "__sample_weight"] = weights
             self.estimator.fit(X_dec, y_dec, **sample_weight)
         else:
-            self.estimator.fit(X_dec, y_dec, sample_weight=w)
+            self.estimator.fit(X_dec, y_dec, sample_weight=weights)
 
         return self
 
@@ -731,7 +737,7 @@ class TLClassifier(TLEstimator):
             The TLClassifier instance.
         """
         if not is_classifier(self.estimator):
-            raise TypeError('Estimator has to be a classifier.')
+            raise TypeError("Estimator has to be a classifier.")
 
         return super().fit(X, y_enc)
 
@@ -808,7 +814,7 @@ class TLRegressor(TLEstimator):
             The TLRegressor instance.
         """
         if not is_regressor(self.estimator):
-            raise TypeError('Estimator has to be a regressor.')
+            raise TypeError("Estimator has to be a regressor.")
 
         return super().fit(X, y_enc)
 
@@ -899,11 +905,12 @@ class MDWM(MDM):
     """
 
     def __init__(
-            self,
-            domain_tradeoff,
-            target_domain,
-            metric="riemann",
-            n_jobs=1):
+        self,
+        domain_tradeoff,
+        target_domain,
+        metric="riemann",
+        n_jobs=1,
+    ):
         """Init."""
         self.domain_tradeoff = domain_tradeoff
         self.target_domain = target_domain

@@ -14,8 +14,8 @@ def test_median_shape(kind, median, get_mats):
     """Test the shape of median"""
     n_matrices, n_channels = 3, 4
     mats = get_mats(n_matrices, n_channels, kind)
-    C = median(mats)
-    assert C.shape == (n_channels, n_channels)
+    M = median(mats)
+    assert M.shape == (n_channels, n_channels)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -24,21 +24,22 @@ def test_median_shape_with_init(kind, median, get_mats):
     """Test the shape of median with init"""
     n_matrices, n_channels = 5, 3
     mats = get_mats(n_matrices, n_channels, kind)
-    C = median(mats, init=mats[0])
-    assert C.shape == (n_channels, n_channels)
+    M = median(mats, init=mats[0])
+    assert M.shape == (n_channels, n_channels)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("median", [median_euclid, median_riemann])
-def test_median_weight_zero(kind, median, get_mats):
+def test_median_weight_zero(kind, median, get_mats, get_weights):
     """Setting one weight to almost 0 it's almost like not passing the mat"""
-    n_matrices, n_channels, w_val = 5, 3, 2
+    n_matrices, n_channels = 5, 3
     mats = get_mats(n_matrices, n_channels, kind)
-    w = w_val * np.ones(n_matrices)
-    C = median(mats[1:], weights=w[1:])
-    w[0] = 1e-12
-    Cw = median(mats, weights=w)
-    assert C == approx(Cw, rel=1e-6, abs=1e-8)
+    weights = get_weights(n_matrices)
+
+    M = median(mats[1:], weights=weights[1:])
+    weights[0] = 1e-12
+    Mw = median(mats, weights=weights)
+    assert M == approx(Mw, rel=1e-6, abs=1e-8)
 
 
 @pytest.mark.parametrize("median", [median_euclid, median_riemann])

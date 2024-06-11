@@ -4,20 +4,26 @@ import pytest
 from pyriemann.channelselection import ElectrodeSelection, FlatChannelRemover
 
 
-@pytest.mark.parametrize("labels", [True, False])
-def test_electrodeselection(labels, get_mats, get_labels):
+@pytest.mark.parametrize("is_label", [True, False])
+@pytest.mark.parametrize("is_weight", [True, False])
+def test_electrodeselection(is_label, is_weight,
+                            get_mats, get_labels, get_weights):
     """Test ElectrodeSelection"""
     n_matrices, n_channels, n_classes = 10, 30, 2
     mats = get_mats(n_matrices, n_channels, "spd")
-    if labels:
+    if is_label:
         labels = get_labels(n_matrices, n_classes)
     else:
         labels, n_classes = None, 1
+    if is_weight:
+        weights = get_weights(n_matrices)
+    else:
+        weights = None
 
     nelec = 16
     se = ElectrodeSelection(nelec=nelec)
 
-    se.fit(mats, labels)
+    se.fit(mats, labels, weights)
     assert se.covmeans_.shape == (n_classes, n_channels, n_channels)
     assert isinstance(se.dist_, list)
     assert len(se.subelec_) == nelec
