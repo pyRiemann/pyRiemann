@@ -21,7 +21,6 @@ def test_tangentspace(tspace, get_mats, get_labels, get_weights):
         clf_transform_wo_fit(tspace, mats)
         clf_inversetransform(tspace, mats)
 
-
 def clf_fit(tspace, mats, labels, weights):
     clf = tspace().fit(mats, labels)
 
