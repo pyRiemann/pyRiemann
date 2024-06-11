@@ -217,7 +217,7 @@ def test_distance_riemann_properties(kind, get_mats):
 
     # proportionality, Eq(6.12) in [Bhatia2007]
     alpha = np.random.uniform()
-    dist_1 = distance_riemann(A, geodesic(A, B, alpha, metric='riemann'))
+    dist_1 = distance_riemann(A, geodesic(A, B, alpha, metric="riemann"))
     dist_2 = alpha * distance_riemann(A, B)
     assert dist_1 == approx(dist_2)
 
@@ -237,9 +237,9 @@ def test_distance_wrapper_between_set_and_matrix(dist, get_mats):
     assert distance(mats, mats[-1], metric=dist).shape == (n_matrices, 1)
 
     n_sets = 5
-    covs_4d = np.asarray([mats for _ in range(n_sets)])
+    mats_4d = np.asarray([mats for _ in range(n_sets)])
     with pytest.raises(ValueError):
-        distance(covs_4d, mats, metric=dist)
+        distance(mats_4d, mats, metric=dist)
 
 
 @pytest.mark.parametrize("dist", get_distances())
