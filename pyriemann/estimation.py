@@ -913,11 +913,10 @@ class Kernels(BaseEstimator, TransformerMixin):
 
 
 class Shrinkage(BaseEstimator, TransformerMixin):
-    """Regularization of SPD matrices by shrinkage.
+    """Regularization of SPD/HPD matrices by shrinkage.
 
-    This transformer applies a shrinkage regularization to any SPD matrix.
-    It directly uses the `shrunk_covariance` function from scikit-learn [1]_,
-    applied on each input.
+    This transformer applies a shrinkage regularization to any SPD/HPD matrix.
+    It directly uses the `shrunk_covariance` function from scikit-learn [1]_.
 
     Parameters
     ----------
@@ -946,7 +945,7 @@ class Shrinkage(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None
             Not used, here for compatibility with sklearn API.
 
@@ -958,22 +957,21 @@ class Shrinkage(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """Shrink and return the SPD matrices.
+        """Shrink and return the SPD/HPD matrices.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
-        covmats : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of shrunk SPD matrices.
+        X_new : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of shrunk SPD/HPD matrices.
         """
+        Xnew = X.copy()
 
-        covmats = np.zeros_like(X)
+        for i, x in enumerate(X):
+            Xnew[i].real = shrunk_covariance(x.real, self.shrinkage)
 
-        for ii, x in enumerate(X):
-            covmats[ii] = shrunk_covariance(x, self.shrinkage)
-
-        return covmats
+        return Xnew
