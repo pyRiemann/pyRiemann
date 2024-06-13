@@ -7,12 +7,13 @@ from pyriemann.tangentspace import TangentSpace, FGDA
 
 
 @pytest.mark.parametrize("tspace", [TangentSpace, FGDA])
-def test_tangentspace(tspace, get_mats, get_labels):
+def test_tangentspace(tspace, get_mats, get_labels, get_weights):
     n_classes, n_matrices, n_channels = 2, 6, 3
     mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
+    weights = get_weights(n_matrices)
 
-    clf_fit(tspace, mats, labels)
+    clf_fit(tspace, mats, labels, weights)
     clf_transform(tspace, mats, labels)
     clf_fit_transform(tspace, mats, labels)
     clf_fit_transform_independence(tspace, mats, labels)
@@ -21,7 +22,7 @@ def test_tangentspace(tspace, get_mats, get_labels):
         clf_inversetransform(tspace, mats)
 
 
-def clf_fit(tspace, mats, labels):
+def clf_fit(tspace, mats, labels, weights):
     clf = tspace().fit(mats, labels)
 
     if tspace is TangentSpace:
@@ -30,6 +31,8 @@ def clf_fit(tspace, mats, labels):
     elif tspace is FGDA:
         n_classes = len(np.unique(labels))
         assert clf.classes_.shape == (n_classes,)
+
+    clf.fit(mats, labels, sample_weight=weights)
 
 
 def clf_transform(tspace, mats, labels):

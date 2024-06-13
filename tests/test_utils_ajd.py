@@ -83,30 +83,30 @@ def test_ajd_pham_weight_none_equivalent_uniform(kind, get_mats):
     mats = get_mats(n_matrices, n_channels, kind)
     V, D = ajd_pham(mats)
     Vw, Dw = ajd_pham(mats, sample_weight=np.ones(n_matrices))
-    assert_array_equal(V, Vw)  # same result as ajd_pham without weight
+    assert_array_equal(V, Vw)
     assert_array_equal(D, Dw)
 
     ajd(mats, method="ajd_pham", sample_weight=np.ones(n_matrices))
 
 
-def test_ajd_pham_weight_positive(get_mats):
+def test_ajd_pham_weight_positive(get_mats, get_weights):
     """Test pham's ajd weights: must be strictly positive"""
     n_matrices, n_channels = 4, 2
     mats = get_mats(n_matrices, n_channels, "spd")
-    w = 1.23 * np.ones(n_matrices)
+    weights = get_weights(n_matrices)
     with pytest.raises(ValueError):  # not strictly positive weight
-        w[0] = 0
-        ajd_pham(mats, sample_weight=w)
+        weights[0] = 0
+        ajd_pham(mats, sample_weight=weights)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_ajd_pham_weight_zero(kind, get_mats):
+def test_ajd_pham_weight_zero(kind, get_mats, get_weights):
     """Setting one weight to almost 0 it's almost like not passing the mat"""
     n_matrices, n_channels = 5, 4
     mats = get_mats(n_matrices, n_channels, kind)
-    w = 4.32 * np.ones(n_matrices)
-    V, D = ajd_pham(mats[1:], sample_weight=w[1:])
-    w[0] = 1e-12
-    Vw, Dw = ajd_pham(mats, sample_weight=w)
+    weights = get_weights(n_matrices)
+    V, D = ajd_pham(mats[1:], sample_weight=weights[1:])
+    weights[0] = 1e-12
+    Vw, Dw = ajd_pham(mats, sample_weight=weights)
     assert V == approx(Vw, rel=1e-4, abs=1e-8)
     assert D == approx(Dw[1:], rel=1e-4, abs=1e-8)

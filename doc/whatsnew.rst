@@ -18,6 +18,8 @@ v0.7.dev
 
 - Add ``partial_fit`` function to :class:`pyriemann.preprocessing.Whitening` for online applications. :pr:`277` by :user:`qbarthelemy` and :user:`brentgaisford`
 
+- Add ``get_weights`` fixture to conftest and complete tests. :pr:`305` by :user:`qbarthelemy`
+
 v0.6 (April 2024)
 -----------------
 

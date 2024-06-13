@@ -49,6 +49,14 @@ def get_mats_params(rndstate):
 
 
 @pytest.fixture
+def get_weights(rndstate):
+    def _gen_weight(n_matrices):
+        return 1 + rndstate.rand(n_matrices)
+
+    return _gen_weight
+
+
+@pytest.fixture
 def get_labels():
     def _get_labels(n_matrices, n_classes):
         return np.arange(n_classes).repeat(n_matrices // n_classes)
