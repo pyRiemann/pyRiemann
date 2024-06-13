@@ -57,7 +57,7 @@ def test_mode(X, axis, expected):
 
 @pytest.mark.parametrize("n_classes", [2, 3])
 @pytest.mark.parametrize("classif", rclf)
-def test_classifier(n_classes, classif, get_mats, get_labels):
+def test_classifier(n_classes, classif, get_mats, get_labels, get_weights):
     if n_classes == 2:
         n_matrices, n_channels = 6, 3
     else:
@@ -65,8 +65,9 @@ def test_classifier(n_classes, classif, get_mats, get_labels):
         n_matrices, n_channels = 9, 3
     mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
+    weights = get_weights(n_matrices)
 
-    clf_fit(classif, mats, labels)
+    clf_fit(classif, mats, labels, weights)
     clf_predict(classif, mats, labels)
     clf_fit_independence(classif, mats, labels)
     clf_predict_proba(classif, mats, labels)
@@ -82,13 +83,12 @@ def test_classifier(n_classes, classif, get_mats, get_labels):
         clf_tsupdate(classif, mats, labels)
 
 
-def clf_fit(classif, mats, labels):
-    n_matrices, n_classes = len(labels), len(np.unique(labels))
-    clf = classif()
-    clf.fit(mats, labels)
+def clf_fit(classif, mats, labels, weights):
+    n_classes = len(np.unique(labels))
+    clf = classif().fit(mats, labels)
     assert clf.classes_.shape == (n_classes,)
 
-    clf.fit(mats, labels, sample_weight=np.random.uniform(size=n_matrices))
+    clf.fit(mats, labels, sample_weight=weights)
 
 
 def clf_predict(classif, mats, labels):

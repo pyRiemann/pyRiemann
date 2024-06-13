@@ -13,27 +13,29 @@ regs = [SVR, KNearestNeighborRegressor]
 
 
 @pytest.mark.parametrize("regres", regs)
-def test_regression(regres, get_mats, get_targets):
+def test_regression(regres, get_mats, get_targets, get_weights):
     n_matrices, n_channels = 6, 3
     mats = get_mats(n_matrices, n_channels, "spd")
     targets = get_targets(n_matrices)
+    weights = get_weights(n_matrices)
 
-    reg_fit(regres, mats, targets)
+    reg_fit(regres, mats, targets, weights)
     reg_predict(regres, mats, targets)
     reg_fit_independence(regres, mats, targets)
     reg_score(regres, mats, targets)
 
 
-def reg_fit(regres, mats, targets):
+def reg_fit(regres, mats, targets, weights):
     n_matrices, n_channels, _ = mats.shape
-    clf = regres()
-    clf.fit(mats, targets)
+    clf = regres().fit(mats, targets)
 
     if clf is SVR:
         assert clf.data_.shape == (n_matrices, n_channels, n_channels)
     elif clf is KNearestNeighborRegressor:
         assert clf.covmeans_.shape == (n_matrices, n_channels, n_channels)
         assert clf.values_.shape == (n_matrices,)
+
+    clf.fit(mats, targets, sample_weight=weights)
 
 
 def reg_predict(regres, mats, targets):

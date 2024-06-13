@@ -50,13 +50,16 @@ def test_whitening_fit_errors(rndstate, get_mats):
 
 @pytest.mark.parametrize("dim_red", dim_red)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-def test_whitening_fit(dim_red, metric, rndstate, get_mats):
+def test_whitening_fit(dim_red, metric, get_mats, get_weights):
     """Test Whitening fit"""
     n_matrices, n_channels = 20, 6
     mats = get_mats(n_matrices, n_channels, "spd")
-    w = rndstate.rand(n_matrices)
+    weights = get_weights(n_matrices)
 
-    whit = Whitening(dim_red=dim_red, metric=metric).fit(mats, sample_weight=w)
+    whit = Whitening(dim_red=dim_red, metric=metric).fit(
+        mats,
+        sample_weight=weights,
+    )
     if dim_red is None:
         n_comp = n_channels
     else:

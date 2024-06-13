@@ -44,10 +44,10 @@ def test_mean_shape(kind, mean, get_mats):
     n_matrices, n_channels = 5, 3
     mats = get_mats(n_matrices, n_channels, kind)
     if mean == mean_power:
-        C = mean(mats, 0.42)
+        M = mean(mats, 0.42)
     else:
-        C = mean(mats)
-    assert C.shape == (n_channels, n_channels)
+        M = mean(mats)
+    assert M.shape == (n_channels, n_channels)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -58,8 +58,8 @@ def test_mean_shape_with_init(kind, mean, get_mats):
     """Test the shape of mean with init"""
     n_matrices, n_channels = 5, 3
     mats = get_mats(n_matrices, n_channels, kind)
-    C = mean(mats, init=mats[0])
-    assert C.shape == (n_channels, n_channels)
+    M = mean(mats, init=mats[0])
+    assert M.shape == (n_channels, n_channels)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -76,15 +76,16 @@ def test_mean_shape_with_init(kind, mean, get_mats):
         nanmean_riemann,
     ],
 )
-def test_mean_weight_zero(kind, mean, get_mats):
+def test_mean_weight_zero(kind, mean, get_mats, get_weights):
     """Setting one weight to almost 0 it's almost like not passing the mat"""
     n_matrices, n_channels = 5, 3
     mats = get_mats(n_matrices, n_channels, kind)
-    w = 2.3 * np.ones(n_matrices)
-    C = mean(mats[1:], sample_weight=w[1:])
-    w[0] = 1e-12
-    Cw = mean(mats, sample_weight=w)
-    assert C == approx(Cw, rel=1e-6, abs=1e-8)
+    weights = get_weights(n_matrices)
+
+    M = mean(mats[1:], sample_weight=weights[1:])
+    weights[0] = 1e-12
+    Mw = mean(mats, sample_weight=weights)
+    assert M == approx(Mw, rel=1e-6, abs=1e-8)
 
 
 @pytest.mark.parametrize(

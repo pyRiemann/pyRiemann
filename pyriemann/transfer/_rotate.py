@@ -25,24 +25,24 @@ def _retract(X, v):
     return Q
 
 
-def _loss(Q, X, Y, weights, metric='euclid'):
+def _loss(Q, X, Y, weights, metric="euclid"):
     """Loss function for estimating the rotation matrix in RPA."""
 
     return weights @ distance(X, Q @ Y @ Q.T, metric=metric)
 
 
-def _grad(Q, X, Y, weights, metric='euclid'):
+def _grad(Q, X, Y, weights, metric="euclid"):
     """Gradient of loss function between class means."""
 
-    if metric == 'euclid':
-        return np.einsum('a,abc->bc', weights, -4 * (X - Q @ Y @ Q.T) @ Q @ Y)
+    if metric == "euclid":
+        return np.einsum("a,abc->bc", weights, -4 * (X - Q @ Y @ Q.T) @ Q @ Y)
 
-    elif metric == 'riemann':
+    elif metric == "riemann":
         M = np.linalg.inv(X) @ Q @ Y @ Q.T
         eigvals, eigvecs = np.linalg.eig(M)
         logeigvals = np.expand_dims(np.log(eigvals), -2)
         logM = (eigvecs * logeigvals) @ np.linalg.inv(eigvecs)
-        return np.einsum('a,abc->bc', weights, 4 * logM @ Q)
+        return np.einsum("a,abc->bc", weights, 4 * logM @ Q)
 
     else:
         raise ValueError("RPA supports only 'euclid' and 'riemann' metrics.")
@@ -90,8 +90,16 @@ def _warm_start(X, Y, weights, metric='euclid'):
     return Q0_candidates[i_min]
 
 
-def _run_minimization(Q_ini, M_source, M_target, weights=None, metric='euclid',
-                      tol_step=1e-9, maxiter=10_000, maxiter_linesearch=32):
+def _run_minimization(
+    Q_ini,
+    M_source,
+    M_target,
+    weights=None,
+    metric="euclid",
+    tol_step=1e-9,
+    maxiter=10_000,
+    maxiter_linesearch=32,
+):
 
     Q_1 = Q_ini
 
@@ -129,13 +137,20 @@ def _run_minimization(Q_ini, M_source, M_target, weights=None, metric='euclid',
         F_1 = F
 
     else:
-        warnings.warn('Convergence not reached.')
+        warnings.warn("Convergence not reached.")
 
     return Q, F
 
 
-def _get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
-                         tol_step=1e-9, maxiter=10_000, maxiter_linesearch=32):
+def _get_rotation_matrix(
+    M_source,
+    M_target,
+    weights=None,
+    metric="euclid",
+    tol_step=1e-9,
+    maxiter=10_000,
+    maxiter_linesearch=32,
+):
     r"""Calculate rotation matrix for the Riemannian Procustes Analysis.
 
     Get the rotation matrix Q that minimizes the loss function:
@@ -158,9 +173,9 @@ def _get_rotation_matrix(M_source, M_target, weights=None, metric='euclid',
     weights : None | array, shape (n_classes,), default=None
         Weights for each class. If None, then give the same weight for each
         class.
-    metric : {'euclid', 'riemann'}, default='euclid'
+    metric : {"euclid", "riemann"}, default="euclid"
         Which type of distance to minimize between the class means, either
-        'euclid' for Euclidean distance or 'riemann' for the affine-invariant
+        "euclid" for Euclidean distance or "riemann" for the affine-invariant
         Riemannian distance between SPD matrices.
     tol_step : float, default 1e-9
         Stopping criterion based on the norm of the descent direction.
