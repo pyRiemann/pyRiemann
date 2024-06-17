@@ -20,6 +20,8 @@ v0.7.dev
 
 - Add ``get_weights`` fixture to conftest and complete tests. :pr:`305` by :user:`qbarthelemy`
 
+- Enhance :class:`pyriemann.estimation.Shrinkage` to process HPD matrices. :pr:`307` by :user:`qbarthelemy`
+
 - Add remote sensing examples in `examples/remote-sensing`
 
 v0.6 (April 2024)

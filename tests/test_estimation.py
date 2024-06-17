@@ -4,6 +4,7 @@ from numpy.testing import (
     assert_array_equal,
     assert_raises,
 )
+from sklearn.covariance import shrunk_covariance
 import pytest
 
 from pyriemann.estimation import (
@@ -23,6 +24,7 @@ from pyriemann.estimation import (
 from pyriemann.utils.test import (
     is_sym_pos_def as is_spd,
     is_sym_pos_semi_def as is_spsd,
+    is_herm_pos_def as is_hpd,
     is_herm_pos_semi_def as is_hpsd,
     is_hankel
 )
@@ -374,14 +376,22 @@ def test_kernels_kwds(metric, kwds, rndstate):
 
 
 @pytest.mark.parametrize("shrinkage", [0.1, 0.9])
-def test_shrinkage(shrinkage, rndstate):
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_shrinkage(shrinkage, kind, get_mats):
     """Test Shrinkage"""
-    n_matrices, n_channels, n_times = 2, 3, 100
-    x = rndstate.randn(n_matrices, n_channels, n_times)
+    n_matrices, n_channels = 4, 3
+    mats = get_mats(n_matrices, n_channels, kind)
 
-    covmats = Covariances().fit_transform(x)
     sh = Shrinkage(shrinkage=shrinkage)
-    covmats = sh.fit_transform(covmats)
     assert sh.get_params() == dict(shrinkage=shrinkage)
-    assert covmats.shape == (n_matrices, n_channels, n_channels)
-    assert is_spd(covmats)
+
+    shmats = sh.fit_transform(mats)
+    assert shmats.shape == mats.shape
+    assert is_hpd(shmats)
+
+    assert_array_equal(
+        shrunk_covariance(mats[0].real, shrinkage),
+        shmats[0].real
+    )
+    assert_raises(AssertionError, assert_array_equal, mats.real, shmats.real)
+    assert_array_equal(mats.imag, shmats.imag)
