@@ -591,7 +591,8 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         raise ValueError("Value window must be a positive integer")
     if not 0 < overlap < 1:
         raise ValueError(
-            f"Value overlap must be included in (0, 1) (Got {overlap})")
+            f"Value overlap must be included in (0, 1) (Got {overlap})"
+        )
 
     n_channels, n_times = X.shape
     n_freqs = int(window / 2) + 1  # X real signal => compute half-spectrum
@@ -673,7 +674,8 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         overlap=overlap,
         fmin=fmin,
         fmax=fmax,
-        fs=fs)
+        fs=fs,
+    )
 
     return S.real, freqs
 
@@ -713,14 +715,15 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         overlap=overlap,
         fmin=fmin,
         fmax=fmax,
-        fs=fs)
+        fs=fs,
+    )
     S2 = np.abs(S)**2  # squared cross-spectral modulus
 
     C = np.zeros_like(S2)
     f_inds = np.arange(0, C.shape[-1], dtype=int)
 
     # lagged coh not defined for DC and Nyquist bins, because S is real
-    if coh == 'lagged':
+    if coh == "lagged":
         if freqs is None:
             f_inds = np.arange(1, C.shape[-1] - 1, dtype=int)
             warnings.warn("DC and Nyquist bins are not defined for lagged-"
@@ -735,14 +738,18 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
     for f in f_inds:
         psd = np.sqrt(np.diag(S2[..., f]))
         psd_prod = np.outer(psd, psd)
-        if coh == 'ordinary':
+        if coh == "ordinary":
             C[..., f] = S2[..., f] / psd_prod
-        elif coh == 'instantaneous':
+        elif coh == "instantaneous":
             C[..., f] = (S[..., f].real)**2 / psd_prod
-        elif coh == 'lagged':
+        elif coh == "lagged":
             np.fill_diagonal(S[..., f].real, 0.)  # prevent div by zero on diag
-            C[..., f] = (S[..., f].imag)**2 / (psd_prod - (S[..., f].real)**2)
-        elif coh == 'imaginary':
+            with np.errstate(divide="ignore", invalid="ignore"):
+                C[..., f] = np.divide(
+                    (S[..., f].imag)**2,
+                    psd_prod - (S[..., f].real)**2
+                )
+        elif coh == "imaginary":
             C[..., f] = (S[..., f].imag)**2 / psd_prod
         else:
             raise ValueError(f"{coh} is not a supported coherence")
