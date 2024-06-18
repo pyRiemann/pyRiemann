@@ -78,17 +78,17 @@ def _oas(X, **kwds):
 
 def _hub(X, **kwds):
     """Wrapper for Huber's M-estimator"""
-    return covariance_mest(X, 'hub', **kwds)
+    return covariance_mest(X, "hub", **kwds)
 
 
 def _stu(X, **kwds):
     """Wrapper for Student-t's M-estimator"""
-    return covariance_mest(X, 'stu', **kwds)
+    return covariance_mest(X, "stu", **kwds)
 
 
 def _tyl(X, **kwds):
     """Wrapper for Tyler's M-estimator"""
-    return covariance_mest(X, 'tyl', **kwds)
+    return covariance_mest(X, "tyl", **kwds)
 
 
 def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
@@ -143,8 +143,8 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     norm : {"trace", "determinant"}, default="trace"
         Using Tyler's M-estimator, the type of normalization:
 
-        * 'trace': trace of covariance matrix is ``n_channels``;
-        * 'determinant': determinant of covariance matrix is 1.
+        * "trace": trace of covariance matrix is ``n_channels``;
+        * "determinant": determinant of covariance matrix is 1.
 
     Returns
     -------
@@ -175,7 +175,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     """  # noqa
     n_channels, n_times = X.shape
 
-    if m_estimator == 'hub':
+    if m_estimator == "hub":
         if not 0 < q <= 1:
             raise ValueError(f"Value q must be included in (0, 1] (Got {q})")
 
@@ -183,13 +183,13 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
             c2 = chi2.ppf(q, n_channels) / 2
             b = chi2.cdf(2 * c2, n_channels + 1) + c2 * (1 - q) / n_channels
             return np.minimum(1, c2 / x) / b
-    elif m_estimator == 'stu':
+    elif m_estimator == "stu":
         if nu <= 0:
             raise ValueError(f"Value nu must be strictly positive (Got {nu})")
 
         def weight_func(x):  # Eq.(42) in [1]
             return (2 * n_channels + nu) / (nu + 2 * x)
-    elif m_estimator == 'tyl':
+    elif m_estimator == "tyl":
         def weight_func(x):  # Example 2, Section V-C in [1]
             return n_channels / x
     else:
@@ -208,15 +208,15 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         Xw = np.sqrt(weight_func(dist2)) * X
         cov_new = Xw @ Xw.conj().T / n_times
 
-        norm_delta = np.linalg.norm(cov_new - cov, ord='fro')
-        norm_cov = np.linalg.norm(cov, ord='fro')
+        norm_delta = np.linalg.norm(cov_new - cov, ord="fro")
+        norm_cov = np.linalg.norm(cov, ord="fro")
         cov = cov_new
         if (norm_delta / norm_cov) <= tol:
             break
     else:
         warnings.warn("Convergence not reached")
 
-    if m_estimator == 'tyl':
+    if m_estimator == "tyl":
         cov = normalize(cov, norm)
         if norm == "trace":
             cov *= n_channels
@@ -681,7 +681,7 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
 
 def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
-              coh='ordinary'):
+              coh="ordinary"):
     """Compute squared coherence.
 
     Parameters
@@ -698,8 +698,8 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         The maximal frequency to be returned.
     fs : float | None, default=None
         The sampling frequency of the signal.
-    coh : {'ordinary', 'instantaneous', 'lagged', 'imaginary'}, \
-            default='ordinary'
+    coh : {"ordinary", "instantaneous", "lagged", "imaginary"}, \
+            default="ordinary"
         The coherence type, see :class:`pyriemann.estimation.Coherences`.
 
     Returns
@@ -744,11 +744,9 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
             C[..., f] = (S[..., f].real)**2 / psd_prod
         elif coh == "lagged":
             np.fill_diagonal(S[..., f].real, 0.)  # prevent div by zero on diag
-            with np.errstate(divide="ignore", invalid="ignore"):
-                C[..., f] = np.divide(
-                    (S[..., f].imag)**2,
-                    psd_prod - (S[..., f].real)**2
-                )
+            denom = psd_prod - (S[..., f].real)**2
+            denom[abs(denom) < 1e-10] = 1e-10
+            C[..., f] = (S[..., f].imag)**2 / denom
         elif coh == "imaginary":
             C[..., f] = (S[..., f].imag)**2 / psd_prod
         else:
@@ -772,10 +770,10 @@ def normalize(X, norm):
     norm : {"corr", "trace", "determinant"}
         The type of normalization:
 
-        * 'corr': normalized matrices are correlation matrices, with values in
+        * "corr": normalized matrices are correlation matrices, with values in
           [-1, 1] and diagonal values equal to 1;
-        * 'trace': trace of normalized matrices is 1;
-        * 'determinant': determinant of normalized matrices is +/- 1.
+        * "trace": trace of normalized matrices is 1;
+        * "determinant": determinant of normalized matrices is +/- 1.
 
     Returns
     -------
