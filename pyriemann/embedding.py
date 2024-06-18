@@ -99,7 +99,7 @@ class SpectralEmbedding(BaseEstimator):
         )
 
         # normalize the embedding between -1 and +1
-        embdn = 2 * (embd - embd.min(0)) / embd.ptp(0) - 1
+        embdn = 2 * (embd - embd.min(0)) / np.ptp(embd, 0) - 1
         self.embedding_ = embdn
 
         return self
