@@ -4,7 +4,7 @@ Clustering on hyperspectral with Riemannian geometry
 ====================================================================
 
 This example compares clustering pipelines based on covariance matrices for
-hyperspectral image clustering.
+hyperspectral image clustering [1]_.
 """
 # Author: Ammar Mian
 
@@ -84,7 +84,7 @@ print("-"*80)
 # Pipelines definition
 # --------------------
 
-pipeline_euclidean = Pipeline([
+pipeline_euclid = Pipeline([
     ("remove_mean", RemoveMeanImage()),
     ("pca", PCAImage(n_components=n_components)),
     ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
@@ -93,8 +93,9 @@ pipeline_euclidean = Pipeline([
         n_clusters=n_clusters,
         n_jobs=n_jobs,
         max_iter=max_iter,
-        metric="euclid"))],
-    verbose=True)
+        metric="euclid",
+    ))
+], verbose=True)
 
 pipeline_riemann = Pipeline([
     ("remove_mean", RemoveMeanImage()),
@@ -105,13 +106,14 @@ pipeline_riemann = Pipeline([
         n_clusters=n_clusters,
         n_jobs=n_jobs,
         max_iter=max_iter,
-        metric="riemann"))],
-    verbose=True)
+        metric="riemann",
+    ))
+], verbose=True)
 
-pipelines = [pipeline_euclidean, pipeline_riemann]
+pipelines = [pipeline_euclid, pipeline_riemann]
 pipelines_names = [
     f"{estimator} Euclidean distance",
-    f"{estimator} Affine Invariant distance",
+    f"{estimator} Riemannian distance",
 ]
 
 ###############################################################################
@@ -155,7 +157,7 @@ for pipeline_name, labels_pred in results.items():
     plt.pcolormesh(X_res, Y_res, labels_pred, cmap="tab20b")
     plt.xlim(X_image.min(), X_image.max())
     plt.ylim(Y_image.min(), Y_image.max())
-    plt.title(f"Clustering results with {pipeline_name}")
+    plt.title(f"Clustering with {pipeline_name}")
     plt.colorbar()
     ax.invert_yaxis()
     plt.xlabel("x (m)")

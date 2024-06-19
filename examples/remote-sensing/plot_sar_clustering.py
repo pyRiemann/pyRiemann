@@ -4,7 +4,7 @@ Clustering on SAR images with Riemannian geometry
 ====================================================================
 
 This example compares clustering pipelines based on covariance matrices for
-SAR image clustering [1]_ [2]_.
+synthetic-aperture radar (SAR) image clustering [1]_ [2]_.
 """
 # Author: Ammar Mian
 
@@ -94,28 +94,24 @@ pipeline_logdet = Pipeline([
         n_clusters=n_clusters,
         n_jobs=n_jobs,
         max_iter=max_iter,
-        metric="logdet"))],
-    verbose=True)
+        metric="logdet",
+    ))
+], verbose=True)
 
 # Riemannian pipeline from [2]
 pipeline_riemann = Pipeline([
-    ('sliding_window', SlidingWindowVectorize(window_size=window_size)),
-    ('covariances', Covariances(estimator=estimator)),
-    ('kmeans', Kmeans(
+    ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
+    ("covariances", Covariances(estimator=estimator)),
+    ("kmeans", Kmeans(
         n_clusters=n_clusters,
         n_jobs=n_jobs,
         max_iter=max_iter,
-        metric="riemann"))],
-    verbose=True)
+        metric="riemann",
+    ))
+], verbose=True)
 
-pipelines = [
-    pipeline_logdet,
-    pipeline_riemann
-]
-pipelines_names = [
-    f"{estimator} logdet",
-    f"{estimator} riemann",
-]
+pipelines = [pipeline_logdet, pipeline_riemann]
+pipelines_names = [f"{estimator} and logdet", f"{estimator} and Riemann"]
 
 ###############################################################################
 # Perform clustering
@@ -146,7 +142,7 @@ plt.colorbar()
 ax.invert_yaxis()
 plt.xlabel("Range (m)")
 plt.ylabel("Azimuth (m)")
-plt.title(r"SAR Data: $20\log_{10}(x_{HH}^2 + x_{HV}^2 + x_{VV}^2$)")
+plt.title(r"SAR data: $20\log_{10}(x_{HH}^2 + x_{HV}^2 + x_{VV}^2$)")
 plt.tight_layout()
 
 ###############################################################################
@@ -158,7 +154,7 @@ for pipeline_name, labels_pred in results.items():
     plt.pcolormesh(X_res, Y_res, labels_pred, cmap="tab20b")
     plt.xlim(X_image.min(), X_image.max())
     plt.ylim(Y_image.min(), Y_image.max())
-    plt.title(f"Clustering results with {pipeline_name}")
+    plt.title(f"Clustering with {pipeline_name}")
     plt.colorbar()
     ax.invert_yaxis()
     plt.xlabel("Range (m)")
@@ -169,8 +165,7 @@ plt.show()
 ###############################################################################
 # References
 # ----------
-# .. [1] `Statistical classification for heterogeneous polarimetric SAR
-#    images
+# .. [1] `Statistical classification for heterogeneous polarimetric SAR images
 #    <https://hal.science/hal-00638829/>`_
 #    Formont, P., Pascal, F., Vasile, G., Ovarlez, J. P., & Ferro-Famil, L.
 #    IEEE Journal of selected topics in Signal Processing, 5(3), 567-576. 2010.

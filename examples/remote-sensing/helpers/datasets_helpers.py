@@ -7,11 +7,11 @@ This file contains helper functions for handling remote sensing datasets
 """
 
 import os
+from typing import Tuple, Dict
 import urllib.request
 
 from numpy.typing import ArrayLike
 from scipy.io import loadmat
-from typing import Tuple, Dict
 
 
 def download_salinas(data_path: str):
