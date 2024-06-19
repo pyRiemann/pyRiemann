@@ -5,25 +5,26 @@ Processing Remote Sensing Helpers
 
 This file contains helper functions for handling remote sensing processes
 """
+from math import ceil
 
 import numpy as np
 import numpy.linalg as la
-from sklearn.base import BaseEstimator, TransformerMixin
 from numpy.lib.stride_tricks import sliding_window_view
 from numpy.typing import ArrayLike
-from math import ceil
+from sklearn.base import BaseEstimator, TransformerMixin
 
 
 ###############################################################################
-def pca_image(image: ArrayLike, nb_components: int):
+
+def pca_image(image: ArrayLike, n_components: int):
     """ A function that centers data and applies PCA on an image.
 
     Parameters
     ----------
-        image : ndarray, shape (n_rows, n_columns, n_features)
-            An image of shape (n_rows, n_columns, n_features).
-        nb_components : int
-            Number of components to keep.
+    image : ndarray, shape (n_rows, n_columns, n_features)
+        An image.
+    n_components : int
+        Number of components to keep.
 
     Written by Antoine Collas for:
     https://github.com/antoinecollas/pyCovariance/
@@ -42,16 +43,16 @@ def pca_image(image: ArrayLike, nb_components: int):
     d, Q = la.eigh(SCM)
     reverse_idx = np.arange(len(d)-1, -1, step=-1)
     Q = Q[:, reverse_idx]
-    Q = Q[:, :nb_components]
+    Q = Q[:, :n_components]
     image = image@Q
 
     return image
 
 
 ###############################################################################
+
 class RemoveMeanImage(BaseEstimator, TransformerMixin):
-    """ Remove the global mean of an three-dimensional image.
-    """
+    """Mean removal for three-dimensional image."""
     def fit(self, X: ArrayLike, y=None):
         return self
 
@@ -63,7 +64,7 @@ class RemoveMeanImage(BaseEstimator, TransformerMixin):
 
 
 class PCAImage(BaseEstimator, TransformerMixin):
-    """PCA on an image of shape (n_rows, n_columns, n_features).
+    """PCA for three-dimensional image.
 
     Parameters
     ----------
@@ -72,13 +73,25 @@ class PCAImage(BaseEstimator, TransformerMixin):
     """
 
     def __init__(self, n_components: int):
-        assert n_components > 0, 'Number of components must be positive.'
+        assert n_components > 0, "Number of components must be positive."
         self.n_components = n_components
 
     def fit(self, X: ArrayLike, y=None):
         return self
 
     def transform(self, X: ArrayLike):
+        """TODO.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_rows, n_columns, n_features)
+            Input image
+
+        Returns
+        -------
+        Xnew : ndarray, shape TODO
+            Output image.
+        """
         if self.n_components == X.shape[2]:
             return X
         return pca_image(X, self.n_components)
@@ -88,21 +101,21 @@ class PCAImage(BaseEstimator, TransformerMixin):
 
 
 class SlidingWindowVectorize(BaseEstimator, TransformerMixin):
-    """Sliding window over an image of shape (n_rows, n_columns, n_features).
+    """Sliding window for three-dimensional image.
 
     Parameters
     ----------
     window_size : int
         Size of the window.
-    overlap : int
-        Overlap between windows. Default is 0.
+    overlap : int, default=0
+        Overlap between windows.
     """
 
     def __init__(self, window_size: int, overlap: int = 0):
-        assert window_size % 2 == 1, 'Window size must be odd.'
-        assert overlap >= 0, 'Overlap must be positive.'
+        assert window_size % 2 == 1, "Window size must be odd."
+        assert overlap >= 0, "Overlap must be positive."
         assert overlap <= window_size//2, \
-            'Overlap must be smaller or equal than int(window_size/2).'
+            "Overlap must be smaller or equal than int(window_size/2)."
         self.window_size = window_size
         self.overlap = overlap
 
@@ -115,19 +128,20 @@ class SlidingWindowVectorize(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X: ndarray, shape (n_rows, n_columns, n_features)
-            input array
+        X : ndarray, shape (n_rows, n_columns, n_features)
+            Input image
 
         Returns
         -------
-        ndarray, shape (n_pixels, window_size**2, n_features)
-            output array, with n_pixels =
+        Xnew : ndarray, shape (n_pixels, window_size**2, n_features)
+            Output array, with n_pixels =
                 (n_rows-window_size+1)(n_columns-window_size+1)//overlap^2
         """
         X = sliding_window_view(
-                X,
-                window_shape=(self.window_size, self.window_size),
-                axis=(0, 1))
+            X,
+            window_shape=(self.window_size, self.window_size),
+            axis=(0, 1),
+        )
         if self.overlap is not None:
             if self.overlap > 0:
                 X = X[::self.overlap, ::self.overlap]
@@ -161,10 +175,10 @@ class LabelsToImage(BaseEstimator, TransformerMixin):
 
     def __init__(self, height: int, width: int,
                  window_size: int, overlap: int = 0):
-        assert window_size % 2 == 1, 'Window size must be odd.'
-        assert overlap >= 0, 'Overlap must be positive.'
+        assert window_size % 2 == 1, "Window size must be odd."
+        assert overlap >= 0, "Overlap must be positive."
         assert overlap <= window_size//2, \
-            'Overlap must be smaller or equal than int(window_size/2).'
+            "Overlap must be smaller or equal than int(window_size/2)."
         self.height = height
         self.width = width
         self.overlap = overlap
