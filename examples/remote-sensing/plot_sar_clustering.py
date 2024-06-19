@@ -31,7 +31,7 @@ date = 0
 n_jobs = -1
 max_iter = 100
 small_dataset = True  # The full dataset will take a very long time
-estimator = "scm" # Chose any estimators from "scm", "lwf", "oas", "mcd", "hub"
+estimator = "scm"  # Chose any estimator from "scm", "lwf", "oas", "mcd", "hub"
 
 ###############################################################################
 # Load data
@@ -41,7 +41,7 @@ print(f"Loading data from scene {scene}.")
 download_uavsar(data_path, scene)
 data = np.load(os.path.join(data_path, f"scene{scene}.npy"))
 data = data[:, :, :, date]  # Select one date only
-data_visualization = data.copy() # To avoid aliasing when showing data
+data_visualization = data.copy()  # To avoid aliasing when showing data
 n_components = data.shape[2]
 n_clusters = 4
 resolution_x = 1.6  # m, obtained from UAVSAR documentation
@@ -62,7 +62,7 @@ if small_dataset:
 height, width, n_features = data.shape
 
 # For visualization of results
-x_values = np.arange(window_size//2, width-window_size//2) * resolution_x 
+x_values = np.arange(window_size//2, width-window_size//2) * resolution_x
 y_values = np.arange(window_size//2, height-window_size//2) * resolution_y
 X_res, Y_res = np.meshgrid(x_values, y_values)
 

@@ -33,7 +33,7 @@ n_jobs = -1
 max_iter = 100
 small_dataset = True  # Whole image can take time
 n_components = 5  # For PCA dimensionality reduction
-estimator = "scm" # Chose any estimators from "scm", "lwf", "oas", "mcd", "hub"
+estimator = "scm"  # Chose any estimator from "scm", "lwf", "oas", "mcd", "hub"
 
 ###############################################################################
 # Load data
@@ -43,7 +43,7 @@ estimator = "scm" # Chose any estimators from "scm", "lwf", "oas", "mcd", "hub"
 print("Loading Salinas data")
 download_salinas(data_path)
 data, labels, labels_names = read_salinas(data_path)
-data_visualization = data.copy() # To avoid aliasing when showing data
+data_visualization = data.copy()  # To avoid aliasing when showing data
 n_clusters = len(labels_names)
 
 resolution = 3.7  # m, obtained from documentation of Salinas dataset
@@ -61,7 +61,7 @@ if small_dataset:
 height, width, n_features = data.shape
 
 # For visualization of results
-x_values = np.arange(window_size//2, width-window_size//2) * resolution 
+x_values = np.arange(window_size//2, width-window_size//2) * resolution
 y_values = np.arange(window_size//2, height-window_size//2) * resolution
 X_res, Y_res = np.meshgrid(x_values, y_values)
 
