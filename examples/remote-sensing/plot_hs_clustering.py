@@ -33,6 +33,7 @@ n_jobs = -1
 max_iter = 100
 small_dataset = True  # Whole image can take time
 n_components = 5  # For PCA dimensionality reduction
+estimator = "scm" # Chose any estimators from "scm", "lwf", "oas", "mcd", "hub"
 
 ###############################################################################
 # Load data
@@ -42,17 +43,33 @@ n_components = 5  # For PCA dimensionality reduction
 print("Loading Salinas data")
 download_salinas(data_path)
 data, labels, labels_names = read_salinas(data_path)
+data_visualization = data.copy() # To avoid aliasing when showing data
 n_clusters = len(labels_names)
+
+resolution = 3.7  # m, obtained from documentation of Salinas dataset
+
+# For visualization of image
+x_values = np.arange(0, data.shape[1]) * resolution
+y_values = np.arange(0, data.shape[0]) * resolution
+X_image, Y_image = np.meshgrid(x_values, y_values)
+
 if small_dataset:
-    data = data[::4, ::4]
-    max_iter = 15
-print("Done")
+    reduce_factor = 4
+    data = data[::reduce_factor, ::reduce_factor]
+    max_iter = 10
+    resolution = reduce_factor*resolution
 height, width, n_features = data.shape
+
+# For visualization of results
+x_values = np.arange(window_size//2, width-window_size//2) * resolution 
+y_values = np.arange(window_size//2, height-window_size//2) * resolution
+X_res, Y_res = np.meshgrid(x_values, y_values)
+
+print("Reading done.")
 
 ###############################################################################
 # Print configuration
 # -------------------
-
 print("-"*80)
 print(f"Size of dataset: {data.shape}")
 print(f"n_clusters = {n_clusters}")
@@ -60,6 +77,7 @@ print(f"window_size = {window_size}")
 print(f"n_components = {n_components}")
 print(f"n_jobs = {n_jobs}")
 print(f"max_iter = {max_iter}")
+print(f"estimator = {estimator}")
 print("-"*80)
 
 ###############################################################################
@@ -70,7 +88,7 @@ pipeline_euclidean = Pipeline([
     ("remove_mean", RemoveMeanImage()),
     ("pca", PCAImage(n_components=n_components)),
     ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
-    ("covariances", Covariances(estimator="scm")),
+    ("covariances", Covariances(estimator=estimator)),
     ("kmeans", Kmeans(
         n_clusters=n_clusters,
         n_jobs=n_jobs,
@@ -82,7 +100,7 @@ pipeline_riemann = Pipeline([
     ("remove_mean", RemoveMeanImage()),
     ("pca", PCAImage(n_components=n_components)),
     ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
-    ("covariances", Covariances(estimator="tyl")),
+    ("covariances", Covariances(estimator=estimator)),
     ("kmeans", Kmeans(
         n_clusters=n_clusters,
         n_jobs=n_jobs,
@@ -91,7 +109,10 @@ pipeline_riemann = Pipeline([
     verbose=True)
 
 pipelines = [pipeline_euclidean, pipeline_riemann]
-pipelines_names = ["Euclidean distance", "Affine-invariant distance"]
+pipelines_names = [
+    f"{estimator} Euclidean distance",
+    f"{estimator} Affine Invariant distance",
+]
 
 ###############################################################################
 # Perform clustering
@@ -115,20 +136,31 @@ print("Done")
 # ---------
 
 print("Plotting")
-plot_value = np.mean(data, axis=2)
-figure = plt.figure()
-plt.imshow(plot_value, cmap="gray", aspect="auto")
-plt.title("Data")
+plot_value = np.mean(data_visualization, axis=2)
+figure, ax = plt.subplots(figsize=(7, 5))
+plt.pcolormesh(X_image, Y_image, plot_value, cmap="gray")
+plt.colorbar()
+ax.invert_yaxis()
+plt.xlabel("x (m)")
+plt.ylabel("y (m)")
+plt.title("Salinas dataset (mean over bands)")
+plt.tight_layout()
 
 ###############################################################################
 # Plot results
 # ------------
 
 for pipeline_name, labels_pred in results.items():
-    figure = plt.figure()
-    plt.imshow(labels_pred, cmap="tab20b", aspect="auto")
+    figure, ax = plt.subplots(figsize=(7, 5))
+    plt.pcolormesh(X_res, Y_res, labels_pred, cmap="tab20b")
+    plt.xlim(X_image.min(), X_image.max())
+    plt.ylim(Y_image.min(), Y_image.max())
     plt.title(f"Clustering results with {pipeline_name}")
     plt.colorbar()
+    ax.invert_yaxis()
+    plt.xlabel("x (m)")
+    plt.ylabel("y (m)")
+    plt.tight_layout()
 plt.show()
 
 ###############################################################################

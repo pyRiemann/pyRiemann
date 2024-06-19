@@ -110,6 +110,6 @@ def download_uavsar(data_path: str, scene: int):
     if not os.path.exists(os.path.join(data_path, filename)):
         print(f"Downloading UAVSAR dataset scene {scene}...")
         urllib.request.urlretrieve(url, os.path.join(data_path, filename))
-        print("Done.")
+        print("Download done.")
     else:
         print("UAVSAR dataset already downloaded.")

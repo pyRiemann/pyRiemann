@@ -31,6 +31,7 @@ date = 0
 n_jobs = -1
 max_iter = 100
 small_dataset = True  # The full dataset will take a very long time
+estimator = "scm" # Chose any estimators from "scm", "lwf", "oas", "mcd", "hub"
 
 ###############################################################################
 # Load data
@@ -40,17 +41,37 @@ print(f"Loading data from scene {scene}.")
 download_uavsar(data_path, scene)
 data = np.load(os.path.join(data_path, f"scene{scene}.npy"))
 data = data[:, :, :, date]  # Select one date only
+data_visualization = data.copy() # To avoid aliasing when showing data
 n_components = data.shape[2]
 n_clusters = 4
+resolution_x = 1.6  # m, obtained from UAVSAR documentation
+resolution_y = 0.6  # m, obtained from UAVSAR documentation
+
+# For visualization of image
+x_values = np.arange(0, data.shape[1]) * resolution_x
+y_values = np.arange(0, data.shape[0]) * resolution_y
+X_image, Y_image = np.meshgrid(x_values, y_values)
+
 if small_dataset:
-    data = data[::7, ::7]
-    max_iter = 15
-print("Done.")
+    reduce_factor_y = 13
+    reduce_factor_x = 7
+    data = data[::reduce_factor_y, ::reduce_factor_x]
+    max_iter = 10
+    resolution_x = reduce_factor_x*resolution_x
+    resolution_y = reduce_factor_y*resolution_y
 height, width, n_features = data.shape
+
+# For visualization of results
+x_values = np.arange(window_size//2, width-window_size//2) * resolution_x 
+y_values = np.arange(window_size//2, height-window_size//2) * resolution_y
+X_res, Y_res = np.meshgrid(x_values, y_values)
+
+print("Reading done.")
 
 ###############################################################################
 # Print configuration
 # -------------------
+
 print("-"*80)
 print(f"Size of dataset: {data.shape}")
 print(f"date = {date}")
@@ -58,16 +79,17 @@ print(f"window_size = {window_size}")
 print(f"n_clusters = {n_clusters}")
 print(f"n_jobs = {n_jobs}")
 print(f"max_iter = {max_iter}")
+print(f"estimator = {estimator}")
 print("-"*80)
 
 ###############################################################################
 # Pipelines definition
 # --------------------
 
-# Logdet pipelines from [1]
-pipeline_scm_logdet = Pipeline([
+# Logdet pipeline from [1]
+pipeline_logdet = Pipeline([
     ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
-    ("covariances", Covariances(estimator="scm")),
+    ("covariances", Covariances(estimator=estimator)),
     ("kmeans", Kmeans(
         n_clusters=n_clusters,
         n_jobs=n_jobs,
@@ -75,20 +97,10 @@ pipeline_scm_logdet = Pipeline([
         metric="logdet"))],
     verbose=True)
 
-pipeline_tyler_logdet = Pipeline([
-    ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
-    ("covariances", Covariances(estimator="tyl")),
-    ("kmeans", Kmeans(
-        n_clusters=n_clusters,
-        n_jobs=n_jobs,
-        max_iter=max_iter,
-        metric="logdet"))],
-    verbose=True)
-
-# Riemannian pipelines from [2]
-pipeline_scm_riemann = Pipeline([
+# Riemannian pipeline from [2]
+pipeline_riemann = Pipeline([
     ('sliding_window', SlidingWindowVectorize(window_size=window_size)),
-    ('covariances', Covariances(estimator="scm")),
+    ('covariances', Covariances(estimator=estimator)),
     ('kmeans', Kmeans(
         n_clusters=n_clusters,
         n_jobs=n_jobs,
@@ -96,27 +108,13 @@ pipeline_scm_riemann = Pipeline([
         metric="riemann"))],
     verbose=True)
 
-pipeline_tyler_riemann = Pipeline([
-    ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
-    ("covariances", Covariances(estimator="tyl")),
-    ("kmeans", Kmeans(
-        n_clusters=n_clusters,
-        n_jobs=n_jobs,
-        max_iter=max_iter,
-        metric="riemann"))],
-    verbose=True)
-
 pipelines = [
-    pipeline_scm_logdet,
-    pipeline_tyler_logdet,
-    pipeline_scm_riemann,
-    pipeline_tyler_riemann
+    pipeline_logdet,
+    pipeline_riemann
 ]
 pipelines_names = [
-    "SCM logdet",
-    "Tyler logdet",
-    "SCM riemann",
-    "Tyler riemann",
+    f"{estimator} logdet",
+    f"{estimator} riemann",
 ]
 
 ###############################################################################
@@ -141,20 +139,31 @@ print("Done")
 # ---------
 
 print("Plotting")
-plot_value = 20*np.log10(np.sum(np.abs(data)**2, axis=2))
-figure = plt.figure()
-plt.imshow(plot_value, cmap="gray", aspect="auto")
-plt.title("Data")
+plot_value = 20*np.log10(np.sum(np.abs(data_visualization)**2, axis=2))
+figure, ax = plt.subplots(figsize=(5, 5))
+plt.pcolormesh(X_image, Y_image, plot_value, cmap="gray")
+plt.colorbar()
+ax.invert_yaxis()
+plt.xlabel("Range (m)")
+plt.ylabel("Azimuth (m)")
+plt.title(r"SAR Data: $20\log_{10}(x_{HH}^2 + x_{HV}^2 + x_{VV}^2$)")
+plt.tight_layout()
 
 ###############################################################################
 # Plot results
 # ------------
 
 for pipeline_name, labels_pred in results.items():
-    figure = plt.figure()
-    plt.imshow(labels_pred, cmap="tab20b", aspect="auto")
+    figure, ax = plt.subplots(figsize=(5, 5))
+    plt.pcolormesh(X_res, Y_res, labels_pred, cmap="tab20b")
+    plt.xlim(X_image.min(), X_image.max())
+    plt.ylim(Y_image.min(), Y_image.max())
     plt.title(f"Clustering results with {pipeline_name}")
     plt.colorbar()
+    ax.invert_yaxis()
+    plt.xlabel("Range (m)")
+    plt.ylabel("Azimuth (m)")
+    plt.tight_layout()
 plt.show()
 
 ###############################################################################
