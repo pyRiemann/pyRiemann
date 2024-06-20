@@ -17,7 +17,6 @@ from pyriemann.clustering import Kmeans
 from helpers.datasets_helpers import download_salinas, read_salinas
 from helpers.processing_helpers import (
     SlidingWindowVectorize,
-    LabelsToImage,
     PCAImage,
     RemoveMeanImage,
 )
@@ -126,10 +125,9 @@ for pipeline_name, pipeline in zip(pipelines_names, pipelines):
     print("-"*60)
     print(f"Pipeline: {pipeline_name}")
     pipeline.fit(data)
-    labels_pred = LabelsToImage(height, width, window_size).fit_transform(
-        pipeline.named_steps["kmeans"].labels_
-    )
-    results[pipeline_name] = labels_pred
+    preds = pipeline.named_steps["kmeans"].labels_
+    results[pipeline_name] = \
+        pipeline.named_steps["sliding_window"].inverse_predict(preds)
     print("-"*60)
 print("Done")
 
