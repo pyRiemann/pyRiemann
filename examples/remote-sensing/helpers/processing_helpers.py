@@ -17,40 +17,6 @@ from sklearn.decomposition import PCA
 
 ###############################################################################
 
-def pca_image(image: ArrayLike, n_components: int):
-    """ A function that centers data and applies PCA on an image.
-
-    Parameters
-    ----------
-    image : ndarray, shape (n_rows, n_columns, n_features)
-        An image.
-    n_components : int
-        Number of components to keep.
-
-    Written by Antoine Collas for:
-    https://github.com/antoinecollas/pyCovariance/
-    """
-    # center pixels
-    h, w, p = image.shape
-    X = image.reshape((h*w, p))
-    mean = np.mean(X, axis=0)
-    image = image - mean
-    X = X - mean
-    # check pixels are centered
-    assert (np.abs(np.mean(X, axis=0)) < 1e-8).all()
-
-    # apply PCA
-    SCM = (1/len(X))*X.conj().T@X
-    d, Q = la.eigh(SCM)
-    reverse_idx = np.arange(len(d)-1, -1, step=-1)
-    Q = Q[:, reverse_idx]
-    Q = Q[:, :n_components]
-    image = image@Q
-
-    return image
-
-
-###############################################################################
 
 class RemoveMeanImage(BaseEstimator, TransformerMixin):
     """Mean removal for three-dimensional image."""
@@ -65,11 +31,11 @@ class RemoveMeanImage(BaseEstimator, TransformerMixin):
 
 
 class PCAImage(BaseEstimator, TransformerMixin):
-    """PCA for three-dimensional image.
+    """Dimension reduction on 3rd dimension using PCA.
 
     Parameters
     ----------
-    n_components : int, float or 'mle', default=None
+    n_components : int, float or "mle", default=None
         Number of components to keep, passed to sklearn.decomposition.PCA when
         data is real. Should be int when data is complex.
     """
@@ -82,32 +48,62 @@ class PCAImage(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: ArrayLike):
-        """Apply PCA over image to reduce the dimensions.
+        """Reduce 3rd dimension of data using PCA.
 
         Parameters
         ----------
         X : ndarray, shape (n_rows, n_columns, n_features)
-            Input image
+            Input data.
 
         Returns
         -------
         Xnew : ndarray, shape (n_rows, n_columns, n_components)
-            Output image.
+            Output data.
         """
         if np.iscomplexobj(X):
             assert isinstance(self.n_components, int), \
                 "n_components should be an int when using complex data."
-            if self.n_components == X.shape[2]:
+            if self.n_components >= X.shape[2]:
                 return X
-            return pca_image(X, self.n_components)
+            return self._complex_pca(X)
 
         # Reshaping to pass it to sklearn PCA when real
-        X_new = X.reshape((np.prod(X.shape[:2]), X.shape[2]))
-        X_new = self.pca.fit_transform(X_new)
-        return X_new.reshape(X.shape[:2] + (X_new.shape[-1],))
+        Xnew = X.reshape((np.prod(X.shape[:2]), X.shape[2]))
+        Xnew = self.pca.fit_transform(Xnew)
+        return Xnew.reshape(X.shape[:2] + (Xnew.shape[-1],))
 
     def fit_transform(self, X: ArrayLike, y=None):
         return self.fit(X).transform(X)
+
+    def _complex_pca(self, image: ArrayLike):
+        """ A function that centers data and applies PCA on an image.
+
+        Parameters
+        ----------
+        image : ndarray, shape (n_rows, n_columns, n_features)
+            An image.
+
+        Written by Antoine Collas for:
+        https://github.com/antoinecollas/pyCovariance/
+        """
+        # center pixels
+        h, w, p = image.shape
+        X = image.reshape((h*w, p))
+        mean = np.mean(X, axis=0)
+        image = image - mean
+        X = X - mean
+        # check pixels are centered
+        assert (np.abs(np.mean(X, axis=0)) < 1e-8).all()
+
+        # apply PCA
+        SCM = (1/len(X))*X.conj().T@X
+        d, Q = la.eigh(SCM)
+        reverse_idx = np.arange(len(d)-1, -1, step=-1)
+        Q = Q[:, reverse_idx]
+        Q = Q[:, :self.n_components]
+        image = image@Q
+
+        return image
 
 
 class SlidingWindowVectorize(BaseEstimator, TransformerMixin):
@@ -178,21 +174,20 @@ class SlidingWindowVectorize(BaseEstimator, TransformerMixin):
     def fit_transform(self, X: ArrayLike, y=None):
         return self.fit(X).transform(X)
 
-    def inverse_predict(self, preds: ArrayLike) -> ArrayLike:
+    def inverse_predict(self, y: ArrayLike) -> ArrayLike:
         """Transforms the prediction of a classifier over a sliding windows
         back to an image shape.
 
         Parameters
         ----------
-        pred : ndarray, shape (n_pixels,)
-            Input classes
+        y : ndarray, shape (n_pixels,)
+            Predicted classes.
 
         Returns
         -------
-        ndarray, shape (H, W)
-            Output classified image with H = (n_rows-window_size+1)//overlap
-            and W = (n_columns-window_size+1)//overlap
-
+        X : ndarray, shape (H, W)
+            Output classified image, with H = (n_rows-window_size+1)//overlap
+            and W = (n_columns-window_size+1)//overlap.
         """
         # Compute reshape size thanks ot window_size before overlap
         H = self.n_rows - self.window_size + 1
@@ -202,4 +197,4 @@ class SlidingWindowVectorize(BaseEstimator, TransformerMixin):
             H = ceil(H/self.overlap)
             W = ceil(W/self.overlap)
 
-        return preds.reshape((H, W))
+        return y.reshape((H, W))
