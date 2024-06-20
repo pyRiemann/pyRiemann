@@ -8,45 +8,10 @@ This file contains helper functions for handling remote sensing processes
 from math import ceil
 
 import numpy as np
-import numpy.linalg as la
 from numpy.lib.stride_tricks import sliding_window_view
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, TransformerMixin
-
-
-###############################################################################
-
-def pca_image(image: ArrayLike, n_components: int):
-    """ A function that centers data and applies PCA on an image.
-
-    Parameters
-    ----------
-    image : ndarray, shape (n_rows, n_columns, n_features)
-        An image.
-    n_components : int
-        Number of components to keep.
-
-    Written by Antoine Collas for:
-    https://github.com/antoinecollas/pyCovariance/
-    """
-    # center pixels
-    h, w, p = image.shape
-    X = image.reshape((h*w, p))
-    mean = np.mean(X, axis=0)
-    image = image - mean
-    X = X - mean
-    # check pixels are centered
-    assert (np.abs(np.mean(X, axis=0)) < 1e-8).all()
-
-    # apply PCA
-    SCM = (1/len(X))*X.conj().T@X
-    d, Q = la.eigh(SCM)
-    reverse_idx = np.arange(len(d)-1, -1, step=-1)
-    Q = Q[:, reverse_idx]
-    Q = Q[:, :n_components]
-    image = image@Q
-
-    return image
+from sklearn.decomposition import PCA
 
 
 ###############################################################################
@@ -68,19 +33,19 @@ class PCAImage(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    n_components : int
-        Number of components to keep.
+    n_components : int, float or 'mle', default=None
+        Number of components to keep, passed to sklearn.decomposition.PCA
     """
 
-    def __init__(self, n_components: int):
-        assert n_components > 0, "Number of components must be positive."
+    def __init__(self, n_components: int | float | str = None):
         self.n_components = n_components
+        self.pca = PCA(n_components=n_components)
 
     def fit(self, X: ArrayLike, y=None):
         return self
 
     def transform(self, X: ArrayLike):
-        """TODO.
+        """Apply PCA over image to reduce the dimensions.
 
         Parameters
         ----------
@@ -89,12 +54,13 @@ class PCAImage(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        Xnew : ndarray, shape TODO
+        Xnew : ndarray, shape (n_rows, n_columns, n_components)
             Output image.
         """
-        if self.n_components == X.shape[2]:
-            return X
-        return pca_image(X, self.n_components)
+        # Reshaping to pass it to sklearn PCA
+        X_new = X.reshape((np.prod(X.shape[:2]), X.shape[2]))
+        X_new = self.pca.fit_transform(X_new)
+        return X_new.reshape(X.shape[:2] + (X_new.shape[-1],))
 
     def fit_transform(self, X: ArrayLike, y=None):
         return self.fit(X).transform(X)
@@ -165,22 +131,22 @@ class LabelsToImage(BaseEstimator, TransformerMixin):
 
     Parameters
     ----------
-    height : int
-        Height of the original image.
-    width : int
-        Width of the original image.
+    n_rows : int
+        n_rows of the original image.
+    n_columns : int
+        n_columns of the original image.
     window_size : int
         Size of the window.
     """
 
-    def __init__(self, height: int, width: int,
+    def __init__(self, n_rows: int, n_columns: int,
                  window_size: int, overlap: int = 0):
         assert window_size % 2 == 1, "Window size must be odd."
         assert overlap >= 0, "Overlap must be positive."
         assert overlap <= window_size//2, \
             "Overlap must be smaller or equal than int(window_size/2)."
-        self.height = height
-        self.width = width
+        self.n_rows = n_rows
+        self.n_columns = n_columns
         self.overlap = overlap
         self.window_size = window_size
 
@@ -188,16 +154,30 @@ class LabelsToImage(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X: ArrayLike):
-        # Compute reshape size thanks ot window-size before overlap
-        height = self.height - self.window_size + 1
-        width = self.width - self.window_size + 1
+        """Transforms the output of a classifier over a sliding windows from
+        SlidingWindowVectorize back to an image shape.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_pixels,)
+            Input classes
+
+        Returns
+        -------
+        ndarray, shape (H, W)
+            Output classified image with H = (n_rows-window_size+1)//overlap
+            and W = (n_columns-window_size+1)//overlap
+
+        """
+        # Compute reshape size thanks ot window_size before overlap
+        n_rows = self.n_rows - self.window_size + 1
+        n_columns = self.n_columns - self.window_size + 1
         # Taking into account overlap
         if self.overlap > 0:
-            height = ceil(height/self.overlap)
-            width = ceil(width/self.overlap)
+            n_rows = ceil(n_rows/self.overlap)
+            n_columns = ceil(n_columns/self.overlap)
 
-        # Reshape to (height, weight)
-        return X.reshape((height, width))
+        return X.reshape((n_rows, n_columns))
 
     def fit_transform(self, X: ArrayLike, y=None):
         return self.fit(X).transform(X)
