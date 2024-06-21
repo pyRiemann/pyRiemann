@@ -18,7 +18,6 @@ from helpers.datasets_helpers import download_salinas, read_salinas
 from helpers.processing_helpers import (
     SlidingWindowVectorize,
     PCAImage,
-    RemoveMeanImage,
 )
 
 
@@ -84,7 +83,6 @@ print("-"*80)
 # --------------------
 
 pipeline_euclid = Pipeline([
-    ("remove_mean", RemoveMeanImage()),
     ("pca", PCAImage(n_components=n_components)),
     ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
     ("covariances", Covariances(estimator=estimator)),
@@ -97,7 +95,6 @@ pipeline_euclid = Pipeline([
 ], verbose=True)
 
 pipeline_riemann = Pipeline([
-    ("remove_mean", RemoveMeanImage()),
     ("pca", PCAImage(n_components=n_components)),
     ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
     ("covariances", Covariances(estimator=estimator)),

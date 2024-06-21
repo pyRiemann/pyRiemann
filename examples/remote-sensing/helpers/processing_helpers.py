@@ -16,19 +16,6 @@ from sklearn.decomposition import PCA
 
 ###############################################################################
 
-
-class RemoveMeanImage(BaseEstimator, TransformerMixin):
-    """Mean removal for three-dimensional image."""
-    def fit(self, X: ArrayLike, y=None):
-        return self
-
-    def transform(self, X: ArrayLike):
-        return X - np.mean(X, axis=(0, 1))
-
-    def fit_transform(self, X: ArrayLike, y=None):
-        return self.fit(X).transform(X)
-
-
 class PCAImage(BaseEstimator, TransformerMixin):
     """Dimension reduction on 3rd dimension using PCA.
 
