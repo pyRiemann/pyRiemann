@@ -38,7 +38,6 @@ estimator = "scm"  # Chose any estimator from "scm", "lwf", "oas", "mcd", "hub"
 # Load data
 # ---------
 
-# TODO: Handle all the other datasets: IndianPines, etc
 print("Loading Salinas data")
 download_salinas(data_path)
 data, labels, labels_names = read_salinas(data_path)
@@ -69,6 +68,7 @@ print("Reading done.")
 ###############################################################################
 # Print configuration
 # -------------------
+
 print("-"*80)
 print(f"Size of dataset: {data.shape}")
 print(f"n_clusters = {n_clusters}")

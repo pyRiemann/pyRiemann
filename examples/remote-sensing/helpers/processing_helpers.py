@@ -8,7 +8,6 @@ This file contains helper functions for handling remote sensing processes
 from math import ceil
 
 import numpy as np
-import numpy.linalg as la
 from numpy.lib.stride_tricks import sliding_window_view
 from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, TransformerMixin
@@ -42,7 +41,6 @@ class PCAImage(BaseEstimator, TransformerMixin):
 
     def __init__(self, n_components=None):
         self.n_components = n_components
-        self.pca = PCA(n_components=n_components)
 
     def fit(self, X: ArrayLike, y=None):
         return self
@@ -57,8 +55,8 @@ class PCAImage(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        Xnew : ndarray, shape (n_rows, n_columns, n_components)
-            Output data.
+        X_new : ndarray, shape (n_rows, n_columns, n_components)
+            Output data, reduced along its 3rd dimension.
         """
         if np.iscomplexobj(X):
             assert isinstance(self.n_components, int), \
@@ -67,52 +65,52 @@ class PCAImage(BaseEstimator, TransformerMixin):
                 return X
             return self._complex_pca(X)
 
-        # Reshaping to pass it to sklearn PCA when real
-        Xnew = X.reshape((np.prod(X.shape[:2]), X.shape[2]))
-        Xnew = self.pca.fit_transform(Xnew)
-        return Xnew.reshape(X.shape[:2] + (Xnew.shape[-1],))
+        # reshape to pass it to sklearn PCA when real
+        X_new = X.reshape((np.prod(X.shape[:2]), X.shape[2]))
+        pca = PCA(n_components=self.n_components)
+        X_new = pca.fit_transform(X_new)
+        return X_new.reshape(X.shape[:2] + (X_new.shape[-1],))
 
     def fit_transform(self, X: ArrayLike, y=None):
         return self.fit(X).transform(X)
 
-    def _complex_pca(self, image: ArrayLike):
-        """ A function that centers data and applies PCA on an image.
+    def _complex_pca(self, X: ArrayLike):
+        """Center and reduce data by PCA.
 
         Parameters
         ----------
-        image : ndarray, shape (n_rows, n_columns, n_features)
-            An image.
+        X : ndarray, shape (n_rows, n_columns, n_features)
+            Input data.
 
-        Written by Antoine Collas for:
-        https://github.com/antoinecollas/pyCovariance/
+        Returns
+        -------
+        X_new : ndarray, shape (n_rows, n_columns, n_components)
+            Output data.
         """
         # center pixels
-        h, w, p = image.shape
-        X = image.reshape((h*w, p))
-        mean = np.mean(X, axis=0)
-        image = image - mean
-        X = X - mean
+        n_rows, n_columns, n_features = X.shape
+        Xr = X.reshape((n_rows*n_columns, n_features))
+        Xr_mean = np.mean(Xr, axis=0)
+        X = X - Xr_mean
+        Xr = Xr - Xr_mean
         # check pixels are centered
-        assert (np.abs(np.mean(X, axis=0)) < 1e-8).all()
+        assert (np.abs(np.mean(Xr, axis=0)) < 1e-8).all()
 
         # apply PCA
-        SCM = (1/len(X))*X.conj().T@X
-        d, Q = la.eigh(SCM)
-        reverse_idx = np.arange(len(d)-1, -1, step=-1)
-        Q = Q[:, reverse_idx]
-        Q = Q[:, :self.n_components]
-        image = image@Q
-
-        return image
+        scm = Xr.conj().T @ Xr / len(Xr)
+        _, eigvecs = np.linalg.eigh(scm)
+        eigvecs = np.fliplr(eigvecs)
+        X_new = X @ eigvecs[:, :self.n_components]
+        return X_new
 
 
 class SlidingWindowVectorize(BaseEstimator, TransformerMixin):
-    """Sliding window for three-dimensional image.
+    """Sliding window for three-dimensional data.
 
     Parameters
     ----------
     window_size : int
-        Size of the window.
+        Size of the sliding window.
     overlap : int, default=0
         Overlap between windows.
     """
@@ -126,20 +124,7 @@ class SlidingWindowVectorize(BaseEstimator, TransformerMixin):
         self.overlap = overlap
 
     def fit(self, X: ArrayLike, y=None):
-        """Keep in memory n_rows and n_columns of data for inverse_predict.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_rows, n_columns, n_features)
-            Input image
-        """
-        self.n_rows = X.shape[0]
-        self.n_columns = X.shape[1]
-        return self
-
-    def transform(self, X: ArrayLike) -> ArrayLike:
-        """Transforms a multidimensional array (ndim=3) into a sliding window
-        view over the first two dimensions.
+        """Keep in memory n_rows and n_columns of original data.
 
         Parameters
         ----------
@@ -148,9 +133,28 @@ class SlidingWindowVectorize(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        Xnew : ndarray, shape (n_pixels, window_size**2, n_features)
-            Output array, with n_pixels =
-                (n_rows-window_size+1)(n_columns-window_size+1)//overlap^2
+        self : SlidingWindowVectorize instance
+            The SlidingWindowVectorize instance.
+        """
+        self.n_rows, self.n_columns, _ = X.shape
+        return self
+
+    def transform(self, X: ArrayLike) -> ArrayLike:
+        """Transform original data with a sliding window.
+
+        Transform original three-dimensional data into a sliding window view
+        over the first two dimensions.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_rows, n_columns, n_features)
+            Input data.
+
+        Returns
+        -------
+        X_new : ndarray, shape (n_pixels, window_size**2, n_features)
+            Output data, with n_pixels = (n_rows-window_size+1) x
+            (n_columns-window_size+1) // overlap^2
         """
         X = sliding_window_view(
             X,
@@ -164,37 +168,38 @@ class SlidingWindowVectorize(BaseEstimator, TransformerMixin):
             X = X[::self.window_size//2, ::self.window_size//2]
             self.overlap = self.window_size//2
 
-        # Reshape to (n_pixels, n_samples, n_features) with
-        # n_pixels = axis0*axis1
-        # n_samples = axis3*axis_4
-        # n_features = axis2
-        X = X.reshape((-1, X.shape[2], X.shape[3]*X.shape[4]))
-        return X
+        # reshape to (n_pixels, n_samples, n_features) with
+        # n_pixels = axis0*axis1, n_samples = axis3*axis_4, n_features = axis2
+        X_new = X.reshape((-1, X.shape[2], X.shape[3]*X.shape[4]))
+        return X_new
 
     def fit_transform(self, X: ArrayLike, y=None):
         return self.fit(X).transform(X)
 
     def inverse_predict(self, y: ArrayLike) -> ArrayLike:
-        """Transforms the prediction of a classifier over a sliding windows
-        back to an image shape.
+        """Transform predictions over sliding windows back to original data.
+
+        Transform the predictions over sliding windows data back to original
+        data shape.
 
         Parameters
         ----------
         y : ndarray, shape (n_pixels,)
-            Predicted classes.
+            Predictions.
 
         Returns
         -------
-        X : ndarray, shape (H, W)
-            Output classified image, with H = (n_rows-window_size+1)//overlap
-            and W = (n_columns-window_size+1)//overlap.
+        X : ndarray, shape (n_new_rows, n_new_columns)
+            Output predicted data, with n_new_rows = (n_rows-window_size+1) //
+            overlap and n_new_columns = (n_columns-window_size+1) // overlap.
         """
-        # Compute reshape size thanks ot window_size before overlap
-        H = self.n_rows - self.window_size + 1
-        W = self.n_columns - self.window_size + 1
-        # Taking into account overlap
-        if self.overlap > 0:
-            H = ceil(H/self.overlap)
-            W = ceil(W/self.overlap)
+        # compute reshape size thanks to window_size before overlap
+        n_new_rows = self.n_rows - self.window_size + 1
+        n_new_columns = self.n_columns - self.window_size + 1
 
-        return y.reshape((H, W))
+        # take into account overlap
+        if self.overlap > 0:
+            n_new_rows = ceil(n_new_rows/self.overlap)
+            n_new_columns = ceil(n_new_columns/self.overlap)
+
+        return y.reshape((n_new_rows, n_new_columns))
