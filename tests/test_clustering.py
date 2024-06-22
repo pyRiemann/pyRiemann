@@ -14,10 +14,10 @@ from pyriemann.clustering import (
 @pytest.mark.parametrize(
     "clust", [Kmeans, KmeansPerClassTransform, Potato, PotatoField]
 )
-def test_clustering_two_clusters(clust, get_mats, get_labels):
-    n_clusters = 2
-    n_matrices, n_channels = 6, 4
+def test_clustering_two_clusters(clust, get_mats, get_labels, get_weights):
+    n_clusters, n_matrices, n_channels = 2, 6, 4
     mats = get_mats(n_matrices, n_channels, "spd")
+    weights = get_weights(n_matrices)
 
     if clust is Kmeans:
         clf_predict(clust, mats, n_clusters)
@@ -25,23 +25,28 @@ def test_clustering_two_clusters(clust, get_mats, get_labels):
         clf_jobs(clust, mats, n_clusters)
         clf_centroids(clust, mats, n_clusters)
         clf_fit_independence(clust, mats)
+
     if clust is KmeansPerClassTransform:
-        n_classes = 2
+        n_classes = n_clusters
         labels = get_labels(n_matrices, n_classes)
         clf_transform_per_class(clust, mats, n_clusters, labels)
         clf_jobs(clust, mats, n_clusters, labels)
         clf_fit_labels_independence(clust, mats, labels)
+
     if clust is Potato:
+        clf_fit(clust, mats, weights)
         clf_transform(clust, mats)
         clf_predict(clust, mats)
         clf_predict_proba(clust, mats)
         clf_partial_fit(clust, mats)
         clf_fit_independence(clust, mats)
+
     if clust is PotatoField:
         n_potatoes = 3
         mats = [get_mats(n_matrices, n_channels, "spd"),
                 get_mats(n_matrices, n_channels + 2, "spd"),
                 get_mats(n_matrices, n_channels + 1, "spd")]
+        clf_fit(clust, mats, weights)
         clf_transform(clust, mats, n_potatoes)
         clf_predict(clust, mats, n_potatoes)
         clf_predict_proba(clust, mats, n_potatoes)
@@ -53,8 +58,7 @@ def test_clustering_two_clusters(clust, get_mats, get_labels):
     "clust", [Kmeans, KmeansPerClassTransform, Potato, PotatoField]
 )
 def test_clustering_three_clusters(clust, get_mats, get_labels):
-    n_clusters = 3
-    n_matrices, n_channels = 6, 3
+    n_clusters, n_matrices, n_channels = 3, 6, 2
     mats = get_mats(n_matrices, n_channels, "spd")
 
     if clust is Kmeans:
@@ -63,12 +67,27 @@ def test_clustering_three_clusters(clust, get_mats, get_labels):
         clf_jobs(clust, mats, n_clusters)
         clf_centroids(clust, mats, n_clusters)
         clf_fit_independence(clust, mats)
+
     if clust is KmeansPerClassTransform:
         n_classes = 2
         labels = get_labels(n_matrices, n_classes)
         clf_transform_per_class(clust, mats, n_clusters, labels)
         clf_jobs(clust, mats, n_clusters, labels)
         clf_fit_labels_independence(clust, mats, labels)
+
+
+def clf_fit(clust, mats, weights):
+    if clust is PotatoField:
+        clf = clust(n_potatoes=len(mats))
+    else:
+        clf = clust()
+    clf.fit(mats)
+
+    if clust is Potato:
+        n_channels = mats.shape[-1]
+        assert clf.covmean_.shape == (n_channels, n_channels)
+
+    clf.fit(mats, sample_weight=weights)
 
 
 def clf_transform(clust, mats, n_clusters=None):
@@ -100,7 +119,7 @@ def clf_jobs(clust, mats, n_clusters, labels=None):
 
 
 def clf_centroids(clust, mats, n_clusters):
-    _, n_channels, n_channels = mats.shape
+    n_channels = mats.shape[-1]
     clf = clust(n_clusters=n_clusters).fit(mats)
     centroids = clf.centroids()
     assert centroids.shape == (n_clusters, n_channels, n_channels)
@@ -184,7 +203,6 @@ def test_kmeans_init(clust, init, n_init, metric, get_mats, get_labels):
     n_clusters, n_classes, n_matrices, n_channels = 2, 3, 9, 5
     mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
-    print(labels)
 
     if init == "ndarray":
         clf = clust(
@@ -215,6 +233,19 @@ def test_kmeans_init(clust, init, n_init, metric, get_mats, get_labels):
         assert dists.shape == (n_matrices, n_clusters)
     elif clust is KmeansPerClassTransform:
         assert dists.shape == (n_matrices, clf.covmeans_.shape[0])
+
+
+@pytest.mark.parametrize("use_weight", [True, False])
+def test_potato_fit(use_weight, get_mats, get_weights):
+    n_matrices, n_channels = 6, 3
+    mats = get_mats(n_matrices, n_channels, "spd")
+    y = np.ones(n_matrices)
+    y[0] = 0
+    if use_weight:
+        weights = get_weights(n_matrices)
+    else:
+        weights = None
+    Potato().fit(mats, y, sample_weight=weights)
 
 
 def test_potato_fit_equal_labels(get_mats):

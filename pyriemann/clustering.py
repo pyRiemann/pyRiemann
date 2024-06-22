@@ -1,10 +1,15 @@
 """Clustering functions."""
-import numpy as np
 from joblib import Parallel, delayed
+import numpy as np
 from scipy.stats import norm, chi2
 import sklearn
-from sklearn.base import (BaseEstimator, ClassifierMixin, TransformerMixin,
-                          ClusterMixin, clone)
+from sklearn.base import (
+    BaseEstimator,
+    ClassifierMixin,
+    TransformerMixin,
+    ClusterMixin,
+    clone,
+)
 from sklearn.cluster import KMeans as _KMeans
 
 from .classification import MDM
@@ -16,7 +21,7 @@ from .utils.utils import check_metric
 def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
     if random_state is not None:
         random_state = np.random.RandomState(random_state)
-    if sklearn.__version__ < '1.3.0':
+    if sklearn.__version__ < "1.3.0":
         return _KMeans(n_clusters=n_clusters, init=init)._init_centroids(
             X,
             x_squared_norms,
@@ -41,9 +46,13 @@ def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,
     mdm = MDM(metric=metric, n_jobs=n_jobs)
     mdm.metric_mean, mdm.metric_dist = check_metric(metric)
     squared_norms = np.linalg.norm(X, ord="fro", axis=(1, 2))**2
-    mdm.covmeans_ = _init_centroids(X, n_clusters, init,
-                                    random_state=random_state,
-                                    x_squared_norms=squared_norms)
+    mdm.covmeans_ = _init_centroids(
+        X,
+        n_clusters,
+        init,
+        random_state=random_state,
+        x_squared_norms=squared_norms,
+    )
     mdm.classes_ = np.arange(n_clusters)
 
     labels = mdm.predict(X)
@@ -134,9 +143,17 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         A. Barachant, Thesis, 2012
     """
 
-    def __init__(self, n_clusters=2, max_iter=100, metric="riemann",
-                 random_state=None, init="random", n_init=10, n_jobs=1,
-                 tol=1e-4):
+    def __init__(
+        self,
+        n_clusters=2,
+        max_iter=100,
+        metric="riemann",
+        random_state=None,
+        init="random",
+        n_init=10,
+        n_jobs=1,
+        tol=1e-4,
+    ):
         """Init."""
         self.metric = metric
         self.n_clusters = n_clusters
@@ -165,30 +182,39 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         if isinstance(self.init, str) and self.init == "random":
             np.random.seed(self.seed)
             seeds = np.random.randint(
-                np.iinfo(np.int32).max, size=self.n_init)
+                np.iinfo(np.int32).max,
+                size=self.n_init,
+            )
+
             if self.n_jobs == 1:
                 res = []
                 for i in range(self.n_init):
-                    res.append(_fit_single(X, y,
-                                           n_clusters=self.n_clusters,
-                                           init=self.init,
-                                           random_state=seeds[i],
-                                           metric=self.metric,
-                                           max_iter=self.max_iter,
-                                           tol=self.tol))
+                    res.append(_fit_single(
+                        X,
+                        y,
+                        n_clusters=self.n_clusters,
+                        init=self.init,
+                        random_state=seeds[i],
+                        metric=self.metric,
+                        max_iter=self.max_iter,
+                        tol=self.tol,
+                    ))
                 labels, inertia, mdm = zip(*res)
-            else:
 
+            else:
                 res = Parallel(n_jobs=self.n_jobs, verbose=0)(
-                    delayed(_fit_single)(X, y,
-                                         n_clusters=self.n_clusters,
-                                         init=self.init,
-                                         random_state=seed,
-                                         metric=self.metric,
-                                         max_iter=self.max_iter,
-                                         tol=self.tol,
-                                         n_jobs=1)
-                    for seed in seeds)
+                    delayed(_fit_single)(
+                        X,
+                        y,
+                        n_clusters=self.n_clusters,
+                        init=self.init,
+                        random_state=seed,
+                        metric=self.metric,
+                        max_iter=self.max_iter,
+                        tol=self.tol,
+                        n_jobs=1,
+                    ) for seed in seeds
+                )
                 labels, inertia, mdm = zip(*res)
 
             best = np.argmin(inertia)
@@ -198,14 +224,17 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
 
         else:
             # no need to iterate if init is not random
-            labels, inertia, mdm = _fit_single(X, y,
-                                               n_clusters=self.n_clusters,
-                                               init=self.init,
-                                               random_state=self.seed,
-                                               metric=self.metric,
-                                               max_iter=self.max_iter,
-                                               tol=self.tol,
-                                               n_jobs=self.n_jobs)
+            labels, inertia, mdm = _fit_single(
+                X,
+                y,
+                n_clusters=self.n_clusters,
+                init=self.init,
+                random_state=self.seed,
+                metric=self.metric,
+                max_iter=self.max_iter,
+                tol=self.tol,
+                n_jobs=self.n_jobs,
+            )
 
         self.mdm_ = mdm
         self.inertia_ = inertia
@@ -277,8 +306,8 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
     def __init__(self, n_clusters=2, **params):
         """Init."""
         params["n_clusters"] = n_clusters
-        self.km = Kmeans(**params)
-        self.metric = self.km.metric
+        self._km = Kmeans(**params)
+        self.metric = self._km.metric
 
     def fit(self, X, y):
         """Fit the clusters for each class.
@@ -295,11 +324,12 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
         self : KmeansPerClassTransform instance
             The KmeansPerClassTransform instance.
         """
-        covmeans = []
         self.classes_ = np.unique(y)
+
+        covmeans = []
         for c in self.classes_:
-            self.km.fit(X[y == c])
-            covmeans.extend(self.km.centroids())
+            self._km.fit(X[y == c])
+            covmeans.extend(self._km.centroids())
         self.covmeans_ = np.stack(covmeans, axis=0)
         return self
 
@@ -316,7 +346,7 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
         dist : ndarray, shape (n_matrices, n_centroids)
             The distance to each centroid according to the metric.
         """
-        mdm = MDM(metric=self.metric, n_jobs=self.km.n_jobs)
+        mdm = MDM(metric=self.metric, n_jobs=self._km.n_jobs)
         mdm.metric_mean, mdm.metric_dist = check_metric(self.metric)
         mdm.covmeans_ = self.covmeans_
         return mdm._predict_distances(X)
@@ -386,7 +416,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         self.pos_label = pos_label
         self.neg_label = neg_label
 
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, sample_weight=None):
         """Fit the potato from SPD matrices.
 
         Fit the potato from SPD matrices, with an iterative outlier
@@ -400,6 +430,8 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
             Labels corresponding to each matrix: positive (resp. negative)
             label corresponds to a clean (resp. artifact) matrix.
             If None, all matrices are considered as clean.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -409,17 +441,21 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         if self.pos_label == self.neg_label:
             raise ValueError("Positive and negative labels must be different")
 
-        self._mdm = MDM(metric=self.metric)
-
+        n_matrices, _, _ = X.shape
         y_old = self._check_labels(X, y)
+
+        if sample_weight is None:
+            sample_weight = np.ones(n_matrices)
+
+        self._mdm = MDM(metric=self.metric)
 
         for _ in range(self.n_iter_max):
             ix = (y_old == 1)
             if not any(ix):
                 raise ValueError("Iterative outlier removal has rejected all "
                                  "matrices. Choose a higher threshold.")
-            self._mdm.fit(X[ix], y_old[ix])
-            y = np.zeros(len(X))
+            self._mdm.fit(X[ix], y_old[ix], sample_weight=sample_weight[ix])
+            y = np.zeros(n_matrices)
             d = np.squeeze(np.log(self._mdm.transform(X[ix])))
             self._mean = np.mean(d)
             self._std = np.std(d)
@@ -433,7 +469,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         self.covmean_ = self._mdm.covmeans_[0]
         return self
 
-    def partial_fit(self, X, y=None, alpha=0.1):
+    def partial_fit(self, X, y=None, *, sample_weight=None, alpha=0.1):
         """Partially fit the potato from SPD matrices.
 
         This partial fit can be used to update dynamic or semi-dymanic online
@@ -447,6 +483,8 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
             Labels corresponding to each matrix: positive (resp. negative)
             label corresponds to a clean (resp. artifact) matrix.
             If None, all matrices are considered as clean.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
         alpha : float, default=0.1
             Update rate in [0, 1] for the centroid, and mean and standard
             deviation of log-distances: 0 for no update, 1 for full update.
@@ -458,22 +496,31 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         """
         if not hasattr(self, "_mdm"):
             raise ValueError(
-                "partial_fit can be called only on an already fitted potato.")
+                "partial_fit can be called only on an already fitted potato."
+            )
 
         n_matrices, n_channels, _ = X.shape
         if n_channels != self._mdm.covmeans_[0].shape[0]:
             raise ValueError(
                 "X does not have the good number of channels. Should be %d but"
-                " got %d." % (self._mdm.covmeans_[0].shape[0], n_channels))
+                " got %d." % (self._mdm.covmeans_[0].shape[0], n_channels)
+            )
 
         y = self._check_labels(X, y)
+
+        if sample_weight is None:
+            sample_weight = np.ones(X.shape[0])
 
         if not 0 <= alpha <= 1:
             raise ValueError("Parameter alpha must be in [0, 1]")
         if alpha == 0:
             return self
 
-        Xm = mean_covariance(X[y == self.pos_label], metric=self.metric)
+        Xm = mean_covariance(
+            X[y == self.pos_label],
+            metric=self.metric,
+            sample_weight=sample_weight[y == self.pos_label],
+        )
         self._mdm.covmeans_[0] = geodesic(
             self._mdm.covmeans_[0], Xm, alpha, metric=self.metric
         )
@@ -519,7 +566,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         -------
         pred : ndarray of bool, shape (n_matrices,)
             The artifact detection: True if the matrix is clean, and False if
-            the matrix contain an artifact.
+            the matrix contains an artifact.
         """
         z = self.transform(X)
         pred = z < self.threshold
@@ -585,7 +632,8 @@ def _check_n_matrices(X, n_matrices):
     if X.shape[0] != n_matrices:
         raise ValueError(
             "Unequal n_matrices between ndarray of X. Should be %d but"
-            " got %d." % (n_matrices, X.shape[0]))
+            " got %d." % (n_matrices, X.shape[0])
+        )
 
 
 class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
@@ -650,7 +698,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         self.pos_label = pos_label
         self.neg_label = neg_label
 
-    def fit(self, X, y=None):
+    def fit(self, X, y=None, sample_weight=None):
         """Fit the potato field from SPD matrices.
 
         Fit the potato field from SPD matrices, with iterative
@@ -667,6 +715,8 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
             Labels corresponding to each matrix: positive (resp. negative)
             label corresponds to a clean (resp. artifact) matrix.
             If None, all matrices are considered as clean.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
@@ -685,16 +735,17 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
             threshold=self.z_threshold,
             n_iter_max=self.n_iter_max,
             pos_label=self.pos_label,
-            neg_label=self.neg_label)
+            neg_label=self.neg_label,
+        )
         self._potatoes = []
         for i in range(self.n_potatoes):
             _check_n_matrices(X[i], n_matrices)
             self._potatoes.append(clone(pt))
-            self._potatoes[i].fit(X[i], y)
+            self._potatoes[i].fit(X[i], y, sample_weight=sample_weight)
 
         return self
 
-    def partial_fit(self, X, y=None, alpha=0.1):
+    def partial_fit(self, X, y=None, *, sample_weight=None, alpha=0.1):
         """Partially fit the potato field from SPD matrices.
 
         This partial fit can be used to update dynamic or semi-dymanic online
@@ -711,6 +762,8 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
             Labels corresponding to each matrix: positive (resp. negative)
             label corresponds to a clean (resp. artifact) matrix.
             If None, all matrices are considered as clean.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
         alpha : float, default=0.1
             Update rate in [0, 1] for the centroid, and mean and standard
             deviation of log-distances: 0 for no update, 1 for full update.
@@ -729,7 +782,12 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
 
         for i in range(self.n_potatoes):
             _check_n_matrices(X[i], n_matrices)
-            self._potatoes[i].partial_fit(X[i], y, alpha=alpha)
+            self._potatoes[i].partial_fit(
+                X[i],
+                y,
+                sample_weight=sample_weight,
+                alpha=alpha,
+            )
         return self
 
     def transform(self, X):
@@ -775,7 +833,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         -------
         pred : ndarray of bool, shape (n_matrices,)
             The artifact detection: True if the matrix is clean, and False if
-            the matrix contain an artifact.
+            the matrix contains an artifact.
         """
         p = self.predict_proba(X)
         pred = p > self.p_threshold
@@ -820,7 +878,8 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         if len(X) != self.n_potatoes:
             raise ValueError(
                 "Length of X is not equal to n_potatoes. Should be %d but got "
-                "%d." % (self.n_potatoes, len(X)))
+                "%d." % (self.n_potatoes, len(X))
+            )
 
     def _get_proba(self, q):
         """Get proba from a chi-squared value q."""

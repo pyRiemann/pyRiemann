@@ -24,6 +24,9 @@ v0.7.dev
 
 - Add remote sensing examples on radar image clustering. :pr:`306` by :user:`AmmarMian`
 
+- Add ``sample_weight`` parameter to ``MDM.fit_predict``, ``Potato.fit``, ``Potato.partial_fit``,
+  ``PotatoField.fit``, ``PotatoField.partial_fit``, ``Whitening.partial_fit``. :pr:`xxx` by :user:`qbarthelemy`
+
 v0.6 (April 2024)
 -----------------
 
