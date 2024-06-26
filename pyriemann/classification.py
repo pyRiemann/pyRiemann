@@ -185,9 +185,9 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         """
         return self._predict_distances(X)
 
-    def fit_predict(self, X, y):
+    def fit_predict(self, X, y, sample_weight=None):
         """Fit and predict in one function."""
-        self.fit(X, y)
+        self.fit(X, y, sample_weight=sample_weight)
         return self.predict(X)
 
     def predict_proba(self, X):

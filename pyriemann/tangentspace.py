@@ -218,7 +218,7 @@ class FGDA(BaseEstimator, TransformerMixin):
     Fisher geodesic discriminant analysis (FGDA)
     projects matrices in tangent space,
     applies a Fisher linear discriminant analysis (FLDA) to reduce dimention,
-    and project filtered tangent vectors back in the manifold [1]_.
+    and projects filtered tangent vectors back in the manifold [1]_.
 
     Parameters
     ----------

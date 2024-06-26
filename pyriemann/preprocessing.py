@@ -178,7 +178,7 @@ class Whitening(BaseEstimator, TransformerMixin):
         self.filters_ = pca_filters * (1. / pca_sqrtvals)[np.newaxis, :]
         self.inv_filters_ = pca_sqrtvals[:, np.newaxis] * pca_filters.T
 
-    def partial_fit(self, X, y=None, alpha=None):
+    def partial_fit(self, X, y=None, *, sample_weight=None, alpha=None):
         """Partially fit whitening spatial filters.
 
         Parameters
@@ -187,6 +187,8 @@ class Whitening(BaseEstimator, TransformerMixin):
             Set of SPD matrices.
         y : None
             Ignored as unsupervised.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
         alpha : float | None, default=None
             Update rate in [0, 1] for the mean: 0 for no update, 1 for full
             update.
@@ -213,14 +215,22 @@ class Whitening(BaseEstimator, TransformerMixin):
             return self
 
         if not hasattr(self, "_mean"):
-            self._mean = mean_covariance(X, metric=self.metric)
+            self._mean = mean_covariance(
+                X,
+                metric=self.metric,
+                sample_weight=sample_weight,
+            )
             self.n_components_ = n_channels
         elif n_channels != self._mean.shape[-1]:
             raise ValueError(
                 "X does not have the good number of channels. Should be %d but"
                 " got %d." % (self._mean.shape[-1], n_channels))
         else:
-            Xm = mean_covariance(X, metric=self.metric)
+            Xm = mean_covariance(
+                X,
+                metric=self.metric,
+                sample_weight=sample_weight,
+            )
             self._mean = geodesic(self._mean, Xm, alpha, metric=self.metric)
 
         self._get_eig()
@@ -238,11 +248,10 @@ class Whitening(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        Xw : ndarray, shape (n_matrices, n_components, n_components)
+        X_new : ndarray, shape (n_matrices, n_components, n_components)
             Set of whitened, and optionally reduced, SPD matrices.
         """
-        Xw = self.filters_.T @ X @ self.filters_
-        return Xw
+        return self.filters_.T @ X @ self.filters_
 
     def inverse_transform(self, X):
         """Apply inverse whitening spatial filters.
@@ -254,8 +263,7 @@ class Whitening(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        Xiw : ndarray, shape (n_matrices, n_channels, n_channels)
+        X_new : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of unwhitened, and optionally unreduced, SPD matrices.
         """
-        Xiw = self.inv_filters_.T @ X @ self.inv_filters_
-        return Xiw
+        return self.inv_filters_.T @ X @ self.inv_filters_
