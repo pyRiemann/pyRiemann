@@ -1,6 +1,6 @@
 # pyRiemann
 
-[![Code PythonVersion](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10-blue)](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10-blue)
+[![Code PythonVersion](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11-blue)](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11-blue)
 [![PyPI version](https://badge.fury.io/py/pyriemann.svg)](https://badge.fury.io/py/pyriemann)
 [![Build Status](https://github.com/pyRiemann/pyRiemann/workflows/testing/badge.svg?branch=master&event=push)](https://github.com/pyRiemann/pyRiemann/actions)
 [![codecov](https://codecov.io/gh/pyRiemann/pyRiemann/branch/master/graph/badge.svg)](https://codecov.io/gh/pyRiemann/pyRiemann)
