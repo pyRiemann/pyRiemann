@@ -190,6 +190,52 @@ def distance_kullback_sym(A, B, squared=False):
     return d ** 2 if squared else d
 
 
+def distance_logchol(A, B, squared=False):
+    r"""Log-Cholesky distance between SPD/HPD matrices.
+
+    The log-Cholesky distance between two SPD/HPD matrices :math:`\mathbf{A}`
+    and :math:`\mathbf{B}` is [1]_:
+
+    .. math::
+        d(\mathbf{A},\mathbf{B}) =
+        \Vert \text{chol}(\mathbf{A}) - \text{chol}(\mathbf{B}) \Vert_F
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices, same dimensions as A.
+    squared : bool, default False
+        Return squared distance.
+
+    Returns
+    -------
+    d : float or ndarray, shape (...,)
+        Log-Cholesky distance between A and B.
+
+    Notes
+    -----
+    .. versionadded:: 0.7
+
+    See Also
+    --------
+    distance
+
+    References
+    ----------
+    .. [1] `Riemannian geometry of symmetric positive definite matrices via
+        Cholesky decomposition
+        <https://arxiv.org/pdf/1908.09326>`_
+        Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
+    """
+    return distance_euclid(
+        np.linalg.cholesky(A),
+        np.linalg.cholesky(B),
+        squared=squared,
+    )
+
+
 def distance_logdet(A, B, squared=False):
     r"""Log-det distance between SPD/HPD matrices.
 
@@ -239,7 +285,7 @@ def distance_logdet(A, B, squared=False):
 def distance_logeuclid(A, B, squared=False):
     r"""Log-Euclidean distance between SPD/HPD matrices.
 
-    The Log-Euclidean distance between two SPD/HPD matrices :math:`\mathbf{A}`
+    The log-Euclidean distance between two SPD/HPD matrices :math:`\mathbf{A}`
     and :math:`\mathbf{B}` is [1]_:
 
     .. math::
@@ -376,6 +422,7 @@ distance_functions = {
     "kullback": distance_kullback,
     "kullback_right": distance_kullback_right,
     "kullback_sym": distance_kullback_sym,
+    "logchol": distance_logchol,
     "logdet": distance_logdet,
     "logeuclid": distance_logeuclid,
     "riemann": distance_riemann,
@@ -397,8 +444,8 @@ def distance(A, B, metric="riemann", squared=False):
         Second matrix.
     metric : string | callable, default="riemann"
         Metric for distance, can be: "euclid", "harmonic", "kullback",
-        "kullback_right", "kullback_sym", "logdet", "logeuclid", "riemann",
-        "wasserstein", or a callable function.
+        "kullback_right", "kullback_sym", "logchol", "logdet", "logeuclid",
+        "riemann", "wasserstein", or a callable function.
     squared : bool, default False
         Return squared distance.
 
@@ -602,7 +649,7 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
         First set of matrices.
     Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
         Second set of matrices. If None, Y is set to X.
-    metric : string, default='riemann'
+    metric : string, default="riemann"
         Metric for pairwise distance. For the list of supported metrics,
         see :func:`pyriemann.utils.distance.distance`.
     squared : bool, default False
