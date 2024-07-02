@@ -87,6 +87,7 @@ def get_distances():
         "kullback",
         "kullback_right",
         "kullback_sym",
+        "logchol",
         "logdet",
         "logeuclid",
         "riemann",

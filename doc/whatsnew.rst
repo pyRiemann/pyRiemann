@@ -29,6 +29,8 @@ v0.7.dev
 
 - Update pyRiemann from Python 3.8 - 3.10 to 3.9 - 3.11. pr`310` by :user:`qbarthelemy`
 
+ - Add :func:`pyriemann.utils.distance.distance_logchol` to compute log-Cholesky distance. :pr:`311` by :user:`qbarthelemy`
+
 v0.6 (April 2024)
 -----------------
 
