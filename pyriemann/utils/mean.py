@@ -66,7 +66,7 @@ def mean_ale(X=None, tol=10e-7, maxiter=50, sample_weight=None, covmats=None):
     eye_n = np.eye(n)
     crit = np.inf
     for _ in range(maxiter):
-        J = np.einsum('a,abc->bc', sample_weight, logm(B @ X @ B.conj().T))
+        J = np.einsum("a,abc->bc", sample_weight, logm(B @ X @ B.conj().T))
         delta = np.real(np.diag(expm(J)))
         B = (np.abs(delta) ** -.5)[:, np.newaxis] * B
 
@@ -76,7 +76,7 @@ def mean_ale(X=None, tol=10e-7, maxiter=50, sample_weight=None, covmats=None):
     else:
         warnings.warn("Convergence not reached")
 
-    J = np.einsum('a,abc->bc', sample_weight, logm(B @ X @ B.conj().T))
+    J = np.einsum("a,abc->bc", sample_weight, logm(B @ X @ B.conj().T))
     A = np.linalg.inv(B)
     M = A @ expm(J) @ A.conj().T
     return M
@@ -319,10 +319,10 @@ def mean_logdet(X=None, tol=10e-5, maxiter=50, init=None, sample_weight=None,
     crit = np.finfo(np.float64).max
     for _ in range(maxiter):
         invX = np.linalg.inv(0.5 * X + 0.5 * M)
-        J = np.einsum('a,abc->bc', sample_weight, invX)
+        J = np.einsum("a,abc->bc", sample_weight, invX)
         Mnew = np.linalg.inv(J)
 
-        crit = np.linalg.norm(Mnew - M, ord='fro')
+        crit = np.linalg.norm(Mnew - M, ord="fro")
         M = Mnew
         if crit <= tol:
             break
@@ -373,7 +373,7 @@ def mean_power(X=None, p=None, *, sample_weight=None, zeta=10e-10, maxiter=100,
                covmats=None):
     r"""Power mean of SPD/HPD matrices.
 
-    Power mean of order p is the solution of [1]_ [2]_:
+    Power mean of order :math:`p` is the solution of [1]_ [2]_:
 
     .. math::
         \mathbf{M} = \sum_i w_i \ \mathbf{M} \sharp_p \mathbf{X}_i
@@ -422,11 +422,11 @@ def mean_power(X=None, p=None, *, sample_weight=None, zeta=10e-10, maxiter=100,
     """
     X = _deprecate_covmats(covmats, X)
     if p is None:
-        raise ValueError("Input p can not be None")
+        raise ValueError("Exponent p can not be None")
     if not isinstance(p, (int, float)):
-        raise ValueError("Power mean only defined for a scalar exponent")
+        raise ValueError("Exponent p must be a scalar exponent")
     if p < -1 or 1 < p:
-        raise ValueError("Exponent must be in [-1,+1]")
+        raise ValueError("Exponent p must be in [-1,+1]")
 
     if p == 1:
         return mean_euclid(X, sample_weight=sample_weight)
@@ -439,7 +439,7 @@ def mean_power(X=None, p=None, *, sample_weight=None, zeta=10e-10, maxiter=100,
     sample_weight = check_weights(sample_weight, n_matrices)
     phi = 0.375 / np.abs(p)
 
-    G = np.einsum('a,abc->bc', sample_weight, powm(X, p))
+    G = np.einsum("a,abc->bc", sample_weight, powm(X, p))
     if p > 0:
         K = invsqrtm(G)
     else:
@@ -449,7 +449,7 @@ def mean_power(X=None, p=None, *, sample_weight=None, zeta=10e-10, maxiter=100,
     crit = 10 * zeta
     for _ in range(maxiter):
         H = np.einsum(
-            'a,abc->bc',
+            "a,abc->bc",
             sample_weight,
             powm(K @ powm(X, np.sign(p)) @ K.conj().T, np.abs(p))
         )
@@ -465,6 +465,53 @@ def mean_power(X=None, p=None, *, sample_weight=None, zeta=10e-10, maxiter=100,
     if p > 0:
         M = np.linalg.inv(M)
 
+    return M
+
+
+def mean_poweuclid(X, p, sample_weight=None):
+    r"""Mean of SPD/HPD matrices according to the power Euclidean metric.
+
+    Power Euclidean mean of order :math:`p` is [1]_:
+
+    .. math::
+        \mathbf{M} = \left( \sum_i w_i \ \mathbf{X}_i^p \right)^{1/p}
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    p : float
+        Exponent.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (n, n)
+        Power Euclidean mean.
+
+    See Also
+    --------
+    mean_covariance
+
+    References
+    ----------
+    .. [1] `Power Euclidean metrics for covariance matrices with application to
+        diffusion tensor imaging
+        <https://arxiv.org/abs/1009.3045>`_
+        I.L. Dryden, X. Pennec, & J.M. Peyrat. arXiv, 2010.
+    """
+    if not isinstance(p, (int, float)):
+        raise ValueError("Exponent p must be a scalar exponent")
+
+    if p == 1:
+        return mean_euclid(X, sample_weight=sample_weight)
+    elif p == 0:
+        return mean_logeuclid(X, sample_weight=sample_weight)
+    elif p == -1:
+        return mean_harmonic(X, sample_weight=sample_weight)
+
+    M = powm(mean_euclid(powm(X, p), sample_weight=sample_weight), 1/p)
     return M
 
 
@@ -527,10 +574,10 @@ def mean_riemann(X=None, tol=10e-9, maxiter=50, init=None, sample_weight=None,
     crit = np.finfo(np.float64).max
     for _ in range(maxiter):
         M12, Mm12 = sqrtm(M), invsqrtm(M)
-        J = np.einsum('a,abc->bc', sample_weight, logm(Mm12 @ X @ Mm12))
+        J = np.einsum("a,abc->bc", sample_weight, logm(Mm12 @ X @ Mm12))
         M = M12 @ expm(nu * J) @ M12
 
-        crit = np.linalg.norm(J, ord='fro')
+        crit = np.linalg.norm(J, ord="fro")
         h = nu * crit
         if h < tau:
             nu = 0.95 * nu
@@ -599,10 +646,10 @@ def mean_wasserstein(X=None, tol=10e-4, maxiter=50, init=None,
 
     crit = np.finfo(np.float64).max
     for _ in range(maxiter):
-        J = np.einsum('a,abc->bc', sample_weight, sqrtm(K @ X @ K))
+        J = np.einsum("a,abc->bc", sample_weight, sqrtm(K @ X @ K))
         Knew = sqrtm(J)
 
-        crit = np.linalg.norm(Knew - K, ord='fro')
+        crit = np.linalg.norm(Knew - K, ord="fro")
         K = Knew
         if crit <= tol:
             break
@@ -775,7 +822,7 @@ def maskedmean_riemann(X=None, masks=None, tol=10e-9, maxiter=100, init=None,
         M12, Mm12 = sqrtm(M), invsqrtm(M)
         M = M12 @ expm(Mm12 @ (nu * J) @ Mm12) @ M12
 
-        crit = np.linalg.norm(J, ord='fro')
+        crit = np.linalg.norm(J, ord="fro")
         h = nu * crit
         if h < tau:
             nu = 0.95 * nu

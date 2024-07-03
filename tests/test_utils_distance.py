@@ -14,6 +14,7 @@ from pyriemann.utils.distance import (
     distance_logchol,
     distance_logdet,
     distance_logeuclid,
+    distance_poweuclid,
     distance_riemann,
     distance_wasserstein,
     distance,
@@ -197,6 +198,17 @@ def test_distance_logdet_implementation(get_mats):
     d = np.sqrt(np.log(np.linalg.det((A + B) / 2.0))
                 - 0.5 * np.log(np.linalg.det(A)*np.linalg.det(B)))
     assert distance_logdet(A, B) == approx(d)
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_distance_poweuclid(kind, get_mats):
+    n_matrices, n_channels = 2, 4
+    mats = get_mats(n_matrices, n_channels, kind)
+    A, B = mats[0], mats[1]
+    assert distance_poweuclid(A, B, 1) == approx(distance_euclid(A, B))
+    assert distance_poweuclid(A, B, 0) == approx(distance_logeuclid(A, B))
+    assert distance_poweuclid(A, B, -1) == approx(distance_harmonic(A, B))
+    distance_poweuclid(A, B, 0.42)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])

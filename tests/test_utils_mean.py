@@ -15,6 +15,7 @@ from pyriemann.utils.mean import (
     mean_logdet,
     mean_logeuclid,
     mean_power,
+    mean_poweuclid,
     mean_riemann,
     mean_wasserstein,
     maskedmean_riemann,
@@ -39,7 +40,7 @@ from pyriemann.utils.mean import (
         nanmean_riemann,
     ],
 )
-def test_mean_shape(kind, mean, get_mats):
+def test_mean(kind, mean, get_mats):
     """Test the shape of mean"""
     n_matrices, n_channels = 5, 3
     mats = get_mats(n_matrices, n_channels, kind)
@@ -54,7 +55,7 @@ def test_mean_shape(kind, mean, get_mats):
 @pytest.mark.parametrize(
     "mean", [mean_logdet, mean_riemann, mean_wasserstein, nanmean_riemann]
 )
-def test_mean_shape_with_init(kind, mean, get_mats):
+def test_mean_init(kind, mean, get_mats):
     """Test the shape of mean with init"""
     n_matrices, n_channels = 5, 3
     mats = get_mats(n_matrices, n_channels, kind)
@@ -101,11 +102,12 @@ def test_mean_weight_zero(kind, mean, get_mats, get_weights):
         nanmean_riemann,
     ],
 )
-def test_mean_weight_len_error(mean, get_mats):
+def test_mean_weight_error(mean, get_mats, get_weights):
     n_matrices, n_channels = 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
+    weights = get_weights(n_matrices + 1)
     with pytest.raises(ValueError):
-        mean(mats, sample_weight=np.ones(n_matrices + 1))
+        mean(mats, sample_weight=weights)
 
 
 @pytest.mark.parametrize(
@@ -142,6 +144,7 @@ def test_mean_warning_convergence(mean, get_mats):
         mean_logdet,
         mean_logeuclid,
         mean_power,
+        mean_poweuclid,
         mean_riemann,
         mean_wasserstein,
     ],
@@ -150,7 +153,7 @@ def test_mean_of_means(kind, mean, get_mats):
     """Test mean of submeans equal to grand mean"""
     n_matrices, n_channels = 10, 3
     mats = get_mats(n_matrices, n_channels, kind)
-    if mean == mean_power:
+    if mean in [mean_power, mean_poweuclid]:
         p = -0.42
         C = mean(mats, p)
         C1 = mean(mats[:n_matrices//2], p)
@@ -175,6 +178,7 @@ def test_mean_of_means(kind, mean, get_mats):
         mean_logdet,
         mean_logeuclid,
         mean_power,
+        mean_poweuclid,
         mean_riemann,
         mean_wasserstein,
         nanmean_riemann,
@@ -184,7 +188,7 @@ def test_mean_of_single_matrix(mean, get_mats):
     """Test the mean of a single matrix"""
     n_channels = 3
     mats = get_mats(1, n_channels, "spd")
-    if mean == mean_power:
+    if mean in [mean_power, mean_poweuclid]:
         M = mean(mats, 0.42)
     else:
         M = mean(mats)
@@ -230,13 +234,16 @@ def test_mean_identity(get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_mean_power(kind, get_mats):
+def test_mean_power(kind, get_mats, get_weights):
     """Test the power mean"""
     n_matrices, n_channels = 3, 3
     mats = get_mats(n_matrices, n_channels, kind)
     assert mean_power(mats, 1) == approx(mean_euclid(mats))
     assert mean_power(mats, 0) == approx(mean_riemann(mats))
     assert mean_power(mats, -1) == approx(mean_harmonic(mats))
+
+    weights = get_weights(n_matrices)
+    mean_power(mats, 0.42, sample_weight=weights)
 
 
 def test_mean_power_errors(get_mats):
@@ -248,6 +255,18 @@ def test_mean_power_errors(get_mats):
         mean_power(mats, [1])
     with pytest.raises(ValueError):  # exponent is not in [-1,1]
         mean_power(mats, 3)
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_mean_poweuclid(kind, get_mats, get_weights):
+    n_matrices, n_channels = 10, 4
+    mats = get_mats(n_matrices, n_channels, kind)
+    assert mean_poweuclid(mats, 1) == approx(mean_euclid(mats))
+    assert mean_poweuclid(mats, 0) == approx(mean_logeuclid(mats))
+    assert mean_poweuclid(mats, -1) == approx(mean_harmonic(mats))
+
+    weights = get_weights(n_matrices)
+    mean_poweuclid(mats, 0.42, sample_weight=weights)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -283,7 +302,7 @@ def test_mean_riemann_properties(kind, get_mats):
 
 
 @pytest.mark.parametrize("init", [True, False])
-def test_mean_masked_riemann_shape(init, get_mats, get_masks):
+def test_mean_masked_riemann(init, get_mats, get_masks):
     """Test the masked Riemannian mean"""
     n_matrices, n_channels = 5, 3
     mats = get_mats(n_matrices, n_channels, "spd")
@@ -296,7 +315,7 @@ def test_mean_masked_riemann_shape(init, get_mats, get_masks):
 
 
 @pytest.mark.parametrize("init", [True, False])
-def test_mean_nan_riemann_shape(init, get_mats, rndstate):
+def test_mean_nan_riemann(init, get_mats, rndstate):
     """Test the Riemannian NaN-mean"""
     n_matrices, n_channels = 10, 6
     mats = get_mats(n_matrices, n_channels, "spd")
