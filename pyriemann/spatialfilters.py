@@ -8,7 +8,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from .utils.covariance import normalize, get_nondiag_weight, cov_est_functions
 from .utils.mean import mean_covariance
 from .utils.utils import check_function
-from .utils.ajd import ajd_pham
+from .utils.ajd import ajd, ajd_pham
 from . import estimation as est
 from .preprocessing import Whitening
 
@@ -29,7 +29,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
     classes : list of int | None, default=None
         List of classes to take into account for Xdawn.
         If None, all classes will be accounted.
-    estimator : string, default='scm'
+    estimator : string, default="scm"
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
     baseline_cov : None | array, shape(n_channels, n_channels), default=None
@@ -70,7 +70,7 @@ class Xdawn(BaseEstimator, TransformerMixin):
         pp.1382-1386.
     """
 
-    def __init__(self, nfilter=4, classes=None, estimator='scm',
+    def __init__(self, nfilter=4, classes=None, estimator="scm",
                  baseline_cov=None):
         """Init."""
         self.nfilter = nfilter
@@ -157,7 +157,8 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
     r"""Bilinear spatial filter.
 
     Bilinear spatial filter for SPD matrices allows to define a custom spatial
-    filter for bilinear projection of the data:
+    filter :math:`\mathbf{V}` for bilinear projection of each covariance matrix
+    :math:`\mathbf{X}_i`:
 
     .. math::
         \mathbf{Xf}_i = \mathbf{V} \mathbf{X}_i \mathbf{V}^T
@@ -204,9 +205,9 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
             The BilinearFilter instance.
         """
         if not isinstance(self.filters, np.ndarray):
-            raise TypeError('filters must be an array.')
+            raise TypeError("Parameter filters must be an array.")
         if not isinstance(self.log, bool):
-            raise TypeError('log must be a boolean')
+            raise TypeError("Parameter log must be a boolean")
         self.filters_ = self.filters
         return self
 
@@ -223,12 +224,12 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
         Xf : ndarray, shape (n_trials, n_filters) or \
                 ndarray, shape (n_trials, n_filters, n_filters)
             Set of spatialy filtered log-variance or covariance, depending on
-            the 'log' input parameter.
+            the `log` input parameter.
         """
         if not isinstance(X, (np.ndarray, list)):
-            raise TypeError('X must be an array.')
+            raise TypeError("X must be an array.")
         if X[0].shape[1] != self.filters_.shape[1]:
-            raise ValueError("Data and filters dimension must be compatible.")
+            raise ValueError("Input and filters dimension must be compatible.")
 
         X_filt = self.filters_ @ X @ self.filters_.T
 
@@ -265,6 +266,11 @@ class CSP(BilinearFilter):
     log : bool, default=True
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.
+    ajd_method : string | callable, default="ajd_pham"
+        Method for AJD, can be: "ajd_pham", "rjd", "uwedge", or a callable
+        function.
+
+        .. versionadded:: 0.7
 
     Attributes
     ----------
@@ -275,7 +281,8 @@ class CSP(BilinearFilter):
 
     See Also
     --------
-    MDM, SPoC
+    MDM
+    SPoC
 
     References
     ----------
@@ -298,11 +305,18 @@ class CSP(BilinearFilter):
         August 2008. pp. 1991 - 2000
     """
 
-    def __init__(self, nfilter=4, metric="euclid", log=True):
+    def __init__(
+        self,
+        nfilter=4,
+        metric="euclid",
+        log=True,
+        ajd_method="ajd_pham",
+    ):
         """Init."""
         self.nfilter = nfilter
         self.metric = metric
         self.log = log
+        self.ajd_method = ajd_method
 
     def fit(self, X, y):
         """Train CSP spatial filters.
@@ -320,28 +334,28 @@ class CSP(BilinearFilter):
             The CSP instance.
         """
         if not isinstance(self.nfilter, int):
-            raise TypeError('nfilter must be an integer')
+            raise TypeError("nfilter must be an integer")
         if not isinstance(self.log, bool):
-            raise TypeError('log must be a boolean')
+            raise TypeError("log must be a boolean")
 
         if not isinstance(X, (np.ndarray, list)):
-            raise TypeError('X must be an array.')
+            raise TypeError("X must be an array.")
         if not isinstance(y, (np.ndarray, list)):
-            raise TypeError('y must be an array.')
+            raise TypeError("y must be an array.")
         X, y = np.asarray(X), np.asarray(y)
         if X.ndim != 3:
-            raise ValueError('X must be n_trials * n_channels * n_channels')
+            raise ValueError("X must be n_trials * n_channels * n_channels")
         if len(y) != len(X):
-            raise ValueError('X and y must have the same length.')
+            raise ValueError("X and y must have the same length.")
         if np.squeeze(y).ndim != 1:
-            raise ValueError('y must be of shape (n_trials,).')
+            raise ValueError("y must be of shape (n_trials,).")
 
         n_trials, n_channels, _ = X.shape
         classes = np.unique(y)
         # estimate class means
         C = []
         for c in classes:
-            C.append(mean_covariance(X[y == c], self.metric))
+            C.append(mean_covariance(X[y == c], metric=self.metric))
         C = np.array(C)
 
         # Switch between binary and multiclass
@@ -350,8 +364,8 @@ class CSP(BilinearFilter):
             # sort eigenvectors
             ix = np.argsort(np.abs(evals - 0.5))[::-1]
         elif len(classes) > 2:
-            evecs, D = ajd_pham(C)
-            Ctot = mean_covariance(C, self.metric)
+            evecs, D = ajd(C, method=self.ajd_method)
+            Ctot = mean_covariance(C, metric=self.metric)
             evecs = evecs.T
 
             # normalize
@@ -525,15 +539,15 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         If ``None`` :
             no dimension reduction during whitening.
-        If ``{'n_components': val}`` :
+        If ``{"n_components": val}`` :
             dimension reduction defining the number of components;
             ``val`` must be an integer superior to 1.
-        If ``{'expl_var': val}`` :
+        If ``{"expl_var": val}`` :
             dimension reduction selecting the number of components such that
             the amount of variance that needs to be explained is greater than
             the percentage specified by ``val``.
             ``val`` must be a float in (0,1], typically ``0.99``.
-        If ``{'max_cond': val}`` :
+        If ``{"max_cond": val}`` :
             dimension reduction selecting the number of components such that
             the condition number of the mean matrix is lower than ``val``.
             This threshold has a physiological interpretation, because it can
@@ -541,7 +555,7 @@ class AJDC(BaseEstimator, TransformerMixin):
             (usually, eye-blink source) and the power of the lowest component
             you don't want to keep (acquisition sensor noise).
             ``val`` must be a float strictly superior to 1, typically 100.
-        If ``{'warm_restart': val}`` :
+        If ``{"warm_restart": val}`` :
             dimension reduction defining the number of components from an
             initial joint diagonalizer, and then run AJD from this solution.
             ``val`` must be a square ndarray.
@@ -632,7 +646,8 @@ class AJDC(BaseEstimator, TransformerMixin):
             overlap=self.overlap,
             fmin=self.fmin,
             fmax=self.fmax,
-            fs=self.fs)
+            fs=self.fs,
+        )
         # estimation of cospectra on subjects and conditions
         cosp = []
         for s in range(len(X)):
@@ -643,9 +658,9 @@ class AJDC(BaseEstimator, TransformerMixin):
                 self.freqs_ = cospcov.freqs_
             else:
                 if n_conditions != cosp_.shape[0]:
-                    raise ValueError('Unequal number of conditions')
+                    raise ValueError("Unequal number of conditions")
                 if self.n_channels_ != cosp_.shape[1]:
-                    raise ValueError('Unequal number of channels')
+                    raise ValueError("Unequal number of channels")
             cosp.append(cosp_)
         cosp = np.transpose(np.array(cosp), axes=(0, 1, 4, 2, 3))
 
@@ -662,22 +677,24 @@ class AJDC(BaseEstimator, TransformerMixin):
         # the size of the initial diag filters
         init = None
         if self.dim_red is None:
-            warnings.warn('Parameter dim_red should not be let to None')
+            warnings.warn("Parameter dim_red should not be let to None")
         elif isinstance(self.dim_red, dict) and len(self.dim_red) == 1 \
-                and next(iter(self.dim_red)) == 'warm_restart':
-            init = self.dim_red['warm_restart']
+                and next(iter(self.dim_red)) == "warm_restart":
+            init = self.dim_red["warm_restart"]
             if init.ndim != 2 or init.shape[0] != init.shape[1]:
                 raise ValueError(
-                    'Initial diagonalizer defined in dim_red is not a 2D '
-                    'square matrix (Got shape = %s).' % (init.shape,))
-            self.dim_red = {'n_components': init.shape[0]}
+                    "Initial diagonalizer defined in dim_red is not a 2D "
+                    "square matrix (Got shape = %s)." % (init.shape,)
+                )
+            self.dim_red = {"n_components": init.shape[0]}
 
         # dimension reduction and whitening, Eq.(8) in [2], computed on the
         # weighted mean of cospectra across frequencies (and conditions)
         whit = Whitening(
-            metric='euclid',
+            metric="euclid",
             dim_red=self.dim_red,
-            verbose=self.verbose)
+            verbose=self.verbose,
+        )
         cosp_rw = whit.fit_transform(self._cosp_channels, weights)
         self.n_sources_ = whit.n_components_
 
@@ -686,7 +703,8 @@ class AJDC(BaseEstimator, TransformerMixin):
             cosp_rw,
             init=init,
             n_iter_max=100,
-            sample_weight=weights)
+            sample_weight=weights,
+        )
 
         # computation of forward and backward filters, Eq.(9) and (10) in [2]
         self.forward_filters_ = self.diag_filters_ @ whit.filters_.T
@@ -710,11 +728,12 @@ class AJDC(BaseEstimator, TransformerMixin):
             Multi-channel time-series in source space.
         """
         if X.ndim != 3:
-            raise ValueError('X must have 3 dimensions (Got %d)' % X.ndim)
+            raise ValueError("X must have 3 dimensions (Got %d)" % X.ndim)
         if X.shape[1] != self.n_channels_:
             raise ValueError(
-                'X does not have the good number of channels. Should be %d but'
-                ' got %d.' % (self.n_channels_, X.shape[1]))
+                "X does not have the good number of channels. Should be %d but"
+                " got %d." % (self.n_channels_, X.shape[1])
+            )
 
         source = self.forward_filters_ @ X
         return source
@@ -739,11 +758,12 @@ class AJDC(BaseEstimator, TransformerMixin):
             Multi-channel time-series in channel space.
         """
         if X.ndim != 3:
-            raise ValueError('X must have 3 dimensions (Got %d)' % X.ndim)
+            raise ValueError("X must have 3 dimensions (Got %d)" % X.ndim)
         if X.shape[1] != self.n_sources_:
             raise ValueError(
-                'X does not have the good number of sources. Should be %d but '
-                'got %d.' % (self.n_sources_, X.shape[1]))
+                "X does not have the good number of sources. Should be %d but "
+                "got %d." % (self.n_sources_, X.shape[1])
+            )
 
         denois = np.eye(self.n_sources_)
         if supp is None:
@@ -752,7 +772,7 @@ class AJDC(BaseEstimator, TransformerMixin):
             for s in supp:
                 denois[s, s] = 0
         else:
-            raise ValueError('Parameter supp must be a list of int, or None')
+            raise ValueError("Parameter supp must be a list of int, or None")
 
         signal = self.backward_filters_ @ denois @ X
         return signal
@@ -773,11 +793,12 @@ class AJDC(BaseEstimator, TransformerMixin):
             Explained variance for each source.
         """
         if X.ndim != 3:
-            raise ValueError('X must have 3 dimensions (Got %d)' % X.ndim)
+            raise ValueError("X must have 3 dimensions (Got %d)" % X.ndim)
         if X.shape[1] != self.n_channels_:
             raise ValueError(
-                'X does not have the good number of channels. Should be %d but'
-                ' got %d.' % (self.n_channels_, X.shape[1]))
+                "X does not have the good number of channels. Should be %d but"
+                " got %d." % (self.n_channels_, X.shape[1])
+            )
 
         cov = est.Covariances().transform(X)
 
@@ -787,5 +808,6 @@ class AJDC(BaseEstimator, TransformerMixin):
                 self.backward_filters_[:, s] * self.forward_filters_[s].T * cov
                 * self.forward_filters_[s] * self.backward_filters_[:, s].T,
                 axis1=-2,
-                axis2=-1)
+                axis2=-1,
+            )
         return src_var
