@@ -16,6 +16,10 @@ import sys
 import os
 import matplotlib
 
+# mne update path
+import mne
+print(mne.datasets.sample.data_path(update_path=True))
+
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
