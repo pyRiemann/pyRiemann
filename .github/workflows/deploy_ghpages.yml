@@ -2,12 +2,11 @@ name: Deploy GitHub pages
 
 on: [push, pull_request]
 
-
 jobs:
   build_docs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
       - name: Generate HTML docs
         uses: josh146/sphinx-action@master
         with:
@@ -17,7 +16,7 @@ jobs:
             pip install -e .
             pip install -r doc/requirements.txt
       - name:  Upload generated HTML as artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: DocHTML
           path: doc/build/html/
