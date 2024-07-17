@@ -18,8 +18,7 @@ import matplotlib
 
 # mne update path
 import mne
-print(mne.datasets.sample.data_path(update_path=True))
-print(mne.datasets.eegbci.load_data(1, [6, 10, 14], update_path=True))
+print(mne.datasets.sample.data_path(update_path=True, download=False))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the

@@ -90,7 +90,8 @@ def get_subject_dataset(subject):
 ###############################################################################
 # We will consider subjects from the Physionet EEG database for which the
 # intra-subject classification has been checked to be > 0.70
-subject_list = [1, 2, 4, 7, 8, 15, 20, 29, 34, 35]
+subject_list = [1, 2, 4, 7]
+n_subjects = len(subject_list)
 
 # Load the data from subjects
 X, y, d = [], [], []
@@ -124,10 +125,10 @@ scores = {meth: [] for meth in ['dummy', 'rct']}
 clf_base = MDM()
 
 # Consider different subjects as target
-for subject_target_idx in tqdm(range(len(subject_list))):
+for i_subject in tqdm(range(n_subjects)):
 
     # Change the target domain
-    tl_cv.target_domain = f'subject_{subject_list[subject_target_idx]:02}'
+    tl_cv.target_domain = f'subject_{subject_list[i_subject]:02}'
 
     # Create dict for storing results of this particular CV split
     scores_cv = {meth: [] for meth in scores.keys()}
@@ -188,12 +189,11 @@ for subject_target_idx in tqdm(range(len(subject_list))):
 
 fig, ax = plt.subplots(figsize=(7, 6))
 ax.boxplot(x=[scores[meth] for meth in scores.keys()])
-ax.set_ylim(0.45, 1.00)
+ax.set_ylim(0.45, 0.8)
 ax.set_xticklabels(['Dummy', 'Recentering'])
 ax.set_ylabel('Classification accuracy')
 ax.set_xlabel('Method')
-ax.set_title('Transfer learning with data pooled from 10 subjects')
-
+ax.set_title(f'Transfer learning with data pooled from {n_subjects} subjects')
 plt.show()
 
 

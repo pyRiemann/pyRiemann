@@ -33,7 +33,7 @@ from helpers.frequencybandselection_helpers import freq_selection_class_dis
 
 tmin, tmax = 0.5, 2.5
 event_id = dict(T1=2, T2=3)
-subject = 1
+subject = 7
 runs = [4, 8, 12]  # motor imagery: left hand vs right hand
 
 raw_files = [
