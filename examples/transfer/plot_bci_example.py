@@ -45,7 +45,7 @@ def get_subject_dataset(subject):
     # Consider epochs that start 1s after cue onset.
     tmin, tmax = 1., 2.
     event_id = dict(hands=2, feet=3)
-    runs = [6, 10, 14]  # motor imagery: hands vs feet
+    runs = [6, 10]  # motor imagery: hands vs feet
 
     # Download data with MNE
     raw_files = [
