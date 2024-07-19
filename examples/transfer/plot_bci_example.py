@@ -49,7 +49,11 @@ def get_subject_dataset(subject):
 
     # Download data with MNE
     raw_files = [
-        read_raw_edf(f, preload=True) for f in eegbci.load_data(subject, runs, update_path=True)
+        read_raw_edf(f, preload=True) for f in eegbci.load_data(
+                                                subject,
+                                                runs,
+                                                update_path=True
+                                               )
     ]
     raw = concatenate_raws(raw_files)
 

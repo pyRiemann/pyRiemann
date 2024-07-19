@@ -72,7 +72,15 @@ def plot_detection(ax, rp_label, rpf_label):
 # -------------
 
 # Load motor imagery data
-raw = read_raw_edf(eegbci.load_data(7, [6], update_path=True)[0], preload=True, verbose=False)
+subject = 7
+runs = [6]
+raw = read_raw_edf(
+    eegbci.load_data(
+        subject,
+        runs,
+        update_path=True
+    )[0], preload=True, verbose=False
+)
 eegbci.standardize(raw)
 raw.set_montage(make_standard_montage('standard_1005'))
 sfreq = int(raw.info['sfreq'])  # 160 Hz
