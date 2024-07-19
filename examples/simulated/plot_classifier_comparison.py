@@ -181,18 +181,34 @@ def plot_classifiers(metric):
 # Classifiers and Datasets
 # ------------------------
 
-names = [
-    "MDM",
-    "k-NN",
-    "SVC",
-    "MeanField",
-]
-classifiers = [
-    MDM(),
-    KNearestNeighbor(n_neighbors=3),
-    SVC(probability=True),
-    MeanField(power_list=[-1, 0, 1]),
-]
+# Usefull for Ci for example
+reduced_example = True
+
+if reduced_example:
+    names = [
+        "MDM",
+        "k-NN",
+        "MeanField",
+    ]
+    classifiers = [
+        MDM(),
+        KNearestNeighbor(n_neighbors=2),
+        MeanField(power_list=[-1, 0, 1]),
+    ]
+else:
+    names = [
+        "MDM",
+        "k-NN",
+        "SVC",
+        "MeanField",
+    ]
+    classifiers = [
+        MDM(),
+        KNearestNeighbor(n_neighbors=3),
+        SVC(probability=True),
+        MeanField(power_list=[-1, 0, 1]),
+    ]
+
 n_classifs = len(classifiers)
 
 rs = np.random.RandomState(2022)
