@@ -49,7 +49,7 @@ def get_subject_dataset(subject):
 
     # Download data with MNE
     raw_files = [
-        read_raw_edf(f, preload=True) for f in eegbci.load_data(subject, runs)
+        read_raw_edf(f, preload=True) for f in eegbci.load_data(subject, runs, update_path=True)
     ]
     raw = concatenate_raws(raw_files)
 
@@ -90,7 +90,7 @@ def get_subject_dataset(subject):
 ###############################################################################
 # We will consider subjects from the Physionet EEG database for which the
 # intra-subject classification has been checked to be > 0.70
-subject_list = [1, 2, 4, 7]
+subject_list = [1, 7]
 n_subjects = len(subject_list)
 
 # Load the data from subjects

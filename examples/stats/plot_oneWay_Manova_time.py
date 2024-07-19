@@ -34,7 +34,7 @@ runs = [6, 10, 14]  # motor imagery: hands vs feet
 
 raw_files = [
     read_raw_edf(f, preload=True, verbose=False)
-    for f in eegbci.load_data(subject, runs)
+    for f in eegbci.load_data(subject, runs, update_path=True)
 ]
 raw = concatenate_raws(raw_files)
 
