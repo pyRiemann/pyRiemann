@@ -193,7 +193,7 @@ if reduced_example:
     classifiers = [
         MDM(),
         KNearestNeighbor(n_neighbors=2),
-        MeanField(power_list=[-1, 0, 1]),
+        SVC(probability=True),
     ]
 else:
     names = [
