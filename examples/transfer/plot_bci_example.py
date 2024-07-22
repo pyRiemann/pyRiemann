@@ -193,7 +193,6 @@ for i_subject in tqdm(range(n_subjects)):
 
 fig, ax = plt.subplots(figsize=(7, 6))
 ax.boxplot(x=[scores[meth] for meth in scores.keys()])
-ax.set_ylim(0.45, 0.8)
 ax.set_xticklabels(['Dummy', 'Recentering'])
 ax.set_ylabel('Classification accuracy')
 ax.set_xlabel('Method')
