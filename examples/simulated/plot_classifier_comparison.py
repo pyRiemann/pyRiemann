@@ -188,7 +188,7 @@ if reduced_example:
     names = [
         "MDM",
         "k-NN",
-        "MeanField",
+        "SVC",
     ]
     classifiers = [
         MDM(),
