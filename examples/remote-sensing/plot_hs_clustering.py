@@ -53,7 +53,7 @@ X_image, Y_image = np.meshgrid(x_values, y_values)
 if small_dataset:
     reduce_factor = 5
     data = data[::reduce_factor, ::reduce_factor]
-    max_iter = 9
+    max_iter = 5
     resolution = reduce_factor*resolution
 height, width, n_features = data.shape
 
