@@ -56,7 +56,7 @@ if small_dataset:
     reduce_factor_y = 14
     reduce_factor_x = 8
     data = data[::reduce_factor_y, ::reduce_factor_x]
-    max_iter = 9
+    max_iter = 5
     resolution_x = reduce_factor_x*resolution_x
     resolution_y = reduce_factor_y*resolution_y
 height, width, n_features = data.shape
