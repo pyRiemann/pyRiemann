@@ -53,8 +53,8 @@ y_values = np.arange(0, data.shape[0]) * resolution_y
 X_image, Y_image = np.meshgrid(x_values, y_values)
 
 if small_dataset:
-    reduce_factor_y = 12
-    reduce_factor_x = 6
+    reduce_factor_y = 14
+    reduce_factor_x = 8
     data = data[::reduce_factor_y, ::reduce_factor_x]
     max_iter = 9
     resolution_x = reduce_factor_x*resolution_x
