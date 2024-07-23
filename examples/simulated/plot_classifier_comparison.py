@@ -32,7 +32,6 @@ from pyriemann.classification import (
     MDM,
     KNearestNeighbor,
     SVC,
-    MeanField,
 )
 
 
