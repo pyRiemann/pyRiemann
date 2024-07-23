@@ -72,14 +72,10 @@ def plot_detection(ax, rp_label, rpf_label):
 # -------------
 
 # Load motor imagery data
-subject = 7
-runs = [6]
 raw = read_raw_edf(
-    eegbci.load_data(
-        subject,
-        runs,
-        update_path=True
-    )[0], preload=True, verbose=False
+    eegbci.load_data(2, [5], update_path=True)[0],
+    preload=True,
+    verbose=False,
 )
 eegbci.standardize(raw)
 raw.set_montage(make_standard_montage('standard_1005'))
