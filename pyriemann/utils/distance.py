@@ -366,7 +366,7 @@ def distance_poweuclid(A, B, p, squared=False):
         I.L. Dryden, X. Pennec, & J.M. Peyrat. arXiv, 2010.
     """
     if not isinstance(p, (int, float)):
-        raise ValueError("Exponent p must be a scalar exponent")
+        raise ValueError("Exponent p must be a scalar (Got {type(p)})")
 
     if p == 1:
         return distance_euclid(A, B, squared=squared)
