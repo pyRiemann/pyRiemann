@@ -45,11 +45,12 @@ def get_subject_dataset(subject):
     # Consider epochs that start 1s after cue onset.
     tmin, tmax = 1., 2.
     event_id = dict(hands=2, feet=3)
-    runs = [6, 10, 14]  # motor imagery: hands vs feet
+    runs = [6, 10]  # motor imagery: hands vs feet
 
     # Download data with MNE
     raw_files = [
-        read_raw_edf(f, preload=True) for f in eegbci.load_data(subject, runs)
+        read_raw_edf(f, preload=True)
+        for f in eegbci.load_data(subject, runs, update_path=True)
     ]
     raw = concatenate_raws(raw_files)
 
@@ -90,7 +91,7 @@ def get_subject_dataset(subject):
 ###############################################################################
 # We will consider subjects from the Physionet EEG database for which the
 # intra-subject classification has been checked to be > 0.70
-subject_list = [1, 2, 4, 7]
+subject_list = [1, 7]
 n_subjects = len(subject_list)
 
 # Load the data from subjects
@@ -189,7 +190,6 @@ for i_subject in tqdm(range(n_subjects)):
 
 fig, ax = plt.subplots(figsize=(7, 6))
 ax.boxplot(x=[scores[meth] for meth in scores.keys()])
-ax.set_ylim(0.45, 0.8)
 ax.set_xticklabels(['Dummy', 'Recentering'])
 ax.set_ylabel('Classification accuracy')
 ax.set_xlabel('Method')

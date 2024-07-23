@@ -170,6 +170,8 @@ html_theme_options = {
     'bootstrap_version':
     "3",
     'navbar_links': [("API", "api"), ("Gallery", "auto_examples/index")],
+    'navigation_depth': 2,
+    'collapse_navigation': True,
 }
 
 # Add any paths that contain custom themes here, relative to this directory.

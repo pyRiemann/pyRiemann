@@ -75,7 +75,8 @@ subject = 7
 runs = [6, 10, 14]  # motor imagery: hands vs feet
 
 raw_files = [
-    read_raw_edf(f, preload=True) for f in eegbci.load_data(subject, runs)
+    read_raw_edf(f, preload=True)
+    for f in eegbci.load_data(subject, runs, update_path=True)
 ]
 raw = concatenate_raws(raw_files)
 
@@ -142,8 +143,8 @@ inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
 
 # Define the hyper-parameters to test in the nested cross-validation
 param_grid = {
-    'augmenteddataset__order': [1, 2, 3, 4, 5, 6, 7],
-    'augmenteddataset__lag': [1, 2, 3, 4, 5, 6, 7],
+    'augmenteddataset__order': [2, 3, 4],
+    'augmenteddataset__lag': [5, 7, 9],
 }
 
 pipelines_grid = {}

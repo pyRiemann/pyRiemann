@@ -89,10 +89,10 @@ plt.show()
 
 event_id = dict(hands=2, feet=3)
 subject = 1
-runs = [6, 10, 14]  # motor imagery: hands vs feet
+runs = [6, 10]  # motor imagery: hands vs feet
 raw_files = [
     read_raw_edf(f, preload=True, stim_channel="auto")
-    for f in eegbci.load_data(subject, runs)
+    for f in eegbci.load_data(subject, runs, update_path=True)
 ]
 raw = concatenate_raws(raw_files)
 picks = pick_types(raw.info, eeg=True, exclude="bads")

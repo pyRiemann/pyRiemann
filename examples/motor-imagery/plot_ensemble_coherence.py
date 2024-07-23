@@ -79,7 +79,8 @@ subject = 7
 runs = [4, 8]  # motor imagery: left vs right hand
 
 raw_files = [
-    read_raw_edf(f, preload=True) for f in eegbci.load_data(subject, runs)
+    read_raw_edf(f, preload=True)
+    for f in eegbci.load_data(subject, runs, update_path=True)
 ]
 raw = concatenate_raws(raw_files)
 

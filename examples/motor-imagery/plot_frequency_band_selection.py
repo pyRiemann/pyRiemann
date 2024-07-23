@@ -34,10 +34,11 @@ from helpers.frequencybandselection_helpers import freq_selection_class_dis
 tmin, tmax = 0.5, 2.5
 event_id = dict(T1=2, T2=3)
 subject = 7
-runs = [4, 8, 12]  # motor imagery: left hand vs right hand
+runs = [4, 8]  # motor imagery: left hand vs right hand
 
 raw_files = [
-    read_raw_edf(f, preload=True) for f in eegbci.load_data(subject, runs)
+    read_raw_edf(f, preload=True)
+    for f in eegbci.load_data(subject, runs, update_path=True)
 ]
 raw = concatenate_raws(raw_files)
 picks = pick_types(
