@@ -363,10 +363,10 @@ def distance_poweuclid(A, B, p, squared=False):
     .. [1] `Power Euclidean metrics for covariance matrices with application to
         diffusion tensor imaging
         <https://arxiv.org/abs/1009.3045>`_
-        I.L. Dryden, X. Pennec, & J.M. Peyrat. arXiv, 2010.
+        I.L. Dryden, X. Pennec, & J.M. Peyrat. arXiv, 2010
     """
     if not isinstance(p, (int, float)):
-        raise ValueError("Exponent p must be a scalar (Got {type(p)})")
+        raise ValueError(f"Exponent p must be a scalar (Got {type(p)})")
 
     if p == 1:
         return distance_euclid(A, B, squared=squared)

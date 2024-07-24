@@ -247,7 +247,6 @@ def test_mean_power(kind, get_mats, get_weights):
 
 
 def test_mean_power_errors(get_mats):
-    """Test the power mean errors"""
     n_matrices, n_channels = 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
 
@@ -267,6 +266,14 @@ def test_mean_poweuclid(kind, get_mats, get_weights):
 
     weights = get_weights(n_matrices)
     mean_poweuclid(mats, 0.42, sample_weight=weights)
+
+
+def test_mean_poweuclid_error(get_mats):
+    n_matrices, n_channels = 3, 2
+    mats = get_mats(n_matrices, n_channels, "spd")
+
+    with pytest.raises(ValueError):  # exponent is not a scalar
+        mean_poweuclid(mats, [1])
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])

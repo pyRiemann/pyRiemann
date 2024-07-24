@@ -424,7 +424,7 @@ def mean_power(X=None, p=None, *, sample_weight=None, zeta=10e-10, maxiter=100,
     if p is None:
         raise ValueError("Exponent p can not be None")
     if not isinstance(p, (int, float)):
-        raise ValueError("Exponent p must be a scalar (Got {type(p)})")
+        raise ValueError(f"Exponent p must be a scalar (Got {type(p)})")
     if p < -1 or 1 < p:
         raise ValueError("Exponent p must be in [-1,+1]")
 
@@ -502,7 +502,7 @@ def mean_poweuclid(X, p, sample_weight=None):
         I.L. Dryden, X. Pennec, & J.M. Peyrat. arXiv, 2010.
     """
     if not isinstance(p, (int, float)):
-        raise ValueError("Exponent p must be a scalar (Got {type(p)})")
+        raise ValueError(f"Exponent p must be a scalar (Got {type(p)})")
 
     if p == 1:
         return mean_euclid(X, sample_weight=sample_weight)
