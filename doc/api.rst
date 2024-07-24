@@ -231,6 +231,7 @@ Distances
     distance_logchol
     distance_logdet
     distance_logeuclid
+    distance_poweuclid
     distance_riemann
     distance_wasserstein
     pairwise_distance
@@ -255,6 +256,7 @@ Means
     mean_logdet
     mean_logeuclid
     mean_power
+    mean_poweuclid
     mean_riemann
     mean_wasserstein
     maskedmean_riemann

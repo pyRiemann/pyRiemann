@@ -33,6 +33,8 @@ v0.7.dev
 
 - Add ``ajd_method`` parameter to :class:`pyriemann.spatialfilters.CSP`. :pr:`313` by :user:`qbarthelemy`
 
+- Add :func:`pyriemann.utils.distance.distance_poweuclid` and :func:`pyriemann.utils.mean.mean_poweuclid` to use power Euclidean metric. :pr:`312` by :user:`qbarthelemy`
+
 v0.6 (April 2024)
 -----------------
 

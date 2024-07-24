@@ -4,7 +4,7 @@ import numpy as np
 from scipy.linalg import eigvalsh, solve
 from sklearn.metrics import euclidean_distances
 
-from .base import logm, sqrtm, invsqrtm
+from .base import invsqrtm, logm, powm, sqrtm
 from .utils import check_function
 
 
@@ -321,6 +321,65 @@ def distance_logeuclid(A, B, squared=False):
         SIAM J Matrix Anal Appl, 2007, 29 (1), pp. 328-347
     """
     return distance_euclid(logm(A), logm(B), squared=squared)
+
+
+def distance_poweuclid(A, B, p, squared=False):
+    r"""Power Euclidean distance between SPD/HPD matrices.
+
+    The power Euclidean distance of order :math:`p` between two SPD/HPD
+    matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is [1]_:
+
+    .. math::
+        d(\mathbf{A},\mathbf{B}) = \frac{1}{|p|}
+        \Vert \mathbf{A}^p - \mathbf{B}^p \Vert_F
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices, same dimensions as A.
+    p : float
+        Exponent. For p=0, it returns
+        :func:`pyriemann.utils.distance.distance_logeuclid`.
+    squared : bool, default False
+        Return squared distance.
+
+    Returns
+    -------
+    d : float or ndarray, shape (...,)
+        Power Euclidean distance between A and B.
+
+    Notes
+    -----
+    .. versionadded:: 0.7
+
+    See Also
+    --------
+    distance
+
+    References
+    ----------
+    .. [1] `Power Euclidean metrics for covariance matrices with application to
+        diffusion tensor imaging
+        <https://arxiv.org/abs/1009.3045>`_
+        I.L. Dryden, X. Pennec, & J.M. Peyrat. arXiv, 2010
+    """
+    if not isinstance(p, (int, float)):
+        raise ValueError(f"Exponent p must be a scalar (Got {type(p)})")
+
+    if p == 1:
+        return distance_euclid(A, B, squared=squared)
+    elif p == 0:
+        return distance_logeuclid(A, B, squared=squared)
+    elif p == -1:
+        return distance_harmonic(A, B, squared=squared)
+
+    return distance_euclid(
+        powm(A, p),
+        powm(B, p),
+        squared=squared,
+    ) / abs(p)
 
 
 def distance_riemann(A, B, squared=False):
