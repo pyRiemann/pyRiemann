@@ -20,7 +20,7 @@ with open('README.md', 'r', **kwargs_open) as fid:
 setup(
     name="pyriemann",
     version=version,
-    description="Biosignals classification with Riemannian geometry",
+    description="Machine learning for multivariate data with Riemannian geometry",
     url="https://pyriemann.readthedocs.io",
     author="Alexandre Barachant",
     author_email="alexandre.barachant@gmail.com",
