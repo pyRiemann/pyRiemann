@@ -17,10 +17,12 @@ kwargs_open = {"encoding": "utf8"} if is_python3 else {}
 with open('README.md', 'r', **kwargs_open) as fid:
     long_description = fid.read()
 
+description = "Machine learning for multivariate data with Riemannian geometry"
+
 setup(
     name="pyriemann",
     version=version,
-    description="Machine learning for multivariate data with Riemannian geometry",
+    description=description,
     url="https://pyriemann.readthedocs.io",
     author="Alexandre Barachant",
     author_email="alexandre.barachant@gmail.com",
