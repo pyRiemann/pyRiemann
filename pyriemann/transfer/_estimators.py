@@ -616,7 +616,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
 class TSA(BaseEstimator, TransformerMixin):
     """Align vectors in tangent space for transfer learning.
 
-    Tangent Space Alignement (TSA) aligns vectors of source and target domains
+    Tangent Space Alignment (TSA) aligns vectors of source and target domains
     in the Euclidean tangent space by means of Procrustes analysis [1]_.
 
     Parameters
@@ -666,7 +666,7 @@ class TSA(BaseEstimator, TransformerMixin):
         self.n_clusters = n_clusters
 
     def fit(self, X, y_enc):
-        """Tangent Space Alignement fit.
+        """Tangent Space Alignment fit.
 
         Parameters
         ----------
@@ -751,7 +751,7 @@ class TSA(BaseEstimator, TransformerMixin):
         return u, vh
 
     def transform(self, X, y_enc=None):
-        """Tangent Space Alignement transform.
+        """Tangent Space Alignment transform.
 
         Parameters
         ----------
@@ -767,7 +767,8 @@ class TSA(BaseEstimator, TransformerMixin):
         """
         X = X - np.mean(X, axis=0) + self.src_mean
         X_new = X @ self._vh.T @ self._u.T
-        X_new /= np.mean(np.linalg.norm(X_new, axis=1), axis=0) * self.src_norm
+        X_norm = np.mean(np.linalg.norm(X_new, axis=1), axis=0)
+        X_new = X_new / X_norm * self.src_norm
         return X_new
 
 

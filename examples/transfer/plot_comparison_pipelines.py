@@ -194,7 +194,6 @@ for target_train_frac in tqdm(target_train_frac_array):
 for meth in scores.keys():
     scores[meth] = np.array(scores[meth])
 
-
 ###############################################################################
 # Plot the results, reproducing Figure 2 of [2]_.
 
