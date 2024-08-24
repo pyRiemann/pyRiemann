@@ -25,6 +25,7 @@ from pyriemann.transfer import (
     TLCenter,
     TLStretch,
     TLRotate,
+    TSA,
     TLSplitter,
     TLClassifier,
     TLRegressor,
@@ -57,10 +58,10 @@ def test_encode_decode_domains(rndstate):
 
 def test_tldummy(rndstate):
     """Test TLDummy"""
-    dum = TLDummy()
     X, y_enc = make_classification_transfer(
         n_matrices=5, random_state=rndstate
     )
+    dum = TLDummy()
     dum.fit(X, y_enc)
     dum.fit_transform(X, y_enc)
 
@@ -71,7 +72,6 @@ def test_tldummy(rndstate):
 def test_tlcenter(rndstate, get_weights, metric, use_weight, target_domain):
     """Test pipeline for recentering data to Identity"""
     # check if the global mean of the domains is indeed Identity
-    rct = TLCenter(target_domain=target_domain, metric=metric)
     X, y_enc = make_classification_transfer(
         n_matrices=25, random_state=rndstate
     )
@@ -79,6 +79,8 @@ def test_tlcenter(rndstate, get_weights, metric, use_weight, target_domain):
         weights = get_weights(len(y_enc))
     else:
         weights = None
+
+    rct = TLCenter(target_domain=target_domain, metric=metric)
 
     # Test fit
     rct.fit(X, y_enc, sample_weight=weights)
@@ -104,7 +106,6 @@ def test_tlcenter_fit_transf(rndstate, get_weights,
                              metric, use_weight, target_domain):
     """Test .fit_transform() versus .fit().transform()"""
     # check if the global mean of the domains is indeed Identity
-    rct = TLCenter(target_domain=target_domain, metric=metric)
     X, y_enc = make_classification_transfer(
         n_matrices=25, random_state=rndstate
     )
@@ -120,6 +121,7 @@ def test_tlcenter_fit_transf(rndstate, get_weights,
     X1, y1 = X[:50], y_enc[:50]
     X2, y2 = X[50:], y_enc[50:]
 
+    rct = TLCenter(target_domain=target_domain, metric=metric)
     X1_rct = rct.fit_transform(X1, y1, sample_weight=weights_1)
     X2_rct = rct.fit(X2, y2, sample_weight=weights_2).transform(X2)
     X_rct = np.concatenate((X1_rct, X2_rct))
@@ -143,15 +145,9 @@ def test_tlstretch(rndstate, get_weights,
                    use_centered_data, metric, use_weight):
     """Test pipeline for stretching data"""
     # check if the dispersion of the dataset indeed decreases to 1
-    tlstr = TLStretch(
-        target_domain="target_domain",
-        final_dispersion=1.0,
-        centered_data=use_centered_data,
-        metric=metric
-    )
     X, y_enc = make_classification_transfer(
-        n_matrices=25, class_disp=2.0, random_state=rndstate)
-
+        n_matrices=25, class_disp=2.0, random_state=rndstate
+    )
     if use_weight:
         weights = get_weights(len(y_enc))
     else:
@@ -160,6 +156,12 @@ def test_tlstretch(rndstate, get_weights,
         tlrct = TLCenter(target_domain="target_domain", metric=metric)
         X = tlrct.fit_transform(X, y_enc, sample_weight=weights)
 
+    tlstr = TLStretch(
+        target_domain="target_domain",
+        final_dispersion=1.0,
+        centered_data=use_centered_data,
+        metric=metric
+    )
     X_str = tlstr.fit_transform(X, y_enc, sample_weight=weights)
 
     _, _, domain = decode_domains(X_str, y_enc)
@@ -183,9 +185,12 @@ def test_tlrotate(rndstate, get_weights, metric, use_weight):
     """Test fit_transform method for rotating the datasets"""
     # check if the distance between the classes of each domain is reduced
     X, y_enc = make_classification_transfer(
-        n_matrices=50, class_sep=3, class_disp=1.0, theta=np.pi / 2,
-        random_state=rndstate)
-
+        n_matrices=50,
+        class_sep=3,
+        class_disp=1.0,
+        theta=np.pi / 2,
+        random_state=rndstate,
+    )
     if use_weight:
         weights = get_weights(len(y_enc))
     else:
@@ -202,20 +207,44 @@ def test_tlrotate(rndstate, get_weights, metric, use_weight):
         d = "source_domain"
         M_rct_label_source = mean_riemann(
             X_rct[domain == d][y[domain == d] == label],
-            sample_weight=weights[domain == d][y[domain == d] == label])
+            sample_weight=weights[domain == d][y[domain == d] == label]
+        )
         M_rot_label_source = mean_riemann(
             X_rot[domain == d][y[domain == d] == label],
-            sample_weight=weights[domain == d][y[domain == d] == label])
+            sample_weight=weights[domain == d][y[domain == d] == label]
+        )
         d = "target_domain"
         M_rct_label_target = mean_riemann(
             X_rct[domain == d][y[domain == d] == label],
-            sample_weight=weights[domain == d][y[domain == d] == label])
+            sample_weight=weights[domain == d][y[domain == d] == label]
+        )
         M_rot_label_target = mean_riemann(
             X_rot[domain == d][y[domain == d] == label],
-            sample_weight=weights[domain == d][y[domain == d] == label])
+            sample_weight=weights[domain == d][y[domain == d] == label]
+        )
         d_rct = distance_riemann(M_rct_label_source, M_rct_label_target)
         d_rot = distance_riemann(M_rot_label_source, M_rot_label_target)
         assert d_rot <= d_rct
+
+
+@pytest.mark.parametrize("n_components", [1, 3, "max"])
+@pytest.mark.parametrize("n_clusters", [1, 2, 5])
+def test_tsa(rndstate, n_components, n_clusters):
+    """Test TSA"""
+    n = 50
+    n_vectors, n_ts = 2 * n, 10
+    X = rndstate.randn(n_vectors, n_ts)
+    y = rndstate.randint(0, 3, size=n_vectors)
+    domains = np.array(n * ["src_domain"] + n * ["tgt_domain"])
+    _, y_enc = encode_domains(X, y, domains)
+
+    tsa = TSA(
+        target_domain="tgt_domain",
+        n_components=n_components,
+        n_clusters=n_clusters,
+    )
+    tsa.fit(X, y_enc)
+    tsa.transform(X)
 
 
 @pytest.mark.parametrize(
@@ -228,7 +257,9 @@ def test_tlrotate(rndstate, get_weights, metric, use_weight):
 def test_tlsplitter(rndstate, cv):
     """Test wrapper for cross-validation in transfer learning"""
     X, y_enc = make_classification_transfer(
-        n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate)
+        n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate
+    )
+
     cv = TLSplitter(
         target_domain="target_domain",
         cv=cv,

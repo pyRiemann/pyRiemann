@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 from joblib import Parallel, delayed
 from sklearn.base import (
@@ -6,24 +8,25 @@ from sklearn.base import (
     is_classifier,
     is_regressor
 )
-from sklearn.pipeline import Pipeline
+from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score, r2_score
+from sklearn.pipeline import Pipeline
 
-from ..utils.mean import mean_covariance, mean_riemann
-from ..utils.distance import distance
-from ..utils.base import invsqrtm, powm, sqrtm
-from ..utils.geodesic import geodesic
-from ..utils.utils import check_weights, check_metric
-from ._rotate import _get_rotation_matrix
 from ..classification import MDM
 from ..preprocessing import Whitening
+from ..utils.base import invsqrtm, powm, sqrtm
+from ..utils.distance import distance
+from ..utils.geodesic import geodesic
+from ..utils.mean import mean_covariance, mean_riemann
+from ..utils.utils import check_weights, check_metric
+from ._rotate import _get_rotation_matrix
 from ._tools import decode_domains
 
 
 class TLDummy(BaseEstimator, TransformerMixin):
-    """No transformation on data for transfer learning.
+    """No transformation on matrices for transfer learning.
 
-    No transformation of the data points between the domains.
+    No transformation of the matrices between the domains.
     This is what we call the Direct Center Transfer (DCT) method.
 
     Notes
@@ -63,7 +66,7 @@ class TLDummy(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_classes)
+        X_new : ndarray, shape (n_matrices, n_classes)
             Same set of SPD matrices as in the input.
         """
         return X
@@ -80,16 +83,16 @@ class TLDummy(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_classes)
+        X_new : ndarray, shape (n_matrices, n_classes)
             Set of SPD matrices with mean in the Identity.
         """
         return self.fit(X, y_enc).transform(X, y_enc)
 
 
 class TLCenter(BaseEstimator, TransformerMixin):
-    """Recenter data for transfer learning.
+    """Recenter matrices in manifold for transfer learning.
 
-    Recenter the data points from each domain to the Identity on manifold, ie
+    Recenter the matrices from each domain to the Identity on manifold, ie
     make the mean of the datasets become the identity. This operation
     corresponds to a whitening step if the SPD matrices represent the spatial
     covariance matrices of multivariate signals.
@@ -188,7 +191,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_classes)
+        X_new : ndarray, shape (n_matrices, n_classes)
             Set of recentered SPD matrices.
         """
         # if target domain is specified, use it
@@ -223,7 +226,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_classes)
+        X_new : ndarray, shape (n_matrices, n_classes)
             Set of recentered SPD matrices.
         """
         self.fit(X, y_enc, sample_weight)
@@ -237,9 +240,9 @@ class TLCenter(BaseEstimator, TransformerMixin):
 
 
 class TLStretch(BaseEstimator, TransformerMixin):
-    """Stretch data for transfer learning.
+    """Stretch matrices in manifold for transfer learning.
 
-    Change the dispersion of the datapoints around their geometric mean
+    Change the dispersion of the matrices around their geometric mean
     for each dataset so that they all have the same desired value.
 
     .. note::
@@ -253,7 +256,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
     target_domain : str
         Domain to consider as target.
     dispersion : float, default=1.0
-        Target value for the dispersion of the data points.
+        Target value for the dispersion of the matrices.
     centered_data : bool, default=False
         Whether the data has been re-centered to the Identity beforehand.
     metric : str, default="riemann"
@@ -347,10 +350,10 @@ class TLStretch(BaseEstimator, TransformerMixin):
         return powm(X, np.sqrt(dispersion_out / dispersion_in))
 
     def transform(self, X, y_enc=None):
-        """Stretch the data points in the target domain.
+        """Stretch the matrices in the target domain.
 
         .. note::
-           The stretching operation is properly defined only for the riemann
+           The stretching operation is properly defined only for the "riemann"
            metric.
 
         Parameters
@@ -362,7 +365,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_classes)
+        X_new : ndarray, shape (n_matrices, n_classes)
             Set of SPD matrices with desired final dispersion.
         """
 
@@ -382,10 +385,10 @@ class TLStretch(BaseEstimator, TransformerMixin):
         return X_str
 
     def fit_transform(self, X, y_enc, sample_weight=None):
-        """Fit TLStretch and then transform data points.
+        """Fit TLStretch and then transform matrices.
 
         Calculate the dispersion around the mean for each domain and then
-        stretch the data points to the desired final dispersion.
+        stretch the matrices to the desired final dispersion.
 
         .. note::
            This method is designed for using at training time. The output for
@@ -403,7 +406,7 @@ class TLStretch(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_classes)
+        X_new : ndarray, shape (n_matrices, n_classes)
             Set of SPD matrices with desired final dispersion.
         """
 
@@ -432,15 +435,15 @@ class TLStretch(BaseEstimator, TransformerMixin):
 
 
 class TLRotate(BaseEstimator, TransformerMixin):
-    """Rotate data for transfer learning.
+    """Rotate matrices in manifold for transfer learning.
 
-    Rotate the data points from each source domain so to match its class means
+    Rotate the matrices from each source domain so to match its class means
     with those from the target domain. The loss function for this matching was
     first proposed in [1]_ and the optimization procedure for mininimizing it
     follows the presentation from [2]_.
 
     .. note::
-       The data points from each domain must have been re-centered to the
+       The matrices from each domain must have been re-centered to the
        identity before calculating the rotation.
 
     .. note::
@@ -549,10 +552,10 @@ class TLRotate(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X, y_enc=None):
-        """Rotate the data points in the target domain.
+        """Rotate the matrices in the target domain.
 
-        The rotations are done from source to target, so in this step the data
-        points suffer no transformation at all.
+        The rotations are done from source to target, so in this step the
+        matrices suffer no transformation at all.
 
         Parameters
         ----------
@@ -563,7 +566,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_classes)
+        X_new : ndarray, shape (n_matrices, n_classes)
             Same set of SPD matrices as in the input.
         """
 
@@ -571,7 +574,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
         return X
 
     def fit_transform(self, X, y_enc, sample_weight=None):
-        """Fit TLRotate and then transform data points.
+        """Fit TLRotate and then transform matrices.
 
         Calculate the rotation matrix for matching each source domain to the
         target domain.
@@ -592,7 +595,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_classes)
+        X_new : ndarray, shape (n_matrices, n_classes)
             Set of SPD matrices after rotation step.
         """
 
@@ -608,6 +611,167 @@ class TLRotate(BaseEstimator, TransformerMixin):
             else:
                 X_rot[idx] = X[idx]
         return X_rot
+
+
+class TSA(BaseEstimator, TransformerMixin):
+    """Align vectors in tangent space for transfer learning.
+
+    Tangent Space Alignement (TSA) aligns vectors of source and target domains
+    in the Euclidean tangent space by means of Procrustes analysis [1]_.
+
+    Parameters
+    ----------
+    target_domain : string
+        Name of the target domain in extended labels.
+    expl_var : float, default=0.999
+        Dimension reduction applied to the cross product matrix during
+        Procrustes analysis.
+        If float in (0,1], percentage of variance that needs to be explained.
+        Else, number of components.
+    n_components : int | "max", default=1
+        Parameter `n_components` used in `sklearn.decomposition.PCA`.
+        If int, number of components to keep in PCA.
+        If "max", all components are kept.
+    n_clusters : int, default=3
+        Number of clusters used to split data.
+
+    See Also
+    --------
+    TLStretch
+    TLRotate
+
+    References
+    ----------
+    .. [1] `Tangent space alignment: Transfer learning for brain-computer
+        interface
+        <https://www.frontiersin.org/articles/10.3389/fnhum.2022.1049985/pdf>`_
+        A. Bleuzé, J. Mattout and M. Congedo, Frontiers in Human Neuroscience,
+        2022
+
+    Notes
+    -----
+    .. versionadded:: 0.7
+    """
+
+    def __init__(
+        self,
+        target_domain,
+        expl_var=0.999,
+        n_components=1,
+        n_clusters=3,
+    ):
+        self.target_domain = target_domain
+        self.expl_var = expl_var
+        self.n_components = n_components
+        self.n_clusters = n_clusters
+
+    def fit(self, X, y_enc):
+        """Tangent Space Alignement fit.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_vectors, n_ts)
+            Set of tangent vectors.
+        y_enc : ndarray, shape (n_vectors,)
+            Extended labels for each vector.
+
+        Returns
+        -------
+        self : TSA instance
+            The TSA instance.
+        """
+        X, y, domains = decode_domains(X, y_enc)
+        X_src = X[domains != self.target_domain]
+        y_src = y[domains != self.target_domain]
+        X_tgt = X[domains == self.target_domain]
+        y_tgt = y[domains == self.target_domain]
+
+        if self.n_components == "max":
+            self.n_components = X.shape[1]
+        self._src_pca = [
+            PCA(n_components=self.n_components) for _ in np.unique(y_src)
+        ]
+
+        self.src_mean = np.mean(X_src, axis=0)
+        self.src_norm = np.mean(np.linalg.norm(X_src, axis=1), axis=0)
+        src_means, src_valid = self._fit_means(X_src, y_src, fit_pca=True)
+
+        X_tgt = X_tgt - np.mean(X_tgt, axis=0) + self.src_mean
+        tgt_means, tgt_valid = self._fit_means(X_tgt, y_tgt, fit_pca=False)
+
+        if src_valid and tgt_valid:
+            n_classes = None
+        else:
+            warnings.warn("Not enough point for either target or source")
+            n_classes = min(len(np.unique(y_src)), len(np.unique(y_tgt)))
+
+        self._u, self._vh = self._fit_rotation(src_means, tgt_means, n_classes)
+
+        return self
+
+    def _fit_means(self, X, y, fit_pca):
+        is_valid = True
+
+        classes = np.unique(y)
+        means = np.array([
+            np.mean(X[y == c], axis=0) for c in classes
+        ])
+
+        for i, c in enumerate(classes):
+            Xc = X[y == c]
+            n_vectors_c = len(Xc)
+
+            if n_vectors_c < self.n_clusters:
+                is_valid = False
+                break
+            r = n_vectors_c / self.n_clusters
+            if fit_pca:
+                self._src_pca[i].fit(Xc)
+
+            Xc_pca = self._src_pca[i].transform(Xc)
+            for j in range(self.n_components):
+                inds = np.argsort(Xc_pca[:, j], axis=0)
+                means_pca_j = [
+                    np.mean(Xc[inds[round(k*r):round((k+1)*r)]], axis=0)
+                    for k in range(self.n_clusters)
+                ]
+                means = np.vstack([means, means_pca_j])
+
+        return means, is_valid
+
+    def _fit_rotation(self, D_src, D_tgt, n_classes):
+        C = D_src[:n_classes].T @ D_tgt[:n_classes]
+        u, s, vh = np.linalg.svd(C)
+        if self.expl_var <= 1:
+            n_comps = np.sum(np.cumsum(s) < self.expl_var * np.sum(s)) + 1
+        else:
+            n_comps = int(self.expl_var)
+        u = u[:, :n_comps]
+        vh = vh[:n_comps, :]
+        return u, vh
+
+    def transform(self, X, y_enc=None):
+        """Tangent Space Alignement transform.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_vectors, n_ts)
+            Set of tangent vectors.
+        y_enc : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        X_new : ndarray, shape (n_vectors, n_ts)
+            Set of tangent vectors after Procrustes registration.
+        """
+        X = X - np.mean(X, axis=0) + self.src_mean
+        X_new = X @ self._vh.T @ self._u.T
+        X_new /= np.mean(np.linalg.norm(X_new, axis=1), axis=0) * self.src_norm
+        return X_new
+
+
+###############################################################################
 
 
 class TLEstimator(BaseEstimator):
@@ -838,6 +1002,9 @@ class TLRegressor(TLEstimator):
         return r2_score(y_true.astype(float), y_pred)
 
 
+###############################################################################
+
+
 class MDWM(MDM):
     """Classification by Minimum Distance to Weighted Mean.
 
@@ -985,6 +1152,7 @@ class MDWM(MDM):
             self.domain_tradeoff,
             metric=self.metric_mean,
         )
+
         return self
 
     def score(self, X, y_enc, sample_weight=None):
