@@ -12,12 +12,12 @@ Procrustes Analysis (RPA) [2]_,
 improving the MDM classifier with a weighting scheme (MDWM) [3]_,
 aligning vectors in tangent space by Procrustes analysis [4]_.
 
-All data points are simulated from a toy model based on the
+Matrices are simulated from a toy model based on the
 Riemannian Gaussian distribution and the differences in statistics between
 source and target distributions are determined by a set of parameters that have
 control over the distance between the centers of each dataset, the angle of
 rotation between the means of each class, and the differences in dispersion
-of the data points from each dataset.
+of the matrices from each dataset.
 """
 
 from tqdm import tqdm
@@ -54,7 +54,7 @@ seed = 100
 # rct : re-center the data points from each domain to the Identity
 # rpa : re-center, stretch and rotate (Riemannian Procrustes Analysis)
 # mdwm : transfer learning with minimum distance to weighted mean
-methods = ['calibration', 'dummy', 'rct', 'rpa', 'mdwm', 'tsa']
+methods = ["calibration", "dummy", "rct", "rpa", "mdwm", "tsa"]
 scores = {meth: [] for meth in methods}
 
 # Create a dataset with two domains, each with two classes both datasets
@@ -72,7 +72,7 @@ X_enc, y_enc = make_classification_transfer(
 # Object for splitting the datasets into training and validation partitions
 # the training set is composed of all data points from the source domain
 # plus a partition of the target domain whose size we can control
-target_domain = 'target_domain'
+target_domain = "target_domain"
 n_splits = 5  # how many times to split the target domain into train/test
 tl_cv = TLSplitter(
     target_domain=target_domain,
@@ -107,12 +107,12 @@ for target_train_frac in tqdm(target_train_frac_array):
             TLClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
-                domain_weight={'source_domain': 0.0, 'target_domain': 1.0},
+                domain_weight={"source_domain": 0.0, "target_domain": 1.0},
             ),
         )
 
         pipeline.fit(X_enc_train, y_enc_train)
-        scores_cv['calibration'].append(pipeline.score(X_enc_test, y_enc_test))
+        scores_cv["calibration"].append(pipeline.score(X_enc_test, y_enc_test))
 
         # Dummy pipeline: no transfer learning at all.
         # Classifier is trained only with samples from the source dataset.
@@ -121,12 +121,12 @@ for target_train_frac in tqdm(target_train_frac_array):
             TLClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
-                domain_weight={'source_domain': 1.0, 'target_domain': 0.0},
+                domain_weight={"source_domain": 1.0, "target_domain": 0.0},
             ),
         )
 
         pipeline.fit(X_enc_train, y_enc_train)
-        scores_cv['dummy'].append(pipeline.score(X_enc_test, y_enc_test))
+        scores_cv["dummy"].append(pipeline.score(X_enc_test, y_enc_test))
 
         # RCT pipeline: recenter data from each domain to identity [1]_.
         # Classifier is trained only with points from the source domain.
@@ -135,12 +135,12 @@ for target_train_frac in tqdm(target_train_frac_array):
             TLClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
-                domain_weight={'source_domain': 1.0, 'target_domain': 0.0},
+                domain_weight={"source_domain": 1.0, "target_domain": 0.0},
             ),
         )
 
         pipeline.fit(X_enc_train, y_enc_train)
-        scores_cv['rct'].append(pipeline.score(X_enc_test, y_enc_test))
+        scores_cv["rct"].append(pipeline.score(X_enc_test, y_enc_test))
 
         # RPA pipeline: recenter, stretch, and rotate [2]_.
         # Classifier is trained with points from source and target.
@@ -151,16 +151,16 @@ for target_train_frac in tqdm(target_train_frac_array):
                 final_dispersion=1,
                 centered_data=True,
             ),
-            TLRotate(target_domain=target_domain, metric='euclid'),
+            TLRotate(target_domain=target_domain, metric="euclid"),
             TLClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
-                domain_weight={'source_domain': 0.5, 'target_domain': 0.5},
+                domain_weight={"source_domain": 0.5, "target_domain": 0.5},
             ),
         )
 
         pipeline.fit(X_enc_train, y_enc_train)
-        scores_cv['rpa'].append(pipeline.score(X_enc_test, y_enc_test))
+        scores_cv["rpa"].append(pipeline.score(X_enc_test, y_enc_test))
 
         # MDWM pipeline [3]_
         domain_tradeoff = 1 - np.exp(-25*target_train_frac)
@@ -170,21 +170,21 @@ for target_train_frac in tqdm(target_train_frac_array):
         )
 
         pipeline.fit(X_enc_train, y_enc_train)
-        scores_cv['mdwm'].append(pipeline.score(X_enc_test, y_enc_test))
+        scores_cv["mdwm"].append(pipeline.score(X_enc_test, y_enc_test))
 
         # TSA pipeline [4]_
         pipeline = make_pipeline(
-            TangentSpace(),
+            TangentSpace(metric="riemann"),
             TSA(target_domain=target_domain, n_clusters=3),
             TLClassifier(
                 target_domain=target_domain,
                 estimator=LogisticRegression(),
-                domain_weight={'source_domain': 0.5, 'target_domain': 0.5},
+                domain_weight={"source_domain": 0.5, "target_domain": 0.5},
             ),
         )
 
         pipeline.fit(X_enc_train, y_enc_train)
-        scores_cv['tsa'].append(pipeline.score(X_enc_test, y_enc_test))
+        scores_cv["tsa"].append(pipeline.score(X_enc_test, y_enc_test))
 
     # Get the average score of each pipeline
     for meth in scores.keys():
@@ -205,15 +205,15 @@ for meth in scores.keys():
         label=meth,
         lw=3.0,
     )
-ax.legend(loc='lower right')
+ax.legend(loc="lower right")
 ax.set_ylim(0.45, 0.75)
 ax.set_yticks([0.5, 0.6, 0.7])
 ax.set_xlim(0.00, 0.21)
 ax.set_xticks([0.01, 0.05, 0.10, 0.15, 0.20])
 ax.set_xticklabels([1, 5, 10, 15, 20])
-ax.set_xlabel('Percentage of training partition in target domain')
-ax.set_ylabel('Classification accuracy')
-ax.set_title('Comparison of transfer learning pipelines')
+ax.set_xlabel("Percentage of training partition in target domain")
+ax.set_ylabel("Classification accuracy")
+ax.set_title("Comparison of transfer learning pipelines")
 
 plt.show()
 
