@@ -13,20 +13,27 @@ It provides a high-level interface for processing and classification of real (*r
 through the Riemannian geometry of symmetric (*resp*. Hermitian) 
 [positive definite](https://en.wikipedia.org/wiki/Definite_matrix) (SPD) (*resp*. HPD) matrices.
 
+The documentation is available on http://pyriemann.readthedocs.io/en/latest/
+
+This code is BSD-licensed (3 clause).
+
+# Description
+
 pyRiemann aims at being a generic package for multivariate data analysis
 but has been designed around [biosignals](https://en.wikipedia.org/wiki/Biosignal) (like EEG, MEG or EMG)
 manipulation applied to [brain-computer interface](https://en.wikipedia.org/wiki/Brain%E2%80%93computer_interface) (BCI),
 estimating [covariance matrices](https://en.wikipedia.org/wiki/Covariance_matrix) from multichannel time series,
 and classifying them using the Riemannian geometry of SPD matrices [[1]](#1).
 
-For BCI applications, studied paradigms are motor imagery [[2]](#2) [[3]](#3), event-related potentials (ERP) [[4]](#4) and steady-state visually evoked potentials (SSVEP) [[5]](#5).
+For BCI applications, studied paradigms are motor imagery [[2]](#2) [[3]](#3),
+event-related potentials (ERP) [[4]](#4) and steady-state visually evoked potentials (SSVEP) [[5]](#5).
 Using extended labels, API allows transfer learning between sessions or subjects [[6]](#6).
 
-This code is BSD-licensed (3 clause).
-
-## Documentation
-
-The documentation is available on http://pyriemann.readthedocs.io/en/latest/
+Another application is [remote sensing](https://en.wikipedia.org/wiki/Remote_sensing),
+estimating covariance matrices over spatial coordinates of radar images using a sliding window,
+and processing them using the Riemannian geometry of
+SPD matrices for [hyperspectral](https://en.wikipedia.org/wiki/Hyperspectral_imaging) images,
+or HPD matrices for [synthetic-aperture radar](https://en.wikipedia.org/wiki/Synthetic-aperture_radar) (SAR) images.
 
 # Installation
 
