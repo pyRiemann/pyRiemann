@@ -693,14 +693,15 @@ class TSA(BaseEstimator, TransformerMixin):
         ]
 
         self.src_mean = np.mean(X_src, axis=0)
-        self.src_norm = np.mean(np.linalg.norm(X_src, axis=1), axis=0)
+        self.src_norm = np.mean(np.linalg.norm(X_src, axis=1))
         src_means, src_valid = self._fit_means(X_src, y_src, fit_pca=True)
 
         X_tgt = X_tgt - np.mean(X_tgt, axis=0) + self.src_mean
+        X_tgt = X_tgt / np.mean(np.linalg.norm(X_tgt, axis=1)) * self.src_norm
         tgt_means, tgt_valid = self._fit_means(X_tgt, y_tgt, fit_pca=False)
 
         if src_valid and tgt_valid:
-            n_classes = None
+            n_classes = None  # select all components
         else:
             warnings.warn("Not enough point for either target or source")
             n_classes = min(len(np.unique(y_src)), len(np.unique(y_tgt)))
@@ -766,9 +767,8 @@ class TSA(BaseEstimator, TransformerMixin):
             Set of tangent vectors after Procrustes registration.
         """
         X = X - np.mean(X, axis=0) + self.src_mean
+        X = X / np.mean(np.linalg.norm(X, axis=1)) * self.src_norm
         X_new = X @ self._vh.T @ self._u.T
-        X_norm = np.mean(np.linalg.norm(X_new, axis=1), axis=0)
-        X_new = X_new / X_norm * self.src_norm
         return X_new
 
 
