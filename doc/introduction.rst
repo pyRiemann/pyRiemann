@@ -16,5 +16,5 @@ Using extended labels, API allows transfer learning between sessions or subjects
 Another application is remote sensing, estimating covariance matrices
 over spatial coordinates of radar images using a sliding window,
 and processing them using the Riemannian geometry of
-SPD matrices (for hyperspectral and synthetic-aperture radar(SAR) images)
-or HPD matrices (for PolSAR images).
+SPD matrices for hyperspectral images,
+or HPD matrices for synthetic-aperture radar (SAR) images.
