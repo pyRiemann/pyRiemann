@@ -37,9 +37,11 @@ from pyriemann.transfer import (
     TLCenter,
     TLStretch,
     TLRotate,
+    TlTsCenter,
+    TlTsNormalize,
+    TlTsRotate,
     TLClassifier,
     MDWM,
-    TSA,
 )
 
 
@@ -51,7 +53,7 @@ seed = 100
 # We consider several types of pipeline for transfer learning:
 # calibration : use only data from target-train partition for the classifier
 # dummy : no transformation of dataset between the domains
-# rct : re-center the data points from each domain to the Identity
+# rct : re-center data from each domain to the Identity
 # rpa : re-center, stretch and rotate (Riemannian Procrustes Analysis)
 # mdwm : transfer learning with minimum distance to weighted mean
 methods = ["calibration", "dummy", "rct", "rpa", "mdwm", "tsa"]
@@ -70,7 +72,7 @@ X_enc, y_enc = make_classification_transfer(
 )
 
 # Object for splitting the datasets into training and validation partitions
-# the training set is composed of all data points from the source domain
+# the training set is composed of all matrices from the source domain
 # plus a partition of the target domain whose size we can control
 target_domain = "target_domain"
 n_splits = 5  # how many times to split the target domain into train/test
@@ -102,7 +104,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         y_enc_train, y_enc_test = y_enc[train_idx], y_enc[test_idx]
 
         # Calibration: use only data from target-train partition.
-        # Classifier is trained only with points from the target domain.
+        # Classifier is trained only with matrices from the target domain.
         pipeline = make_pipeline(
             TLClassifier(
                 target_domain=target_domain,
@@ -115,7 +117,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         scores_cv["calibration"].append(pipeline.score(X_enc_test, y_enc_test))
 
         # Dummy pipeline: no transfer learning at all.
-        # Classifier is trained only with samples from the source dataset.
+        # Classifier is trained only with matrices from the source dataset.
         pipeline = make_pipeline(
             TLDummy(),
             TLClassifier(
@@ -129,7 +131,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         scores_cv["dummy"].append(pipeline.score(X_enc_test, y_enc_test))
 
         # RCT pipeline: recenter data from each domain to identity [1]_.
-        # Classifier is trained only with points from the source domain.
+        # Classifier is trained only with matrices from the source domain.
         pipeline = make_pipeline(
             TLCenter(target_domain=target_domain),
             TLClassifier(
@@ -143,7 +145,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         scores_cv["rct"].append(pipeline.score(X_enc_test, y_enc_test))
 
         # RPA pipeline: recenter, stretch, and rotate [2]_.
-        # Classifier is trained with points from source and target.
+        # Classifier is trained with matrices from source and target.
         pipeline = make_pipeline(
             TLCenter(target_domain=target_domain),
             TLStretch(
@@ -166,16 +168,19 @@ for target_train_frac in tqdm(target_train_frac_array):
         domain_tradeoff = 1 - np.exp(-25*target_train_frac)
         pipeline = MDWM(
             domain_tradeoff=domain_tradeoff,
-            target_domain=target_domain
+            target_domain=target_domain,
+            metric="riemann",
         )
 
         pipeline.fit(X_enc_train, y_enc_train)
         scores_cv["mdwm"].append(pipeline.score(X_enc_test, y_enc_test))
 
-        # TSA pipeline [4]_
+        # TSA pipeline: center, normalize and rotate in tangent space [4]_
         pipeline = make_pipeline(
             TangentSpace(metric="riemann"),
-            TSA(target_domain=target_domain, n_clusters=3),
+            TlTsCenter(target_domain=target_domain),
+            TlTsNormalize(target_domain=target_domain),
+            TlTsRotate(target_domain=target_domain),
             TLClassifier(
                 target_domain=target_domain,
                 estimator=LogisticRegression(),
@@ -206,7 +211,7 @@ for meth in scores.keys():
         lw=3.0,
     )
 ax.legend(loc="lower right")
-ax.set_ylim(0.45, 0.75)
+ax.set_ylim(0.5, 0.75)
 ax.set_yticks([0.5, 0.6, 0.7])
 ax.set_xlim(0.00, 0.21)
 ax.set_xticks([0.01, 0.05, 0.10, 0.15, 0.20])

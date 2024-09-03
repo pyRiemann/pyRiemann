@@ -38,7 +38,7 @@ def encode_domains(X, y, domain):
     if len(y) != len(domain):
         raise ValueError("Input lengths don't match")
 
-    y_enc = [str(d_) + '/' + str(y_) for (d_, y_) in zip(domain, y)]
+    y_enc = [str(d_) + "/" + str(y_) for (d_, y_) in zip(domain, y)]
     return X, np.array(y_enc)
 
 
@@ -76,7 +76,7 @@ def decode_domains(X_enc, y_enc):
     """
     y, domain = [], []
     for y_enc_ in y_enc:
-        y_dec_ = y_enc_.split('/')
+        y_dec_ = y_enc_.split("/")
         domain.append(y_dec_[-2])
         y.append(y_dec_[-1])
     return X_enc, np.array(y), np.array(domain)
@@ -86,9 +86,9 @@ class TLSplitter():
     """Class for handling the cross-validation splits of multi-domain data.
 
     This is a wrapper to sklearn's cross-validation iterators [1]_ which
-    ensures the handling of domain information with the data points. In fact,
+    ensures the handling of domain information with the data. In fact,
     the data from source domain is always fully available in the training
-    partition whereas the random splits are done on the data points from the
+    partition whereas the random splits are done on the data from the
     target domain.
 
     Parameters

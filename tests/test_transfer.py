@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
 from pytest import approx
 from sklearn.model_selection import KFold, StratifiedShuffleSplit
@@ -25,7 +25,9 @@ from pyriemann.transfer import (
     TLCenter,
     TLStretch,
     TLRotate,
-    TSA,
+    TlTsCenter,
+    TlTsNormalize,
+    TlTsRotate,
     TLSplitter,
     TLClassifier,
     TLRegressor,
@@ -64,6 +66,7 @@ def test_tldummy(rndstate):
     dum = TLDummy()
     dum.fit(X, y_enc)
     dum.fit_transform(X, y_enc)
+    dum.transform(X)
 
 
 @pytest.mark.parametrize("metric", ["riemann", "euclid"])
@@ -97,6 +100,9 @@ def test_tlcenter(rndstate, get_weights, metric, use_weight, target_domain):
         else:
             Md = mean_covariance(Xd, metric=metric)
         assert Md == pytest.approx(np.eye(2))
+
+    # Test transform
+    rct.transform(X)
 
 
 @pytest.mark.parametrize("metric", ["riemann", "euclid"])
@@ -178,6 +184,8 @@ def test_tlstretch(rndstate, get_weights,
             disp = np.mean(distance(Xd, Md, metric=metric, squared=True))
         assert np.isclose(disp, 1.0)
 
+    tlstr.transform(X)
+
 
 @pytest.mark.parametrize("metric", ["euclid", "riemann"])
 @pytest.mark.parametrize("use_weight", [True, False])
@@ -226,25 +234,81 @@ def test_tlrotate(rndstate, get_weights, metric, use_weight):
         d_rot = distance_riemann(M_rot_label_source, M_rot_label_target)
         assert d_rot <= d_rct
 
+    rot.transform(X_rct)
+
+
+def test_tltscenter(rndstate):
+    """Test TlTsCenter"""
+    n_vectors_d = 50
+    n_vectors, n_ts = 2 * n_vectors_d, 10
+    X = rndstate.randn(n_vectors, n_ts)
+    y = rndstate.randint(0, 3, size=n_vectors)
+    domains = np.array(n_vectors_d * ["src"] + n_vectors_d * ["tgt"])
+    _, y_enc = encode_domains(X, y, domains)
+
+    tlctr = TlTsCenter(target_domain="tgt")
+
+    tlctr.fit(X, y_enc)
+
+    X_rct = tlctr.fit_transform(X, y_enc)
+    assert X_rct.shape == X.shape
+    for d in np.unique(domains):
+        idx = domains == d
+        md = np.mean(X_rct[idx], axis=0)
+        assert_array_almost_equal(md, np.zeros((n_ts)))
+
+    X_rct = tlctr.transform(X)
+    assert X_rct.shape == X.shape
+
+
+def test_tltsnormalize(rndstate):
+    """Test TlTsNormalize"""
+    n_vectors_d = 50
+    n_vectors, n_ts = 2 * n_vectors_d, 10
+    X = rndstate.randn(n_vectors, n_ts)
+    y = rndstate.randint(0, 3, size=n_vectors)
+    domains = np.array(n_vectors_d * ["src"] + n_vectors_d * ["tgt"])
+    _, y_enc = encode_domains(X, y, domains)
+
+    tlnrm = TlTsNormalize(target_domain="tgt")
+
+    tlnrm.fit(X, y_enc)
+
+    X_norm = tlnrm.fit_transform(X, y_enc)
+    assert X_norm.shape == X.shape
+    for d in np.unique(domains):
+        idx = domains == d
+        assert np.mean(np.linalg.norm(X_norm[idx], axis=1)) == pytest.approx(1)
+
+    X_norm = tlnrm.transform(X)
+    assert X_norm.shape == X.shape
+
 
 @pytest.mark.parametrize("n_components", [1, 3, "max"])
 @pytest.mark.parametrize("n_clusters", [1, 2, 5])
-def test_tsa(rndstate, n_components, n_clusters):
-    """Test TSA"""
-    n = 50
-    n_vectors, n_ts = 2 * n, 10
+def test_tltsrotate(rndstate, n_components, n_clusters):
+    """Test TlTsRotate"""
+    n_vectors_d = 50
+    n_vectors, n_ts = 2 * n_vectors_d, 10
     X = rndstate.randn(n_vectors, n_ts)
-    y = rndstate.randint(0, 3, size=n_vectors)
-    domains = np.array(n * ["src_domain"] + n * ["tgt_domain"])
+    y = rndstate.randint(0, 2, size=n_vectors)
+    domains = np.array(n_vectors_d * ["src"] + n_vectors_d * ["tgt"])
     _, y_enc = encode_domains(X, y, domains)
 
-    tsa = TSA(
-        target_domain="tgt_domain",
+    tlrot = TlTsRotate(
+        target_domain="tgt",
         n_components=n_components,
         n_clusters=n_clusters,
     )
-    tsa.fit(X, y_enc)
-    tsa.transform(X)
+
+    tlrot.fit(X, y_enc)
+    assert tlrot.rotation_.shape == (n_ts, n_ts)
+
+    X_rot = tlrot.fit_transform(X, y_enc)
+    assert X_rot.shape == (n_vectors, n_ts)
+
+    X_rot = tlrot.transform(X)
+    assert_array_equal(X_rot, X)
 
 
 @pytest.mark.parametrize(

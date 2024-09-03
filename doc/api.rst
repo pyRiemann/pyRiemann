@@ -159,7 +159,9 @@ Transfer Learning
     TLCenter
     TLStretch
     TLRotate
-    TSA
+    TlTsCenter
+    TlTsNormalize
+    TlTsRotate
     MDWM
 
 Stats
