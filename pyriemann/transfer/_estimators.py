@@ -892,7 +892,7 @@ class TlTsRotate(BaseEstimator, TransformerMixin):
         self.n_clusters = n_clusters
 
     def fit(self, X, y_enc):
-        """Fit TLTSRotate.
+        """Fit TlTsRotate.
 
         Calculate the rotation matrix to match source domain into the target
         domain.
@@ -1373,8 +1373,9 @@ class MDWM(MDM):
 
         if not 0 <= self.domain_tradeoff <= 1:
             raise ValueError(
-                "Value domain_tradeoff must be included in [0, 1] (Got %d)"
-                % self.domain_tradeoff)
+                "Parameter domain_tradeoff must be included in [0, 1] "
+                f"(Got {self.domain_tradeoff})"
+            )
 
         X_dec, y_dec, domains = decode_domains(X, y_enc)
         X_src = X_dec[domains != self.target_domain]
@@ -1396,19 +1397,19 @@ class MDWM(MDM):
         self.source_means_ = np.stack(
             Parallel(n_jobs=self.n_jobs)(
                 delayed(mean_covariance)(
-                    X_src[y_src == ll],
+                    X_src[y_src == c],
                     metric=self.metric_mean,
-                    sample_weight=sample_weight[y_src == ll],
-                ) for ll in self.classes_
+                    sample_weight=sample_weight[y_src == c],
+                ) for c in self.classes_
             )
         )
 
         self.target_means_ = np.stack(
             Parallel(n_jobs=self.n_jobs)(
                 delayed(mean_covariance)(
-                    X_tgt[y_tgt == ll],
+                    X_tgt[y_tgt == c],
                     metric=self.metric_mean,
-                ) for ll in self.classes_
+                ) for c in self.classes_
             )
         )
 
@@ -1427,9 +1428,11 @@ class MDWM(MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Test set of SPD matrices.
         y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
+            Extended true labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------

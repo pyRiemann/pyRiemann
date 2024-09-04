@@ -540,6 +540,10 @@ def test_mdwm(rndstate, domain_tradeoff, metric, n_jobs):
     assert probabilities.shape == (n_matrices, n_classes)
     assert probabilities.sum(axis=1) == approx(np.ones(n_matrices))
 
+    # test transform
+    dists = clf.transform(X)
+    assert dists.shape == (n_matrices, n_classes)
+
     # test score
     clf.score(X, y_enc)
 
@@ -555,7 +559,7 @@ def test_mdwm_weights(rndstate, get_weights):
     weights = get_weights(n_matrices // n_classes)
 
     clf = MDWM(
-        domain_tradeoff=0.5,
+        domain_tradeoff=0.4,
         target_domain="target_domain",
         metric="riemann",
     )
