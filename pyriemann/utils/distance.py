@@ -190,7 +190,7 @@ def distance_kullback_sym(A, B, squared=False):
     return d ** 2 if squared else d
 
 
-def distance_logchol(A, B, squared=False):
+def distance_cholesky(A, B, squared=False):
     r"""Log-Cholesky distance between SPD/HPD matrices.
 
     The log-Cholesky distance between two SPD/HPD matrices :math:`\mathbf{A}`
@@ -234,6 +234,61 @@ def distance_logchol(A, B, squared=False):
         np.linalg.cholesky(B),
         squared=squared,
     )
+
+
+def distance_logcholesky(A, B, squared=False):
+    r"""Log-Cholesky distance between SPD/HPD matrices.
+
+    The log-Cholesky distance between two SPD/HPD matrices :math:`\mathbf{A}`
+    and :math:`\mathbf{B}` is [1]_:
+
+    .. math::
+        d(\mathbf{A},\mathbf{B}) =
+        \Vert \text{chol}(\mathbf{A}) - \text{chol}(\mathbf{B}) \Vert_F
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices, same dimensions as A.
+    squared : bool, default False
+        Return squared distance.
+
+    Returns
+    -------
+    d : float or ndarray, shape (...,)
+        Log-Cholesky distance between A and B.
+
+    Notes
+    -----
+    .. versionadded:: 0.7
+
+    See Also
+    --------
+    distance
+
+    References
+    ----------
+    .. [1] `Riemannian geometry of symmetric positive definite matrices via
+        Cholesky decomposition
+        <https://arxiv.org/pdf/1908.09326>`_
+        Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
+    """
+    _check_inputs(A, B)
+    L_A = np.linalg.cholesky(A)
+    L_B = np.linalg.cholesky(B)
+
+    tr0, tr1 = np.tril_indices(L_A.shape[-1], -1)
+    diag0, diag1 = np.diag_indices(L_A.shape[-1])
+
+    triagular_part = np.linalg.norm(L_A[..., tr0, tr1] - L_B[..., tr0, tr1],
+                                    axis=-1)**2
+    diagonal_part = np.linalg.norm(np.log(L_A[..., diag0, diag1]) -
+                                   np.log(L_B[..., diag0, diag1]),
+                                   axis=-1)**2
+    d2 = triagular_part + diagonal_part
+    return d2 if squared else np.sqrt(d2)
 
 
 def distance_logdet(A, B, squared=False):
@@ -481,7 +536,9 @@ distance_functions = {
     "kullback": distance_kullback,
     "kullback_right": distance_kullback_right,
     "kullback_sym": distance_kullback_sym,
-    "logchol": distance_logchol,
+    "logchol": distance_cholesky,
+    "logcholesky": distance_logcholesky,
+    "cholesky": distance_cholesky,
     "logdet": distance_logdet,
     "logeuclid": distance_logeuclid,
     "riemann": distance_riemann,
@@ -613,6 +670,54 @@ def _pairwise_distance_harmonic(X, Y=None, squared=False):
     return _pairwise_distance_euclid(invX, invY, squared=squared)
 
 
+def _pairwise_distance_logcholesky(X, Y=None, squared=False):
+    """Pairwise Log-Cholesky distance matrix.
+
+    Compute the matrix of Log-Cholesky distances between pairs of elements of
+    X and Y.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices_X, n, n)
+        First set of matrices.
+    Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
+        Second set of matrices. If None, Y is set to X.
+    squared : bool, default False
+        Return squared distances.
+
+    Returns
+    -------
+    dist : ndarray, shape (n_matrices_X, n_matrices_X) or (n_matrices_X, \
+            n_matrices_Y)
+        Log-Cholesky distances between pairs of elements of X if Y is None, or
+        between elements of X and Y.
+
+    See Also
+    --------
+    pairwise_distance
+    distance_logcholesky
+    """
+    X_chol = np.linalg.cholesky(X)
+    tr0, tr1 = np.tril_indices(X_chol.shape[-1], -1)
+    diag0, diag1 = np.diag_indices(X_chol.shape[-1])
+    if Y is None:
+        triagular_part = euclidean_distances(X_chol[..., tr0, tr1],
+                                             squared=True)
+        diagonal_part = euclidean_distances(np.log(X_chol[..., diag0, diag1]),
+                                            squared=True)
+    else:
+        Y_chol = np.linalg.cholesky(Y)
+        triagular_part = euclidean_distances(X_chol[..., tr0, tr1],
+                                             Y_chol[..., tr0, tr1],
+                                             squared=True)
+        diagonal_part = euclidean_distances(np.log(X_chol[..., diag0, diag1]),
+                                            np.log(Y_chol[..., diag0, diag1]),
+                                            squared=True)
+
+    dist = triagular_part + diagonal_part
+    return dist if squared else np.sqrt(dist)
+
+
 def _pairwise_distance_logeuclid(X, Y=None, squared=False):
     """Pairwise Log-Euclidean distance matrix.
 
@@ -731,6 +836,8 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
         return _pairwise_distance_euclid(X, Y=Y, squared=squared)
     elif metric == "harmonic":
         return _pairwise_distance_harmonic(X, Y=Y, squared=squared)
+    elif metric == "logcholesky":
+        return _pairwise_distance_logcholesky(X, Y=Y, squared=squared)
     elif metric == "logeuclid":
         return _pairwise_distance_logeuclid(X, Y=Y, squared=squared)
     elif metric == "riemann":

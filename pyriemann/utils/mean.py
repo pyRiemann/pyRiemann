@@ -275,6 +275,23 @@ def mean_kullback_sym(X=None, sample_weight=None, covmats=None):
     return M
 
 
+def mean_logcholesky(X=None, sample_weight=None, covmats=None):
+    X = _deprecate_covmats(covmats, X)
+    X_chol = np.linalg.cholesky(X)
+
+    tr0, tr1 = np.tril_indices(X.shape[-1], -1)
+    diag0, diag1 = np.diag_indices(X.shape[-1])
+
+    mean = np.zeros(X.shape[-2:], dtype=X.dtype)
+
+    mean[..., tr0, tr1] = np.average(X_chol[..., tr0, tr1], axis=0,
+                                     weights=sample_weight)
+    mean[..., diag0, diag1] = np.exp(
+        np.average(np.log(X_chol[..., diag0, diag1]),
+                   axis=0, weights=sample_weight))
+    return mean @ mean.conj().swapaxes(-2, -1)
+
+
 def mean_logdet(X=None, tol=10e-5, maxiter=50, init=None, sample_weight=None,
                 covmats=None):
     r"""Mean of SPD/HPD matrices according to the log-det metric.
@@ -671,6 +688,7 @@ mean_functions = {
     "identity": mean_identity,
     "kullback_sym": mean_kullback_sym,
     "logdet": mean_logdet,
+    "logcholesky": mean_logcholesky,
     "logeuclid": mean_logeuclid,
     "riemann": mean_riemann,
     "wasserstein": mean_wasserstein,

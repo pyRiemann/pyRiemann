@@ -6,12 +6,13 @@ from scipy.spatial.distance import euclidean, mahalanobis
 
 from conftest import get_distances
 from pyriemann.utils.distance import (
+    distance_cholesky,
     distance_euclid,
     distance_harmonic,
     distance_kullback,
     distance_kullback_right,
     distance_kullback_sym,
-    distance_logchol,
+    distance_logcholesky,
     distance_logdet,
     distance_logeuclid,
     distance_poweuclid,
@@ -28,12 +29,13 @@ from pyriemann.utils.test import is_sym
 
 def get_dist_func():
     dist_func = [
+        distance_cholesky,
         distance_euclid,
         distance_harmonic,
         distance_kullback,
         distance_kullback_right,
         distance_kullback_sym,
-        distance_logchol,
+        distance_logcholesky,
         distance_logdet,
         distance_logeuclid,
         distance_riemann,
@@ -51,12 +53,13 @@ def callable_sp_euclidean(A, B, squared=False):
 @pytest.mark.parametrize(
     "metric, dist",
     [
+        ("cholesky", distance_cholesky),
         ("euclid", distance_euclid),
         ("harmonic", distance_harmonic),
         ("kullback", distance_kullback),
         ("kullback_right", distance_kullback_right),
         ("kullback_sym", distance_kullback_sym),
-        ("logchol", distance_logchol),
+        ("logcholesky", distance_logcholesky),
         ("logdet", distance_logdet),
         ("logeuclid", distance_logeuclid),
         ("riemann", distance_riemann),
@@ -136,10 +139,11 @@ def test_distances_all_separability(kind, dist, get_mats):
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize(
     "dist", [
+        distance_cholesky,
         distance_euclid,
         distance_harmonic,
         distance_kullback_sym,
-        distance_logchol,
+        distance_logcholesky,
         distance_logdet,
         distance_logeuclid,
         distance_riemann,

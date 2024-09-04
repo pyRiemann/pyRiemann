@@ -5,24 +5,27 @@ from pytest import approx
 from pyriemann.utils.geodesic import (
     geodesic,
     geodesic_euclid,
+    geodesic_logcholesky,
     geodesic_logeuclid,
     geodesic_riemann,
 )
 from pyriemann.utils.mean import (
     mean_euclid,
+    mean_logcholesky,
     mean_logeuclid,
     mean_riemann,
 )
 
 
 def get_geod_func():
-    geod_func = [geodesic_euclid, geodesic_logeuclid, geodesic_riemann]
+    geod_func = [geodesic_euclid, geodesic_logcholesky,
+                 geodesic_logeuclid, geodesic_riemann]
     for gf in geod_func:
         yield gf
 
 
 def get_geod_name():
-    geod_name = ["euclid", "logeuclid", "riemann"]
+    geod_name = ["euclid", "logcholesky", "logeuclid", "riemann"]
     for gn in geod_name:
         yield gn
 
@@ -63,6 +66,8 @@ def test_geodesic_all_random(kind, gfun, get_mats):
     A, B = mats[0], mats[1]
     if gfun is geodesic_euclid:
         Ctrue = mean_euclid(mats)
+    elif gfun is geodesic_logcholesky:
+        Ctrue = mean_logcholesky(mats)
     elif gfun is geodesic_logeuclid:
         Ctrue = mean_logeuclid(mats)
     elif gfun is geodesic_riemann:
@@ -115,6 +120,8 @@ def test_geodesic_wrapper_random(metric, gfun, get_mats):
     A, B = mats[0], mats[1]
     if gfun is geodesic_euclid:
         Ctrue = mean_euclid(mats)
+    elif gfun is geodesic_logcholesky:
+        Ctrue = mean_logcholesky(mats)
     elif gfun is geodesic_logeuclid:
         Ctrue = mean_logeuclid(mats)
     elif gfun is geodesic_riemann:

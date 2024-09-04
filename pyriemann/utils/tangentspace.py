@@ -43,6 +43,57 @@ def exp_map_euclid(X, Cref):
     return X + Cref
 
 
+def exp_map_logcholesky(X, Cref):
+    r"""Project matrices back to manifold by Log-Cholesky exponential map.
+
+    The projection of a matrix :math:`\mathbf{X}` from tangent space
+    to SPD/HPD manifold with Log-Cholesky exponential map
+    according to a reference SPD/HPD matrix :math:`\mathbf{C}_\text{ref}` is:
+
+    .. math::
+        \mathbf{X}_\text{original} = \mathbf{L} \mathbf{L}^T
+
+    where :math:`\mathbf{L}` is the Cholesky decomposition of
+    :math:`\mathbf{X} + \log(\mathbf{C}_\text{ref})`.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        Matrices in tangent space.
+    Cref : ndarray, shape (n, n)
+        Reference SPD/HPD matrix.
+
+    Returns
+    -------
+    X_original : ndarray, shape (..., n, n)
+        Matrices in SPD/HPD manifold.
+
+    Notes
+    -----
+    .. versionadded:: 0.4
+    """
+    Cref_chol = np.linalg.cholesky(Cref)
+    Cref_chol_inv = np.linalg.inv(Cref_chol)
+
+    exp_map = np.zeros_like(X)
+
+    diag0, diag1 = np.diag_indices(X.shape[-1])
+    tr0, tr1 = np.tril_indices(X.shape[-1], -1)
+
+    diff_bracket = Cref_chol_inv @ X @ Cref_chol_inv.T
+    diff_bracket[..., diag0, diag1] /= 2
+    diff_bracket[..., tr1, tr0] = 0
+
+    diff = Cref_chol@diff_bracket
+
+    exp_map[..., diag0, diag1] = np.exp(diff_bracket[..., diag0, diag1]) \
+        * Cref_chol[..., diag0, diag1]
+
+    exp_map[..., tr0, tr1] = Cref_chol[..., tr0, tr1] + diff[..., tr0, tr1]
+
+    return exp_map@exp_map.conj().swapaxes(-1, -2)
+
+
 def exp_map_logeuclid(X, Cref):
     r"""Project matrices back to manifold by Log-Euclidean exponential map.
 
@@ -143,6 +194,24 @@ def log_map_euclid(X, Cref):
     .. versionadded:: 0.4
     """
     return X - Cref
+
+
+def log_map_logcholesky(X, Cref):
+    X_chol = np.linalg.cholesky(X)
+    Cref_chol = np.linalg.cholesky(Cref)
+
+    tr0, tr1 = np.tril_indices(X.shape[-1], -1)
+    diag0, diag1 = np.diag_indices(X.shape[-1])
+    res = np.zeros_like(X)
+
+    res[..., tr0, tr1] = X_chol[..., tr0, tr1] - Cref_chol[..., tr0, tr1]
+
+    res[..., diag0, diag1] = Cref_chol[..., diag0, diag1] * \
+        np.log(X_chol[..., diag0, diag1] / Cref_chol[..., diag0, diag1])
+
+    diff = Cref_chol@res.conj().swapaxes(-1, -2) + \
+        res@Cref_chol.conj().swapaxes(-1, -2)
+    return diff
 
 
 def log_map_logeuclid(X, Cref):
@@ -295,6 +364,7 @@ def unupper(T):
 
 log_map_functions = {
     "euclid": log_map_euclid,
+    "logcholesky": log_map_logcholesky,
     "logeuclid": log_map_logeuclid,
     "riemann": log_map_riemann,
 }
@@ -337,6 +407,7 @@ def tangent_space(X, Cref, *, metric="riemann"):
 
 exp_map_functions = {
     "euclid": exp_map_euclid,
+    "logcholesky": exp_map_logcholesky,
     "logeuclid": exp_map_logeuclid,
     "riemann": exp_map_riemann,
 }

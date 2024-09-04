@@ -38,54 +38,54 @@ def geodesic_euclid(A, B, alpha=0.5):
 def geodesic_logcholesky(A, B, alpha=0.5):
     r"""Log-Cholesky geodesic between SPD/HPD matrices.
 
-        The matrix at position :math:`\alpha` on the Log-Cholesky geodesic
-        between two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}`
-        is [1]_:
+    The matrix at position :math:`\alpha` on the Log-Cholesky geodesic
+    between two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}`
+    is [1]_:
 
-        .. math::
-            \mathbf{C} = \mathbf{L} \mathbf{L}^T
+    .. math::
+        \mathbf{C} = \mathbf{L} \mathbf{L}^T
 
-        where :math:`\mathbf{L}` is the Cholesky decomposition of
-        :math:`(1-\alpha) \log(\mathbf{A}) + \alpha \log(\mathbf{B})`.
+    where :math:`\mathbf{L}` is the Cholesky decomposition of
+    :math:`(1-\alpha) \log(\mathbf{A}) + \alpha \log(\mathbf{B})`.
 
-        Parameters
-        ----------
-        A : ndarray, shape (..., n, n)
-            First SPD/HPD matrices.
-        B : ndarray, shape (..., n, n)
-            Second SPD/HPD matrices.
-        alpha : float, default=0.5
-            Position on the geodesic.
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices.
+    alpha : float, default=0.5
+        Position on the geodesic.
 
-        Returns
-        -------
-        C : ndarray, shape (..., n, n)
-            SPD/HPD matrices on the Log-Cholesky geodesic.
+    Returns
+    -------
+    C : ndarray, shape (..., n, n)
+        SPD/HPD matrices on the Log-Cholesky geodesic.
 
-        Notes
-        -----
-        ..versionadded:: 0.7
+    Notes
+    -----
+    ..versionadded:: 0.7
 
-        References
-        ----------
-        .. [1] `Riemannian Geometry of Symmetric Positive Definite Matrices via
-        Cholesky Decomposition <https://epubs.siam.org/doi/10.1137/18M1221084>`_
-        Z. Lin. SIAM Journal on Matrix Analysis and Applications, 40(4), 2019,
-        pp. 1353-1370.
+    References
+    ----------
+    .. [1] `Riemannian geometry of symmetric positive definite matrices via
+        Cholesky decomposition
+        <https://arxiv.org/pdf/1908.09326>`_
+        Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
         """
-    L_A = cholesky(A)
-    L_B = cholesky(B)
-    geo_t = np.zeros(L_A.shape)
+    A_chol = cholesky(A)
+    B_chol = cholesky(B)
+    geo_t = np.zeros_like(A)
 
-    tr0, tr1 = np.tril_indices(L_A.shape[-1], -1)
-    geo_t[..., tr0, tr1] = (1 - alpha) * L_A[..., tr0, tr1] + \
-                           alpha * L_B[..., tr0, tr1]
+    tr0, tr1 = np.tril_indices(A_chol.shape[-1], -1)
+    geo_t[..., tr0, tr1] = (1 - alpha) * A_chol[..., tr0, tr1] + \
+        alpha * B_chol[..., tr0, tr1]
 
-    diag0, diag1 = np.diag_indices(L_A.shape[-1])
-    geo_t[..., diag0, diag1] = L_A[..., diag0, diag1] ** (1 - alpha) * \
-                           L_B[..., diag0, diag1] ** alpha
+    diag0, diag1 = np.diag_indices(A_chol.shape[-1])
+    geo_t[..., diag0, diag1] = A_chol[..., diag0, diag1] ** (1 - alpha) * \
+        B_chol[..., diag0, diag1] ** alpha
 
-    return geo_t @ geo_t.swapaxes(-1, -2)
+    return geo_t @ geo_t.conj().swapaxes(-1, -2)
 
 
 def geodesic_logeuclid(A, B, alpha=0.5):
