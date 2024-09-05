@@ -355,7 +355,8 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    "python": ('https://docs.python.org/', None)
+    "python": ('https://docs.python.org/', None),
+    "sklearn": ("https://scikit-learn.org/stable/", None),
 }
 
 
