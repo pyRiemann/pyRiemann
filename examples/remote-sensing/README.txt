@@ -1,4 +1,4 @@
-Remote Sensing
---------------
+Clustering of radar images
+--------------------------
 
-Using Riemannian geometry for remote sensing applications.
+Using Riemannian geometry for clustering of radar images.
