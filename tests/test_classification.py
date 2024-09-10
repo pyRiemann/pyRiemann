@@ -182,7 +182,8 @@ def test_metric_str(classif, metric, get_mats, get_labels):
     clf = classif(metric=metric)
 
     if classif in [SVC, FgMDM, TSclassifier] \
-            and metric not in ["euclid", "logcholesky", "logeuclid", "riemann"]:
+            and metric not in ["euclid", "logcholesky",
+                               "logeuclid", "riemann"]:
         with pytest.raises((KeyError, ValueError)):
             clf.fit(mats, labels).predict(mats)
     else:
@@ -211,7 +212,7 @@ def test_mdm(metric_mean, metric_dist, n_classes, get_mats, get_labels):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("metric", ["euclid","logcholesky",
+@pytest.mark.parametrize("metric", ["euclid", "logcholesky",
                                     "logeuclid", "riemann"])
 def test_mdm_hpd(kind, metric, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 4, 2
