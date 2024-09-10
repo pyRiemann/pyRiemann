@@ -40,13 +40,7 @@ def geodesic_logcholesky(A, B, alpha=0.5):
 
     The matrix at position :math:`\alpha` on the Log-Cholesky geodesic
     between two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}`
-    is [1]_:
-
-    .. math::
-        \mathbf{C} = \mathbf{L} \mathbf{L}^T
-
-    where :math:`\mathbf{L}` is the Cholesky decomposition of
-    :math:`(1-\alpha) \log(\mathbf{A}) + \alpha \log(\mathbf{B})`.
+    given in [1]_.
 
     Parameters
     ----------
@@ -72,7 +66,7 @@ def geodesic_logcholesky(A, B, alpha=0.5):
         Cholesky decomposition
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
-        """
+    """
     A_chol = cholesky(A)
     B_chol = cholesky(B)
     geo_t = np.zeros_like(A)

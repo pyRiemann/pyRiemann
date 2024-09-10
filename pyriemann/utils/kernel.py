@@ -49,13 +49,22 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
 def kernel_logcholesky(X, Y=None, *, Cref=None, reg=1e-10, **kwargs):
     r"""Log-Cholesky kernel between two sets of SPD matrices.
 
-    Calculates the Log-Cholesky kernel matrix :math:`\mathbf{K}` of inner
-    products of two sets :math:`\mathbf{X}` and :math:`\mathbf{Y}` of SPD
-    matrices in :math:`\mathbb{R}^{n \times n}` by calculating pairwise
-    products [1]_:
+    Calculates the log-Cholesky Riemannian kernel matrix :math:`\mathbf{K}`
+    of inner products of two sets :math:`\mathbf{X}` and :math:`\mathbf{Y}` of
+    SPD matrices in :math:`\mathbb{R}^{n \times n}` on tangent space at
+    :math:`\mathbf{C}_\text{ref}` by calculating pairwise products using the
+    combination of logarithmic map and inner product from [1]_:
 
     .. math::
-        \mathbf{K}_{i,j} = \text{tr}(\log(\mathbf{X}_i) \log(\mathbf{Y}_j))
+        \mathbf{K}_{i,j} =
+        <\text{lower}(\text{chol}(X_i) -
+        \text{lower}(\text{chol}(\mathbf{C}_\text{ref}),
+        \text{lower}(\text{chol}(X_j) -
+        \text{lower}(\text{chol}(\mathbf{C}_\text{ref})> +
+        <\log(\text{diag}(\text{chol}(\mathbf{C}_\text{ref}))^{-1}
+        \text{diag}(\text{chol}(X_i))),
+        <\log(\text{diag}(\text{chol}(\mathbf{C}_\text{ref}))^{-1}
+        \text{diag}(\text{chol}(X_j)))>
 
     Parameters
     ----------
@@ -63,6 +72,8 @@ def kernel_logcholesky(X, Y=None, *, Cref=None, reg=1e-10, **kwargs):
         First set of SPD matrices.
     Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
         Second set of SPD matrices. If None, Y is set to X.
+    Cref : None | ndarray, shape (n, n), default=None
+        Reference point for the tangent space and inner product calculation.
     reg : float, default=1e-10
         Regularization parameter to mitigate numerical errors in kernel
         matrix estimation.
@@ -82,11 +93,10 @@ def kernel_logcholesky(X, Y=None, *, Cref=None, reg=1e-10, **kwargs):
 
     References
     ----------
-    .. [1] `Classification of covariance matrices using a Riemannian-based
-        kernel for BCI applications
-        <https://hal.archives-ouvertes.fr/hal-00820475/>`_
-        A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
-        Elsevier, 2013, 112, pp.172-178.
+    .. [1] `Riemannian geometry of symmetric positive definite matrices via
+        Cholesky decomposition
+        <https://arxiv.org/pdf/1908.09326>`_
+        Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
     _check_dimensions(X, Y, Cref)
     if Cref is None:

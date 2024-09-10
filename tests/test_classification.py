@@ -182,7 +182,7 @@ def test_metric_str(classif, metric, get_mats, get_labels):
     clf = classif(metric=metric)
 
     if classif in [SVC, FgMDM, TSclassifier] \
-            and metric not in ["euclid", "logeuclid", "riemann"]:
+            and metric not in ["euclid", "logcholesky", "logeuclid", "riemann"]:
         with pytest.raises((KeyError, ValueError)):
             clf.fit(mats, labels).predict(mats)
     else:
@@ -211,7 +211,8 @@ def test_mdm(metric_mean, metric_dist, n_classes, get_mats, get_labels):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", ["euclid","logcholesky",
+                                    "logeuclid", "riemann"])
 def test_mdm_hpd(kind, metric, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 4, 2
     labels = get_labels(n_matrices, n_classes)
@@ -223,7 +224,8 @@ def test_mdm_hpd(kind, metric, get_mats, get_labels):
 
 @pytest.mark.parametrize("metric_mean", get_means())
 @pytest.mark.parametrize("metric_dist", get_distances())
-@pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric_map", ["euclid", "logcholesky",
+                                        "logeuclid", "riemann"])
 def test_fgmdm(metric_mean, metric_dist, metric_map, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 4, 3, 2
     labels = get_labels(n_matrices, n_classes)
@@ -254,7 +256,8 @@ def test_knn(k, get_mats, get_labels):
 
 
 @pytest.mark.parametrize("metric_mean", get_means())
-@pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric_map", ["euclid", "logcholesky",
+                                        "logeuclid", "riemann"])
 def test_tsclassifier(metric_mean, metric_map, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 4, 3, 2
     labels = get_labels(n_matrices, n_classes)
@@ -306,7 +309,8 @@ def test_svc_params_error(get_mats, get_labels):
         SVC(foo=5)
 
 
-@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", ["euclid", "logcholesky",
+                                    "logeuclid", "riemann"])
 def test_svc_cref_metric(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
@@ -318,7 +322,8 @@ def test_svc_cref_metric(get_mats, get_labels, metric):
     assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
 
 
-@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", ["euclid", "logcholesky",
+                                    "logeuclid", "riemann"])
 def test_svc_cref_callable(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
@@ -336,7 +341,8 @@ def test_svc_cref_callable(get_mats, get_labels, metric):
     assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
 
 
-@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", ["euclid", "logcholesky",
+                                    "logeuclid", "riemann"])
 def test_svc_cref_error(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
@@ -352,7 +358,8 @@ def test_svc_cref_error(get_mats, get_labels, metric):
         SVC(Cref=Cref).fit(mats, labels)
 
 
-@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", ["euclid", "logcholesky",
+                                    "logeuclid", "riemann"])
 def test_svc_kernel_callable(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
@@ -375,7 +382,8 @@ def test_svc_kernel_callable(get_mats, get_labels, metric):
 
 
 @pytest.mark.parametrize("kernel_fct", [None, "precomputed"])
-@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", ["euclid", "logcholesky",
+                                    "logeuclid", "riemann"])
 def test_svc_kernel_precomputed(get_mats, get_labels, kernel_fct, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")

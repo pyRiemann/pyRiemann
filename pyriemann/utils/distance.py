@@ -244,7 +244,10 @@ def distance_logcholesky(A, B, squared=False):
 
     .. math::
         d(\mathbf{A},\mathbf{B}) =
-        \Vert \text{chol}(\mathbf{A}) - \text{chol}(\mathbf{B}) \Vert_F
+        (\Vert \text{lower}(\text{chol}(\mathbf{A})) -
+        \text{lower}(\text{chol}(\mathbf{B})) \Vert_F^2 +
+        \Vert \log(\text{diag}(\text{chol}(\mathbf{A}))) -
+        \log(\text{diag}(\text{chol}(\mathbf{B}))) \Vert_F^2)^\frac{1}{2}
 
     Parameters
     ----------

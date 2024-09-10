@@ -47,14 +47,7 @@ def exp_map_logcholesky(X, Cref):
     r"""Project matrices back to manifold by Log-Cholesky exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
-    to SPD/HPD manifold with Log-Cholesky exponential map
-    according to a reference SPD/HPD matrix :math:`\mathbf{C}_\text{ref}` is:
-
-    .. math::
-        \mathbf{X}_\text{original} = \mathbf{L} \mathbf{L}^T
-
-    where :math:`\mathbf{L}` is the Cholesky decomposition of
-    :math:`\mathbf{X} + \log(\mathbf{C}_\text{ref})`.
+    to SPD/HPD manifold with Log-Cholesky exponential map, see [1]_ Table 2.
 
     Parameters
     ----------
@@ -70,7 +63,14 @@ def exp_map_logcholesky(X, Cref):
 
     Notes
     -----
-    .. versionadded:: 0.4
+    .. versionadded:: 0.7
+
+    References
+    ----------
+    .. [1] `Riemannian geometry of symmetric positive definite matrices via
+        Cholesky decomposition
+        <https://arxiv.org/pdf/1908.09326>`_
+        Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
     Cref_chol = np.linalg.cholesky(Cref)
     Cref_chol_inv = np.linalg.inv(Cref_chol)
@@ -80,7 +80,7 @@ def exp_map_logcholesky(X, Cref):
     diag0, diag1 = np.diag_indices(X.shape[-1])
     tr0, tr1 = np.tril_indices(X.shape[-1], -1)
 
-    diff_bracket = Cref_chol_inv @ X @ Cref_chol_inv.T
+    diff_bracket = Cref_chol_inv @ X @ Cref_chol_inv.conj().T
     diff_bracket[..., diag0, diag1] /= 2
     diff_bracket[..., tr1, tr0] = 0
 
@@ -197,6 +197,34 @@ def log_map_euclid(X, Cref):
 
 
 def log_map_logcholesky(X, Cref):
+    r"""Project matrices in tangent space by Log-Cholesky logarithmic map.
+
+    The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
+    to tangent space by Log-Cholesky logarithmic map, see [1]_ Table 2.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        Matrices in SPD/HPD manifold.
+    Cref : ndarray, shape (n, n)
+        Reference SPD matrix.
+
+    Returns
+    -------
+    X_new : ndarray, shape (..., n, n)
+        Matrices projected in tangent space.
+
+    Notes
+    -----
+    .. versionadded:: 0.7
+
+    References
+    ----------
+    .. [1] `Riemannian geometry of symmetric positive definite matrices via
+        Cholesky decomposition
+        <https://arxiv.org/pdf/1908.09326>`_
+        Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
+    """
     X_chol = np.linalg.cholesky(X)
     Cref_chol = np.linalg.cholesky(Cref)
 
@@ -384,7 +412,8 @@ def tangent_space(X, Cref, *, metric="riemann"):
         Reference matrix.
     metric : string | callable, default="riemann"
         Metric used for logarithmic map, can be:
-        "euclid", "logeuclid", "riemann", or a callable function.
+        "euclid", "logcholesky", "logeuclid", "riemann", or a callable
+        function.
 
     Returns
     -------
@@ -427,7 +456,8 @@ def untangent_space(T, Cref, *, metric="riemann"):
         Reference matrix.
     metric : string | callable, default="riemann"
         Metric used for exponential map, can be:
-        "euclid", "logeuclid", "riemann", or a callable function.
+        "euclid", "logcholesky", "logeuclid", "riemann", or a callable
+        function.
 
     Returns
     -------

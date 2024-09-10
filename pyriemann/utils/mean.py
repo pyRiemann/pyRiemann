@@ -276,11 +276,47 @@ def mean_kullback_sym(X=None, sample_weight=None, covmats=None):
 
 
 def mean_logcholesky(X=None, sample_weight=None, covmats=None):
+    r"""Mean of SPD/HPD matrices according to the log-Cholesky metric [1]_.
+
+    .. math::
+        \mathbf{M} =\sum_i w_i \text{lower}(\text{chol}(\mathbf{X}_i})) +
+        \exp{\sum_i w_i \log{\text{diag}\text{chol}({\mathbf{X}_i}}) }
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (n, n)
+        Log-Cholesky mean.
+
+    Notes
+    -----
+    .. versionadded:: 0.7
+
+    See Also
+    --------
+    mean_covariance
+
+    References
+    ----------
+    .. [1] `Riemannian geometry of symmetric positive definite matrices via
+        Cholesky decomposition
+        <https://arxiv.org/pdf/1908.09326>`_
+        Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
+    """
     X = _deprecate_covmats(covmats, X)
+    n_matrices, _, n_channels = X.shape
+    sample_weight = check_weights(sample_weight, n_matrices)
+
     X_chol = np.linalg.cholesky(X)
 
-    tr0, tr1 = np.tril_indices(X.shape[-1], -1)
-    diag0, diag1 = np.diag_indices(X.shape[-1])
+    tr0, tr1 = np.tril_indices(n_channels, -1)
+    diag0, diag1 = np.diag_indices(n_channels)
 
     mean = np.zeros(X.shape[-2:], dtype=X.dtype)
 
