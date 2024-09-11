@@ -281,15 +281,15 @@ def distance_logcholesky(A, B, squared=False):
     _check_inputs(A, B)
     A_chol, B_chol = np.linalg.cholesky(A), np.linalg.cholesky(B)
 
-    tr0, tr1 = np.tril_indices(L_A.shape[-1], -1)
-    diag0, diag1 = np.diag_indices(L_A.shape[-1])
+    tr0, tr1 = np.tril_indices(A_chol.shape[-1], -1)
+    diag0, diag1 = np.diag_indices(A_chol.shape[-1])
 
     triagular_part = np.linalg.norm(
-        L_A[..., tr0, tr1] - L_B[..., tr0, tr1],
+        A_chol[..., tr0, tr1] - B_chol[..., tr0, tr1],
         axis=-1,
     ) ** 2
     diagonal_part = np.linalg.norm(
-        np.log(L_A[..., diag0, diag1]) - np.log(L_B[..., diag0, diag1]),
+        np.log(A_chol[..., diag0, diag1]) - np.log(B_chol[..., diag0, diag1]),
         axis=-1,
     ) ** 2
     d2 = triagular_part + diagonal_part

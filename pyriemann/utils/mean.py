@@ -275,7 +275,7 @@ def mean_kullback_sym(X=None, sample_weight=None, covmats=None):
     return M
 
 
-def mean_logchol(X, sample_weight=None):
+def mean_logcholesky(X, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the log-Cholesky metric.
 
     Log-Cholesky mean is [1]_:
@@ -323,7 +323,7 @@ def mean_logchol(X, sample_weight=None):
 
     mean[..., tr0, tr1] = np.average(X_chol[..., tr0, tr1], axis=0,
                                      weights=sample_weight)
-    mean[..., diag0, diag1] = np.exp(
+    mean[diag0, diag1] = np.exp(
         np.average(np.log(X_chol[..., diag0, diag1]),
                    axis=0, weights=sample_weight))
     return mean @ mean.conj().swapaxes(-2, -1)
