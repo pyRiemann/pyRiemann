@@ -275,8 +275,10 @@ def mean_kullback_sym(X=None, sample_weight=None, covmats=None):
     return M
 
 
-def mean_logcholesky(X=None, sample_weight=None, covmats=None):
-    r"""Mean of SPD/HPD matrices according to the log-Cholesky metric [1]_.
+def mean_logchol(X, sample_weight=None):
+    r"""Mean of SPD/HPD matrices according to the log-Cholesky metric.
+
+    Log-Cholesky mean is [1]_:
 
     .. math::
         \mathbf{M} =\sum_i w_i \text{lower}(\text{chol}(\mathbf{X}_i})) +
@@ -309,7 +311,6 @@ def mean_logcholesky(X=None, sample_weight=None, covmats=None):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    X = _deprecate_covmats(covmats, X)
     n_matrices, _, n_channels = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
 

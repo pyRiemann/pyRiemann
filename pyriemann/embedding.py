@@ -148,7 +148,7 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         If None, all available matrices are used.
         If ``n_neighbors > n_matrices``, ``n_neighbors`` is set to
         ``n_matrices - 1``.
-    metric : string, default: "riemann"
+    metric : string, default="riemann"
         Metric used for k-NN and kernel estimation. For the list of supported
         metrics, see :func:`pyriemann.utils.kernel.kernel`.
     kernel : callable | None, default=None
@@ -377,7 +377,7 @@ def locally_linear_embedding(
         If None, all available matrices are used.
         If ``n_neighbors > n_matrices``, ``n_neighbors`` is set to
         ``n_matrices - 1``.
-    metric : string, default: "riemann"
+    metric : string, default="riemann"
         Metric used for k-NN and kernel estimation. For the list of supported
         metrics, see :func:`pyriemann.utils.kernel.kernel`.
     kernel : callable | None, default=None
