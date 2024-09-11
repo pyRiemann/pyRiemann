@@ -6,16 +6,14 @@ from pyriemann.utils.base import logm
 from pyriemann.utils.kernel import (
     kernel,
     kernel_euclid,
-    kernel_logcholesky,
     kernel_logeuclid,
     kernel_riemann
 )
 from pyriemann.utils.mean import mean_covariance
 from pyriemann.utils.test import is_sym_pos_semi_def as is_spsd
 
-rker_str = ["euclid", "logcholesky", "logeuclid", "riemann"]
-rker_fct = [kernel_euclid, kernel_logcholesky,
-            kernel_logeuclid, kernel_riemann]
+rker_str = ["euclid", "logeuclid", "riemann"]
+rker_fct = [kernel_euclid, kernel_logeuclid, kernel_riemann]
 
 
 @pytest.mark.parametrize("ker", rker_fct)

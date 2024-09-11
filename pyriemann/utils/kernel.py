@@ -3,7 +3,7 @@
 import numpy as np
 
 from .base import invsqrtm, logm
-from .mean import mean_riemann, mean_logcholesky
+from .mean import mean_riemann
 from .utils import check_function
 
 
@@ -44,92 +44,6 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
         return X
 
     return _apply_matrix_kernel(kernelfct, X, Y, reg=reg)
-
-
-def kernel_logcholesky(X, Y=None, *, Cref=None, reg=1e-10, **kwargs):
-    r"""Log-Cholesky kernel between two sets of SPD matrices.
-
-    Calculates the log-Cholesky Riemannian kernel matrix :math:`\mathbf{K}`
-    of inner products of two sets :math:`\mathbf{X}` and :math:`\mathbf{Y}` of
-    SPD matrices in :math:`\mathbb{R}^{n \times n}` on tangent space at
-    :math:`\mathbf{C}_\text{ref}` by calculating pairwise products using the
-    combination of logarithmic map and inner product from [1]_:
-
-    .. math::
-        \mathbf{K}_{i,j} =
-        <\text{lower}(\text{chol}(X_i) -
-        \text{lower}(\text{chol}(\mathbf{C}_\text{ref}),
-        \text{lower}(\text{chol}(X_j) -
-        \text{lower}(\text{chol}(\mathbf{C}_\text{ref})> +
-        <\log(\text{diag}(\text{chol}(\mathbf{C}_\text{ref}))^{-1}
-        \text{diag}(\text{chol}(X_i))),
-        <\log(\text{diag}(\text{chol}(\mathbf{C}_\text{ref}))^{-1}
-        \text{diag}(\text{chol}(X_j)))>
-
-    Parameters
-    ----------
-    X : ndarray, shape (n_matrices_X, n, n)
-        First set of SPD matrices.
-    Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
-        Second set of SPD matrices. If None, Y is set to X.
-    Cref : None | ndarray, shape (n, n), default=None
-        Reference point for the tangent space and inner product calculation.
-    reg : float, default=1e-10
-        Regularization parameter to mitigate numerical errors in kernel
-        matrix estimation.
-
-    Returns
-    -------
-    K : ndarray, shape (n_matrices_X, n_matrices_Y)
-        The Log-Cholesky kernel matrix between X and Y.
-
-    Notes
-    -----
-    .. versionadded:: 0.3
-
-    See Also
-    --------
-    kernel
-
-    References
-    ----------
-    .. [1] `Riemannian geometry of symmetric positive definite matrices via
-        Cholesky decomposition
-        <https://arxiv.org/pdf/1908.09326>`_
-        Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
-    """
-    _check_dimensions(X, Y, Cref)
-    if Cref is None:
-        Cref = mean_logcholesky(X)
-
-    Cref_chol = np.linalg.cholesky(Cref)
-    X_chol = np.linalg.cholesky(X)
-    if Y is None:
-        Y_chol = X_chol
-    else:
-        Y_chol = np.linalg.cholesky(Y)
-
-    tr0, tr1 = np.tril_indices(Cref_chol.shape[-1], -1)
-    diag0, diag1 = np.diag_indices(Cref_chol.shape[-1])
-
-    X_triangular_part = X_chol[:, tr0, tr1]
-    Y_triangular_part = Y_chol[:, tr0, tr1]
-    Cref_triangular_part = Cref_chol[tr0, tr1]
-    triangular_part = np.dot(X_triangular_part-Cref_triangular_part,
-                             (Y_triangular_part - Cref_triangular_part).T)
-
-    X_diagonal_part = X_chol[:, diag0, diag1]
-    Y_diagonal_part = Y_chol[:, diag0, diag1]
-    Cref_diagonal_part = Cref_chol[diag0, diag1]
-    diagonal_part = np.dot(np.log(Cref_diagonal_part**-1*X_diagonal_part),
-                           (np.log(Cref_diagonal_part**-1*Y_diagonal_part)).T)
-    K = triangular_part + diagonal_part
-
-    # regularization due to numerical errors
-    if np.array_equal(X_chol, Y_chol):
-        K.flat[:: X.shape[0] + 1] += reg
-
-    return K
 
 
 def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
@@ -282,7 +196,6 @@ def _apply_matrix_kernel(kernel_fct, X, Y=None, *, Cref=None, reg=1e-10):
 
 kernel_functions = {
     "euclid": kernel_euclid,
-    "logcholesky": kernel_logcholesky,
     "logeuclid": kernel_logeuclid,
     "riemann": kernel_riemann,
 }

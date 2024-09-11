@@ -115,8 +115,7 @@ def test_embd_n_comp(n_components, embd, get_mats):
         embd.fit(mats)
 
 
-@pytest.mark.parametrize("metric", ["euclid", "logcholesky",
-                                    "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("n_neighbors", [2, 4, 8, 16])
 @pytest.mark.parametrize("reg", [1e-3, 0])
 @pytest.mark.parametrize("kernel_fct", [kernel, None])
@@ -153,8 +152,7 @@ def test_locally_linear_embedding(get_mats):
     assert isinstance(error, float)
 
 
-@pytest.mark.parametrize("metric", ["euclid", "logcholesky",
-                                    "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_locally_linear_none_kernel(metric, get_mats):
     """Test LocallyLinearEmbedding."""
     n_matrices, n_channels, n_components = 6, 3, 2

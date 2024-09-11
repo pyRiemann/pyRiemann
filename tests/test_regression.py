@@ -155,8 +155,7 @@ def test_svr_params_error(get_mats, get_targets):
         SVR(foo=5)
 
 
-@pytest.mark.parametrize("metric", ["euclid", "logcholesky",
-                                    "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svr_cref_metric(get_mats, get_targets, metric):
     n_matrices, n_channels = 6, 3
     mats = get_mats(n_matrices, n_channels, "spd")
@@ -168,8 +167,7 @@ def test_svr_cref_metric(get_mats, get_targets, metric):
     assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
 
 
-@pytest.mark.parametrize("metric", ["euclid", "logcholesky",
-                                    "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_cref_callable(get_mats, get_targets, metric):
     n_matrices, n_channels = 6, 3
     mats = get_mats(n_matrices, n_channels, "spd")
@@ -187,8 +185,7 @@ def test_svc_cref_callable(get_mats, get_targets, metric):
     assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
 
 
-@pytest.mark.parametrize("metric", ["euclid", "logcholesky",
-                                    "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_cref_error(get_mats, get_targets, metric):
     n_matrices, n_channels = 6, 3
     mats = get_mats(n_matrices, n_channels, "spd")
@@ -204,8 +201,7 @@ def test_svc_cref_error(get_mats, get_targets, metric):
         SVR(Cref=Cref).fit(mats, targets)
 
 
-@pytest.mark.parametrize("metric", ["euclid", "logcholesky",
-                                    "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_kernel_callable(get_mats, get_targets, metric):
     n_matrices, n_channels = 6, 3
     mats = get_mats(n_matrices, n_channels, "spd")
