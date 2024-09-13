@@ -300,7 +300,6 @@ Kernels
 
     kernel
     kernel_euclid
-    kernel_logcholesky
     kernel_logeuclid
     kernel_riemann
 
