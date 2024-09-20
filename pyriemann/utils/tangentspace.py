@@ -43,11 +43,11 @@ def exp_map_euclid(X, Cref):
     return X + Cref
 
 
-def exp_map_logcholesky(X, Cref):
-    r"""Project matrices back to manifold by Log-Cholesky exponential map.
+def exp_map_logchol(X, Cref):
+    r"""Project matrices back to manifold by log-Cholesky exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
-    to SPD/HPD manifold with Log-Cholesky exponential map, see [1]_ Table 2.
+    to SPD/HPD manifold with log-Cholesky exponential map, see Table 2 of [1]_.
 
     Parameters
     ----------
@@ -73,32 +73,31 @@ def exp_map_logcholesky(X, Cref):
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
     Cref_chol = np.linalg.cholesky(Cref)
-    Cref_chol_inv = np.linalg.inv(Cref_chol)
+    Cref_invchol = np.linalg.inv(Cref_chol)
+
+    tr0, tr1 = np.tril_indices(X.shape[-1], -1)
+    diag0, diag1 = np.diag_indices(X.shape[-1])
+
+    diff_bracket = Cref_invchol @ X @ Cref_invchol.conj().T
+    diff_bracket[..., tr1, tr0] = 0
+    diff_bracket[..., diag0, diag1] /= 2
+    diff = Cref_chol @ diff_bracket
 
     exp_map = np.zeros_like(X)
 
-    diag0, diag1 = np.diag_indices(X.shape[-1])
-    tr0, tr1 = np.tril_indices(X.shape[-1], -1)
-
-    diff_bracket = Cref_chol_inv @ X @ Cref_chol_inv.conj().T
-    diff_bracket[..., diag0, diag1] /= 2
-    diff_bracket[..., tr1, tr0] = 0
-
-    diff = Cref_chol@diff_bracket
+    exp_map[..., tr0, tr1] = Cref_chol[..., tr0, tr1] + diff[..., tr0, tr1]
 
     exp_map[..., diag0, diag1] = np.exp(diff_bracket[..., diag0, diag1]) \
         * Cref_chol[..., diag0, diag1]
 
-    exp_map[..., tr0, tr1] = Cref_chol[..., tr0, tr1] + diff[..., tr0, tr1]
-
-    return exp_map@exp_map.conj().swapaxes(-1, -2)
+    return exp_map @ exp_map.conj().swapaxes(-1, -2)
 
 
 def exp_map_logeuclid(X, Cref):
-    r"""Project matrices back to manifold by Log-Euclidean exponential map.
+    r"""Project matrices back to manifold by log-Euclidean exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
-    to SPD/HPD manifold with Log-Euclidean exponential map
+    to SPD/HPD manifold with log-Euclidean exponential map
     according to a reference SPD/HPD matrix :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
@@ -196,11 +195,11 @@ def log_map_euclid(X, Cref):
     return X - Cref
 
 
-def log_map_logcholesky(X, Cref):
-    r"""Project matrices in tangent space by Log-Cholesky logarithmic map.
+def log_map_logchol(X, Cref):
+    r"""Project matrices in tangent space by log-Cholesky logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
-    to tangent space by Log-Cholesky logarithmic map, see [1]_ Table 2.
+    to tangent space by log-Cholesky logarithmic map, see [1]_ Table 2.
 
     Parameters
     ----------
@@ -228,25 +227,26 @@ def log_map_logcholesky(X, Cref):
     X_chol = np.linalg.cholesky(X)
     Cref_chol = np.linalg.cholesky(Cref)
 
-    tr0, tr1 = np.tril_indices(X.shape[-1], -1)
-    diag0, diag1 = np.diag_indices(X.shape[-1])
     res = np.zeros_like(X)
 
-    res[..., tr0, tr1] = X_chol[..., tr0, tr1] - Cref_chol[..., tr0, tr1]
+    tri0, tri1 = np.tril_indices(X.shape[-1], -1)
+    res[..., tri0, tri1] = X_chol[..., tri0, tri1] - Cref_chol[..., tri0, tri1]
 
+    diag0, diag1 = np.diag_indices(X.shape[-1])
     res[..., diag0, diag1] = Cref_chol[..., diag0, diag1] * \
         np.log(X_chol[..., diag0, diag1] / Cref_chol[..., diag0, diag1])
 
-    diff = Cref_chol@res.conj().swapaxes(-1, -2) + \
-        res@Cref_chol.conj().swapaxes(-1, -2)
-    return diff
+    X_new = Cref_chol @ res.conj().swapaxes(-1, -2) + \
+        res @ Cref_chol.conj().swapaxes(-1, -2)
+
+    return X_new
 
 
 def log_map_logeuclid(X, Cref):
-    r"""Project matrices in tangent space by Log-Euclidean logarithmic map.
+    r"""Project matrices in tangent space by log-Euclidean logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
-    to tangent space by Log-Euclidean logarithmic map
+    to tangent space by log-Euclidean logarithmic map
     according to a SPD/HPD reference matrix :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
@@ -392,7 +392,7 @@ def unupper(T):
 
 log_map_functions = {
     "euclid": log_map_euclid,
-    "logcholesky": log_map_logcholesky,
+    "logchol": log_map_logchol,
     "logeuclid": log_map_logeuclid,
     "riemann": log_map_riemann,
 }
@@ -412,8 +412,8 @@ def tangent_space(X, Cref, *, metric="riemann"):
         Reference matrix.
     metric : string | callable, default="riemann"
         Metric used for logarithmic map, can be:
-        "euclid", "logcholesky", "logeuclid", "riemann", or a callable
-        function.
+        "euclid", "logchol", "logeuclid", "riemann",
+        or a callable function.
 
     Returns
     -------
@@ -436,7 +436,7 @@ def tangent_space(X, Cref, *, metric="riemann"):
 
 exp_map_functions = {
     "euclid": exp_map_euclid,
-    "logcholesky": exp_map_logcholesky,
+    "logchol": exp_map_logchol,
     "logeuclid": exp_map_logeuclid,
     "riemann": exp_map_riemann,
 }
@@ -456,8 +456,8 @@ def untangent_space(T, Cref, *, metric="riemann"):
         Reference matrix.
     metric : string | callable, default="riemann"
         Metric used for exponential map, can be:
-        "euclid", "logcholesky", "logeuclid", "riemann", or a callable
-        function.
+        "euclid", "logchol", "logeuclid", "riemann",
+        or a callable function.
 
     Returns
     -------

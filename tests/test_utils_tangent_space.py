@@ -5,17 +5,33 @@ from pytest import approx
 from conftest import get_metrics
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.tangentspace import (
-    exp_map_euclid, exp_map_logcholesky, exp_map_logeuclid, exp_map_riemann,
-    log_map_euclid, log_map_logcholesky, log_map_logeuclid, log_map_riemann,
-    upper, unupper, tangent_space, untangent_space, transport
+    exp_map_euclid,
+    exp_map_logchol,
+    exp_map_logeuclid,
+    exp_map_riemann,
+    log_map_euclid,
+    log_map_logchol,
+    log_map_logeuclid,
+    log_map_riemann,
+    upper,
+    unupper,
+    tangent_space,
+    untangent_space,
+    transport,
 )
 
 
 @pytest.mark.parametrize(
-    "fun_map", [exp_map_euclid, exp_map_logcholesky,
-                exp_map_logeuclid, exp_map_riemann,
-                log_map_euclid, log_map_logcholesky,
-                log_map_logeuclid, log_map_riemann]
+    "fun_map", [
+        exp_map_euclid,
+        exp_map_logchol,
+        exp_map_logeuclid,
+        exp_map_riemann,
+        log_map_euclid,
+        log_map_logchol,
+        log_map_logeuclid,
+        log_map_riemann,
+    ]
 )
 def test_maps_ndarray(fun_map, get_mats):
     """Test log and exp maps"""
@@ -68,8 +84,9 @@ def test_upper_and_unupper(kind, get_mats):
     assert unupper(upper(mats_4d)) == approx(mats_4d)
 
 
-@pytest.mark.parametrize("metric", ["euclid", "logcholesky",
-                                    "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", [
+    "euclid", "logchol", "logeuclid", "riemann"
+])
 def test_tangent_space_ndarray(metric, get_mats):
     """Test tangent space projection"""
     n_matrices, n_channels = 6, 3
@@ -96,8 +113,9 @@ def test_tangent_space_riemann_properties(kind, get_mats):
     assert dist == approx(np.linalg.norm(s))
 
 
-@pytest.mark.parametrize("metric", ["euclid", "logcholesky",
-                                    "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", [
+    "euclid", "logchol", "logeuclid", "riemann"
+])
 def test_untangent_space_ndarray(metric, rndstate):
     """Test untangent space projection"""
     n_matrices, n_channels = 10, 3
@@ -113,8 +131,9 @@ def test_untangent_space_ndarray(metric, rndstate):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("metric", ["euclid", "logcholesky",
-                                    "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", [
+    "euclid", "logchol", "logeuclid", "riemann"
+])
 def test_tangent_and_untangent_space(kind, metric, get_mats):
     """Test tangent space projection then back-projection should be identity"""
     n_matrices, n_channels = 10, 3

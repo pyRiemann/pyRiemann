@@ -31,6 +31,53 @@ def _recursive(fun, A, B, *args, **kwargs):
 # Distances between matrices
 
 
+def distance_chol(A, B, squared=False):
+    r"""Cholesky distance between SPD/HPD matrices.
+
+    The Cholesky distance between two SPD/HPD matrices :math:`\mathbf{A}`
+    and :math:`\mathbf{B}` is [1]_:
+
+    .. math::
+        d(\mathbf{A},\mathbf{B}) =
+        \Vert \text{chol}(\mathbf{A}) - \text{chol}(\mathbf{B}) \Vert_F
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices, same dimensions as A.
+    squared : bool, default False
+        Return squared distance.
+
+    Returns
+    -------
+    d : float or ndarray, shape (...,)
+        Cholesky distance between A and B.
+
+    Notes
+    -----
+    .. versionadded:: 0.7
+
+    See Also
+    --------
+    distance
+
+    References
+    ----------
+    .. [1] `Non-Euclidean statistics for covariance matrices, with applications
+        to diffusion tensor imaging
+        <https://doi.org/10.1214/09-AOAS249>`_
+        I.L. Dryden, A. Koloydenko, D. Zhou.
+        Ann Appl Stat, 2019, 3(3), pp. 1102-1123.
+    """
+    return distance_euclid(
+        np.linalg.cholesky(A),
+        np.linalg.cholesky(B),
+        squared=squared,
+    )
+
+
 def distance_euclid(A, B, squared=False):
     r"""Euclidean distance between matrices.
 
@@ -190,64 +237,19 @@ def distance_kullback_sym(A, B, squared=False):
     return d ** 2 if squared else d
 
 
-def distance_cholesky(A, B, squared=False):
+def distance_logchol(A, B, squared=False):
     r"""Log-Cholesky distance between SPD/HPD matrices.
 
     The log-Cholesky distance between two SPD/HPD matrices :math:`\mathbf{A}`
     and :math:`\mathbf{B}` is [1]_:
 
     .. math::
-        d(\mathbf{A},\mathbf{B}) =
-        \Vert \text{chol}(\mathbf{A}) - \text{chol}(\mathbf{B}) \Vert_F
-
-    Parameters
-    ----------
-    A : ndarray, shape (..., n, n)
-        First SPD/HPD matrices, at least 2D ndarray.
-    B : ndarray, shape (..., n, n)
-        Second SPD/HPD matrices, same dimensions as A.
-    squared : bool, default False
-        Return squared distance.
-
-    Returns
-    -------
-    d : float or ndarray, shape (...,)
-        Log-Cholesky distance between A and B.
-
-    Notes
-    -----
-    .. versionadded:: 0.7
-
-    See Also
-    --------
-    distance
-
-    References
-    ----------
-    .. [1] `Riemannian geometry of symmetric positive definite matrices via
-        Cholesky decomposition
-        <https://arxiv.org/pdf/1908.09326>`_
-        Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
-    """
-    return distance_euclid(
-        np.linalg.cholesky(A),
-        np.linalg.cholesky(B),
-        squared=squared,
-    )
-
-
-def distance_logcholesky(A, B, squared=False):
-    r"""Log-Cholesky distance between SPD/HPD matrices.
-
-    The log-Cholesky distance between two SPD/HPD matrices :math:`\mathbf{A}`
-    and :math:`\mathbf{B}` is [1]_:
-
-    .. math::
-        d(\mathbf{A},\mathbf{B}) =
-        (\Vert \text{lower}(\text{chol}(\mathbf{A})) -
+        d(\mathbf{A},\mathbf{B}) = \left(
+        \Vert \text{lower}(\text{chol}(\mathbf{A})) -
         \text{lower}(\text{chol}(\mathbf{B})) \Vert_F^2 +
         \Vert \log(\text{diag}(\text{chol}(\mathbf{A}))) -
-        \log(\text{diag}(\text{chol}(\mathbf{B}))) \Vert_F^2)^\frac{1}{2}
+        \log(\text{diag}(\text{chol}(\mathbf{B}))) \Vert_F^2
+        \right)^\frac{1}{2}
 
     Parameters
     ----------
@@ -281,17 +283,18 @@ def distance_logcholesky(A, B, squared=False):
     _check_inputs(A, B)
     A_chol, B_chol = np.linalg.cholesky(A), np.linalg.cholesky(B)
 
-    tr0, tr1 = np.tril_indices(A_chol.shape[-1], -1)
-    diag0, diag1 = np.diag_indices(A_chol.shape[-1])
-
+    tri0, tri1 = np.tril_indices(A_chol.shape[-1], -1)
     triagular_part = np.linalg.norm(
-        A_chol[..., tr0, tr1] - B_chol[..., tr0, tr1],
+        A_chol[..., tri0, tri1] - B_chol[..., tri0, tri1],
         axis=-1,
     ) ** 2
+
+    diag0, diag1 = np.diag_indices(A_chol.shape[-1])
     diagonal_part = np.linalg.norm(
         np.log(A_chol[..., diag0, diag1]) - np.log(B_chol[..., diag0, diag1]),
         axis=-1,
     ) ** 2
+
     d2 = triagular_part + diagonal_part
     return d2 if squared else np.sqrt(d2)
 
@@ -536,14 +539,13 @@ def distance_wasserstein(A, B, squared=False):
 
 
 distance_functions = {
+    "chol": distance_chol,
     "euclid": distance_euclid,
     "harmonic": distance_harmonic,
     "kullback": distance_kullback,
     "kullback_right": distance_kullback_right,
     "kullback_sym": distance_kullback_sym,
-    "logchol": distance_cholesky,
-    "logcholesky": distance_logcholesky,
-    "cholesky": distance_cholesky,
+    "logchol": distance_logchol,
     "logdet": distance_logdet,
     "logeuclid": distance_logeuclid,
     "riemann": distance_riemann,
@@ -564,9 +566,10 @@ def distance(A, B, metric="riemann", squared=False):
     B : ndarray, shape (n, n)
         Second matrix.
     metric : string | callable, default="riemann"
-        Metric for distance, can be: "euclid", "harmonic", "kullback",
+        Metric for distance, can be: "chol", "euclid", "harmonic", "kullback",
         "kullback_right", "kullback_sym", "logchol", "logdet", "logeuclid",
-        "riemann", "wasserstein", or a callable function.
+        "riemann", "wasserstein",
+        or a callable function.
     squared : bool, default False
         Return squared distance.
 
@@ -675,10 +678,10 @@ def _pairwise_distance_harmonic(X, Y=None, squared=False):
     return _pairwise_distance_euclid(invX, invY, squared=squared)
 
 
-def _pairwise_distance_logcholesky(X, Y=None, squared=False):
-    """Pairwise Log-Cholesky distance matrix.
+def _pairwise_distance_logchol(X, Y=None, squared=False):
+    """Pairwise log-Cholesky distance matrix.
 
-    Compute the matrix of Log-Cholesky distances between pairs of elements of
+    Compute the matrix of log-Cholesky distances between pairs of elements of
     X and Y.
 
     Parameters
@@ -700,33 +703,42 @@ def _pairwise_distance_logcholesky(X, Y=None, squared=False):
     See Also
     --------
     pairwise_distance
-    distance_logcholesky
+    distance_logchol
     """
     X_chol = np.linalg.cholesky(X)
-    tr0, tr1 = np.tril_indices(X_chol.shape[-1], -1)
+    tri0, tri1 = np.tril_indices(X_chol.shape[-1], -1)
     diag0, diag1 = np.diag_indices(X_chol.shape[-1])
+
     if Y is None:
-        triagular_part = euclidean_distances(X_chol[..., tr0, tr1],
-                                             squared=True)
-        diagonal_part = euclidean_distances(np.log(X_chol[..., diag0, diag1]),
-                                            squared=True)
+        triagular_part = euclidean_distances(
+            X_chol[..., tri0, tri1],
+            squared=True
+        )
+        diagonal_part = euclidean_distances(
+            np.log(X_chol[..., diag0, diag1]),
+            squared=True,
+        )
     else:
         Y_chol = np.linalg.cholesky(Y)
-        triagular_part = euclidean_distances(X_chol[..., tr0, tr1],
-                                             Y_chol[..., tr0, tr1],
-                                             squared=True)
-        diagonal_part = euclidean_distances(np.log(X_chol[..., diag0, diag1]),
-                                            np.log(Y_chol[..., diag0, diag1]),
-                                            squared=True)
+        triagular_part = euclidean_distances(
+            X_chol[..., tri0, tri1],
+            Y_chol[..., tri0, tri1],
+            squared=True,
+        )
+        diagonal_part = euclidean_distances(
+            np.log(X_chol[..., diag0, diag1]),
+            np.log(Y_chol[..., diag0, diag1]),
+            squared=True,
+        )
 
     dist = triagular_part + diagonal_part
     return dist if squared else np.sqrt(dist)
 
 
 def _pairwise_distance_logeuclid(X, Y=None, squared=False):
-    """Pairwise Log-Euclidean distance matrix.
+    """Pairwise log-Euclidean distance matrix.
 
-    Compute the matrix of Log-Euclidean distances between pairs of elements of
+    Compute the matrix of log-Euclidean distances between pairs of elements of
     X and Y.
 
     Parameters
@@ -841,8 +853,8 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
         return _pairwise_distance_euclid(X, Y=Y, squared=squared)
     elif metric == "harmonic":
         return _pairwise_distance_harmonic(X, Y=Y, squared=squared)
-    elif metric == "logcholesky":
-        return _pairwise_distance_logcholesky(X, Y=Y, squared=squared)
+    elif metric == "logchol":
+        return _pairwise_distance_logchol(X, Y=Y, squared=squared)
     elif metric == "logeuclid":
         return _pairwise_distance_logeuclid(X, Y=Y, squared=squared)
     elif metric == "riemann":

@@ -1,9 +1,8 @@
 """Geodesics for SPD/HPD matrices."""
+import numpy as np
 
 from .base import sqrtm, invsqrtm, powm, logm, expm
 from .utils import check_function
-import numpy as np
-from numpy.linalg import cholesky
 
 
 def geodesic_euclid(A, B, alpha=0.5):
@@ -35,10 +34,10 @@ def geodesic_euclid(A, B, alpha=0.5):
     return (1 - alpha) * A + alpha * B
 
 
-def geodesic_logcholesky(A, B, alpha=0.5):
+def geodesic_logchol(A, B, alpha=0.5):
     r"""Log-Cholesky geodesic between SPD/HPD matrices.
 
-    The matrix at position :math:`\alpha` on the Log-Cholesky geodesic
+    The matrix at position :math:`\alpha` on the log-Cholesky geodesic
     between two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}`
     given in [1]_.
 
@@ -54,7 +53,7 @@ def geodesic_logcholesky(A, B, alpha=0.5):
     Returns
     -------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices on the Log-Cholesky geodesic.
+        SPD/HPD matrices on the log-Cholesky geodesic.
 
     Notes
     -----
@@ -67,25 +66,25 @@ def geodesic_logcholesky(A, B, alpha=0.5):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    A_chol = cholesky(A)
-    B_chol = cholesky(B)
-    geo_t = np.zeros_like(A)
+    A_chol, B_chol = np.linalg.cholesky(A), np.linalg.cholesky(B)
 
-    tr0, tr1 = np.tril_indices(A_chol.shape[-1], -1)
-    geo_t[..., tr0, tr1] = (1 - alpha) * A_chol[..., tr0, tr1] + \
-        alpha * B_chol[..., tr0, tr1]
+    geo = np.zeros_like(A)
+
+    tri0, tri1 = np.tril_indices(A_chol.shape[-1], -1)
+    geo[..., tri0, tri1] = (1 - alpha) * A_chol[..., tri0, tri1] + \
+        alpha * B_chol[..., tri0, tri1]
 
     diag0, diag1 = np.diag_indices(A_chol.shape[-1])
-    geo_t[..., diag0, diag1] = A_chol[..., diag0, diag1] ** (1 - alpha) * \
+    geo[..., diag0, diag1] = A_chol[..., diag0, diag1] ** (1 - alpha) * \
         B_chol[..., diag0, diag1] ** alpha
 
-    return geo_t @ geo_t.conj().swapaxes(-1, -2)
+    return geo @ geo.conj().swapaxes(-1, -2)
 
 
 def geodesic_logeuclid(A, B, alpha=0.5):
     r"""Log-Euclidean geodesic between SPD/HPD matrices.
 
-    The matrix at position :math:`\alpha` on the Log-Euclidean geodesic
+    The matrix at position :math:`\alpha` on the log-Euclidean geodesic
     between two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is:
 
     .. math::
@@ -107,7 +106,7 @@ def geodesic_logeuclid(A, B, alpha=0.5):
     Returns
     -------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices on the Log-Euclidean geodesic.
+        SPD/HPD matrices on the log-Euclidean geodesic.
     """
     return expm((1 - alpha) * logm(A) + alpha * logm(B))
 
@@ -152,7 +151,7 @@ def geodesic_riemann(A, B, alpha=0.5):
 
 geodesic_functions = {
     "euclid": geodesic_euclid,
-    "logcholesky": geodesic_logcholesky,
+    "logchol": geodesic_logchol,
     "logeuclid": geodesic_logeuclid,
     "riemann": geodesic_riemann,
 }
@@ -173,7 +172,8 @@ def geodesic(A, B, alpha, metric="riemann"):
     alpha : float
         Position on the geodesic.
     metric : string | callable, default="riemann"
-        Metric used for geodesic, can be: "euclid", "logeuclid", "riemann",
+        Metric used for geodesic, can be: "euclid", "logchol", "logeuclid",
+        "riemann",
         or a callable function.
 
     Returns

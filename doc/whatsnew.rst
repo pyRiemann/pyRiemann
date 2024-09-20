@@ -35,6 +35,8 @@ v0.7.dev
 
 - Add :func:`pyriemann.utils.distance.distance_poweuclid` and :func:`pyriemann.utils.mean.mean_poweuclid` to use power Euclidean metric. :pr:`312` by :user:`qbarthelemy`
 
+- Add :func:`pyriemann.utils.distance.distance_chol` and correct :func:`pyriemann.utils.distance.distance_logchol`. :pr:`322` by :user:`gabelstein`
+
 v0.6 (April 2024)
 -----------------
 

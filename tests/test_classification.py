@@ -182,8 +182,7 @@ def test_metric_str(classif, metric, get_mats, get_labels):
     clf = classif(metric=metric)
 
     if classif in [SVC, FgMDM, TSclassifier] \
-            and metric not in ["euclid", "logcholesky",
-                               "logeuclid", "riemann"]:
+            and metric not in ["euclid", "logchol", "logeuclid", "riemann"]:
         with pytest.raises((KeyError, ValueError)):
             clf.fit(mats, labels).predict(mats)
     else:
@@ -212,8 +211,9 @@ def test_mdm(metric_mean, metric_dist, n_classes, get_mats, get_labels):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("metric", ["euclid", "logcholesky",
-                                    "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric", [
+    "euclid", "logchol", "logeuclid", "riemann"
+])
 def test_mdm_hpd(kind, metric, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 4, 2
     labels = get_labels(n_matrices, n_classes)
@@ -225,8 +225,9 @@ def test_mdm_hpd(kind, metric, get_mats, get_labels):
 
 @pytest.mark.parametrize("metric_mean", get_means())
 @pytest.mark.parametrize("metric_dist", get_distances())
-@pytest.mark.parametrize("metric_map", ["euclid", "logcholesky",
-                                        "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric_map", [
+    "euclid", "logchol", "logeuclid", "riemann"
+])
 def test_fgmdm(metric_mean, metric_dist, metric_map, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 4, 3, 2
     labels = get_labels(n_matrices, n_classes)
@@ -257,8 +258,9 @@ def test_knn(k, get_mats, get_labels):
 
 
 @pytest.mark.parametrize("metric_mean", get_means())
-@pytest.mark.parametrize("metric_map", ["euclid", "logcholesky",
-                                        "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric_map", [
+    "euclid", "logchol", "logeuclid", "riemann"
+])
 def test_tsclassifier(metric_mean, metric_map, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 4, 3, 2
     labels = get_labels(n_matrices, n_classes)

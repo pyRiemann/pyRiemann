@@ -82,13 +82,13 @@ def get_targets():
 
 def get_distances():
     distances = [
-        "cholesky",
+        "chol",
         "euclid",
         "harmonic",
         "kullback",
         "kullback_right",
         "kullback_sym",
-        "logcholesky",
+        "logchol",
         "logdet",
         "logeuclid",
         "riemann",
@@ -105,6 +105,7 @@ def get_means():
         "harmonic",
         "identity",
         "kullback_sym",
+        "logchol",
         "logdet",
         "logeuclid",
         "riemann",
