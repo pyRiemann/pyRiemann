@@ -752,9 +752,9 @@ def mean_covariance(X=None, metric="riemann", sample_weight=None, covmats=None,
     X : ndarray, shape (n_matrices, n, n)
         Set of matrices.
     metric : string | callable, default="riemann"
-        Metric for mean estimation, can be: "ale", "alm", "euclid", "harmonic",
-        "identity", "kullback_sym", "logchol", "logdet", "logeuclid",
-        "riemann", "wasserstein",
+        Metric for mean estimation, can be:
+        "ale", "alm", "euclid", "harmonic", "identity", "kullback_sym",
+        "logchol", "logdet", "logeuclid", "riemann", "wasserstein",
         or a callable function.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.

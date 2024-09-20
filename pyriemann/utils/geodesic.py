@@ -38,7 +38,7 @@ def geodesic_logchol(A, B, alpha=0.5):
     r"""Log-Cholesky geodesic between SPD/HPD matrices.
 
     The matrix at position :math:`\alpha` on the log-Cholesky geodesic
-    between two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}`
+    between two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is
     given in [1]_.
 
     Parameters
@@ -140,10 +140,8 @@ def geodesic_riemann(A, B, alpha=0.5):
         SPD/HPD matrices on the affine-invariant Riemannian geodesic.
     """
     sA, isA = sqrtm(A), invsqrtm(A)
-    C = isA @ B @ isA
-    D = powm(C, alpha)
-    E = sA @ D @ sA
-    return E
+    C = sA @ powm(isA @ B @ isA, alpha) @ sA
+    return C
 
 
 ###############################################################################
@@ -172,8 +170,8 @@ def geodesic(A, B, alpha, metric="riemann"):
     alpha : float
         Position on the geodesic.
     metric : string | callable, default="riemann"
-        Metric used for geodesic, can be: "euclid", "logchol", "logeuclid",
-        "riemann",
+        Metric used for geodesic, can be:
+        "euclid", "logchol", "logeuclid", "riemann",
         or a callable function.
 
     Returns

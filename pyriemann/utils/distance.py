@@ -566,9 +566,10 @@ def distance(A, B, metric="riemann", squared=False):
     B : ndarray, shape (n, n)
         Second matrix.
     metric : string | callable, default="riemann"
-        Metric for distance, can be: "chol", "euclid", "harmonic", "kullback",
-        "kullback_right", "kullback_sym", "logchol", "logdet", "logeuclid",
-        "riemann", "wasserstein",
+        Metric for distance, can be:
+        "chol", "euclid", "harmonic", "kullback", "kullback_right",
+        "kullback_sym", "logchol", "logdet", "logeuclid", "riemann",
+        "wasserstein",
         or a callable function.
     squared : bool, default False
         Return squared distance.
