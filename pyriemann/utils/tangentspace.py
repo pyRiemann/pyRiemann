@@ -75,17 +75,18 @@ def exp_map_logchol(X, Cref):
     Cref_chol = np.linalg.cholesky(Cref)
     Cref_invchol = np.linalg.inv(Cref_chol)
 
-    tr0, tr1 = np.tril_indices(X.shape[-1], -1)
+    tri0, tri1 = np.tril_indices(X.shape[-1], -1)
     diag0, diag1 = np.diag_indices(X.shape[-1])
 
     diff_bracket = Cref_invchol @ X @ Cref_invchol.conj().T
-    diff_bracket[..., tr1, tr0] = 0
+    diff_bracket[..., tri1, tri0] = 0
     diff_bracket[..., diag0, diag1] /= 2
     diff = Cref_chol @ diff_bracket
 
     exp_map = np.zeros_like(X)
 
-    exp_map[..., tr0, tr1] = Cref_chol[..., tr0, tr1] + diff[..., tr0, tr1]
+    exp_map[..., tri0, tri1] = Cref_chol[..., tri0, tri1] + \
+        diff[..., tri0, tri1]
 
     exp_map[..., diag0, diag1] = np.exp(diff_bracket[..., diag0, diag1]) \
         * Cref_chol[..., diag0, diag1]
