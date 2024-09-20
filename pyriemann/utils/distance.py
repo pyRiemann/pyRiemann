@@ -69,7 +69,7 @@ def distance_chol(A, B, squared=False):
         to diffusion tensor imaging
         <https://doi.org/10.1214/09-AOAS249>`_
         I.L. Dryden, A. Koloydenko, D. Zhou.
-        Ann Appl Stat, 2019, 3(3), pp. 1102-1123.
+        Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
     """
     return distance_euclid(
         np.linalg.cholesky(A),
