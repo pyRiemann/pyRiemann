@@ -6,20 +6,23 @@ Classify fNIRS data with block diagonal matrices for HbO and HbR
 
 This example demonstrates how to classify fNIRS data using block diagonal
 matrices for oxyhemoglobin (HbO) and deoxyhemoglobin (HbR) signals, using the
-``BlockKernels`` estimator. It showcases how to set up a pipeline with PyRiemann
-estimators and perform hyperparameter tuning using grid search.
-
+``BlockKernels`` estimator. This estimator computes block kernel or covariance
+matrices for each block of channels, allowing for separate processing of HbO and
+HbR signals. We can then apply shrinkage to each block separately.
 """
 
-# Author: Your Name
-
+# Author: Tim Näher
 import itertools
+import urllib.request
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.metrics.pairwise import pairwise_kernels
 from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
+
 from pyriemann.utils.covariance import covariances
 from pyriemann.estimation import Shrinkage
 from pyriemann.classification import SVC
@@ -34,12 +37,10 @@ cv_splits = 5  # Number of cross-validation folds
 random_state = 42  # Random state for reproducibility
 
 # Some example kernel metrics
-kernel_metrics = [
-    'poly',  'rbf', 'laplacian', 'sigmoid', 'cosine'
-]
+kernel_metrics = ['poly',  'rbf', 'laplacian']
 
 # Some example covariance estimators
-covariance_estimators = ['oas','lwf','mcd']
+covariance_estimators = ['oas','lwf']
 
 # Combine all metrics
 all_metrics = kernel_metrics + covariance_estimators
@@ -49,11 +50,7 @@ metric_combinations = [list(tup) for tup in itertools.product(all_metrics, repea
 
 # Shrinkage values to test
 shrinkage_values = [
-    None,
-    0.1, # same shrinkage for both blocks
-    0.2,
-    [0.1, 0.05], # different shrinkage for each block
-    [0.05, 0.1],
+    None, 0.01, [0.01, 0.1], # different shrinkage for each block
 ]
 
 ###############################################################################
@@ -184,17 +181,17 @@ class BlockKernels(BaseEstimator, TransformerMixin):
         else:
             raise ValueError("Parameter shrinkage must be None, a float, or a list of floats.")
 
-        # Lists of supported metrics
+        # Lists of current supported metrics
         kernel_metrics = [
-            'linear', 'poly', 'polynomial', 'rbf',
-            'laplacian', 'sigmoid', 'cosine'
+            'linear', 'poly', 'polynomial', 'rbf', 'laplacian', 'sigmoid', 'cosine'
         ]
+
         covariance_estimators = [
-            'scm', 'lwf', 'oas', 'mcd', 'corr', 'tyl', 'np', 'riemann',
-            'identity', 'cov'
+            'corr', 'cov', 'hub', 'lwf', 'mcd', 'oas', 'sch', 'scm', 'stu', 'tyl'
         ]
 
         M_matrices = []
+
 
         for i in range(n_samples):
             start = 0
@@ -255,15 +252,34 @@ class BlockKernels(BaseEstimator, TransformerMixin):
         return result
 
 ###############################################################################
-# Load data
+# Download example data
 # ---------
 
-print("Loading preprocessed fNIRS data")
-# Adjust the path to your data
-data_path = './data'
-X = np.load(data_path + '/X.npy')[:96,:,:]
-y = np.load(data_path + '/y.npy')[0:96]
-print(f"Data loaded: {X.shape[0]} samples, {X.shape[1]} channels, "
+X_url = 'https://zenodo.org/records/13841869/files/X.npy'
+y_url = 'https://zenodo.org/records/13841869/files/y.npy'
+
+data_path = Path('./data')
+data_path.mkdir(exist_ok=True)
+
+X_path = data_path / 'X.npy'
+y_path = data_path / 'y.npy'
+
+# Function to download the files if they don't already exist
+def download_file(url, file_path):
+    if not os.path.isfile(file_path):
+        print(f"Downloading {file_path} from {url}")
+        urllib.request.urlretrieve(url, file_path)
+        print(f"Downloaded {file_path}")
+
+# Download
+download_file(X_url, X_path)
+download_file(y_url, y_path)
+
+# Load the dataset
+X = np.load(X_path)
+y = np.load(y_path)
+
+print(f"Data loaded: {X.shape[0]} trials, {X.shape[1]} channels, "
       f"{X.shape[2]} time points")
 
 ###############################################################################
@@ -284,6 +300,8 @@ pipeline = Pipeline([
 param_grid = {
     'block_kernels__metric': metric_combinations,
     'block_kernels__shrinkage': shrinkage_values,
+    'classifier__C': [0.1, 1, 10],
+    'classifier__metric': ['euclid', 'riemann', 'logeuclid'],
 }
 
 ###############################################################################
@@ -303,7 +321,7 @@ grid_search = GridSearchCV(
     scoring='accuracy',
     cv=cv,
     n_jobs=n_jobs,
-    verbose=4
+    verbose=1
 )
 
 grid_search.fit(X, y)
@@ -334,7 +352,7 @@ print(df_results[display_columns].sort_values(by='mean_test_score', ascending=Fa
 # ----------
 
 # The grid search allows us to find the best combination of metrics and shrinkage
-# values for our fNIRS classification task. By using block diagonal matrices
+# values for our fNIRS classification of mental imagery. By using block diagonal matrices
 # for HbO and HbR signals, we can tune our classifier to HbO and HbR signals separately,
 # which can improve classification performance.
 
@@ -344,5 +362,3 @@ print(df_results[display_columns].sort_values(by='mean_test_score', ascending=Fa
 # .. [1] `Riemannian Geometry for the classification of brain states with fNIRS
 #    <https://www.biorxiv.org/content/10.1101/2024.09.06.611347v1>`_
 #    T. Näher, L. Bastian, A. Vorreuther, P. Fries, R. Goebel, B. Sorger.
-
-#%%
