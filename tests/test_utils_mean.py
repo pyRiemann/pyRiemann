@@ -66,7 +66,10 @@ def test_mean_init(kind, mean, get_mats):
     """Test the shape of mean with init"""
     n_matrices, n_channels = 5, 3
     mats = get_mats(n_matrices, n_channels, kind)
-    M = mean(mats, init=mats[0])
+    if mean == mean_power:
+        M = mean(mats, 0.123, init=mats[0])
+    else:
+        M = mean(mats, init=mats[0])
     assert M.shape == (n_channels, n_channels)
 
 
