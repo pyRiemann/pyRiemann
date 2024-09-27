@@ -369,7 +369,7 @@ def mean_logeuclid(X=None, sample_weight=None, covmats=None):
     return M
 
 
-def mean_power(X=None, p=None, *, sample_weight=None, zeta=10e-10, maxiter=100,
+def mean_power(X=None, p=None, *, init=None, sample_weight=None, zeta=10e-10, maxiter=100,
                covmats=None):
     r"""Power mean of SPD/HPD matrices.
 
@@ -439,7 +439,11 @@ def mean_power(X=None, p=None, *, sample_weight=None, zeta=10e-10, maxiter=100,
     sample_weight = check_weights(sample_weight, n_matrices)
     phi = 0.375 / np.abs(p)
 
-    G = np.einsum("a,abc->bc", sample_weight, powm(X, p))
+    if init is None:
+        G = powm(np.einsum("a,abc->bc", sample_weight, powm(X, p)), 1/p)
+    else:
+        G = init
+        
     if p > 0:
         K = invsqrtm(G)
     else:
