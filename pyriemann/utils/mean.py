@@ -443,7 +443,6 @@ def mean_power(X=None, p=None, *, sample_weight=None, zeta=10e-10, maxiter=100,
         G = powm(np.einsum("a,abc->bc", sample_weight, powm(X, p)), 1/p)
     else:
         G = init
-        
     if p > 0:
         K = invsqrtm(G)
     else:
