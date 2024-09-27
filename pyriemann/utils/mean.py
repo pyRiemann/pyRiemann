@@ -369,8 +369,8 @@ def mean_logeuclid(X=None, sample_weight=None, covmats=None):
     return M
 
 
-def mean_power(X=None, p=None, *, init=None, sample_weight=None, zeta=10e-10, maxiter=100,
-               covmats=None):
+def mean_power(X=None, p=None, *, sample_weight=None, zeta=10e-10, maxiter=100,
+               covmats=None, init=None):
     r"""Power mean of SPD/HPD matrices.
 
     Power mean of order :math:`p` is the solution of [1]_ [2]_:
