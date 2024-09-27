@@ -35,9 +35,9 @@ v0.7.dev
 
 - Add :func:`pyriemann.utils.distance.distance_poweuclid` and :func:`pyriemann.utils.mean.mean_poweuclid` to use power Euclidean metric. :pr:`312` by :user:`qbarthelemy`
 
-- Add ``init`` parameter to :class:`pyriemann.utils.mean.mean_power`. It allows initialization of the power mean. :pr:`324` by :user:`toncho11`
+- Add ``init`` parameter to :class:`pyriemann.utils.mean.mean_power`, and 
+  fix :func:`pyriemann.utils.mean.mean_power` to use the correct initialization provided in the associated paper. :pr:`324` by :user:`toncho11`
 
-- Fix :func:`pyriemann.utils.mean.mean_power` to use the correct initialization provided in the associated paper. :pr:`324` by :user:`toncho11`
 v0.6 (April 2024)
 -----------------
 

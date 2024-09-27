@@ -53,7 +53,14 @@ def test_mean(kind, mean, get_mats):
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize(
-    "mean", [mean_logdet, mean_riemann, mean_wasserstein, nanmean_riemann]
+    "mean",
+    [
+        mean_logdet,
+        mean_power,
+        mean_riemann,
+        mean_wasserstein,
+        nanmean_riemann,
+    ]
 )
 def test_mean_init(kind, mean, get_mats):
     """Test the shape of mean with init"""
