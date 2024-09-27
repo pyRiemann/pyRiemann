@@ -396,7 +396,7 @@ def mean_power(X=None, p=None, *, sample_weight=None, zeta=10e-10, maxiter=100,
         The maximum number of iterations.
     init : None | ndarray, shape (n, n), default=None
         A SPD/HPD matrix used to initialize the gradient descent.
-        If None, a naive weighted power mean is used.
+        If None, the weighted power Euclidean mean is used.
 
     Returns
     -------
