@@ -244,7 +244,7 @@ def test_block_covariances_est(estimator, rndstate):
     assert is_spd(covmats)
 
 
-@pytest.mark.parametrize("block_size", [1, 6, [4, 8]])
+@pytest.mark.parametrize("block_size", [1, 6, [4, 8], np.array([5, 7])])
 def test_block_covariances_blocks(block_size, rndstate):
     """Test BlockCovariances fit"""
     n_matrices, n_channels, n_times = 2, 12, 100

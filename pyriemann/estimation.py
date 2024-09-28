@@ -361,7 +361,7 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
     block_size : int | list of int
         Sizes of individual blocks given as int for same-size block, or list
         for varying block sizes.
-    estimator : string, default='scm'
+    estimator : string, default="scm"
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
     **kwds : dict
@@ -376,7 +376,7 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
     Covariances
     """
 
-    def __init__(self, block_size, estimator='scm', **kwds):
+    def __init__(self, block_size, estimator="scm", **kwds):
         """Init."""
         self.estimator = estimator
         self.block_size = block_size
@@ -416,17 +416,34 @@ class BlockCovariances(BaseEstimator, TransformerMixin):
         """
         n_matrices, n_channels, n_times = X.shape
 
-        if isinstance(self.block_size, int):
-            n_blocks = n_channels // self.block_size
-            blocks = [self.block_size for b in range(n_blocks)]
+        blocks = self._check_block_size(self.block_size, n_channels)
 
-        elif isinstance(self.block_size, (list, np.ndarray)):
-            blocks = self.block_size
+        return block_covariances(X, blocks, self.estimator, **self.kwds)
+
+    @staticmethod
+    def _check_block_size(block_size, n_channels):
+        """Check validity of parameter block_size"""
+        if isinstance(block_size, int):
+            if n_channels % block_size != 0:
+                raise ValueError(
+                    f"Number of channels ({n_channels}) must be "
+                    f"divisible by block size ({block_size})"
+                )
+            n_blocks = n_channels // block_size
+            blocks = [block_size] * n_blocks
+
+        elif isinstance(block_size, (list, np.ndarray)):
+            if np.sum(block_size) != n_channels:
+                raise ValueError(
+                    "Sum of individual block sizes must match "
+                    f"number of channels ({n_channels})"
+                )
+            blocks = block_size
 
         else:
             raise ValueError("Parameter block_size must be int or list.")
 
-        return block_covariances(X, blocks, self.estimator, **self.kwds)
+        return blocks
 
 
 ###############################################################################
