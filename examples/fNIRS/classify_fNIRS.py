@@ -1,4 +1,3 @@
-#%%
 """
 ====================================================================
 Classify fNIRS data with block diagonal matrices for HbO and HbR
@@ -7,11 +6,12 @@ Classify fNIRS data with block diagonal matrices for HbO and HbR
 This example demonstrates how to classify fNIRS data using block diagonal
 matrices for oxyhemoglobin (HbO) and deoxyhemoglobin (HbR) signals, using the
 ``BlockKernels`` estimator. This estimator computes block kernel or covariance
-matrices for each block of channels, allowing for separate processing of HbO and
-HbR signals. We can then apply shrinkage to each block separately.
+matrices for each block of channels, allowing for separate processing of HbO
+and HbR signals. We can then apply shrinkage to each block separately.
 """
 
 # Author: Tim Näher
+import os
 import itertools
 import urllib.request
 from pathlib import Path
@@ -37,32 +37,39 @@ cv_splits = 5  # Number of cross-validation folds
 random_state = 42  # Random state for reproducibility
 
 # Some example kernel metrics
-kernel_metrics = ['poly',  'rbf', 'laplacian']
+kernel_metrics = ["poly", "rbf", "laplacian"]
 
 # Some example covariance estimators
-covariance_estimators = ['oas','lwf']
+covariance_estimators = ["oas", "lwf"]
 
 # Combine all metrics
 all_metrics = kernel_metrics + covariance_estimators
 
 # Generate all possible combinations of metrics for two blocks
-metric_combinations = [list(tup) for tup in itertools.product(all_metrics, repeat=2)]
+metric_combinations = [
+    list(tup) for tup in itertools.product(all_metrics, repeat=2)
+]
 
 # Shrinkage values to test
 shrinkage_values = [
-    None, 0.01, [0.01, 0.1], # different shrinkage for each block
+    None,
+    0.01,
+    [0.01, 0.1],  # different shrinkage for each block
 ]
 
 ###############################################################################
 # Define the BlockKernels estimator
 # ---------------------------------
 
-class BlockKernels(BaseEstimator, TransformerMixin):
-    """Estimation of block kernel or covariance matrices with customizable metrics and shrinkage.
 
-    Perform a block matrix estimation for each given time series, computing either
-    kernel matrices or covariance matrices for each block based on the specified
-    metrics. Optionally apply shrinkage to each block's matrix.
+class BlockKernels(BaseEstimator, TransformerMixin):
+    """Estimation of block kernel or covariance matrices with
+    customizable metrics and shrinkage.
+
+    Perform a block matrix estimation for each given time series,
+    computing either kernel matrices or covariance matrices for
+    each block based on the specified metrics. Optionally apply
+    shrinkage to each block's matrix.
 
     Parameters
     ----------
@@ -71,15 +78,16 @@ class BlockKernels(BaseEstimator, TransformerMixin):
         or list for varying block sizes.
     metric : string | list of string, default='linear'
         The metric(s) to use when computing matrices between channels.
-        For kernel matrices, supported metrics are those from ``pairwise_kernels``:
-        'linear', 'poly', 'polynomial', 'rbf', 'laplacian', 'cosine', etc.
-        For covariance matrices, supported estimators are those from pyRiemann:
+        For kernel matrices, supported metrics are those from
+        ``pairwise_kernels``: 'linear', 'poly', 'polynomial',
+        'rbf', 'laplacian', 'cosine', etc. For covariance matrices,
+        supported estimators are those from pyRiemann:
         'scm', 'lwf', 'oas', 'mcd', etc.
         If a list is provided, it must match the number of blocks.
     n_jobs : int, default=None
         The number of jobs to use for the computation. This works by
-        breaking down the pairwise matrix into ``n_jobs`` even slices and computing
-        them in parallel.
+        breaking down the pairwise matrix into ``n_jobs`` even
+        slices and computing them in parallel.
     shrinkage : None | float | list of float, default=None
         Shrinkage parameter(s) to regularize each block's matrix.
         If None, no shrinkage is applied. If a single float is provided,
@@ -96,7 +104,9 @@ class BlockKernels(BaseEstimator, TransformerMixin):
     Shrinkage
     """
 
-    def __init__(self, block_size, metric='linear', n_jobs=None, shrinkage=None, **kwds):
+    def __init__(
+        self, block_size, metric="linear", n_jobs=None, shrinkage=None, **kwds
+    ):
         self.block_size = block_size
         self.metric = metric
         self.n_jobs = n_jobs
@@ -123,7 +133,8 @@ class BlockKernels(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """Estimate block kernel or covariance matrices with optional shrinkage.
+        """Estimate block kernel or covariance matrices
+        with optional shrinkage.
 
         Parameters
         ----------
@@ -141,17 +152,19 @@ class BlockKernels(BaseEstimator, TransformerMixin):
         if isinstance(self.block_size, int):
             if n_channels % self.block_size != 0:
                 raise ValueError(
-                    f"n_channels ({n_channels}) must be divisible by block_size ({self.block_size})"
+                    f"n_channels ({n_channels}) must be "
+                    f"divisible by block_size ({self.block_size})"
                 )
-            n_blocks = n_channels // self.block_size
-            blocks = [self.block_size] * n_blocks
+                n_blocks = n_channels // self.block_size
+                blocks = [self.block_size] * n_blocks
         elif isinstance(self.block_size, (list, np.ndarray)):
             if sum(self.block_size) != n_channels:
                 raise ValueError(
-                    f"Sum of block sizes ({sum(self.block_size)}) must equal n_channels ({n_channels})"
+                    f"Sum of block sizes ({sum(self.block_size)}) must"
+                    f"equal n_channels ({n_channels})"
                 )
-            blocks = self.block_size
-            n_blocks = len(blocks)
+                blocks = self.block_size
+                n_blocks = len(blocks)
         else:
             raise ValueError("Parameter block_size must be int or list.")
 
@@ -161,11 +174,14 @@ class BlockKernels(BaseEstimator, TransformerMixin):
         elif isinstance(self.metric, list):
             if len(self.metric) != n_blocks:
                 raise ValueError(
-                    f"Length of metric list ({len(self.metric)}) must match number of blocks ({n_blocks})"
+                    f"Length of metric list ({len(self.metric)}) must"
+                    f"match number of blocks ({n_blocks})"
                 )
-            metrics = self.metric
+                metrics = self.metric
         else:
-            raise ValueError("Parameter metric must be a string or a list of strings.")
+            raise ValueError(
+                "Parameter metric must be a string or a list of strings."
+            )
 
         # Handle shrinkage parameter
         if self.shrinkage is None:
@@ -175,29 +191,48 @@ class BlockKernels(BaseEstimator, TransformerMixin):
         elif isinstance(self.shrinkage, list):
             if len(self.shrinkage) != n_blocks:
                 raise ValueError(
-                    f"Length of shrinkage list ({len(self.shrinkage)}) must match number of blocks ({n_blocks})"
+                    f"Length of shrinkage list ({len(self.shrinkage)})"
+                    f"must match number of blocks ({n_blocks})"
                 )
-            shrinkages = self.shrinkage
+                shrinkages = self.shrinkage
         else:
-            raise ValueError("Parameter shrinkage must be None, a float, or a list of floats.")
+            raise ValueError(
+                "Parameter shrinkage must be None,"
+                "a float, or a list of floats."
+            )
 
         # Lists of current supported metrics
         kernel_metrics = [
-            'linear', 'poly', 'polynomial', 'rbf', 'laplacian', 'sigmoid', 'cosine'
+            "linear",
+            "poly",
+            "polynomial",
+            "rbf",
+            "laplacian",
+            "sigmoid",
+            "cosine",
         ]
 
         covariance_estimators = [
-            'corr', 'cov', 'hub', 'lwf', 'mcd', 'oas', 'sch', 'scm', 'stu', 'tyl'
+            "corr",
+            "cov",
+            "hub",
+            "lwf",
+            "mcd",
+            "oas",
+            "sch",
+            "scm",
+            "stu",
+            "tyl",
         ]
 
         M_matrices = []
-
 
         for i in range(n_samples):
             start = 0
             M_blocks = []
             for idx, (block_size, metric, shrinkage_value) in enumerate(
-                    zip(blocks, metrics, shrinkages)):
+                zip(blocks, metrics, shrinkages)
+            ):
                 end = start + block_size
                 # Extract the block of channels
                 X_block = X[i, start:end, :]  # shape: (block_size, n_times)
@@ -206,10 +241,7 @@ class BlockKernels(BaseEstimator, TransformerMixin):
                 if metric in kernel_metrics:
                     # Compute kernel matrix
                     M_block = pairwise_kernels(
-                        X_block,
-                        metric=metric,
-                        n_jobs=self.n_jobs,
-                        **self.kwds
+                        X_block, metric=metric, n_jobs=self.n_jobs, **self.kwds
                     )
                 elif metric in covariance_estimators:
                     # Compute covariance matrix
@@ -219,8 +251,9 @@ class BlockKernels(BaseEstimator, TransformerMixin):
                     )[0]
                 else:
                     raise ValueError(
-                        f"Metric '{metric}' is not recognized as a kernel metric "
-                        f"or covariance estimator."
+                        f"Metric '{metric}' is not recognized"
+                        f" as a kernel metric or"
+                        f"covariance estimator."
                     )
 
                 # Apply shrinkage if specified
@@ -251,18 +284,20 @@ class BlockKernels(BaseEstimator, TransformerMixin):
             start = end
         return result
 
+
 ###############################################################################
 # Download example data
 # ---------------------
 
-X_url = 'https://zenodo.org/records/13841869/files/X.npy'
-y_url = 'https://zenodo.org/records/13841869/files/y.npy'
+X_url = "https://zenodo.org/records/13841869/files/X.npy"
+y_url = "https://zenodo.org/records/13841869/files/y.npy"
 
-data_path = Path('./data')
+data_path = Path("./data")
 data_path.mkdir(exist_ok=True)
 
-X_path = data_path / 'X.npy'
-y_path = data_path / 'y.npy'
+X_path = data_path / "X.npy"
+y_path = data_path / "y.npy"
+
 
 # Function to download the files if they don't already exist
 def download_file(url, file_path):
@@ -270,6 +305,7 @@ def download_file(url, file_path):
         print(f"Downloading {file_path} from {url}")
         urllib.request.urlretrieve(url, file_path)
         print(f"Downloaded {file_path}")
+
 
 # Download
 download_file(X_url, X_path)
@@ -279,18 +315,22 @@ download_file(y_url, y_path)
 X = np.load(X_path)
 y = np.load(y_path)
 
-print(f"Data loaded: {X.shape[0]} trials, {X.shape[1]} channels, "
-      f"{X.shape[2]} time points")
+print(
+    f"Data loaded: {X.shape[0]} trials, {X.shape[1]} channels, "
+    f"{X.shape[2]} time points"
+)
 
 ###############################################################################
 # Set up the pipeline
 # -------------------
 
 # Define the pipeline with BlockKernels and SVC classifier
-pipeline = Pipeline([
-    ('block_kernels', BlockKernels(block_size=block_size)),
-    ('classifier', SVC()),
-])
+pipeline = Pipeline(
+    [
+        ("block_kernels", BlockKernels(block_size=block_size)),
+        ("classifier", SVC()),
+    ]
+)
 
 ###############################################################################
 # Define hyperparameter grid
@@ -298,17 +338,19 @@ pipeline = Pipeline([
 
 # Define the hyperparameter grid for grid search
 param_grid = {
-    'block_kernels__metric': metric_combinations,
-    'block_kernels__shrinkage': shrinkage_values,
-    'classifier__C': [0.1, 1, 10],
-    'classifier__metric': ['euclid', 'riemann', 'logeuclid'],
+    "block_kernels__metric": metric_combinations,
+    "block_kernels__shrinkage": shrinkage_values,
+    "classifier__C": [0.1, 1, 10],
+    "classifier__metric": ["euclid", "riemann", "logeuclid"],
 }
 
 ###############################################################################
 # Define cross-validation
 # --------------------------------
 
-cv = StratifiedKFold(n_splits=cv_splits, shuffle=True, random_state=random_state)
+cv = StratifiedKFold(
+    n_splits=cv_splits, shuffle=True, random_state=random_state
+)
 
 ###############################################################################
 # Run grid search
@@ -318,10 +360,10 @@ print("Starting grid search")
 grid_search = GridSearchCV(
     estimator=pipeline,
     param_grid=param_grid,
-    scoring='accuracy',
+    scoring="accuracy",
     cv=cv,
     n_jobs=n_jobs,
-    verbose=1
+    verbose=1,
 )
 
 grid_search.fit(X, y)
@@ -341,19 +383,28 @@ df_results = pd.DataFrame(results)
 
 # Display relevant columns
 display_columns = [
-    'mean_test_score', 'std_test_score', 'param_block_kernels__metric',
-    'param_block_kernels__shrinkage'
+    "mean_test_score",
+    "std_test_score",
+    "param_block_kernels__metric",
+    "param_block_kernels__shrinkage",
 ]
 
-print(df_results[display_columns].sort_values(by='mean_test_score', ascending=False))
+print(
+    df_results[display_columns].sort_values(
+        by="mean_test_score", ascending=False
+    )
+)
 
 ###############################################################################
 # Conclusion
 # ----------
 
-# The grid search allows us to find the best combination of metrics and shrinkage
-# values for our fNIRS classification of mental imagery. By using block diagonal matrices
-# for HbO and HbR signals, we can tune our classifier to HbO and HbR signals separately,
+# The grid search allows us to find the best
+# combination of metrics and shrinkage values
+# for our fNIRS classification of mental imagery.
+# By using block diagonal matrices for HbO and HbR
+# signals, we can tune our classifier
+# to HbO and HbR signals separately,
 # which can improve classification performance.
 
 ###############################################################################
