@@ -253,7 +253,7 @@ class BlockKernels(BaseEstimator, TransformerMixin):
 
 ###############################################################################
 # Download example data
-# ---------
+# ---------------------
 
 X_url = 'https://zenodo.org/records/13841869/files/X.npy'
 y_url = 'https://zenodo.org/records/13841869/files/y.npy'
