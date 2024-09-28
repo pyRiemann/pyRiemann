@@ -806,6 +806,11 @@ class HankelCovariances(TimeDelayCovariances):
 ###############################################################################
 
 
+kernel_functions = [
+    "linear", "poly", "polynomial", "rbf", "laplacian", "cosine"
+]
+
+
 class Kernels(BaseEstimator, TransformerMixin):
     r"""Estimation of kernel matrices between channels of time series.
 
@@ -827,7 +832,7 @@ class Kernels(BaseEstimator, TransformerMixin):
     ----------
     metric : string, default='linear'
         The metric to use when computing kernel function between channels [2]_:
-        'linear', 'poly', 'polynomial', 'rbf', 'laplacian', 'cosine'.
+        "linear", "poly", "polynomial", "rbf", "laplacian", "cosine".
     n_jobs : int, default=None
         The number of jobs to use for the computation [2]_. This works by
         breaking down the pairwise matrix into n_jobs even slices and computing
@@ -853,7 +858,7 @@ class Kernels(BaseEstimator, TransformerMixin):
         https://scikit-learn.org/stable/modules/generated/sklearn.metrics.pairwise.pairwise_kernels.html
     """  # noqa
 
-    def __init__(self, metric='linear', n_jobs=None, **kwds):
+    def __init__(self, metric="linear", n_jobs=None, **kwds):
         """Init."""
         self.metric = metric
         self.n_jobs = n_jobs
@@ -891,10 +896,8 @@ class Kernels(BaseEstimator, TransformerMixin):
         K : ndarray, shape (n_matrices, n_channels, n_channels)
             Kernel matrices.
         """
-        if self.metric not in [
-                'linear', 'poly', 'polynomial', 'rbf', 'laplacian', 'cosine'
-        ]:
-            raise TypeError('Unsupported metric for kernel estimation.')
+        if self.metric not in kernel_functions:
+            raise TypeError("Unsupported metric for kernel estimation.")
 
         K = [
             pairwise_kernels(
