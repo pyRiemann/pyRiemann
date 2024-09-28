@@ -3,11 +3,12 @@
 Classify fNIRS data with block diagonal matrices for HbO and HbR
 ====================================================================
 
-This example demonstrates how to classify fNIRS data using block diagonal
-matrices for oxyhemoglobin (HbO) and deoxyhemoglobin (HbR) signals, using the
-``BlockKernels`` estimator. This estimator computes block kernel or covariance
-matrices for each block of channels, allowing for separate processing of HbO
-and HbR signals. We can then apply shrinkage to each block separately [1]_.
+This example demonstrates how to classify functional near-infrared spectroscopy
+(fNIRS) data using block diagonal matrices for oxyhemoglobin (HbO) and
+deoxyhemoglobin (HbR) signals, using the ``BlockKernels`` estimator.
+This estimator computes block kernel or covariance matrices for each block of
+channels, allowing for separate processing of HbO and HbR signals.
+We can then apply shrinkage to each block separately [1]_.
 """
 
 # Author: Tim Näher
