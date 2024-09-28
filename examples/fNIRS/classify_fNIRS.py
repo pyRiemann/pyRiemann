@@ -105,7 +105,7 @@ class BlockKernels(BaseEstimator, TransformerMixin):
     """
 
     def __init__(
-        self, block_size, metric="linear", n_jobs=None, shrinkage=None, **kwds
+        self, block_size, metric="linear", n_jobs=None, shrinkage=0, **kwds
     ):
         self.block_size = block_size
         self.metric = metric
@@ -257,7 +257,7 @@ class BlockKernels(BaseEstimator, TransformerMixin):
                     )
 
                 # Apply shrinkage if specified
-                if shrinkage_value is not None:
+                if shrinkage_value != 0:
                     M_block_reshaped = M_block[np.newaxis, :, :]
                     shr = Shrinkage(shrinkage=shrinkage_value)
                     M_block = shr.fit_transform(M_block_reshaped)[0]
