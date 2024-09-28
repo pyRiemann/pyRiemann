@@ -73,7 +73,7 @@ class BlockKernels(BaseEstimator, TransformerMixin):
         The metric(s) to use when computing matrices between channels.
         For kernel matrices, supported metrics are those from ``pairwise_kernels``:
         'linear', 'poly', 'polynomial', 'rbf', 'laplacian', 'cosine', etc.
-        For covariance matrices, supported estimators are those from PyRiemann:
+        For covariance matrices, supported estimators are those from pyRiemann:
         'scm', 'lwf', 'oas', 'mcd', etc.
         If a list is provided, it must match the number of blocks.
     n_jobs : int, default=None
