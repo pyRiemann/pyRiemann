@@ -76,6 +76,7 @@ sphinx_gallery_conf = {
         '../examples/ERP',
         '../examples/SSVEP',
         '../examples/artifacts',
+        '../examples/fNIRS',
         '../examples/remote-sensing',
         '../examples/transfer',
         '../examples/stats',
