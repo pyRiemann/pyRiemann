@@ -35,6 +35,9 @@ v0.7.dev
 
 - Add :func:`pyriemann.utils.distance.distance_poweuclid` and :func:`pyriemann.utils.mean.mean_poweuclid` to use power Euclidean metric. :pr:`312` by :user:`qbarthelemy`
 
+- Add an example using fNIRS data with a new estimator called `BlockKernels` for classifying HbO and HbR signals. :pr:`323` by :user:`timnaher`
+
+
 v0.6 (April 2024)
 -----------------
 
