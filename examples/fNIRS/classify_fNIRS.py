@@ -7,14 +7,14 @@ This example demonstrates how to classify fNIRS data using block diagonal
 matrices for oxyhemoglobin (HbO) and deoxyhemoglobin (HbR) signals, using the
 ``BlockKernels`` estimator. This estimator computes block kernel or covariance
 matrices for each block of channels, allowing for separate processing of HbO
-and HbR signals. We can then apply shrinkage to each block separately.
+and HbR signals. We can then apply shrinkage to each block separately [1]_.
 """
 
 # Author: Tim Näher
-import os
 import itertools
-import urllib.request
+import os
 from pathlib import Path
+import urllib.request
 
 import numpy as np
 import pandas as pd
@@ -24,8 +24,9 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
 from pyriemann.utils.covariance import covariances
-from pyriemann.estimation import Shrinkage
+from pyriemann.estimation import Shrinkage, kernel_functions
 from pyriemann.classification import SVC
+from pyriemann.utils.covariance import cov_est_functions
 
 ###############################################################################
 # Parameters
@@ -155,16 +156,16 @@ class BlockKernels(BaseEstimator, TransformerMixin):
                     f"n_channels ({n_channels}) must be "
                     f"divisible by block_size ({self.block_size})"
                 )
-                n_blocks = n_channels // self.block_size
-                blocks = [self.block_size] * n_blocks
+            n_blocks = n_channels // self.block_size
+            blocks = [self.block_size] * n_blocks
         elif isinstance(self.block_size, (list, np.ndarray)):
             if sum(self.block_size) != n_channels:
                 raise ValueError(
                     f"Sum of block sizes ({sum(self.block_size)}) must"
                     f"equal n_channels ({n_channels})"
                 )
-                blocks = self.block_size
-                n_blocks = len(blocks)
+            blocks = self.block_size
+            n_blocks = len(blocks)
         else:
             raise ValueError("Parameter block_size must be int or list.")
 
@@ -177,7 +178,7 @@ class BlockKernels(BaseEstimator, TransformerMixin):
                     f"Length of metric list ({len(self.metric)}) must"
                     f"match number of blocks ({n_blocks})"
                 )
-                metrics = self.metric
+            metrics = self.metric
         else:
             raise ValueError(
                 "Parameter metric must be a string or a list of strings."
@@ -194,36 +195,12 @@ class BlockKernels(BaseEstimator, TransformerMixin):
                     f"Length of shrinkage list ({len(self.shrinkage)})"
                     f"must match number of blocks ({n_blocks})"
                 )
-                shrinkages = self.shrinkage
+            shrinkages = self.shrinkage
         else:
             raise ValueError(
                 "Parameter shrinkage must be None,"
                 "a float, or a list of floats."
             )
-
-        # Lists of current supported metrics
-        kernel_metrics = [
-            "linear",
-            "poly",
-            "polynomial",
-            "rbf",
-            "laplacian",
-            "sigmoid",
-            "cosine",
-        ]
-
-        covariance_estimators = [
-            "corr",
-            "cov",
-            "hub",
-            "lwf",
-            "mcd",
-            "oas",
-            "sch",
-            "scm",
-            "stu",
-            "tyl",
-        ]
 
         M_matrices = []
 
@@ -238,12 +215,12 @@ class BlockKernels(BaseEstimator, TransformerMixin):
                 X_block = X[i, start:end, :]  # shape: (block_size, n_times)
 
                 # Compute the matrix for this block
-                if metric in kernel_metrics:
+                if metric in kernel_functions:
                     # Compute kernel matrix
                     M_block = pairwise_kernels(
                         X_block, metric=metric, n_jobs=self.n_jobs, **self.kwds
                     )
-                elif metric in covariance_estimators:
+                elif metric in cov_est_functions.keys():
                     # Compute covariance matrix
                     X_block_reshaped = X_block[np.newaxis, :, :]
                     M_block = covariances(
