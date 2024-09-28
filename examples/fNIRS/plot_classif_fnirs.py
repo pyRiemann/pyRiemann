@@ -270,8 +270,7 @@ download_file(X_url, X_path)
 download_file(y_url, y_path)
 
 # Load the dataset
-X = np.load(X_path)
-y = np.load(y_path)
+X, y = np.load(X_path), np.load(y_path)
 
 print(
     f"Data loaded: {X.shape[0]} trials, {X.shape[1]} channels, "
