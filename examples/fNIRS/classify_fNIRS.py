@@ -24,9 +24,10 @@ from sklearn.pipeline import Pipeline
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
 from pyriemann.utils.covariance import covariances
-from pyriemann.estimation import Shrinkage, kernel_functions
+from pyriemann.estimation import BlockCovariances, Shrinkage, kernel_functions
 from pyriemann.classification import SVC
 from pyriemann.utils.covariance import cov_est_functions
+
 
 ###############################################################################
 # Parameters
@@ -53,7 +54,7 @@ metric_combinations = [
 
 # Shrinkage values to test
 shrinkage_values = [
-    None,
+    1,
     0.01,
     [0.01, 0.1],  # different shrinkage for each block
 ]
@@ -89,11 +90,10 @@ class BlockKernels(BaseEstimator, TransformerMixin):
         The number of jobs to use for the computation. This works by
         breaking down the pairwise matrix into ``n_jobs`` even
         slices and computing them in parallel.
-    shrinkage : None | float | list of float, default=None
+    shrinkage : float | list of float, default=0
         Shrinkage parameter(s) to regularize each block's matrix.
-        If None, no shrinkage is applied. If a single float is provided,
-        it is applied to all blocks. If a list is provided, it must match
-        the number of blocks.
+        If a single float is provided, it is applied to all blocks.
+        If a list is provided, it must match the number of blocks.
     **kwds : dict
         Any further parameters are passed directly to the kernel function(s)
         or covariance estimator(s).
@@ -149,25 +149,11 @@ class BlockKernels(BaseEstimator, TransformerMixin):
         """
         n_samples, n_channels, n_times = X.shape
 
-        # Determine block sizes
-        if isinstance(self.block_size, int):
-            if n_channels % self.block_size != 0:
-                raise ValueError(
-                    f"n_channels ({n_channels}) must be "
-                    f"divisible by block_size ({self.block_size})"
-                )
-            n_blocks = n_channels // self.block_size
-            blocks = [self.block_size] * n_blocks
-        elif isinstance(self.block_size, (list, np.ndarray)):
-            if sum(self.block_size) != n_channels:
-                raise ValueError(
-                    f"Sum of block sizes ({sum(self.block_size)}) must"
-                    f"equal n_channels ({n_channels})"
-                )
-            blocks = self.block_size
-            n_blocks = len(blocks)
-        else:
-            raise ValueError("Parameter block_size must be int or list.")
+        blocks = BlockCovariances._check_block_size(
+            self.block_size,
+            n_channels,
+        )
+        n_blocks = len(blocks)
 
         # Handle metric parameter
         if isinstance(self.metric, str):
@@ -185,9 +171,7 @@ class BlockKernels(BaseEstimator, TransformerMixin):
             )
 
         # Handle shrinkage parameter
-        if self.shrinkage is None:
-            shrinkages = [None] * n_blocks
-        elif isinstance(self.shrinkage, (float, int)):
+        if isinstance(self.shrinkage, (float, int)):
             shrinkages = [self.shrinkage] * n_blocks
         elif isinstance(self.shrinkage, list):
             if len(self.shrinkage) != n_blocks:
@@ -198,8 +182,7 @@ class BlockKernels(BaseEstimator, TransformerMixin):
             shrinkages = self.shrinkage
         else:
             raise ValueError(
-                "Parameter shrinkage must be None,"
-                "a float, or a list of floats."
+                "Parameter shrinkage must be a float, or a list of floats."
             )
 
         M_matrices = []
@@ -229,8 +212,7 @@ class BlockKernels(BaseEstimator, TransformerMixin):
                 else:
                     raise ValueError(
                         f"Metric '{metric}' is not recognized"
-                        f" as a kernel metric or"
-                        f"covariance estimator."
+                        " as a kernel metric or a covariance estimator."
                     )
 
                 # Apply shrinkage if specified
@@ -271,9 +253,7 @@ y_url = "https://zenodo.org/records/13841869/files/y.npy"
 
 data_path = Path("./data")
 data_path.mkdir(exist_ok=True)
-
-X_path = data_path / "X.npy"
-y_path = data_path / "y.npy"
+X_path, y_path = data_path / "X.npy", data_path / "y.npy"
 
 
 # Function to download the files if they don't already exist
@@ -310,8 +290,8 @@ pipeline = Pipeline(
 )
 
 ###############################################################################
-# Define hyperparameter grid
-# --------------------------
+# Define hyperparameter cross-validation
+# --------------------------------------
 
 # Define the hyperparameter grid for grid search
 param_grid = {
@@ -321,10 +301,7 @@ param_grid = {
     "classifier__metric": ["euclid", "riemann", "logeuclid"],
 }
 
-###############################################################################
 # Define cross-validation
-# --------------------------------
-
 cv = StratifiedKFold(
     n_splits=cv_splits, shuffle=True, random_state=random_state
 )
@@ -350,13 +327,10 @@ print("Grid search completed")
 # Print results
 # -------------
 
-print("Best Parameters:")
-print(grid_search.best_params_)
-print(f"Best Cross-Validation Accuracy: {grid_search.best_score_:.4f}")
+print(f"Best parameters:\n{grid_search.best_params_}")
+print(f"Best cross-validation accuracy: {grid_search.best_score_:.4f}")
 
-# Convert results to a pandas DataFrame
-results = grid_search.cv_results_
-df_results = pd.DataFrame(results)
+df_results = pd.DataFrame(grid_search.cv_results_)
 
 # Display relevant columns
 display_columns = [
@@ -372,17 +346,16 @@ print(
     )
 )
 
+
 ###############################################################################
 # Conclusion
 # ----------
 
-# The grid search allows us to find the best
-# combination of metrics and shrinkage values
-# for our fNIRS classification of mental imagery.
-# By using block diagonal matrices for HbO and HbR
-# signals, we can tune our classifier
-# to HbO and HbR signals separately,
-# which can improve classification performance.
+# The grid search allows us to find the best combination of metrics and
+# shrinkage values for our fNIRS classification of mental imagery.
+# By using block diagonal matrices for HbO and HbR signals, we can tune our
+# classifier to HbO and HbR signals separately, which can improve
+# classification performance.
 
 ###############################################################################
 # References
