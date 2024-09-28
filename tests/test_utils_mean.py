@@ -53,13 +53,23 @@ def test_mean(kind, mean, get_mats):
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize(
-    "mean", [mean_logdet, mean_riemann, mean_wasserstein, nanmean_riemann]
+    "mean",
+    [
+        mean_logdet,
+        mean_power,
+        mean_riemann,
+        mean_wasserstein,
+        nanmean_riemann,
+    ]
 )
 def test_mean_init(kind, mean, get_mats):
     """Test the shape of mean with init"""
     n_matrices, n_channels = 5, 3
     mats = get_mats(n_matrices, n_channels, kind)
-    M = mean(mats, init=mats[0])
+    if mean == mean_power:
+        M = mean(mats, 0.123, init=mats[0])
+    else:
+        M = mean(mats, init=mats[0])
     assert M.shape == (n_channels, n_channels)
 
 
