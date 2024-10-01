@@ -12,8 +12,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.pipeline import Pipeline
 
-from pyriemann.estimation import Covariances
 from pyriemann.clustering import Kmeans
+from pyriemann.estimation import Covariances
 from helpers.datasets_helpers import download_salinas, read_salinas
 from helpers.processing_helpers import (
     SlidingWindowVectorize,

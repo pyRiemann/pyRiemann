@@ -22,23 +22,23 @@ set.
 from functools import partial
 from time import time
 
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
+import numpy as np
 from sklearn.model_selection import train_test_split
 
-from pyriemann.datasets import make_matrices, make_gaussian_blobs
 from pyriemann.classification import (
     MDM,
     KNearestNeighbor,
     SVC,
 )
+from pyriemann.datasets import make_matrices, make_gaussian_blobs
 
 
 ###############################################################################
 
 
-@partial(np.vectorize, excluded=['clf'])
+@partial(np.vectorize, excluded=["clf"])
 def get_proba(cov_00, cov_01, cov_11, clf):
     cov = np.array([[cov_00, cov_01], [cov_01, cov_11]])
     with np.testing.suppress_warnings() as sup:
@@ -63,7 +63,7 @@ def plot_classifiers(metric):
         z_min, z_max = X[:, 1, 1].min(), X[:, 1, 1].max()
 
         # just plot the dataset first
-        ax = plt.subplot(n_datasets, n_classifs + 1, i, projection='3d')
+        ax = plt.subplot(n_datasets, n_classifs + 1, i, projection="3d")
         if ds_cnt == 0:
             ax.set_title("Input data")
         # Plot the training points
@@ -101,9 +101,9 @@ def plot_classifiers(metric):
 
         # iterate over classifiers
         for name, clf in zip(names, classifiers):
-            ax = plt.subplot(n_datasets, n_classifs + 1, i, projection='3d')
+            ax = plt.subplot(n_datasets, n_classifs + 1, i, projection="3d")
 
-            clf.set_params(**{'metric': metric})
+            clf.set_params(**{"metric": metric})
             t0 = time()
             clf.fit(X_train, y_train)
             t1 = time() - t0
@@ -121,17 +121,17 @@ def plot_classifiers(metric):
             xx, yy = np.meshgrid(rx, ry)
             zz = get_proba(xx, yy, X[:, 1, 1].mean()*np.ones_like(xx), clf=clf)
             zz = np.ma.masked_where(~np.isfinite(zz), zz)
-            ax.contourf(xx, yy, zz, zdir='z', offset=z_min, cmap=cm, alpha=0.5)
+            ax.contourf(xx, yy, zz, zdir="z", offset=z_min, cmap=cm, alpha=0.5)
 
             xx, zz = np.meshgrid(rx, rz)
             yy = get_proba(xx, X[:, 0, 1].mean()*np.ones_like(xx), zz, clf=clf)
             yy = np.ma.masked_where(~np.isfinite(yy), yy)
-            ax.contourf(xx, yy, zz, zdir='y', offset=y_max, cmap=cm, alpha=0.5)
+            ax.contourf(xx, yy, zz, zdir="y", offset=y_max, cmap=cm, alpha=0.5)
 
             yy, zz = np.meshgrid(ry, rz)
             xx = get_proba(X[:, 0, 0].mean()*np.ones_like(yy), yy, zz, clf=clf)
             xx = np.ma.masked_where(~np.isfinite(xx), xx)
-            ax.contourf(xx, yy, zz, zdir='x', offset=x_min, cmap=cm, alpha=0.5)
+            ax.contourf(xx, yy, zz, zdir="x", offset=x_min, cmap=cm, alpha=0.5)
 
             # Plot the training points
             ax.scatter(

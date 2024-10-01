@@ -58,8 +58,8 @@ mats, all_n_corrup_channels, all_corrup_channels = corrupt(
     mats, n_corrup_channels_max, rs)
 
 fig, ax = plt.subplots(nrows=1, ncols=1)
-ax.set(title='Histogram of the number of corrupted channels',
-       xlabel='Channel count', ylabel='Occurrences')
+ax.set(title="Histogram of the number of corrupted channels",
+       xlabel="Channel count", ylabel="Occurrences")
 plt.hist(all_n_corrup_channels, bins=np.arange(n_corrup_channels_max + 2) - .5)
 plt.show()
 
@@ -68,8 +68,8 @@ plt.show()
 
 
 fig, ax = plt.subplots(nrows=1, ncols=1)
-ax.set(title='Histogram of the indices of corrupted channels',
-       xlabel='Channel index', ylabel='Occurrences')
+ax.set(title="Histogram of the indices of corrupted channels",
+       xlabel="Channel index", ylabel="Occurrences")
 plt.hist(all_corrup_channels, bins=np.arange(n_channels + 1) - .5)
 plt.show()
 
@@ -140,15 +140,15 @@ for n_corrup_channels_max in range(0, n_channels // 2 + 1):
     mats_ = np.delete(mats, np.where(isnan), axis=0)
     C_mdriem = mean_riemann(mats_)
 
-    res_naneucl = {'n_corrupt': n_corrup_channels_max,
-                   'dist': distance_riemann(C_ref, C_naneucl),
-                   'Means': 'Euclidean NaN-mean'}
-    res_nanriem = {'n_corrupt': n_corrup_channels_max,
-                   'dist': distance_riemann(C_ref, C_nanriem),
-                   'Means': 'Riemannian NaN-mean'}
-    res_mdriem = {'n_corrupt': n_corrup_channels_max,
-                  'dist': distance_riemann(C_ref, C_mdriem),
-                  'Means': 'Riemannian mean after deletion'}
+    res_naneucl = {"n_corrupt": n_corrup_channels_max,
+                   "dist": distance_riemann(C_ref, C_naneucl),
+                   "Means": "Euclidean NaN-mean"}
+    res_nanriem = {"n_corrupt": n_corrup_channels_max,
+                   "dist": distance_riemann(C_ref, C_nanriem),
+                   "Means": "Riemannian NaN-mean"}
+    res_mdriem = {"n_corrupt": n_corrup_channels_max,
+                  "dist": distance_riemann(C_ref, C_mdriem),
+                  "Means": "Riemannian mean after deletion"}
     df += [res_naneucl, res_nanriem, res_mdriem]
 df = pd.DataFrame(df)
 

@@ -87,9 +87,10 @@ y = ... # labels
 # estimate covariance matrices
 cov = pyriemann.estimation.Covariances().fit_transform(X)
 
-# cross validation
+# build your classifier
 mdm = pyriemann.classification.MDM()
 
+# cross validation
 accuracy = cross_val_score(mdm, cov, y)
 
 print(accuracy.mean())
@@ -102,20 +103,20 @@ For example, to classify EEG signal using a SVM classifier in the tangent space,
 ```python
 from pyriemann.estimation import Covariances
 from pyriemann.tangentspace import TangentSpace
-
 from sklearn.pipeline import make_pipeline
-from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score
+from sklearn.svm import SVC
 
 # load your data
 X = ... # EEG data, in format n_epochs x n_channels x n_times
 y = ... # labels
 
 # build your pipeline
-covest = Covariances()
-ts = TangentSpace()
-svc = SVC(kernel='linear')
-clf = make_pipeline(covest, ts, svc)
+clf = make_pipeline(
+    Covariances(),
+    TangentSpace(),
+    SVC(kernel="linear"),
+)
 
 # cross validation
 accuracy = cross_val_score(clf, X, y)
@@ -124,7 +125,7 @@ print(accuracy.mean())
 
 ```
 
-**Check out the example folder for more examples.**
+Check out the example folder for more examples.
 
 # Contribution Guidelines
 
