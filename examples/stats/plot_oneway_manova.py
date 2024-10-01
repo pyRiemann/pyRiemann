@@ -1,27 +1,27 @@
 """
 ====================================================================
-One Way manova
+One-way Manova
 ====================================================================
 
-One way manova to compare Left vs Right.
+One-way Manova to compare Left vs Right.
 """
+
 from time import time
 
 from matplotlib import pyplot as plt
-import seaborn as sns
-
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
-from sklearn.pipeline import make_pipeline
+import seaborn as sns
 from sklearn.linear_model import LogisticRegression
+from sklearn.pipeline import make_pipeline
 
-from pyriemann.stats import PermutationDistance, PermutationModel
 from pyriemann.estimation import Covariances
 from pyriemann.spatialfilters import CSP
+from pyriemann.stats import PermutationDistance, PermutationModel
 
-sns.set_style('whitegrid')
+sns.set_style("whitegrid")
 
 ###############################################################################
 # Set parameters and read data
@@ -41,12 +41,12 @@ raw_files = [
 raw = concatenate_raws(raw_files)
 
 # Apply band-pass filter
-raw.filter(7., 35., method='iir')
+raw.filter(7., 35., method="iir")
 
 events, _ = events_from_annotations(raw, event_id=dict(T1=2, T2=3))
 
 picks = pick_types(
-    raw.info, meg=False, eeg=True, stim=False, eog=False, exclude='bads')
+    raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
 picks = picks[::4]
 
 # Read epochs (train will be done only between 1 and 2s)
@@ -61,7 +61,8 @@ epochs = Epochs(
     picks=picks,
     baseline=None,
     preload=True,
-    verbose=False)
+    verbose=False,
+)
 labels = epochs.events[:, -1] - 2
 
 # get epochs
@@ -76,14 +77,14 @@ n_perms = 500
 # ----------------------------------------
 
 t_init = time()
-p_test = PermutationDistance(n_perms, metric='riemann', mode='pairwise')
+p_test = PermutationDistance(n_perms, metric="riemann", mode="pairwise")
 p, F = p_test.test(covmats, labels)
 duration = time() - t_init
 
 fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
 p_test.plot(nbins=10, axes=axes)
-plt.title('Pairwise distance - %.2f sec.' % duration)
-print('p-value: %.3f' % p)
+plt.title("Pairwise distance - %.2f sec." % duration)
+print("p-value: %.3f" % p)
 sns.despine()
 plt.tight_layout()
 plt.show()
@@ -93,14 +94,14 @@ plt.show()
 # --------------------------------------
 
 t_init = time()
-p_test = PermutationDistance(n_perms, metric='riemann', mode='ttest')
+p_test = PermutationDistance(n_perms, metric="riemann", mode="ttest")
 p, F = p_test.test(covmats, labels)
 duration = time() - t_init
 
 fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
 p_test.plot(nbins=10, axes=axes)
-plt.title('t-test distance - %.2f sec.' % duration)
-print('p-value: %.3f' % p)
+plt.title("t-test distance - %.2f sec." % duration)
+print("p-value: %.3f" % p)
 sns.despine()
 plt.tight_layout()
 plt.show()
@@ -110,14 +111,14 @@ plt.show()
 # --------------------------------------
 
 t_init = time()
-p_test = PermutationDistance(n_perms, metric='riemann', mode='ftest')
+p_test = PermutationDistance(n_perms, metric="riemann", mode="ftest")
 p, F = p_test.test(covmats, labels)
 duration = time() - t_init
 
 fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
 p_test.plot(nbins=10, axes=axes)
-plt.title('F-test distance - %.2f sec.' % duration)
-print('p-value: %.3f' % p)
+plt.title("F-test distance - %.2f sec." % duration)
+print("p-value: %.3f" % p)
 sns.despine()
 plt.tight_layout()
 plt.show()
@@ -129,14 +130,14 @@ plt.show()
 clf = make_pipeline(CSP(4), LogisticRegression())
 
 t_init = time()
-p_test = PermutationModel(n_perms, model=clf, cv=3, scoring='roc_auc')
+p_test = PermutationModel(n_perms, model=clf, cv=3, scoring="roc_auc")
 p, F = p_test.test(covmats, labels)
 duration = time() - t_init
 
 fig, axes = plt.subplots(1, 1, figsize=[6, 3], sharey=True)
 p_test.plot(nbins=10, axes=axes)
-plt.title('Classification - %.2f sec.' % duration)
-print('p-value: %.3f' % p)
+plt.title("Classification - %.2f sec." % duration)
+print("p-value: %.3f" % p)
 sns.despine()
 plt.tight_layout()
 plt.show()

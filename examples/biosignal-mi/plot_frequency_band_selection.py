@@ -15,17 +15,18 @@ data to the baseline with no frequency band selection [1]_.
 
 from time import time
 
-import numpy as np
 from matplotlib import pyplot as plt
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
+import numpy as np
 from sklearn.model_selection import cross_val_score, ShuffleSplit
 
 from pyriemann.classification import MDM
 from pyriemann.estimation import Covariances
 from helpers.frequencybandselection_helpers import freq_selection_class_dis
+
 
 ###############################################################################
 # Set basic parameters and read data
@@ -42,7 +43,7 @@ raw_files = [
 ]
 raw = concatenate_raws(raw_files)
 picks = pick_types(
-    raw.info, meg=False, eeg=True, stim=False, eog=False, exclude='bads')
+    raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
 # subsample elecs
 picks = picks[::2]
 
@@ -56,11 +57,10 @@ cv = ShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
 # Apply band-pass filter using a wide frequency band, 5-35 Hz.
 # Train and evaluate classifier.
 t0 = time()
-raw_filter = raw.copy().filter(5., 35., method='iir', picks=picks,
+raw_filter = raw.copy().filter(5., 35., method="iir", picks=picks,
                                verbose=False)
 
-events, _ = events_from_annotations(raw_filter, event_id,
-                                    verbose=False)
+events, _ = events_from_annotations(raw_filter, event_id, verbose=False)
 
 # Read epochs (train will be done only between 0.5 and 2.5 s)
 epochs = Epochs(
@@ -83,7 +83,7 @@ epochs_data_baseline = epochs.get_data(units="uV", copy=False)
 cov_data_baseline = Covariances().transform(epochs_data_baseline)
 
 # Set classifier
-model = MDM(metric=dict(mean='riemann', distance='riemann'))
+model = MDM(metric=dict(mean="riemann", distance="riemann"))
 
 # Classification with minimum distance to mean
 acc_baseline = cross_val_score(model, cov_data_baseline, labels,
@@ -113,7 +113,7 @@ best_freq, all_class_dis = \
                              cv,
                              return_class_dis=True, verbose=False)
 
-print(f'Selected frequency band : {best_freq[0][0]} - {best_freq[0][1]} Hz')
+print(f"Selected frequency band : {best_freq[0][0]} - {best_freq[0][1]} Hz")
 
 ###############################################################################
 # Step2: Train classifier using selected frequency band and evaluate
@@ -121,7 +121,7 @@ print(f'Selected frequency band : {best_freq[0][0]} - {best_freq[0][1]} Hz')
 
 # Apply band-pass filter using the best frequency band
 best_raw_filter = raw.copy().filter(best_freq[0][0], best_freq[0][1],
-                                    method='iir', picks=picks,
+                                    method="iir", picks=picks,
                                     verbose=False)
 
 events, _ = events_from_annotations(best_raw_filter, event_id, verbose=False)
@@ -137,7 +137,8 @@ epochs = Epochs(
     picks=picks,
     baseline=None,
     preload=True,
-    verbose=False)
+    verbose=False,
+)
 
 # Get epochs
 epochs_data_train = epochs.get_data(units="uV", copy=False)
@@ -184,22 +185,22 @@ freq_end = subband_fmax.index(best_freq[0][1])
 
 plt.subplot(1, 1, 1)
 plt.grid()
-plt.plot(x, all_class_dis[0], marker='o')
+plt.plot(x, all_class_dis[0], marker="o")
 plt.xticks(list(range(0, 14, 1)),
            [[int(i), int(j)] for i, j in zip(subband_fmin, subband_fmax)])
 
 plt.axvspan(freq_start, freq_end, color="orange", alpha=0.3,
-            label='Selected frequency band')
-plt.ylabel('Class distinctiveness')
-plt.xlabel('Filter bank [Hz]')
-plt.title('Class distinctiveness value of each subband')
-plt.legend(loc='upper right')
+            label="Selected frequency band")
+plt.ylabel("Class distinctiveness")
+plt.xlabel("Filter bank [Hz]")
+plt.title("Class distinctiveness value of each subband")
+plt.legend(loc="upper right")
 
 fig.tight_layout()
 plt.show()
 
-print(f'Optimal frequency band for this subject is '
-      f'{best_freq[0][0]} - {best_freq[0][1]} Hz')
+print("Optimal frequency band for this subject is "
+      f"{best_freq[0][0]} - {best_freq[0][1]} Hz")
 
 ###############################################################################
 # References

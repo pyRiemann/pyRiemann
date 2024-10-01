@@ -14,23 +14,22 @@ intuitive visualizations.
 from functools import partial
 import os
 
-import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation
-
+from mne import make_fixed_length_epochs
 from mne.datasets import sample
 from mne.io import read_raw_fif
-from mne import make_fixed_length_epochs
+import numpy as np
 
-from pyriemann.estimation import Covariances
 from pyriemann.clustering import Potato
+from pyriemann.estimation import Covariances
 from pyriemann.utils.viz import _add_alpha
 
 
 ###############################################################################
 
 
-@partial(np.vectorize, excluded=['potato'])
+@partial(np.vectorize, excluded=["potato"])
 def get_zscores(cov_00, cov_01, cov_11, potato):
     cov = np.array([[cov_00, cov_01], [cov_01, cov_11]])
     with np.testing.suppress_warnings() as sup:
@@ -40,10 +39,10 @@ def get_zscores(cov_00, cov_01, cov_11, potato):
 
 def plot_potato_2D(ax, cax, X, Y, p_zscores, p_center, covs, p_colors, clabel):
     qcs = ax.contourf(X, Y, p_zscores, levels=20, vmin=p_zscores.min(),
-                      vmax=p_zscores.max(), cmap='RdYlBu_r', alpha=0.5)
-    ax.contour(X, Y, p_zscores, levels=[z_th], colors='k')
+                      vmax=p_zscores.max(), cmap="RdYlBu_r", alpha=0.5)
+    ax.contour(X, Y, p_zscores, levels=[z_th], colors="k")
     sc = ax.scatter(covs[:, 0, 0], covs[:, 1, 1], c=p_colors)
-    ax.scatter(p_center[0, 0], p_center[1, 1], c='k', s=100)
+    ax.scatter(p_center[0, 0], p_center[1, 1], c="k", s=100)
     if cax:
         cbar = fig.colorbar(qcs, cax=cax)
     else:
@@ -56,7 +55,7 @@ def plot_sig(ax, time, sig):
     ax.axis((time[0], time[-1], -15, 15))
     pl, = ax.plot(time, sig, lw=0.75)
     ax.axhspan(
-        -14, 14, edgecolor='k', facecolor='none',
+        -14, 14, edgecolor="k", facecolor="none",
         xmin=-test_time_start / (test_time_end - test_time_start),
         xmax=(duration - test_time_start) / (test_time_end - test_time_start))
     return pl
@@ -66,10 +65,10 @@ def plot_sig(ax, time, sig):
 # Load EEG data
 # -------------
 
-raw_fname = os.path.join(sample.data_path(), 'MEG', 'sample',
-                         'sample_audvis_filt-0-40_raw.fif')
+raw_fname = os.path.join(sample.data_path(), "MEG", "sample",
+                         "sample_audvis_filt-0-40_raw.fif")
 raw = read_raw_fif(raw_fname, preload=True, verbose=False)
-sfreq = int(raw.info['sfreq'])  # 150 Hz
+sfreq = int(raw.info["sfreq"])  # 150 Hz
 
 
 ###############################################################################
@@ -81,10 +80,10 @@ raw.pick_types(meg=False, eeg=True).apply_proj()
 
 # Select two EEG channels for the example, preferably without artifact at the
 # beginning, to have a reliable calibration
-ch_names = ['EEG 010', 'EEG 015']
+ch_names = ["EEG 010", "EEG 015"]
 
 # Apply band-pass filter between 1 and 35 Hz
-raw.filter(1., 35., method='iir', picks=ch_names)
+raw.filter(1., 35., method="iir", picks=ch_names)
 
 # Epoch time-series with a sliding window
 duration = 2.5    # duration of epochs
@@ -94,7 +93,7 @@ epochs = make_fixed_length_epochs(
 epochs_data = 5e5 * epochs.get_data(picks=ch_names, copy=False)
 
 # Estimate spatial covariance matrices
-covs = Covariances(estimator='lwf').transform(epochs_data)
+covs = Covariances(estimator="lwf").transform(epochs_data)
 
 
 ###############################################################################
@@ -115,15 +114,15 @@ train_covs = 40  # nb of matrices to train the potato
 # Calibrate potato by unsupervised training on first matrices: compute a
 # reference matrix, mean and standard deviation of distances to this reference.
 train_set = range(train_covs)
-rpotato = Potato(metric='riemann', threshold=z_th).fit(covs[train_set])
+rpotato = Potato(metric="riemann", threshold=z_th).fit(covs[train_set])
 rp_center = rpotato._mdm.covmeans_[0]
-epotato = Potato(metric='euclid', threshold=z_th).fit(covs[train_set])
+epotato = Potato(metric="euclid", threshold=z_th).fit(covs[train_set])
 ep_center = epotato._mdm.covmeans_[0]
 
 rp_labels = rpotato.predict(covs[train_set])
-rp_colors = ['b' if ll == 1 else 'r' for ll in rp_labels.tolist()]
+rp_colors = ["b" if ll == 1 else "r" for ll in rp_labels.tolist()]
 ep_labels = epotato.predict(covs[train_set])
-ep_colors = ['b' if ll == 1 else 'r' for ll in ep_labels.tolist()]
+ep_colors = ["b" if ll == 1 else "r" for ll in ep_labels.tolist()]
 
 # Zscores in the horizontal 2D plane going through the reference
 X, Y = np.meshgrid(np.linspace(1, 31, 100), np.linspace(1, 31, 100))
@@ -134,19 +133,19 @@ ep_zscores = get_zscores(X, np.full_like(X, ep_center[0, 1]), Y,
                          potato=epotato)
 
 # Plot calibration
-xlabel = 'Cov({},{})'.format(ch_names[0], ch_names[0])
-ylabel = 'Cov({},{})'.format(ch_names[1], ch_names[1])
+xlabel = "Cov({},{})".format(ch_names[0], ch_names[0])
+ylabel = "Cov({},{})".format(ch_names[1], ch_names[1])
 
 fig, axs = plt.subplots(figsize=(12, 5), nrows=1, ncols=2)
-fig.suptitle('Offline calibration of potatoes', fontsize=16)
+fig.suptitle("Offline calibration of potatoes", fontsize=16)
 axs[0].set(xlabel=xlabel, ylabel=ylabel,
-           title='2D projection of Riemannian potato')
+           title="2D projection of Riemannian potato")
 plot_potato_2D(axs[0], None, X, Y, rp_mzscores, rp_center, covs[train_set],
-               rp_colors, 'Z-score of Riemannian distance to reference')
+               rp_colors, "Z-score of Riemannian distance to reference")
 axs[1].set(xlabel=xlabel, ylabel=ylabel,
-           title='2D projection of Euclidean potato')
+           title="2D projection of Euclidean potato")
 plot_potato_2D(axs[1], None, X, Y, ep_zscores, ep_center, covs[train_set],
-               ep_colors, 'Z-score of Euclidean distance to reference')
+               ep_colors, "Z-score of Euclidean distance to reference")
 plt.show()
 
 
@@ -182,23 +181,23 @@ covs_visu, rp_colors, ep_colors = np.empty([0, 2, 2]), [], []
 alphas = np.linspace(0, 1, test_covs_visu)
 
 fig = plt.figure(figsize=(12, 10), constrained_layout=False)
-fig.suptitle('Online artifact detection by potatoes', fontsize=16)
+fig.suptitle("Online artifact detection by potatoes", fontsize=16)
 gs = fig.add_gridspec(nrows=4, ncols=40, top=0.90, hspace=0.3, wspace=1.0)
-ax_sig0 = fig.add_subplot(gs[0, :], xlabel='Time (s)', ylabel=ch_names[0])
+ax_sig0 = fig.add_subplot(gs[0, :], xlabel="Time (s)", ylabel=ch_names[0])
 pl_sig0 = plot_sig(ax_sig0, time, sig[0])
 ax_sig1 = fig.add_subplot(gs[1, :], ylabel=ch_names[1])
 pl_sig1 = plot_sig(ax_sig1, time, sig[1])
 ax_sig1.set_xticks([])
 ax_rp = fig.add_subplot(gs[2:4, 0:15], xlabel=xlabel, ylabel=ylabel,
-                        title='2D projection of Riemannian potato')
+                        title="2D projection of Riemannian potato")
 cax_rp = fig.add_subplot(gs[2:4, 15])
 p_rp = plot_potato_2D(ax_rp, cax_rp, X, Y, rp_mzscores, rp_center, covs_visu,
-                      rp_colors, 'Z-score of Riemannian distance to reference')
+                      rp_colors, "Z-score of Riemannian distance to reference")
 ax_ep = fig.add_subplot(gs[2:4, 21:36], xlabel=xlabel, ylabel=ylabel,
-                        title='2D projection of Euclidean potato')
+                        title="2D projection of Euclidean potato")
 cax_ep = fig.add_subplot(gs[2:4, 36])
 p_ep = plot_potato_2D(ax_ep, cax_ep, X, Y, ep_zscores, ep_center, covs_visu,
-                      ep_colors, 'Z-score of Euclidean distance to reference')
+                      ep_colors, "Z-score of Euclidean distance to reference")
 
 
 ###############################################################################
@@ -225,8 +224,8 @@ def online_detect(t):
     sig = np.hstack((sig[:, int(interval*sfreq):],
                      eeg_data[:, int(time_start*sfreq):int(time_end*sfreq)]))
     covs_visu = np.vstack((covs_visu, covs[np.newaxis, t]))
-    rp_colors.append('b' if rp_label == 1 else 'r')
-    ep_colors.append('b' if ep_label == 1 else 'r')
+    rp_colors.append("b" if rp_label == 1 else "r")
+    ep_colors.append("b" if ep_label == 1 else "r")
     if len(covs_visu) > test_covs_visu:
         covs_visu = covs_visu[1:]
         rp_colors.pop(0)
@@ -267,7 +266,7 @@ except ImportError:
     raise ImportError("Install IPython to plot animation in documentation")
 
 plt.rcParams["animation.embed_limit"] = 10
-HTML(potato.to_jshtml(fps=5, default_mode='loop'))
+HTML(potato.to_jshtml(fps=5, default_mode="loop"))
 
 
 ###############################################################################

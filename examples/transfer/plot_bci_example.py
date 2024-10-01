@@ -14,17 +14,16 @@ the Identity matrix (recenter) [1]_. We use data from the Physionet BCI
 database and compare the classification performance of MDM with each strategy.
 """
 
-import numpy as np
 from tqdm import tqdm
-import matplotlib.pyplot as plt
 
-from mne import Epochs, pick_types, events_from_annotations
+import matplotlib.pyplot as plt
+from mne import Epochs, pick_types, events_from_annotations, set_log_level
+from mne.datasets import eegbci
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
-from mne.datasets import eegbci
-from mne import set_log_level
-from sklearn.pipeline import make_pipeline
+import numpy as np
 from sklearn.model_selection import StratifiedShuffleSplit
+from sklearn.pipeline import make_pipeline
 
 from pyriemann.classification import MDM
 from pyriemann.estimation import Covariances
@@ -56,12 +55,12 @@ def get_subject_dataset(subject):
 
     # Select only EEG channels
     picks = pick_types(
-        raw.info, meg=False, eeg=True, stim=False, eog=False, exclude='bads')
+        raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
     # select only nine electrodes: F3, Fz, F4, C3, Cz, C4, P3, Pz, P4
     picks = picks[[31, 33, 35, 8, 10, 12, 48, 50, 52]]
 
     # Apply band-pass filter
-    raw.filter(7., 35., method='iir', picks=picks)
+    raw.filter(7., 35., method="iir", picks=picks)
 
     # Check the events
     events, _ = events_from_annotations(raw, event_id=dict(T1=2, T2=3))
@@ -100,7 +99,7 @@ for i, subject_source in enumerate(subject_list):
     X_source_i, y_source_i = get_subject_dataset(subject=subject_source)
     X.append(X_source_i)
     y.append(y_source_i)
-    d = d + [f'subject_{subject_source:02}'] * len(X_source_i)
+    d = d + [f"subject_{subject_source:02}"] * len(X_source_i)
 X = np.concatenate(X)
 y = np.concatenate(y)
 domains = np.array(d)
@@ -113,14 +112,14 @@ X_enc, y_enc = encode_domains(X, y, domains)
 # Object for splitting the datasets into training and validation partitions
 n_splits = 5  # How many times to split the target domain into train/test
 tl_cv = TLSplitter(
-    target_domain='',
+    target_domain="",
     cv=StratifiedShuffleSplit(
         n_splits=n_splits, train_size=0.10, random_state=42))
 
 # We consider two types of pipelines for transfer learning
 # dct : no transformation of dataset between the domains
 # rct : re-center the data points from each domain to the Identity
-scores = {meth: [] for meth in ['dummy', 'rct']}
+scores = {meth: [] for meth in ["dummy", "rct"]}
 
 # Base classifier to be wrapped for transfer learning
 clf_base = MDM()
@@ -129,7 +128,7 @@ clf_base = MDM()
 for i_subject in tqdm(range(n_subjects)):
 
     # Change the target domain
-    tl_cv.target_domain = f'subject_{subject_list[i_subject]:02}'
+    tl_cv.target_domain = f"subject_{subject_list[i_subject]:02}"
 
     # Create dict for storing results of this particular CV split
     scores_cv = {meth: [] for meth in scores.keys()}
@@ -159,7 +158,7 @@ for i_subject in tqdm(range(n_subjects)):
 
         # Fit and get accuracy score
         pipeline.fit(X_enc_train, y_enc_train)
-        scores_cv['dummy'].append(pipeline.score(X_enc_test, y_enc_test))
+        scores_cv["dummy"].append(pipeline.score(X_enc_test, y_enc_test))
 
         # (2) Recentering pipeline: recenter the data from each domain to
         # identity [1]_.
@@ -179,7 +178,7 @@ for i_subject in tqdm(range(n_subjects)):
         )
 
         pipeline.fit(X_enc_train, y_enc_train)
-        scores_cv['rct'].append(pipeline.score(X_enc_test, y_enc_test))
+        scores_cv["rct"].append(pipeline.score(X_enc_test, y_enc_test))
 
     for meth in scores.keys():
         scores[meth].append(np.mean(scores_cv[meth]))
@@ -190,10 +189,10 @@ for i_subject in tqdm(range(n_subjects)):
 
 fig, ax = plt.subplots(figsize=(7, 6))
 ax.boxplot(x=[scores[meth] for meth in scores.keys()])
-ax.set_xticklabels(['Dummy', 'Recentering'])
-ax.set_ylabel('Classification accuracy')
-ax.set_xlabel('Method')
-ax.set_title(f'Transfer learning with data pooled from {n_subjects} subjects')
+ax.set_xticklabels(["Dummy", "Recentering"])
+ax.set_ylabel("Classification accuracy")
+ax.set_xlabel("Method")
+ax.set_title(f"Transfer learning with data pooled from {n_subjects} subjects")
 plt.show()
 
 

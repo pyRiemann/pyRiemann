@@ -122,7 +122,7 @@ def freq_selection_class_dis(raw, freq_band=(5., 35.), sub_band_width=4,
         for ii in range(n_subband):
             class_dis = class_distinctiveness(
                 all_sub_band_cov[ii][train_ind], labels[train_ind],
-                exponent=1, metric='riemann', return_num_denom=False)
+                exponent=1, metric="riemann", return_num_denom=False)
             all_class_dis.append(class_dis)
         all_cv_class_dis.append(all_class_dis)
 
@@ -141,7 +141,7 @@ def _get_filtered_cov(raw, picks, event_id, fmin, fmax, tmin, tmax, verbose):
     """Private function to apply band-pass filter and estimate
     covariance matrix."""
 
-    best_raw_filter = raw.copy().filter(fmin, fmax, method='iir', picks=picks,
+    best_raw_filter = raw.copy().filter(fmin, fmax, method="iir", picks=picks,
                                         verbose=verbose)
 
     events, _ = events_from_annotations(best_raw_filter, event_id=event_id,

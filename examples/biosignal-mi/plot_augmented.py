@@ -10,22 +10,23 @@ versus augmented covariance matrix (ACM) [1]_.
 #
 # License: BSD (3-clause)
 
-import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
-import seaborn as sns
-
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
-from sklearn.base import clone
-from sklearn.model_selection import StratifiedKFold, GridSearchCV
-from sklearn.pipeline import Pipeline
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.svm import SVC
-from sklearn.model_selection import train_test_split
+import numpy as np
+import pandas as pd
+import seaborn as sns
+from sklearn.base import clone, BaseEstimator, TransformerMixin
 from sklearn.metrics import accuracy_score
+from sklearn.model_selection import (
+    train_test_split,
+    StratifiedKFold,
+    GridSearchCV,
+)
+from sklearn.pipeline import Pipeline
+from sklearn.svm import SVC
 
 from pyriemann.classification import MDM
 from pyriemann.estimation import Covariances
@@ -81,12 +82,12 @@ raw_files = [
 raw = concatenate_raws(raw_files)
 
 picks = pick_types(
-    raw.info, meg=False, eeg=True, stim=False, eog=False, exclude='bads')
+    raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
 # subsample elecs
 picks = picks[::2]
 
 # Apply band-pass filter
-raw.filter(7., 35., method='iir', picks=picks)
+raw.filter(7., 35., method="iir", picks=picks)
 
 events, _ = events_from_annotations(raw, event_id=dict(T1=2, T2=3))
 
@@ -134,7 +135,7 @@ pipelines["ACM(Grid)+TGSP+SVM"] = Pipeline(steps=[
 pipelines["ACM(Grid)+MDM"] = Pipeline(steps=[
     ("augmenteddataset", AugmentedDataset()),
     ("Covariances", Covariances("oas")),
-    ("MDM", MDM(metric=dict(mean='riemann', distance='riemann')))
+    ("MDM", MDM(metric=dict(mean="riemann", distance="riemann")))
 ])
 
 # Define the inner CV scheme for the nested cross-validation of
@@ -143,8 +144,8 @@ inner_cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
 
 # Define the hyper-parameters to test in the nested cross-validation
 param_grid = {
-    'augmenteddataset__order': [2, 3, 4],
-    'augmenteddataset__lag': [5, 7, 9],
+    "augmenteddataset__order": [2, 3, 4],
+    "augmenteddataset__lag": [5, 7, 9],
 }
 
 pipelines_grid = {}
@@ -193,11 +194,11 @@ print(results_grid)
 
 # Update the pipeline with the best pipeline obtained with GridSearch process
 pipelines["ACM(Grid)+TGSP+SVM"] = best_estimator.loc[
-    best_estimator['pipeline'] == "ACM(Grid)+TGSP+SVM",
+    best_estimator["pipeline"] == "ACM(Grid)+TGSP+SVM",
     "best_estimator"].values[0]
 
 pipelines["ACM(Grid)+MDM"] = best_estimator.loc[
-    best_estimator['pipeline'] == "ACM(Grid)+MDM",
+    best_estimator["pipeline"] == "ACM(Grid)+MDM",
     "best_estimator"].values[0]
 
 
@@ -211,7 +212,7 @@ pipelines["CM+TGSP+SVM"] = Pipeline(steps=[
 
 pipelines["CM+MDM"] = Pipeline(steps=[
     ("Covariances", Covariances("cov")),
-    ("MDM", MDM(metric=dict(mean='riemann', distance='riemann')))
+    ("MDM", MDM(metric=dict(mean="riemann", distance="riemann")))
 ])
 
 
@@ -233,13 +234,13 @@ for ppn, ppl in pipelines.items():
     res = {
         "score": score,
         "pipeline": ppn,
-        "Features": ppn.split('+')[0],
-        "Classifiers": ppn.split('+', 1)[1]
+        "Features": ppn.split("+")[0],
+        "Classifiers": ppn.split("+", 1)[1]
     }
     results.append(res)
 results = pd.DataFrame(results)
 
-for _, row in results.sort_values(by='score', ascending=False).iterrows():
+for _, row in results.sort_values(by="score", ascending=False).iterrows():
     print(f"{row.pipeline}, score: {row.score:.4f}")
 
 
