@@ -11,18 +11,17 @@ detect artifacts in online processing. It is compared to the Riemannian Potato
 #
 # License: BSD (3-clause)
 
-import numpy as np
 from matplotlib import pyplot as plt
 from matplotlib.animation import FuncAnimation
-
+from mne import make_fixed_length_epochs
+from mne.channels import make_standard_montage
 from mne.datasets import eegbci
 from mne.io import read_raw_edf
-from mne.channels import make_standard_montage
-from mne import make_fixed_length_epochs
+import numpy as np
 
+from pyriemann.clustering import Potato, PotatoField
 from pyriemann.estimation import Covariances
 from pyriemann.utils.covariance import normalize
-from pyriemann.clustering import Potato, PotatoField
 
 
 ###############################################################################
@@ -44,23 +43,23 @@ def plot_detection(ax, rp_label, rpf_label):
     if not rp_label:
         r1 = ax.axhspan(
             ylims[0] + 0.06 * height, ylims[1] - 0.05 * height,
-            edgecolor='r', facecolor='none',
+            edgecolor="r", facecolor="none",
             xmin=-test_time_start / test_duration - 0.005,
             xmax=(duration - test_time_start) / test_duration - 0.005)
         labels.append(r1)
-        ax.text(0.25, 0.95, 'RP', color='r', size=16, transform=ax.transAxes)
+        ax.text(0.25, 0.95, "RP", color="r", size=16, transform=ax.transAxes)
     if not rpf_label:
         r2 = ax.axhspan(
             ylims[0] + 0.05 * height, ylims[1] - 0.06 * height,
-            edgecolor='m', facecolor='none',
+            edgecolor="m", facecolor="none",
             xmin=-test_time_start / test_duration + 0.005,
             xmax=(duration - test_time_start) / test_duration + 0.005)
         labels.append(r2)
-        ax.text(0.65, 0.95, 'RPF', color='m', size=16, transform=ax.transAxes)
+        ax.text(0.65, 0.95, "RPF", color="m", size=16, transform=ax.transAxes)
     if rp_label and rpf_label:
         r3 = ax.axhspan(
             ylims[0] + 0.05 * height, ylims[1] - 0.05 * height,
-            edgecolor='k', facecolor='none',
+            edgecolor="k", facecolor="none",
             xmin=-test_time_start / test_duration,
             xmax=(duration - test_time_start) / test_duration)
         labels.append(r3)
@@ -78,13 +77,13 @@ raw = read_raw_edf(
     verbose=False,
 )
 eegbci.standardize(raw)
-raw.set_montage(make_standard_montage('standard_1005'))
-sfreq = int(raw.info['sfreq'])  # 160 Hz
+raw.set_montage(make_standard_montage("standard_1005"))
+sfreq = int(raw.info["sfreq"])  # 160 Hz
 
 # Select the 21 channels of the 10-20 montage
 raw.pick_channels(
-    ['Fp1', 'Fpz', 'Fp2', 'F7', 'F3', 'Fz', 'F4', 'F8', 'T7', 'C3', 'Cz', 'C4',
-     'T8', 'P7', 'P3', 'Pz', 'P4', 'P8', 'O1', 'Oz', 'O2'], ordered=True)
+    ["Fp1", "Fpz", "Fp2", "F7", "F3", "Fz", "F4", "F8", "T7", "C3", "Cz", "C4",
+     "T8", "P7", "P3", "Pz", "P4", "P8", "O1", "Oz", "O2"], ordered=True)
 ch_names = raw.ch_names
 ch_count = len(ch_names)
 
@@ -103,14 +102,14 @@ interval = 0.2    # interval between epochs
 # RP definition
 z_th = 2.0           # z-score threshold
 low_freq, high_freq = 1., 35.
-rp = Potato(metric='riemann', threshold=z_th)
+rp = Potato(metric="riemann", threshold=z_th)
 
 # EEG processing for RP
 rp_sig = filter_bandpass(raw, low_freq, high_freq)  # band-pass filter
 rp_epochs = make_fixed_length_epochs(  # epoch time-series
     rp_sig, duration=duration, overlap=duration - interval, verbose=False
 ).get_data(copy=False)
-rp_covs = Covariances(estimator='scm').transform(rp_epochs)
+rp_covs = Covariances(estimator="scm").transform(rp_epochs)
 
 # RP training
 train_covs = 45      # nb of matrices for training
@@ -134,34 +133,34 @@ rp.fit(rp_covs[train_set])
 # RPF definition
 p_th = 0.01          # probability threshold
 rpf_config = {
-    'RPF eye_blinks': {  # for eye-blinks
-        'ch_names': ['Fp1', 'Fpz', 'Fp2'],
-        'low_freq': 1.,
-        'high_freq': 20.},
-    'RPF occipital': {  # for high-frequency artifacts in occipital area
-        'ch_names': ['O1', 'Oz', 'O2'],
-        'low_freq': 25.,
-        'high_freq': 45.,
-        'cov_normalization': 'trace'},  # trace-norm to be insensitive to power
-    'RPF global_lf': {  # for low-frequency artifacts in all channels
-        'ch_names': None,
-        'low_freq': 0.5,
-        'high_freq': 3.}
+    "RPF eye_blinks": {  # for eye-blinks
+        "ch_names": ["Fp1", "Fpz", "Fp2"],
+        "low_freq": 1.,
+        "high_freq": 20.},
+    "RPF occipital": {  # for high-frequency artifacts in occipital area
+        "ch_names": ["O1", "Oz", "O2"],
+        "low_freq": 25.,
+        "high_freq": 45.,
+        "cov_normalization": "trace"},  # trace-norm to be insensitive to power
+    "RPF global_lf": {  # for low-frequency artifacts in all channels
+        "ch_names": None,
+        "low_freq": 0.5,
+        "high_freq": 3.}
 }
-rpf = PotatoField(metric='riemann', z_threshold=z_th, p_threshold=p_th,
+rpf = PotatoField(metric="riemann", z_threshold=z_th, p_threshold=p_th,
                   n_potatoes=len(rpf_config))
 
 # EEG processing for RPF
 rpf_covs = []
 for p in rpf_config.values():  # loop on potatoes
-    rpf_sig = filter_bandpass(raw, p.get('low_freq'), p.get('high_freq'),
-                              channels=p.get('ch_names'))
+    rpf_sig = filter_bandpass(raw, p.get("low_freq"), p.get("high_freq"),
+                              channels=p.get("ch_names"))
     rpf_epochs = make_fixed_length_epochs(
         rpf_sig, duration=duration, overlap=duration - interval, verbose=False
     ).get_data(copy=False)
-    covs_ = Covariances(estimator='scm').transform(rpf_epochs)
-    if p.get('cov_normalization'):
-        covs_ = normalize(covs_, p.get('cov_normalization'))
+    covs_ = Covariances(estimator="scm").transform(rpf_epochs)
+    if p.get("cov_normalization"):
+        covs_ = normalize(covs_, p.get("cov_normalization"))
     rpf_covs.append(covs_)
 
 # RPF training
@@ -188,7 +187,7 @@ time_start = train_covs * interval + test_time_start
 time_end = train_covs * interval + test_time_end
 time = np.linspace(time_start, time_end, int((time_end - time_start) * sfreq),
                    endpoint=False)
-raw.filter(l_freq=0.5, h_freq=75., method='iir', verbose=False)
+raw.filter(l_freq=0.5, h_freq=75., method="iir", verbose=False)
 eeg_data = 1e5 * raw.get_data()
 sig = eeg_data[:, int(time_start * sfreq):int(time_end * sfreq)]
 eeg_offset = - 15 * np.linspace(1, ch_count, ch_count, endpoint=False)
@@ -196,25 +195,25 @@ covs_t, covs_z = np.empty([0]), np.empty([len(rpf_config) + 1, 0])
 covs_p = np.empty([0])
 
 fig, ax = plt.subplots(figsize=(12, 10), nrows=2, ncols=1)
-fig.suptitle('Online artifact detection, RP vs RPF', fontsize=16)
-ax[0].set(xlabel='Time (s)', ylabel='EEG channels')
+fig.suptitle("Online artifact detection, RP vs RPF", fontsize=16)
+ax[0].set(xlabel="Time (s)", ylabel="EEG channels")
 ax[0].set_xlim([time[0], time[-1]])
 ax[0].set_yticks(eeg_offset)
 ax[0].set_yticklabels(ch_names)
 pl = ax[0].plot(time, sig.T + eeg_offset.T, lw=0.75)
 labels = []
 
-ax[1].set(xlabel='Time (s)', ylabel='Z-scores of distances to references')
+ax[1].set(xlabel="Time (s)", ylabel="Z-scores of distances to references")
 pl2 = ax[1].plot(covs_t, covs_z.T, lw=0.75)
-for c, l in enumerate(['RP'] + [*rpf_config]):
+for c, l in enumerate(["RP"] + [*rpf_config]):
     pl2[c].set_label(l)
 ax[1].set_ylim([-1.5, 8.5])
-ax[1].legend(loc='upper left')
+ax[1].legend(loc="upper left")
 axp = ax[1].twinx()
-axp.set(ylabel='RPF probability of clean EEG')
-pl3 = axp.plot(covs_t, covs_p, lw=0.75, c='k', label='RPF proba')
+axp.set(ylabel="RPF probability of clean EEG")
+pl3 = axp.plot(covs_t, covs_p, lw=0.75, c="k", label="RPF proba")
 axp.set_ylim([0, 1])
-axp.legend(loc='upper right')
+axp.legend(loc="upper right")
 
 
 ###############################################################################
@@ -286,7 +285,7 @@ except ImportError:
     raise ImportError("Install IPython to plot animation in documentation")
 
 plt.rcParams["animation.embed_limit"] = 10
-HTML(potato.to_jshtml(fps=5, default_mode='loop'))
+HTML(potato.to_jshtml(fps=5, default_mode="loop"))
 
 
 ###############################################################################
