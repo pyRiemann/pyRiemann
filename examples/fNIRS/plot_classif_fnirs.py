@@ -19,6 +19,7 @@ import urllib.request
 
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.metrics.pairwise import pairwise_kernels
 from sklearn.pipeline import Pipeline
@@ -246,8 +247,8 @@ class BlockKernels(BaseEstimator, TransformerMixin):
 
 
 ###############################################################################
-# Download example data
-# ---------------------
+# Download example data and plot
+# ------------------------------
 
 X_url = "https://zenodo.org/records/13841869/files/X.npy"
 y_url = "https://zenodo.org/records/13841869/files/y.npy"
@@ -276,6 +277,28 @@ print(
     f"Data loaded: {X.shape[0]} trials, {X.shape[1]} channels, "
     f"{X.shape[2]} time points"
 )
+
+# Get trials with the label "OP" for "Own Paradigm"
+MT_label = "OP"
+MT_trials_indices = np.where(y == MT_label)[0]
+
+# Average the data across the "OP" trials
+X_MT_erp = np.mean(X[MT_trials_indices, :, :], axis=0)
+
+# select example channel
+channel_index = 2
+
+# Plot the averaged signals
+plt.figure(figsize=(10, 5))
+plt.plot(X_MT_erp[channel_index, :], label="HbO", color="red")
+plt.plot(X_MT_erp[channel_index + 62, :], label="HbR", color="blue")
+
+plt.xlabel("Samples")
+plt.ylabel("Signal Amplitude")
+plt.title(f"ERP for OP [Own Paradigm] trials in channel {channel_index}")
+plt.legend()
+
+plt.show()
 
 ###############################################################################
 # Set up the pipeline
