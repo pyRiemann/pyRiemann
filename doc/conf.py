@@ -70,9 +70,9 @@ sphinx_gallery_conf = {
     'examples_dirs': ['../examples'],
     'gallery_dirs': ['auto_examples'],
     'subsection_order': ExplicitOrder([
-        '../examples/signal',
+        '../examples/covariance-estimation',
         '../examples/simulated',
-        '../examples/motor-imagery',
+        '../examples/biosignal-mi',
         '../examples/biosignal-erp',
         '../examples/biosignal-ssvep',
         '../examples/artifacts',
