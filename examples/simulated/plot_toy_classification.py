@@ -60,7 +60,7 @@ for delta in deltas_array:
     mean_class_dis = np.mean(all_class_dis)
     class_dis_array.append(mean_class_dis)
 
-    # Now let"s train a MDM classifier and measure its performance
+    # Now let's train a MDM classifier and measure its performance
     clf = MDM()
 
     # get the classification score for this setup
