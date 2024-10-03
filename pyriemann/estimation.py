@@ -7,7 +7,6 @@ from sklearn.metrics.pairwise import pairwise_kernels
 from .spatialfilters import Xdawn
 from .utils.covariance import (covariances, covariances_EP, cross_spectrum,
                                coherence, block_covariances)
-from .utils import deprecated
 
 
 def _nextpow2(i):
@@ -580,15 +579,7 @@ class CoSpectra(CrossSpectra):
         return X_new.real
 
 
-@deprecated(
-    "CospCovariances is deprecated and will be removed in 0.8.0; "
-    "please use CoSpectra."
-)
-class CospCovariances(CoSpectra):
-    pass
-
-
-class Coherences(CospCovariances):
+class Coherences(CoSpectra):
     """Estimation of squared coherence matrices.
 
     Squared coherence matrices estimation [1]_. This method will return a 4-d
@@ -793,14 +784,6 @@ class TimeDelayCovariances(BaseEstimator, TransformerMixin):
 
         covmats = covariances(self.Xtd_, estimator=self.estimator, **self.kwds)
         return covmats
-
-
-@deprecated(
-    "HankelCovariances is deprecated and will be removed in 0.8.0; "
-    "please use TimeDelayCovariances."
-)
-class HankelCovariances(TimeDelayCovariances):
-    pass
 
 
 ###############################################################################

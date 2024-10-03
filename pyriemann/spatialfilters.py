@@ -585,7 +585,7 @@ class AJDC(BaseEstimator, TransformerMixin):
 
     See Also
     --------
-    CospCovariances
+    CoSpectra
 
     References
     ----------
@@ -641,7 +641,7 @@ class AJDC(BaseEstimator, TransformerMixin):
             The AJDC instance.
         """
         # definition of params for Welch's method
-        cospcov = est.CospCovariances(
+        cospest = est.CoSpectra(
             window=self.window,
             overlap=self.overlap,
             fmin=self.fmin,
@@ -651,11 +651,11 @@ class AJDC(BaseEstimator, TransformerMixin):
         # estimation of cospectra on subjects and conditions
         cosp = []
         for s in range(len(X)):
-            cosp_ = cospcov.transform(X[s])
+            cosp_ = cospest.transform(X[s])
             if s == 0:
                 n_conditions = cosp_.shape[0]
                 self.n_channels_ = cosp_.shape[1]
-                self.freqs_ = cospcov.freqs_
+                self.freqs_ = cospest.freqs_
             else:
                 if n_conditions != cosp_.shape[0]:
                     raise ValueError("Unequal number of conditions")

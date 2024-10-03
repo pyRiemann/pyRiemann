@@ -1,6 +1,5 @@
 """Module for classification function."""
 import functools
-import warnings
 
 from joblib import Parallel, delayed
 import numpy as np
@@ -529,7 +528,7 @@ class KNearestNeighbor(MDM):
 
         return self
 
-    def predict(self, X=None, covtest=None):
+    def predict(self, X):
         """Get the predictions.
 
         Parameters
@@ -542,12 +541,6 @@ class KNearestNeighbor(MDM):
         pred : ndarray of int, shape (n_matrices,)
             Predictions for each matrix according to the nearest neighbors.
         """
-        if covtest is not None:
-            warnings.warn("Input covtest has been renamed into X and will be "
-                          "removed in 0.8.0.", category=DeprecationWarning)
-            assert (X is None)
-            X = covtest
-
         dist = self._predict_distances(X)
         neighbors_classes = self.classmeans_[np.argsort(dist)]
         pred = _mode_2d(neighbors_classes[:, 0:self.n_neighbors], axis=1)

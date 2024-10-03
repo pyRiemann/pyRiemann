@@ -16,7 +16,7 @@ import numpy as np
 from pylab import plt
 import seaborn as sns
 
-from pyriemann.estimation import CospCovariances
+from pyriemann.estimation import CoSpectra
 from pyriemann.stats import PermutationDistance
 
 sns.set_style("whitegrid")
@@ -64,7 +64,7 @@ epochs_data = epochs.get_data(copy=False)
 # compute cospectral covariance matrices
 fmin = 2.0
 fmax = 40.0
-cosp = CospCovariances(
+cosp = CoSpectra(
     window=128, overlap=0.98, fmin=fmin, fmax=fmax, fs=160.0)
 covmats = cosp.fit_transform(epochs_data[:, ::4, :])
 
