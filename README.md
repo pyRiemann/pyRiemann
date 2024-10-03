@@ -10,7 +10,7 @@
 
 pyRiemann is a Python machine learning package based on [scikit-learn](http://scikit-learn.org/stable/modules/classes.html) API.
 It provides a high-level interface for processing and classification of real (*resp*. complex)-valued multivariate data
-through the Riemannian geometry of symmetric (*resp*. Hermitian) 
+through the Riemannian geometry of symmetric (*resp*. Hermitian)
 [positive definite](https://en.wikipedia.org/wiki/Definite_matrix) (SPD) (*resp*. HPD) matrices.
 
 The documentation is available on http://pyriemann.readthedocs.io/en/latest/
@@ -159,14 +159,22 @@ pytest
                   Erik Bjäreholt and
                   Maria Sayu Yamamoto and
                   Pierre Clisson and
-                  Marie-Constance Corsi},
-  title        = {pyRiemann/pyRiemann: v0.5},
-  month        = june,
-  year         = 2023,
+                  Marie-Constance Corsi and
+                  Igor Carrara and
+                  Apolline Mellot and
+                  Bruna Junqueira Lopes and
+                  Brent Gaisford and
+                  Ammar Mian and
+                  Anton Andreev and
+                  Gregoire Cattan and
+                  Arthur Lebeurrier},
+  title        = {pyRiemann},
+  month        = oct,
+  year         = 2024,
+  version      = {v0.7},
   publisher    = {Zenodo},
-  version      = {v0.5},
-  doi          = {10.5281/zenodo.8059038},
-  url          = {https://doi.org/10.5281/zenodo.8059038}
+  doi          = {10.5281/zenodo.593816},
+  url          = {https://doi.org/10.5281/zenodo.593816}
 }
 ```
 
