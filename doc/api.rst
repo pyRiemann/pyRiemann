@@ -224,6 +224,7 @@ Distances
     :toctree: generated/
 
     distance
+    distance_chol
     distance_euclid
     distance_harmonic
     distance_kullback
@@ -253,6 +254,7 @@ Means
     mean_harmonic
     mean_identity
     mean_kullback_sym
+    mean_logchol
     mean_logdet
     mean_logeuclid
     mean_power
@@ -283,6 +285,7 @@ Geodesics
 
     geodesic
     geodesic_euclid
+    geodesic_logchol
     geodesic_logeuclid
     geodesic_riemann
 
@@ -308,9 +311,11 @@ Tangent Space
     :toctree: generated/
 
     exp_map_euclid
+    exp_map_logchol
     exp_map_logeuclid
     exp_map_riemann
     log_map_euclid
+    log_map_logchol
     log_map_logeuclid
     log_map_riemann
     upper

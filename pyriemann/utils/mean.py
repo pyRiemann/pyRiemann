@@ -275,6 +275,69 @@ def mean_kullback_sym(X=None, sample_weight=None, covmats=None):
     return M
 
 
+def mean_logchol(X, sample_weight=None):
+    r"""Mean of SPD/HPD matrices according to the log-Cholesky metric.
+
+    Log-Cholesky mean :math:`\mathbf{M}` is
+    :math:`\mathbf{M} = \mathbf{L} \mathbf{L}^H`,
+    where :math:`\mathbf{L}` is computed as [1]_:
+
+    .. math::
+        \mathbf{L} = \sum_i w_i \text{lower}(\text{chol}(\mathbf{X}_i)) +
+        \exp \left( \sum_i w_i \log(\text{diag}(\text{chol}(\mathbf{X}_i)))
+        \right)
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (n, n)
+        Log-Cholesky mean.
+
+    Notes
+    -----
+    .. versionadded:: 0.7
+
+    See Also
+    --------
+    mean_covariance
+
+    References
+    ----------
+    .. [1] `Riemannian geometry of symmetric positive definite matrices via
+        Cholesky decomposition
+        <https://arxiv.org/pdf/1908.09326>`_
+        Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
+    """
+    n_matrices, _, n_channels = X.shape
+    sample_weight = check_weights(sample_weight, n_matrices)
+
+    X_chol = np.linalg.cholesky(X)
+
+    mean = np.zeros(X.shape[-2:], dtype=X.dtype)
+
+    tri0, tri1 = np.tril_indices(n_channels, -1)
+    mean[tri0, tri1] = np.average(
+        X_chol[:, tri0, tri1],
+        axis=0,
+        weights=sample_weight,
+    )
+
+    diag0, diag1 = np.diag_indices(n_channels)
+    mean[diag0, diag1] = np.exp(np.average(
+        np.log(X_chol[:, diag0, diag1]),
+        axis=0,
+        weights=sample_weight,
+    ))
+
+    return mean @ mean.conj().T
+
+
 def mean_logdet(X=None, tol=10e-5, maxiter=50, init=None, sample_weight=None,
                 covmats=None):
     r"""Mean of SPD/HPD matrices according to the log-det metric.
@@ -677,6 +740,7 @@ mean_functions = {
     "identity": mean_identity,
     "kullback_sym": mean_kullback_sym,
     "logdet": mean_logdet,
+    "logchol": mean_logchol,
     "logeuclid": mean_logeuclid,
     "riemann": mean_riemann,
     "wasserstein": mean_wasserstein,
@@ -694,9 +758,10 @@ def mean_covariance(X=None, metric="riemann", sample_weight=None, covmats=None,
     X : ndarray, shape (n_matrices, n, n)
         Set of matrices.
     metric : string | callable, default="riemann"
-        Metric for mean estimation, can be: "ale", "alm", "euclid", "harmonic",
-        "identity", "kullback_sym", "logdet", "logeuclid", "riemann",
-        "wasserstein", or a callable function.
+        Metric for mean estimation, can be:
+        "ale", "alm", "euclid", "harmonic", "identity", "kullback_sym",
+        "logchol", "logdet", "logeuclid", "riemann", "wasserstein",
+        or a callable function.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
     **kwargs : dict

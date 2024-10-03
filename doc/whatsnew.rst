@@ -37,6 +37,9 @@ v0.7.dev
 
 - Enhance :func:`pyriemann.utils.mean.mean_power`: add ``init`` parameter and fix default initialization provided in the associated paper. :pr:`324` by :user:`toncho11`
 
+- Add :func:`pyriemann.utils.distance.distance_chol`, :func:`pyriemann.utils.geodesic.geodesic_logchol`, :func:`pyriemann.utils.mean.mean_logchol`,
+  and correct :func:`pyriemann.utils.distance.distance_logchol`. :pr:`322` by :user:`gabelstein`
+
 v0.6 (April 2024)
 -----------------
 

@@ -592,8 +592,9 @@ class SVC(sklearnSVC):
 
     Parameters
     ----------
-    metric : {"euclid", "logeuclid", "riemann"}, default="riemann"
-        Metric for kernel matrix computation.
+    metric : string, default="riemann"
+        Metric for kernel matrix computation. For the list of supported metrics
+        see :func:`pyriemann.utils.kernel.kernel`.
     Cref : None | callable | ndarray, shape (n_channels, n_channels)
         Reference point for kernel matrix computation.
         If None, the mean of the training data according to the metric is used.

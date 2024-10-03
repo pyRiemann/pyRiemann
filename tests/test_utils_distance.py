@@ -6,6 +6,7 @@ from scipy.spatial.distance import euclidean, mahalanobis
 
 from conftest import get_distances
 from pyriemann.utils.distance import (
+    distance_chol,
     distance_euclid,
     distance_harmonic,
     distance_kullback,
@@ -28,6 +29,7 @@ from pyriemann.utils.test import is_sym
 
 def get_dist_func():
     dist_func = [
+        distance_chol,
         distance_euclid,
         distance_harmonic,
         distance_kullback,
@@ -51,6 +53,7 @@ def callable_sp_euclidean(A, B, squared=False):
 @pytest.mark.parametrize(
     "metric, dist",
     [
+        ("chol", distance_chol),
         ("euclid", distance_euclid),
         ("harmonic", distance_harmonic),
         ("kullback", distance_kullback),
@@ -136,6 +139,7 @@ def test_distances_all_separability(kind, dist, get_mats):
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize(
     "dist", [
+        distance_chol,
         distance_euclid,
         distance_harmonic,
         distance_kullback_sym,
