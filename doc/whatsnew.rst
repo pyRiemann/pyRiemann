@@ -7,8 +7,12 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.7.dev
+v0.8.dev
 --------
+
+
+v0.7 (October 2024)
+-------------------
 
 - Add ``kernel`` parameter to :class:`pyriemann.embedding.LocallyLinearEmbedding`. :pr:`293` by :user:`gabelstein`
 
