@@ -1,6 +1,5 @@
 """Module for classification function."""
 import functools
-import warnings
 
 from joblib import Parallel, delayed
 import numpy as np
