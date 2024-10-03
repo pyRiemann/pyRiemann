@@ -7,8 +7,12 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.7.dev
+v0.8.dev
 --------
+
+
+v0.7 (October 2024)
+-------------------
 
 - Add ``kernel`` parameter to :class:`pyriemann.embedding.LocallyLinearEmbedding`. :pr:`293` by :user:`gabelstein`
 
@@ -27,7 +31,7 @@ v0.7.dev
 - Add ``sample_weight`` parameter to ``MDM.fit_predict``, ``Potato.fit``, ``Potato.partial_fit``,
   ``PotatoField.fit``, ``PotatoField.partial_fit``, ``Whitening.partial_fit``. :pr:`309` by :user:`qbarthelemy`
 
-- Update pyRiemann from Python 3.8 - 3.10 to 3.9 - 3.11. pr`310` by :user:`qbarthelemy`
+- Update pyRiemann from Python 3.8 - 3.10 to 3.9 - 3.11. :pr:`310` by :user:`qbarthelemy`
 
 - Add :func:`pyriemann.utils.distance.distance_logchol` to compute log-Cholesky distance. :pr:`311` by :user:`qbarthelemy`
 
