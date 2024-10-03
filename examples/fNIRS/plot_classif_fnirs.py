@@ -21,14 +21,19 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.metrics.pairwise import pairwise_kernels
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import FunctionTransformer
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
-from pyriemann.utils.covariance import covariances
-from pyriemann.estimation import BlockCovariances, Shrinkage, kernel_functions
-from pyriemann.classification import SVC
 from pyriemann.utils.covariance import cov_est_functions
+from pyriemann.estimation import (
+    Covariances,
+    Kernels,
+    Shrinkage,
+    BlockCovariances
+)
+from pyriemann.estimation import kernel_functions
+from pyriemann.classification import SVC
 
 
 ###############################################################################
@@ -41,7 +46,7 @@ cv_splits = 5  # Number of cross-validation folds
 random_state = 42  # Random state for reproducibility
 
 # Some example kernel metrics
-kernel_metrics = ["poly", "rbf", "laplacian"]
+kernel_metrics = ["rbf", "laplacian"]
 
 # Some example covariance estimators
 covariance_estimators = ["oas", "lwf"]
@@ -119,7 +124,7 @@ class BlockKernels(BaseEstimator, TransformerMixin):
     def fit(self, X, y=None):
         """Fit.
 
-        Do nothing. For compatibility purpose.
+        Prepare per-block transformers.
 
         Parameters
         ----------
@@ -133,6 +138,113 @@ class BlockKernels(BaseEstimator, TransformerMixin):
         self : BlockKernels instance
             The BlockKernels instance.
         """
+        n_samples, n_channels, n_times = X.shape
+
+        self.blocks = BlockCovariances._check_block_size(
+            self.block_size,
+            n_channels,
+        )
+        n_blocks = len(self.blocks)
+
+        # Handle metric parameter
+        if isinstance(self.metric, str):
+            self.metrics = [self.metric] * n_blocks
+        elif isinstance(self.metric, list):
+            if len(self.metric) != n_blocks:
+                raise ValueError(
+                    f"Length of metric list ({len(self.metric)}) must"
+                    f" match number of blocks ({n_blocks})"
+                )
+            self.metrics = self.metric
+        else:
+            raise ValueError(
+                "Parameter metric must be a string or a list of strings."
+            )
+
+        # Handle shrinkage parameter
+        if isinstance(self.shrinkage, (float, int)):
+            self.shrinkages = [self.shrinkage] * n_blocks
+        elif isinstance(self.shrinkage, list):
+            if len(self.shrinkage) != n_blocks:
+                raise ValueError(
+                    f"Length of shrinkage list ({len(self.shrinkage)})"
+                    f" must match number of blocks ({n_blocks})"
+                )
+            self.shrinkages = self.shrinkage
+        else:
+            raise ValueError(
+                "Parameter shrinkage must be a float, or a list of floats."
+            )
+
+        # Compute the indices for each block
+        self.block_indices = []
+        start = 0
+        for block_size in self.blocks:
+            end = start + block_size
+            indices = np.arange(start, end)
+            self.block_indices.append(indices)
+            start = end
+
+        # Create per-block transformers
+        self.transformers = []
+        for idx, (indices, metric, shrinkage_value) in enumerate(
+            zip(self.block_indices, self.metrics, self.shrinkages)
+        ):
+            if metric in kernel_functions:
+                # Use Kernels transformer
+                transformer = Pipeline([
+                    (
+                        'select',
+                        FunctionTransformer(
+                            self._select_channels,
+                            kw_args={'indices': indices},
+                            validate=False
+                        )
+                    ),
+                    (
+                        'kernels',
+                        Kernels(
+                            metric=metric,
+                            n_jobs=self.n_jobs,
+                            **self.kwds
+                        )
+                    ),
+                    (
+                        'shrinkage',
+                        Shrinkage(shrinkage=shrinkage_value)
+                        if shrinkage_value != 0 else 'passthrough'
+                    ),
+                ])
+            elif metric in cov_est_functions.keys():
+                # Use Covariances transformer
+                transformer = Pipeline([
+                    (
+                        'select',
+                        FunctionTransformer(
+                            self._select_channels,
+                            kw_args={'indices': indices},
+                            validate=False
+                        )
+                    ),
+                    (
+                        'covariances',
+                        Covariances(
+                            estimator=metric,
+                            **self.kwds
+                        )
+                    ),
+                    (
+                        'shrinkage',
+                        Shrinkage(shrinkage=shrinkage_value)
+                        if shrinkage_value != 0 else 'passthrough'
+                    ),
+                ])
+            else:
+                raise ValueError(
+                    f"Metric '{metric}' is not recognized"
+                    " as a kernel metric or a covariance estimator."
+                )
+            self.transformers.append(transformer)
         return self
 
     def transform(self, X):
@@ -151,86 +263,24 @@ class BlockKernels(BaseEstimator, TransformerMixin):
         """
         n_samples, n_channels, n_times = X.shape
 
-        blocks = BlockCovariances._check_block_size(
-            self.block_size,
-            n_channels,
-        )
-        n_blocks = len(blocks)
-
-        # Handle metric parameter
-        if isinstance(self.metric, str):
-            metrics = [self.metric] * n_blocks
-        elif isinstance(self.metric, list):
-            if len(self.metric) != n_blocks:
-                raise ValueError(
-                    f"Length of metric list ({len(self.metric)}) must"
-                    f"match number of blocks ({n_blocks})"
-                )
-            metrics = self.metric
-        else:
-            raise ValueError(
-                "Parameter metric must be a string or a list of strings."
-            )
-
-        # Handle shrinkage parameter
-        if isinstance(self.shrinkage, (float, int)):
-            shrinkages = [self.shrinkage] * n_blocks
-        elif isinstance(self.shrinkage, list):
-            if len(self.shrinkage) != n_blocks:
-                raise ValueError(
-                    f"Length of shrinkage list ({len(self.shrinkage)})"
-                    f"must match number of blocks ({n_blocks})"
-                )
-            shrinkages = self.shrinkage
-        else:
-            raise ValueError(
-                "Parameter shrinkage must be a float, or a list of floats."
-            )
-
         M_matrices = []
 
         for i in range(n_samples):
-            start = 0
             M_blocks = []
-            for idx, (block_size, metric, shrinkage_value) in enumerate(
-                zip(blocks, metrics, shrinkages)
-            ):
-                end = start + block_size
-                # Extract the block of channels
-                X_block = X[i, start:end, :]  # shape: (block_size, n_times)
-
-                # Compute the matrix for this block
-                if metric in kernel_functions:
-                    # Compute kernel matrix
-                    M_block = pairwise_kernels(
-                        X_block, metric=metric, n_jobs=self.n_jobs, **self.kwds
-                    )
-                elif metric in cov_est_functions.keys():
-                    # Compute covariance matrix
-                    X_block_reshaped = X_block[np.newaxis, :, :]
-                    M_block = covariances(
-                        X_block_reshaped, estimator=metric, **self.kwds
-                    )[0]
-                else:
-                    raise ValueError(
-                        f"Metric '{metric}' is not recognized"
-                        " as a kernel metric or a covariance estimator."
-                    )
-
-                # Apply shrinkage if specified
-                if shrinkage_value != 0:
-                    M_block_reshaped = M_block[np.newaxis, :, :]
-                    shr = Shrinkage(shrinkage=shrinkage_value)
-                    M_block = shr.fit_transform(M_block_reshaped)[0]
-
+            for idx, transformer in enumerate(self.transformers):
+                # Apply transformer to the current sample
+                M_block = transformer.transform(X[[i]])[0]
                 M_blocks.append(M_block)
-                start = end
-
             # Create the block diagonal matrix
             M_full = self._block_diag(M_blocks)
             M_matrices.append(M_full)
 
         return np.array(M_matrices)
+
+    @staticmethod
+    def _select_channels(X, indices):
+        """Select channels based on indices."""
+        return X[:, indices, :]
 
     @staticmethod
     def _block_diag(matrices):
@@ -320,8 +370,8 @@ pipeline = Pipeline(
 param_grid = {
     "block_kernels__metric": metric_combinations,
     "block_kernels__shrinkage": shrinkage_values,
-    "classifier__C": [0.1, 1, 10],
-    "classifier__metric": ["euclid", "riemann", "logeuclid"],
+    "classifier__C": [0.1, 1],
+    "classifier__metric": ["riemann", "logeuclid"],
 }
 
 # Define cross-validation
@@ -386,3 +436,5 @@ print(
 # .. [1] `Riemannian Geometry for the classification of brain states with fNIRS
 #    <https://www.biorxiv.org/content/10.1101/2024.09.06.611347v1>`_
 #    T. Näher, L. Bastian, A. Vorreuther, P. Fries, R. Goebel, B. Sorger.
+
+# %%
