@@ -12,14 +12,14 @@ the tangent space and classified with a logistic regression.
 #
 # License: BSD (3-clause)
 
-import numpy as np
 from matplotlib import pyplot as plt
 import mne
 from mne import io
 from mne.datasets import sample
+import numpy as np
 from sklearn.linear_model import LogisticRegression
-from sklearn.model_selection import KFold
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from sklearn.model_selection import KFold
 from sklearn.pipeline import make_pipeline
 
 from pyriemann.estimation import XdawnCovariances

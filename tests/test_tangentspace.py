@@ -87,7 +87,9 @@ def clf_inversetransform(tspace, mats):
 @pytest.mark.parametrize("fit", [True, False])
 @pytest.mark.parametrize("tsupdate", [True, False])
 @pytest.mark.parametrize("metric_mean", get_metrics())
-@pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric_map", [
+    "euclid", "logchol", "logeuclid", "riemann"
+])
 def test_TangentSpace_init(fit, tsupdate, metric_mean, metric_map, get_mats):
     n_matrices, n_channels = 4, 3
     n_ts = (n_channels * (n_channels + 1)) // 2
@@ -105,7 +107,9 @@ def test_TangentSpace_init(fit, tsupdate, metric_mean, metric_map, get_mats):
 
 @pytest.mark.parametrize("tsupdate", [True, False])
 @pytest.mark.parametrize("metric_mean", get_metrics())
-@pytest.mark.parametrize("metric_map", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric_map", [
+    "euclid", "logchol", "logeuclid", "riemann"
+])
 def test_FGDA_init(tsupdate, metric_mean, metric_map, get_mats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 3
     labels = get_labels(n_matrices, n_classes)

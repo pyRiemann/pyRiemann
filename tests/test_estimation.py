@@ -13,9 +13,7 @@ from pyriemann.estimation import (
     XdawnCovariances,
     CrossSpectra,
     CoSpectra,
-    CospCovariances,
     TimeDelayCovariances,
-    HankelCovariances,
     Coherences,
     Shrinkage,
     BlockCovariances,
@@ -105,15 +103,6 @@ def test_time_delay_covariances(delays, rndstate):
     assert covest.Xtd_.shape == (n_matrices, n_delays * n_channels, n_times)
     assert is_spd(covmats)
     assert ~is_hankel(covmats[0])
-
-
-def test_hankel_covariances():
-    import warnings
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        HankelCovariances()
-        assert len(w) == 1
-        assert issubclass(w[-1].category, DeprecationWarning)
 
 
 @pytest.mark.parametrize("estimator", estim)
@@ -288,15 +277,6 @@ def test_xspectra(estim, rndstate):
         assert is_spsd(spmats.transpose(0, 3, 1, 2))
     else:
         assert is_hpsd(spmats.transpose(0, 3, 1, 2))
-
-
-def test_cosp_covariances():
-    import warnings
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        CospCovariances()
-        assert len(w) == 1
-        assert issubclass(w[-1].category, DeprecationWarning)
 
 
 @pytest.mark.parametrize("coh", coh)

@@ -50,7 +50,7 @@ labels = np.array(n_matrices*[1] + n_matrices*[2] + n_matrices*[3])
 
 ###############################################################################
 # Apply the spectral embedding over the SPD matrices
-lapl = SpectralEmbedding(metric='riemann', n_components=2)
+lapl = SpectralEmbedding(metric="riemann", n_components=2)
 embd = lapl.fit_transform(X=samples)
 
 ###############################################################################
@@ -58,20 +58,20 @@ embd = lapl.fit_transform(X=samples)
 
 fig, ax = plt.subplots(figsize=(8, 6))
 
-colors = {1: 'C0', 2: 'C1', 3: 'C2'}
+colors = {1: "C0", 2: "C1", 3: "C2"}
 for i in range(len(samples)):
     ax.scatter(embd[i, 0], embd[i, 1], c=colors[labels[i]], s=50)
-ax.scatter([], [], c='C0', s=50, label=r'$\varepsilon = 1.00, \sigma = 1.00$')
-ax.scatter([], [], c='C1', s=50, label=r'$\varepsilon = 1.00, \sigma = 0.50$')
-ax.scatter([], [], c='C2', s=50, label=r'$\varepsilon = 4.00, \sigma = 1.00$')
+ax.scatter([], [], c="C0", s=50, label=r"$\varepsilon = 1.00, \sigma = 1.00$")
+ax.scatter([], [], c="C1", s=50, label=r"$\varepsilon = 1.00, \sigma = 0.50$")
+ax.scatter([], [], c="C2", s=50, label=r"$\varepsilon = 4.00, \sigma = 1.00$")
 ax.set_xticks([-1, -0.5, 0, 0.5, 1.0])
 ax.set_xticklabels([-1, -0.5, 0, 0.5, 1.0], fontsize=12)
 ax.set_yticks([-1, -0.5, 0, 0.5, 1.0])
 ax.set_yticklabels([-1, -0.5, 0, 0.5, 1.0], fontsize=12)
-ax.set_title(r'Spectral embedding of data points (fixed $n_{dim} = 4$)',
+ax.set_title(r"Spectral embedding of data points (fixed $n_{dim} = 4$)",
              fontsize=14)
-ax.set_xlabel(r'$\phi_1$', fontsize=14)
-ax.set_ylabel(r'$\phi_2$', fontsize=14)
+ax.set_xlabel(r"$\phi_1$", fontsize=14)
+ax.set_ylabel(r"$\phi_2$", fontsize=14)
 ax.legend()
 
 plt.show()

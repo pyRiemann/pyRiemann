@@ -7,8 +7,13 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.7.dev
+v0.8.dev
 --------
+
+- Add an example using fNIRS data with a new estimator called `BlockKernels` for classifying HbO and HbR signals. :pr:`323` by :user:`timnaher`
+
+v0.7 (October 2024)
+-------------------
 
 - Add ``kernel`` parameter to :class:`pyriemann.embedding.LocallyLinearEmbedding`. :pr:`293` by :user:`gabelstein`
 
@@ -27,7 +32,7 @@ v0.7.dev
 - Add ``sample_weight`` parameter to ``MDM.fit_predict``, ``Potato.fit``, ``Potato.partial_fit``,
   ``PotatoField.fit``, ``PotatoField.partial_fit``, ``Whitening.partial_fit``. :pr:`309` by :user:`qbarthelemy`
 
-- Update pyRiemann from Python 3.8 - 3.10 to 3.9 - 3.11. pr`310` by :user:`qbarthelemy`
+- Update pyRiemann from Python 3.8 - 3.10 to 3.9 - 3.11. :pr:`310` by :user:`qbarthelemy`
 
 - Add :func:`pyriemann.utils.distance.distance_logchol` to compute log-Cholesky distance. :pr:`311` by :user:`qbarthelemy`
 
@@ -37,7 +42,8 @@ v0.7.dev
 
 - Enhance :func:`pyriemann.utils.mean.mean_power`: add ``init`` parameter and fix default initialization provided in the associated paper. :pr:`324` by :user:`toncho11`
 
-- Add an example using fNIRS data with a new estimator called `BlockKernels` for classifying HbO and HbR signals. :pr:`323` by :user:`timnaher`
+- Add :func:`pyriemann.utils.distance.distance_chol`, :func:`pyriemann.utils.geodesic.geodesic_logchol`, :func:`pyriemann.utils.mean.mean_logchol`,
+  and correct :func:`pyriemann.utils.distance.distance_logchol`. :pr:`322` by :user:`gabelstein`
 
 v0.6 (April 2024)
 -----------------

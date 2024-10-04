@@ -10,21 +10,20 @@ impact on classification [1]_. Kernel estimators are also compared [2]_.
 #
 # License: BSD (3-clause)
 
-import numpy as np
-import pandas as pd
 from matplotlib import pyplot as plt
-import seaborn as sns
-
 from mne import Epochs, pick_types, events_from_annotations
+from mne.datasets import eegbci
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
-from mne.datasets import eegbci
+import numpy as np
+import pandas as pd
+import seaborn as sns
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.pipeline import make_pipeline
 
+from pyriemann.classification import MDM
 from pyriemann.estimation import Covariances, Kernels
 from pyriemann.utils.distance import distance
-from pyriemann.classification import MDM
 
 
 ###############################################################################
@@ -144,7 +143,7 @@ for wl in w_len:
         verbose=False,
     ).get_data(copy=False)
     for est in estimators:
-        est_class, est_param = est.split('-')
+        est_class, est_param = est.split("-")
         if est_class == "ker":
             covs = Kernels(metric=est_param).transform(X)
         else:
@@ -195,7 +194,7 @@ for wl in w_len:
     X = epochs.get_data(copy=False)
     y = np.array([0 if ev == 2 else 1 for ev in epochs.events[:, -1]])
     for est in estimators:
-        est_class, est_param = est.split('-')
+        est_class, est_param = est.split("-")
         if est_class == "ker":
             clf = make_pipeline(Kernels(metric=est_param), MDM())
         else:

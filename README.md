@@ -10,7 +10,7 @@
 
 pyRiemann is a Python machine learning package based on [scikit-learn](http://scikit-learn.org/stable/modules/classes.html) API.
 It provides a high-level interface for processing and classification of real (*resp*. complex)-valued multivariate data
-through the Riemannian geometry of symmetric (*resp*. Hermitian) 
+through the Riemannian geometry of symmetric (*resp*. Hermitian)
 [positive definite](https://en.wikipedia.org/wiki/Definite_matrix) (SPD) (*resp*. HPD) matrices.
 
 The documentation is available on http://pyriemann.readthedocs.io/en/latest/
@@ -87,9 +87,10 @@ y = ... # labels
 # estimate covariance matrices
 cov = pyriemann.estimation.Covariances().fit_transform(X)
 
-# cross validation
+# build your classifier
 mdm = pyriemann.classification.MDM()
 
+# cross validation
 accuracy = cross_val_score(mdm, cov, y)
 
 print(accuracy.mean())
@@ -102,20 +103,20 @@ For example, to classify EEG signal using a SVM classifier in the tangent space,
 ```python
 from pyriemann.estimation import Covariances
 from pyriemann.tangentspace import TangentSpace
-
 from sklearn.pipeline import make_pipeline
-from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score
+from sklearn.svm import SVC
 
 # load your data
 X = ... # EEG data, in format n_epochs x n_channels x n_times
 y = ... # labels
 
 # build your pipeline
-covest = Covariances()
-ts = TangentSpace()
-svc = SVC(kernel='linear')
-clf = make_pipeline(covest, ts, svc)
+clf = make_pipeline(
+    Covariances(),
+    TangentSpace(),
+    SVC(kernel="linear"),
+)
 
 # cross validation
 accuracy = cross_val_score(clf, X, y)
@@ -124,7 +125,7 @@ print(accuracy.mean())
 
 ```
 
-**Check out the example folder for more examples.**
+Check out the example folder for more examples.
 
 # Contribution Guidelines
 
@@ -158,14 +159,22 @@ pytest
                   Erik Bjäreholt and
                   Maria Sayu Yamamoto and
                   Pierre Clisson and
-                  Marie-Constance Corsi},
-  title        = {pyRiemann/pyRiemann: v0.5},
-  month        = june,
-  year         = 2023,
+                  Marie-Constance Corsi and
+                  Igor Carrara and
+                  Apolline Mellot and
+                  Bruna Junqueira Lopes and
+                  Brent Gaisford and
+                  Ammar Mian and
+                  Anton Andreev and
+                  Gregoire Cattan and
+                  Arthur Lebeurrier},
+  title        = {pyRiemann},
+  month        = oct,
+  year         = 2024,
+  version      = {v0.7},
   publisher    = {Zenodo},
-  version      = {v0.5},
-  doi          = {10.5281/zenodo.8059038},
-  url          = {https://doi.org/10.5281/zenodo.8059038}
+  doi          = {10.5281/zenodo.593816},
+  url          = {https://doi.org/10.5281/zenodo.593816}
 }
 ```
 

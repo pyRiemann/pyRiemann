@@ -13,16 +13,16 @@ before this example.
 #
 # License: BSD (3-clause)
 
-import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
 from mne import find_events, Epochs, make_fixed_length_epochs
 from mne.io import Raw
-from sklearn.pipeline import make_pipeline
+import numpy as np
 from sklearn.decomposition import PCA
+from sklearn.pipeline import make_pipeline
 
-from pyriemann.estimation import BlockCovariances
 from pyriemann.classification import MDM
+from pyriemann.estimation import BlockCovariances
 from pyriemann.tangentspace import TangentSpace
 from pyriemann.utils.viz import _add_alpha
 from helpers.ssvep_helpers import download_data, extend_signal
@@ -30,20 +30,20 @@ from helpers.ssvep_helpers import download_data, extend_signal
 
 ###############################################################################
 
-clabel = ['resting-state', '13 Hz', '17 Hz', '21 Hz']
+clabel = ["resting-state", "13 Hz", "17 Hz", "21 Hz"]
 clist = plt.cm.viridis(np.array([0, 1, 2, 3])/3)
 cmap = "viridis"
 
 
 def plot_pga(ax, data, labels, centers):
-    sc = ax.scatter(data[:, 0], data[:, 1], c=labels, marker='P', cmap=cmap)
+    sc = ax.scatter(data[:, 0], data[:, 1], c=labels, marker="P", cmap=cmap)
     ax.scatter(
-        centers[:, 0], centers[:, 1], c=clist, marker='o', s=100, cmap=cmap
+        centers[:, 0], centers[:, 1], c=clist, marker="o", s=100, cmap=cmap
         )
-    ax.set(xlabel='PGA, 1st axis', ylabel='PGA, 2nd axis')
+    ax.set(xlabel="PGA, 1st axis", ylabel="PGA, 2nd axis")
     for i in range(len(clabel)):
-        ax.scatter([], [], color=clist[i], marker='o', s=50, label=clabel[i])
-    ax.legend(loc='upper right')
+        ax.scatter([], [], color=clist[i], marker="o", s=50, label=clabel[i])
+    ax.legend(loc="upper right")
     return sc
 
 
@@ -53,7 +53,7 @@ def plot_pga(ax, data, labels, centers):
 
 frequencies = [13, 17, 21]
 freq_band = 0.1
-events_id = {'13 Hz': 2, '17 Hz': 4, '21 Hz': 3, 'resting-state': 1}
+events_id = {"13 Hz": 2, "17 Hz": 4, "21 Hz": 3, "resting-state": 1}
 
 duration = 2.5    # duration of epochs
 interval = 0.25   # interval between successive epochs for online processing
@@ -64,13 +64,13 @@ interval = 0.25   # interval between successive epochs for online processing
 raw = Raw(download_data(subject=12, session=1), preload=True, verbose=False)
 events = find_events(raw, shortest_event=0, verbose=False)
 raw = raw.pick("eeg")
-ch_count = len(raw.info['ch_names'])
+ch_count = len(raw.info["ch_names"])
 raw_ext = extend_signal(raw, frequencies, freq_band)
 epochs = Epochs(
     raw_ext, events, events_id, tmin=2, tmax=5, baseline=None, verbose=False
 ).get_data(copy=False)
 x_train = BlockCovariances(
-    estimator='lwf', block_size=ch_count
+    estimator="lwf", block_size=ch_count
 ).transform(epochs)
 y_train = events[:, 2]
 
@@ -82,7 +82,7 @@ epochs = make_fixed_length_epochs(
     raw_ext, duration=duration, overlap=duration - interval, verbose=False
 ).get_data(copy=False)
 x_test = BlockCovariances(
-    estimator='lwf', block_size=ch_count
+    estimator="lwf", block_size=ch_count
 ).transform(epochs)
 
 
@@ -94,7 +94,7 @@ x_test = BlockCovariances(
 
 print("Number of training trials: {}".format(len(x_train)))
 
-mdm = MDM(metric=dict(mean='riemann', distance='riemann'))
+mdm = MDM(metric=dict(mean="riemann", distance="riemann"))
 mdm.fit(x_train, y_train)
 
 
@@ -127,7 +127,7 @@ ts_means = pga.transform(np.array(mdm.covmeans_))
 # best subject.
 
 fig, ax = plt.subplots(figsize=(8, 8))
-fig.suptitle('PGA of training set', fontsize=16)
+fig.suptitle("PGA of training set", fontsize=16)
 plot_pga(ax, ts_train, y_train, ts_means)
 plt.show()
 
@@ -148,7 +148,7 @@ colors, ts_visu = [], np.empty([0, 2])
 alphas = np.linspace(0, 1, test_visu)
 
 fig, ax = plt.subplots(figsize=(8, 8))
-fig.suptitle('PGA of testing set', fontsize=16)
+fig.suptitle("PGA of testing set", fontsize=16)
 pl = plot_pga(ax, ts_visu, colors, ts_means)
 pl.axes.set_xlim(-5, 6)
 pl.axes.set_ylim(-5, 5)
@@ -200,7 +200,7 @@ except ImportError:
     raise ImportError("Install IPython to plot animation in documentation")
 
 plt.rcParams["animation.embed_limit"] = 10
-HTML(visu.to_jshtml(fps=5, default_mode='loop'))
+HTML(visu.to_jshtml(fps=5, default_mode="loop"))
 
 
 ###############################################################################

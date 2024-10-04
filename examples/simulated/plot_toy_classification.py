@@ -16,13 +16,13 @@ distinctiveness [1]_ vary when Delta increases.
 #
 # License: BSD (3-clause)
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.model_selection import cross_val_score, StratifiedKFold
 
-from pyriemann.classification import MDM
+from pyriemann.classification import MDM, class_distinctiveness
 from pyriemann.datasets import make_gaussian_blobs
-from pyriemann.classification import class_distinctiveness
+
 
 ###############################################################################
 # Set general parameters for the illustrations
@@ -52,7 +52,7 @@ for delta in deltas_array:
     all_class_dis = []
     for train_ind, _ in skf.split(X, y):
         class_dis = class_distinctiveness(X[train_ind], y[train_ind],
-                                          exponent=1, metric='riemann',
+                                          exponent=1, metric="riemann",
                                           return_num_denom=False)
         all_class_dis.append(class_dis)
 
@@ -65,7 +65,7 @@ for delta in deltas_array:
 
     # get the classification score for this setup
     scores_array.append(
-        cross_val_score(clf, X, y, cv=skf, scoring='roc_auc').mean())
+        cross_val_score(clf, X, y, cv=skf, scoring="roc_auc").mean())
 
 scores_array = np.array(scores_array)
 class_dis_array = np.array(class_dis_array)
@@ -74,15 +74,15 @@ class_dis_array = np.array(class_dis_array)
 # Plot the results
 fig, (ax1, ax2) = plt.subplots(sharex=True, nrows=2)
 
-ax1.plot(deltas_array, scores_array, lw=3.0, label=r'ROC AUC score')
-ax2.plot(deltas_array, class_dis_array, lw=3.0, color='g',
-         label='Class Distinctiveness')
+ax1.plot(deltas_array, scores_array, lw=3.0, label=r"ROC AUC score")
+ax2.plot(deltas_array, class_dis_array, lw=3.0, color="g",
+         label="Class Distinctiveness")
 
-ax2.set_xlabel(r'$\Delta/\sigma$', fontsize=14)
-ax1.set_ylabel(r'ROC AUC score', fontsize=12)
-ax2.set_ylabel(r'class distinctiveness', fontsize=12)
-ax1.set_title('Classification score and class distinctiveness value\n'
-              r'vs. class separability ($n_{dim} = 4$)',
+ax2.set_xlabel(r"$\Delta/\sigma$", fontsize=14)
+ax1.set_ylabel(r"ROC AUC score", fontsize=12)
+ax2.set_ylabel(r"class distinctiveness", fontsize=12)
+ax1.set_title("Classification score and class distinctiveness value\n"
+              r"vs. class separability ($n_{dim} = 4$)",
               fontsize=12)
 
 ax1.grid(True)

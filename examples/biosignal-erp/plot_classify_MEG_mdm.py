@@ -15,11 +15,11 @@ for mean-covariance matrices used by the classification algorithm.
 #
 # License: BSD (3-clause)
 
-import numpy as np
 from matplotlib import pyplot as plt
 import mne
 from mne import io
 from mne.datasets import sample
+import numpy as np
 from sklearn.metrics import (
     classification_report,
     confusion_matrix,
@@ -93,6 +93,7 @@ print(classification_report(labels, pr))
 
 ###############################################################################
 # plot the spatial patterns
+
 xd = XdawnCovariances(n_components)
 xd.fit(epochs_data, labels)
 
@@ -110,6 +111,7 @@ patterns.plot_topomap(
 
 ###############################################################################
 # plot the confusion matrix
+
 names = ["audio left", "audio right", "vis left", "vis right"]
 cm = confusion_matrix(labels, pr)
 ConfusionMatrixDisplay(cm, display_labels=names).plot()

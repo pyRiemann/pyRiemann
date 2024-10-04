@@ -101,7 +101,8 @@ def test_metric_str(regres, metric, get_mats, get_targets):
     mats = get_mats(n_matrices, n_channels, "spd")
     clf = regres(metric=metric)
 
-    if regres is SVR and metric not in ["euclid", "logeuclid", "riemann"]:
+    if regres is SVR and metric not in ["euclid", "logchol",
+                                        "logeuclid", "riemann"]:
         with pytest.raises(ValueError):
             clf.fit(mats, targets).predict(mats)
 

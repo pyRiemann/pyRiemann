@@ -13,15 +13,13 @@ ensemble learning [1]_.
 # License: BSD (3-clause)
 
 import matplotlib.pyplot as plt
-import numpy as np
-import pandas as pd
-import seaborn as sns
-
 from mne import Epochs, pick_types, events_from_annotations
 from mne.io import concatenate_raws
 from mne.io.edf import read_raw_edf
 from mne.datasets import eegbci
-from sklearn.base import BaseEstimator, TransformerMixin
+import numpy as np
+import pandas as pd
+import seaborn as sns
 from sklearn.ensemble import StackingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
@@ -43,26 +41,11 @@ from helpers.coherence_helpers import NearestSPD, get_results
 # `pyriemann.estimation.Coherences`
 
 
-class Connectivities(TransformerMixin, BaseEstimator):
+class Connectivities(Coherences):
     """Getting connectivity features from epoch"""
 
-    def __init__(self, method="ordinary", fmin=8, fmax=35, fs=None):
-        self.method = method
-        self.fmin = fmin
-        self.fmax = fmax
-        self.fs = fs
-
-    def fit(self, X, y=None):
-        self._coh = Coherences(
-            coh=self.method,
-            fmin=self.fmin,
-            fmax=self.fmax,
-            fs=self.fs,
-        )
-        return self
-
     def transform(self, X):
-        X_coh = self._coh.fit_transform(X)
+        X_coh = super().transform(X)
         X_con = np.mean(X_coh, axis=-1, keepdims=False)
         return X_con
 
@@ -166,7 +149,7 @@ for sm in spectral_met:
             steps=[("cov", Covariances(estimator="lwf"))] + step_fc
         )
     else:
-        ft = Connectivities(**param_ft, method=sm)
+        ft = Connectivities(**param_ft, coh=sm)
         ppl_fc[pname] = Pipeline(steps=[("ft", ft)] + step_fc)
 
 ###############################################################################

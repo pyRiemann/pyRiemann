@@ -148,8 +148,9 @@ class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
         If None, all available matrices are used.
         If ``n_neighbors > n_matrices``, ``n_neighbors`` is set to
         ``n_matrices - 1``.
-    metric : {"euclid", "logeuclid", "riemann"}, default: "riemann"
-        Metric used for k-NN and kernel estimation.
+    metric : string, default="riemann"
+        Metric used for k-NN and kernel estimation. For the list of supported
+        metrics, see :func:`pyriemann.utils.kernel.kernel`.
     kernel : callable | None, default=None
         Kernel function to use for the embedding. If None, the canonical
         kernel specified by the metric is used. Must be a function that
@@ -300,8 +301,9 @@ def barycenter_weights(X, Y, indices, metric="riemann", kernel=None, reg=1e-3):
         Set of SPD matrices.
     indices : ndarray, shape (n_matrices, n_neighbors)
         Indices of matrices in Y used to compute the barycenter.
-    metric : {"euclid", "logeuclid", "riemann"}, default="riemann"
-        Kernel metric.
+    metric : string, default="riemann"
+        Kernel metric. For the list of supported metrics, see
+        :func:`pyriemann.utils.kernel.kernel`.
     kernel : callable | None, default=None
         Kernel function to use for the embedding. If None, the canonical
         kernel specified by the metric is used. Must be a function that
@@ -375,8 +377,9 @@ def locally_linear_embedding(
         If None, all available matrices are used.
         If ``n_neighbors > n_matrices``, ``n_neighbors`` is set to
         ``n_matrices - 1``.
-    metric : {"euclid", "logeuclid", "riemann"}, default: "riemann"
-        Metric used for k-NN and kernel estimation.
+    metric : string, default="riemann"
+        Metric used for k-NN and kernel estimation. For the list of supported
+        metrics, see :func:`pyriemann.utils.kernel.kernel`.
     kernel : callable | None, default=None
         Kernel function to use for the embedding. If None, the canonical
         kernel specified by the metric is used. Must be a function that
