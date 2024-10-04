@@ -17,23 +17,23 @@ import os
 from pathlib import Path
 import urllib.request
 
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
 from sklearn.base import BaseEstimator, TransformerMixin
+from sklearn.model_selection import GridSearchCV, StratifiedKFold
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import FunctionTransformer
-from sklearn.model_selection import GridSearchCV, StratifiedKFold
 
-from pyriemann.utils.covariance import cov_est_functions
+from pyriemann.classification import SVC
 from pyriemann.estimation import (
     Covariances,
     Kernels,
     Shrinkage,
-    BlockCovariances
+    BlockCovariances,
+    kernel_functions,
 )
-from pyriemann.estimation import kernel_functions
-from pyriemann.classification import SVC
+from pyriemann.utils.covariance import cov_est_functions
 
 
 ###############################################################################
@@ -128,7 +128,7 @@ class BlockKernels(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_samples, n_channels, n_times)
+        X : ndarray, shape (n_matrices, n_channels, n_times)
             Multi-channel time series.
         y : None
             Not used, here for compatibility with scikit-learn API.
@@ -138,7 +138,7 @@ class BlockKernels(BaseEstimator, TransformerMixin):
         self : BlockKernels instance
             The BlockKernels instance.
         """
-        n_samples, n_channels, n_times = X.shape
+        n_matrices, n_channels, n_times = X.shape
 
         self.blocks = BlockCovariances._check_block_size(
             self.block_size,
@@ -253,19 +253,19 @@ class BlockKernels(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_samples, n_channels, n_times)
+        X : ndarray, shape (n_matrices, n_channels, n_times)
             Multi-channel time series.
 
         Returns
         -------
-        M : ndarray, shape (n_samples, n_channels, n_channels)
+        M : ndarray, shape (n_matrices, n_channels, n_channels)
             Block matrices (kernel or covariance matrices).
         """
-        n_samples, n_channels, n_times = X.shape
+        n_matrices, n_channels, n_times = X.shape
 
         M_matrices = []
 
-        for i in range(n_samples):
+        for i in range(n_matrices):
             M_blocks = []
             for idx, transformer in enumerate(self.transformers):
                 # Apply transformer to the current sample
@@ -342,12 +342,10 @@ channel_index = 2
 plt.figure(figsize=(10, 5))
 plt.plot(X_MT_erp[channel_index, :], label="HbO", color="red")
 plt.plot(X_MT_erp[channel_index + 62, :], label="HbR", color="blue")
-
-plt.xlabel("Samples")
+plt.xlabel("Time samples")
 plt.ylabel("Signal Amplitude")
 plt.title(f"ERP for OP [Own Paradigm] trials in channel {channel_index}")
 plt.legend()
-
 plt.show()
 
 ###############################################################################
@@ -358,7 +356,7 @@ plt.show()
 pipeline = Pipeline(
     [
         ("block_kernels", BlockKernels(block_size=block_size)),
-        ("classifier", SVC()),
+        ("classifier", SVC(metric="riemann")),
     ]
 )
 
@@ -371,7 +369,6 @@ param_grid = {
     "block_kernels__metric": metric_combinations,
     "block_kernels__shrinkage": shrinkage_values,
     "classifier__C": [0.1, 1],
-    "classifier__metric": ["riemann", "logeuclid"],
 }
 
 # Define cross-validation
@@ -436,5 +433,3 @@ print(
 # .. [1] `Riemannian Geometry for the classification of brain states with fNIRS
 #    <https://www.biorxiv.org/content/10.1101/2024.09.06.611347v1>`_
 #    T. Näher, L. Bastian, A. Vorreuther, P. Fries, R. Goebel, B. Sorger.
-
-# %%
