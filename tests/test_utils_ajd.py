@@ -40,25 +40,12 @@ def test_ajd(method, algo, get_mats):
 @pytest.mark.parametrize("init", [True, False])
 def test_ajd_init(method, init, get_mats_params):
     """Test init for ajd algos"""
-    n_matrices, n_channels = 9, 4
+    n_matrices, n_channels = 6, 4
     mats, _, evecs = get_mats_params(n_matrices, n_channels, "spd")
     if init:
         ajd(mats, method=method, init=evecs)
     else:
         ajd(mats, method=method)
-
-
-@pytest.mark.parametrize("method", ["rjd", "ajd_pham", "uwedge"])
-def test_ajd_init_error(method, get_mats):
-    """Test init errors for ajd algos"""
-    n_matrices, n_channels = 4, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
-    with pytest.raises(ValueError):  # not 2D array
-        ajd(mats, method=method, init=np.ones((3, 2, 2)))
-    with pytest.raises(ValueError):  # not square array
-        ajd(mats, method=method, init=np.ones((3, 2)))
-    with pytest.raises(ValueError):  # shape not equal to n_channels
-        ajd(mats, method=method, init=np.ones((2, 2)))
 
 
 @pytest.mark.parametrize("method", ["abc", 42])

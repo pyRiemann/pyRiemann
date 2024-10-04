@@ -76,13 +76,6 @@ def test_mean_init(kind, mean, get_mats):
         M = mean(mats, init=init)
     assert M.shape == (n_channels, n_channels)
 
-    with pytest.raises(ValueError):
-        init = np.array([1, 2, 3])
-        if mean == mean_power:
-            M = mean(mats, 0.123, init=init)
-        else:
-            M = mean(mats, init=init)
-
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize(

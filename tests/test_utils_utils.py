@@ -1,7 +1,12 @@
 import numpy as np
 import pytest
 
-from pyriemann.utils.utils import check_weights, check_metric, check_function
+from pyriemann.utils.utils import (
+    check_weights,
+    check_metric,
+    check_function,
+    check_init,
+)
 
 
 @pytest.mark.parametrize("n_matrices", [3, 4, 5])
@@ -69,3 +74,18 @@ def test_check_function():
 
     with pytest.raises(ValueError):  # not str or callable
         check_function(0.5, available_funs)
+
+
+def test_check_init():
+    with pytest.raises(ValueError):  # not array
+        check_init(init="init", n=3)
+    with pytest.raises(ValueError):  # not 2D array
+        check_init(init=np.ones((3, 2, 2)), n=3)
+    with pytest.raises(ValueError):  # not 2D array
+        check_init(init=[1, 2, 3], n=3)
+    with pytest.raises(ValueError):  # not 2D array
+        check_init(init=1, n=3)
+    with pytest.raises(ValueError):  # not square array
+        check_init(init=np.ones((3, 2)), n=3)
+    with pytest.raises(ValueError):  # shape not equal to n
+        check_init(init=np.ones((2, 2)), n=3)
