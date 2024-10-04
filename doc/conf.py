@@ -76,7 +76,7 @@ sphinx_gallery_conf = {
         '../examples/biosignal-erp',
         '../examples/biosignal-ssvep',
         '../examples/artifacts',
-        '../examples/fNIRS',
+        '../examples/fnirs',
         '../examples/remote-sensing',
         '../examples/transfer',
         '../examples/stats',
