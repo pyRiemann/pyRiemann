@@ -8,17 +8,7 @@ from .ajd import ajd_pham
 from .base import sqrtm, invsqrtm, logm, expm, powm
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann
-from .utils import check_weights, check_function
-
-
-def _check_init(init, n):
-    init = np.asarray(init)
-    if init.shape != (n, n):
-        raise ValueError(
-            "Init matrix does not have the good shape. "
-            f"Should be ({n},{n}) but got {init.shape}."
-        )
-    return init
+from .utils import check_weights, check_function, check_init
 
 
 def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
@@ -66,7 +56,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     if init is None:
         B = ajd_pham(X)[0]
     else:
-        B = _check_init(init, n)
+        B = check_init(init, n)
 
     eye_n = np.eye(n)
     crit = np.inf
@@ -374,7 +364,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     if init is None:
         M = mean_euclid(X, sample_weight=sample_weight)
     else:
-        M = _check_init(init, n)
+        M = check_init(init, n)
 
     crit = np.finfo(np.float64).max
     for _ in range(maxiter):
@@ -500,7 +490,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     if init is None:
         G = powm(np.einsum("a,abc->bc", sample_weight, powm(X, p)), 1/p)
     else:
-        G = _check_init(init, n)
+        G = check_init(init, n)
     if p > 0:
         K = invsqrtm(G)
     else:
@@ -626,7 +616,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     if init is None:
         M = mean_euclid(X, sample_weight=sample_weight)
     else:
-        M = _check_init(init, n)
+        M = check_init(init, n)
 
     nu = 1.0
     tau = np.finfo(np.float64).max
@@ -698,7 +688,7 @@ def mean_wasserstein(X, tol=10e-4, maxiter=50, init=None, sample_weight=None):
     if init is None:
         init = mean_euclid(X, sample_weight=sample_weight)
     else:
-        init = _check_init(init, n)
+        init = check_init(init, n)
     K = sqrtm(init)
 
     crit = np.finfo(np.float64).max
@@ -861,7 +851,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
     if init is None:
         M = np.eye(n)
     else:
-        M = _check_init(init, n)
+        M = check_init(init, n)
 
     nu = 1.0
     tau = np.finfo(np.float64).max
@@ -937,7 +927,7 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
     if init is None:
         init = np.nanmean(X, axis=0) + 1e-6 * np.eye(n)
     else:
-        init = _check_init(init, n)
+        init = check_init(init, n)
 
     M = maskedmean_riemann(
         np.nan_to_num(X),  # avoid nan contamination in matmul
