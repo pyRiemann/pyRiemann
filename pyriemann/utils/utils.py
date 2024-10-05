@@ -178,3 +178,31 @@ def check_function(fun, functions):
         raise ValueError("Argument must be a string or a callable "
                          f"(Got {type(fun)}).")
     return fun
+
+
+def check_init(init, n):
+    """Check the initial matrix.
+
+    Parameters
+    ----------
+    init : ndarray, shape (n, n)
+        A square matrix used to initialize the algorithm.
+    n : int
+        Expected dimension of the matrix.
+
+    Returns
+    -------
+    init : ndarray, shape (n, n)
+        The checked square matrix used to initialize the algorithm.
+
+    Notes
+    -----
+    .. versionadded:: 0.8
+    """
+    init = np.asarray(init)
+    if init.shape != (n, n):
+        raise ValueError(
+            "Init matrix does not have the good shape. "
+            f"Should be ({n},{n}) but got {init.shape}."
+        )
+    return init
