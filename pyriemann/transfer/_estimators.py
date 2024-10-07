@@ -634,7 +634,7 @@ class TlTsCenter(BaseEstimator, TransformerMixin):
 
     Notes
     -----
-    .. versionadded:: 0.7
+    .. versionadded:: 0.8
     """
 
     def __init__(self, target_domain):
@@ -737,7 +737,7 @@ class TlTsNormalize(BaseEstimator, TransformerMixin):
 
     Notes
     -----
-    .. versionadded:: 0.7
+    .. versionadded:: 0.8
     """
 
     def __init__(self, target_domain):
@@ -875,7 +875,7 @@ class TlTsRotate(BaseEstimator, TransformerMixin):
 
     Notes
     -----
-    .. versionadded:: 0.7
+    .. versionadded:: 0.8
     """
 
     def __init__(
