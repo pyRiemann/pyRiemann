@@ -1,8 +1,9 @@
 """Means of SPD/HPD matrices."""
 
 from copy import deepcopy
-import numpy as np
 import warnings
+
+import numpy as np
 
 from .ajd import ajd_pham
 from .base import sqrtm, invsqrtm, logm, expm, powm
@@ -720,12 +721,14 @@ mean_functions = {
     "logdet": mean_logdet,
     "logchol": mean_logchol,
     "logeuclid": mean_logeuclid,
+    "power": mean_power,
+    "poweuclid": mean_poweuclid,
     "riemann": mean_riemann,
     "wasserstein": mean_wasserstein,
 }
 
 
-def mean_covariance(X, metric="riemann", sample_weight=None, **kwargs):
+def mean_covariance(X, *args, metric="riemann", sample_weight=None, **kwargs):
     """Mean of matrices according to a metric.
 
     Compute the mean of a set of matrices according to a metric [1]_.
@@ -734,11 +737,14 @@ def mean_covariance(X, metric="riemann", sample_weight=None, **kwargs):
     ----------
     X : ndarray, shape (n_matrices, n, n)
         Set of matrices.
+    *args : list
+        The arguments passed to the sub function.
     metric : string | callable, default="riemann"
         Metric for mean estimation, can be:
         "ale", "alm", "euclid", "harmonic", "identity", "kullback_sym",
         "logchol", "logdet", "logeuclid", "riemann", "wasserstein",
         or a callable function.
+        If an exponent is given in args, it can be "power", "poweuclid".
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
     **kwargs : dict
@@ -760,6 +766,7 @@ def mean_covariance(X, metric="riemann", sample_weight=None, **kwargs):
     mean_function = check_function(metric, mean_functions)
     M = mean_function(
         X,
+        *args,
         sample_weight=sample_weight,
         **kwargs,
     )
