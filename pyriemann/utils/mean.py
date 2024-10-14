@@ -728,6 +728,17 @@ mean_functions = {
 }
 
 
+def _deprecate(metric, *args):
+    args = list(args)
+    for m in mean_functions.keys():
+        if m in args:
+            metric = m
+            args.remove(m)
+            warnings.warn("Parameter metric will be a strict keyword argument "
+                          "in 0.10.0.", category=DeprecationWarning)
+    return args, metric
+
+
 def mean_covariance(X, *args, metric="riemann", sample_weight=None, **kwargs):
     """Mean of matrices according to a metric.
 
@@ -737,7 +748,7 @@ def mean_covariance(X, *args, metric="riemann", sample_weight=None, **kwargs):
     ----------
     X : ndarray, shape (n_matrices, n, n)
         Set of matrices.
-    *args : list
+    *args : tuple
         The arguments passed to the sub function.
     metric : string | callable, default="riemann"
         Metric for mean estimation, can be:
@@ -763,6 +774,7 @@ def mean_covariance(X, *args, metric="riemann", sample_weight=None, **kwargs):
         S. Chevallier, E. K. Kalunga, Q. Barthélemy, E. Monacelli.
         Neuroinformatics, Springer, 2021, 19 (1), pp.93-106
     """
+    args, metric = _deprecate(metric, *args)
     mean_function = check_function(metric, mean_functions)
     M = mean_function(
         X,
