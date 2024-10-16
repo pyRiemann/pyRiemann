@@ -1,17 +1,18 @@
 """Means of SPD/HPD matrices."""
 
 from copy import deepcopy
-import numpy as np
 import warnings
+
+import numpy as np
 
 from .ajd import ajd_pham
 from .base import sqrtm, invsqrtm, logm, expm, powm
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann
-from .utils import check_weights, check_function
+from .utils import check_weights, check_function, check_init
 
 
-def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None):
+def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     """AJD-based log-Euclidean (ALE) mean of SPD matrices.
 
     Return the mean of a set of SPD matrices using the approximate joint
@@ -27,6 +28,9 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None):
         The maximum number of iterations.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
+    init : None | ndarray, shape (n, n), default=None
+        A SPD/HPD matrix used to initialize the gradient descent.
+        If None, the joint diagonalizer of input matrices is used.
 
     Returns
     -------
@@ -50,9 +54,10 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None):
     """
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
-
-    # init with AJD
-    B = ajd_pham(X)[0]
+    if init is None:
+        B = ajd_pham(X)[0]
+    else:
+        B = check_init(init, n)
 
     eye_n = np.eye(n)
     crit = np.inf
@@ -304,7 +309,6 @@ def mean_logchol(X, sample_weight=None):
     sample_weight = check_weights(sample_weight, n_matrices)
 
     X_chol = np.linalg.cholesky(X)
-
     mean = np.zeros(X.shape[-2:], dtype=X.dtype)
 
     tri0, tri1 = np.tril_indices(n_channels, -1)
@@ -356,12 +360,12 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     --------
     mean_covariance
     """
-    n_matrices, _, _ = X.shape
+    n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
         M = mean_euclid(X, sample_weight=sample_weight)
     else:
-        M = init
+        M = check_init(init, n)
 
     crit = np.finfo(np.float64).max
     for _ in range(maxiter):
@@ -484,11 +488,10 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
     phi = 0.375 / np.abs(p)
-
     if init is None:
         G = powm(np.einsum("a,abc->bc", sample_weight, powm(X, p)), 1/p)
     else:
-        G = init
+        G = check_init(init, n)
     if p > 0:
         K = invsqrtm(G)
     else:
@@ -609,12 +612,12 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         <https://epubs.siam.org/doi/10.1137/S0895479803436937>`_
         M. Moakher. SIAM J Matrix Anal Appl, 2005, 26 (3), pp. 735-747
     """
-    n_matrices, _, _ = X.shape
+    n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
         M = mean_euclid(X, sample_weight=sample_weight)
     else:
-        M = init
+        M = check_init(init, n)
 
     nu = 1.0
     tau = np.finfo(np.float64).max
@@ -681,13 +684,13 @@ def mean_wasserstein(X, tol=10e-4, maxiter=50, init=None, sample_weight=None):
         <https://ieeexplore.ieee.org/document/6042179>`_
         F. Barbaresco. 12th International Radar Symposium (IRS), October 2011
     """
-    n_matrices, _, _ = X.shape
+    n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
-        M = mean_euclid(X, sample_weight=sample_weight)
+        init = mean_euclid(X, sample_weight=sample_weight)
     else:
-        M = init
-    K = sqrtm(M)
+        init = check_init(init, n)
+    K = sqrtm(init)
 
     crit = np.finfo(np.float64).max
     for _ in range(maxiter):
@@ -718,12 +721,25 @@ mean_functions = {
     "logdet": mean_logdet,
     "logchol": mean_logchol,
     "logeuclid": mean_logeuclid,
+    "power": mean_power,
+    "poweuclid": mean_poweuclid,
     "riemann": mean_riemann,
     "wasserstein": mean_wasserstein,
 }
 
 
-def mean_covariance(X, metric="riemann", sample_weight=None, **kwargs):
+def _deprecate(metric, *args):
+    args = list(args)
+    for m in mean_functions.keys():
+        if m in args:
+            metric = m
+            args.remove(m)
+            warnings.warn("Parameter metric will be a strict keyword argument "
+                          "in 0.10.0.", category=DeprecationWarning)
+    return args, metric
+
+
+def mean_covariance(X, *args, metric="riemann", sample_weight=None, **kwargs):
     """Mean of matrices according to a metric.
 
     Compute the mean of a set of matrices according to a metric [1]_.
@@ -732,11 +748,14 @@ def mean_covariance(X, metric="riemann", sample_weight=None, **kwargs):
     ----------
     X : ndarray, shape (n_matrices, n, n)
         Set of matrices.
+    *args : tuple
+        The arguments passed to the sub function.
     metric : string | callable, default="riemann"
         Metric for mean estimation, can be:
         "ale", "alm", "euclid", "harmonic", "identity", "kullback_sym",
         "logchol", "logdet", "logeuclid", "riemann", "wasserstein",
         or a callable function.
+        If an exponent is given in args, it can be "power", "poweuclid".
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
     **kwargs : dict
@@ -755,9 +774,11 @@ def mean_covariance(X, metric="riemann", sample_weight=None, **kwargs):
         S. Chevallier, E. K. Kalunga, Q. Barthélemy, E. Monacelli.
         Neuroinformatics, Springer, 2021, 19 (1), pp.93-106
     """
+    args, metric = _deprecate(metric, *args)
     mean_function = check_function(metric, mean_functions)
     M = mean_function(
         X,
+        *args,
         sample_weight=sample_weight,
         **kwargs,
     )
@@ -849,7 +870,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
     if init is None:
         M = np.eye(n)
     else:
-        M = init
+        M = check_init(init, n)
 
     nu = 1.0
     tau = np.finfo(np.float64).max
@@ -923,16 +944,16 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
     """
     n_matrices, n, _ = X.shape
     if init is None:
-        Minit = np.nanmean(X, axis=0) + 1e-6 * np.eye(n)
+        init = np.nanmean(X, axis=0) + 1e-6 * np.eye(n)
     else:
-        Minit = init
+        init = check_init(init, n)
 
     M = maskedmean_riemann(
         np.nan_to_num(X),  # avoid nan contamination in matmul
         _get_masks_from_nan(X),
         tol=tol,
         maxiter=maxiter,
-        init=Minit,
+        init=init,
         sample_weight=sample_weight
     )
     return M

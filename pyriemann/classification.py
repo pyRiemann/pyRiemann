@@ -10,7 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 
 from .utils.kernel import kernel
-from .utils.mean import mean_covariance, mean_power
+from .utils.mean import mean_covariance
 from .utils.distance import distance
 from .utils.utils import check_metric
 from .tangentspace import FGDA, TangentSpace
@@ -834,10 +834,11 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         for p in self.power_list:
             means_p = {}
             for c in self.classes_:
-                means_p[c] = mean_power(
+                means_p[c] = mean_covariance(
                     X[y == c],
                     p,
-                    sample_weight=sample_weight[y == c]
+                    metric="power",
+                    sample_weight=sample_weight[y == c],
                 )
             self.covmeans_[p] = means_p
 
@@ -848,7 +849,10 @@ class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
         for ip, p in enumerate(self.power_list):
             for ic, c in enumerate(self.classes_):
                 m[ip, ic] = distance(
-                    x, self.covmeans_[p][c], metric=self.metric, squared=True
+                    x,
+                    self.covmeans_[p][c],
+                    metric=self.metric,
+                    squared=True,
                 )
 
         if self.method_label == "sum_means":

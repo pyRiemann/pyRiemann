@@ -4,15 +4,7 @@ import warnings
 
 import numpy as np
 
-from .utils import check_weights, check_function
-
-
-def _check_init_diag(init, n):
-    if init.shape != (n, n):
-        raise ValueError(
-            "Initial diagonalizer shape must be %d x % d (Got %s)."
-            % (n, n, init.shape,))
-    return init
+from .utils import check_weights, check_function, check_init
 
 
 def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
@@ -66,7 +58,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     if init is None:
         V = np.eye(n)
     else:
-        V = _check_init_diag(init, n)
+        V = check_init(init, n)
 
     for _ in range(n_iter_max):
         crit = False
@@ -166,7 +158,7 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     if init is None:
         V = np.eye(n)
     else:
-        V = _check_init_diag(init, n)
+        V = check_init(init, n)
     V = V.astype(X.dtype)
     epsilon = n * (n - 1) * eps
 
@@ -280,7 +272,7 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
         E, H = np.linalg.eig(M[:, 0:n])
         V = H.T / np.sqrt(np.abs(E))[:, np.newaxis]
     else:
-        V = _check_init_diag(init, n)
+        V = check_init(init, n)
 
     Ms = np.array(M)
     Rs = np.zeros((n, n_matrices))

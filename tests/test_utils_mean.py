@@ -56,6 +56,7 @@ def test_mean(kind, mean, get_mats):
 @pytest.mark.parametrize(
     "mean",
     [
+        mean_ale,
         mean_logdet,
         mean_power,
         mean_riemann,
@@ -65,12 +66,14 @@ def test_mean(kind, mean, get_mats):
 )
 def test_mean_init(kind, mean, get_mats):
     """Test the shape of mean with init"""
-    n_matrices, n_channels = 5, 3
+    n_matrices, n_channels = 4, 3
     mats = get_mats(n_matrices, n_channels, kind)
+
+    init = mats[0]
     if mean == mean_power:
-        M = mean(mats, 0.123, init=mats[0])
+        M = mean(mats, 0.123, init=init)
     else:
-        M = mean(mats, init=mats[0])
+        M = mean(mats, init=init)
     assert M.shape == (n_channels, n_channels)
 
 
@@ -386,6 +389,8 @@ def callable_np_average(X, sample_weight=None):
         ("logchol", mean_logchol),
         ("logdet", mean_logdet),
         ("logeuclid", mean_logeuclid),
+        ("power", mean_power),
+        ("poweuclid", mean_poweuclid),
         ("riemann", mean_riemann),
         ("wasserstein", mean_wasserstein),
         (callable_np_average, mean_euclid),
@@ -395,15 +400,31 @@ def test_mean_covariance_metric(metric, mean, get_mats):
     """Test mean_covariance for metric"""
     n_matrices, n_channels = 3, 3
     mats = get_mats(n_matrices, n_channels, "spd")
-    C = mean_covariance(mats, metric=metric)
-    Ctrue = mean(mats)
-    assert np.all(C == Ctrue)
+    if metric in ["power", "poweuclid"]:
+        p = 0.1
+        assert mean(mats, p) == approx(mean_covariance(mats, p, metric=metric))
+    else:
+        assert mean(mats) == approx(mean_covariance(mats, metric=metric))
 
 
-def test_mean_covariance_args(get_mats):
-    """Test mean_covariance with different arguments"""
+def test_mean_covariance_arguments(get_mats):
+    """Test mean_covariance with different args and kwargs"""
     n_matrices, n_channels = 3, 3
     mats = get_mats(n_matrices, n_channels, "spd")
+
+    mean_covariance(mats)
+    mean_covariance(mats, 0.2, metric="power", zeta=10e-3)
+    mean_covariance(mats, 0.3, metric="poweuclid", sample_weight=None)
+
     mean_covariance(mats, metric="ale", maxiter=5)
     mean_covariance(mats, metric="logdet", tol=10e-3)
     mean_covariance(mats, metric="riemann", init=np.eye(n_channels))
+
+
+def test_mean_covariance_deprecation(get_mats):
+    import warnings
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        mean_covariance(get_mats(3, 2, "spd"), "euclid")
+        assert len(w) >= 1
+        assert issubclass(w[-1].category, DeprecationWarning)
