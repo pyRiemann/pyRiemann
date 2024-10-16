@@ -472,11 +472,11 @@ class SPoC(CSP):
         target -= target.mean()
         target /= target.std()
 
-        C = mean_covariance(X, self.metric)
+        C = mean_covariance(X, metric=self.metric)
         Ce = np.zeros_like(X)
         for i in range(Ce.shape[0]):
             Ce[i] = X[i] * target[i]
-        Cz = mean_covariance(Ce, self.metric)
+        Cz = mean_covariance(Ce, metric=self.metric)
 
         # solve eigenvalue decomposition
         evals, evecs = eigh(Cz, C)
