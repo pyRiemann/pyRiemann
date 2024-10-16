@@ -21,39 +21,36 @@ from ..utils.mean import mean_covariance, mean_riemann
 from ..utils.utils import check_weights, check_metric
 from ._rotate import _get_rotation_matrix
 from ._tools import decode_domains
+from ..utils import deprecated
 
 
 ###############################################################################
 
 
-class TLDummy(BaseEstimator, TransformerMixin):
-    """No transformation on matrices for transfer learning.
+class TlDummy(BaseEstimator, TransformerMixin):
+    """No transformation for transfer learning.
 
-    No transformation of the matrices between the domains.
-    This is what we call the Direct Center Transfer (DCT) method.
+    No transformation of data between the domains.
 
     Notes
     -----
     .. versionadded:: 0.4
     """
 
-    def __init__(self):
-        pass
-
     def fit(self, X, y_enc=None):
         """Do nothing.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+        X : ndarray, shape (n, ...)
+            Input data.
         y_enc : None
             Not used, here for compatibility with sklearn API.
 
         Returns
         -------
-        self : TLDummy instance
-            The TLDummy instance.
+        self : TlDummy instance
+            The TlDummy instance.
         """
         return self
 
@@ -62,13 +59,13 @@ class TLDummy(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+        X : ndarray, shape (n, ...)
+            Input data.
 
         Returns
         -------
-        X_new : ndarray, shape (n_matrices, n_classes)
-            Same set of SPD matrices as in the input.
+        X_new : ndarray, shape (n, ...)
+            Same data as in the input.
         """
         return X
 
@@ -77,17 +74,25 @@ class TLDummy(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+        X : ndarray, shape (n, ...)
+            Input data.
         y_enc : None
             Not used, here for compatibility with sklearn API.
 
         Returns
         -------
-        X_new : ndarray, shape (n_matrices, n_classes)
-            Same set of SPD matrices as in the input.
+        X_new : ndarray
+            Same data as in the input.
         """
         return self.fit(X, y_enc).transform(X)
+
+
+@deprecated(
+    "TLDummy is deprecated and will be removed in 0.10.0; "
+    "please use TlDummy."
+)
+class TLDummy(TlDummy):
+    pass
 
 
 class TLCenter(BaseEstimator, TransformerMixin):
@@ -123,6 +128,10 @@ class TLCenter(BaseEstimator, TransformerMixin):
     recenter_ : dict
         If fit, dictionary with key=domain_name and value=domain_mean.
 
+    Notes
+    -----
+    .. versionadded:: 0.4
+
     References
     ----------
     .. [1] `Transfer Learning: A Riemannian Geometry Framework With
@@ -134,10 +143,6 @@ class TLCenter(BaseEstimator, TransformerMixin):
         A Euclidean Space Data Alignment Approach
         <https://arxiv.org/abs/1808.05464>`_
         He He and Dongrui Wu, IEEE Transactions on Biomedical Engineering, 2019
-
-    Notes
-    -----
-    .. versionadded:: 0.4
     """
 
     def __init__(self, target_domain, metric="riemann"):
@@ -269,6 +274,10 @@ class TLStretch(BaseEstimator, TransformerMixin):
     dispersions_ : dict
         Dictionary with key=domain_name and value=domain_dispersion.
 
+    Notes
+    -----
+    .. versionadded:: 0.4
+
     References
     ----------
     .. [1] `Riemannian Procrustes analysis: transfer learning for
@@ -276,10 +285,6 @@ class TLStretch(BaseEstimator, TransformerMixin):
         <https://hal.archives-ouvertes.fr/hal-01971856>`_
         PLC Rodrigues et al, IEEE Transactions on Biomedical Engineering,
         vol. 66, no. 8, pp. 2390-2401, December, 2018
-
-    Notes
-    -----
-    .. versionadded:: 0.4
     """
 
     def __init__(
@@ -473,6 +478,10 @@ class TLRotate(BaseEstimator, TransformerMixin):
     --------
     TLCenter
 
+    Notes
+    -----
+    .. versionadded:: 0.4
+
     References
     ----------
     .. [1] `Riemannian Procrustes analysis: transfer learning for
@@ -483,10 +492,6 @@ class TLRotate(BaseEstimator, TransformerMixin):
     .. [2] `An introduction to optimization on smooth manifolds
         <https://www.nicolasboumal.net/book/>`_
         N. Boumal. To appear with Cambridge University Press. June, 2022
-
-    Notes
-    -----
-    .. versionadded:: 0.4
     """
 
     def __init__(self, target_domain, weights=None, metric="euclid", n_jobs=1):
@@ -865,6 +870,10 @@ class TlTsRotate(BaseEstimator, TransformerMixin):
     TlTsCenter
     TlTsNormalize
 
+    Notes
+    -----
+    .. versionadded:: 0.8
+
     References
     ----------
     .. [1] `Tangent space alignment: Transfer learning for brain-computer
@@ -872,10 +881,6 @@ class TlTsRotate(BaseEstimator, TransformerMixin):
         <https://www.frontiersin.org/articles/10.3389/fnhum.2022.1049985/pdf>`_
         A. Bleuzé, J. Mattout and M. Congedo, Frontiers in Human Neuroscience,
         2022
-
-    Notes
-    -----
-    .. versionadded:: 0.8
     """
 
     def __init__(
@@ -1040,11 +1045,11 @@ class TlTsRotate(BaseEstimator, TransformerMixin):
 ###############################################################################
 
 
-class TLEstimator(BaseEstimator):
+class TlEstimator(BaseEstimator):
     """Transfer learning wrapper for estimators.
 
-    This is a wrapper for any BaseEstimator (i.e. classifier or regressor) that
-    converts extended labels used in Transfer Learning into the usual y array
+    This is a wrapper for any BaseEstimator (classifier or regressor) that
+    converts extended labels used in transfer learning into the usual y array
     to train a classifier/regressor of choice.
 
     Parameters
@@ -1052,12 +1057,17 @@ class TLEstimator(BaseEstimator):
     target_domain : str
         Domain to consider as target.
     estimator : BaseEstimator
-        The estimator to apply on matrices. It can be any regressor or
-        classifier from pyRiemann.
+        The estimator to apply on data. It can be any regressor or classifier
+        from pyRiemann.
     domain_weight : None | dict, default=None
-        Weights to combine matrices from each domain to train the estimator.
+        Weights to combine data from each domain to train the estimator.
         The dict contains key=domain_name and value=weight_to_assign.
         If None, it uses equal weights.
+
+    See Also
+    --------
+    TlClassifier
+    TlRegressor
 
     Notes
     -----
@@ -1071,19 +1081,19 @@ class TLEstimator(BaseEstimator):
         self.estimator = estimator
 
     def fit(self, X, y_enc):
-        """Fit TLEstimator.
+        """Fit TlEstimator.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
+        X : ndarray, shape (n, ...)
+            Input data.
+        y_enc : ndarray, shape (n,)
+            Extended labels for each datum.
 
         Returns
         -------
-        self : TLEstimator instance
-            The TLEstimator instance.
+        self : TlEstimator instance
+            The TlEstimator instance.
         """
         if not (is_regressor(self.estimator) or is_classifier(self.estimator)):
             raise TypeError(
@@ -1118,22 +1128,30 @@ class TLEstimator(BaseEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+        X : ndarray, shape (n, ...)
+            Input data.
 
         Returns
         -------
-        pred : ndarray, shape (n_matrices,)
-            Predictions for each matrix according to the estimator.
+        pred : ndarray, shape (n,)
+            Predictions according to the estimator.
         """
         return self.estimator.predict(X)
 
 
-class TLClassifier(TLEstimator):
+@deprecated(
+    "TLEstimator is deprecated and will be removed in 0.10.0; "
+    "please use TlEstimator."
+)
+class TLEstimator(TlEstimator):
+    pass
+
+
+class TlClassifier(TlEstimator):
     """Transfer learning wrapper for classifiers.
 
     This is a wrapper for any classifier that converts extended labels used in
-    Transfer Learning into the usual y array to train a classifier of choice.
+    transfer learning into the usual y array to train a classifier of choice.
 
     Parameters
     ----------
@@ -1142,9 +1160,13 @@ class TLClassifier(TLEstimator):
     estimator : BaseClassifier
         The classifier to apply on matrices.
     domain_weight : None | dict, default=None
-        Weights to combine matrices from each domain to train the classifier.
+        Weights to combine data from each domain to train the classifier.
         The dict contains key=domain_name and value=weight_to_assign.
         If None, it uses equal weights.
+
+    See Also
+    --------
+    TlRegressor
 
     Notes
     -----
@@ -1152,19 +1174,19 @@ class TLClassifier(TLEstimator):
     """
 
     def fit(self, X, y_enc):
-        """Fit TLClassifier.
+        """Fit TlClassifier.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
+        X : ndarray, shape (n, ...)
+            Input data.
+        y_enc : ndarray, shape (n,)
+            Extended labels for each datum.
 
         Returns
         -------
-        self : TLClassifier instance
-            The TLClassifier instance.
+        self : TlClassifier instance
+            The TlClassifier instance.
         """
         if not is_classifier(self.estimator):
             raise TypeError("Estimator has to be a classifier.")
@@ -1176,13 +1198,13 @@ class TLClassifier(TLEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+        X : ndarray, shape (n, ...)
+            Input data.
 
         Returns
         -------
-        pred : ndarray, shape (n_matrices, n_classes)
-            Predictions for each matrix.
+        pred : ndarray, shape (n, n_classes)
+            Predictions for each datum.
         """
         return self.estimator.predict_proba(X)
 
@@ -1191,10 +1213,10 @@ class TLClassifier(TLEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Test set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended true labels for each matrix.
+        X : ndarray, shape (n, ...)
+            Test set of input data.
+        y_enc : ndarray, shape (n,)
+            Extended true labels for each datum.
 
         Returns
         -------
@@ -1206,11 +1228,19 @@ class TLClassifier(TLEstimator):
         return accuracy_score(y_true, y_pred)
 
 
-class TLRegressor(TLEstimator):
+@deprecated(
+    "TLClassifier is deprecated and will be removed in 0.10.0; "
+    "please use TlClassifier."
+)
+class TLClassifier(TlClassifier):
+    pass
+
+
+class TlRegressor(TlEstimator):
     """Transfer learning wrapper for regressors.
 
     This is a wrapper for any regressor that converts extended labels used in
-    Transfer Learning into the usual y array to train a regressor of choice.
+    transfer learning into the usual y array to train a regressor of choice.
 
     Parameters
     ----------
@@ -1219,9 +1249,13 @@ class TLRegressor(TLEstimator):
     estimator : BaseRegressor
         The regressor to apply on matrices.
     domain_weight : None | dict, default=None
-        Weights to combine matrices from each domain to train the regressor.
+        Weights to combine data from each domain to train the regressor.
         The dict contains key=domain_name and value=weight_to_assign.
         If None, it uses equal weights.
+
+    See Also
+    --------
+    TlClassifier
 
     Notes
     -----
@@ -1229,19 +1263,19 @@ class TLRegressor(TLEstimator):
     """
 
     def fit(self, X, y_enc):
-        """Fit TLRegressor.
+        """Fit TlRegressor.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
+        X : ndarray, shape (n, ...)
+            Input data.
+        y_enc : ndarray, shape (n,)
+            Extended labels for each datum.
 
         Returns
         -------
-        self : TLRegressor instance
-            The TLRegressor instance.
+        self : TlRegressor instance
+            The TlRegressor instance.
         """
         if not is_regressor(self.estimator):
             raise TypeError("Estimator has to be a regressor.")
@@ -1253,10 +1287,10 @@ class TLRegressor(TLEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Test set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended true values for each matrix.
+        X : ndarray, shape (n, ...)
+            Test set of data.
+        y_enc : ndarray, shape (n,)
+            Extended true values for each datum.
 
         Returns
         -------
@@ -1266,6 +1300,14 @@ class TLRegressor(TLEstimator):
         _, y_true, _ = decode_domains(X, y_enc)
         y_pred = self.predict(X)
         return r2_score(y_true.astype(float), y_pred)
+
+
+@deprecated(
+    "TLRegressor is deprecated and will be removed in 0.10.0; "
+    "please use TlRegressor."
+)
+class TLRegressor(TlRegressor):
+    pass
 
 
 ###############################################################################

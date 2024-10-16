@@ -13,7 +13,7 @@ from pyriemann.classification import (
     MDM,
     FgMDM,
     KNearestNeighbor,
-    TSclassifier,
+    TsClassifier,
     SVC,
     MeanField,
 )
@@ -21,16 +21,16 @@ from pyriemann.regression import KNearestNeighborRegressor, SVR
 from pyriemann.transfer import (
     decode_domains,
     encode_domains,
-    TLDummy,
+    TlSplitter,
+    TlDummy,
     TLCenter,
     TLStretch,
     TLRotate,
     TlTsCenter,
     TlTsNormalize,
     TlTsRotate,
-    TLSplitter,
-    TLClassifier,
-    TLRegressor,
+    TlClassifier,
+    TlRegressor,
     MDWM,
 )
 from pyriemann.utils.distance import distance, distance_riemann
@@ -58,12 +58,16 @@ def test_encode_decode_domains(rndstate):
     assert (domain == d_dec).all()
 
 
-def test_tldummy(rndstate):
-    """Test TLDummy"""
+@pytest.mark.parametrize("space", ["manifold", "tangentspace"])
+def test_tldummy(rndstate, space):
+    """Test TlDummy"""
     X, y_enc = make_classification_transfer(
         n_matrices=5, random_state=rndstate
     )
-    dum = TLDummy()
+    if space == "tangentspace":
+        X = X[:, :]
+
+    dum = TlDummy()
     dum.fit(X, y_enc)
     dum.fit_transform(X, y_enc)
     dum.transform(X)
@@ -324,7 +328,7 @@ def test_tlsplitter(rndstate, cv):
         n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate
     )
 
-    cv = TLSplitter(
+    cv = TlSplitter(
         target_domain="target_domain",
         cv=cv,
     )
@@ -355,7 +359,7 @@ def test_tlclassifier_mdm(rndstate, clf, source_domain, target_domain):
         random_state=rndstate,
     )
 
-    tlclf = TLClassifier(target_domain="target_domain", estimator=clf)
+    tlclf = TlClassifier(target_domain="target_domain", estimator=clf)
     tlclf.domain_weight = {
         "source_domain": source_domain,
         "target_domain": target_domain,
@@ -395,7 +399,7 @@ def test_tlclassifier_mdm(rndstate, clf, source_domain, target_domain):
         make_pipeline(MDM(metric="riemann")),
         FgMDM(),
         make_pipeline(KNearestNeighbor(metric="logeuclid")),
-        TSclassifier(),
+        TsClassifier(),
         SVC(metric="riemann"),
         make_pipeline(MeanField(metric="logeuclid")),
     ]
@@ -416,7 +420,7 @@ def test_tlclassifiers(rndstate, clf, source_domain, target_domain):
 
     if hasattr(clf, "probability"):
         clf.set_params(**{"probability": True})
-    tlclf = TLClassifier(target_domain="target_domain", estimator=clf)
+    tlclf = TlClassifier(target_domain="target_domain", estimator=clf)
     tlclf.domain_weight = {
         "source_domain": source_domain,
         "target_domain": target_domain,
@@ -469,7 +473,7 @@ def test_tlregressors(rndstate, get_weights,
         n_matrices=n_matrices, n_channels=n_channels, rs=rndstate
     )
 
-    tlreg = TLRegressor(target_domain="target_domain", estimator=reg)
+    tlreg = TlRegressor(target_domain="target_domain", estimator=reg)
     tlreg.domain_weight = {
         "source_domain": source_domain,
         "target_domain": target_domain,

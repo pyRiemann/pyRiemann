@@ -32,15 +32,15 @@ from pyriemann.classification import MDM
 from pyriemann.datasets.simulated import make_classification_transfer
 from pyriemann.tangentspace import TangentSpace
 from pyriemann.transfer import (
-    TLSplitter,
-    TLDummy,
+    TlSplitter,
+    TlDummy,
     TLCenter,
     TLStretch,
     TLRotate,
     TlTsCenter,
     TlTsNormalize,
     TlTsRotate,
-    TLClassifier,
+    TlClassifier,
     MDWM,
 )
 
@@ -76,7 +76,7 @@ X_enc, y_enc = make_classification_transfer(
 # plus a partition of the target domain whose size we can control
 target_domain = "target_domain"
 n_splits = 5  # how many times to split the target domain into train/test
-tl_cv = TLSplitter(
+tl_cv = TlSplitter(
     target_domain=target_domain,
     cv=StratifiedShuffleSplit(n_splits=n_splits, random_state=seed),
 )
@@ -106,7 +106,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         # Calibration: use only data from target-train partition.
         # Classifier is trained only with matrices from the target domain.
         pipeline = make_pipeline(
-            TLClassifier(
+            TlClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
                 domain_weight={"source_domain": 0.0, "target_domain": 1.0},
@@ -119,8 +119,8 @@ for target_train_frac in tqdm(target_train_frac_array):
         # Dummy pipeline: no transfer learning at all.
         # Classifier is trained only with matrices from the source dataset.
         pipeline = make_pipeline(
-            TLDummy(),
-            TLClassifier(
+            TlDummy(),
+            TlClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
                 domain_weight={"source_domain": 1.0, "target_domain": 0.0},
@@ -134,7 +134,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         # Classifier is trained only with matrices from the source domain.
         pipeline = make_pipeline(
             TLCenter(target_domain=target_domain),
-            TLClassifier(
+            TlClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
                 domain_weight={"source_domain": 1.0, "target_domain": 0.0},
@@ -154,7 +154,7 @@ for target_train_frac in tqdm(target_train_frac_array):
                 centered_data=True,
             ),
             TLRotate(target_domain=target_domain, metric="euclid"),
-            TLClassifier(
+            TlClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
                 domain_weight={"source_domain": 0.5, "target_domain": 0.5},
@@ -181,7 +181,7 @@ for target_train_frac in tqdm(target_train_frac_array):
             TlTsCenter(target_domain=target_domain),
             TlTsNormalize(target_domain=target_domain),
             TlTsRotate(target_domain=target_domain),
-            TLClassifier(
+            TlClassifier(
                 target_domain=target_domain,
                 estimator=LogisticRegression(),
                 domain_weight={"source_domain": 0.5, "target_domain": 0.5},
