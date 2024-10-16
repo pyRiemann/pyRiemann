@@ -29,10 +29,10 @@ from pyriemann.classification import MDM
 from pyriemann.estimation import Covariances
 from pyriemann.transfer import (
     encode_domains,
-    TLDummy,
+    TlDummy,
     TLCenter,
-    TLClassifier,
-    TLSplitter,
+    TlClassifier,
+    TlSplitter,
 )
 set_log_level(verbose=False)
 
@@ -111,7 +111,7 @@ X_enc, y_enc = encode_domains(X, y, domains)
 
 # Object for splitting the datasets into training and validation partitions
 n_splits = 5  # How many times to split the target domain into train/test
-tl_cv = TLSplitter(
+tl_cv = TlSplitter(
     target_domain="",
     cv=StratifiedShuffleSplit(
         n_splits=n_splits, train_size=0.10, random_state=42))
@@ -148,8 +148,8 @@ for i_subject in tqdm(range(n_subjects)):
         domain_weight_dummy[tl_cv.target_domain] = 0.0
 
         pipeline = make_pipeline(
-            TLDummy(),
-            TLClassifier(
+            TlDummy(),
+            TlClassifier(
                 target_domain=tl_cv.target_domain,
                 estimator=clf_base,
                 domain_weight=domain_weight_dummy,
@@ -170,7 +170,7 @@ for i_subject in tqdm(range(n_subjects)):
 
         pipeline = make_pipeline(
             TLCenter(target_domain=tl_cv.target_domain),
-            TLClassifier(
+            TlClassifier(
                 target_domain=tl_cv.target_domain,
                 estimator=clf_base,
                 domain_weight=domain_weight_rct,

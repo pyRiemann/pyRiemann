@@ -1,30 +1,36 @@
 from ._tools import (
     encode_domains,
     decode_domains,
-    TLSplitter
+    TlSplitter
 )
 
 from ._estimators import (
-    TLDummy,
+    TlDummy,
     TLCenter,
     TLStretch,
     TLRotate,
-    TLEstimator,
-    TLClassifier,
-    TLRegressor,
+    TlTsCenter,
+    TlTsNormalize,
+    TlTsRotate,
+    TlEstimator,
+    TlClassifier,
+    TlRegressor,
     MDWM,
 )
 
 __all__ = [
     "encode_domains",
     "decode_domains",
-    "TLDummy",
-    "TLSplitter",
+    "TlSplitter",
+    "TlDummy",
     "TLCenter",
     "TLStretch",
     "TLRotate",
-    "TLEstimator",
-    "TLClassifier",
-    "TLRegressor",
+    "TlTsCenter",
+    "TlTsNormalize",
+    "TlTsRotate",
+    "TlEstimator",
+    "TlClassifier",
+    "TlRegressor",
     "MDWM",
 ]
