@@ -22,16 +22,16 @@ import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import GridSearchCV, StratifiedKFold
-from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import FunctionTransformer
+from sklearn.compose import ColumnTransformer
+from sklearn.utils.validation import check_is_fitted
+from sklearn.pipeline import Pipeline, make_pipeline
 
 from pyriemann.classification import SVC
 from pyriemann.estimation import (
     Covariances,
     Kernels,
     Shrinkage,
-    BlockCovariances,
-    kernel_functions,
+    channel_kernel_functions,
 )
 from pyriemann.utils.covariance import cov_est_functions
 
@@ -46,7 +46,7 @@ cv_splits = 5  # Number of cross-validation folds
 random_state = 42  # Random state for reproducibility
 
 # Some example kernel metrics
-kernel_metrics = ["rbf", "laplacian"]
+kernel_metrics = ["poly", "cosine"]
 
 # Some example covariance estimators
 covariance_estimators = ["oas", "lwf"]
@@ -61,65 +61,87 @@ metric_combinations = [
 
 # Shrinkage values to test
 shrinkage_values = [
-    1,
-    0.01,
+    0.01,  # same shrinkage for all blocks
+    0.1,  # same shrinkage for all blocks
     [0.01, 0.1],  # different shrinkage for each block
 ]
 
 ###############################################################################
-# Define the BlockKernels estimator
-# ---------------------------------
+# Define the BlockKernels estimator and helper transformers
+# ---------------------------------------------------------
+
+
+class Stacker(TransformerMixin):
+    """Stacks values of a DataFrame column into a 3D array."""
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        assert isinstance(X, pd.DataFrame), "Input must be a DataFrame"
+        assert X.shape[1] == 1, "DataFrame must have only one column"
+        return np.stack(X.iloc[:, 0].values)
+
+
+class FlattenTransformer(BaseEstimator, TransformerMixin):
+    """Flattens the last two dimensions of an array.
+        ColumnTransformer requires 2D output, so this transformer
+        is needed"""
+    def fit(self, X, y=None):
+        return self
+
+    def transform(self, X):
+        return X.reshape(X.shape[0], -1)
 
 
 class BlockKernels(BaseEstimator, TransformerMixin):
     """Estimation of block kernel or covariance matrices with
     customizable metrics and shrinkage.
 
-    Perform a block matrix estimation for each given time series,
+    Perform block matrix estimation for each given time series,
     computing either kernel matrices or covariance matrices for
-    each block based on the specified metrics. Optionally apply
-    shrinkage to each block's matrix.
+    each block based on the specified metrics. The block matrices
+    are then concatenated to form the final block diagonal matrices.
+    It is possible to add different shrinkage values for each block.
+    This estimator is helpful when dealing with data from multiple
+    sources or modalities (e.g. fNIRS, EMG, EEG, gyro, acceleration),
+    where each block corresponds to a different source or modality
+    and benefits from separate processing and tuning.
 
     Parameters
     ----------
     block_size : int | list of int
         Sizes of individual blocks given as int for same-size blocks,
         or list for varying block sizes.
-    metric : string | list of string, default='linear'
+    metrics : string | list of string, default='linear'
         The metric(s) to use when computing matrices between channels.
         For kernel matrices, supported metrics are those from
         ``pairwise_kernels``: 'linear', 'poly', 'polynomial',
-        'rbf', 'laplacian', 'cosine', etc. For covariance matrices,
-        supported estimators are those from pyRiemann:
-        'scm', 'lwf', 'oas', 'mcd', etc.
+        'rbf', 'laplacian', 'cosine', etc.
+        For covariance matrices, supported estimators are those from
+        pyRiemann: 'scm', 'lwf', 'oas', 'mcd', etc.
         If a list is provided, it must match the number of blocks.
-    n_jobs : int, default=None
-        The number of jobs to use for the computation. This works by
-        breaking down the pairwise matrix into ``n_jobs`` even
-        slices and computing them in parallel.
     shrinkage : float | list of float, default=0
         Shrinkage parameter(s) to regularize each block's matrix.
         If a single float is provided, it is applied to all blocks.
         If a list is provided, it must match the number of blocks.
-    **kwds : dict
+    n_jobs : int, default=None
+        The number of jobs to use for the computation.
+    **kwargs : dict
         Any further parameters are passed directly to the kernel function(s)
         or covariance estimator(s).
 
     See Also
     --------
     BlockCovariances
-    Kernels
-    Shrinkage
     """
 
-    def __init__(
-        self, block_size, metric="linear", n_jobs=None, shrinkage=0, **kwds
-    ):
+    def __init__(self, block_size, metrics="linear", shrinkage=0,
+                 n_jobs=None, **kwargs):
         self.block_size = block_size
-        self.metric = metric
-        self.n_jobs = n_jobs
+        self.metrics = metrics
         self.shrinkage = shrinkage
-        self.kwds = kwds
+        self.n_jobs = n_jobs
+        self.kwargs = kwargs
 
     def fit(self, X, y=None):
         """Fit.
@@ -128,7 +150,7 @@ class BlockKernels(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_times)
+        X : ndarray, shape (n_samples, n_channels, n_times)
             Multi-channel time series.
         y : None
             Not used, here for compatibility with scikit-learn API.
@@ -138,27 +160,48 @@ class BlockKernels(BaseEstimator, TransformerMixin):
         self : BlockKernels instance
             The BlockKernels instance.
         """
-        n_matrices, n_channels, n_times = X.shape
+        n_samples, n_channels, n_times = X.shape
 
-        self.blocks = BlockCovariances._check_block_size(
-            self.block_size,
-            n_channels,
-        )
-        n_blocks = len(self.blocks)
-
-        # Handle metric parameter
-        if isinstance(self.metric, str):
-            self.metrics = [self.metric] * n_blocks
-        elif isinstance(self.metric, list):
-            if len(self.metric) != n_blocks:
+        # Determine block sizes
+        if isinstance(self.block_size, int):
+            num_blocks = n_channels // self.block_size
+            remainder = n_channels % self.block_size
+            self.blocks = [self.block_size] * num_blocks
+            if remainder > 0:
+                self.blocks.append(remainder)
+        elif isinstance(self.block_size, list):
+            self.blocks = self.block_size
+            if sum(self.blocks) != n_channels:
                 raise ValueError(
-                    f"Length of metric list ({len(self.metric)}) must"
-                    f" match number of blocks ({n_blocks})"
-                )
-            self.metrics = self.metric
+                    "Sum of block sizes mustequal number of channels"
+                    )
         else:
             raise ValueError(
-                "Parameter metric must be a string or a list of strings."
+                "block_size must be int or list of ints"
+                )
+
+        # Compute block indices
+        self.block_indices = []
+        start = 0
+        for size in self.blocks:
+            end = start + size
+            self.block_indices.append((start, end))
+            start = end
+
+        # Handle metrics parameter
+        n_blocks = len(self.blocks)
+        if isinstance(self.metrics, str):
+            self.metrics_list = [self.metrics] * n_blocks
+        elif isinstance(self.metrics, list):
+            if len(self.metrics) != n_blocks:
+                raise ValueError(
+                    f"Length of metrics list ({len(self.metrics)}) "
+                    f"must match number of blocks ({n_blocks})"
+                )
+            self.metrics_list = self.metrics
+        else:
+            raise ValueError(
+                "Parameter 'metrics' must be a string or a list of strings."
             )
 
         # Handle shrinkage parameter
@@ -167,120 +210,126 @@ class BlockKernels(BaseEstimator, TransformerMixin):
         elif isinstance(self.shrinkage, list):
             if len(self.shrinkage) != n_blocks:
                 raise ValueError(
-                    f"Length of shrinkage list ({len(self.shrinkage)})"
-                    f" must match number of blocks ({n_blocks})"
+                    f"Length of shrinkage list ({len(self.shrinkage)}) "
+                    f"must match number of blocks ({n_blocks})"
                 )
             self.shrinkages = self.shrinkage
         else:
             raise ValueError(
-                "Parameter shrinkage must be a float, or a list of floats."
+                "Parameter 'shrinkage' must be a float or a list of floats."
             )
 
-        # Compute the indices for each block
-        self.block_indices = []
-        start = 0
-        for block_size in self.blocks:
-            end = start + block_size
-            indices = np.arange(start, end)
-            self.block_indices.append(indices)
-            start = end
+        # Build per-block pipelines
+        self.block_names = [f"block_{i}" for i in range(n_blocks)]
 
-        # Create per-block transformers
-        self.transformers = []
-        for idx, (indices, metric, shrinkage_value) in enumerate(
-            zip(self.block_indices, self.metrics, self.shrinkages)
-        ):
-            if metric in kernel_functions:
+        transformers = []
+        for i, (indices, metric, shrinkage_value) in enumerate(
+                zip(self.block_indices, self.metrics_list, self.shrinkages)):
+            block_name = self.block_names[i]
+
+            # Build the pipeline for this block
+            block_pipeline = make_pipeline(
+                Stacker(),
+            )
+
+            # Determine if the metric is a kernel or a covariance estimator
+            if metric in channel_kernel_functions:
                 # Use Kernels transformer
-                transformer = Pipeline([
-                    (
-                        'select',
-                        FunctionTransformer(
-                            self._select_channels,
-                            kw_args={'indices': indices},
-                            validate=False
-                        )
-                    ),
-                    (
-                        'kernels',
-                        Kernels(
-                            metric=metric,
-                            n_jobs=self.n_jobs,
-                            **self.kwds
-                        )
-                    ),
-                    (
-                        'shrinkage',
-                        Shrinkage(shrinkage=shrinkage_value)
-                        if shrinkage_value != 0 else 'passthrough'
-                    ),
-                ])
+                estimator = Kernels(
+                    metric=metric,
+                    n_jobs=self.n_jobs,
+                    **self.kwargs
+                )
+                block_pipeline.steps.append(('kernels', estimator))
             elif metric in cov_est_functions.keys():
                 # Use Covariances transformer
-                transformer = Pipeline([
-                    (
-                        'select',
-                        FunctionTransformer(
-                            self._select_channels,
-                            kw_args={'indices': indices},
-                            validate=False
-                        )
-                    ),
-                    (
-                        'covariances',
-                        Covariances(
-                            estimator=metric,
-                            **self.kwds
-                        )
-                    ),
-                    (
-                        'shrinkage',
-                        Shrinkage(shrinkage=shrinkage_value)
-                        if shrinkage_value != 0 else 'passthrough'
-                    ),
-                ])
+                estimator = Covariances(
+                    estimator=metric,
+                    **self.kwargs
+                )
+                block_pipeline.steps.append(('covariances', estimator))
             else:
                 raise ValueError(
-                    f"Metric '{metric}' is not recognized"
-                    " as a kernel metric or a covariance estimator."
+                    f"Metric '{metric}' is not recognized as a kernel "
+                    f"metric or a covariance estimator."
                 )
-            self.transformers.append(transformer)
+
+            # add shrinkage if provided
+            # TODO: add support for different shrinkage types at some point?
+            if shrinkage_value != 0:
+                shrinkage_transformer = Shrinkage(shrinkage=shrinkage_value)
+                block_pipeline.steps.append(
+                    ('shrinkage', shrinkage_transformer)
+                    )
+
+            # Add the flattening transformer at the end of the pipeline
+            block_pipeline.steps.append(('flatten', FlattenTransformer()))
+
+            transformers.append((block_name, block_pipeline, [block_name]))
+
+        # create the columncransformer with per-block pipelines
+        self.preprocessor = ColumnTransformer(transformers)
+
+        # Prepare the DataFrame
+        X_df = self._prepare_dataframe(X)
+
+        # Fit the preprocessor
+        self.preprocessor.fit(X_df)
+
         return self
 
     def transform(self, X):
-        """Estimate block kernel or covariance matrices
-        with optional shrinkage.
+        """Estimate block kernel or covariance matrices.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_times)
+        X : ndarray, shape (n_samples, n_channels, n_times)
             Multi-channel time series.
 
         Returns
         -------
-        M : ndarray, shape (n_matrices, n_channels, n_channels)
-            Block matrices (kernel or covariance matrices).
+        M : ndarray, shape (n_samples, n_channels, n_channels)
+            Block diagonal matrices (kernel or covariance matrices).
         """
-        n_matrices, n_channels, n_times = X.shape
+        check_is_fitted(self, 'preprocessor')
 
+        # make the df wheren each block is 1 column
+        X_df = self._prepare_dataframe(X)
+
+        # Transform the data
+        transformed_blocks = []
+        data_transformed = self.preprocessor.transform(X_df)
+
+        # calculate the number of features per block
+        features_per_block = [size * size for size in self.blocks]
+
+        # compute the indices where to split the data
+        split_indices = np.cumsum(features_per_block)[:-1]
+
+        # split the data into flattened blocks
+        blocks_flat = np.split(data_transformed, split_indices, axis=1)
+
+        # reshape each block back to its original shape
+        for i, block_flat in enumerate(blocks_flat):
+            size = self.blocks[i]
+            block = block_flat.reshape(-1, size, size)
+            transformed_blocks.append(block)
+
+        # Reconstruct the block diagonal matrices
+        n_samples = X.shape[0]
         M_matrices = []
-
-        for i in range(n_matrices):
-            M_blocks = []
-            for idx, transformer in enumerate(self.transformers):
-                # Apply transformer to the current sample
-                M_block = transformer.transform(X[[i]])[0]
-                M_blocks.append(M_block)
-            # Create the block diagonal matrix
-            M_full = self._block_diag(M_blocks)
+        for i in range(n_samples):
+            blocks = [Xt[i] for Xt in transformed_blocks]
+            M_full = self._block_diag(blocks)
             M_matrices.append(M_full)
-
         return np.array(M_matrices)
 
-    @staticmethod
-    def _select_channels(X, indices):
-        """Select channels based on indices."""
-        return X[:, indices, :]
+    def _prepare_dataframe(self, X):
+        """Converts the data into a df with eac hblock as column."""
+        data_dict = {}
+        for i, (start, end) in enumerate(self.block_indices):
+            data_dict[self.block_names[i]] = list(X[:, start:end, :])
+        return pd.DataFrame(data_dict)
 
     @staticmethod
     def _block_diag(matrices):
@@ -366,7 +415,7 @@ pipeline = Pipeline(
 
 # Define the hyperparameter grid for grid search
 param_grid = {
-    "block_kernels__metric": metric_combinations,
+    "block_kernels__metrics": metric_combinations,
     "block_kernels__shrinkage": shrinkage_values,
     "classifier__C": [0.1, 1],
 }
@@ -406,7 +455,7 @@ df_results = pd.DataFrame(grid_search.cv_results_)
 display_columns = [
     "mean_test_score",
     "std_test_score",
-    "param_block_kernels__metric",
+    "param_block_kernels__metrics",
     "param_block_kernels__shrinkage",
 ]
 
@@ -425,6 +474,11 @@ print(
 # shrinkage values for our fNIRS classification of mental imagery.
 # By using block diagonal matrices for HbO and HbR signals, we can tune our
 # classifier to HbO and HbR signals separately, which can improve
+# classification performance, since fNIRS classification methods are often
+# lacking in this regard. Since there is so few data available, we just
+# calculate cross validation scores. This means that the classification
+# accuracies will be overestimated. If more data per class are available
+# one should use a train-test split to get a more realistic estimate of the
 # classification performance.
 
 ###############################################################################
