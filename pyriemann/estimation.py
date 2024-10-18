@@ -806,7 +806,7 @@ class TimeDelayCovariances(BaseEstimator, TransformerMixin):
 ###############################################################################
 
 
-kernel_functions = [
+ker_est_functions = [
     "linear", "poly", "polynomial", "rbf", "laplacian", "cosine"
 ]
 
@@ -896,7 +896,7 @@ class Kernels(BaseEstimator, TransformerMixin):
         K : ndarray, shape (n_matrices, n_channels, n_channels)
             Kernel matrices.
         """
-        if self.metric not in kernel_functions:
+        if self.metric not in ker_est_functions:
             raise TypeError("Unsupported metric for kernel estimation.")
 
         K = [

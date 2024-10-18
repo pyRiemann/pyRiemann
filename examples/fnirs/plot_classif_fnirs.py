@@ -31,7 +31,7 @@ from pyriemann.estimation import (
     Covariances,
     Kernels,
     Shrinkage,
-    channel_kernel_functions,
+    ker_est_functions,
 )
 from pyriemann.utils.covariance import cov_est_functions
 
@@ -233,7 +233,7 @@ class BlockKernels(BaseEstimator, TransformerMixin):
             )
 
             # Determine if the metric is a kernel or a covariance estimator
-            if metric in channel_kernel_functions:
+            if metric in ker_est_functions:
                 # Use Kernels transformer
                 estimator = Kernels(
                     metric=metric,
@@ -469,7 +469,7 @@ print(
 ###############################################################################
 # Conclusion
 # ----------
-
+#
 # The grid search allows us to find the best combination of metrics and
 # shrinkage values for our fNIRS classification of mental imagery.
 # By using block diagonal matrices for HbO and HbR signals, we can tune our
