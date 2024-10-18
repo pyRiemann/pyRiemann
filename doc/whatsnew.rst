@@ -15,6 +15,8 @@ v0.8.dev
 
 - Enhance :func:`pyriemann.utils.mean.mean_covariance` to support "power" and "poweuclid" metrics. :pr:`329` by :user:`qbarthelemy`
 
+- Add an example using fNIRS data with a new estimator called `BlockKernels` for classifying HbO and HbR signals. :pr:`323` by :user:`timnaher`
+
 v0.7 (October 2024)
 -------------------
 
