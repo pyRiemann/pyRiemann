@@ -1,6 +1,6 @@
 """
 ====================================================================
-Segmentation on SAR images with Riemannian geometry
+Segmentation of SAR image with Riemannian geometry
 ====================================================================
 
 This example compares clustering pipelines based on covariance matrices for
