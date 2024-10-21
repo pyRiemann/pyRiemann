@@ -1,4 +1,4 @@
-Clustering of radar images
---------------------------
+Segmentation of radar images
+----------------------------
 
-Using Riemannian geometry for clustering of radar images.
+Using Riemannian geometry for segmentation of radar images.

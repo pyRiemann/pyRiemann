@@ -1,10 +1,10 @@
 """
 ====================================================================
-Clustering on SAR images with Riemannian geometry
+Segmentation on SAR images with Riemannian geometry
 ====================================================================
 
 This example compares clustering pipelines based on covariance matrices for
-synthetic-aperture radar (SAR) image clustering [1]_ [2]_.
+synthetic-aperture radar (SAR) image segmentation [1]_ [2]_.
 """
 # Author: Ammar Mian
 
