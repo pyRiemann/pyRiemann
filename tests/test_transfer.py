@@ -1,5 +1,5 @@
 import numpy as np
-from numpy.testing import assert_array_equal
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
 from pytest import approx
 from sklearn.model_selection import KFold, StratifiedShuffleSplit
@@ -13,7 +13,7 @@ from pyriemann.classification import (
     MDM,
     FgMDM,
     KNearestNeighbor,
-    TSclassifier,
+    TsClassifier,
     SVC,
     MeanField,
 )
@@ -21,13 +21,16 @@ from pyriemann.regression import KNearestNeighborRegressor, SVR
 from pyriemann.transfer import (
     decode_domains,
     encode_domains,
-    TLDummy,
+    TlSplitter,
+    TlDummy,
     TLCenter,
     TLStretch,
     TLRotate,
-    TLSplitter,
-    TLClassifier,
-    TLRegressor,
+    TlTsCenter,
+    TlTsNormalize,
+    TlTsRotate,
+    TlClassifier,
+    TlRegressor,
     MDWM,
 )
 from pyriemann.utils.distance import distance, distance_riemann
@@ -55,14 +58,19 @@ def test_encode_decode_domains(rndstate):
     assert (domain == d_dec).all()
 
 
-def test_tldummy(rndstate):
-    """Test TLDummy"""
-    dum = TLDummy()
+@pytest.mark.parametrize("space", ["manifold", "tangentspace"])
+def test_tldummy(rndstate, space):
+    """Test TlDummy"""
     X, y_enc = make_classification_transfer(
         n_matrices=5, random_state=rndstate
     )
+    if space == "tangentspace":
+        X = X[:, :]
+
+    dum = TlDummy()
     dum.fit(X, y_enc)
     dum.fit_transform(X, y_enc)
+    dum.transform(X)
 
 
 @pytest.mark.parametrize("metric", ["riemann", "euclid"])
@@ -71,7 +79,6 @@ def test_tldummy(rndstate):
 def test_tlcenter(rndstate, get_weights, metric, use_weight, target_domain):
     """Test pipeline for recentering data to Identity"""
     # check if the global mean of the domains is indeed Identity
-    rct = TLCenter(target_domain=target_domain, metric=metric)
     X, y_enc = make_classification_transfer(
         n_matrices=25, random_state=rndstate
     )
@@ -79,6 +86,8 @@ def test_tlcenter(rndstate, get_weights, metric, use_weight, target_domain):
         weights = get_weights(len(y_enc))
     else:
         weights = None
+
+    rct = TLCenter(target_domain=target_domain, metric=metric)
 
     # Test fit
     rct.fit(X, y_enc, sample_weight=weights)
@@ -96,6 +105,9 @@ def test_tlcenter(rndstate, get_weights, metric, use_weight, target_domain):
             Md = mean_covariance(Xd, metric=metric)
         assert Md == pytest.approx(np.eye(2))
 
+    # Test transform
+    rct.transform(X)
+
 
 @pytest.mark.parametrize("metric", ["riemann", "euclid"])
 @pytest.mark.parametrize("use_weight", [True, False])
@@ -104,7 +116,6 @@ def test_tlcenter_fit_transf(rndstate, get_weights,
                              metric, use_weight, target_domain):
     """Test .fit_transform() versus .fit().transform()"""
     # check if the global mean of the domains is indeed Identity
-    rct = TLCenter(target_domain=target_domain, metric=metric)
     X, y_enc = make_classification_transfer(
         n_matrices=25, random_state=rndstate
     )
@@ -120,6 +131,7 @@ def test_tlcenter_fit_transf(rndstate, get_weights,
     X1, y1 = X[:50], y_enc[:50]
     X2, y2 = X[50:], y_enc[50:]
 
+    rct = TLCenter(target_domain=target_domain, metric=metric)
     X1_rct = rct.fit_transform(X1, y1, sample_weight=weights_1)
     X2_rct = rct.fit(X2, y2, sample_weight=weights_2).transform(X2)
     X_rct = np.concatenate((X1_rct, X2_rct))
@@ -143,15 +155,9 @@ def test_tlstretch(rndstate, get_weights,
                    use_centered_data, metric, use_weight):
     """Test pipeline for stretching data"""
     # check if the dispersion of the dataset indeed decreases to 1
-    tlstr = TLStretch(
-        target_domain="target_domain",
-        final_dispersion=1.0,
-        centered_data=use_centered_data,
-        metric=metric
-    )
     X, y_enc = make_classification_transfer(
-        n_matrices=25, class_disp=2.0, random_state=rndstate)
-
+        n_matrices=25, class_disp=2.0, random_state=rndstate
+    )
     if use_weight:
         weights = get_weights(len(y_enc))
     else:
@@ -160,6 +166,12 @@ def test_tlstretch(rndstate, get_weights,
         tlrct = TLCenter(target_domain="target_domain", metric=metric)
         X = tlrct.fit_transform(X, y_enc, sample_weight=weights)
 
+    tlstr = TLStretch(
+        target_domain="target_domain",
+        final_dispersion=1.0,
+        centered_data=use_centered_data,
+        metric=metric
+    )
     X_str = tlstr.fit_transform(X, y_enc, sample_weight=weights)
 
     _, _, domain = decode_domains(X_str, y_enc)
@@ -176,6 +188,8 @@ def test_tlstretch(rndstate, get_weights,
             disp = np.mean(distance(Xd, Md, metric=metric, squared=True))
         assert np.isclose(disp, 1.0)
 
+    tlstr.transform(X)
+
 
 @pytest.mark.parametrize("metric", ["euclid", "riemann"])
 @pytest.mark.parametrize("use_weight", [True, False])
@@ -183,9 +197,12 @@ def test_tlrotate(rndstate, get_weights, metric, use_weight):
     """Test fit_transform method for rotating the datasets"""
     # check if the distance between the classes of each domain is reduced
     X, y_enc = make_classification_transfer(
-        n_matrices=50, class_sep=3, class_disp=1.0, theta=np.pi / 2,
-        random_state=rndstate)
-
+        n_matrices=50,
+        class_sep=3,
+        class_disp=1.0,
+        theta=np.pi / 2,
+        random_state=rndstate,
+    )
     if use_weight:
         weights = get_weights(len(y_enc))
     else:
@@ -202,20 +219,100 @@ def test_tlrotate(rndstate, get_weights, metric, use_weight):
         d = "source_domain"
         M_rct_label_source = mean_riemann(
             X_rct[domain == d][y[domain == d] == label],
-            sample_weight=weights[domain == d][y[domain == d] == label])
+            sample_weight=weights[domain == d][y[domain == d] == label]
+        )
         M_rot_label_source = mean_riemann(
             X_rot[domain == d][y[domain == d] == label],
-            sample_weight=weights[domain == d][y[domain == d] == label])
+            sample_weight=weights[domain == d][y[domain == d] == label]
+        )
         d = "target_domain"
         M_rct_label_target = mean_riemann(
             X_rct[domain == d][y[domain == d] == label],
-            sample_weight=weights[domain == d][y[domain == d] == label])
+            sample_weight=weights[domain == d][y[domain == d] == label]
+        )
         M_rot_label_target = mean_riemann(
             X_rot[domain == d][y[domain == d] == label],
-            sample_weight=weights[domain == d][y[domain == d] == label])
+            sample_weight=weights[domain == d][y[domain == d] == label]
+        )
         d_rct = distance_riemann(M_rct_label_source, M_rct_label_target)
         d_rot = distance_riemann(M_rot_label_source, M_rot_label_target)
         assert d_rot <= d_rct
+
+    rot.transform(X_rct)
+
+
+def test_tltscenter(rndstate):
+    """Test TlTsCenter"""
+    n_vectors_d = 50
+    n_vectors, n_ts = 2 * n_vectors_d, 10
+    X = rndstate.randn(n_vectors, n_ts)
+    y = rndstate.randint(0, 3, size=n_vectors)
+    domains = np.array(n_vectors_d * ["src"] + n_vectors_d * ["tgt"])
+    _, y_enc = encode_domains(X, y, domains)
+
+    tlctr = TlTsCenter(target_domain="tgt")
+
+    tlctr.fit(X, y_enc)
+
+    X_rct = tlctr.fit_transform(X, y_enc)
+    assert X_rct.shape == X.shape
+    for d in np.unique(domains):
+        idx = domains == d
+        md = np.mean(X_rct[idx], axis=0)
+        assert_array_almost_equal(md, np.zeros((n_ts)))
+
+    X_rct = tlctr.transform(X)
+    assert X_rct.shape == X.shape
+
+
+def test_tltsnormalize(rndstate):
+    """Test TlTsNormalize"""
+    n_vectors_d = 50
+    n_vectors, n_ts = 2 * n_vectors_d, 10
+    X = rndstate.randn(n_vectors, n_ts)
+    y = rndstate.randint(0, 3, size=n_vectors)
+    domains = np.array(n_vectors_d * ["src"] + n_vectors_d * ["tgt"])
+    _, y_enc = encode_domains(X, y, domains)
+
+    tlnrm = TlTsNormalize(target_domain="tgt")
+
+    tlnrm.fit(X, y_enc)
+
+    X_norm = tlnrm.fit_transform(X, y_enc)
+    assert X_norm.shape == X.shape
+    for d in np.unique(domains):
+        idx = domains == d
+        assert np.mean(np.linalg.norm(X_norm[idx], axis=1)) == pytest.approx(1)
+
+    X_norm = tlnrm.transform(X)
+    assert X_norm.shape == X.shape
+
+
+@pytest.mark.parametrize("n_components", [1, 3, "max"])
+@pytest.mark.parametrize("n_clusters", [1, 2, 5])
+def test_tltsrotate(rndstate, n_components, n_clusters):
+    """Test TlTsRotate"""
+    n_vectors_d = 50
+    n_vectors, n_ts = 2 * n_vectors_d, 10
+    X = rndstate.randn(n_vectors, n_ts)
+    y = rndstate.randint(0, 2, size=n_vectors)
+    domains = np.array(n_vectors_d * ["src"] + n_vectors_d * ["tgt"])
+    _, y_enc = encode_domains(X, y, domains)
+
+    tlrot = TlTsRotate(
+        target_domain="tgt",
+        n_components=n_components,
+        n_clusters=n_clusters,
+    )
+
+    tlrot.fit(X, y_enc)
+    assert tlrot.rotation_.shape == (n_ts, n_ts)
+
+    X_rot = tlrot.fit_transform(X, y_enc)
+    assert X_rot.shape == (n_vectors, n_ts)
+
+    X_rot = tlrot.transform(X)
+    assert_array_equal(X_rot, X)
 
 
 @pytest.mark.parametrize(
@@ -228,8 +325,10 @@ def test_tlrotate(rndstate, get_weights, metric, use_weight):
 def test_tlsplitter(rndstate, cv):
     """Test wrapper for cross-validation in transfer learning"""
     X, y_enc = make_classification_transfer(
-        n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate)
-    cv = TLSplitter(
+        n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate
+    )
+
+    cv = TlSplitter(
         target_domain="target_domain",
         cv=cv,
     )
@@ -260,7 +359,7 @@ def test_tlclassifier_mdm(rndstate, clf, source_domain, target_domain):
         random_state=rndstate,
     )
 
-    tlclf = TLClassifier(target_domain="target_domain", estimator=clf)
+    tlclf = TlClassifier(target_domain="target_domain", estimator=clf)
     tlclf.domain_weight = {
         "source_domain": source_domain,
         "target_domain": target_domain,
@@ -300,7 +399,7 @@ def test_tlclassifier_mdm(rndstate, clf, source_domain, target_domain):
         make_pipeline(MDM(metric="riemann")),
         FgMDM(),
         make_pipeline(KNearestNeighbor(metric="logeuclid")),
-        TSclassifier(),
+        TsClassifier(),
         SVC(metric="riemann"),
         make_pipeline(MeanField(metric="logeuclid")),
     ]
@@ -321,7 +420,7 @@ def test_tlclassifiers(rndstate, clf, source_domain, target_domain):
 
     if hasattr(clf, "probability"):
         clf.set_params(**{"probability": True})
-    tlclf = TLClassifier(target_domain="target_domain", estimator=clf)
+    tlclf = TlClassifier(target_domain="target_domain", estimator=clf)
     tlclf.domain_weight = {
         "source_domain": source_domain,
         "target_domain": target_domain,
@@ -374,7 +473,7 @@ def test_tlregressors(rndstate, get_weights,
         n_matrices=n_matrices, n_channels=n_channels, rs=rndstate
     )
 
-    tlreg = TLRegressor(target_domain="target_domain", estimator=reg)
+    tlreg = TlRegressor(target_domain="target_domain", estimator=reg)
     tlreg.domain_weight = {
         "source_domain": source_domain,
         "target_domain": target_domain,
@@ -445,6 +544,10 @@ def test_mdwm(rndstate, domain_tradeoff, metric, n_jobs):
     assert probabilities.shape == (n_matrices, n_classes)
     assert probabilities.sum(axis=1) == approx(np.ones(n_matrices))
 
+    # test transform
+    dists = clf.transform(X)
+    assert dists.shape == (n_matrices, n_classes)
+
     # test score
     clf.score(X, y_enc)
 
@@ -460,7 +563,7 @@ def test_mdwm_weights(rndstate, get_weights):
     weights = get_weights(n_matrices // n_classes)
 
     clf = MDWM(
-        domain_tradeoff=0.5,
+        domain_tradeoff=0.4,
         target_domain="target_domain",
         metric="riemann",
     )

@@ -19,7 +19,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.pipeline import Pipeline
 
-from pyriemann.classification import MDM, TSclassifier
+from pyriemann.classification import MDM, TsClassifier
 from pyriemann.estimation import Covariances
 
 
@@ -93,7 +93,7 @@ print("MDM Classification accuracy: %f / Chance level: %f" % (np.mean(scores),
 # Classification with Tangent Space Logistic Regression
 # -----------------------------------------------------
 
-clf = TSclassifier()
+clf = TsClassifier()
 # Use scikit-learn Pipeline with cross_val_score function
 scores = cross_val_score(clf, cov_data_train, labels, cv=cv, n_jobs=1)
 
