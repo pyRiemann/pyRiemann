@@ -1,10 +1,10 @@
 """
 ====================================================================
-Clustering on hyperspectral with Riemannian geometry
+Segmentation of hyperspectral image with Riemannian geometry
 ====================================================================
 
 This example compares clustering pipelines based on covariance matrices for
-hyperspectral image clustering [1]_.
+hyperspectral image segmentation [1]_.
 """
 # Author: Ammar Mian
 
