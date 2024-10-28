@@ -2,8 +2,10 @@ import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
 from pytest import approx
+from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.model_selection import KFold, StratifiedShuffleSplit
 from sklearn.pipeline import make_pipeline, Pipeline
+from sklearn.svm import LinearSVC, LinearSVR
 
 from pyriemann.datasets.simulated import (
     make_classification_transfer,
@@ -35,13 +37,14 @@ from pyriemann.transfer import (
 )
 from pyriemann.utils.distance import distance, distance_riemann
 from pyriemann.utils.mean import mean_covariance, mean_riemann
+from pyriemann.utils.tangentspace import tangent_space
 from pyriemann.utils.utils import check_weights
 
 rndstate = 1234
 
 
 def test_encode_decode_domains(rndstate):
-    """Test encoding and decoding of domains for data points"""
+    """Test encoding and decoding of domains"""
     n_matrices, n_channels = 4, 2
     X = make_matrices(n_matrices, n_channels, "spd", rs=rndstate)
     y = np.array(["left_hand", "right_hand", "left_hand", "right_hand"])
@@ -58,6 +61,27 @@ def test_encode_decode_domains(rndstate):
     assert (domain == d_dec).all()
 
 
+@pytest.mark.parametrize(
+    "cv",
+    [
+        KFold(n_splits=5, shuffle=True),
+        StratifiedShuffleSplit(n_splits=5, train_size=0.80),
+    ]
+)
+def test_tlsplitter(rndstate, cv):
+    """Test wrapper for cross-validation"""
+    X, y_enc = make_classification_transfer(
+        n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate
+    )
+
+    cv = TlSplitter(target_domain="target_domain", cv=cv)
+    train_idx, test_idx = next(cv.split(X, y_enc))
+
+    assert len(train_idx) == 90  # 50 from source and 4/5*100 from target
+    assert len(test_idx) == 10  # 1/5*100 from target
+    assert cv.get_n_splits() == 5
+
+
 @pytest.mark.parametrize("space", ["manifold", "tangentspace"])
 def test_tldummy(rndstate, space):
     """Test TlDummy"""
@@ -65,7 +89,7 @@ def test_tldummy(rndstate, space):
         n_matrices=5, random_state=rndstate
     )
     if space == "tangentspace":
-        X = X[:, :]
+        X = tangent_space(X, Cref=mean_riemann(X), metric="riemann")
 
     dum = TlDummy()
     dum.fit(X, y_enc)
@@ -241,14 +265,21 @@ def test_tlrotate(rndstate, get_weights, metric, use_weight):
     rot.transform(X_rct)
 
 
-def test_tltscenter(rndstate):
-    """Test TlTsCenter"""
-    n_vectors_d = 50
-    n_vectors, n_ts = 2 * n_vectors_d, 10
+def make_classification_transfer_tangspace(rndstate, n_vectors_d=50, n_ts=10):
+    n_vectors = 2 * n_vectors_d
     X = rndstate.randn(n_vectors, n_ts)
     y = rndstate.randint(0, 3, size=n_vectors)
     domains = np.array(n_vectors_d * ["src"] + n_vectors_d * ["tgt"])
     _, y_enc = encode_domains(X, y, domains)
+    return X, y_enc, domains
+
+
+def test_tltscenter(rndstate):
+    """Test TlTsCenter"""
+    n_vectors_d, n_ts = 50, 10
+    X, y_enc, domains = make_classification_transfer_tangspace(
+        rndstate, n_vectors_d, n_ts
+    )
 
     tlctr = TlTsCenter(target_domain="tgt")
 
@@ -267,12 +298,10 @@ def test_tltscenter(rndstate):
 
 def test_tltsnormalize(rndstate):
     """Test TlTsNormalize"""
-    n_vectors_d = 50
-    n_vectors, n_ts = 2 * n_vectors_d, 10
-    X = rndstate.randn(n_vectors, n_ts)
-    y = rndstate.randint(0, 3, size=n_vectors)
-    domains = np.array(n_vectors_d * ["src"] + n_vectors_d * ["tgt"])
-    _, y_enc = encode_domains(X, y, domains)
+    n_vectors_d, n_ts = 50, 10
+    X, y_enc, domains = make_classification_transfer_tangspace(
+        rndstate, n_vectors_d, n_ts
+    )
 
     tlnrm = TlTsNormalize(target_domain="tgt")
 
@@ -292,12 +321,10 @@ def test_tltsnormalize(rndstate):
 @pytest.mark.parametrize("n_clusters", [1, 2, 5])
 def test_tltsrotate(rndstate, n_components, n_clusters):
     """Test TlTsRotate"""
-    n_vectors_d = 50
-    n_vectors, n_ts = 2 * n_vectors_d, 10
-    X = rndstate.randn(n_vectors, n_ts)
-    y = rndstate.randint(0, 2, size=n_vectors)
-    domains = np.array(n_vectors_d * ["src"] + n_vectors_d * ["tgt"])
-    _, y_enc = encode_domains(X, y, domains)
+    n_vectors_d, n_ts = 50, 10
+    X, y_enc, domains = make_classification_transfer_tangspace(
+        rndstate, n_vectors_d, n_ts
+    )
 
     tlrot = TlTsRotate(
         target_domain="tgt",
@@ -306,36 +333,13 @@ def test_tltsrotate(rndstate, n_components, n_clusters):
     )
 
     tlrot.fit(X, y_enc)
-    assert tlrot.rotation_.shape == (n_ts, n_ts)
+    assert tlrot.rotations_.shape == (n_ts, n_ts)
 
     X_rot = tlrot.fit_transform(X, y_enc)
-    assert X_rot.shape == (n_vectors, n_ts)
+    assert X_rot.shape == (2 * n_vectors_d, n_ts)
 
     X_rot = tlrot.transform(X)
     assert_array_equal(X_rot, X)
-
-
-@pytest.mark.parametrize(
-    "cv",
-    [
-        KFold(n_splits=5, shuffle=True),
-        StratifiedShuffleSplit(n_splits=5, train_size=0.80),
-    ]
-)
-def test_tlsplitter(rndstate, cv):
-    """Test wrapper for cross-validation in transfer learning"""
-    X, y_enc = make_classification_transfer(
-        n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate
-    )
-
-    cv = TlSplitter(
-        target_domain="target_domain",
-        cv=cv,
-    )
-    train_idx, test_idx = next(cv.split(X, y_enc))
-    assert len(train_idx) == 90  # 50 from source and 4/5*100 from target
-    assert len(test_idx) == 10  # 1/5*100 from target
-    assert cv.get_n_splits() == 5
 
 
 @pytest.mark.parametrize(
@@ -350,7 +354,7 @@ def test_tlsplitter(rndstate, cv):
     [(1.0, 0.0), (0.0, 1.0), (1.0, 1.0)],
 )
 def test_tlclassifier_mdm(rndstate, clf, source_domain, target_domain):
-    """Test wrapper for MDM classifier in transfer learning"""
+    """Test wrapper for MDM classifier"""
     n_matrices = 40
     X, y_enc = make_classification_transfer(
         n_matrices=n_matrices // 4,
@@ -359,11 +363,14 @@ def test_tlclassifier_mdm(rndstate, clf, source_domain, target_domain):
         random_state=rndstate,
     )
 
-    tlclf = TlClassifier(target_domain="target_domain", estimator=clf)
-    tlclf.domain_weight = {
-        "source_domain": source_domain,
-        "target_domain": target_domain,
-    }
+    tlclf = TlClassifier(
+        target_domain="target_domain",
+        estimator=clf,
+        domain_weight={
+            "source_domain": source_domain,
+            "target_domain": target_domain,
+        },
+    )
     tlclf.fit(X, y_enc)
 
     X, y, domain = decode_domains(X, y_enc)
@@ -408,9 +415,9 @@ def test_tlclassifier_mdm(rndstate, clf, source_domain, target_domain):
     "source_domain, target_domain",
     [(1.0, 0.0), (0.0, 1.0), (1.0, 1.0)],
 )
-def test_tlclassifiers(rndstate, clf, source_domain, target_domain):
-    """Test wrapper for classifiers in transfer learning"""
-    n_classes, n_matrices = 2, 40
+def test_tlclassifier_manifold(rndstate, clf, source_domain, target_domain):
+    """Test wrapper for classifiers in manifold"""
+    n_matrices = 40
     X, y_enc = make_classification_transfer(
         n_matrices=n_matrices // 4,
         class_sep=5,
@@ -418,13 +425,41 @@ def test_tlclassifiers(rndstate, clf, source_domain, target_domain):
         random_state=rndstate,
     )
 
+    tlclassifier(clf, X, y_enc, source_domain, target_domain)
+
+
+@pytest.mark.parametrize("clf", [LinearSVC(), LogisticRegression()])
+@pytest.mark.parametrize(
+    "source_domain, target_domain",
+    [(1.0, 0.0), (0.0, 1.0), (1.0, 1.0)],
+)
+def test_tlclassifier_tangspace(rndstate, clf, source_domain, target_domain):
+    """Test wrapper for classifiers in tangent space"""
+    n_matrices = 40
+    X, y_enc = make_classification_transfer(
+        n_matrices=n_matrices // 4,
+        class_sep=5,
+        class_disp=1.0,
+        random_state=rndstate,
+    )
+    X = tangent_space(X, Cref=mean_riemann(X), metric="riemann")
+
+    tlclassifier(clf, X, y_enc, source_domain, target_domain)
+
+
+def tlclassifier(clf, X, y_enc, source_domain, target_domain, n_classes=2):
+    n_matrices = X.shape[0]
+
     if hasattr(clf, "probability"):
         clf.set_params(**{"probability": True})
-    tlclf = TlClassifier(target_domain="target_domain", estimator=clf)
-    tlclf.domain_weight = {
-        "source_domain": source_domain,
-        "target_domain": target_domain,
-    }
+    tlclf = TlClassifier(
+        target_domain="target_domain",
+        estimator=clf,
+        domain_weight={
+            "source_domain": source_domain,
+            "target_domain": target_domain,
+        },
+    )
 
     # test fit
     tlclf.fit(X, y_enc)
@@ -435,9 +470,10 @@ def test_tlclassifiers(rndstate, clf, source_domain, target_domain):
     assert predicted.shape == (n_matrices,)
 
     # test predict_proba
-    probabilities = tlclf.predict_proba(X)
-    assert probabilities.shape == (n_matrices, n_classes)
-    assert probabilities.sum(axis=1) == approx(np.ones(n_matrices))
+    if hasattr(clf, "predict_proba"):
+        probabilities = tlclf.predict_proba(X)
+        assert probabilities.shape == (n_matrices, n_classes)
+        assert probabilities.sum(axis=1) == approx(np.ones(n_matrices))
 
     # test score
     tlclf.score(X, y_enc)
@@ -455,29 +491,52 @@ def test_tlclassifiers(rndstate, clf, source_domain, target_domain):
     "source_domain, target_domain",
     [(1.0, 0.0), (0.0, 1.0), (1.0, 1.0)],
 )
-def test_tlregressors(rndstate, get_weights,
-                      reg, source_domain, target_domain):
-    """Test wrapper for regressors in transfer learning"""
-
-    def make_regression_transfer(n_matrices, n_channels, rs):
-        X = make_matrices(
-            n_matrices, n_channels, "spd", rs=rndstate
-        )
-        y = get_weights(n_matrices)
-        domain = np.array(20 * ["source_domain"] + 20 * ["target_domain"])
-        _, y_enc = encode_domains(X, y, domain)
-        return X, y_enc
-
+def test_tlregressor_manifold(rndstate, reg, source_domain, target_domain):
+    """Test wrapper for regressors in manifold"""
     n_matrices, n_channels = 40, 2
     X, y_enc = make_regression_transfer(
-        n_matrices=n_matrices, n_channels=n_channels, rs=rndstate
+        rndstate, n_matrices=n_matrices, n_channels=n_channels
     )
 
-    tlreg = TlRegressor(target_domain="target_domain", estimator=reg)
-    tlreg.domain_weight = {
-        "source_domain": source_domain,
-        "target_domain": target_domain,
-    }
+    tlregressor(reg, X, y_enc, source_domain, target_domain)
+
+
+@pytest.mark.parametrize("reg", [LinearSVR(), LinearRegression()])
+@pytest.mark.parametrize(
+    "source_domain, target_domain",
+    [(1.0, 0.0), (0.0, 1.0), (1.0, 1.0)],
+)
+def test_tlregressor_tangspace(rndstate, reg, source_domain, target_domain):
+    """Test wrapper for regressors in tangent space"""
+    n_matrices, n_channels = 40, 2
+    X, y_enc = make_regression_transfer(
+        rndstate, n_matrices=n_matrices, n_channels=n_channels
+    )
+    X = tangent_space(X, Cref=mean_riemann(X), metric="riemann")
+
+    tlregressor(reg, X, y_enc, source_domain, target_domain)
+
+
+def make_regression_transfer(rndstate, n_matrices, n_channels):
+    X = make_matrices(n_matrices, n_channels, "spd", rs=rndstate)
+    y = rndstate.randn(n_matrices)
+    domain = ["source_domain"] * (n_matrices // 2) \
+        + ["target_domain"] * (n_matrices // 2)
+    _, y_enc = encode_domains(X, y, domain)
+    return X, y_enc
+
+
+def tlregressor(reg, X, y_enc, source_domain, target_domain):
+    n_matrices = X.shape[0]
+
+    tlreg = TlRegressor(
+        target_domain="target_domain",
+        estimator=reg,
+        domain_weight={
+            "source_domain": source_domain,
+            "target_domain": target_domain,
+        },
+    )
 
     # test fit
     tlreg.fit(X, y_enc)

@@ -13,18 +13,18 @@ def encode_domains(X, y, domain):
 
     Parameters
     ----------
-    X : ndarray, shape (n, ...)
+    X : ndarray, shape (n_data, ...)
         Input data.
-    y : ndarray, shape (n,)
+    y : ndarray, shape (n_data,)
         Labels for each datum.
-    domain : ndarray, shape (n,)
+    domain : ndarray, shape (n_data,)
         Domains for each datum.
 
     Returns
     -------
-    X_enc : ndarray, shape (n, ...)
+    X_enc : ndarray, shape (n_data, ...)
         The same data given as input.
-    y_enc : ndarray, shape (n,)
+    y_enc : ndarray, shape (n_data,)
         Extended labels for each datum.
 
     See Also
@@ -52,18 +52,18 @@ def decode_domains(X_enc, y_enc):
 
     Parameters
     ----------
-    X_enc : ndarray, shape (n, ...)
+    X_enc : ndarray, shape (n_data, ...)
         Input data.
-    y_enc : ndarray, shape (n,)
+    y_enc : ndarray, shape (n_data,)
         Extended labels for each datum.
 
     Returns
     -------
-    X : ndarray, shape (n, ...)
+    X : ndarray, shape (n_data, ...)
         The same data given as input.
-    y : ndarray, shape (n,)
+    y : ndarray, shape (n_data,)
         Labels for each datum.
-    domain : ndarray, shape (n,)
+    domain : ndarray, shape (n_data,)
         Domains for each datum.
 
     See Also
@@ -115,9 +115,9 @@ class TlSplitter():
 
         Parameters
         ----------
-        X : ndarray, shape (n, ...)
+        X : ndarray, shape (n_data, ...)
             Input data.
-        y : ndarray, shape (n,)
+        y : ndarray, shape (n_data,)
             Extended labels for each datum.
 
         Yields
@@ -131,7 +131,7 @@ class TlSplitter():
         # decode the domains of the data
         X, y, domain = decode_domains(X, y)
 
-        # indentify the indices of the target dataset
+        # identify the indices of the target dataset
         idx_source = np.where(domain != self.target_domain)[0]
         idx_target = np.where(domain == self.target_domain)[0]
         y_target = y[idx_target]
@@ -140,7 +140,8 @@ class TlSplitter():
         ss_target = self.cv.split(idx_target, y_target)
         for train_sub_idx_target, test_sub_idx_target in ss_target:
             train_idx = np.concatenate(
-                [idx_source, idx_target[train_sub_idx_target]])
+                [idx_source, idx_target[train_sub_idx_target]]
+            )
             test_idx = idx_target[test_sub_idx_target]
             yield train_idx, test_idx
 

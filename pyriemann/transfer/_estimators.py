@@ -42,7 +42,7 @@ class TlDummy(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n, ...)
+        X : ndarray, shape (n_data, ...)
             Input data.
         y_enc : None
             Not used, here for compatibility with sklearn API.
@@ -59,12 +59,12 @@ class TlDummy(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n, ...)
+        X : ndarray, shape (n_data, ...)
             Input data.
 
         Returns
         -------
-        X_new : ndarray, shape (n, ...)
+        X_new : ndarray, shape (n_data, ...)
             Same data as in the input.
         """
         return X
@@ -74,14 +74,14 @@ class TlDummy(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n, ...)
+        X : ndarray, shape (n_data, ...)
             Input data.
         y_enc : None
             Not used, here for compatibility with sklearn API.
 
         Returns
         -------
-        X_new : ndarray
+        X_new : ndarray, shape (n_data, ...)
             Same data as in the input.
         """
         return self.fit(X, y_enc).transform(X)
@@ -126,7 +126,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
     Attributes
     ----------
     recenter_ : dict
-        If fit, dictionary with key=domain_name and value=domain_mean.
+        Dictionary with key=domain_name and value=domain_recentering.
 
     Notes
     -----
@@ -634,8 +634,8 @@ class TlTsCenter(BaseEstimator, TransformerMixin):
 
     Attributes
     ----------
-    center_ : dict
-        If fit, dictionary with key=domain_name and value=domain_mean.
+    centers_ : dict
+        Dictionary with key=domain_name and value=domain_mean_vector.
 
     Notes
     -----
@@ -665,10 +665,10 @@ class TlTsCenter(BaseEstimator, TransformerMixin):
         """
         X, y, domains = decode_domains(X, y_enc)
 
-        self.center_ = {}
+        self.centers_ = {}
         for d in np.unique(domains):
             idx = domains == d
-            self.center_[d] = np.mean(X[idx], axis=0)
+            self.centers_[d] = np.mean(X[idx], axis=0)
 
         return self
 
@@ -689,7 +689,7 @@ class TlTsCenter(BaseEstimator, TransformerMixin):
         X_new : ndarray, shape (n_vectors, n_ts)
             Set of centered tangent vectors.
         """
-        X_new = X - self.center_[self.target_domain]
+        X_new = X - self.centers_[self.target_domain]
         return X_new
 
     def fit_transform(self, X, y_enc):
@@ -721,7 +721,7 @@ class TlTsCenter(BaseEstimator, TransformerMixin):
         X_new = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
-            X_new[idx] = X[idx] - self.center_[d]
+            X_new[idx] = X[idx] - self.centers_[d]
         return X_new
 
 
@@ -738,7 +738,7 @@ class TlTsNormalize(BaseEstimator, TransformerMixin):
     Attributes
     ----------
     norms_ : dict
-        If fit, dictionary with key=domain_name and value=domain_norm.
+        Dictionary with key=domain_name and value=domain_norm.
 
     Notes
     -----
@@ -862,8 +862,8 @@ class TlTsRotate(BaseEstimator, TransformerMixin):
 
     Attributes
     ----------
-    rotation_ : ndarray, shape (n_ts, n_ts)
-        If fit, rotation matrix to match source domain into the target domain.
+    rotations_ : ndarray, shape (n_ts, n_ts)
+        Rotation matrix to match source domain into the target domain.
 
     See Also
     --------
@@ -986,7 +986,7 @@ class TlTsRotate(BaseEstimator, TransformerMixin):
             n_comps = int(self.expl_var)
         u = u[:, :n_comps]
         vh = vh[:n_comps, :]
-        self.rotation_ = vh.T @ u.T
+        self.rotations_ = vh.T @ u.T
 
     def transform(self, X):
         """Rotate the vectors in the target domain.
@@ -1036,7 +1036,7 @@ class TlTsRotate(BaseEstimator, TransformerMixin):
         for d in np.unique(domains):
             idx = domains == d
             if d != self.target_domain:
-                X_new[idx] = X[idx] @ self.rotation_
+                X_new[idx] = X[idx] @ self.rotations_
             else:
                 X_new[idx] = X[idx]
         return X_new
@@ -1085,9 +1085,9 @@ class TlEstimator(BaseEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n, ...)
+        X : ndarray, shape (n_data, ...)
             Input data.
-        y_enc : ndarray, shape (n,)
+        y_enc : ndarray, shape (n_data,)
             Extended labels for each datum.
 
         Returns
@@ -1128,12 +1128,12 @@ class TlEstimator(BaseEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n, ...)
+        X : ndarray, shape (n_data, ...)
             Input data.
 
         Returns
         -------
-        pred : ndarray, shape (n,)
+        pred : ndarray, shape (n_data,)
             Predictions according to the estimator.
         """
         return self.estimator.predict(X)
@@ -1178,9 +1178,9 @@ class TlClassifier(TlEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n, ...)
+        X : ndarray, shape (n_data, ...)
             Input data.
-        y_enc : ndarray, shape (n,)
+        y_enc : ndarray, shape (n_data,)
             Extended labels for each datum.
 
         Returns
@@ -1198,12 +1198,12 @@ class TlClassifier(TlEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n, ...)
+        X : ndarray, shape (n_data, ...)
             Input data.
 
         Returns
         -------
-        pred : ndarray, shape (n, n_classes)
+        pred : ndarray, shape (n_data, n_classes)
             Predictions for each datum.
         """
         return self.estimator.predict_proba(X)
@@ -1213,9 +1213,9 @@ class TlClassifier(TlEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n, ...)
+        X : ndarray, shape (n_data, ...)
             Test set of input data.
-        y_enc : ndarray, shape (n,)
+        y_enc : ndarray, shape (n_data,)
             Extended true labels for each datum.
 
         Returns
@@ -1267,9 +1267,9 @@ class TlRegressor(TlEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n, ...)
+        X : ndarray, shape (n_data, ...)
             Input data.
-        y_enc : ndarray, shape (n,)
+        y_enc : ndarray, shape (n_data,)
             Extended labels for each datum.
 
         Returns
@@ -1287,9 +1287,9 @@ class TlRegressor(TlEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n, ...)
+        X : ndarray, shape (n_data, ...)
             Test set of data.
-        y_enc : ndarray, shape (n,)
+        y_enc : ndarray, shape (n_data,)
             Extended true values for each datum.
 
         Returns
