@@ -262,7 +262,8 @@ def test_tlrotate(rndstate, get_weights, metric, use_weight):
         d_rot = distance_riemann(M_rot_label_source, M_rot_label_target)
         assert d_rot <= d_rct
 
-    rot.transform(X_rct)
+    X_rot = rot.transform(X_rct)
+    assert_array_equal(X_rot, X_rct)
 
 
 def make_classification_transfer_tangspace(rndstate, n_vectors_d=50, n_ts=10):
@@ -336,7 +337,7 @@ def test_tltsrotate(rndstate, n_components, n_clusters):
     assert tlrot.rotations_.shape == (n_ts, n_ts)
 
     X_rot = tlrot.fit_transform(X, y_enc)
-    assert X_rot.shape == (2 * n_vectors_d, n_ts)
+    assert X_rot.shape == X.shape
 
     X_rot = tlrot.transform(X)
     assert_array_equal(X_rot, X)
