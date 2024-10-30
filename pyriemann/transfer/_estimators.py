@@ -27,6 +27,11 @@ from ..utils import deprecated
 ###############################################################################
 
 
+def _check_inputs(X):
+    if X.ndim not in [2, 3]:
+        raise ValueError(f"Input must be a 2d or a 3d array (Got {X.ndim}).")
+
+
 class TlDummy(BaseEstimator, TransformerMixin):
     """No transformation for transfer learning.
 
@@ -95,19 +100,24 @@ class TLDummy(TlDummy):
     pass
 
 
-class TLCenter(BaseEstimator, TransformerMixin):
-    """Recenter matrices in manifold for transfer learning.
+class TlCenter(BaseEstimator, TransformerMixin):
+    """Centering for transfer learning.
 
-    Recenter the matrices from each domain to the identity on manifold, ie
-    make the mean of the datasets become the identity. This operation
-    corresponds to a whitening step if the SPD matrices represent the spatial
-    covariance matrices of multivariate signals.
+    For inputs in matrix manifold, it recenters the matrices from each domain
+    to the identity matrix on manifold, ie it makes the mean of the matrices of
+    each domain become the identity [1]_.
+    This operation corresponds to a whitening when the matrices represent the
+    spatial covariance matrices of multivariate signals.
+
+    For inputs in tangent space, it recenters the tangent vectors from each
+    domain to the origin of tangent space, ie it makes the mean of the vectors
+    of each domain become zero.
 
     .. note::
        Using .fit() and then .transform() will give different results than
        .fit_transform(). In fact, .fit_transform() should be applied on the
-       training dataset (target and source) and .transform() on the test
-       partition of the target dataset.
+       training set (target and source domains),
+       and .transform() on the target domain of the test set.
 
     Parameters
     ----------
@@ -125,12 +135,14 @@ class TLCenter(BaseEstimator, TransformerMixin):
 
     Attributes
     ----------
-    recenter_ : dict
-        Dictionary with key=domain_name and value=domain_recentering.
+    centers_ : dict
+        Dictionary with key=domain_name and value=domain_center.
 
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.8
+        Added support for tangent space centering.
 
     References
     ----------
@@ -151,132 +163,181 @@ class TLCenter(BaseEstimator, TransformerMixin):
         self.metric = metric
 
     def fit(self, X, y_enc, sample_weight=None):
-        """Fit TLCenter.
+        """Fit TlCenter.
 
-        For each domain, calculates the mean of matrices of this domain.
+        For each domain, it calculates the mean of matrices or vectors of this
+        domain.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
+        sample_weight : None | ndarray, shape (n_matrices,) or \
+                shape (n_vectors,), default=None
+            Weights for each matrix or vector. If None, it uses equal weights.
 
         Returns
         -------
-        self : TLCenter instance
-            The TLCenter instance.
+        self : TlCenter instance
+            The TlCenter instance.
         """
+        _check_inputs(X)
         _, _, domains = decode_domains(X, y_enc)
-        n_matrices, _, _ = X.shape
-        sample_weight = check_weights(sample_weight, n_matrices)
+        sample_weight = check_weights(sample_weight, X.shape[0])
 
-        self.recenter_ = {}
+        self.centers_ = {}
+
         for d in np.unique(domains):
             idx = domains == d
-            self.recenter_[d] = Whitening(metric=self.metric).fit(
-                X[idx], sample_weight=sample_weight[idx]
-            )
+            
+            if X.ndim == 3:
+                self.centers_[d] = Whitening(metric=self.metric).fit(
+                    X[idx],
+                    sample_weight=sample_weight[idx],
+                )
+
+            else:
+                self.centers_[d] = np.average(
+                    X[idx],
+                    axis=0,
+                    weights=sample_weight[idx],
+                )
+
         return self
 
     def transform(self, X):
-        """Re-center matrices in the target domain.
+        """Center inputs in the target domain.
 
         .. note::
            This method is designed for using at test time,
-           recentering all matrices in target domain, or in the last fitted
+           recentering all inputs in target domain, or in the last fitted
            domain.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
 
         Returns
         -------
-        X_new : ndarray, shape (n_matrices, n_classes)
-            Set of recentered SPD matrices.
+        X_new : ndarray, shape (n_matrices, n_classes) or \
+                shape (n_vectors, n_ts)
+            Set of centered SPD matrices or tangent vectors in target domain.
         """
+        _check_inputs(X)
+
         # if target domain is specified, use it
         if self.target_domain != "":
             target_domain = self.target_domain
         # else, use last calibrated domain as target domain
         else:
-            target_domain = list(self.recenter_.keys())[-1]
+            target_domain = list(self.centers_.keys())[-1]
 
-        X_new = self.recenter_[target_domain].transform(X)
+        if X.ndim == 3:
+            X_new = self.centers_[target_domain].transform(X)
+        else:
+            X_new = X - self.centers_[self.target_domain]
+
         return X_new
 
     def fit_transform(self, X, y_enc, sample_weight=None):
-        """Fit TLCenter and then transform matrices.
+        """Fit TlCenter and then transform inputs.
 
-        For each domain, calculates the mean of matrices of this domain and
-        then recenters them to identity.
+        For each domain, it calculates the mean of matrices or vectors of this
+        domain, and then recenters them to identity matrix or to null vector.
 
         .. note::
-           This method is designed for using at training time. The output for
-           .fit_transform() will be different than using .fit() and
-           .transform() separately.
+           This method is designed for using at training time.
+           The output for .fit_transform() will be different
+           than using .fit() and .transform() separately.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
+        sample_weight : None | ndarray, shape (n_matrices,) or \
+                shape (n_vectors,), default=None
+            Weights for each matrix or vector. If None, it uses equal weights.
 
         Returns
         -------
-        X_new : ndarray, shape (n_matrices, n_classes)
-            Set of recentered SPD matrices.
+        X_new : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of centered SPD matrices or tangent vectors in each domain.
         """
-        self.fit(X, y_enc, sample_weight)
+        self.fit(X, y_enc, sample_weight=sample_weight)
         _, _, domains = decode_domains(X, y_enc)
 
         X_new = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
-            X_new[idx] = self.recenter_[d].transform(X[idx])
+
+            if X.ndim == 3:
+                X_new[idx] = self.centers_[d].transform(X[idx])
+            else:
+                X_new[idx] = X[idx] - self.centers_[d]
+
         return X_new
 
 
-class TLStretch(BaseEstimator, TransformerMixin):
-    """Stretch matrices in manifold for transfer learning.
+@deprecated(
+    "TLCenter is deprecated and will be removed in 0.10.0; "
+    "please use TlCenter."
+)
+class TLCenter(TlCenter):
+    pass
 
-    Change the dispersion of the matrices around their geometric mean
-    for each dataset so that they all have the same desired value.
+
+class TlScale(BaseEstimator, TransformerMixin):
+    """Scaling for transfer learning.
+
+    For inputs in matrix manifold, it stretches the matrices from each domain
+    around their mean so that the dispersion of the matrices of each domain is
+    equal to one [1]_.
+
+    For inputs in tangent space, it scales the tangent vectors from each domain
+    so that the mean of norms of vectors of each domain is equal to one.
 
     .. note::
        Using .fit() and then .transform() will give different results than
        .fit_transform(). In fact, .fit_transform() should be applied on the
-       training dataset (target and source) and .transform() on the test
-       partition of the target dataset.
+       training set (target and source domains),
+       and .transform() on the target domain of the test set.
 
     Parameters
     ----------
     target_domain : str
         Domain to consider as target.
     dispersion : float, default=1.0
-        Target value for the dispersion of the matrices.
+        For inputs in manifold, target value for the dispersion of the
+        matrices.
     centered_data : bool, default=False
-        Whether the data has been re-centered to the identity beforehand.
+        For inputs in manifold, whether the matrices have been re-centered to
+        the identity matrix beforehand.
     metric : str, default="riemann"
-        Metric used for calculating the dispersion.
+        For inputs in manifold, metric used for calculating the dispersion.
         For the list of supported metrics,
         see :func:`pyriemann.utils.distance.distance`.
+        The stretching operation in manifold is properly defined only for the
+        "riemann" metric.
 
     Attributes
     ----------
-    dispersions_ : dict
-        Dictionary with key=domain_name and value=domain_dispersion.
+    scales_ : dict
+        Dictionary with key=domain_name and value=domain_scale.
 
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.8
+        Added support for tangent space scaling.
 
     References
     ----------
@@ -301,45 +362,54 @@ class TLStretch(BaseEstimator, TransformerMixin):
         self.metric = metric
 
     def fit(self, X, y_enc, sample_weight=None):
-        """Fit TLStretch.
+        """Fit TlScale.
 
-        Calculate the dispersion around the mean for each domain.
+        For each domain, it calculates the scaling of this domain,
+        ie the dispersion around the mean of matrices,
+        or the mean of the norm of vectors.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
+        sample_weight : None | ndarray, shape (n_matrices,) or \
+                shape (n_vectors,), default=None
+            Weights for each matrix or vector. If None, it uses equal weights.
 
         Returns
         -------
-        self : TLStretch instance
-            The TLStretch instance.
+        self : TlScale instance
+            The TlScale instance.
         """
+        _check_inputs(X)
         _, _, domains = decode_domains(X, y_enc)
-        n_matrices, n_channels, _ = X.shape
-        sample_weight = check_weights(sample_weight, n_matrices)
+        sample_weight = check_weights(sample_weight, X.shape[0])
 
-        self._means, self.dispersions_ = {}, {}
+        self._means, self.scales_ = {}, {}
         for d in np.unique(domains):
             idx = domains == d
             sample_weight_d = check_weights(sample_weight[idx], np.sum(idx))
-            if self.centered_data:
-                self._means[d] = np.eye(n_channels)
-            else:
-                self._means[d] = mean_riemann(
-                    X[idx], sample_weight=sample_weight_d
+            
+            if X.ndim == 3:
+                if self.centered_data:
+                    self._means[d] = np.eye(X.shape[-1])
+                else:
+                    self._means[d] = mean_riemann(
+                        X[idx], sample_weight=sample_weight_d
+                    )
+                dist = distance(
+                    X[idx],
+                    self._means[d],
+                    metric=self.metric,
+                    squared=True,
                 )
-            dist = distance(
-                X[idx],
-                self._means[d],
-                metric=self.metric,
-                squared=True,
-            )
-            self.dispersions_[d] = np.sum(sample_weight_d * np.squeeze(dist))
+                self.scales_[d] = np.sum(sample_weight_d * np.squeeze(dist))
+
+            else:
+                self.scales_[d] = np.mean(np.linalg.norm(X[idx], axis=1))
 
         return self
 
@@ -355,65 +425,73 @@ class TLStretch(BaseEstimator, TransformerMixin):
         return powm(X, np.sqrt(dispersion_out / dispersion_in))
 
     def transform(self, X):
-        """Stretch the matrices in the target domain.
+        """Scale inputs in the target domain.
 
         .. note::
-           The stretching operation is properly defined only for the "riemann"
-           metric.
+           This method is designed for using at test time,
+           scaling all inputs in target domain.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
 
         Returns
         -------
-        X_new : ndarray, shape (n_matrices, n_classes)
-            Set of SPD matrices with desired final dispersion.
+        X_new : ndarray, shape (n_matrices, n_classes) or \
+                shape (n_vectors, n_ts)
+            Set of scaled SPD matrices or tangent vectors in target domain.
         """
+        _check_inputs(X)
 
-        if not self.centered_data:
-            # center matrices to Identity
-            X = self._center(X, self._means[self.target_domain])
+        if X.ndim == 3:
+            if not self.centered_data:  # center matrices to identity
+                X = self._center(X, self._means[self.target_domain])
+        
+            # stretch
+            X_new = self._strech(
+                X, self.scales_[self.target_domain], self.final_dispersion
+            )
+        
+            if not self.centered_data:  # re-center back to previous mean
+                X_new = self._uncenter(X_new, self._means[self.target_domain])
 
-        # stretch
-        X_new = self._strech(
-            X, self.dispersions_[self.target_domain], self.final_dispersion
-        )
-
-        if not self.centered_data:
-            # re-center back to previous mean
-            X_new = self._uncenter(X_new, self._means[self.target_domain])
+        else:
+            X_new = X / self.scales_[self.target_domain]
 
         return X_new
 
     def fit_transform(self, X, y_enc, sample_weight=None):
-        """Fit TLStretch and then transform matrices.
+        """Fit TlScale and then transform inputs.
 
-        Calculate the dispersion around the mean for each domain and then
-        stretch the matrices to the desired final dispersion.
+        For each domain, it calculates the dispersion around the mean of this
+        domain, and then stretches them to the desired final dispersion.
+        For vectors, it scales them so that the mean of norms of vectors of
+        each domain is equal to one.
 
         .. note::
-           This method is designed for using at training time. The output for
-           .fit_transform() will be different than using .fit() and
-           .transform() separately.
+           This method is designed for using at training time.
+           The output for .fit_transform() will be different
+           than using .fit() and .transform() separately.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
+        sample_weight : None | ndarray, shape (n_matrices,) or \
+                shape (n_vectors,), default=None
+            Weights for each matrix or vector. If None, it uses equal weights.
 
         Returns
         -------
-        X_new : ndarray, shape (n_matrices, n_classes)
-            Set of SPD matrices with desired final dispersion.
+        X_new : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of scaled SPD matrices or tangent vectors in each domain.
         """
-
-        # used during fit, in pipeline
         self.fit(X, y_enc, sample_weight)
         _, _, domains = decode_domains(X, y_enc)
 
@@ -421,20 +499,30 @@ class TLStretch(BaseEstimator, TransformerMixin):
         for d in np.unique(domains):
             idx = domains == d
 
-            if not self.centered_data:
-                # re-center matrices to Identity
-                X[idx] = self._center(X[idx], self._means[d])
+            if X.ndim == 3:
+                if not self.centered_data:  # re-center matrices to identity
+                    X[idx] = self._center(X[idx], self._means[d])
 
-            # stretch
-            X_new[idx] = self._strech(
-                X[idx], self.dispersions_[d], self.final_dispersion
-            )
+                # stretch
+                X_new[idx] = self._strech(
+                    X[idx], self.scales_[d], self.final_dispersion
+                )
 
-            if not self.centered_data:
-                # re-center back to previous mean
-                X_new[idx] = self._uncenter(X_new[idx], self._means[d])
+                if not self.centered_data:  # re-center back to previous mean
+                    X_new[idx] = self._uncenter(X_new[idx], self._means[d])
+
+            else:
+                X_new[idx] = X[idx] / self.scales_[d]
 
         return X_new
+
+
+@deprecated(
+    "TLStretch is deprecated and will be removed in 0.10.0; "
+    "please use TlScale."
+)
+class TLStretch(TlScale):
+    pass
 
 
 class TLRotate(BaseEstimator, TransformerMixin):
@@ -616,215 +704,6 @@ class TLRotate(BaseEstimator, TransformerMixin):
                 X_new[idx] = self.rotations_[d] @ X[idx] @ self.rotations_[d].T
             else:
                 X_new[idx] = X[idx]
-        return X_new
-
-
-###############################################################################
-
-
-class TlTsCenter(BaseEstimator, TransformerMixin):
-    """Center vectors in tangent space for transfer learning.
-
-    Center the vectors from each domain to zero on tangent space.
-
-    Parameters
-    ----------
-    target_domain : string
-        Name of the target domain in extended labels.
-
-    Attributes
-    ----------
-    centers_ : dict
-        Dictionary with key=domain_name and value=domain_mean_vector.
-
-    Notes
-    -----
-    .. versionadded:: 0.8
-    """
-
-    def __init__(self, target_domain):
-        """Init"""
-        self.target_domain = target_domain
-
-    def fit(self, X, y_enc):
-        """Fit TlTsCenter.
-
-        For each domain, calculates the mean of vectors of this domain.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_vectors, n_ts)
-            Set of tangent vectors.
-        y_enc : ndarray, shape (n_vectors,)
-            Extended labels for each vector.
-
-        Returns
-        -------
-        self : TlTsCenter instance
-            The TlTsCenter instance.
-        """
-        X, y, domains = decode_domains(X, y_enc)
-
-        self.centers_ = {}
-        for d in np.unique(domains):
-            idx = domains == d
-            self.centers_[d] = np.mean(X[idx], axis=0)
-
-        return self
-
-    def transform(self, X):
-        """Center vectors in the target domain.
-
-        .. note::
-           This method is designed for using at test time,
-           recentering all vectors in target domain.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_vectors, n_ts)
-            Set of tangent vectors.
-
-        Returns
-        -------
-        X_new : ndarray, shape (n_vectors, n_ts)
-            Set of centered tangent vectors.
-        """
-        X_new = X - self.centers_[self.target_domain]
-        return X_new
-
-    def fit_transform(self, X, y_enc):
-        """Fit TlTsCenter and then transform vectors.
-
-        For each domain, calculates the mean of vectors of this domain and
-        then recenters them to zero.
-
-        .. note::
-           This method is designed for using at training time. The output for
-           .fit_transform() will be different than using .fit() and
-           .transform() separately.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_vectors, n_ts)
-            Set of tangent vectors.
-        y_enc : ndarray, shape (n_vectors,)
-            Extended labels for each vector.
-
-        Returns
-        -------
-        X_new : ndarray, shape (n_vectors, n_ts)
-            Set of centered tangent vectors.
-        """
-        self.fit(X, y_enc)
-        X, y, domains = decode_domains(X, y_enc)
-
-        X_new = np.zeros_like(X)
-        for d in np.unique(domains):
-            idx = domains == d
-            X_new[idx] = X[idx] - self.centers_[d]
-        return X_new
-
-
-class TlTsNormalize(BaseEstimator, TransformerMixin):
-    """Normalize vectors in tangent space for transfer learning.
-
-    Normalize the vectors from each domain on tangent space.
-
-    Parameters
-    ----------
-    target_domain : string
-        Name of the target domain in extended labels.
-
-    Attributes
-    ----------
-    norms_ : dict
-        Dictionary with key=domain_name and value=domain_norm.
-
-    Notes
-    -----
-    .. versionadded:: 0.8
-    """
-
-    def __init__(self, target_domain):
-        """Init"""
-        self.target_domain = target_domain
-
-    def fit(self, X, y_enc):
-        """Fit TlTsNormalize.
-
-        For each domain, calculates the mean of vector norms of this domain.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_vectors, n_ts)
-            Set of tangent vectors.
-        y_enc : ndarray, shape (n_vectors,)
-            Extended labels for each vector.
-
-        Returns
-        -------
-        self : TlTsNormalize instance
-            The TlTsNormalize instance.
-        """
-        X, y, domains = decode_domains(X, y_enc)
-
-        self.norms_ = {}
-        for d in np.unique(domains):
-            idx = domains == d
-            self.norms_[d] = np.mean(np.linalg.norm(X[idx], axis=1))
-
-        return self
-
-    def transform(self, X):
-        """Normalize vectors in the target domain.
-
-        .. note::
-           This method is designed for using at test time,
-           normalizing all vectors in target domain.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_vectors, n_ts)
-            Set of tangent vectors.
-
-        Returns
-        -------
-        X_new : ndarray, shape (n_vectors, n_ts)
-            Set of normalized tangent vectors.
-        """
-        X_new = X / self.norms_[self.target_domain]
-        return X_new
-
-    def fit_transform(self, X, y_enc):
-        """Fit TlTsNormalize and then transform vectors.
-
-        For each domain, calculates the mean of vector norms of this domain and
-        normalizes them.
-
-        .. note::
-           This method is designed for using at training time. The output for
-           .fit_transform() will be different than using .fit() and
-           .transform() separately.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_vectors, n_ts)
-            Set of tangent vectors.
-        y_enc : ndarray, shape (n_vectors,)
-            Extended labels for each vector.
-
-        Returns
-        -------
-        X_new : ndarray, shape (n_vectors, n_ts)
-            Set of normalized tangent vectors.
-        """
-        self.fit(X, y_enc)
-        X, y, domains = decode_domains(X, y_enc)
-
-        X_new = np.zeros_like(X)
-        for d in np.unique(domains):
-            idx = domains == d
-            X_new[idx] = X[idx] / self.norms_[d]
         return X_new
 
 
