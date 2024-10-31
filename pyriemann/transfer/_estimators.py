@@ -19,7 +19,7 @@ from ..utils.distance import distance
 from ..utils.geodesic import geodesic
 from ..utils.mean import mean_covariance, mean_riemann
 from ..utils.utils import check_weights, check_metric
-from ._rotate import _get_rotation_matrix
+from ._rotate import _get_rotation_manifold, _get_rotation_tangentspace
 from ._tools import decode_domains
 from ..utils import deprecated
 
@@ -192,7 +192,7 @@ class TlCenter(BaseEstimator, TransformerMixin):
 
         for d in np.unique(domains):
             idx = domains == d
-            
+
             if X.ndim == 3:
                 self.centers_[d] = Whitening(metric=self.metric).fit(
                     X[idx],
@@ -333,6 +333,10 @@ class TlScale(BaseEstimator, TransformerMixin):
     scales_ : dict
         Dictionary with key=domain_name and value=domain_scale.
 
+    See Also
+    --------
+    TlCenter
+
     Notes
     -----
     .. versionadded:: 0.4
@@ -392,7 +396,7 @@ class TlScale(BaseEstimator, TransformerMixin):
         for d in np.unique(domains):
             idx = domains == d
             sample_weight_d = check_weights(sample_weight[idx], np.sum(idx))
-            
+
             if X.ndim == 3:
                 if self.centered_data:
                     self._means[d] = np.eye(X.shape[-1])
@@ -448,12 +452,12 @@ class TlScale(BaseEstimator, TransformerMixin):
         if X.ndim == 3:
             if not self.centered_data:  # center matrices to identity
                 X = self._center(X, self._means[self.target_domain])
-        
+
             # stretch
             X_new = self._strech(
                 X, self.scales_[self.target_domain], self.final_dispersion
             )
-        
+
             if not self.centered_data:  # re-center back to previous mean
                 X_new = self._uncenter(X_new, self._means[self.target_domain])
 
@@ -492,7 +496,7 @@ class TlScale(BaseEstimator, TransformerMixin):
                 shape (n_vectors, n_ts)
             Set of scaled SPD matrices or tangent vectors in each domain.
         """
-        self.fit(X, y_enc, sample_weight)
+        self.fit(X, y_enc, sample_weight=sample_weight)
         _, _, domains = decode_domains(X, y_enc)
 
         X_new = np.zeros_like(X)
@@ -525,23 +529,26 @@ class TLStretch(TlScale):
     pass
 
 
-class TLRotate(BaseEstimator, TransformerMixin):
-    """Rotate matrices in manifold for transfer learning.
+class TlRotate(BaseEstimator, TransformerMixin):
+    """Rotation for transfer learning.
 
-    Rotate the matrices from each source domain so to match its class means
-    with those from the target domain. The loss function for this matching was
-    first proposed in [1]_ and the optimization procedure for minimizing it
-    follows the presentation from [2]_.
+    For inputs in matrix manifold, it rotates the matrices from each source
+    domain so to match its class means with those from the target domain.
+    The loss function for this matching is described in [1]_ and the
+    optimization procedure for minimizing it in [2]_.
+
+    For inputs in tangent space, it rotates the tangent vectors from source
+    domain so to match its class means with those from the target domain [3]_.
 
     .. note::
-       The matrices from each domain must have been re-centered to the
-       identity before calculating the rotation.
+       The inputs from each domain must have been centered to the before
+       calculating the rotation.
 
     .. note::
        Using .fit() and then .transform() will give different results than
        .fit_transform(). In fact, .fit_transform() should be applied on the
-       training dataset (target and source) and .transform() on the test
-       partition of the target dataset.
+       training set (target and source domains),
+       and .transform() on the target domain of the test set.
 
     Parameters
     ----------
@@ -551,11 +558,24 @@ class TLRotate(BaseEstimator, TransformerMixin):
         Weights to assign for each class. If None, then give the same weight
         for each class.
     metric : {"euclid", "riemann"}, default="euclid"
-        Metric for the distance to minimize between class means.
+        For inputs in manifold, metric for the distance to minimize between
+        class means.
     n_jobs : int, default=1
-        The number of jobs to use for the computation. This works by computing
-        the rotation matrix for each source domain in parallel. If -1 all CPUs
-        are used.
+        For inputs in manifold, the number of jobs to use for the computation.
+        This works by computing the rotation matrix for each source domain in
+        parallel. If -1 all CPUs are used.
+    expl_var : float, default=0.999
+        For inputs in tangent space, dimension reduction applied to the cross
+        product matrix during Procrustes analysis.
+        If float in (0,1], percentage of variance that needs to be explained.
+        Else, number of components.
+    n_components : int | "max", default=1
+        For inputs in tangent space,
+        parameter `n_components` used in `sklearn.decomposition.PCA`.
+        If int, number of components to keep in PCA.
+        If "max", all components are kept.
+    n_clusters : int, default=3
+        For inputs in tangent space, number of clusters used to split data.
 
     Attributes
     ----------
@@ -564,11 +584,13 @@ class TLRotate(BaseEstimator, TransformerMixin):
 
     See Also
     --------
-    TLCenter
+    TlCenter
 
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.8
+        Added support for tangent space rotation.
 
     References
     ----------
@@ -580,39 +602,70 @@ class TLRotate(BaseEstimator, TransformerMixin):
     .. [2] `An introduction to optimization on smooth manifolds
         <https://www.nicolasboumal.net/book/>`_
         N. Boumal. To appear with Cambridge University Press. June, 2022
+    .. [3] `Tangent space alignment: Transfer learning for brain-computer
+        interface
+        <https://www.frontiersin.org/articles/10.3389/fnhum.2022.1049985/pdf>`_
+        A. Bleuzé, J. Mattout and M. Congedo, Frontiers in Human Neuroscience,
+        2022
     """
 
-    def __init__(self, target_domain, weights=None, metric="euclid", n_jobs=1):
+    def __init__(
+        self,
+        target_domain,
+        weights=None,
+        metric="euclid",
+        n_jobs=1,
+        expl_var=0.999,
+        n_components=1,
+        n_clusters=3,
+    ):
         """Init"""
         self.target_domain = target_domain
         self.weights = weights
         self.metric = metric
         self.n_jobs = n_jobs
+        self.expl_var = expl_var
+        self.n_components = n_components
+        self.n_clusters = n_clusters
 
     def fit(self, X, y_enc, sample_weight=None):
-        """Fit TLRotate.
+        """Fit TlRotate.
 
-        Calculate the rotations matrices to transform each source domain into
-        the target domain.
+        It calculates the rotations matrices to transform each source domain
+        into the target domain.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
+        sample_weight : None | ndarray, shape (n_matrices,) or \
+                shape (n_vectors,), default=None
+            Weights for each matrix or vector. If None, it uses equal weights.
 
         Returns
         -------
-        self : TLRotate instance
-            The TLRotate instance.
+        self : TlRotate instance
+            The TlRotate instance.
         """
-
+        _check_inputs(X)
         _, _, domains = decode_domains(X, y_enc)
-        n_matrices, _, _ = X.shape
-        sample_weight = check_weights(sample_weight, n_matrices)
+        sample_weight = check_weights(sample_weight, X.shape[0])
+
+        if X.ndim == 3:
+            self._fit_manifold(X, y_enc, domains, sample_weight)
+        else:
+            if len(np.unique(domains)) > 2:
+                raise ValueError(
+                    "Current implementation supports only one source domain"
+                )
+            self._fit_tangentspace(X, y_enc, domains)
+
+        return self
+
+    def _fit_manifold(self, X, y_enc, domains, sample_weight):
 
         idx = domains == self.target_domain
         X_target, y_target = X[idx], y_enc[idx]
@@ -626,7 +679,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
         source_domains = np.unique(domains)
         source_domains = source_domains[source_domains != self.target_domain]
         rotations = Parallel(n_jobs=self.n_jobs)(
-            delayed(_get_rotation_matrix)(
+            delayed(_get_rotation_manifold)(
                 np.stack([
                     mean_riemann(
                         X[domains == d][y_enc[domains == d] == label],
@@ -645,164 +698,13 @@ class TLRotate(BaseEstimator, TransformerMixin):
         for d, rot in zip(source_domains, rotations):
             self.rotations_[d] = rot
 
-        return self
-
-    def transform(self, X):
-        """Rotate the matrices in the target domain.
-
-        The rotations are done from source to target, so in this step the
-        matrices suffer no transformation at all.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-
-        Returns
-        -------
-        X_new : ndarray, shape (n_matrices, n_classes)
-            Same set of SPD matrices as in the input.
-        """
-
-        # used during inference on target domain
-        return X
-
-    def fit_transform(self, X, y_enc, sample_weight=None):
-        """Fit TLRotate and then transform matrices.
-
-        Calculate and apply the rotation matrix for matching each source domain
-        to the target domain.
-
-        .. note::
-           This method is designed for using at training time. The output for
-           .fit_transform() will be different than using .fit() and
-           .transform() separately.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
-
-        Returns
-        -------
-        X_new : ndarray, shape (n_matrices, n_classes)
-            Set of SPD matrices after rotation step.
-        """
-
-        # used during fit in pipeline, rotate each source domain
-        self.fit(X, y_enc, sample_weight)
-        _, _, domains = decode_domains(X, y_enc)
-
-        X_new = np.zeros_like(X)
-        for d in np.unique(domains):
-            idx = domains == d
-            if d != self.target_domain:
-                X_new[idx] = self.rotations_[d] @ X[idx] @ self.rotations_[d].T
-            else:
-                X_new[idx] = X[idx]
-        return X_new
-
-
-class TlTsRotate(BaseEstimator, TransformerMixin):
-    """Rotate vectors in tangent space for transfer learning.
-
-    Rotate the tangent vectors from source domain so to match its class
-    means with those from the target domain [1]_.
-
-    .. note::
-       The vectors from each domain must have been centered and normalized
-       before calculating the rotation.
-
-    .. note::
-       Using .fit() and then .transform() will give different results than
-       .fit_transform(). In fact, .fit_transform() should be applied on the
-       training dataset (target and source) and .transform() on the test
-       partition of the target dataset.
-
-    Parameters
-    ----------
-    target_domain : string
-        Name of the target domain in extended labels.
-    expl_var : float, default=0.999
-        Dimension reduction applied to the cross product matrix during
-        Procrustes analysis.
-        If float in (0,1], percentage of variance that needs to be explained.
-        Else, number of components.
-    n_components : int | "max", default=1
-        Parameter `n_components` used in `sklearn.decomposition.PCA`.
-        If int, number of components to keep in PCA.
-        If "max", all components are kept.
-    n_clusters : int, default=3
-        Number of clusters used to split data.
-
-    Attributes
-    ----------
-    rotations_ : ndarray, shape (n_ts, n_ts)
-        Rotation matrix to match source domain into the target domain.
-
-    See Also
-    --------
-    TlTsCenter
-    TlTsNormalize
-
-    Notes
-    -----
-    .. versionadded:: 0.8
-
-    References
-    ----------
-    .. [1] `Tangent space alignment: Transfer learning for brain-computer
-        interface
-        <https://www.frontiersin.org/articles/10.3389/fnhum.2022.1049985/pdf>`_
-        A. Bleuzé, J. Mattout and M. Congedo, Frontiers in Human Neuroscience,
-        2022
-    """
-
-    def __init__(
-        self,
-        target_domain,
-        expl_var=0.999,
-        n_components=1,
-        n_clusters=3,
-    ):
-        """Init"""
-        self.target_domain = target_domain
-        self.expl_var = expl_var
-        self.n_components = n_components
-        self.n_clusters = n_clusters
-
-    def fit(self, X, y_enc):
-        """Fit TlTsRotate.
-
-        Calculate the rotation matrix to match source domain into the target
-        domain.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_vectors, n_ts)
-            Set of tangent vectors.
-        y_enc : ndarray, shape (n_vectors,)
-            Extended labels for each vector.
-
-        Returns
-        -------
-        self : TlTsRotate instance
-            The TlTsRotate instance.
-        """
-        X, y, domains = decode_domains(X, y_enc)
+    def _fit_tangentspace(self, X, y_enc, domains):
+        _, y, _ = decode_domains(X, y_enc)
         X_src = X[domains != self.target_domain]
         y_src = y[domains != self.target_domain]
         X_tgt = X[domains == self.target_domain]
         y_tgt = y[domains == self.target_domain]
 
-        if len(np.unique(domains)) > 2:
-            raise ValueError(
-                "Current implementation supports only one source domain"
-            )
         if len(np.unique(y_src)) != len(np.unique(y_tgt)):
             raise ValueError(
                 "The number of classes in each domain don't match"
@@ -822,9 +724,12 @@ class TlTsRotate(BaseEstimator, TransformerMixin):
         else:
             warnings.warn("Not enough vectors for either source or target")
             n_classes = len(np.unique(y_src))
-        self._fit_rotation(src_means, tgt_means, n_classes)
-
-        return self
+        self.rotations_ = _get_rotation_tangentspace(
+            src_means,
+            tgt_means,
+            n_classes,
+            self.expl_var,
+        )
 
     def _fit_means(self, X, y, fit_pca):
         is_valid = True
@@ -856,69 +761,78 @@ class TlTsRotate(BaseEstimator, TransformerMixin):
 
         return means, is_valid
 
-    def _fit_rotation(self, D_src, D_tgt, n_classes):
-        C = D_src[:n_classes].T @ D_tgt[:n_classes]
-        u, s, vh = np.linalg.svd(C)
-        if self.expl_var <= 1:
-            n_comps = np.sum(np.cumsum(s) < self.expl_var * np.sum(s)) + 1
-        else:
-            n_comps = int(self.expl_var)
-        u = u[:, :n_comps]
-        vh = vh[:n_comps, :]
-        self.rotations_ = vh.T @ u.T
-
     def transform(self, X):
-        """Rotate the vectors in the target domain.
+        """Rotate inputs in the target domain.
 
-        The rotation is done from source to target, so in this step the
-        vectors suffer no transformation at all.
+        The rotations are done from source to target, so in this step, the
+        data suffer no transformation at all.
 
         Parameters
         ----------
-        X : ndarray, shape (n_vectors, n_ts)
-            Set of tangent vectors.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
 
         Returns
         -------
-        X_new : ndarray, shape (n_vectors, n_ts)
-            Same set of tangent vectors as in the input.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Same data as in the input.
         """
         return X
 
-    def fit_transform(self, X, y_enc):
-        """Fit TlTsRotate and then transform matrices.
+    def fit_transform(self, X, y_enc, sample_weight=None):
+        """Fit TlRotate and then transform inputs.
 
-        Calculate and apply the rotation matrix for matching source domain to
-        the target domain.
+        It calculates and applies the rotation matrix for matching each source
+        domain to the target domain.
 
         .. note::
-           This method is designed for using at training time. The output for
-           .fit_transform() will be different than using .fit() and
-           .transform() separately.
+           This method is designed for using at training time.
+           The output for .fit_transform() will be different
+           than using .fit() and .transform() separately.
 
         Parameters
         ----------
-        X : ndarray, shape (n_vectors, n_ts)
-            Set of tangent vectors.
-        y_enc : ndarray, shape (n_vectors,)
-            Extended labels for each vector.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
+        sample_weight : None | ndarray, shape (n_matrices,) or \
+                shape (n_vectors,), default=None
+            Weights for each matrix or vector. If None, it uses equal weights.
 
         Returns
         -------
-        X_new : ndarray, shape (n_vectors, n_ts)
-            Set of tangent vectors after Procrustes registration.
+        X_new : ndarray, shape (n_matrices, n_classes)
+            Set of rotated SPD matrices or tangent vectors to target domain.
         """
-        self.fit(X, y_enc)
+        self.fit(X, y_enc, sample_weight=sample_weight)
         _, _, domains = decode_domains(X, y_enc)
 
         X_new = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
-            if d != self.target_domain:
-                X_new[idx] = X[idx] @ self.rotations_
-            else:
+
+            if d == self.target_domain:
                 X_new[idx] = X[idx]
+            else:
+                if X.ndim == 3:
+                    X_new[idx] = self.rotations_[d] @ X[idx] \
+                        @ self.rotations_[d].T
+                else:
+                    X_new[idx] = X[idx] @ self.rotations_
+
         return X_new
+
+
+@deprecated(
+    "TLRotate is deprecated and will be removed in 0.10.0; "
+    "please use TlRotate."
+)
+class TLRotate(TlRotate):
+    pass
 
 
 ###############################################################################

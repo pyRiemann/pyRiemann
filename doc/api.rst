@@ -156,12 +156,9 @@ Transfer Learning
     TlClassifier
     TlRegressor
     TlDummy
-    TLCenter
-    TLStretch
-    TLRotate
-    TlTsCenter
-    TlTsNormalize
-    TlTsRotate
+    TlCenter
+    TlScale
+    TlRotate
     MDWM
 
 Stats

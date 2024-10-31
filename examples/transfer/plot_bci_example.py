@@ -30,7 +30,7 @@ from pyriemann.estimation import Covariances
 from pyriemann.transfer import (
     encode_domains,
     TlDummy,
-    TLCenter,
+    TlCenter,
     TlClassifier,
     TlSplitter,
 )
@@ -169,7 +169,7 @@ for i_subject in tqdm(range(n_subjects)):
         domain_weight_rct[tl_cv.target_domain] = 0.0
 
         pipeline = make_pipeline(
-            TLCenter(target_domain=tl_cv.target_domain),
+            TlCenter(target_domain=tl_cv.target_domain),
             TlClassifier(
                 target_domain=tl_cv.target_domain,
                 estimator=clf_base,

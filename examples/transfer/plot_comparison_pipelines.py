@@ -34,12 +34,9 @@ from pyriemann.tangentspace import TangentSpace
 from pyriemann.transfer import (
     TlSplitter,
     TlDummy,
-    TLCenter,
-    TLStretch,
-    TLRotate,
-    TlTsCenter,
-    TlTsNormalize,
-    TlTsRotate,
+    TlCenter,
+    TlScale,
+    TlRotate,
     TlClassifier,
     MDWM,
 )
@@ -133,7 +130,7 @@ for target_train_frac in tqdm(target_train_frac_array):
         # RCT pipeline: recenter data from each domain to identity [1]_.
         # Classifier is trained only with matrices from the source domain.
         pipeline = make_pipeline(
-            TLCenter(target_domain=target_domain),
+            TlCenter(target_domain=target_domain),
             TlClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
@@ -147,13 +144,13 @@ for target_train_frac in tqdm(target_train_frac_array):
         # RPA pipeline: recenter, stretch, and rotate [2]_.
         # Classifier is trained with matrices from source and target.
         pipeline = make_pipeline(
-            TLCenter(target_domain=target_domain),
-            TLStretch(
+            TlCenter(target_domain=target_domain),
+            TlScale(
                 target_domain=target_domain,
                 final_dispersion=1,
                 centered_data=True,
             ),
-            TLRotate(target_domain=target_domain, metric="euclid"),
+            TlRotate(target_domain=target_domain, metric="euclid"),
             TlClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
@@ -178,9 +175,9 @@ for target_train_frac in tqdm(target_train_frac_array):
         # TSA pipeline: center, normalize and rotate in tangent space [4]_
         pipeline = make_pipeline(
             TangentSpace(metric="riemann"),
-            TlTsCenter(target_domain=target_domain),
-            TlTsNormalize(target_domain=target_domain),
-            TlTsRotate(target_domain=target_domain),
+            TlCenter(target_domain=target_domain),
+            TlScale(target_domain=target_domain),
+            TlRotate(target_domain=target_domain),
             TlClassifier(
                 target_domain=target_domain,
                 estimator=LogisticRegression(),

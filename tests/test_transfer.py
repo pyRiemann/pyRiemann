@@ -27,8 +27,7 @@ from pyriemann.transfer import (
     TlDummy,
     TlCenter,
     TlScale,
-    TLRotate,
-    TlTsRotate,
+    TlRotate,
     TlClassifier,
     TlRegressor,
     MDWM,
@@ -50,7 +49,7 @@ def make_classification_transfer_tangspace(rndstate, n_vectors_d=50, n_ts=10):
     y = rndstate.randint(0, 3, size=n_vectors)
     domains = np.array(n_vectors_d * ["src"] + n_vectors_d * ["tgt"])
     _, y_enc = encode_domains(X, y, domains)
-    return X, y_enc, domains
+    return X, y_enc
 
 
 def make_regression_transfer(rndstate, n_matrices, n_channels):
@@ -200,7 +199,7 @@ def test_tlcenter_manifold_fit_transf(rndstate, get_weights,
 def test_tlcenter_tangentspace(rndstate):
     """Test centering tangent vectors to origin"""
     n_vectors_d, n_ts = 50, 10
-    X, y_enc, domains = make_classification_transfer_tangspace(
+    X, y_enc = make_classification_transfer_tangspace(
         rndstate, n_vectors_d, n_ts
     )
 
@@ -226,7 +225,7 @@ def test_tlcenter_tangentspace(rndstate):
 @pytest.mark.parametrize("metric", ["riemann"])
 @pytest.mark.parametrize("use_weight", [True, False])
 def test_tlscale_manifold(rndstate, get_weights,
-                   use_centered_data, metric, use_weight):
+                          use_centered_data, metric, use_weight):
     """Test scaling matrices to a target dispersion"""
     X, y_enc = make_classification_transfer(
         n_matrices=25, class_disp=2.0, random_state=rndstate
@@ -269,9 +268,11 @@ def test_tlscale_manifold(rndstate, get_weights,
 def test_tlscale_tangentspace(rndstate):
     """Test scaling vectors to unit norm"""
     n_vectors_d, n_ts = 50, 10
-    X, y_enc, domains = make_classification_transfer_tangspace(
+    X, y_enc = make_classification_transfer_tangspace(
         rndstate, n_vectors_d, n_ts
     )
+
+    _, _, domain = decode_domains(X, y_enc)
 
     tlnrm = TlScale(target_domain="tgt")
 
@@ -280,19 +281,18 @@ def test_tlscale_tangentspace(rndstate):
     # Test if the mean of norms of each domain is indeed 1
     X_norm = tlnrm.fit_transform(X, y_enc)
     assert X_norm.shape == X.shape
-    for d in np.unique(domains):
-        idx = domains == d
+    for d in np.unique(domain):
+        idx = domain == d
         assert np.mean(np.linalg.norm(X_norm[idx], axis=1)) == pytest.approx(1)
 
     X_norm = tlnrm.transform(X)
     assert X_norm.shape == X.shape
 
 
-
 @pytest.mark.parametrize("metric", ["euclid", "riemann"])
 @pytest.mark.parametrize("use_weight", [True, False])
-def test_tlrotate(rndstate, get_weights, metric, use_weight):
-    """Test fit_transform method for rotating the datasets"""
+def test_tlrotate_manifold(rndstate, get_weights, metric, use_weight):
+    """Test rotating matrices"""
     X, y_enc = make_classification_transfer(
         n_matrices=50,
         class_sep=3,
@@ -310,9 +310,13 @@ def test_tlrotate(rndstate, get_weights, metric, use_weight):
 
     rct = TlCenter(target_domain="target_domain", metric=metric)
     X_rct = rct.fit_transform(X, y_enc, sample_weight=weights)
-    rot = TLRotate(target_domain="target_domain", metric=metric)
+    rot = TlRotate(target_domain="target_domain", metric=metric)
     X_rot = rot.fit_transform(X_rct, y_enc, sample_weight=weights)
-    
+    assert_array_equal(
+        X_rot[domain == "target_domain"],
+        X_rct[domain == "target_domain"],
+    )
+
     # check if the distance between the classes of each domain is reduced
     for label in np.unique(y):
         d = "source_domain"
@@ -343,14 +347,16 @@ def test_tlrotate(rndstate, get_weights, metric, use_weight):
 
 @pytest.mark.parametrize("n_components", [1, 3, "max"])
 @pytest.mark.parametrize("n_clusters", [1, 2, 5])
-def test_tltsrotate(rndstate, n_components, n_clusters):
-    """Test TlTsRotate"""
+def test_tlrotate_tangentspace(rndstate, n_components, n_clusters):
+    """Test rotating vectors"""
     n_vectors_d, n_ts = 50, 10
-    X, y_enc, domains = make_classification_transfer_tangspace(
+    X, y_enc = make_classification_transfer_tangspace(
         rndstate, n_vectors_d, n_ts
     )
 
-    tlrot = TlTsRotate(
+    _, _, domain = decode_domains(X, y_enc)
+
+    tlrot = TlRotate(
         target_domain="tgt",
         n_components=n_components,
         n_clusters=n_clusters,
@@ -361,6 +367,10 @@ def test_tltsrotate(rndstate, n_components, n_clusters):
 
     X_rot = tlrot.fit_transform(X, y_enc)
     assert X_rot.shape == X.shape
+    assert_array_equal(
+        X_rot[domain == "target_domain"],
+        X[domain == "target_domain"],
+    )
 
     X_rot = tlrot.transform(X)
     assert_array_equal(X_rot, X)

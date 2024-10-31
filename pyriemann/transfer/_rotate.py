@@ -1,5 +1,7 @@
 import warnings
+
 import numpy as np
+
 from ..utils.distance import distance
 from ..utils.utils import check_weights
 
@@ -142,7 +144,7 @@ def _run_minimization(
     return Q, F
 
 
-def _get_rotation_matrix(
+def _get_rotation_manifold(
     M_source,
     M_target,
     weights=None,
@@ -151,9 +153,10 @@ def _get_rotation_matrix(
     maxiter=10_000,
     maxiter_linesearch=32,
 ):
-    r"""Calculate rotation matrix for the Riemannian Procustes Analysis.
+    r"""Calculate rotation matrix in the manifold.
 
-    Get the rotation matrix Q that minimizes the loss function:
+    For the Riemannian Procustes Analysis in the matrix manifold,
+    it calculates the rotation matrix Q that minimizes the loss function:
 
     .. math::
         L(Q) = \sum_i w_i delta^2(M_{target_i}, Q M_{source_i} Q^T)
@@ -234,3 +237,28 @@ def _get_rotation_matrix(
         return Q_posdet
     else:
         return Q_negdet
+
+
+###############################################################################
+
+
+def _get_rotation_tangentspace(X_src, X_tgt, n_classes, expl_var):
+    """Calculate rotation matrix in the tangent space.
+
+    Euclidean Procustes Analysis in the tangent space.
+
+    Notes
+    -----
+    .. versionadded:: 0.8
+    """
+    C = X_src[:n_classes].T @ X_tgt[:n_classes]
+    u, s, vh = np.linalg.svd(C)
+
+    if expl_var <= 1:
+        n_comps = np.sum(np.cumsum(s) < expl_var * np.sum(s)) + 1
+    else:
+        n_comps = int(expl_var)
+
+    u = u[:, :n_comps]
+    vh = vh[:n_comps, :]
+    return vh.T @ u.T
