@@ -13,19 +13,21 @@ def encode_domains(X, y, domain):
 
     Parameters
     ----------
-    X : ndarray, shape (n_data, ...)
-        Input data.
-    y : ndarray, shape (n_data,)
-        Labels for each datum.
-    domain : ndarray, shape (n_data,)
-        Domains for each datum.
+    X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+            shape (n_vectors, n_ts)
+        Set of SPD matrices or tangent vectors.
+    y : ndarray, shape (n_matrices,) or shape (n_vectors,)
+        Labels for each matrix or vector.
+    domain : ndarray, shape (n_matrices,) or shape (n_vectors,)
+        Domains for each matrix or vector.
 
     Returns
     -------
-    X_enc : ndarray, shape (n_data, ...)
+    X_enc : ndarray, shape (n_matrices, n_channels, n_channels) or \
+            shape (n_vectors, n_ts)
         The same data given as input.
-    y_enc : ndarray, shape (n_data,)
-        Extended labels for each datum.
+    y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+        Extended labels for each matrix or vector.
 
     See Also
     --------
@@ -52,19 +54,21 @@ def decode_domains(X_enc, y_enc):
 
     Parameters
     ----------
-    X_enc : ndarray, shape (n_data, ...)
-        Input data.
-    y_enc : ndarray, shape (n_data,)
-        Extended labels for each datum.
+    X_enc : ndarray, shape (n_matrices, n_channels, n_channels) or \
+            shape (n_vectors, n_ts)
+        Set of SPD matrices or tangent vectors.
+    y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+        Extended labels for each matrix or vector.
 
     Returns
     -------
-    X : ndarray, shape (n_data, ...)
+    X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+            shape (n_vectors, n_ts)
         The same data given as input.
-    y : ndarray, shape (n_data,)
-        Labels for each datum.
-    domain : ndarray, shape (n_data,)
-        Domains for each datum.
+    y : ndarray, shape (n_matrices,) or shape (n_vectors,)
+        Labels for each matrix or vector.
+    domain : ndarray, shape (n_matrices,) or shape (n_vectors,)
+        Domains for each matrix or vector.
 
     See Also
     --------
@@ -115,10 +119,11 @@ class TlSplitter():
 
         Parameters
         ----------
-        X : ndarray, shape (n_data, ...)
-            Input data.
-        y : ndarray, shape (n_data,)
-            Extended labels for each datum.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
 
         Yields
         ------
@@ -146,7 +151,7 @@ class TlSplitter():
             yield train_idx, test_idx
 
     def get_n_splits(self, X=None, y=None):
-        """Returns the number of splitting iterations in the cross-validator.
+        """Return the number of splitting iterations in the cross-validator.
 
         Parameters
         ----------

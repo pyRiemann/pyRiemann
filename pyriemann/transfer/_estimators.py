@@ -47,8 +47,9 @@ class TlDummy(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_data, ...)
-            Input data.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
         y_enc : None
             Not used, here for compatibility with sklearn API.
 
@@ -64,12 +65,14 @@ class TlDummy(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_data, ...)
-            Input data.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
 
         Returns
         -------
-        X_new : ndarray, shape (n_data, ...)
+        X_new : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
             Same data as in the input.
         """
         return X
@@ -79,14 +82,16 @@ class TlDummy(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_data, ...)
-            Input data.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
         y_enc : None
             Not used, here for compatibility with sklearn API.
 
         Returns
         -------
-        X_new : ndarray, shape (n_data, ...)
+        X_new : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
             Same data as in the input.
         """
         return self.fit(X, y_enc).transform(X)
@@ -128,7 +133,8 @@ class TlCenter(BaseEstimator, TransformerMixin):
           target domain;
         * else, ``transform()`` recenters matrices to the last fitted domain.
     metric : str, default="riemann"
-        Metric used for mean estimation. For the list of supported metrics,
+        For inputs in manifold,
+        metric used for mean estimation. For the list of supported metrics,
         see :func:`pyriemann.utils.mean.mean_covariance`.
         Note, however, that only when using the "riemann" metric that we are
         ensured to re-center the matrices precisely to the identity.
@@ -200,11 +206,7 @@ class TlCenter(BaseEstimator, TransformerMixin):
                 )
 
             else:
-                self.centers_[d] = np.average(
-                    X[idx],
-                    axis=0,
-                    weights=sample_weight[idx],
-                )
+                self.centers_[d] = np.mean(X[idx], axis=0)
 
         return self
 
@@ -539,6 +541,7 @@ class TlRotate(BaseEstimator, TransformerMixin):
 
     For inputs in tangent space, it rotates the tangent vectors from source
     domain so to match its class means with those from the target domain [3]_.
+    Current implementation supports only one source domain.
 
     .. note::
        The inputs from each domain must have been centered to the before
@@ -878,10 +881,11 @@ class TlEstimator(BaseEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_data, ...)
-            Input data.
-        y_enc : ndarray, shape (n_data,)
-            Extended labels for each datum.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
 
         Returns
         -------
@@ -921,12 +925,13 @@ class TlEstimator(BaseEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_data, ...)
-            Input data.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
 
         Returns
         -------
-        pred : ndarray, shape (n_data,)
+        pred : ndarray, shape (n_matrices,) or shape (n_vectors,)
             Predictions according to the estimator.
         """
         return self.estimator.predict(X)
@@ -971,10 +976,11 @@ class TlClassifier(TlEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_data, ...)
-            Input data.
-        y_enc : ndarray, shape (n_data,)
-            Extended labels for each datum.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
 
         Returns
         -------
@@ -991,13 +997,15 @@ class TlClassifier(TlEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_data, ...)
-            Input data.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
 
         Returns
         -------
-        pred : ndarray, shape (n_data, n_classes)
-            Predictions for each datum.
+        pred : ndarray, shape (n_matrices, n_classes) or \
+                shape (n_vectors, n_classes)
+            Predictions for each matrix or vector.
         """
         return self.estimator.predict_proba(X)
 
@@ -1006,10 +1014,11 @@ class TlClassifier(TlEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_data, ...)
-            Test set of input data.
-        y_enc : ndarray, shape (n_data,)
-            Extended true labels for each datum.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
 
         Returns
         -------
@@ -1060,10 +1069,11 @@ class TlRegressor(TlEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_data, ...)
-            Input data.
-        y_enc : ndarray, shape (n_data,)
-            Extended labels for each datum.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
 
         Returns
         -------
@@ -1080,10 +1090,11 @@ class TlRegressor(TlEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_data, ...)
-            Test set of data.
-        y_enc : ndarray, shape (n_data,)
-            Extended true values for each datum.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
 
         Returns
         -------

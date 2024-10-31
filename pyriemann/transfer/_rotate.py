@@ -193,6 +193,10 @@ def _get_rotation_manifold(
         Orthogonal matrix that minimizes the distance between the class means
         for the source and target domains.
 
+    Notes
+    -----
+    .. versionadded:: 0.4
+
     References
     ----------
     .. [1] `Riemannian Procrustes analysis: transfer
@@ -203,10 +207,6 @@ def _get_rotation_manifold(
     .. [2] `An introduction to optimization on smooth manifolds
         <https://www.nicolasboumal.net/book/>`_
         N. Boumal. To appear with Cambridge University Press. June, 2022
-
-    Notes
-    -----
-    .. versionadded:: 0.4
     """
 
     if M_source.shape[0] != M_target.shape[0]:
@@ -245,11 +245,20 @@ def _get_rotation_manifold(
 def _get_rotation_tangentspace(X_src, X_tgt, n_classes, expl_var):
     """Calculate rotation matrix in the tangent space.
 
-    Euclidean Procustes Analysis in the tangent space.
+    Euclidean Procustes Analysis in the tangent space,
+    from code provided by the authors.
 
     Notes
     -----
     .. versionadded:: 0.8
+
+    References
+    ----------
+    .. [1] `Tangent space alignment: Transfer learning for brain-computer
+        interface
+        <https://www.frontiersin.org/articles/10.3389/fnhum.2022.1049985/pdf>`_
+        A. Bleuzé, J. Mattout and M. Congedo, Frontiers in Human Neuroscience,
+        2022
     """
     C = X_src[:n_classes].T @ X_tgt[:n_classes]
     u, s, vh = np.linalg.svd(C)
