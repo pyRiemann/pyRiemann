@@ -1,7 +1,7 @@
 import warnings
 
-import numpy as np
 from joblib import Parallel, delayed
+import numpy as np
 from sklearn.base import (
     BaseEstimator,
     TransformerMixin,
@@ -12,16 +12,16 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score, r2_score
 from sklearn.pipeline import Pipeline
 
+from ._rotate import _get_rotation_manifold, _get_rotation_tangentspace
+from ._tools import decode_domains
 from ..classification import MDM
 from ..preprocessing import Whitening
+from ..utils import deprecated
 from ..utils.base import invsqrtm, powm, sqrtm
 from ..utils.distance import distance
 from ..utils.geodesic import geodesic
 from ..utils.mean import mean_covariance, mean_riemann
 from ..utils.utils import check_weights, check_metric
-from ._rotate import _get_rotation_manifold, _get_rotation_tangentspace
-from ._tools import decode_domains
-from ..utils import deprecated
 
 
 ###############################################################################
@@ -167,6 +167,14 @@ class TlCenter(BaseEstimator, TransformerMixin):
         """Init"""
         self.target_domain = target_domain
         self.metric = metric
+
+    @property
+    @deprecated(
+        "\nAttribute recenter_ is deprecated and will be removed in 0.10.0; "
+        "please use centers_."
+    )
+    def recenter_(self):
+        return self.centers_
 
     def fit(self, X, y_enc, sample_weight=None):
         """Fit TlCenter.
@@ -366,6 +374,14 @@ class TlScale(BaseEstimator, TransformerMixin):
         self.final_dispersion = final_dispersion
         self.centered_data = centered_data
         self.metric = metric
+
+    @property
+    @deprecated(
+        "\nAttribute dispersions_ is deprecated and will be removed in 0.10.0;"
+        " please use scales_."
+    )
+    def dispersions_(self):
+        return self.scales_
 
     def fit(self, X, y_enc, sample_weight=None):
         """Fit TlScale.
