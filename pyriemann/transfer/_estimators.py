@@ -170,8 +170,8 @@ class TlCenter(BaseEstimator, TransformerMixin):
 
     @property
     @deprecated(
-        "\nAttribute recenter_ is deprecated and will be removed in 0.10.0; "
-        "please use centers_."
+        "Attribute `recenter_` is deprecated and will be removed in 0.10.0; "
+        "please use `centers_`."
     )
     def recenter_(self):
         return self.centers_
@@ -377,8 +377,8 @@ class TlScale(BaseEstimator, TransformerMixin):
 
     @property
     @deprecated(
-        "\nAttribute dispersions_ is deprecated and will be removed in 0.10.0;"
-        " please use scales_."
+        "Attribute `dispersions_` is deprecated and will be removed in 0.10.0;"
+        " please use `scales_`."
     )
     def dispersions_(self):
         return self.scales_
