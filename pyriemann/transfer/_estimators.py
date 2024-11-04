@@ -219,7 +219,7 @@ class TlCenter(BaseEstimator, TransformerMixin):
         return self
 
     def transform(self, X):
-        """Center inputs in the target domain.
+        """Center in the target domain.
 
         .. note::
            This method is designed for using at test time,
@@ -255,7 +255,7 @@ class TlCenter(BaseEstimator, TransformerMixin):
         return X_new
 
     def fit_transform(self, X, y_enc, sample_weight=None):
-        """Fit TlCenter and then transform inputs.
+        """Fit TlCenter and then center each domain.
 
         For each domain, it calculates the mean of matrices or vectors of this
         domain, and then recenters them to identity matrix or to null vector.
@@ -447,7 +447,7 @@ class TlScale(BaseEstimator, TransformerMixin):
         return powm(X, np.sqrt(dispersion_out / dispersion_in))
 
     def transform(self, X):
-        """Scale inputs in the target domain.
+        """Scale in the target domain.
 
         .. note::
            This method is designed for using at test time,
@@ -485,7 +485,7 @@ class TlScale(BaseEstimator, TransformerMixin):
         return X_new
 
     def fit_transform(self, X, y_enc, sample_weight=None):
-        """Fit TlScale and then transform inputs.
+        """Fit TlScale and then scale each domain.
 
         For each domain, it calculates the dispersion around the mean of this
         domain, and then stretches them to the desired final dispersion.
@@ -574,11 +574,9 @@ class TlRotate(BaseEstimator, TransformerMixin):
     target_domain : str
         Domain to consider as target.
     weights : None | array, shape (n_classes,), default=None
-        Weights to assign for each class. If None, then give the same weight
-        for each class.
+        Weights to assign for each class. If None, it uses equal weights.
     metric : {"euclid", "riemann"}, default="euclid"
-        For inputs in manifold, metric for the distance to minimize between
-        class means.
+        For inputs in manifold, distance to minimize between class means.
     n_jobs : int, default=1
         For inputs in manifold, the number of jobs to use for the computation.
         This works by computing the rotation matrix for each source domain in
@@ -685,7 +683,12 @@ class TlRotate(BaseEstimator, TransformerMixin):
         return self
 
     def _fit_manifold(self, X, y_enc, domains, sample_weight):
+        """Fit TlRotate on manifold.
 
+        It computes the mean M of SPD matrices X for each class of each domain.
+        It computes the rotation for each source domain so that its class means
+        are close to those from the target domain.
+        """
         idx = domains == self.target_domain
         X_target, y_target = X[idx], y_enc[idx]
         M_target = np.stack([
@@ -718,6 +721,12 @@ class TlRotate(BaseEstimator, TransformerMixin):
             self.rotations_[d] = rot
 
     def _fit_tangentspace(self, X, y_enc, domains):
+        """Fit TlRotate in tangent space.
+
+        It computes anchors for each class of each domain.
+        It computes the rotation for source domain so that its anchors
+        are close to those from the target domain.
+        """
         _, y, _ = decode_domains(X, y_enc)
         X_src = X[domains != self.target_domain]
         y_src = y[domains != self.target_domain]
@@ -735,26 +744,34 @@ class TlRotate(BaseEstimator, TransformerMixin):
             PCA(n_components=self.n_components) for _ in np.unique(y_src)
         ]
 
-        src_means, src_valid = self._fit_means(X_src, y_src, fit_pca=True)
-        tgt_means, tgt_valid = self._fit_means(X_tgt, y_tgt, fit_pca=False)
+        src_anchors, src_valid = self._get_anchors(X_src, y_src, fit_pca=True)
+        tgt_anchors, tgt_valid = self._get_anchors(X_tgt, y_tgt, fit_pca=False)
 
-        if src_valid and tgt_valid:
-            n_classes = None  # select all components
-        else:
-            warnings.warn("Not enough vectors for either source or target")
-            n_classes = len(np.unique(y_src))
+        if not src_valid or not tgt_valid:
+            n_classes = len(np.unique(y_tgt))
+            src_anchors = src_anchors[:n_classes]
+            tgt_anchors = tgt_anchors[:n_classes]
+            if not src_valid:
+                warnings.warn("Not enough vectors for source domain")
+            if not tgt_valid:
+                warnings.warn("Not enough vectors for target domain")
+
         self.rotations_ = _get_rotation_tangentspace(
-            src_means,
-            tgt_means,
-            n_classes,
+            src_anchors,
+            tgt_anchors,
             self.expl_var,
         )
 
-    def _fit_means(self, X, y, fit_pca):
+    def _get_anchors(self, X, y, fit_pca):
+        """Get anchors.
+
+        It computes anchors for each class of each domain, ie class means and
+        clusters along principal components.
+        """
         is_valid = True
 
         classes = np.unique(y)
-        means = np.array([
+        anchors = np.array([
             np.mean(X[y == c], axis=0) for c in classes
         ])
 
@@ -772,19 +789,21 @@ class TlRotate(BaseEstimator, TransformerMixin):
             Xc_pca = self._src_pca[i].transform(Xc)
             for j in range(self.n_components):
                 inds = np.argsort(Xc_pca[:, j], axis=0)
-                means_pca_j = [
+                anchor = [
                     np.mean(Xc[inds[round(k*r):round((k+1)*r)]], axis=0)
                     for k in range(self.n_clusters)
                 ]
-                means = np.vstack([means, means_pca_j])
+                anchors = np.vstack([anchors, anchor])
 
-        return means, is_valid
+        return anchors, is_valid
 
     def transform(self, X):
-        """Rotate inputs in the target domain.
+        """Rotate in the target domain, ie do nothing.
 
-        The rotations are done from source to target, so in this step, the
-        data suffer no transformation at all.
+        .. note::
+           This method is designed for using at test time on target data.
+           No transformation is applied since rotations are done from source
+           to target domain.
 
         Parameters
         ----------
@@ -801,7 +820,7 @@ class TlRotate(BaseEstimator, TransformerMixin):
         return X
 
     def fit_transform(self, X, y_enc, sample_weight=None):
-        """Fit TlRotate and then transform inputs.
+        """Fit TlRotate and then rotate each source domain to target domain.
 
         It calculates and applies the rotation matrix for matching each source
         domain to the target domain.

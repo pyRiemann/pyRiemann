@@ -328,6 +328,8 @@ def test_tlrotate_manifold(rndstate, get_weights, metric, use_weight):
     X_rct = rct.fit_transform(X, y_enc, sample_weight=weights)
     rot = TlRotate(target_domain="target_domain", metric=metric)
     X_rot = rot.fit_transform(X_rct, y_enc, sample_weight=weights)
+    for k in rot.rotations_.keys():
+        assert rot.rotations_[k].shape == (2, 2)
     assert_array_equal(
         X_rot[domain == "target_domain"],
         X_rct[domain == "target_domain"],

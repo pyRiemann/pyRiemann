@@ -7,7 +7,8 @@ from ..utils.utils import check_weights
 
 
 def _project(X, U):
-    """
+    """Projection.
+
     Project U on the tangent space of orthogonal matrices with base point X.
     """
 
@@ -15,7 +16,8 @@ def _project(X, U):
 
 
 def _retract(X, v):
-    """
+    """Retraction.
+
     Retraction taking tangent vector v at base point X back to manifold of
     orthogonal matrices.
     """
@@ -28,13 +30,13 @@ def _retract(X, v):
 
 
 def _loss(Q, X, Y, weights, metric="euclid"):
-    """Loss function for estimating the rotation matrix in RPA."""
+    """Loss function for estimating the rotation matrix."""
 
     return weights @ distance(X, Q @ Y @ Q.T, metric=metric)
 
 
 def _grad(Q, X, Y, weights, metric="euclid"):
-    """Gradient of loss function between class means."""
+    """Gradient of loss function for estimating the rotation matrix."""
 
     if metric == "euclid":
         return np.einsum("a,abc->bc", weights, -4 * (X - Q @ Y @ Q.T) @ Q @ Y)
@@ -94,8 +96,8 @@ def _warm_start(X, Y, weights, metric='euclid'):
 
 def _run_minimization(
     Q_ini,
-    M_source,
-    M_target,
+    X_source,
+    X_target,
     weights=None,
     metric="euclid",
     tol_step=1e-9,
@@ -109,11 +111,12 @@ def _run_minimization(
     for _ in range(maxiter):
 
         # get the current value for the loss function
-        F_1 = _loss(Q_1, M_target, M_source, weights, metric=metric)
+        F_1 = _loss(Q_1, X_target, X_source, weights, metric=metric)
 
         # get the direction of steepest descent
         direction = _project(
-            Q_1, _grad(Q_1, M_target, M_source, weights, metric=metric)
+            Q_1,
+            _grad(Q_1, X_target, X_source, weights, metric=metric),
         )
 
         # backtracking line search
@@ -121,13 +124,13 @@ def _run_minimization(
         tau = 0.50
         r = 1e-4
         Q = _retract(Q_1, -alpha * direction)
-        F = _loss(Q, M_target, M_source, weights, metric=metric)
+        F = _loss(Q, X_target, X_source, weights, metric=metric)
         for _ in range(maxiter_linesearch):
             if F_1 - F > r * alpha * np.linalg.norm(direction)**2:
                 break
             alpha = tau * alpha
             Q = _retract(Q_1, -alpha * direction)
-            F = _loss(Q, M_target, M_source, weights, metric=metric)
+            F = _loss(Q, X_target, X_source, weights, metric=metric)
 
         # test if the step size is small
         crit = np.linalg.norm(-alpha * direction)
@@ -145,8 +148,8 @@ def _run_minimization(
 
 
 def _get_rotation_manifold(
-    M_source,
-    M_target,
+    X_source,
+    X_target,
     weights=None,
     metric="euclid",
     tol_step=1e-9,
@@ -155,31 +158,29 @@ def _get_rotation_manifold(
 ):
     r"""Calculate rotation matrix in the manifold.
 
-    For the Riemannian Procustes Analysis in the matrix manifold,
-    it calculates the rotation matrix Q that minimizes the loss function:
+    Riemannian Procustes analysis in the matrix manifold calculates the
+    rotation matrix :math:`\mathbf{Q}` that minimizes the loss function:
 
     .. math::
-        L(Q) = \sum_i w_i delta^2(M_{target_i}, Q M_{source_i} Q^T)
+        L(Q) = \sum_i w_i \delta^2(X^\text{target}_i, Q X^\text{source}_i Q^T)
 
-    The solution can then be used to transform the data points from the source
-    domain so that their class means are close to the those from the target
-    domain. This manifold optimization problem was first defined in Eq(35) of
-    [1]_. The optimization procedure follows the usual setup for optimization
-    on manifolds as described in [2]_.
+    This rotation transforms SPD matrices :math:`\mathbf{M^\text{source}}` from
+    the source domain close to matrices :math:`\mathbf{M^\text{target}}` from
+    the target domain.
+    This manifold optimization problem was first defined in Eq.(35) of [1]_.
+    The optimization procedure follows the usual setup for optimization on
+    manifolds as described in [2]_.
 
     Parameters
     ----------
-    M_source : ndarray, shape (n_classes, n, n)
-        Set with the means of the n_classes from the source domain.
-    M_target : ndarray, shape (n_classes, n, n)
-        Set with the means of the n_classes from the target domain.
-    weights : None | array, shape (n_classes,), default=None
-        Weights for each class. If None, then give the same weight for each
-        class.
+    X_source : ndarray, shape (n_matrices, n, n)
+        Set of SPD matrices from the source domain.
+    X_target : ndarray, shape (n_matrices, n, n)
+        Set of SPD matrices from the target domain.
+    weights : None | array, shape (n_matrices,), default=None
+        Weights for each pair of matrices. If None, it uses equal weights.
     metric : {"euclid", "riemann"}, default="euclid"
-        Which type of distance to minimize between the class means, either
-        "euclid" for Euclidean distance or "riemann" for the affine-invariant
-        Riemannian distance between SPD matrices.
+        Distance to minimize between SPD matrices.
     tol_step : float, default 1e-9
         Stopping criterion based on the norm of the descent direction.
     maxiter : int, default=10_000
@@ -190,7 +191,7 @@ def _get_rotation_manifold(
     Returns
     -------
     Q : ndarray, shape (n, n)
-        Orthogonal matrix that minimizes the distance between the class means
+        Orthogonal matrix that minimizes the distance between the SPD matrices
         for the source and target domains.
 
     Notes
@@ -209,28 +210,42 @@ def _get_rotation_manifold(
         N. Boumal. To appear with Cambridge University Press. June, 2022
     """
 
-    if M_source.shape[0] != M_target.shape[0]:
-        raise ValueError("The number of classes in each domain don't match")
-    if M_source.shape[1:] != M_target.shape[1:]:
+    if X_source.shape[0] != X_target.shape[0]:
+        raise ValueError("The number of matrices in each domain don't match")
+    if X_source.shape[1:] != X_target.shape[1:]:
         raise ValueError("The number of channels in each domain don't match")
 
-    weights = check_weights(weights, len(M_source))
+    weights = check_weights(weights, len(X_source))
 
     # initialize the solution with an educated guess
-    Q_ini = _warm_start(M_target, M_source, weights, metric=metric)
+    Q_ini = _warm_start(X_target, X_source, weights, metric=metric)
     if np.linalg.det(Q_ini) < 0:  # make sure it is a rotation
         Q_ini[[0, 1], :] = Q_ini[[1, 0], :]
 
     # run the optimization procedure on rotation matrices
     Q_posdet, F_posdet = _run_minimization(
-        Q_ini, M_source, M_target, weights, metric, tol_step, maxiter,
-        maxiter_linesearch)
+        Q_ini,
+        X_source,
+        X_target,
+        weights,
+        metric,
+        tol_step,
+        maxiter,
+        maxiter_linesearch,
+    )
 
     # run the optimization procedure on reflection matrices
     Q_ini[[0, 1], :] = Q_ini[[1, 0], :]
     Q_negdet, F_negdet = _run_minimization(
-        Q_ini, M_source, M_target, weights, metric, tol_step, maxiter,
-        maxiter_linesearch)
+        Q_ini,
+        X_source,
+        X_target,
+        weights,
+        metric,
+        tol_step,
+        maxiter,
+        maxiter_linesearch,
+    )
 
     # check which of the options yield a smaller loss value
     if F_posdet < F_negdet:
@@ -242,11 +257,34 @@ def _get_rotation_manifold(
 ###############################################################################
 
 
-def _get_rotation_tangentspace(X_src, X_tgt, n_classes, expl_var):
-    """Calculate rotation matrix in the tangent space.
+def _get_rotation_tangentspace(X_source, X_target, expl_var):
+    r"""Calculate rotation matrix in the tangent space.
 
-    Euclidean Procustes Analysis in the tangent space,
-    from code provided by the authors.
+    Procustes analysis in the Euclidean tangent space calculates the rotation
+    matrix :math:`\mathbf{Q}` that minimizes:
+
+    .. math::
+        || X^\text{source} Q -  X^\text{target} ||_F^2
+
+    From code provided by the authors [1]_.
+
+    Parameters
+    ----------
+    X_source : ndarray, shape (n_vectors, n_ts)
+        Set of tangent vectors from the source domain.
+    X_target : ndarray, shape (n_vectors, n_ts)
+        Set of tangent vectors from the target domain.
+    expl_var : float
+        Dimension reduction applied to the cross product matrix during
+        Procrustes analysis.
+        If float in (0,1], percentage of variance that needs to be explained.
+        Else, number of components.
+
+    Returns
+    -------
+    Q : ndarray, shape (n_ts, n_ts)
+        Orthogonal matrix that minimizes the distance between the tangent
+        vectors for the source and target domains.
 
     Notes
     -----
@@ -260,7 +298,7 @@ def _get_rotation_tangentspace(X_src, X_tgt, n_classes, expl_var):
         A. Bleuzé, J. Mattout and M. Congedo, Frontiers in Human Neuroscience,
         2022
     """
-    C = X_src[:n_classes].T @ X_tgt[:n_classes]
+    C = X_source.T @ X_target
     u, s, vh = np.linalg.svd(C)
 
     if expl_var <= 1:
