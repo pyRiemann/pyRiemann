@@ -53,16 +53,20 @@ def test_maps_ndarray(fun_map, get_mats):
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize(
     "log_map, exp_map", zip(
-        [log_map_euclid,
-         log_map_logchol,
-         log_map_logeuclid,
-         log_map_riemann,
-         log_map_wasserstein],
-        [exp_map_euclid,
-         exp_map_logchol,
-         exp_map_logeuclid,
-         exp_map_riemann,
-         exp_map_wasserstein]
+        [
+            log_map_euclid,
+            log_map_logchol,
+            log_map_logeuclid,
+            log_map_riemann,
+            log_map_wasserstein,
+        ],
+        [
+            exp_map_euclid,
+            exp_map_logchol,
+            exp_map_logeuclid,
+            exp_map_riemann,
+            exp_map_wasserstein,
+        ]
     )
 )
 def test_maps_log_exp(kind, log_map, exp_map, get_mats):

@@ -481,7 +481,7 @@ log_map_functions = {
     "logchol": log_map_logchol,
     "logeuclid": log_map_logeuclid,
     "riemann": log_map_riemann,
-    "wasserstein": log_map_wasserstein
+    "wasserstein": log_map_wasserstein,
 }
 
 
@@ -526,7 +526,7 @@ exp_map_functions = {
     "logchol": exp_map_logchol,
     "logeuclid": exp_map_logeuclid,
     "riemann": exp_map_riemann,
-    "wasserstein": exp_map_wasserstein
+    "wasserstein": exp_map_wasserstein,
 }
 
 
