@@ -234,7 +234,7 @@ def test_mdm_hpd(kind, metric, get_mats, get_labels):
 @pytest.mark.parametrize("metric_mean", get_means())
 @pytest.mark.parametrize("metric_dist", get_distances())
 @pytest.mark.parametrize("metric_map", [
-    "euclid", "logchol", "logeuclid", "riemann"
+    "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
 ])
 def test_fgmdm(metric_mean, metric_dist, metric_map, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 4, 3, 2
@@ -267,7 +267,7 @@ def test_knn(k, get_mats, get_labels):
 
 @pytest.mark.parametrize("metric_mean", get_means())
 @pytest.mark.parametrize("metric_map", [
-    "euclid", "logchol", "logeuclid", "riemann"
+    "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
 ])
 def test_tsclassifier(metric_mean, metric_map, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 4, 3, 2

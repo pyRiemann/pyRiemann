@@ -233,6 +233,7 @@ def exp_map_wasserstein(X, Cref):
 
     return Cref + X + X_tmp
 
+
 def log_map_euclid(X, Cref):
     r"""Project matrices in tangent space by Euclidean logarithmic map.
 
