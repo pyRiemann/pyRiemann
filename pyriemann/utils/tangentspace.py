@@ -192,6 +192,47 @@ def exp_map_riemann(X, Cref, Cm12=False):
     return C12 @ expm(X) @ C12
 
 
+def exp_map_wasserstein(X, Cref):
+    r"""Project matrices back to manifold by Wasserstein exponential map.
+
+    The projection of a matrix :math:`\mathbf{X}` from tangent space
+    to SPD/HPD manifold with Wasserstein exponential map according to a
+    reference SPD/HPD matrix :math:`\mathbf{C}_\text{ref}` is given in [1]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        Matrices in tangent space.
+    Cref : ndarray, shape (n, n)
+        Reference SPD/HPD matrix.
+
+    Returns
+    -------
+    X_original : ndarray, shape (..., n, n)
+        Matrices in SPD/HPD manifold.
+
+    Notes
+    -----
+    .. versionadded:: 0.8
+
+    References
+    ----------
+    .. [1] `Wasserstein Riemannian geometry of Gaussian densities
+        <https://link.springer.com/article/10.1007/s41884-018-0014-4>`_
+        L. Malagò, L. Montrucchio, G. Pistone. Information Geometry, 2018, 1,
+        pp. 137–179.
+    """
+
+    d, V = np.linalg.eigh(Cref)
+    C = 1 / (d[:, None] + d[None, :])
+
+    X_rotated = V.conj().T @ X @ V
+    X_tmp = C * X_rotated
+    X_tmp = X_tmp @ np.diag(d) @ X_tmp
+    X_tmp = V @ X_tmp @ V.conj().T
+
+    return Cref + X + X_tmp
+
 def log_map_euclid(X, Cref):
     r"""Project matrices in tangent space by Euclidean logarithmic map.
 
@@ -370,6 +411,49 @@ def log_map_riemann(X, Cref, C12=False):
     return X_new
 
 
+def log_map_wasserstein(X, Cref):
+    r"""Project matrices in tangent space by Wasserstein logarithmic map.
+
+    The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
+    to tangent space by the Wasserstein logarithmic map
+    according to a SPD/HPD reference matrix :math:`\mathbf{C}_\text{ref}` is
+    given in [1]_:
+
+    .. math::
+        \mathbf{X}_\text{new} = (\mathbf{X}\mathbf{C}_\text{ref})^{1/2} +
+        (\mathbf{C}_\text{ref}\mathbf{X})^{1/2} - 2\mathbf{C}_\text{ref}
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        Matrices in SPD/HPD manifold.
+    Cref : ndarray, shape (n, n)
+        Reference SPD/HPD matrix.
+
+    Returns
+    -------
+    X_new : ndarray, shape (..., n, n)
+        Matrices projected in tangent space.
+
+    Notes
+    -----
+    .. versionadded:: 0.8
+
+    References
+    ----------
+    .. [1] `Wasserstein Riemannian geometry of Gaussian densities
+        <https://link.springer.com/article/10.1007/s41884-018-0014-4>`_
+        L. Malagò, L. Montrucchio, G. Pistone. Information Geometry, 2018, 1,
+        pp. 137–179.
+    """
+    _check_dimensions(X, Cref)
+    P12 = sqrtm(Cref)
+    P12inv = invsqrtm(Cref)
+    sqrt_bracket = sqrtm(P12 @ X @ P12)
+    tmp = P12inv @ sqrt_bracket @ P12
+    return tmp + tmp.conj().swapaxes(-2, -1) - 2 * Cref
+
+
 def upper(X):
     r"""Return the weighted upper triangular part of matrices.
 
@@ -448,6 +532,7 @@ log_map_functions = {
     "logchol": log_map_logchol,
     "logeuclid": log_map_logeuclid,
     "riemann": log_map_riemann,
+    "wasserstein": log_map_wasserstein
 }
 
 
@@ -492,6 +577,7 @@ exp_map_functions = {
     "logchol": exp_map_logchol,
     "logeuclid": exp_map_logeuclid,
     "riemann": exp_map_riemann,
+    "wasserstein": exp_map_wasserstein
 }
 
 
