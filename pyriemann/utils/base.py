@@ -254,7 +254,7 @@ def first_divided_difference(d, function, derivative, atol=1e-12, rtol=1e-12):
     Parameters
     ----------
     d : ndarray, shape (n,)
-        Eigenvalues of a Symmetric matrix.
+        Eigenvalues of a symmetric matrix.
     function : callable
         Function to apply to eigenvalues of d. Has to be defined for all
         possible eigenvalues of d.
