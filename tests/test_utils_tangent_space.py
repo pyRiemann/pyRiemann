@@ -9,10 +9,12 @@ from pyriemann.utils.tangentspace import (
     exp_map_logchol,
     exp_map_logeuclid,
     exp_map_riemann,
+    exp_map_wasserstein,
     log_map_euclid,
     log_map_logchol,
     log_map_logeuclid,
     log_map_riemann,
+    log_map_wasserstein,
     upper,
     unupper,
     tangent_space,
@@ -27,10 +29,12 @@ from pyriemann.utils.tangentspace import (
         exp_map_logchol,
         exp_map_logeuclid,
         exp_map_riemann,
+        exp_map_wasserstein,
         log_map_euclid,
         log_map_logchol,
         log_map_logeuclid,
         log_map_riemann,
+        log_map_wasserstein
     ]
 )
 def test_maps_ndarray(fun_map, get_mats):
@@ -49,8 +53,16 @@ def test_maps_ndarray(fun_map, get_mats):
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize(
     "log_map, exp_map", zip(
-        [log_map_euclid, log_map_logeuclid, log_map_riemann],
-        [exp_map_euclid, exp_map_logeuclid, exp_map_riemann]
+        [log_map_euclid,
+         log_map_logchol,
+         log_map_logeuclid,
+         log_map_riemann,
+         log_map_wasserstein],
+        [exp_map_euclid,
+         exp_map_logchol,
+         exp_map_logeuclid,
+         exp_map_riemann,
+         exp_map_wasserstein]
     )
 )
 def test_maps_log_exp(kind, log_map, exp_map, get_mats):
@@ -114,7 +126,7 @@ def test_tangent_space_riemann_properties(kind, get_mats):
 
 
 @pytest.mark.parametrize("metric", [
-    "euclid", "logchol", "logeuclid", "riemann"
+    "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
 ])
 def test_untangent_space_ndarray(metric, rndstate):
     """Test untangent space projection"""
@@ -132,7 +144,7 @@ def test_untangent_space_ndarray(metric, rndstate):
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("metric", [
-    "euclid", "logchol", "logeuclid", "riemann"
+    "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
 ])
 def test_tangent_and_untangent_space(kind, metric, get_mats):
     """Test tangent space projection then back-projection should be identity"""

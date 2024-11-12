@@ -642,7 +642,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     return M
 
 
-def mean_wasserstein(X, tol=10e-4, maxiter=50, init=None, sample_weight=None):
+def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the Wasserstein metric.
 
     Wasserstein mean is obtained by an iterative procedure where the update is
