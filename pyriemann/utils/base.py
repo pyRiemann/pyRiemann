@@ -1,7 +1,8 @@
 """Base functions for SPD/HPD matrices."""
 
 import numpy as np
-from numpy.core.numerictypes import typecodes
+from numpy._core.numerictypes import typecodes
+
 from .test import is_pos_def
 
 

@@ -38,7 +38,7 @@ setup(
     platforms="any",
     python_requires=">=3.9",
     install_requires=[
-        "numpy!=1.24.0",
+        "numpy>=2.0.0",
         "scipy",
         "scikit-learn>=0.24",
         "joblib",
