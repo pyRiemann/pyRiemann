@@ -500,7 +500,6 @@ def untangent_space(T, Cref, *, metric="riemann"):
 def transport(Covs, Cref, metric="riemann"):
     """Parallel transport of a set of SPD matrices towards a reference matrix.
 
-
     Parameters
     ----------
     Covs : ndarray, shape (n_matrices, n, n)
