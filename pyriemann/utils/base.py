@@ -234,7 +234,7 @@ def nearest_sym_pos_def(X, reg=1e-6):
     return np.array([_nearest_sym_pos_def(x, reg) for x in X])
 
 
-def first_divided_difference(d, function, derivative, atol=1e-14, rtol=1e-14):
+def first_divided_difference(d, function, derivative, atol=1e-12, rtol=1e-12):
     r"""First divided difference of a matrix function.
 
     First divided difference of a matrix function applied to the eigenvalues
@@ -261,9 +261,9 @@ def first_divided_difference(d, function, derivative, atol=1e-14, rtol=1e-14):
     derivative : callable
         Derivative of the function to apply. Has to be defined for all
         possible eigenvalues of d.
-    atol : float, default=1e-10
+    atol : float, default=1e-12
         Absolute tolerance for equality of eigenvalues.
-    rtol : float, default=1e-10
+    rtol : float, default=1e-12
         Relative tolerance for equality of eigenvalues.
 
     Returns
@@ -274,7 +274,7 @@ def first_divided_difference(d, function, derivative, atol=1e-14, rtol=1e-14):
 
     Notes
     -----
-    .. versionadded:: 0.6
+    .. versionadded:: 0.8
 
     References
     ----------
@@ -286,6 +286,6 @@ def first_divided_difference(d, function, derivative, atol=1e-14, rtol=1e-14):
     dif += d
     close_ = np.isclose(dif, dif.T, atol=atol, rtol=rtol)
     dif[close_] = derivative(dif[close_])
-    dif[~close_] = (function(dif[~close_]) -
-                    function(dif.T[~close_])) / (dif[~close_] - dif.T[~close_])
+    dif[~close_] = (function(dif[~close_]) - function(dif.T[~close_])) / \
+                   (dif[~close_] - dif.T[~close_])
     return dif

@@ -99,12 +99,8 @@ def exp_map_logeuclid(X, Cref):
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
     to SPD/HPD manifold with log-Euclidean exponential map
-    according to a reference SPD/HPD matrix :math:`\mathbf{C}_\text{ref}` is:
-
-    .. math::
-        \mathbf{X}_\text{original} =
-        \exp(\log(\mathbf{C}_\text{ref}) +
-        [\text{D}_{\mathbf{C}_\text{ref}}\log](X))
+    according to a reference SPD/HPD matrix :math:`\mathbf{C}_\text{ref}` as
+    described in [1]_.
 
     Parameters
     ----------
@@ -121,6 +117,13 @@ def exp_map_logeuclid(X, Cref):
     Notes
     -----
     .. versionadded:: 0.4
+
+    References
+    ----------
+    .. [1] `A New Canonical Log-Euclidean Kernel for Symmetric Positive
+        Definite Matrices for EEG Analysis
+        <https://ieeexplore.ieee.org/document/10735221>`_
+        G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
     d, V = np.linalg.eigh(Cref)
     logfdd = first_divided_difference(d, np.log, lambda x: 1 / x)
@@ -250,12 +253,8 @@ def log_map_logeuclid(X, Cref):
     r"""Project matrices in tangent space by log-Euclidean logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
-    to tangent space by log-Euclidean logarithmic map
-    according to a SPD/HPD reference matrix :math:`\mathbf{C}_\text{ref}` is:
-
-    .. math::
-        \mathbf{X}_\text{new} = [\text{D}_{\log(\mathbf{C}_\text{ref})}\exp]
-        (\log(\mathbf{X}) - \log(\mathbf{C}_\text{ref}))
+    to tangent space by log-Euclidean logarithmic map according to a SPD/HPD
+    reference matrix :math:`\mathbf{C}_\text{ref}` as described in [1]_.
 
     Parameters
     ----------
@@ -272,6 +271,13 @@ def log_map_logeuclid(X, Cref):
     Notes
     -----
     .. versionadded:: 0.4
+
+    References
+    ----------
+    .. [1] `A New Canonical Log-Euclidean Kernel for Symmetric Positive
+        Definite Matrices for EEG Analysis
+        <https://ieeexplore.ieee.org/document/10735221>`_
+        G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
     _check_dimensions(X, Cref)
     logX = logm(X)
