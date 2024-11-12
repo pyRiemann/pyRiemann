@@ -4,7 +4,7 @@ import numpy as np
 from scipy.linalg import eigvalsh, solve
 from sklearn.metrics import euclidean_distances
 
-from .base import logm, sqrtm, invsqrtm
+from .base import invsqrtm, logm, powm, sqrtm
 from .utils import check_function
 
 
@@ -29,6 +29,53 @@ def _recursive(fun, A, B, *args, **kwargs):
 
 ###############################################################################
 # Distances between matrices
+
+
+def distance_chol(A, B, squared=False):
+    r"""Cholesky distance between SPD/HPD matrices.
+
+    The Cholesky distance between two SPD/HPD matrices :math:`\mathbf{A}`
+    and :math:`\mathbf{B}` is [1]_:
+
+    .. math::
+        d(\mathbf{A},\mathbf{B}) =
+        \Vert \text{chol}(\mathbf{A}) - \text{chol}(\mathbf{B}) \Vert_F
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices, same dimensions as A.
+    squared : bool, default False
+        Return squared distance.
+
+    Returns
+    -------
+    d : float or ndarray, shape (...,)
+        Cholesky distance between A and B.
+
+    Notes
+    -----
+    .. versionadded:: 0.7
+
+    See Also
+    --------
+    distance
+
+    References
+    ----------
+    .. [1] `Non-Euclidean statistics for covariance matrices, with applications
+        to diffusion tensor imaging
+        <https://doi.org/10.1214/09-AOAS249>`_
+        I.L. Dryden, A. Koloydenko, D. Zhou.
+        Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
+    """
+    return distance_euclid(
+        np.linalg.cholesky(A),
+        np.linalg.cholesky(B),
+        squared=squared,
+    )
 
 
 def distance_euclid(A, B, squared=False):
@@ -190,6 +237,68 @@ def distance_kullback_sym(A, B, squared=False):
     return d ** 2 if squared else d
 
 
+def distance_logchol(A, B, squared=False):
+    r"""Log-Cholesky distance between SPD/HPD matrices.
+
+    The log-Cholesky distance between two SPD/HPD matrices :math:`\mathbf{A}`
+    and :math:`\mathbf{B}` is [1]_:
+
+    .. math::
+        d(\mathbf{A},\mathbf{B}) = \left(
+        \Vert \text{lower}(\text{chol}(\mathbf{A})) -
+        \text{lower}(\text{chol}(\mathbf{B})) \Vert_F^2 +
+        \Vert \log(\text{diag}(\text{chol}(\mathbf{A}))) -
+        \log(\text{diag}(\text{chol}(\mathbf{B}))) \Vert_F^2
+        \right)^\frac{1}{2}
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices, same dimensions as A.
+    squared : bool, default False
+        Return squared distance.
+
+    Returns
+    -------
+    d : float or ndarray, shape (...,)
+        Log-Cholesky distance between A and B.
+
+    Notes
+    -----
+    .. versionadded:: 0.7
+
+    See Also
+    --------
+    distance
+
+    References
+    ----------
+    .. [1] `Riemannian geometry of symmetric positive definite matrices via
+        Cholesky decomposition
+        <https://arxiv.org/pdf/1908.09326>`_
+        Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
+    """
+    _check_inputs(A, B)
+    A_chol, B_chol = np.linalg.cholesky(A), np.linalg.cholesky(B)
+
+    tri0, tri1 = np.tril_indices(A_chol.shape[-1], -1)
+    triagular_part = np.linalg.norm(
+        A_chol[..., tri0, tri1] - B_chol[..., tri0, tri1],
+        axis=-1,
+    ) ** 2
+
+    diag0, diag1 = np.diag_indices(A_chol.shape[-1])
+    diagonal_part = np.linalg.norm(
+        np.log(A_chol[..., diag0, diag1]) - np.log(B_chol[..., diag0, diag1]),
+        axis=-1,
+    ) ** 2
+
+    d2 = triagular_part + diagonal_part
+    return d2 if squared else np.sqrt(d2)
+
+
 def distance_logdet(A, B, squared=False):
     r"""Log-det distance between SPD/HPD matrices.
 
@@ -239,7 +348,7 @@ def distance_logdet(A, B, squared=False):
 def distance_logeuclid(A, B, squared=False):
     r"""Log-Euclidean distance between SPD/HPD matrices.
 
-    The Log-Euclidean distance between two SPD/HPD matrices :math:`\mathbf{A}`
+    The log-Euclidean distance between two SPD/HPD matrices :math:`\mathbf{A}`
     and :math:`\mathbf{B}` is [1]_:
 
     .. math::
@@ -275,6 +384,65 @@ def distance_logeuclid(A, B, squared=False):
         SIAM J Matrix Anal Appl, 2007, 29 (1), pp. 328-347
     """
     return distance_euclid(logm(A), logm(B), squared=squared)
+
+
+def distance_poweuclid(A, B, p, squared=False):
+    r"""Power Euclidean distance between SPD/HPD matrices.
+
+    The power Euclidean distance of order :math:`p` between two SPD/HPD
+    matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is [1]_:
+
+    .. math::
+        d(\mathbf{A},\mathbf{B}) = \frac{1}{|p|}
+        \Vert \mathbf{A}^p - \mathbf{B}^p \Vert_F
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices, same dimensions as A.
+    p : float
+        Exponent. For p=0, it returns
+        :func:`pyriemann.utils.distance.distance_logeuclid`.
+    squared : bool, default False
+        Return squared distance.
+
+    Returns
+    -------
+    d : float or ndarray, shape (...,)
+        Power Euclidean distance between A and B.
+
+    Notes
+    -----
+    .. versionadded:: 0.7
+
+    See Also
+    --------
+    distance
+
+    References
+    ----------
+    .. [1] `Power Euclidean metrics for covariance matrices with application to
+        diffusion tensor imaging
+        <https://arxiv.org/abs/1009.3045>`_
+        I.L. Dryden, X. Pennec, & J.M. Peyrat. arXiv, 2010
+    """
+    if not isinstance(p, (int, float)):
+        raise ValueError(f"Exponent p must be a scalar (Got {type(p)})")
+
+    if p == 1:
+        return distance_euclid(A, B, squared=squared)
+    elif p == 0:
+        return distance_logeuclid(A, B, squared=squared)
+    elif p == -1:
+        return distance_harmonic(A, B, squared=squared)
+
+    return distance_euclid(
+        powm(A, p),
+        powm(B, p),
+        squared=squared,
+    ) / abs(p)
 
 
 def distance_riemann(A, B, squared=False):
@@ -371,11 +539,13 @@ def distance_wasserstein(A, B, squared=False):
 
 
 distance_functions = {
+    "chol": distance_chol,
     "euclid": distance_euclid,
     "harmonic": distance_harmonic,
     "kullback": distance_kullback,
     "kullback_right": distance_kullback_right,
     "kullback_sym": distance_kullback_sym,
+    "logchol": distance_logchol,
     "logdet": distance_logdet,
     "logeuclid": distance_logeuclid,
     "riemann": distance_riemann,
@@ -396,9 +566,11 @@ def distance(A, B, metric="riemann", squared=False):
     B : ndarray, shape (n, n)
         Second matrix.
     metric : string | callable, default="riemann"
-        Metric for distance, can be: "euclid", "harmonic", "kullback",
-        "kullback_right", "kullback_sym", "logdet", "logeuclid", "riemann",
-        "wasserstein", or a callable function.
+        Metric for distance, can be:
+        "chol", "euclid", "harmonic", "kullback", "kullback_right",
+        "kullback_sym", "logchol", "logdet", "logeuclid", "riemann",
+        "wasserstein",
+        or a callable function.
     squared : bool, default False
         Return squared distance.
 
@@ -507,10 +679,67 @@ def _pairwise_distance_harmonic(X, Y=None, squared=False):
     return _pairwise_distance_euclid(invX, invY, squared=squared)
 
 
-def _pairwise_distance_logeuclid(X, Y=None, squared=False):
-    """Pairwise Log-Euclidean distance matrix.
+def _pairwise_distance_logchol(X, Y=None, squared=False):
+    """Pairwise log-Cholesky distance matrix.
 
-    Compute the matrix of Log-Euclidean distances between pairs of elements of
+    Compute the matrix of log-Cholesky distances between pairs of elements of
+    X and Y.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices_X, n, n)
+        First set of matrices.
+    Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
+        Second set of matrices. If None, Y is set to X.
+    squared : bool, default False
+        Return squared distances.
+
+    Returns
+    -------
+    dist : ndarray, shape (n_matrices_X, n_matrices_X) or (n_matrices_X, \
+            n_matrices_Y)
+        Log-Cholesky distances between pairs of elements of X if Y is None, or
+        between elements of X and Y.
+
+    See Also
+    --------
+    pairwise_distance
+    distance_logchol
+    """
+    X_chol = np.linalg.cholesky(X)
+    tri0, tri1 = np.tril_indices(X_chol.shape[-1], -1)
+    diag0, diag1 = np.diag_indices(X_chol.shape[-1])
+
+    if Y is None:
+        triagular_part = euclidean_distances(
+            X_chol[..., tri0, tri1],
+            squared=True
+        )
+        diagonal_part = euclidean_distances(
+            np.log(X_chol[..., diag0, diag1]),
+            squared=True,
+        )
+    else:
+        Y_chol = np.linalg.cholesky(Y)
+        triagular_part = euclidean_distances(
+            X_chol[..., tri0, tri1],
+            Y_chol[..., tri0, tri1],
+            squared=True,
+        )
+        diagonal_part = euclidean_distances(
+            np.log(X_chol[..., diag0, diag1]),
+            np.log(Y_chol[..., diag0, diag1]),
+            squared=True,
+        )
+
+    dist = triagular_part + diagonal_part
+    return dist if squared else np.sqrt(dist)
+
+
+def _pairwise_distance_logeuclid(X, Y=None, squared=False):
+    """Pairwise log-Euclidean distance matrix.
+
+    Compute the matrix of log-Euclidean distances between pairs of elements of
     X and Y.
 
     Parameters
@@ -602,7 +831,7 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
         First set of matrices.
     Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
         Second set of matrices. If None, Y is set to X.
-    metric : string, default='riemann'
+    metric : string, default="riemann"
         Metric for pairwise distance. For the list of supported metrics,
         see :func:`pyriemann.utils.distance.distance`.
     squared : bool, default False
@@ -625,6 +854,8 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
         return _pairwise_distance_euclid(X, Y=Y, squared=squared)
     elif metric == "harmonic":
         return _pairwise_distance_harmonic(X, Y=Y, squared=squared)
+    elif metric == "logchol":
+        return _pairwise_distance_logchol(X, Y=Y, squared=squared)
     elif metric == "logeuclid":
         return _pairwise_distance_logeuclid(X, Y=Y, squared=squared)
     elif metric == "riemann":

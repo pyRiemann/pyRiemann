@@ -6,13 +6,16 @@ from scipy.spatial.distance import euclidean, mahalanobis
 
 from conftest import get_distances
 from pyriemann.utils.distance import (
+    distance_chol,
     distance_euclid,
     distance_harmonic,
     distance_kullback,
     distance_kullback_right,
     distance_kullback_sym,
+    distance_logchol,
     distance_logdet,
     distance_logeuclid,
+    distance_poweuclid,
     distance_riemann,
     distance_wasserstein,
     distance,
@@ -26,11 +29,13 @@ from pyriemann.utils.test import is_sym
 
 def get_dist_func():
     dist_func = [
+        distance_chol,
         distance_euclid,
         distance_harmonic,
         distance_kullback,
         distance_kullback_right,
         distance_kullback_sym,
+        distance_logchol,
         distance_logdet,
         distance_logeuclid,
         distance_riemann,
@@ -48,11 +53,13 @@ def callable_sp_euclidean(A, B, squared=False):
 @pytest.mark.parametrize(
     "metric, dist",
     [
+        ("chol", distance_chol),
         ("euclid", distance_euclid),
         ("harmonic", distance_harmonic),
         ("kullback", distance_kullback),
         ("kullback_right", distance_kullback_right),
         ("kullback_sym", distance_kullback_sym),
+        ("logchol", distance_logchol),
         ("logdet", distance_logdet),
         ("logeuclid", distance_logeuclid),
         ("riemann", distance_riemann),
@@ -132,9 +139,11 @@ def test_distances_all_separability(kind, dist, get_mats):
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize(
     "dist", [
+        distance_chol,
         distance_euclid,
         distance_harmonic,
         distance_kullback_sym,
+        distance_logchol,
         distance_logdet,
         distance_logeuclid,
         distance_riemann,
@@ -196,6 +205,17 @@ def test_distance_logdet_implementation(get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_distance_poweuclid(kind, get_mats):
+    n_matrices, n_channels = 2, 4
+    mats = get_mats(n_matrices, n_channels, kind)
+    A, B = mats[0], mats[1]
+    assert distance_poweuclid(A, B, 1) == approx(distance_euclid(A, B))
+    assert distance_poweuclid(A, B, 0) == approx(distance_logeuclid(A, B))
+    assert distance_poweuclid(A, B, -1) == approx(distance_harmonic(A, B))
+    distance_poweuclid(A, B, 0.42)
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_distance_riemann_properties(kind, get_mats):
     n_channels = 6
     mats = get_mats(2, n_channels, kind)
@@ -217,7 +237,7 @@ def test_distance_riemann_properties(kind, get_mats):
 
     # proportionality, Eq(6.12) in [Bhatia2007]
     alpha = np.random.uniform()
-    dist_1 = distance_riemann(A, geodesic(A, B, alpha, metric='riemann'))
+    dist_1 = distance_riemann(A, geodesic(A, B, alpha, metric="riemann"))
     dist_2 = alpha * distance_riemann(A, B)
     assert dist_1 == approx(dist_2)
 
@@ -237,9 +257,9 @@ def test_distance_wrapper_between_set_and_matrix(dist, get_mats):
     assert distance(mats, mats[-1], metric=dist).shape == (n_matrices, 1)
 
     n_sets = 5
-    covs_4d = np.asarray([mats for _ in range(n_sets)])
+    mats_4d = np.asarray([mats for _ in range(n_sets)])
     with pytest.raises(ValueError):
-        distance(covs_4d, mats, metric=dist)
+        distance(mats_4d, mats, metric=dist)
 
 
 @pytest.mark.parametrize("dist", get_distances())
@@ -260,13 +280,12 @@ def test_pairwise_distance_matrix(get_mats, dist, Y, squared):
 
     for i in range(n_matrices_X):
         for j in range(n_matrices_Y):
-            assert np.isclose(pdist[i, j],
-                              distance(X[i],
-                                       Y_[j],
-                                       metric=dist,
-                                       squared=squared),
-                              atol=1e-5,
-                              rtol=1e-5)
+            assert np.isclose(
+                pdist[i, j],
+                distance(X[i], Y_[j], metric=dist, squared=squared),
+                atol=1e-5,
+                rtol=1e-5,
+            )
 
     if Y is None and dist not in ["kullback", "kullback_right"]:
         assert is_sym(pdist)

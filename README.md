@@ -1,6 +1,6 @@
 # pyRiemann
 
-[![Code PythonVersion](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10-blue)](https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10-blue)
+[![Code PythonVersion](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11-blue)](https://img.shields.io/badge/python-3.9%20%7C%203.10%20%7C%203.11-blue)
 [![PyPI version](https://badge.fury.io/py/pyriemann.svg)](https://badge.fury.io/py/pyriemann)
 [![Build Status](https://github.com/pyRiemann/pyRiemann/workflows/testing/badge.svg?branch=master&event=push)](https://github.com/pyRiemann/pyRiemann/actions)
 [![codecov](https://codecov.io/gh/pyRiemann/pyRiemann/branch/master/graph/badge.svg)](https://codecov.io/gh/pyRiemann/pyRiemann)
@@ -10,8 +10,14 @@
 
 pyRiemann is a Python machine learning package based on [scikit-learn](http://scikit-learn.org/stable/modules/classes.html) API.
 It provides a high-level interface for processing and classification of real (*resp*. complex)-valued multivariate data
-through the Riemannian geometry of symmetric (*resp*. Hermitian) 
+through the Riemannian geometry of symmetric (*resp*. Hermitian)
 [positive definite](https://en.wikipedia.org/wiki/Definite_matrix) (SPD) (*resp*. HPD) matrices.
+
+The documentation is available on http://pyriemann.readthedocs.io/en/latest/
+
+This code is BSD-licensed (3 clause).
+
+# Description
 
 pyRiemann aims at being a generic package for multivariate data analysis
 but has been designed around [biosignals](https://en.wikipedia.org/wiki/Biosignal) (like EEG, MEG or EMG)
@@ -19,14 +25,15 @@ manipulation applied to [brain-computer interface](https://en.wikipedia.org/wiki
 estimating [covariance matrices](https://en.wikipedia.org/wiki/Covariance_matrix) from multichannel time series,
 and classifying them using the Riemannian geometry of SPD matrices [[1]](#1).
 
-For BCI applications, studied paradigms are motor imagery [[2]](#2) [[3]](#3), event-related potentials (ERP) [[4]](#4) and steady-state visually evoked potentials (SSVEP) [[5]](#5).
+For BCI applications, studied paradigms are motor imagery [[2]](#2) [[3]](#3),
+event-related potentials (ERP) [[4]](#4) and steady-state visually evoked potentials (SSVEP) [[5]](#5).
 Using extended labels, API allows transfer learning between sessions or subjects [[6]](#6).
 
-This code is BSD-licensed (3 clause).
-
-## Documentation
-
-The documentation is available on http://pyriemann.readthedocs.io/en/latest/
+Another application is [remote sensing](https://en.wikipedia.org/wiki/Remote_sensing),
+estimating covariance matrices over spatial coordinates of radar images using a sliding window,
+and processing them using the Riemannian geometry of
+SPD matrices for [hyperspectral](https://en.wikipedia.org/wiki/Hyperspectral_imaging) images,
+or HPD matrices for [synthetic-aperture radar](https://en.wikipedia.org/wiki/Synthetic-aperture_radar) (SAR) images.
 
 # Installation
 
@@ -80,9 +87,10 @@ y = ... # labels
 # estimate covariance matrices
 cov = pyriemann.estimation.Covariances().fit_transform(X)
 
-# cross validation
+# build your classifier
 mdm = pyriemann.classification.MDM()
 
+# cross validation
 accuracy = cross_val_score(mdm, cov, y)
 
 print(accuracy.mean())
@@ -95,20 +103,20 @@ For example, to classify EEG signal using a SVM classifier in the tangent space,
 ```python
 from pyriemann.estimation import Covariances
 from pyriemann.tangentspace import TangentSpace
-
 from sklearn.pipeline import make_pipeline
-from sklearn.svm import SVC
 from sklearn.model_selection import cross_val_score
+from sklearn.svm import SVC
 
 # load your data
 X = ... # EEG data, in format n_epochs x n_channels x n_times
 y = ... # labels
 
 # build your pipeline
-covest = Covariances()
-ts = TangentSpace()
-svc = SVC(kernel='linear')
-clf = make_pipeline(covest, ts, svc)
+clf = make_pipeline(
+    Covariances(),
+    TangentSpace(),
+    SVC(kernel="linear"),
+)
 
 # cross validation
 accuracy = cross_val_score(clf, X, y)
@@ -117,7 +125,7 @@ print(accuracy.mean())
 
 ```
 
-**Check out the example folder for more examples.**
+Check out the example folder for more examples.
 
 # Contribution Guidelines
 
@@ -151,14 +159,22 @@ pytest
                   Erik Bjäreholt and
                   Maria Sayu Yamamoto and
                   Pierre Clisson and
-                  Marie-Constance Corsi},
-  title        = {pyRiemann/pyRiemann: v0.5},
-  month        = june,
-  year         = 2023,
+                  Marie-Constance Corsi and
+                  Igor Carrara and
+                  Apolline Mellot and
+                  Bruna Junqueira Lopes and
+                  Brent Gaisford and
+                  Ammar Mian and
+                  Anton Andreev and
+                  Gregoire Cattan and
+                  Arthur Lebeurrier},
+  title        = {pyRiemann},
+  month        = oct,
+  year         = 2024,
+  version      = {v0.7},
   publisher    = {Zenodo},
-  version      = {v0.5},
-  doi          = {10.5281/zenodo.8059038},
-  url          = {https://doi.org/10.5281/zenodo.8059038}
+  doi          = {10.5281/zenodo.593816},
+  url          = {https://doi.org/10.5281/zenodo.593816}
 }
 ```
 

@@ -18,8 +18,7 @@ import matplotlib
 
 # mne update path
 import mne
-print(mne.datasets.sample.data_path(update_path=True))
-print(mne.datasets.eegbci.load_data(1, [6, 10, 14], update_path=True))
+print(mne.datasets.sample.data_path(update_path=True, download=False))
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -28,7 +27,9 @@ curdir = os.path.dirname(__file__)
 sys.path.append(os.path.abspath(os.path.join(curdir, 'sphinxext')))
 
 matplotlib.use('Agg')
+
 import sphinx_bootstrap_theme
+from sphinx_gallery.sorting import ExplicitOrder
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -66,8 +67,22 @@ plot_html_show_formats = False
 plot_html_show_source_link = False
 
 sphinx_gallery_conf = {
-    'examples_dirs': ['../examples', '../tutorials'],
-    'gallery_dirs': ['auto_examples']
+    'examples_dirs': ['../examples'],
+    'gallery_dirs': ['auto_examples'],
+    'subsection_order': ExplicitOrder([
+        '../examples/covariance-estimation',
+        '../examples/simulated',
+        '../examples/biosignal-mi',
+        '../examples/biosignal-erp',
+        '../examples/biosignal-ssvep',
+        '../examples/artifacts',
+        '../examples/image-radar',
+        '../examples/transfer',
+        '../examples/stats',
+    ]),
+    'doc_module': 'pyriemann',
+    'backreferences_dir': 'generated',
+    'plot_gallery': 'True',
 }
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -171,6 +186,8 @@ html_theme_options = {
     'bootstrap_version':
     "3",
     'navbar_links': [("API", "api"), ("Gallery", "auto_examples/index")],
+    'navigation_depth': 2,
+    'collapse_navigation': True,
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
@@ -337,7 +354,10 @@ texinfo_documents = [
 #texinfo_no_detailmenu = False
 
 # Example configuration for intersphinx: refer to the Python standard library.
-intersphinx_mapping = {'https://docs.python.org/': None}
+intersphinx_mapping = {
+    "python": ('https://docs.python.org/', None),
+    "sklearn": ("https://scikit-learn.org/stable/", None),
+}
 
 
 def setup(app):

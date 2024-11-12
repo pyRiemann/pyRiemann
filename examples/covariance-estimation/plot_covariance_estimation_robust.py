@@ -10,8 +10,8 @@ low-dimensional dataset. See also [1]_.
 #
 # License: BSD (3-clause)
 
-import numpy as np
 from matplotlib import pyplot as plt
+import numpy as np
 
 from pyriemann.estimation import Covariances
 from pyriemann.utils.viz import plot_cov_ellipse
@@ -21,11 +21,11 @@ from pyriemann.utils.viz import plot_cov_ellipse
 
 
 def plot_cov_estimators(ax, X, estimators):
-    plot_cov_ellipse(ax, C_ref, edgecolor="C0", label='Reference')
+    plot_cov_ellipse(ax, C_ref, edgecolor="C0", label="Reference")
     for i, est in enumerate(estimators):
         C = Covariances(estimator=est).transform(X[np.newaxis, ...])[0]
         plot_cov_ellipse(ax, C, edgecolor=f"C{i+2}", label=est)
-    ax.legend(loc='upper left')
+    ax.legend(loc="upper left")
     return ax
 
 
@@ -53,13 +53,13 @@ X = C_ref @ rs.randn(n_channels, n_inliers)
 # - Ledoit-Wolf shrunk covariance matrix (lwf),
 # - oracle approximating shrunk covariance matrix (oas),
 # - minimum covariance determinant matrix (mcd),
-# - robust Huber's M-estimator based covariance matrix (hub).
+# - robust Huber"s M-estimator based covariance matrix (hub).
 
 estimators = ["scm", "lwf", "oas", "mcd", "hub"]
 
 fig, ax = plt.subplots(figsize=(7, 7))
 ax.set_title("Covariance estimations on dataset")
-ax.scatter(X[0], X[1], c='C0', edgecolors="k", label='Inputs')
+ax.scatter(X[0], X[1], c="C0", edgecolors="k", label="Inputs")
 ax = plot_cov_estimators(ax, X, estimators)
 xlim, ylim = ax.get_xlim(), ax.get_ylim()
 min_, max_ = min(xlim[0], ylim[0]), max(xlim[1], ylim[1])
@@ -88,10 +88,10 @@ X = np.concatenate((X, Xout), axis=1)
 
 fig, ax = plt.subplots(figsize=(14, 7))
 ax.set_title("Covariance estimations on corrupted dataset")
-ax.scatter(X[0, :n_inliers], X[1, :n_inliers], c='C0', edgecolors="k",
-           label='Inliers')
-ax.scatter(X[0, n_inliers:], X[1, n_inliers:], c='C1', edgecolors="k",
-           label='Outliers')
+ax.scatter(X[0, :n_inliers], X[1, :n_inliers], c="C0", edgecolors="k",
+           label="Inliers")
+ax.scatter(X[0, n_inliers:], X[1, n_inliers:], c="C1", edgecolors="k",
+           label="Outliers")
 ax = plot_cov_estimators(ax, X, estimators)
 plt.show()
 

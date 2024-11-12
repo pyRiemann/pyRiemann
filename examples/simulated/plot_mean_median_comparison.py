@@ -11,14 +11,18 @@ Riemannian geometric medians [2]_, on low-dimensional synthetic datasets.
 #
 # License: BSD (3-clause)
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.datasets import make_blobs
 
-from pyriemann.datasets import make_outliers
-from pyriemann.utils import mean_euclid, mean_riemann
-from pyriemann.utils import median_euclid, median_riemann
 from pyriemann.clustering import Potato
+from pyriemann.datasets import make_outliers
+from pyriemann.utils import (
+    mean_euclid,
+    mean_riemann,
+    median_euclid,
+    median_riemann,
+)
 
 rs = np.random.RandomState(17)
 
@@ -48,16 +52,16 @@ C_gmed = median_euclid(X[..., np.newaxis])
 
 fig, ax = plt.subplots(figsize=(7, 7))
 fig.suptitle("Mean and median for 2D vectors", fontsize=16)
-ax.scatter(X[is_inlier, 0], X[is_inlier, 1], c='C0', edgecolors="k",
-           label='Inliers')
-ax.scatter(X[~is_inlier, 0], X[~is_inlier, 1], c='C1', edgecolors="k",
-           label='Outliers')
-ax.scatter(C_mean[0], C_mean[1], c='r', marker="x", label='Euclidean mean')
-ax.scatter(C_mmed[0], C_mmed[1], c='r', marker=">",
-           label='Marginal Euclidean median')
-ax.scatter(C_gmed[0], C_gmed[1], c='r', marker="s",
-           label='Geometric Euclidean median')
-ax.legend(loc='upper left')
+ax.scatter(X[is_inlier, 0], X[is_inlier, 1], c="C0", edgecolors="k",
+           label="Inliers")
+ax.scatter(X[~is_inlier, 0], X[~is_inlier, 1], c="C1", edgecolors="k",
+           label="Outliers")
+ax.scatter(C_mean[0], C_mean[1], c="r", marker="x", label="Euclidean mean")
+ax.scatter(C_mmed[0], C_mmed[1], c="r", marker=">",
+           label="Marginal Euclidean median")
+ax.scatter(C_gmed[0], C_gmed[1], c="r", marker="s",
+           label="Geometric Euclidean median")
+ax.legend(loc="upper left")
 plt.show()
 
 
@@ -91,21 +95,21 @@ C_rmed = median_riemann(X)
 
 fig2 = plt.figure(figsize=(7, 7))
 fig2.suptitle("Means and medians for 2x2 SPD matrices", fontsize=16)
-ax2 = plt.subplot(111, projection='3d')
-ax2.scatter(1, 0, 1, c="k", marker="+", s=50, label='Identity')
+ax2 = plt.subplot(111, projection="3d")
+ax2.scatter(1, 0, 1, c="k", marker="+", s=50, label="Identity")
 ax2.scatter(Xin[:, 0, 0], Xin[:, 0, 1], Xin[:, 1, 1], c="C0", edgecolors="k",
-            label='Inliers')
+            label="Inliers")
 ax2.scatter(Xout[:, 0, 0], Xout[:, 0, 1], Xout[:, 1, 1], c="C1",
-            edgecolors="k", label='Outliers')
+            edgecolors="k", label="Outliers")
 ax2.scatter(C_emean[0, 0], C_emean[0, 1], C_emean[1, 1], c="r", marker="x",
-            label='Euclidean mean')
+            label="Euclidean mean")
 ax2.scatter(C_rmean[0, 0], C_rmean[0, 1], C_rmean[1, 1], c="m", marker="x",
-            label='Riemannian mean')
+            label="Riemannian mean")
 ax2.scatter(C_emed[0, 0], C_emed[0, 1], C_emed[1, 1], c="r", marker="s",
-            label='Euclidean median')
+            label="Euclidean median")
 ax2.scatter(C_rmed[0, 0], C_rmed[0, 1], C_rmed[1, 1], c="m", marker="s",
-            label='Riemannian median')
-ax2.legend(loc='center left', bbox_to_anchor=(0.7, 0.6))
+            label="Riemannian median")
+ax2.legend(loc="center left", bbox_to_anchor=(0.7, 0.6))
 plt.show()
 
 
@@ -118,25 +122,25 @@ plt.show()
 # Surprise guest: Riemannian potato is fitted with an offline iterative outlier
 # removal, providing a robust mean [4]_.
 
-C_rp = Potato(metric='riemann', threshold=1.5).fit(X).covmean_
+C_rp = Potato(metric="riemann", threshold=1.5).fit(X).covmean_
 
 fig3 = plt.figure(figsize=(7, 7))
 fig3.suptitle("Means and medians for 2x2 SPD matrices\nZoom", fontsize=16)
-ax3 = plt.subplot(111, projection='3d')
-ax3.scatter(1, 0, 1, c="k", marker="+", s=50, label='Identity')
+ax3 = plt.subplot(111, projection="3d")
+ax3.scatter(1, 0, 1, c="k", marker="+", s=50, label="Identity")
 ax3.scatter(Cin[0, 0], Cin[0, 1], Cin[1, 1], c="C0", edgecolors="k", s=50,
-            label='Center of inliers')
+            label="Center of inliers")
 ax3.scatter(C_emean[0, 0], C_emean[0, 1], C_emean[1, 1], c="r", marker="x",
-            label='Euclidean mean')
+            label="Euclidean mean")
 ax3.scatter(C_rmean[0, 0], C_rmean[0, 1], C_rmean[1, 1], c="m", marker="x",
-            label='Riemannian mean')
+            label="Riemannian mean")
 ax3.scatter(C_emed[0, 0], C_emed[0, 1], C_emed[1, 1], c="r", marker="s",
-            label='Euclidean median')
+            label="Euclidean median")
 ax3.scatter(C_rmed[0, 0], C_rmed[0, 1], C_rmed[1, 1], c="m", marker="s",
-            label='Riemannian median')
+            label="Riemannian median")
 ax3.scatter(C_rp[0, 0], C_rp[0, 1], C_rp[1, 1], c="chartreuse", marker="*",
-            s=40, label='Center of\nRiemannian potato')
-ax3.legend(loc='center left', bbox_to_anchor=(0.7, 0.5))
+            s=40, label="Center of\nRiemannian potato")
+ax3.legend(loc="center left", bbox_to_anchor=(0.7, 0.5))
 plt.show()
 
 

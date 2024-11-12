@@ -1,17 +1,10 @@
 """Aproximate joint diagonalization algorithms."""
 
-import numpy as np
 import warnings
 
-from .utils import check_weights, check_function
+import numpy as np
 
-
-def _check_init_diag(init, n):
-    if init.shape != (n, n):
-        raise ValueError(
-            "Initial diagonalizer shape must be %d x % d (Got %s)."
-            % (n, n, init.shape,))
-    return init
+from .utils import check_weights, check_function, check_init
 
 
 def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
@@ -65,31 +58,26 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     if init is None:
         V = np.eye(n)
     else:
-        V = _check_init_diag(init, n)
-    encore = True
-    k = 0
+        V = check_init(init, n)
 
-    while encore:
-        encore = False
-        k += 1
-        if k > n_iter_max:
-            break
-        for p in range(n - 1):
+    for _ in range(n_iter_max):
+        crit = False
+        for p in range(n):
             for q in range(p + 1, n):
-
                 Ip = np.arange(p, n_matrices_x_n, n)
                 Iq = np.arange(q, n_matrices_x_n, n)
 
-                # computation of Givens angle
+                # computation of Givens rotations
                 g = np.array([A[p, Ip] - A[q, Iq], A[p, Iq] + A[q, Ip]])
                 gg = g @ g.T
                 ton = gg[0, 0] - gg[1, 1]
                 toff = gg[0, 1] + gg[1, 0]
-                theta = 0.5 * np.arctan2(
-                    toff, ton + np.sqrt(ton * ton + toff * toff))
+                theta = 0.5 * np.arctan2(toff, ton + np.sqrt(ton**2 + toff**2))
                 c = np.cos(theta)
                 s = np.sin(theta)
-                encore = encore | (np.abs(s) > eps)
+                crit = crit | (np.abs(s) > eps)
+
+                # update of A and V matrices
                 if (np.abs(s) > eps):
                     tmp = A[:, Ip].copy()
                     A[:, Ip] = c * A[:, Ip] + s * A[:, Iq]
@@ -102,6 +90,11 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
                     tmp = V[:, p].copy()
                     V[:, p] = c * V[:, p] + s * V[:, q]
                     V[:, q] = c * V[:, q] - s * tmp
+
+        if not crit:
+            break
+    else:
+        warnings.warn("Convergence not reached")
 
     D = np.reshape(A, (n, n_matrices, n)).transpose(1, 0, 2)
     return V, D
@@ -116,7 +109,7 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n, n)
-        Set of SPD matrices to diagonalize.
+        Set of SPD/HPD matrices to diagonalize.
     init : None | ndarray, shape (n, n), default=None
         Initialization for the diagonalizer.
     eps : float, default=1e-6
@@ -132,7 +125,7 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     V : ndarray, shape (n, n)
         The diagonalizer, an invertible matrix.
     D : ndarray, shape (n_matrices, n, n)
-        Set of quasi diagonal matrices, D = V X V^T.
+        Set of quasi diagonal matrices, D = V X V^H.
 
     Notes
     -----
@@ -165,11 +158,12 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     if init is None:
         V = np.eye(n)
     else:
-        V = _check_init_diag(init, n)
+        V = check_init(init, n)
+    V = V.astype(X.dtype)
     epsilon = n * (n - 1) * eps
 
     for _ in range(n_iter_max):
-        decr = 0
+        crit = 0
         for ii in range(1, n):
             for jj in range(ii):
                 Ii = np.arange(ii, n_matrices_x_n, n)
@@ -187,33 +181,39 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
 
                 tmp = np.sqrt(omega21 / omega12)
                 tmp1 = (tmp * g12 + g21) / (omega + 1)
-                tmp2 = (tmp * g12 - g21) / max(omega - 1, 1e-9)
+                if np.isrealobj(X):
+                    omega = max(omega - 1, 1e-9)
+                tmp2 = (tmp * g12 - g21) / omega
 
                 h12 = tmp1 + tmp2
                 h21 = np.conj((tmp1 - tmp2) / tmp)
 
-                decr += n_matrices * (g12 * np.conj(h12) + g21 * h21) / 2.0
+                crit += n_matrices * (g12 * np.conj(h12) + g21 * h21) / 2.0
 
                 tmp = 1 + 0.5j * np.imag(h12 * h21)
-                tmp = np.real(tmp + np.sqrt(tmp ** 2 - h12 * h21))
-                tau = np.array([[1, -h12 / tmp], [-h21 / tmp, 1]])
+                tmp = tmp + np.sqrt(tmp ** 2 - h12 * h21)
+                if np.isrealobj(X):
+                    tmp = np.real(tmp)
+                tau = np.array([[1, np.conj(-h12 / tmp)],
+                                [np.conj(-h21 / tmp), 1]])
 
-                A[[ii, jj], :] = tau @ A[[ii, jj], :]
+                A[[ii, jj], :] = tau.conj() @ A[[ii, jj], :]
                 tmp = np.c_[A[:, Ii], A[:, Ij]]
-                tmp = np.reshape(tmp, (n * n_matrices, 2), order='F')
+                tmp = np.reshape(tmp, (n * n_matrices, 2), order="F")
                 tmp = tmp @ tau.T
 
-                tmp = np.reshape(tmp, (n, n_matrices * 2), order='F')
+                tmp = np.reshape(tmp, (n, n_matrices * 2), order="F")
                 A[:, Ii] = tmp[:, :n_matrices]
                 A[:, Ij] = tmp[:, n_matrices:]
                 V[[ii, jj], :] = tau @ V[[ii, jj], :]
-        if decr < epsilon:
+
+        if crit < epsilon:
             break
     else:
         warnings.warn("Convergence not reached")
 
-    D = np.reshape(A, (n, -1, n)).transpose(1, 0, 2)
-    return V, D
+    D = np.reshape(A, (n, -1, n)).transpose(1, 0, 2).conj()
+    return V.astype(X.dtype), D.astype(X.dtype)
 
 
 def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
@@ -268,13 +268,11 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
     n, n_matrices_x_n = M.shape
 
     # init variables
-    iteration = 0
-    improve = 10
     if init is None:
         E, H = np.linalg.eig(M[:, 0:n])
         V = H.T / np.sqrt(np.abs(E))[:, np.newaxis]
     else:
-        V = _check_init_diag(init, n)
+        V = check_init(init, n)
 
     Ms = np.array(M)
     Rs = np.zeros((n, n_matrices))
@@ -285,9 +283,9 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
         M[:, Il] = 0.5 * (M[:, Il] + M[:, Il].T)
         Ms[:, Il] = V @ M[:, Il] @ V.T
         Rs[:, k] = np.diag(Ms[:, Il])
-
     crit = np.sum(Ms ** 2) - np.sum(Rs ** 2)
-    while (improve > eps) & (iteration < n_iter_max):
+
+    for _ in range(n_iter_max):
         B = Rs @ Rs.T
         C1 = np.zeros((n, n))
         for i in range(n):
@@ -307,11 +305,13 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
             Il = np.arange(ini, ini + n)
             Ms[:, Il] = V @ M[:, Il] @ V.T
             Rs[:, k] = np.diag(Ms[:, Il])
-
         crit_new = np.sum(Ms ** 2) - np.sum(Rs ** 2)
-        improve = np.abs(crit_new - crit)
+
+        if np.abs(crit_new - crit) < eps:
+            break
         crit = crit_new
-        iteration += 1
+    else:
+        warnings.warn("Convergence not reached")
 
     D = np.reshape(Ms, (n, n_matrices, n)).transpose(1, 0, 2)
     return V, D

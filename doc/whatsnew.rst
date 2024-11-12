@@ -7,10 +7,46 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.7.dev
+v0.8.dev
 --------
 
-- Add kernel option to :class:`pyriemann.embedding.LocallyLinearEmbedding`. :pr:`293` by :user:`gabelstein`
+- Enhance :func:`pyriemann.utils.mean.mean_ale` adding ``init`` parameter,
+  and add function ``check_init()`` useful to all ajd and mean functions allowing initialization. :pr:`328` by :user:`qbarthelemy`
+
+- Enhance :func:`pyriemann.utils.mean.mean_covariance` to support "power" and "poweuclid" metrics. :pr:`329` by :user:`qbarthelemy`
+
+v0.7 (October 2024)
+-------------------
+
+- Add ``kernel`` parameter to :class:`pyriemann.embedding.LocallyLinearEmbedding`. :pr:`293` by :user:`gabelstein`
+
+- Add possibility for ``target_domain`` parameter of :class:`pyriemann.transfer._estimators.TLCenter` to be empty, forcing ``transform()`` to recenter matrices to the last fitted domain. :pr:`292` by :user:`brunaafl`
+
+- Enhance :func:`pyriemann.utils.ajd.ajd_pham` and :func:`pyriemann.utils.mean.mean_ale` functions to process HPD matrices. :pr:`299` by :user:`qbarthelemy`
+
+- Add ``partial_fit`` function to :class:`pyriemann.preprocessing.Whitening` for online applications. :pr:`277` by :user:`qbarthelemy` and :user:`brentgaisford`
+
+- Add ``get_weights`` fixture to conftest and complete tests. :pr:`305` by :user:`qbarthelemy`
+
+- Enhance :class:`pyriemann.estimation.Shrinkage` to process HPD matrices. :pr:`307` by :user:`qbarthelemy`
+
+- Add remote sensing examples on radar image clustering. :pr:`306` by :user:`AmmarMian`
+
+- Add ``sample_weight`` parameter to ``MDM.fit_predict``, ``Potato.fit``, ``Potato.partial_fit``,
+  ``PotatoField.fit``, ``PotatoField.partial_fit``, ``Whitening.partial_fit``. :pr:`309` by :user:`qbarthelemy`
+
+- Update pyRiemann from Python 3.8 - 3.10 to 3.9 - 3.11. :pr:`310` by :user:`qbarthelemy`
+
+- Add :func:`pyriemann.utils.distance.distance_logchol` to compute log-Cholesky distance. :pr:`311` by :user:`qbarthelemy`
+
+- Add ``ajd_method`` parameter to :class:`pyriemann.spatialfilters.CSP`. :pr:`313` by :user:`qbarthelemy`
+
+- Add :func:`pyriemann.utils.distance.distance_poweuclid` and :func:`pyriemann.utils.mean.mean_poweuclid` to use power Euclidean metric. :pr:`312` by :user:`qbarthelemy`
+
+- Enhance :func:`pyriemann.utils.mean.mean_power`: add ``init`` parameter and fix default initialization provided in the associated paper. :pr:`324` by :user:`toncho11`
+
+- Add :func:`pyriemann.utils.distance.distance_chol`, :func:`pyriemann.utils.geodesic.geodesic_logchol`, :func:`pyriemann.utils.mean.mean_logchol`,
+  and correct :func:`pyriemann.utils.distance.distance_logchol`. :pr:`322` by :user:`gabelstein`
 
 v0.6 (April 2024)
 -----------------
@@ -50,7 +86,7 @@ v0.6 (April 2024)
 - Add :func:`pyriemann.utils.viz.plot_bihist`, :func:`pyriemann.utils.viz.plot_biscatter` and :func:`pyriemann.utils.viz.plot_cov_ellipse` for display. :pr:`287` 
   by :user:`qbarthelemy` and :user:`gcattan`
 
-- Add :class:`pyriemann.estimation.CrossSpectra` and deprecate `CospCovariances` renamed into :class:`pyriemann.estimation.CoSpectra`. :pr:`288` by :user:`qbarthelemy`
+- Add :class:`pyriemann.estimation.CrossSpectra` and deprecate ``CospCovariances`` renamed into :class:`pyriemann.estimation.CoSpectra`. :pr:`288` by :user:`qbarthelemy`
 
 v0.5 (Jun 2023)
 ---------------

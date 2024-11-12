@@ -6,12 +6,11 @@
 This file contains helper functions for the functional connectivity example
 """
 
-from sklearn.model_selection import StratifiedKFold
-from sklearn.base import clone
-from sklearn.preprocessing import LabelEncoder
-from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.metrics import balanced_accuracy_score
+from sklearn.base import clone, BaseEstimator, TransformerMixin
 from sklearn.ensemble import StackingClassifier
+from sklearn.metrics import balanced_accuracy_score
+from sklearn.model_selection import StratifiedKFold
+from sklearn.preprocessing import LabelEncoder
 
 from pyriemann.utils.base import nearest_sym_pos_def
 

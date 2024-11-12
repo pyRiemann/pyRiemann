@@ -12,7 +12,7 @@ from pyriemann.utils.kernel import (
 from pyriemann.utils.mean import mean_covariance
 from pyriemann.utils.test import is_sym_pos_semi_def as is_spsd
 
-rker_str = ['euclid', 'logeuclid', 'riemann']
+rker_str = ["euclid", "logeuclid", "riemann"]
 rker_fct = [kernel_euclid, kernel_logeuclid, kernel_riemann]
 
 
@@ -53,7 +53,7 @@ def test_metric_string(ker, get_mats):
     """Test generic kernel function"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "spd")
-    K = globals()[f'kernel_{ker}'](X)
+    K = globals()[f"kernel_{ker}"](X)
     K1 = kernel(X, metric=ker)
     assert_array_equal(K, K1)
 
@@ -63,7 +63,7 @@ def test_metric_string_error(get_mats):
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "spd")
     with pytest.raises(ValueError):
-        kernel(X, metric='foo')
+        kernel(X, metric="foo")
 
 
 @pytest.mark.parametrize("ker", rker_str)
@@ -73,7 +73,7 @@ def test_input_dimension_error(ker, get_mats):
     X = get_mats(n_matrices, n_channels, "spd")
     Y = get_mats(n_matrices, n_channels + 1, "spd")
     cref = get_mats(1, n_channels + 1, "spd")[0]
-    if ker == 'riemann':
+    if ker == "riemann":
         with pytest.raises(AssertionError):
             kernel(X, Cref=cref, metric=ker)
     with pytest.raises(AssertionError):

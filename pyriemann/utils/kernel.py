@@ -30,7 +30,7 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
     Returns
     -------
     K : ndarray, shape (n_matrices_X, n_matrices_Y)
-        The Euclidean kernel matrix between X and Y.
+        Euclidean kernel matrix between X and Y.
 
     Notes
     -----
@@ -49,7 +49,7 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
 def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
     r"""Log-Euclidean kernel between two sets of SPD matrices.
 
-    Calculates the Log-Euclidean kernel matrix :math:`\mathbf{K}` of inner
+    Calculates the log-Euclidean kernel matrix :math:`\mathbf{K}` of inner
     products of two sets :math:`\mathbf{X}` and :math:`\mathbf{Y}` of SPD
     matrices in :math:`\mathbb{R}^{n \times n}` by calculating pairwise
     products [1]_:
@@ -70,7 +70,7 @@ def kernel_logeuclid(X, Y=None, *, reg=1e-10, **kwargs):
     Returns
     -------
     K : ndarray, shape (n_matrices_X, n_matrices_Y)
-        The Log-Euclidean kernel matrix between X and Y.
+        Log-Euclidean kernel matrix between X and Y.
 
     Notes
     -----
@@ -124,7 +124,7 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
     Returns
     -------
     K : ndarray, shape (n_matrices_X, n_matrices_Y)
-        The affine-invariant Riemannian kernel matrix between X and Y.
+        Affine-invariant Riemannian kernel matrix between X and Y.
 
     Notes
     -----
@@ -226,7 +226,7 @@ def kernel(X, Y=None, *, Cref=None, metric="riemann", reg=1e-10):
     Returns
     -------
     K : ndarray, shape (n_matrices_X, n_matrices_Y)
-        The kernel matrix between X and Y.
+        Kernel matrix between X and Y.
 
     Notes
     -----

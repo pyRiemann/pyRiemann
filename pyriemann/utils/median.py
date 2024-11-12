@@ -1,6 +1,7 @@
 """Medians of SPD/HPD matrices."""
 
 import warnings
+
 import numpy as np
 
 from .base import sqrtm, invsqrtm, logm, expm
@@ -64,7 +65,7 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
         M = init
 
     for _ in range(maxiter):
-        dists = distance(X, M, metric='euclid')[:, 0]
+        dists = distance(X, M, metric="euclid")[:, 0]
         is_zero = (dists == 0)
 
         w = weights[~is_zero] / dists[~is_zero]
@@ -72,12 +73,12 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
 
         n_zeros = np.sum(is_zero)
         if n_zeros > 0:
-            R = np.einsum('a,abc->bc', w, X[~is_zero] - M)  # Eq(2.7)
-            r = np.linalg.norm(R, ord='fro')
+            R = np.einsum("a,abc->bc", w, X[~is_zero] - M)  # Eq(2.7)
+            r = np.linalg.norm(R, ord="fro")
             rinv = 0 if r == 0 else np.mean(weights[is_zero]) / r
             Mnew = max(0, 1 - rinv) * Mnew + min(1, rinv) * M  # Eq(2.6)
 
-        crit = np.linalg.norm(Mnew - M, ord='fro')
+        crit = np.linalg.norm(Mnew - M, ord="fro")
         M = Mnew
         if crit <= tol:
             break
@@ -87,8 +88,15 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
     return M
 
 
-def median_riemann(X, *, tol=10e-6, maxiter=50, init=None, weights=None,
-                   step_size=1):
+def median_riemann(
+    X,
+    *,
+    tol=10e-6,
+    maxiter=50,
+    init=None,
+    weights=None,
+    step_size=1,
+):
     r"""Affine-invariant Riemannian geometric median of SPD/HPD matrices.
 
     The affine-invariant Riemannian geometric median minimizes the sum of
@@ -138,7 +146,8 @@ def median_riemann(X, *, tol=10e-6, maxiter=50, init=None, weights=None,
     """
     if not 0 < step_size <= 2:
         raise ValueError(
-            f"Value step_size must be included in (0, 2] (Got {step_size})")
+            f"Value step_size must be included in (0, 2] (Got {step_size})"
+        )
     n_matrices, _, _ = X.shape
     weights = check_weights(weights, n_matrices)
     if init is None:
@@ -147,17 +156,17 @@ def median_riemann(X, *, tol=10e-6, maxiter=50, init=None, weights=None,
         M = init
 
     for _ in range(maxiter):
-        dists = distance(X, M, metric='riemann')[:, 0]
+        dists = distance(X, M, metric="riemann")[:, 0]
         is_zero = (dists == 0)
         w = weights[~is_zero] / dists[~is_zero]
 
         # Eq(11) of [1]
         M12, Mm12 = sqrtm(M), invsqrtm(M)
         tangvecs = logm(Mm12 @ X[~is_zero] @ Mm12)
-        J = np.einsum('a,abc->bc', w / np.sum(w), tangvecs)
+        J = np.einsum("a,abc->bc", w / np.sum(w), tangvecs)
         M = M12 @ expm(step_size * J) @ M12
 
-        crit = np.linalg.norm(J, ord='fro')
+        crit = np.linalg.norm(J, ord="fro")
         if crit <= tol:
             break
     else:

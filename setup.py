@@ -17,10 +17,12 @@ kwargs_open = {"encoding": "utf8"} if is_python3 else {}
 with open('README.md', 'r', **kwargs_open) as fid:
     long_description = fid.read()
 
+description = "Machine learning for multivariate data with Riemannian geometry"
+
 setup(
     name="pyriemann",
     version=version,
-    description="Biosignals classification with Riemannian geometry",
+    description=description,
     url="https://pyriemann.readthedocs.io",
     author="Alexandre Barachant",
     author_email="alexandre.barachant@gmail.com",
@@ -34,7 +36,7 @@ setup(
         "Tracker": "https://github.com/pyRiemann/pyRiemann/issues/",
     },
     platforms="any",
-    python_requires=">=3.8",
+    python_requires=">=3.9",
     install_requires=[
         "numpy!=1.24.0",
         "scipy",
@@ -44,7 +46,7 @@ setup(
     ],
     extras_require={
         "docs": [
-            "sphinx>=6.0.0,<=7.0.1",
+            "sphinx",
             "sphinx-gallery",
             "sphinx-bootstrap_theme",
             "numpydoc",
