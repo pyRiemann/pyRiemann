@@ -26,12 +26,12 @@ from pyriemann.classification import MDM
 from pyriemann.datasets.simulated import make_classification_transfer
 from pyriemann.tangentspace import TangentSpace
 from pyriemann.transfer import (
-    TlSplitter,
-    TlDummy,
-    TlCenter,
-    TlScale,
-    TlRotate,
-    TlClassifier,
+    TLSplitter,
+    TLDummy,
+    TLCenter,
+    TLScale,
+    TLRotate,
+    TLClassifier,
     MDWM,
 )
 
@@ -82,7 +82,7 @@ X_enc, y_enc = make_classification_transfer(
 # plus a partition of the target domain whose size we can control
 target_domain = "target_domain"
 n_splits = 5  # how many times to split the target domain into train/test
-tl_cv = TlSplitter(
+tl_cv = TLSplitter(
     target_domain=target_domain,
     cv=StratifiedShuffleSplit(n_splits=n_splits, random_state=seed),
 )
@@ -108,7 +108,7 @@ for target_train_frac in tqdm(target_train_frac_array):
 
         # Calibration
         pipeline = make_pipeline(
-            TlClassifier(
+            TLClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
                 domain_weight={"source_domain": 0.0, "target_domain": 1.0},
@@ -120,8 +120,8 @@ for target_train_frac in tqdm(target_train_frac_array):
 
         # Dummy
         pipeline = make_pipeline(
-            TlDummy(),
-            TlClassifier(
+            TLDummy(),
+            TLClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
                 domain_weight={"source_domain": 1.0, "target_domain": 0.0},
@@ -133,8 +133,8 @@ for target_train_frac in tqdm(target_train_frac_array):
 
         # Recentering pipeline
         pipeline = make_pipeline(
-            TlCenter(target_domain=target_domain),
-            TlClassifier(
+            TLCenter(target_domain=target_domain),
+            TLClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
                 domain_weight={"source_domain": 1.0, "target_domain": 0.0},
@@ -146,14 +146,14 @@ for target_train_frac in tqdm(target_train_frac_array):
 
         # RPA pipeline
         pipeline = make_pipeline(
-            TlCenter(target_domain=target_domain),
-            TlScale(
+            TLCenter(target_domain=target_domain),
+            TLScale(
                 target_domain=target_domain,
                 final_dispersion=1,
                 centered_data=True,
             ),
-            TlRotate(target_domain=target_domain, metric="euclid"),
-            TlClassifier(
+            TLRotate(target_domain=target_domain, metric="euclid"),
+            TLClassifier(
                 target_domain=target_domain,
                 estimator=clf_base,
                 domain_weight={"source_domain": 0.5, "target_domain": 0.5},
@@ -177,10 +177,10 @@ for target_train_frac in tqdm(target_train_frac_array):
         # TSA pipeline
         pipeline = make_pipeline(
             TangentSpace(metric="riemann"),
-            TlCenter(target_domain=target_domain),
-            TlScale(target_domain=target_domain),
-            TlRotate(target_domain=target_domain),
-            TlClassifier(
+            TLCenter(target_domain=target_domain),
+            TLScale(target_domain=target_domain),
+            TLRotate(target_domain=target_domain),
+            TLClassifier(
                 target_domain=target_domain,
                 estimator=LogisticRegression(),
                 domain_weight={"source_domain": 0.5, "target_domain": 0.5},

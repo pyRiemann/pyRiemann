@@ -86,7 +86,7 @@ def decode_domains(X_enc, y_enc):
     return X_enc, np.array(y), np.array(domain)
 
 
-class TlSplitter():
+class TLSplitter():
     """Class for handling the cross-validation splits of multi-domain data.
 
     This is a wrapper to sklearn's cross-validation iterators [1]_ which

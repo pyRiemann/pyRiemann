@@ -342,7 +342,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         return self._mdm.transform(cov)
 
 
-class TsClassifier(BaseEstimator, ClassifierMixin):
+class TSClassifier(BaseEstimator, ClassifierMixin):
     """Classification in the tangent space.
 
     Project data in the tangent space and apply a classifier on the projected
@@ -410,8 +410,8 @@ class TsClassifier(BaseEstimator, ClassifierMixin):
 
         Returns
         -------
-        self : TsClassifier instance
-            The TsClassifier instance.
+        self : TSClassifier instance
+            The TSClassifier instance.
         """
         if not isinstance(self.clf, ClassifierMixin):
             raise TypeError("clf must be a ClassifierMixin")
@@ -459,9 +459,9 @@ class TsClassifier(BaseEstimator, ClassifierMixin):
 
 @deprecated(
     "TSclassifier is deprecated and will be removed in 0.10.0; "
-    "please use TsClassifier."
+    "please use TSClassifier."
 )
-class TSclassifier(TsClassifier):
+class TSclassifier(TSClassifier):
     pass
 
 

@@ -13,7 +13,7 @@ import numpy as np
 
 from pyriemann.datasets.simulated import make_classification_transfer
 from pyriemann.embedding import SpectralEmbedding
-from pyriemann.transfer import decode_domains, TlCenter, TlRotate
+from pyriemann.transfer import decode_domains, TLCenter, TLRotate
 
 
 ###############################################################################
@@ -46,13 +46,13 @@ points = np.concatenate([X_org, np.eye(2)[None, :, :]])  # stack the identity
 embedded_points["origin"] = emb.fit_transform(points)
 
 # embed the source and target datasets after recentering
-rct = TlCenter(target_domain="target_domain")
+rct = TLCenter(target_domain="target_domain")
 X_rct = rct.fit_transform(X_org, y_enc)
 points = np.concatenate([X_rct, np.eye(2)[None, :, :]])  # stack the identity
 embedded_points["rct"] = emb.fit_transform(points)
 
 # embed the source and target datasets after recentering
-rot = TlRotate(target_domain="target_domain", metric="riemann")
+rot = TLRotate(target_domain="target_domain", metric="riemann")
 X_rot = rot.fit_transform(X_rct, y_enc)
 
 points = np.concatenate([X_org, X_rct, X_rot, np.eye(2)[None, :, :]])

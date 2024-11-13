@@ -51,7 +51,7 @@ Classification
 
     MDM
     FgMDM
-    TsClassifier
+    TSClassifier
     KNearestNeighbor
     SVC
     MeanField
@@ -151,14 +151,14 @@ Transfer Learning
 
     :template: class.rst
 
-    TlSplitter
-    TlEstimator
-    TlClassifier
-    TlRegressor
-    TlDummy
-    TlCenter
-    TlScale
-    TlRotate
+    TLSplitter
+    TLEstimator
+    TLClassifier
+    TLRegressor
+    TLDummy
+    TLCenter
+    TLScale
+    TLRotate
     MDWM
 
 Stats

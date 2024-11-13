@@ -15,7 +15,7 @@ from pyriemann.classification import (
     MDM,
     FgMDM,
     KNearestNeighbor,
-    TsClassifier,
+    TSClassifier,
     SVC,
     MeanField,
 )
@@ -23,13 +23,13 @@ from pyriemann.regression import KNearestNeighborRegressor, SVR
 from pyriemann.transfer import (
     decode_domains,
     encode_domains,
-    TlSplitter,
-    TlDummy,
-    TlCenter,
-    TlScale,
-    TlRotate,
-    TlClassifier,
-    TlRegressor,
+    TLSplitter,
+    TLDummy,
+    TLCenter,
+    TLScale,
+    TLRotate,
+    TLClassifier,
+    TLRegressor,
     MDWM,
 )
 from pyriemann.utils.distance import distance, distance_riemann
@@ -95,7 +95,7 @@ def test_tlsplitter(rndstate, cv):
         n_matrices=25, class_sep=5, class_disp=1.0, random_state=rndstate
     )
 
-    cv = TlSplitter(target_domain="target_domain", cv=cv)
+    cv = TLSplitter(target_domain="target_domain", cv=cv)
     train_idx, test_idx = next(cv.split(X, y_enc))
 
     assert len(train_idx) == 90  # 50 from source and 4/5*100 from target
@@ -114,7 +114,7 @@ def test_tldummy(rndstate, space):
     if space == "tangentspace":
         X = tangent_space(X, Cref=mean_riemann(X), metric="riemann")
 
-    dum = TlDummy()
+    dum = TLDummy()
     dum.fit(X, y_enc)
     dum.fit_transform(X, y_enc)
     dum.transform(X)
@@ -136,7 +136,7 @@ def test_tlcenter_manifold(rndstate, get_weights,
 
     _, _, domain = decode_domains(X, y_enc)
 
-    rct = TlCenter(target_domain=target_domain, metric=metric)
+    rct = TLCenter(target_domain=target_domain, metric=metric)
 
     # Test fit
     rct.fit(X, y_enc, sample_weight=weights)
@@ -186,7 +186,7 @@ def test_tlcenter_manifold_fit_transf(rndstate, get_weights,
     X1, y1 = X[:50], y_enc[:50]
     X2, y2 = X[50:], y_enc[50:]
 
-    rct = TlCenter(target_domain=target_domain, metric=metric)
+    rct = TLCenter(target_domain=target_domain, metric=metric)
     X1_rct = rct.fit_transform(X1, y1, sample_weight=weights_1)
     X2_rct = rct.fit(X2, y2, sample_weight=weights_2).transform(X2)
     X_rct = np.concatenate((X1_rct, X2_rct))
@@ -213,7 +213,7 @@ def test_tlcenter_tangentspace(rndstate):
 
     _, _, domain = decode_domains(X, y_enc)
 
-    tlctr = TlCenter(target_domain="tgt")
+    tlctr = TLCenter(target_domain="tgt")
 
     tlctr.fit(X, y_enc)
 
@@ -243,12 +243,12 @@ def test_tlscale_manifold(rndstate, get_weights,
     else:
         weights = None
     if use_centered_data:  # ensure that data is indeed centered on each domain
-        tlrct = TlCenter(target_domain="target_domain", metric=metric)
+        tlrct = TLCenter(target_domain="target_domain", metric=metric)
         X = tlrct.fit_transform(X, y_enc, sample_weight=weights)
 
     _, _, domain = decode_domains(X, y_enc)
 
-    tlstr = TlScale(
+    tlstr = TLScale(
         target_domain="target_domain",
         final_dispersion=1.0,
         centered_data=use_centered_data,
@@ -290,7 +290,7 @@ def test_tlscale_tangentspace(rndstate):
 
     _, _, domain = decode_domains(X, y_enc)
 
-    tlscl = TlScale(target_domain="tgt")
+    tlscl = TLScale(target_domain="tgt")
 
     tlscl.fit(X, y_enc)
 
@@ -324,9 +324,9 @@ def test_tlrotate_manifold(rndstate, get_weights, metric, use_weight):
 
     _, y, domain = decode_domains(X, y_enc)
 
-    rct = TlCenter(target_domain="target_domain", metric=metric)
+    rct = TLCenter(target_domain="target_domain", metric=metric)
     X_rct = rct.fit_transform(X, y_enc, sample_weight=weights)
-    rot = TlRotate(target_domain="target_domain", metric=metric)
+    rot = TLRotate(target_domain="target_domain", metric=metric)
     X_rot = rot.fit_transform(X_rct, y_enc, sample_weight=weights)
     for k in rot.rotations_.keys():
         assert rot.rotations_[k].shape == (2, 2)
@@ -374,7 +374,7 @@ def test_tlrotate_tangentspace(rndstate, n_components, n_clusters):
 
     _, _, domain = decode_domains(X, y_enc)
 
-    tlrot = TlRotate(
+    tlrot = TLRotate(
         target_domain="tgt",
         n_components=n_components,
         n_clusters=n_clusters,
@@ -418,7 +418,7 @@ def test_tlclassifier_mdm(rndstate, clf, source_weight, target_weight):
         random_state=rndstate,
     )
 
-    tlclf = TlClassifier(
+    tlclf = TLClassifier(
         target_domain="target_domain",
         estimator=clf,
         domain_weight={
@@ -461,7 +461,7 @@ def test_tlclassifier_mdm(rndstate, clf, source_weight, target_weight):
         make_pipeline(MDM(metric="riemann")),
         FgMDM(),
         make_pipeline(KNearestNeighbor(metric="logeuclid")),
-        TsClassifier(),
+        TSClassifier(),
         SVC(metric="riemann"),
         make_pipeline(MeanField(metric="logeuclid")),
     ]
@@ -508,7 +508,7 @@ def tlclassifier(clf, X, y_enc, source_weight, target_weight, n_classes=2):
 
     if hasattr(clf, "probability"):
         clf.set_params(**{"probability": True})
-    tlclf = TlClassifier(
+    tlclf = TLClassifier(
         target_domain="target_domain",
         estimator=clf,
         domain_weight={
@@ -576,7 +576,7 @@ def test_tlregressor_tangentspace(rndstate, reg, source_weight, target_weight):
 def tlregressor(reg, X, y_enc, source_weight, target_weight):
     n_inputs = X.shape[0]
 
-    tlreg = TlRegressor(
+    tlreg = TLRegressor(
         target_domain="target_domain",
         estimator=reg,
         domain_weight={

@@ -32,7 +32,7 @@ def _check_inputs(X):
         raise ValueError(f"Input must be a 2d or a 3d array (Got {X.ndim}).")
 
 
-class TlDummy(BaseEstimator, TransformerMixin):
+class TLDummy(BaseEstimator, TransformerMixin):
     """No transformation for transfer learning.
 
     No transformation of data between the domains.
@@ -55,8 +55,8 @@ class TlDummy(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        self : TlDummy instance
-            The TlDummy instance.
+        self : TLDummy instance
+            The TLDummy instance.
         """
         return self
 
@@ -97,15 +97,7 @@ class TlDummy(BaseEstimator, TransformerMixin):
         return self.fit(X, y_enc).transform(X)
 
 
-@deprecated(
-    "TLDummy is deprecated and will be removed in 0.10.0; "
-    "please use TlDummy."
-)
-class TLDummy(TlDummy):
-    pass
-
-
-class TlCenter(BaseEstimator, TransformerMixin):
+class TLCenter(BaseEstimator, TransformerMixin):
     """Centering for transfer learning.
 
     For inputs in matrix manifold, it recenters the matrices from each domain
@@ -177,7 +169,7 @@ class TlCenter(BaseEstimator, TransformerMixin):
         return self.centers_
 
     def fit(self, X, y_enc, sample_weight=None):
-        """Fit TlCenter.
+        """Fit TLCenter.
 
         For each domain, it calculates the mean of matrices or vectors of this
         domain.
@@ -195,8 +187,8 @@ class TlCenter(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        self : TlCenter instance
-            The TlCenter instance.
+        self : TLCenter instance
+            The TLCenter instance.
         """
         _check_inputs(X)
         _, _, domains = decode_domains(X, y_enc)
@@ -255,7 +247,7 @@ class TlCenter(BaseEstimator, TransformerMixin):
         return X_new
 
     def fit_transform(self, X, y_enc, sample_weight=None):
-        """Fit TlCenter and then center each domain.
+        """Fit TLCenter and then center each domain.
 
         For each domain, it calculates the mean of matrices or vectors of this
         domain, and then recenters them to identity matrix or to null vector.
@@ -297,15 +289,7 @@ class TlCenter(BaseEstimator, TransformerMixin):
         return X_new
 
 
-@deprecated(
-    "TLCenter is deprecated and will be removed in 0.10.0; "
-    "please use TlCenter."
-)
-class TLCenter(TlCenter):
-    pass
-
-
-class TlScale(BaseEstimator, TransformerMixin):
+class TLScale(BaseEstimator, TransformerMixin):
     """Scaling for transfer learning.
 
     For inputs in matrix manifold, it stretches the matrices from each domain
@@ -345,7 +329,7 @@ class TlScale(BaseEstimator, TransformerMixin):
 
     See Also
     --------
-    TlCenter
+    TLCenter
 
     Notes
     -----
@@ -384,7 +368,7 @@ class TlScale(BaseEstimator, TransformerMixin):
         return self.scales_
 
     def fit(self, X, y_enc, sample_weight=None):
-        """Fit TlScale.
+        """Fit TLScale.
 
         For each domain, it calculates the scaling of this domain,
         ie the dispersion around the mean of matrices,
@@ -403,8 +387,8 @@ class TlScale(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        self : TlScale instance
-            The TlScale instance.
+        self : TLScale instance
+            The TLScale instance.
         """
         _check_inputs(X)
         _, _, domains = decode_domains(X, y_enc)
@@ -485,7 +469,7 @@ class TlScale(BaseEstimator, TransformerMixin):
         return X_new
 
     def fit_transform(self, X, y_enc, sample_weight=None):
-        """Fit TlScale and then scale each domain.
+        """Fit TLScale and then scale each domain.
 
         For each domain, it calculates the dispersion around the mean of this
         domain, and then stretches them to the desired final dispersion.
@@ -541,13 +525,13 @@ class TlScale(BaseEstimator, TransformerMixin):
 
 @deprecated(
     "TLStretch is deprecated and will be removed in 0.10.0; "
-    "please use TlScale."
+    "please use TLScale."
 )
-class TLStretch(TlScale):
+class TLStretch(TLScale):
     pass
 
 
-class TlRotate(BaseEstimator, TransformerMixin):
+class TLRotate(BaseEstimator, TransformerMixin):
     """Rotation for transfer learning.
 
     For inputs in matrix manifold, it rotates the matrices from each source
@@ -601,7 +585,7 @@ class TlRotate(BaseEstimator, TransformerMixin):
 
     See Also
     --------
-    TlCenter
+    TLCenter
 
     Notes
     -----
@@ -646,7 +630,7 @@ class TlRotate(BaseEstimator, TransformerMixin):
         self.n_clusters = n_clusters
 
     def fit(self, X, y_enc, sample_weight=None):
-        """Fit TlRotate.
+        """Fit TLRotate.
 
         It calculates the rotations matrices to transform each source domain
         into the target domain.
@@ -664,8 +648,8 @@ class TlRotate(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        self : TlRotate instance
-            The TlRotate instance.
+        self : TLRotate instance
+            The TLRotate instance.
         """
         _check_inputs(X)
         _, _, domains = decode_domains(X, y_enc)
@@ -683,7 +667,7 @@ class TlRotate(BaseEstimator, TransformerMixin):
         return self
 
     def _fit_manifold(self, X, y_enc, domains, sample_weight):
-        """Fit TlRotate on manifold.
+        """Fit TLRotate on manifold.
 
         It computes the mean M of SPD matrices X for each class of each domain.
         It computes the rotation for each source domain so that its class means
@@ -721,7 +705,7 @@ class TlRotate(BaseEstimator, TransformerMixin):
             self.rotations_[d] = rot
 
     def _fit_tangentspace(self, X, y_enc, domains):
-        """Fit TlRotate in tangent space.
+        """Fit TLRotate in tangent space.
 
         It computes anchors for each class of each domain.
         It computes the rotation for source domain so that its anchors
@@ -820,7 +804,7 @@ class TlRotate(BaseEstimator, TransformerMixin):
         return X
 
     def fit_transform(self, X, y_enc, sample_weight=None):
-        """Fit TlRotate and then rotate each source domain to target domain.
+        """Fit TLRotate and then rotate each source domain to target domain.
 
         It calculates and applies the rotation matrix for matching each source
         domain to the target domain.
@@ -865,18 +849,10 @@ class TlRotate(BaseEstimator, TransformerMixin):
         return X_new
 
 
-@deprecated(
-    "TLRotate is deprecated and will be removed in 0.10.0; "
-    "please use TlRotate."
-)
-class TLRotate(TlRotate):
-    pass
-
-
 ###############################################################################
 
 
-class TlEstimator(BaseEstimator):
+class TLEstimator(BaseEstimator):
     """Transfer learning wrapper for estimators.
 
     This is a wrapper for any BaseEstimator (classifier or regressor) that
@@ -897,8 +873,8 @@ class TlEstimator(BaseEstimator):
 
     See Also
     --------
-    TlClassifier
-    TlRegressor
+    TLClassifier
+    TLRegressor
 
     Notes
     -----
@@ -912,7 +888,7 @@ class TlEstimator(BaseEstimator):
         self.estimator = estimator
 
     def fit(self, X, y_enc):
-        """Fit TlEstimator.
+        """Fit TLEstimator.
 
         Parameters
         ----------
@@ -924,8 +900,8 @@ class TlEstimator(BaseEstimator):
 
         Returns
         -------
-        self : TlEstimator instance
-            The TlEstimator instance.
+        self : TLEstimator instance
+            The TLEstimator instance.
         """
         if not (is_regressor(self.estimator) or is_classifier(self.estimator)):
             raise TypeError(
@@ -972,15 +948,7 @@ class TlEstimator(BaseEstimator):
         return self.estimator.predict(X)
 
 
-@deprecated(
-    "TLEstimator is deprecated and will be removed in 0.10.0; "
-    "please use TlEstimator."
-)
-class TLEstimator(TlEstimator):
-    pass
-
-
-class TlClassifier(TlEstimator):
+class TLClassifier(TLEstimator):
     """Transfer learning wrapper for classifiers.
 
     This is a wrapper for any classifier that converts extended labels used in
@@ -999,7 +967,7 @@ class TlClassifier(TlEstimator):
 
     See Also
     --------
-    TlRegressor
+    TLRegressor
 
     Notes
     -----
@@ -1007,7 +975,7 @@ class TlClassifier(TlEstimator):
     """
 
     def fit(self, X, y_enc):
-        """Fit TlClassifier.
+        """Fit TLClassifier.
 
         Parameters
         ----------
@@ -1019,8 +987,8 @@ class TlClassifier(TlEstimator):
 
         Returns
         -------
-        self : TlClassifier instance
-            The TlClassifier instance.
+        self : TLClassifier instance
+            The TLClassifier instance.
         """
         if not is_classifier(self.estimator):
             raise TypeError("Estimator has to be a classifier.")
@@ -1065,15 +1033,7 @@ class TlClassifier(TlEstimator):
         return accuracy_score(y_true, y_pred)
 
 
-@deprecated(
-    "TLClassifier is deprecated and will be removed in 0.10.0; "
-    "please use TlClassifier."
-)
-class TLClassifier(TlClassifier):
-    pass
-
-
-class TlRegressor(TlEstimator):
+class TLRegressor(TLEstimator):
     """Transfer learning wrapper for regressors.
 
     This is a wrapper for any regressor that converts extended labels used in
@@ -1092,7 +1052,7 @@ class TlRegressor(TlEstimator):
 
     See Also
     --------
-    TlClassifier
+    TLClassifier
 
     Notes
     -----
@@ -1100,7 +1060,7 @@ class TlRegressor(TlEstimator):
     """
 
     def fit(self, X, y_enc):
-        """Fit TlRegressor.
+        """Fit TLRegressor.
 
         Parameters
         ----------
@@ -1112,8 +1072,8 @@ class TlRegressor(TlEstimator):
 
         Returns
         -------
-        self : TlRegressor instance
-            The TlRegressor instance.
+        self : TLRegressor instance
+            The TLRegressor instance.
         """
         if not is_regressor(self.estimator):
             raise TypeError("Estimator has to be a regressor.")
@@ -1139,14 +1099,6 @@ class TlRegressor(TlEstimator):
         _, y_true, _ = decode_domains(X, y_enc)
         y_pred = self.predict(X)
         return r2_score(y_true.astype(float), y_pred)
-
-
-@deprecated(
-    "TLRegressor is deprecated and will be removed in 0.10.0; "
-    "please use TlRegressor."
-)
-class TLRegressor(TlRegressor):
-    pass
 
 
 ###############################################################################
