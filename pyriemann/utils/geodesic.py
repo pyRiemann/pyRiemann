@@ -186,8 +186,8 @@ def geodesic_wasserstein(A, B, alpha=0.5):
     A12 = sqrtm(A)
     A12inv = invsqrtm(A)
     AB12 = A12 @ sqrtm(A12 @ B @ A12) @ A12inv
-    return (1-alpha)**2*A + alpha**2*B + \
-        alpha*(1-alpha)*(AB12 + AB12.conj().swapaxes(-1, -2))
+    return (1-alpha)**2 * A + alpha**2 * B + \
+        alpha*(1-alpha) * (AB12 + AB12.conj().swapaxes(-1, -2))
 
 
 ###############################################################################

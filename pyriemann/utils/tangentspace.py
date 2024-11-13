@@ -197,7 +197,8 @@ def exp_map_wasserstein(X, Cref):
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
     to SPD/HPD manifold with Wasserstein exponential map according to a
-    reference SPD/HPD matrix :math:`\mathbf{C}_\text{ref}` is given in [1]_.
+    reference SPD/HPD matrix :math:`\mathbf{C}_\text{ref}` is given in
+    Eq.(36) of [1]_.
 
     Parameters
     ----------
@@ -418,7 +419,7 @@ def log_map_wasserstein(X, Cref):
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
     to tangent space by the Wasserstein logarithmic map
     according to a SPD/HPD reference matrix :math:`\mathbf{C}_\text{ref}` is
-    given in [1]_:
+    given in Proposition 9 of [1]_:
 
     .. math::
         \mathbf{X}_\text{new} = (\mathbf{X}\mathbf{C}_\text{ref})^{1/2} +
