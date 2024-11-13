@@ -9,6 +9,7 @@ from pyriemann.utils.base import (
     powm,
     sqrtm,
     nearest_sym_pos_def,
+    _first_divided_difference
 )
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.utils.test import is_pos_def, is_sym_pos_def
@@ -158,3 +159,26 @@ def test_nearest_sym_pos_def(get_mats):
     assert not is_pos_def(psd)
     assert is_sym_pos_def(nearest_sym_pos_def(mats))
     assert is_sym_pos_def(nearest_sym_pos_def(psd))
+
+
+def test_first_divided_difference(get_mats):
+    """Test first divided difference."""
+    n_matrices = 1
+    X = get_mats(n_matrices, n_channels, "spd")[0]
+    d = np.linalg.eigvalsh(X)
+    id = lambda x: x
+
+    fdd_id = _first_divided_difference(d, id, id)
+    assert fdd_id.shape == X.shape
+    assert_array_almost_equal(np.diag(fdd_id), d)
+    assert_array_almost_equal(fdd_id[np.triu_indices_from(fdd_id, k=1)], 1)
+
+    fdd_exp = _first_divided_difference(d, np.exp, np.exp)
+    assert_array_almost_equal(np.diag(fdd_exp), np.exp(d))
+
+    fdd_log = _first_divided_difference(d, np.log, lambda x: 1./x)
+    assert_array_almost_equal(np.diag(fdd_log), 1/d)
+
+    # exp of log is element-wise inverse of log
+    fdd_exp_of_log = _first_divided_difference(np.log(d), np.exp, np.exp)
+    assert_array_almost_equal(fdd_exp_of_log, 1/fdd_log)

@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from .base import sqrtm, invsqrtm, logm, expm, first_divided_difference
+from .base import sqrtm, invsqrtm, logm, expm, _first_divided_difference
 from .mean import mean_covariance
 from .utils import check_function
 
@@ -126,7 +126,7 @@ def exp_map_logeuclid(X, Cref):
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
     d, V = np.linalg.eigh(Cref)
-    logfdd = first_divided_difference(d, np.log, lambda x: 1 / x)
+    logfdd = _first_divided_difference(d, np.log, lambda x: 1 / x)
     return expm(logm(Cref) + V @ (logfdd * (V.conj().T @ X @ V)) @ V.conj().T)
 
 
@@ -283,7 +283,7 @@ def log_map_logeuclid(X, Cref):
     logX = logm(X)
     logCref = logm(Cref)
     d, V = np.linalg.eigh(Cref)
-    expfdd = first_divided_difference(np.log(d), np.exp, np.exp)
+    expfdd = _first_divided_difference(np.log(d), np.exp, np.exp)
     return V @ (expfdd * (V.conj().T @ (logX - logCref) @ V)) @ V.conj().T
 
 

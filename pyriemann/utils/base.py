@@ -234,7 +234,7 @@ def nearest_sym_pos_def(X, reg=1e-6):
     return np.array([_nearest_sym_pos_def(x, reg) for x in X])
 
 
-def first_divided_difference(d, function, derivative, atol=1e-12, rtol=1e-12):
+def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
     r"""First divided difference of a matrix function.
 
     First divided difference of a matrix function applied to the eigenvalues
@@ -242,11 +242,11 @@ def first_divided_difference(d, function, derivative, atol=1e-12, rtol=1e-12):
 
     .. math::
 
-       [F^{[1]}(\Lambda_S)]_{i,j} =
+       [D(\Lambda_S)]_{i,j} =
            \begin{cases}
-           \frac{f(\lambda_i)-f(\lambda_j)}{\lambda_i-\lambda_j}, & \lambda_i
-           \neq \lambda_j\\
-           f'(\lambda_i),
+           \frac{fct(\lambda_i)-fct(\lambda_j)}{\lambda_i-\lambda_j},
+           & \lambda_i \neq \lambda_j\\
+           fctder(\lambda_i),
            & \lambda_i = \lambda_j
            \end{cases}
 
@@ -255,10 +255,10 @@ def first_divided_difference(d, function, derivative, atol=1e-12, rtol=1e-12):
     ----------
     d : ndarray, shape (n,)
         Eigenvalues of a symmetric matrix.
-    function : callable
+    fct : callable
         Function to apply to eigenvalues of d. Has to be defined for all
         possible eigenvalues of d.
-    derivative : callable
+    fctder : callable
         Derivative of the function to apply. Has to be defined for all
         possible eigenvalues of d.
     atol : float, default=1e-12
@@ -282,10 +282,10 @@ def first_divided_difference(d, function, derivative, atol=1e-12, rtol=1e-12):
         R. Bhatia, Springer, 1997
     """
     n = len(d)
-    dif = np.zeros((n, n))
-    dif += d
+    dif = np.repeat(d[None, :], n, axis=0)
+
     close_ = np.isclose(dif, dif.T, atol=atol, rtol=rtol)
-    dif[close_] = derivative(dif[close_])
-    dif[~close_] = (function(dif[~close_]) - function(dif.T[~close_])) / \
+    dif[close_] = fctder(dif[close_])
+    dif[~close_] = (fct(dif[~close_]) - fct(dif.T[~close_])) / \
                    (dif[~close_] - dif.T[~close_])
     return dif
