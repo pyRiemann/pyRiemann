@@ -13,7 +13,9 @@ v0.8.dev
 - Enhance :func:`pyriemann.utils.mean.mean_ale` adding ``init`` parameter,
   and add ``check_init`` useful to all ajd and mean functions allowing initialization. :pr:`328` by :user:`qbarthelemy`
 
-- Add tangent space alignment (TSA) in transfer learning module. :pr:`320` by :user:`qbarthelemy`
+- Add tangent space alignment (TSA) in transfer learning module.
+  ``TLStretch`` is deprecated and renamed into :class:`pyriemann.transfer._estimators.TLScale`,
+  and ``TSclassifier`` into :class:`pyriemann.classification.TSClassifier`. :pr:`320` by :user:`qbarthelemy`
 
 v0.7 (October 2024)
 -------------------
