@@ -166,9 +166,8 @@ def test_first_divided_difference(get_mats):
     n_matrices = 1
     X = get_mats(n_matrices, n_channels, "spd")[0]
     d = np.linalg.eigvalsh(X)
-    id = lambda x: x
 
-    fdd_id = _first_divided_difference(d, id, id)
+    fdd_id = _first_divided_difference(d, lambda x: x, lambda x: x)
     assert fdd_id.shape == X.shape
     assert_array_almost_equal(np.diag(fdd_id), d)
     assert_array_almost_equal(fdd_id[np.triu_indices_from(fdd_id, k=1)], 1)
