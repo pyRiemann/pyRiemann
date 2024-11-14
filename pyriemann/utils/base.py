@@ -1,7 +1,6 @@
 """Base functions for SPD/HPD matrices."""
 
 import numpy as np
-from numpy._core.numerictypes import typecodes
 
 from .test import is_pos_def
 
@@ -10,7 +9,7 @@ def _matrix_operator(C, operator):
     """Matrix function."""
     if not isinstance(C, np.ndarray) or C.ndim < 2:
         raise ValueError("Input must be at least a 2D ndarray")
-    if C.dtype.char in typecodes['AllFloat'] and (
+    if C.dtype.char in np.typecodes['AllFloat'] and (
             np.isinf(C).any() or np.isnan(C).any()):
         raise ValueError(
             "Matrices must be positive definite. Add "
