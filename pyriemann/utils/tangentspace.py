@@ -100,7 +100,16 @@ def exp_map_logeuclid(X, Cref):
     The projection of a matrix :math:`\mathbf{X}` from tangent space
     to SPD/HPD manifold with log-Euclidean exponential map
     according to a reference SPD/HPD matrix :math:`\mathbf{C}_\text{ref}` as
-    described in [1]_.
+    described in Eq.(3.4) of [1]_:
+
+    .. math::
+        \mathbf{X}_\text{original} = \exp \left( \log(\mathbf{C}_\text{ref})
+        + [D_{\mathbf{C}_\text{ref}} \log] \left(\mathbf{X}\right) \right)
+
+    where :math:`[D_{\mathbf{C}_\text{ref}} \log] \left( \mathbf{X}\right)`
+    indicates the differential of the matrix logarithm at point
+    :math:`\mathbf{C}_\text{ref}` applied to :math:`\mathbf{X}`. Calculation is
+    performed according to Eq. (5) in [2]_.
 
     Parameters
     ----------
@@ -120,7 +129,12 @@ def exp_map_logeuclid(X, Cref):
 
     References
     ----------
-    .. [1] `A New Canonical Log-Euclidean Kernel for Symmetric Positive
+    .. [1] `Geometric Means in a Novel Vector Space Structure on Symmetric
+        Positive‐Definite Matrices
+        <https://epubs.siam.org/doi/10.1137/050637996>`_
+        V. Arsigny, P. Fillard, X. Pennec, N. Ayache. SIMAX, 2006, 29(1),
+        pp. 328-347.
+    .. [2] `A New Canonical Log-Euclidean Kernel for Symmetric Positive
         Definite Matrices for EEG Analysis
         <https://ieeexplore.ieee.org/document/10735221>`_
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
@@ -254,7 +268,17 @@ def log_map_logeuclid(X, Cref):
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
     to tangent space by log-Euclidean logarithmic map according to a SPD/HPD
-    reference matrix :math:`\mathbf{C}_\text{ref}` as described in [1]_.
+    reference matrix :math:`\mathbf{C}_\text{ref}` as described in Eq.(3.4)
+    of [1]_:
+
+    .. math::
+        \mathbf{X}_\text{new} = [D_{\log(\mathbf{C}_\text{ref})} \exp] \left(
+        \log(\mathbf{X}) - \log(\mathbf{C}_\text{ref}) \right)
+
+    where :math:`[D_{\log(\mathbf{C}_\text{ref})} \exp]\left(\mathbf{X}\right)`
+    indicates the differential of the matrix exponential at point
+    :math:`\log(\mathbf{C}_\text{ref})` applied to :math:`\mathbf{X}`.
+    Calculation is performed according to Eq. (7) in [2]_.
 
     Parameters
     ----------
@@ -274,7 +298,12 @@ def log_map_logeuclid(X, Cref):
 
     References
     ----------
-    .. [1] `A New Canonical Log-Euclidean Kernel for Symmetric Positive
+    .. [1] `Geometric Means in a Novel Vector Space Structure on Symmetric
+        Positive‐Definite Matrices
+        <https://epubs.siam.org/doi/10.1137/050637996>`_
+        V. Arsigny, P. Fillard, X. Pennec, N. Ayache. SIMAX, 2006, 29(1),
+        pp. 328-347.
+    .. [2] `A New Canonical Log-Euclidean Kernel for Symmetric Positive
         Definite Matrices for EEG Analysis
         <https://ieeexplore.ieee.org/document/10735221>`_
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
