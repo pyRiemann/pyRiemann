@@ -289,3 +289,94 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
     dif[~close_] = (fct(dif[~close_]) - fct(dif.T[~close_])) / \
                    (dif[~close_] - dif.T[~close_])
     return dif
+
+
+def ddlogm(X, Cref):
+    r"""Directional derivative of the matrix logarithm.
+
+    The directional derivative of the matrix logarithm at a SPD/HPD matrix
+    :math:`\mathbf{C}_{\text{ref}}` in the direction of a SPD/HPD matrix
+    :math:`\mathbf{X}` is defined as Eq. (V.13) in [1]_:
+
+    .. math::
+
+        \text{ddlogm}(\mathbf{X}, \mathbf{C}_{\text{ref}}) =
+        \mathbf{V} \left( \text{fdd}(\mathbf{\Lambda}) \odot
+        \mathbf{V}^H \mathbf{X} \mathbf{V} \right) \mathbf{V}^H
+
+
+    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues of
+    :math:`\mathbf{C}_{\text{ref}}`, :math:`\mathbf{V}` the eigenvectors of
+    :math:`\mathbf{C}_{\text{ref}}`, and :math:`\text{fdd}` the first divided
+    difference of the logarithm function.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n, n)
+        Symmetric/hermitian positive definite matrix.
+    Cref : ndarray, shape (n, n)
+        Symmetric/hermitian positive definite matrix.
+
+    Returns
+    -------
+    ddlogm : ndarray, shape (n, n)
+        Directional derivative of the matrix logarithm.
+
+    Notes
+    -----
+    .. versionadded:: 0.8
+
+    References
+    ----------
+    .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
+        R. Bhatia, Springer, 1997
+    """
+
+    d, V = np.linalg.eigh(Cref)
+    logfdd = _first_divided_difference(d, np.log, lambda x: 1 / x)
+    return V @ (logfdd * (V.conj().T @ X @ V)) @ V.conj().T
+
+
+def ddexpm(X, Cref):
+    r"""Directional derivative of the matrix exponential.
+
+    The directional derivative of the matrix exponential at a SPD/HPD matrix
+    :math:`\mathbf{C}_{\text{ref}}` in the direction of a SPD/HPD matrix
+    :math:`\mathbf{X}` is defined as Eq. (V.13) in [1]_:
+
+    .. math::
+
+        \text{ddexpm}(\mathbf{X}, \mathbf{C}_{\text{ref}}) =
+        \mathbf{V} \left( \text{fdd}(\mathbf{\Lambda}) \odot
+        \mathbf{V}^H \mathbf{X} \mathbf{V} \right) \mathbf{V}^H
+
+    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues of
+    :math:`\mathbf{C}_{\text{ref}}`, :math:`\mathbf{V}` the eigenvectors of
+    :math:`\mathbf{C}_{\text{ref}}`, and :math:`\text{fdd}` the first divided
+    difference of the exponential function.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n, n)
+        SPD/HPD matrix.
+    Cref : ndarray, shape (n, n)
+        SPD/HPD matrix.
+
+    Returns
+    -------
+    ddexpm : ndarray, shape (n, n)
+        Directional derivative of the matrix exponential.
+
+    Notes
+    -----
+    .. versionadded:: 0.8
+
+    References
+    ----------
+    .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
+        R. Bhatia, Springer, 1997
+    """
+
+    d, V = np.linalg.eigh(Cref)
+    expfdd = _first_divided_difference(d, np.exp, np.exp)
+    return V @ (expfdd * (V.conj().T @ X @ V)) @ V.conj().T

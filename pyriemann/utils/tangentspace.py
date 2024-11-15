@@ -310,10 +310,10 @@ def log_map_logeuclid(X, Cref):
     """
     _check_dimensions(X, Cref)
     logX = logm(X)
-    logCref = logm(Cref)
     d, V = np.linalg.eigh(Cref)
-    expfdd = _first_divided_difference(np.log(d), np.exp, np.exp)
-    return V @ (expfdd * (V.conj().T @ (logX - logCref) @ V)) @ V.conj().T
+    logd = np.log(d)
+    expfdd = _first_divided_difference(logd, np.exp, np.exp)
+    return V @ (expfdd * (V.conj().T @ logX @ V - np.diag(logd))) @ V.conj().T
 
 
 def log_map_riemann(X, Cref, C12=False):
