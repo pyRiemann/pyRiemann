@@ -735,7 +735,7 @@ class TimeDelayCovariances(BaseEstimator, TransformerMixin):
     --------
     Covariances
     ERPCovariances
-    CospCovariances
+    CoSpectra
 
     References
     ----------

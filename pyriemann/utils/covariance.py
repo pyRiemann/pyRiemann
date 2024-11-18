@@ -243,7 +243,7 @@ def covariance_sch(X):
     Parameters
     ----------
     X : ndarray, shape (n_channels, n_times)
-        Multi-channel time-series, real-valued.
+        Multi-channel time-series, real or complex-valued.
 
     Returns
     -------
