@@ -5,14 +5,19 @@ Classify fNIRS data with block diagonal matrices for HbO and HbR
 
 This example demonstrates how to classify functional near-infrared spectroscopy
 (fNIRS) data using block diagonal matrices for oxyhemoglobin (HbO) and
-deoxyhemoglobin (HbR) signals, using the ``BlockKernels`` estimator.
+deoxyhemoglobin (HbR) signals, utilizing the ``HybridBlocks`` estimator.
 This estimator computes block kernel or covariance matrices for each block of
-channels, allowing for separate processing of HbO and HbR signals.
-We can then apply shrinkage to each block separately [1]_.
+channels, enabling separate processing of HbO and HbR signals.
+
+Riemannian geometry methods generally already perform exceptionally well
+for the classification of fNIRS data [1]_. The ``HybridBlocks`` estimator
+builds upon this strength by allowing for even finer control and tuning of
+block-specific properties, which may further enhance classification accuracy.
+We can then apply shrinkage independently to each block for
+optimal performance [1]_.
 """
 
 # Author: Tim Näher
-import itertools
 import os
 from pathlib import Path
 import urllib.request
@@ -21,13 +26,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.model_selection import GridSearchCV, StratifiedKFold
+from sklearn.model_selection import StratifiedKFold
 from sklearn.compose import ColumnTransformer
 from sklearn.utils.validation import check_is_fitted
 from sklearn.pipeline import Pipeline, make_pipeline
+from sklearn.model_selection import cross_val_score
 
 from pyriemann.classification import SVC
 from pyriemann.estimation import (
+    BlockCovariances,
     Covariances,
     Kernels,
     Shrinkage,
@@ -45,29 +52,8 @@ n_jobs = -1  # Use all available cores
 cv_splits = 5  # Number of cross-validation folds
 random_state = 42  # Random state for reproducibility
 
-# Some example kernel metrics
-kernel_metrics = ["poly", "cosine"]
-
-# Some example covariance estimators
-covariance_estimators = ["oas", "lwf"]
-
-# Combine all metrics
-all_metrics = kernel_metrics + covariance_estimators
-
-# Generate all possible combinations of metrics for two blocks
-metric_combinations = [
-    list(tup) for tup in itertools.product(all_metrics, repeat=2)
-]
-
-# Shrinkage values to test
-shrinkage_values = [
-    0.01,  # same shrinkage for all blocks
-    0.1,  # same shrinkage for all blocks
-    [0.01, 0.1],  # different shrinkage for each block
-]
-
 ###############################################################################
-# Define the BlockKernels estimator and helper transformers
+# Define the HybridBlocks estimator and helper transformers
 # ---------------------------------------------------------
 
 
@@ -93,7 +79,7 @@ class FlattenTransformer(BaseEstimator, TransformerMixin):
         return X.reshape(X.shape[0], -1)
 
 
-class BlockKernels(BaseEstimator, TransformerMixin):
+class HybridBlocks(BaseEstimator, TransformerMixin):
     """Estimation of block kernel or covariance matrices with
     customizable metrics and shrinkage.
 
@@ -157,8 +143,8 @@ class BlockKernels(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        self : BlockKernels instance
-            The BlockKernels instance.
+        self : HybridBlocks instance
+            The HybridBlocks instance.
         """
         n_samples, n_channels, n_times = X.shape
 
@@ -401,10 +387,19 @@ plt.show()
 # Set up the pipeline
 # -------------------
 
-# Define the pipeline with BlockKernels and SVC classifier
-pipeline = Pipeline(
+# Define the pipeline with HybridBlocks and SVC classifier
+pipeline_hybrid_blocks = Pipeline(
     [
-        ("block_kernels", BlockKernels(block_size=block_size)),
+        ("block_kernels", HybridBlocks(block_size=block_size)),
+        ("classifier", SVC(metric="riemann")),
+    ]
+)
+
+# Define the pipeline with BlockCovariances and SVC classifier
+pipeline_blockcovariances = Pipeline(
+    [
+        ("covariances", BlockCovariances(block_size=block_size)),
+        ('shrinkage', Shrinkage()),
         ("classifier", SVC(metric="riemann")),
     ]
 )
@@ -413,73 +408,73 @@ pipeline = Pipeline(
 # Define hyperparameter cross-validation
 # --------------------------------------
 
-# Define the hyperparameter grid for grid search
-param_grid = {
-    "block_kernels__metrics": metric_combinations,
-    "block_kernels__shrinkage": shrinkage_values,
-    "classifier__C": [0.1, 1],
-}
+# Define the hyperparameters for fitting
+pipeline_hybrid_blocks.set_params(
+    block_kernels__shrinkage=[0.01, 0],
+    block_kernels__metrics=['cov', 'rbf'],
+    classifier__C=0.1
+    )
+
+pipeline_blockcovariances.set_params(
+    covariances__estimator='lwf',
+    shrinkage__shrinkage=0.01,
+    classifier__C=0.1
+    )
 
 # Define cross-validation
 cv = StratifiedKFold(
-    n_splits=cv_splits, shuffle=True, random_state=random_state
-)
-
-###############################################################################
-# Run grid search
-# ---------------
-
-print("Starting grid search")
-grid_search = GridSearchCV(
-    estimator=pipeline,
-    param_grid=param_grid,
-    scoring="accuracy",
-    cv=cv,
-    n_jobs=n_jobs,
-    verbose=1,
-)
-
-grid_search.fit(X, y)
-print("Grid search completed")
-
-###############################################################################
-# Print results
-# -------------
-
-print(f"Best parameters:\n{grid_search.best_params_}")
-print(f"Best cross-validation accuracy: {grid_search.best_score_:.4f}")
-
-df_results = pd.DataFrame(grid_search.cv_results_)
-
-# Display relevant columns
-display_columns = [
-    "mean_test_score",
-    "std_test_score",
-    "param_block_kernels__metrics",
-    "param_block_kernels__shrinkage",
-]
-
-print(
-    df_results[display_columns].sort_values(
-        by="mean_test_score", ascending=False
+    n_splits=cv_splits,
+    random_state=random_state,
+    shuffle=True
     )
-)
 
+###############################################################################
+# Fit the two models
+# ---------------
+cv_scores_hybrid_blocks = cross_val_score(
+    pipeline_hybrid_blocks, X, y,
+    cv=cv, scoring="accuracy", n_jobs=n_jobs
+    )
+
+cv_scores_blockcovariances = cross_val_score(
+    pipeline_blockcovariances, X, y,
+    cv=cv, scoring="accuracy", n_jobs=n_jobs)
+
+###############################################################################
+# Print and plot results
+# -------------
+acc_hybrid_blocks = np.median(cv_scores_hybrid_blocks)
+acc_blockcovariances = np.median(cv_scores_blockcovariances)
+
+print(f"Median accuracy for HybridBlocks: {acc_hybrid_blocks:.2f}")
+print(f"Median accuracy for BlockCovariances: {acc_blockcovariances:.2f}")
+
+# plot a scatter plot of CV and median scores
+plt.figure(figsize=(6, 6))
+plt.scatter(cv_scores_hybrid_blocks, cv_scores_blockcovariances)
+plt.plot([0.4, 1], [0.4, 1], "--", color="black")
+plt.axhline(acc_blockcovariances, color="red", linestyle="--")
+plt.axvline(acc_hybrid_blocks, color="red", linestyle="--")
+plt.xlabel("Accuracy HybridBlocks")
+plt.ylabel("Accuracy BlockCovariances")
+plt.title("Comparison of HybridBlocks and Covariances")
+plt.legend(["CV Fold Scores"])
+plt.show()
 
 ###############################################################################
 # Conclusion
 # ----------
 #
-# The grid search allows us to find the best combination of metrics and
-# shrinkage values for our fNIRS classification of mental imagery.
+# The ``HybridBlocks`` estimator allows us to use the best combination of
+# metrics and shrinkage values for our fNIRS classification of mental imagery.
 # By using block diagonal matrices for HbO and HbR signals, we can tune our
 # classifier to HbO and HbR signals separately, which can improve
 # classification performance, since fNIRS classification methods are often
-# lacking in this regard. Since there is so few data available, we just
-# calculate cross validation scores. This means that the classification
+# lacking in this regard. Since there are few data available in this example,
+# we just calculate cross validation scores. This means that the classification
 # accuracies will be overestimated. If more data per class are available
 # one should use a train-test split to get a more realistic estimate of the
-# classification performance.
+# absolute classification performance.
 
 ###############################################################################
 # References
