@@ -241,12 +241,12 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
     of a symmetric matrix. The first divided difference is defined as [1]_:
 
     .. math::
-       [D(\Lambda)]_{i,j} =
+       [FDD(d)]_{i,j} =
            \begin{cases}
-           \frac{fct(\lambda_i)-fct(\lambda_j)}{\lambda_i-\lambda_j},
-           & \lambda_i \neq \lambda_j\\
-           fctder(\lambda_i),
-           & \lambda_i = \lambda_j
+           \frac{fct(d_i)-fct(d_j)}{d_i-d_j},
+           & d_i \neq d_j\\
+           fctder(d_i),
+           & d_i = d_j
            \end{cases}
 
 
@@ -267,7 +267,7 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
 
     Returns
     -------
-    D : ndarray, shape (n, n)
+    FDD : ndarray, shape (n, n)
         First divided difference of the function applied to the eigenvalues.
 
     Notes
