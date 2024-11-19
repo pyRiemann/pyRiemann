@@ -241,8 +241,7 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
     of a symmetric matrix. The first divided difference is defined as [1]_:
 
     .. math::
-
-       [D(\Lambda_S)]_{i,j} =
+       [D(\Lambda)]_{i,j} =
            \begin{cases}
            \frac{fct(\lambda_i)-fct(\lambda_j)}{\lambda_i-\lambda_j},
            & \lambda_i \neq \lambda_j\\
@@ -269,8 +268,7 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
     Returns
     -------
     D : ndarray, shape (n, n)
-        First divided difference of the function applied to the eigenvalues
-        of S.
+        First divided difference of the function applied to the eigenvalues.
 
     Notes
     -----
@@ -281,8 +279,7 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
     .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
         R. Bhatia, Springer, 1997
     """
-    n = len(d)
-    dif = np.repeat(d[None, :], n, axis=0)
+    dif = np.repeat(d[None, :], len(d), axis=0)
 
     close_ = np.isclose(dif, dif.T, atol=atol, rtol=rtol)
     dif[close_] = fctder(dif[close_])
@@ -299,16 +296,13 @@ def ddlogm(X, Cref):
     :math:`\mathbf{X}` is defined as Eq. (V.13) in [1]_:
 
     .. math::
-
         \text{ddlogm}(\mathbf{X}, \mathbf{C}_{\text{ref}}) =
-        \mathbf{V} \left( \text{fdd}(\mathbf{\Lambda}) \odot
+        \mathbf{V} \left( \text{fddlogm}(\mathbf{\Lambda}) \odot
         \mathbf{V}^H \mathbf{X} \mathbf{V} \right) \mathbf{V}^H
 
-
-    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues of
-    :math:`\mathbf{C}_{\text{ref}}`, :math:`\mathbf{V}` the eigenvectors of
-    :math:`\mathbf{C}_{\text{ref}}`, and :math:`\text{fdd}` the first divided
-    difference of the logarithm function.
+    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
+    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}_{\text{ref}}`,
+    and :math:`\text{fddlogm}` the first divided difference of the logarithm function.
 
     Parameters
     ----------
@@ -345,15 +339,13 @@ def ddexpm(X, Cref):
     :math:`\mathbf{X}` is defined as Eq. (V.13) in [1]_:
 
     .. math::
-
         \text{ddexpm}(\mathbf{X}, \mathbf{C}_{\text{ref}}) =
-        \mathbf{V} \left( \text{fdd}(\mathbf{\Lambda}) \odot
+        \mathbf{V} \left( \text{fddexpm}(\mathbf{\Lambda}) \odot
         \mathbf{V}^H \mathbf{X} \mathbf{V} \right) \mathbf{V}^H
 
     where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues of
-    :math:`\mathbf{C}_{\text{ref}}`, :math:`\mathbf{V}` the eigenvectors of
-    :math:`\mathbf{C}_{\text{ref}}`, and :math:`\text{fdd}` the first divided
-    difference of the exponential function.
+    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}_{\text{ref}}`,
+    and :math:`\text{fddexpm}` the first divided difference of the exponential function.
 
     Parameters
     ----------
