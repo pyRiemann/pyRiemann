@@ -430,7 +430,7 @@ cv = StratifiedKFold(
 
 ###############################################################################
 # Fit the two models
-# ---------------
+# ------------------
 cv_scores_hybrid_blocks = cross_val_score(
     pipeline_hybrid_blocks, X, y,
     cv=cv, scoring="accuracy", n_jobs=n_jobs
