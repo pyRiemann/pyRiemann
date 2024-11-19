@@ -274,7 +274,7 @@ class HybridBlocks(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        M : ndarray, shape (n_samples, n_channels, n_channels)
+        M : ndarray, shape (n_matrices, n_channels, n_channels)
             Block diagonal matrices (kernel or covariance matrices).
         """
         check_is_fitted(self, 'preprocessor')
