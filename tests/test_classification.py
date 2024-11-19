@@ -17,13 +17,13 @@ from pyriemann.classification import (
     MDM,
     FgMDM,
     KNearestNeighbor,
-    TSclassifier,
+    TSClassifier,
     SVC,
     MeanField,
     class_distinctiveness,
 )
 
-rclf = [MDM, FgMDM, KNearestNeighbor, TSclassifier, SVC, MeanField]
+rclf = [MDM, FgMDM, KNearestNeighbor, TSClassifier, SVC, MeanField]
 
 
 @pytest.mark.parametrize(
@@ -181,7 +181,7 @@ def test_metric_str(classif, metric, get_mats, get_labels):
     mats = get_mats(n_matrices, n_channels, "spd")
     clf = classif(metric=metric)
 
-    if classif in [SVC, FgMDM, TSclassifier] \
+    if classif in [SVC, FgMDM, TSClassifier] \
             and metric not in ["euclid", "logchol", "logeuclid", "riemann"]:
         with pytest.raises((KeyError, ValueError)):
             clf.fit(mats, labels).predict(mats)
@@ -266,7 +266,7 @@ def test_tsclassifier(metric_mean, metric_map, get_mats, get_labels):
     labels = get_labels(n_matrices, n_classes)
     mats = get_mats(n_matrices, n_channels, "spd")
 
-    clf = TSclassifier(metric={"mean": metric_mean, "map": metric_map})
+    clf = TSClassifier(metric={"mean": metric_mean, "map": metric_map})
     clf.fit(mats, labels).predict(mats)
 
 
@@ -276,7 +276,7 @@ def test_tsclassifier_fit(get_mats, get_labels):
     mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
 
-    clf = TSclassifier(clf=DummyClassifier())
+    clf = TSClassifier(clf=DummyClassifier())
     clf.fit(mats, labels).predict(mats)
 
 
@@ -286,7 +286,7 @@ def test_tsclassifier_clf_error(get_mats, get_labels):
     mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
     with pytest.raises(TypeError):
-        TSclassifier(clf=Covariances()).fit(mats, labels)
+        TSClassifier(clf=Covariances()).fit(mats, labels)
 
 
 def test_svc_params():

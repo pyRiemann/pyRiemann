@@ -7,7 +7,7 @@ from ._tools import (
 from ._estimators import (
     TLDummy,
     TLCenter,
-    TLStretch,
+    TLScale,
     TLRotate,
     TLEstimator,
     TLClassifier,
@@ -18,10 +18,10 @@ from ._estimators import (
 __all__ = [
     "encode_domains",
     "decode_domains",
-    "TLDummy",
     "TLSplitter",
+    "TLDummy",
     "TLCenter",
-    "TLStretch",
+    "TLScale",
     "TLRotate",
     "TLEstimator",
     "TLClassifier",

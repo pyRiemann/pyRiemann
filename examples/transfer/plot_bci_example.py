@@ -10,7 +10,7 @@ from several source subjects to train a single classifier using all of their
 data points pooled together. We compare the results of simply mixing all
 covariances from all source subjects without any care (dummy) versus
 transforming the covariances of all subjects so that they are centered around
-the Identity matrix (recenter) [1]_. We use data from the Physionet BCI
+the identity matrix (recenter) [1]_. We use data from the Physionet BCI
 database and compare the classification performance of MDM with each strategy.
 """
 
@@ -114,7 +114,11 @@ n_splits = 5  # How many times to split the target domain into train/test
 tl_cv = TLSplitter(
     target_domain="",
     cv=StratifiedShuffleSplit(
-        n_splits=n_splits, train_size=0.10, random_state=42))
+        n_splits=n_splits,
+        train_size=0.10,
+        random_state=42,
+    ),
+)
 
 # We consider two types of pipelines for transfer learning
 # dct : no transformation of dataset between the domains
@@ -140,7 +144,7 @@ for i_subject in tqdm(range(n_subjects)):
         X_enc_train, X_enc_test = X_enc[train_idx], X_enc[test_idx]
         y_enc_train, y_enc_test = y_enc[train_idx], y_enc[test_idx]
 
-        # (1) Dummy pipeline: no transfer learning at all.
+        # Dummy pipeline: no transfer learning at all.
         # Classifier is trained only with points from the source domain.
         domain_weight_dummy = {}
         for d in np.unique(domains):
@@ -160,7 +164,7 @@ for i_subject in tqdm(range(n_subjects)):
         pipeline.fit(X_enc_train, y_enc_train)
         scores_cv["dummy"].append(pipeline.score(X_enc_test, y_enc_test))
 
-        # (2) Recentering pipeline: recenter the data from each domain to
+        # Recentering pipeline: recenter the data from each domain to
         # identity [1]_.
         # Classifier is trained only with points from the source domain.
         domain_weight_rct = {}
