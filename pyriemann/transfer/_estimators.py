@@ -1,48 +1,57 @@
-import numpy as np
+import warnings
+
 from joblib import Parallel, delayed
+import numpy as np
 from sklearn.base import (
     BaseEstimator,
     TransformerMixin,
     is_classifier,
     is_regressor
 )
-from sklearn.pipeline import Pipeline
+from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score, r2_score
+from sklearn.pipeline import Pipeline
 
-from ..utils.mean import mean_covariance, mean_riemann
-from ..utils.distance import distance
-from ..utils.base import invsqrtm, powm, sqrtm
-from ..utils.geodesic import geodesic
-from ..utils.utils import check_weights, check_metric
-from ._rotate import _get_rotation_matrix
+from ._rotate import _get_rotation_manifold, _get_rotation_tangentspace
+from ._tools import decode_domains
 from ..classification import MDM
 from ..preprocessing import Whitening
-from ._tools import decode_domains
+from ..utils import deprecated
+from ..utils.base import invsqrtm, powm, sqrtm
+from ..utils.distance import distance
+from ..utils.geodesic import geodesic
+from ..utils.mean import mean_covariance, mean_riemann
+from ..utils.utils import check_weights, check_metric
+
+
+###############################################################################
+
+
+def _check_inputs(X):
+    if X.ndim not in [2, 3]:
+        raise ValueError(f"Input must be a 2d or a 3d array (Got {X.ndim}).")
 
 
 class TLDummy(BaseEstimator, TransformerMixin):
-    """No transformation on data for transfer learning.
+    """No transformation for transfer learning.
 
-    No transformation of the data points between the domains.
-    This is what we call the Direct Center Transfer (DCT) method.
+    No transformation of data between the domains.
 
     Notes
     -----
     .. versionadded:: 0.4
     """
 
-    def __init__(self):
-        pass
-
-    def fit(self, X, y_enc):
+    def fit(self, X, y_enc=None):
         """Do nothing.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : None
+            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
@@ -51,54 +60,61 @@ class TLDummy(BaseEstimator, TransformerMixin):
         """
         return self
 
-    def transform(self, X, y_enc=None):
+    def transform(self, X):
         """Do nothing.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+
+        Returns
+        -------
+        X_new : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Same data as in the input.
+        """
+        return X
+
+    def fit_transform(self, X, y_enc=None):
+        """Do nothing.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
         y_enc : None
             Not used, here for compatibility with sklearn API.
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_classes)
-            Same set of SPD matrices as in the input.
+        X_new : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Same data as in the input.
         """
-        return X
-
-    def fit_transform(self, X, y_enc):
-        """Do nothing.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
-
-        Returns
-        -------
-        X : ndarray, shape (n_matrices, n_classes)
-            Set of SPD matrices with mean in the Identity.
-        """
-        return self.fit(X, y_enc).transform(X, y_enc)
+        return self.fit(X, y_enc).transform(X)
 
 
 class TLCenter(BaseEstimator, TransformerMixin):
-    """Recenter data for transfer learning.
+    """Centering for transfer learning.
 
-    Recenter the data points from each domain to the Identity on manifold, ie
-    make the mean of the datasets become the identity. This operation
-    corresponds to a whitening step if the SPD matrices represent the spatial
-    covariance matrices of multivariate signals.
+    For inputs in matrix manifold, it recenters the matrices from each domain
+    to the identity matrix on manifold, ie it makes the mean of the matrices of
+    each domain become the identity [1]_.
+    This operation corresponds to a whitening when the matrices represent the
+    spatial covariance matrices of multivariate signals.
+
+    For inputs in tangent space, it recenters the tangent vectors from each
+    domain to the origin of tangent space, ie it makes the mean of the vectors
+    of each domain become zero.
 
     .. note::
        Using .fit() and then .transform() will give different results than
        .fit_transform(). In fact, .fit_transform() should be applied on the
-       training dataset (target and source) and .transform() on the test
-       partition of the target dataset.
+       training set (target and source domains),
+       and .transform() on the target domain of the test set.
 
     Parameters
     ----------
@@ -109,15 +125,22 @@ class TLCenter(BaseEstimator, TransformerMixin):
           target domain;
         * else, ``transform()`` recenters matrices to the last fitted domain.
     metric : str, default="riemann"
-        Metric used for mean estimation. For the list of supported metrics,
+        For inputs in manifold,
+        metric used for mean estimation. For the list of supported metrics,
         see :func:`pyriemann.utils.mean.mean_covariance`.
         Note, however, that only when using the "riemann" metric that we are
-        ensured to re-center the matrices precisely to the Identity.
+        ensured to re-center the matrices precisely to the identity.
 
     Attributes
     ----------
-    recenter_ : dict
-        If fit, dictionary with key=domain_name and value=domain_mean.
+    centers_ : dict
+        Dictionary with key=domain_name and value=domain_center.
+
+    Notes
+    -----
+    .. versionadded:: 0.4
+    .. versionchanged:: 0.8
+        Added support for tangent space centering.
 
     References
     ----------
@@ -130,10 +153,6 @@ class TLCenter(BaseEstimator, TransformerMixin):
         A Euclidean Space Data Alignment Approach
         <https://arxiv.org/abs/1808.05464>`_
         He He and Dongrui Wu, IEEE Transactions on Biomedical Engineering, 2019
-
-    Notes
-    -----
-    .. versionadded:: 0.4
     """
 
     def __init__(self, target_domain, metric="riemann"):
@@ -141,130 +160,182 @@ class TLCenter(BaseEstimator, TransformerMixin):
         self.target_domain = target_domain
         self.metric = metric
 
+    @property
+    @deprecated(
+        "Attribute `recenter_` is deprecated and will be removed in 0.10.0; "
+        "please use `centers_`."
+    )
+    def recenter_(self):
+        return self.centers_
+
     def fit(self, X, y_enc, sample_weight=None):
         """Fit TLCenter.
 
-        For each domain, calculates the mean of matrices of this domain.
+        For each domain, it calculates the mean of matrices or vectors of this
+        domain.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
+        sample_weight : None | ndarray, shape (n_matrices,) or \
+                shape (n_vectors,), default=None
+            Weights for each matrix or vector. If None, it uses equal weights.
 
         Returns
         -------
         self : TLCenter instance
             The TLCenter instance.
         """
+        _check_inputs(X)
         _, _, domains = decode_domains(X, y_enc)
-        n_matrices, _, _ = X.shape
-        sample_weight = check_weights(sample_weight, n_matrices)
+        sample_weight = check_weights(sample_weight, X.shape[0])
 
-        self.recenter_ = {}
+        self.centers_ = {}
+
         for d in np.unique(domains):
             idx = domains == d
-            self.recenter_[d] = Whitening(metric=self.metric).fit(
-                X[idx], sample_weight=sample_weight[idx]
-            )
+
+            if X.ndim == 3:
+                self.centers_[d] = Whitening(metric=self.metric).fit(
+                    X[idx],
+                    sample_weight=sample_weight[idx],
+                )
+
+            else:
+                self.centers_[d] = np.mean(X[idx], axis=0)
+
         return self
 
-    def transform(self, X, y_enc=None):
-        """Re-center matrices in the target domain.
+    def transform(self, X):
+        """Center in the target domain.
 
         .. note::
            This method is designed for using at test time,
-           recentering all matrices in target domain.
+           recentering all inputs in target domain, or in the last fitted
+           domain.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : None
-            Not used, here for compatibility with sklearn API.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_classes)
-            Set of recentered SPD matrices.
+        X_new : ndarray, shape (n_matrices, n_classes) or \
+                shape (n_vectors, n_ts)
+            Set of centered SPD matrices or tangent vectors in target domain.
         """
+        _check_inputs(X)
+
         # if target domain is specified, use it
         if self.target_domain != "":
             target_domain = self.target_domain
         # else, use last calibrated domain as target domain
         else:
-            target_domain = list(self.recenter_.keys())[-1]
+            target_domain = list(self.centers_.keys())[-1]
 
-        X_rct = self.recenter_[target_domain].transform(X)
-        return X_rct
+        if X.ndim == 3:
+            X_new = self.centers_[target_domain].transform(X)
+        else:
+            X_new = X - self.centers_[self.target_domain]
+
+        return X_new
 
     def fit_transform(self, X, y_enc, sample_weight=None):
-        """Fit TLCenter and then transform matrices.
+        """Fit TLCenter and then center each domain.
 
-        For each domain, calculates the mean of matrices of this domain and
-        then recenters them to Identity.
+        For each domain, it calculates the mean of matrices or vectors of this
+        domain, and then recenters them to identity matrix or to null vector.
 
         .. note::
-           This method is designed for using at training time. The output for
-           .fit_transform() will be different than using .fit() and
-           .transform() separately.
+           This method is designed for using at training time.
+           The output for .fit_transform() will be different
+           than using .fit() and .transform() separately.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
+        sample_weight : None | ndarray, shape (n_matrices,) or \
+                shape (n_vectors,), default=None
+            Weights for each matrix or vector. If None, it uses equal weights.
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_classes)
-            Set of recentered SPD matrices.
+        X_new : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of centered SPD matrices or tangent vectors in each domain.
         """
-        self.fit(X, y_enc, sample_weight)
+        self.fit(X, y_enc, sample_weight=sample_weight)
         _, _, domains = decode_domains(X, y_enc)
 
-        X_rct = np.zeros_like(X)
+        X_new = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
-            X_rct[idx] = self.recenter_[d].transform(X[idx])
-        return X_rct
+
+            if X.ndim == 3:
+                X_new[idx] = self.centers_[d].transform(X[idx])
+            else:
+                X_new[idx] = X[idx] - self.centers_[d]
+
+        return X_new
 
 
-class TLStretch(BaseEstimator, TransformerMixin):
-    """Stretch data for transfer learning.
+class TLScale(BaseEstimator, TransformerMixin):
+    """Scaling for transfer learning.
 
-    Change the dispersion of the datapoints around their geometric mean
-    for each dataset so that they all have the same desired value.
+    For inputs in matrix manifold, it stretches the matrices from each domain
+    around their mean so that the dispersion of the matrices of each domain is
+    equal to one [1]_.
+
+    For inputs in tangent space, it scales the tangent vectors from each domain
+    so that the mean of norms of vectors of each domain is equal to one.
 
     .. note::
        Using .fit() and then .transform() will give different results than
        .fit_transform(). In fact, .fit_transform() should be applied on the
-       training dataset (target and source) and .transform() on the test
-       partition of the target dataset.
+       training set (target and source domains),
+       and .transform() on the target domain of the test set.
 
     Parameters
     ----------
     target_domain : str
         Domain to consider as target.
     dispersion : float, default=1.0
-        Target value for the dispersion of the data points.
+        For inputs in manifold, target value for the dispersion of the
+        matrices.
     centered_data : bool, default=False
-        Whether the data has been re-centered to the Identity beforehand.
+        For inputs in manifold, whether the matrices have been re-centered to
+        the identity matrix beforehand.
     metric : str, default="riemann"
-        Metric used for calculating the dispersion.
+        For inputs in manifold, metric used for calculating the dispersion.
         For the list of supported metrics,
         see :func:`pyriemann.utils.distance.distance`.
+        The stretching operation in manifold is properly defined only for the
+        "riemann" metric.
 
     Attributes
     ----------
-    dispersions_ : dict
-        Dictionary with key=domain_name and value=domain_dispersion.
+    scales_ : dict
+        Dictionary with key=domain_name and value=domain_scale.
+
+    See Also
+    --------
+    TLCenter
+
+    Notes
+    -----
+    .. versionadded:: 0.4
+    .. versionchanged:: 0.8
+        Added support for tangent space scaling.
 
     References
     ----------
@@ -273,10 +344,6 @@ class TLStretch(BaseEstimator, TransformerMixin):
         <https://hal.archives-ouvertes.fr/hal-01971856>`_
         PLC Rodrigues et al, IEEE Transactions on Biomedical Engineering,
         vol. 66, no. 8, pp. 2390-2401, December, 2018
-
-    Notes
-    -----
-    .. versionadded:: 0.4
     """
 
     def __init__(
@@ -292,46 +359,63 @@ class TLStretch(BaseEstimator, TransformerMixin):
         self.centered_data = centered_data
         self.metric = metric
 
-    def fit(self, X, y_enc, sample_weight=None):
-        """Fit TLStretch.
+    @property
+    @deprecated(
+        "Attribute `dispersions_` is deprecated and will be removed in 0.10.0;"
+        " please use `scales_`."
+    )
+    def dispersions_(self):
+        return self.scales_
 
-        Calculate the dispersion around the mean for each domain.
+    def fit(self, X, y_enc, sample_weight=None):
+        """Fit TLScale.
+
+        For each domain, it calculates the scaling of this domain,
+        ie the dispersion around the mean of matrices,
+        or the mean of the norm of vectors.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
+        sample_weight : None | ndarray, shape (n_matrices,) or \
+                shape (n_vectors,), default=None
+            Weights for each matrix or vector. If None, it uses equal weights.
 
         Returns
         -------
-        self : TLStretch instance
-            The TLStretch instance.
+        self : TLScale instance
+            The TLScale instance.
         """
+        _check_inputs(X)
         _, _, domains = decode_domains(X, y_enc)
-        n_matrices, n_channels, _ = X.shape
-        sample_weight = check_weights(sample_weight, n_matrices)
+        sample_weight = check_weights(sample_weight, X.shape[0])
 
-        self._means, self.dispersions_ = {}, {}
+        self._means, self.scales_ = {}, {}
         for d in np.unique(domains):
             idx = domains == d
             sample_weight_d = check_weights(sample_weight[idx], np.sum(idx))
-            if self.centered_data:
-                self._means[d] = np.eye(n_channels)
-            else:
-                self._means[d] = mean_riemann(
-                    X[idx], sample_weight=sample_weight_d
+
+            if X.ndim == 3:
+                if self.centered_data:
+                    self._means[d] = np.eye(X.shape[-1])
+                else:
+                    self._means[d] = mean_riemann(
+                        X[idx], sample_weight=sample_weight_d
+                    )
+                dist = distance(
+                    X[idx],
+                    self._means[d],
+                    metric=self.metric,
+                    squared=True,
                 )
-            dist = distance(
-                X[idx],
-                self._means[d],
-                metric=self.metric,
-                squared=True,
-            )
-            self.dispersions_[d] = np.sum(sample_weight_d * np.squeeze(dist))
+                self.scales_[d] = np.sum(sample_weight_d * np.squeeze(dist))
+
+            else:
+                self.scales_[d] = np.mean(np.linalg.norm(X[idx], axis=1))
 
         return self
 
@@ -346,127 +430,168 @@ class TLStretch(BaseEstimator, TransformerMixin):
     def _strech(self, X, dispersion_in, dispersion_out):
         return powm(X, np.sqrt(dispersion_out / dispersion_in))
 
-    def transform(self, X, y_enc=None):
-        """Stretch the data points in the target domain.
+    def transform(self, X):
+        """Scale in the target domain.
 
         .. note::
-           The stretching operation is properly defined only for the riemann
-           metric.
+           This method is designed for using at test time,
+           scaling all inputs in target domain.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : None
-            Not used, here for compatibility with sklearn API.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_classes)
-            Set of SPD matrices with desired final dispersion.
+        X_new : ndarray, shape (n_matrices, n_classes) or \
+                shape (n_vectors, n_ts)
+            Set of scaled SPD matrices or tangent vectors in target domain.
         """
+        _check_inputs(X)
 
-        if not self.centered_data:
-            # center matrices to Identity
-            X = self._center(X, self._means[self.target_domain])
+        if X.ndim == 3:
+            if not self.centered_data:  # center matrices to identity
+                X = self._center(X, self._means[self.target_domain])
 
-        # stretch
-        X_str = self._strech(
-            X, self.dispersions_[self.target_domain], self.final_dispersion
-        )
+            # stretch
+            X_new = self._strech(
+                X, self.scales_[self.target_domain], self.final_dispersion
+            )
 
-        if not self.centered_data:
-            # re-center back to previous mean
-            X_str = self._uncenter(X_str, self._means[self.target_domain])
+            if not self.centered_data:  # re-center back to previous mean
+                X_new = self._uncenter(X_new, self._means[self.target_domain])
 
-        return X_str
+        else:
+            X_new = X / self.scales_[self.target_domain]
+
+        return X_new
 
     def fit_transform(self, X, y_enc, sample_weight=None):
-        """Fit TLStretch and then transform data points.
+        """Fit TLScale and then scale each domain.
 
-        Calculate the dispersion around the mean for each domain and then
-        stretch the data points to the desired final dispersion.
+        For each domain, it calculates the dispersion around the mean of this
+        domain, and then stretches them to the desired final dispersion.
+        For vectors, it scales them so that the mean of norms of vectors of
+        each domain is equal to one.
 
         .. note::
-           This method is designed for using at training time. The output for
-           .fit_transform() will be different than using .fit() and
-           .transform() separately.
+           This method is designed for using at training time.
+           The output for .fit_transform() will be different
+           than using .fit() and .transform() separately.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
+        sample_weight : None | ndarray, shape (n_matrices,) or \
+                shape (n_vectors,), default=None
+            Weights for each matrix or vector. If None, it uses equal weights.
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_classes)
-            Set of SPD matrices with desired final dispersion.
+        X_new : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of scaled SPD matrices or tangent vectors in each domain.
         """
-
-        # used during fit, in pipeline
-        self.fit(X, y_enc, sample_weight)
+        self.fit(X, y_enc, sample_weight=sample_weight)
         _, _, domains = decode_domains(X, y_enc)
 
-        X_str = np.zeros_like(X)
+        X_new = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
 
-            if not self.centered_data:
-                # re-center matrices to Identity
-                X[idx] = self._center(X[idx], self._means[d])
+            if X.ndim == 3:
+                if not self.centered_data:  # re-center matrices to identity
+                    X[idx] = self._center(X[idx], self._means[d])
 
-            # stretch
-            X_str[idx] = self._strech(
-                X[idx], self.dispersions_[d], self.final_dispersion
-            )
+                # stretch
+                X_new[idx] = self._strech(
+                    X[idx], self.scales_[d], self.final_dispersion
+                )
 
-            if not self.centered_data:
-                # re-center back to previous mean
-                X_str[idx] = self._uncenter(X_str[idx], self._means[d])
+                if not self.centered_data:  # re-center back to previous mean
+                    X_new[idx] = self._uncenter(X_new[idx], self._means[d])
 
-        return X_str
+            else:
+                X_new[idx] = X[idx] / self.scales_[d]
+
+        return X_new
+
+
+@deprecated(
+    "TLStretch is deprecated and will be removed in 0.10.0; "
+    "please use TLScale."
+)
+class TLStretch(TLScale):
+    pass
 
 
 class TLRotate(BaseEstimator, TransformerMixin):
-    """Rotate data for transfer learning.
+    """Rotation for transfer learning.
 
-    Rotate the data points from each source domain so to match its class means
-    with those from the target domain. The loss function for this matching was
-    first proposed in [1]_ and the optimization procedure for mininimizing it
-    follows the presentation from [2]_.
+    For inputs in matrix manifold, it rotates the matrices from each source
+    domain so to match its class means with those from the target domain.
+    The loss function for this matching is described in [1]_ and the
+    optimization procedure for minimizing it in [2]_.
+
+    For inputs in tangent space, it rotates the tangent vectors from source
+    domain so to match its class means with those from the target domain [3]_.
+    Current implementation supports only one source domain.
 
     .. note::
-       The data points from each domain must have been re-centered to the
-       identity before calculating the rotation.
+       The inputs from each domain must have been centered to the before
+       calculating the rotation.
 
     .. note::
        Using .fit() and then .transform() will give different results than
        .fit_transform(). In fact, .fit_transform() should be applied on the
-       training dataset (target and source) and .transform() on the test
-       partition of the target dataset.
+       training set (target and source domains),
+       and .transform() on the target domain of the test set.
 
     Parameters
     ----------
     target_domain : str
         Domain to consider as target.
     weights : None | array, shape (n_classes,), default=None
-        Weights to assign for each class. If None, then give the same weight
-        for each class.
+        Weights to assign for each class. If None, it uses equal weights.
     metric : {"euclid", "riemann"}, default="euclid"
-        Metric for the distance to minimize between class means.
+        For inputs in manifold, distance to minimize between class means.
     n_jobs : int, default=1
-        The number of jobs to use for the computation. This works by computing
-        the rotation matrix for each source domain in parallel. If -1 all CPUs
-        are used.
+        For inputs in manifold, the number of jobs to use for the computation.
+        This works by computing the rotation matrix for each source domain in
+        parallel. If -1 all CPUs are used.
+    expl_var : float, default=0.999
+        For inputs in tangent space, dimension reduction applied to the cross
+        product matrix during Procrustes analysis.
+        If float in (0,1], percentage of variance that needs to be explained.
+        Else, number of components.
+    n_components : int | "max", default=1
+        For inputs in tangent space,
+        parameter `n_components` used in `sklearn.decomposition.PCA`.
+        If int, number of components to keep in PCA.
+        If "max", all components are kept.
+    n_clusters : int, default=3
+        For inputs in tangent space, number of clusters used to split data.
 
     Attributes
     ----------
     rotations_ : dict
         Dictionary with key=domain_name and value=domain_rotation_matrix.
+
+    See Also
+    --------
+    TLCenter
+
+    Notes
+    -----
+    .. versionadded:: 0.4
+    .. versionchanged:: 0.8
+        Added support for tangent space rotation.
 
     References
     ----------
@@ -478,56 +603,89 @@ class TLRotate(BaseEstimator, TransformerMixin):
     .. [2] `An introduction to optimization on smooth manifolds
         <https://www.nicolasboumal.net/book/>`_
         N. Boumal. To appear with Cambridge University Press. June, 2022
-
-    Notes
-    -----
-    .. versionadded:: 0.4
+    .. [3] `Tangent space alignment: Transfer learning for brain-computer
+        interface
+        <https://www.frontiersin.org/articles/10.3389/fnhum.2022.1049985/pdf>`_
+        A. Bleuzé, J. Mattout and M. Congedo, Frontiers in Human Neuroscience,
+        2022
     """
 
-    def __init__(self, target_domain, weights=None, metric="euclid", n_jobs=1):
+    def __init__(
+        self,
+        target_domain,
+        weights=None,
+        metric="euclid",
+        n_jobs=1,
+        expl_var=0.999,
+        n_components=1,
+        n_clusters=3,
+    ):
         """Init"""
         self.target_domain = target_domain
         self.weights = weights
         self.metric = metric
         self.n_jobs = n_jobs
+        self.expl_var = expl_var
+        self.n_components = n_components
+        self.n_clusters = n_clusters
 
     def fit(self, X, y_enc, sample_weight=None):
         """Fit TLRotate.
 
-        Calculate the rotations matrices to transform each source domain into
-        the target domain.
+        It calculates the rotations matrices to transform each source domain
+        into the target domain.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
+        sample_weight : None | ndarray, shape (n_matrices,) or \
+                shape (n_vectors,), default=None
+            Weights for each matrix or vector. If None, it uses equal weights.
 
         Returns
         -------
         self : TLRotate instance
             The TLRotate instance.
         """
-
+        _check_inputs(X)
         _, _, domains = decode_domains(X, y_enc)
-        n_matrices, _, _ = X.shape
-        sample_weight = check_weights(sample_weight, n_matrices)
+        sample_weight = check_weights(sample_weight, X.shape[0])
 
+        if X.ndim == 3:
+            self._fit_manifold(X, y_enc, domains, sample_weight)
+        else:
+            if len(np.unique(domains)) > 2:
+                raise ValueError(
+                    "Current implementation supports only one source domain"
+                )
+            self._fit_tangentspace(X, y_enc, domains)
+
+        return self
+
+    def _fit_manifold(self, X, y_enc, domains, sample_weight):
+        """Fit TLRotate on manifold.
+
+        It computes the mean M of SPD matrices X for each class of each domain.
+        It computes the rotation for each source domain so that its class means
+        are close to those from the target domain.
+        """
         idx = domains == self.target_domain
         X_target, y_target = X[idx], y_enc[idx]
         M_target = np.stack([
-            mean_riemann(X_target[y_target == label],
-                         sample_weight=sample_weight[idx][y_target == label])
-            for label in np.unique(y_target)
+            mean_riemann(
+                X_target[y_target == label],
+                sample_weight=sample_weight[idx][y_target == label],
+            ) for label in np.unique(y_target)
         ])
 
         source_domains = np.unique(domains)
         source_domains = source_domains[source_domains != self.target_domain]
         rotations = Parallel(n_jobs=self.n_jobs)(
-            delayed(_get_rotation_matrix)(
+            delayed(_get_rotation_manifold)(
                 np.stack([
                     mean_riemann(
                         X[domains == d][y_enc[domains == d] == label],
@@ -546,75 +704,159 @@ class TLRotate(BaseEstimator, TransformerMixin):
         for d, rot in zip(source_domains, rotations):
             self.rotations_[d] = rot
 
-        return self
+    def _fit_tangentspace(self, X, y_enc, domains):
+        """Fit TLRotate in tangent space.
 
-    def transform(self, X, y_enc=None):
-        """Rotate the data points in the target domain.
+        It computes anchors for each class of each domain.
+        It computes the rotation for source domain so that its anchors
+        are close to those from the target domain.
+        """
+        _, y, _ = decode_domains(X, y_enc)
+        X_src = X[domains != self.target_domain]
+        y_src = y[domains != self.target_domain]
+        X_tgt = X[domains == self.target_domain]
+        y_tgt = y[domains == self.target_domain]
 
-        The rotations are done from source to target, so in this step the data
-        points suffer no transformation at all.
+        if len(np.unique(y_src)) != len(np.unique(y_tgt)):
+            raise ValueError(
+                "The number of classes in each domain don't match"
+            )
+
+        if self.n_components == "max":
+            self.n_components = X.shape[1]
+        self._src_pca = [
+            PCA(n_components=self.n_components) for _ in np.unique(y_src)
+        ]
+
+        src_anchors, src_valid = self._get_anchors(X_src, y_src, fit_pca=True)
+        tgt_anchors, tgt_valid = self._get_anchors(X_tgt, y_tgt, fit_pca=False)
+
+        if not src_valid or not tgt_valid:
+            n_classes = len(np.unique(y_tgt))
+            src_anchors = src_anchors[:n_classes]
+            tgt_anchors = tgt_anchors[:n_classes]
+            if not src_valid:
+                warnings.warn("Not enough vectors for source domain")
+            if not tgt_valid:
+                warnings.warn("Not enough vectors for target domain")
+
+        self.rotations_ = _get_rotation_tangentspace(
+            src_anchors,
+            tgt_anchors,
+            self.expl_var,
+        )
+
+    def _get_anchors(self, X, y, fit_pca):
+        """Get anchors.
+
+        It computes anchors for each class of each domain, ie class means and
+        clusters along principal components.
+        """
+        is_valid = True
+
+        classes = np.unique(y)
+        anchors = np.array([
+            np.mean(X[y == c], axis=0) for c in classes
+        ])
+
+        for i, c in enumerate(classes):
+            Xc = X[y == c]
+            n_vectors_c = len(Xc)
+
+            if n_vectors_c < self.n_clusters:
+                is_valid = False
+                break
+            r = n_vectors_c / self.n_clusters
+            if fit_pca:
+                self._src_pca[i].fit(Xc)
+
+            Xc_pca = self._src_pca[i].transform(Xc)
+            for j in range(self.n_components):
+                inds = np.argsort(Xc_pca[:, j], axis=0)
+                anchor = [
+                    np.mean(Xc[inds[round(k*r):round((k+1)*r)]], axis=0)
+                    for k in range(self.n_clusters)
+                ]
+                anchors = np.vstack([anchors, anchor])
+
+        return anchors, is_valid
+
+    def transform(self, X):
+        """Rotate in the target domain, ie do nothing.
+
+        .. note::
+           This method is designed for using at test time on target data.
+           No transformation is applied since rotations are done from source
+           to target domain.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : None
-            Not used, here for compatibility with sklearn API.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_classes)
-            Same set of SPD matrices as in the input.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Same data as in the input.
         """
-
-        # used during inference on target domain
         return X
 
     def fit_transform(self, X, y_enc, sample_weight=None):
-        """Fit TLRotate and then transform data points.
+        """Fit TLRotate and then rotate each source domain to target domain.
 
-        Calculate the rotation matrix for matching each source domain to the
-        target domain.
+        It calculates and applies the rotation matrix for matching each source
+        domain to the target domain.
 
         .. note::
-           This method is designed for using at training time. The output for
-           .fit_transform() will be different than using .fit() and
-           .transform() separately.
+           This method is designed for using at training time.
+           The output for .fit_transform() will be different
+           than using .fit() and .transform() separately.
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
+        sample_weight : None | ndarray, shape (n_matrices,) or \
+                shape (n_vectors,), default=None
+            Weights for each matrix or vector. If None, it uses equal weights.
 
         Returns
         -------
-        X : ndarray, shape (n_matrices, n_classes)
-            Set of SPD matrices after rotation step.
+        X_new : ndarray, shape (n_matrices, n_classes)
+            Set of rotated SPD matrices or tangent vectors to target domain.
         """
-
-        # used during fit in pipeline, rotate each source domain
-        self.fit(X, y_enc, sample_weight)
+        self.fit(X, y_enc, sample_weight=sample_weight)
         _, _, domains = decode_domains(X, y_enc)
 
-        X_rot = np.zeros_like(X)
+        X_new = np.zeros_like(X)
         for d in np.unique(domains):
             idx = domains == d
-            if d != self.target_domain:
-                X_rot[idx] = self.rotations_[d] @ X[idx] @ self.rotations_[d].T
+
+            if d == self.target_domain:
+                X_new[idx] = X[idx]
             else:
-                X_rot[idx] = X[idx]
-        return X_rot
+                if X.ndim == 3:
+                    X_new[idx] = self.rotations_[d] @ X[idx] \
+                        @ self.rotations_[d].T
+                else:
+                    X_new[idx] = X[idx] @ self.rotations_
+
+        return X_new
+
+
+###############################################################################
 
 
 class TLEstimator(BaseEstimator):
     """Transfer learning wrapper for estimators.
 
-    This is a wrapper for any BaseEstimator (i.e. classifier or regressor) that
-    converts extended labels used in Transfer Learning into the usual y array
+    This is a wrapper for any BaseEstimator (classifier or regressor) that
+    converts extended labels used in transfer learning into the usual y array
     to train a classifier/regressor of choice.
 
     Parameters
@@ -622,12 +864,17 @@ class TLEstimator(BaseEstimator):
     target_domain : str
         Domain to consider as target.
     estimator : BaseEstimator
-        The estimator to apply on matrices. It can be any regressor or
-        classifier from pyRiemann.
+        The estimator to apply on data. It can be any regressor or classifier
+        from pyRiemann.
     domain_weight : None | dict, default=None
-        Weights to combine matrices from each domain to train the estimator.
+        Weights to combine data from each domain to train the estimator.
         The dict contains key=domain_name and value=weight_to_assign.
         If None, it uses equal weights.
+
+    See Also
+    --------
+    TLClassifier
+    TLRegressor
 
     Notes
     -----
@@ -645,10 +892,11 @@ class TLEstimator(BaseEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
 
         Returns
         -------
@@ -688,13 +936,14 @@ class TLEstimator(BaseEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
 
         Returns
         -------
-        pred : ndarray, shape (n_matrices,)
-            Predictions for each matrix according to the estimator.
+        pred : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Predictions according to the estimator.
         """
         return self.estimator.predict(X)
 
@@ -703,7 +952,7 @@ class TLClassifier(TLEstimator):
     """Transfer learning wrapper for classifiers.
 
     This is a wrapper for any classifier that converts extended labels used in
-    Transfer Learning into the usual y array to train a classifier of choice.
+    transfer learning into the usual y array to train a classifier of choice.
 
     Parameters
     ----------
@@ -712,9 +961,13 @@ class TLClassifier(TLEstimator):
     estimator : BaseClassifier
         The classifier to apply on matrices.
     domain_weight : None | dict, default=None
-        Weights to combine matrices from each domain to train the classifier.
+        Weights to combine data from each domain to train the classifier.
         The dict contains key=domain_name and value=weight_to_assign.
         If None, it uses equal weights.
+
+    See Also
+    --------
+    TLRegressor
 
     Notes
     -----
@@ -726,10 +979,11 @@ class TLClassifier(TLEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
 
         Returns
         -------
@@ -746,13 +1000,15 @@ class TLClassifier(TLEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
 
         Returns
         -------
-        pred : ndarray, shape (n_matrices, n_classes)
-            Predictions for each matrix.
+        pred : ndarray, shape (n_matrices, n_classes) or \
+                shape (n_vectors, n_classes)
+            Predictions for each matrix or vector.
         """
         return self.estimator.predict_proba(X)
 
@@ -761,10 +1017,11 @@ class TLClassifier(TLEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Test set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended true labels for each matrix.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
 
         Returns
         -------
@@ -780,7 +1037,7 @@ class TLRegressor(TLEstimator):
     """Transfer learning wrapper for regressors.
 
     This is a wrapper for any regressor that converts extended labels used in
-    Transfer Learning into the usual y array to train a regressor of choice.
+    transfer learning into the usual y array to train a regressor of choice.
 
     Parameters
     ----------
@@ -789,9 +1046,13 @@ class TLRegressor(TLEstimator):
     estimator : BaseRegressor
         The regressor to apply on matrices.
     domain_weight : None | dict, default=None
-        Weights to combine matrices from each domain to train the regressor.
+        Weights to combine data from each domain to train the regressor.
         The dict contains key=domain_name and value=weight_to_assign.
         If None, it uses equal weights.
+
+    See Also
+    --------
+    TLClassifier
 
     Notes
     -----
@@ -803,10 +1064,11 @@ class TLRegressor(TLEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
 
         Returns
         -------
@@ -823,10 +1085,11 @@ class TLRegressor(TLEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Test set of SPD matrices.
-        y_enc : ndarray, shape (n_matrices,)
-            Extended true values for each matrix.
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of SPD matrices or tangent vectors.
+        y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
+            Extended labels for each matrix or vector.
 
         Returns
         -------
@@ -836,6 +1099,9 @@ class TLRegressor(TLEstimator):
         _, y_true, _ = decode_domains(X, y_enc)
         y_pred = self.predict(X)
         return r2_score(y_true.astype(float), y_pred)
+
+
+###############################################################################
 
 
 class MDWM(MDM):
@@ -940,8 +1206,9 @@ class MDWM(MDM):
 
         if not 0 <= self.domain_tradeoff <= 1:
             raise ValueError(
-                "Value domain_tradeoff must be included in [0, 1] (Got %d)"
-                % self.domain_tradeoff)
+                "Parameter domain_tradeoff must be included in [0, 1] "
+                f"(Got {self.domain_tradeoff})"
+            )
 
         X_dec, y_dec, domains = decode_domains(X, y_enc)
         X_src = X_dec[domains != self.target_domain]
@@ -963,19 +1230,19 @@ class MDWM(MDM):
         self.source_means_ = np.stack(
             Parallel(n_jobs=self.n_jobs)(
                 delayed(mean_covariance)(
-                    X_src[y_src == ll],
+                    X_src[y_src == c],
                     metric=self.metric_mean,
-                    sample_weight=sample_weight[y_src == ll],
-                ) for ll in self.classes_
+                    sample_weight=sample_weight[y_src == c],
+                ) for c in self.classes_
             )
         )
 
         self.target_means_ = np.stack(
             Parallel(n_jobs=self.n_jobs)(
                 delayed(mean_covariance)(
-                    X_tgt[y_tgt == ll],
+                    X_tgt[y_tgt == c],
                     metric=self.metric_mean,
-                ) for ll in self.classes_
+                ) for c in self.classes_
             )
         )
 
@@ -985,6 +1252,7 @@ class MDWM(MDM):
             self.domain_tradeoff,
             metric=self.metric_mean,
         )
+
         return self
 
     def score(self, X, y_enc, sample_weight=None):
@@ -993,9 +1261,11 @@ class MDWM(MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Test set of SPD matrices.
         y_enc : ndarray, shape (n_matrices,)
-            Extended labels for each matrix.
+            Extended true labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------

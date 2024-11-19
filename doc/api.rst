@@ -51,7 +51,7 @@ Classification
 
     MDM
     FgMDM
-    TSclassifier
+    TSClassifier
     KNearestNeighbor
     SVC
     MeanField
@@ -157,7 +157,7 @@ Transfer Learning
     TLRegressor
     TLDummy
     TLCenter
-    TLStretch
+    TLScale
     TLRotate
     MDWM
 

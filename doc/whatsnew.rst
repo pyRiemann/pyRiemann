@@ -15,6 +15,10 @@ v0.8.dev
 
 - Enhance :func:`pyriemann.utils.mean.mean_covariance` to support "power" and "poweuclid" metrics. :pr:`329` by :user:`qbarthelemy`
 
+- Add tangent space alignment (TSA) in transfer learning module.
+  ``TLStretch`` is deprecated and renamed into :class:`pyriemann.transfer._estimators.TLScale`,
+  and ``TSclassifier`` into :class:`pyriemann.classification.TSClassifier`. :pr:`320` by :user:`qbarthelemy`
+
 - Add directional derivatives :func:`pyriemann.utils.base.ddlogm` and :func:`pyriemann.utils.base.ddexpm`,
   and correct :func:`pyriemann.utils.tangentspace.log_map_logeuclid` and :func:`pyriemann.utils.tangentspace.exp_map_logeuclid`. :pr:`332` by :user:`gabelstein`
 
