@@ -1,10 +1,10 @@
 """
 ====================================================================
-Plot the data transformations in the Riemannian Procrustes Analysis
+Data transformations in the Riemannian Procrustes Analysis
 ====================================================================
 
-Use the SpectralEmbedding module to plot in 2D the transformations on the data
-points from source and target domains when applying the Riemannian Procrustes
+Use the SpectralEmbedding module to plot in 2D the transformations on the
+matrices from source and target domains when applying the Riemannian Procrustes
 Analysis [1]_ to match their statistics.
 """
 
@@ -79,19 +79,23 @@ for axi, step, title in zip(ax, steps, titles):
     axi.scatter(
         S_source[y_source == "1"][:, 0],
         S_source[y_source == "1"][:, 1],
-        c="C0", s=50, alpha=0.50)
+        c="C0", s=50, alpha=0.50,
+    )
     axi.scatter(
         S_source[y_source == "2"][:, 0],
         S_source[y_source == "2"][:, 1],
-        c="C1", s=50, alpha=0.50)
+        c="C1", s=50, alpha=0.50,
+    )
     axi.scatter(
         S_target[y_target == "1"][:, 0],
         S_target[y_target == "1"][:, 1],
-        c="C0", s=50, alpha=0.30, marker="^")
+        c="C0", s=50, alpha=0.30, marker="^",
+    )
     axi.scatter(
         S_target[y_target == "2"][:, 0],
         S_target[y_target == "2"][:, 1],
-        c="C1", s=50, alpha=0.30, marker="^")
+        c="C1", s=50, alpha=0.30, marker="^",
+    )
     axi.scatter(S[-1, 0], S[-1, 1], c="k", s=80, marker="*")
     axi.set_xlim(-0.60, +1.60)
     axi.set_ylim(-1.10, +1.25)
@@ -103,7 +107,6 @@ ax[0].scatter([], [], c="C1", label="source - class 1")
 ax[0].scatter([], [], marker="^", c="C0", label="target - class 0")
 ax[0].scatter([], [], marker="^", c="C1", label="target - class 1")
 ax[0].legend(loc="upper right")
-
 plt.show()
 
 

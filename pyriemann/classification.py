@@ -9,6 +9,7 @@ from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 
+from .utils import deprecated
 from .utils.kernel import kernel
 from .utils.mean import mean_covariance
 from .utils.distance import distance
@@ -341,7 +342,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         return self._mdm.transform(cov)
 
 
-class TSclassifier(BaseEstimator, ClassifierMixin):
+class TSClassifier(BaseEstimator, ClassifierMixin):
     """Classification in the tangent space.
 
     Project data in the tangent space and apply a classifier on the projected
@@ -396,7 +397,7 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
         self.clf = clf
 
     def fit(self, X, y, sample_weight=None):
-        """Fit TSclassifier.
+        """Fit TsClassifier.
 
         Parameters
         ----------
@@ -409,8 +410,8 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
 
         Returns
         -------
-        self : TSclassifier instance
-            The TSclassifier instance.
+        self : TSClassifier instance
+            The TSClassifier instance.
         """
         if not isinstance(self.clf, ClassifierMixin):
             raise TypeError("clf must be a ClassifierMixin")
@@ -454,6 +455,14 @@ class TSclassifier(BaseEstimator, ClassifierMixin):
             Predictions for each matrix.
         """
         return self._pipe.predict_proba(X)
+
+
+@deprecated(
+    "TSclassifier is deprecated and will be removed in 0.10.0; "
+    "please use TSClassifier."
+)
+class TSclassifier(TSClassifier):
+    pass
 
 
 class KNearestNeighbor(MDM):
