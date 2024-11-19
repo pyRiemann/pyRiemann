@@ -442,7 +442,7 @@ cv_scores_blockcovariances = cross_val_score(
 
 ###############################################################################
 # Print and plot results
-# -------------
+# ----------------------
 acc_hybrid_blocks = np.median(cv_scores_hybrid_blocks)
 acc_blockcovariances = np.median(cv_scores_blockcovariances)
 
