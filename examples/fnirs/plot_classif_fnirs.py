@@ -269,7 +269,7 @@ class HybridBlocks(BaseEstimator, TransformerMixin):
 
         Parameters
         ----------
-        X : ndarray, shape (n_samples, n_channels, n_times)
+        X : ndarray, shape (n_matrices, n_channels, n_times)
             Multi-channel time series.
 
         Returns
