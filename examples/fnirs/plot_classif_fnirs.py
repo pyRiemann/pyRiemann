@@ -146,7 +146,7 @@ class HybridBlocks(BaseEstimator, TransformerMixin):
         self : HybridBlocks instance
             The HybridBlocks instance.
         """
-        n_samples, n_channels, n_times = X.shape
+        n_matrices, n_channels, n_times = X.shape
 
         # Determine block sizes
         if isinstance(self.block_size, int):
