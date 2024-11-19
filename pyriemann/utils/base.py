@@ -306,14 +306,14 @@ def ddlogm(X, Cref):
 
     Parameters
     ----------
-    X : ndarray, shape (n, n)
-        Symmetric/hermitian positive definite matrix.
+    X : ndarray, shape (..., n, n)
+        SPD/HPD matrices.
     Cref : ndarray, shape (n, n)
-        Symmetric/hermitian positive definite matrix.
+        SPD/HPD matrix.
 
     Returns
     -------
-    ddlogm : ndarray, shape (n, n)
+    ddlogm : ndarray, shape (..., n, n)
         Directional derivative of the matrix logarithm.
 
     Notes
@@ -349,14 +349,14 @@ def ddexpm(X, Cref):
 
     Parameters
     ----------
-    X : ndarray, shape (n, n)
-        SPD/HPD matrix.
+    X : ndarray, shape (..., n, n)
+        SPD/HPD matrices.
     Cref : ndarray, shape (n, n)
         SPD/HPD matrix.
 
     Returns
     -------
-    ddexpm : ndarray, shape (n, n)
+    ddexpm : ndarray, shape (..., n, n)
         Directional derivative of the matrix exponential.
 
     Notes
