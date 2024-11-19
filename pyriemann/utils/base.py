@@ -302,7 +302,8 @@ def ddlogm(X, Cref):
 
     where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
     and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}_{\text{ref}}`,
-    and :math:`\text{fddlogm}` the first divided difference of the logarithm function.
+    and :math:`\text{fddlogm}` the first divided difference of the logarithm
+    function.
 
     Parameters
     ----------
@@ -345,7 +346,8 @@ def ddexpm(X, Cref):
 
     where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues of
     and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}_{\text{ref}}`,
-    and :math:`\text{fddexpm}` the first divided difference of the exponential function.
+    and :math:`\text{fddexpm}` the first divided difference of the exponential
+    function.
 
     Parameters
     ----------
