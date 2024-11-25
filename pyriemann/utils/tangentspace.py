@@ -155,7 +155,8 @@ def exp_map_riemann(X, Cref, Cm12=False):
         \mathbf{X}_\text{original} = \mathbf{C}_\text{ref}^{1/2}
         \exp(\mathbf{X}) \mathbf{C}_\text{ref}^{1/2}
 
-    When Cm12=True, it returns the full Riemannian exponential map:
+    When Cm12=True, it returns the full Riemannian exponential map  as in [1]_
+    Section 3.4:
 
     .. math::
         \mathbf{X}_\text{original} = \mathbf{C}_\text{ref}^{1/2}
@@ -179,6 +180,12 @@ def exp_map_riemann(X, Cref, Cm12=False):
     Notes
     -----
     .. versionadded:: 0.4
+
+    References
+    ----------
+    .. [1] `A Riemannian Framework for Tensor Computing
+        <https://link.springer.com/article/10.1007/s11263-005-3222-z>`_
+        X. Pennec, P. Fillard, N. Ayache. IJCV, 2006, 66(1), pp. 41-66.
     """
     if Cm12:
         Cm12 = invsqrtm(Cref)
@@ -327,7 +334,8 @@ def log_map_riemann(X, Cref, C12=False):
         \mathbf{X}_\text{new} = \log ( \mathbf{C}_\text{ref}^{-1/2}
         \mathbf{X} \mathbf{C}_\text{ref}^{-1/2})
 
-    When C12=True, it returns the full Riemannian logarithmic map:
+    When C12=True, it returns the full Riemannian logarithmic map as in [1]_
+    Section 3.4:
 
     .. math::
         \mathbf{X}_\text{new} = \mathbf{C}_\text{ref}^{1/2}
@@ -351,6 +359,12 @@ def log_map_riemann(X, Cref, C12=False):
     Notes
     -----
     .. versionadded:: 0.4
+
+    References
+    ----------
+    .. [1] `A Riemannian Framework for Tensor Computing
+        <https://link.springer.com/article/10.1007/s11263-005-3222-z>`_
+        X. Pennec, P. Fillard, N. Ayache. IJCV, 2006, 66(1), pp. 41-66.
     """
     _check_dimensions(X, Cref)
     Cm12 = invsqrtm(Cref)
