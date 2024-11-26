@@ -155,8 +155,8 @@ def exp_map_riemann(X, Cref, Cm12=False):
         \mathbf{X}_\text{original} = \mathbf{C}_\text{ref}^{1/2}
         \exp(\mathbf{X}) \mathbf{C}_\text{ref}^{1/2}
 
-    When Cm12=True, it returns the full Riemannian exponential map  as in [1]_
-    Section 3.4:
+    When Cm12=True, it returns the full Riemannian exponential map as in
+    Section 3.4 of [1]_:
 
     .. math::
         \mathbf{X}_\text{original} = \mathbf{C}_\text{ref}^{1/2}
@@ -334,8 +334,8 @@ def log_map_riemann(X, Cref, C12=False):
         \mathbf{X}_\text{new} = \log ( \mathbf{C}_\text{ref}^{-1/2}
         \mathbf{X} \mathbf{C}_\text{ref}^{-1/2})
 
-    When C12=True, it returns the full Riemannian logarithmic map as in [1]_
-    Section 3.4:
+    When C12=True, it returns the full Riemannian logarithmic map as in
+    Section 3.4 of [1]_:
 
     .. math::
         \mathbf{X}_\text{new} = \mathbf{C}_\text{ref}^{1/2}

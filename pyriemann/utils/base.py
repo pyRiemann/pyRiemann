@@ -234,6 +234,9 @@ def nearest_sym_pos_def(X, reg=1e-6):
     return np.array([_nearest_sym_pos_def(x, reg) for x in X])
 
 
+###############################################################################
+
+
 def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
     r"""First divided difference of a matrix function.
 
