@@ -316,6 +316,7 @@ class HybridBlocks(BaseEstimator, TransformerMixin):
             data_dict[self.block_names[i]] = list(X[:, start:end, :])
         return pd.DataFrame(data_dict)
 
+
 ###############################################################################
 # Download example data and plot
 # ------------------------------
@@ -429,8 +430,8 @@ cv_scores_blockcovariances = cross_val_score(
 acc_hybrid_blocks = np.mean(cv_scores_hybrid_blocks)
 acc_blockcovariances = np.mean(cv_scores_blockcovariances)
 
-print(f"Median accuracy for HybridBlocks: {acc_hybrid_blocks:.2f}")
-print(f"Median accuracy for BlockCovariances: {acc_blockcovariances:.2f}")
+print(f"Mean accuracy for HybridBlocks: {acc_hybrid_blocks:.2f}")
+print(f"Mean accuracy for BlockCovariances: {acc_blockcovariances:.2f}")
 
 # plot a scatter plot of CV and median scores
 plt.figure(figsize=(6, 6))
