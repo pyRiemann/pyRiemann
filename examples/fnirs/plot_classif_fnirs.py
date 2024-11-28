@@ -316,6 +316,7 @@ class HybridBlocks(BaseEstimator, TransformerMixin):
             data_dict[self.block_names[i]] = list(X[:, start:end, :])
         return pd.DataFrame(data_dict)
 
+
 ###############################################################################
 # Download example data and plot
 # ------------------------------
