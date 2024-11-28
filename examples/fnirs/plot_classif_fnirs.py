@@ -24,6 +24,7 @@ import urllib.request
 
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.linalg import block_diag
 import pandas as pd
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.model_selection import StratifiedKFold
@@ -301,14 +302,12 @@ class HybridBlocks(BaseEstimator, TransformerMixin):
             block = block_flat.reshape(-1, size, size)
             transformed_blocks.append(block)
 
-        # Reconstruct the block diagonal matrices
-        n_samples = X.shape[0]
-        M_matrices = []
-        for i in range(n_samples):
-            blocks = [Xt[i] for Xt in transformed_blocks]
-            M_full = self._block_diag(blocks)
-            M_matrices.append(M_full)
-        return np.array(M_matrices)
+        # Construct the block diagonal matrices using scipy
+        M_matrices = np.array([
+            block_diag(*[Xt[i] for Xt in transformed_blocks])
+            for i in range(X.shape[0])
+        ])
+        return M_matrices
 
     def _prepare_dataframe(self, X):
         """Converts the data into a df with eac hblock as column."""
@@ -316,20 +315,6 @@ class HybridBlocks(BaseEstimator, TransformerMixin):
         for i, (start, end) in enumerate(self.block_indices):
             data_dict[self.block_names[i]] = list(X[:, start:end, :])
         return pd.DataFrame(data_dict)
-
-    @staticmethod
-    def _block_diag(matrices):
-        """Construct a block diagonal matrix from a list of square matrices."""
-        shapes = [m.shape[0] for m in matrices]
-        total_size = sum(shapes)
-        result = np.zeros((total_size, total_size), dtype=matrices[0].dtype)
-        start = 0
-        for m in matrices:
-            end = start + m.shape[0]
-            result[start:end, start:end] = m
-            start = end
-        return result
-
 
 ###############################################################################
 # Download example data and plot
@@ -391,7 +376,7 @@ plt.show()
 pipeline_hybrid_blocks = Pipeline(
     [
         ("block_kernels", HybridBlocks(block_size=block_size)),
-        ("classifier", SVC(metric="riemann")),
+        ("classifier", SVC(metric="riemann", C=0.1)),
     ]
 )
 
@@ -400,7 +385,7 @@ pipeline_blockcovariances = Pipeline(
     [
         ("covariances", BlockCovariances(block_size=block_size)),
         ('shrinkage', Shrinkage()),
-        ("classifier", SVC(metric="riemann")),
+        ("classifier", SVC(metric="riemann", C=0.1)),
     ]
 )
 
@@ -411,14 +396,12 @@ pipeline_blockcovariances = Pipeline(
 # Define the hyperparameters for fitting
 pipeline_hybrid_blocks.set_params(
     block_kernels__shrinkage=[0.01, 0],
-    block_kernels__metrics=['cov', 'rbf'],
-    classifier__C=0.1
+    block_kernels__metrics=['cov', 'rbf']
     )
 
 pipeline_blockcovariances.set_params(
     covariances__estimator='lwf',
-    shrinkage__shrinkage=0.01,
-    classifier__C=0.1
+    shrinkage__shrinkage=0.01
     )
 
 # Define cross-validation
