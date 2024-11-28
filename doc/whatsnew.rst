@@ -19,6 +19,8 @@ v0.8.dev
   ``TLStretch`` is deprecated and renamed into :class:`pyriemann.transfer._estimators.TLScale`,
   and ``TSclassifier`` into :class:`pyriemann.classification.TSClassifier`. :pr:`320` by :user:`qbarthelemy`
 
+- Add an example using fNIRS data with a new estimator called `HybridBlocks` for classifying HbO and HbR signals. :pr:`323` by :user:`timnaher`
+
 v0.7 (October 2024)
 -------------------
 
