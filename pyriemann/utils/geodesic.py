@@ -218,7 +218,7 @@ def geodesic(A, B, alpha, metric="riemann"):
         Position on the geodesic.
     metric : string | callable, default="riemann"
         Metric used for geodesic, can be:
-        "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
+        "euclid", "logchol", "logeuclid", "riemann", "wasserstein",
         or a callable function.
 
     Returns
