@@ -2,6 +2,7 @@
 import functools
 
 import numpy as np
+from sklearn.base import RegressorMixin
 from sklearn.metrics import r2_score
 from sklearn.svm import SVR as sklearnSVR
 from sklearn.utils.extmath import softmax
@@ -158,7 +159,7 @@ class SVR(sklearnSVR):
                             f"{self.kernel}.")
 
 
-class KNearestNeighborRegressor(MDM):
+class KNearestNeighborRegressor(RegressorMixin, MDM):
     """Regression by k-nearest-neighbors.
 
     Regression by k-nearest neighbors (k-NN). For each matrix of the test set,
@@ -197,7 +198,6 @@ class KNearestNeighborRegressor(MDM):
     def __init__(self, n_neighbors=5, metric="riemann"):
         """Init."""
         self.n_neighbors = n_neighbors
-        self._estimator_type = "regressor"
         super().__init__(metric=metric)
 
     def fit(self, X, y, sample_weight=None):
