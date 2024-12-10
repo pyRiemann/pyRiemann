@@ -21,6 +21,9 @@ v0.8.dev
 
 - Add an example using fNIRS data with a new estimator called `HybridBlocks` for classifying HbO and HbR signals. :pr:`323` by :user:`timnaher`
 
+- Add :func:`pyriemann.utils.tangentspace.exp_map_wasserstein`, :func:`pyriemann.utils.tangentspace.log_map_wasserstein`
+  and :func:`pyriemann.utils.geodesic.geodesic_wasserstein`. :pr:`331` by :user:`gabelstein`
+
 v0.7 (October 2024)
 -------------------
 
