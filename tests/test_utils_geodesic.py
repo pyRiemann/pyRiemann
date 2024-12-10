@@ -16,7 +16,6 @@ from pyriemann.utils.mean import (
     mean_logeuclid,
     mean_riemann,
     mean_wasserstein,
-    mean_covariance
 )
 
 
@@ -44,16 +43,36 @@ def get_geod_name():
         yield gn
 
 
-def geodesic_0(gfun, A, B):
+def assert_geodesic_0(gfun, A, B):
     assert gfun(A, B, 0) == approx(A)
 
 
-def geodesic_1(gfun, A, B):
+def assert_geodesic_1(gfun, A, B):
     assert gfun(A, B, 1) == approx(B)
 
 
-def geodesic_middle(gfun, A, B, Ctrue):
+def assert_geodesic_middle(gfun, A, B, Ctrue):
     assert gfun(A, B, 0.5) == approx(Ctrue)
+
+
+@pytest.mark.parametrize("gfun", get_geod_func())
+def test_geodesic_all_simple(gfun):
+    n_channels = 3
+    if gfun is geodesic_euclid:
+        A = 1.0 * np.eye(n_channels)
+        B = 2.0 * np.eye(n_channels)
+        Ctrue = 1.5 * np.eye(n_channels)
+    elif gfun is geodesic_wasserstein:
+        A = 0.5 * np.eye(n_channels)
+        B = 2 * np.eye(n_channels)
+        Ctrue = 1.125 * np.eye(n_channels)
+    else:
+        A = 0.5 * np.eye(n_channels)
+        B = 2 * np.eye(n_channels)
+        Ctrue = np.eye(n_channels)
+    assert_geodesic_0(gfun, A, B)
+    assert_geodesic_1(gfun, A, B)
+    assert_geodesic_middle(gfun, A, B, Ctrue)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -72,9 +91,9 @@ def test_geodesic_all_random(kind, gfun, get_mats):
         Ctrue = mean_riemann(mats)
     elif gfun is geodesic_wasserstein:
         Ctrue = mean_wasserstein(mats)
-    geodesic_0(gfun, A, B)
-    geodesic_1(gfun, A, B)
-    geodesic_middle(gfun, A, B, Ctrue)
+    assert_geodesic_0(gfun, A, B)
+    assert_geodesic_1(gfun, A, B)
+    assert_geodesic_middle(gfun, A, B, Ctrue)
 
 
 @pytest.mark.parametrize("complex_valued", [True, False])
@@ -104,12 +123,15 @@ def test_geodesic_wrapper_ndarray(metric, get_mats):
 
 @pytest.mark.parametrize("metric", get_geod_name())
 def test_geodesic_wrapper_simple(metric, get_mats):
-    n_matrices, n_channels = 2, 5
-    mats = get_mats(n_matrices, n_channels, "spd")
-    A, B = mats[0], mats[1]
-    Ctrue = mean_covariance(mats, metric=metric)
-
-    assert geodesic(A, B, 0.5, metric=metric) == approx(Ctrue)
+    n_channels = 3
+    A = 0.5 * np.eye(n_channels)
+    if metric == "euclid":
+        B = 1.5 * np.eye(n_channels)
+    elif metric == "wasserstein":
+        B = (9/2 - np.sqrt(8)) * np.eye(n_channels)
+    else:
+        B = 2.0 * np.eye(n_channels)
+    assert geodesic(A, B, 0.5, metric=metric) == approx(np.eye(n_channels))
 
 
 @pytest.mark.parametrize("metric, gfun", zip(get_geod_name(), get_geod_func()))
