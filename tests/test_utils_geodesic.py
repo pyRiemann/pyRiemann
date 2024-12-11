@@ -122,7 +122,7 @@ def test_geodesic_wrapper_ndarray(metric, get_mats):
 
 
 @pytest.mark.parametrize("metric", get_geod_name())
-def test_geodesic_wrapper_simple(metric, get_mats):
+def test_geodesic_wrapper_simple(metric):
     n_channels = 3
     A = 0.5 * np.eye(n_channels)
     if metric == "euclid":
