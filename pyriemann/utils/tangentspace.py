@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from .base import *
+from .base import expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
 from .mean import mean_covariance
 from .utils import check_function
 
@@ -140,6 +140,7 @@ def exp_map_logeuclid(X, Cref):
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
     return expm(logm(Cref) + ddlogm(X, Cref))
+
 
 def exp_map_riemann(X, Cref, Cm12=False):
     r"""Project matrices back to manifold by Riemannian exponential map.
