@@ -139,11 +139,7 @@ def exp_map_logeuclid(X, Cref):
         <https://ieeexplore.ieee.org/document/10735221>`_
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
-    d, V = np.linalg.eigh(Cref)
-    logd = np.diag(np.log(d))
-    logfdd = _first_divided_difference(d, np.log, lambda x: 1 / x)
-    return V @ expm(logd + logfdd * (V.conj().T @ X @ V)) @ V.conj().T
-
+    return expm(logm(Cref) + ddlogm(X, Cref))
 
 def exp_map_riemann(X, Cref, Cm12=False):
     r"""Project matrices back to manifold by Riemannian exponential map.
@@ -317,11 +313,8 @@ def log_map_logeuclid(X, Cref):
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
     _check_dimensions(X, Cref)
-    logX = logm(X)
-    d, V = np.linalg.eigh(Cref)
-    logd = np.log(d)
-    expfdd = _first_divided_difference(logd, np.exp, np.exp)
-    return V @ (expfdd * (V.conj().T @ logX @ V - np.diag(logd))) @ V.conj().T
+    logCref = logm(Cref)
+    return ddexpm(logm(X) - logCref, logCref)
 
 
 def log_map_riemann(X, Cref, C12=False):
