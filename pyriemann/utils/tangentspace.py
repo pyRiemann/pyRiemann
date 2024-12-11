@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from .base import sqrtm, invsqrtm, logm, expm, _first_divided_difference
+from .base import *
 from .mean import mean_covariance
 from .utils import check_function
 
