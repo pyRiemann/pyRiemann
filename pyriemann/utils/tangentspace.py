@@ -552,7 +552,7 @@ def tangent_space(X, Cref, *, metric="riemann"):
         Reference matrix.
     metric : string | callable, default="riemann"
         Metric used for logarithmic map, can be:
-        "euclid", "logchol", "logeuclid", "riemann",
+        "euclid", "logchol", "logeuclid", "riemann", "wasserstein",
         or a callable function.
 
     Returns
@@ -597,7 +597,7 @@ def untangent_space(T, Cref, *, metric="riemann"):
         Reference matrix.
     metric : string | callable, default="riemann"
         Metric used for exponential map, can be:
-        "euclid", "logchol", "logeuclid", "riemann",
+        "euclid", "logchol", "logeuclid", "riemann", "wasserstein",
         or a callable function.
 
     Returns
