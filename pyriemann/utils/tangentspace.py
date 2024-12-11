@@ -140,8 +140,9 @@ def exp_map_logeuclid(X, Cref):
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
     d, V = np.linalg.eigh(Cref)
+    logd = np.diag(np.log(d))
     logfdd = _first_divided_difference(d, np.log, lambda x: 1 / x)
-    return V@expm(np.diag(np.log(d)) + logfdd * (V.conj().T @ X @ V))@V.conj().T
+    return V @ expm(logd + logfdd * (V.conj().T @ X @ V)) @ V.conj().T
 
 
 def exp_map_riemann(X, Cref, Cm12=False):
