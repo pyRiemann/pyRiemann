@@ -3,7 +3,7 @@ import functools
 
 from joblib import Parallel, delayed
 import numpy as np
-from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.svm import SVC as sklearnSVC
 from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
@@ -28,7 +28,7 @@ def _mode_2d(X, axis=1):
     return mode
 
 
-class MDM(ClassifierMixin, BaseEstimator):
+class MDM(ClassifierMixin, TransformerMixin, BaseEstimator):
     r"""Classification by Minimum Distance to Mean.
 
     For each of the given classes :math:`k = 1, \ldots, K`, a centroid
@@ -206,7 +206,7 @@ class MDM(ClassifierMixin, BaseEstimator):
         return softmax(-self._predict_distances(X) ** 2)
 
 
-class FgMDM(ClassifierMixin, BaseEstimator):
+class FgMDM(ClassifierMixin, TransformerMixin, BaseEstimator):
     """Classification by Minimum Distance to Mean with geodesic filtering.
 
     Apply geodesic filtering described in [1]_, and classify using MDM.
@@ -763,7 +763,7 @@ class SVC(sklearnSVC):
             )
 
 
-class MeanField(ClassifierMixin, BaseEstimator):
+class MeanField(ClassifierMixin, TransformerMixin, BaseEstimator):
     """Classification by Minimum Distance to Mean Field.
 
     Classification by Minimum Distance to Mean Field [1]_, defining several
