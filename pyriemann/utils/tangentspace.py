@@ -141,7 +141,7 @@ def exp_map_logeuclid(X, Cref):
     """
     d, V = np.linalg.eigh(Cref)
     logfdd = _first_divided_difference(d, np.log, lambda x: 1 / x)
-    return V@expm(np.diag(log(d)) + logfdd * (V.conj().T @ X @ V))@V.conj().T
+    return V@expm(np.diag(np.log(d)) + logfdd * (V.conj().T @ X @ V))@V.conj().T
 
 
 def exp_map_riemann(X, Cref, Cm12=False):
