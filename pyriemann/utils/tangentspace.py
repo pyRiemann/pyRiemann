@@ -108,8 +108,8 @@ def exp_map_logeuclid(X, Cref):
 
     where :math:`[D_{\mathbf{C}_\text{ref}} \log] \left( \mathbf{X}\right)`
     indicates the differential of the matrix logarithm at point
-    :math:`\mathbf{C}_\text{ref}` applied to :math:`\mathbf{X}`. Calculation is
-    performed according to Eq. (5) in [2]_.
+    :math:`\mathbf{C}_\text{ref}` applied to :math:`\mathbf{X}`.
+    Calculation is performed according to Eq. (5) in [2]_.
 
     Parameters
     ----------

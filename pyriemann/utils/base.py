@@ -347,7 +347,7 @@ def ddlogm(X, Cref):
         \mathbf{V} \left( \text{fddlogm}(\mathbf{\Lambda}) \odot
         \mathbf{V}^H \mathbf{X} \mathbf{V} \right) \mathbf{V}^H
 
-    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues
+    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues of
     and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}_{\text{ref}}`,
     and :math:`\text{fddlogm}` the first divided difference of the logarithm
     function.
