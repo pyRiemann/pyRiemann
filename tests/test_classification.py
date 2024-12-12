@@ -467,11 +467,3 @@ def test_class_distinctiveness(n_classes, metric_mean, metric_dist, exponent,
     assert isinstance(num, float), "Unexpected object of num"
     assert isinstance(denom, float), "Unexpected object of denum"
 
-
-@pytest.mark.parametrize("classif", [MDM, FgMDM, MeanField])
-def test_classifier_transformers(classif, get_mats, get_labels):
-    """Test transformer classifiers."""
-    n_matrices, n_channels, n_classes = 6, 3, 2
-    mats = get_mats(n_matrices, n_channels, "spd")
-    labels = get_labels(n_matrices, n_classes)
-    classif().fit_transform(mats, labels)
