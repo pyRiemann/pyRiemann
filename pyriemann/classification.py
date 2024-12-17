@@ -28,7 +28,7 @@ def _mode_2d(X, axis=1):
     return mode
 
 
-class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
+class MDM(ClassifierMixin, TransformerMixin, BaseEstimator):
     r"""Classification by Minimum Distance to Mean.
 
     For each of the given classes :math:`k = 1, \ldots, K`, a centroid
@@ -206,7 +206,7 @@ class MDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         return softmax(-self._predict_distances(X) ** 2)
 
 
-class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
+class FgMDM(ClassifierMixin, TransformerMixin, BaseEstimator):
     """Classification by Minimum Distance to Mean with geodesic filtering.
 
     Apply geodesic filtering described in [1]_, and classify using MDM.
@@ -342,7 +342,7 @@ class FgMDM(BaseEstimator, ClassifierMixin, TransformerMixin):
         return self._mdm.transform(cov)
 
 
-class TSClassifier(BaseEstimator, ClassifierMixin):
+class TSClassifier(ClassifierMixin, BaseEstimator):
     """Classification in the tangent space.
 
     Project data in the tangent space and apply a classifier on the projected
@@ -763,7 +763,7 @@ class SVC(sklearnSVC):
             )
 
 
-class MeanField(BaseEstimator, ClassifierMixin, TransformerMixin):
+class MeanField(ClassifierMixin, TransformerMixin, BaseEstimator):
     """Classification by Minimum Distance to Mean Field.
 
     Classification by Minimum Distance to Mean Field [1]_, defining several

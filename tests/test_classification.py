@@ -75,8 +75,9 @@ def test_classifier(n_classes, classif, get_mats, get_labels, get_weights):
     clf_populate_classes(classif, mats, labels)
     if classif in (MDM, KNearestNeighbor, MeanField):
         clf_fitpredict(classif, mats, labels)
-    if classif in (MDM, FgMDM):
+    if classif in (MDM, FgMDM, MeanField):
         clf_transform(classif, mats, labels)
+        clf_fittransform(classif, mats, labels)
     if hasattr(classif(), "n_jobs"):
         clf_jobs(classif, mats, labels)
     if hasattr(classif(), "tsupdate"):
@@ -124,6 +125,13 @@ def clf_transform(classif, mats, labels):
     clf = classif()
     transf = clf.fit(mats, labels).transform(mats)
     assert transf.shape == (n_matrices, n_classes)
+
+
+def clf_fittransform(classif, mats, labels):
+    clf = classif()
+    transf = clf.fit_transform(mats, labels)
+    transf2 = clf.fit(mats, labels).transform(mats)
+    assert_array_equal(transf, transf2)
 
 
 def clf_fit_independence(classif, mats, labels):

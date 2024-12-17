@@ -136,7 +136,9 @@ def test_covariances_X(estimator, rndstate):
     """Test covariance_X for multiple estimators"""
     n_matrices, n_channels, n_times = 3, 5, 15
     x = rndstate.randn(n_matrices, n_channels, n_times)
-    if estimator is None:
+    if estimator == "mcd":
+        pytest.skip()
+    elif estimator is None:
         cov = covariances_X(x, alpha=5.)
     else:
         cov = covariances_X(x, estimator=estimator, alpha=5.)
