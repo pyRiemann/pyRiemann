@@ -21,12 +21,7 @@ v0.8.dev
 
 - Add an example using fNIRS data with a new estimator called `HybridBlocks` for classifying HbO and HbR signals. :pr:`323` by :user:`timnaher`
 
-- Add :func:`pyriemann.utils.base.first_divided_difference` and correct :func:`pyriemann.utils.tangentspace.log_map_logeuclid`
-- Add :func:`pyriemann.utils.base._first_divided_difference` and correct :func:`pyriemann.utils.tangentspace.log_map_logeuclid`
-- Add :func:`pyriemann.utils.base._first_divided_difference`, :func:`pyriemann.utils.base.ddlogm` and
-  :func:`pyriemann.utils.base.ddexpm` and correct :func:`pyriemann.utils.tangentspace.log_map_logeuclid`
-  and :func:`pyriemann.utils.tangentspace.exp_map_logeuclid`. :pr:`332` by :user:`gabelstein`
-- Add directional derivatives :func:`pyriemann.utils.base.ddlogm` and :func:`pyriemann.utils.base.ddexpm`,
+- Add directional derivatives :func:`pyriemann.utils.base.ddexpm` and :func:`pyriemann.utils.base.ddlogm`,
   and correct :func:`pyriemann.utils.tangentspace.log_map_logeuclid` and :func:`pyriemann.utils.tangentspace.exp_map_logeuclid`. :pr:`332` by :user:`gabelstein`
 
 v0.7 (October 2024)
