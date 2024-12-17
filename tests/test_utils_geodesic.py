@@ -8,12 +8,14 @@ from pyriemann.utils.geodesic import (
     geodesic_logchol,
     geodesic_logeuclid,
     geodesic_riemann,
+    geodesic_wasserstein
 )
 from pyriemann.utils.mean import (
     mean_euclid,
     mean_logchol,
     mean_logeuclid,
     mean_riemann,
+    mean_wasserstein,
 )
 
 
@@ -23,6 +25,7 @@ def get_geod_func():
         geodesic_logchol,
         geodesic_logeuclid,
         geodesic_riemann,
+        geodesic_wasserstein
     ]
     for gf in geod_func:
         yield gf
@@ -33,21 +36,22 @@ def get_geod_name():
         "euclid",
         "logchol",
         "logeuclid",
-        "riemann"
+        "riemann",
+        "wasserstein"
     ]
     for gn in geod_name:
         yield gn
 
 
-def geodesic_0(gfun, A, B):
+def assert_geodesic_0(gfun, A, B):
     assert gfun(A, B, 0) == approx(A)
 
 
-def geodesic_1(gfun, A, B):
+def assert_geodesic_1(gfun, A, B):
     assert gfun(A, B, 1) == approx(B)
 
 
-def geodesic_middle(gfun, A, B, Ctrue):
+def assert_geodesic_middle(gfun, A, B, Ctrue):
     assert gfun(A, B, 0.5) == approx(Ctrue)
 
 
@@ -58,13 +62,17 @@ def test_geodesic_all_simple(gfun):
         A = 1.0 * np.eye(n_channels)
         B = 2.0 * np.eye(n_channels)
         Ctrue = 1.5 * np.eye(n_channels)
+    elif gfun is geodesic_wasserstein:
+        A = 0.5 * np.eye(n_channels)
+        B = 2 * np.eye(n_channels)
+        Ctrue = 1.125 * np.eye(n_channels)
     else:
         A = 0.5 * np.eye(n_channels)
         B = 2 * np.eye(n_channels)
         Ctrue = np.eye(n_channels)
-    geodesic_0(gfun, A, B)
-    geodesic_1(gfun, A, B)
-    geodesic_middle(gfun, A, B, Ctrue)
+    assert_geodesic_0(gfun, A, B)
+    assert_geodesic_1(gfun, A, B)
+    assert_geodesic_middle(gfun, A, B, Ctrue)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -81,9 +89,11 @@ def test_geodesic_all_random(kind, gfun, get_mats):
         Ctrue = mean_logeuclid(mats)
     elif gfun is geodesic_riemann:
         Ctrue = mean_riemann(mats)
-    geodesic_0(gfun, A, B)
-    geodesic_1(gfun, A, B)
-    geodesic_middle(gfun, A, B, Ctrue)
+    elif gfun is geodesic_wasserstein:
+        Ctrue = mean_wasserstein(mats)
+    assert_geodesic_0(gfun, A, B)
+    assert_geodesic_1(gfun, A, B)
+    assert_geodesic_middle(gfun, A, B, Ctrue)
 
 
 @pytest.mark.parametrize("complex_valued", [True, False])
@@ -117,6 +127,8 @@ def test_geodesic_wrapper_simple(metric):
     A = 0.5 * np.eye(n_channels)
     if metric == "euclid":
         B = 1.5 * np.eye(n_channels)
+    elif metric == "wasserstein":
+        B = (9/2 - np.sqrt(8)) * np.eye(n_channels)
     else:
         B = 2.0 * np.eye(n_channels)
     assert geodesic(A, B, 0.5, metric=metric) == approx(np.eye(n_channels))
@@ -135,4 +147,6 @@ def test_geodesic_wrapper_random(metric, gfun, get_mats):
         Ctrue = mean_logeuclid(mats)
     elif gfun is geodesic_riemann:
         Ctrue = mean_riemann(mats)
+    elif gfun is geodesic_wasserstein:
+        Ctrue = mean_wasserstein(mats)
     assert geodesic(A, B, 0.5, metric=metric) == approx(Ctrue)

@@ -24,6 +24,9 @@ v0.8.dev
 - Add directional derivatives :func:`pyriemann.utils.base.ddexpm` and :func:`pyriemann.utils.base.ddlogm`,
   and correct :func:`pyriemann.utils.tangentspace.log_map_logeuclid` and :func:`pyriemann.utils.tangentspace.exp_map_logeuclid`. :pr:`332` by :user:`gabelstein`
 
+- Add :func:`pyriemann.utils.tangentspace.exp_map_wasserstein`, :func:`pyriemann.utils.tangentspace.log_map_wasserstein`
+  and :func:`pyriemann.utils.geodesic.geodesic_wasserstein`. :pr:`331` by :user:`gabelstein`
+
 v0.7 (October 2024)
 -------------------
 

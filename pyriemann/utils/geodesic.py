@@ -144,6 +144,52 @@ def geodesic_riemann(A, B, alpha=0.5):
     return C
 
 
+def geodesic_wasserstein(A, B, alpha=0.5):
+    r"""Wasserstein geodesic between SPD/HPD matrices.
+
+    The matrix at position :math:`\alpha` on the Wasserstein geodesic between
+    two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is
+    given in [1]_:
+
+    .. math::
+        \mathbf{C} = (1-\alpha)^2\mathbf{A} + \alpha^2\mathbf{B} +
+          \alpha(1-\alpha)((\mathbf{AB})^{1/2} + (\mathbf{BA})^{1/2})
+
+    :math:`\mathbf{C}` is equal to :math:`\mathbf{A}` if :math:`\alpha` = 0,
+    and :math:`\mathbf{B}` if :math:`\alpha` = 1.
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices.
+    alpha : float, default=0.5
+        Position on the geodesic.
+
+    Returns
+    -------
+    C : ndarray, shape (..., n, n)
+        SPD/HPD matrices on the Wasserstein geodesic.
+
+    Notes
+    -----
+    ..versionadded:: 0.8
+
+    References
+    ----------
+    .. [1] `Wasserstein Riemannian geometry of Gaussian densities
+        <https://link.springer.com/article/10.1007/s41884-018-0014-4>`_
+        L. Malagò, L. Montrucchio, G. Pistone. Information Geometry, 2018, 1,
+        pp. 137–179.
+    """
+    A12 = sqrtm(A)
+    A12inv = invsqrtm(A)
+    AB12 = A12 @ sqrtm(A12 @ B @ A12) @ A12inv
+    return (1-alpha)**2 * A + alpha**2 * B + \
+        alpha*(1-alpha) * (AB12 + AB12.conj().swapaxes(-1, -2))
+
+
 ###############################################################################
 
 
@@ -152,6 +198,7 @@ geodesic_functions = {
     "logchol": geodesic_logchol,
     "logeuclid": geodesic_logeuclid,
     "riemann": geodesic_riemann,
+    "wasserstein": geodesic_wasserstein,
 }
 
 
@@ -171,7 +218,7 @@ def geodesic(A, B, alpha, metric="riemann"):
         Position on the geodesic.
     metric : string | callable, default="riemann"
         Metric used for geodesic, can be:
-        "euclid", "logchol", "logeuclid", "riemann",
+        "euclid", "logchol", "logeuclid", "riemann", "wasserstein",
         or a callable function.
 
     Returns

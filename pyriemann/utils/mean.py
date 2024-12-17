@@ -642,7 +642,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     return M
 
 
-def mean_wasserstein(X, tol=10e-4, maxiter=50, init=None, sample_weight=None):
+def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the Wasserstein metric.
 
     Wasserstein mean is obtained by an iterative procedure where the update is
@@ -658,7 +658,7 @@ def mean_wasserstein(X, tol=10e-4, maxiter=50, init=None, sample_weight=None):
     ----------
     X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
-    tol : float, default=10e-4
+    tol : float, default=10e-9
         The tolerance to stop the gradient descent.
     maxiter : int, default=50
         The maximum number of iterations.
