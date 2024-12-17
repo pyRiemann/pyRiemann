@@ -337,6 +337,8 @@ Base
     powm
     sqrtm
     nearest_sym_pos_def
+    ddexpm
+    ddlogm
 
 Aproximate Joint Diagonalization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

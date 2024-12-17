@@ -232,3 +232,148 @@ def nearest_sym_pos_def(X, reg=1e-6):
         N.J. Higham, Linear Algebra and its Applications, vol 103, 1988
     """
     return np.array([_nearest_sym_pos_def(x, reg) for x in X])
+
+
+###############################################################################
+
+
+def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
+    r"""First divided difference of a matrix function.
+
+    First divided difference of a matrix function applied to the eigenvalues
+    of a symmetric matrix. The first divided difference is defined as [1]_:
+
+    .. math::
+       [FDD(d)]_{i,j} =
+           \begin{cases}
+           \frac{fct(d_i)-fct(d_j)}{d_i-d_j},
+           & d_i \neq d_j\\
+           fctder(d_i),
+           & d_i = d_j
+           \end{cases}
+
+
+    Parameters
+    ----------
+    d : ndarray, shape (n,)
+        Eigenvalues of a symmetric matrix.
+    fct : callable
+        Function to apply to eigenvalues of d. Has to be defined for all
+        possible eigenvalues of d.
+    fctder : callable
+        Derivative of the function to apply. Has to be defined for all
+        possible eigenvalues of d.
+    atol : float, default=1e-12
+        Absolute tolerance for equality of eigenvalues.
+    rtol : float, default=1e-12
+        Relative tolerance for equality of eigenvalues.
+
+    Returns
+    -------
+    FDD : ndarray, shape (n, n)
+        First divided difference of the function applied to the eigenvalues.
+
+    Notes
+    -----
+    .. versionadded:: 0.8
+
+    References
+    ----------
+    .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
+        R. Bhatia, Springer, 1997
+    """
+    dif = np.repeat(d[None, :], len(d), axis=0)
+
+    close_ = np.isclose(dif, dif.T, atol=atol, rtol=rtol)
+    dif[close_] = fctder(dif[close_])
+    dif[~close_] = (fct(dif[~close_]) - fct(dif.T[~close_])) / \
+                   (dif[~close_] - dif.T[~close_])
+    return dif
+
+
+def ddexpm(X, Cref):
+    r"""Directional derivative of the matrix exponential.
+
+    The directional derivative of the matrix exponential at a SPD/HPD matrix
+    :math:`\mathbf{C}_{\text{ref}}` in the direction of a SPD/HPD matrix
+    :math:`\mathbf{X}` is defined as Eq. (V.13) in [1]_:
+
+    .. math::
+        \text{ddexpm}(\mathbf{X}, \mathbf{C}_{\text{ref}}) =
+        \mathbf{V} \left( \text{fddexpm}(\mathbf{\Lambda}) \odot
+        \mathbf{V}^H \mathbf{X} \mathbf{V} \right) \mathbf{V}^H
+
+    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues of
+    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}_{\text{ref}}`,
+    and :math:`\text{fddexpm}` the first divided difference of the exponential
+    function.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        SPD/HPD matrices.
+    Cref : ndarray, shape (n, n)
+        SPD/HPD matrix.
+
+    Returns
+    -------
+    ddexpm : ndarray, shape (..., n, n)
+        Directional derivative of the matrix exponential.
+
+    Notes
+    -----
+    .. versionadded:: 0.8
+
+    References
+    ----------
+    .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
+        R. Bhatia, Springer, 1997
+    """
+
+    d, V = np.linalg.eigh(Cref)
+    expfdd = _first_divided_difference(d, np.exp, np.exp)
+    return V @ (expfdd * (V.conj().T @ X @ V)) @ V.conj().T
+
+
+def ddlogm(X, Cref):
+    r"""Directional derivative of the matrix logarithm.
+
+    The directional derivative of the matrix logarithm at a SPD/HPD matrix
+    :math:`\mathbf{C}_{\text{ref}}` in the direction of a SPD/HPD matrix
+    :math:`\mathbf{X}` is defined as Eq. (V.13) in [1]_:
+
+    .. math::
+        \text{ddlogm}(\mathbf{X}, \mathbf{C}_{\text{ref}}) =
+        \mathbf{V} \left( \text{fddlogm}(\mathbf{\Lambda}) \odot
+        \mathbf{V}^H \mathbf{X} \mathbf{V} \right) \mathbf{V}^H
+
+    where :math:`\mathbf{\Lambda}` is the diagonal matrix of eigenvalues of
+    and :math:`\mathbf{V}` the eigenvectors of :math:`\mathbf{C}_{\text{ref}}`,
+    and :math:`\text{fddlogm}` the first divided difference of the logarithm
+    function.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        SPD/HPD matrices.
+    Cref : ndarray, shape (n, n)
+        SPD/HPD matrix.
+
+    Returns
+    -------
+    ddlogm : ndarray, shape (..., n, n)
+        Directional derivative of the matrix logarithm.
+
+    Notes
+    -----
+    .. versionadded:: 0.8
+
+    References
+    ----------
+    .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
+        R. Bhatia, Springer, 1997
+    """
+
+    d, V = np.linalg.eigh(Cref)
+    logfdd = _first_divided_difference(d, np.log, lambda x: 1 / x)
+    return V @ (logfdd * (V.conj().T @ X @ V)) @ V.conj().T
