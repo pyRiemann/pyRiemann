@@ -13,7 +13,7 @@ from . import estimation as est
 from .preprocessing import Whitening
 
 
-class Xdawn(BaseEstimator, TransformerMixin):
+class Xdawn(TransformerMixin, BaseEstimator):
     """Xdawn algorithm.
 
     Xdawn [1]_ is a spatial filtering method designed to improve the signal
@@ -145,15 +145,32 @@ class Xdawn(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        Xf : ndarray, shape (n_trials, n_classes x min(n_channels, n_filters),\
-                n_times)
+        X_new : ndarray, shape (n_trials, n_classes x min(n_channels, \
+                n_filters), n_times)
             Set of spatialy filtered trials.
         """
-        X = self.filters_ @ X
-        return X
+        return self.filters_ @ X
+
+    def fit_transform(self, X, y=None, sample_weight=None):
+        """Fit and transform in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_times)
+            Set of trials.
+        y : ndarray, shape (n_trials,)
+            Labels for each trial.
+
+        Returns
+        -------
+        X_new : ndarray, shape (n_trials, n_classes x min(n_channels, \
+                n_filters), n_times)
+            Set of spatialy filtered trials.
+        """
+        return self.fit(X, y, sample_weight=sample_weight).transform(X)
 
 
-class BilinearFilter(BaseEstimator, TransformerMixin):
+class BilinearFilter(TransformerMixin, BaseEstimator):
     r"""Bilinear spatial filter.
 
     Bilinear spatial filter for SPD matrices allows to define a custom spatial
@@ -221,7 +238,7 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        Xf : ndarray, shape (n_trials, n_filters) or \
+        X_new : ndarray, shape (n_trials, n_filters) or \
                 ndarray, shape (n_trials, n_filters, n_filters)
             Set of spatialy filtered log-variance or covariance, depending on
             the `log` input parameter.
@@ -231,16 +248,33 @@ class BilinearFilter(BaseEstimator, TransformerMixin):
         if X[0].shape[1] != self.filters_.shape[1]:
             raise ValueError("Input and filters dimension must be compatible.")
 
-        X_filt = self.filters_ @ X @ self.filters_.T
+        X_new = self.filters_ @ X @ self.filters_.T
 
         # if logvariance
         if self.log:
-            out = np.zeros(X_filt.shape[:2])
-            for i, x in enumerate(X_filt):
+            out = np.zeros(X_new.shape[:2])
+            for i, x in enumerate(X_new):
                 out[i] = np.log(np.diag(x))
             return out
         else:
-            return X_filt
+            return X_new
+
+    def fit_transform(self, X, y=None):
+        """Fit and transform in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_trials, n_channels, n_channels)
+            Set of covariance matrices.
+        y : ndarray, shape (n_trials,)
+            Labels for each trial.
+
+        Returns
+        -------
+        X_new : ndarray, shape (n_matrices, n_elec, n_elec)
+            Set of SPD matrices after reduction of the number of channels.
+        """
+        return self.fit(X, y).transform(X)
 
 
 class CSP(BilinearFilter):
@@ -497,7 +531,7 @@ class SPoC(CSP):
         return self
 
 
-class AJDC(BaseEstimator, TransformerMixin):
+class AJDC(TransformerMixin, BaseEstimator):
     """AJDC algorithm.
 
     The approximate joint diagonalization of Fourier cospectral matrices (AJDC)
@@ -724,7 +758,7 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        source : ndarray, shape (n_matrices, n_sources, n_times)
+        X_new : ndarray, shape (n_matrices, n_sources, n_times)
             Multi-channel time-series in source space.
         """
         if X.ndim != 3:
@@ -735,8 +769,28 @@ class AJDC(BaseEstimator, TransformerMixin):
                 " got %d." % (self.n_channels_, X.shape[1])
             )
 
-        source = self.forward_filters_ @ X
-        return source
+        return self.forward_filters_ @ X
+
+    def fit_transform(self, X, y=None):
+        """Fit and transform in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_subjects, n_conditions, n_channels, n_times) | \
+                list of n_subjects of list of n_conditions ndarray of shape \
+                (n_channels, n_times), with same n_conditions and n_channels \
+                but different n_times
+            Multi-channel time-series in channel space, acquired for different
+            subjects and under different experimental conditions.
+        y : None
+            Currently not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        X_new : ndarray, shape (n_matrices, n_sources, n_times)
+            Multi-channel time-series in source space.
+        """
+        return self.fit(X, y).transform(X)
 
     def inverse_transform(self, X, supp=None):
         """Transform source space to channel space.
@@ -754,7 +808,7 @@ class AJDC(BaseEstimator, TransformerMixin):
 
         Returns
         -------
-        signal : ndarray, shape (n_matrices, n_channels, n_times)
+        X_new : ndarray, shape (n_matrices, n_channels, n_times)
             Multi-channel time-series in channel space.
         """
         if X.ndim != 3:
@@ -774,8 +828,7 @@ class AJDC(BaseEstimator, TransformerMixin):
         else:
             raise ValueError("Parameter supp must be a list of int, or None")
 
-        signal = self.backward_filters_ @ denois @ X
-        return signal
+        return self.backward_filters_ @ denois @ X
 
     def get_src_expl_var(self, X):
         """Estimate explained variances of sources.
