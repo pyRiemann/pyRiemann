@@ -20,6 +20,7 @@ def test_clustering_two_clusters(clust, get_mats, get_labels, get_weights):
     weights = get_weights(n_matrices)
 
     if clust is Kmeans:
+        clf_fit(clust, mats, weights)
         clf_predict(clust, mats, n_clusters)
         clf_transform(clust, mats, n_clusters)
         clf_jobs(clust, mats, n_clusters)
@@ -40,6 +41,7 @@ def test_clustering_two_clusters(clust, get_mats, get_labels, get_weights):
         clf_predict_proba(clust, mats)
         clf_partial_fit(clust, mats)
         clf_fit_independence(clust, mats)
+        clf_fittransform(clust, mats)
 
     if clust is PotatoField:
         n_potatoes = 3
@@ -87,7 +89,8 @@ def clf_fit(clust, mats, weights):
         n_channels = mats.shape[-1]
         assert clf.covmean_.shape == (n_channels, n_channels)
 
-    clf.fit(mats, sample_weight=weights)
+    if clust is not Kmeans:
+        clf.fit(mats, sample_weight=weights)
 
 
 def clf_transform(clust, mats, n_clusters=None):
@@ -193,6 +196,13 @@ def clf_fit_labels_independence(clust, mats, labels):
     # retraining with different size should erase previous fit
     new_mats = mats[:, :-1, :-1]
     clf.fit(new_mats, labels).transform(new_mats)
+
+
+def clf_fittransform(clust, mats):
+    clf = clust()
+    transf = clf.fit_transform(mats)
+    transf2 = clf.fit(mats).transform(mats)
+    assert_array_equal(transf, transf2)
 
 
 @pytest.mark.parametrize("clust", [Kmeans, KmeansPerClassTransform])

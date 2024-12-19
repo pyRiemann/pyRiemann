@@ -124,7 +124,7 @@ class SpectralEmbedding(BaseEstimator):
         return self.embedding_
 
 
-class LocallyLinearEmbedding(BaseEstimator, TransformerMixin):
+class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
     """Locally Linear Embedding (LLE) of SPD matrices.
 
     As proposed in [1]_, Locally Linear Embedding (LLE) is a non-linear,

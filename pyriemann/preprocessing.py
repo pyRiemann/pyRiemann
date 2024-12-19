@@ -10,7 +10,7 @@ from .utils.geodesic import geodesic
 from .utils.mean import mean_covariance
 
 
-class Whitening(BaseEstimator, TransformerMixin):
+class Whitening(TransformerMixin, BaseEstimator):
     """Whitening, and optional unsupervised dimension reduction.
 
     Implementation of the whitening, and an optional unsupervised dimension
@@ -252,6 +252,26 @@ class Whitening(BaseEstimator, TransformerMixin):
             Set of whitened, and optionally reduced, SPD matrices.
         """
         return self.filters_.T @ X @ self.filters_
+
+    def fit_transform(self, X, y=None, sample_weight=None):
+        """Fit and transform in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None
+            Ignored as unsupervised.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weight of each matrix, to compute the weighted mean matrix used for
+            whitening and dimension reduction. If None, it uses equal weights.
+
+        Returns
+        -------
+        X_new : ndarray, shape (n_matrices, n_components, n_components)
+            Set of whitened, and optionally reduced, SPD matrices.
+        """
+        return self.fit(X, y, sample_weight=sample_weight).transform(X)
 
     def inverse_transform(self, X):
         """Apply inverse whitening spatial filters.

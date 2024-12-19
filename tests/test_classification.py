@@ -73,8 +73,6 @@ def test_classifier(n_classes, classif, get_mats, get_labels, get_weights):
     clf_predict_proba(classif, mats, labels)
     clf_score(classif, mats, labels)
     clf_populate_classes(classif, mats, labels)
-    if classif in (MDM, KNearestNeighbor, MeanField):
-        clf_fitpredict(classif, mats, labels)
     if classif in (MDM, FgMDM, MeanField):
         clf_transform(classif, mats, labels)
         clf_fittransform(classif, mats, labels)
@@ -88,6 +86,7 @@ def clf_fit(classif, mats, labels, weights):
     n_classes = len(np.unique(labels))
     clf = classif().fit(mats, labels)
     assert clf.classes_.shape == (n_classes,)
+    assert_array_equal(clf.classes_, np.unique(labels))
 
     clf.fit(mats, labels, sample_weight=weights)
 
@@ -107,12 +106,6 @@ def clf_predict_proba(classif, mats, labels):
     proba = clf.fit(mats, labels).predict_proba(mats)
     assert proba.shape == (n_matrices, n_classes)
     assert proba.sum(axis=1) == approx(np.ones(n_matrices))
-
-
-def clf_fitpredict(classif, mats, labels):
-    clf = classif()
-    clf.fit_predict(mats, labels)
-    assert_array_equal(clf.classes_, np.unique(labels))
 
 
 def clf_score(classif, mats, labels):

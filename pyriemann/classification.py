@@ -28,7 +28,29 @@ def _mode_2d(X, axis=1):
     return mode
 
 
-class MDM(ClassifierMixin, TransformerMixin, BaseEstimator):
+class SpdClassifMixin(ClassifierMixin):
+
+    def score(self, X, y, sample_weight=None):
+        """Return the mean accuracy on the given test data and labels.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Test set of SPD matrices.
+        y : ndarray, shape (n_matrices,)
+            True labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix.
+
+        Returns
+        -------
+        score : float
+            Mean accuracy of clf.predict(X) wrt. y.
+        """
+        return super().score(X, y, sample_weight)
+
+
+class MDM(SpdClassifMixin, TransformerMixin, BaseEstimator):
     r"""Classification by Minimum Distance to Mean.
 
     For each of the given classes :math:`k = 1, \ldots, K`, a centroid
@@ -181,14 +203,35 @@ class MDM(ClassifierMixin, TransformerMixin, BaseEstimator):
         Returns
         -------
         dist : ndarray, shape (n_matrices, n_classes)
-            The distance to each centroid according to the metric.
+            Distance to each centroid according to the metric.
         """
         return self._predict_distances(X)
 
+    @deprecated(
+        "fit_predict() is deprecated and will be removed in 0.10.0; "
+        "please use fit().predict()."
+    )
     def fit_predict(self, X, y, sample_weight=None):
-        """Fit and predict in one function."""
-        self.fit(X, y, sample_weight=sample_weight)
-        return self.predict(X)
+        return self.fit(X, y, sample_weight=sample_weight).predict(X)
+
+    def fit_transform(self, X, y, sample_weight=None):
+        """Fit and transform in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD/HPD matrices.
+        y : ndarray, shape (n_matrices,)
+            Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
+
+        Returns
+        -------
+        dist : ndarray, shape (n_matrices, n_classes)
+            Distance to each centroid according to the metric.
+        """
+        return self.fit(X, y, sample_weight=sample_weight).transform(X)
 
     def predict_proba(self, X):
         """Predict proba using softmax of negative squared distances.
@@ -206,7 +249,7 @@ class MDM(ClassifierMixin, TransformerMixin, BaseEstimator):
         return softmax(-self._predict_distances(X) ** 2)
 
 
-class FgMDM(ClassifierMixin, TransformerMixin, BaseEstimator):
+class FgMDM(SpdClassifMixin, TransformerMixin, BaseEstimator):
     """Classification by Minimum Distance to Mean with geodesic filtering.
 
     Apply geodesic filtering described in [1]_, and classify using MDM.
@@ -336,13 +379,32 @@ class FgMDM(ClassifierMixin, TransformerMixin, BaseEstimator):
         Returns
         -------
         dist : ndarray, shape (n_matrices, n_cluster)
-            The distance to each centroid according to the metric.
+            Distance to each centroid according to the metric.
         """
         cov = self._fgda.transform(X)
         return self._mdm.transform(cov)
 
+    def fit_transform(self, X, y, sample_weight=None):
+        """Fit and transform in a single function.
 
-class TSClassifier(ClassifierMixin, BaseEstimator):
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD/HPD matrices.
+        y : ndarray, shape (n_matrices,)
+            Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
+
+        Returns
+        -------
+        dist : ndarray, shape (n_matrices, n_cluster)
+            Distance to each centroid according to the metric.
+        """
+        return self.fit(X, y, sample_weight=sample_weight).transform(X)
+
+
+class TSClassifier(SpdClassifMixin, BaseEstimator):
     """Classification in the tangent space.
 
     Project data in the tangent space and apply a classifier on the projected
@@ -763,7 +825,7 @@ class SVC(sklearnSVC):
             )
 
 
-class MeanField(ClassifierMixin, TransformerMixin, BaseEstimator):
+class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
     """Classification by Minimum Distance to Mean Field.
 
     Classification by Minimum Distance to Mean Field [1]_, defining several
@@ -928,10 +990,31 @@ class MeanField(ClassifierMixin, TransformerMixin, BaseEstimator):
         """
         return self._predict_distances(X)
 
-    def fit_predict(self, X, y):
-        """Fit and predict in one function."""
-        self.fit(X, y)
-        return self.predict(X)
+    @deprecated(
+        "fit_predict() is deprecated and will be removed in 0.10.0; "
+        "please use fit().predict()."
+    )
+    def fit_predict(self, X, y, sample_weight=None):
+        return self.fit(X, y, sample_weight=sample_weight).predict(X)
+
+    def fit_transform(self, X, y, sample_weight=None):
+        """Fit and transform in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : ndarray, shape (n_matrices,)
+            Labels for each matrix.
+        sample_weight : None | ndarray shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
+
+        Returns
+        -------
+        dist : ndarray, shape (n_matrices, n_classes)
+            Distance to each means field according to the metric.
+        """
+        return self.fit(X, y, sample_weight=sample_weight).transform(X)
 
     def predict_proba(self, X):
         """Predict proba using softmax of negative squared distances.

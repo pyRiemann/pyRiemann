@@ -5,14 +5,13 @@ from scipy.stats import norm, chi2
 import sklearn
 from sklearn.base import (
     BaseEstimator,
-    ClassifierMixin,
     TransformerMixin,
     ClusterMixin,
     clone,
 )
 from sklearn.cluster import KMeans as _KMeans
 
-from .classification import MDM
+from .classification import MDM, SpdClassifMixin
 from .utils.mean import mean_covariance
 from .utils.geodesic import geodesic
 from .utils.utils import check_metric
@@ -65,12 +64,14 @@ def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,
         k += 1
         if (k > max_iter) | (np.mean(labels == old_labels) > (1 - tol)):
             break
-    inertia = sum([sum(dist[labels == mdm.classes_[i], i])
-                   for i in range(len(mdm.classes_))])
+    inertia = sum([
+        sum(dist[labels == mdm.classes_[i], i])
+        for i in range(len(mdm.classes_))
+    ])
     return labels, inertia, mdm
 
 
-class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
+class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
     """Clustering by k-means with SPD matrices as inputs.
 
     The k-means is a clustering method used to find clusters that minimize the
@@ -171,7 +172,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : None | ndarray, shape (n_matrices,), default=None
+        y : None
             Not used, here for compatibility with sklearn API.
 
         Returns
@@ -257,6 +258,23 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         """
         return self.mdm_.predict(X)
 
+    def fit_predict(self, X, y=None):
+        """Fit and predict in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        pred : ndarray of int, shape (n_matrices,)
+            Prediction for each matrix according to the closest centroid.
+        """
+        return self.fit(X, y).predict(X)
+
     def transform(self, X):
         """Get the distance to each centroid.
 
@@ -268,9 +286,26 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         Returns
         -------
         dist : ndarray, shape (n_matrices, n_clusters)
-            The distance to each centroid according to the metric.
+            Distance to each centroid according to the metric.
         """
         return self.mdm_.transform(X)
+
+    def fit_transform(self, X, y=None):
+        """Fit and transform in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        dist : ndarray, shape (n_matrices, n_clusters)
+            Distance to each centroid according to the metric.
+        """
+        return self.fit(X, y).transform(X)
 
     def centroids(self):
         """Helper for fast access to the centroids.
@@ -283,7 +318,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         return self.mdm_.covmeans_
 
 
-class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
+class KmeansPerClassTransform(TransformerMixin, BaseEstimator):
     """Clustering by k-means for each class with SPD matrices as inputs.
 
     Parameters
@@ -344,15 +379,32 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
         Returns
         -------
         dist : ndarray, shape (n_matrices, n_centroids)
-            The distance to each centroid according to the metric.
+            Distance to each centroid according to the metric.
         """
         mdm = MDM(metric=self.metric, n_jobs=self._km.n_jobs)
         mdm.metric_mean, mdm.metric_dist = check_metric(self.metric)
         mdm.covmeans_ = self.covmeans_
         return mdm._predict_distances(X)
 
+    def fit_transform(self, X, y):
+        """Fit and transform in a single function.
 
-class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : ndarray, shape (n_matrices,)
+            Labels corresponding to each matrix.
+
+        Returns
+        -------
+        dist : ndarray, shape (n_matrices, n_centroids)
+            Distance to each centroid according to the metric.
+        """
+        return self.fit(X, y).transform(X)
+
+
+class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
     """Artifact detection with the Riemannian Potato.
 
     The Riemannian Potato [1]_ is a clustering method used to detect artifact
@@ -548,11 +600,32 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         Returns
         -------
         z : ndarray, shape (n_matrices,)
-            The standardized log-distance to the centroid.
+            Standardized log-distance to the centroid.
         """
         d = np.squeeze(np.log(self._mdm.transform(X)), axis=1)
         z = self._get_z_score(d)
         return z
+
+    def fit_transform(self, X, y=None, sample_weight=None):
+        """Fit and transform in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None | ndarray, shape (n_matrices,), default=None
+            Labels corresponding to each matrix: positive (resp. negative)
+            label corresponds to a clean (resp. artifact) matrix.
+            If None, all matrices are considered as clean.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
+
+        Returns
+        -------
+        z : ndarray, shape (n_matrices,)
+            Standardized log-distance to the centroid.
+        """
+        return self.fit(X, y, sample_weight=sample_weight).transform(X)
 
     def predict(self, X):
         """Predict artifact from data.
@@ -636,7 +709,7 @@ def _check_n_matrices(X, n_matrices):
         )
 
 
-class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
+class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
     """Artifact detection with the Riemannian Potato Field.
 
     The Riemannian Potato Field [1]_ is a clustering method used to detect
@@ -807,7 +880,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         Returns
         -------
         z : ndarray, shape (n_matrices, n_potatoes)
-            The standardized log-distances to the centroids.
+            Standardized log-distances to the centroids.
         """
         self._check_length(X)
         n_matrices = X[0].shape[0]
@@ -817,6 +890,30 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
             _check_n_matrices(X[i], n_matrices)
             z[:, i] = self._potatoes[i].transform(X[i])
         return z
+
+    def fit_transform(self, X, y=None, sample_weight=None):
+        """Fit and transform in a single function.
+
+        Parameters
+        ----------
+        X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
+                n_channels) with same n_matrices but potentially different \
+                n_channels
+            List of sets of SPD matrices, each corresponding to a different
+            subset of channels and/or filtering with a specific frequency band.
+        y : None | ndarray, shape (n_matrices,), default=None
+            Labels corresponding to each matrix: positive (resp. negative)
+            label corresponds to a clean (resp. artifact) matrix.
+            If None, all matrices are considered as clean.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
+
+        Returns
+        -------
+        z : ndarray, shape (n_matrices, n_potatoes)
+            Standardized log-distances to the centroids.
+        """
+        return self.fit(X, y, sample_weight=sample_weight).transform(X)
 
     def predict(self, X):
         """Predict artifact from data.

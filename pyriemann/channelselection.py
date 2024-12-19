@@ -6,7 +6,7 @@ from .utils.distance import distance
 from .classification import MDM
 
 
-class ElectrodeSelection(BaseEstimator, TransformerMixin):
+class ElectrodeSelection(TransformerMixin, BaseEstimator):
 
     """Channel selection based on a Riemannian geometry criterion.
 
@@ -125,8 +125,27 @@ class ElectrodeSelection(BaseEstimator, TransformerMixin):
         """
         return X[:, self.subelec_, :][:, :, self.subelec_]
 
+    def fit_transform(self, X, y=None, sample_weight=None):
+        """Fit and transform in a single function.
 
-class FlatChannelRemover(BaseEstimator, TransformerMixin):
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None | ndarray, shape (n_matrices,), default=None
+            Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
+
+        Returns
+        -------
+        X_new : ndarray, shape (n_matrices, n_elec, n_elec)
+            Set of SPD matrices after reduction of the number of channels.
+        """
+        return self.fit(X, y, sample_weight=sample_weight).transform(X)
+
+
+class FlatChannelRemover(TransformerMixin, BaseEstimator):
     """Flat channel removal.
 
     Attributes
@@ -170,7 +189,7 @@ class FlatChannelRemover(BaseEstimator, TransformerMixin):
         return X[:, self.channels_, :]
 
     def fit_transform(self, X, y=None):
-        """Find and remove flat channels.
+        """Fit and transform in a single function.
 
         Parameters
         ----------
@@ -184,5 +203,4 @@ class FlatChannelRemover(BaseEstimator, TransformerMixin):
         X_new : ndarray, shape (n_matrices, n_good_channels, n_times)
             Multi-channel time-series without flat channels.
         """
-        self.fit(X, y)
-        return self.transform(X)
+        return self.fit(X, y).transform(X)
