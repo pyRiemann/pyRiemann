@@ -27,7 +27,7 @@ and classifying them using the Riemannian geometry of SPD matrices [[1]](#1).
 
 For BCI applications, studied paradigms are motor imagery [[2]](#2) [[3]](#3),
 event-related potentials (ERP) [[4]](#4) and steady-state visually evoked potentials (SSVEP) [[5]](#5).
-Using extended labels, API allows transfer learning between sessions or subjects [[6]](#6).
+Using extended labels, API allows multisource transfer learning between sessions or subjects [[6]](#6).
 
 Another application is [remote sensing](https://en.wikipedia.org/wiki/Remote_sensing),
 estimating covariance matrices over spatial coordinates of radar images using a sliding window,

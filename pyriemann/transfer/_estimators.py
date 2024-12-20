@@ -32,7 +32,7 @@ def _check_inputs(X):
         raise ValueError(f"Input must be a 2d or a 3d array (Got {X.ndim}).")
 
 
-class TLDummy(BaseEstimator, TransformerMixin):
+class TLDummy(TransformerMixin, BaseEstimator):
     """No transformation for transfer learning.
 
     No transformation of data between the domains.
@@ -97,7 +97,7 @@ class TLDummy(BaseEstimator, TransformerMixin):
         return self.fit(X, y_enc).transform(X)
 
 
-class TLCenter(BaseEstimator, TransformerMixin):
+class TLCenter(TransformerMixin, BaseEstimator):
     """Centering for transfer learning.
 
     For inputs in matrix manifold, it recenters the matrices from each domain
@@ -206,7 +206,11 @@ class TLCenter(BaseEstimator, TransformerMixin):
                 )
 
             else:
-                self.centers_[d] = np.mean(X[idx], axis=0)
+                self.centers_[d] = np.average(
+                    X[idx],
+                    axis=0,
+                    weights=sample_weight[idx],
+                )
 
         return self
 
@@ -289,7 +293,7 @@ class TLCenter(BaseEstimator, TransformerMixin):
         return X_new
 
 
-class TLScale(BaseEstimator, TransformerMixin):
+class TLScale(TransformerMixin, BaseEstimator):
     """Scaling for transfer learning.
 
     For inputs in matrix manifold, it stretches the matrices from each domain
@@ -415,7 +419,11 @@ class TLScale(BaseEstimator, TransformerMixin):
                 self.scales_[d] = np.sum(sample_weight_d * np.squeeze(dist))
 
             else:
-                self.scales_[d] = np.mean(np.linalg.norm(X[idx], axis=1))
+                self.scales_[d] = np.average(
+                    np.linalg.norm(X[idx], axis=1),
+                    axis=0,
+                    weights=sample_weight_d,
+                )
 
         return self
 
@@ -531,7 +539,7 @@ class TLStretch(TLScale):
     pass
 
 
-class TLRotate(BaseEstimator, TransformerMixin):
+class TLRotate(TransformerMixin, BaseEstimator):
     """Rotation for transfer learning.
 
     For inputs in matrix manifold, it rotates the matrices from each source
@@ -539,9 +547,9 @@ class TLRotate(BaseEstimator, TransformerMixin):
     The loss function for this matching is described in [1]_ and the
     optimization procedure for minimizing it in [2]_.
 
-    For inputs in tangent space, it rotates the tangent vectors from source
-    domain so to match its class means with those from the target domain [3]_.
-    Current implementation supports only one source domain.
+    For inputs in tangent space, it rotates the tangent vectors from each
+    source domain so to match its class means with those from the target domain
+    [3]_.
 
     .. note::
        The inputs from each domain must have been centered to the before
@@ -658,11 +666,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
         if X.ndim == 3:
             self._fit_manifold(X, y_enc, domains, sample_weight)
         else:
-            if len(np.unique(domains)) > 2:
-                raise ValueError(
-                    "Current implementation supports only one source domain"
-                )
-            self._fit_tangentspace(X, y_enc, domains)
+            self._fit_tangentspace(X, y_enc, domains, sample_weight)
 
         return self
 
@@ -704,71 +708,86 @@ class TLRotate(BaseEstimator, TransformerMixin):
         for d, rot in zip(source_domains, rotations):
             self.rotations_[d] = rot
 
-    def _fit_tangentspace(self, X, y_enc, domains):
+    def _fit_tangentspace(self, X, y_enc, domains, sample_weight):
         """Fit TLRotate in tangent space.
 
         It computes anchors for each class of each domain.
         It computes the rotation for source domain so that its anchors
         are close to those from the target domain.
         """
-        _, y, _ = decode_domains(X, y_enc)
-        X_src = X[domains != self.target_domain]
-        y_src = y[domains != self.target_domain]
         X_tgt = X[domains == self.target_domain]
-        y_tgt = y[domains == self.target_domain]
-
-        if len(np.unique(y_src)) != len(np.unique(y_tgt)):
-            raise ValueError(
-                "The number of classes in each domain don't match"
-            )
+        y_tgt = y_enc[domains == self.target_domain]
+        weights_tgt = sample_weight[domains == self.target_domain]
+        n_classes = len(np.unique(y_tgt))
 
         if self.n_components == "max":
             self.n_components = X.shape[1]
         self._src_pca = [
-            PCA(n_components=self.n_components) for _ in np.unique(y_src)
+            PCA(n_components=self.n_components) for _ in range(n_classes)
         ]
 
-        src_anchors, src_valid = self._get_anchors(X_src, y_src, fit_pca=True)
-        tgt_anchors, tgt_valid = self._get_anchors(X_tgt, y_tgt, fit_pca=False)
+        self.rotations_ = {}
+        source_domains = np.unique(domains)
+        source_domains = source_domains[source_domains != self.target_domain]
+        for d in source_domains:
+            y_src = y_enc[domains == d]
+            if len(np.unique(y_src)) != n_classes:
+                raise ValueError(
+                    f"Number of classes in source domain {d} does not match"
+                )
 
-        if not src_valid or not tgt_valid:
-            n_classes = len(np.unique(y_tgt))
-            src_anchors = src_anchors[:n_classes]
-            tgt_anchors = tgt_anchors[:n_classes]
-            if not src_valid:
-                warnings.warn("Not enough vectors for source domain")
-            if not tgt_valid:
-                warnings.warn("Not enough vectors for target domain")
+            # fit_transf(src) then transf(tgt), because more src data than tgt
+            anchors_src, is_valid_src = self._get_anchors(
+                X[domains == d],
+                y_src,
+                sample_weight[domains == d],
+                fit_pca=True,
+            )
+            anchors_tgt, is_valid_tgt = self._get_anchors(
+                X_tgt,
+                y_tgt,
+                weights_tgt,
+                fit_pca=False,
+            )
 
-        self.rotations_ = _get_rotation_tangentspace(
-            src_anchors,
-            tgt_anchors,
-            self.expl_var,
-        )
+            if not is_valid_src or not is_valid_tgt:
+                anchors_src = anchors_src[:n_classes]
+                anchors_tgt = anchors_tgt[:n_classes]
+                if not is_valid_src:
+                    warnings.warn(f"Not enough vectors for source domain {d}")
+                if not is_valid_tgt:
+                    warnings.warn("Not enough vectors for target domain")
 
-    def _get_anchors(self, X, y, fit_pca):
+            self.rotations_[d] = _get_rotation_tangentspace(
+                anchors_src,
+                anchors_tgt,
+                self.expl_var,
+            )
+
+    def _get_anchors(self, X, y, sample_weight, fit_pca):
         """Get anchors.
 
         It computes anchors for each class of each domain, ie class means and
         clusters along principal components.
         """
         is_valid = True
-
         classes = np.unique(y)
         anchors = np.array([
-            np.mean(X[y == c], axis=0) for c in classes
+            np.average(X[y == c], axis=0, weights=sample_weight[y == c])
+            for c in classes
         ])
 
         for i, c in enumerate(classes):
             Xc = X[y == c]
             n_vectors_c = len(Xc)
 
+            if fit_pca:
+                self._src_pca[i].fit(Xc)
+
             if n_vectors_c < self.n_clusters:
                 is_valid = False
                 break
             r = n_vectors_c / self.n_clusters
-            if fit_pca:
-                self._src_pca[i].fit(Xc)
 
             Xc_pca = self._src_pca[i].transform(Xc)
             for j in range(self.n_components):
@@ -844,7 +863,7 @@ class TLRotate(BaseEstimator, TransformerMixin):
                     X_new[idx] = self.rotations_[d] @ X[idx] \
                         @ self.rotations_[d].T
                 else:
-                    X_new[idx] = X[idx] @ self.rotations_
+                    X_new[idx] = X[idx] @ self.rotations_[d]
 
         return X_new
 
@@ -1273,4 +1292,4 @@ class MDWM(MDM):
             Mean accuracy of clf.predict(X) wrt. y_enc.
         """
         _, y_true, _ = decode_domains(X, y_enc)
-        return super().score(X, y_true, sample_weight)
+        return super().score(X, y_true, sample_weight=sample_weight)

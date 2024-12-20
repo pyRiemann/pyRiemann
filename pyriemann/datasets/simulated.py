@@ -332,9 +332,17 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
     return outliers
 
 
-def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
-                                 domain_sep=5.0, theta=0.0, stretch=1.0,
-                                 random_state=None, class_names=[1, 2]):
+def make_classification_transfer(
+    n_matrices,
+    class_sep=3.0,
+    class_disp=1.0,
+    domain_sep=5.0,
+    theta=0.0,
+    stretch=1.0,
+    random_state=None,
+    class_names=[1, 2],
+    domain_names=["source_domain", "target_domain"],
+):
     """Generate 2x2 SPD matrices for two classes in source and target domains.
 
     Generate a set of 2x2 SPD matrices drawn from Riemannian Gaussian
@@ -366,6 +374,8 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
         Pass an int for reproducible output across multiple function calls.
     class_names : list, default=[1, 2]
         Names of classes.
+    domain_names : list, default=["source_domain", "target_domain"]
+        Names of domains, source and target.
 
     Returns
     -------
@@ -384,8 +394,10 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
 
     # the examples considered here are always for 2x2 matrices
     n_dim = 2
-    if len(class_names) != n_dim:
+    if len(class_names) != 2:
         raise ValueError("class_names must contain 2 elements")
+    if len(domain_names) != 2:
+        raise ValueError("domain_names must contain 2 elements")
 
     # create a source domain with two classes and global mean at identity
     M1_source = np.eye(n_dim)  # first class mean at Identity at first
@@ -455,7 +467,7 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
 
     # create array specifying the domain for each matrix
     domains = np.array(
-        len(X_source)*['source_domain'] + len(X_target)*['target_domain']
+        len(X_source) * [domain_names[0]] + len(X_target) * [domain_names[1]]
     )
 
     # encode the labels and domains together
