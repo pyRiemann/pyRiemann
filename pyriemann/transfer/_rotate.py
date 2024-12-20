@@ -177,7 +177,7 @@ def _get_rotation_manifold(
         Set of SPD matrices from the source domain.
     X_target : ndarray, shape (n_matrices, n, n)
         Set of SPD matrices from the target domain.
-    weights : None | array, shape (n_matrices,), default=None
+    weights : None | ndarray, shape (n_matrices,), default=None
         Weights for each pair of matrices. If None, it uses equal weights.
     metric : {"euclid", "riemann"}, default="euclid"
         Distance to minimize between SPD matrices.
@@ -209,11 +209,10 @@ def _get_rotation_manifold(
         <https://www.nicolasboumal.net/book/>`_
         N. Boumal. To appear with Cambridge University Press. June, 2022
     """
-
     if X_source.shape[0] != X_target.shape[0]:
-        raise ValueError("The number of matrices in each domain don't match")
+        raise ValueError("Number of matrices in each domain doesn't match")
     if X_source.shape[1:] != X_target.shape[1:]:
-        raise ValueError("The number of channels in each domain don't match")
+        raise ValueError("Number of channels in each domain doesn't match")
 
     weights = check_weights(weights, len(X_source))
 
@@ -298,6 +297,9 @@ def _get_rotation_tangentspace(X_source, X_target, expl_var):
         A. Bleuzé, J. Mattout and M. Congedo, Frontiers in Human Neuroscience,
         2022
     """
+    if X_source.shape != X_target.shape:
+        raise ValueError("Inputs shapes don't match")
+
     C = X_source.T @ X_target
     u, s, vh = np.linalg.svd(C)
 
