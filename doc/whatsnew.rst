@@ -32,7 +32,7 @@ v0.8.dev
   Deprecate ``generate_random_spd_matrix``. :pr:`339` by :user:`qbarthelemy`
 
 - Enhance TSA, adding weights to transformers, and generalizing :class:`pyriemann.classification.TLRotate` from
-  one-to-one to many-to-one domain adaptation in tangent space. :pr:`336` by :user:`qbarthelemy`
+  one-to-one to many-to-one domain adaptation in tangent space. :pr:`337` by :user:`qbarthelemy`
 
 v0.7 (October 2024)
 -------------------
