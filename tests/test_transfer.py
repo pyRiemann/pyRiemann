@@ -345,43 +345,48 @@ def test_tlrotate_manifold(rndstate, get_weights, metric, use_weight):
         random_state=rndstate,
     )
     if use_weight:
-        weights = get_weights(len(y_enc))
+        matrix_weight, class_weight = get_weights(len(y_enc)), get_weights(2)
     else:
-        weights = None
-    weights = check_weights(weights, len(y_enc))
+        matrix_weight, class_weight = None, None
 
     _, y, domain = decode_domains(X, y_enc)
 
     rct = TLCenter(target_domain="target_domain", metric=metric)
-    X_rct = rct.fit_transform(X, y_enc, sample_weight=weights)
-    rot = TLRotate(target_domain="target_domain", metric=metric)
-    X_rot = rot.fit_transform(X_rct, y_enc, sample_weight=weights)
+    X_rct = rct.fit_transform(X, y_enc, sample_weight=matrix_weight)
+    rot = TLRotate(
+        target_domain="target_domain",
+        metric=metric,
+        weights=class_weight,
+    )
+    X_rot = rot.fit_transform(X_rct, y_enc, sample_weight=matrix_weight)
     for k in rot.rotations_.keys():
         assert rot.rotations_[k].shape == (2, 2)
     assert_array_equal(
         X_rot[domain == "target_domain"],
         X_rct[domain == "target_domain"],
     )
+    
+    matrix_weight = check_weights(matrix_weight, len(y_enc))
 
     # check if the distance between the classes of each domain is reduced
     for label in np.unique(y):
         d = "source_domain"
         M_rct_label_source = mean_riemann(
             X_rct[domain == d][y[domain == d] == label],
-            sample_weight=weights[domain == d][y[domain == d] == label]
+            sample_weight=matrix_weight[domain == d][y[domain == d] == label]
         )
         M_rot_label_source = mean_riemann(
             X_rot[domain == d][y[domain == d] == label],
-            sample_weight=weights[domain == d][y[domain == d] == label]
+            sample_weight=matrix_weight[domain == d][y[domain == d] == label]
         )
         d = "target_domain"
         M_rct_label_target = mean_riemann(
             X_rct[domain == d][y[domain == d] == label],
-            sample_weight=weights[domain == d][y[domain == d] == label]
+            sample_weight=matrix_weight[domain == d][y[domain == d] == label]
         )
         M_rot_label_target = mean_riemann(
             X_rot[domain == d][y[domain == d] == label],
-            sample_weight=weights[domain == d][y[domain == d] == label]
+            sample_weight=matrix_weight[domain == d][y[domain == d] == label]
         )
         d_rct = distance_riemann(M_rct_label_source, M_rct_label_target)
         d_rot = distance_riemann(M_rot_label_source, M_rot_label_target)

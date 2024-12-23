@@ -566,7 +566,8 @@ class TLRotate(TransformerMixin, BaseEstimator):
     target_domain : str
         Domain to consider as target.
     weights : None | array, shape (n_classes,), default=None
-        Weights to assign for each class. If None, it uses equal weights.
+        For inputs in manifold, weights to assign for each class.
+        If None, it uses equal weights.
     metric : {"euclid", "riemann"}, default="euclid"
         For inputs in manifold, distance to minimize between class means.
     n_jobs : int, default=1

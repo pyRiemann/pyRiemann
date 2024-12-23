@@ -263,15 +263,15 @@ def _get_rotation_tangentspace(X_source, X_target, expl_var):
     matrix :math:`\mathbf{Q}` that minimizes:
 
     .. math::
-        || X^\text{source} Q -  X^\text{target} ||_F^2
+        || X^\text{source} Q - X^\text{target} ||_F^2
 
     From code provided by the authors [1]_.
 
     Parameters
     ----------
-    X_source : ndarray, shape (n_vectors, n_ts)
+    X_source : ndarray, shape (n_vectors, n)
         Set of tangent vectors from the source domain.
-    X_target : ndarray, shape (n_vectors, n_ts)
+    X_target : ndarray, shape (n_vectors, n)
         Set of tangent vectors from the target domain.
     expl_var : float
         Dimension reduction applied to the cross product matrix during
@@ -281,7 +281,7 @@ def _get_rotation_tangentspace(X_source, X_target, expl_var):
 
     Returns
     -------
-    Q : ndarray, shape (n_ts, n_ts)
+    Q : ndarray, shape (n, n)
         Orthogonal matrix that minimizes the distance between the tangent
         vectors for the source and target domains.
 
