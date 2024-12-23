@@ -2,12 +2,12 @@ import numpy as np
 
 
 def encode_domains(X, y, domain):
-    r"""Encode the domains of the data in the labels.
+    """Encode the domains of the data in the labels.
 
     We handle the possibility of having different domains for the datasets by
     extending the labels of the data and including this information to them.
-    For instance, if we have a datum X with class `left_hand` on the
-    `domain_01` then its extended label will be `domain_01/left_hand`.
+    For instance, if we have a datum X with class ``left_hand`` on the
+    ``domain_01`` then its extended label will be ``domain_01/left_hand``.
     Note that if the classes were integers at first, they will be converted to
     strings.
 
