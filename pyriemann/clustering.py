@@ -93,7 +93,7 @@ class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
         (see :func:`pyriemann.utils.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
-    random_state : integer or np.RandomState, optional
+    random_state : None | integer | np.RandomState, default=None
         The generator used to initialize the centroids. If an integer is
         given, it fixes the seed. Defaults to the global numpy random
         number generator.

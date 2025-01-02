@@ -29,7 +29,7 @@ class SVR(sklearnSVR):
         Reference matrix for kernel matrix computation.
         If None, the mean of the training matrices according to the metric is
         used.
-    kernel_fct : "precomputed" | callable, default=None
+    kernel_fct : None | "precomputed" | callable, default=None
         If "precomputed", the kernel matrix for datasets X and Y is estimated
         according to `pyriemann.utils.kernel(X, Y, Cref, metric)`.
         If callable, the callable is passed as the kernel parameter to

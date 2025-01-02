@@ -687,7 +687,7 @@ class SVC(sklearnSVC):
         Tolerance for stopping criterion.
     cache_size : float, default=200
         Specify the size of the kernel cache (in MB).
-    class_weight : dict or "balanced", default=None
+    class_weight : None | dict | "balanced", default=None
         Set the parameter C of class i to class_weight[i]*C for SVC. If not
         given, all classes are supposed to have weight one.
         The "balanced" mode uses the values of y to automatically adjust
@@ -713,7 +713,7 @@ class SVC(sklearnSVC):
         `decision_function`; otherwise the first class among the tied
         classes is returned. Please note that breaking ties comes at a
         relatively high computational cost compared to a simple predict.
-    random_state : int, RandomState instance or None, default=None
+    random_state : None | int | RandomState instance, default=None
         Controls the pseudo random number generation for shuffling the data for
         probability estimates. Ignored when `probability` is False.
         Pass an int for reproducible output across multiple function calls.
