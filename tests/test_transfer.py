@@ -365,7 +365,7 @@ def test_tlrotate_manifold(rndstate, get_weights, metric, use_weight):
         X_rot[domain == "target_domain"],
         X_rct[domain == "target_domain"],
     )
-    
+
     matrix_weight = check_weights(matrix_weight, len(y_enc))
 
     # check if the distance between the classes of each domain is reduced
