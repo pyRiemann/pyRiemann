@@ -25,10 +25,11 @@ class SVR(sklearnSVR):
     metric : string, default="riemann"
         Metric for kernel matrix computation. For the list of supported metrics
         see :func:`pyriemann.utils.kernel.kernel`.
-    Cref : None | ndarray, shape (n_channels, n_channels)
-        Reference point for kernel matrix computation. If None, the mean of
-        the training data according to the metric is used.
-    kernel_fct : "precomputed" | callable
+    Cref : None | ndarray, shape (n_channels, n_channels), default=None
+        Reference matrix for kernel matrix computation.
+        If None, the mean of the training matrices according to the metric is
+        used.
+    kernel_fct : None | "precomputed" | callable, default=None
         If "precomputed", the kernel matrix for datasets X and Y is estimated
         according to `pyriemann.utils.kernel(X, Y, Cref, metric)`.
         If callable, the callable is passed as the kernel parameter to
@@ -59,7 +60,7 @@ class SVR(sklearnSVR):
     Attributes
     ----------
     data_ : ndarray, shape (n_matrices, n_channels, n_channels)
-        If fitted, training data.
+        If fitted, training matrices.
 
     Notes
     -----
@@ -187,7 +188,7 @@ class KNearestNeighborRegressor(RegressorMixin, MDM):
     values_ : ndarray, shape (n_matrices,)
         Training target values.
     covmeans_ : ndarray, shape (n_matrices, n_channels, n_channels)
-        Training set of SPD matrices.
+        Training matrices.
 
     Notes
     -----
@@ -206,7 +207,7 @@ class KNearestNeighborRegressor(RegressorMixin, MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : ndarray, shape (n_matrices,)
             Target values for each matrix.
         sample_weight : None
@@ -229,7 +230,7 @@ class KNearestNeighborRegressor(RegressorMixin, MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -251,7 +252,7 @@ class KNearestNeighborRegressor(RegressorMixin, MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Test set of SPD matrices.
+            Test set of SPD/HPD matrices.
         y : ndarray, shape (n_matrices,)
             True values for each matrix.
 

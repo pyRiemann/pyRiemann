@@ -10,16 +10,19 @@ from pyriemann.clustering import (
     PotatoField,
 )
 
+clts = [Kmeans, KmeansPerClassTransform, Potato, PotatoField]
 
-@pytest.mark.parametrize(
-    "clust", [Kmeans, KmeansPerClassTransform, Potato, PotatoField]
-)
-def test_clustering_two_clusters(clust, get_mats, get_labels, get_weights):
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("clust", clts)
+def test_clustering_two_clusters(kind, clust,
+                                 get_mats, get_labels, get_weights):
     n_clusters, n_matrices, n_channels = 2, 6, 4
-    mats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, kind)
     weights = get_weights(n_matrices)
 
     if clust is Kmeans:
+        clf_fit(clust, mats, weights)
         clf_predict(clust, mats, n_clusters)
         clf_transform(clust, mats, n_clusters)
         clf_jobs(clust, mats, n_clusters)
@@ -40,12 +43,13 @@ def test_clustering_two_clusters(clust, get_mats, get_labels, get_weights):
         clf_predict_proba(clust, mats)
         clf_partial_fit(clust, mats)
         clf_fit_independence(clust, mats)
+        clf_fittransform(clust, mats)
 
     if clust is PotatoField:
         n_potatoes = 3
-        mats = [get_mats(n_matrices, n_channels, "spd"),
-                get_mats(n_matrices, n_channels + 2, "spd"),
-                get_mats(n_matrices, n_channels + 1, "spd")]
+        mats = [get_mats(n_matrices, n_channels, kind),
+                get_mats(n_matrices, n_channels + 2, kind),
+                get_mats(n_matrices, n_channels + 1, kind)]
         clf_fit(clust, mats, weights)
         clf_transform(clust, mats, n_potatoes)
         clf_predict(clust, mats, n_potatoes)
@@ -54,12 +58,11 @@ def test_clustering_two_clusters(clust, get_mats, get_labels, get_weights):
         clf_fit_independence(clust, mats, n_potatoes)
 
 
-@pytest.mark.parametrize(
-    "clust", [Kmeans, KmeansPerClassTransform, Potato, PotatoField]
-)
-def test_clustering_three_clusters(clust, get_mats, get_labels):
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("clust", clts)
+def test_clustering_three_clusters(kind, clust, get_mats, get_labels):
     n_clusters, n_matrices, n_channels = 3, 6, 2
-    mats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, kind)
 
     if clust is Kmeans:
         clf_predict(clust, mats, n_clusters)
@@ -87,7 +90,8 @@ def clf_fit(clust, mats, weights):
         n_channels = mats.shape[-1]
         assert clf.covmean_.shape == (n_channels, n_channels)
 
-    clf.fit(mats, sample_weight=weights)
+    if clust is not Kmeans:
+        clf.fit(mats, sample_weight=weights)
 
 
 def clf_transform(clust, mats, n_clusters=None):
@@ -195,6 +199,13 @@ def clf_fit_labels_independence(clust, mats, labels):
     clf.fit(new_mats, labels).transform(new_mats)
 
 
+def clf_fittransform(clust, mats):
+    clf = clust()
+    transf = clf.fit_transform(mats)
+    transf2 = clf.fit(mats).transform(mats)
+    assert_array_equal(transf, transf2)
+
+
 @pytest.mark.parametrize("clust", [Kmeans, KmeansPerClassTransform])
 @pytest.mark.parametrize("init", ["random", "ndarray"])
 @pytest.mark.parametrize("n_init", [1, 5])
@@ -263,14 +274,14 @@ def test_potato_fit_error(y_fail, get_mats):
         Potato().fit(mats, y=y_fail)
 
 
-def test_potato_partial_fit_not_fitted(get_mats):
+def test_potato_partialfit_not_fitted(get_mats):
     n_matrices, n_channels = 6, 3
     mats = get_mats(n_matrices, n_channels, "spd")
     with pytest.raises(ValueError):  # potato not fitted
         Potato().partial_fit(mats)
 
 
-def test_potato_partial_fit_diff_channels(get_mats, get_labels):
+def test_potato_partialfit_diff_channels(get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
@@ -279,7 +290,7 @@ def test_potato_partial_fit_diff_channels(get_mats, get_labels):
         pt.partial_fit(get_mats(2, n_channels + 1, "spd"))
 
 
-def test_potato_partial_fit_no_poslabel(get_mats, get_labels):
+def test_potato_partialfit_no_poslabel(get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
@@ -289,7 +300,7 @@ def test_potato_partial_fit_no_poslabel(get_mats, get_labels):
 
 
 @pytest.mark.parametrize("alpha", [-0.1, 1.1])
-def test_potato_partial_fit_alpha(alpha, get_mats, get_labels):
+def test_potato_partialfit_alpha(alpha, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
     labels = get_labels(n_matrices, n_classes)
@@ -325,7 +336,7 @@ def test_potato_specific_labels(get_mats):
     pt.fit(mats, y=[2] * n_matrices)
 
 
-def test_potato_field_fit(get_mats):
+def test_potatofield_fit(get_mats):
     n_potatoes, n_matrices, n_channels = 2, 6, 3
     mats1 = get_mats(n_matrices, n_channels, "spd")
     mats2 = get_mats(n_matrices, n_channels + 1, "spd")
@@ -346,7 +357,7 @@ def test_potato_field_fit(get_mats):
 @pytest.mark.parametrize(
     "method", ["partial_fit", "transform", "predict_proba"]
 )
-def test_potato_field_method(get_mats, method):
+def test_potatofield_method(get_mats, method):
     n_potatoes, n_matrices, n_channels = 2, 6, 3
     mats1 = get_mats(n_matrices, n_channels, "spd")
     mats2 = get_mats(n_matrices, n_channels + 1, "spd")

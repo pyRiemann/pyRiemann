@@ -12,10 +12,13 @@ from pyriemann.utils.mean import mean_covariance
 regs = [SVR, KNearestNeighborRegressor]
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("regres", regs)
-def test_regression(regres, get_mats, get_targets, get_weights):
+def test_regression(kind, regres, get_mats, get_targets, get_weights):
+    if kind == "hpd" and regres is SVR:
+        pytest.skip()
     n_matrices, n_channels = 6, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, kind)
     targets = get_targets(n_matrices)
     weights = get_weights(n_matrices)
 

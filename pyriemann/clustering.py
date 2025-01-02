@@ -5,14 +5,13 @@ from scipy.stats import norm, chi2
 import sklearn
 from sklearn.base import (
     BaseEstimator,
-    ClassifierMixin,
     TransformerMixin,
     ClusterMixin,
     clone,
 )
 from sklearn.cluster import KMeans as _KMeans
 
-from .classification import MDM
+from .classification import MDM, SpdClassifMixin
 from .utils.mean import mean_covariance
 from .utils.geodesic import geodesic
 from .utils.utils import check_metric
@@ -65,16 +64,18 @@ def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,
         k += 1
         if (k > max_iter) | (np.mean(labels == old_labels) > (1 - tol)):
             break
-    inertia = sum([sum(dist[labels == mdm.classes_[i], i])
-                   for i in range(len(mdm.classes_))])
+    inertia = sum([
+        sum(dist[labels == mdm.classes_[i], i])
+        for i in range(len(mdm.classes_))
+    ])
     return labels, inertia, mdm
 
 
-class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
-    """Clustering by k-means with SPD matrices as inputs.
+class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
+    """Clustering by k-means with SPD/HPD matrices as inputs.
 
     The k-means is a clustering method used to find clusters that minimize the
-    sum of squared distances between centroids and SPD matrices [1]_.
+    sum of squared distances between centroids and SPD/HPD matrices [1]_.
 
     Then, for each new matrix, the class is affected according to the nearest
     centroid.
@@ -92,7 +93,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         (see :func:`pyriemann.utils.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
-    random_state : integer or np.RandomState, optional
+    random_state : None | integer | np.RandomState, default=None
         The generator used to initialize the centroids. If an integer is
         given, it fixes the seed. Defaults to the global numpy random
         number generator.
@@ -170,8 +171,8 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y : None | ndarray, shape (n_matrices,), default=None
+            Set of SPD/HPD matrices.
+        y : None
             Not used, here for compatibility with sklearn API.
 
         Returns
@@ -248,7 +249,7 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -257,20 +258,54 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         """
         return self.mdm_.predict(X)
 
+    def fit_predict(self, X, y=None):
+        """Fit and predict in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD/HPD matrices.
+        y : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        pred : ndarray of int, shape (n_matrices,)
+            Prediction for each matrix according to the closest centroid.
+        """
+        return self.fit(X, y).predict(X)
+
     def transform(self, X):
         """Get the distance to each centroid.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
         dist : ndarray, shape (n_matrices, n_clusters)
-            The distance to each centroid according to the metric.
+            Distance to each centroid according to the metric.
         """
         return self.mdm_.transform(X)
+
+    def fit_transform(self, X, y=None):
+        """Fit and transform in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD/HPD matrices.
+        y : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        dist : ndarray, shape (n_matrices, n_clusters)
+            Distance to each centroid according to the metric.
+        """
+        return self.fit(X, y).transform(X)
 
     def centroids(self):
         """Helper for fast access to the centroids.
@@ -283,8 +318,8 @@ class Kmeans(BaseEstimator, ClassifierMixin, ClusterMixin, TransformerMixin):
         return self.mdm_.covmeans_
 
 
-class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
-    """Clustering by k-means for each class with SPD matrices as inputs.
+class KmeansPerClassTransform(TransformerMixin, BaseEstimator):
+    """Clustering by k-means for each class with SPD/HPD matrices as inputs.
 
     Parameters
     ----------
@@ -315,7 +350,7 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels corresponding to each matrix.
 
@@ -339,24 +374,41 @@ class KmeansPerClassTransform(BaseEstimator, TransformerMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
         dist : ndarray, shape (n_matrices, n_centroids)
-            The distance to each centroid according to the metric.
+            Distance to each centroid according to the metric.
         """
         mdm = MDM(metric=self.metric, n_jobs=self._km.n_jobs)
         mdm.metric_mean, mdm.metric_dist = check_metric(self.metric)
         mdm.covmeans_ = self.covmeans_
         return mdm._predict_distances(X)
 
+    def fit_transform(self, X, y):
+        """Fit and transform in a single function.
 
-class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD/HPD matrices.
+        y : ndarray, shape (n_matrices,)
+            Labels corresponding to each matrix.
+
+        Returns
+        -------
+        dist : ndarray, shape (n_matrices, n_centroids)
+            Distance to each centroid according to the metric.
+        """
+        return self.fit(X, y).transform(X)
+
+
+class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
     """Artifact detection with the Riemannian Potato.
 
     The Riemannian Potato [1]_ is a clustering method used to detect artifact
-    in multichannel signals. Processing SPD matrices,
+    in multichannel signals. Processing SPD/HPD matrices,
     the algorithm iteratively estimates the centroid of clean
     matrices by rejecting every matrix that is too far from it.
 
@@ -407,8 +459,14 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
     """
 
-    def __init__(self, metric="riemann", threshold=3, n_iter_max=100,
-                 pos_label=1, neg_label=0):
+    def __init__(
+        self,
+        metric="riemann",
+        threshold=3,
+        n_iter_max=100,
+        pos_label=1,
+        neg_label=0,
+    ):
         """Init."""
         self.metric = metric
         self.threshold = threshold
@@ -417,15 +475,15 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         self.neg_label = neg_label
 
     def fit(self, X, y=None, sample_weight=None):
-        """Fit the potato from SPD matrices.
+        """Fit the potato.
 
-        Fit the potato from SPD matrices, with an iterative outlier
+        Fit the potato from SPD/HPD matrices, with an iterative outlier
         removal to obtain a reliable potato.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None | ndarray, shape (n_matrices,), default=None
             Labels corresponding to each matrix: positive (resp. negative)
             label corresponds to a clean (resp. artifact) matrix.
@@ -470,7 +528,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         return self
 
     def partial_fit(self, X, y=None, *, sample_weight=None, alpha=0.1):
-        """Partially fit the potato from SPD matrices.
+        """Partially fit the potato.
 
         This partial fit can be used to update dynamic or semi-dymanic online
         potatoes with clean matrices.
@@ -478,7 +536,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None | ndarray, shape (n_matrices,), default=None
             Labels corresponding to each matrix: positive (resp. negative)
             label corresponds to a clean (resp. artifact) matrix.
@@ -543,16 +601,37 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
         z : ndarray, shape (n_matrices,)
-            The standardized log-distance to the centroid.
+            Standardized log-distance to the centroid.
         """
         d = np.squeeze(np.log(self._mdm.transform(X)), axis=1)
         z = self._get_z_score(d)
         return z
+
+    def fit_transform(self, X, y=None, sample_weight=None):
+        """Fit and transform in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD/HPD matrices.
+        y : None | ndarray, shape (n_matrices,), default=None
+            Labels corresponding to each matrix: positive (resp. negative)
+            label corresponds to a clean (resp. artifact) matrix.
+            If None, all matrices are considered as clean.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
+
+        Returns
+        -------
+        z : ndarray, shape (n_matrices,)
+            Standardized log-distance to the centroid.
+        """
+        return self.fit(X, y, sample_weight=sample_weight).transform(X)
 
     def predict(self, X):
         """Predict artifact from data.
@@ -560,7 +639,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -583,7 +662,7 @@ class Potato(BaseEstimator, TransformerMixin, ClassifierMixin):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -636,11 +715,11 @@ def _check_n_matrices(X, n_matrices):
         )
 
 
-class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
+class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
     """Artifact detection with the Riemannian Potato Field.
 
     The Riemannian Potato Field [1]_ is a clustering method used to detect
-    artifact in multichannel signals. Processing SPD matrices,
+    artifact in multichannel signals. Processing SPD/HPD matrices,
     the algorithm combines several potatoes of low dimension,
     each one being designed to capture specific artifact typically
     affecting specific subsets of channels and/or specific frequency bands.
@@ -687,8 +766,16 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
     """
 
-    def __init__(self, n_potatoes=1, p_threshold=0.01, z_threshold=3,
-                 metric="riemann", n_iter_max=10, pos_label=1, neg_label=0):
+    def __init__(
+        self,
+        n_potatoes=1,
+        p_threshold=0.01,
+        z_threshold=3,
+        metric="riemann",
+        n_iter_max=10,
+        pos_label=1,
+        neg_label=0,
+    ):
         """Init."""
         self.n_potatoes = int(n_potatoes)
         self.p_threshold = p_threshold
@@ -699,9 +786,9 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         self.neg_label = neg_label
 
     def fit(self, X, y=None, sample_weight=None):
-        """Fit the potato field from SPD matrices.
+        """Fit the potato field.
 
-        Fit the potato field from SPD matrices, with iterative
+        Fit the potato field from SPD/HPD matrices, with iterative
         outlier removal to obtain reliable potatoes.
 
         Parameters
@@ -709,7 +796,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
                 n_channels) with same n_matrices but potentially different \
                 n_channels
-            List of sets of SPD matrices, each corresponding to a different
+            List of sets of SPD/HPD matrices, each corresponding to a different
             subset of channels and/or filtering with a specific frequency band.
         y : None | ndarray, shape (n_matrices,), default=None
             Labels corresponding to each matrix: positive (resp. negative)
@@ -746,7 +833,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         return self
 
     def partial_fit(self, X, y=None, *, sample_weight=None, alpha=0.1):
-        """Partially fit the potato field from SPD matrices.
+        """Partially fit the potato field.
 
         This partial fit can be used to update dynamic or semi-dymanic online
         potatoes with clean matrices.
@@ -756,7 +843,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
                 n_channels) with same n_matrices but potentially different \
                 n_channels
-            List of sets of SPD matrices, each corresponding to a different
+            List of sets of SPD/HPD matrices, each corresponding to a different
             subset of channels and/or filtering with a specific frequency band.
         y : None | ndarray, shape (n_matrices,), default=None
             Labels corresponding to each matrix: positive (resp. negative)
@@ -801,13 +888,13 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
                 n_channels) with same n_matrices but potentially different \
                 n_channels
-            List of sets of SPD matrices, each corresponding to a different
+            List of sets of SPD/HPD matrices, each corresponding to a different
             subset of channels and/or filtering with a specific frequency band.
 
         Returns
         -------
         z : ndarray, shape (n_matrices, n_potatoes)
-            The standardized log-distances to the centroids.
+            Standardized log-distances to the centroids.
         """
         self._check_length(X)
         n_matrices = X[0].shape[0]
@@ -818,6 +905,30 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
             z[:, i] = self._potatoes[i].transform(X[i])
         return z
 
+    def fit_transform(self, X, y=None, sample_weight=None):
+        """Fit and transform in a single function.
+
+        Parameters
+        ----------
+        X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
+                n_channels) with same n_matrices but potentially different \
+                n_channels
+            List of sets of SPD/HPD matrices, each corresponding to a different
+            subset of channels and/or filtering with a specific frequency band.
+        y : None | ndarray, shape (n_matrices,), default=None
+            Labels corresponding to each matrix: positive (resp. negative)
+            label corresponds to a clean (resp. artifact) matrix.
+            If None, all matrices are considered as clean.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
+
+        Returns
+        -------
+        z : ndarray, shape (n_matrices, n_potatoes)
+            Standardized log-distances to the centroids.
+        """
+        return self.fit(X, y, sample_weight=sample_weight).transform(X)
+
     def predict(self, X):
         """Predict artifact from data.
 
@@ -826,7 +937,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
                 n_channels) with same n_matrices but potentially different \
                 n_channels
-            List of sets of SPD matrices, each corresponding to a different
+            List of sets of SPD/HPD matrices, each corresponding to a different
             subset of channels and/or filtering with a specific frequency band.
 
         Returns
@@ -852,7 +963,7 @@ class PotatoField(BaseEstimator, TransformerMixin, ClassifierMixin):
         X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
                 n_channels) with same n_matrices but potentially different \
                 n_channels
-            List of sets of SPD matrices, each corresponding to a different
+            List of sets of SPD/HPD matrices, each corresponding to a different
             subset of channels and/or filtering with a specific frequency band.
 
         Returns

@@ -8,7 +8,7 @@ from .utils.tangentspace import tangent_space, untangent_space
 from .utils.utils import check_metric
 
 
-class TangentSpace(BaseEstimator, TransformerMixin):
+class TangentSpace(TransformerMixin, BaseEstimator):
 
     """Tangent space projection.
 
@@ -211,7 +211,7 @@ class TangentSpace(BaseEstimator, TransformerMixin):
         return untangent_space(X, self.reference_, metric=self.metric_map)
 
 
-class FGDA(BaseEstimator, TransformerMixin):
+class FGDA(TransformerMixin, BaseEstimator):
 
     """Fisher geodesic discriminant analysis.
 
