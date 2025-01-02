@@ -390,7 +390,7 @@ class FgMDM(SpdClassifMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD/HPD matrices.
+            Set of SPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
@@ -581,7 +581,7 @@ class KNearestNeighbor(MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
         sample_weight : None
@@ -605,7 +605,7 @@ class KNearestNeighbor(MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -623,7 +623,7 @@ class KNearestNeighbor(MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -871,8 +871,13 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         Brain-Computer Interface Conference, Sep 2019, Graz, Austria.
     """
 
-    def __init__(self, power_list=[-1, 0, 1], method_label="sum_means",
-                 metric="riemann", n_jobs=1):
+    def __init__(
+        self,
+        power_list=[-1, 0, 1],
+        method_label="sum_means",
+        metric="riemann",
+        n_jobs=1,
+    ):
         """Init."""
         self.power_list = power_list
         self.method_label = method_label
@@ -885,7 +890,7 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
         sample_weight : None | ndarray shape (n_matrices,), default=None
@@ -942,7 +947,7 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -981,7 +986,7 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -1003,7 +1008,7 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
         sample_weight : None | ndarray shape (n_matrices,), default=None
@@ -1022,7 +1027,7 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -1034,10 +1039,10 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
 
 def class_distinctiveness(X, y, exponent=1, metric="riemann",
                           return_num_denom=False):
-    r"""Measure class distinctiveness between classes of SPD matrices.
+    r"""Measure class distinctiveness between classes of SPD/HPD matrices.
 
     For two class problem, the class distinctiveness between class :math:`K_1`
-    and :math:`K_2` on the manifold of SPD matrices is quantified as [1]_:
+    and :math:`K_2` on the manifold of SPD/HPD matrices is quantified as [1]_:
 
     .. math::
         \mathrm{classDis}(K_1, K_2, p) =
@@ -1069,7 +1074,7 @@ def class_distinctiveness(X, y, exponent=1, metric="riemann",
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices.
+        Set of SPD/HPD matrices.
     y : ndarray, shape (n_matrices,)
         Labels for each matrix.
     exponent : int, default=1

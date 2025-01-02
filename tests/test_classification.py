@@ -55,15 +55,19 @@ def test_mode(X, axis, expected):
         assert_array_equal(actual, sp.ravel())
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("n_classes", [2, 3])
 @pytest.mark.parametrize("classif", rclf)
-def test_classifier(n_classes, classif, get_mats, get_labels, get_weights):
+def test_classifier(kind, n_classes, classif,
+                    get_mats, get_labels, get_weights):
+    if kind == "hpd" and classif in [FgMDM, TSClassifier, SVC]:
+        pytest.skip()
     if n_classes == 2:
         n_matrices, n_channels = 6, 3
     else:
         assert n_classes == 3
         n_matrices, n_channels = 9, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, kind)
     labels = get_labels(n_matrices, n_classes)
     weights = get_weights(n_matrices)
 
@@ -431,16 +435,18 @@ def test_meanfield(get_mats, get_labels, power_list, method_label, metric):
     assert transf.shape == (n_matrices, n_classes)
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("n_classes", [1, 2, 3])
 @pytest.mark.parametrize("metric_mean", get_means())
 @pytest.mark.parametrize("metric_dist", get_distances())
 @pytest.mark.parametrize("exponent", [1, 2])
-def test_class_distinctiveness(n_classes, metric_mean, metric_dist, exponent,
-                               get_mats, get_labels):
+def test_class_distinctiveness(kind, n_classes, metric_mean, metric_dist,
+                               exponent, get_mats, get_labels):
     """Test function for class distinctiveness measure for two class problem"""
     n_matrices, n_channels = 6, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, kind)
     labels = get_labels(n_matrices, n_classes)
+
     if n_classes == 1:
         with pytest.raises(ValueError):
             class_distinctiveness(mats, labels)

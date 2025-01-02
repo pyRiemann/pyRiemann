@@ -147,7 +147,7 @@ class Xdawn(TransformerMixin, BaseEstimator):
         -------
         X_new : ndarray, shape (n_trials, n_classes x min(n_channels, \
                 n_filters), n_times)
-            Set of spatialy filtered trials.
+            Set of spatially filtered trials.
         """
         return self.filters_ @ X
 
@@ -165,7 +165,7 @@ class Xdawn(TransformerMixin, BaseEstimator):
         -------
         X_new : ndarray, shape (n_trials, n_classes x min(n_channels, \
                 n_filters), n_times)
-            Set of spatialy filtered trials.
+            Set of spatially filtered trials.
         """
         return self.fit(X, y, sample_weight=sample_weight).transform(X)
 
@@ -240,7 +240,7 @@ class BilinearFilter(TransformerMixin, BaseEstimator):
         -------
         X_new : ndarray, shape (n_trials, n_filters) or \
                 ndarray, shape (n_trials, n_filters, n_filters)
-            Set of spatialy filtered log-variance or covariance, depending on
+            Set of spatially filtered log-variance or covariance, depending on
             the `log` input parameter.
         """
         if not isinstance(X, (np.ndarray, list)):
@@ -259,7 +259,7 @@ class BilinearFilter(TransformerMixin, BaseEstimator):
         else:
             return X_new
 
-    def fit_transform(self, X, y=None):
+    def fit_transform(self, X, y):
         """Fit and transform in a single function.
 
         Parameters
@@ -271,8 +271,10 @@ class BilinearFilter(TransformerMixin, BaseEstimator):
 
         Returns
         -------
-        X_new : ndarray, shape (n_matrices, n_elec, n_elec)
-            Set of SPD matrices after reduction of the number of channels.
+        X_new : ndarray, shape (n_trials, n_filters) or \
+                ndarray, shape (n_trials, n_filters, n_filters)
+            Set of spatially filtered log-variance or covariance, depending on
+            the `log` input parameter.
         """
         return self.fit(X, y).transform(X)
 
