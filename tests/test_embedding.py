@@ -12,13 +12,16 @@ from pyriemann.embedding import (
 )
 from pyriemann.utils.kernel import kernel, kernel_functions
 
-rembd = [SpectralEmbedding, LocallyLinearEmbedding]
+embds = [SpectralEmbedding, LocallyLinearEmbedding]
 
 
-@pytest.mark.parametrize("embd", rembd)
-def test_embedding(embd, get_mats):
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("embd", embds)
+def test_embedding(kind, embd, get_mats):
+    if kind == "hpd" and embd is LocallyLinearEmbedding:
+        pytest.skip()
     n_matrices, n_channels, n_comp = 8, 3, 4
-    mats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, kind)
 
     embd_fit(embd, mats, n_comp)
     embd_fit_transform(embd, mats, n_comp)
@@ -103,7 +106,7 @@ def test_spectral_embedding_parameters(metric, eps, get_mats):
 
 
 @pytest.mark.parametrize("n_components", [2, 4, 100])
-@pytest.mark.parametrize("embd", rembd)
+@pytest.mark.parametrize("embd", embds)
 def test_embd_n_comp(n_components, embd, get_mats):
     n_matrices, n_channels = 8, 3
     mats = get_mats(n_matrices, n_channels, "spd")

@@ -407,9 +407,9 @@ class FgMDM(SpdClassifMixin, TransformerMixin, BaseEstimator):
 class TSClassifier(SpdClassifMixin, BaseEstimator):
     """Classification in the tangent space.
 
-    Project data in the tangent space and apply a classifier on the projected
-    data. This is a simple helper to pipeline the tangent space projection and
-    a classifier. Default classifier is LogisticRegression.
+    Project SPD matrices in the tangent space and apply a classifier.
+    This is a simple helper to pipeline the tangent space projection and
+    a classifier.
 
     Parameters
     ----------
@@ -530,7 +530,7 @@ class TSclassifier(TSClassifier):
 class KNearestNeighbor(MDM):
     """Classification by k-nearest neighbors.
 
-    Classification by k-nearest neighbors (k-NN). For each point of the test
+    Classification by k-nearest neighbors (k-NN). For each matrix of the test
     set, the pairwise distance to each element of the training set is
     estimated. The class is affected according to the majority class of the
     k-nearest neighbors.
@@ -659,12 +659,14 @@ class SVC(sklearnSVC):
     metric : string, default="riemann"
         Metric for kernel matrix computation. For the list of supported metrics
         see :func:`pyriemann.utils.kernel.kernel`.
-    Cref : None | callable | ndarray, shape (n_channels, n_channels)
-        Reference point for kernel matrix computation.
-        If None, the mean of the training data according to the metric is used.
-        If callable, the function is called on the training data to calculate
-        Cref.
-    kernel_fct : None | "precomputed" | callable
+    Cref : None | callable | ndarray, shape (n_channels, n_channels), \
+            default=None
+        Reference matrix for kernel matrix computation.
+        If None, the mean of the training matrices according to the metric is
+        used.
+        If callable, the function is called on the training matrices to
+        calculate Cref.
+    kernel_fct : None | "precomputed" | callable, default=None
         If None or "precomputed", the kernel matrix for datasets X and Y is
         estimated according to `pyriemann.utils.kernel(X, Y, Cref, metric)`.
         If callable, the callable is passed as the kernel parameter to

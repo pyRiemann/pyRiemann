@@ -72,10 +72,10 @@ def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,
 
 
 class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
-    """Clustering by k-means with SPD matrices as inputs.
+    """Clustering by k-means with SPD/HPD matrices as inputs.
 
     The k-means is a clustering method used to find clusters that minimize the
-    sum of squared distances between centroids and SPD matrices [1]_.
+    sum of squared distances between centroids and SPD/HPD matrices [1]_.
 
     Then, for each new matrix, the class is affected according to the nearest
     centroid.
@@ -171,7 +171,7 @@ class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None
             Not used, here for compatibility with sklearn API.
 
@@ -249,7 +249,7 @@ class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -264,7 +264,7 @@ class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None
             Not used, here for compatibility with sklearn API.
 
@@ -281,7 +281,7 @@ class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -296,7 +296,7 @@ class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None
             Not used, here for compatibility with sklearn API.
 
@@ -319,7 +319,7 @@ class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
 
 
 class KmeansPerClassTransform(TransformerMixin, BaseEstimator):
-    """Clustering by k-means for each class with SPD matrices as inputs.
+    """Clustering by k-means for each class with SPD/HPD matrices as inputs.
 
     Parameters
     ----------
@@ -350,7 +350,7 @@ class KmeansPerClassTransform(TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels corresponding to each matrix.
 
@@ -374,7 +374,7 @@ class KmeansPerClassTransform(TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -392,7 +392,7 @@ class KmeansPerClassTransform(TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels corresponding to each matrix.
 
@@ -408,7 +408,7 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
     """Artifact detection with the Riemannian Potato.
 
     The Riemannian Potato [1]_ is a clustering method used to detect artifact
-    in multichannel signals. Processing SPD matrices,
+    in multichannel signals. Processing SPD/HPD matrices,
     the algorithm iteratively estimates the centroid of clean
     matrices by rejecting every matrix that is too far from it.
 
@@ -459,8 +459,14 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
     """
 
-    def __init__(self, metric="riemann", threshold=3, n_iter_max=100,
-                 pos_label=1, neg_label=0):
+    def __init__(
+        self,
+        metric="riemann",
+        threshold=3,
+        n_iter_max=100,
+        pos_label=1,
+        neg_label=0,
+    ):
         """Init."""
         self.metric = metric
         self.threshold = threshold
@@ -469,15 +475,15 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         self.neg_label = neg_label
 
     def fit(self, X, y=None, sample_weight=None):
-        """Fit the potato from SPD matrices.
+        """Fit the potato.
 
-        Fit the potato from SPD matrices, with an iterative outlier
+        Fit the potato from SPD/HPD matrices, with an iterative outlier
         removal to obtain a reliable potato.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None | ndarray, shape (n_matrices,), default=None
             Labels corresponding to each matrix: positive (resp. negative)
             label corresponds to a clean (resp. artifact) matrix.
@@ -522,7 +528,7 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         return self
 
     def partial_fit(self, X, y=None, *, sample_weight=None, alpha=0.1):
-        """Partially fit the potato from SPD matrices.
+        """Partially fit the potato.
 
         This partial fit can be used to update dynamic or semi-dymanic online
         potatoes with clean matrices.
@@ -530,7 +536,7 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None | ndarray, shape (n_matrices,), default=None
             Labels corresponding to each matrix: positive (resp. negative)
             label corresponds to a clean (resp. artifact) matrix.
@@ -595,7 +601,7 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -612,7 +618,7 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None | ndarray, shape (n_matrices,), default=None
             Labels corresponding to each matrix: positive (resp. negative)
             label corresponds to a clean (resp. artifact) matrix.
@@ -633,7 +639,7 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -656,7 +662,7 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -713,7 +719,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
     """Artifact detection with the Riemannian Potato Field.
 
     The Riemannian Potato Field [1]_ is a clustering method used to detect
-    artifact in multichannel signals. Processing SPD matrices,
+    artifact in multichannel signals. Processing SPD/HPD matrices,
     the algorithm combines several potatoes of low dimension,
     each one being designed to capture specific artifact typically
     affecting specific subsets of channels and/or specific frequency bands.
@@ -760,8 +766,16 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
     """
 
-    def __init__(self, n_potatoes=1, p_threshold=0.01, z_threshold=3,
-                 metric="riemann", n_iter_max=10, pos_label=1, neg_label=0):
+    def __init__(
+        self,
+        n_potatoes=1,
+        p_threshold=0.01,
+        z_threshold=3,
+        metric="riemann",
+        n_iter_max=10,
+        pos_label=1,
+        neg_label=0,
+    ):
         """Init."""
         self.n_potatoes = int(n_potatoes)
         self.p_threshold = p_threshold
@@ -772,9 +786,9 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         self.neg_label = neg_label
 
     def fit(self, X, y=None, sample_weight=None):
-        """Fit the potato field from SPD matrices.
+        """Fit the potato field.
 
-        Fit the potato field from SPD matrices, with iterative
+        Fit the potato field from SPD/HPD matrices, with iterative
         outlier removal to obtain reliable potatoes.
 
         Parameters
@@ -782,7 +796,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
                 n_channels) with same n_matrices but potentially different \
                 n_channels
-            List of sets of SPD matrices, each corresponding to a different
+            List of sets of SPD/HPD matrices, each corresponding to a different
             subset of channels and/or filtering with a specific frequency band.
         y : None | ndarray, shape (n_matrices,), default=None
             Labels corresponding to each matrix: positive (resp. negative)
@@ -819,7 +833,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         return self
 
     def partial_fit(self, X, y=None, *, sample_weight=None, alpha=0.1):
-        """Partially fit the potato field from SPD matrices.
+        """Partially fit the potato field.
 
         This partial fit can be used to update dynamic or semi-dymanic online
         potatoes with clean matrices.
@@ -829,7 +843,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
                 n_channels) with same n_matrices but potentially different \
                 n_channels
-            List of sets of SPD matrices, each corresponding to a different
+            List of sets of SPD/HPD matrices, each corresponding to a different
             subset of channels and/or filtering with a specific frequency band.
         y : None | ndarray, shape (n_matrices,), default=None
             Labels corresponding to each matrix: positive (resp. negative)
@@ -874,7 +888,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
                 n_channels) with same n_matrices but potentially different \
                 n_channels
-            List of sets of SPD matrices, each corresponding to a different
+            List of sets of SPD/HPD matrices, each corresponding to a different
             subset of channels and/or filtering with a specific frequency band.
 
         Returns
@@ -899,7 +913,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
                 n_channels) with same n_matrices but potentially different \
                 n_channels
-            List of sets of SPD matrices, each corresponding to a different
+            List of sets of SPD/HPD matrices, each corresponding to a different
             subset of channels and/or filtering with a specific frequency band.
         y : None | ndarray, shape (n_matrices,), default=None
             Labels corresponding to each matrix: positive (resp. negative)
@@ -923,7 +937,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
                 n_channels) with same n_matrices but potentially different \
                 n_channels
-            List of sets of SPD matrices, each corresponding to a different
+            List of sets of SPD/HPD matrices, each corresponding to a different
             subset of channels and/or filtering with a specific frequency band.
 
         Returns
@@ -949,7 +963,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         X : list of n_potatoes ndarrays of shape (n_matrices, n_channels, \
                 n_channels) with same n_matrices but potentially different \
                 n_channels
-            List of sets of SPD matrices, each corresponding to a different
+            List of sets of SPD/HPD matrices, each corresponding to a different
             subset of channels and/or filtering with a specific frequency band.
 
         Returns

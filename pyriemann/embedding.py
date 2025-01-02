@@ -13,13 +13,14 @@ from .utils.kernel import kernel as kernel_fct
 
 
 class SpectralEmbedding(BaseEstimator):
-    """Spectral embedding of SPD matrices into an Euclidean space.
+    """Spectral embedding of SPD/HPD matrices into an Euclidean space.
 
-    It uses Laplacian Eigenmaps [1]_ to embed SPD matrices into an Euclidean
-    space of smaller dimension. The basic hypothesis is that high-dimensional
+    It uses Laplacian Eigenmaps [1]_ to embed SPD/HPD matrices into an
+    Euclidean space of smaller dimension.
+    The basic hypothesis is that high-dimensional
     data live in a low-dimensional manifold, whose intrinsic geometry can be
     described via the Laplacian matrix of a graph. The vertices of this graph
-    are the SPD matrices and the weights of the links are determined by the
+    are the SPD/HPD matrices and the weights of the links are determined by the
     Riemannian distance between each pair of them.
 
     Parameters
@@ -75,12 +76,12 @@ class SpectralEmbedding(BaseEstimator):
         return kernel_n
 
     def fit(self, X, y=None):
-        """Fit the model from data in X.
+        """Fit the spectral embedding.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None
             Not used, here for compatibility with sklearn API.
 
@@ -110,7 +111,7 @@ class SpectralEmbedding(BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None
             Not used, here for compatibility with sklearn API.
 
@@ -129,14 +130,12 @@ class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
 
     As proposed in [1]_, Locally Linear Embedding (LLE) is a non-linear,
     neighborhood-preserving dimensionality reduction algorithm which
-    consists of three main steps. For each matrix X[i],
+    consists of three main steps. For each SPD matrix X[i] [2]_:
 
     1.  find its k-nearest neighbors k-NN(X[i]),
     2.  calculate the best reconstruction of X[i] based on its k-NN,
     3.  calculate a low-dimensional embedding for all matrices based on
         the weights in step 2.
-
-    This implementation using SPD matrices is based on [2]_.
 
     Parameters
     ----------
@@ -357,7 +356,7 @@ def locally_linear_embedding(
 
     Locally Linear Embedding (LLE) is a non-linear,
     neighborhood-preserving dimensionality reduction algorithm which consists
-    of three main steps [1]_. For each matrix X[i],
+    of three main steps [1]_. For each SPD matrix X[i]:
 
     1.  find its k-nearest neighbors k-NN(X[i]),
     2.  calculate the best reconstruction of X[i] based on its
