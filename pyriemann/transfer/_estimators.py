@@ -1273,5 +1273,4 @@ class MDWM(MDM):
             Mean accuracy of clf.predict(X) wrt. y_enc.
         """
         _, y_true, _ = decode_domains(X, y_enc)
-        y_pred = self.predict(X)
-        return accuracy_score(y_true, y_pred)
+        return super().score(X, y_true, sample_weight)

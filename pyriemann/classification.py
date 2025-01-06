@@ -28,7 +28,29 @@ def _mode_2d(X, axis=1):
     return mode
 
 
-class MDM(ClassifierMixin, TransformerMixin, BaseEstimator):
+class SpdClassifMixin(ClassifierMixin):
+
+    def score(self, X, y, sample_weight=None):
+        """Return the mean accuracy on the given test data and labels.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Test set of SPD matrices.
+        y : ndarray, shape (n_matrices,)
+            True labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix.
+
+        Returns
+        -------
+        score : float
+            Mean accuracy of clf.predict(X) wrt. y.
+        """
+        return super().score(X, y, sample_weight)
+
+
+class MDM(SpdClassifMixin, TransformerMixin, BaseEstimator):
     r"""Classification by Minimum Distance to Mean.
 
     For each of the given classes :math:`k = 1, \ldots, K`, a centroid
@@ -181,14 +203,35 @@ class MDM(ClassifierMixin, TransformerMixin, BaseEstimator):
         Returns
         -------
         dist : ndarray, shape (n_matrices, n_classes)
-            The distance to each centroid according to the metric.
+            Distance to each centroid according to the metric.
         """
         return self._predict_distances(X)
 
+    @deprecated(
+        "fit_predict() is deprecated and will be removed in 0.10.0; "
+        "please use fit().predict()."
+    )
     def fit_predict(self, X, y, sample_weight=None):
-        """Fit and predict in one function."""
-        self.fit(X, y, sample_weight=sample_weight)
-        return self.predict(X)
+        return self.fit(X, y, sample_weight=sample_weight).predict(X)
+
+    def fit_transform(self, X, y, sample_weight=None):
+        """Fit and transform in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD/HPD matrices.
+        y : ndarray, shape (n_matrices,)
+            Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
+
+        Returns
+        -------
+        dist : ndarray, shape (n_matrices, n_classes)
+            Distance to each centroid according to the metric.
+        """
+        return self.fit(X, y, sample_weight=sample_weight).transform(X)
 
     def predict_proba(self, X):
         """Predict proba using softmax of negative squared distances.
@@ -206,7 +249,7 @@ class MDM(ClassifierMixin, TransformerMixin, BaseEstimator):
         return softmax(-self._predict_distances(X) ** 2)
 
 
-class FgMDM(ClassifierMixin, TransformerMixin, BaseEstimator):
+class FgMDM(SpdClassifMixin, TransformerMixin, BaseEstimator):
     """Classification by Minimum Distance to Mean with geodesic filtering.
 
     Apply geodesic filtering described in [1]_, and classify using MDM.
@@ -336,18 +379,37 @@ class FgMDM(ClassifierMixin, TransformerMixin, BaseEstimator):
         Returns
         -------
         dist : ndarray, shape (n_matrices, n_cluster)
-            The distance to each centroid according to the metric.
+            Distance to each centroid according to the metric.
         """
         cov = self._fgda.transform(X)
         return self._mdm.transform(cov)
 
+    def fit_transform(self, X, y, sample_weight=None):
+        """Fit and transform in a single function.
 
-class TSClassifier(ClassifierMixin, BaseEstimator):
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : ndarray, shape (n_matrices,)
+            Labels for each matrix.
+        sample_weight : None | ndarray, shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
+
+        Returns
+        -------
+        dist : ndarray, shape (n_matrices, n_cluster)
+            Distance to each centroid according to the metric.
+        """
+        return self.fit(X, y, sample_weight=sample_weight).transform(X)
+
+
+class TSClassifier(SpdClassifMixin, BaseEstimator):
     """Classification in the tangent space.
 
-    Project data in the tangent space and apply a classifier on the projected
-    data. This is a simple helper to pipeline the tangent space projection and
-    a classifier. Default classifier is LogisticRegression.
+    Project SPD matrices in the tangent space and apply a classifier.
+    This is a simple helper to pipeline the tangent space projection and
+    a classifier.
 
     Parameters
     ----------
@@ -468,7 +530,7 @@ class TSclassifier(TSClassifier):
 class KNearestNeighbor(MDM):
     """Classification by k-nearest neighbors.
 
-    Classification by k-nearest neighbors (k-NN). For each point of the test
+    Classification by k-nearest neighbors (k-NN). For each matrix of the test
     set, the pairwise distance to each element of the training set is
     estimated. The class is affected according to the majority class of the
     k-nearest neighbors.
@@ -519,7 +581,7 @@ class KNearestNeighbor(MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
         sample_weight : None
@@ -543,7 +605,7 @@ class KNearestNeighbor(MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -561,7 +623,7 @@ class KNearestNeighbor(MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -597,12 +659,14 @@ class SVC(sklearnSVC):
     metric : string, default="riemann"
         Metric for kernel matrix computation. For the list of supported metrics
         see :func:`pyriemann.utils.kernel.kernel`.
-    Cref : None | callable | ndarray, shape (n_channels, n_channels)
-        Reference point for kernel matrix computation.
-        If None, the mean of the training data according to the metric is used.
-        If callable, the function is called on the training data to calculate
-        Cref.
-    kernel_fct : None | "precomputed" | callable
+    Cref : None | callable | ndarray, shape (n_channels, n_channels), \
+            default=None
+        Reference matrix for kernel matrix computation.
+        If None, the mean of the training matrices according to the metric is
+        used.
+        If callable, the function is called on the training matrices to
+        calculate Cref.
+    kernel_fct : None | "precomputed" | callable, default=None
         If None or "precomputed", the kernel matrix for datasets X and Y is
         estimated according to `pyriemann.utils.kernel(X, Y, Cref, metric)`.
         If callable, the callable is passed as the kernel parameter to
@@ -623,7 +687,7 @@ class SVC(sklearnSVC):
         Tolerance for stopping criterion.
     cache_size : float, default=200
         Specify the size of the kernel cache (in MB).
-    class_weight : dict or "balanced", default=None
+    class_weight : None | dict | "balanced", default=None
         Set the parameter C of class i to class_weight[i]*C for SVC. If not
         given, all classes are supposed to have weight one.
         The "balanced" mode uses the values of y to automatically adjust
@@ -649,7 +713,7 @@ class SVC(sklearnSVC):
         `decision_function`; otherwise the first class among the tied
         classes is returned. Please note that breaking ties comes at a
         relatively high computational cost compared to a simple predict.
-    random_state : int, RandomState instance or None, default=None
+    random_state : None | int | RandomState instance, default=None
         Controls the pseudo random number generation for shuffling the data for
         probability estimates. Ignored when `probability` is False.
         Pass an int for reproducible output across multiple function calls.
@@ -763,7 +827,7 @@ class SVC(sklearnSVC):
             )
 
 
-class MeanField(ClassifierMixin, TransformerMixin, BaseEstimator):
+class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
     """Classification by Minimum Distance to Mean Field.
 
     Classification by Minimum Distance to Mean Field [1]_, defining several
@@ -809,8 +873,13 @@ class MeanField(ClassifierMixin, TransformerMixin, BaseEstimator):
         Brain-Computer Interface Conference, Sep 2019, Graz, Austria.
     """
 
-    def __init__(self, power_list=[-1, 0, 1], method_label="sum_means",
-                 metric="riemann", n_jobs=1):
+    def __init__(
+        self,
+        power_list=[-1, 0, 1],
+        method_label="sum_means",
+        metric="riemann",
+        n_jobs=1,
+    ):
         """Init."""
         self.power_list = power_list
         self.method_label = method_label
@@ -823,7 +892,7 @@ class MeanField(ClassifierMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
         sample_weight : None | ndarray shape (n_matrices,), default=None
@@ -880,7 +949,7 @@ class MeanField(ClassifierMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -919,7 +988,7 @@ class MeanField(ClassifierMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -928,10 +997,31 @@ class MeanField(ClassifierMixin, TransformerMixin, BaseEstimator):
         """
         return self._predict_distances(X)
 
-    def fit_predict(self, X, y):
-        """Fit and predict in one function."""
-        self.fit(X, y)
-        return self.predict(X)
+    @deprecated(
+        "fit_predict() is deprecated and will be removed in 0.10.0; "
+        "please use fit().predict()."
+    )
+    def fit_predict(self, X, y, sample_weight=None):
+        return self.fit(X, y, sample_weight=sample_weight).predict(X)
+
+    def fit_transform(self, X, y, sample_weight=None):
+        """Fit and transform in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD/HPD matrices.
+        y : ndarray, shape (n_matrices,)
+            Labels for each matrix.
+        sample_weight : None | ndarray shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
+
+        Returns
+        -------
+        dist : ndarray, shape (n_matrices, n_classes)
+            Distance to each means field according to the metric.
+        """
+        return self.fit(X, y, sample_weight=sample_weight).transform(X)
 
     def predict_proba(self, X):
         """Predict proba using softmax of negative squared distances.
@@ -939,7 +1029,7 @@ class MeanField(ClassifierMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -951,10 +1041,10 @@ class MeanField(ClassifierMixin, TransformerMixin, BaseEstimator):
 
 def class_distinctiveness(X, y, exponent=1, metric="riemann",
                           return_num_denom=False):
-    r"""Measure class distinctiveness between classes of SPD matrices.
+    r"""Measure class distinctiveness between classes of SPD/HPD matrices.
 
     For two class problem, the class distinctiveness between class :math:`K_1`
-    and :math:`K_2` on the manifold of SPD matrices is quantified as [1]_:
+    and :math:`K_2` on the manifold of SPD/HPD matrices is quantified as [1]_:
 
     .. math::
         \mathrm{classDis}(K_1, K_2, p) =
@@ -986,7 +1076,7 @@ def class_distinctiveness(X, y, exponent=1, metric="riemann",
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices.
+        Set of SPD/HPD matrices.
     y : ndarray, shape (n_matrices,)
         Labels for each matrix.
     exponent : int, default=1

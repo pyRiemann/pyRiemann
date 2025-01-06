@@ -23,7 +23,7 @@ from pyriemann.classification import (
     class_distinctiveness,
 )
 
-rclf = [MDM, FgMDM, KNearestNeighbor, TSClassifier, SVC, MeanField]
+clfs = [MDM, FgMDM, KNearestNeighbor, TSClassifier, SVC, MeanField]
 
 
 @pytest.mark.parametrize(
@@ -55,15 +55,19 @@ def test_mode(X, axis, expected):
         assert_array_equal(actual, sp.ravel())
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("n_classes", [2, 3])
-@pytest.mark.parametrize("classif", rclf)
-def test_classifier(n_classes, classif, get_mats, get_labels, get_weights):
+@pytest.mark.parametrize("classif", clfs)
+def test_classifier(kind, n_classes, classif,
+                    get_mats, get_labels, get_weights):
+    if kind == "hpd" and classif in [FgMDM, TSClassifier, SVC]:
+        pytest.skip()
     if n_classes == 2:
         n_matrices, n_channels = 6, 3
     else:
         assert n_classes == 3
         n_matrices, n_channels = 9, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, kind)
     labels = get_labels(n_matrices, n_classes)
     weights = get_weights(n_matrices)
 
@@ -73,8 +77,6 @@ def test_classifier(n_classes, classif, get_mats, get_labels, get_weights):
     clf_predict_proba(classif, mats, labels)
     clf_score(classif, mats, labels)
     clf_populate_classes(classif, mats, labels)
-    if classif in (MDM, KNearestNeighbor, MeanField):
-        clf_fitpredict(classif, mats, labels)
     if classif in (MDM, FgMDM, MeanField):
         clf_transform(classif, mats, labels)
         clf_fittransform(classif, mats, labels)
@@ -88,6 +90,7 @@ def clf_fit(classif, mats, labels, weights):
     n_classes = len(np.unique(labels))
     clf = classif().fit(mats, labels)
     assert clf.classes_.shape == (n_classes,)
+    assert_array_equal(clf.classes_, np.unique(labels))
 
     clf.fit(mats, labels, sample_weight=weights)
 
@@ -107,12 +110,6 @@ def clf_predict_proba(classif, mats, labels):
     proba = clf.fit(mats, labels).predict_proba(mats)
     assert proba.shape == (n_matrices, n_classes)
     assert proba.sum(axis=1) == approx(np.ones(n_matrices))
-
-
-def clf_fitpredict(classif, mats, labels):
-    clf = classif()
-    clf.fit_predict(mats, labels)
-    assert_array_equal(clf.classes_, np.unique(labels))
 
 
 def clf_score(classif, mats, labels):
@@ -158,7 +155,7 @@ def clf_tsupdate(classif, mats, labels):
     clf.fit(mats, labels).predict(mats)
 
 
-@pytest.mark.parametrize("classif", rclf)
+@pytest.mark.parametrize("classif", clfs)
 @pytest.mark.parametrize("mean", ["faulty", 42])
 @pytest.mark.parametrize("dist", ["not_real", 27])
 def test_metric_dict_error(classif, mean, dist, get_mats, get_labels):
@@ -170,7 +167,7 @@ def test_metric_dict_error(classif, mean, dist, get_mats, get_labels):
         clf.fit(mats, labels).predict(mats)
 
 
-@pytest.mark.parametrize("classif", rclf)
+@pytest.mark.parametrize("classif", clfs)
 @pytest.mark.parametrize("metric", [42, "faulty", {"foo": "bar"}])
 def test_metric_errors(classif, metric, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
@@ -181,7 +178,7 @@ def test_metric_errors(classif, metric, get_mats, get_labels):
         clf.fit(mats, labels).predict(mats)
 
 
-@pytest.mark.parametrize("classif", rclf)
+@pytest.mark.parametrize("classif", clfs)
 @pytest.mark.parametrize("metric", get_metrics())
 def test_metric_str(classif, metric, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
@@ -438,16 +435,18 @@ def test_meanfield(get_mats, get_labels, power_list, method_label, metric):
     assert transf.shape == (n_matrices, n_classes)
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("n_classes", [1, 2, 3])
 @pytest.mark.parametrize("metric_mean", get_means())
 @pytest.mark.parametrize("metric_dist", get_distances())
 @pytest.mark.parametrize("exponent", [1, 2])
-def test_class_distinctiveness(n_classes, metric_mean, metric_dist, exponent,
-                               get_mats, get_labels):
+def test_class_distinctiveness(kind, n_classes, metric_mean, metric_dist,
+                               exponent, get_mats, get_labels):
     """Test function for class distinctiveness measure for two class problem"""
     n_matrices, n_channels = 6, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, kind)
     labels = get_labels(n_matrices, n_classes)
+
     if n_classes == 1:
         with pytest.raises(ValueError):
             class_distinctiveness(mats, labels)
