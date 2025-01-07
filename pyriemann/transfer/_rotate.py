@@ -213,7 +213,6 @@ def _get_rotation_manifold(
         raise ValueError("Number of matrices in each domain doesn't match")
     if X_source.shape[1:] != X_target.shape[1:]:
         raise ValueError("Number of channels in each domain doesn't match")
-
     weights = check_weights(weights, len(X_source))
 
     # initialize the solution with an educated guess

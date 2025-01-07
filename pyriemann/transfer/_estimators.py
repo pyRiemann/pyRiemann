@@ -565,7 +565,7 @@ class TLRotate(TransformerMixin, BaseEstimator):
     ----------
     target_domain : str
         Domain to consider as target.
-    weights : None | array, shape (n_classes,), default=None
+    weights : None | ndarray, shape (n_classes,), default=None
         For inputs in manifold, weights to assign for each class.
         If None, it uses equal weights.
     metric : {"euclid", "riemann"}, default="euclid"
@@ -700,7 +700,7 @@ class TLRotate(TransformerMixin, BaseEstimator):
                     ) for label in np.unique(y_enc[domains == d])
                 ]),
                 M_target,
-                self.weights,
+                weights=self.weights,
                 metric=self.metric,
             ) for d in source_domains
         )
