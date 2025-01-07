@@ -29,7 +29,7 @@ def _pdf_r(r, sigma):
     Returns
     -------
     p : float
-        Probability density function applied to data point r.
+        Probability density function applied to r.
     """
 
     if (sigma <= 0):
@@ -181,7 +181,7 @@ def _slice_one_sample(ptarget, x0, w, rs):
         The target pdf to sample from or a multiple of it.
     x0 : array
         Initial state for the MCMC procedure. Note that the shape of this array
-        defines the dimensionality n_dim of the data points to be sampled.
+        defines the dimensionality n_dim of the matrices to be sampled.
     w : float
         Initial bracket width.
     rs : int, RandomState instance or None
@@ -251,7 +251,7 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
         How many samples to get from the ptarget distribution.
     x0 : array
         Initial state for the MCMC procedure. Note that the shape of this array
-        defines the dimensionality n_dim of the data points to be sampled.
+        defines the dimensionality n_dim of the matrices to be sampled.
     n_burnin : int, default=20
         How many samples to discard from the beginning of the chain generated
         by the slice sampling procedure. Usually the first samples are prone to
@@ -420,7 +420,6 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
-    sampling_method : str, default="auto"
     sampling_method : {"auto", "slice", "rejection"}, default="auto"
         Sampling method used to sample r: "auto", "slice" or "rejection".
         If it is "auto", the sampling_method will be
