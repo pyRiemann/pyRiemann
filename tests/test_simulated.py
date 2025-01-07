@@ -4,13 +4,14 @@ import pytest
 
 from pyriemann.datasets.sampling import generate_random_spd_matrix
 from pyriemann.datasets.simulated import (
+    mat_kinds,
     make_matrices,
     make_masks,
     make_gaussian_blobs,
     make_outliers,
 )
 from pyriemann.utils.test import (
-    is_real,
+    is_real, is_sym, is_hermitian,
     is_sym_pos_def as is_spd,
     is_sym_pos_semi_def as is_spsd,
     is_herm_pos_def as is_hpd,
@@ -18,47 +19,58 @@ from pyriemann.utils.test import (
 )
 
 
-@pytest.mark.parametrize(
-    "kind", ["real", "comp", "spd", "spsd", "hpd", "hpsd"]
-)
+@pytest.mark.parametrize("kind", mat_kinds)
 def test_make_matrices(rndstate, kind):
     """Test function for make matrices."""
-    n_matrices, n_dim = 5, 4
+    n_matrices, n_dim = 5, 3
     X = make_matrices(
         n_matrices=n_matrices,
         n_dim=n_dim,
         kind=kind,
-        return_params=False,
-        eigvecs_same=False,
         rs=rndstate,
+        return_params=False,
+        evals_low=0.7,
+        evals_high=3.0,
+        eigvecs_same=False,
+        eigvecs_mean=1.0,
+        eigvecs_std=2.0,
     )
     assert X.shape == (n_matrices, n_dim, n_dim)
 
     if kind == "real":
         assert is_real(X)
-    elif kind == "comp":
+        return
+    if kind == "comp":
         assert not is_real(X)
+        return
+
+    # all other types are symmetric or Hermitian
+    assert_array_almost_equal(X, np.swapaxes(X.conj(), -2, -1))
+
+    if kind == "sym":
+        assert is_sym(X)
+    elif kind == "herm":
+        assert is_hermitian(X)
     elif kind == "spd":
         assert is_spd(X)
         assert is_spsd(X)
-        assert_array_almost_equal(X, np.swapaxes(X, -2, -1))
     elif kind == "spsd":
         assert is_spsd(X)
         assert not is_spd(X, tol=1e-9)
     elif kind == "hpd":
         assert is_hpd(X)
         assert is_hpsd(X)
-        assert_array_almost_equal(X, np.swapaxes(X.conj(), -2, -1))
-    else:  # hpsd
+    elif kind == "hpsd":
         assert is_hpsd(X)
         assert not is_hpd(X, tol=1e-9)
 
 
 @pytest.mark.parametrize("kind", ["spd", "spsd", "hpd", "hpsd"])
+@pytest.mark.parametrize("n_matrices", [3, 4, 5])
+@pytest.mark.parametrize("n_dim", [2, 3, 4])
 @pytest.mark.parametrize("eigvecs_same", [False, True])
-def test_make_matrices_return(rndstate, kind, eigvecs_same):
+def test_make_matrices_return(rndstate, kind, n_matrices, n_dim, eigvecs_same):
     """Test function for make matrices."""
-    n_matrices, n_dim = 5, 4
     X, evals, evecs = make_matrices(
         n_matrices=n_matrices,
         n_dim=n_dim,
@@ -108,19 +120,6 @@ def test_gaussian_blobs():
                                         return_centers=True,
                                         random_state=None)
     assert centers.shape == (2, n_dim, n_dim)  # centers shape mismatch
-
-
-def test_generate_random_spd_matrix():
-    """Test function for sampling outliers"""
-    n_matrices, n_dim, sigma = 5, 4, 1.
-    mean = generate_random_spd_matrix(n_dim)
-    X = make_outliers(n_matrices=n_matrices,
-                      mean=mean,
-                      sigma=sigma,
-                      outlier_coeff=10,
-                      random_state=None)
-    assert X.shape == (n_matrices, n_dim, n_dim)  # X shape mismatch
-    assert is_spd(X)  # X is an array of SPD matrices
 
 
 def test_functions_error():

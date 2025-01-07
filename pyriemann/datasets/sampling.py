@@ -1,10 +1,12 @@
 from functools import partial
 import warnings
+
+from joblib import Parallel, delayed
 import numpy as np
 from scipy.stats import multivariate_normal
 from sklearn.utils import check_random_state
-from joblib import Parallel, delayed
 
+from ..utils import deprecated
 from ..utils.base import sqrtm, expm
 from ..utils.test import is_sym_pos_semi_def as is_spsd
 
@@ -31,7 +33,7 @@ def _pdf_r(r, sigma):
     """
 
     if (sigma <= 0):
-        raise ValueError(f'sigma must be a positive number (Got {sigma})')
+        raise ValueError(f"sigma must be a positive number (Got {sigma})")
 
     n_dim = len(r)
     partial_1 = -np.sum(r**2) / (2 * sigma**2)
@@ -70,7 +72,7 @@ def _rejection_sampling_2D_gfunction_plus(sigma, r_sample):
     m = np.pi * (sigma**2) * np.exp(sigma**2 / 4)
     if r_sample[0] >= r_sample[1]:
         num = _pdf_r(r_sample, sigma)
-        den = multivariate_normal.pdf(r_sample, mean=mu_a, cov=cov_matrix)*m
+        den = multivariate_normal.pdf(r_sample, mean=mu_a, cov=cov_matrix) * m
         return num / den
     return 0
 
@@ -121,7 +123,7 @@ def _rejection_sampling_2D(n_samples, sigma, random_state=None,
         Number of samples to get from the target distribution.
     sigma : float
         Dispersion of the Riemannian Gaussian distribution.
-    random_state : int, RandomState instance or None, default=None
+    random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
     return_acceptance_rate : boolean, default=False
         Whether to return the acceptance rate with the sample (number of
@@ -260,7 +262,7 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
         samples can help reducing this correlation. Note that this makes the
         algorithm actually sample `thin x n_samples` samples from the pdf, so
         expect the whole sampling procedure to take longer.
-    random_state : int, RandomState instance or None, default=None
+    random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
@@ -274,12 +276,14 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
 
     if (n_samples <= 0) or (not isinstance(n_samples, int)):
         raise ValueError(
-            f'n_samples must be a positive integer (Got {n_samples})')
+            f"n_samples must be a positive integer (Got {n_samples})"
+        )
     if (n_burnin <= 0) or (not isinstance(n_burnin, int)):
         raise ValueError(
-            f'n_samples must be a positive integer (Got {n_burnin})')
+            f"n_samples must be a positive integer (Got {n_burnin})"
+        )
     if (thin <= 0) or (not isinstance(thin, int)):
-        raise ValueError(f'thin must be a positive integer (Got {thin})')
+        raise ValueError(f"thin must be a positive integer (Got {thin})")
 
     rs = check_random_state(random_state)
     w = 1.0  # initial bracket width
@@ -288,7 +292,8 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
 
     samples = Parallel(n_jobs=n_jobs)(
         delayed(_slice_one_sample)(ptarget, x0, w, rs)
-        for _ in range(n_samples_total))
+        for _ in range(n_samples_total)
+    )
 
     samples = np.array(samples)[(n_burnin * thin):][::thin]
 
@@ -296,7 +301,7 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
 
 
 def _sample_parameter_r(n_samples, n_dim, sigma,
-                        random_state=None, n_jobs=1, sampling_method='auto'):
+                        random_state=None, n_jobs=1, sampling_method="auto"):
     """Sample the r parameters of a Riemannian Gaussian distribution.
 
     Sample the logarithm of the eigenvalues of a SPD matrix following a
@@ -312,16 +317,15 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
         Dimensionality of the SPD matrices to be sampled.
     sigma : float
         Dispersion of the Riemannian Gaussian distribution.
-    random_state : int, RandomState instance or None, default=None
+    random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
-    sampling_method : str, default='auto'
-        Name of the sampling method used to sample samples_r. It can be
-        'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
-        will be equal to 'slice' for n_dim != 2 and equal to
-        'rejection' for n_dim = 2.
+    sampling_method : {"auto", "slice", "rejection"}, default="auto"
+        Sampling method used to sample r: "auto", "slice" or "rejection".
+        If it is "auto", the sampling_method will be
+        equal to "slice" for n_dim != 2 and equal to "rejection" for n_dim = 2.
 
         .. versionadded:: 0.4
 
@@ -338,15 +342,16 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
         S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton. IEEE Trans Inf
         Theory, vol. 63, pp. 2153–2170, 2017.
     """
-    if sampling_method not in ['slice', 'rejection', 'auto']:
-        raise ValueError(f'Unknown sampling method {sampling_method},'
-                         'try slice or rejection')
+    if sampling_method not in ["slice", "rejection", "auto"]:
+        raise ValueError(f"Unknown sampling method {sampling_method}, "
+                         "try slice or rejection")
     if n_dim == 2 and sampling_method != "slice":
         return _rejection_sampling_2D(n_samples, sigma,
                                       random_state=random_state)
     if n_dim != 2 and sampling_method == "rejection":
         raise ValueError(
-            f'n_dim={n_dim} is not yet supported with rejection sampling')
+            f"n_dim={n_dim} is not yet supported with rejection sampling"
+        )
     rs = check_random_state(random_state)
     x0 = rs.randn(n_dim)
     ptarget = partial(_pdf_r, sigma=sigma)
@@ -356,7 +361,7 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
         x0=x0,
         random_state=random_state,
         n_jobs=n_jobs,
-        )
+    )
 
     return r_samples
 
@@ -375,7 +380,7 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
         How many samples to generate.
     n_dim : int
         Dimensionality of the SPD matrices to be sampled.
-    random_state : int, RandomState instance or None, default=None
+    random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
 
     Returns
@@ -395,7 +400,7 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
 
 
 def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
-                                  n_jobs=1, sampling_method='auto'):
+                                  n_jobs=1, sampling_method="auto"):
     """Sample a Riemannian Gaussian distribution centered at the Identity.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at the
@@ -410,16 +415,16 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
         Dimensionality of the SPD matrices to be sampled.
     sigma : float
         Dispersion of the Riemannian Gaussian distribution.
-    random_state : int, RandomState instance or None, default=None
+    random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
-    sampling_method : str, default='auto'
-        Name of the sampling method used to sample samples_r. It can be
-        'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
-        will be equal to 'slice' for n_dim != 2 and equal to
-        'rejection' for n_dim = 2.
+    sampling_method : str, default="auto"
+    sampling_method : {"auto", "slice", "rejection"}, default="auto"
+        Sampling method used to sample r: "auto", "slice" or "rejection".
+        If it is "auto", the sampling_method will be
+        equal to "slice" for n_dim != 2 and equal to "rejection" for n_dim = 2.
 
         .. versionadded:: 0.4
 
@@ -441,15 +446,19 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
         Theory, vol. 63, pp. 2153–2170, 2017.
     """
 
-    samples_r = _sample_parameter_r(n_samples=n_matrices,
-                                    n_dim=n_dim,
-                                    sigma=sigma,
-                                    random_state=random_state,
-                                    n_jobs=n_jobs,
-                                    sampling_method=sampling_method)
-    samples_U = _sample_parameter_U(n_samples=n_matrices,
-                                    n_dim=n_dim,
-                                    random_state=random_state)
+    samples_r = _sample_parameter_r(
+        n_samples=n_matrices,
+        n_dim=n_dim,
+        sigma=sigma,
+        random_state=random_state,
+        n_jobs=n_jobs,
+        sampling_method=sampling_method,
+    )
+    samples_U = _sample_parameter_U(
+        n_samples=n_matrices,
+        n_dim=n_dim,
+        random_state=random_state,
+    )
 
     samples = np.zeros((n_matrices, n_dim, n_dim))
     for i in range(n_matrices):
@@ -462,7 +471,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
 
 
 def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
-                        n_jobs=1, sampling_method='auto'):
+                        n_jobs=1, sampling_method="auto"):
     """Sample a Riemannian Gaussian distribution.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at
@@ -480,16 +489,15 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         Center of the Riemannian Gaussian distribution.
     sigma : float
         Dispersion of the Riemannian Gaussian distribution.
-    random_state : int, RandomState instance or None, default=None
+    random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
-    sampling_method : str, default='auto'
-        Sampling method to sample eigenvalues. It can be
-        'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
-        will be equal to 'slice' for n_dim != 2 and equal to
-        'rejection' for n_dim = 2.
+    sampling_method : {"auto", "slice", "rejection"}, default="auto"
+        Sampling method used to sample r: "auto", "slice" or "rejection".
+        If it is "auto", the sampling_method will be
+        equal to "slice" for n_dim != 2 and equal to "rejection" for n_dim = 2.
 
         .. versionadded:: 0.4
 
@@ -519,7 +527,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         sigma=sigma / np.sqrt(n_dim),
         random_state=random_state,
         n_jobs=n_jobs,
-        sampling_method=sampling_method
+        sampling_method=sampling_method,
     )
 
     # apply the parallel transport to mean on each of the samples
@@ -535,6 +543,10 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
     return samples
 
 
+@deprecated(
+    "generate_random_spd_matrix is deprecated and will be removed in 0.10.0; "
+    "please use make_matrices."
+)
 def generate_random_spd_matrix(n_dim, random_state=None, *, mat_mean=.0,
                                mat_std=1.):
     """Generate a random SPD matrix.
@@ -543,7 +555,7 @@ def generate_random_spd_matrix(n_dim, random_state=None, *, mat_mean=.0,
     ----------
     n_dim : int
         Dimensionality of the matrix to sample.
-    random_state : int, RandomState instance or None, default=None
+    random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
     mat_mean : float, default=0.0
         Mean of random values to generate matrix.
@@ -562,7 +574,8 @@ def generate_random_spd_matrix(n_dim, random_state=None, *, mat_mean=.0,
 
     if (n_dim <= 0) or (not isinstance(n_dim, int)):
         raise ValueError(
-            f'n_samples must be a positive integer (Got {n_dim})')
+            f"n_samples must be a positive integer (Got {n_dim})"
+        )
 
     rs = check_random_state(random_state)
     A = mat_mean + mat_std * rs.randn(n_dim, n_dim)
