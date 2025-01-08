@@ -1,8 +1,7 @@
 import numpy as np
 import pytest
 
-from pyriemann.datasets.sampling import (sample_gaussian_spd,
-                                         generate_random_spd_matrix)
+from pyriemann.datasets.sampling import sample_gaussian_spd
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.test import is_sym_pos_def as is_spd
 
@@ -40,16 +39,8 @@ def test_sample_gaussian_spd_error():
         sample_gaussian_spd(5, np.eye(n_dim), 1., sampling_method="rejection")
 
 
-def test_generate_random_spd_matrix():
-    """Test generating random SPD matrix"""
-    n_dim = 4
-    X = generate_random_spd_matrix(n_dim, random_state=None)
-    assert X.shape == (n_dim, n_dim)  # X shape mismatch
-    assert is_spd(X)  # X is a SPD matrix
-
-
 @pytest.mark.parametrize("n_jobs", [1, -1])
-def test_sigma_gaussian_spd(n_jobs):
+def test_sample_gaussian_spd_sigma(n_jobs):
     """Test sigma parameter from Riemannian Gaussian sampling."""
     n_matrices, n_dim, sig_1, sig_2 = 5, 4, 1., 2.
     mean = np.eye(n_dim)
@@ -64,7 +55,7 @@ def test_sigma_gaussian_spd(n_jobs):
     assert avg_d1 < avg_d2
 
 
-def test_functions_error():
+def test_sample_gaussian_spd_sigma_errors():
     n_matrices, n_dim = 3, 4
     mean, sigma = np.eye(n_dim), 2.
     with pytest.raises(ValueError):  # mean is not a matrix
@@ -75,7 +66,3 @@ def test_functions_error():
         sample_gaussian_spd(-n_matrices, mean, sigma)
     with pytest.raises(ValueError):  # n_matrices is not an integer
         sample_gaussian_spd(4.2, mean, sigma)
-    with pytest.raises(ValueError):  # n_dim is not an integer
-        generate_random_spd_matrix(1.7)
-    with pytest.raises(ValueError):  # n_dim is negative
-        generate_random_spd_matrix(-n_dim)

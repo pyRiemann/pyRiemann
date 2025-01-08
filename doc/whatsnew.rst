@@ -27,6 +27,10 @@ v0.8.dev
 - Add :func:`pyriemann.utils.tangentspace.exp_map_wasserstein`, :func:`pyriemann.utils.tangentspace.log_map_wasserstein`
   and :func:`pyriemann.utils.geodesic.geodesic_wasserstein`. :pr:`331` by :user:`gabelstein`
 
+- Enhance :func:`pyriemann.datasets.make_matrices`, to generate symmetric and Hermitian matrices,
+  and add parameters defining the normal distribution to draw eigen vectors.
+  Deprecate ``generate_random_spd_matrix``. :pr:`339` by :user:`qbarthelemy`
+
 v0.7 (October 2024)
 -------------------
 

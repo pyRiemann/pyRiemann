@@ -2,7 +2,6 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 import pytest
 
-from pyriemann.datasets.sampling import generate_random_spd_matrix
 from pyriemann.datasets.simulated import (
     mat_kinds,
     make_matrices,
@@ -122,7 +121,7 @@ def test_gaussian_blobs():
     assert centers.shape == (2, n_dim, n_dim)  # centers shape mismatch
 
 
-def test_functions_error():
+def test_gaussian_blobs_errors():
     n_matrices, n_dim, class_sep, class_disp = 5, 4, 2., 1.
     with pytest.raises(ValueError):  # n_matrices is not an integer
         make_gaussian_blobs(n_matrices=float(n_matrices),
@@ -154,3 +153,11 @@ def test_functions_error():
                             n_dim=n_dim,
                             class_sep=class_sep,
                             class_disp=class_disp * np.ones(n_dim))
+
+
+@pytest.mark.parametrize("n_matrices", [3, 4, 5])
+@pytest.mark.parametrize("n_dim", [2, 3, 4])
+def test_make_outliers(rndstate, get_mats, n_matrices, n_dim):
+    mean, sigma = get_mats(1, n_dim, "spd")[0], 0.5
+    X = make_outliers(n_matrices, mean, sigma, random_state=None)
+    assert X.shape == (n_matrices, n_dim, n_dim)

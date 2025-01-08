@@ -544,7 +544,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
 
 @deprecated(
     "generate_random_spd_matrix is deprecated and will be removed in 0.10.0; "
-    "please use make_matrices."
+    "please use make_matrices with kind='spd'."
 )
 def generate_random_spd_matrix(n_dim, random_state=None, *, mat_mean=.0,
                                mat_std=1.):

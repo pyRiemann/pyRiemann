@@ -1,7 +1,7 @@
 import numpy as np
 from sklearn.utils.validation import check_random_state
 
-from .sampling import generate_random_spd_matrix, sample_gaussian_spd
+from .sampling import sample_gaussian_spd
 from ..transfer import encode_domains
 from ..utils.mean import mean_riemann
 from ..utils.distance import distance_riemann
@@ -262,7 +262,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
 
     if not center_dataset:
         # center the dataset to a random SPD matrix
-        M = generate_random_spd_matrix(n_dim=n_dim, random_state=rs)
+        M = make_matrices(n_matrices=1, n_dim=n_dim, kind="spd", rs=rs)[0]
         M_sqrt = sqrtm(M)
         X = M_sqrt @ X @ M_sqrt
 
@@ -322,7 +322,7 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
 
     outliers = np.zeros((n_matrices, n_dim, n_dim))
     for i in range(n_matrices):
-        Oi = generate_random_spd_matrix(n_dim=n_dim, random_state=random_state)
+        Oi = make_matrices(n_matrices=1, n_dim=n_dim, kind="spd", rs=random_state)[0]
         epsilon_num = outlier_coeff * sigma * n_dim
         epsilon_den = distance_riemann(Oi, np.eye(n_dim), squared=True)
         epsilon = np.sqrt(epsilon_num / epsilon_den)
