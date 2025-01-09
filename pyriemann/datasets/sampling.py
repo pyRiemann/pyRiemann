@@ -54,7 +54,7 @@ def _rejection_sampling_2D_gfunction_plus(sigma, r_sample):
     ----------
     sigma : float
         Dispersion of the Riemannian Gaussian distribution.
-    r_samples : ndarray, shape (1, n_dim)
+    r_sample : ndarray, shape (1, n_dim)
         Sample of the r parameters of the Riemannian Gaussian distribution.
 
     Returns
@@ -86,7 +86,7 @@ def _rejection_sampling_2D_gfunction_minus(sigma, r_sample):
     ----------
     sigma : float
         Dispersion of the Riemannian Gaussian distribution.
-    r_samples : ndarray, shape (1, n_dim)
+    r_sample : ndarray, shape (1, n_dim)
         Sample of the r parameters of the Riemannian Gaussian distribution.
 
     Returns
@@ -179,12 +179,12 @@ def _slice_one_sample(ptarget, x0, w, rs):
     ----------
     ptarget : function with one input
         The target pdf to sample from or a multiple of it.
-    x0 : array
+    x0 : ndarray
         Initial state for the MCMC procedure. Note that the shape of this array
         defines the dimensionality n_dim of the matrices to be sampled.
     w : float
         Initial bracket width.
-    rs : int, RandomState instance or None
+    rs : int | RandomState instance | None
         Pass an int for reproducible output across multiple function calls.
 
     Returns
@@ -249,7 +249,7 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
         The target pdf to sample from or a multiple of it.
     n_samples : int
         How many samples to get from the ptarget distribution.
-    x0 : array
+    x0 : ndarray
         Initial state for the MCMC procedure. Note that the shape of this array
         defines the dimensionality n_dim of the matrices to be sampled.
     n_burnin : int, default=20
@@ -323,9 +323,9 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
     sampling_method : {"auto", "slice", "rejection"}, default="auto"
-        Sampling method used to sample r: "auto", "slice" or "rejection".
-        If it is "auto", the sampling_method will be
-        equal to "slice" for n_dim != 2 and equal to "rejection" for n_dim = 2.
+        Method used to sample parameter r: "auto", "slice" or "rejection".
+        If "auto", sampling_method will be equal to "slice" for n_dim != 2 and
+        equal to "rejection" for n_dim = 2.
 
         .. versionadded:: 0.4
 
@@ -421,9 +421,9 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
     sampling_method : {"auto", "slice", "rejection"}, default="auto"
-        Sampling method used to sample r: "auto", "slice" or "rejection".
-        If it is "auto", the sampling_method will be
-        equal to "slice" for n_dim != 2 and equal to "rejection" for n_dim = 2.
+        Method used to sample parameter r: "auto", "slice" or "rejection".
+        If "auto", sampling_method will be equal to "slice" for n_dim != 2 and
+        equal to "rejection" for n_dim = 2.
 
         .. versionadded:: 0.4
 
@@ -494,9 +494,9 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
     sampling_method : {"auto", "slice", "rejection"}, default="auto"
-        Sampling method used to sample r: "auto", "slice" or "rejection".
-        If it is "auto", the sampling_method will be
-        equal to "slice" for n_dim != 2 and equal to "rejection" for n_dim = 2.
+        Method used to sample eigenvalues: "auto", "slice" or "rejection".
+        If "auto", sampling_method will be equal to "slice" for n_dim != 2 and
+        equal to "rejection" for n_dim = 2.
 
         .. versionadded:: 0.4
 
