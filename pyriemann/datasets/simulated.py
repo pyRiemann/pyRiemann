@@ -377,6 +377,8 @@ def make_classification_transfer(
     domain_names : list, default=["source_domain", "target_domain"]
         Names of domains, source and target.
 
+        .. versionadded:: 0.8
+
     Returns
     -------
     X_enc : ndarray, shape (4*n_matrices, 2, 2)
@@ -392,7 +394,6 @@ def make_classification_transfer(
     rs = check_random_state(random_state)
     seeds = rs.randint(100, size=4)
 
-    # the examples considered here are always for 2x2 matrices
     n_dim = 2
     if len(class_names) != 2:
         raise ValueError("class_names must contain 2 elements")
