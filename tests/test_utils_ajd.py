@@ -6,6 +6,7 @@ from pytest import approx
 from pyriemann.utils.ajd import ajd, rjd, ajd_pham, uwedge
 
 
+@pytest.mark.parametrize("kind", ["sym", "spd"])
 @pytest.mark.parametrize(
     "method, algo",
     [
@@ -15,11 +16,13 @@ from pyriemann.utils.ajd import ajd, rjd, ajd_pham, uwedge
         (uwedge, uwedge),
     ]
 )
-def test_ajd(method, algo, get_mats):
+def test_ajd(kind, method, algo, get_mats):
     """Test ajd algos"""
+    if kind == "sym" and method == "ajd_pham":
+        return
     eps, n_iter_max = 1e-6, 100
     n_matrices, n_channels = 10, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
+    mats = get_mats(n_matrices, n_channels, kind)
 
     V, D = ajd(mats, method=method, eps=eps, n_iter_max=n_iter_max)
     assert V.shape == (n_channels, n_channels)
@@ -55,7 +58,7 @@ def test_ajd_method_error(method):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_ajd_pham(kind, get_mats):
+def test_ajdpham(kind, get_mats):
     """Test pham's ajd"""
     n_matrices, n_channels = 7, 4
     mats = get_mats(n_matrices, n_channels, kind)
@@ -64,7 +67,7 @@ def test_ajd_pham(kind, get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_ajd_pham_weight_none_equivalent_uniform(kind, get_mats):
+def test_ajdpham_weight_none_equivalent_uniform(kind, get_mats):
     """Test pham's ajd weights: none is equivalent to uniform values"""
     n_matrices, n_channels = 5, 3
     mats = get_mats(n_matrices, n_channels, kind)
@@ -76,7 +79,7 @@ def test_ajd_pham_weight_none_equivalent_uniform(kind, get_mats):
     ajd(mats, method="ajd_pham", sample_weight=np.ones(n_matrices))
 
 
-def test_ajd_pham_weight_positive(get_mats, get_weights):
+def test_ajdpham_weight_positive(get_mats, get_weights):
     """Test pham's ajd weights: must be strictly positive"""
     n_matrices, n_channels = 4, 2
     mats = get_mats(n_matrices, n_channels, "spd")
@@ -87,7 +90,7 @@ def test_ajd_pham_weight_positive(get_mats, get_weights):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_ajd_pham_weight_zero(kind, get_mats, get_weights):
+def test_ajdpham_weight_zero(kind, get_mats, get_weights):
     """Setting one weight to almost 0 it's almost like not passing the mat"""
     n_matrices, n_channels = 5, 4
     mats = get_mats(n_matrices, n_channels, kind)

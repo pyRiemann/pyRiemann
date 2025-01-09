@@ -1,80 +1,102 @@
 import numpy as np
 from sklearn.utils.validation import check_random_state
 
+from .sampling import sample_gaussian_spd
+from ..transfer import encode_domains
 from ..utils.mean import mean_riemann
 from ..utils.distance import distance_riemann
 from ..utils.base import invsqrtm, powm, sqrtm, expm
-from .sampling import generate_random_spd_matrix, sample_gaussian_spd
-from ..transfer import encode_domains
+
+
+mat_kinds = ["real", "sym", "comp", "spd", "spsd", "herm", "hpd", "hpsd"]
 
 
 def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
-                  evals_low=0.5, evals_high=2.0, eigvecs_same=False):
-    """Generate a set of matrices, with specific properties.
+                  evals_low=0.5, evals_high=2.0, eigvecs_same=False,
+                  eigvecs_mean=0.0, eigvecs_std=1.0):
+    """Generate square matrices, with specific properties.
 
     Parameters
     ----------
     n_matrices : int
-        Number of matrices to generate.
+        Number of square matrices to generate.
     n_dim : int
         Dimension of square matrices to generate.
-    kind : {'real', 'comp', 'spd', 'spsd', 'hpd', 'hpsd'}
-        Kind of matrices to generate:
+    kind : {"real", "sym", "spd", "spsd", "comp", "herm", "hpd", "hpsd"}
+        Kind of square matrices to generate:
 
-        - 'real' for real-valued matrices;
-        - 'comp' for complex-valued matrices;
-        - 'spd' for symmetric positive-definite matrices;
-        - 'spsd' for symmetric positive semi-definite matrices;
-        - 'hpd' for Hermitian positive-definite matrices;
-        - 'hpsd' for Hermitian positive semi-definite matrices.
-    rs : RandomState instance, default=None
+        - "real" for real-valued matrices;
+        - "sym" for symmetric real-valued matrices;
+        - "spd" for symmetric positive-definite matrices;
+        - "spsd" for symmetric positive semi-definite matrices;
+        - "comp" for complex-valued matrices;
+        - "herm" for Hermitian matrices;
+        - "hpd" for Hermitian positive-definite matrices;
+        - "hpsd" for Hermitian positive semi-definite matrices.
+    rs : int | RandomState instance | None, default=None
         Random state for reproducible output across multiple function calls.
     return_params : bool, default=False
-        If True, then returns evals and evecs for 'spd', 'spsd', 'hpd' and
-        'hpsd'.
+        If True, returns evals and evecs for "spd", "spsd", "hpd" and "hpsd".
     evals_low : float, default=0.5
         Lowest value of the uniform distribution to draw eigen values.
     evals_high : float, default=2.0
         Highest value of the uniform distribution to draw eigen values.
-    eigvecs_same : bool, default False
-        If True, then uses the same eigen vectors for all matrices.
+    eigvecs_same : bool, default=False
+        If True, uses the same eigen vectors for all matrices.
+    eigvecs_mean : float, default=0.0
+        Mean of the normal distribution to draw eigen vectors.
+
+        .. versionadded:: 0.8
+    eigvecs_std : float, default=1.0
+        Standard deviation of the normal distribution to draw eigen vectors.
+
+        .. versionadded:: 0.8
 
     Returns
     -------
     mats : ndarray, shape (n_matrices, n_dim, n_dim)
-        Generated matrices.
+        Set of generated square matrices.
     evals : ndarray, shape (n_matrices, n_dim)
-        Eigen values used for 'spd', 'spsd', 'hpd' and 'hpsd'.
+        Eigen values used for "spd", "spsd", "hpd" and "hpsd".
         Only returned if ``return_params=True``.
     evecs : ndarray, shape (n_matrices, n_dim, n_dim) or (n_dim, n_dim)
-        Eigen vectors used for 'spd', 'spsd', 'hpd' and 'hpsd'.
+        Eigen vectors used for "spd", "spsd", "hpd" and "hpsd".
         Only returned if ``return_params=True``.
 
     Notes
     -----
     .. versionadded:: 0.5
+    .. versionchanged:: 0.8
+        Add support for kinds "sym" and "herm".
     """
-    if kind not in ("real", "comp", "spd", "spsd", "hpd", "hpsd"):
+    if kind not in mat_kinds:
         raise ValueError(f"Unsupported matrix kind: {kind}")
-
     rs = check_random_state(rs)
-    X = rs.randn(n_matrices, n_dim, n_dim)
+
+    X = eigvecs_std * rs.randn(n_matrices, n_dim, n_dim) + eigvecs_mean
+
     if kind == "real":
         return X
-
-    if kind in ("comp", "hpd", "hpsd"):
-        X = X + 1j * rs.randn(n_matrices, n_dim, n_dim)
+    if kind == "sym":
+        return X + X.transpose(0, 2, 1)
+    if kind in ["comp", "herm", "hpd", "hpsd"]:
+        Y = eigvecs_std * rs.randn(n_matrices, n_dim, n_dim) + eigvecs_mean
+        if kind == "herm":
+            return X + X.transpose(0, 2, 1) + 1j * (Y - Y.transpose(0, 2, 1))
+        X = X + 1j * Y
         if kind == "comp":
             return X
 
     # eigen values
     if evals_low <= 0.0:
         raise ValueError(
-            f"Lowest value must be strictly positive (Got {evals_low}).")
+            f"Lowest value must be strictly positive (Got {evals_low})."
+        )
     if evals_high <= evals_low:
         raise ValueError(
             "Highest value must be superior to lowest value "
-            f"(Got {evals_high} and {evals_low}).")
+            f"(Got {evals_high} and {evals_low})."
+        )
     evals = rs.uniform(evals_low, evals_high, size=(n_matrices, n_dim))
     if kind in ("spsd", "hpsd"):
         evals[..., -1] = 1e-10  # last eigen value set to almost zero
@@ -82,7 +104,7 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
     # eigen vectors
     if eigvecs_same:
         X = X[0]
-    if np.__version__ < '1.22.0' and X.ndim > 2:
+    if np.__version__ < "1.22.0" and X.ndim > 2:
         evecs = np.array([np.linalg.qr(x)[0] for x in X])
     else:
         evecs = np.linalg.qr(X)[0]
@@ -103,7 +125,7 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
 
 
 def make_masks(n_masks, n_dim0, n_dim1_min, rs=None):
-    """Generate a set of masks, defined as semi-orthogonal matrices.
+    """Generate masks defined as semi-orthogonal matrices.
 
     Parameters
     ----------
@@ -113,7 +135,7 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs=None):
         First dimension of masks.
     n_dim1_min : int
         Minimal value for second dimension of masks.
-    rs : RandomState instance, default=None
+    rs : int | RandomState instance | None, default=None
         Random state for reproducible output across multiple function calls.
 
     Returns
@@ -139,49 +161,48 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs=None):
 def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
                         return_centers=False, center_dataset=False,
                         random_state=None, centers=None, *, n_jobs=1,
-                        sampling_method='auto'):
-    """Generate SPD dataset with two classes sampled from Riemannian Gaussian.
+                        sampling_method="auto"):
+    """Generate SPD matrices for two classes.
 
-    Generate a dataset with SPD matrices drawn from two Riemannian Gaussian
-    distributions. The distributions have the same class dispersions and the
-    distance between their centers of mass is an input parameter. Useful for
-    testing classification or clustering methods.
+    Generate a set of SPD matrices drawn from Riemannian Gaussian
+    distributions, one per class. Currently, it supports two classes.
+    The distributions have the same dispersions.
+    Useful for testing classification or clustering methods.
 
     Parameters
     ----------
     n_matrices : int, default=100
-        How many matrices to generate for each class.
+        Number of matrices to generate for each class.
     n_dim : int, default=2
-        Dimensionality of the SPD matrices generated by the distributions.
+        Dimensionality of the generated SPD matrices.
     class_sep : float, default=1.0
-        Parameter controlling the separability of the classes.
+        Distance between the centers of the classes.
     class_disp : float, default=1.0
-        Intra dispersion of the points sampled from each class.
-    centers : ndarray, shape (2, n_dim, n_dim), default=None
-        List with the centers of mass for each class. If None, the centers are
-        sampled randomly based on class_sep.
+        Dispersion of the matrices for each class.
+    centers : None | ndarray, shape (2, n_dim, n_dim), default=None
+        Centers for each class.
+        If None, the centers are drawn randomly based on class_sep.
     return_centers : bool, default=False
-        If True, then return the centers of each cluster
+        If True, return the centers of each class.
     center_dataset : bool, default=False
-        If True, re-center the simulated dataset to the Identity. If False,
-        the dataset is centered around a random SPD matrix.
+        If True, re-center dataset to the Identity.
+        If False, dataset is centered around a random SPD matrix.
     random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
-    sampling_method : str, default='auto'
-        Name of the sampling method used to sample samples_r. It can be
-        'auto', 'slice' or 'rejection'. If it is 'auto', the sampling_method
-        will be equal to 'slice' for n_dim != 2 and equal to
-        'rejection' for n_dim = 2.
+    sampling_method : {"auto", "slice", "rejection"}, default="auto"
+        Method used to sample eigenvalues: "auto", "slice" or "rejection".
+        If "auto", sampling_method will be equal to "slice" for n_dim != 2 and
+        equal to "rejection" for n_dim = 2.
 
         .. versionadded:: 0.4
 
     Returns
     -------
     X : ndarray, shape (2*n_matrices, n_dim, n_dim)
-        Set of SPD matrices.
+        Set of SPD matrices, for two classes.
     y : ndarray, shape (2*n_matrices,)
         Labels corresponding to each matrix.
     centers : ndarray, shape (2, n_dim, n_dim)
@@ -209,7 +230,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     else:
         C0_in, C1_in = centers
 
-    # sample data points from class 0
+    # sample matrices from class 0
     X0 = sample_gaussian_spd(
         n_matrices=n_matrices,
         mean=C0_in,
@@ -220,7 +241,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     )
     y0 = np.zeros(n_matrices)
 
-    # sample data points from class 1
+    # sample matrices from class 1
     X1 = sample_gaussian_spd(
         n_matrices=n_matrices,
         mean=C1_in,
@@ -242,7 +263,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
 
     if not center_dataset:
         # center the dataset to a random SPD matrix
-        M = generate_random_spd_matrix(n_dim=n_dim, random_state=rs)
+        M = make_matrices(n_matrices=1, n_dim=n_dim, kind="spd", rs=rs)[0]
         M_sqrt = sqrtm(M)
         X = M_sqrt @ X @ M_sqrt
 
@@ -268,29 +289,29 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
 
 def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
                   random_state=None):
-    """Generate a set of outlier points.
+    """Generate outlier matrices.
 
-    Simulate data points that are outliers for a given Riemannian Gaussian
+    Generate matrices that are outliers for a given Riemannian Gaussian
     distribution with fixed mean and dispersion.
 
     Parameters
     ----------
     n_matrices : int
-        How many matrices to generate.
+        Number of matrices to generate.
     mean : ndarray, shape (n_dim, n_dim)
         Center of the Riemannian Gaussian distribution.
     sigma : float
         Dispersion of the Riemannian Gaussian distribution.
     outlier_coeff: float, default=10
-        Coefficient determining how to define an outlier data point, i.e. how
+        Coefficient determining how to define an outlier, i.e. how
         many times the sigma parameter its distance to the mean should be.
-    random_state : int, RandomState instance or None, default=None
+    random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
 
     Returns
     -------
     outliers : ndarray, shape (n_matrices, n_dim, n_dim)
-        Set of simulated outlier matrix.
+        Set of generated outlier matrices.
 
     Notes
     -----
@@ -302,7 +323,7 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
 
     outliers = np.zeros((n_matrices, n_dim, n_dim))
     for i in range(n_matrices):
-        Oi = generate_random_spd_matrix(n_dim=n_dim, random_state=random_state)
+        Oi = make_matrices(1, n_dim=n_dim, kind="spd", rs=random_state)[0]
         epsilon_num = outlier_coeff * sigma * n_dim
         epsilon_den = distance_riemann(Oi, np.eye(n_dim), squared=True)
         epsilon = np.sqrt(epsilon_num / epsilon_den)
@@ -314,29 +335,31 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
 def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
                                  domain_sep=5.0, theta=0.0, stretch=1.0,
                                  random_state=None, class_names=[1, 2]):
-    """Generate source and target toy datasets for transfer learning examples.
+    """Generate 2x2 SPD matrices for two classes in source and target domains.
 
-    Generate a dataset with 2x2 SPD matrices drawn from two Riemannian Gaussian
-    distributions. The distributions have the same class dispersions and the
-    distance between their centers of mass is an input parameter. We can
-    stretch the target dataset and control a rotation matrix that maps the
-    source to the target domains. This function is useful for testing
-    classification or clustering methods on transfer learning applications.
+    Generate a set of 2x2 SPD matrices drawn from Riemannian Gaussian
+    distributions, one per class and per domain.
+    Currently, it supports two classes and two domains.
+    The distributions have the same dispersions.
+    You can stretch the target domain and control a rotation matrix that maps
+    the source domain to the target domain.
+    Useful for testing classification or clustering methods on transfer
+    learning applications.
 
     Parameters
     ----------
-    n_matrices : int, default=100
-        How many 2x2 matrices to generate for each class on each domain.
+    n_matrices : int
+        Number of 2x2 matrices to generate for each class on each domain.
     class_sep : float, default=3.0
-        Distance between the centers of the two classes.
+        Distance between the centers of the classes.
     class_disp : float, default=1.0
-        Dispersion of the data points to be sampled on each class.
+        Dispersion of the matrices for each class.
     domain_sep : float, default=5.0
-        Distance between the global means of each source and target datasets.
+        Distance between the global means of each source and target domains.
     theta : float, default=0.0
-        Angle of the 2x2 rotation matrix from source to target dataset.
+        Angle of the 2x2 rotation matrix from source to target domain.
     stretch : float, default=1.0
-        Factor to stretch the data points in target dataset. Note that when it
+        Factor to stretch the matrices in target domain. Note that when it
         is != 1.0 the class dispersions in target domain will be different than
         those in source domain (fixed at class_disp).
     random_state : None | int | RandomState instance, default=None
@@ -347,9 +370,9 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
     Returns
     -------
     X_enc : ndarray, shape (4*n_matrices, 2, 2)
-        Set of SPD matrices.
+        Set of 2x2 SPD matrices, for two classes and two domains.
     y_enc : ndarray, shape (4*n_matrices,)
-        Extended labels for each data point.
+        Extended labels for each matrix.
 
     Notes
     -----
@@ -364,7 +387,7 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
     if len(class_names) != n_dim:
         raise ValueError("class_names must contain 2 elements")
 
-    # create a source dataset with two classes and global mean at identity
+    # create a source domain with two classes and global mean at identity
     M1_source = np.eye(n_dim)  # first class mean at Identity at first
     X1_source = sample_gaussian_spd(
         n_matrices=n_matrices,
@@ -386,11 +409,11 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
     X_source = np.concatenate([X1_source, X2_source])
     M_source = mean_riemann(X_source)
     M_source_invsqrt = invsqrtm(M_source)
-    # center the dataset to Identity
+    # center the domain to Identity
     X_source = M_source_invsqrt @ X_source @ M_source_invsqrt
     y_source = np.concatenate([y1_source, y2_source])
 
-    # create target dataset based on the source dataset
+    # create target domain based on the source domain
     X1_target = sample_gaussian_spd(
         n_matrices=n_matrices,
         mean=M1_source,
@@ -404,15 +427,15 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
     X_target = np.concatenate([X1_target, X2_target])
     M_target = mean_riemann(X_target)
     M_target_invsqrt = invsqrtm(M_target)
-    # center the dataset to Identity
+    # center the domain to Identity
     X_target = M_target_invsqrt @ X_target @ M_target_invsqrt
     y_target = np.copy(y_source)
 
-    # stretch the data points in target domain if needed
+    # stretch the matrices in target domain if needed
     if stretch != 1.0:
         X_target = powm(X_target, alpha=stretch)
 
-    # move the points in X_target with a random matrix A = P * Q
+    # move the matrices in X_target with a random matrix A = P * Q
 
     # create SPD matrix for the translation between domains
     Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
@@ -426,11 +449,11 @@ def make_classification_transfer(n_matrices, class_sep=3.0, class_disp=1.0,
     Q = np.array([[np.cos(theta), -np.sin(theta)],
                   [np.sin(theta), np.cos(theta)]])
 
-    # transform the data points from the target domain
+    # transform the matrices from the target domain
     A = P @ Q
     X_target = A @ X_target @ A.T
 
-    # create array specifying the domain for each epoch
+    # create array specifying the domain for each matrix
     domains = np.array(
         len(X_source)*['source_domain'] + len(X_target)*['target_domain']
     )

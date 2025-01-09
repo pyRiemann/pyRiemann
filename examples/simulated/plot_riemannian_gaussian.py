@@ -15,13 +15,14 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 from pyriemann.embedding import SpectralEmbedding
-from pyriemann.datasets import sample_gaussian_spd, generate_random_spd_matrix
+from pyriemann.datasets import make_matrices, sample_gaussian_spd
 
 
 print(__doc__)
 
 ###############################################################################
 # Set parameters for sampling from the Riemannian Gaussian distribution
+
 n_matrices = 100  # how many SPD matrices to generate
 n_dim = 2  # number of dimensions of the SPD matrices
 sigma = 1.0  # dispersion of the Gaussian distribution
@@ -29,7 +30,7 @@ epsilon = 4.0  # parameter for controlling the distance between centers
 random_state = 42  # ensure reproducibility
 
 # Generate the samples on three different conditions
-mean = generate_random_spd_matrix(n_dim)  # random reference point
+mean = make_matrices(1, n_dim, "spd")[0]  # random reference point
 
 samples_1 = sample_gaussian_spd(n_matrices=n_matrices,
                                 mean=mean,
@@ -50,6 +51,7 @@ labels = np.array(n_matrices*[1] + n_matrices*[2] + n_matrices*[3])
 
 ###############################################################################
 # Apply the spectral embedding over the SPD matrices
+
 lapl = SpectralEmbedding(metric="riemann", n_components=2)
 embd = lapl.fit_transform(X=samples)
 

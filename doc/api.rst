@@ -186,7 +186,6 @@ Datasets
     make_matrices
     make_masks
     sample_gaussian_spd
-    generate_random_spd_matrix
     make_classification_transfer
 
 Utils function
