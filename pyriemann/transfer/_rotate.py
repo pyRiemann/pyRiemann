@@ -181,7 +181,7 @@ def _get_rotation_manifold(
         Weights for each pair of matrices. If None, it uses equal weights.
     metric : {"euclid", "riemann"}, default="euclid"
         Distance to minimize between SPD matrices.
-    tol_step : float, default 1e-9
+    tol_step : float, default=1e-9
         Stopping criterion based on the norm of the descent direction.
     maxiter : int, default=10_000
         Maximum number of iterations in the optimization procedure.
