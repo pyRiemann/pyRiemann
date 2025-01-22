@@ -210,9 +210,11 @@ def _get_rotation_manifold(
         N. Boumal. To appear with Cambridge University Press. June, 2022
     """
     if X_source.shape[0] != X_target.shape[0]:
-        raise ValueError("Number of matrices in each domain doesn't match")
+        raise ValueError("Number of matrices in each domain doesn't match. "
+                         f"Got {X_source.shape[0]} and {X_target.shape[0]}.")
     if X_source.shape[1:] != X_target.shape[1:]:
-        raise ValueError("Number of channels in each domain doesn't match")
+        raise ValueError("Number of channels in each domain doesn't match. "
+                         f"Got {X_source.shape[1:]} and {X_target.shape[1:]}.")
     weights = check_weights(weights, len(X_source))
 
     # initialize the solution with an educated guess
@@ -297,7 +299,8 @@ def _get_rotation_tangentspace(X_source, X_target, expl_var):
         2022
     """
     if X_source.shape != X_target.shape:
-        raise ValueError("Inputs shapes don't match")
+        raise ValueError("Inputs shapes don't match. "
+                         f"Got {X_source.shape} and {X_target.shape}.")
 
     C = X_source.T @ X_target
     u, s, vh = np.linalg.svd(C)

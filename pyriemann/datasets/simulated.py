@@ -406,7 +406,8 @@ def make_classification_transfer(
         n_matrices=n_matrices,
         mean=M1_source,
         sigma=class_disp,
-        random_state=seeds[0])
+        random_state=seeds[0],
+    )
     y1_source = [class_names[0]] * n_matrices
     Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
     Pv = (Pv + Pv.T)/2  # symmetrize
@@ -417,7 +418,8 @@ def make_classification_transfer(
         n_matrices=n_matrices,
         mean=M2_source,
         sigma=class_disp,
-        random_state=seeds[1])
+        random_state=seeds[1],
+    )
     y2_source = [class_names[1]] * n_matrices
     X_source = np.concatenate([X1_source, X2_source])
     M_source = mean_riemann(X_source)
@@ -431,12 +433,14 @@ def make_classification_transfer(
         n_matrices=n_matrices,
         mean=M1_source,
         sigma=class_disp,
-        random_state=seeds[2])
+        random_state=seeds[2],
+    )
     X2_target = sample_gaussian_spd(
         n_matrices=n_matrices,
         mean=M2_source,
         sigma=class_disp,
-        random_state=seeds[3])
+        random_state=seeds[3],
+    )
     X_target = np.concatenate([X1_target, X2_target])
     M_target = mean_riemann(X_target)
     M_target_invsqrt = invsqrtm(M_target)
