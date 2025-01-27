@@ -35,7 +35,7 @@ v0.8.dev
   one-to-one to many-to-one domain adaptation in tangent space. :pr:`337` by :user:`qbarthelemy`
 
 - Enhance :func:`pyriemann.utils.kernel.kernel_logeuclid` adding ``Cref`` parameter,
-  and correct :func:`pyriemann.utils.kernel.kernel_riemann` when ``Y`` is different from ``X`` and ``Cref`` is None. :pr:`338` by :user:`qbarthelemy`
+  and correct :func:`pyriemann.utils.kernel.kernel_riemann` when ``Y`` is different from ``X`` and ``Cref`` is None. :pr:`340` by :user:`qbarthelemy`
 
 v0.7 (October 2024)
 -------------------
