@@ -110,7 +110,7 @@ def kernel_logeuclid(X, Y=None, *, Cref=None, reg=1e-10):
     """
     def kernelfct(X, Cref):
         if Cref is None:
-            return logm(X), np.eye(X.shape[-1])
+            return logm(X), Cref
         else:
             return logm(X) - logm(Cref), Cref
 
