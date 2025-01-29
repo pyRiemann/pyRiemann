@@ -80,12 +80,12 @@ def test_cref(n_channels, ker, get_mats):
     Y = get_mats(n_matrices_Y, n_channels, "spd")
     K = kernel(X, Y, metric=ker)
 
-    if ker == "logeuclid":
+    if ker == "euclid":
+        Cref = np.zeros((n_channels, n_channels))
+    elif ker == "logeuclid":
         Cref = np.eye(n_channels)
     elif ker == "riemann":
         Cref = mean_covariance(X)
-    else:
-        return
 
     K1 = kernel(X, Y, Cref=Cref, metric=ker)
     assert_array_equal(K, K1)
@@ -111,19 +111,27 @@ def test_euclid(n_dim0, n_dim1, rndstate):
     assert_array_almost_equal(K, K1)
     assert_array_almost_equal(K, K2)
 
+    kernel_euclid(X, Y, Cref=rndstate.randn(n_dim0, n_dim1))
+
 
 def test_logeuclid(get_mats):
-    n_matrices, n_channels = 5, 3
+    n_matrices, n_channels = 5, 4
     X = get_mats(n_matrices, n_channels, "spd")
-    kernel_logeuclid(X)
+    Y = get_mats(n_matrices, n_channels, "spd")
+    Cref = np.eye(n_channels)
+
+    # test equivalence with Riemannian kernel when Cref is identity
+    Kle = kernel_logeuclid(X, Y, Cref=Cref)
+    Kr = kernel_riemann(X, Y, Cref=Cref)
+    assert_array_almost_equal(Kle, Kr)
 
 
-def test_riemann_correctness(get_mats):
-    """Test Riemannian kernel correctness"""
+def test_riemann(get_mats):
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "spd")
     K = kernel_riemann(X, Cref=np.eye(n_channels), reg=0)
 
+    # test correctness
     log_X = logm(X)
     tensor = np.tensordot(log_X, log_X.T, axes=1)
     K1 = np.trace(tensor, axis1=1, axis2=2)

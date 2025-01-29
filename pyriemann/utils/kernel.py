@@ -7,12 +7,21 @@ from .mean import mean_riemann
 from .utils import check_function
 
 
-def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
+def kernel_euclid(X, Y=None, *, Cref=None, reg=1e-10):
     r"""Euclidean kernel between two sets of matrices.
 
     Euclidean kernel matrix :math:`\mathbf{K}` of two sets
     :math:`\mathbf{X}` and :math:`\mathbf{Y}` of matrices in
-    :math:`\mathbb{R}^{n \times m}` is calculated with pairwise inner products:
+    :math:`\mathbb{R}^{n \times m}` at :math:`\mathbf{C}_\text{ref}`
+    is calculated with pairwise inner products:
+
+    .. math::
+        \mathbf{K}_{i,j} = \text{tr}(
+        (\mathbf{X}_i - \mathbf{C}_\text{ref})^T
+        (\mathbf{Y}_j - \mathbf{C}_\text{ref})
+        )
+
+    If :math:`\mathbf{C}_\text{ref}` is None [1]_:
 
     .. math::
         \mathbf{K}_{i,j} = \text{tr}(\mathbf{X}_i^T \mathbf{Y}_j)
@@ -23,6 +32,11 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
         First set of matrices.
     Y : None | ndarray, shape (n_matrices_Y, n, m), default=None
         Second set of matrices. If None, Y is set to X.
+    Cref : None | ndarray, shape (n, m), default=None
+        Reference matrix.
+        If None, Cref is defined as null matrix.
+
+        .. versionadded:: 0.8
     reg : float, default=1e-10
         Regularization parameter to mitigate numerical errors in kernel
         matrix estimation.
@@ -39,11 +53,21 @@ def kernel_euclid(X, Y=None, *, reg=1e-10, **kwargs):
     See Also
     --------
     kernel
+
+    References
+    ----------
+    .. [1] `A linear feature space for simultaneous learning of spatio-spectral
+        filters in BCI
+        <https://doi.org/10.1016/j.neunet.2009.06.035>`_
+        J. Farquhar. Neural Networks, 2009
     """
     def kernelfct(X, Cref):
-        return X, Cref
+        if Cref is None:
+            return X, Cref
+        else:
+            return X - Cref, Cref
 
-    return _apply_matrix_kernel(kernelfct, X, Y, reg=reg)
+    return _apply_matrix_kernel(kernelfct, X, Y, Cref=Cref, reg=reg)
 
 
 def kernel_logeuclid(X, Y=None, *, Cref=None, reg=1e-10):
@@ -242,7 +266,7 @@ def kernel(X, Y=None, *, Cref=None, metric="riemann", reg=1e-10):
     Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
         Second set of matrices. If None, Y is set to X.
     Cref : None | ndarray, shape (n, n), default=None
-        Reference matrix. Used for "logeuclid" or "riemann" metrics.
+        Reference matrix.
     metric : string | callable, default="riemann"
         Metric used for tangent space and mean estimation, can be:
         "euclid", "logeuclid", "riemann", or a callable function.
