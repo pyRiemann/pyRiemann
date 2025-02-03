@@ -34,6 +34,9 @@ v0.8.dev
 - Enhance TSA, adding weights to transformers, and generalizing :class:`pyriemann.classification.TLRotate` from
   one-to-one to many-to-one domain adaptation in tangent space. :pr:`337` by :user:`qbarthelemy`
 
+- Enhance :func:`pyriemann.utils.kernel.kernel_euclid` and :func:`pyriemann.utils.kernel.kernel_logeuclid` adding ``Cref`` parameter,
+  and correct :func:`pyriemann.utils.kernel.kernel_riemann` when ``Y`` is different from ``X`` and ``Cref`` is None. :pr:`340` by :user:`qbarthelemy`
+
 v0.7 (October 2024)
 -------------------
 
