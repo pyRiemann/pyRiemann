@@ -536,6 +536,7 @@ log_map_functions = {
     "wasserstein": log_map_wasserstein,
 }
 
+
 def tangent_space(X, Cref, *, metric="riemann"):
     """Transform matrices into tangent vectors.
 
@@ -620,17 +621,22 @@ def untangent_space(T, Cref, *, metric="riemann"):
 ###############################################################################
 
 # NOT IN API
-def transport(Covs, C1, C2, metric="riemann"):
-    """Parallel transport of a set of SPD matrices towards a reference matrix.
+def transport(X, C1, C2):
+    r"""Parallel transport of a set of SPD matrices towards a reference matrix.
+
+    The parallel transport of a set of SPD matrices :math:`\mathbf{X}_i`
+    from a reference matrix :math:`\mathbf{C}_1` towards a target matrix
+    :math:`\mathbf{C}_2` according to the Levi-Civita connection along
+    a geodesic under the affine invariant metric.
 
     Parameters
     ----------
-    Covs : ndarray, shape (n_matrices, n, n)
-        Set of SPD matrices.
-    Cref : ndarray, shape (n, n)
-        The reference SPD matrix.
-    metric : string, default="riemann"
-        The metric used for mean, can be: "euclid", "logeuclid", "riemann".
+    X : ndarray, shape (..., n, n)
+        Symmetric/Hermitian matrices.
+    C1 : ndarray, shape (n, n)
+        The initial SPD matrix.
+    C2 : ndarray, shape (n, n)
+        The target SPD matrix.
 
     Returns
     -------
@@ -640,5 +646,5 @@ def transport(Covs, C1, C2, metric="riemann"):
     C = C1
     iC = invsqrtm(C)
     E = sqrtm(iC @ C2 @ iC)
-    out = E @ Covs @ E.T
+    out = E @ X @ E.T
     return out
