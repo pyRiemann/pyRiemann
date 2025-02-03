@@ -3,7 +3,6 @@
 import numpy as np
 
 from .base import expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
-from .mean import mean_covariance
 from .utils import check_function
 
 
@@ -537,7 +536,6 @@ log_map_functions = {
     "wasserstein": log_map_wasserstein,
 }
 
-
 def tangent_space(X, Cref, *, metric="riemann"):
     """Transform matrices into tangent vectors.
 
@@ -621,9 +619,8 @@ def untangent_space(T, Cref, *, metric="riemann"):
 
 ###############################################################################
 
-
 # NOT IN API
-def transport(Covs, Cref, metric="riemann"):
+def transport(Covs, C1, C2, metric="riemann"):
     """Parallel transport of a set of SPD matrices towards a reference matrix.
 
     Parameters
@@ -640,8 +637,8 @@ def transport(Covs, Cref, metric="riemann"):
     out : ndarray, shape (n_matrices, n, n)
         Set of transported SPD matrices.
     """
-    C = mean_covariance(Covs, metric=metric)
+    C = C1
     iC = invsqrtm(C)
-    E = sqrtm(iC @ Cref @ iC)
+    E = sqrtm(iC @ C2 @ iC)
     out = E @ Covs @ E.T
     return out

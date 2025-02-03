@@ -164,5 +164,5 @@ def test_tangent_and_untangent_space(kind, metric, get_mats):
 def test_transport(metric, get_mats):
     n_matrices, n_channels = 10, 3
     X = get_mats(n_matrices, n_channels, "spd")
-    X_tr = transport(X, np.eye(n_channels), metric=metric)
-    assert X_tr.shape == (n_matrices, n_channels, n_channels)
+    X_tr = transport(X, np.eye(n_channels), np.eye(n_channels), metric=metric)
+    assert X == approx(X_tr)
