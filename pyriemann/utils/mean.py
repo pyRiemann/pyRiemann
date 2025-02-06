@@ -688,18 +688,18 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         init = mean_euclid(X, sample_weight=sample_weight)
     else:
         init = check_init(init, n)
-    K = init
+    M = init
     for _ in range(maxiter):
-        X_ts = log_map_wasserstein(X, K)
+        X_ts = log_map_wasserstein(X, M)
         J = np.einsum("a,abc->bc", sample_weight, X_ts)
         crit = np.linalg.norm(J)
-        K = exp_map_wasserstein(J, K)
+        M = exp_map_wasserstein(J, M)
         if crit <= tol:
             break
     else:
         warnings.warn("Convergence not reached")
 
-    return K
+    return M
 
 
 ###############################################################################

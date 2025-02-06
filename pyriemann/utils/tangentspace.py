@@ -625,8 +625,8 @@ def transport(X, C1, C2):
     r"""Parallel transport of matrices in tangent space.
 
     The parallel transport of a set of SPD matrices :math:`\mathbf{X}_i`
-    from an initial SPD/HPD matrix :math:`\mathbf{A}` towards a final SPD/HPD matrix
-    :math:`\mathbf{C}_2` according to the Levi-Civita connection along
+    from an initial SPD/HPD matrix :math:`\mathbf{A}` towards a final SPD/HPD
+    matrix :math:`\mathbf{C}_2` according to the Levi-Civita connection along
     a geodesic under the affine invariant metric.
 
     Parameters
