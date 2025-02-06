@@ -622,17 +622,17 @@ def untangent_space(T, Cref, *, metric="riemann"):
 
 # NOT IN API
 def transport(X, C1, C2):
-    r"""Parallel transport of a set of SPD matrices towards a reference matrix.
+    r"""Parallel transport of matrices in tangent space.
 
     The parallel transport of a set of SPD matrices :math:`\mathbf{X}_i`
-    from a reference matrix :math:`\mathbf{C}_1` towards a target matrix
+    from an initial SPD/HPD matrix :math:`\mathbf{A}` towards a final SPD/HPD matrix
     :math:`\mathbf{C}_2` according to the Levi-Civita connection along
     a geodesic under the affine invariant metric.
 
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        Symmetric/Hermitian matrices.
+        Symmetric/Hermitian matrices in tangent space.
     C1 : ndarray, shape (n, n)
         The initial SPD matrix.
     C2 : ndarray, shape (n, n)
@@ -646,5 +646,5 @@ def transport(X, C1, C2):
     C = C1
     iC = invsqrtm(C)
     E = sqrtm(iC @ C2 @ iC)
-    out = E @ X @ E.T
-    return out
+    X_new = E @ X @ E.T
+    return X_new

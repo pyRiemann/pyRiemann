@@ -674,10 +674,13 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 
     References
     ----------
-    .. [1] `Barycenter Estimation of Positive Semi-Definite Matrices with
+    .. [1] `Barycenters in the Wasserstein space
+        <https://hal.science/hal-00637399/file/AC_bary_revis.pdf>`_
+        M. Agueh and G. Carlier. SIAM Journal on Mathematical Analysis, 2011
+    .. [2] `Barycenter Estimation of Positive Semi-Definite Matrices with
         Bures-Wasserstein Distance
         <https://arxiv.org/abs/2302.14618>`_
-        J. Zheng, H. Huang, Y. Yi, Y. Li, S.-C. Lin.
+        J. Zheng, H. Huang, Y. Yi, Y. Li, S.-C. Lin, ArXiv, 2023
     """
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
