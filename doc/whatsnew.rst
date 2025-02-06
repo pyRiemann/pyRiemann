@@ -19,7 +19,7 @@ v0.8.dev
   ``TLStretch`` is deprecated and renamed into :class:`pyriemann.transfer._estimators.TLScale`,
   and ``TSclassifier`` into :class:`pyriemann.classification.TSClassifier`. :pr:`320` by :user:`qbarthelemy`
 
-- Add an example using fNIRS data with a new estimator called `HybridBlocks` for classifying HbO and HbR signals. :pr:`323` by :user:`timnaher`
+- Add an example using fNIRS data with a new estimator called ``HybridBlocks`` for classifying HbO and HbR signals. :pr:`323` by :user:`timnaher`
 
 - Add directional derivatives :func:`pyriemann.utils.base.ddexpm` and :func:`pyriemann.utils.base.ddlogm`,
   and correct :func:`pyriemann.utils.tangentspace.log_map_logeuclid` and :func:`pyriemann.utils.tangentspace.exp_map_logeuclid`. :pr:`332` by :user:`gabelstein`
@@ -31,7 +31,7 @@ v0.8.dev
   and add parameters defining the normal distribution to draw eigen vectors.
   Deprecate ``generate_random_spd_matrix``. :pr:`339` by :user:`qbarthelemy`
 
-- Enhance TSA, adding weights to transformers, and generalizing :class:`pyriemann.classification.TLRotate` from
+- Enhance TSA, adding weights to transformers, and generalizing :class:`pyriemann.transfer._estimators.TLRotate` from
   one-to-one to many-to-one domain adaptation in tangent space. :pr:`337` by :user:`qbarthelemy`
 
 - Enhance :func:`pyriemann.utils.kernel.kernel_euclid` and :func:`pyriemann.utils.kernel.kernel_logeuclid` adding ``Cref`` parameter,
@@ -73,7 +73,7 @@ v0.7 (October 2024)
 v0.6 (April 2024)
 -----------------
 
-- Update pyRiemann from Python 3.7 to 3.8. :pr:`254` by :user:`qbarthelemy`
+- Update pyRiemann from Python 3.7 - 3.9 to 3.8 - 3.10. :pr:`254` by :user:`qbarthelemy`
 
 - Speedup pairwise distance function :func:`pyriemann.utils.distance.pairwise_distance`
   by adding individual functions for 'euclid', 'harmonic', 'logeuclid' and 'riemann' metrics. :pr:`256` by :user:`gabelstein`
@@ -99,7 +99,7 @@ v0.6 (April 2024)
 
 - Add an example on augmented covariance matrix. :pr:`276` by :user:`carraraig`
 
-- Remove function `make_covariances`. :pr:`280` by :user:`qbarthelemy`
+- Remove function ``make_covariances``. :pr:`280` by :user:`qbarthelemy`
 
 - Speedup :class:`pyriemann.estimation.TimeDelayCovariances`. :pr:`281` by :user:`qbarthelemy`
 
@@ -120,7 +120,7 @@ v0.5 (Jun 2023)
 - Add functions to test HPD and HPSD matrices, :func:`pyriemann.utils.test.is_herm_pos_def` and :func:`pyriemann.utils.test.is_herm_pos_semi_def`. :pr:`231` by :user:`qbarthelemy`
 
 - Add function :func:`pyriemann.datasets.make_matrices` to generate SPD, SPSD, HPD and HPSD matrices.
-  Deprecate function :func:`pyriemann.datasets.make_covariances`. :pr:`232` by :user:`qbarthelemy`
+  Deprecate function ``pyriemann.datasets.make_covariances``. :pr:`232` by :user:`qbarthelemy`
 
 - Add tests for matrix operators and distances for HPD matrices, complete doc and add references. :pr:`234` by :user:`qbarthelemy`
 
@@ -179,13 +179,13 @@ v0.4 (Feb 2023)
 v0.3 (July 2022)
 ----------------
 
-- Correct spectral estimation in :func:`pyriemann.utils.covariance.cross_spectrum` to obtain equivalence with SciPy. :pr:`133` by :user:`qbarthelemy`
+- Correct spectral estimation in :func:`pyriemann.utils.covariance.cross_spectrum` to obtain equivalence with SciPy. :pr:`131` by :user:`qbarthelemy`
 
 - Add instantaneous, lagged and imaginary coherences in :func:`pyriemann.utils.covariance.coherence` and :class:`pyriemann.estimation.Coherences`. :pr:`132` by :user:`qbarthelemy`
 
 - Add ``partial_fit`` in :class:`pyriemann.clustering.Potato`, useful for an online update; and update example on artifact detection. :pr:`133` by :user:`qbarthelemy`
 
-- Deprecate :func:`pyriemann.utils.viz.plot_confusion_matrix` as sklearn integrate its own version. :pr:`135` by :user:`sylvchev`
+- Deprecate ``pyriemann.utils.viz.plot_confusion_matrix`` as sklearn integrate its own version. :pr:`135` by :user:`sylvchev`
 
 - Add Ando-Li-Mathias mean estimation in :func:`pyriemann.utils.mean.mean_covariance`. :pr:`56` by :user:`sylvchev`
 
@@ -246,88 +246,89 @@ v0.3 (July 2022)
 v0.2.7 (June 2021)
 ------------------
 
-- Add example on SSVEP classification
+- Add example on SSVEP classification. :pr:`81` by :user:`sylvchev`
 
 - Fix compatibility with scikit-learn v0.24
 
-- Correct probas of :class:`pyriemann.classification.MDM`
+- Correct probas of :class:`pyriemann.classification.MDM`. :pr:`100` by :user:`qbarthelemy`
 
-- Add ``predict_proba`` for :class:`pyriemann.clustering.Potato`, and an example on artifact detection
+- Add ``predict_proba`` for :class:`pyriemann.clustering.Potato`, and an example on artifact detection. :pr:`105` by :user:`qbarthelemy`
 
-- Add weights to Pham's AJD algorithm :func:`pyriemann.utils.ajd.ajd_pham`
+- Add weights to Pham's AJD algorithm :func:`pyriemann.utils.ajd.ajd_pham`. :pr:`112` by :user:`qbarthelemy`
 
-- Add :func:`pyriemann.utils.covariance.cross_spectrum`, fix :func:`pyriemann.utils.covariance.cospectrum`; :func:`pyriemann.utils.covariance.coherence` output is kept unchanged
+- Add :func:`pyriemann.utils.covariance.cross_spectrum`, fix :func:`pyriemann.utils.covariance.cospectrum`;
+  :func:`pyriemann.utils.covariance.coherence` output is kept unchanged. :pr:`118` by :user:`qbarthelemy`
 
-- Add :class:`pyriemann.spatialfilters.AJDC` for BSS and gBSS, with an example on artifact correction
+- Add :class:`pyriemann.spatialfilters.AJDC` for BSS and gBSS, with an example on artifact correction. :pr:`120` by :user:`qbarthelemy`
 
-- Add :class:`pyriemann.preprocessing.Whitening`, with optional dimension reduction
+- Add :class:`pyriemann.preprocessing.Whitening`, with optional dimension reduction. :pr:`122` by :user:`qbarthelemy`
 
 v0.2.6 (March 2020)
 -------------------
 
-- Updated for better Scikit-Learn v0.22 support
+- Remove support for Python 2, and update code for better scikit-learn v0.22 support. :pr:`79` by :user:`alexandrebarachant`
 
 v0.2.5 (January 2018)
 ---------------------
 
-- Added BilinearFilter
+- Add ``BilinearFilter``.
 
-- Added a permutation test for generic scikit-learn estimator
+- Add a permutation test for generic scikit-learn estimator.
 
-- Stats module refactoring, with distance based t-test and f-test
+- Enhance stats module, with distance based t-test and f-test.
 
-- Removed two way permutation test
+- Remove two way permutation test.
 
-- Added FlatChannelRemover
+- Add ``FlatChannelRemover``. :pr:`30` by :user:`kingjr`
 
-- Support for python 3.5 in travis
+- Add support for Python 3.5 in travis.
 
-- Added Shrinkage transformer
+- Add ``Shrinkage`` transformer. :pr:`38` by :user:`alexandrebarachant`
 
-- Added Coherences transformer
+- Add ``Coherences`` transformer.
 
-- Added Embedding class.
+- Add ``Embedding`` class. :pr:`54` by :user:`plcrodrigues`
 
 v0.2.4 (June 2016)
 ------------------
 
-- Improved documentation
+- Improve documentation.
 
-- Added TSclassifier for out-of the box tangent space classification.
+- Add ``TSclassifier`` for out-of the box tangent space classification.
 
-- Added Wasserstein distance and mean.
+- Add Wasserstein distance and mean.
 
-- Added NearestNeighbor classifier.
+- Add ``KNearestNeighbor`` classifier.
 
-- Added Softmax probabilities for MDM.
+- Add softmax probabilities for ``MDM``.
 
-- Added CSP for covariance matrices.
+- Add ``CSP`` for covariance matrices.
 
-- Added Approximate Joint diagonalization algorithms (JADE, PHAM, UWEDGE).
+- Add approximate joint diagonalization algorithms: JADE, PHAM, UWEDGE.
 
-- Added ALE mean.
+- Add ALE mean.
 
-- Added Multiclass CSP.
+- Add multiclass ``CSP``.
 
-- API: param name changes in `CospCovariances` to comply to Scikit-Learn.
+- Correct param name in ``CospCovariances`` to comply to scikit-learn.
 
-- API: attributes name changes in most modules to comply to the Scikit-Learn naming convention.
+- Correct attributes name in most modules to comply to the scikit-learn naming convention.
 
-- Added `HankelCovariances` estimation
+- Add ``HankelCovariances`` estimation.
 
-- Added `SPoC` spatial filtering
+- Add ``SPoC`` spatial filtering.
 
-- Added Harmonic mean
+- Add harmonic mean.
 
-- Added Kullback leibler mean
+- Add Kullback-Leibler mean.
 
 v0.2.3 (November 2015)
 ----------------------
 
-- Added multiprocessing for MDM with joblib.
+- Add multiprocessing for ``MDM`` with joblib.
 
-- Added kullback-leibler divergence.
+- Add Kullback-Leibler divergence.
 
-- Added Riemannian Potato.
+- Add Riemannian ``Potato``.
 
-- Added sample_weight for mean estimation and MDM.
+- Add sample_weight for mean estimation and ``MDM``.
