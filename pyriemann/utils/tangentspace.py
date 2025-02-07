@@ -621,30 +621,32 @@ def untangent_space(T, Cref, *, metric="riemann"):
 ###############################################################################
 
 # NOT IN API
-def transport(X, C1, C2):
+def transport(X, A, B):
     r"""Parallel transport of matrices in tangent space.
 
-    The parallel transport of a set of SPD matrices :math:`\mathbf{X}_i`
-    from an initial SPD/HPD matrix :math:`\mathbf{A}` towards a final SPD/HPD
-    matrix :math:`\mathbf{C}_2` according to the Levi-Civita connection along
-    a geodesic under the affine invariant metric.
+    The parallel transport of matrices :math:`\mathbf{X}` in tangent space
+    from an initial SPD/HPD matrix :math:`\mathbf{A}` to a final SPD/HPD
+    matrix :math:`\mathbf{B}` according to the Levi-Civita connection along
+    a geodesic under the affine-invariant metric.
+
+    This function must be applied to matrices already projected in tangent
+    space with a  logarithmic map, not to SPD/HPD matrices in manifold.
 
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
         Symmetric/Hermitian matrices in tangent space.
-    C1 : ndarray, shape (n, n)
-        The initial SPD matrix.
-    C2 : ndarray, shape (n, n)
-        The target SPD matrix.
+    A : ndarray, shape (n, n)
+        Initial SPD/HPD matrix.
+    B : ndarray, shape (n, n)
+        Final SPD/HPD matrix.
 
     Returns
     -------
-    out : ndarray, shape (n_matrices, n, n)
-        Set of transported SPD matrices.
+    X_new : ndarray, shape (..., n, n)
+        Transported matrices in tangent space.
     """
-    C = C1
-    iC = invsqrtm(C)
+    iA = invsqrtm(A)
     E = sqrtm(iC @ C2 @ iC)
     X_new = E @ X @ E.T
     return X_new

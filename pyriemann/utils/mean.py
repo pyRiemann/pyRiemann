@@ -646,8 +646,8 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the Wasserstein metric.
 
-    Inductive Wasserstein mean as proposed in [1]_ adapted to the same
-    convergence criterion as the Riemannian mean.
+    Wasserstein mean [1]_ is implemented as the inductive mean [2]_,
+    adapted to the same convergence criterion as the Riemannian mean.
 
     Parameters
     ----------
