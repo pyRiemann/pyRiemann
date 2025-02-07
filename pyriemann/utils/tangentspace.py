@@ -647,6 +647,6 @@ def transport(X, A, B):
         Transported matrices in tangent space.
     """
     iA = invsqrtm(A)
-    E = sqrtm(iC @ C2 @ iC)
+    E = sqrtm(iC @ B @ iC)
     X_new = E @ X @ E.T
     return X_new
