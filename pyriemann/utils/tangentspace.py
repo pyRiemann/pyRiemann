@@ -627,7 +627,11 @@ def transport(X, A, B):
     The parallel transport of matrices :math:`\mathbf{X}` in tangent space
     from an initial SPD/HPD matrix :math:`\mathbf{A}` to a final SPD/HPD
     matrix :math:`\mathbf{B}` according to the Levi-Civita connection along
-    a geodesic under the affine-invariant metric.
+    the geodesic betweenunder the affine-invariant metric.
+
+    .. math::
+        \mathbf{X}_\text{new} = (\mathbf{B}\mathbf{A}^{-1})^{1/2}\mathbf{X}
+        (\mathbf{A}^{-1}\mathbf{B})^{1/2}
 
     This function must be applied to matrices already projected in tangent
     space with a  logarithmic map, not to SPD/HPD matrices in manifold.
@@ -646,7 +650,9 @@ def transport(X, A, B):
     X_new : ndarray, shape (..., n, n)
         Transported matrices in tangent space.
     """
-    iA = invsqrtm(A)
-    E = sqrtm(iC @ C2 @ iC)
+    # (BA^{-1})^{1/2} = A^{1/2}(A^{-1/2}BA^{-1/2})^{1/2}A^{-1/2}
+    A12inv = invsqrtm(A)
+    A12 = sqrtm(A)
+    E = A12@sqrtm(A12inv @ B @ A12inv)@A12inv
     X_new = E @ X @ E.T
     return X_new
