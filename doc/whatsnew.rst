@@ -34,6 +34,9 @@ v0.8.dev
 - Enhance TSA, adding weights to transformers, and generalizing :class:`pyriemann.classification.TLRotate` from
   one-to-one to many-to-one domain adaptation in tangent space. :pr:`337` by :user:`qbarthelemy`
 
+- Speedup of the Wasserstein mean :func:`pyriemann.utils.mean.mean_wasserstein` and extension of transport function
+  :func:`pyriemann.utils.tangentspace.transport`. :pr:`341` by :user:`gabelstein`
+
 v0.7 (October 2024)
 -------------------
 
