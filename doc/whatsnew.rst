@@ -37,6 +37,9 @@ v0.8.dev
 - Enhance :func:`pyriemann.utils.kernel.kernel_euclid` and :func:`pyriemann.utils.kernel.kernel_logeuclid` adding ``Cref`` parameter,
   and correct :func:`pyriemann.utils.kernel.kernel_riemann` when ``Y`` is different from ``X`` and ``Cref`` is None. :pr:`340` by :user:`qbarthelemy`
 
+- Speedup of the Wasserstein mean :func:`pyriemann.utils.mean.mean_wasserstein` and extension of transport function
+  :func:`pyriemann.utils.tangentspace.transport`. :pr:`341` by :user:`gabelstein`
+
 v0.7 (October 2024)
 -------------------
 

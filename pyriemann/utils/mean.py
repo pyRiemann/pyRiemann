@@ -9,6 +9,7 @@ from .ajd import ajd_pham
 from .base import sqrtm, invsqrtm, logm, expm, powm
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann
+from .tangentspace import log_map_wasserstein, exp_map_wasserstein
 from .utils import check_weights, check_function, check_init
 
 
@@ -645,14 +646,8 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the Wasserstein metric.
 
-    Wasserstein mean is obtained by an iterative procedure where the update is
-    [1]_:
-
-    .. math::
-        \mathbf{K} = \left( \sum_i w_i \ \left( \mathbf{K} \mathbf{X}_i
-                     \mathbf{K} \right)^{1/2} \right)^{1/2}
-
-    with :math:`\mathbf{K} = \mathbf{M}^{1/2}`.
+    Wasserstein mean [1]_ is implemented as the inductive mean [2]_,
+    adapted to the same convergence criterion as the Riemannian mean.
 
     Parameters
     ----------
@@ -679,10 +674,13 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 
     References
     ----------
-    .. [1] `Geometric Radar Processing based on Frechet distance: Information
-        geometry versus Optimal Transport Theory
-        <https://ieeexplore.ieee.org/document/6042179>`_
-        F. Barbaresco. 12th International Radar Symposium (IRS), October 2011
+    .. [1] `Barycenters in the Wasserstein space
+        <https://hal.science/hal-00637399/file/AC_bary_revis.pdf>`_
+        M. Agueh and G. Carlier. SIAM Journal on Mathematical Analysis, 2011
+    .. [2] `Barycenter Estimation of Positive Semi-Definite Matrices with
+        Bures-Wasserstein Distance
+        <https://arxiv.org/abs/2302.14618>`_
+        J. Zheng, H. Huang, Y. Yi, Y. Li, S.-C. Lin, ArXiv, 2023
     """
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
@@ -690,21 +688,17 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         init = mean_euclid(X, sample_weight=sample_weight)
     else:
         init = check_init(init, n)
-    K = sqrtm(init)
-
-    crit = np.finfo(np.float64).max
+    M = init
     for _ in range(maxiter):
-        J = np.einsum("a,abc->bc", sample_weight, sqrtm(K @ X @ K))
-        Knew = sqrtm(J)
-
-        crit = np.linalg.norm(Knew - K, ord="fro")
-        K = Knew
+        X_ts = log_map_wasserstein(X, M)
+        J = np.einsum("a,abc->bc", sample_weight, X_ts)
+        crit = np.linalg.norm(J)
+        M = exp_map_wasserstein(J, M)
         if crit <= tol:
             break
     else:
         warnings.warn("Convergence not reached")
 
-    M = K @ K
     return M
 
 

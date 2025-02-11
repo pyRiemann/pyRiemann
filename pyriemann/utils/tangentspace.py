@@ -3,7 +3,6 @@
 import numpy as np
 
 from .base import expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
-from .mean import mean_covariance
 from .utils import check_function
 
 
@@ -621,27 +620,52 @@ def untangent_space(T, Cref, *, metric="riemann"):
 
 ###############################################################################
 
-
 # NOT IN API
-def transport(Covs, Cref, metric="riemann"):
-    """Parallel transport of a set of SPD matrices towards a reference matrix.
+def transport(X, A, B):
+    r"""Parallel transport of matrices in tangent space.
+
+    The parallel transport of matrices :math:`\mathbf{X}` in tangent space
+    from an initial SPD/HPD matrix :math:`\mathbf{A}` to a final SPD/HPD
+    matrix :math:`\mathbf{B}` according to the Levi-Civita connection along
+    the geodesic under the affine-invariant metric is [1]_:
+
+    .. math::
+        \mathbf{X}_\text{new} = \mathbf{E} \mathbf{X} \mathbf{E}^H
+
+    where :math:`\mathbf{E} = (\mathbf{B} \mathbf{A}^{-1})^{1/2}`.
+
+    Warning: this function must be applied to matrices already projected in
+    tangent space with a logarithmic map, not to SPD/HPD matrices in manifold.
 
     Parameters
     ----------
-    Covs : ndarray, shape (n_matrices, n, n)
-        Set of SPD matrices.
-    Cref : ndarray, shape (n, n)
-        The reference SPD matrix.
-    metric : string, default="riemann"
-        The metric used for mean, can be: "euclid", "logeuclid", "riemann".
+    X : ndarray, shape (..., n, n)
+        Symmetric/Hermitian matrices in tangent space.
+    A : ndarray, shape (n, n)
+        Initial SPD/HPD matrix.
+    B : ndarray, shape (n, n)
+        Final SPD/HPD matrix.
 
     Returns
     -------
-    out : ndarray, shape (n_matrices, n, n)
-        Set of transported SPD matrices.
+    X_new : ndarray, shape (..., n, n)
+        Transported matrices in tangent space.
+
+    Notes
+    -----
+    .. versionchanged:: 0.8
+        Change input arguments.
+
+    References
+    ----------
+    .. [1] `Conic geometric optimisation on the manifold of positive definite
+        matrices
+        <https://arxiv.org/pdf/1312.1039>`_
+        S. Sra and R. Hosseini. SIAM Journal on Optimization, 2015.
     """
-    C = mean_covariance(Covs, metric=metric)
-    iC = invsqrtm(C)
-    E = sqrtm(iC @ Cref @ iC)
-    out = E @ Covs @ E.T
-    return out
+    # (BA^{-1})^{1/2} = A^{1/2}(A^{-1/2}BA^{-1/2})^{1/2}A^{-1/2}
+    A12inv = invsqrtm(A)
+    A12 = sqrtm(A)
+    E = A12 @ sqrtm(A12inv @ B @ A12inv) @ A12inv
+    X_new = E @ X @ E.conj().T
+    return X_new

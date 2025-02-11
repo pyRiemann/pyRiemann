@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 from pytest import approx
 
-from conftest import get_metrics
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.tangentspace import (
     exp_map_euclid,
@@ -160,9 +159,9 @@ def test_tangent_and_untangent_space(kind, metric, get_mats):
     assert X_ut == approx(X)
 
 
-@pytest.mark.parametrize("metric", get_metrics())
-def test_transport(metric, get_mats):
+@pytest.mark.parametrize("kind", ["sym", "herm"])
+def test_transport(get_mats, kind):
     n_matrices, n_channels = 10, 3
-    X = get_mats(n_matrices, n_channels, "spd")
-    X_tr = transport(X, np.eye(n_channels), metric=metric)
-    assert X_tr.shape == (n_matrices, n_channels, n_channels)
+    X = get_mats(n_matrices, n_channels, kind)
+    X_tr = transport(X, np.eye(n_channels), np.eye(n_channels))
+    assert X == approx(X_tr)
