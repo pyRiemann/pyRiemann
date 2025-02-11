@@ -630,8 +630,9 @@ def transport(X, A, B):
     the geodesic under the affine-invariant metric is [1]_:
 
     .. math::
-        \mathbf{X}_\text{new} = (\mathbf{B}\mathbf{A}^{-1})^{1/2}\mathbf{X}
-        (\mathbf{A}^{-1}\mathbf{B})^{1/2}
+        \mathbf{X}_\text{new} = \mathbf{E} \mathbf{X} \mathbf{E}^H
+
+    where :math:`\mathbf{E} = (\mathbf{B} \mathbf{A}^{-1})^{1/2}`.
 
     Warning: this function must be applied to matrices already projected in
     tangent space with a logarithmic map, not to SPD/HPD matrices in manifold.
