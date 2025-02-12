@@ -7,8 +7,11 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.8.dev
+v0.9.dev
 --------
+
+v0.8 (February 2025)
+--------------------
 
 - Enhance :func:`pyriemann.utils.mean.mean_ale` adding ``init`` parameter,
   and add function ``check_init()`` useful to all ajd and mean functions allowing initialization. :pr:`328` by :user:`qbarthelemy`
