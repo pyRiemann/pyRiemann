@@ -164,7 +164,7 @@ def _nearest_sym_pos_def(S, reg=1e-6):
     ----------
     S : ndarray, shape (n, n)
         Square matrix.
-    reg : float
+    reg : float, default=1e-6
         Regularization parameter.
 
     Returns
@@ -172,18 +172,21 @@ def _nearest_sym_pos_def(S, reg=1e-6):
     P : ndarray, shape (n, n)
         Nearest SPD matrix.
     """
+    def regularize(X, reg):
+        ei, ev = np.linalg.eigh(X)
+        if np.min(ei) / np.max(ei) < reg:
+            X = ev @ np.diag(ei + reg) @ ev.T
+        return X
+
     A = (S + S.T) / 2
     _, s, V = np.linalg.svd(A)
-    H = V.T @ np.diag(s) @ V
+    H = V.T @ (s[:, np.newaxis] * V)
     B = (A + H) / 2
     P = (B + B.T) / 2
 
     if is_pos_def(P):
         # Regularize if already PD
-        ei, ev = np.linalg.eigh(P)
-        if np.min(ei) / np.max(ei) < reg:
-            P = ev @ np.diag(ei + reg) @ ev.T
-        return P
+        return regularize(P, reg)
 
     spacing = np.spacing(np.linalg.norm(A))
     I = np.eye(S.shape[0])  # noqa
@@ -194,10 +197,7 @@ def _nearest_sym_pos_def(S, reg=1e-6):
         k += 1
 
     # Regularize
-    ei, ev = np.linalg.eigh(P)
-    if np.min(ei) / np.max(ei) < reg:
-        P = ev @ np.diag(ei + reg) @ ev.T
-    return P
+    return regularize(P, reg)
 
 
 def nearest_sym_pos_def(X, reg=1e-6):
@@ -208,14 +208,14 @@ def nearest_sym_pos_def(X, reg=1e-6):
 
     Parameters
     ----------
-    X : ndarray, shape (..., n, n)
-        Square matrices, at least 2D ndarray.
-    reg : float
+    X : ndarray, shape (n_matrices, n, n)
+        Square matrices.
+    reg : float, default=1e-6
         Regularization parameter.
 
     Returns
     -------
-    P : ndarray, shape (..., n, n)
+    P : ndarray, shape (n_matrices, n, n)
         Nearest SPD matrices.
 
     Notes
