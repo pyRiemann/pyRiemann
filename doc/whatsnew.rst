@@ -7,6 +7,11 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
+- Add :class:`pyriemann.embedding.tSNE`, a Riemannian t-SNE implementation
+  and an example of this tSNE of synthetic data generated using the SPD Gaussians.
+- Add :func:`pyriemann.utils.base.multisym`, :func:`pyriemann.utils.base.multitransp`
+and a new file `pyriemann.utils.gradient` ...?
+
 v0.9.dev
 --------
 

@@ -7,12 +7,13 @@ from pyriemann.datasets import make_gaussian_blobs
 from pyriemann.embedding import (
     SpectralEmbedding,
     LocallyLinearEmbedding,
+    tSNE,
     barycenter_weights,
     locally_linear_embedding,
 )
 from pyriemann.utils.kernel import kernel, kernel_functions
 
-embds = [SpectralEmbedding, LocallyLinearEmbedding]
+embds = [SpectralEmbedding, LocallyLinearEmbedding, tSNE]
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])

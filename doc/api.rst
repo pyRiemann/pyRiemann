@@ -39,6 +39,7 @@ Embedding
 
     SpectralEmbedding
     LocallyLinearEmbedding
+    tSNE
 
 Classification
 --------------
@@ -341,6 +342,8 @@ Base
     nearest_sym_pos_def
     ddexpm
     ddlogm
+    multitransp
+    multisym
 
 Aproximate Joint Diagonalization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
