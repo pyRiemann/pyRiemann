@@ -278,7 +278,7 @@ class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-
+            Set of SPD matrices.
         y : None
             Not used, here for compatibility with sklearn API.
 
