@@ -8,13 +8,13 @@ from scipy.sparse import csr_matrix
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.manifold import spectral_embedding
 from sklearn.manifold._utils import _binary_search_perplexity
-from time import time 
+from time import time
 
 from .utils.distance import pairwise_distance
 from .utils.kernel import kernel as kernel_fct
 from .utils.base import sqrtm, invsqrtm, logm
 from .datasets import sample_gaussian_spd
-from .utils.gradient import retraction, norm_SPD
+from .utils.gradient_descent import retraction, norm_SPD
 
 
 class SpectralEmbedding(BaseEstimator):
@@ -72,7 +72,7 @@ class SpectralEmbedding(BaseEstimator):
             eps = self.eps
 
         # make kernel matrix from the distance matrix
-        kernel = np.exp(-distmatrix ** 2 / (4 * eps))
+        kernel = np.exp(-(distmatrix**2) / (4 * eps))
 
         # normalize the kernel matrix
         q = kernel @ np.ones(len(kernel))
@@ -254,9 +254,9 @@ class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
         """
         _check_dimensions(self.data_, X)
         pairwise_dists = pairwise_distance(X, self.data_, metric=self.metric)
-        ind = np.array([
-            np.argsort(dist)[1:self.n_neighbors + 1] for dist in pairwise_dists
-        ])
+        ind = np.array(
+            [np.argsort(dist)[1 : self.n_neighbors + 1] for dist in pairwise_dists]
+        )
 
         weights = barycenter_weights(
             X,
@@ -278,7 +278,7 @@ class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            
+
         y : None
             Not used, here for compatibility with sklearn API.
 
@@ -326,8 +326,10 @@ def barycenter_weights(X, Y, indices, metric="riemann", kernel=None, reg=1e-3):
     .. versionadded:: 0.3
     """
     n_matrices, n_neighbors = indices.shape
-    msg = f"Number of index-sets in indices (is {n_matrices}) must match " \
-          f"number of matrices in X (is {X.shape[0]})."
+    msg = (
+        f"Number of index-sets in indices (is {n_matrices}) must match "
+        f"number of matrices in X (is {X.shape[0]})."
+    )
     assert X.shape[0] == n_matrices, msg
     if kernel is None:
         kernel = kernel_fct
@@ -412,7 +414,7 @@ def locally_linear_embedding(
     n_matrices, n_channels, n_channels = X.shape
     pairwise_distances = pairwise_distance(X, metric=metric)
     neighbors = np.array(
-        [np.argsort(dist)[1:n_neighbors + 1] for dist in pairwise_distances]
+        [np.argsort(dist)[1 : n_neighbors + 1] for dist in pairwise_distances]
     )
 
     B = barycenter_weights(
@@ -443,7 +445,6 @@ def locally_linear_embedding(
     return embd, error
 
 
-
 class tSNE(BaseEstimator):
     """AIRM Riemannian version of t-SNE algorithm.
 
@@ -455,16 +456,16 @@ class tSNE(BaseEstimator):
     n_components : int, default = 2
         Dimension of the matrices in the embedded space.
     perplexity : int, default = None
-        Perplexity used in the Riemannian t-SNE algorithm. 
+        Perplexity used in the Riemannian t-SNE algorithm.
         If perplexity = None, it will be set to 0.75*n_matrices
     verbosity : int, default = 0
-        Level of information printed by the optimizer while it operates: 
+        Level of information printed by the optimizer while it operates:
         0 is silent, 2 is most verbose.
     max_it : int, default = 10000
-        Maximum number of iterations used for the Riemannian gradient 
+        Maximum number of iterations used for the Riemannian gradient
         descent.
     max_time : int default = 300
-        Maximum time on the run time of the Riemannian gradient descent 
+        Maximum time on the run time of the Riemannian gradient descent
         in seconds.
     random_state : int, default=None
         Pass an int for reproducible output across multiple function calls.
@@ -473,23 +474,23 @@ class tSNE(BaseEstimator):
     ----------
     embedding_ : ndarray, shape (n_matrices, n_components, n_components)
         The result of the optimization process.
-    
+
     References
     ----------
     .. [1] `Geometry-Aware visualization of high dimensional Symmetric Positive Definite matrices
         <https://openreview.net/pdf?id=DYCSRf3vby>`_
-        T. de Surrel, S. Chevallier, F. Lotte and F. Yger. 
+        T. de Surrel, S. Chevallier, F. Lotte and F. Yger.
         Transactions on Machine Learning Research, 2025
     """
 
     def __init__(
         self,
-        n_components = 2,
+        n_components=2,
         perplexity=None,
         verbosity=0,
         max_it=10000,
         max_time=100,
-        random_state=None, 
+        random_state=None,
     ):
         self.n_components = n_components
         self.perplexity = perplexity
@@ -499,7 +500,7 @@ class tSNE(BaseEstimator):
         self.random_state = random_state
 
     def _compute_similarties(self, X):
-        """Computed the high dimensional symmetrized conditional similarities 
+        """Computed the high dimensional symmetrized conditional similarities
         p_{ij} for the t-SNE algorithm.
 
         Parameters
@@ -524,7 +525,7 @@ class tSNE(BaseEstimator):
         return P / (2 * nb_mat)
 
     def _compute_low_affinities(self, Y):
-        """Computed the low dimensional similarities q_{ij} for the t-SNE 
+        """Computed the low dimensional similarities q_{ij} for the t-SNE
         algorithm.
 
         Parameters
@@ -552,7 +553,7 @@ class tSNE(BaseEstimator):
         return Q, Dsq
 
     def _cost(self, P, Q):
-        """Computed the loss of the t-SNE, that is the Kullback-Leibler 
+        """Computed the loss of the t-SNE, that is the Kullback-Leibler
         divergence between P and Q.
 
         Parameters
@@ -560,7 +561,7 @@ class tSNE(BaseEstimator):
         P : ndarray, shape (n_matrices, n_matrices)
             The matrix of the symmetrized conditional probabilities of X.
         Q : ndarray, shape (n_matrices, n_matrices)
-            The matrix of the low dimensional similarities conditional 
+            The matrix of the low dimensional similarities conditional
             probabilities of Y.
 
         Returns
@@ -580,7 +581,7 @@ class tSNE(BaseEstimator):
         P : ndarray, shape (n_matrices, n_matrices)
             The matrix of the symmetrized conditional probabilities of X.
         Q : ndarray, shape (n_matrices, n_matrices)
-            The matrix of the low dimensional similarities conditional 
+            The matrix of the low dimensional similarities conditional
             probabilities of Y.
         Dsq : ndarray, shape (n_matrices, n_matrices)
             The Riemannian distance matrix of Y.
@@ -682,9 +683,7 @@ class tSNE(BaseEstimator):
         else:
             warnings.warn("Maximum iterations reached.")
         if self.verbosity >= 1:
-            print(
-                "Optimization done in {:.2f} seconds.".format(time() - initial_time)
-            )
+            print("Optimization done in {:.2f} seconds.".format(time() - initial_time))
         return current_sol
 
     def fit(self, X, y=None):
@@ -710,23 +709,22 @@ class tSNE(BaseEstimator):
         # Compute similarities in the high dimension space
         P = self._compute_similarties(X)
 
-    
         # Sample initial solution close to the identity
         sigma = 1
         self.initial_point = sample_gaussian_spd(
-            n_matrices, 
-            mean=np.eye(self.n_components), 
-            sigma=sigma, 
-            random_state = self.random_state
+            n_matrices,
+            mean=np.eye(self.n_components),
+            sigma=sigma,
+            random_state=self.random_state,
         )
         if self.verbosity >= 1:
             print("Optimizing...")
         self.embedding_ = self._run_minimization(P)
 
         return self
-    
+
     def fit_transform(self, X, y=None):
-        """Calculate the coordinates of the embedded matrices 
+        """Calculate the coordinates of the embedded matrices
         using t-SNE.
 
         Parameters
@@ -744,29 +742,36 @@ class tSNE(BaseEstimator):
         """
         self.fit(X)
         return self.embedding_
-    
+
+
 def _check_dimensions(X, Y=None, n_components=None, n_neighbors=None):
     n_matrices, n_channels, n_channels = X.shape
 
     if Y is not None and Y.shape[1:] != (n_channels, n_channels):
-        msg = f"Dimension of matrices in data to be transformed must match " \
-              f"dimension of data used for fitting. Expected " \
-              f"{(n_channels, n_channels)}, got {Y.shape[1:]}."
+        msg = (
+            f"Dimension of matrices in data to be transformed must match "
+            f"dimension of data used for fitting. Expected "
+            f"{(n_channels, n_channels)}, got {Y.shape[1:]}."
+        )
         raise ValueError(msg)
 
     if n_components is None:
         n_components = n_matrices - 1
     elif n_components >= n_matrices:
-        msg = f"n_components (is {n_components}) must be smaller than " \
-              f"n_matrices (is {n_matrices})."
+        msg = (
+            f"n_components (is {n_components}) must be smaller than "
+            f"n_matrices (is {n_matrices})."
+        )
         raise ValueError(msg)
 
     if n_neighbors is None:
         n_neighbors = n_matrices - 1
     elif n_matrices <= n_neighbors:
-        warnings.warn(f"n_neighbors (is {n_neighbors}) must be smaller than "
-                      f"n_matrices (is {n_matrices}). Setting n_neighbors to "
-                      f"{n_matrices - 1}.")
+        warnings.warn(
+            f"n_neighbors (is {n_neighbors}) must be smaller than "
+            f"n_matrices (is {n_matrices}). Setting n_neighbors to "
+            f"{n_matrices - 1}."
+        )
         n_neighbors = n_matrices - 1
 
     return n_components, n_neighbors
