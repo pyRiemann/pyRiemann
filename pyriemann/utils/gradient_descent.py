@@ -8,7 +8,6 @@ def retraction(point, tangent_vector):
     """
     Retracts a tangent vector back to the manifold.
 
-    
     Parameters
     ----------
     point : array, shape (n, n)
@@ -24,9 +23,11 @@ def retraction(point, tangent_vector):
 
     References
     ----------
-    .. [1] `Pymanopt: A Python Toolbox for Optimization on Manifolds using Automatic Differentiation
+    .. [1] `Pymanopt: A Python Toolbox for Optimization on Manifolds using
+        Automatic Differentiation
         <http://jmlr.org/papers/v17/16-177.html>`_
-        J. Townsend, N. Koep and S. Weichwald, Journal of Machine Learning Research, 2016
+        J. Townsend, N. Koep and S. Weichwald, Journal of Machine Learning
+        Research, 2016
     """
 
     p_inv_tv = np.linalg.solve(point, tangent_vector)
@@ -35,7 +36,7 @@ def retraction(point, tangent_vector):
 
 def norm_SPD(point, tangent_vector):
     """
-    Compute the norm of a tangent vector at a point on the manifold of 
+    Compute the norm of a tangent vector at a point on the manifold of
     SPD matrices.
     Parameters
     ----------
@@ -52,9 +53,11 @@ def norm_SPD(point, tangent_vector):
 
     References
     ----------
-    .. [1] `Pymanopt: A Python Toolbox for Optimization on Manifolds using Automatic Differentiation
+    .. [1] `Pymanopt: A Python Toolbox for Optimization on Manifolds using
+        Automatic Differentiation
         <http://jmlr.org/papers/v17/16-177.html>`_
-        J. Townsend, N. Koep and S. Weichwald, Journal of Machine Learning Research, 2016
+        J. Townsend, N. Koep and S. Weichwald, Journal of Machine Learning
+        Research, 2016
     """
 
     p_inv_tv = np.linalg.solve(point, tangent_vector)

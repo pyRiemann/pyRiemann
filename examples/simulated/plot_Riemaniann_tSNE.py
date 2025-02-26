@@ -3,7 +3,7 @@
 Visualize SPD dataset using the Riemannian t-SNE algorithm.
 =====================================================================
 
-Using the Riemannian t-SNE to visualize samples from 
+Using the Riemannian t-SNE to visualize samples from
 the Riemannian Gaussian distribution with different centerings and dispersions.
 More details on the Riemannian t-SNE can be found in [1]_.
 
@@ -33,7 +33,8 @@ epsilon = 4.0  # parameter for controlling the distance between centers
 random_state = 42  # ensure reproducibility
 
 # Generate the samples on three different conditions
-means = make_matrices(2, n_dim, "spd", rs=random_state)  # random reference points
+# random reference points
+means = make_matrices(2, n_dim, "spd", rs=random_state)
 
 samples_1 = sample_gaussian_spd(
     n_matrices=n_matrices_per_class,
@@ -74,18 +75,19 @@ tSNE_ = tSNE(
 embd = tSNE_.fit_transform(X=samples)
 
 ###############################################################################
-# Plot the results. A dynamic display is required if you want to rotate or zoom the 3D figure.
-# This 3D plot can be tricky to interpret. 2x2 SPD matrices can be viewed as
-# spatial coordinates contained in a hyper-cone.
-# We can see that the two Gaussians are well reduced, with two different means and the
-# second Gaussian having a smaller dispersion.
+# Plot the results. A dynamic display is required if you want to rotate
+# or zoom the 3D figure. This 3D plot can be tricky to interpret.
+# 2x2 SPD matrices can be viewed as spatial coordinates contained in
+# a hyper-cone. We can see that the two Gaussians are well reduced,
+# with two different means and the second Gaussian having a smaller dispersion.
 
 fig = plt.figure(figsize=(8, 6))
 ax = plt.axes(projection="3d")
 
 colors = {1: "C0", 2: "C1"}
 for i in range(len(samples)):
-    ax.scatter(embd[i, 0, 0], embd[i, 0, 1], embd[i, 1, 1], c=colors[labels[i]], s=50)
+    ax.scatter(embd[i, 0, 0], embd[i, 0, 1], embd[i, 1, 1],
+               c=colors[labels[i]], s=50)
 ax.scatter([], [], c="C0", s=50, label=r"First Gaussian")
 ax.scatter([], [], c="C1", s=50, label=r"Second Gaussian")
 ax.legend()

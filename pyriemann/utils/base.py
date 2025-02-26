@@ -380,6 +380,7 @@ def ddlogm(X, Cref):
 
 ###############################################################################
 
+
 def multitransp(A):
     """Vectorized matrix transpose.
 
@@ -393,9 +394,11 @@ def multitransp(A):
 
     References
     ----------
-    .. [1] `Pymanopt: A Python Toolbox for Optimization on Manifolds using Automatic Differentiation
+    .. [1] `Pymanopt: A Python Toolbox for Optimization on Manifolds using
+        Automatic Differentiation
         <http://jmlr.org/papers/v17/16-177.html>`_
-        J. Townsend, N. Koep and S. Weichwald, Journal of Machine Learning Research, 2016 
+        J. Townsend, N. Koep and S. Weichwald, Journal of Machine Learning
+        Research, 2016
     """
     if A.ndim == 2:
         return A.T
@@ -413,8 +416,10 @@ def multisym(A):
 
     References
     ----------
-    .. [1] `Pymanopt: A Python Toolbox for Optimization on Manifolds using Automatic Differentiation
+    .. [1] `Pymanopt: A Python Toolbox for Optimization on Manifolds using
+        Automatic Differentiation
         <http://jmlr.org/papers/v17/16-177.html>`_
-        J. Townsend, N. Koep and S. Weichwald, Journal of Machine Learning Research, 2016
+        J. Townsend, N. Koep and S. Weichwald, Journal of Machine Learning
+        Research, 2016
     """
     return 0.5 * (A + multitransp(A))

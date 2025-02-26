@@ -255,7 +255,8 @@ class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
         _check_dimensions(self.data_, X)
         pairwise_dists = pairwise_distance(X, self.data_, metric=self.metric)
         ind = np.array(
-            [np.argsort(dist)[1 : self.n_neighbors + 1] for dist in pairwise_dists]
+            [np.argsort(dist)[1: self.n_neighbors + 1] for dist in
+             pairwise_dists]
         )
 
         weights = barycenter_weights(
@@ -414,7 +415,7 @@ def locally_linear_embedding(
     n_matrices, n_channels, n_channels = X.shape
     pairwise_distances = pairwise_distance(X, metric=metric)
     neighbors = np.array(
-        [np.argsort(dist)[1 : n_neighbors + 1] for dist in pairwise_distances]
+        [np.argsort(dist)[1: n_neighbors + 1] for dist in pairwise_distances]
     )
 
     B = barycenter_weights(
@@ -477,7 +478,8 @@ class tSNE(BaseEstimator):
 
     References
     ----------
-    .. [1] `Geometry-Aware visualization of high dimensional Symmetric Positive Definite matrices
+    .. [1] `Geometry-Aware visualization of high dimensional Symmetric
+        Positive Definite matrices
         <https://openreview.net/pdf?id=DYCSRf3vby>`_
         T. de Surrel, S. Chevallier, F. Lotte and F. Yger.
         Transactions on Machine Learning Research, 2025
@@ -516,8 +518,9 @@ class tSNE(BaseEstimator):
         nb_mat = X.shape[0]
         Dsq = pairwise_distance(X, squared=True)
         Dsq = Dsq.astype(np.float32, copy=False)
-        # Use _binary_search_perplexity from sklearn to compute conditional probabilities
-        # such that they approximately match the desired perplexity
+        # Use _binary_search_perplexity from sklearn to compute conditional
+        # probabilities such that they approximately match the desired
+        # perplexity
         conditional_P = _binary_search_perplexity(Dsq, self.perplexity, 0)
 
         # Symmetrize the conditional probabilities
@@ -546,7 +549,8 @@ class tSNE(BaseEstimator):
         Dsq = pairwise_distance(Y, squared=True)
 
         denominator = np.sum(
-            [np.sum([np.delete(1 / (1 + Dsq[k, :]), k)]) for k in range(nb_mat)]
+            [np.sum([np.delete(1 / (1 + Dsq[k, :]), k)])
+             for k in range(nb_mat)]
         )
         Q = 1 / (1 + Dsq) / denominator
         np.fill_diagonal(Q, 0)
@@ -569,7 +573,8 @@ class tSNE(BaseEstimator):
         _ : float
             The cost of the t-SNE.
         """
-        return np.sum(P * np.log((P + np.eye(P.shape[0])) / (Q + np.eye(P.shape[0]))))
+        return np.sum(P * np.log((P + np.eye(P.shape[0])) /
+                                 (Q + np.eye(P.shape[0]))))
 
     def _riemannian_gradient(self, Y, P, Q, Dsq):
         """Computed the Riemannian gradient of the loss of the t-SNE.
@@ -597,10 +602,12 @@ class tSNE(BaseEstimator):
         Y_i_sqrt = sqrtm(Y)
         for i in range(nb_mat):
             log_riemann = (
-                Y_i_sqrt[i] @ logm(Y_i_invsqrt[i] @ Y @ Y_i_invsqrt[i]) @ Y_i_sqrt[i]
+                Y_i_sqrt[i] @ logm(Y_i_invsqrt[i] @ Y @ Y_i_invsqrt[i])
+                @ Y_i_sqrt[i]
             )
             grad[i] = -4 * np.sum(
-                ((P[i] - Q[i]) / (1 + Dsq[i]))[:, np.newaxis, np.newaxis] * log_riemann,
+                ((P[i] - Q[i]) / (1 + Dsq[i]))[:, np.newaxis, np.newaxis] *
+                log_riemann,
                 axis=0,
             )
         return grad
@@ -641,17 +648,19 @@ class tSNE(BaseEstimator):
             if i == 0:
                 alpha = 1.0 / norm_direction
             else:
-                # Pick initial step size based on where we were last time and look a bit further
+                # Pick initial step size based on where we were last time and
+                # look a bit further
                 # See Boumal, 2023, Section 4.3 for more insights.
-                alpha = 4 * (self.loss_evolution[-2] - loss) / (norm_direction**2)
+                alpha = 4 * (self.loss_evolution[-2] - loss) / \
+                        norm_direction**2
 
             tau = 0.50
             r = 1e-4
             maxiter_linesearch = 25
 
             retracted = retraction(current_sol, -alpha * direction)
-            Q_retracted, Dsq_retracted = self._compute_low_affinities(retracted)
-            loss_retracted = self._cost(P, Q_retracted)
+            Q_retract, Dsq_retract = self._compute_low_affinities(retracted)
+            loss_retracted = self._cost(P, Q_retract)
 
             # Backtrack while the Armijo criterion is not satisfied
             for _ in range(maxiter_linesearch):
@@ -660,8 +669,9 @@ class tSNE(BaseEstimator):
                 alpha = tau * alpha
 
                 retracted = retraction(current_sol, -alpha * direction)
-                Q_retracted, Dsq_retracted = self._compute_low_affinities(retracted)
-                loss_retracted = self._cost(P, Q_retracted)
+                Q_retract, Dsq_retract = self._compute_low_affinities(
+                    retracted)
+                loss_retracted = self._cost(P, Q_retract)
             else:
                 warnings.warn("Maximum iteration in linesearched reached.")
 
@@ -677,13 +687,19 @@ class tSNE(BaseEstimator):
 
             # test if the maximum time has been reached
             if time() - initial_time >= self.max_time:
-                warnings.warn("Time limite reached after " + str(i) + " iterations.")
+                warnings.warn(
+                    "Time limite reached after " + str(i) + " iterations."
+                    )
                 break
 
         else:
             warnings.warn("Maximum iterations reached.")
         if self.verbosity >= 1:
-            print("Optimization done in {:.2f} seconds.".format(time() - initial_time))
+            print(
+                "Optimization done in {:.2f} seconds.".format(
+                    time() - initial_time
+                    )
+                )
         return current_sol
 
     def fit(self, X, y=None):
