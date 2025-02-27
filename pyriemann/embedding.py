@@ -18,10 +18,10 @@ from .utils.gradient_descent import retraction, norm
 
 
 class SpectralEmbedding(BaseEstimator):
-    """Spectral embedding of SPD/HPD matrices into an Euclidean space.
+    """Spectral embedding of SPD/HPD matrices.
 
-    It uses Laplacian Eigenmaps [1]_ to embed SPD/HPD matrices into an
-    Euclidean space of smaller dimension.
+    Spectral embedding uses Laplacian Eigenmaps [1]_ to embed SPD/HPD matrices
+    into an Euclidean space of smaller dimension.
     The basic hypothesis is that high-dimensional
     data live in a low-dimensional manifold, whose intrinsic geometry can be
     described via the Laplacian matrix of a graph. The vertices of this graph
@@ -33,7 +33,7 @@ class SpectralEmbedding(BaseEstimator):
     n_components : integer, default=2
         The dimension of the projected subspace.
     metric : string, default="riemann"
-        Metric used for defining pairwise distance between SPD matrices.
+        Metric used for defining pairwise distance between SPD/HPD matrices.
         For the list of supported metrics,
         see :func:`pyriemann.utils.distance.pairwise_distance`.
     eps : None | float, default=None
@@ -124,18 +124,18 @@ class SpectralEmbedding(BaseEstimator):
         -------
         X_new : ndarray, shape (n_matrices, n_components)
             Coordinates of embedded matrices.
-
         """
         self.fit(X)
         return self.embedding_
 
 
 class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
-    """Locally Linear Embedding (LLE) of SPD matrices.
+    """Locally Linear Embedding of SPD matrices.
 
-    As proposed in [1]_, Locally Linear Embedding (LLE) is a non-linear,
+    Locally Linear Embedding (LLE) is a non-linear,
     neighborhood-preserving dimensionality reduction algorithm which
-    consists of three main steps. For each SPD matrix X[i] [2]_:
+    consists of three main steps [1]_.
+    For each SPD matrix X[i] [2]_:
 
     1.  find its k-nearest neighbors k-NN(X[i]),
     2.  calculate the best reconstruction of X[i] based on its k-NN,
@@ -293,7 +293,7 @@ class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
 
 
 def barycenter_weights(X, Y, indices, metric="riemann", kernel=None, reg=1e-3):
-    """Compute Riemannian barycenter weights of X from Y along the first axis.
+    """Compute barycenter weights of X from Y along the first axis.
 
     Estimates the weights to assign to each matrix in Y[indices] to recover
     the matrix X[i] by geodesic interpolation. The barycenter weights sum to 1.
@@ -447,28 +447,25 @@ def locally_linear_embedding(
 
 
 class TSNE(BaseEstimator):
-    """T-distributed Stochastic Neighbor Embedding (t-SNE) for SPD/HPD
-    matrices.
+    """T-distributed Stochastic Neighbor Embedding (t-SNE) of SPD/HPD matrices.
 
-    t-SNE algorithm for the affine-invariant Riemannian metric [1]_,
-    reducing a set of nxn SPD/HPD matrices into a set of 2x2 SPD/HPD matrices.
+    T-distributed Stochastic Neighbor Embedding (t-SNE) reduces
+    a set of nxn SPD/HPD matrices into a set of 2x2 SPD/HPD matrices [1]_.
 
     Parameters
     ----------
     n_components : int, default=2
         Dimension of the matrices in the embedded space.
     perplexity : int, default=None
-        Perplexity used in the Riemannian t-SNE algorithm.
+        Perplexity used in the t-SNE algorithm.
         If None, it will be set to 0.75*n_matrices
     verbosity : int, default=0
         Level of information printed by the optimizer while it operates:
         0 is silent, 2 is most verbose.
     max_it : int, default=10_000
-        Maximum number of iterations used for the Riemannian gradient
-        descent.
+        Maximum number of iterations used for the gradient descent.
     max_time : int default=300
-        Maximum time on the run time of the Riemannian gradient descent
-        in seconds.
+        Maximum time on the run time of the gradient descent in seconds.
     random_state : int, default=None
         Pass an int for reproducible output across multiple function calls.
 
@@ -709,7 +706,7 @@ class TSNE(BaseEstimator):
         Parameters
         ----------
         X : array_like of shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None
             Not used, here for compatibility with sklearn API.
 
@@ -746,15 +743,14 @@ class TSNE(BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None
             Not used, here for compatibility with sklearn API.
 
         Returns
         -------
         X_new : ndarray, shape (n_matrices, n_components, n_components)
-            Coordinates of embedded matrices using t-SNE.
-
+            Coordinates of embedded matrices.
         """
         self.fit(X)
         return self.embedding_
