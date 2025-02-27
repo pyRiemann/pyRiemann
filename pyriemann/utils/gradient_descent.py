@@ -32,6 +32,7 @@ def retraction(point, tangent_vector):
         A tangent vector at the point.
 
     Returns
+    -------
     retracted_point : array, shape (n_matrices, n, n)
         The tangent vector retracted on the manifold.
 
@@ -58,9 +59,10 @@ def norm(point, tangent_vector):
         A point on the SPD manifold.
     tangent_vector : ndarray, shape (..., n, n)
         A tangent vector at the point on the SPD manifold.
+
     Returns
     -------
-    norm : float
+    norm : float or ndarray, shape (...,)
         The norm of the tangent vector at the given point.
 
 
