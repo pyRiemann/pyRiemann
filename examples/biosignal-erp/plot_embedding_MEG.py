@@ -1,23 +1,23 @@
 """
-============================================
-Embedding ERP MEG data in 2D Euclidean space
-============================================
+===============================================
+Comparison of embeddings of covariance matrices
+===============================================
 
-Riemannian embeddings via Laplacian Eigenmaps (LE) and Locally Linear
-Embedding (LLE) of a set of ERP data. Embedding via Laplacian Eigenmaps is
-referred to as Spectral Embedding (SE).
+Comparison of several embeddings of a set of ERP covariance matrices extracted
+on MEG data: SE and LLE.
 
-Locally Linear Embedding (LLE) assumes that the local neighborhood of a
-point on the manifold can be well approximated by  the affine subspace
-spanned by the k-nearest neighbors of the point and finds a low-dimensional
-embedding of the data based on these affine approximations.
-
-Laplacian Eigenmaps (LE) are based on computing the low dimensional
+Spectral Embedding (SE) is based on computing the low-dimensional
 representation that best preserves locality instead of local linearity in LLE
 [1]_.
+
+Locally Linear Embedding (LLE) assumes that the local neighborhood of a
+matrix on the manifold can be well approximated by the affine subspace
+spanned by the k-nearest neighbors of the matrix and finds a low-dimensional
+embedding of the data based on these affine approximations.
 """
 # Authors:  Pedro Rodrigues <pedro.rodrigues01@gmail.com>,
 #           Gabriel Wagner vom Berg <gabriel@bccn-berlin.de>
+#
 # License: BSD (3-clause)
 
 import matplotlib.pyplot as plt
@@ -58,9 +58,10 @@ epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=False,
 X = epochs.get_data(copy=False)
 y = epochs.events[:, -1]
 
+
 ###############################################################################
-# Embedding of Xdawn covariance matrices
-# --------------------------------------
+# Extract Xdawn covariance matrices
+# ---------------------------------
 
 nfilter = 4
 xdwn = XdawnCovariances(estimator="scm", nfilter=nfilter)
@@ -68,19 +69,21 @@ split = train_test_split(X, y, train_size=0.25, random_state=42)
 Xtrain, Xtest, ytrain, ytest = split
 covs = xdwn.fit(Xtrain, ytrain).transform(Xtest)
 
+
 ###############################################################################
-# Laplacian Eigenmaps (LE), also called Spectral Embedding (SE)
-# -------------------------------------------------------------
+# Spectral Embedding (SE)
+# -----------------------
 
 plot_embedding(covs, ytest, metric="riemann", embd_type="Spectral",
                normalize=True)
 plt.show()
 
+
 ###############################################################################
 # Locally Linear Embedding (LLE)
 # ------------------------------
 
-plot_embedding(covs, ytest, metric="riemann", embd_type="LocallyLinear",
+plot_embedding(covs, ytest, metric="riemann", embd_type="Locally Linear",
                normalize=False)
 plt.show()
 
