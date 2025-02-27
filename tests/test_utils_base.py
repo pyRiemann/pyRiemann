@@ -3,6 +3,7 @@ from numpy.testing import assert_array_almost_equal
 import pytest
 
 from pyriemann.utils.base import (
+    ctranspose,
     expm,
     invsqrtm,
     logm,
@@ -124,11 +125,7 @@ def test_funm_properties(get_mats, kind):
 
     # sqrtm
     sC = sqrtm(C)
-    assert_array_almost_equal(
-        np.swapaxes(sC.conj(), -2, -1) @ sC,
-        C,
-        decimal=10,
-    )
+    assert_array_almost_equal(ctranspose(sC) @ sC, C, decimal=10)
     assert_array_almost_equal(isC @ C @ isC, Eye, decimal=10)
 
     # powm
