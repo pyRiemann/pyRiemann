@@ -83,7 +83,7 @@ plt.show()
 # Locally Linear Embedding (LLE)
 # ------------------------------
 
-plot_embedding(covs, ytest, metric="riemann", embd_type="Locally Linear",
+plot_embedding(covs, ytest, metric="riemann", embd_type="LocallyLinear",
                normalize=False)
 plt.show()
 
