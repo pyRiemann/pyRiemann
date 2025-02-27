@@ -17,7 +17,7 @@ More details on the Riemannian t-SNE can be found in [1]_.
 import numpy as np
 import matplotlib.pyplot as plt
 
-from pyriemann.embedding import tSNE
+from pyriemann.embedding import TSNE
 from pyriemann.datasets import make_matrices, sample_gaussian_spd
 
 
@@ -54,17 +54,17 @@ samples = np.concatenate([samples_1, samples_2])
 labels = np.array(n_matrices_per_class * [1] + n_matrices_per_class * [2])
 n_total_matrices = samples.shape[0]
 ###############################################################################
-# Apply the tSNE over the SPD matrices
+# Apply the t-SNE over the SPD matrices
 
 n_components = 2  # Dimension of the SPD matrices in the output space
 perplexity = int(
     0.75 * n_total_matrices
-)  # Perplexity parameter for the tSNE (recommended to be 0.75*n_samples)
-verbosity = 0  # Verbosity level of the tSNE
+)  # Perplexity parameter for the t-SNE (recommended to be 0.75*n_samples)
+verbosity = 0  # Verbosity level of the t-SNE
 max_it = 10000  # Maximum number of iterations
 max_time = 60  # Maximum time for the computation in seconds
 
-tSNE_ = tSNE(
+TSNE_ = TSNE(
     n_components=n_components,
     perplexity=perplexity,
     verbosity=verbosity,
@@ -72,7 +72,7 @@ tSNE_ = tSNE(
     max_time=max_time,
     random_state=random_state,
 )
-embd = tSNE_.fit_transform(X=samples)
+embd = TSNE_.fit_transform(X=samples)
 
 ###############################################################################
 # Plot the results. A dynamic display is required if you want to rotate

@@ -39,7 +39,7 @@ Embedding
 
     SpectralEmbedding
     LocallyLinearEmbedding
-    tSNE
+    TSNE
 
 Classification
 --------------

@@ -14,7 +14,7 @@ from .utils.distance import pairwise_distance
 from .utils.kernel import kernel as kernel_fct
 from .utils.base import sqrtm, invsqrtm, logm
 from .datasets import sample_gaussian_spd
-from .utils.gradient_descent import retraction, norm_SPD
+from .utils.gradient_descent import retraction, norm
 
 
 class SpectralEmbedding(BaseEstimator):
@@ -255,8 +255,8 @@ class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
         _check_dimensions(self.data_, X)
         pairwise_dists = pairwise_distance(X, self.data_, metric=self.metric)
         ind = np.array(
-            [np.argsort(dist)[1: self.n_neighbors + 1] for dist in
-             pairwise_dists]
+            [np.argsort(dist)[1: self.n_neighbors + 1]
+             for dist in pairwise_dists]
         )
 
         weights = barycenter_weights(
@@ -446,26 +446,27 @@ def locally_linear_embedding(
     return embd, error
 
 
-class tSNE(BaseEstimator):
-    """AIRM Riemannian version of t-SNE algorithm.
+class TSNE(BaseEstimator):
+    """T-distributed Stochastic Neighbor Embedding (t-SNE) for SPD/HPD
+    matrices.
 
-    This Riemannian version of the t-SNE algorihtm was presented in [1]_.
-    Reduces a set of d x d SPD matrices into a set of 2 x 2 SPD matrices.
+    t-SNE algorithm for the affine-invariant Riemannian metric [1]_,
+    reducing a set of nxn SPD/HPD matrices into a set of 2x2 SPD/HPD matrices.
 
     Parameters
     ----------
-    n_components : int, default = 2
+    n_components : int, default=2
         Dimension of the matrices in the embedded space.
-    perplexity : int, default = None
+    perplexity : int, default=None
         Perplexity used in the Riemannian t-SNE algorithm.
-        If perplexity = None, it will be set to 0.75*n_matrices
-    verbosity : int, default = 0
+        If None, it will be set to 0.75*n_matrices
+    verbosity : int, default=0
         Level of information printed by the optimizer while it operates:
         0 is silent, 2 is most verbose.
-    max_it : int, default = 10000
+    max_it : int, default=10_000
         Maximum number of iterations used for the Riemannian gradient
         descent.
-    max_time : int default = 300
+    max_time : int default=300
         Maximum time on the run time of the Riemannian gradient descent
         in seconds.
     random_state : int, default=None
@@ -474,7 +475,7 @@ class tSNE(BaseEstimator):
     Attributes
     ----------
     embedding_ : ndarray, shape (n_matrices, n_components, n_components)
-        The result of the optimization process.
+        Embedding matrices of the training set.
 
     References
     ----------
@@ -515,7 +516,7 @@ class tSNE(BaseEstimator):
         P : ndarray, shape (n_matrices, n_matrices)
             The matrix of the symmetrized conditional probabilities of X.
         """
-        nb_mat = X.shape[0]
+        n_matrices, _, _ = X.shape
         Dsq = pairwise_distance(X, squared=True)
         Dsq = Dsq.astype(np.float32, copy=False)
         # Use _binary_search_perplexity from sklearn to compute conditional
@@ -525,7 +526,7 @@ class tSNE(BaseEstimator):
 
         # Symmetrize the conditional probabilities
         P = conditional_P + conditional_P.T
-        return P / (2 * nb_mat)
+        return P / (2 * n_matrices)
 
     def _compute_low_affinities(self, Y):
         """Computed the low dimensional similarities q_{ij} for the t-SNE
@@ -545,12 +546,12 @@ class tSNE(BaseEstimator):
             The array containing the squared Riemannian distances between
             the points in X.
         """
-        nb_mat = Y.shape[0]
+        n_matrices, _, _ = Y.shape
         Dsq = pairwise_distance(Y, squared=True)
 
         denominator = np.sum(
             [np.sum([np.delete(1 / (1 + Dsq[k, :]), k)])
-             for k in range(nb_mat)]
+             for k in range(n_matrices)]
         )
         Q = 1 / (1 + Dsq) / denominator
         np.fill_diagonal(Q, 0)
@@ -596,11 +597,11 @@ class tSNE(BaseEstimator):
         grad : ndarray, shape (n_matrices, n_components, n_components)
             The Riemannian gradient of the cost of the t-SNE.
         """
-        nb_mat = P.shape[0]
-        grad = np.zeros((nb_mat, self.n_components, self.n_components))
+        n_matrices, _ = P.shape
+        grad = np.zeros((n_matrices, self.n_components, self.n_components))
         Y_i_invsqrt = invsqrtm(Y)
         Y_i_sqrt = sqrtm(Y)
-        for i in range(nb_mat):
+        for i in range(n_matrices):
             log_riemann = (
                 Y_i_sqrt[i] @ logm(Y_i_invsqrt[i] @ Y @ Y_i_invsqrt[i])
                 @ Y_i_sqrt[i]
@@ -642,7 +643,7 @@ class tSNE(BaseEstimator):
 
             # get the direction of steepest descent
             direction = self._riemannian_gradient(current_sol, P, Q, Dsq)
-            norm_direction = norm_SPD(current_sol, direction)
+            norm_direction = norm(current_sol, direction)
 
             # backtracking line search
             if i == 0:
@@ -679,7 +680,7 @@ class tSNE(BaseEstimator):
             current_sol = retracted
 
             # test if the step size is small
-            crit = norm_SPD(current_sol, -alpha * direction)
+            crit = norm(current_sol, -alpha * direction)
             if crit <= tol_step:
                 if self.verbosity >= 1:
                     print("Min stepsize reached")
@@ -703,7 +704,7 @@ class tSNE(BaseEstimator):
         return current_sol
 
     def fit(self, X, y=None):
-        """Fit X to smaller SDP matrices using the Riemannian t-SNE algorithm.
+        """Fit Riemannian t-SNE.
 
         Parameters
         ----------
@@ -714,10 +715,10 @@ class tSNE(BaseEstimator):
 
         Returns
         -------
-        res_opti :  ndarray, shape (n_matrices, n_components, n_components)
-            The solution of the t-SNE problem.
+        self : TSNE instance
+            The TSNE instance.
         """
-        (n_matrices, _, _) = X.shape
+        n_matrices, _, _ = X.shape
 
         if self.perplexity is None:
             self.perplexity = int(0.75 * n_matrices)
@@ -740,8 +741,7 @@ class tSNE(BaseEstimator):
         return self
 
     def fit_transform(self, X, y=None):
-        """Calculate the coordinates of the embedded matrices
-        using t-SNE.
+        """Calculate the coordinates of the embedded matrices.
 
         Parameters
         ----------

@@ -1,25 +1,40 @@
 """Tools used for Riemannian Gradient Descent"""
 import numpy as np
 
-from .base import multisym, multitransp
 
-
-def retraction(point, tangent_vector):
-    """
-    Retracts a tangent vector back to the manifold.
+def symmetrize(A):
+    """Symmetrize an array.
 
     Parameters
     ----------
-    point : array, shape (n, n)
-        A point on the manifold.
-    tangent_vector : array, shape (n, n)
-        A tangent vector at the point.
+    A : ndarray, shape (..., n, n)
+        Input array to be symmetrized.
+
     Returns
     -------
-    retracted_point : array, shape (n, n)
-        The tangent vector retracted on the manifold.
+    ndarray, shape (..., n, n)
+        Symmetrized array.
+    """
+
+    return (A + np.swapaxes(A, -1, -2)) / 2
+
+
+def retraction(point, tangent_vector):
+    """Retracts an array of tangent vector back to the manifold.
 
     This code is an adaptation from pyManopt [1]_.
+
+    Parameters
+    ----------
+    point : ndarray, shape (n_matrices, n, n)
+        A point on the manifold.
+    tangent_vector : array, shape (n_matrices, n, n)
+        A tangent vector at the point.
+
+    Returns
+    retracted_point : array, shape (n_matrices, n, n)
+        The tangent vector retracted on the manifold.
+
 
     References
     ----------
@@ -31,15 +46,14 @@ def retraction(point, tangent_vector):
     """
 
     p_inv_tv = np.linalg.solve(point, tangent_vector)
-    return multisym(point + tangent_vector + tangent_vector @ p_inv_tv / 2)
+    return symmetrize(point + tangent_vector + tangent_vector @ p_inv_tv / 2)
 
 
-def norm_SPD(point, tangent_vector):
-    """
-    Compute the norm of a tangent vector at a point on the manifold of
-    SPD matrices.
+def norm(point, tangent_vector):
+    """Compute the norm.
+    This code is an adaptation from pyManopt [1]_.
+
     Parameters
-    ----------
     point : ndarray, shape (..., n, n)
         A point on the SPD manifold.
     tangent_vector : ndarray, shape (..., n, n)
@@ -49,10 +63,7 @@ def norm_SPD(point, tangent_vector):
     norm : float
         The norm of the tangent vector at the given point.
 
-    This code is an adaptation from pyManopt [1]_.
 
-    References
-    ----------
     .. [1] `Pymanopt: A Python Toolbox for Optimization on Manifolds using
         Automatic Differentiation
         <http://jmlr.org/papers/v17/16-177.html>`_
@@ -61,6 +72,12 @@ def norm_SPD(point, tangent_vector):
     """
 
     p_inv_tv = np.linalg.solve(point, tangent_vector)
+
+    if p_inv_tv.ndim == 2:
+        p_inv_tv_transposed = p_inv_tv.T
+    else:
+        p_inv_tv_transposed = np.transpose(p_inv_tv, (0, 2, 1))
+
     return np.sqrt(
-        np.tensordot(p_inv_tv, multitransp(p_inv_tv), axes=tangent_vector.ndim)
+        np.tensordot(p_inv_tv, p_inv_tv_transposed, axes=tangent_vector.ndim)
     )

@@ -7,13 +7,13 @@ from pyriemann.datasets import make_gaussian_blobs
 from pyriemann.embedding import (
     SpectralEmbedding,
     LocallyLinearEmbedding,
-    tSNE,
+    TSNE,
     barycenter_weights,
     locally_linear_embedding,
 )
 from pyriemann.utils.kernel import kernel, kernel_functions
 
-embds = [SpectralEmbedding, LocallyLinearEmbedding, tSNE]
+embds = [SpectralEmbedding, LocallyLinearEmbedding, TSNE]
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -30,7 +30,8 @@ def test_embedding(kind, embd, get_mats):
     if "transform" in embd.__dict__.keys():
         embd_transform(embd, mats, n_comp)
         embd_transform_error(embd, mats, n_comp)
-    embd_metric_error(embd, mats, n_comp)
+    if embd is not TSNE:
+        embd_metric_error(embd, mats, n_comp)
     embd_result(embd)
 
 
@@ -38,13 +39,10 @@ def embd_fit(embedding, mats, n_components):
     n_matrices, n_channels, n_channels = mats.shape
     embd = embedding(n_components=n_components)
     embd.fit(mats)
-    if embedding is tSNE:
-        # The t-SNE reduces the SPD matrices to SPD matrices, therefore,
-        # the output is a array of matrices.
+    if embedding is TSNE:
         assert embd.embedding_.shape == (n_matrices, n_components,
                                          n_components)
     else:
-        # The other embedding methods reduce the SPD matrices to vectors.
         assert embd.embedding_.shape == (n_matrices, n_components)
 
     if embedding is LocallyLinearEmbedding:
@@ -56,12 +54,9 @@ def embd_fit_transform(embedding, mats, n_components):
     n_matrices, n_channels, n_channels = mats.shape
     embd = embedding(n_components=n_components)
     transformed = embd.fit_transform(mats)
-    if embedding is tSNE:
-        # The t-SNE reduces the SPD matrices to SPD matrices, therefore,
-        # the output is a array of matrices.
+    if embedding is TSNE:
         assert transformed.shape == (n_matrices, n_components, n_components)
     else:
-        # The other embedding methods reduce the SPD matrices to vectors.
         assert transformed.shape == (n_matrices, n_components)
 
 
@@ -70,13 +65,10 @@ def embd_transform(embedding, mats, n_components):
     embd = embedding(n_components=n_components)
     embd = embd.fit(mats)
     transformed = embd.transform(mats[:-1])
-    if embedding is tSNE:
-        # The t-SNE reduces the SPD matrices to SPD matrices, therefore,
-        # the output is a array of matrices.
+    if embedding is TSNE:
         assert transformed.shape == (n_matrices - 1, n_components,
                                      n_components)
     else:
-        # The other embedding methods reduce the SPD matrices to vectors.
         assert transformed.shape == (n_matrices - 1, n_components)
 
 
@@ -94,34 +86,31 @@ def embd_fit_independence(embedding, mats, n_components):
     # retraining with different size should erase previous fit
     new_mats = mats[:-1, :-1, :-1]
     embd = embd.fit(new_mats)
-    if embedding is tSNE:
-        # The t-SNE reduces the SPD matrices to SPD matrices, therefore,
-        # the output is a array of matrices.
+    if embedding is TSNE:
         assert embd.embedding_.shape == (n_matrices - 1, n_components,
                                          n_components)
     else:
-        # The other embedding methods reduce the SPD matrices to vectors.
         assert embd.embedding_.shape == (n_matrices - 1, n_components)
 
 
 def embd_metric_error(embedding, mats, n_components):
-    if embedding is tSNE:
-        # t-SNE does not have a metric parameter and works only with the
-        # AIRM metric.
-        pytest.skip()
     with pytest.raises(ValueError):
         embd = embedding(n_components=n_components, metric="foooo")
         embd.fit(mats)
 
 
 def embd_result(embedding):
-    X, y = make_gaussian_blobs(n_matrices=10, n_dim=2, class_sep=10.0,
+    X, y = make_gaussian_blobs(n_matrices=10,
+                               n_dim=2,
+                               class_sep=10.,
                                class_disp=1)
 
     embd = embedding(n_components=1)
     X_ = embd.fit_transform(X)
+    if embedding is TSNE:
+        X_ = X_[:, 0]
     score = NearestCentroid().fit(X_, y).score(X_, y)
-    assert score == 1.0
+    assert score == 1.
 
 
 @pytest.mark.parametrize("metric", get_metrics())
@@ -138,9 +127,9 @@ def test_spectral_embedding_parameters(metric, eps, get_mats):
 @pytest.mark.parametrize("n_components", [2, 4, 100])
 @pytest.mark.parametrize("embd", embds)
 def test_embd_n_comp(n_components, embd, get_mats):
-    if n_components == 100 and embd is tSNE:
+    if n_components == 100 and embd is TSNE:
         # t-SNE would take too long with 100 components
-        pytest.skip()
+        return
     n_matrices, n_channels = 8, 3
     mats = get_mats(n_matrices, n_channels, "spd")
     embd = embd(n_components=n_components)
@@ -174,8 +163,11 @@ def test_barycenter_weights(get_mats):
     """Test barycenter_weights helper function."""
     n_matrices, n_channels = 4, 3
     mats = get_mats(n_matrices, n_channels, "spd")
-    weights = barycenter_weights(mats, mats, np.array([[1, 2], [2, 3], [3, 0],
-                                                       [0, 1]]))
+    weights = barycenter_weights(
+        mats,
+        mats,
+        np.array([[1, 2], [2, 3], [3, 0], [0, 1]])
+    )
     assert weights.shape == (n_matrices, 2)
 
 
