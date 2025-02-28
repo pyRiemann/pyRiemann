@@ -5,23 +5,6 @@ import numpy as np
 from .test import is_pos_def
 
 
-def _matrix_operator(C, operator):
-    """Matrix function."""
-    if not isinstance(C, np.ndarray) or C.ndim < 2:
-        raise ValueError("Input must be at least a 2D ndarray")
-    if C.dtype.char in np.typecodes['AllFloat'] and (
-            np.isinf(C).any() or np.isnan(C).any()):
-        raise ValueError(
-            "Matrices must be positive definite. Add "
-            "regularization to avoid this error.")
-    eigvals, eigvecs = np.linalg.eigh(C)
-    eigvals = operator(eigvals)
-    if C.ndim >= 3:
-        eigvals = np.expand_dims(eigvals, -2)
-    D = (eigvecs * eigvals) @ ctranspose(eigvecs)
-    return D
-
-
 def ctranspose(X):
     """Conjugate transpose operator.
 
@@ -44,6 +27,26 @@ def ctranspose(X):
     .. [1] https://en.wikipedia.org/wiki/Conjugate_transpose
     """
     return np.swapaxes(X.conj(), -2, -1)
+
+
+###############################################################################
+
+
+def _matrix_operator(C, operator):
+    """Matrix function."""
+    if not isinstance(C, np.ndarray) or C.ndim < 2:
+        raise ValueError("Input must be at least a 2D ndarray")
+    if C.dtype.char in np.typecodes['AllFloat'] and (
+            np.isinf(C).any() or np.isnan(C).any()):
+        raise ValueError(
+            "Matrices must be positive definite. Add "
+            "regularization to avoid this error.")
+    eigvals, eigvecs = np.linalg.eigh(C)
+    eigvals = operator(eigvals)
+    if C.ndim >= 3:
+        eigvals = np.expand_dims(eigvals, -2)
+    D = (eigvecs * eigvals) @ ctranspose(eigvecs)
+    return D
 
 
 def expm(C):

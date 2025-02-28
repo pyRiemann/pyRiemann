@@ -21,6 +21,17 @@ from pyriemann.utils.test import is_pos_def, is_sym_pos_def
 n_channels = 3
 
 
+def test_ctranspose(get_mats):
+    X = np.random.rand(3, 4)
+    assert_array_almost_equal(ctranspose(X), X.T, decimal=10)
+
+    X = np.random.rand(7, 3, 4)
+    assert_array_almost_equal(ctranspose(X), X.transpose(0, 2, 1), decimal=10)
+
+    X = get_mats(10, n_channels, "herm")
+    assert_array_almost_equal(ctranspose(X), X, decimal=10)
+
+
 def test_expm():
     """Test matrix exponential"""
     C = 2 * np.eye(n_channels)
