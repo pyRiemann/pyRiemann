@@ -5,6 +5,33 @@ import numpy as np
 from .test import is_pos_def
 
 
+def ctranspose(X):
+    """Conjugate transpose operator.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, m)
+        Matrices, at least 2D ndarray.
+
+    Returns
+    -------
+    X_new : ndarray, shape (..., m, n)
+        Conjugate transpose of X.
+
+    Notes
+    -----
+    .. versionadded:: 0.9
+
+    References
+    ----------
+    .. [1] https://en.wikipedia.org/wiki/Conjugate_transpose
+    """
+    return np.swapaxes(X.conj(), -2, -1)
+
+
+###############################################################################
+
+
 def _matrix_operator(C, operator):
     """Matrix function."""
     if not isinstance(C, np.ndarray) or C.ndim < 2:
@@ -18,7 +45,7 @@ def _matrix_operator(C, operator):
     eigvals = operator(eigvals)
     if C.ndim >= 3:
         eigvals = np.expand_dims(eigvals, -2)
-    D = (eigvecs * eigvals) @ np.swapaxes(eigvecs.conj(), -2, -1)
+    D = (eigvecs * eigvals) @ ctranspose(eigvecs)
     return D
 
 

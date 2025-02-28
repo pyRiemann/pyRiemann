@@ -9,6 +9,7 @@ from pyriemann.datasets.simulated import (
     make_gaussian_blobs,
     make_outliers,
 )
+from pyriemann.utils.base import ctranspose
 from pyriemann.utils.test import (
     is_real, is_sym, is_hermitian,
     is_sym_pos_def as is_spd,
@@ -44,7 +45,7 @@ def test_make_matrices(rndstate, kind):
         return
 
     # all other types are symmetric or Hermitian
-    assert_array_almost_equal(X, np.swapaxes(X.conj(), -2, -1))
+    assert_array_almost_equal(X, ctranspose(X))
 
     if kind == "sym":
         assert is_sym(X)

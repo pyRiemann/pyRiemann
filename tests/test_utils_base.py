@@ -3,6 +3,7 @@ from numpy.testing import assert_array_almost_equal
 import pytest
 
 from pyriemann.utils.base import (
+    ctranspose,
     expm,
     invsqrtm,
     logm,
@@ -18,6 +19,17 @@ from pyriemann.utils.test import is_pos_def, is_sym_pos_def
 
 
 n_channels = 3
+
+
+def test_ctranspose(get_mats):
+    X = np.random.rand(3, 4)
+    assert_array_almost_equal(ctranspose(X), X.T, decimal=10)
+
+    X = np.random.rand(7, 3, 4)
+    assert_array_almost_equal(ctranspose(X), X.transpose(0, 2, 1), decimal=10)
+
+    X = get_mats(10, n_channels, "herm")
+    assert_array_almost_equal(ctranspose(X), X, decimal=10)
 
 
 def test_expm():
@@ -124,11 +136,7 @@ def test_funm_properties(get_mats, kind):
 
     # sqrtm
     sC = sqrtm(C)
-    assert_array_almost_equal(
-        np.swapaxes(sC.conj(), -2, -1) @ sC,
-        C,
-        decimal=10,
-    )
+    assert_array_almost_equal(ctranspose(sC) @ sC, C, decimal=10)
     assert_array_almost_equal(isC @ C @ isC, Eye, decimal=10)
 
     # powm
