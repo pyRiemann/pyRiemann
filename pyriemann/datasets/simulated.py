@@ -5,7 +5,7 @@ from .sampling import sample_gaussian_spd
 from ..transfer import encode_domains
 from ..utils.mean import mean_riemann
 from ..utils.distance import distance_riemann
-from ..utils.base import invsqrtm, powm, sqrtm, expm
+from ..utils.base import ctranspose, invsqrtm, powm, sqrtm, expm
 
 
 mat_kinds = ["real", "sym", "comp", "spd", "spsd", "herm", "hpd", "hpsd"]
@@ -115,8 +115,7 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
         for i in range(n_matrices):
             mats[i] = (evecs * evals[i]) @ evecs.conj().T
     else:
-        mats = (evecs * evals[:, np.newaxis, :]) @ np.swapaxes(evecs.conj(),
-                                                               -2, -1)
+        mats = (evecs * evals[:, np.newaxis, :]) @ ctranspose(evecs)
 
     if return_params:
         return mats, evals, evecs
