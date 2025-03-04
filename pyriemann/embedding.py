@@ -1,5 +1,6 @@
 """Embedding SPD matrices via manifold learning techniques."""
 
+from time import time
 import warnings
 
 import numpy as np
@@ -8,7 +9,6 @@ from scipy.sparse import csr_matrix
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.manifold import spectral_embedding
 from sklearn.manifold._utils import _binary_search_perplexity
-from time import time
 
 from .utils.distance import pairwise_distance
 from .utils.kernel import kernel as kernel_fct

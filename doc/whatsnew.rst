@@ -9,7 +9,6 @@ A catalog of new features, improvements, and bug-fixes in each release.
 
 - Add :class:`pyriemann.embedding.TSNE`, a Riemannian t-SNE implementation
   and an example of this t-SNE on synthetic data generated using the SPD Gaussians. :pr:`347` by :user:`thibaultdesurrel`
-- Add a new file `pyriemann.utils.gradient_descent` with the utility functions needed for this implementation.
 
 v0.9.dev
 --------

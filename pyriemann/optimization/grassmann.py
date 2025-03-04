@@ -1,3 +1,5 @@
+"""Optimization for rotations on Grassmann manifold"""
+
 import warnings
 
 import numpy as np

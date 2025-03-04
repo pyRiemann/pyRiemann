@@ -1,4 +1,5 @@
-"""Tools used for Riemannian Gradient Descent"""
+"""Optimization on the manifold of positive definite matrices"""
+
 import numpy as np
 
 
