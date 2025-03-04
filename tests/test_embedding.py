@@ -7,12 +7,13 @@ from pyriemann.datasets import make_gaussian_blobs
 from pyriemann.embedding import (
     SpectralEmbedding,
     LocallyLinearEmbedding,
+    TSNE,
     barycenter_weights,
     locally_linear_embedding,
 )
 from pyriemann.utils.kernel import kernel, kernel_functions
 
-embds = [SpectralEmbedding, LocallyLinearEmbedding]
+embds = [SpectralEmbedding, LocallyLinearEmbedding, TSNE]
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -29,7 +30,8 @@ def test_embedding(kind, embd, get_mats):
     if "transform" in embd.__dict__.keys():
         embd_transform(embd, mats, n_comp)
         embd_transform_error(embd, mats, n_comp)
-    embd_metric_error(embd, mats, n_comp)
+    if embd is not TSNE:
+        embd_metric_error(embd, mats, n_comp)
     embd_result(embd)
 
 
@@ -37,7 +39,11 @@ def embd_fit(embedding, mats, n_components):
     n_matrices, n_channels, n_channels = mats.shape
     embd = embedding(n_components=n_components)
     embd.fit(mats)
-    assert embd.embedding_.shape == (n_matrices, n_components)
+    if embedding is TSNE:
+        assert embd.embedding_.shape == (n_matrices, n_components,
+                                         n_components)
+    else:
+        assert embd.embedding_.shape == (n_matrices, n_components)
 
     if embedding is LocallyLinearEmbedding:
         assert embd.data_.shape == (n_matrices, n_channels, n_channels)
@@ -48,7 +54,10 @@ def embd_fit_transform(embedding, mats, n_components):
     n_matrices, n_channels, n_channels = mats.shape
     embd = embedding(n_components=n_components)
     transformed = embd.fit_transform(mats)
-    assert transformed.shape == (n_matrices, n_components)
+    if embedding is TSNE:
+        assert transformed.shape == (n_matrices, n_components, n_components)
+    else:
+        assert transformed.shape == (n_matrices, n_components)
 
 
 def embd_transform(embedding, mats, n_components):
@@ -56,7 +65,11 @@ def embd_transform(embedding, mats, n_components):
     embd = embedding(n_components=n_components)
     embd = embd.fit(mats)
     transformed = embd.transform(mats[:-1])
-    assert transformed.shape == (n_matrices - 1, n_components)
+    if embedding is TSNE:
+        assert transformed.shape == (n_matrices - 1, n_components,
+                                     n_components)
+    else:
+        assert transformed.shape == (n_matrices - 1, n_components)
 
 
 def embd_transform_error(embedding, mats, n_components):
@@ -73,7 +86,11 @@ def embd_fit_independence(embedding, mats, n_components):
     # retraining with different size should erase previous fit
     new_mats = mats[:-1, :-1, :-1]
     embd = embd.fit(new_mats)
-    assert embd.embedding_.shape == (n_matrices - 1, n_components)
+    if embedding is TSNE:
+        assert embd.embedding_.shape == (n_matrices - 1, n_components,
+                                         n_components)
+    else:
+        assert embd.embedding_.shape == (n_matrices - 1, n_components)
 
 
 def embd_metric_error(embedding, mats, n_components):
@@ -90,6 +107,8 @@ def embd_result(embedding):
 
     embd = embedding(n_components=1)
     X_ = embd.fit_transform(X)
+    if embedding is TSNE:
+        X_ = X_[:, 0]
     score = NearestCentroid().fit(X_, y).score(X_, y)
     assert score == 1.
 
@@ -108,6 +127,9 @@ def test_spectral_embedding_parameters(metric, eps, get_mats):
 @pytest.mark.parametrize("n_components", [2, 4, 100])
 @pytest.mark.parametrize("embd", embds)
 def test_embd_n_comp(n_components, embd, get_mats):
+    if n_components == 100 and embd is TSNE:
+        # t-SNE would take too long with 100 components
+        return
     n_matrices, n_channels = 8, 3
     mats = get_mats(n_matrices, n_channels, "spd")
     embd = embd(n_components=n_components)
@@ -127,10 +149,12 @@ def test_locally_linear_parameters(metric, n_neighbors, reg, kernel_fct,
     """Test LocallyLinearEmbedding."""
     n_matrices, n_channels, n_components = n_neighbors + 5, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
-    embd = LocallyLinearEmbedding(metric=metric,
-                                  n_components=n_components,
-                                  n_neighbors=n_neighbors,
-                                  kernel=kernel_fct)
+    embd = LocallyLinearEmbedding(
+        metric=metric,
+        n_components=n_components,
+        n_neighbors=n_neighbors,
+        kernel=kernel_fct,
+    )
     covembd = embd.fit_transform(mats)
     assert covembd.shape == (n_matrices, n_components)
 
@@ -139,8 +163,11 @@ def test_barycenter_weights(get_mats):
     """Test barycenter_weights helper function."""
     n_matrices, n_channels = 4, 3
     mats = get_mats(n_matrices, n_channels, "spd")
-    weights = barycenter_weights(mats, mats, np.array([[1, 2], [2, 3],
-                                                       [3, 0], [0, 1]]))
+    weights = barycenter_weights(
+        mats,
+        mats,
+        np.array([[1, 2], [2, 3], [3, 0], [0, 1]])
+    )
     assert weights.shape == (n_matrices, 2)
 
 
@@ -148,9 +175,9 @@ def test_locally_linear_embedding(get_mats):
     """Test locally_linear_embedding helper function."""
     n_matrices, n_channels, n_comps, n_neighbors = 4, 3, 2, 2
     mats = get_mats(n_matrices, n_channels, "spd")
-    embedding, error = locally_linear_embedding(mats,
-                                                n_neighbors=n_neighbors,
-                                                n_components=n_comps)
+    embedding, error = locally_linear_embedding(
+        mats, n_neighbors=n_neighbors, n_components=n_comps
+    )
     assert embedding.shape == (n_matrices, n_comps)
     assert isinstance(error, float)
 
@@ -164,14 +191,13 @@ def test_locally_linear_none_kernel(metric, get_mats):
     def kfun(X, Y=None, Cref=None, metric=None):
         return kernel_functions[metric](X, Y, Cref=Cref)
 
-    embd = LocallyLinearEmbedding(metric=metric,
-                                  n_components=n_components,
+    embd = LocallyLinearEmbedding(metric=metric, n_components=n_components,
                                   kernel=kfun)
     mats_tf = embd.fit_transform(mats)
 
-    embd2 = LocallyLinearEmbedding(metric=metric,
-                                   n_components=n_components,
-                                   kernel=None)
+    embd2 = LocallyLinearEmbedding(
+        metric=metric, n_components=n_components, kernel=None
+    )
     mats_tf2 = embd2.fit_transform(mats)
 
     assert np.array_equal(mats_tf, mats_tf2)
