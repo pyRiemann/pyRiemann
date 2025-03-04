@@ -14,7 +14,7 @@ from .utils.distance import pairwise_distance
 from .utils.kernel import kernel as kernel_fct
 from .utils.base import sqrtm, invsqrtm, logm
 from .datasets import sample_gaussian_spd
-from .utils.gradient_descent import retraction, norm
+from .optimization.gradient_descent import retraction, norm
 
 
 class SpectralEmbedding(BaseEstimator):
