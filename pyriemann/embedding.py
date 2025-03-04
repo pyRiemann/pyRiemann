@@ -701,11 +701,11 @@ class TSNE(BaseEstimator):
         return current_sol
 
     def fit(self, X, y=None):
-        """Fit Riemannian t-SNE.
+        """Fit TSNE.
 
         Parameters
         ----------
-        X : array_like of shape (n_matrices, n_channels, n_channels)
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD/HPD matrices.
         y : None
             Not used, here for compatibility with sklearn API.
