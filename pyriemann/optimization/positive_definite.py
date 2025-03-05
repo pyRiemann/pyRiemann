@@ -1,9 +1,9 @@
 """Optimization on the manifold of positive definite matrices"""
 
+from time import time
 import warnings
 
 import numpy as np
-from time import time
 
 from ..utils.base import sqrtm, invsqrtm, logm
 
@@ -42,7 +42,6 @@ def _retraction(point, tangent_vector):
     retracted_point : array, shape (n_matrices, n, n)
         The tangent vector retracted on the manifold.
 
-
     References
     ----------
     .. [1] `Pymanopt: A Python Toolbox for Optimization on Manifolds using
@@ -61,6 +60,7 @@ def _norm(point, tangent_vector):
     This code is an adaptation from pyManopt [1]_.
 
     Parameters
+    ----------
     point : ndarray, shape (..., n, n)
         A point on the SPD manifold.
     tangent_vector : ndarray, shape (..., n, n)
@@ -71,7 +71,8 @@ def _norm(point, tangent_vector):
     norm : float or ndarray, shape (...,)
         The norm of the tangent vector at the given point.
 
-
+    References
+    ----------
     .. [1] `Pymanopt: A Python Toolbox for Optimization on Manifolds using
         Automatic Differentiation
         <http://jmlr.org/papers/v17/16-177.html>`_
@@ -196,7 +197,7 @@ def _run_minimization(
     P,
     initial_point,
     metric,
-    max_it,
+    max_iter,
     max_time,
     verbosity,
     _compute_low_affinities,
@@ -210,7 +211,7 @@ def _run_minimization(
         The matrix of the symmetrized conditional probabilities of X.
     initial_point : ndarray, shape (n_matrices, n_components, n_components)
         The initial point for the optimization.
-    max_it : int
+    max_iter : int
         The maximum number of iterations for the optimization.
     max_time : float
         The maximum time (in seconds) allowed for the optimization.
@@ -218,7 +219,6 @@ def _run_minimization(
         The level of verbosity. Higher values result in more detailed output.
     _compute_low_affinities : callable
         Function to compute low affinities.
-
 
     Returns
     -------
@@ -231,8 +231,7 @@ def _run_minimization(
     initial_time = time()
     n_components = initial_point.shape[1]
 
-    # loop over iterations
-    for i in range(max_it):
+    for i in range(max_iter):
         if verbosity >= 2 and i % 100 == 0:
             print("Iteration : ", i)
 
@@ -294,9 +293,8 @@ def _run_minimization(
             break
 
     else:
-        warnings.warn(
-            "Maximum iterations reached."
-        )
+        warnings.warn("Convergence not reached.")
+
     if verbosity >= 1:
         print("Optimization done in {:.2f} seconds.".format(
             time() - initial_time))
