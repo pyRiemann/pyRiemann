@@ -1,6 +1,5 @@
 """Embedding SPD matrices via manifold learning techniques."""
 
-from time import time
 import warnings
 
 import numpy as np
@@ -12,9 +11,8 @@ from sklearn.manifold._utils import _binary_search_perplexity
 
 from .utils.distance import pairwise_distance
 from .utils.kernel import kernel as kernel_fct
-from .utils.base import sqrtm, invsqrtm, logm
 from .datasets import sample_gaussian_spd
-from .optimization.positive_definite import retraction, norm
+from .optimization.positive_definite import _run_minimization
 
 
 class SpectralEmbedding(BaseEstimator):
@@ -487,19 +485,26 @@ class TSNE(BaseEstimator):
         self,
         n_components=2,
         perplexity=None,
+        metric="riemann",
         verbosity=0,
         max_it=10000,
-        max_time=100,
+        max_time=300,
         random_state=None,
     ):
         self.n_components = n_components
         self.perplexity = perplexity
+        self.metric = metric
         self.verbosity = verbosity
         self.max_it = max_it
         self.max_time = max_time
         self.random_state = random_state
 
-    def _compute_similarties(self, X):
+        if metric not in ["riemann", "logeuclid"]:
+            raise ValueError(
+                f"Unknown metric '{metric}'. Use 'riemann' or 'logeuclid'."
+            )
+
+    def _compute_similarities(self, X):
         """Computed the high dimensional symmetrized conditional similarities
         p_{ij} for the t-SNE algorithm.
 
@@ -514,7 +519,7 @@ class TSNE(BaseEstimator):
             The matrix of the symmetrized conditional probabilities of X.
         """
         n_matrices, _, _ = X.shape
-        Dsq = pairwise_distance(X, squared=True)
+        Dsq = pairwise_distance(X, metric=self.metric, squared=True)
         Dsq = Dsq.astype(np.float32, copy=False)
         # Use _binary_search_perplexity from sklearn to compute conditional
         # probabilities such that they approximately match the desired
@@ -544,7 +549,7 @@ class TSNE(BaseEstimator):
             the points in X.
         """
         n_matrices, _, _ = Y.shape
-        Dsq = pairwise_distance(Y, squared=True)
+        Dsq = pairwise_distance(Y, metric=self.metric, squared=True)
 
         denominator = np.sum(
             [np.sum([np.delete(1 / (1 + Dsq[k, :]), k)])
@@ -553,152 +558,6 @@ class TSNE(BaseEstimator):
         Q = 1 / (1 + Dsq) / denominator
         np.fill_diagonal(Q, 0)
         return Q, Dsq
-
-    def _cost(self, P, Q):
-        """Computed the loss of the t-SNE, that is the Kullback-Leibler
-        divergence between P and Q.
-
-        Parameters
-        ----------
-        P : ndarray, shape (n_matrices, n_matrices)
-            The matrix of the symmetrized conditional probabilities of X.
-        Q : ndarray, shape (n_matrices, n_matrices)
-            The matrix of the low dimensional similarities conditional
-            probabilities of Y.
-
-        Returns
-        -------
-        _ : float
-            The cost of the t-SNE.
-        """
-        return np.sum(P * np.log((P + np.eye(P.shape[0])) /
-                                 (Q + np.eye(P.shape[0]))))
-
-    def _riemannian_gradient(self, Y, P, Q, Dsq):
-        """Computed the Riemannian gradient of the loss of the t-SNE.
-
-        Parameters
-        ----------
-        Y : ndarray, shape (n_matrices, n_components, n_components)
-            Set of SPD matrices.
-        P : ndarray, shape (n_matrices, n_matrices)
-            The matrix of the symmetrized conditional probabilities of X.
-        Q : ndarray, shape (n_matrices, n_matrices)
-            The matrix of the low dimensional similarities conditional
-            probabilities of Y.
-        Dsq : ndarray, shape (n_matrices, n_matrices)
-            The Riemannian distance matrix of Y.
-
-        Returns
-        -------
-        grad : ndarray, shape (n_matrices, n_components, n_components)
-            The Riemannian gradient of the cost of the t-SNE.
-        """
-        n_matrices, _ = P.shape
-        grad = np.zeros((n_matrices, self.n_components, self.n_components))
-        Y_i_invsqrt = invsqrtm(Y)
-        Y_i_sqrt = sqrtm(Y)
-        for i in range(n_matrices):
-            log_riemann = (
-                Y_i_sqrt[i] @ logm(Y_i_invsqrt[i] @ Y @ Y_i_invsqrt[i])
-                @ Y_i_sqrt[i]
-            )
-            grad[i] = -4 * np.sum(
-                ((P[i] - Q[i]) / (1 + Dsq[i]))[:, np.newaxis, np.newaxis] *
-                log_riemann,
-                axis=0,
-            )
-        return grad
-
-    def _run_minimization(self, P):
-        """Run the minimization to solve the t-SNE optimization.
-
-        Parameters
-        ----------
-        P : ndarray, shape (n_matrices, n_matrices)
-            The matrix of the symmetrized conditional probabilities of X.
-
-        Returns
-        -------
-        current_sol : ndarray, shape (n_matrices, n_components, n_components)
-            The solution of the t-SNE problem.
-        """
-        tol_step = 1e-6
-        current_sol = self.initial_point
-        self.loss_evolution = []
-        initial_time = time()
-
-        # loop over iterations
-        for i in range(self.max_it):
-            if self.verbosity >= 2 and i % 100 == 0:
-                print("Iteration : ", i)
-
-            # get the current value for the loss function
-            Q, Dsq = self._compute_low_affinities(current_sol)
-            loss = self._cost(P, Q)
-            self.loss_evolution.append(loss)
-
-            # get the direction of steepest descent
-            direction = self._riemannian_gradient(current_sol, P, Q, Dsq)
-            norm_direction = norm(current_sol, direction)
-
-            # backtracking line search
-            if i == 0:
-                alpha = 1.0 / norm_direction
-            else:
-                # Pick initial step size based on where we were last time and
-                # look a bit further
-                # See Boumal, 2023, Section 4.3 for more insights.
-                alpha = 4 * (self.loss_evolution[-2] - loss) / \
-                        norm_direction**2
-
-            tau = 0.50
-            r = 1e-4
-            maxiter_linesearch = 25
-
-            retracted = retraction(current_sol, -alpha * direction)
-            Q_retract, Dsq_retract = self._compute_low_affinities(retracted)
-            loss_retracted = self._cost(P, Q_retract)
-
-            # Backtrack while the Armijo criterion is not satisfied
-            for _ in range(maxiter_linesearch):
-                if loss - loss_retracted > r * alpha * norm_direction**2:
-                    break
-                alpha = tau * alpha
-
-                retracted = retraction(current_sol, -alpha * direction)
-                Q_retract, Dsq_retract = self._compute_low_affinities(
-                    retracted)
-                loss_retracted = self._cost(P, Q_retract)
-            else:
-                warnings.warn("Maximum iteration in linesearched reached.")
-
-            # update variable for next iteration
-            current_sol = retracted
-
-            # test if the step size is small
-            crit = norm(current_sol, -alpha * direction)
-            if crit <= tol_step:
-                if self.verbosity >= 1:
-                    print("Min stepsize reached")
-                break
-
-            # test if the maximum time has been reached
-            if time() - initial_time >= self.max_time:
-                warnings.warn(
-                    "Time limite reached after " + str(i) + " iterations."
-                    )
-                break
-
-        else:
-            warnings.warn("Maximum iterations reached.")
-        if self.verbosity >= 1:
-            print(
-                "Optimization done in {:.2f} seconds.".format(
-                    time() - initial_time
-                    )
-                )
-        return current_sol
 
     def fit(self, X, y=None):
         """Fit TSNE.
@@ -715,25 +574,28 @@ class TSNE(BaseEstimator):
         self : TSNE instance
             The TSNE instance.
         """
+
         n_matrices, _, _ = X.shape
 
         if self.perplexity is None:
             self.perplexity = int(0.75 * n_matrices)
 
         # Compute similarities in the high dimension space
-        P = self._compute_similarties(X)
+        P = self._compute_similarities(X)
 
         # Sample initial solution close to the identity
-        sigma = 1
         self.initial_point = sample_gaussian_spd(
             n_matrices,
             mean=np.eye(self.n_components),
-            sigma=sigma,
+            sigma=1,
             random_state=self.random_state,
         )
         if self.verbosity >= 1:
             print("Optimizing...")
-        self.embedding_ = self._run_minimization(P)
+        self.embedding_, self.loss_evolution = _run_minimization(
+            P, self.initial_point, self.metric, self.max_it, self.max_time,
+            self.verbosity, self._compute_low_affinities
+        )
 
         return self
 
