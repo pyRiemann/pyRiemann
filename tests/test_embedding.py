@@ -30,8 +30,7 @@ def test_embedding(kind, embd, get_mats):
     if "transform" in embd.__dict__.keys():
         embd_transform(embd, mats, n_comp)
         embd_transform_error(embd, mats, n_comp)
-    if embd is not TSNE:
-        embd_metric_error(embd, mats, n_comp)
+    embd_metric_error(embd, mats, n_comp)
     embd_result(embd)
 
 
