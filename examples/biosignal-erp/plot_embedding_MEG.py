@@ -16,7 +16,7 @@ spanned by the k-nearest neighbors of the matrix and finds a low-dimensional
 embedding of the data based on these affine approximations.
 
 t-SNE reduces SPD matrices into lower dimensional SPD matrices by computing
-conditional probabilities that represent similarities [2]_. This fully 
+conditional probabilities that represent similarities [2]_. This fully
 Riemannian algorithm helps preserve the non-Euclidean structure of the data.
 """
 # Authors:  Pedro Rodrigues <pedro.rodrigues01@gmail.com>,
