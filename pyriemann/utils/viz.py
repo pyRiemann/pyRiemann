@@ -75,7 +75,7 @@ def plot_embedding(X,
             ax.set_yticks([-1.0, -0.5, 0.0, +0.5, 1.0])
         ax.legend(list(np.unique(y)))
     elif embd_type == "TSNE":
-        fig, ax = plt.subplots(figsize=(7, 7))
+        fig = plt.subplots(figsize=(7, 7), facecolor="white")
         ax = plt.axes(projection="3d")
         for label in np.unique(y):
             idx = y == label

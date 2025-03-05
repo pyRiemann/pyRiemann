@@ -61,17 +61,15 @@ epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=False,
 X = epochs.get_data(copy=False)
 y = epochs.events[:, -1]
 
-
 ###############################################################################
 # Extract Xdawn covariance matrices
 # ---------------------------------
 
-nfilter = 4
+nfilter = 2
 xdwn = XdawnCovariances(estimator="scm", nfilter=nfilter)
 split = train_test_split(X, y, train_size=0.25, random_state=42)
 Xtrain, Xtest, ytrain, ytest = split
 covs = xdwn.fit(Xtrain, ytrain).transform(Xtest)
-print(covs.shape)
 
 ###############################################################################
 # Spectral Embedding (SE)
