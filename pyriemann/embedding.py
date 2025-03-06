@@ -501,11 +501,6 @@ class TSNE(BaseEstimator):
         self.max_time = max_time
         self.random_state = random_state
 
-        if metric not in ["riemann", "logeuclid"]:
-            raise ValueError(
-                f"Unknown metric '{metric}'. Use 'riemann' or 'logeuclid'."
-            )
-
     def _compute_similarities(self, X):
         """Compute the high dimensional symmetrized conditional similarities
         p_{ij} for t-SNE.
@@ -574,6 +569,12 @@ class TSNE(BaseEstimator):
             The TSNE instance.
         """
 
+        if self.metric not in ["riemann", "logeuclid"]:
+            raise ValueError(
+                f"Unknown metric '{self.metric}'. "
+                f"Use 'riemann' or 'logeuclid'."
+            )
+
         n_matrices, _, _ = X.shape
 
         if self.perplexity is None:
@@ -591,7 +592,7 @@ class TSNE(BaseEstimator):
         )
         if self.verbosity >= 1:
             print("Optimizing...")
-        self.embedding_, self.loss_evolution = _run_minimization(
+        self.embedding_ = _run_minimization(
             P,
             initial_point,
             self.metric,

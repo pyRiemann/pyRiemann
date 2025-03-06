@@ -5,7 +5,7 @@ import warnings
 
 import numpy as np
 
-from ..utils.base import sqrtm, invsqrtm, logm
+from ..utils.base import sqrtm, invsqrtm, logm, ddlogm
 
 
 def _symmetrize(A):
@@ -92,43 +92,7 @@ def _norm(point, tangent_vector):
     )
 
 
-def _d_log_array(A, H):
-    """
-    Compute the directional derivative of the matrix logarithm.
-
-    Parameters:
-    A (np.ndarray): Positive definite matrix.
-    H (np.ndarray): Symmetric matrix.
-
-    Returns:
-    np.ndarray: The directional derivative Dlog(A)[H].
-    """
-    # Diagonalize A
-    eigenvalues, U = np.linalg.eigh(A)
-
-    # Compute H_tilde
-    H_tilde = U.T @ H @ U
-
-    # Compute Z matrix using broadcasting for efficiency
-    eigen_diff = eigenvalues[:, np.newaxis] - eigenvalues[np.newaxis, :]
-    with np.errstate(
-        divide="ignore", invalid="ignore"
-    ):  # Handle division by zero safely
-        Z = np.where(
-            eigen_diff != 0,
-            (np.log(eigenvalues[:, np.newaxis])
-             - np.log(eigenvalues[np.newaxis, :]))
-            / eigen_diff,
-            1 / eigenvalues[:, np.newaxis],
-        )
-    # Compute the result
-    result = (
-        U @ (H_tilde * Z[np.newaxis, np.newaxis, :]) @ U.T
-    )
-    return result[0]
-
-
-def _cost(P, Q):
+def _loss(P, Q):
     """Computed the loss of the t-SNE, that is the Kullback-Leibler
     divergence between P and Q.
 
@@ -183,7 +147,7 @@ def _riemannian_gradient(Y, P, Q, Dsq, n_components, metric):
                 ) @ Y_i_sqrt[i]
             )
         elif metric == "logeuclid":
-            grad_dist = -Y[i]@_d_log_array(Y[i], logm(Y[i]) - logm(Y))@Y[i]
+            grad_dist = -Y[i]@ddlogm(logm(Y[i]) - logm(Y), Y[i])@Y[i]
 
         grad[i] = -4 * np.sum(
             ((P[i] - Q[i]) / (1 + Dsq[i]))[:, np.newaxis, np.newaxis]
@@ -237,7 +201,7 @@ def _run_minimization(
 
         # get the current value for the loss function
         Q, Dsq = _compute_low_affinities(current_sol)
-        loss = _cost(P, Q)
+        loss = _loss(P, Q)
         loss_evolution.append(loss)
 
         # get the direction of steepest descent
@@ -261,7 +225,7 @@ def _run_minimization(
 
         retracted = _retraction(current_sol, -alpha * direction)
         Q_retract, Dsq_retract = _compute_low_affinities(retracted)
-        loss_retracted = _cost(P, Q_retract)
+        loss_retracted = _loss(P, Q_retract)
 
         # Backtrack while the Armijo criterion is not satisfied
         for _ in range(maxiter_linesearch):
@@ -271,7 +235,7 @@ def _run_minimization(
 
             retracted = _retraction(current_sol, -alpha * direction)
             Q_retract, Dsq_retract = _compute_low_affinities(retracted)
-            loss_retracted = _cost(P, Q_retract)
+            loss_retracted = _loss(P, Q_retract)
         else:
             warnings.warn("Maximum iteration in linesearched reached.")
 
@@ -298,4 +262,4 @@ def _run_minimization(
     if verbosity >= 1:
         print("Optimization done in {:.2f} seconds.".format(
             time() - initial_time))
-    return current_sol, loss_evolution
+    return current_sol
