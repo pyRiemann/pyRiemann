@@ -6,6 +6,7 @@ import warnings
 import numpy as np
 
 from ..utils.base import sqrtm, invsqrtm, logm, ddlogm
+from ..datasets import sample_gaussian_spd
 
 
 def _symmetrize(A):
@@ -155,6 +156,33 @@ def _riemannian_gradient(Y, P, Q, Dsq, n_components, metric):
             axis=0,
         )
     return grad
+
+
+def _get_initial_solution(n_matrices, n_components, random_state):
+    """
+    Generate an initial solution for the t-SNE optimization by sampling
+    Gaussian SPD matrices.
+    Parameters
+    ----------
+    n_matrices : int
+        The number of SPD matrices to sample.
+    n_components : int
+        The dimension of each SPD matrix.
+    random_state : int, RandomState instance or None
+        The seed or random number generator for reproducibility.
+    Returns
+    -------
+    initial_point : ndarray, shape (n_matrices, n_components, n_components)
+        The sampled SPD matrices.
+    """
+
+    initial_point = sample_gaussian_spd(
+            n_matrices,
+            mean=np.eye(n_components),
+            sigma=1,
+            random_state=random_state,
+        )
+    return initial_point
 
 
 def _run_minimization(

@@ -11,8 +11,8 @@ from sklearn.manifold._utils import _binary_search_perplexity
 
 from .utils.distance import pairwise_distance
 from .utils.kernel import kernel as kernel_fct
-from .datasets import sample_gaussian_spd
 from .optimization.positive_definite import _run_minimization
+from .optimization.positive_definite import _get_initial_solution
 
 
 class SpectralEmbedding(BaseEstimator):
@@ -584,11 +584,8 @@ class TSNE(BaseEstimator):
         P = self._compute_similarities(X)
 
         # Sample initial solution close to the identity
-        initial_point = sample_gaussian_spd(
-            n_matrices,
-            mean=np.eye(self.n_components),
-            sigma=1,
-            random_state=self.random_state,
+        initial_point = _get_initial_solution(
+            n_matrices, self.n_components, self.random_state
         )
         if self.verbosity >= 1:
             print("Optimizing...")
