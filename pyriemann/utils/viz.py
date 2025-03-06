@@ -58,7 +58,7 @@ def plot_embedding(
     else:
         raise ValueError(
             f"Unknown embedding type {embd_type}. "
-            "Valid types are: 'Spectral', 'LocallyLinear' or 'TNSE'."
+            "Valid types are 'Spectral', 'LocallyLinear' or 'TNSE'."
         )
 
     embd = e.fit_transform(X)
@@ -76,7 +76,7 @@ def plot_embedding(
             ax.set_xticks([-1.0, -0.5, 0.0, +0.5, 1.0])
             ax.set_yticks([-1.0, -0.5, 0.0, +0.5, 1.0])
 
-    elif embd_type == "TSNE":
+    else:
         fig = plt.subplots(figsize=(7, 7), facecolor="white")
         ax = plt.axes(projection="3d")
         for label in np.unique(y):
@@ -85,7 +85,6 @@ def plot_embedding(
         ax.set_xlabel(r"a", fontsize=16)
         ax.set_ylabel(r"b", fontsize=16)
         ax.set_zlabel(r"c", fontsize=16)
-
         if normalize:
             ax.set_xticks([-1.0, -0.5, 0.0, +0.5, 1.0])
             ax.set_yticks([-1.0, -0.5, 0.0, +0.5, 1.0])

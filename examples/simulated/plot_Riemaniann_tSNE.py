@@ -63,7 +63,7 @@ perplexity = int(
 metric = "riemann"  # Metric used to compute the distances between SPD matrices
 # can be "riemann" or "logeuclid"
 verbosity = 0  # Verbosity level of the t-SNE
-max_it = 10000  # Maximum number of iterations
+max_iter = 10000  # Maximum number of iterations
 max_time = 60  # Maximum time for the computation in seconds
 
 TSNE_ = TSNE(
@@ -71,7 +71,7 @@ TSNE_ = TSNE(
     perplexity=perplexity,
     metric=metric,
     verbosity=2,
-    max_it=max_it,
+    max_iter=max_iter,
     max_time=max_time,
     random_state=random_state,
 )
