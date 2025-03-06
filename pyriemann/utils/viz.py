@@ -51,8 +51,8 @@ def plot_embedding(
         e = SpectralEmbedding(n_components=2, metric=metric)
     elif embd_type == "LocallyLinear":
         e = LocallyLinearEmbedding(n_components=2,
-                                      n_neighbors=X.shape[1],
-                                      metric=metric)
+                                   n_neighbors=X.shape[1],
+                                   metric=metric)
     elif embd_type == "TSNE":
         e = TSNE(n_components=2, metric=metric)
     else:
