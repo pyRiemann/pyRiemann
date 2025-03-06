@@ -8,7 +8,7 @@ What's new in the package
 A catalog of new features, improvements, and bug-fixes in each release.
 
 - Add :class:`pyriemann.embedding.TSNE`, a Riemannian t-SNE implementation
-  and an example of this t-SNE on synthetic data generated using the SPD Gaussians. :pr:`347` by :user:`thibaultdesurrel`
+  and update example comparing embeddings. :pr:`347` by :user:`thibaultdesurrel`
 
 v0.9.dev
 --------

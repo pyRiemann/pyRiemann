@@ -11,8 +11,7 @@ from sklearn.manifold._utils import _binary_search_perplexity
 
 from .utils.distance import pairwise_distance
 from .utils.kernel import kernel as kernel_fct
-from .optimization.positive_definite import _run_minimization
-from .optimization.positive_definite import _get_initial_solution
+from .optimization.positive_definite import _get_tsne_embedding
 
 
 class SpectralEmbedding(BaseEstimator):
@@ -448,12 +447,13 @@ class TSNE(BaseEstimator):
     """T-distributed Stochastic Neighbor Embedding (t-SNE) of SPD/HPD matrices.
 
     T-distributed Stochastic Neighbor Embedding (t-SNE) reduces
-    a set of nxn SPD/HPD matrices into a set of 2x2 SPD/HPD matrices [1]_.
+    a set of high-dimensional SPD/HPD matrices into
+    a set of low-dimensional SPD/HPD matrices [1]_.
 
     Parameters
     ----------
     n_components : int, default=2
-        Dimension of the matrices in the embedded space.
+        Low dimension of the matrices in the embedded space.
     perplexity : int, default=None
         Perplexity used in the t-SNE algorithm.
         If None, it will be set to 0.75*n_matrices.
@@ -473,6 +473,10 @@ class TSNE(BaseEstimator):
     ----------
     embedding_ : ndarray, shape (n_matrices, n_components, n_components)
         Embedding matrices of the training set.
+
+    Notes
+    -----
+    .. versionadded:: 0.9
 
     References
     ----------
@@ -502,13 +506,13 @@ class TSNE(BaseEstimator):
         self.random_state = random_state
 
     def _compute_similarities(self, X):
-        """Compute the high dimensional symmetrized conditional similarities
+        """Compute the high-dimensional symmetrized conditional similarities
         p_{ij} for t-SNE.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices to reduce.
+            Set of high-dimensional SPD matrices to reduce.
 
         Returns
         -------
@@ -528,17 +532,17 @@ class TSNE(BaseEstimator):
         return P / (2 * n_matrices)
 
     def _compute_low_affinities(self, Y):
-        """Compute the low dimensional similarities q_{ij} for t-SNE.
+        """Compute the low-dimensional similarities q_{ij} for t-SNE.
 
         Parameters
         ----------
         Y : ndarray, shape (n_matrices, n_components, n_components)
-            Set of SPD matrices.
+            Set of low-dimensional SPD matrices.
 
         Returns
         -------
         Q : ndarray, shape (n_matrices, n_matrices)
-            Low dimensional similarities conditional probabilities of Y.
+            Low-dimensional similarities conditional probabilities of Y.
         Dsq : ndarray, shape (n_matrices, n_matrices)
             Squared distances between the matrices in Y.
         """
@@ -559,7 +563,7 @@ class TSNE(BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD/HPD matrices.
+            Set of high-dimensional SPD/HPD matrices.
         y : None
             Not used, here for compatibility with sklearn API.
 
@@ -572,49 +576,43 @@ class TSNE(BaseEstimator):
         if self.metric not in ["riemann", "logeuclid"]:
             raise ValueError(
                 f"Unknown metric '{self.metric}'. "
-                f"Use 'riemann' or 'logeuclid'."
+                "TSNE supports only 'riemann' and 'logeuclid' metrics."
             )
 
         n_matrices, _, _ = X.shape
-
         if self.perplexity is None:
             self.perplexity = int(0.75 * n_matrices)
 
         # Compute similarities in the high dimension space
         P = self._compute_similarities(X)
 
-        # Sample initial solution close to the identity
-        initial_point = _get_initial_solution(
-            n_matrices, self.n_components, self.random_state
-        )
-        if self.verbosity >= 1:
-            print("Optimizing...")
-        self.embedding_ = _run_minimization(
+        self.embedding_ = _get_tsne_embedding(
             P,
-            initial_point,
+            self.n_components,
             self.metric,
             self.max_iter,
             self.max_time,
             self.verbosity,
+            self.random_state,
             self._compute_low_affinities
         )
 
         return self
 
     def fit_transform(self, X, y=None):
-        """Calculate the coordinates of the embedded matrices.
+        """Calculate the embedded matrices.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD/HPD matrices.
+            Set of high-dimensional SPD/HPD matrices.
         y : None
             Not used, here for compatibility with sklearn API.
 
         Returns
         -------
         X_new : ndarray, shape (n_matrices, n_components, n_components)
-            Coordinates of embedded matrices.
+            Set of low-dimensional embedded matrices.
         """
         self.fit(X)
         return self.embedding_

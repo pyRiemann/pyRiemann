@@ -57,7 +57,7 @@ def _grad(Q, X, Y, weights, metric="euclid"):
         )
 
 
-def _warm_start(X, Y, weights, metric='euclid'):
+def _warm_start(X, Y, weights, metric="euclid"):
     """Smart initialization of the minimization procedure.
 
     The loss function being optimized is a weighted sum of loss functions with
