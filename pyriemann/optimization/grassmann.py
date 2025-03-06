@@ -51,7 +51,10 @@ def _grad(Q, X, Y, weights, metric="euclid"):
         return np.einsum("a,abc->bc", weights, 4 * logM @ Q)
 
     else:
-        raise ValueError("RPA supports only 'euclid' and 'riemann' metrics.")
+        raise ValueError(
+            f"Unknown metric {metric}. "
+            "TLRotate supports only 'euclid' and 'riemann' metrics."
+        )
 
 
 def _warm_start(X, Y, weights, metric='euclid'):

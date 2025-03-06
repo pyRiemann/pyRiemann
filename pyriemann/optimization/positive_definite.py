@@ -130,6 +130,8 @@ def _riemannian_gradient(Y, P, Q, Dsq, n_components, metric):
         The Riemannian distance matrix of Y.
     n_components : int
         Dimension of the matrices in the embedded space.
+    metric : {"logeuclid", "riemann"}
+        Metric for the gradient descent.
 
     Returns
     -------
@@ -192,9 +194,8 @@ def _run_minimization(
     max_iter,
     max_time,
     verbosity,
-    _compute_low_affinities,
+    compute_low_affinities,
 ):
-
     """Run the minimization to solve the t-SNE optimization.
 
     Parameters
@@ -203,13 +204,15 @@ def _run_minimization(
         The matrix of the symmetrized conditional probabilities of X.
     initial_point : ndarray, shape (n_matrices, n_components, n_components)
         The initial point for the optimization.
+    metric : {"logeuclid", "riemann"}
+        Metric for the gradient descent.
     max_iter : int
         The maximum number of iterations for the optimization.
     max_time : float
         The maximum time (in seconds) allowed for the optimization.
     verbosity : int
         The level of verbosity. Higher values result in more detailed output.
-    _compute_low_affinities : callable
+    compute_low_affinities : callable
         Function to compute low affinities.
 
     Returns
@@ -228,7 +231,7 @@ def _run_minimization(
             print("Iteration : ", i)
 
         # get the current value for the loss function
-        Q, Dsq = _compute_low_affinities(current_sol)
+        Q, Dsq = compute_low_affinities(current_sol)
         loss = _loss(P, Q)
         loss_evolution.append(loss)
 
@@ -252,7 +255,7 @@ def _run_minimization(
         maxiter_linesearch = 25
 
         retracted = _retraction(current_sol, -alpha * direction)
-        Q_retract, Dsq_retract = _compute_low_affinities(retracted)
+        Q_retract, Dsq_retract = compute_low_affinities(retracted)
         loss_retracted = _loss(P, Q_retract)
 
         # Backtrack while the Armijo criterion is not satisfied
@@ -262,7 +265,7 @@ def _run_minimization(
             alpha = tau * alpha
 
             retracted = _retraction(current_sol, -alpha * direction)
-            Q_retract, Dsq_retract = _compute_low_affinities(retracted)
+            Q_retract, Dsq_retract = compute_low_affinities(retracted)
             loss_retracted = _loss(P, Q_retract)
         else:
             warnings.warn("Maximum iteration in linesearched reached.")
