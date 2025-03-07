@@ -139,9 +139,10 @@ def _riemannian_gradient(Y, P, Q, Dsq, n_components, metric):
         The Riemannian gradient of the loss of the t-SNE.
     """
     n_matrices, _ = P.shape
-    grad = np.zeros((n_matrices, n_components, n_components))
     Y_invsqrt = invsqrtm(Y)
     Y_sqrt = sqrtm(Y)
+
+    grad = np.zeros((n_matrices, n_components, n_components))
     for i in range(n_matrices):
         if metric == "riemann":
             grad_dist = (
@@ -175,22 +176,22 @@ def _get_initial_solution(n_matrices, n_components, random_state):
 
     Returns
     -------
-    initial_point : ndarray, shape (n_matrices, n_components, n_components)
+    initial_sol : ndarray, shape (n_matrices, n_components, n_components)
         Generated SPD matrices.
     """
 
-    initial_point = sample_gaussian_spd(
+    initial_sol = sample_gaussian_spd(
         n_matrices,
         mean=np.eye(n_components),
         sigma=1,
         random_state=random_state,
     )
-    return initial_point
+    return initial_sol
 
 
 def _run_minimization(
     P,
-    initial_point,
+    initial_sol,
     metric,
     max_iter,
     max_time,
@@ -203,7 +204,7 @@ def _run_minimization(
     ----------
     P : ndarray, shape (n_matrices, n_matrices)
         Symmetrized conditional probabilities of high-dimensional matrices.
-    initial_point : ndarray, shape (n_matrices, n_components, n_components)
+    initial_sol : ndarray, shape (n_matrices, n_components, n_components)
         Initial point for the optimization.
     metric : {"logeuclid", "riemann"}
         Metric for the gradient descent.
@@ -222,10 +223,10 @@ def _run_minimization(
         The solution of the t-SNE problem.
     """
     tol_step = 1e-6
-    current_sol = initial_point
+    current_sol = initial_sol
     loss_evolution = []
     initial_time = time()
-    n_components = initial_point.shape[1]
+    _, n_components, _ = initial_sol.shape
 
     for i in range(max_iter):
         if verbosity >= 2 and i % 100 == 0:
@@ -283,9 +284,7 @@ def _run_minimization(
 
         # test if the maximum time has been reached
         if time() - initial_time >= max_time:
-            warnings.warn(
-                "Time limite reached after " + str(i) + " iterations."
-            )
+            warnings.warn(f"Time limit reached after {i} iterations.")
             break
 
     else:
@@ -312,7 +311,7 @@ def _get_tsne_embedding(
     n_matrices, _ = P.shape
 
     # Sample initial solution close to the identity
-    init = _get_initial_solution(
+    embedding_ini = _get_initial_solution(
         n_matrices,
         n_components,
         random_state,
@@ -320,7 +319,7 @@ def _get_tsne_embedding(
 
     embedding = _run_minimization(
         P,
-        init,
+        embedding_ini,
         metric,
         max_iter,
         max_time,

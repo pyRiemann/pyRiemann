@@ -13,10 +13,10 @@ def plot_embedding(
     *,
     embd_type="Spectral",
     metric="riemann",
-    title="Embedding of covariances",
+    title="Embedding of SPD matrices",
     normalize=True
 ):
-    """Plot 2D embedding of SPD matrices.
+    """Plot embedding of SPD matrices.
 
     Parameters
     ----------
@@ -33,7 +33,7 @@ def plot_embedding(
           "kullback_right", "kullback_sym" for Spectral Embedding;
         - "riemann", "logeuclid", "euclid" for Locally Linear Embedding;
         - "riemann", "logeuclid" for TSNE.
-    title : str, default="Embedding of covariances"
+    title : str, default="Embedding of SPD matrices"
         Title of figure.
     normalize : bool, default=True
         If True, the plot is normalized from -1 to +1.
@@ -58,7 +58,7 @@ def plot_embedding(
     else:
         raise ValueError(
             f"Unknown embedding type {embd_type}. "
-            "Valid types are 'Spectral', 'LocallyLinear' or 'TNSE'."
+            "Valid types are 'Spectral', 'LocallyLinear' or 'TSNE'."
         )
 
     embd = e.fit_transform(X)
@@ -70,8 +70,6 @@ def plot_embedding(
         for label in np.unique(y):
             idx = y == label
             ax.scatter(embd[idx, 0], embd[idx, 1], s=36)
-        ax.set_xlabel(r"$\varphi_1$", fontsize=16)
-        ax.set_ylabel(r"$\varphi_2$", fontsize=16)
         if normalize:
             ax.set_xticks([-1.0, -0.5, 0.0, +0.5, 1.0])
             ax.set_yticks([-1.0, -0.5, 0.0, +0.5, 1.0])
@@ -82,17 +80,17 @@ def plot_embedding(
         for label in np.unique(y):
             idx = y == label
             ax.scatter(embd[idx, 0, 0], embd[idx, 0, 1], embd[idx, 1, 1], s=36)
-        ax.set_xlabel(r"a", fontsize=16)
-        ax.set_ylabel(r"b", fontsize=16)
-        ax.set_zlabel(r"c", fontsize=16)
+        ax.set_zlabel(r"$\varphi_3$", fontsize=16)
         if normalize:
             ax.set_xticks([-1.0, -0.5, 0.0, +0.5, 1.0])
             ax.set_yticks([-1.0, -0.5, 0.0, +0.5, 1.0])
             ax.set_zticks([-1.0, -0.5, 0.0, +0.5, 1.0])
 
     ax.set_title(f"{embd_type} {title}", fontsize=16)
+    ax.set_xlabel(r"$\varphi_1$", fontsize=16)
+    ax.set_ylabel(r"$\varphi_2$", fontsize=16)
     ax.grid(False)
-    ax.legend(list(np.unique(y)))
+    ax.legend(list(np.unique(y)), title="Classes")
 
     return fig
 
