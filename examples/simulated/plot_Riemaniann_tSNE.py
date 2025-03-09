@@ -60,7 +60,7 @@ n_components = 2  # Dimension of the SPD matrices in the output space
 perplexity = int(
     0.75 * n_total_matrices
 )  # Perplexity parameter for the t-SNE (recommended to be 0.75*n_samples)
-metric = "riemann"  # Metric used to compute the distances between SPD matrices
+metric = "euclid"  # Metric used to compute the distances between SPD matrices
 # can be "riemann" or "logeuclid"
 verbosity = 0  # Verbosity level of the t-SNE
 max_iter = 10000  # Maximum number of iterations
@@ -70,7 +70,7 @@ TSNE_ = TSNE(
     n_components=n_components,
     perplexity=perplexity,
     metric=metric,
-    verbosity=verbosity,
+    verbosity=0,
     max_iter=max_iter,
     max_time=max_time,
     random_state=random_state,

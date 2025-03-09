@@ -26,7 +26,7 @@ def _symmetrize(A):
     return (A + np.swapaxes(A, -1, -2)) / 2
 
 
-def _retraction(point, tangent_vector):
+def _retraction(point, tangent_vector, metric):
     """Retracts an array of tangent vector back to the manifold.
 
     This code is an adaptation from pyManopt [1]_.
@@ -51,12 +51,18 @@ def _retraction(point, tangent_vector):
         J. Townsend, N. Koep and S. Weichwald, Journal of Machine Learning
         Research, 2016
     """
+    if metric == "eiclid":
+        retracted_point = point + tangent_vector
+    else:
+        p_inv_tv = np.linalg.solve(point, tangent_vector)
+        retracted_point = _symmetrize(
+            point + tangent_vector + tangent_vector @ p_inv_tv / 2
+        )
 
-    p_inv_tv = np.linalg.solve(point, tangent_vector)
-    return _symmetrize(point + tangent_vector + tangent_vector @ p_inv_tv / 2)
+    return retracted_point
 
 
-def _norm(point, tangent_vector):
+def _norm(point, tangent_vector, metric):
     """Compute the norm.
 
     This code is an adaptation from pyManopt [1]_.
@@ -81,17 +87,22 @@ def _norm(point, tangent_vector):
         J. Townsend, N. Koep and S. Weichwald, Journal of Machine Learning
         Research, 2016
     """
-
-    p_inv_tv = np.linalg.solve(point, tangent_vector)
-
-    if p_inv_tv.ndim == 2:
-        p_inv_tv_transposed = p_inv_tv.T
+    if metric == "euclid":
+        norm = np.linalg.norm(tangent_vector)
     else:
-        p_inv_tv_transposed = np.transpose(p_inv_tv, (0, 2, 1))
+        p_inv_tv = np.linalg.solve(point, tangent_vector)
 
-    return np.sqrt(
-        np.tensordot(p_inv_tv, p_inv_tv_transposed, axes=tangent_vector.ndim)
-    )
+        if p_inv_tv.ndim == 2:
+            p_inv_tv_transposed = p_inv_tv.T
+        else:
+            p_inv_tv_transposed = np.transpose(p_inv_tv, (0, 2, 1))
+        norm = np.sqrt(
+            np.tensordot(
+                p_inv_tv, p_inv_tv_transposed, axes=tangent_vector.ndim
+            )
+        )
+
+    return norm
 
 
 def _loss(P, Q):
@@ -130,7 +141,7 @@ def _riemannian_gradient(Y, P, Q, Dsq, n_components, metric):
         The Riemannian distance matrix of Y.
     n_components : int
         Dimension of the matrices in the embedded space.
-    metric : {"logeuclid", "riemann"}
+    metric : {"logeuclid", "riemann", "euclid"}
         Metric for the gradient descent.
 
     Returns
@@ -144,13 +155,15 @@ def _riemannian_gradient(Y, P, Q, Dsq, n_components, metric):
     Y_sqrt = sqrtm(Y)
     for i in range(n_matrices):
         if metric == "riemann":
-            grad_dist = (
+            grad_dist = - (
                 Y_sqrt[i] @ logm(Y_invsqrt[i] @ Y @ Y_invsqrt[i]) @ Y_sqrt[i]
             )
         elif metric == "logeuclid":
-            grad_dist = -Y[i] @ ddlogm(logm(Y[i]) - logm(Y), Y[i]) @ Y[i]
+            grad_dist = Y[i] @ ddlogm(logm(Y[i]) - logm(Y), Y[i]) @ Y[i]
+        elif metric == "euclid":
+            grad_dist = (Y[i] - Y)
 
-        grad[i] = -4 * np.sum(
+        grad[i] = 4 * np.sum(
             ((P[i] - Q[i]) / (1 + Dsq[i]))[:, np.newaxis, np.newaxis]
             * grad_dist,
             axis=0,
@@ -205,7 +218,7 @@ def _run_minimization(
         Symmetrized conditional probabilities of high-dimensional matrices.
     initial_point : ndarray, shape (n_matrices, n_components, n_components)
         Initial point for the optimization.
-    metric : {"logeuclid", "riemann"}
+    metric : {"logeuclid", "riemann", "euclid"}
         Metric for the gradient descent.
     max_iter : int
         Maximum number of iterations for the optimization.
@@ -240,7 +253,7 @@ def _run_minimization(
         direction = _riemannian_gradient(
             current_sol, P, Q, Dsq, n_components, metric
         )
-        norm_direction = _norm(current_sol, direction)
+        norm_direction = _norm(current_sol, direction, metric)
 
         # backtracking line search
         if i == 0:
@@ -255,7 +268,7 @@ def _run_minimization(
         r = 1e-4
         maxiter_linesearch = 25
 
-        retracted = _retraction(current_sol, -alpha * direction)
+        retracted = _retraction(current_sol, -alpha * direction, metric)
         Q_retract, Dsq_retract = compute_low_affinities(retracted)
         loss_retracted = _loss(P, Q_retract)
 
@@ -265,7 +278,7 @@ def _run_minimization(
                 break
             alpha = tau * alpha
 
-            retracted = _retraction(current_sol, -alpha * direction)
+            retracted = _retraction(current_sol, -alpha * direction, metric)
             Q_retract, Dsq_retract = compute_low_affinities(retracted)
             loss_retracted = _loss(P, Q_retract)
         else:
@@ -275,7 +288,7 @@ def _run_minimization(
         current_sol = retracted
 
         # test if the step size is small
-        crit = _norm(current_sol, -alpha * direction)
+        crit = _norm(current_sol, -alpha * direction, metric)
         if crit <= tol_step:
             if verbosity >= 1:
                 print("Min stepsize reached")
@@ -307,7 +320,33 @@ def _get_tsne_embedding(
     random_state,
     compute_low_affinities,
 ):
-    """TODO"""
+    """
+    Compute the t-SNE embedding.
+
+    Parameters
+    ----------
+    P : ndarray, shape (n_matrices, n_matrices)
+        Symmetrized conditional probabilities of high-dimensional matrices.
+    initial_point : ndarray, shape (n_matrices, n_components, n_components)
+        Initial point for the optimization.
+    metric : {"logeuclid", "riemann", "euclid"}
+        Metric for the gradient descent.
+    max_iter : int
+        Maximum number of iterations for the optimization.
+    max_time : float
+        Maximum time (in seconds) allowed for the optimization.
+    verbosity : int
+        Level of verbosity. Higher values result in more detailed output.
+    random_state : int, RandomState instance or None
+        The seed or random number generator for reproducibility.
+    compute_low_affinities : callable
+        Function to compute low affinities.
+
+    Returns
+    -------
+    embedding : ndarray, shape (n_matrices, n_components)
+        The computed t-SNE embedding.
+    """
 
     n_matrices, _ = P.shape
 

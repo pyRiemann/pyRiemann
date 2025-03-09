@@ -457,7 +457,7 @@ class TSNE(BaseEstimator):
     perplexity : int, default=None
         Perplexity used in the t-SNE algorithm.
         If None, it will be set to 0.75*n_matrices.
-    metric : {"logeuclid", "riemann"}, default="riemann"
+    metric : {"logeuclid", "riemann", "euclid"}, default="riemann"
         Metric for the gradient descent.
     verbosity : int, default=0
         Level of information printed by the optimizer while it operates:
@@ -507,7 +507,12 @@ class TSNE(BaseEstimator):
 
     def _compute_similarities(self, X):
         """Compute the high-dimensional symmetrized conditional similarities
-        p_{ij} for t-SNE.
+        p_{ij} for t-SNE. This is done using the Gaussian distribution on SPD
+        matrices:
+        ..math::
+            p_{j|i} = \frac{\exp(-\delta(X_i, X_j)^2/2\sigma_i^2)}{\
+            \sum_{k\neq i}\exp(-\delta(X_i, X_k)^2/2\sigma_i^2)}
+
 
         Parameters
         ----------
@@ -532,7 +537,13 @@ class TSNE(BaseEstimator):
         return P / (2 * n_matrices)
 
     def _compute_low_affinities(self, Y):
-        """Compute the low-dimensional similarities q_{ij} for t-SNE.
+        """Compute the low-dimensional joint probabilities q_{ij} for t-SNE.
+            They are computed using a Student t-distribution with one degree
+            of freedomw:
+            .. math::
+                \frac{\left(1 + \delta(Y_i, Y_j)^2\right)^{-1}}{\
+                \sum_{k \neq l} (1 + \delta(Y_k ,Y_l)^2)^{-1}}.
+
 
         Parameters
         ----------
@@ -542,7 +553,7 @@ class TSNE(BaseEstimator):
         Returns
         -------
         Q : ndarray, shape (n_matrices, n_matrices)
-            Low-dimensional similarities conditional probabilities of Y.
+            Joint probabilities of the low-dimensional matrices Y.
         Dsq : ndarray, shape (n_matrices, n_matrices)
             Squared distances between the matrices in Y.
         """
@@ -573,10 +584,11 @@ class TSNE(BaseEstimator):
             The TSNE instance.
         """
 
-        if self.metric not in ["riemann", "logeuclid"]:
+        if self.metric not in ["riemann", "logeuclid", "euclid"]:
             raise ValueError(
                 f"Unknown metric '{self.metric}'. "
-                "TSNE supports only 'riemann' and 'logeuclid' metrics."
+                "TSNE supports only 'riemann', 'logeuclid' and 'euclid' "
+                "metrics."
             )
 
         n_matrices, _, _ = X.shape
