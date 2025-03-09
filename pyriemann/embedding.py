@@ -15,7 +15,7 @@ from .optimization.positive_definite import _get_tsne_embedding
 
 
 class SpectralEmbedding(BaseEstimator):
-    """Spectral embedding of SPD/HPD matrices.
+    """Spectral Embedding of SPD/HPD matrices.
 
     Spectral embedding uses Laplacian Eigenmaps [1]_ to embed SPD/HPD matrices
     into an Euclidean space of smaller dimension.
@@ -464,7 +464,7 @@ class TSNE(BaseEstimator):
         0 is silent, 2 is most verbose.
     max_iter : int, default=10_000
         Maximum number of iterations used for the gradient descent.
-    max_time : int default=300
+    max_time : int, default=300
         Maximum time on the run time of the gradient descent in seconds.
     random_state : int, default=None
         Pass an int for reproducible output across multiple function calls.
