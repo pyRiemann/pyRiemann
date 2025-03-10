@@ -7,11 +7,11 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-- Add :class:`pyriemann.embedding.TSNE`, a Riemannian t-SNE implementation
-  and update example comparing embeddings. :pr:`347` by :user:`thibaultdesurrel`
-
 v0.9.dev
 --------
+
+- Add :class:`pyriemann.embedding.TSNE`, a Riemannian t-SNE implementation
+  and update example comparing embeddings. :pr:`347` by :user:`thibaultdesurrel`
 
 v0.8 (February 2025)
 --------------------
