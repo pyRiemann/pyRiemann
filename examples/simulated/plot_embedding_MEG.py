@@ -65,7 +65,7 @@ y = epochs.events[:, -1]
 # Extract Xdawn covariance matrices
 # ---------------------------------
 
-nfilter = 2
+nfilter = 4
 xdwn = XdawnCovariances(estimator="scm", nfilter=nfilter)
 split = train_test_split(X, y, train_size=0.25, random_state=42)
 Xtrain, Xtest, ytrain, ytest = split
@@ -94,7 +94,7 @@ plt.show()
 # ------------------------------
 
 plot_embedding(covs, ytest, metric="riemann", embd_type="TSNE",
-               normalize=False)
+               normalize=False, max_iter=50)
 plt.show()
 
 ###############################################################################

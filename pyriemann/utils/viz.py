@@ -14,7 +14,9 @@ def plot_embedding(
     embd_type="Spectral",
     metric="riemann",
     title="Embedding of SPD matrices",
-    normalize=True
+    normalize=True,
+    max_iter=10000,
+    max_time=300,
 ):
     """Plot embedding of SPD matrices.
 
@@ -37,6 +39,11 @@ def plot_embedding(
         Title of figure.
     normalize : bool, default=True
         If True, the plot is normalized from -1 to +1.
+    max_iter : int, default=10_000
+        Maximum number of iterations used for the gradient descent of the
+        t-SNE.
+    max_time : int, default=300
+        Maximum time on the run time of the t-SNE in seconds.
 
     Returns
     -------
@@ -54,7 +61,10 @@ def plot_embedding(
                                    n_neighbors=X.shape[1],
                                    metric=metric)
     elif embd_type == "TSNE":
-        e = TSNE(n_components=2, metric=metric)
+        e = TSNE(n_components=2,
+                 metric=metric,
+                 max_iter=max_iter,
+                 max_time=max_time)
     else:
         raise ValueError(
             f"Unknown embedding type {embd_type}. "

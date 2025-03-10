@@ -26,8 +26,8 @@ print(__doc__)
 ###############################################################################
 # Set parameters for sampling from the Riemannian Gaussian distribution
 
-n_matrices_per_class = 50  # how many SPD matrices to generate in each class
-n_dim = 6  # number of dimensions of the SPD matrices
+n_matrices_per_class = 40  # how many SPD matrices to generate in each class
+n_dim = 4  # number of dimensions of the SPD matrices
 sigma = 1.0  # dispersion of the Gaussian distribution
 epsilon = 4.0  # parameter for controlling the distance between centers
 random_state = 42  # ensure reproducibility
@@ -70,7 +70,7 @@ TSNE_ = TSNE(
     n_components=n_components,
     perplexity=perplexity,
     metric=metric,
-    verbosity=0,
+    verbosity=1,
     max_iter=max_iter,
     max_time=max_time,
     random_state=random_state,
