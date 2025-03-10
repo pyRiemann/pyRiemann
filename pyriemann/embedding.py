@@ -457,7 +457,7 @@ class TSNE(BaseEstimator):
     perplexity : int, default=None
         Perplexity used in the t-SNE algorithm.
         If None, it will be set to 0.75*n_matrices.
-    metric : {"logeuclid", "riemann", "euclid"}, default="riemann"
+    metric : {"euclid", "logeuclid", "riemann"}, default="riemann"
         Metric for the gradient descent.
     verbosity : int, default=0
         Level of information printed by the optimizer while it operates:
@@ -506,9 +506,11 @@ class TSNE(BaseEstimator):
         self.random_state = random_state
 
     def _compute_similarities(self, X):
-        """Compute the high-dimensional symmetrized conditional similarities
-        p_{ij} for t-SNE. This is done using the Gaussian distribution on SPD
-        matrices:
+        r"""Compute the high-dimensional symmetrized conditional similarities
+        p_{ij} for t-SNE.
+
+        This is done using the Gaussian distribution on SPD matrices:
+
         ..math::
             p_{j|i} = \frac{\exp(-\delta(X_i, X_j)^2/2\sigma_i^2)}{\
             \sum_{k\neq i}\exp(-\delta(X_i, X_k)^2/2\sigma_i^2)}
@@ -537,9 +539,11 @@ class TSNE(BaseEstimator):
         return P / (2 * n_matrices)
 
     def _compute_low_affinities(self, Y):
-        """Compute the low-dimensional joint probabilities q_{ij} for t-SNE.
-            They are computed using a Student t-distribution with one degree
-            of freedomw:
+        r"""Compute the low-dimensional joint probabilities q_{ij} for t-SNE.
+
+        They are computed using a Student t-distribution with one degree
+        of freedom:
+
             .. math::
                 \frac{\left(1 + \delta(Y_i, Y_j)^2\right)^{-1}}{\
                 \sum_{k \neq l} (1 + \delta(Y_k ,Y_l)^2)^{-1}}.

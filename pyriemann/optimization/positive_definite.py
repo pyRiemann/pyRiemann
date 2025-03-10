@@ -51,7 +51,7 @@ def _retraction(point, tangent_vector, metric):
         J. Townsend, N. Koep and S. Weichwald, Journal of Machine Learning
         Research, 2016
     """
-    if metric == "eiclid":
+    if metric == "euclid":
         retracted_point = point + tangent_vector
     else:
         p_inv_tv = np.linalg.solve(point, tangent_vector)
@@ -141,7 +141,7 @@ def _riemannian_gradient(Y, P, Q, Dsq, n_components, metric):
         The Riemannian distance matrix of Y.
     n_components : int
         Dimension of the matrices in the embedded space.
-    metric : {"logeuclid", "riemann", "euclid"}
+    metric : {"euclid", "logeuclid", "riemann"}
         Metric for the gradient descent.
 
     Returns
@@ -219,7 +219,7 @@ def _run_minimization(
         Symmetrized conditional probabilities of high-dimensional matrices.
     initial_sol : ndarray, shape (n_matrices, n_components, n_components)
         Initial point for the optimization.
-    metric : {"logeuclid", "riemann", "euclid"}
+    metric : {"euclid", "logeuclid", "riemann"}
         Metric for the gradient descent.
     max_iter : int
         Maximum number of iterations for the optimization.
@@ -328,7 +328,7 @@ def _get_tsne_embedding(
         Symmetrized conditional probabilities of high-dimensional matrices.
     initial_point : ndarray, shape (n_matrices, n_components, n_components)
         Initial point for the optimization.
-    metric : {"logeuclid", "riemann", "euclid"}
+    metric : {"euclid", "logeuclid", "riemann"}
         Metric for the gradient descent.
     max_iter : int
         Maximum number of iterations for the optimization.
