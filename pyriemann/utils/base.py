@@ -8,6 +8,9 @@ from .test import is_pos_def
 def ctranspose(X):
     """Conjugate transpose operator.
 
+    Conjugate transpose operator for complex-valued array,
+    giving transpose operator for real-valued array.
+
     Parameters
     ----------
     X : ndarray, shape (..., n, m)
@@ -32,21 +35,21 @@ def ctranspose(X):
 ###############################################################################
 
 
-def _matrix_operator(C, operator):
-    """Matrix function."""
-    if not isinstance(C, np.ndarray) or C.ndim < 2:
+def _matrix_operator(X, operator):
+    """Matrix function for SPD/HPD matrices."""
+    if not isinstance(X, np.ndarray) or X.ndim < 2:
         raise ValueError("Input must be at least a 2D ndarray")
-    if C.dtype.char in np.typecodes['AllFloat'] and (
-            np.isinf(C).any() or np.isnan(C).any()):
+    if X.dtype.char in np.typecodes['AllFloat'] and (
+            np.isinf(X).any() or np.isnan(X).any()):
         raise ValueError(
-            "Matrices must be positive definite. Add "
-            "regularization to avoid this error.")
-    eigvals, eigvecs = np.linalg.eigh(C)
+            "Matrices must be positive definite. "
+            "You should add regularization to avoid this error."
+        )
+
+    eigvals, eigvecs = np.linalg.eigh(X)
     eigvals = operator(eigvals)
-    if C.ndim >= 3:
-        eigvals = np.expand_dims(eigvals, -2)
-    D = (eigvecs * eigvals) @ ctranspose(eigvecs)
-    return D
+    X_new = eigvecs @ (np.expand_dims(eigvals, -1) * ctranspose(eigvecs))
+    return X_new
 
 
 def expm(C):
