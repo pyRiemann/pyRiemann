@@ -334,6 +334,7 @@ Base
 .. autosummary::
     :toctree: generated/
 
+    ctranspose
     expm
     invsqrtm
     logm
