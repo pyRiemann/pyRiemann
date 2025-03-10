@@ -5,7 +5,7 @@ import warnings
 
 import numpy as np
 
-from ..utils.base import sqrtm, invsqrtm, logm, ddlogm
+from ..utils.base import ctranspose, sqrtm, invsqrtm, logm, ddlogm
 from ..datasets import sample_gaussian_spd
 
 
@@ -23,7 +23,7 @@ def _symmetrize(X):
         Symmetrized square matrices.
     """
 
-    return (X + np.swapaxes(X, -1, -2)) / 2
+    return (X + ctranspose(X)) / 2
 
 
 def _retraction(point, tangent_vector, metric):
@@ -91,14 +91,9 @@ def _norm(point, tangent_vector, metric):
         norm = np.linalg.norm(tangent_vector)
     else:
         p_inv_tv = np.linalg.solve(point, tangent_vector)
-
-        if p_inv_tv.ndim == 2:
-            p_inv_tv_transposed = p_inv_tv.T
-        else:
-            p_inv_tv_transposed = np.transpose(p_inv_tv, (0, 2, 1))
         norm = np.sqrt(
             np.tensordot(
-                p_inv_tv, p_inv_tv_transposed, axes=tangent_vector.ndim
+                p_inv_tv, ctranspose(p_inv_tv), axes=tangent_vector.ndim
             )
         )
 
