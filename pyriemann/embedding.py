@@ -505,73 +505,6 @@ class TSNE(BaseEstimator):
         self.max_time = max_time
         self.random_state = random_state
 
-    def _compute_similarities(self, X):
-        r"""Compute the high-dimensional symmetrized conditional similarities
-        p_{ij} for t-SNE.
-
-        This is done using the Gaussian distribution on SPD matrices:
-
-        ..math::
-            p_{j|i} = \frac{\exp(-\delta(X_i, X_j)^2/2\sigma_i^2)}{\
-            \sum_{k\neq i}\exp(-\delta(X_i, X_k)^2/2\sigma_i^2)}
-
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of high-dimensional SPD matrices to reduce.
-
-        Returns
-        -------
-        P : ndarray, shape (n_matrices, n_matrices)
-            Symmetrized conditional probabilities of X.
-        """
-        n_matrices, _, _ = X.shape
-        Dsq = pairwise_distance(X, metric=self.metric, squared=True)
-        Dsq = Dsq.astype(np.float32, copy=False)
-        # Use _binary_search_perplexity from sklearn to compute conditional
-        # probabilities such that they approximately match the desired
-        # perplexity
-        conditional_P = _binary_search_perplexity(Dsq, self.perplexity, 0)
-
-        # Symmetrize the conditional probabilities
-        P = conditional_P + conditional_P.T
-        return P / (2 * n_matrices)
-
-    def _compute_low_affinities(self, Y):
-        r"""Compute the low-dimensional joint probabilities q_{ij} for t-SNE.
-
-        They are computed using a Student t-distribution with one degree
-        of freedom:
-
-            .. math::
-                \frac{\left(1 + \delta(Y_i, Y_j)^2\right)^{-1}}{\
-                \sum_{k \neq l} (1 + \delta(Y_k ,Y_l)^2)^{-1}}.
-
-
-        Parameters
-        ----------
-        Y : ndarray, shape (n_matrices, n_components, n_components)
-            Set of low-dimensional SPD matrices.
-
-        Returns
-        -------
-        Q : ndarray, shape (n_matrices, n_matrices)
-            Joint probabilities of the low-dimensional matrices Y.
-        Dsq : ndarray, shape (n_matrices, n_matrices)
-            Squared distances between the matrices in Y.
-        """
-        n_matrices, _, _ = Y.shape
-        Dsq = pairwise_distance(Y, metric=self.metric, squared=True)
-
-        denominator = np.sum(
-            [np.sum([np.delete(1 / (1 + Dsq[k, :]), k)])
-             for k in range(n_matrices)]
-        )
-        Q = 1 / (1 + Dsq) / denominator
-        np.fill_diagonal(Q, 0)
-        return Q, Dsq
-
     def fit(self, X, y=None):
         """Fit TSNE.
 
@@ -588,19 +521,12 @@ class TSNE(BaseEstimator):
             The TSNE instance.
         """
 
-        if self.metric not in ["riemann", "logeuclid", "euclid"]:
-            raise ValueError(
-                f"Unknown metric '{self.metric}'. "
-                "TSNE supports only 'riemann', 'logeuclid' and 'euclid' "
-                "metrics."
-            )
-
         n_matrices, _, _ = X.shape
         if self.perplexity is None:
             self.perplexity = int(0.75 * n_matrices)
 
-        # Compute similarities in the high dimension space
-        P = self._compute_similarities(X)
+        # Compute similarities between high-dimensional matrices
+        P = _compute_symcondprob_gaussian(X, self.metric, self.perplexity)
 
         self.embedding_ = _get_tsne_embedding(
             P,
@@ -610,7 +536,7 @@ class TSNE(BaseEstimator):
             self.max_time,
             self.verbosity,
             self.random_state,
-            self._compute_low_affinities
+            _compute_jointprob_student
         )
 
         return self
@@ -632,6 +558,68 @@ class TSNE(BaseEstimator):
         """
         self.fit(X)
         return self.embedding_
+
+
+def _compute_symcondprob_gaussian(X, metric, perplexity):
+    r"""Symmetrized conditional probabilities using a Gaussian distribution.
+
+    ..math::
+        p_{j|i} = \frac{\exp(-\delta(X_i, X_j)^2/2\sigma_i^2)}{\
+        \sum_{k\neq i}\exp(-\delta(X_i, X_k)^2/2\sigma_i^2)}
+
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+
+    Returns
+    -------
+    P : ndarray, shape (n_matrices, n_matrices)
+        Symmetrized conditional probabilities of matrices.
+    """
+    n_matrices, _, _ = X.shape
+    Dsq = pairwise_distance(X, metric=metric, squared=True)
+    Dsq = Dsq.astype(np.float32, copy=False)
+    # Use _binary_search_perplexity from sklearn to compute conditional
+    # probabilities such that they approximately match the desired
+    # perplexity
+    conditional_P = _binary_search_perplexity(Dsq, perplexity, 0)
+
+    # Symmetrize the conditional probabilities
+    P = conditional_P + conditional_P.T
+    return P / (2 * n_matrices)
+
+
+def _compute_jointprob_student(X, metric):
+    r"""Joint probabilities using a Student t-distribution with one DoF.
+
+    .. math::
+        q_{ij} = \frac{\left(1 + \delta(X_i, X_j)^2\right)^{-1}}
+        {\sum_{k \neq l} (1 + \delta(X_k, X_l)^2)^{-1}}
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD matrices.
+
+    Returns
+    -------
+    Q : ndarray, shape (n_matrices, n_matrices)
+        Joint probabilities of matrices.
+    Dsq : ndarray, shape (n_matrices, n_matrices)
+        Squared distances between matrices.
+    """
+    n_matrices, _, _ = X.shape
+    Dsq = pairwise_distance(X, metric=metric, squared=True)
+
+    denominator = np.sum(
+        [np.sum([np.delete(1 / (1 + Dsq[k, :]), k)])
+         for k in range(n_matrices)]
+    )
+    Q = 1 / (1 + Dsq) / denominator
+    np.fill_diagonal(Q, 0)
+    return Q, Dsq
 
 
 def _check_dimensions(X, Y=None, n_components=None, n_neighbors=None):

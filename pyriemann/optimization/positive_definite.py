@@ -5,29 +5,29 @@ import warnings
 
 import numpy as np
 
-from ..utils.base import sqrtm, invsqrtm, logm, ddlogm
+from ..utils.base import ctranspose, sqrtm, invsqrtm, logm, ddlogm
 from ..datasets import sample_gaussian_spd
 
 
-def _symmetrize(A):
+def _symmetrize(X):
     """Symmetrize an array.
 
     Parameters
     ----------
-    A : ndarray, shape (..., n, n)
-        Input array to be symmetrized.
+    X : ndarray, shape (..., n, n)
+        Square matrices, at least 2D ndarray.
 
     Returns
     -------
-    ndarray, shape (..., n, n)
-        Symmetrized array.
+    X_new : ndarray, shape (..., n, n)
+        Symmetrized square matrices.
     """
 
-    return (A + np.swapaxes(A, -1, -2)) / 2
+    return (X + ctranspose(X)) / 2
 
 
 def _retraction(point, tangent_vector, metric):
-    """Retracts an array of tangent vector back to the manifold.
+    """Retract tangent vectors back to the manifold.
 
     This code is an adaptation from pyManopt [1]_.
 
@@ -91,14 +91,9 @@ def _norm(point, tangent_vector, metric):
         norm = np.linalg.norm(tangent_vector)
     else:
         p_inv_tv = np.linalg.solve(point, tangent_vector)
-
-        if p_inv_tv.ndim == 2:
-            p_inv_tv_transposed = p_inv_tv.T
-        else:
-            p_inv_tv_transposed = np.transpose(p_inv_tv, (0, 2, 1))
         norm = np.sqrt(
             np.tensordot(
-                p_inv_tv, p_inv_tv_transposed, axes=tangent_vector.ndim
+                p_inv_tv, ctranspose(p_inv_tv), axes=tangent_vector.ndim
             )
         )
 
@@ -106,27 +101,25 @@ def _norm(point, tangent_vector, metric):
 
 
 def _loss(P, Q):
-    """Compute the loss of the t-SNE, that is the Kullback-Leibler
-    divergence between P and Q.
+    """Kullback-Leibler divergence between probability distributions.
 
     Parameters
     ----------
     P : ndarray, shape (n_matrices, n_matrices)
-        The matrix of the symmetrized conditional probabilities of X.
+        First probability distribution.
     Q : ndarray, shape (n_matrices, n_matrices)
-        The matrix of the low dimensional similarities conditional
-        probabilities of Y.
+        Second probability distribution.
 
     Returns
     -------
     _ : float
-        The loss of the t-SNE.
+        Kullback-Leibler divergence between P and Q.
     """
     eye_matrix = np.eye(P.shape[0])
     return np.sum(P * np.log((P + eye_matrix) / (Q + eye_matrix)))
 
 
-def _riemannian_gradient(Y, P, Q, Dsq, n_components, metric):
+def _riemannian_gradient(Y, P, Q, Dsq, metric):
     """Compute the Riemannian gradient of the loss of the t-SNE.
 
     Parameters
@@ -134,27 +127,26 @@ def _riemannian_gradient(Y, P, Q, Dsq, n_components, metric):
     Y : ndarray, shape (n_matrices, n_components, n_components)
         Set of low-dimensional SPD matrices.
     P : ndarray, shape (n_matrices, n_matrices)
-        Symmetrized conditional probabilities of X.
+        Symmetrized conditional probabilities of high-dimensional matrices.
     Q : ndarray, shape (n_matrices, n_matrices)
-        Low dimensional similarities conditional probabilities of Y.
+        Joint probabilities of low-dimensional matrices.
     Dsq : ndarray, shape (n_matrices, n_matrices)
-        The Riemannian distance matrix of Y.
-    n_components : int
-        Dimension of the matrices in the embedded space.
+        Squared distances between low-dimensional matrices.
     metric : {"euclid", "logeuclid", "riemann"}
         Metric for the gradient descent.
 
     Returns
     -------
     grad : ndarray, shape (n_matrices, n_components, n_components)
-        The Riemannian gradient of the loss of the t-SNE.
+        Riemannian gradient of the loss of the t-SNE.
     """
-    n_matrices, _ = P.shape
+    n_matrices, n_components, _ = Y.shape
     Y_invsqrt = invsqrtm(Y)
     Y_sqrt = sqrtm(Y)
 
     grad = np.zeros((n_matrices, n_components, n_components))
     for i in range(n_matrices):
+
         if metric == "riemann":
             grad_dist = - (
                 Y_sqrt[i] @ logm(Y_invsqrt[i] @ Y @ Y_invsqrt[i]) @ Y_sqrt[i]
@@ -163,6 +155,12 @@ def _riemannian_gradient(Y, P, Q, Dsq, n_components, metric):
             grad_dist = Y[i] @ ddlogm(logm(Y[i]) - logm(Y), Y[i]) @ Y[i]
         elif metric == "euclid":
             grad_dist = (Y[i] - Y)
+        else:
+            raise ValueError(
+                f"Unknown metric '{metric}'. "
+                "TSNE supports only 'riemann', 'logeuclid' and 'euclid' "
+                "metrics."
+            )
 
         grad[i] = 4 * np.sum(
             ((P[i] - Q[i]) / (1 + Dsq[i]))[:, np.newaxis, np.newaxis]
@@ -218,17 +216,17 @@ def _run_minimization(
     P : ndarray, shape (n_matrices, n_matrices)
         Symmetrized conditional probabilities of high-dimensional matrices.
     initial_sol : ndarray, shape (n_matrices, n_components, n_components)
-        Initial point for the optimization.
+        Initial solution for the optimization.
     metric : {"euclid", "logeuclid", "riemann"}
         Metric for the gradient descent.
     max_iter : int
         Maximum number of iterations for the optimization.
     max_time : float
-        Maximum time (in seconds) allowed for the optimization.
+        Maximum time allowed for the optimization in seconds.
     verbosity : int
         Level of verbosity. Higher values result in more detailed output.
     compute_low_affinities : callable
-        Function to compute low affinities.
+        Function to compute affinities of low-dimensional matrices.
 
     Returns
     -------
@@ -238,7 +236,7 @@ def _run_minimization(
     tol_step = 1e-6
     current_sol = initial_sol
     loss_evolution = []
-    initial_time = time()
+    ini_time = time()
     _, n_components, _ = initial_sol.shape
 
     for i in range(max_iter):
@@ -246,14 +244,12 @@ def _run_minimization(
             print("Iteration : ", i)
 
         # get the current value for the loss function
-        Q, Dsq = compute_low_affinities(current_sol)
+        Q, Dsq = compute_low_affinities(current_sol, metric)
         loss = _loss(P, Q)
         loss_evolution.append(loss)
 
         # get the direction of steepest descent
-        direction = _riemannian_gradient(
-            current_sol, P, Q, Dsq, n_components, metric
-        )
+        direction = _riemannian_gradient(current_sol, P, Q, Dsq, metric)
         norm_direction = _norm(current_sol, direction, metric)
 
         # backtracking line search
@@ -270,7 +266,7 @@ def _run_minimization(
         maxiter_linesearch = 25
 
         retracted = _retraction(current_sol, -alpha * direction, metric)
-        Q_retract, Dsq_retract = compute_low_affinities(retracted)
+        Q_retract, Dsq_retract = compute_low_affinities(retracted, metric)
         loss_retracted = _loss(P, Q_retract)
 
         # Backtrack while the Armijo criterion is not satisfied
@@ -280,7 +276,7 @@ def _run_minimization(
             alpha = tau * alpha
 
             retracted = _retraction(current_sol, -alpha * direction, metric)
-            Q_retract, Dsq_retract = compute_low_affinities(retracted)
+            Q_retract, Dsq_retract = compute_low_affinities(retracted, metric)
             loss_retracted = _loss(P, Q_retract)
         else:
             warnings.warn("Maximum iteration in linesearched reached.")
@@ -296,7 +292,7 @@ def _run_minimization(
             break
 
         # test if the maximum time has been reached
-        if time() - initial_time >= max_time:
+        if time() - ini_time >= max_time:
             warnings.warn(f"Time limit reached after {i} iterations.")
             break
 
@@ -304,8 +300,8 @@ def _run_minimization(
         warnings.warn("Convergence not reached.")
 
     if verbosity >= 1:
-        print("Optimization done in {:.2f} seconds.".format(
-            time() - initial_time))
+        print("Optimization done in {:.2f} seconds.".format(time() - ini_time))
+
     return current_sol
 
 
@@ -319,15 +315,14 @@ def _get_tsne_embedding(
     random_state,
     compute_low_affinities,
 ):
-    """
-    Compute the t-SNE embedding.
+    """Compute the t-SNE embedding.
 
     Parameters
     ----------
     P : ndarray, shape (n_matrices, n_matrices)
         Symmetrized conditional probabilities of high-dimensional matrices.
-    initial_point : ndarray, shape (n_matrices, n_components, n_components)
-        Initial point for the optimization.
+    n_components : int
+        Dimension of the matrices in the embedded space.
     metric : {"euclid", "logeuclid", "riemann"}
         Metric for the gradient descent.
     max_iter : int
@@ -339,11 +334,11 @@ def _get_tsne_embedding(
     random_state : int, RandomState instance or None
         The seed or random number generator for reproducibility.
     compute_low_affinities : callable
-        Function to compute low affinities.
+        Function to compute affinities of low-dimensional matrices.
 
     Returns
     -------
-    embedding : ndarray, shape (n_matrices, n_components)
+    embedding : ndarray, shape (n_matrices, n_components, n_components)
         The computed t-SNE embedding.
     """
 
