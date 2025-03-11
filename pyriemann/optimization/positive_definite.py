@@ -141,8 +141,11 @@ def _riemannian_gradient(Y, P, Q, Dsq, metric):
         Riemannian gradient of the loss of the t-SNE.
     """
     n_matrices, n_components, _ = Y.shape
-    Y_invsqrt = invsqrtm(Y)
-    Y_sqrt = sqrtm(Y)
+    if metric != "euclid":
+        # If the metric is "euclid", the matrices are not SPD therfore, one
+        # cannot compute the square root or the inverse square root.
+        Y_invsqrt = invsqrtm(Y)
+        Y_sqrt = sqrtm(Y)
 
     grad = np.zeros((n_matrices, n_components, n_components))
     for i in range(n_matrices):

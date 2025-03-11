@@ -66,7 +66,7 @@ verbosity = 0  # Verbosity level of the t-SNE
 max_iter = 10000  # Maximum number of iterations
 max_time = 60  # Maximum time for the computation in seconds
 
-TSNE_ = TSNE(
+TSNE_riemann = TSNE(
     n_components=n_components,
     perplexity=perplexity,
     metric=metric,
@@ -75,7 +75,7 @@ TSNE_ = TSNE(
     max_time=max_time,
     random_state=random_state,
 )
-embd = TSNE_.fit_transform(X=samples)
+embd_riemann = TSNE_riemann.fit_transform(X=samples)
 
 ###############################################################################
 # Plot the results. A dynamic display is required if you want to rotate
@@ -89,15 +89,70 @@ ax = plt.axes(projection="3d")
 
 colors = {1: "C0", 2: "C1"}
 for i in range(len(samples)):
-    ax.scatter(embd[i, 0, 0], embd[i, 0, 1], embd[i, 1, 1],
-               c=colors[labels[i]], s=50)
+    ax.scatter(
+        embd_riemann[i, 0, 0], embd_riemann[i, 0, 1], embd_riemann[i, 1, 1],
+        c=colors[labels[i]], s=50
+    )
 ax.scatter([], [], c="C0", s=50, label=r"First Gaussian")
 ax.scatter([], [], c="C1", s=50, label=r"Second Gaussian")
 ax.legend()
 ax.set_xlabel("a", fontsize=14)
 ax.set_ylabel("b", fontsize=14)
 ax.set_zlabel("c", fontsize=14)
-ax.set_title("The reduced version of the data points using the t-SNE")
+ax.set_title(
+    "The reduced version of the data points using the Riemannian t-SNE"
+)
+
+plt.show()
+
+###############################################################################
+# We can compare to the Euclidean t-SNE to see the difference in the
+# representation of the SPD matrices.
+
+n_components = 2  # Dimension of the SPD matrices in the output space
+perplexity = int(
+    0.75 * n_total_matrices
+)  # Perplexity parameter for the t-SNE (recommended to be 0.75*n_samples)
+metric = "euclid"  # Metric used to compute the distances between SPD matrices
+# can be "riemann", "logeuclid" or "euclid"
+verbosity = 0  # Verbosity level of the t-SNE
+max_iter = 10000  # Maximum number of iterations
+max_time = 60  # Maximum time for the computation in seconds
+
+TSNE_euclid = TSNE(
+    n_components=n_components,
+    perplexity=perplexity,
+    metric=metric,
+    verbosity=1,
+    max_iter=max_iter,
+    max_time=max_time,
+    random_state=random_state,
+)
+embd_euclid = TSNE_euclid.fit_transform(X=samples)
+
+
+###############################################################################
+# Plot the results. A dynamic display is required if you want to rotate
+# or zoom the 3D figure. This 3D plot can be tricky to interpret.
+
+fig = plt.figure(figsize=(8, 6))
+ax = plt.axes(projection="3d")
+
+colors = {1: "C0", 2: "C1"}
+for i in range(len(samples)):
+    ax.scatter(
+        embd_euclid[i, 0, 0], embd_euclid[i, 0, 1], embd_euclid[i, 1, 1],
+        c=colors[labels[i]], s=50
+    )
+ax.scatter([], [], c="C0", s=50, label=r"First Gaussian")
+ax.scatter([], [], c="C1", s=50, label=r"Second Gaussian")
+ax.legend()
+ax.set_xlabel("a", fontsize=14)
+ax.set_ylabel("b", fontsize=14)
+ax.set_zlabel("c", fontsize=14)
+ax.set_title(
+    "The reduced version of the data points using the Euclidean t-SNE"
+)
 
 plt.show()
 
