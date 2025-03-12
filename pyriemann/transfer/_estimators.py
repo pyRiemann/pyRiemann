@@ -12,7 +12,9 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score, r2_score
 from sklearn.pipeline import Pipeline
 
-from ._rotate import _get_rotation_manifold, _get_rotation_tangentspace
+from ..optimization.grassmann import (
+    _get_rotation_manifold, _get_rotation_tangentspace
+)
 from ._tools import decode_domains
 from ..classification import MDM
 from ..preprocessing import Whitening

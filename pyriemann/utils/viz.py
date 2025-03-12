@@ -4,17 +4,20 @@ from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
 import numpy as np
 
-from ..embedding import SpectralEmbedding, LocallyLinearEmbedding
+from ..embedding import SpectralEmbedding, LocallyLinearEmbedding, TSNE
 
 
-def plot_embedding(X,
-                   y=None,
-                   *,
-                   metric="riemann",
-                   title="Embedding of covariances",
-                   embd_type="Spectral",
-                   normalize=True):
-    """Plot 2D embedding of SPD matrices.
+def plot_embedding(
+    X,
+    y=None,
+    *,
+    embd_type="Spectral",
+    metric="riemann",
+    title="Embedding of SPD matrices",
+    normalize=True,
+    max_iter=50,
+):
+    """Plot embedding of SPD matrices.
 
     Parameters
     ----------
@@ -22,17 +25,21 @@ def plot_embedding(X,
         Set of SPD matrices.
     y : None | ndarray, shape (n_matrices,), default=None
         Labels for each matrix.
+    embd_type : {"Spectral", "LocallyLinear", "TSNE"}, default="Spectral"
+        Type of the embedding.
     metric : string, default="riemann"
-        Metric used in the embedding. Can be {"riemann", "logeuclid",
-        "euclid"} for Locally Linear Embedding, and {"riemann", "logeuclid",
-        "euclid", "logdet", "kullback", "kullback_right", "kullback_sym"}
-        for Spectral Embedding.
-    title : str, default="Embedding of covariances"
+        Metric used for the embedding. Can be:
+
+        - "riemann", "logeuclid", "euclid", "logdet", "kullback",
+          "kullback_right", "kullback_sym" for Spectral Embedding;
+        - "riemann", "logeuclid", "euclid" for Locally Linear Embedding;
+        - "riemann", "logeuclid", "euclid" for TSNE.
+    title : str, default="Embedding of SPD matrices"
         Title of figure.
-    embd_type : {"Spectral", "LocallyLinear"}, default="Spectral"
-        Embedding type.
     normalize : bool, default=True
         If True, the plot is normalized from -1 to +1.
+    max_iter : int, default=50
+        Maximum number of iterations used for the gradient descent of TSNE.
 
     Returns
     -------
@@ -44,33 +51,49 @@ def plot_embedding(X,
     .. versionadded:: 0.2.6
     """
     if embd_type == "Spectral":
-        lapl = SpectralEmbedding(n_components=2, metric=metric)
+        e = SpectralEmbedding(n_components=2, metric=metric)
     elif embd_type == "LocallyLinear":
-        lapl = LocallyLinearEmbedding(n_components=2,
-                                      n_neighbors=X.shape[1],
-                                      metric=metric)
+        e = LocallyLinearEmbedding(n_components=2,
+                                   n_neighbors=X.shape[1],
+                                   metric=metric)
+    elif embd_type == "TSNE":
+        e = TSNE(n_components=2, metric=metric, max_iter=max_iter)
     else:
-        raise ValueError(f"Unknown embedding type {embd_type}. "
-                         "Valid types are: 'Spectral', 'LocallyLinear'.")
+        raise ValueError(
+            f"Unknown embedding type {embd_type}. "
+            "Valid types are 'Spectral', 'LocallyLinear' or 'TSNE'."
+        )
 
-    embd = lapl.fit_transform(X)
-
+    embd = e.fit_transform(X)
     if y is None:
         y = np.ones(embd.shape[0])
 
-    fig, ax = plt.subplots(figsize=(7, 7), facecolor="white")
-    for label in np.unique(y):
-        idx = y == label
-        ax.scatter(embd[idx, 0], embd[idx, 1], s=36)
+    if embd_type in ["Spectral", "LocallyLinear"]:
+        fig, ax = plt.subplots(figsize=(7, 7), facecolor="white")
+        for label in np.unique(y):
+            idx = y == label
+            ax.scatter(embd[idx, 0], embd[idx, 1], s=36)
+        if normalize:
+            ax.set_xticks([-1.0, -0.5, 0.0, +0.5, 1.0])
+            ax.set_yticks([-1.0, -0.5, 0.0, +0.5, 1.0])
 
+    else:
+        fig = plt.subplots(figsize=(7, 7), facecolor="white")
+        ax = plt.axes(projection="3d")
+        for label in np.unique(y):
+            idx = y == label
+            ax.scatter(embd[idx, 0, 0], embd[idx, 0, 1], embd[idx, 1, 1], s=36)
+        ax.set_zlabel(r"$\varphi_3$", fontsize=16)
+        if normalize:
+            ax.set_xticks([-1.0, -0.5, 0.0, +0.5, 1.0])
+            ax.set_yticks([-1.0, -0.5, 0.0, +0.5, 1.0])
+            ax.set_zticks([-1.0, -0.5, 0.0, +0.5, 1.0])
+
+    ax.set_title(f"{embd_type} {title}", fontsize=16)
     ax.set_xlabel(r"$\varphi_1$", fontsize=16)
     ax.set_ylabel(r"$\varphi_2$", fontsize=16)
-    ax.set_title(f"{embd_type} {title}", fontsize=16)
     ax.grid(False)
-    if normalize:
-        ax.set_xticks([-1.0, -0.5, 0.0, +0.5, 1.0])
-        ax.set_yticks([-1.0, -0.5, 0.0, +0.5, 1.0])
-    ax.legend(list(np.unique(y)))
+    ax.legend(list(np.unique(y)), title="Classes")
 
     return fig
 

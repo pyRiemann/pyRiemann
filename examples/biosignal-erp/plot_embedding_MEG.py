@@ -1,23 +1,28 @@
 """
-============================================
-Embedding ERP MEG data in 2D Euclidean space
-============================================
+===============================================
+Comparison of embeddings of covariance matrices
+===============================================
 
-Riemannian embeddings via Laplacian Eigenmaps (LE) and Locally Linear
-Embedding (LLE) of a set of ERP data. Embedding via Laplacian Eigenmaps is
-referred to as Spectral Embedding (SE).
+Comparison of several embeddings of a set of ERP covariance matrices extracted
+on MEG data: SE, LLE and t-SNE
 
-Locally Linear Embedding (LLE) assumes that the local neighborhood of a
-point on the manifold can be well approximated by  the affine subspace
-spanned by the k-nearest neighbors of the point and finds a low-dimensional
-embedding of the data based on these affine approximations.
-
-Laplacian Eigenmaps (LE) are based on computing the low dimensional
+Spectral Embedding (SE) is based on computing the low-dimensional
 representation that best preserves locality instead of local linearity in LLE
 [1]_.
+
+Locally Linear Embedding (LLE) assumes that the local neighborhood of a
+matrix on the manifold can be well approximated by the affine subspace
+spanned by the k-nearest neighbors of the matrix and finds a low-dimensional
+embedding of the data based on these affine approximations.
+
+t-SNE reduces SPD matrices into lower dimensional SPD matrices by computing
+conditional probabilities that represent similarities [2]_. This fully
+Riemannian algorithm helps preserve the non-Euclidean structure of the data.
 """
 # Authors:  Pedro Rodrigues <pedro.rodrigues01@gmail.com>,
 #           Gabriel Wagner vom Berg <gabriel@bccn-berlin.de>
+#           Thibault de Surrel <thibault.de-surrel@lamsade.dauphine.fr>
+#
 # License: BSD (3-clause)
 
 import matplotlib.pyplot as plt
@@ -31,11 +36,9 @@ from pyriemann.utils.viz import plot_embedding
 
 print(__doc__)
 
-
 ###############################################################################
 # Set parameters and read data
 # ----------------------------
-
 data_path = str(sample.data_path())
 raw_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw.fif"
 event_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif"
@@ -59,8 +62,8 @@ X = epochs.get_data(copy=False)
 y = epochs.events[:, -1]
 
 ###############################################################################
-# Embedding of Xdawn covariance matrices
-# --------------------------------------
+# Extract Xdawn covariance matrices
+# ---------------------------------
 
 nfilter = 4
 xdwn = XdawnCovariances(estimator="scm", nfilter=nfilter)
@@ -69,12 +72,13 @@ Xtrain, Xtest, ytrain, ytest = split
 covs = xdwn.fit(Xtrain, ytrain).transform(Xtest)
 
 ###############################################################################
-# Laplacian Eigenmaps (LE), also called Spectral Embedding (SE)
-# -------------------------------------------------------------
+# Spectral Embedding (SE)
+# -----------------------
 
 plot_embedding(covs, ytest, metric="riemann", embd_type="Spectral",
                normalize=True)
 plt.show()
+
 
 ###############################################################################
 # Locally Linear Embedding (LLE)
@@ -86,9 +90,22 @@ plt.show()
 
 
 ###############################################################################
+# TNSE
+# ------------------------------
+
+plot_embedding(covs, ytest, metric="riemann", embd_type="TSNE",
+               normalize=False, max_iter=50)
+plt.show()
+
+###############################################################################
 # References
 # ----------
 # .. [1] `Clustering and dimensionality reduction on Riemannian manifolds
 #    <https://ieeexplore.ieee.org/document/4587422>`_
 #    A. Goh and R Vidal, in 2008 IEEE Conference on Computer Vision and Pattern
 #    Recognition.
+# .. [2] `Geometry-Aware visualization of high dimensional Symmetric
+#     Positive Definite matrices
+#     <https://openreview.net/pdf?id=DYCSRf3vby>`_
+#     T. de Surrel, S. Chevallier, F. Lotte and F. Yger.
+#     Transactions on Machine Learning Research, 2025

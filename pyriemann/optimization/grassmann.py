@@ -1,3 +1,5 @@
+"""Optimization for rotations on Grassmann manifold"""
+
 import warnings
 
 import numpy as np
@@ -49,10 +51,13 @@ def _grad(Q, X, Y, weights, metric="euclid"):
         return np.einsum("a,abc->bc", weights, 4 * logM @ Q)
 
     else:
-        raise ValueError("RPA supports only 'euclid' and 'riemann' metrics.")
+        raise ValueError(
+            f"Unknown metric {metric}. "
+            "TLRotate supports only 'euclid' and 'riemann' metrics."
+        )
 
 
-def _warm_start(X, Y, weights, metric='euclid'):
+def _warm_start(X, Y, weights, metric="euclid"):
     """Smart initialization of the minimization procedure.
 
     The loss function being optimized is a weighted sum of loss functions with
