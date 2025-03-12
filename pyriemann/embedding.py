@@ -459,13 +459,8 @@ class TSNE(BaseEstimator):
         If None, it will be set to 0.75*n_matrices.
     metric : {"euclid", "logeuclid", "riemann"}, default="riemann"
         Metric for the gradient descent.
-    verbosity : int, default=0
-        Level of information printed by the optimizer while it operates:
-        0 is silent, 2 is most verbose.
-    max_iter : int, default=10_000
+    max_iter : int, default=200
         Maximum number of iterations used for the gradient descent.
-    max_time : int, default=300
-        Maximum time on the run time of the gradient descent in seconds.
     random_state : int, default=None
         Pass an int for reproducible output across multiple function calls.
 
@@ -492,17 +487,13 @@ class TSNE(BaseEstimator):
         n_components=2,
         perplexity=None,
         metric="riemann",
-        verbosity=0,
-        max_iter=10000,
-        max_time=300,
+        max_iter=200,
         random_state=None,
     ):
         self.n_components = n_components
         self.perplexity = perplexity
         self.metric = metric
-        self.verbosity = verbosity
         self.max_iter = max_iter
-        self.max_time = max_time
         self.random_state = random_state
 
     def fit(self, X, y=None):
@@ -533,8 +524,6 @@ class TSNE(BaseEstimator):
             self.n_components,
             self.metric,
             self.max_iter,
-            self.max_time,
-            self.verbosity,
             self.random_state,
             _compute_jointprob_student
         )

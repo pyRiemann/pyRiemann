@@ -1,6 +1,5 @@
 """Optimization on the manifold of positive definite matrices"""
 
-from time import time
 import warnings
 
 import numpy as np
@@ -141,9 +140,7 @@ def _riemannian_gradient(Y, P, Q, Dsq, metric):
         Riemannian gradient of the loss of the t-SNE.
     """
     n_matrices, n_components, _ = Y.shape
-    if metric != "euclid":
-        # If the metric is "euclid", the matrices are not SPD therfore, one
-        # cannot compute the square root or the inverse square root.
+    if metric == "riemann":
         Y_invsqrt = invsqrtm(Y)
         Y_sqrt = sqrtm(Y)
 
@@ -208,8 +205,6 @@ def _run_minimization(
     initial_sol,
     metric,
     max_iter,
-    max_time,
-    verbosity,
     compute_low_affinities,
 ):
     """Run the minimization to solve the t-SNE optimization.
@@ -224,10 +219,6 @@ def _run_minimization(
         Metric for the gradient descent.
     max_iter : int
         Maximum number of iterations for the optimization.
-    max_time : float
-        Maximum time allowed for the optimization in seconds.
-    verbosity : int
-        Level of verbosity. Higher values result in more detailed output.
     compute_low_affinities : callable
         Function to compute affinities of low-dimensional matrices.
 
@@ -238,18 +229,13 @@ def _run_minimization(
     """
     tol_step = 1e-6
     current_sol = initial_sol
-    loss_evolution = []
-    ini_time = time()
     _, n_components, _ = initial_sol.shape
+    prev_loss = None
 
     for i in range(max_iter):
-        if verbosity >= 2 and i % 100 == 0:
-            print("Iteration : ", i)
-
         # get the current value for the loss function
         Q, Dsq = compute_low_affinities(current_sol, metric)
         loss = _loss(P, Q)
-        loss_evolution.append(loss)
 
         # get the direction of steepest descent
         direction = _riemannian_gradient(current_sol, P, Q, Dsq, metric)
@@ -261,8 +247,10 @@ def _run_minimization(
         else:
             # Pick initial step size based on where we were last time and
             # look a bit further
-            # See Boumal, 2023, Section 4.3 for more insights.
-            alpha = 4 * (loss_evolution[-2] - loss) / norm_direction**2
+            # See Boumal, 2023, Section 4.5 for more insights.
+            alpha = 4 * (prev_loss - loss) / norm_direction**2
+
+        prev_loss = loss
 
         tau = 0.50
         r = 1e-4
@@ -290,20 +278,10 @@ def _run_minimization(
         # test if the step size is small
         crit = _norm(current_sol, -alpha * direction, metric)
         if crit <= tol_step:
-            if verbosity >= 1:
-                print("Min stepsize reached")
-            break
-
-        # test if the maximum time has been reached
-        if time() - ini_time >= max_time:
-            warnings.warn(f"Time limit reached after {i} iterations.")
             break
 
     else:
-        warnings.warn("Convergence not reached.")
-
-    if verbosity >= 1:
-        print("Optimization done in {:.2f} seconds.".format(time() - ini_time))
+        warnings.warn("Convergence not reached. Try increasing max_iter.")
 
     return current_sol
 
@@ -313,8 +291,6 @@ def _get_tsne_embedding(
     n_components,
     metric,
     max_iter,
-    max_time,
-    verbosity,
     random_state,
     compute_low_affinities,
 ):
@@ -330,10 +306,6 @@ def _get_tsne_embedding(
         Metric for the gradient descent.
     max_iter : int
         Maximum number of iterations for the optimization.
-    max_time : float
-        Maximum time (in seconds) allowed for the optimization.
-    verbosity : int
-        Level of verbosity. Higher values result in more detailed output.
     random_state : int, RandomState instance or None
         The seed or random number generator for reproducibility.
     compute_low_affinities : callable
@@ -359,8 +331,6 @@ def _get_tsne_embedding(
         embedding_ini,
         metric,
         max_iter,
-        max_time,
-        verbosity,
         compute_low_affinities,
     )
 
