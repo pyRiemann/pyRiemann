@@ -289,6 +289,115 @@ class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
         return self.embedding_
 
 
+class TSNE(BaseEstimator):
+    """T-distributed Stochastic Neighbor Embedding (t-SNE) of SPD/HPD matrices.
+
+    T-distributed Stochastic Neighbor Embedding (t-SNE) reduces
+    a set of high-dimensional SPD/HPD matrices into
+    a set of low-dimensional SPD/HPD matrices [1]_.
+
+    Parameters
+    ----------
+    n_components : int, default=2
+        Low dimension of the matrices in the embedded space.
+    perplexity : int, default=None
+        Perplexity used in the t-SNE algorithm.
+        If None, it will be set to 0.75*n_matrices.
+    metric : {"euclid", "logeuclid", "riemann"}, default="riemann"
+        Metric for the gradient descent.
+    max_iter : int, default=200
+        Maximum number of iterations used for the gradient descent.
+    random_state : int, default=None
+        Pass an int for reproducible output across multiple function calls.
+
+    Attributes
+    ----------
+    embedding_ : ndarray, shape (n_matrices, n_components, n_components)
+        Embedding matrices of the training set.
+
+    Notes
+    -----
+    .. versionadded:: 0.9
+
+    References
+    ----------
+    .. [1] `Geometry-Aware visualization of high dimensional Symmetric
+        Positive Definite matrices
+        <https://openreview.net/pdf?id=DYCSRf3vby>`_
+        T. de Surrel, S. Chevallier, F. Lotte and F. Yger.
+        Transactions on Machine Learning Research, 2025
+    """
+
+    def __init__(
+        self,
+        n_components=2,
+        perplexity=None,
+        metric="riemann",
+        max_iter=200,
+        random_state=None,
+    ):
+        self.n_components = n_components
+        self.perplexity = perplexity
+        self.metric = metric
+        self.max_iter = max_iter
+        self.random_state = random_state
+
+    def fit(self, X, y=None):
+        """Fit TSNE.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of high-dimensional SPD/HPD matrices.
+        y : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        self : TSNE instance
+            The TSNE instance.
+        """
+
+        n_matrices, _, _ = X.shape
+        if self.perplexity is None:
+            self.perplexity = int(0.75 * n_matrices)
+
+        # Compute similarities between high-dimensional matrices
+        P = _compute_condprob_gaussian(X, self.metric, self.perplexity)
+
+        self.embedding_ = _get_tsne_embedding(
+            P,
+            self.n_components,
+            self.metric,
+            self.max_iter,
+            self.random_state,
+            _compute_jointprob_student
+        )
+
+        return self
+
+    def fit_transform(self, X, y=None):
+        """Calculate the embedded matrices.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of high-dimensional SPD/HPD matrices.
+        y : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        X_new : ndarray, shape (n_matrices, n_components, n_components)
+            Set of low-dimensional embedded matrices.
+        """
+        self.fit(X)
+        return self.embedding_
+
+
+###############################################################################
+
+
 def barycenter_weights(X, Y, indices, metric="riemann", kernel=None, reg=1e-3):
     """Compute barycenter weights of X from Y along the first axis.
 
@@ -443,114 +552,8 @@ def locally_linear_embedding(
     return embd, error
 
 
-class TSNE(BaseEstimator):
-    """T-distributed Stochastic Neighbor Embedding (t-SNE) of SPD/HPD matrices.
-
-    T-distributed Stochastic Neighbor Embedding (t-SNE) reduces
-    a set of high-dimensional SPD/HPD matrices into
-    a set of low-dimensional SPD/HPD matrices [1]_.
-
-    Parameters
-    ----------
-    n_components : int, default=2
-        Low dimension of the matrices in the embedded space.
-    perplexity : int, default=None
-        Perplexity used in the t-SNE algorithm.
-        If None, it will be set to 0.75*n_matrices.
-    metric : {"euclid", "logeuclid", "riemann"}, default="riemann"
-        Metric for the gradient descent.
-    max_iter : int, default=200
-        Maximum number of iterations used for the gradient descent.
-    random_state : int, default=None
-        Pass an int for reproducible output across multiple function calls.
-
-    Attributes
-    ----------
-    embedding_ : ndarray, shape (n_matrices, n_components, n_components)
-        Embedding matrices of the training set.
-
-    Notes
-    -----
-    .. versionadded:: 0.9
-
-    References
-    ----------
-    .. [1] `Geometry-Aware visualization of high dimensional Symmetric
-        Positive Definite matrices
-        <https://openreview.net/pdf?id=DYCSRf3vby>`_
-        T. de Surrel, S. Chevallier, F. Lotte and F. Yger.
-        Transactions on Machine Learning Research, 2025
-    """
-
-    def __init__(
-        self,
-        n_components=2,
-        perplexity=None,
-        metric="riemann",
-        max_iter=200,
-        random_state=None,
-    ):
-        self.n_components = n_components
-        self.perplexity = perplexity
-        self.metric = metric
-        self.max_iter = max_iter
-        self.random_state = random_state
-
-    def fit(self, X, y=None):
-        """Fit TSNE.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of high-dimensional SPD/HPD matrices.
-        y : None
-            Not used, here for compatibility with sklearn API.
-
-        Returns
-        -------
-        self : TSNE instance
-            The TSNE instance.
-        """
-
-        n_matrices, _, _ = X.shape
-        if self.perplexity is None:
-            self.perplexity = int(0.75 * n_matrices)
-
-        # Compute similarities between high-dimensional matrices
-        P = _compute_symcondprob_gaussian(X, self.metric, self.perplexity)
-
-        self.embedding_ = _get_tsne_embedding(
-            P,
-            self.n_components,
-            self.metric,
-            self.max_iter,
-            self.random_state,
-            _compute_jointprob_student
-        )
-
-        return self
-
-    def fit_transform(self, X, y=None):
-        """Calculate the embedded matrices.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of high-dimensional SPD/HPD matrices.
-        y : None
-            Not used, here for compatibility with sklearn API.
-
-        Returns
-        -------
-        X_new : ndarray, shape (n_matrices, n_components, n_components)
-            Set of low-dimensional embedded matrices.
-        """
-        self.fit(X)
-        return self.embedding_
-
-
-def _compute_symcondprob_gaussian(X, metric, perplexity):
-    r"""Symmetrized conditional probabilities using a Gaussian distribution.
+def _compute_condprob_gaussian(X, metric, perplexity):
+    r"""Conditional probabilities using a Gaussian distribution.
 
     ..math::
         p_{j|i} = \frac{\exp(-\delta(X_i, X_j)^2/2\sigma_i^2)}{\
@@ -565,26 +568,23 @@ def _compute_symcondprob_gaussian(X, metric, perplexity):
     Returns
     -------
     P : ndarray, shape (n_matrices, n_matrices)
-        Symmetrized conditional probabilities of matrices.
+        Conditional probabilities of matrices.
     """
     n_matrices, _, _ = X.shape
     Dsq = pairwise_distance(X, metric=metric, squared=True)
     Dsq = Dsq.astype(np.float32, copy=False)
     # Use _binary_search_perplexity from sklearn to compute conditional
-    # probabilities such that they approximately match the desired
-    # perplexity
+    # probabilities such that they approximately match the desired perplexity
     conditional_P = _binary_search_perplexity(Dsq, perplexity, 0)
 
-    # Symmetrize the conditional probabilities
-    P = conditional_P + conditional_P.T
-    return P / (2 * n_matrices)
+    return conditional_P / n_matrices
 
 
 def _compute_jointprob_student(X, metric):
     r"""Joint probabilities using a Student t-distribution with one DoF.
 
     .. math::
-        q_{ij} = \frac{\left(1 + \delta(X_i, X_j)^2\right)^{-1}}
+        p_{i,j} = \frac{\left(1 + \delta(X_i, X_j)^2\right)^{-1}}
         {\sum_{k \neq l} (1 + \delta(X_k, X_l)^2)^{-1}}
 
     Parameters
@@ -594,7 +594,7 @@ def _compute_jointprob_student(X, metric):
 
     Returns
     -------
-    Q : ndarray, shape (n_matrices, n_matrices)
+    P : ndarray, shape (n_matrices, n_matrices)
         Joint probabilities of matrices.
     Dsq : ndarray, shape (n_matrices, n_matrices)
         Squared distances between matrices.
@@ -606,9 +606,9 @@ def _compute_jointprob_student(X, metric):
         [np.sum([np.delete(1 / (1 + Dsq[k, :]), k)])
          for k in range(n_matrices)]
     )
-    Q = 1 / (1 + Dsq) / denominator
-    np.fill_diagonal(Q, 0)
-    return Q, Dsq
+    P = 1 / (1 + Dsq) / denominator
+    np.fill_diagonal(P, 0)
+    return P, Dsq
 
 
 def _check_dimensions(X, Y=None, n_components=None, n_neighbors=None):

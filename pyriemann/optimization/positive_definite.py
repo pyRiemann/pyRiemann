@@ -299,7 +299,7 @@ def _get_tsne_embedding(
     Parameters
     ----------
     P : ndarray, shape (n_matrices, n_matrices)
-        Symmetrized conditional probabilities of high-dimensional matrices.
+        Conditional probabilities of high-dimensional matrices.
     n_components : int
         Dimension of the matrices in the embedded space.
     metric : {"euclid", "logeuclid", "riemann"}
@@ -318,6 +318,9 @@ def _get_tsne_embedding(
     """
 
     n_matrices, _ = P.shape
+
+    # Symmetrize the conditional probabilities
+    P = _symmetrize(P)
 
     # Sample initial solution close to the identity
     embedding_ini = _get_initial_solution(
