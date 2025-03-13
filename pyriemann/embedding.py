@@ -556,14 +556,13 @@ def _compute_condprob_gaussian(X, metric, perplexity):
     r"""Conditional probabilities using a Gaussian distribution.
 
     ..math::
-        p_{j|i} = \frac{\exp(-\delta(X_i, X_j)^2/2\sigma_i^2)}{\
-        \sum_{k\neq i}\exp(-\delta(X_i, X_k)^2/2\sigma_i^2)}
-
+        p_{j|i} = \frac{\exp(-\delta(X_i, X_j)^2/2\sigma_i^2)}
+        {\sum_{k\neq i}\exp(-\delta(X_i, X_k)^2/2\sigma_i^2)}
 
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices.
+        Set of SPD/HPD matrices.
 
     Returns
     -------
@@ -590,7 +589,7 @@ def _compute_jointprob_student(X, metric):
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD matrices.
+        Set of SPD/HPD matrices.
 
     Returns
     -------
