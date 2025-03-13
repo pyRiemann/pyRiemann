@@ -262,17 +262,18 @@ def test_distance_wrapper_between_set_and_matrix(dist, get_mats):
         distance(mats_4d, mats, metric=dist)
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("dist", get_distances())
 @pytest.mark.parametrize("Y", [None, True])
 @pytest.mark.parametrize("squared", [False, True])
-def test_pairwise_distance_matrix(get_mats, dist, Y, squared):
+def test_pairwise_distance_matrix(kind, dist, Y, squared, get_mats):
     n_matrices_X, n_matrices_Y, n_channels = 6, 4, 5
-    X = get_mats(n_matrices_X, n_channels, "spd")
+    X = get_mats(n_matrices_X, n_channels, kind)
     if Y is None:
         n_matrices_Y = n_matrices_X
         Y_ = X
     else:
-        Y = get_mats(n_matrices_Y, n_channels, "spd")
+        Y = get_mats(n_matrices_Y, n_channels, kind)
         Y_ = Y
 
     pdist = pairwise_distance(X, Y, metric=dist, squared=squared)
