@@ -1,5 +1,7 @@
-import sys
 import math
+import sys
+
+import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.model_selection import cross_val_score
 
@@ -44,7 +46,8 @@ class BasePermutation():
         y : array-like
             The target variable to try to predict in the case of
             supervised learning.
-
+        groups : array-like, default=None
+            Group labels used while splitting the dataset into train/test set.
         verbose : bool, default=True
             If true, print progress.
         """
@@ -109,7 +112,7 @@ class BasePermutation():
 
         Parameters
         ----------
-        nbins : integer or array_like or 'auto', default=10
+        nbins : integer or array-like or "auto", default=10
             If an integer is given, bins + 1 bin edges are returned,
             consistently with np.histogram() for numpy version >= 1.3.
             Unequally spaced bins are supported if bins is a sequence.
@@ -119,27 +122,21 @@ class BasePermutation():
             Range has no effect if bins is a sequence.
             If bins is a sequence or range is specified, autoscaling is based
             on the specified bin range instead of the range of x.
-
         axes : axes handle, default=None
             Axes handle for matplotlib. if None a new figure will be created.
         """
-        try:
-            import matplotlib.pyplot as plt
-        except ImportError:
-            raise ImportError("Install matplotlib to plot permutation")
-
         if axes is None:
             fig, axes = plt.subplots(1, 1)
-        axes.hist(self.scores_[1:], nbins, range)
+        axes.hist(self.scores_[1:], nbins, range=range)
         x_val = self.scores_[0]
         y_max = axes.get_ylim()[1]
-        axes.plot([x_val, x_val], [0, y_max], '--r', lw=2)
+        axes.plot([x_val, x_val], [0, y_max], "--r", lw=2)
         x_max = axes.get_xlim()[1]
         x_min = axes.get_xlim()[0]
         x_pos = x_min + ((x_max - x_min) * 0.25)
-        axes.text(x_pos, y_max * 0.8, 'p-value: %.3f' % self.p_value_)
-        axes.set_xlabel('Score')
-        axes.set_ylabel('Count')
+        axes.text(x_pos, y_max * 0.8, "p-value: %.3f" % self.p_value_)
+        axes.set_xlabel("Score")
+        axes.set_ylabel("Count")
         return axes
 
 
@@ -174,8 +171,7 @@ class PermutationModel(BasePermutation):
         a scorer callable object / function with signature
         `scorer(estimator, X, y)`.
     n_jobs : integer, default=1
-        The number of CPUs to use to do the computation. -1 means
-        'all CPUs'.
+        The number of CPUs to use to do the computation. -1 means "all CPUs".
     random_state : int, default=42
         random state for the permutation test.
 
@@ -192,13 +188,15 @@ class PermutationModel(BasePermutation):
     PermutationDistance
     """
 
-    def __init__(self,
-                 n_perms=100,
-                 model=MDM(),
-                 cv=3,
-                 scoring=None,
-                 n_jobs=1,
-                 random_state=42):
+    def __init__(
+        self,
+        n_perms=100,
+        model=MDM(),
+        cv=3,
+        scoring=None,
+        n_jobs=1,
+        random_state=42,
+    ):
         """Init."""
         self.n_perms = n_perms
         self.model = model
@@ -215,10 +213,11 @@ class PermutationModel(BasePermutation):
         X : array-like
             The data to fit. Can be, for example a list, or an array at
             least 2d.
-
         y : array-like
             The target variable to try to predict in the case of
             supervised learning.
+        groups : array-like, default=None
+            Group labels used while splitting the dataset into train/test set
         """
         score = cross_val_score(
             self.model,
@@ -227,7 +226,8 @@ class PermutationModel(BasePermutation):
             cv=self.cv,
             n_jobs=self.n_jobs,
             scoring=self.scoring,
-            groups=groups)
+            groups=groups,
+        )
         return score.mean()
 
 
@@ -235,23 +235,23 @@ class PermutationDistance(BasePermutation):
     """Permutation test based on distance.
 
     Perform a permutation test based on distance. You have the choice of 3
-    different statistic:
+    different statistics:
 
-    - 'pairwise' :
+    - "pairwise":
         the statistic is based on paiwire distance as
-        descibed in [1]_. This is the fastest option for low sample size since
+        described in [1]_. This is the fastest option for low sample size since
         the pairwise distance matrix does not need to be estimated for each
         permutation.
 
-    - 'ttest' :
+    - "ttest":
         t-test based statistic obtained by the ration of the
-        distance between each riemannian centroid and the group dispersion.
+        distance between each centroid and the group dispersion.
         The means have to be estimated for each permutation, leading to a
         slower procedure. However, this can be used for high sample size.
 
-    - 'ftest':
+    - "ftest":
         f-test based statistic estimated using the between and
-        within group variability. As for the 'ttest' stats, group centroid
+        within group variability. As for the "ttest" stats, group centroid
         are estimated for each permutation.
 
     Parameters
@@ -266,11 +266,10 @@ class PermutationDistance(BasePermutation):
         (see :func:`pyriemann.utils.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
-    mode : string, default='pairwise'
-        Type of statistic to use. could be 'pairwise', 'ttest' of 'ftest'
+    mode : string, default="pairwise"
+        Type of statistic to use. could be "pairwise", "ttest" of "ftest"
     n_jobs : integer, default=1
-        The number of CPUs to use to do the computation. -1 means
-        'all CPUs'.
+        The number of CPUs to use to do the computation. -1 means "all CPUs".
     random_state : int, default=42
         random state for the permutation test.
     estimator : None or sklearn compatible estimator, default=None
@@ -297,17 +296,19 @@ class PermutationDistance(BasePermutation):
         M. Anderson. Austral ecology, Volume 26, Issue 1, February 2001.
     """
 
-    def __init__(self,
-                 n_perms=100,
-                 metric="riemann",
-                 mode='pairwise',
-                 n_jobs=1,
-                 random_state=42,
-                 estimator=None):
+    def __init__(
+        self,
+        n_perms=100,
+        metric="riemann",
+        mode="pairwise",
+        n_jobs=1,
+        random_state=42,
+        estimator=None,
+    ):
         """Init."""
         self.n_perms = n_perms
-        if mode not in ['pairwise', 'ttest', 'ftest']:
-            raise (ValueError("mode must be 'pairwise', 'ttest' or 'ftest'"))
+        if mode not in ["pairwise", "ttest", "ftest"]:
+            raise ValueError("mode must be 'pairwise', 'ttest' or 'ftest'")
         self.mode = mode
         self.metric = metric
         self.n_jobs = n_jobs
@@ -325,16 +326,18 @@ class PermutationDistance(BasePermutation):
         y : array-like
             The target variable to try to predict in the case of
             supervised learning.
+        groups : array-like, default=None
+            Group labels used while splitting the dataset into train/test set
         """
         if self.estimator:
             X = self.estimator.fit_transform(X, y)
             X = self.__init_transform(X)
 
-        if self.mode == 'ttest':
+        if self.mode == "ttest":
             return self._score_ttest(X, y)
-        elif self.mode == 'ftest':
+        elif self.mode == "ftest":
             return self._score_ftest(X, y)
-        elif self.mode == 'pairwise':
+        elif self.mode == "pairwise":
             return self._score_pairwise(X, y)
 
     def _initial_transform(self, X):
@@ -349,9 +352,9 @@ class PermutationDistance(BasePermutation):
         """Init tr"""
         self.mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
         self.mdm.metric_mean, self.mdm.metric_dist = check_metric(self.metric)
-        if self.mode == 'ftest':
+        if self.mode == "ftest":
             self.global_mean = mean_covariance(X, metric=self.mdm.metric_mean)
-        elif self.mode == 'pairwise':
+        elif self.mode == "pairwise":
             X = pairwise_distance(X, metric=self.mdm.metric_dist, squared=True)
         return X
 
