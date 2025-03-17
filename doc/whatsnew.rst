@@ -15,7 +15,7 @@ v0.9.dev
 - Add :class:`pyriemann.embedding.TSNE`, a Riemannian t-SNE implementation
   and update example comparing embeddings. :pr:`347` by :user:`thibaultdesurrel`
 
--  Fix matplotlib warning. :pr:`351` by :user:`qbarthelemy`
+- Fix matplotlib warning. :pr:`351` by :user:`qbarthelemy`
 
 v0.8 (February 2025)
 --------------------
