@@ -187,7 +187,7 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         )
         return tangent_space(X, self.reference_, metric=self.metric_map)
 
-    def inverse_transform(self, X, y=None):
+    def inverse_transform(self, X):
         """Inverse transform.
 
         Project back a set of tangent space vector in the manifold.
@@ -196,8 +196,6 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         ----------
         X : ndarray, shape (n_matrices, n_ts)
             Set of tangent space projections of the matrices.
-        y : None
-            Not used, here for compatibility with sklearn API.
 
         Returns
         -------
