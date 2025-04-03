@@ -12,8 +12,9 @@ v0.9.dev
 
 - Add conjugate transpose operator :func:`pyriemann.utils.base.ctranspose` for real- and complex-valued ndarrays. :pr:`348` by :user:`qbarthelemy`
 
-- Add :class:`pyriemann.embedding.TSNE`, a Riemannian t-SNE implementation
-  and update example comparing embeddings. :pr:`347` by :user:`thibaultdesurrel`
+- Add :class:`pyriemann.embedding.TSNE`, a Riemannian t-SNE implementation and update example comparing embeddings. :pr:`347` by :user:`thibaultdesurrel`
+
+- Enhance :func:`pyriemann.utils.distance.pairwise_distance` to support HPD matrices for "euclid", "harmonic", "logchol" and "logeuclid" metrics. :pr:`350` by :user:`qbarthelemy`
 
 - Fix matplotlib warning. :pr:`351` by :user:`qbarthelemy`
 
