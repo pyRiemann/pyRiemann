@@ -489,7 +489,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
                 tol=zeta,
                 maxiter=maxiter,
                )
-    elif p == -1:
+    if p == -1:
         return mean_harmonic(X, sample_weight=sample_weight)
 
     n_matrices, n, _ = X.shape
