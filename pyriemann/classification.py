@@ -1163,6 +1163,14 @@ def _get_within(X, y, means, classes, exponent, metric):
     sum_sigmas = np.sum(sigmas)
     return sum_sigmas
 
+#temporal: imports MeanField_V2
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from .utils.mean import mean_logeuclid
+from .utils.mean import mean_power
+from scipy.stats import zscore
+from sklearn.ensemble import IsolationForest
+from sklearn.neighbors import LocalOutlierFactor
+
 class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
     """Classification by Minimum Distance to Mean Field.
 
@@ -1214,7 +1222,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
                  metric="riemann",
                  power_mean_zeta = 1e-07, #stopping criterion for the mean calculation, bigger values help with speed
                  distance_squared = True,
-                 n_jobs=-1, 
+                 n_jobs=1, 
                  euclidean_mean  = False,
                  distance_strategy = "power_distance",
                  remove_outliers = True,
@@ -1225,9 +1233,6 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
                  outliers_mean_init = True,
                  reuse_previous_mean = False,
                  outliers_single_zscore = True, #when false more outliers are removed. When True only the outliers further from the mean are removed
-                 user_orig_power_mean_function = False,
-                 keep_distance_as_matrix = False, #to be used with vector_distance and CNN
-                 vector_distance_method = 2
                  ):
         """Init."""
         self.power_list = power_list
@@ -1246,21 +1251,15 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.distance_squared = distance_squared
         self.reuse_previous_mean = reuse_previous_mean
         self.outliers_single_zscore = outliers_single_zscore
-        self.user_orig_power_mean_function = user_orig_power_mean_function
-        self.keep_distance_as_matrix = keep_distance_as_matrix # for "vector_distance"
-        self.vector_distance_method = vector_distance_method # for "vector_distance"
         
         '''
-        
-        most used: default_metric and power_distance(squared=false)
         
         "default_metric" - it uses "metric" (usually Riemann) for all distances 
         "power_mean"     - uses a modified power_distance function based riemann distance, which has an optimization that first calcualtes the inverse of the power mean
-        "adaptive1"      - it uses p=-1 harmonic distance and for p=1 euclidean, riemann for the p=0
-                         - for the rest it uses custom_distance that uses p to calculate the distance
-        "adaptive2"      - it uses p=-1 harmonic distance and for p=1 euclidean, for the rest it uses "metric" (usually Riemann)
+     
         '''
-        if distance_strategy not in ["default_metric", "adaptive1", "adaptive2", "power_distance", "custom_distance_function", "vector_distance"]:
+        #if distance_strategy not in ["default_metric", "adaptive1", "adaptive2", "power_distance", "custom_distance_function", "vector_distance"]:
+        if distance_strategy not in ["default_metric", "power_distance"]:
             raise Exception()("Invalid distance stategy!")
         
         if distance_strategy == "vector_distance" and self.remove_outliers:
@@ -1306,22 +1305,14 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
                         init = self.covmeans_[prev_p][ll]
                         #print(prev_p)
                         #print("using prev mean from the power list")
-                
-                if self.user_orig_power_mean_function:
-                    means_p[ll] = mean_power(
-                        X[y == ll],
-                        p,
-                        sample_weight=sample_weight[y == ll],
-                        init = init
-                    )
-                else:  
-                    means_p[ll] = mean_power_custom(
-                        X[y == ll],
-                        p,
-                        sample_weight=sample_weight[y == ll],
-                        zeta = self.power_mean_zeta,
-                        init = init
-                    )
+                 
+                means_p[ll] = mean_power( #original is mean_power_custom
+                    X[y == ll],
+                    p,
+                    sample_weight=sample_weight[y == ll],
+                    zeta = self.power_mean_zeta,
+                    init = init
+                )
             #self.covmeans_[p] = means_p
             
         if self.distance_strategy == "power_distance":
@@ -1464,6 +1455,33 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         
         return means_p,inv_means
     
+    def power_distance(self, trial, power_mean_inv, squared=False):
+        '''
+        A distance that requires inv power mean as second parameter
+
+        Parameters
+        ----------
+        trial : TYPE
+            DESCRIPTION.
+        power_mean_inv : TYPE
+            DESCRIPTION.
+        squared : TYPE, optional
+            DESCRIPTION. The default is False.
+
+        Returns
+        -------
+        TYPE
+            DESCRIPTION.
+
+        '''
+        
+        #_check_inputs(A, B)
+        #_check_inputs(power_mean_inv, trial)
+
+        d2 = (np.log( np.linalg.eigvals (power_mean_inv @ trial)) **2 ).sum(axis=-1)
+
+        return d2 if squared else np.sqrt(d2)
+
     def _calculate_all_means(self,X,y,sample_weight):
         
         if self.n_jobs==-1 or self.n_jobs > 1:
@@ -1531,21 +1549,11 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         if self.distance_strategy == "power_distance" and len(self.covmeans_.keys()) != len(self.covmeans_inv_.keys()):
             raise Exception("Problem with the number of inverse matrices")
         
-        if self.method_label == "lda" and self.keep_distance_as_matrix == False:
+        if self.method_label == "lda":
             dists = self._predict_distances(X)
             self.lda.fit(dists,y)
 
         return self
-    
-    #def calculate_inv_mean_by_p(self,p): #for all classes
-    #          
-    #    means_p = {}
-    #    for ll in self.classes_:
-    #        means_p[ll] = np.linalg.inv(self.covmeans_[p][ll])
-    #    
-    #    self.covmeans_inv_[p] = means_p
-    #    
-    #    return means_p
     
     def calculate_inv_mean_by_mean(self,covs): #for all classes
               
@@ -1612,66 +1620,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         
         if len(A.shape) == 2:
         
-            if self.distance_strategy == "adaptive1": #very slow
-                
-                met = None
-                
-                if p == 200:
-                    met = "logeuclid"
-                    #print("euclidean distance")
-                    
-                if p == 1:
-                    met = "euclid"
-                
-                if p == -1:
-                    met = "harmonic"
-                
-                if p<=0.1 and p>=-0.1:
-                    met = "riemann"
-                
-                if met is None:
-                    #print("p based distance")
-                    #this is the case for example: -0.75, -0.5, -0.25, +0.75, +0.5, +0.25
-                    dist = distance_custom(A, B, k=p, squared = squared)
-                    
-                    # if (dist is None):
-                    #     print("Problem with distance custom")
-                else:
-                    #when selected one of the above -1,1, [-0.1..0.1]
-                    dist = distance(
-                            A,
-                            B,
-                            metric=met,
-                            squared = squared,
-                        )
-                
-                #print("adaptive distance", dist)
-            
-            elif self.distance_strategy == "adaptive2":
-                
-                #adaptive only for -1,1 and 200
-                met = self.metric
-                
-                if p == 200:
-                    met = "logeuclid"
-                    #print("euclidean distance")
-                    
-                elif p == 1:
-                    met = "euclid"
-                
-                elif p == -1:
-                    met = "harmonic"
-            
-                dist = distance(
-                        A,
-                        B,
-                        metric=met,
-                        squared = squared,
-                    )
-                
-                #print("adaptive distance", dist)
-               
-            elif self.distance_strategy == "default_metric":
+            if self.distance_strategy == "default_metric":
                 
                 dist = distance(
                         A,
@@ -1683,23 +1632,11 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
             #same as "default_metric", but uses inverse mean
             elif self.distance_strategy == "power_distance":
                 
-                dist = power_distance(
+                dist = self.power_distance(
                         A, #trial
                         B, #mean inverted
                         squared = squared,
                     )
-            elif self.distance_strategy == "vector_distance":
-                
-                dist = vector_distance(
-                        A,
-                        B,
-                        self.vector_distance_method
-                    )
-                
-            elif self.distance_strategy == "custom_distance_function":
-                
-                dist = distance_custom(A, B, k=p, squared = squared)
-                
             else:
                 raise Exception("Invalid distance strategy")
                     
@@ -1724,46 +1661,15 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
                 
                 m[p].append(dist_p)
                 
-        if self.distance_strategy=="vector_distance":
+        combined = [] #combined for all classes
+        for v in m.values():
+            combined.extend(v)
+        
+        #check combned = (number of classes) x (number of power means)
+        if len(combined) != (len(self.power_list) * len(self.classes_)) :
+            raise Exception("Not enough calculated distances!", len(combined),(len(self.power_list) * 2))
             
-            combined = [] #combined for all classes
-            
-            if self.keep_distance_as_matrix:
-                combined_class1 = []
-                combined_class2 = []
-                    
-                for v in m.values():
-                    combined_class1.append(v[0])
-                    combined_class2.append(v[1])
-                    
-                combined = np.vstack((np.array(combined_class1),np.array(combined_class2)))
-            else:
-                for v in m.values():
-                    combined.extend(v[0])
-                    combined.extend(v[1])  
-                
-                # if len(combined) != x.shape[0] * (len(self.power_list) * len(self.classes_)):
-                #     raise Exception("Not enough calculated distances!", len(combined),(len(self.power_list) * 2))
-                
-            return combined
-        else: #standard
-            
-            combined = [] #combined for all classes
-            
-            #(number of classes) x (number of power means)
-            if self.keep_distance_as_matrix:
-                for v in m.values():
-                    combined.append(v)
-                combined=np.array(combined)
-                combined=combined.T
-            else:      
-                for v in m.values():
-                    combined.extend(v)
-                
-                if len(combined) != (len(self.power_list) * len(self.classes_)) :
-                    raise Exception("Not enough calculated distances!", len(combined),(len(self.power_list) * 2))
-                
-            return combined
+        return combined
         
     def _predict_distances(self, X):
         """Helper to predict the distance. Equivalent to transform."""
