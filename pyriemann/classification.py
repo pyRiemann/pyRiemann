@@ -1567,16 +1567,16 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
                  metric="riemann",
                  power_mean_zeta = 1e-07, #stopping criterion for the mean calculation, bigger values help with speed
                  distance_squared = True,
-                 n_jobs=1, 
-                 euclidean_mean  = False,
+                 n_jobs= 1, 
+                 euclidean_mean = False,
                  distance_strategy = "power_distance",
+                 reuse_previous_mean = False,
                  remove_outliers = True,
                  outliers_th = 2.5,
                  outliers_depth = 4, #how many times to run the outliers detection on the same data
                  outliers_max_remove_th = 30, #default 30%, parameter is percentage
                  outliers_method = "zscore",
                  outliers_mean_init = True,
-                 reuse_previous_mean = False,
                  outliers_single_zscore = True, #when false more outliers are removed. When True only the outliers further from the mean are removed
                  ):
         """Init."""
@@ -1586,15 +1586,15 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.n_jobs = n_jobs
         self.euclidean_mean = euclidean_mean #if True sets LogEuclidian distance for LogEuclidian mean and Euclidian distance for power mean p=1
         self.distance_strategy = distance_strategy 
+        self.reuse_previous_mean = reuse_previous_mean
+        self.power_mean_zeta = power_mean_zeta
         self.remove_outliers = remove_outliers
         self.outliers_th = outliers_th
         self.outliers_depth = outliers_depth
         self.outliers_max_remove_th = outliers_max_remove_th
         self.outliers_method = outliers_method
-        self.power_mean_zeta = power_mean_zeta
         self.outliers_mean_init = outliers_mean_init
         self.distance_squared = distance_squared
-        self.reuse_previous_mean = reuse_previous_mean
         self.outliers_single_zscore = outliers_single_zscore
         
         '''
@@ -1836,7 +1836,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         
         return means_p,inv_means
     
-    def power_distance(self, trial, power_mean_inv, squared=False):
+    def _inv_power_distance(self, trial, power_mean_inv, squared=False):
         '''
         A distance that requires inv power mean as second parameter
 
@@ -1905,6 +1905,8 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
             The MeanField instance.
         """
         
+        # example on how to add non power means
+        # p>= 200 are handled separately from the power means [-1 .. 1]
         if self.euclidean_mean:
             self.power_list.append(200)
             
@@ -2019,10 +2021,10 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
                         squared = squared,
                     )
             
-            #same as "default_metric", but uses inverse mean
+            # similar to "default_metric", but uses inverse mean
             elif self.distance_strategy == "power_distance":
                 
-                dist = self.power_distance(
+                dist = self._inv_power_distance(
                         A, #trial
                         B, #mean inverted
                         squared = squared,
