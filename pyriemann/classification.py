@@ -1514,6 +1514,7 @@ from .utils.mean import mean_power
 from scipy.stats import zscore
 from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
+from .utils.distance import _check_inputs
 
 class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
     """Classification by Minimum Distance to Mean Field.
@@ -1633,7 +1634,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         '''
         means_p   = {} #keys are classes, values are means for this p and class
-        inv_means = {}
+        inv_means = {} #same as above
         
         if p == 200: #adding an extra mean - this one is logeuclid and not power mean
             #print("euclidean mean")
@@ -1706,11 +1707,11 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         X_no_outliers = X.copy() #so that every power mean p start from the same data
         y_no_outliers = y.copy()
         
-        total_outliers_removed_per_class = np.zeros(len(self.classes_))
-        total_samples_per_class          = np.zeros(len(self.classes_))
+        count_total_outliers_removed_per_class = np.zeros(len(self.classes_))
+        count_total_samples_per_class          = np.zeros(len(self.classes_))
         
         for ll in self.classes_:
-            total_samples_per_class[ll] = len(y_no_outliers[y_no_outliers==ll])
+            count_total_samples_per_class[ll] = len(y_no_outliers[y_no_outliers==ll])
         
         if self.outliers_method == "iforest":
             iso = IsolationForest(contamination='auto') #0.1
@@ -1789,7 +1790,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
                 
                 #check if too many samples are about to be removed
                 #case 1 less than self.max_outliers_remove_th are to be removed
-                if ((total_outliers_removed_per_class[ll] + outliers_count) / total_samples_per_class[ll]) * 100 < self.outliers_max_remove_th:
+                if ((count_total_outliers_removed_per_class[ll] + outliers_count) / count_total_samples_per_class[ll]) * 100 < self.outliers_max_remove_th:
                     #print ("Removed for class ", ll ," ",  len(outliers[outliers==True]), " samples out of ", X_no_outliers.shape[0])
             
                     X_no_outliers = X_no_outliers[~outliers]
@@ -1799,7 +1800,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
                     if X_no_outliers.shape[0] != (samples_before - outliers_count):
                         raise Exception("Error while removing outliers!")
                     
-                    total_outliers_removed_per_class[ll] = total_outliers_removed_per_class[ll] + outliers_count
+                    count_total_outliers_removed_per_class[ll] = count_total_outliers_removed_per_class[ll] + outliers_count
                 
                 else: #case 2 more than self.max_outliers_remove_th are to be removed
                 
@@ -1813,22 +1814,22 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
             if sum(ouliers_per_iteration_count.values()) == 0:
                 early_stop = True
         
-        total_outliers_removed = total_outliers_removed_per_class.sum()
+        count_total_outliers_removed = count_total_outliers_removed_per_class.sum()
 
-        if total_outliers_removed > 0:
+        if count_total_outliers_removed > 0:
            
             #generate the final power mean (after outliers removal)
             means_p,inv_means = self._calculate_mean(X_no_outliers, y_no_outliers, p, sample_weight)
         
-            outliers_removed_for_single_mean_gt = X.shape[0] - X_no_outliers.shape[0]
+            count_outliers_removed_for_single_mean_gt = X.shape[0] - X_no_outliers.shape[0]
             
-            if (total_outliers_removed != outliers_removed_for_single_mean_gt):
+            if (count_total_outliers_removed != count_outliers_removed_for_single_mean_gt):
                 raise Exception("Error outliers removal count!")
             
-            print("Total outliers removed for mean p=",p," is: ",total_outliers_removed, " for all classes")
+            #print("Total outliers removed for mean p=",p," is: ",total_outliers_removed, " for all classes")
             
-            if (outliers_removed_for_single_mean_gt / X.shape[0]) * 100 > self.outliers_max_remove_th:
-                raise Exception("Outliers removal algorithm has removed too many samples: ", outliers_removed_for_single_mean_gt, " out of ",X.shape[0])
+            if (count_outliers_removed_for_single_mean_gt / X.shape[0]) * 100 > self.outliers_max_remove_th:
+                raise Exception("Outliers removal algorithm has removed too many samples: ", count_outliers_removed_for_single_mean_gt, " out of ",X.shape[0])
         else: 
             #print("No outliers removed")
             pass
@@ -1854,12 +1855,8 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
             DESCRIPTION.
 
         '''
-        
-        #_check_inputs(A, B)
-        #_check_inputs(power_mean_inv, trial)
-
+        _check_inputs(power_mean_inv, trial)
         d2 = (np.log( np.linalg.eigvals (power_mean_inv @ trial)) **2 ).sum(axis=-1)
-
         return d2 if squared else np.sqrt(d2)
 
     def _calculate_all_means(self,X,y,sample_weight):
