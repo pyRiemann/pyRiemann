@@ -17,7 +17,7 @@ v0.9.dev
 
 - Fix matplotlib warning. :pr:`351` by :user:`qbarthelemy`
 
-- Improvement in mean_power(). :pr:`353` by :user:`toncho11`
+- Enhance :func:`pyriemann.utils.mean.mean_power` using ``init``, ``tol`` and ``maxiter`` parameters when p=0. :pr:`353` by :user:`toncho11`
 
 v0.8 (February 2025)
 --------------------
