@@ -481,7 +481,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
 
     if p == 1:
         return mean_euclid(X, sample_weight=sample_weight)
-    elif p == 0:
+    if p == 0:
         return mean_riemann(
                 X,
                 sample_weight=sample_weight,
