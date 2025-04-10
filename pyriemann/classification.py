@@ -1521,7 +1521,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
     
     The Riemannian Means Field Classifier (MF) [1]_ is the second version,
     which improves the performance of the Minimum Distance to Mean Field (MDMF) [2]_
-    classifier. Classification is performed by defining several power means for
+    classifier. Classification is performed by defining a list of power means for
     each class.
 
     Parameters
@@ -1543,13 +1543,10 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
     power_mean_zeta : float, default=1e-07
         A stopping criterion for the mean calculation. Bigger values help with speed,
         smaller provide better accuracy.
+    power_mean_maxiter : int, default=150
+        Sets the maximum mumber of iterations for the power mean calculation
     distance_squared : bool, default = True
         The distances used for classification are squared.  
-    distance_strategy : {'default_metric', 'power_distance'}, default='power_distance'
-        * default_metric: it uses the metric parameter for the means and distances
-          calculations
-        * power_mean: the inverse of each power mean is calculated once and then used 
-          to calculate all distance to it
     reuse_previous_mean :bool, default = False
         An optimization that allows the calculation of a power mean to be initialized using
         a previously calculated mean from the power_list.
@@ -1594,8 +1591,9 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
                  method_label='lda',
                  metric="riemann",
                  power_mean_zeta=1e-07,
+                 power_mean_maxiter=150,
                  distance_squared=True,
-                 distance_strategy = "power_distance",
+                 #distance_strategy = "power_distance",
                  reuse_previous_mean = False,
                  n_jobs=1,
                  
@@ -1614,7 +1612,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.method_label = method_label
         self.metric = metric
         self.power_mean_zeta = power_mean_zeta
-        self.distance_strategy = distance_strategy
+        self.power_mean_maxiter = power_mean_maxiter
         self.reuse_previous_mean = reuse_previous_mean
         self.n_jobs = n_jobs
 
@@ -1628,9 +1626,6 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.outliers_mean_init = outliers_mean_init
         self.distance_squared = distance_squared
         self.outliers_single_zscore = outliers_single_zscore
-        
-        if distance_strategy not in ["default_metric", "power_distance"]:
-            raise Exception()("Invalid distance stategy!")
         
         if (outliers_max_remove_th > 100):
             raise Exception("outliers_max_remove_th is a %, it can not be > 100")
@@ -1662,7 +1657,6 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         '''
         means_p   = {} #keys are classes, values are means for this p and class
-        inv_means = {} #same as above
         
         if p == 200: #adding an extra mean - this one is logeuclid and not power mean
             #print("euclidean mean")
@@ -1695,13 +1689,11 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
                     p,
                     sample_weight=sample_weight[y == ll],
                     zeta = self.power_mean_zeta,
-                    init = init
+                    init = init,
+                    maxiter = self.power_mean_maxiter
                 )
-            
-        if self.distance_strategy == "power_distance":
-            inv_means= self.calculate_inv_mean_by_mean(means_p)
-            
-        return means_p,inv_means #contains means for all classes
+                       
+        return means_p # contains means for all classes
     
     def _calcualte_mean_remove_outliers(self,X, y, p, sample_weight):
         '''
@@ -1756,7 +1748,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
             #print("\nremove outliers iteration: ",i)
             
             #calculate/update the n means (one for each class)
-            means_p,inv_means = self._calculate_mean(X_no_outliers, y_no_outliers, p, sample_weight)
+            means_p = self._calculate_mean(X_no_outliers, y_no_outliers, p, sample_weight)
             
             ouliers_per_iteration_count = {}
             
@@ -1772,14 +1764,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
             
                 # Calcualte all the distances only for class ll and power mean p
                 for idx, x in enumerate (X_no_outliers[y_no_outliers==ll]):
-                    
-                    if self.distance_strategy == "power_distance":
-                        #dist_p = self._calculate_distance(x, self.covmeans_inv_[p][ll], p)
-                        dist_p = self._calculate_distance(x, inv_means[ll], p)
-                    else:
-                        #dist_p = self._calculate_distance(x, self.covmeans_[p][ll], p)
-                        dist_p = self._calculate_distance(x, means_p[ll], p)
-                    #dist_p = np.log(dist_p)
+                    dist_p = self._calculate_distance(x, means_p[ll], p)
                     m.append(dist_p)
                 
                 m = np.array(m, dtype=float)
@@ -1846,7 +1831,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         if count_total_outliers_removed > 0:
            
             #generate the final power mean (after outliers removal)
-            means_p,inv_means = self._calculate_mean(X_no_outliers, y_no_outliers, p, sample_weight)
+            means_p = self._calculate_mean(X_no_outliers, y_no_outliers, p, sample_weight)
         
             count_outliers_removed_for_single_mean_gt = X.shape[0] - X_no_outliers.shape[0]
             
@@ -1861,30 +1846,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
             #print("No outliers removed")
             pass
         
-        return means_p,inv_means
-    
-    def _inv_power_distance(self, trial, power_mean_inv, squared=False):
-        '''
-        A distance that requires inv power mean as second parameter
-
-        Parameters
-        ----------
-        trial : TYPE
-            DESCRIPTION.
-        power_mean_inv : TYPE
-            DESCRIPTION.
-        squared : TYPE, optional
-            DESCRIPTION. The default is False.
-
-        Returns
-        -------
-        TYPE
-            DESCRIPTION.
-
-        '''
-        _check_inputs(power_mean_inv, trial)
-        d2 = (np.log( np.linalg.eigvals (power_mean_inv @ trial)) **2 ).sum(axis=-1)
-        return d2 if squared else np.sqrt(d2)
+        return means_p
 
     def _calculate_all_means(self,X,y,sample_weight):
         
@@ -1911,8 +1873,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
                 results.append(result_per_p)
         
         for i, p in enumerate(self.power_list):
-            self.covmeans_[p]     = results[i][0]
-            self.covmeans_inv_[p] = results[i][1]
+            self.covmeans_[p] = results[i]
                 
     def fit(self, X, y, sample_weight=None):
         """Fit (estimates) the centroids. Calculates the power means.
@@ -1945,42 +1906,17 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         # keys are p, each value is another dictionary over the classes and
         # values of this dictionary are the means for this p and a class
         self.covmeans_ = {}
-        self.covmeans_inv_ = {}
         
         self._calculate_all_means(X,y,sample_weight)
         
         if len(self.power_list) != len(self.covmeans_.keys()):
             raise Exception("Problem with number of calculated means!",len(self.power_list),len(self.covmeans_.keys()))
             
-        if self.distance_strategy == "power_distance" and len(self.covmeans_.keys()) != len(self.covmeans_inv_.keys()):
-            raise Exception("Problem with the number of inverse matrices")
-        
         if self.method_label == "lda":
             dists = self._predict_distances(X)
             self.lda.fit(dists,y)
 
-        return self
-    
-    def calculate_inv_mean_by_mean(self,cov): #for all classes
-        '''
-        Calculates the inverse mean of a mean covariance matrix.
-
-        Parameters
-        ----------
-        cov : TYPE
-            DESCRIPTION.
-
-        Returns
-        -------
-        inv_means_p : TYPE
-            DESCRIPTION.
-
-        '''
-        inv_means_p = {}
-        for ll in self.classes_:
-            inv_means_p[ll] = np.linalg.inv(cov[ll])
-        
-        return inv_means_p           
+        return self         
 
     def _get_label(self, x, labs_unique):
         
@@ -2038,27 +1974,12 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         squared = self.distance_squared
         
         if len(A.shape) == 2:
-        
-            if self.distance_strategy == "default_metric":
-                
                 dist = distance(
                         A,
                         B,
                         metric=self.metric,
                         squared = squared,
-                    )
-            
-            # similar to "default_metric", but uses inverse mean
-            elif self.distance_strategy == "power_distance":
-                
-                dist = self._inv_power_distance(
-                        A, #trial
-                        B, #mean inverted
-                        squared = squared,
-                    )
-            else:
-                raise Exception("Invalid distance strategy")
-                    
+                    )             
         else:
             raise Exception("Error size of input, not matrices?")
             
@@ -2090,11 +2011,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
             m[p] = []
             
             for ll in self.classes_: #add all distances (1 per class) for m[p] power mean
-                
-                if self.distance_strategy == "power_distance":
-                    dist_p = self._calculate_distance(x, self.covmeans_inv_[p][ll], p)
-                else:
-                    dist_p = self._calculate_distance(x, self.covmeans_[p][ll], p)
+                dist_p = self._calculate_distance(x, self.covmeans_[p][ll], p)
                 
                 m[p].append(dist_p)
                 
