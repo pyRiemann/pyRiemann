@@ -1597,7 +1597,6 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
                  reuse_previous_mean = False,
                  n_jobs=1,
                  
-                 euclidean_mean=False, #if True sets LogEuclidian distance for LogEuclidian mean and Euclidian distance for power mean p=1
                  #RPME parameters
                  remove_outliers=True,
                  outliers_th=2.5,
@@ -1616,7 +1615,6 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.reuse_previous_mean = reuse_previous_mean
         self.n_jobs = n_jobs
 
-        self.euclidean_mean = euclidean_mean 
         #RPME
         self.remove_outliers = remove_outliers
         self.outliers_th = outliers_th
@@ -1657,41 +1655,33 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         '''
         means_p   = {} #keys are classes, values are means for this p and class
-        
-        if p == 200: #adding an extra mean - this one is logeuclid and not power mean
-            #print("euclidean mean")
-            for ll in self.classes_:
-                means_p[ll] = mean_logeuclid(
-                    X[y == ll],
-                    sample_weight=sample_weight[y == ll]
-                )       
-        else:
-            for ll in self.classes_:
-                
-                init = None
-                
-                #use previous mean for this p
-                #usually when calculating the new mean after outliers removal
-                if self.outliers_mean_init and p in self.covmeans_:
-                    init = self.covmeans_[p][ll] #use previous mean
-                    #print("using init mean")
-                
-                elif self.reuse_previous_mean:
-                    pos = self.power_list.index(p)
-                    if pos>0:
-                        prev_p = self.power_list[pos-1]
-                        init = self.covmeans_[prev_p][ll]
-                        #print(prev_p)
-                        #print("using prev mean from the power list")
-                 
-                means_p[ll] = mean_power( #original is mean_power_custom
-                    X[y == ll],
-                    p,
-                    sample_weight=sample_weight[y == ll],
-                    zeta = self.power_mean_zeta,
-                    init = init,
-                    maxiter = self.power_mean_maxiter
-                )
+
+        for ll in self.classes_:
+            
+            init = None
+            
+            #use previous mean for this p
+            #usually when calculating the new mean after outliers removal
+            if self.outliers_mean_init and p in self.covmeans_:
+                init = self.covmeans_[p][ll] #use previous mean
+                #print("using init mean")
+            
+            elif self.reuse_previous_mean:
+                pos = self.power_list.index(p)
+                if pos>0:
+                    prev_p = self.power_list[pos-1]
+                    init = self.covmeans_[prev_p][ll]
+                    #print(prev_p)
+                    #print("using prev mean from the power list")
+             
+            means_p[ll] = mean_power( #original is mean_power_custom
+                X[y == ll],
+                p,
+                sample_weight=sample_weight[y == ll],
+                zeta = self.power_mean_zeta,
+                init = init,
+                maxiter = self.power_mean_maxiter
+            )
                        
         return means_p # contains means for all classes
     
@@ -1892,11 +1882,6 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         self : MeanField instance
             The MeanField instance.
         """
-        
-        # example on how to add non power means
-        # p>= 200 are handled separately from the power means [-1 .. 1]
-        if self.euclidean_mean:
-            self.power_list.append(200)
             
         self.classes_ = np.unique(y)
 
