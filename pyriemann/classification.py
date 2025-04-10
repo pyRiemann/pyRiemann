@@ -1517,18 +1517,21 @@ from sklearn.neighbors import LocalOutlierFactor
 from .utils.distance import _check_inputs
 
 class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
-    """Classification by Minimum Distance to Mean Field.
-
-    Classification by Minimum Distance to Mean Field [1]_, defining several
-    power means for each class.
+    """Classification by Riemannian Means Field Classifier
+    
+    The Riemannian Means Field Classifier (MF) [1]_ is the second version,
+    which improves the performance of the Minimum Distance to Mean Field (MDMF) [2]_
+    classifier. Classification is performed by defining several power means for
+    each class.
 
     Parameters
     ----------
-    power_list : list of float, default=[-1,0,+1]
+    power_list : list of float, default=[-1, -0.75, -0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5, 0.75, 1]
         Exponents of power means.
-    method_label : {'sum_means', 'inf_means'}, default='sum_means'
+    method_label : {'lda', 'sum_means', 'inf_means'}, default='lda'
         Method to combine labels:
-
+        * lda: an LDA classfier is trained on the distances to each mean for
+          all classes which allows more complex patterns to be learned
         * sum_means: it assigns the covariance to the class whom the sum of
           distances to means of the field is the lowest;
         * inf_means: it assigns the covariance to the class of the closest mean
@@ -1537,6 +1540,28 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         Metric used for distance estimation during prediction.
         For the list of supported metrics,
         see :func:`pyriemann.utils.distance.distance`.
+    power_mean_zeta : float, default=1e-07
+        A stopping criterion for the mean calculation. Bigger values help with speed,
+        smaller provide better accuracy.
+    distance_squared : bool, default = True
+        The distances used for classification are squared.  
+    distance_strategy : {'default_metric', 'power_distance'}, default='power_distance'
+        * default_metric: it uses the metric parameter for the means and distances
+          calculations
+        * power_mean: the inverse of each power mean is calculated once and then used 
+          to calculate all distance to it
+    reuse_previous_mean :bool, default = False
+        An optimization that allows the calculation of a power mean to be initialized using
+        a previously calculated mean from the power_list.
+    n_jobs : int, default=1
+        The number of jobs to use for the computation. This works by computing
+        each of the class mean fields and distances in parallel. Depending on 
+        the data, the computation of the means and distances can be intensive and 
+        in this case the parallel processing can help.
+        If -1 all CPUs are used. If 1 is given, no parallel computing code is
+        used at all, which is useful for debugging. For n_jobs below -1,
+        (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
+        are used.
 
     Attributes
     ----------
@@ -1552,11 +1577,14 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
 
     Notes
     -----
-    .. versionadded:: 0.3
+    .. versionadded:: 0.9
 
     References
     ----------
-    .. [1] `The Riemannian Minimum Distance to Means Field Classifier
+    .. [1] `The Riemannian Means Field Classifier for EEG-Based BCI Data'
+        <https://www.mdpi.com/1424-8220/25/7/2305>`
+        A Anndreev, G Cattan, M Congedo. MDPI Sensors journal, April 2025
+    .. [2] `The Riemannian Minimum Distance to Means Field Classifier
         <https://hal.archives-ouvertes.fr/hal-02315131>`_
         M Congedo, PLC Rodrigues, C Jutten. BCI 2019 - 8th International
         Brain-Computer Interface Conference, Sep 2019, Graz, Austria.
@@ -1565,29 +1593,33 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
     def __init__(self, power_list=[-1, -0.75, -0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5, 0.75, 1], 
                  method_label='lda',
                  metric="riemann",
-                 power_mean_zeta = 1e-07, #stopping criterion for the mean calculation, bigger values help with speed
-                 distance_squared = True,
-                 n_jobs= 1, 
-                 euclidean_mean = False,
+                 power_mean_zeta=1e-07,
+                 distance_squared=True,
                  distance_strategy = "power_distance",
                  reuse_previous_mean = False,
-                 remove_outliers = True,
-                 outliers_th = 2.5,
-                 outliers_depth = 4, #how many times to run the outliers detection on the same data
-                 outliers_max_remove_th = 30, #default 30%, parameter is percentage
-                 outliers_method = "zscore",
-                 outliers_mean_init = True,
-                 outliers_single_zscore = True, #when false more outliers are removed. When True only the outliers further from the mean are removed
+                 n_jobs=1,
+                 
+                 euclidean_mean=False, #if True sets LogEuclidian distance for LogEuclidian mean and Euclidian distance for power mean p=1
+                 #RPME parameters
+                 remove_outliers=True,
+                 outliers_th=2.5,
+                 outliers_depth=4, #how many times to run the outliers detection on the same data
+                 outliers_max_remove_th=30, #default 30%, parameter is percentage
+                 outliers_method="zscore",
+                 outliers_mean_init=True,
+                 outliers_single_zscore=True, #when false more outliers are removed. When True only the outliers further from the mean are removed
                  ):
         """Init."""
         self.power_list = power_list
         self.method_label = method_label
         self.metric = metric
-        self.n_jobs = n_jobs
-        self.euclidean_mean = euclidean_mean #if True sets LogEuclidian distance for LogEuclidian mean and Euclidian distance for power mean p=1
-        self.distance_strategy = distance_strategy 
-        self.reuse_previous_mean = reuse_previous_mean
         self.power_mean_zeta = power_mean_zeta
+        self.distance_strategy = distance_strategy
+        self.reuse_previous_mean = reuse_previous_mean
+        self.n_jobs = n_jobs
+
+        self.euclidean_mean = euclidean_mean 
+        #RPME
         self.remove_outliers = remove_outliers
         self.outliers_th = outliers_th
         self.outliers_depth = outliers_depth
@@ -1597,10 +1629,6 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.distance_squared = distance_squared
         self.outliers_single_zscore = outliers_single_zscore
         
-        '''
-        "default_metric" - it uses "metric" (usually Riemann) for all distances 
-        "power_mean"     - uses a modified power_distance function based riemann distance, which has an optimization that first calcualtes the inverse of the power mean
-        '''
         if distance_strategy not in ["default_metric", "power_distance"]:
             raise Exception()("Invalid distance stategy!")
         
@@ -1612,7 +1640,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
     
     def _calculate_mean(self,X, y, p, sample_weight):
         '''
-        Calculates mean (and inv mean) for all classes for specific p
+        Calculates mean (and inv. mean) for all classes for specific p
 
         Parameters
         ----------
@@ -1654,7 +1682,6 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
                     init = self.covmeans_[p][ll] #use previous mean
                     #print("using init mean")
                 
-                #use the mean from the previous position in the power list
                 elif self.reuse_previous_mean:
                     pos = self.power_list.index(p)
                     if pos>0:
