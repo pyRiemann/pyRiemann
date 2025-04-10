@@ -1172,351 +1172,6 @@ from sklearn.ensemble import IsolationForest
 from sklearn.neighbors import LocalOutlierFactor
 
 class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
-    """Classification by Minimum Distance to Mean Field.
-
-    Classification by Minimum Distance to Mean Field [1]_, defining several
-    power means for each class.
-
-    Parameters
-    ----------
-    power_list : list of float, default=[-1,0,+1]
-        Exponents of power means.
-    method_label : {"sum_means", "inf_means"}, default="sum_means"
-        Method to combine labels:
-
-        * sum_means: it assigns the matrix to the class whom the sum of
-          distances to means of the field is the lowest;
-        * inf_means: it assigns the matrix to the class of the nearest mean
-          of the field.
-    metric : string, default="riemann"
-        Metric used for distance estimation during prediction.
-        For the list of supported metrics,
-        see :func:`pyriemann.utils.distance.distance`.
-
-    Attributes
-    ----------
-    classes_ : ndarray, shape (n_classes,)
-        Labels for each class.
-    covmeans_ : dict of ``n_powers`` dicts of ``n_classes`` ndarrays of shape \
-            (n_channels, n_channels)
-        Centroids for each power and each class.
-
-    See Also
-    --------
-    MDM
-
-    Notes
-    -----
-    .. versionadded:: 0.3
-
-    References
-    ----------
-    .. [1] `The Riemannian Minimum Distance to Means Field Classifier
-        <https://hal.archives-ouvertes.fr/hal-02315131>`_
-        M Congedo, PLC Rodrigues, C Jutten. BCI 2019 - 8th International
-        Brain-Computer Interface Conference, Sep 2019, Graz, Austria.
-    """
-
-    def __init__(
-        self,
-        power_list=[-1, 0, 1],
-        method_label="sum_means",
-        metric="riemann",
-        n_jobs=1,
-    ):
-        """Init."""
-        self.power_list = power_list
-        self.method_label = method_label
-        self.metric = metric
-        self.n_jobs = n_jobs
-
-    def fit(self, X, y, sample_weight=None):
-        """Fit (estimates) the centroids.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD/HPD matrices.
-        y : ndarray, shape (n_matrices,)
-            Labels for each matrix.
-        sample_weight : None | ndarray shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
-
-        Returns
-        -------
-        self : MeanField instance
-            The MeanField instance.
-        """
-        self.classes_ = np.unique(y)
-
-        if sample_weight is None:
-            sample_weight = np.ones(X.shape[0])
-
-        self.covmeans_ = {}
-        for p in self.power_list:
-            means_p = {}
-            for c in self.classes_:
-                means_p[c] = mean_covariance(
-                    X[y == c],
-                    p,
-                    metric="power",
-                    sample_weight=sample_weight[y == c],
-                )
-            self.covmeans_[p] = means_p
-
-        return self
-
-    def _get_label(self, x):
-        m = np.zeros((len(self.power_list), len(self.classes_)))
-        for ip, p in enumerate(self.power_list):
-            for ic, c in enumerate(self.classes_):
-                m[ip, ic] = distance(
-                    x,
-                    self.covmeans_[p][c],
-                    metric=self.metric,
-                    squared=True,
-                )
-
-        if self.method_label == "sum_means":
-            ipmin = np.argmin(np.sum(m, axis=1))
-        elif self.method_label == "inf_means":
-            ipmin = np.where(m == np.min(m))[0][0]
-        else:
-            raise TypeError("method_label must be sum_means or inf_means")
-
-        y = self.classes_[np.argmin(m[ipmin])]
-        return y
-
-    def predict(self, X):
-        """Get the predictions.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD/HPD matrices.
-
-        Returns
-        -------
-        pred : ndarray of int, shape (n_matrices,)
-            Predictions for each matrix according to the nearest means field.
-        """
-        pred = Parallel(n_jobs=self.n_jobs)(
-            delayed(self._get_label)(x) for x in X
-        )
-        return np.array(pred)
-
-    def _predict_distances(self, X):
-        """Helper to predict the distance. Equivalent to transform."""
-
-        dist = []
-        for x in X:
-            m = {}
-            for p in self.power_list:
-                m[p] = []
-                for c in self.classes_:
-                    m[p].append(
-                        distance(
-                            x,
-                            self.covmeans_[p][c],
-                            metric=self.metric,
-                        )
-                    )
-            pmin = min(m.items(), key=lambda x: np.sum(x[1]))[0]
-            dist.append(np.array(m[pmin]))
-
-        return np.stack(dist)
-
-    def transform(self, X):
-        """Get the distance to each means field.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD/HPD matrices.
-
-        Returns
-        -------
-        dist : ndarray, shape (n_matrices, n_classes)
-            Distance to each means field according to the metric.
-        """
-        return self._predict_distances(X)
-
-    @deprecated(
-        "fit_predict() is deprecated and will be removed in 0.10.0; "
-        "please use fit().predict()."
-    )
-    def fit_predict(self, X, y, sample_weight=None):
-        return self.fit(X, y, sample_weight=sample_weight).predict(X)
-
-    def fit_transform(self, X, y, sample_weight=None):
-        """Fit and transform in a single function.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD/HPD matrices.
-        y : ndarray, shape (n_matrices,)
-            Labels for each matrix.
-        sample_weight : None | ndarray shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
-
-        Returns
-        -------
-        dist : ndarray, shape (n_matrices, n_classes)
-            Distance to each means field according to the metric.
-        """
-        return self.fit(X, y, sample_weight=sample_weight).transform(X)
-
-    def predict_proba(self, X):
-        """Predict proba using softmax of negative squared distances.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD/HPD matrices.
-
-        Returns
-        -------
-        prob : ndarray, shape (n_matrices, n_classes)
-            Probabilities for each class.
-        """
-        return softmax(-self._predict_distances(X) ** 2)
-
-
-def class_distinctiveness(X, y, exponent=1, metric="riemann",
-                          return_num_denom=False):
-    r"""Measure class distinctiveness between classes of SPD/HPD matrices.
-
-    For two class problem, the class distinctiveness between class :math:`K_1`
-    and :math:`K_2` on the manifold of SPD/HPD matrices is quantified as [1]_:
-
-    .. math::
-        \mathrm{classDis}(K_1, K_2, p) =
-        \frac{d \left( \mathbf{M}_{K_1}, \mathbf{M}_{K_2} \right)^p}
-        {\frac{1}{2} \left( \sigma_{K_1}^p + \sigma_{K_2}^p \right)}
-
-    where :math:`\mathbf{M}_K` is the center of class :math:`K`, ie the mean of
-    matrices from class :math:`K`; and
-    :math:`\sigma_K` is the class dispersion, ie the mean of distances between
-    matrices from class :math:`K` and their center of class
-    :math:`\mathbf{M}_K`:
-
-    .. math::
-        \sigma_K^p = \frac{1}{m} \sum_{i=1}^m d
-        \left(X_i, \mathbf{M}_K \right)^p
-
-    and :math:`p` is the exponentiation of the distance.
-
-    For more than two classes, it is quantified as:
-
-    .. math::
-        \mathrm{classDis} \left( \left\{K_{j} \right\}_{j=1}^c, p \right) =
-        \frac{\sum_{j=1}^c d\left(\mathbf{M}_{K_{j}},\bar{\mathbf{M}}\right)^p}
-        {\sum_{j=1}^c \sigma_{K_{j}}^p}
-
-    where :math:`\bar{\mathbf{M}}` is the mean of centers of class of all
-    :math:`c` classes.
-
-    Parameters
-    ----------
-    X : ndarray, shape (n_matrices, n_channels, n_channels)
-        Set of SPD/HPD matrices.
-    y : ndarray, shape (n_matrices,)
-        Labels for each matrix.
-    exponent : int, default=1
-        Parameter for exponentiation of distances, corresponding to p in the
-        above equations:
-
-        - exponent = 1 gives the formula originally defined in [1]_;
-        - exponent = 2 gives the Fisher criterion generalized on the manifold,
-          ie the ratio of the variance between the classes to the variance
-          within the classes.
-    metric : string | dict, default="riemann"
-        Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.mean_covariance`) and
-        for distance estimation
-        (see :func:`pyriemann.utils.distance.distance`).
-        The metric can be a dict with two keys, "mean" and "distance"
-        in order to pass different metrics.
-    return_num_denom : bool, default=False
-        Whether to return numerator and denominator of class_dis.
-
-    Returns
-    -------
-    class_dis : float
-        Class distinctiveness value.
-    num : float
-        Numerator value of class_dis. Returned only if return_num_denom is
-        True.
-    denom : float
-        Denominator value of class_dis. Returned only if return_num_denom is
-        True.
-
-    Notes
-    -----
-    .. versionadded:: 0.4
-
-    References
-    ----------
-    .. [1] `Defining and quantifying users’ mental imagery-based
-       BCI skills: a first step
-       <https://hal.archives-ouvertes.fr/hal-01846434/>`_
-       F. Lotte, and C. Jeunet. Journal of neural engineering,
-       15(4), 046030, 2018.
-    """
-
-    metric_mean, metric_dist = check_metric(metric)
-    classes = np.unique(y)
-    if len(classes) <= 1:
-        raise ValueError("y must contain at least two classes")
-
-    means = np.array([
-        mean_covariance(X[y == c], metric=metric_mean) for c in classes
-    ])
-
-    if len(classes) == 2:
-        num = distance(means[0], means[1], metric=metric_dist) ** exponent
-        denom = 0.5 * _get_within(X, y, means, classes, exponent, metric_dist)
-
-    else:
-        mean_all = mean_covariance(means, metric=metric_mean)
-        dists_between = [
-            distance(m, mean_all, metric=metric_dist) ** exponent
-            for m in means
-        ]
-        num = np.sum(dists_between)
-        denom = _get_within(X, y, means, classes, exponent, metric_dist)
-
-    class_dis = num / denom
-
-    if return_num_denom:
-        return class_dis, num, denom
-    else:
-        return class_dis
-
-
-def _get_within(X, y, means, classes, exponent, metric):
-    """Private function to compute within dispersion."""
-    sigmas = []
-    for ic, c in enumerate(classes):
-        dists_within = [
-            distance(x, means[ic], metric=metric) ** exponent
-            for x in X[y == c]
-        ]
-        sigmas.append(np.mean(dists_within))
-    sum_sigmas = np.sum(sigmas)
-    return sum_sigmas
-
-#temporal: imports MeanField_V2
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-from .utils.mean import mean_logeuclid
-from .utils.mean import mean_power
-from scipy.stats import zscore
-from sklearn.ensemble import IsolationForest
-from sklearn.neighbors import LocalOutlierFactor
-from .utils.distance import _check_inputs
-
-class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
     """Classification by Riemannian Means Field Classifier
     
     The Riemannian Means Field Classifier (MF) [1]_ is the second version,
@@ -1896,3 +1551,128 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
             
         else:
             return softmax(-self._predict_distances(X) ** 2)
+
+
+def class_distinctiveness(X, y, exponent=1, metric="riemann",
+                          return_num_denom=False):
+    r"""Measure class distinctiveness between classes of SPD/HPD matrices.
+
+    For two class problem, the class distinctiveness between class :math:`K_1`
+    and :math:`K_2` on the manifold of SPD/HPD matrices is quantified as [1]_:
+
+    .. math::
+        \mathrm{classDis}(K_1, K_2, p) =
+        \frac{d \left( \mathbf{M}_{K_1}, \mathbf{M}_{K_2} \right)^p}
+        {\frac{1}{2} \left( \sigma_{K_1}^p + \sigma_{K_2}^p \right)}
+
+    where :math:`\mathbf{M}_K` is the center of class :math:`K`, ie the mean of
+    matrices from class :math:`K`; and
+    :math:`\sigma_K` is the class dispersion, ie the mean of distances between
+    matrices from class :math:`K` and their center of class
+    :math:`\mathbf{M}_K`:
+
+    .. math::
+        \sigma_K^p = \frac{1}{m} \sum_{i=1}^m d
+        \left(X_i, \mathbf{M}_K \right)^p
+
+    and :math:`p` is the exponentiation of the distance.
+
+    For more than two classes, it is quantified as:
+
+    .. math::
+        \mathrm{classDis} \left( \left\{K_{j} \right\}_{j=1}^c, p \right) =
+        \frac{\sum_{j=1}^c d\left(\mathbf{M}_{K_{j}},\bar{\mathbf{M}}\right)^p}
+        {\sum_{j=1}^c \sigma_{K_{j}}^p}
+
+    where :math:`\bar{\mathbf{M}}` is the mean of centers of class of all
+    :math:`c` classes.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n_channels, n_channels)
+        Set of SPD/HPD matrices.
+    y : ndarray, shape (n_matrices,)
+        Labels for each matrix.
+    exponent : int, default=1
+        Parameter for exponentiation of distances, corresponding to p in the
+        above equations:
+
+        - exponent = 1 gives the formula originally defined in [1]_;
+        - exponent = 2 gives the Fisher criterion generalized on the manifold,
+          ie the ratio of the variance between the classes to the variance
+          within the classes.
+    metric : string | dict, default="riemann"
+        Metric used for mean estimation (for the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for distance estimation
+        (see :func:`pyriemann.utils.distance.distance`).
+        The metric can be a dict with two keys, "mean" and "distance"
+        in order to pass different metrics.
+    return_num_denom : bool, default=False
+        Whether to return numerator and denominator of class_dis.
+
+    Returns
+    -------
+    class_dis : float
+        Class distinctiveness value.
+    num : float
+        Numerator value of class_dis. Returned only if return_num_denom is
+        True.
+    denom : float
+        Denominator value of class_dis. Returned only if return_num_denom is
+        True.
+
+    Notes
+    -----
+    .. versionadded:: 0.4
+
+    References
+    ----------
+    .. [1] `Defining and quantifying users’ mental imagery-based
+       BCI skills: a first step
+       <https://hal.archives-ouvertes.fr/hal-01846434/>`_
+       F. Lotte, and C. Jeunet. Journal of neural engineering,
+       15(4), 046030, 2018.
+    """
+
+    metric_mean, metric_dist = check_metric(metric)
+    classes = np.unique(y)
+    if len(classes) <= 1:
+        raise ValueError("y must contain at least two classes")
+
+    means = np.array([
+        mean_covariance(X[y == c], metric=metric_mean) for c in classes
+    ])
+
+    if len(classes) == 2:
+        num = distance(means[0], means[1], metric=metric_dist) ** exponent
+        denom = 0.5 * _get_within(X, y, means, classes, exponent, metric_dist)
+
+    else:
+        mean_all = mean_covariance(means, metric=metric_mean)
+        dists_between = [
+            distance(m, mean_all, metric=metric_dist) ** exponent
+            for m in means
+        ]
+        num = np.sum(dists_between)
+        denom = _get_within(X, y, means, classes, exponent, metric_dist)
+
+    class_dis = num / denom
+
+    if return_num_denom:
+        return class_dis, num, denom
+    else:
+        return class_dis
+
+
+def _get_within(X, y, means, classes, exponent, metric):
+    """Private function to compute within dispersion."""
+    sigmas = []
+    for ic, c in enumerate(classes):
+        dists_within = [
+            distance(x, means[ic], metric=metric) ** exponent
+            for x in X[y == c]
+        ]
+        sigmas.append(np.mean(dists_within))
+    sum_sigmas = np.sum(sigmas)
+    return sum_sigmas
