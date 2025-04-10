@@ -1593,18 +1593,17 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
                  power_mean_zeta=1e-07,
                  power_mean_maxiter=150,
                  distance_squared=True,
-                 #distance_strategy = "power_distance",
                  reuse_previous_mean = False,
                  n_jobs=1,
                  
-                 #RPME parameters
-                 remove_outliers=True,
-                 outliers_th=2.5,
-                 outliers_depth=4, #how many times to run the outliers detection on the same data
-                 outliers_max_remove_th=30, #default 30%, parameter is percentage
-                 outliers_method="zscore",
-                 outliers_mean_init=True,
-                 outliers_single_zscore=True, #when false more outliers are removed. When True only the outliers further from the mean are removed
+                 # #RPME parameters
+                 # remove_outliers=True,
+                 # outliers_th=2.5,
+                 # outliers_depth=4, #how many times to run the outliers detection on the same data
+                 # outliers_max_remove_th=30, #default 30%, parameter is percentage
+                 # outliers_method="zscore",
+                 # outliers_mean_init=True,
+                 # outliers_single_zscore=True, #when false more outliers are removed. When True only the outliers further from the mean are removed
                  ):
         """Init."""
         self.power_list = power_list
@@ -1612,22 +1611,26 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         self.metric = metric
         self.power_mean_zeta = power_mean_zeta
         self.power_mean_maxiter = power_mean_maxiter
+        self.distance_squared = distance_squared
         self.reuse_previous_mean = reuse_previous_mean
         self.n_jobs = n_jobs
 
         #RPME
-        self.remove_outliers = remove_outliers
-        self.outliers_th = outliers_th
-        self.outliers_depth = outliers_depth
-        self.outliers_max_remove_th = outliers_max_remove_th
-        self.outliers_method = outliers_method
-        self.outliers_mean_init = outliers_mean_init
-        self.distance_squared = distance_squared
-        self.outliers_single_zscore = outliers_single_zscore
+        # self.remove_outliers = remove_outliers
+        # self.outliers_th = outliers_th
+        # self.outliers_depth = outliers_depth
+        # self.outliers_max_remove_th = outliers_max_remove_th
+        # self.outliers_method = outliers_method
+        # self.outliers_mean_init = outliers_mean_init
+        # self.distance_squared = distance_squared
+        # self.outliers_single_zscore = outliers_single_zscore
         
-        if (outliers_max_remove_th > 100):
-            raise Exception("outliers_max_remove_th is a %, it can not be > 100")
-            
+        # if (outliers_max_remove_th > 100):
+        #     raise Exception("outliers_max_remove_th is a %, it can not be > 100")
+        
+        if (self.reuse_previous_mean and self.n_jobs!=1):
+            raise Exception("Currently reuse_previous_mean is not supported when combined with parallel mean calculation.")
+        
         if self.method_label == "lda":
             self.lda = LDA()
     
@@ -1656,23 +1659,29 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         '''
         means_p   = {} #keys are classes, values are means for this p and class
 
+        #print(p)
+        
         for ll in self.classes_:
             
             init = None
             
             #use previous mean for this p
             #usually when calculating the new mean after outliers removal
-            if self.outliers_mean_init and p in self.covmeans_:
-                init = self.covmeans_[p][ll] #use previous mean
-                #print("using init mean")
+            # if self.outliers_mean_init and p in self.covmeans_:
+            #     init = self.covmeans_[p][ll] #use previous mean
+            #     #print("using init mean")
             
-            elif self.reuse_previous_mean:
+            #elif self.reuse_previous_mean:
+            if self.reuse_previous_mean and self.n_jobs==1:
                 pos = self.power_list.index(p)
                 if pos>0:
                     prev_p = self.power_list[pos-1]
-                    init = self.covmeans_[prev_p][ll]
-                    #print(prev_p)
-                    #print("using prev mean from the power list")
+                    if prev_p in self.covmeans_:
+                        init = self.covmeans_[prev_p][ll]
+                        #print(prev_p)
+                        #print("using prev mean from the power list")
+                    else:
+                        raise Exception("No previous mean")
              
             means_p[ll] = mean_power( #original is mean_power_custom
                 X[y == ll],
@@ -1685,186 +1694,186 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
                        
         return means_p # contains means for all classes
     
-    def _calcualte_mean_remove_outliers(self,X, y, p, sample_weight):
-        '''
-        Removes outliers and calculates the power mean p on the rest
+    # def _calcualte_mean_remove_outliers(self,X, y, p, sample_weight):
+    #     '''
+    #     Removes outliers and calculates the power mean p on the rest
 
-        Parameters
-        ----------
-        X : TYPE
-            DESCRIPTION.
-        y : TYPE
-            DESCRIPTION.
-        p : TYPE
-            DESCRIPTION.
-        sample_weight : TYPE
-            DESCRIPTION.
+    #     Parameters
+    #     ----------
+    #     X : TYPE
+    #         DESCRIPTION.
+    #     y : TYPE
+    #         DESCRIPTION.
+    #     p : TYPE
+    #         DESCRIPTION.
+    #     sample_weight : TYPE
+    #         DESCRIPTION.
 
-        Raises
-        ------
-        Exception
-            DESCRIPTION.
+    #     Raises
+    #     ------
+    #     Exception
+    #         DESCRIPTION.
 
-        Returns
-        -------
-        means_p : TYPE
-            DESCRIPTION.
-        inv_means : TYPE
-            DESCRIPTION.
+    #     Returns
+    #     -------
+    #     means_p : TYPE
+    #         DESCRIPTION.
+    #     inv_means : TYPE
+    #         DESCRIPTION.
 
-        '''
-        X_no_outliers = X.copy() #so that every power mean p start from the same data
-        y_no_outliers = y.copy()
+    #     '''
+    #     X_no_outliers = X.copy() #so that every power mean p start from the same data
+    #     y_no_outliers = y.copy()
         
-        count_total_outliers_removed_per_class = np.zeros(len(self.classes_))
-        count_total_samples_per_class          = np.zeros(len(self.classes_))
+    #     count_total_outliers_removed_per_class = np.zeros(len(self.classes_))
+    #     count_total_samples_per_class          = np.zeros(len(self.classes_))
         
-        for ll in self.classes_:
-            count_total_samples_per_class[ll] = len(y_no_outliers[y_no_outliers==ll])
+    #     for ll in self.classes_:
+    #         count_total_samples_per_class[ll] = len(y_no_outliers[y_no_outliers==ll])
         
-        if self.outliers_method == "iforest":
-            iso = IsolationForest(contamination='auto') #0.1
-        elif self.outliers_method == "lof":
-            lof = LocalOutlierFactor(contamination='auto', n_neighbors=2) #default = 2
+    #     if self.outliers_method == "iforest":
+    #         iso = IsolationForest(contamination='auto') #0.1
+    #     elif self.outliers_method == "lof":
+    #         lof = LocalOutlierFactor(contamination='auto', n_neighbors=2) #default = 2
         
-        early_stop = False
+    #     early_stop = False
         
-        for i in range(self.outliers_depth):
+    #     for i in range(self.outliers_depth):
             
-            if early_stop:
-                #print("Early stop")
-                break
+    #         if early_stop:
+    #             #print("Early stop")
+    #             break
             
-            #print("\nremove outliers iteration: ",i)
+    #         #print("\nremove outliers iteration: ",i)
             
-            #calculate/update the n means (one for each class)
-            means_p = self._calculate_mean(X_no_outliers, y_no_outliers, p, sample_weight)
+    #         #calculate/update the n means (one for each class)
+    #         means_p = self._calculate_mean(X_no_outliers, y_no_outliers, p, sample_weight)
             
-            ouliers_per_iteration_count = {}
+    #         ouliers_per_iteration_count = {}
             
-            #outlier removal is per class
-            for ll in self.classes_:
+    #         #outlier removal is per class
+    #         for ll in self.classes_:
                 
-                samples_before = X_no_outliers.shape[0]
+    #             samples_before = X_no_outliers.shape[0]
                 
-                m = [] #each entry contains a distance to the power mean p for class ll
+    #             m = [] #each entry contains a distance to the power mean p for class ll
                 
-                #length includes all classes, not only the ll
-                z_scores = np.zeros(len(y_no_outliers),dtype=float)
+    #             #length includes all classes, not only the ll
+    #             z_scores = np.zeros(len(y_no_outliers),dtype=float)
             
-                # Calcualte all the distances only for class ll and power mean p
-                for idx, x in enumerate (X_no_outliers[y_no_outliers==ll]):
-                    dist_p = self._calculate_distance(x, means_p[ll], p)
-                    m.append(dist_p)
+    #             # Calcualte all the distances only for class ll and power mean p
+    #             for idx, x in enumerate (X_no_outliers[y_no_outliers==ll]):
+    #                 dist_p = self._calculate_distance(x, means_p[ll], p)
+    #                 m.append(dist_p)
                 
-                m = np.array(m, dtype=float)
+    #             m = np.array(m, dtype=float)
                 
-                if self.outliers_method == "zscore":
+    #             if self.outliers_method == "zscore":
                     
-                    m = np.log(m)
-                    # Calculate Z-scores for each data point for the current ll class
-                    # For the non ll the zscore stays 0, so they won't be removed
-                    z_scores[y_no_outliers==ll] = zscore(m)
+    #                 m = np.log(m)
+    #                 # Calculate Z-scores for each data point for the current ll class
+    #                 # For the non ll the zscore stays 0, so they won't be removed
+    #                 z_scores[y_no_outliers==ll] = zscore(m)
                 
-                    if self.outliers_single_zscore:
-                        outliers = (z_scores > self.outliers_th)
-                    else:
-                        outliers = (z_scores > self.outliers_th) | (z_scores < -self.outliers_th)
+    #                 if self.outliers_single_zscore:
+    #                     outliers = (z_scores > self.outliers_th)
+    #                 else:
+    #                     outliers = (z_scores > self.outliers_th) | (z_scores < -self.outliers_th)
                     
-                elif self.outliers_method == "iforest":
+    #             elif self.outliers_method == "iforest":
                     
-                    m1 = [[k] for k in m]
-                    z_scores[y_no_outliers==ll] = iso.fit_predict(m1)
-                    #outliers is designed to be the size with all classes
-                    outliers = z_scores == -1
+    #                 m1 = [[k] for k in m]
+    #                 z_scores[y_no_outliers==ll] = iso.fit_predict(m1)
+    #                 #outliers is designed to be the size with all classes
+    #                 outliers = z_scores == -1
                     
-                elif self.outliers_method == "lof":
+    #             elif self.outliers_method == "lof":
                     
-                    m1 = [[k] for k in m]
-                    z_scores[y_no_outliers==ll] = lof.fit_predict(m1)
-                    #outliers is designed to be the size with all classes
-                    outliers = z_scores == -1
+    #                 m1 = [[k] for k in m]
+    #                 z_scores[y_no_outliers==ll] = lof.fit_predict(m1)
+    #                 #outliers is designed to be the size with all classes
+    #                 outliers = z_scores == -1
                     
-                else:   
-                    raise Exception("Invalid Outlier Removal Method")
+    #             else:   
+    #                 raise Exception("Invalid Outlier Removal Method")
 
-                outliers_count = len(outliers[outliers==True])
+    #             outliers_count = len(outliers[outliers==True])
                 
-                #check if too many samples are about to be removed
-                #case 1 less than self.max_outliers_remove_th are to be removed
-                if ((count_total_outliers_removed_per_class[ll] + outliers_count) / count_total_samples_per_class[ll]) * 100 < self.outliers_max_remove_th:
-                    #print ("Removed for class ", ll ," ",  len(outliers[outliers==True]), " samples out of ", X_no_outliers.shape[0])
+    #             #check if too many samples are about to be removed
+    #             #case 1 less than self.max_outliers_remove_th are to be removed
+    #             if ((count_total_outliers_removed_per_class[ll] + outliers_count) / count_total_samples_per_class[ll]) * 100 < self.outliers_max_remove_th:
+    #                 #print ("Removed for class ", ll ," ",  len(outliers[outliers==True]), " samples out of ", X_no_outliers.shape[0])
             
-                    X_no_outliers = X_no_outliers[~outliers]
-                    y_no_outliers = y_no_outliers[~outliers]
-                    sample_weight = sample_weight[~outliers]
+    #                 X_no_outliers = X_no_outliers[~outliers]
+    #                 y_no_outliers = y_no_outliers[~outliers]
+    #                 sample_weight = sample_weight[~outliers]
                 
-                    if X_no_outliers.shape[0] != (samples_before - outliers_count):
-                        raise Exception("Error while removing outliers!")
+    #                 if X_no_outliers.shape[0] != (samples_before - outliers_count):
+    #                     raise Exception("Error while removing outliers!")
                     
-                    count_total_outliers_removed_per_class[ll] = count_total_outliers_removed_per_class[ll] + outliers_count
+    #                 count_total_outliers_removed_per_class[ll] = count_total_outliers_removed_per_class[ll] + outliers_count
                 
-                else: #case 2 more than self.max_outliers_remove_th are to be removed
+    #             else: #case 2 more than self.max_outliers_remove_th are to be removed
                 
-                    outliers_count = 0 #0 set outliers removed to 0
+    #                 outliers_count = 0 #0 set outliers removed to 0
                     
-                    print("WARNING: Skipped full outliers removal because too many samples were about to be removed.")
+    #                 print("WARNING: Skipped full outliers removal because too many samples were about to be removed.")
                 
-                ouliers_per_iteration_count[ll] = outliers_count
+    #             ouliers_per_iteration_count[ll] = outliers_count
             
-            #early stop: if no outliers were removed for both classes then we stop early
-            if sum(ouliers_per_iteration_count.values()) == 0:
-                early_stop = True
+    #         #early stop: if no outliers were removed for both classes then we stop early
+    #         if sum(ouliers_per_iteration_count.values()) == 0:
+    #             early_stop = True
         
-        count_total_outliers_removed = count_total_outliers_removed_per_class.sum()
+    #     count_total_outliers_removed = count_total_outliers_removed_per_class.sum()
 
-        if count_total_outliers_removed > 0:
+    #     if count_total_outliers_removed > 0:
            
-            #generate the final power mean (after outliers removal)
-            means_p = self._calculate_mean(X_no_outliers, y_no_outliers, p, sample_weight)
+    #         #generate the final power mean (after outliers removal)
+    #         means_p = self._calculate_mean(X_no_outliers, y_no_outliers, p, sample_weight)
         
-            count_outliers_removed_for_single_mean_gt = X.shape[0] - X_no_outliers.shape[0]
+    #         count_outliers_removed_for_single_mean_gt = X.shape[0] - X_no_outliers.shape[0]
             
-            if (count_total_outliers_removed != count_outliers_removed_for_single_mean_gt):
-                raise Exception("Error outliers removal count!")
+    #         if (count_total_outliers_removed != count_outliers_removed_for_single_mean_gt):
+    #             raise Exception("Error outliers removal count!")
             
-            #print("Total outliers removed for mean p=",p," is: ",total_outliers_removed, " for all classes")
+    #         #print("Total outliers removed for mean p=",p," is: ",total_outliers_removed, " for all classes")
             
-            if (count_outliers_removed_for_single_mean_gt / X.shape[0]) * 100 > self.outliers_max_remove_th:
-                raise Exception("Outliers removal algorithm has removed too many samples: ", count_outliers_removed_for_single_mean_gt, " out of ",X.shape[0])
-        else: 
-            #print("No outliers removed")
-            pass
+    #         if (count_outliers_removed_for_single_mean_gt / X.shape[0]) * 100 > self.outliers_max_remove_th:
+    #             raise Exception("Outliers removal algorithm has removed too many samples: ", count_outliers_removed_for_single_mean_gt, " out of ",X.shape[0])
+    #     else: 
+    #         #print("No outliers removed")
+    #         pass
         
-        return means_p
+    #     return means_p
 
     def _calculate_all_means(self,X,y,sample_weight):
         
         if self.n_jobs==-1 or self.n_jobs > 1:
             print("parallel means")
-            if (self.remove_outliers):
+            # if (self.remove_outliers):
                 
-                results = Parallel(n_jobs=self.n_jobs)(delayed(self._calcualte_mean_remove_outliers)(X, y, p, sample_weight)
-                                      for p in self.power_list
-                                  )
-            else:
-                results = Parallel(n_jobs=-1)(delayed(self._calculate_mean)(X, y, p, sample_weight)
-                                        for p in self.power_list
-                                    )
+            #     results = Parallel(n_jobs=self.n_jobs)(delayed(self._calcualte_mean_remove_outliers)(X, y, p, sample_weight)
+            #                           for p in self.power_list
+            #                       )
+            # else:
+            results = Parallel(n_jobs=-1)(delayed(self._calculate_mean)(X, y, p, sample_weight)
+                                    for p in self.power_list
+                                )
+            
+            for i, p in enumerate(self.power_list):
+                self.covmeans_[p] = results[i]
         else:
             print("NON parallel means")
-            results = [] #per p for all classes
+            #results = [] #per p for all classes
             for p in self.power_list:
                 
-                if (self.remove_outliers):
-                    result_per_p = self._calcualte_mean_remove_outliers(X, y, p, sample_weight)
-                else:
-                    result_per_p = self._calculate_mean(X, y, p, sample_weight)
-                results.append(result_per_p)
-        
-        for i, p in enumerate(self.power_list):
-            self.covmeans_[p] = results[i]
-                
+                # if (self.remove_outliers):
+                #     result_per_p = self._calcualte_mean_remove_outliers(X, y, p, sample_weight)
+                # else:
+                result_per_p = self._calculate_mean(X, y, p, sample_weight)
+                self.covmeans_[p] = result_per_p
+       
     def fit(self, X, y, sample_weight=None):
         """Fit (estimates) the centroids. Calculates the power means.
 
