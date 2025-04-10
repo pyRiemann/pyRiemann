@@ -1508,6 +1508,15 @@ def _get_within(X, y, means, classes, exponent, metric):
     return sum_sigmas
 
 #temporal: imports MeanField_V2
+#temporal: imports MeanField_V2
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
+from .utils.mean import mean_logeuclid
+from .utils.mean import mean_power
+from scipy.stats import zscore
+from sklearn.ensemble import IsolationForest
+from sklearn.neighbors import LocalOutlierFactor
+from .utils.distance import _check_inputs
+
 class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
     """Classification by Riemannian Means Field Classifier
     
@@ -1536,7 +1545,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         A stopping criterion for the mean calculation. Bigger values help with speed,
         smaller provide better accuracy.
     power_mean_maxiter : int, default=150
-        Sets the maximum mumber of iterations for the power mean calculation
+        Sets the maximum mumber of iterations for the power mean calculation.
     distance_squared : bool, default = True
         The distances used for classification are squared.  
     reuse_previous_mean :bool, default = False
@@ -1579,16 +1588,18 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         M Congedo, PLC Rodrigues, C Jutten. BCI 2019 - 8th International
         Brain-Computer Interface Conference, Sep 2019, Graz, Austria.
     """
-
-    def __init__(self, power_list=[-1, -0.75, -0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5, 0.75, 1], 
-                 method_label='lda',
-                 metric="riemann",
-                 power_mean_zeta=1e-07,
-                 power_mean_maxiter=150,
-                 distance_squared=True,
-                 reuse_previous_mean = False,
-                 n_jobs=1,
-                 ):
+  
+    def __init__(
+        self, 
+        power_list=[-1, -0.75, -0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5, 0.75, 1], 
+        method_label='lda',
+        metric="riemann",
+        power_mean_zeta=1e-07,
+        power_mean_maxiter=150,
+        distance_squared=True,
+        reuse_previous_mean = False,
+        n_jobs=1,
+    ):
         """Init."""
         self.power_list = power_list
         self.method_label = method_label
@@ -1604,31 +1615,29 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         
         if self.method_label == "lda":
             self.lda = LDA()
-    
+        
     def _calculate_mean(self,X, y, p, sample_weight):
         '''
-        Calculates mean (and inv. mean) for all classes for specific p
+        Calculates power means for all classes for specific p.
 
         Parameters
         ----------
-        X : TYPE
-            DESCRIPTION.
-        y : TYPE
-            DESCRIPTION.
-        p : TYPE
-            DESCRIPTION.
-        sample_weight : TYPE
-            DESCRIPTION.
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : ndarray, shape (n_matrices,)
+            Labels for each matrix.
+        p : float
+            Exponent of a power mean.
+        sample_weight : None | ndarray shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
 
         Returns
         -------
-        means_p : TYPE
-            DESCRIPTION.
-        TYPE
-            DESCRIPTION.
+        means_p : dict
+            Contains the power means for all classes for this p.
 
         '''
-        means_p   = {} #keys are classes, values are means for this p and class
+        means_p   = {}
 
         #print(p)
         
@@ -1656,15 +1665,14 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
                 maxiter = self.power_mean_maxiter
             )
                        
-        return means_p # contains means for all classes
+        return means_p
 
     def _calculate_all_means(self,X,y,sample_weight):
         
         if self.n_jobs==-1 or self.n_jobs > 1:
             print("parallel means")
             results = Parallel(n_jobs=-1)(delayed(self._calculate_mean)(X, y, p, sample_weight)
-                                    for p in self.power_list
-                                )
+                                    for p in self.power_list)
             
             for i, p in enumerate(self.power_list):
                 self.covmeans_[p] = results[i]
@@ -1746,33 +1754,23 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         
         #print("In predict")
         if self.method_label == "lda":
-
             dists = self._predict_distances(X)
-            
             pred  = self.lda.predict(dists)
-            
             return np.array(pred)
             
         else:
-            
             labs_unique = sorted(self.covmeans_[self.power_list[0]].keys())
-    
             pred = Parallel(n_jobs=self.n_jobs)(delayed(self._get_label)(x, labs_unique)
-                 for x in X
-                )
-            
+                 for x in X)
             return np.array(pred)
 
     def _calculate_distance(self,A,B,p):
-
-        squared = self.distance_squared
-        
         if len(A.shape) == 2:
                 dist = distance(
                         A,
                         B,
                         metric=self.metric,
-                        squared = squared,
+                        squared = self.distance_squared,
                     )             
         else:
             raise Exception("Error size of input, not matrices?")
@@ -1781,39 +1779,38 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
     
     def _calucalte_distances_for_all_means(self,x):
         '''
-        Calculates the distances to all power means 
+        Calculates the distances to all power means and all classes.
 
         Parameters
         ----------
-        x : TYPE
-            DESCRIPTION.
+        x : ndarray, shape (n_channels, n_channels)
+            An SPD matrix.
 
         Raises
         ------
         Exception
-            DESCRIPTION.
+            If (number of classes) x (number of power means) != (total number of calculated distances)
 
         Returns
         -------
-        combined : TYPE
-            DESCRIPTION.
+        combined : list
+            A list of all distances to all power means for all classes.
+            
 
         '''
-        m = {} #contains a distance to a power mean
+        m = {} #keys are p exponents and values are distances for each class
         
         for p in self.power_list:
             m[p] = []
             
             for ll in self.classes_: #add all distances (1 per class) for m[p] power mean
                 dist_p = self._calculate_distance(x, self.covmeans_[p][ll], p)
-                
                 m[p].append(dist_p)
                 
         combined = [] #combined for all classes
         for v in m.values():
             combined.extend(v)
         
-        #check combned = (number of classes) x (number of power means)
         if len(combined) != (len(self.power_list) * len(self.classes_)) :
             raise Exception("Not enough calculated distances!", len(combined),(len(self.power_list) * 2))
             
@@ -1838,13 +1835,13 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         
         return distances
 
-    def transform(self, X,):
+    def transform(self, X):
         """Get the distance to each means field.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -1853,11 +1850,32 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         """
         return self._predict_distances(X)
 
-    def fit_predict(self, X, y):
-        """Fit and predict in one function."""
-        self.fit(X, y)
-        return self.predict(X)
+    @deprecated(
+        "fit_predict() is deprecated and will be removed in 0.10.0; "
+        "please use fit().predict()."
+    )
+    def fit_predict(self, X, y, sample_weight=None):
+        return self.fit(X, y, sample_weight=sample_weight).predict(X)
 
+    def fit_transform(self, X, y, sample_weight=None):
+        """Fit and transform in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD/HPD matrices.
+        y : ndarray, shape (n_matrices,)
+            Labels for each matrix.
+        sample_weight : None | ndarray shape (n_matrices,), default=None
+            Weights for each matrix. If None, it uses equal weights.
+
+        Returns
+        -------
+        dist : ndarray, shape (n_matrices, n_classes)
+            Distance to each means field according to the metric.
+        """
+        return self.fit(X, y, sample_weight=sample_weight).transform(X)
+    
     def predict_proba(self, X):
         """Predict proba using softmax of negative squared distances.
 
