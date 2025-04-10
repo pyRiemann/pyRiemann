@@ -1508,7 +1508,6 @@ def _get_within(X, y, means, classes, exponent, metric):
     return sum_sigmas
 
 #temporal: imports MeanField_V2
-#temporal: imports MeanField_V2
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from .utils.mean import mean_logeuclid
 from .utils.mean import mean_power
@@ -1612,6 +1611,9 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         
         if (self.reuse_previous_mean and self.n_jobs!=1):
             raise Exception("Currently reuse_previous_mean is not supported when combined with parallel mean calculation.")
+        
+        if method_label not in {'lda', 'sum_means', 'inf_means'}:
+            raise TypeError("Parameter method_label is incorrect.")
         
         if self.method_label == "lda":
             self.lda = LDA()
@@ -1720,12 +1722,10 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
 
         return self         
 
-    def _get_label(self, x, labs_unique):
-        
-        m = np.zeros((len(self.power_list), len(labs_unique)))
-        
+    def _get_label(self, x):
+        m = np.zeros((len(self.power_list), len(self.classes_)))
         for ip, p in enumerate(self.power_list):
-            for ill, ll in enumerate(labs_unique):
+            for ill, ll in enumerate(self.classes_):
                  m[ip, ill] = self._calculate_distance(x,self.covmeans_[p][ll],p)
 
         if self.method_label == 'sum_means':
@@ -1735,7 +1735,7 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         else:
             raise TypeError('method_label must be sum_means or inf_means')
 
-        y = labs_unique[np.argmin(m[ipmin])]
+        y = self.classes_[np.argmin(m[ipmin])]
         return y
 
     def predict(self, X):
@@ -1796,14 +1796,13 @@ class MeanField_V2(BaseEstimator, ClassifierMixin, TransformerMixin):
         combined : list
             A list of all distances to all power means for all classes.
             
-
         '''
         m = {} #keys are p exponents and values are distances for each class
         
-        for p in self.power_list:
+        for p in self.power_list: #store in m all distances (1 per class) for each p
             m[p] = []
             
-            for ll in self.classes_: #add all distances (1 per class) for m[p] power mean
+            for ll in self.classes_: 
                 dist_p = self._calculate_distance(x, self.covmeans_[p][ll], p)
                 m[p].append(dist_p)
                 
