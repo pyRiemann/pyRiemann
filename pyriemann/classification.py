@@ -954,7 +954,6 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
 
         '''
         means_p = {}
-        # print(p)
 
         for ll in self.classes_:
 
@@ -966,8 +965,6 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
                     prev_p = self.power_list[pos-1]
                     if prev_p in self.covmeans_:
                         init = self.covmeans_[prev_p][ll]
-                        # print(prev_p)
-                        # print("using prev mean from the power list")
                     else:
                         raise Exception("No previous mean.")
 
@@ -993,7 +990,6 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
             for i, p in enumerate(self.power_list):
                 self.covmeans_[p] = results[i]
         else:
-            print("NON parallel means")
             for p in self.power_list:
                 result_per_p = self._calculate_mean(X, y, p, sample_weight)
                 self.covmeans_[p] = result_per_p
@@ -1068,8 +1064,6 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         pred : ndarray of int, shape (n_matrices,)
             Predictions for each matrix according to the closest means field.
         """
-
-        # print("In predict")
         if self.method_label == "lda":
             dists = self._predict_distances(X)
             pred = self.lda.predict(dists)
@@ -1139,9 +1133,6 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
 
     def _predict_distances(self, X):
         """Helper to predict the distance. Equivalent to transform."""
-
-        # print("predict distances")
-
         if (self.n_jobs == 1):
             distances = []
             for x in X:
