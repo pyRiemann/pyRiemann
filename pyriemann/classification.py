@@ -841,8 +841,8 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         Exponents of power means.
     method_label : {'lda', 'sum_means', 'inf_means'}, default='lda'
         Method to combine labels:
-        * lda: an LDA classfier is trained on the distances to each mean for
-          all classes which allows more complex patterns to be learned
+        * lda: an LDA classifier is trained on the distances to each mean for
+          all classes, which allows more complex patterns to be learned
         * sum_means: it assigns the covariance to the class whom the sum of
           distances to means of the field is the lowest;
         * inf_means: it assigns the covariance to the class of the closest mean
@@ -852,8 +852,8 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         For the list of supported metrics,
         see :func:`pyriemann.utils.distance.distance`.
     power_mean_zeta : float, default=1e-07
-        A stopping criterion for the mean calculation. Bigger values help with speed,
-        smaller provide better accuracy.
+        A stopping criterion for the mean calculation: bigger values improve speed,
+        while smaller provide better accuracy.
     power_mean_maxiter : int, default=150
         Sets the maximum mumber of iterations for the power mean calculation.
     distance_squared : bool, default = True
