@@ -1133,20 +1133,36 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
 
     def _predict_distances(self, X):
         """Helper to predict the distance. Equivalent to transform."""
-        if (self.n_jobs == 1):
-            distances = []
+        if self.method_label in ("sum_means", "inf_means"):
+            dist = []
             for x in X:
-                distances_per_mean = self._calucalte_distances_for_all_means(x)
-                distances.append(distances_per_mean)
+                m = {}
+                for p in self.power_list:
+                    m[p] = []
+                    for c in self.classes_:
+                        m[p].append(
+                            distance(
+                                x,
+                                self.covmeans_[p][c],
+                                metric=self.metric,
+                            )
+                        )
+                pmin = min(m.items(), key=lambda x: np.sum(x[1]))[0]
+                dist.append(np.array(m[pmin]))
+            return np.stack(dist)
         else:
-            distances = Parallel(n_jobs=self.n_jobs)(
-                delayed(self._calucalte_distances_for_all_means)(x)
-                for x in X
-            )
-
-        distances = np.array(distances)
-
-        return distances
+            if (self.n_jobs == 1):
+                distances = []
+                for x in X:
+                    all_distances = self._calucalte_distances_for_all_means(x)
+                    distances.append(all_distances)
+            else:
+                distances = Parallel(n_jobs=self.n_jobs)(
+                    delayed(self._calucalte_distances_for_all_means)(x)
+                    for x in X
+                )
+            distances = np.array(distances)
+            return distances
 
     def transform(self, X):
         """Get the distance to each means field.
