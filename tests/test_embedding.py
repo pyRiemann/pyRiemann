@@ -22,8 +22,6 @@ embds = [SpectralEmbedding, LocallyLinearEmbedding, TSNE]
 def test_embedding(kind, embd, metric, get_mats):
     if kind == "hpd" and embd is LocallyLinearEmbedding:
         pytest.skip()
-    if kind == "hpd" and metric in ["euclid", "logeuclid"]:
-        pytest.skip()  # sklearn.euclidean_dist does not support complex data
     n_matrices, n_channels, n_comp = 8, 3, 4
     mats = get_mats(n_matrices, n_channels, kind)
 
