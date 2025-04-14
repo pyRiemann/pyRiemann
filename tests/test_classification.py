@@ -432,7 +432,10 @@ def test_meanfield(get_mats, get_labels, power_list, method_label, metric):
     proba = mf.predict_proba(mats)
     assert proba.shape == (n_matrices, n_classes)
     transf = mf.transform(mats)
-    assert transf.shape == (n_matrices, n_classes)
+    if method_label ==  "sum_means" or method_label == "inf_means":
+        assert transf.shape == (n_matrices, n_classes)
+    elif method_label ==  "lda":
+        assert transf.shape == (n_matrices, n_classes * n_powers)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
