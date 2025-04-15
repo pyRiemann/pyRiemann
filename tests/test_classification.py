@@ -121,7 +121,11 @@ def clf_transform(classif, mats, labels):
     n_matrices, n_classes = len(labels), len(np.unique(labels))
     clf = classif()
     transf = clf.fit(mats, labels).transform(mats)
-    assert transf.shape == (n_matrices, n_classes)
+    if isinstance(clf, MeanField) and clf.method_label == "lda":
+        n_powers = len(clf.power_list)
+        assert transf.shape == (n_matrices, n_classes * n_powers)
+    else:
+        assert transf.shape == (n_matrices, n_classes)
 
 
 def clf_fittransform(classif, mats, labels):
@@ -411,7 +415,7 @@ def test_svc_kernel_error(get_mats, get_labels):
 
 
 @pytest.mark.parametrize("power_list", [[-1, 0, 1], [0, 0.1]])
-@pytest.mark.parametrize("method_label", ["sum_means", "inf_means"])
+@pytest.mark.parametrize("method_label", ["lda", "sum_means", "inf_means"])
 @pytest.mark.parametrize("metric", get_distances())
 def test_meanfield(get_mats, get_labels, power_list, method_label, metric):
     n_powers = len(power_list)
@@ -432,7 +436,10 @@ def test_meanfield(get_mats, get_labels, power_list, method_label, metric):
     proba = mf.predict_proba(mats)
     assert proba.shape == (n_matrices, n_classes)
     transf = mf.transform(mats)
-    assert transf.shape == (n_matrices, n_classes)
+    if method_label == "sum_means" or method_label == "inf_means":
+        assert transf.shape == (n_matrices, n_classes)
+    elif method_label == "lda":
+        assert transf.shape == (n_matrices, n_classes * n_powers)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
