@@ -58,7 +58,7 @@ random_state = 42  # Random state for reproducibility
 # ---------------------------------------------------------
 
 
-class Stacker(TransformerMixin):
+class Stacker(TransformerMixin, BaseEstimator):
     """Stacks values of a DataFrame column into a 3D array."""
     def fit(self, X, y=None):
         return self
@@ -69,10 +69,11 @@ class Stacker(TransformerMixin):
         return np.stack(X.iloc[:, 0].values)
 
 
-class FlattenTransformer(BaseEstimator, TransformerMixin):
+class FlattenTransformer(TransformerMixin, BaseEstimator):
     """Flattens the last two dimensions of an array.
-        ColumnTransformer requires 2D output, so this transformer
-        is needed"""
+
+    ColumnTransformer requires 2D output, so this transformer is needed
+    """
     def fit(self, X, y=None):
         return self
 
@@ -80,9 +81,8 @@ class FlattenTransformer(BaseEstimator, TransformerMixin):
         return X.reshape(X.shape[0], -1)
 
 
-class HybridBlocks(BaseEstimator, TransformerMixin):
-    """Estimation of block kernel or covariance matrices with
-    customizable metrics and shrinkage.
+class HybridBlocks(TransformerMixin, BaseEstimator):
+    """Estimation of block kernel or covariance matrices.
 
     Perform block matrix estimation for each given time series,
     computing either kernel matrices or covariance matrices for
@@ -99,13 +99,13 @@ class HybridBlocks(BaseEstimator, TransformerMixin):
     block_size : int | list of int
         Sizes of individual blocks given as int for same-size blocks,
         or list for varying block sizes.
-    metrics : string | list of string, default='linear'
+    metrics : string | list of string, default="linear"
         The metric(s) to use when computing matrices between channels.
         For kernel matrices, supported metrics are those from
-        ``pairwise_kernels``: 'linear', 'poly', 'polynomial',
-        'rbf', 'laplacian', 'cosine', etc.
+        ``pairwise_kernels``: "linear", "poly", "polynomial",
+        "rbf", "laplacian", "cosine", etc.
         For covariance matrices, supported estimators are those from
-        pyRiemann: 'scm', 'lwf', 'oas', 'mcd', etc.
+        pyRiemann: "scm", "lwf", "oas", "mcd", etc.
         If a list is provided, it must match the number of blocks.
     shrinkage : float | list of float, default=0
         Shrinkage parameter(s) to regularize each block's matrix.
@@ -163,9 +163,7 @@ class HybridBlocks(BaseEstimator, TransformerMixin):
                     "Sum of block sizes mustequal number of channels"
                     )
         else:
-            raise ValueError(
-                "block_size must be int or list of ints"
-                )
+            raise ValueError("block_size must be int or list of ints")
 
         # Compute block indices
         self.block_indices = []
@@ -215,9 +213,7 @@ class HybridBlocks(BaseEstimator, TransformerMixin):
             block_name = self.block_names[i]
 
             # Build the pipeline for this block
-            block_pipeline = make_pipeline(
-                Stacker(),
-            )
+            block_pipeline = make_pipeline(Stacker())
 
             # Determine if the metric is a kernel or a covariance estimator
             if metric in ker_est_functions:
@@ -247,7 +243,7 @@ class HybridBlocks(BaseEstimator, TransformerMixin):
                 shrinkage_transformer = Shrinkage(shrinkage=shrinkage_value)
                 block_pipeline.steps.append(
                     ('shrinkage', shrinkage_transformer)
-                    )
+                )
 
             # Add the flattening transformer at the end of the pipeline
             block_pipeline.steps.append(('flatten', FlattenTransformer()))
@@ -398,19 +394,19 @@ pipeline_blockcovariances = Pipeline(
 pipeline_hybrid_blocks.set_params(
     block_kernels__shrinkage=[0.01, 0],
     block_kernels__metrics=['cov', 'rbf']
-    )
+)
 
 pipeline_blockcovariances.set_params(
     covariances__estimator='lwf',
     shrinkage__shrinkage=0.01
-    )
+)
 
 # Define cross-validation
 cv = StratifiedKFold(
     n_splits=cv_splits,
     random_state=random_state,
     shuffle=True
-    )
+)
 
 ###############################################################################
 # Fit the two models
@@ -418,11 +414,12 @@ cv = StratifiedKFold(
 cv_scores_hybrid_blocks = cross_val_score(
     pipeline_hybrid_blocks, X, y,
     cv=cv, scoring="accuracy", n_jobs=n_jobs
-    )
+)
 
 cv_scores_blockcovariances = cross_val_score(
     pipeline_blockcovariances, X, y,
-    cv=cv, scoring="accuracy", n_jobs=n_jobs)
+    cv=cv, scoring="accuracy", n_jobs=n_jobs
+)
 
 ###############################################################################
 # Print and plot results
@@ -433,7 +430,7 @@ acc_blockcovariances = np.mean(cv_scores_blockcovariances)
 print(f"Mean accuracy for HybridBlocks: {acc_hybrid_blocks:.2f}")
 print(f"Mean accuracy for BlockCovariances: {acc_blockcovariances:.2f}")
 
-# plot a scatter plot of CV and median scores
+# plot a scatter plot of CV and mean scores
 plt.figure(figsize=(6, 6))
 plt.scatter(cv_scores_hybrid_blocks, cv_scores_blockcovariances)
 plt.plot([0.4, 1], [0.4, 1], "--", color="black")

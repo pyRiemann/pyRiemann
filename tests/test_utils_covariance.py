@@ -54,13 +54,13 @@ def test_covariances(estimator, rndstate):
             )
 
 
-@pytest.mark.parametrize('assume_centered', [True, False])
+@pytest.mark.parametrize("assume_centered", [True, False])
 def test_covariance_scm_real(rndstate, assume_centered):
     """Test equivalence between pyriemann and sklearn estimator on real data"""
     n_matrices, n_channels, n_times = 3, 4, 50
     x = rndstate.randn(n_matrices, n_channels, n_times)
 
-    cov = covariances(x, estimator='scm', assume_centered=assume_centered)
+    cov = covariances(x, estimator="scm", assume_centered=assume_centered)
     cov_sklearn = np.asarray([
         empirical_covariance(x_.T, assume_centered=assume_centered)
         for x_ in x
@@ -83,7 +83,7 @@ def test_covariance_scm_complex(rndstate):
     assert_array_almost_equal(cov, cov_decorator, 10)
 
 
-@pytest.mark.parametrize('estimator', estimators + m_estimators)
+@pytest.mark.parametrize("estimator", estimators + m_estimators)
 def test_covariances_complex(estimator, rndstate):
     """Test covariance for complex inputs"""
     n_matrices, n_channels, n_times = 3, 4, 50
@@ -95,9 +95,7 @@ def test_covariances_complex(estimator, rndstate):
     assert is_herm_pos_def(cov)
 
 
-@pytest.mark.parametrize(
-    'estimator', estimators + [None]
-)
+@pytest.mark.parametrize("estimator", estimators + [None])
 def test_covariances_EP(estimator, rndstate):
     """Test covariance_EP for multiple estimators"""
     n_matrices, n_channels_x, n_channels_p, n_times = 2, 3, 3, 100
@@ -111,9 +109,7 @@ def test_covariances_EP(estimator, rndstate):
     assert cov.shape == (n_matrices, n_dim_cov, n_dim_cov)
 
 
-@pytest.mark.parametrize(
-    'estimator', estimators + [None]
-)
+@pytest.mark.parametrize("estimator", estimators + [None])
 def test_covariances_EP_complex(estimator, rndstate):
     """Test covariance_EP for complex input"""
     n_matrices, n_channels_x, n_channels_p, n_times = 2, 3, 3, 100
@@ -129,9 +125,7 @@ def test_covariances_EP_complex(estimator, rndstate):
     assert cov.shape == (n_matrices, n_dim_cov, n_dim_cov)
 
 
-@pytest.mark.parametrize(
-    'estimator', estimators + [None]
-)
+@pytest.mark.parametrize("estimator", estimators + [None])
 def test_covariances_X(estimator, rndstate):
     """Test covariance_X for multiple estimators"""
     n_matrices, n_channels, n_times = 3, 5, 15
@@ -147,7 +141,7 @@ def test_covariances_X(estimator, rndstate):
 
 
 @pytest.mark.parametrize(
-    'estimator', estimators + [np.cov, 'truc', None]
+    "estimator", estimators + [np.cov, "truc", None]
 )
 def test_block_covariances_est(estimator, rndstate):
     """Test block covariance for multiple estimators"""
@@ -191,7 +185,7 @@ def test_covariances_eegtocov(rndstate):
     n_times, n_channels = 1000, 3
     x = rndstate.randn(n_times, n_channels)
     cov = eegtocov(x)
-    assert cov.shape[1] == n_channels
+    assert cov.shape[1:] == (n_channels, n_channels)
 
 
 def test_covariances_cross_spectrum(rndstate):

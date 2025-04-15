@@ -14,11 +14,11 @@ v0.9.dev
 
 - Add :class:`pyriemann.embedding.TSNE`, a Riemannian t-SNE implementation and update example comparing embeddings. :pr:`347` by :user:`thibaultdesurrel`
 
-- Enhance :func:`pyriemann.utils.distance.pairwise_distance` to support HPD matrices for "euclid", "harmonic", "logchol" and "logeuclid" metrics. :pr:`350` by :user:`qbarthelemy`
-
 - Fix matplotlib warning. :pr:`351` by :user:`qbarthelemy`
 
 - Enhance :func:`pyriemann.utils.mean.mean_power` using ``init``, ``tol`` and ``maxiter`` parameters when p=0. :pr:`353` by :user:`toncho11`
+
+- Enhance :func:`pyriemann.utils.distance.pairwise_distance` to support HPD matrices for "euclid", "harmonic", "logchol" and "logeuclid" metrics. :pr:`350` by :user:`qbarthelemy`
 
 v0.8 (February 2025)
 --------------------
