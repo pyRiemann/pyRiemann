@@ -981,8 +981,8 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
 
     def _calculate_all_means(self, X, y, sample_weight):
 
-        if self.n_jobs == -1 or self.n_jobs > 1:
-            results = Parallel(n_jobs=-1)(
+        if self.n_jobs != 1:
+            results = Parallel(n_jobs=self.n_jobs)(
                 delayed(self._calculate_mean)(X, y, p, sample_weight)
                 for p in self.power_list
             )
@@ -990,6 +990,7 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
             for i, p in enumerate(self.power_list):
                 self.covmeans_[p] = results[i]
         else:
+            # this non-parallel version for parameter reuse_previous_mean
             for p in self.power_list:
                 result_per_p = self._calculate_mean(X, y, p, sample_weight)
                 self.covmeans_[p] = result_per_p
@@ -1090,7 +1091,7 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
 
         return dist
 
-    def _calucalte_distances_for_all_means(self, x):
+    def _calculate_distances_for_all_means(self, x):
         '''
         Calculates the distances to all power means and all classes.
 
@@ -1151,16 +1152,12 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
                 dist.append(np.array(m[pmin]))
             return np.stack(dist)
         else:
-            if (self.n_jobs == 1):
-                distances = []
-                for x in X:
-                    all_distances = self._calucalte_distances_for_all_means(x)
-                    distances.append(all_distances)
-            else:
-                distances = Parallel(n_jobs=self.n_jobs)(
-                    delayed(self._calucalte_distances_for_all_means)(x)
-                    for x in X
-                )
+            # lda
+            distances = Parallel(n_jobs=self.n_jobs)(
+                delayed(self._calculate_distances_for_all_means)(x)
+                for x in X
+            )
+
             distances = np.array(distances)
             return distances
 
