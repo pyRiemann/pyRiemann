@@ -35,7 +35,6 @@ def freq_selection_class_dis(raw, freq_band=(5., 35.), sub_band_width=4,
     .. math::
       th = max(classDis) - (max(classDis)−min(classDis)) × alpha
 
-
     Parameters
     ----------
     raw : Raw object
@@ -51,7 +50,7 @@ def freq_selection_class_dis(raw, freq_band=(5., 35.), sub_band_width=4,
     tmin, tmax : float, default=0.5, 2.5
         Start and end time of the epochs in seconds, relative to
         the time-locked event.
-    picks : str | array_like | slice,  default=None
+    picks : str | array-like | slice, default=None
         Channels to include. Slices and lists of integers will be
         interpreted as channel indices.
         If None (default), all channels will pick.
@@ -69,7 +68,7 @@ def freq_selection_class_dis(raw, freq_band=(5., 35.), sub_band_width=4,
         An instance of a cross validation iterator from sklearn.
     return_class_dis : bool, default=False
         Whether to return all_cv_class_dis value.
-    verbose : bool, str, int, default=None
+    verbose : bool | str | int, default=None
         Control verbosity of the logging output of filtering and .
         If None, use the default verbosity level.
 

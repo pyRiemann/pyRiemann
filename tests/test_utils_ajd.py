@@ -40,12 +40,12 @@ def test_ajd(kind, method, algo, get_mats):
 
 
 @pytest.mark.parametrize("method", ["rjd", "ajd_pham", "uwedge"])
-@pytest.mark.parametrize("init", [True, False])
-def test_ajd_init(method, init, get_mats_params):
+@pytest.mark.parametrize("use_init", [True, False])
+def test_ajd_init(method, use_init, get_mats_params):
     """Test init for ajd algos"""
     n_matrices, n_channels = 6, 4
     mats, _, evecs = get_mats_params(n_matrices, n_channels, "spd")
-    if init:
+    if use_init:
         ajd(mats, method=method, init=evecs)
     else:
         ajd(mats, method=method)

@@ -24,9 +24,9 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=10e-7
-        The tolerance to stop the gradient descent.
+        Tolerance to stop the gradient descent.
     maxiter : int, default=50
-        The maximum number of iterations.
+        Maximum number of iterations.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
     init : None | ndarray, shape (n, n), default=None
@@ -96,9 +96,9 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None):
     X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=10e-14
-        The tolerance to stop the gradient descent.
+        Tolerance to stop the gradient descent.
     maxiter : int, default=100
-        The maximum number of iterations.
+        Maximum number of iterations.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -343,9 +343,9 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=10e-5
-        The tolerance to stop the gradient descent.
+        Tolerance to stop the gradient descent.
     maxiter : int, default=50
-        The maximum number of iterations.
+        Maximum number of iterations.
     init : None | ndarray, shape (n, n), default=None
         A SPD/HPD matrix used to initialize the gradient descent.
         If None, the weighted Euclidean mean is used.
@@ -444,7 +444,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     zeta : float, default=10e-10
         Stopping criterion.
     maxiter : int, default=100
-        The maximum number of iterations.
+        Maximum number of iterations.
     init : None | ndarray, shape (n, n), default=None
         A SPD/HPD matrix used to initialize the gradient descent.
         If None, the weighted power Euclidean mean is used.
@@ -589,9 +589,9 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=10e-9
-        The tolerance to stop the gradient descent.
+        Tolerance to stop the gradient descent.
     maxiter : int, default=50
-        The maximum number of iterations.
+        Maximum number of iterations.
     init : None | ndarray, shape (n, n), default=None
         A SPD/HPD matrix used to initialize the gradient descent.
         If None, the weighted Euclidean mean is used.
@@ -660,9 +660,9 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=10e-9
-        The tolerance to stop the gradient descent.
+        Tolerance to stop the gradient descent.
     maxiter : int, default=50
-        The maximum number of iterations.
+        Maximum number of iterations.
     init : None | ndarray, shape (n, n), default=None
         A SPD/HPD matrix used to initialize the gradient descent.
         If None the Euclidean mean is used.
@@ -803,17 +803,11 @@ def _get_mask_from_nan(X):
 
 
 def _get_masks_from_nan(X):
-    masks = []
-    for i in range(len(X)):
-        masks.append(_get_mask_from_nan(X[i]))
-    return masks
+    return [_get_mask_from_nan(x) for x in X]
 
 
 def _apply_masks(X, masks):
-    maskedX = []
-    for i in range(len(X)):
-        maskedX.append(masks[i].T @ X[i] @ masks[i])
-    return maskedX
+    return [m.T @ x @ m for x, m in zip(X, masks)]
 
 
 def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
@@ -833,9 +827,9 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
             with different n_i, such that n_i <= n
         Masks, defined as semi-orthogonal matrices. See [1]_.
     tol : float, default=10e-9
-        The tolerance to stop the gradient descent.
+        Tolerance to stop the gradient descent.
     maxiter : int, default=100
-        The maximum number of iteration.
+        Maximum number of iterations.
     init : None | ndarray, shape (n, n), default=None
         A SPD/HPD matrix used to initialize the gradient descent.
         If None, the Identity is used.
@@ -911,9 +905,9 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
     X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices, corrupted by symmetric NaN values [1]_.
     tol : float, default=10e-9
-        The tolerance to stop the gradient descent.
+        Tolerance to stop the gradient descent.
     maxiter : int, default=100
-        The maximum number of iteration.
+        Maximum number of iterations.
     init : None | ndarray, shape (n, n), default=None
         A SPD/HPD matrix used to initialize the gradient descent.
         If None, a regularized Euclidean NaN-mean is used.

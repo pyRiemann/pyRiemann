@@ -32,7 +32,7 @@ class Xdawn(TransformerMixin, BaseEstimator):
     estimator : string, default="scm"
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
-    baseline_cov : None | array, shape(n_channels, n_channels), default=None
+    baseline_cov : None | ndarray, shape(n_channels, n_channels), default=None
         Covariance matrix to which the average signals are compared. If None,
         the baseline covariance is computed across all trials and time samples.
 
@@ -686,9 +686,9 @@ class AJDC(TransformerMixin, BaseEstimator):
         )
         # estimation of cospectra on subjects and conditions
         cosp = []
-        for s in range(len(X)):
-            cosp_ = cospest.transform(X[s])
-            if s == 0:
+        for i, x in enumerate(X):
+            cosp_ = cospest.transform(x)
+            if i == 0:
                 n_conditions = cosp_.shape[0]
                 self.n_channels_ = cosp_.shape[1]
                 self.freqs_ = cospest.freqs_
