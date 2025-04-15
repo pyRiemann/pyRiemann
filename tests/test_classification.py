@@ -121,7 +121,11 @@ def clf_transform(classif, mats, labels):
     n_matrices, n_classes = len(labels), len(np.unique(labels))
     clf = classif()
     transf = clf.fit(mats, labels).transform(mats)
-    assert transf.shape == (n_matrices, n_classes)
+    if isinstance(clf, MeanField) and clf.method_label == "lda":
+        n_powers = len(clf.power_list)
+        assert transf.shape == (n_matrices, n_classes * n_powers)
+    else:
+        assert transf.shape == (n_matrices, n_classes)
 
 
 def clf_fittransform(classif, mats, labels):
@@ -432,9 +436,9 @@ def test_meanfield(get_mats, get_labels, power_list, method_label, metric):
     proba = mf.predict_proba(mats)
     assert proba.shape == (n_matrices, n_classes)
     transf = mf.transform(mats)
-    if method_label ==  "sum_means" or method_label == "inf_means":
+    if method_label == "sum_means" or method_label == "inf_means":
         assert transf.shape == (n_matrices, n_classes)
-    elif method_label ==  "lda":
+    elif method_label == "lda":
         assert transf.shape == (n_matrices, n_classes * n_powers)
 
 
