@@ -142,7 +142,7 @@ class TLCenter(TransformerMixin, BaseEstimator):
     -----
     .. versionadded:: 0.4
     .. versionchanged:: 0.8
-        Added support for tangent space centering.
+        Add support for tangent space centering.
 
     References
     ----------
@@ -341,7 +341,7 @@ class TLScale(TransformerMixin, BaseEstimator):
     -----
     .. versionadded:: 0.4
     .. versionchanged:: 0.8
-        Added support for tangent space scaling.
+        Add support for tangent space scaling.
 
     References
     ----------

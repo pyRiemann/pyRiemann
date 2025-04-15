@@ -152,7 +152,7 @@ def is_pos_def(X, tol=0.0, fast_mode=False):
     ----------
     X : ndarray, shape (..., n, n)
         The set of square matrices, at least 2D ndarray.
-    tol : float, default 0.0
+    tol : float, default=0.0
         Threshold below which eigen values are considered zero.
     fast_mode : bool, default=False
         Use Cholesky decomposition to avoid computing all eigenvalues.
@@ -195,7 +195,7 @@ def is_sym_pos_def(X, tol=0.0):
     ----------
     X : ndarray, shape (..., n, n)
         The set of square matrices, at least 2D ndarray.
-    tol : float, default 0.0
+    tol : float, default=0.0
         Threshold below which eigen values are considered zero.
 
     Returns
@@ -229,7 +229,7 @@ def is_herm_pos_def(X, tol=0.0):
     ----------
     X : ndarray, shape (..., n, n)
         The set of square matrices, at least 2D ndarray.
-    tol : float, default 0.0
+    tol : float, default=0.0
         Threshold below which eigen values are considered zero.
 
     Returns

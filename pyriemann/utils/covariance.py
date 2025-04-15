@@ -236,7 +236,7 @@ def covariance_sch(X):
     where :math:`T` is the diagonal target matrix:
 
     .. math::
-        T[i,j] = \{ C_\text{scm}[i,i] \ \text{if} i = j, 0 \text{otherwise} \}
+        T[i,j] = \{ C_\text{scm}[i,i] \ \text{if} \ i=j, 0 \ \text{otherwise} \}
 
     Note that the optimal :math:`\gamma` is estimated by the authors' method.
 
@@ -410,7 +410,7 @@ def covariances_EP(X, P, estimator="cov", **kwds):
         Multi-channel time-series.
     P : ndarray, shape (n_channels_proto, n_times)
         Multi-channel prototype.
-    estimator : string, default="cov"
+    estimator : string | callable, default="cov"
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
     **kwds : optional keyword parameters
@@ -442,7 +442,7 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_times)
         Multi-channel time-series.
-    estimator : string, default="cov"
+    estimator : string | callable, default="cov"
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
     alpha : float, default=0.2
@@ -502,7 +502,7 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
         Multi-channel time-series.
     blocks: list of int
         List of block sizes.
-    estimator : string, default="cov"
+    estimator : string | callable, default="cov"
         Covariance matrix estimator, see
         :func:`pyriemann.utils.covariance.covariances`.
     **kwds : optional keyword parameters
@@ -563,22 +563,22 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     X : ndarray, shape (n_channels, n_times)
         Multi-channel time-series, real-valued.
     window : int, default=128
-        The length of the FFT window used for spectral estimation.
+        Length of the FFT window used for spectral estimation.
     overlap : float, default=0.75
-        The percentage of overlap between window.
+        Percentage of overlap between windows.
     fmin : float | None, default=None
-        The minimal frequency to be returned.
+        Minimal frequency to be returned.
     fmax : float | None, default=None
-        The maximal frequency to be returned.
+        Maximal frequency to be returned.
     fs : float | None, default=None
-        The sampling frequency of the signal.
+        Sampling frequency of the time-series.
 
     Returns
     -------
     S : ndarray, shape (n_channels, n_channels, n_freqs)
         Cross-spectral matrices, for each frequency bin.
     freqs : ndarray, shape (n_freqs,)
-        The frequencies associated to cross-spectra.
+        Frequencies associated to cross-spectra.
 
     References
     ----------
@@ -651,22 +651,22 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     X : ndarray, shape (n_channels, n_times)
         Multi-channel time-series, real-valued.
     window : int, default=128
-        The length of the FFT window used for spectral estimation.
+        Length of the FFT window used for spectral estimation.
     overlap : float, default=0.75
-        The percentage of overlap between window.
+        Percentage of overlap between windows.
     fmin : float | None, default=None
-        The minimal frequency to be returned.
+        Minimal frequency to be returned.
     fmax : float | None, default=None
-        The maximal frequency to be returned.
+        Maximal frequency to be returned.
     fs : float | None, default=None
-        The sampling frequency of the signal.
+        Sampling frequency of the time-series.
 
     Returns
     -------
     S : ndarray, shape (n_channels, n_channels, n_freqs)
         Co-spectral matrices, for each frequency bin.
     freqs : ndarray, shape (n_freqs,)
-        The frequencies associated to cospectra.
+        Frequencies associated to cospectra.
     """
     S, freqs = cross_spectrum(
         X=X,
@@ -689,25 +689,25 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
     X : ndarray, shape (n_channels, n_times)
         Multi-channel time-series, real-valued.
     window : int, default=128
-        The length of the FFT window used for spectral estimation.
+        Length of the FFT window used for spectral estimation.
     overlap : float, default=0.75
-        The percentage of overlap between window.
+        Percentage of overlap between windows.
     fmin : float | None, default=None
-        The minimal frequency to be returned.
+        Minimal frequency to be returned.
     fmax : float | None, default=None
-        The maximal frequency to be returned.
+        Maximal frequency to be returned.
     fs : float | None, default=None
-        The sampling frequency of the signal.
+        Sampling frequency of the time-series.
     coh : {"ordinary", "instantaneous", "lagged", "imaginary"}, \
             default="ordinary"
-        The coherence type, see :class:`pyriemann.estimation.Coherences`.
+        Coherence type, see :class:`pyriemann.estimation.Coherences`.
 
     Returns
     -------
     C : ndarray, shape (n_channels, n_channels, n_freqs)
         Squared coherence matrices, for each frequency bin.
     freqs : ndarray, shape (n_freqs,)
-        The frequencies associated to coherence.
+        Frequencies associated to coherence.
     """
     S, freqs = cross_spectrum(
         X,
@@ -764,11 +764,11 @@ def normalize(X, norm):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray. Matrices must be
-        invertible for determinant-normalization.
+        Set of square matrices, at least 2D ndarray.
+        Matrices must be invertible for determinant-normalization.
 
     norm : {"corr", "trace", "determinant"}
-        The type of normalization:
+        Type of normalization:
 
         * "corr": normalized matrices are correlation matrices, with values in
           [-1, 1] and diagonal values equal to 1;
@@ -778,7 +778,7 @@ def normalize(X, norm):
     Returns
     -------
     Xn : ndarray, shape (..., n, n)
-        The set of normalized matrices, same dimensions as X.
+        Set of normalized matrices, same dimensions as X.
     """
     if not is_square(X):
         raise ValueError("Matrices must be square")
@@ -811,12 +811,12 @@ def get_nondiag_weight(X):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
+        Set of square matrices, at least 2D ndarray.
 
     Returns
     -------
     weights : ndarray, shape (...,)
-        The non-diagonality weights for matrices.
+        Non-diagonality weights for matrices.
 
     References
     ----------
