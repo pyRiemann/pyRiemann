@@ -1001,7 +1001,7 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : ndarray, shape (n_matrices,)
             Labels for each matrix.
         sample_weight : None | ndarray shape (n_matrices,), default=None
@@ -1058,7 +1058,7 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
@@ -1208,7 +1208,7 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------

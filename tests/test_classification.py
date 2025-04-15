@@ -415,7 +415,7 @@ def test_svc_kernel_error(get_mats, get_labels):
 
 
 @pytest.mark.parametrize("power_list", [[-1, 0, 1], [0, 0.1]])
-@pytest.mark.parametrize("method_label", ["sum_means", "inf_means"])
+@pytest.mark.parametrize("method_label", ["lda", "sum_means", "inf_means"])
 @pytest.mark.parametrize("metric", get_distances())
 def test_meanfield(get_mats, get_labels, power_list, method_label, metric):
     n_powers = len(power_list)
