@@ -219,30 +219,17 @@ def test_xdawn_covariances_filters(n_classes, nfilter, applyfilters, baseline,
     assert covmats.shape == (n_matrices, covsize, covsize)
 
 
-@pytest.mark.parametrize("estimator", estim)
-def test_block_covariances_est(estimator, rndstate):
-    """Test BlockCovariances estimators"""
-    n_matrices, n_channels, n_times = 2, 12, 100
-    x = rndstate.randn(n_matrices, n_channels, n_times)
-
-    covest = BlockCovariances(block_size=6, estimator=estimator)
-    covest.fit(x)
-    covmats = covest.fit_transform(x)
-    assert covest.get_params() == dict(block_size=6, estimator=estimator)
-    assert covmats.shape == (n_matrices, n_channels, n_channels)
-    assert is_spd(covmats)
-
-
 @pytest.mark.parametrize("block_size", [1, 6, [4, 8], np.array([5, 7])])
-def test_block_covariances_blocks(block_size, rndstate):
-    """Test BlockCovariances fit"""
+@pytest.mark.parametrize("estim", estim)
+def test_block_covariances(block_size, estim, rndstate):
+    """Test BlockCovariances"""
     n_matrices, n_channels, n_times = 2, 12, 100
     x = rndstate.randn(n_matrices, n_channels, n_times)
 
-    covest = BlockCovariances(block_size=block_size)
+    covest = BlockCovariances(block_size=block_size, estimator=estim)
     covest.fit(x)
     covmats = covest.fit_transform(x)
-    assert covest.get_params() == dict(block_size=block_size, estimator="scm")
+    assert covest.get_params() == dict(block_size=block_size, estimator=estim)
     assert covmats.shape == (n_matrices, n_channels, n_channels)
     assert is_spd(covmats)
 

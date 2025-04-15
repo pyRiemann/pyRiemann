@@ -254,10 +254,9 @@ class XdawnCovariances(TransformerMixin, BaseEstimator):
     """Estimate special form covariance matrices for ERP combined with Xdawn.
 
     Estimation of special form covariance matrix dedicated to ERP processing
-    combined with `Xdawn` spatial filtering.
+    combined with `Xdawn` spatial filtering [1]_.
     This is similar to :class:`pyriemann.estimation.ERPCovariances` but data
     are spatially filtered with :class:`pyriemann.spatialfilters.Xdawn`.
-    A complete description of the method is available in [1]_.
 
     The advantage of this estimation is to reduce dimensionality of the
     covariance matrices supervisely.
@@ -283,7 +282,7 @@ class XdawnCovariances(TransformerMixin, BaseEstimator):
         Covariance matrix estimator for `Xdawn` spatial filtering.
         Should be regularized using "lwf" or "oas", see
         :func:`pyriemann.utils.covariance.covariances`.
-    baseline_cov : array, shape (n_channels, n_channels) | None, default=None
+    baseline_cov : ndarray, shape (n_channels, n_channels) | None, default=None
         Baseline covariance for `Xdawn` spatial filtering,
         see :class:`pyriemann.spatialfilters.Xdawn`.
     **kwds : dict
@@ -578,16 +577,16 @@ class CrossSpectra(TransformerMixin, BaseEstimator):
         """
         X_new = []
 
-        for i in range(len(X)):
-            S, freqs = cross_spectrum(
-                X[i],
+        for x in X:
+            x_new, freqs = cross_spectrum(
+                x,
                 window=self.window,
                 overlap=self.overlap,
                 fmin=self.fmin,
                 fmax=self.fmax,
                 fs=self.fs,
             )
-            X_new.append(S)
+            X_new.append(x_new)
         self.freqs_ = freqs
 
         return np.array(X_new)
@@ -761,11 +760,11 @@ class Coherences(CoSpectra):
             Squared coherence matrices for each input and for each frequency
             bin.
         """
-        out = []
+        X_new = []
 
-        for i in range(len(X)):
-            S, freqs = coherence(
-                X[i],
+        for x in X:
+            x_new, freqs = coherence(
+                x,
                 window=self.window,
                 overlap=self.overlap,
                 fmin=self.fmin,
@@ -773,10 +772,10 @@ class Coherences(CoSpectra):
                 fs=self.fs,
                 coh=self.coh,
             )
-            out.append(S)
+            X_new.append(x_new)
         self.freqs_ = freqs
 
-        return np.array(out)
+        return np.array(X_new)
 
 
 class TimeDelayCovariances(TransformerMixin, BaseEstimator):
