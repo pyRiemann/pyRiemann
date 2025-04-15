@@ -236,7 +236,8 @@ def covariance_sch(X):
     where :math:`T` is the diagonal target matrix:
 
     .. math::
-        T[i,j] = \{ C_\text{scm}[i,i] \ \text{if} \ i=j, 0 \ \text{otherwise} \}
+        T[i,j] = \{ C_\text{scm}[i,i] \ \text{if} \ i=j,
+                    0 \ \text{otherwise} \}
 
     Note that the optimal :math:`\gamma` is estimated by the authors' method.
 
