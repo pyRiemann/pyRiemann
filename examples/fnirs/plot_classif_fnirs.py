@@ -71,8 +71,9 @@ class Stacker(TransformerMixin, BaseEstimator):
 
 class FlattenTransformer(TransformerMixin, BaseEstimator):
     """Flattens the last two dimensions of an array.
-        ColumnTransformer requires 2D output, so this transformer
-        is needed"""
+
+    ColumnTransformer requires 2D output, so this transformer is needed
+    """
     def fit(self, X, y=None):
         return self
 
@@ -81,8 +82,7 @@ class FlattenTransformer(TransformerMixin, BaseEstimator):
 
 
 class HybridBlocks(TransformerMixin, BaseEstimator):
-    """Estimation of block kernel or covariance matrices with
-    customizable metrics and shrinkage.
+    """Estimation of block kernel or covariance matrices.
 
     Perform block matrix estimation for each given time series,
     computing either kernel matrices or covariance matrices for
@@ -99,13 +99,13 @@ class HybridBlocks(TransformerMixin, BaseEstimator):
     block_size : int | list of int
         Sizes of individual blocks given as int for same-size blocks,
         or list for varying block sizes.
-    metrics : string | list of string, default='linear'
+    metrics : string | list of string, default="linear"
         The metric(s) to use when computing matrices between channels.
         For kernel matrices, supported metrics are those from
-        ``pairwise_kernels``: 'linear', 'poly', 'polynomial',
-        'rbf', 'laplacian', 'cosine', etc.
+        ``pairwise_kernels``: "linear", "poly", "polynomial",
+        "rbf", "laplacian", "cosine", etc.
         For covariance matrices, supported estimators are those from
-        pyRiemann: 'scm', 'lwf', 'oas', 'mcd', etc.
+        pyRiemann: "scm", "lwf", "oas", "mcd", etc.
         If a list is provided, it must match the number of blocks.
     shrinkage : float | list of float, default=0
         Shrinkage parameter(s) to regularize each block's matrix.
@@ -213,9 +213,7 @@ class HybridBlocks(TransformerMixin, BaseEstimator):
             block_name = self.block_names[i]
 
             # Build the pipeline for this block
-            block_pipeline = make_pipeline(
-                Stacker(),
-            )
+            block_pipeline = make_pipeline(Stacker())
 
             # Determine if the metric is a kernel or a covariance estimator
             if metric in ker_est_functions:
@@ -432,7 +430,7 @@ acc_blockcovariances = np.mean(cv_scores_blockcovariances)
 print(f"Mean accuracy for HybridBlocks: {acc_hybrid_blocks:.2f}")
 print(f"Mean accuracy for BlockCovariances: {acc_blockcovariances:.2f}")
 
-# plot a scatter plot of CV and median scores
+# plot a scatter plot of CV and mean scores
 plt.figure(figsize=(6, 6))
 plt.scatter(cv_scores_hybrid_blocks, cv_scores_blockcovariances)
 plt.plot([0.4, 1], [0.4, 1], "--", color="black")
