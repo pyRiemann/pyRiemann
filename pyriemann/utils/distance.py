@@ -5,6 +5,7 @@ from scipy.linalg import eigvalsh, solve
 from sklearn.metrics import euclidean_distances
 
 from .base import invsqrtm, logm, powm, sqrtm
+from .test import is_real_type
 from .utils import check_function
 
 
@@ -47,7 +48,7 @@ def distance_chol(A, B, squared=False):
         First SPD/HPD matrices, at least 2D ndarray.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices, same dimensions as A.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distance.
 
     Returns
@@ -94,7 +95,7 @@ def distance_euclid(A, B, squared=False):
         First matrices, at least 2D ndarray.
     B : ndarray, shape (..., n, m)
         Second matrices, same dimensions as A.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distance.
 
         .. versionadded:: 0.5
@@ -129,7 +130,7 @@ def distance_harmonic(A, B, squared=False):
         First invertible matrices, at least 2D ndarray.
     B : ndarray, shape (..., n, n)
         Second invertible matrices, same dimensions as A.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distance.
 
         .. versionadded:: 0.5
@@ -163,7 +164,7 @@ def distance_kullback(A, B, squared=False):
         First SPD/HPD matrices, at least 2D ndarray.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices, same dimensions as A.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distance.
 
         .. versionadded:: 0.5
@@ -211,7 +212,7 @@ def distance_kullback_sym(A, B, squared=False):
         First SPD/HPD matrices, at least 2D ndarray.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices, same dimensions as A.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distance.
 
         .. versionadded:: 0.5
@@ -257,7 +258,7 @@ def distance_logchol(A, B, squared=False):
         First SPD/HPD matrices, at least 2D ndarray.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices, same dimensions as A.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distance.
 
     Returns
@@ -316,7 +317,7 @@ def distance_logdet(A, B, squared=False):
         First SPD/HPD matrices, at least 2D ndarray.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices, same dimensions as A.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distance.
 
         .. versionadded:: 0.5
@@ -361,7 +362,7 @@ def distance_logeuclid(A, B, squared=False):
         First SPD/HPD matrices, at least 2D ndarray.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices, same dimensions as A.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distance.
 
         .. versionadded:: 0.5
@@ -405,7 +406,7 @@ def distance_poweuclid(A, B, p, squared=False):
     p : float
         Exponent. For p=0, it returns
         :func:`pyriemann.utils.distance.distance_logeuclid`.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distance.
 
     Returns
@@ -464,7 +465,7 @@ def distance_riemann(A, B, squared=False):
         First SPD/HPD matrices, at least 2D ndarray.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices, same dimensions as A.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distance.
 
         .. versionadded:: 0.5
@@ -507,7 +508,7 @@ def distance_wasserstein(A, B, squared=False):
         First SPSD/HPSD matrices, at least 2D ndarray.
     B : ndarray, shape (..., n, n)
         Second SPSD/HPSD matrices, same dimensions as A.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distance.
 
         .. versionadded:: 0.5
@@ -571,7 +572,7 @@ def distance(A, B, metric="riemann", squared=False):
         "kullback_sym", "logchol", "logdet", "logeuclid", "riemann",
         "wasserstein",
         or a callable function.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distance.
 
         .. versionadded:: 0.5
@@ -607,6 +608,21 @@ def distance(A, B, metric="riemann", squared=False):
 ###############################################################################
 
 
+def _euclidean_distances(X, Y=None, squared=False):
+    """Function to extend euclidean_distances of sklearn to complex data."""
+    if is_real_type(X):
+        return euclidean_distances(X, Y, squared=squared)
+
+    if Y is None:
+        Yreal, Yimag = None, None
+    else:
+        Yreal, Yimag = Y.real, Y.imag
+
+    dist2 = euclidean_distances(X.real, Yreal, squared=True) + \
+        euclidean_distances(X.imag, Yimag, squared=True)
+    return dist2 if squared else np.sqrt(dist2)
+
+
 def _pairwise_distance_euclid(X, Y=None, squared=False):
     """Pairwise Euclidean distance matrix.
 
@@ -619,7 +635,7 @@ def _pairwise_distance_euclid(X, Y=None, squared=False):
         First set of matrices.
     Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
         Second set of matrices. If None, Y is set to X.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distances.
 
     Returns
@@ -634,13 +650,10 @@ def _pairwise_distance_euclid(X, Y=None, squared=False):
     pairwise_distance
     distance_euclid
     """
-    if Y is None:
-        dist = euclidean_distances(X.reshape(len(X), -1), squared=squared)
-    else:
-        dist = euclidean_distances(X.reshape(len(X), -1),
-                                   Y.reshape(len(Y), -1),
-                                   squared=squared)
-    return dist
+    if Y is not None:
+        Y = Y.reshape(len(Y), -1)
+
+    return _euclidean_distances(X.reshape(len(X), -1), Y, squared=squared)
 
 
 def _pairwise_distance_harmonic(X, Y=None, squared=False):
@@ -655,7 +668,7 @@ def _pairwise_distance_harmonic(X, Y=None, squared=False):
         First set of matrices.
     Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
         Second set of matrices. If None, Y is set to X.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distances.
 
     Returns
@@ -670,13 +683,12 @@ def _pairwise_distance_harmonic(X, Y=None, squared=False):
     pairwise_distance
     distance_harmonic
     """
-    invX = np.linalg.inv(X)
     if Y is None:
         invY = None
     else:
         invY = np.linalg.inv(Y)
 
-    return _pairwise_distance_euclid(invX, invY, squared=squared)
+    return _pairwise_distance_euclid(np.linalg.inv(X), invY, squared=squared)
 
 
 def _pairwise_distance_logchol(X, Y=None, squared=False):
@@ -691,7 +703,7 @@ def _pairwise_distance_logchol(X, Y=None, squared=False):
         First set of matrices.
     Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
         Second set of matrices. If None, Y is set to X.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distances.
 
     Returns
@@ -711,22 +723,22 @@ def _pairwise_distance_logchol(X, Y=None, squared=False):
     diag0, diag1 = np.diag_indices(X_chol.shape[-1])
 
     if Y is None:
-        triagular_part = euclidean_distances(
+        triagular_part = _euclidean_distances(
             X_chol[..., tri0, tri1],
             squared=True
         )
-        diagonal_part = euclidean_distances(
+        diagonal_part = _euclidean_distances(
             np.log(X_chol[..., diag0, diag1]),
             squared=True,
         )
     else:
         Y_chol = np.linalg.cholesky(Y)
-        triagular_part = euclidean_distances(
+        triagular_part = _euclidean_distances(
             X_chol[..., tri0, tri1],
             Y_chol[..., tri0, tri1],
             squared=True,
         )
-        diagonal_part = euclidean_distances(
+        diagonal_part = _euclidean_distances(
             np.log(X_chol[..., diag0, diag1]),
             np.log(Y_chol[..., diag0, diag1]),
             squared=True,
@@ -748,7 +760,7 @@ def _pairwise_distance_logeuclid(X, Y=None, squared=False):
         First set of matrices.
     Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
         Second set of matrices. If None, Y is set to X.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distances.
 
     Returns
@@ -763,13 +775,12 @@ def _pairwise_distance_logeuclid(X, Y=None, squared=False):
     pairwise_distance
     distance_logeuclid
     """
-    logX = logm(X)
     if Y is None:
         logY = None
     else:
         logY = logm(Y)
 
-    return _pairwise_distance_euclid(logX, logY, squared=squared)
+    return _pairwise_distance_euclid(logm(X), logY, squared=squared)
 
 
 def _pairwise_distance_riemann(X, Y=None, squared=False):
@@ -784,7 +795,7 @@ def _pairwise_distance_riemann(X, Y=None, squared=False):
         First set of matrices.
     Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
         Second set of matrices. If None, Y is set to X.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distances.
 
     Returns
@@ -834,7 +845,7 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
     metric : string, default="riemann"
         Metric for pairwise distance. For the list of supported metrics,
         see :func:`pyriemann.utils.distance.distance`.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distances.
 
         .. versionadded:: 0.5
@@ -907,7 +918,7 @@ def distance_mahalanobis(X, cov, mean=None, squared=False):
     mean : None | ndarray, shape (n, 1), default=None
         Mean vector of the multivariate Gaussian distribution.
         If None, distribution is considered as centered.
-    squared : bool, default False
+    squared : bool, default=False
         Return squared distance.
 
         .. versionadded:: 0.5
@@ -929,5 +940,5 @@ def distance_mahalanobis(X, cov, mean=None, squared=False):
         X -= mean
 
     Xw = invsqrtm(cov) @ X
-    d2 = np.einsum('ij,ji->i', Xw.conj().T, Xw).real
+    d2 = np.einsum("ij,ji->i", Xw.conj().T, Xw).real
     return d2 if squared else np.sqrt(d2)
