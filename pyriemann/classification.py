@@ -7,12 +7,11 @@ from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
 from sklearn.svm import SVC as sklearnSVC
 from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
-from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.pipeline import make_pipeline
 
 from .utils import deprecated
 from .utils.kernel import kernel
-from .utils.mean import mean_covariance, mean_power
+from .utils.mean import mean_covariance
 from .utils.distance import distance
 from .utils.utils import check_metric
 from .tangentspace import FGDA, TangentSpace
@@ -829,55 +828,35 @@ class SVC(sklearnSVC):
 
 
 class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
-    """Classification by Riemannian Means Field Classifier
+    """Classification by Mean Field.
 
-    The Riemannian Means Field Classifier (MF) [1]_ is the second version,
-    which improves the performance of the Minimum Distance to Mean Field
-    (MDMF) [2]_ classifier. Classification is performed by defining a list
-    of power means for each class.
+    The Mean Field estimates several power means for each class.
+    Then, it can be used as a classifier, which computes the minimum distance
+    to the mean field [1]_;
+    or as a feature extractor, which must be pipelined with another classifier
+    [2]_.
 
     Parameters
     ----------
-    power_list : list of float, default=[-1, -0.75, -0.5, -0.25, -0.1, 0, 0.1,
-                                         0.25, 0.5, 0.75, 1]
+    power_list : list of float, default=[-1,0,+1]
         Exponents of power means.
-    method_label : {'lda', 'sum_means', 'inf_means'}, default='lda'
+    method_label : {"sum_means", "inf_means"}, default="sum_means"
         Method to combine labels:
-        * lda: an LDA classifier is trained on the distances to each mean for
-          all classes, which allows more complex patterns to be learned
-        * sum_means: it assigns the covariance to the class whom the sum of
+
+        * sum_means: it assigns the matrix to the class whom the sum of
           distances to means of the field is the lowest;
-        * inf_means: it assigns the covariance to the class of the closest mean
+        * inf_means: it assigns the matrix to the class of the nearest mean
           of the field.
     metric : string, default="riemann"
         Metric used for distance estimation during prediction.
         For the list of supported metrics,
         see :func:`pyriemann.utils.distance.distance`.
-    power_mean_zeta : float, default=1e-07
-        A stopping criterion for the mean calculation: bigger values improve
-        speed, while smaller provide better accuracy.
-    power_mean_maxiter : int, default=150
-        Sets the maximum mumber of iterations for the power mean calculation.
-    distance_squared : bool, default = True
-        The distances used for classification are squared.
-    reuse_previous_mean :bool, default = False
-        An optimization that allows the calculation of a power mean to be
-        initialized using a previously calculated mean from the power_list.
-    n_jobs : int, default=1
-        The number of jobs to use for the computation. This works by computing
-        each of the class mean fields and distances in parallel. Depending on
-        the data, the computation of the means and distances can be intensive
-        and in this case the parallel processing can help.
-        If -1 all CPUs are used. If 1 is given, no parallel computing code is
-        used at all, which is useful for debugging. For n_jobs below -1,
-        (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
-        are used.
 
     Attributes
     ----------
     classes_ : ndarray, shape (n_classes,)
         Labels for each class.
-    covmeans_ : dict of ``n_powers`` lists of ``n_classes`` ndarrays of shape \
+    covmeans_ : dict of ``n_powers`` dicts of ``n_classes`` ndarrays of shape \
             (n_channels, n_channels)
         Centroids for each power and each class.
 
@@ -887,116 +866,34 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
 
     Notes
     -----
-    .. versionupdated:: 0.9
     .. versionadded:: 0.3
 
     References
     ----------
-    .. [1] `The Riemannian Means Field Classifier for EEG-Based BCI Data'
-        <https://www.mdpi.com/1424-8220/25/7/2305>`
-        A Anndreev, G Cattan, M Congedo. MDPI Sensors journal, April 2025
-    .. [2] `The Riemannian Minimum Distance to Means Field Classifier
+    .. [1] `The Riemannian Minimum Distance to Means Field Classifier
         <https://hal.archives-ouvertes.fr/hal-02315131>`_
         M Congedo, PLC Rodrigues, C Jutten. BCI 2019 - 8th International
         Brain-Computer Interface Conference, Sep 2019, Graz, Austria.
+    .. [2] `The Riemannian Means Field Classifier for EEG-Based BCI Data
+        <https://www.mdpi.com/1424-8220/25/7/2305>`_
+        A Anndreev, G Cattan, M Congedo. MDPI Sensors journal, April 2025
     """
 
     def __init__(
         self,
-        power_list=[-1, -0.75, -0.5, -0.25, -0.1, 0, 0.1, 0.25, 0.5, 0.75, 1],
-        method_label='lda',
+        power_list=[-1, 0, 1],
+        method_label="sum_means",
         metric="riemann",
-        power_mean_zeta=1e-07,
-        power_mean_maxiter=150,
-        distance_squared=True,
-        reuse_previous_mean=False,
         n_jobs=1,
     ):
         """Init."""
         self.power_list = power_list
         self.method_label = method_label
         self.metric = metric
-        self.power_mean_zeta = power_mean_zeta
-        self.power_mean_maxiter = power_mean_maxiter
-        self.distance_squared = distance_squared
-        self.reuse_previous_mean = reuse_previous_mean
         self.n_jobs = n_jobs
 
-        if self.reuse_previous_mean and self.n_jobs != 1:
-            raise Exception(("Currently reuse_previous_mean is not supported "
-                            "when combined with parallel mean calculation."))
-
-        if method_label not in {'lda', 'sum_means', 'inf_means'}:
-            raise TypeError("Parameter method_label is incorrect.")
-
-        if self.method_label == "lda":
-            self.lda = LDA()
-
-    def _calculate_mean(self, X, y, p, sample_weight):
-        '''
-        Calculates power means for all classes for specific p.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y : ndarray, shape (n_matrices,)
-            Labels for each matrix.
-        p : float
-            Exponent of a power mean.
-        sample_weight : None | ndarray shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
-
-        Returns
-        -------
-        means_p : dict
-            Contains the power means for all classes for this p.
-
-        '''
-        means_p = {}
-
-        for ll in self.classes_:
-
-            init = None
-
-            if self.reuse_previous_mean and self.n_jobs == 1:
-                pos = self.power_list.index(p)
-                if pos > 0:
-                    prev_p = self.power_list[pos-1]
-                    if prev_p in self.covmeans_:
-                        init = self.covmeans_[prev_p][ll]
-                    else:
-                        raise Exception("No previous mean.")
-
-            means_p[ll] = mean_power(
-                X[y == ll],
-                p,
-                sample_weight=sample_weight[y == ll],
-                zeta=self.power_mean_zeta,
-                init=init,
-                maxiter=self.power_mean_maxiter
-            )
-
-        return means_p
-
-    def _calculate_all_means(self, X, y, sample_weight):
-
-        if self.n_jobs != 1:
-            results = Parallel(n_jobs=self.n_jobs)(
-                delayed(self._calculate_mean)(X, y, p, sample_weight)
-                for p in self.power_list
-            )
-
-            for i, p in enumerate(self.power_list):
-                self.covmeans_[p] = results[i]
-        else:
-            # this non-parallel version for parameter reuse_previous_mean
-            for p in self.power_list:
-                result_per_p = self._calculate_mean(X, y, p, sample_weight)
-                self.covmeans_[p] = result_per_p
-
     def fit(self, X, y, sample_weight=None):
-        """Fit (estimates) the centroids. Calculates the power means.
+        """Fit (estimates) the centroids.
 
         Parameters
         ----------
@@ -1012,42 +909,42 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         self : MeanField instance
             The MeanField instance.
         """
-
         self.classes_ = np.unique(y)
 
         if sample_weight is None:
             sample_weight = np.ones(X.shape[0])
 
-        # keys are p, each value is another dictionary over the classes and
-        # values of this dictionary are the means for this p and a class
         self.covmeans_ = {}
-
-        self._calculate_all_means(X, y, sample_weight)
-
-        if len(self.power_list) != len(self.covmeans_.keys()):
-            raise Exception("Problem with number of calculated means!",
-                            len(self.power_list), len(self.covmeans_.keys()))
-
-        if self.method_label == "lda":
-            dists = self._predict_distances(X)
-            self.lda.fit(dists, y)
+        for p in self.power_list:
+            means_p = {}
+            for c in self.classes_:
+                means_p[c] = mean_covariance(
+                    X[y == c],
+                    p,
+                    metric="power",
+                    sample_weight=sample_weight[y == c],
+                )
+            self.covmeans_[p] = means_p
 
         return self
 
     def _get_label(self, x):
         m = np.zeros((len(self.power_list), len(self.classes_)))
         for ip, p in enumerate(self.power_list):
-            for ill, ll in enumerate(self.classes_):
-                m[ip, ill] = self._calculate_distance(x,
-                                                      self.covmeans_[p][ll],
-                                                      p)
+            for ic, c in enumerate(self.classes_):
+                m[ip, ic] = distance(
+                    x,
+                    self.covmeans_[p][c],
+                    metric=self.metric,
+                    squared=True,
+                )
 
-        if self.method_label == 'sum_means':
+        if self.method_label == "sum_means":
             ipmin = np.argmin(np.sum(m, axis=1))
-        elif self.method_label == 'inf_means':
+        elif self.method_label == "inf_means":
             ipmin = np.where(m == np.min(m))[0][0]
         else:
-            raise TypeError('method_label must be sum_means or inf_means')
+            raise TypeError("method_label must be sum_means or inf_means")
 
         y = self.classes_[np.argmin(m[ipmin])]
         return y
@@ -1063,103 +960,33 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices,)
-            Predictions for each matrix according to the closest means field.
+            Predictions for each matrix according to the nearest means field.
         """
-        if self.method_label == "lda":
-            dists = self._predict_distances(X)
-            pred = self.lda.predict(dists)
-            return np.array(pred)
-
-        else:
-            labs_unique = sorted(self.covmeans_[self.power_list[0]].keys())
-            pred = Parallel(n_jobs=self.n_jobs)(
-                delayed(self._get_label)(x, labs_unique)
-                for x in X
-            )
-            return np.array(pred)
-
-    def _calculate_distance(self, A, B, p):
-        if len(A.shape) == 2:
-            dist = distance(
-                    A,
-                    B,
-                    metric=self.metric,
-                    squared=self.distance_squared,
-                )
-        else:
-            raise Exception("Error size of input, not matrices?")
-
-        return dist
-
-    def _calculate_distances_for_all_means(self, x):
-        '''
-        Calculates the distances to all power means and all classes.
-
-        Parameters
-        ----------
-        x : ndarray, shape (n_channels, n_channels)
-            An SPD matrix.
-
-        Raises
-        ------
-        Exception
-            If (number of classes) x (number of power means) != (total number
-            of calculated distances).
-
-        Returns
-        -------
-        combined : list
-            A list of all distances to all power means for all classes.
-
-        '''
-        m = {}  # keys are p exponents and values are distances for each class
-
-        # store in m all distances (1 per class) for each p
-        for p in self.power_list:
-            m[p] = []
-
-            for ll in self.classes_:
-                dist_p = self._calculate_distance(x, self.covmeans_[p][ll], p)
-                m[p].append(dist_p)
-
-        combined = []  # combined for all classes
-        for v in m.values():
-            combined.extend(v)
-
-        if len(combined) != (len(self.power_list) * len(self.classes_)):
-            raise Exception("Not enough calculated distances!", len(combined),
-                            (len(self.power_list) * 2))
-
-        return combined
+        pred = Parallel(n_jobs=self.n_jobs)(
+            delayed(self._get_label)(x) for x in X
+        )
+        return np.array(pred)
 
     def _predict_distances(self, X):
         """Helper to predict the distance. Equivalent to transform."""
-        if self.method_label in ("sum_means", "inf_means"):
-            dist = []
-            for x in X:
-                m = {}
-                for p in self.power_list:
-                    m[p] = []
-                    for c in self.classes_:
-                        m[p].append(
-                            distance(
-                                x,
-                                self.covmeans_[p][c],
-                                metric=self.metric,
-                            )
-                        )
-                pmin = min(m.items(), key=lambda x: np.sum(x[1]))[0]
-                dist.append(np.array(m[pmin]))
-            return np.stack(dist)
-        else:
-            # lda
-            distances = Parallel(n_jobs=self.n_jobs)(
-                delayed(self._calculate_distances_for_all_means)(x)
-                for x in X
-            )
 
-            distances = np.array(distances)
-            return distances
+        dist = []
+        for x in X:
+            m = {}
+            for p in self.power_list:
+                m[p] = []
+                for c in self.classes_:
+                    m[p].append(
+                        distance(
+                            x,
+                            self.covmeans_[p][c],
+                            metric=self.metric,
+                        )
+                    )
+            pmin = min(m.items(), key=lambda x: np.sum(x[1]))[0]
+            dist.append(np.array(m[pmin]))
+
+        return np.stack(dist)
 
     def transform(self, X):
         """Get the distance to each means field.
@@ -1215,11 +1042,7 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         prob : ndarray, shape (n_matrices, n_classes)
             Probabilities for each class.
         """
-        if self.method_label == "lda":
-            dists = self._predict_distances(X)
-            return self.lda.predict_proba(dists)
-        else:
-            return softmax(-self._predict_distances(X) ** 2)
+        return softmax(-self._predict_distances(X) ** 2)
 
 
 def class_distinctiveness(X, y, exponent=1, metric="riemann",

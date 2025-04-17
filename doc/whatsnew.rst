@@ -20,8 +20,6 @@ v0.9.dev
 
 - Enhance :func:`pyriemann.utils.distance.pairwise_distance` to support HPD matrices for "euclid", "harmonic", "logchol" and "logeuclid" metrics. :pr:`350` by :user:`qbarthelemy`
 
-- Improve threading in :class:`pyriemann.classification.MeanField`, add new label method "lda" and change default values of parameters `label_method` and `power_list`. :pr:`356` by :user:`toncho11`
-
 v0.8 (February 2025)
 --------------------
 
