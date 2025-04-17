@@ -828,15 +828,13 @@ class SVC(sklearnSVC):
 
 
 class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
-    """Classification by Minimum Distance to Mean Field.
+    """Classification by Mean Field.
 
-    Classification by Minimum Distance to Mean Field, defining several
-    power means for each class.
-
-    This implementation covers the first version of the algorithm
-    introduced in the conference paper [1]_.
-
-    For the article version [2]_, please see [3]_.
+    The Mean Field estimates several power means for each class.
+    Then, it can be used as a classifier, which computes the minimum distance
+    to the mean field [1]_;
+    or as a feature extractor, which must be pipelined with another classifier
+    [2]_.
 
     Parameters
     ----------
@@ -876,11 +874,9 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         <https://hal.archives-ouvertes.fr/hal-02315131>`_
         M Congedo, PLC Rodrigues, C Jutten. BCI 2019 - 8th International
         Brain-Computer Interface Conference, Sep 2019, Graz, Austria.
-    .. [2] `The Riemannian Means Field Classifier for EEG-Based BCI Data'
-        <https://www.mdpi.com/1424-8220/25/7/2305>`
+    .. [2] `The Riemannian Means Field Classifier for EEG-Based BCI Data
+        <https://www.mdpi.com/1424-8220/25/7/2305>`_
         A Anndreev, G Cattan, M Congedo. MDPI Sensors journal, April 2025
-    .. [3] \
-        https://github.com/toncho11/The_Riemannian_Means_Field_classifier_for_EEG_Based_BCI-Data
     """
 
     def __init__(
