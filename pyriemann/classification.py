@@ -75,7 +75,7 @@ class MDM(SpdClassifMixin, TransformerMixin, BaseEstimator):
         to boost the computional speed, and "riemann" for the "distance" in
         order to keep the good sensitivity for the classification.
     n_jobs : int, default=1
-        The number of jobs to use for the computation. This works by computing
+        Number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
         used at all, which is useful for debugging. For n_jobs below -1,
@@ -137,22 +137,13 @@ class MDM(SpdClassifMixin, TransformerMixin, BaseEstimator):
         if sample_weight is None:
             sample_weight = np.ones(X.shape[0])
 
-        if self.n_jobs == 1:
-            self.covmeans_ = [
-                mean_covariance(
-                    X[y == c],
-                    metric=self.metric_mean,
-                    sample_weight=sample_weight[y == c]
-                ) for c in self.classes_
-            ]
-        else:
-            self.covmeans_ = Parallel(n_jobs=self.n_jobs)(
-                delayed(mean_covariance)(
-                    X[y == c],
-                    metric=self.metric_mean,
-                    sample_weight=sample_weight[y == c]
-                ) for c in self.classes_
-            )
+        self.covmeans_ = Parallel(n_jobs=self.n_jobs)(
+            delayed(mean_covariance)(
+                X[y == c],
+                metric=self.metric_mean,
+                sample_weight=sample_weight[y == c]
+            ) for c in self.classes_
+        )
 
         self.covmeans_ = np.stack(self.covmeans_, axis=0)
 
@@ -161,17 +152,10 @@ class MDM(SpdClassifMixin, TransformerMixin, BaseEstimator):
     def _predict_distances(self, X):
         """Helper to predict the distance. Equivalent to transform."""
 
-        if self.n_jobs == 1:
-            dist = [
-                distance(X, covmean, self.metric_dist)
-                for covmean in self.covmeans_
-            ]
-        else:
-            dist = Parallel(n_jobs=self.n_jobs)(
-                delayed(distance)(
-                    X, covmean, self.metric_dist
-                ) for covmean in self.covmeans_
-            )
+        dist = Parallel(n_jobs=self.n_jobs)(
+            delayed(distance)(X, covmean, self.metric_dist)
+            for covmean in self.covmeans_
+        )
 
         dist = np.concatenate(dist, axis=1)
         return dist
@@ -274,7 +258,7 @@ class FgMDM(SpdClassifMixin, TransformerMixin, BaseEstimator):
         online implementation. Performance are better when the number of
         matrices for prediction is higher.
     n_jobs : int, default=1
-        The number of jobs to use for the computation. This works by computing
+        Number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
         used at all, which is useful for debugging. For n_jobs below -1,
@@ -547,7 +531,7 @@ class KNearestNeighbor(MDM):
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
     n_jobs : int, default=1
-        The number of jobs to use for the computation. This works by computing
+        Number of jobs to use for the computation. This works by computing
         each of the distance to the training set in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
         used at all, which is useful for debugging. For n_jobs below -1,

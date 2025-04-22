@@ -108,7 +108,7 @@ class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
         centroid seeds. The final results will be the best output of
         n_init consecutive runs in terms of inertia.
     n_jobs : int, default=1
-        The number of jobs to use for the computation. This works by computing
+        Number of jobs to use for the computation. This works by computing
         each of the n_init runs in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
         used at all, which is useful for debugging. For n_jobs below -1,
@@ -187,36 +187,20 @@ class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
                 size=self.n_init,
             )
 
-            if self.n_jobs == 1:
-                res = []
-                for i in range(self.n_init):
-                    res.append(_fit_single(
-                        X,
-                        y,
-                        n_clusters=self.n_clusters,
-                        init=self.init,
-                        random_state=seeds[i],
-                        metric=self.metric,
-                        max_iter=self.max_iter,
-                        tol=self.tol,
-                    ))
-                labels, inertia, mdm = zip(*res)
-
-            else:
-                res = Parallel(n_jobs=self.n_jobs, verbose=0)(
-                    delayed(_fit_single)(
-                        X,
-                        y,
-                        n_clusters=self.n_clusters,
-                        init=self.init,
-                        random_state=seed,
-                        metric=self.metric,
-                        max_iter=self.max_iter,
-                        tol=self.tol,
-                        n_jobs=1,
-                    ) for seed in seeds
-                )
-                labels, inertia, mdm = zip(*res)
+            res = Parallel(n_jobs=self.n_jobs)(
+                delayed(_fit_single)(
+                    X,
+                    y,
+                    n_clusters=self.n_clusters,
+                    init=self.init,
+                    random_state=seed,
+                    metric=self.metric,
+                    max_iter=self.max_iter,
+                    tol=self.tol,
+                    n_jobs=1,
+                ) for seed in seeds
+            )
+            labels, inertia, mdm = zip(*res)
 
             best = np.argmin(inertia)
             mdm = mdm[best]
