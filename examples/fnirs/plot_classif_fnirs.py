@@ -120,7 +120,7 @@ class HybridBlocks(TransformerMixin, BaseEstimator):
         If a single float is provided, it is applied to all blocks.
         If a list is provided, it must match the number of blocks.
     n_jobs : int, default=None
-        The number of jobs to use for the computation.
+        Number of jobs to use for the computation.
     **kwargs : dict
         Any further parameters are passed directly to the kernel function(s)
         or covariance estimator(s).

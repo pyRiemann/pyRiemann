@@ -921,7 +921,7 @@ class Kernels(TransformerMixin, BaseEstimator):
     Parameters
     ----------
     metric : string, default="linear"
-        The metric to use when computing kernel function between channels [2]_:
+        Metric to use when computing kernel function between channels [2]_:
         "linear", "poly", "polynomial", "rbf", "laplacian", "cosine".
     n_jobs : int, default=None
         The number of jobs to use for the computation [2]_. This works by
