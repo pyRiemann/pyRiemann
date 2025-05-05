@@ -265,7 +265,7 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
     random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
-        The number of jobs to use for the computation. This works by computing
+        Number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
 
     Returns
@@ -320,7 +320,7 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
     random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
-        The number of jobs to use for the computation. This works by computing
+        Number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
     sampling_method : {"auto", "slice", "rejection"}, default="auto"
         Method used to sample parameter r: "auto", "slice" or "rejection".
@@ -418,7 +418,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
     random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
-        The number of jobs to use for the computation. This works by computing
+        Number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
     sampling_method : {"auto", "slice", "rejection"}, default="auto"
         Method used to sample parameter r: "auto", "slice" or "rejection".

@@ -20,6 +20,8 @@ v0.9.dev
 
 - Enhance :func:`pyriemann.utils.distance.pairwise_distance` to support HPD matrices for "euclid", "harmonic", "logchol" and "logeuclid" metrics. :pr:`350` by :user:`qbarthelemy`
 
+- Avoid duplicating code when using joblib. :pr:`359` by :user:`qbarthelemy`
+
 - Fix sklearn warning. :pr:`358` by :user:`qbarthelemy`
 
 v0.8 (February 2025)
