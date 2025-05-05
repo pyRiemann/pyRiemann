@@ -22,6 +22,8 @@ v0.9.dev
 
 - Avoid duplicating code when using joblib. :pr:`359` by :user:`qbarthelemy`
 
+- Fix sklearn warning. :pr:`358` by :user:`qbarthelemy`
+
 v0.8 (February 2025)
 --------------------
 
