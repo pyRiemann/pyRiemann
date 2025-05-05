@@ -924,7 +924,7 @@ class Kernels(TransformerMixin, BaseEstimator):
         The metric to use when computing kernel function between channels [2]_:
         "linear", "poly", "polynomial", "rbf", "laplacian", "cosine".
     n_jobs : int, default=None
-        The number of jobs to use for the computation [2]_. This works by
+        Number of jobs to use for the computation [2]_. This works by
         breaking down the pairwise matrix into n_jobs even slices and computing
         them in parallel.
     **kwds : dict

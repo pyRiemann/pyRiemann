@@ -573,7 +573,7 @@ class TLRotate(TransformerMixin, BaseEstimator):
     metric : {"euclid", "riemann"}, default="euclid"
         For inputs in manifold, distance to minimize between class means.
     n_jobs : int, default=1
-        For inputs in manifold, the number of jobs to use for the computation.
+        For inputs in manifold, number of jobs to use for the computation.
         This works by computing the rotation matrix for each source domain in
         parallel. If -1 all CPUs are used.
     expl_var : float, default=0.999
