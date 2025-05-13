@@ -584,6 +584,8 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     .. math::
          \arg \min_{\mathbf{M}} \sum_i w_i \ d_R (\mathbf{M}, \mathbf{X}_i)^2
 
+    For the convergence, the implemented stopping criterion comes from [3]_.
+
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n, n)
@@ -618,6 +620,10 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         symmetric positive-definite matrices
         <https://epubs.siam.org/doi/10.1137/S0895479803436937>`_
         M. Moakher. SIAM J Matrix Anal Appl, 2005, 26 (3), pp. 735-747
+    .. [3] `Approximate Joint Diagonalization and Geometric Mean of Symmetric
+        Positive Definite Matrices
+        <https://arxiv.org/abs/1505.07343>`_
+        M. Congedo, B. Afsari, A. Barachant, M. Moakher. PLOS ONE, 2015
     """
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
