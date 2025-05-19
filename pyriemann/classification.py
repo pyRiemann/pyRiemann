@@ -652,10 +652,10 @@ class SVC(sklearnSVC):
         calculate Cref.
     kernel_fct : None | "precomputed" | callable, default=None
         If None or "precomputed", the kernel matrix for datasets X and Y is
-        estimated according to `pyriemann.utils.kernel(X, Y, Cref, metric)`.
+        estimated according to ``pyriemann.utils.kernel(X, Y, Cref, metric)``.
         If callable, the callable is passed as the kernel parameter to
-        `sklearn.svm.SVC()` [2]_. The callable has to be of the form
-        `kernel(X, Y, Cref, metric)`.
+        ``sklearn.svm.SVC()`` [2]_. The callable has to be of the form
+        ``kernel(X, Y, Cref, metric)``.
     C : float, default=1.0
         Regularization parameter. The strength of the regularization is
         inversely proportional to C. Must be strictly positive. The penalty
@@ -664,9 +664,9 @@ class SVC(sklearnSVC):
         Whether to use the shrinking heuristic.
     probability : bool, default=False
         Whether to enable probability estimates. This must be enabled prior
-        to calling `fit`, will slow down that method as it internally uses
-        5-fold cross-validation, and `predict_proba` may be inconsistent with
-        `predict`.
+        to calling ``fit``, will slow down that method as it internally uses
+        5-fold cross-validation, and ``predict_proba`` may be inconsistent with
+        ``predict``.
     tol : float, default=1e-3
         Tolerance for stopping criterion.
     cache_size : float, default=200
@@ -676,7 +676,7 @@ class SVC(sklearnSVC):
         given, all classes are supposed to have weight one.
         The "balanced" mode uses the values of y to automatically adjust
         weights inversely proportional to class frequencies in the input data
-        as ``n_matrices / (n_classes * np.bincount(y))``.
+        as n_matrices / (n_classes * np.bincount(y)).
     verbose : bool, default=False
         Enable verbose output. Note that this setting takes advantage of a
         per-process runtime setting in libsvm that, if enabled, may not work
@@ -692,14 +692,14 @@ class SVC(sklearnSVC):
         to train models; an ovr matrix is only constructed from the ovo matrix.
         The parameter is ignored for binary classification.
     break_ties : bool, default=False
-        If true, ``decision_function_shape="ovr"``, and number of classes > 2,
-        `predict` will break ties according to the confidence values of
-        `decision_function`; otherwise the first class among the tied
+        If True, ``decision_function_shape`` ="ovr", and n_classes > 2,
+        ``predict`` will break ties according to the confidence values of
+        ``decision_function``; otherwise the first class among the tied
         classes is returned. Please note that breaking ties comes at a
         relatively high computational cost compared to a simple predict.
     random_state : None | int | RandomState instance, default=None
         Controls the pseudo random number generation for shuffling the data for
-        probability estimates. Ignored when `probability` is False.
+        probability estimates. Ignored when ``probability`` is False.
         Pass an int for reproducible output across multiple function calls.
 
     Notes
@@ -840,8 +840,8 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
     ----------
     classes_ : ndarray, shape (n_classes,)
         Labels for each class.
-    covmeans_ : dict of ``n_powers`` dicts of ``n_classes`` ndarrays of shape \
-            (n_channels, n_channels)
+    covmeans_ : dict of len(``power_list``) dicts of n_classes ndarrays of \
+            shape (n_channels, n_channels)
         Centroids for each power and each class.
 
     See Also
@@ -860,7 +860,7 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         Brain-Computer Interface Conference, Sep 2019, Graz, Austria.
     .. [2] `The Riemannian Means Field Classifier for EEG-Based BCI Data
         <https://www.mdpi.com/1424-8220/25/7/2305>`_
-        A Anndreev, G Cattan, M Congedo. MDPI Sensors journal, April 2025
+        A Andreev, G Cattan, M Congedo. MDPI Sensors journal, April 2025
     """
 
     def __init__(

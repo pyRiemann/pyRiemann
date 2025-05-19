@@ -233,7 +233,7 @@ def _nearest_sym_pos_def(S, reg=1e-6):
 def nearest_sym_pos_def(X, reg=1e-6):
     """Find the nearest SPD matrices.
 
-    A NumPy port of John D'Errico's `nearestSPD` MATLAB code [1]_,
+    A NumPy port of John D'Errico's ``nearestSPD`` MATLAB code [1]_,
     which credits [2]_.
 
     Parameters

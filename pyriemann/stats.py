@@ -144,7 +144,7 @@ class PermutationModel(BasePermutation):
     """Permutation test using any scikit-learn model for scoring.
 
     Perform a permutation test using the cross-validation score of any
-    scikit-learn compatible model. Score is obtained with `cross_val_score`
+    scikit-learn compatible model. Score is obtained with ``cross_val_score``
     from scikit-learn. The score should be a "higer is better" metric.
 
     Parameters
@@ -159,17 +159,17 @@ class PermutationModel(BasePermutation):
         Possible inputs for cv are:
 
         - None, to use the default 3-fold cross validation;
-        - integer, to specify the number of folds in a `(Stratified)KFold`;
+        - integer, to specify the number of folds in a ``(Stratified)KFold``;
         - an object to be used as a cross-validation generator;
         - an iterable yielding train, test splits.
 
         For integer/None inputs, if the estimator is a classifier and `y` is
-        either binary or multiclass, `StratifiedKFold` is used. In all
-        other cases, `KFold` is used.
+        either binary or multiclass, ``StratifiedKFold`` is used. In all
+        other cases, ``KFold`` is used.
     scoring : string or callable or None, default=None
         A string (see model evaluation documentation) or
         a scorer callable object / function with signature
-        `scorer(estimator, X, y)`.
+        ``scorer(estimator, X, y)``.
     n_jobs : integer, default=1
         The number of CPUs to use to do the computation. -1 means "all CPUs".
     random_state : int, default=42

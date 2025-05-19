@@ -126,9 +126,9 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     n_iter_max : int, default=50
         The maximum number of iterations.
     assume_centered : bool, default=False
-        If `True`, data will not be centered before computation.
+        If True, data will not be centered before computation.
         Useful when working with data whose mean is almost, but not exactly
-        zero. If `False`, data will be centered before computation.
+        zero. If False, data will be centered before computation.
     q : float, default=0.9
         Using Huber's M-estimator, q is the percentage in (0, 1] of inputs
         deemed uncorrupted, while (1-q) is the percentage of inputs treated as
@@ -143,7 +143,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     norm : {"trace", "determinant"}, default="trace"
         Using Tyler's M-estimator, the type of normalization:
 
-        * "trace": trace of covariance matrix is ``n_channels``;
+        * "trace": trace of covariance matrix is n_channels;
         * "determinant": determinant of covariance matrix is 1.
 
     Returns
@@ -286,7 +286,7 @@ def covariance_sch(X):
 def covariance_scm(X, *, assume_centered=False):
     """Sample covariance estimator.
 
-    Sample covariance estimator, re-implementing `empirical_covariance` of
+    Sample covariance estimator, re-implementing ``empirical_covariance`` of
     scikit-learn [1]_, but supporting real and complex-valued data.
 
     Parameters
@@ -294,10 +294,10 @@ def covariance_scm(X, *, assume_centered=False):
     X : ndarray, shape (n_channels, n_times)
         Multi-channel time-series, real or complex-valued.
     assume_centered : bool, default=False
-        If `True`, data will not be centered before computation.
+        If True, data will not be centered before computation.
         Useful when working with data whose mean is almost, but not exactly
         zero.
-        If `False`, data will be centered before computation.
+        If False, data will be centered before computation.
 
     Returns
     -------

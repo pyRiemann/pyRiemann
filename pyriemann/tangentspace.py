@@ -25,8 +25,8 @@ class TangentSpace(TransformerMixin, BaseEstimator):
 
     Tangent space projection is a local approximation of the manifold. It takes
     one parameter, the reference matrix, that is usually estimated using the
-    geometric mean of the SPD matrices set you project. If the function
-    `fit` is not called, the identity matrix will be used as reference matrix.
+    geometric mean of the SPD matrices set you project. If the function ``fit``
+    is not called, the identity matrix will be used as reference matrix.
     This can lead to serious degradation of performances.
     The approximation will be bigger if the matrices in the set are scattered
     in the manifold, and lower if they are grouped in a small region of the
