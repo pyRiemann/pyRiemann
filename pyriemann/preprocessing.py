@@ -49,9 +49,9 @@ class Whitening(TransformerMixin, BaseEstimator):
     ----------
     n_components_ : int
         If fit, the number of components after dimension reduction.
-    filters_ : ndarray, shape ``(n_channels, n_components_)``
+    filters_ : ndarray, shape (n_channels, n_components_)
         If fit, the spatial filters to whiten SPD matrices.
-    inv_filters_ : ndarray, shape ``(n_components_, n_channels)``
+    inv_filters_ : ndarray, shape (n_components_, n_channels)
         If fit, the spatial filters to unwhiten SPD matrices.
 
     Notes

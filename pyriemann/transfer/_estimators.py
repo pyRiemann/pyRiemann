@@ -583,7 +583,7 @@ class TLRotate(TransformerMixin, BaseEstimator):
         Else, number of components.
     n_components : int | "max", default=1
         For inputs in tangent space,
-        parameter `n_components` used in `sklearn.decomposition.PCA`.
+        parameter ``n_components`` used in ``sklearn.decomposition.PCA``.
         If int, number of components to keep in PCA.
         If "max", all components are kept.
     n_clusters : int, default=3

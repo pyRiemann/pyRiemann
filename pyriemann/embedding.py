@@ -143,12 +143,12 @@ class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
     ----------
     n_components : int | None, default=2
         Dimensionality of projected space.
-        If None, ``n_components`` is set to ``n_matrices - 1``.
+        If None, ``n_components`` is set to n_matrices - 1.
     n_neighbors : int | None, default=5
         Number of neighbors for reconstruction of each matrix.
         If None, all available matrices are used.
-        If ``n_neighbors > n_matrices``, ``n_neighbors`` is set to
-        ``n_matrices - 1``.
+        If ``n_neighbors`` > n_matrices, ``n_neighbors`` is set to
+        n_matrices - 1.
     metric : string, default="riemann"
         Metric used for k-NN and kernel estimation. For the list of supported
         metrics, see :func:`pyriemann.utils.kernel.kernel`.
@@ -164,7 +164,7 @@ class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
     embedding_ : ndarray, shape (n_matrices, n_components)
         Embedding vectors of the training set.
     error_ : float
-        Reconstruction error associated with `embedding_`.
+        Reconstruction error associated with ``embedding_``.
     data_ : ndarray, shape (n_matrices, n_channels, n_channels)
         Training set.
 
@@ -421,7 +421,7 @@ def barycenter_weights(X, Y, indices, metric="riemann", kernel=None, reg=1e-3):
         takes the arguments (X, Cref, metric).
     reg : float, default=1e-3
         Amount of regularization to add for the problem to be
-        well-posed in the case of ``n_neighbors > n_channels``.
+        well-posed in the case of n_neighbors > n_channels.
 
     Returns
     -------

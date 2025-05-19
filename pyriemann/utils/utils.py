@@ -151,13 +151,13 @@ def check_function(fun, functions):
     ----------
     fun : string | callable
         Function to check.
-        If string, it must be one of the keys of `functions`.
+        If string, it must be one of the keys of ``functions``.
         If callable, it can be a function defined in API or by the user.
         In the latter case, the signature of the function as to match the ones
-        defined in `functions`. This is the user responsibility to ensure this,
-        and will not be checked.
+        defined in ``functions``. This is the user responsibility to ensure
+        this, and will not be checked.
     functions : dict
-        Functions available in API, used only when `fun` is a string.
+        Functions available in API, used only when ``fun`` is a string.
 
     Returns
     -------

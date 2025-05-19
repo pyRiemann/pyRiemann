@@ -241,7 +241,7 @@ class BilinearFilter(TransformerMixin, BaseEstimator):
         X_new : ndarray, shape (n_trials, n_filters) or \
                 ndarray, shape (n_trials, n_filters, n_filters)
             Set of spatially filtered log-variance or covariance, depending on
-            the `log` input parameter.
+            the ``log`` input parameter.
         """
         if not isinstance(X, (np.ndarray, list)):
             raise TypeError("X must be an array.")
@@ -274,7 +274,7 @@ class BilinearFilter(TransformerMixin, BaseEstimator):
         X_new : ndarray, shape (n_trials, n_filters) or \
                 ndarray, shape (n_trials, n_filters, n_filters)
             Set of spatially filtered log-variance or covariance, depending on
-            the `log` input parameter.
+            the ``log`` input parameter.
         """
         return self.fit(X, y).transform(X)
 

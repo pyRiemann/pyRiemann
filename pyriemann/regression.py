@@ -31,10 +31,10 @@ class SVR(sklearnSVR):
         used.
     kernel_fct : None | "precomputed" | callable, default=None
         If "precomputed", the kernel matrix for datasets X and Y is estimated
-        according to `pyriemann.utils.kernel(X, Y, Cref, metric)`.
+        according to ``pyriemann.utils.kernel(X, Y, Cref, metric)``.
         If callable, the callable is passed as the kernel parameter to
-        `sklearn.svm.SVC()` [2]_. The callable has to be of the form
-        `kernel(X, Y, Cref, metric)`.
+        ``sklearn.svm.SVC()`` [2]_. The callable has to be of the form
+        ``kernel(X, Y, Cref, metric)``.
     tol : float, default=1e-3
         Tolerance for stopping criterion.
     C : float, default=1.0

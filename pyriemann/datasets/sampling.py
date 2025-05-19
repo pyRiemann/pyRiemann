@@ -258,9 +258,9 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
         non-stationary behavior and do not follow very well the target pdf.
     thin : int, default=10
         Thinning factor for the slice sampling procedure. MCMC samples are
-        often correlated between them, so taking one sample every `thin`
+        often correlated between them, so taking one sample every ``thin``
         samples can help reducing this correlation. Note that this makes the
-        algorithm actually sample `thin x n_samples` samples from the pdf, so
+        algorithm actually sample ``thin`` x n_samples samples from the pdf, so
         expect the whole sampling procedure to take longer.
     random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
