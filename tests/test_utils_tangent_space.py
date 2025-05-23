@@ -4,11 +4,13 @@ from pytest import approx
 
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.tangentspace import (
+    exp_map,
     exp_map_euclid,
     exp_map_logchol,
     exp_map_logeuclid,
     exp_map_riemann,
     exp_map_wasserstein,
+    log_map,
     log_map_euclid,
     log_map_logchol,
     log_map_logeuclid,
@@ -50,8 +52,20 @@ def test_maps_ndarray(fun_map, get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("metric", [
+    "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
+])
+def test_map_log_exp(kind, metric, get_mats):
+    """Test log then exp maps should be identity"""
+    n_matrices, n_channels = 9, 2
+    mats = get_mats(n_matrices, n_channels, kind)
+    X, C = mats[:-1], mats[-1]
+    assert exp_map(log_map(X, C, metric=metric), C, metric=metric) == approx(X)
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize(
-    "log_map, exp_map", zip(
+    "log_map_, exp_map_", zip(
         [
             log_map_euclid,
             log_map_logchol,
@@ -68,12 +82,12 @@ def test_maps_ndarray(fun_map, get_mats):
         ]
     )
 )
-def test_maps_log_exp(kind, log_map, exp_map, get_mats):
+def test_maps_log_exp(kind, log_map_, exp_map_, get_mats):
     """Test log then exp maps should be identity"""
     n_matrices, n_channels = 10, 3
     mats = get_mats(n_matrices, n_channels, kind)
     X, C = mats[:-1], mats[-1]
-    assert exp_map(log_map(X, C), C) == approx(X)
+    assert exp_map_(log_map_(X, C), C) == approx(X)
 
 
 @pytest.mark.parametrize("complex_valued", [True, False])

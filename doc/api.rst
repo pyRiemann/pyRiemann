@@ -311,11 +311,13 @@ Tangent Space
 .. autosummary::
     :toctree: generated/
 
+    exp_map
     exp_map_euclid
     exp_map_logchol
     exp_map_logeuclid
     exp_map_riemann
     exp_map_wasserstein
+    log_map
     log_map_euclid
     log_map_logchol
     log_map_logeuclid

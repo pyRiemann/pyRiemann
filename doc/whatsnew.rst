@@ -24,6 +24,8 @@ v0.9.dev
 
 - Fix sklearn warning. :pr:`358` by :user:`qbarthelemy`
 
+- Add :func:`pyriemann.utils.tangentspace.log_map` and :func:`pyriemann.utils.tangentspace.exp_map`. :pr:`363` by :user:`qbarthelemy`
+
 v0.8 (February 2025)
 --------------------
 
