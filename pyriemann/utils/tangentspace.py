@@ -641,7 +641,7 @@ def tangent_space(X, Cref, *, metric="riemann"):
     log_map
     upper
     """
-    X_ = log_map(X, Cref, metric)
+    X_ = log_map(X, Cref, metric=metric)
     T = upper(X_)
     return T
 
@@ -674,7 +674,7 @@ def untangent_space(T, Cref, *, metric="riemann"):
     exp_map
     """
     X_ = unupper(T)
-    X = exp_map(X_, Cref, metric)
+    X = exp_map(X_, Cref, metric=metric)
     return X
 
 
