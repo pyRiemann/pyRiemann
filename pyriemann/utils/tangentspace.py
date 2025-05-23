@@ -234,6 +234,49 @@ def exp_map_wasserstein(X, Cref):
     return Cref + X + X_tmp
 
 
+exp_map_functions = {
+    "euclid": exp_map_euclid,
+    "logchol": exp_map_logchol,
+    "logeuclid": exp_map_logeuclid,
+    "riemann": exp_map_riemann,
+    "wasserstein": exp_map_wasserstein,
+}
+
+
+def exp_map(X, Cref, *, metric="riemann"):
+    """Project matrices back to manifold by exponential map.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        Matrices in tangent space.
+    Cref : ndarray, shape (n, n)
+        Reference matrix.
+    metric : string | callable, default="riemann"
+        Metric used for exponential map, can be:
+        "euclid", "logchol", "logeuclid", "riemann", "wasserstein",
+        or a callable function.
+
+    Returns
+    -------
+    X_original : ndarray, shape (..., n, n)
+        Matrices in manifold.
+
+    See Also
+    --------
+    exp_map_euclid
+    exp_map_logchol
+    exp_map_logeuclid
+    exp_map_riemann
+    exp_map_wasserstein
+    """
+    exp_map_function = check_function(metric, exp_map_functions)
+    return exp_map_function(X, Cref)
+
+
+###############################################################################
+
+
 def log_map_euclid(X, Cref):
     r"""Project matrices in tangent space by Euclidean logarithmic map.
 
@@ -455,6 +498,49 @@ def log_map_wasserstein(X, Cref):
     return tmp + tmp.conj().swapaxes(-2, -1) - 2 * Cref
 
 
+log_map_functions = {
+    "euclid": log_map_euclid,
+    "logchol": log_map_logchol,
+    "logeuclid": log_map_logeuclid,
+    "riemann": log_map_riemann,
+    "wasserstein": log_map_wasserstein,
+}
+
+
+def log_map(X, Cref, *, metric="riemann"):
+    """Project matrices in tangent space by logarithmic map.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        Matrices in manifold.
+    Cref : ndarray, shape (n, n)
+        Reference matrix.
+    metric : string | callable, default="riemann"
+        Metric used for logarithmic map, can be:
+        "euclid", "logchol", "logeuclid", "riemann", "wasserstein",
+        or a callable function.
+
+    Returns
+    -------
+    X_new : ndarray, shape (..., n, n)
+        Matrices projected in tangent space.
+
+    See Also
+    --------
+    log_map_euclid
+    log_map_logchol
+    log_map_logeuclid
+    log_map_riemann
+    log_map_wasserstein
+    """
+    log_map_function = check_function(metric, log_map_functions)
+    return log_map_function(X, Cref)
+
+
+###############################################################################
+
+
 def upper(X):
     r"""Return the weighted upper triangular part of matrices.
 
@@ -528,15 +614,6 @@ def unupper(T):
     return X
 
 
-log_map_functions = {
-    "euclid": log_map_euclid,
-    "logchol": log_map_logchol,
-    "logeuclid": log_map_logeuclid,
-    "riemann": log_map_riemann,
-    "wasserstein": log_map_wasserstein,
-}
-
-
 def tangent_space(X, Cref, *, metric="riemann"):
     """Transform matrices into tangent vectors.
 
@@ -561,25 +638,12 @@ def tangent_space(X, Cref, *, metric="riemann"):
 
     See Also
     --------
-    log_map_euclid
-    log_map_logeuclid
-    log_map_riemann
+    log_map
     upper
     """
-    log_map_function = check_function(metric, log_map_functions)
-    X_ = log_map_function(X, Cref)
+    X_ = log_map(X, Cref, metric)
     T = upper(X_)
-
     return T
-
-
-exp_map_functions = {
-    "euclid": exp_map_euclid,
-    "logchol": exp_map_logchol,
-    "logeuclid": exp_map_logeuclid,
-    "riemann": exp_map_riemann,
-    "wasserstein": exp_map_wasserstein,
-}
 
 
 def untangent_space(T, Cref, *, metric="riemann"):
@@ -607,14 +671,10 @@ def untangent_space(T, Cref, *, metric="riemann"):
     See Also
     --------
     unupper
-    exp_map_euclid
-    exp_map_logeuclid
-    exp_map_riemann
+    exp_map
     """
     X_ = unupper(T)
-    exp_map_function = check_function(metric, exp_map_functions)
-    X = exp_map_function(X_, Cref)
-
+    X = exp_map(X_, Cref, metric)
     return X
 
 
