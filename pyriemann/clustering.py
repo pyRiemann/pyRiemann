@@ -1,4 +1,7 @@
 """Clustering functions."""
+from math import floor
+import warnings
+
 from joblib import Parallel, delayed
 import numpy as np
 from scipy.stats import norm, chi2
@@ -12,9 +15,32 @@ from sklearn.base import (
 from sklearn.cluster import KMeans as _KMeans
 
 from .classification import MDM, SpdClassifMixin
+from .utils.distance import distance, pairwise_distance
 from .utils.mean import mean_covariance
 from .utils.geodesic import geodesic
-from .utils.utils import check_metric
+from .utils.tangentspace import exp_map, log_map
+from .utils.utils import check_metric, check_function
+
+
+class SpdClustMixin(ClusterMixin):
+    """ClusterMixin for SPD matrices"""
+
+    def fit_predict(self, X, y=None):
+        """Fit and predict in a single function.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        pred : ndarray of int, shape (n_matrices,)
+            Prediction for each matrix according to the closest cluster.
+        """
+        return self.fit(X, y).predict(X)
 
 
 def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
@@ -71,7 +97,7 @@ def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,
     return labels, inertia, mdm
 
 
-class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
+class Kmeans(SpdClassifMixin, SpdClustMixin, TransformerMixin, BaseEstimator):
     """Clustering by k-means with SPD/HPD matrices as inputs.
 
     The k-means is a clustering method used to find clusters that minimize the
@@ -85,7 +111,7 @@ class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
     n_clusters : int, default=2
         Number of clusters.
     max_iter : int, default=100
-        The maximum number of iteration to reach convergence.
+        Maximum number of iteration to reach convergence.
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
         see :func:`pyriemann.utils.mean.mean_covariance`) and
@@ -115,7 +141,7 @@ class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
         (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
         are used.
     tol : float, default=1e-4
-        The stopping criterion to stop convergence, representing the minimum
+        Stopping criterion to stop convergence, representing the minimum
         amount of change in labels between two iterations.
 
     Attributes
@@ -123,7 +149,7 @@ class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
     mdm_ : MDM instance
         MDM instance containing the centroids.
     labels_ : ndarray, shape (n_matrices,)
-        Labels, ie centroid index, of each matrix of training set.
+        Labels, ie centroid indices, of each matrix of training set.
     inertia_ : float
         Sum of distances of matrices to their closest cluster centroids.
 
@@ -166,7 +192,7 @@ class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
         self.n_jobs = n_jobs
 
     def fit(self, X, y=None):
-        """Fit (estimates) the clusters.
+        """Fit the centroids of clusters.
 
         Parameters
         ----------
@@ -242,23 +268,6 @@ class Kmeans(SpdClassifMixin, ClusterMixin, TransformerMixin, BaseEstimator):
         """
         return self.mdm_.predict(X)
 
-    def fit_predict(self, X, y=None):
-        """Fit and predict in a single function.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD/HPD matrices.
-        y : None
-            Not used, here for compatibility with sklearn API.
-
-        Returns
-        -------
-        pred : ndarray of int, shape (n_matrices,)
-            Prediction for each matrix according to the closest centroid.
-        """
-        return self.fit(X, y).predict(X)
-
     def transform(self, X):
         """Get the distance to each centroid.
 
@@ -309,13 +318,16 @@ class KmeansPerClassTransform(TransformerMixin, BaseEstimator):
     ----------
     n_clusters : int, default=2
         Number of clusters.
+    **params : dict
+        The keyword arguments passed to :class:`pyriemann.clustering.Kmeans`.
 
     Attributes
     ----------
     classes_ : ndarray, shape (n_classes,)
         Labels for each class.
     covmeans_ : ndarray, shape (n_centroids, n_channels, n_channels)
-        Centroids of each cluster of each class.
+        Centroids of each cluster of each class, with n_centroids <=
+        n_clusters x n_classes.
 
     See Also
     --------
@@ -386,6 +398,188 @@ class KmeansPerClassTransform(TransformerMixin, BaseEstimator):
             Distance to each centroid according to the metric.
         """
         return self.fit(X, y).transform(X)
+
+
+@np.vectorize
+def kernel_normal(x):
+    return np.exp(- x ** 2)
+
+
+@np.vectorize
+def kernel_uniform(x):
+    if np.abs(x) <= 1:
+        return 1
+    return 0
+
+
+ker_clust_functions = {
+    "normal": kernel_normal,
+    "uniform": kernel_uniform,
+}
+
+
+class MeanShift(SpdClustMixin, BaseEstimator):
+    """Clustering by mean shift with SPD/HPD matrices as inputs.
+
+    The mean shift is a non-parametric clustering method used to find clusters
+    on the manifold of SPD/HPD matrices, estimating the gradient of matrices
+    density [1]_.
+
+    Parameters
+    ----------
+    kernel : {"normal", "uniform"} | callable, default="uniform"
+        Kernel used for kernel density estimation.
+    bandwidth : None | float, default=None
+        Bandwidth of the kernel.
+    metric : string | dict, default="riemann"
+        Metric used for map estimation (for the list of supported metrics,
+        see :func:`pyriemann.utils.tangentspace.log_map`) and
+        for distance estimation
+        (see :func:`pyriemann.utils.distance.distance`).
+        The metric can be a dict with two keys, "map" and "distance"
+        in order to pass different metrics.
+    tol : float, default=1e-4
+        Stopping criterion to stop convergence, representing the norm of
+        gradient.
+    max_iter : int, default=100
+        Maximum number of iteration to reach convergence.
+    n_jobs : int, default=1
+        Number of jobs to use for the computation. This works by computing
+        each of the n_init runs in parallel.
+        If -1 all CPUs are used. If 1 is given, no parallel computing code is
+        used at all, which is useful for debugging. For n_jobs below -1,
+        (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
+        are used.
+
+    Attributes
+    ----------
+    modes_ : ndarray, shape (n_modes, n_channels, n_channels)
+        Modes of each cluster.
+    labels_ : ndarray, shape (n_matrices,)
+        Labels, ie mode indices, of each matrix of training set.
+
+    Notes
+    -----
+    .. versionadded:: 0.9
+
+    See Also
+    --------
+    Kmeans
+
+    References
+    ----------
+    .. [1] `Nonlinear Mean Shift over Riemannian Manifolds
+        <https://sites.rutgers.edu/peter-meer/wp-content/uploads/sites/69/2019/01/manifoldmsijcv.pdf>`_
+        R. Subbarao & P. Meer. International Journal of Computer Vision, 84,
+        1-20, 2009
+    """  # noqa
+
+    def __init__(
+        self,
+        kernel="uniform",
+        bandwidth=None,
+        metric="riemann",
+        tol=1e-3,
+        max_iter=100,
+        n_jobs=-2
+    ):
+        """Init."""
+        self.kernel = kernel
+        self.bandwidth = bandwidth
+        self.metric = metric
+        self.tol = tol
+        self.max_iter = max_iter
+        self.n_jobs = n_jobs
+
+    def fit(self, X, y=None):
+        """Fit the modes of clusters.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD/HPD matrices.
+        y : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        self : MeanShift instance
+            The MeanShift instance.
+        """
+        self._kernel_fun = check_function(self.kernel, ker_clust_functions)
+        self.metric_map, self.metric_dist = check_metric(self.metric)
+        if self.bandwidth is None:
+            self._bandwidth = self._estimate_bandwidth(X, quantile=0.3)
+        self._bandwidth2 = self._bandwidth ** 2
+
+        modes = Parallel(n_jobs=self.n_jobs)(
+            delayed(self._seek)(X, x) for x in X
+        )
+
+        modes = self._fuse(modes)
+
+        if len(modes) == 0:
+            raise ValueError(
+                "No mode found, try other parameters "
+                f"(Got kernel={self.kernel} and bandwith={self.bandwidth:.3f})"
+            )
+        self.modes_ = np.array(modes)
+        self.labels_ = self.predict(X)
+
+        return self
+
+    def _estimate_bandwidth(self, X, quantile):
+        dist = pairwise_distance(X, None, metric=self.metric_dist)
+        dist = np.triu(dist, 1)
+        dist_sorted = np.sort(dist[dist > 0])
+        bandwidth = dist_sorted[floor(quantile * len(dist_sorted))]
+        print(f"MeanShift bandwidth={bandwidth:.3f}")
+        return bandwidth
+
+    def _seek(self, X, mean):
+        for _ in range(self.max_iter):
+            T = log_map(X, mean, metric=self.metric_map)
+            dist2 = distance(X, mean, metric=self.metric_dist, squared=True)
+            weights = self._kernel_fun(dist2[:, 0] / self._bandwidth2)
+            meanshift = np.einsum("a,abc->bc", weights, T) / np.sum(weights)
+            mean = exp_map(meanshift, mean, metric=self.metric_map)
+            if np.linalg.norm(meanshift) <= self.tol:
+                break
+        else:
+            warnings.warn("Convergence not reached")
+
+        return mean
+
+    def _fuse(self, in_modes):
+        out_modes = in_modes.copy()
+        in_modes = np.stack(in_modes, axis=0)
+        dist = pairwise_distance(in_modes, None, metric=self.metric_dist)
+        np.fill_diagonal(dist, self._bandwidth + 1)
+        for i in range(dist.shape[0] - 1, -1, -1):
+            if np.min(dist[i]) < self._bandwidth:
+                del out_modes[i]
+                dist[:, i] = self._bandwidth + 1
+        return out_modes
+
+    def predict(self, X):
+        """Get the predictions.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD/HPD matrices.
+
+        Returns
+        -------
+        pred : ndarray of int, shape (n_matrices,)
+            Prediction for each matrix according to the closest mode.
+        """
+        dist = Parallel(n_jobs=self.n_jobs)(
+            delayed(distance)(X, mode, self.metric_dist)
+            for mode in self.modes_
+        )
+        dist = np.concatenate(dist, axis=1)
+        return dist.argmin(axis=1)
 
 
 class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
