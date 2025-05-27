@@ -481,7 +481,7 @@ class MeanShift(SpdClustMixin, BaseEstimator):
         metric="riemann",
         tol=1e-3,
         max_iter=100,
-        n_jobs=-2
+        n_jobs=1
     ):
         """Init."""
         self.kernel = kernel
