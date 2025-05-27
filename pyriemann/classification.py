@@ -29,6 +29,7 @@ def _mode_2d(X, axis=1):
 
 
 class SpdClassifMixin(ClassifierMixin):
+    """ClassifierMixin for SPD matrices"""
 
     def score(self, X, y, sample_weight=None):
         """Return the mean accuracy on the given test data and labels.
