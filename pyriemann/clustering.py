@@ -513,16 +513,11 @@ class MeanShift(SpdClustMixin, BaseEstimator):
         self._bandwidth2 = self._bandwidth ** 2
 
         modes = Parallel(n_jobs=self.n_jobs)(
-            delayed(self._seek)(X, x) for x in X
+            delayed(self._seek_mode)(X, x) for x in X
         )
 
-        modes = self._fuse(modes)
+        modes = self._fuse_mode(modes)
 
-        if len(modes) == 0:
-            raise ValueError(
-                "No mode found, try other parameters "
-                f"(Got kernel={self.kernel} and bandwith={self.bandwidth:.3f})"
-            )
         self.modes_ = np.array(modes)
         self.labels_ = self.predict(X)
 
@@ -536,7 +531,7 @@ class MeanShift(SpdClustMixin, BaseEstimator):
         print(f"MeanShift bandwidth={bandwidth:.3f}")
         return bandwidth
 
-    def _seek(self, X, mean):
+    def _seek_mode(self, X, mean):
         for _ in range(self.max_iter):
             T = log_map(X, mean, metric=self.metric_map)
             dist2 = distance(X, mean, metric=self.metric_dist, squared=True)
@@ -550,7 +545,7 @@ class MeanShift(SpdClustMixin, BaseEstimator):
 
         return mean
 
-    def _fuse(self, in_modes):
+    def _fuse_mode(self, in_modes):
         out_modes = in_modes.copy()
         in_modes = np.stack(in_modes, axis=0)
         dist = pairwise_distance(in_modes, None, metric=self.metric_dist)
@@ -559,6 +554,13 @@ class MeanShift(SpdClustMixin, BaseEstimator):
             if np.min(dist[i]) < self._bandwidth:
                 del out_modes[i]
                 dist[:, i] = self._bandwidth + 1
+
+        if len(out_modes) == 0:
+            raise ValueError(
+                "No mode found, try other parameters (Got "
+                f"kernel={self.kernel} and bandwith={self._bandwidth:.3f})"
+            )
+
         return out_modes
 
     def predict(self, X):
