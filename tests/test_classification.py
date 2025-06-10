@@ -23,7 +23,7 @@ from pyriemann.classification import (
     class_distinctiveness,
 )
 
-clfs = [MDM, FgMDM, KNearestNeighbor, TSClassifier, SVC, MeanField]
+classifs = [MDM, FgMDM, KNearestNeighbor, TSClassifier, SVC, MeanField]
 
 
 @pytest.mark.parametrize(
@@ -57,7 +57,7 @@ def test_mode(X, axis, expected):
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("n_classes", [2, 3])
-@pytest.mark.parametrize("classif", clfs)
+@pytest.mark.parametrize("classif", classifs)
 def test_classifier(kind, n_classes, classif,
                     get_mats, get_labels, get_weights):
     if kind == "hpd" and classif in [FgMDM, TSClassifier, SVC]:
@@ -155,7 +155,7 @@ def clf_tsupdate(classif, mats, labels):
     clf.fit(mats, labels).predict(mats)
 
 
-@pytest.mark.parametrize("classif", clfs)
+@pytest.mark.parametrize("classif", classifs)
 @pytest.mark.parametrize("mean", ["faulty", 42])
 @pytest.mark.parametrize("dist", ["not_real", 27])
 def test_metric_dict_error(classif, mean, dist, get_mats, get_labels):
@@ -167,7 +167,7 @@ def test_metric_dict_error(classif, mean, dist, get_mats, get_labels):
         clf.fit(mats, labels).predict(mats)
 
 
-@pytest.mark.parametrize("classif", clfs)
+@pytest.mark.parametrize("classif", classifs)
 @pytest.mark.parametrize("metric", [42, "faulty", {"foo": "bar"}])
 def test_metric_errors(classif, metric, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
@@ -178,7 +178,7 @@ def test_metric_errors(classif, metric, get_mats, get_labels):
         clf.fit(mats, labels).predict(mats)
 
 
-@pytest.mark.parametrize("classif", clfs)
+@pytest.mark.parametrize("classif", classifs)
 @pytest.mark.parametrize("metric", get_metrics())
 def test_metric_str(classif, metric, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2

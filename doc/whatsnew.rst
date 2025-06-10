@@ -26,6 +26,8 @@ v0.9.dev
 
 - Add :func:`pyriemann.utils.tangentspace.log_map` and :func:`pyriemann.utils.tangentspace.exp_map`. :pr:`363` by :user:`qbarthelemy`
 
+- Add :class:`pyriemann.clustering.MeanShift`, a Riemannian mean shift clustering algorithm. :pr:`364` by :user:`qbarthelemy`
+
 v0.8 (February 2025)
 --------------------
 
