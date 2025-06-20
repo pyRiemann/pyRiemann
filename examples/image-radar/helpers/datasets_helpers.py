@@ -7,10 +7,10 @@ This file contains helper functions for handling remote sensing datasets
 """
 
 import os
+import time
 from typing import Tuple, Dict, Optional
 import urllib.request
 import urllib.error
-import time
 
 from numpy.typing import ArrayLike
 from scipy.io import loadmat
@@ -23,33 +23,36 @@ def download_with_resume(
     max_retries: int = 5,
     backoff_factor: float = 1.0,
 ) -> bool:
-    """
-    Download a file with resume capability and retry logic.
+    """Download a file with resume capability and retry logic.
 
     Parameters
     ----------
     url : str
-        URL to download from
+        URL to download from.
     filepath : str
-        Local path to save the file
+        Local path to save the file.
     chunk_size : int, default=8192
-        Size of chunks to download at a time
+        Size of chunks to download at a time.
     max_retries : int, default=5
-        Maximum number of retry attempts
+        Maximum number of retry attempts.
     backoff_factor : float, default=1.0
-        Factor for exponential backoff between retries
+        Factor for exponential backoff between retries.
 
     Returns
     -------
     bool
-        True if download successful, False otherwise
+        True if download successful, False otherwise.
     """
 
     def get_browser_headers() -> dict:
         """Get realistic browser headers to avoid bot detection."""
         return {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7",
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
+                AppleWebKit/537.36 (KHTML, like Gecko) \
+                Chrome/120.0.0.0 Safari/537.36",
+            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,\
+                image/avif,image/webp,image/apng,*/*;q=0.8,\
+                application/signed-exchange;v=b3;q=0.7",
             "Accept-Language": "en-US,en;q=0.9",
             "Accept-Encoding": "gzip, deflate, br",
             "DNT": "1",
@@ -89,7 +92,7 @@ def download_with_resume(
 
     for attempt in range(max_retries):
         try:
-            # Prepare request with range header for resuming and browser headers
+            # Prepare request with range header for resuming and browser header
             headers = get_browser_headers()
             mode = "wb"
 
@@ -112,9 +115,13 @@ def download_with_resume(
                     )  # Create new request with browser headers
                     response = urllib.request.urlopen(req)
 
-                # If we get 416 Range Not Satisfiable, file might already be complete
+                # If we get 416 Range Not Satisfiable,
+                # file might already be complete
                 if response.status == 416:
-                    print(f"File {os.path.basename(filepath)} appears to be complete.")
+                    print(
+                        f"File {os.path.basename(filepath)} "
+                        "appears to be complete."
+                    )
                     return True
 
                 # Download in chunks
@@ -131,12 +138,15 @@ def download_with_resume(
                         if total_size:
                             progress = (downloaded / total_size) * 100
                             print(
-                                f"\rDownloading {os.path.basename(filepath)}: {progress:.1f}%",
+                                f"\rDownloading {os.path.basename(filepath)}: "
+                                f"{progress:.1f}%",
                                 end="",
                                 flush=True,
                             )
 
-                print(f"\nSuccessfully downloaded {os.path.basename(filepath)}")
+                print(
+                    f"\nSuccessfully downloaded {os.path.basename(filepath)}"
+                )
                 return True
 
         except (
@@ -151,10 +161,11 @@ def download_with_resume(
                 wait_time = backoff_factor * (2**attempt)
                 print(f"Retrying in {wait_time:.1f} seconds...")
                 time.sleep(wait_time)
-                existing_size = get_existing_size(filepath)  # Update existing size
+                existing_size = get_existing_size(filepath)
             else:
                 print(
-                    f"Failed to download {os.path.basename(filepath)} after {max_retries} attempts"
+                    f"Failed to download {os.path.basename(filepath)} after "
+                    f"{max_retries} attempts"
                 )
                 return False
 
@@ -165,9 +176,15 @@ def download_with_resume(
     return False
 
 
-def download_salinas(data_path: str, chunk_size: int = 8192, max_retries: int = 5):
-    """
-    Download the Salinas dataset with robust error handling and resume capability.
+def download_salinas(
+    data_path: str,
+    chunk_size: int = 8192,
+    max_retries: int = 5,
+):
+    """Download Salinas dataset.
+
+    Download the Salinas dataset with robust error handling and resume
+    capability.
     Uses browser headers to avoid bot detection and server restrictions.
 
     Parameters
@@ -175,9 +192,9 @@ def download_salinas(data_path: str, chunk_size: int = 8192, max_retries: int = 
     data_path : str
         Path to the data folder to download the data.
     chunk_size : int, default=8192
-        Size of chunks to download at a time (in bytes)
+        Size of chunks to download at a time (in bytes).
     max_retries : int, default=5
-        Maximum number of retry attempts per file
+        Maximum number of retry attempts per file.
     """
     urls = [
         "https://www.ehu.eus/ccwintco/uploads/f/f1/Salinas.mat",
@@ -202,12 +219,12 @@ def download_salinas(data_path: str, chunk_size: int = 8192, max_retries: int = 
         if download_with_resume(url, filepath, chunk_size, max_retries):
             success_count += 1
         else:
-            print(f"❌ Failed to download {filename}")
+            print(f"Failed to download {filename}")
 
     if success_count == len(urls):
-        print(f"\n✅ Successfully downloaded all {len(urls)} files!")
+        print(f"\nSuccessfully downloaded all {len(urls)} files!")
     else:
-        print(f"\n⚠️  Downloaded {success_count}/{len(urls)} files successfully")
+        print(f"\nDownloaded {success_count}/{len(urls)} files successfully")
 
     return success_count == len(urls)
 
@@ -220,7 +237,7 @@ def read_salinas(
     Parameters
     ----------
     data_path : str
-        Path to the data folder
+        Path to the data folder.
     version : str, default="corrected"
         Version of the data to read. Can be either "corrected" or "raw".
 
