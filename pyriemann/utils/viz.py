@@ -283,8 +283,9 @@ def plot_cov_ellipse(ax, X, n_std=2.5, **kwds):
     scale_y = np.sqrt(X[1, 1]) * n_std
     transf = transforms.Affine2D().rotate_deg(45).scale(scale_x, scale_y)
     ellipse.set_transform(transf + ax.transData)
+    ax.add_patch(ellipse)
 
-    return ax.add_patch(ellipse)
+    return ax
 
 
 def plot_bihist(X, y, n_bins=10, title="Histogram"):
