@@ -22,33 +22,38 @@ def download_salinas(data_path: str):
     data_path : str
         Path to the data folder to download the data.
     """
+    url_base = "https://zenodo.org/records/15771735/files/"
     urls = [
-        "https://www.ehu.eus/ccwintco/uploads/f/f1/Salinas.mat",
-        "https://www.ehu.eus/ccwintco/uploads/a/a3/Salinas_corrected.mat",
-        "https://www.ehu.eus/ccwintco/uploads/f/fa/Salinas_gt.mat",
+        url_base + "Salinas.mat?download=1",
+        url_base + "Salinas_corrected.mat?download=1",
+        url_base + "Salinas_gt.mat?download=1",
     ]
-    filenames = [os.path.basename(url) for url in urls]
+    filenames = [os.path.basename(url).split("?")[0] for url in urls]
     if not os.path.exists(data_path):
         os.makedirs(data_path, exist_ok=True)
-    if not all([os.path.exists(os.path.join(data_path, filename))
-                for filename in filenames]):
+    if not all(
+        [
+            os.path.exists(os.path.join(data_path, filename))
+            for filename in filenames
+        ]
+    ):
         print("Downloading Salinas dataset...")
-        for url in urls:
-            urllib.request.urlretrieve(url, os.path.join(data_path,
-                                       os.path.basename(url)))
+        for url, filename in zip(urls, filenames):
+            urllib.request.urlretrieve(url, os.path.join(data_path, filename))
         print("Done.")
     else:
         print("Salinas dataset already downloaded.")
 
 
-def read_salinas(data_path: str, version: str = "corrected") -> \
-        Tuple[ArrayLike, ArrayLike, Dict[int, str]]:
+def read_salinas(
+    data_path: str, version: str = "corrected"
+) -> Tuple[ArrayLike, ArrayLike, Dict[int, str]]:
     """Read Salinas hyperspectral data.
 
     Parameters
     ----------
     data_path : str
-        Path to the data folder
+        Path to the data folder.
     version : str, default="corrected"
         Version of the data to read. Can be either "corrected" or "raw".
 
