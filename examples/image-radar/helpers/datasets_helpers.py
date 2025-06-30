@@ -22,16 +22,20 @@ def download_salinas(data_path: str):
     data_path : str
         Path to the data folder to download the data.
     """
+    url_base = "https://zenodo.org/records/15771735/files/"
     urls = [
-        "https://zenodo.org/records/15771735/files/Salinas.mat?download=1",
-        "https://zenodo.org/records/15771735/files/Salinas_corrected.mat?download=1",
-        "https://zenodo.org/records/15771735/files/Salinas_gt.mat?download=1",
+        url_base + "Salinas.mat?download=1",
+        url_base + "Salinas_corrected.mat?download=1",
+        url_base + "Salinas_gt.mat?download=1",
     ]
     filenames = [os.path.basename(url).split("?")[0] for url in urls]
     if not os.path.exists(data_path):
         os.makedirs(data_path, exist_ok=True)
     if not all(
-        [os.path.exists(os.path.join(data_path, filename)) for filename in filenames]
+        [
+            os.path.exists(os.path.join(data_path, filename))
+            for filename in filenames
+        ]
     ):
         print("Downloading Salinas dataset...")
         for url, filename in zip(urls, filenames):
@@ -49,7 +53,7 @@ def read_salinas(
     Parameters
     ----------
     data_path : str
-        Path to the data folder
+        Path to the data folder.
     version : str, default="corrected"
         Version of the data to read. Can be either "corrected" or "raw".
 
