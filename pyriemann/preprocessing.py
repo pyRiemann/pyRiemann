@@ -49,9 +49,9 @@ class Whitening(TransformerMixin, BaseEstimator):
     ----------
     n_components_ : int
         If fit, the number of components after dimension reduction.
-    filters_ : ndarray, shape (n_channels, n_components_)
+    filters_ : ndarray, shape (n_channels, ``n_components_``)
         If fit, the spatial filters to whiten SPD matrices.
-    inv_filters_ : ndarray, shape (n_components_, n_channels)
+    inv_filters_ : ndarray, shape (``n_components_``, n_channels)
         If fit, the spatial filters to unwhiten SPD matrices.
 
     Notes
@@ -248,7 +248,8 @@ class Whitening(TransformerMixin, BaseEstimator):
 
         Returns
         -------
-        X_new : ndarray, shape (n_matrices, n_components, n_components)
+        X_new : ndarray, shape (n_matrices, ``n_components_``, \
+                ``n_components_``)
             Set of whitened, and optionally reduced, SPD matrices.
         """
         return self.filters_.T @ X @ self.filters_
@@ -268,7 +269,8 @@ class Whitening(TransformerMixin, BaseEstimator):
 
         Returns
         -------
-        X_new : ndarray, shape (n_matrices, n_components, n_components)
+        X_new : ndarray, shape (n_matrices, ``n_components_``, \
+                ``n_components_``)
             Set of whitened, and optionally reduced, SPD matrices.
         """
         return self.fit(X, y, sample_weight=sample_weight).transform(X)
@@ -278,7 +280,7 @@ class Whitening(TransformerMixin, BaseEstimator):
 
         Parameters
         ----------
-        X : ndarray, shape (n_matrices, n_components, n_components)
+        X : ndarray, shape (n_matrices, ``n_components_``, ``n_components_``)
             Set of whitened, and optionally reduced, SPD matrices.
 
         Returns
