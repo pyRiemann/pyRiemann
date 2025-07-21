@@ -151,7 +151,7 @@ class Xdawn(TransformerMixin, BaseEstimator):
         """
         return self.filters_ @ X
 
-    def fit_transform(self, X, y=None, sample_weight=None):
+    def fit_transform(self, X, y=None):
         """Fit and transform in a single function.
 
         Parameters
