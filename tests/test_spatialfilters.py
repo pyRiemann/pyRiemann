@@ -94,6 +94,10 @@ def clf_transform(spfilt, X, labels, n_matrices, n_channels, n_times):
     else:
         Xtr = sf.fit(X, labels).transform(X)
 
+        Xtr1 = sf.fit_transform(X, labels)
+
+        assert_array_equal(Xtr, Xtr1)
+
     if spfilt is AJDC:
         assert Xtr.shape == (n_matrices, n_channels, n_times)
     elif spfilt is BilinearFilter:
@@ -104,6 +108,7 @@ def clf_transform(spfilt, X, labels, n_matrices, n_channels, n_times):
     else:
         n_components = min(n_channels, sf.nfilter)
         assert Xtr.shape == (n_matrices, n_components)
+
 
 
 def clf_transform_error(spfilt, X, labels, n_channels):
