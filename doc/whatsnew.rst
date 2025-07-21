@@ -10,7 +10,7 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.9.dev
 --------
 
-- Fix :class:`pyriemann.spatialfilters.Xdawn` to remove the parameters ``sample_weight`` that is not used on the fit_transformation. :pr:`XXX` by :user:`baristimunha`
+- Fix :class:`pyriemann.spatialfilters.Xdawn` to remove the parameters ``sample_weight`` that is not used on the fit_transformation. :pr:`371` by :user:`baristimunha`
 
 - Add conjugate transpose operator :func:`pyriemann.utils.base.ctranspose` for real- and complex-valued ndarrays. :pr:`348` by :user:`qbarthelemy`
 
