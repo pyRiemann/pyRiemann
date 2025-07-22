@@ -169,9 +169,9 @@ pytest
                   Gregoire Cattan and
                   Arthur Lebeurrier},
   title        = {pyRiemann},
-  month        = feb,
+  month        = jul,
   year         = 2025,
-  version      = {v0.8},
+  version      = {v0.9},
   publisher    = {Zenodo},
   doi          = {10.5281/zenodo.593816},
   url          = {https://doi.org/10.5281/zenodo.593816}

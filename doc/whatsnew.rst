@@ -7,8 +7,11 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.9.dev
+v0.10.dev
 --------
+
+v0.9 (July 2025)
+----------------
 
 - Add conjugate transpose operator :func:`pyriemann.utils.base.ctranspose` for real- and complex-valued ndarrays. :pr:`348` by :user:`qbarthelemy`
 
