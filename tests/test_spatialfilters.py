@@ -110,7 +110,6 @@ def clf_transform(spfilt, X, labels, n_matrices, n_channels, n_times):
         assert Xtr.shape == (n_matrices, n_components)
 
 
-
 def clf_transform_error(spfilt, X, labels, n_channels):
     if spfilt is BilinearFilter:
         sf = spfilt(np.eye(n_channels))

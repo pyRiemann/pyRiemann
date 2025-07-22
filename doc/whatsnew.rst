@@ -28,7 +28,7 @@ v0.9.dev
 
 - Add :class:`pyriemann.clustering.MeanShift`, a Riemannian mean shift clustering algorithm. :pr:`364` by :user:`qbarthelemy`
 
-- Fix :class:`pyriemann.spatialfilters.Xdawn` to remove the parameters ``sample_weight`` that is not used on the fit_transformation. :pr:`XXX` by :user:`baristimunha`
+- Fix :class:`pyriemann.spatialfilters.Xdawn` to remove the parameters ``sample_weight`` that is not used on the fit_transformation. :pr:`371` by :user:`baristimunha`
 
 v0.8 (February 2025)
 --------------------
