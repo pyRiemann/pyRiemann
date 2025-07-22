@@ -151,7 +151,7 @@ class Xdawn(TransformerMixin, BaseEstimator):
         """
         return self.filters_ @ X
 
-    def fit_transform(self, X, y=None, sample_weight=None):
+    def fit_transform(self, X, y=None):
         """Fit and transform in a single function.
 
         Parameters
@@ -167,7 +167,7 @@ class Xdawn(TransformerMixin, BaseEstimator):
                 n_filters), n_times)
             Set of spatially filtered trials.
         """
-        return self.fit(X, y, sample_weight=sample_weight).transform(X)
+        return self.fit(X, y).transform(X)
 
 
 class BilinearFilter(TransformerMixin, BaseEstimator):
