@@ -10,8 +10,6 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.9.dev
 --------
 
-- Fix :class:`pyriemann.spatialfilters.Xdawn` to remove the parameters ``sample_weight`` that is not used on the fit_transformation. :pr:`XXX` by :user:`baristimunha`
-
 - Add conjugate transpose operator :func:`pyriemann.utils.base.ctranspose` for real- and complex-valued ndarrays. :pr:`348` by :user:`qbarthelemy`
 
 - Add :class:`pyriemann.embedding.TSNE`, a Riemannian t-SNE implementation and update example comparing embeddings. :pr:`347` by :user:`thibaultdesurrel`
@@ -29,6 +27,8 @@ v0.9.dev
 - Add :func:`pyriemann.utils.tangentspace.log_map` and :func:`pyriemann.utils.tangentspace.exp_map`. :pr:`363` by :user:`qbarthelemy`
 
 - Add :class:`pyriemann.clustering.MeanShift`, a Riemannian mean shift clustering algorithm. :pr:`364` by :user:`qbarthelemy`
+
+- Fix :class:`pyriemann.spatialfilters.Xdawn` to remove the parameters ``sample_weight`` that is not used on the fit_transformation. :pr:`XXX` by :user:`baristimunha`
 
 v0.8 (February 2025)
 --------------------
