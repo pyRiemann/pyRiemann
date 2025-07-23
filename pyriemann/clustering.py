@@ -185,7 +185,7 @@ class Kmeans(SpdClassifMixin, SpdClustMixin, TransformerMixin, BaseEstimator):
         self.metric = metric
         self.n_clusters = n_clusters
         self.max_iter = max_iter
-        self.seed = random_state
+        self.random_state = random_state
         self.init = init
         self.n_init = n_init
         self.tol = tol
@@ -207,7 +207,7 @@ class Kmeans(SpdClassifMixin, SpdClustMixin, TransformerMixin, BaseEstimator):
             The Kmeans instance.
         """
         if isinstance(self.init, str) and self.init == "random":
-            np.random.seed(self.seed)
+            np.random.seed(self.random_state)
             seeds = np.random.randint(
                 np.iinfo(np.int32).max,
                 size=self.n_init,
@@ -240,7 +240,7 @@ class Kmeans(SpdClassifMixin, SpdClustMixin, TransformerMixin, BaseEstimator):
                 y,
                 n_clusters=self.n_clusters,
                 init=self.init,
-                random_state=self.seed,
+                random_state=self.random_state,
                 metric=self.metric,
                 max_iter=self.max_iter,
                 tol=self.tol,

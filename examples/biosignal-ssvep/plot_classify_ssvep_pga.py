@@ -56,7 +56,7 @@ freq_band = 0.1
 events_id = {"13 Hz": 2, "17 Hz": 4, "21 Hz": 3, "resting-state": 1}
 
 duration = 2.5    # duration of epochs
-interval = 0.25   # interval between successive epochs for online processing
+interval = 0.5   # interval between successive epochs for online processing
 
 # Subject 12: first 4 sessions for training, last session for test
 
