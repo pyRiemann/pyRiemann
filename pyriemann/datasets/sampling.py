@@ -6,8 +6,7 @@ import numpy as np
 from scipy.stats import multivariate_normal
 from sklearn.utils import check_random_state
 
-from ..utils import deprecated
-from ..utils.base import sqrtm, expm
+from ..utils.base import sqrtm
 from ..utils.test import is_sym_pos_semi_def as is_spsd
 
 
@@ -540,51 +539,3 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         warnings.warn(msg)
 
     return samples
-
-
-@deprecated(
-    "generate_random_spd_matrix is deprecated and will be removed in 0.10.0; "
-    "please use make_matrices with kind='spd'."
-)
-def generate_random_spd_matrix(n_dim, random_state=None, *, mat_mean=.0,
-                               mat_std=1.):
-    """Generate a random SPD matrix.
-
-    Parameters
-    ----------
-    n_dim : int
-        Dimensionality of the matrix to sample.
-    random_state : int | RandomState instance | None, default=None
-        Pass an int for reproducible output across multiple function calls.
-    mat_mean : float, default=0.0
-        Mean of random values to generate matrix.
-    mat_std : float, default=1.0
-        Standard deviation of random values to generate matrix.
-
-    Returns
-    -------
-    C : ndarray, shape (n_dim, n_dim)
-        Random SPD matrix.
-
-    Notes
-    -----
-    .. versionadded:: 0.3
-    """
-
-    if (n_dim <= 0) or (not isinstance(n_dim, int)):
-        raise ValueError(
-            f"n_samples must be a positive integer (Got {n_dim})"
-        )
-
-    rs = check_random_state(random_state)
-    A = mat_mean + mat_std * rs.randn(n_dim, n_dim)
-    A = 0.5 * (A + A.T)
-    C = expm(A)
-
-    if not is_spsd(C):
-        msg = "The sampled matrix is very badly conditioned and may not \
-               behave numerically as a SPD matrix. Try sampling again or \
-               reducing the dimensionality of the matrix."
-        warnings.warn(msg)
-
-    return C

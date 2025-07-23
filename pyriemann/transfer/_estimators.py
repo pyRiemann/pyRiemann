@@ -18,7 +18,6 @@ from ..optimization.grassmann import (
 from ._tools import decode_domains
 from ..classification import MDM
 from ..preprocessing import Whitening
-from ..utils import deprecated
 from ..utils.base import invsqrtm, powm, sqrtm
 from ..utils.distance import distance
 from ..utils.geodesic import geodesic
@@ -161,14 +160,6 @@ class TLCenter(TransformerMixin, BaseEstimator):
         """Init"""
         self.target_domain = target_domain
         self.metric = metric
-
-    @property
-    @deprecated(
-        "Attribute `recenter_` is deprecated and will be removed in 0.10.0; "
-        "please use `centers_`."
-    )
-    def recenter_(self):
-        return self.centers_
 
     def fit(self, X, y_enc, sample_weight=None):
         """Fit TLCenter.
@@ -365,14 +356,6 @@ class TLScale(TransformerMixin, BaseEstimator):
         self.centered_data = centered_data
         self.metric = metric
 
-    @property
-    @deprecated(
-        "Attribute `dispersions_` is deprecated and will be removed in 0.10.0;"
-        " please use `scales_`."
-    )
-    def dispersions_(self):
-        return self.scales_
-
     def fit(self, X, y_enc, sample_weight=None):
         """Fit TLScale.
 
@@ -533,14 +516,6 @@ class TLScale(TransformerMixin, BaseEstimator):
         return X_new
 
 
-@deprecated(
-    "TLStretch is deprecated and will be removed in 0.10.0; "
-    "please use TLScale."
-)
-class TLStretch(TLScale):
-    pass
-
-
 class TLRotate(TransformerMixin, BaseEstimator):
     """Rotation for transfer learning.
 
@@ -602,7 +577,7 @@ class TLRotate(TransformerMixin, BaseEstimator):
     -----
     .. versionadded:: 0.4
     .. versionchanged:: 0.8
-        Added support for tangent space rotation.
+        Add support for tangent space rotation.
 
     References
     ----------

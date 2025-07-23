@@ -262,6 +262,10 @@ def exp_map(X, Cref, *, metric="riemann"):
     X_original : ndarray, shape (..., n, n)
         Matrices in manifold.
 
+    Notes
+    -----
+    .. versionadded:: 0.9
+
     See Also
     --------
     exp_map_euclid
@@ -525,6 +529,10 @@ def log_map(X, Cref, *, metric="riemann"):
     -------
     X_new : ndarray, shape (..., n, n)
         Matrices projected in tangent space.
+
+    Notes
+    -----
+    .. versionadded:: 0.9
 
     See Also
     --------

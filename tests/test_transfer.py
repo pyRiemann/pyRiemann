@@ -161,14 +161,6 @@ def test_tlcenter_manifold(rndstate, get_weights,
     # Test transform
     rct.transform(X)
 
-    # Test deprecated attribute
-    import warnings
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        rct.recenter_
-        assert len(w) == 1
-        assert issubclass(w[-1].category, DeprecationWarning)
-
 
 @pytest.mark.parametrize("metric", ["riemann", "euclid"])
 @pytest.mark.parametrize("use_weight", [True, False])
@@ -288,14 +280,6 @@ def test_tlscale_manifold(rndstate, get_weights,
         assert np.isclose(disp, 1.0)
 
     tlstr.transform(X)
-
-    # Test deprecated attribute
-    import warnings
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        tlstr.dispersions_
-        assert len(w) == 1
-        assert issubclass(w[-1].category, DeprecationWarning)
 
 
 @pytest.mark.parametrize("use_weight", [True, False])

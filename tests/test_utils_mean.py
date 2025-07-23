@@ -419,12 +419,3 @@ def test_mean_covariance_arguments(get_mats):
     mean_covariance(mats, metric="ale", maxiter=5)
     mean_covariance(mats, metric="logdet", tol=10e-3)
     mean_covariance(mats, metric="riemann", init=np.eye(n_channels))
-
-
-def test_mean_covariance_deprecation(get_mats):
-    import warnings
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        mean_covariance(get_mats(3, 2, "spd"), "euclid")
-        assert len(w) >= 1
-        assert issubclass(w[-1].category, DeprecationWarning)
