@@ -31,9 +31,8 @@ from pyriemann.datasets import make_matrices, make_gaussian_blobs
 
 
 def plot_clusterers(metric):
-    figure = plt.figure(figsize=(12, 10))
-    figure.suptitle(f"Clustering algorithms with metric='{metric}'",
-                    fontsize=16)
+    fig = plt.figure(figsize=(12, 10))
+    fig.suptitle(f"Clustering algorithms with metric='{metric}'", fontsize=16)
     i = 1
 
     # iterate over datasets

@@ -46,8 +46,8 @@ def get_proba(cov_00, cov_01, cov_11, clf):
 
 
 def plot_classifiers(metric):
-    figure = plt.figure(figsize=(12, 10))
-    figure.suptitle(f"Classifiers with metric='{metric}'", fontsize=16)
+    fig = plt.figure(figsize=(12, 10))
+    fig.suptitle(f"Classifiers with metric='{metric}'", fontsize=16)
     i = 1
 
     # iterate over datasets
