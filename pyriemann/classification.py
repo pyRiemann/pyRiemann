@@ -9,7 +9,6 @@ from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 
-from .utils import deprecated
 from .utils.kernel import kernel
 from .utils.mean import mean_covariance
 from .utils.distance import distance
@@ -191,13 +190,6 @@ class MDM(SpdClassifMixin, TransformerMixin, BaseEstimator):
             Distance to each centroid according to the metric.
         """
         return self._predict_distances(X)
-
-    @deprecated(
-        "fit_predict() is deprecated and will be removed in 0.10.0; "
-        "please use fit().predict()."
-    )
-    def fit_predict(self, X, y, sample_weight=None):
-        return self.fit(X, y, sample_weight=sample_weight).predict(X)
 
     def fit_transform(self, X, y, sample_weight=None):
         """Fit and transform in a single function.
@@ -502,14 +494,6 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
             Predictions for each matrix.
         """
         return self._pipe.predict_proba(X)
-
-
-@deprecated(
-    "TSclassifier is deprecated and will be removed in 0.10.0; "
-    "please use TSClassifier."
-)
-class TSclassifier(TSClassifier):
-    pass
 
 
 class KNearestNeighbor(MDM):
@@ -987,13 +971,6 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
             Distance to each means field according to the metric.
         """
         return self._predict_distances(X)
-
-    @deprecated(
-        "fit_predict() is deprecated and will be removed in 0.10.0; "
-        "please use fit().predict()."
-    )
-    def fit_predict(self, X, y, sample_weight=None):
-        return self.fit(X, y, sample_weight=sample_weight).predict(X)
 
     def fit_transform(self, X, y, sample_weight=None):
         """Fit and transform in a single function.
