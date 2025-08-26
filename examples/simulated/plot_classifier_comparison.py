@@ -13,7 +13,6 @@ these examples does not necessarily carry over to real datasets.
 The 3D plots show training matrices in solid colors and testing matrices
 semi-transparent. The lower right shows the classification accuracy on the test
 set.
-
 """
 # Authors: Quentin Barthélemy
 #
@@ -47,12 +46,14 @@ def get_proba(cov_00, cov_01, cov_11, clf):
 
 
 def plot_classifiers(metric):
-    figure = plt.figure(figsize=(12, 10))
-    figure.suptitle(f"Compare classifiers with metric='{metric}'", fontsize=16)
+    fig = plt.figure(figsize=(12, 10))
+    fig.suptitle(f"Classifiers with metric='{metric}'", fontsize=16)
     i = 1
 
     # iterate over datasets
-    for ds_cnt, (X, y) in enumerate(datasets):
+    for i_dataset, (X, y) in enumerate(datasets):
+        print(f"Dataset n°{i_dataset+1}")
+
         # split dataset into training and test part
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.4, random_state=42
@@ -64,9 +65,9 @@ def plot_classifiers(metric):
 
         # just plot the dataset first
         ax = plt.subplot(n_datasets, n_classifs + 1, i, projection="3d")
-        if ds_cnt == 0:
-            ax.set_title("Input data")
-        # Plot the training points
+        if i_dataset == 0:
+            ax.set_title("Input matrices")
+        # plot the training matrices
         ax.scatter(
             X_train[:, 0, 0],
             X_train[:, 0, 1],
@@ -75,7 +76,7 @@ def plot_classifiers(metric):
             cmap=cm_bright,
             edgecolors="k"
         )
-        # Plot the testing points
+        # plot the testing matrices
         ax.scatter(
             X_test[:, 0, 0],
             X_test[:, 0, 1],
@@ -97,26 +98,23 @@ def plot_classifiers(metric):
         ry = np.arange(y_min, y_max, (y_max - y_min) / 50)
         rz = np.arange(z_min, z_max, (z_max - z_min) / 50)
 
-        print(f"Dataset n°{ds_cnt+1}")
-
         # iterate over classifiers
-        for name, clf in zip(names, classifiers):
-            ax = plt.subplot(n_datasets, n_classifs + 1, i, projection="3d")
-
+        for name, clf in zip(names, classifs):
             clf.set_params(**{"metric": metric})
+
             t0 = time()
             clf.fit(X_train, y_train)
             t1 = time() - t0
-
             t0 = time()
             score = clf.score(X_test, y_test)
             t2 = time() - t0
-
             print(
                 f" {name}:\n  training time={t1:.5f}\n  test time    ={t2:.5f}"
             )
 
-            # Plot the decision boundaries for horizontal 2D planes going
+            ax = plt.subplot(n_datasets, n_classifs + 1, i, projection="3d")
+
+            # plot the decision boundaries for horizontal 2D planes going
             # through the mean value of the third coordinates
             xx, yy = np.meshgrid(rx, ry)
             zz = get_proba(xx, yy, X[:, 1, 1].mean()*np.ones_like(xx), clf=clf)
@@ -133,7 +131,7 @@ def plot_classifiers(metric):
             xx = np.ma.masked_where(~np.isfinite(xx), xx)
             ax.contourf(xx, yy, zz, zdir="x", offset=x_min, cmap=cm, alpha=0.5)
 
-            # Plot the training points
+            # plot the training matrices
             ax.scatter(
                 X_train[:, 0, 0],
                 X_train[:, 0, 1],
@@ -142,7 +140,7 @@ def plot_classifiers(metric):
                 cmap=cm_bright,
                 edgecolors="k"
             )
-            # Plot the testing points
+            # plot the testing matrices
             ax.scatter(
                 X_test[:, 0, 0],
                 X_test[:, 0, 1],
@@ -153,7 +151,7 @@ def plot_classifiers(metric):
                 alpha=0.6
             )
 
-            if ds_cnt == 0:
+            if i_dataset == 0:
                 ax.set_title(name)
             ax.text(
                 1.3 * x_max,
@@ -185,12 +183,12 @@ names = [
     "k-NN",
     "SVC",
 ]
-classifiers = [
+classifs = [
     MDM(),
     KNearestNeighbor(n_neighbors=3),
     SVC(probability=True),
 ]
-n_classifs = len(classifiers)
+n_classifs = len(classifs)
 
 rs = np.random.RandomState(2022)
 n_matrices, n_channels = 50, 2
@@ -235,17 +233,10 @@ cm_bright = ListedColormap(["#FF0000", "#0000FF"])
 
 
 ###############################################################################
-# Classifiers with Riemannian metric
-# ----------------------------------
+# Classifiers with affine-invariant Riemannian metric
+# ---------------------------------------------------
 
 plot_classifiers("riemann")
-
-
-###############################################################################
-# Classifiers with Log-Euclidean metric
-# -------------------------------------
-
-plot_classifiers("logeuclid")
 
 
 ###############################################################################

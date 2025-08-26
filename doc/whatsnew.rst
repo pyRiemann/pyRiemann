@@ -8,7 +8,9 @@ What's new in the package
 A catalog of new features, improvements, and bug-fixes in each release.
 
 v0.10.dev
---------
+---------
+
+- Add example in gallery to compare clustering algorithms on synthetic datasets. :pr:`374` by :user:`qbarthelemy`
 
 v0.9 (July 2025)
 ----------------
