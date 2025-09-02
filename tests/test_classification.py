@@ -411,9 +411,12 @@ def test_svc_kernel_error(get_mats, get_labels):
 
 
 @pytest.mark.parametrize("power_list", [[-1, 0, 1], [0, 0.1]])
-@pytest.mark.parametrize("method_label", ["sum_means", "inf_means"])
+@pytest.mark.parametrize("method_combination",
+    ["sum_means", "inf_means", None]
+)
 @pytest.mark.parametrize("metric", get_distances())
-def test_meanfield(get_mats, get_labels, power_list, method_label, metric):
+def test_meanfield(get_mats, get_labels,
+                   power_list, method_combination, metric):
     n_powers = len(power_list)
     n_matrices, n_channels, n_classes = 8, 3, 2
     mats = get_mats(n_matrices, n_channels, "spd")
@@ -421,18 +424,20 @@ def test_meanfield(get_mats, get_labels, power_list, method_label, metric):
 
     mf = MeanField(
         power_list=power_list,
-        method_label=method_label,
+        method_combination=method_combination,
         metric=metric,
     ).fit(mats, labels)
-    covmeans = mf.covmeans_
-    assert len(covmeans) == n_powers
-    assert len(covmeans[power_list[0]]) == n_classes
-    assert covmeans[power_list[0]][labels[0]].shape == (n_channels, n_channels)
+    assert mf.covmeans_.shape == (n_classes, n_powers, n_channels, n_channels)
 
-    proba = mf.predict_proba(mats)
-    assert proba.shape == (n_matrices, n_classes)
     transf = mf.transform(mats)
-    assert transf.shape == (n_matrices, n_classes)
+    if method_combination is None:
+        assert transf.shape == (n_matrices, n_classes, n_powers)
+    else:
+        assert transf.shape == (n_matrices, n_classes)
+        pred = mf.predict(mats)
+        assert pred.shape == (n_matrices,)
+        proba = mf.predict_proba(mats)
+        assert proba.shape == (n_matrices, n_classes)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
