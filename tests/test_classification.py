@@ -6,7 +6,9 @@ import pytest
 from pytest import approx
 from scipy.spatial.distance import euclidean
 from scipy.stats import mode
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.dummy import DummyClassifier
+from sklearn.pipeline import make_pipeline
 
 from conftest import get_distances, get_means, get_metrics
 from pyriemann.estimation import Covariances
@@ -431,13 +433,27 @@ def test_meanfield(get_mats, get_labels,
 
     transf = mf.transform(mats)
     if method_combination is None:
-        assert transf.shape == (n_matrices, n_classes, n_powers)
+        assert transf.shape == (n_matrices, n_classes * n_powers)
     else:
         assert transf.shape == (n_matrices, n_classes)
         pred = mf.predict(mats)
         assert pred.shape == (n_matrices,)
         proba = mf.predict_proba(mats)
         assert proba.shape == (n_matrices, n_classes)
+
+
+@pytest.mark.parametrize("power_list", [[-1, 0, 1], [0, 0.1]])
+def test_meanfield_transformer(get_mats, get_labels, power_list):
+    n_matrices, n_channels, n_classes = 8, 3, 2
+    mats = get_mats(n_matrices, n_channels, "spd")
+    labels = get_labels(n_matrices, n_classes)
+
+    pip = make_pipeline(
+        MeanField(power_list=power_list, method_combination=None),
+        LDA(),
+    )
+    pip.fit(mats, labels)
+    pip.predict(mats)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])

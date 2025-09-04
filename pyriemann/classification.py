@@ -920,42 +920,34 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
 
         return self
 
-    def _compute_distance(self, x):
-        dist2 = np.zeros((self._n_classes, self._n_powers))
+    def _compute_distances(self, X):
+        n_matrices, _, _ = X.shape
+        dist2 = np.zeros((n_matrices, self._n_classes, self._n_powers))
         for ic, c in enumerate(self.classes_):
             for ip, p in enumerate(self.power_list):
-                dist2[ic, ip] = distance(
-                    x,
+                dist2[:, ic, ip] = distance(
+                    X,
                     self.covmeans_[ic, ip],
                     metric=self.metric,
                     squared=True,
-                )
+                )[:, 0]
         return dist2
 
-    def _predict_distance(self, x):
-        dist2 = self._compute_distance(x)
+    def _predict_distances(self, X):
+        """Helper to predict the distances. Equivalent to transform."""
+        dist2 = self._compute_distances(X)
 
         if self.method_combination == "sum_means":
-            dist2 = np.sum(dist2, axis=1, keepdims=False)
+            dist2 = np.sum(dist2, axis=2, keepdims=False)
         elif self.method_combination == "inf_means":
-            dist2 = np.min(dist2, axis=1, keepdims=False)
+            dist2 = np.min(dist2, axis=2, keepdims=False)
         elif self.method_combination is None:
-            pass
+            dist2 = np.reshape(dist2, (dist2.shape[0], -1))
         else:
             raise ValueError("Unsupported method_combination "
                              f"{self.method_combination}")
 
         return np.sqrt(dist2)
-
-    def _predict_distances(self, X):
-        """Helper to predict the squared distances. Equivalent to transform."""
-
-        dist = Parallel(n_jobs=self.n_jobs)(
-            delayed(self._predict_distance)(x) for x in X
-        )
-
-        dist = np.stack(dist, axis=0)
-        return dist
 
     def predict(self, X):
         """Get the predictions.
@@ -971,11 +963,11 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
             Predictions for each matrix according to the nearest mean field.
         """
         if self.method_combination is None:
-            raise ValueError("Classification by Mean Field is not available "
+            raise ValueError("Classification by MeanField is not available "
                              "when method_combination is None")
 
-        dist2 = self._predict_distances(X)
-        return self.classes_[dist2.argmin(axis=1)]
+        dist = self._predict_distances(X)
+        return self.classes_[dist.argmin(axis=1)]
 
     def transform(self, X):
         """Get the distance to each mean field.
@@ -988,7 +980,7 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         Returns
         -------
         dist : ndarray, shape (n_matrices, n_classes) or \
-                ndarray, shape (n_matrices, n_classes, n_powers)
+                ndarray, shape (n_matrices, n_classes x n_powers)
             Distance to each mean field according to the metric.
         """
         return self._predict_distances(X)
@@ -1008,7 +1000,7 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         Returns
         -------
         dist : ndarray, shape (n_matrices, n_classes) or \
-                ndarray, shape (n_matrices, n_classes, n_powers)
+                ndarray, shape (n_matrices, n_classes x n_powers)
             Distance to each mean field according to the metric.
         """
         return self.fit(X, y, sample_weight=sample_weight).transform(X)
@@ -1027,7 +1019,7 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
             Probabilities for each class.
         """
         if self.method_combination is None:
-            raise ValueError("Classification by Mean Field is not available "
+            raise ValueError("Classification by MeanField is not available "
                              "when method_combination is None")
 
         return softmax(-self._predict_distances(X) ** 2)
