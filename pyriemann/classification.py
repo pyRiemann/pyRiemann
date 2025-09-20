@@ -809,13 +809,17 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
     ----------
     power_list : list of float, default=[-1,0,+1]
         Exponents of power means.
-    method_label : {"sum_means", "inf_means"}, default="sum_means"
-        Method to combine labels:
+    method_combination : {"sum_means", "inf_means", None}, default="sum_means"
+        Method to combine distances from the different means of the field:
 
-        * sum_means: it assigns the matrix to the class whom the sum of
-          distances to means of the field is the lowest;
-        * inf_means: it assigns the matrix to the class of the nearest mean
-          of the field.
+        * sum_means: the classifier assigns the matrix to the class whom the
+          sum of distances to means of the field is the lowest [1]_;
+        * inf_means: the classifier assigns the matrix to the class of the
+          nearest mean of the field [1]_;
+        * None: the transformer extracts all distances, without combination
+          [2]_.
+
+        .. versionchanged:: 0.10
     metric : string, default="riemann"
         Metric used for distance estimation during prediction.
         For the list of supported metrics,
@@ -825,9 +829,10 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
     ----------
     classes_ : ndarray, shape (n_classes,)
         Labels for each class.
-    covmeans_ : dict of len(``power_list``) dicts of n_classes ndarrays of \
-            shape (n_channels, n_channels)
-        Centroids for each power and each class.
+    covmeans_ : ndarray, shape (n_classes, n_powers, n_channels, n_channels)
+        Centroids for each class and each power.
+
+        .. versionchanged:: 0.10
 
     See Also
     --------
@@ -851,15 +856,24 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
     def __init__(
         self,
         power_list=[-1, 0, 1],
-        method_label="sum_means",
+        method_label="",
+        method_combination="sum_means",
         metric="riemann",
         n_jobs=1,
     ):
         """Init."""
         self.power_list = power_list
         self.method_label = method_label
+        self.method_combination = method_combination
         self.metric = metric
         self.n_jobs = n_jobs
+
+    def _deprecate_method_label(self, method_label, method_combination):
+        if method_label != "":
+            print("DeprecationWarning: input method_label has been renamed "
+                  "into method_combination and will be removed in 0.11.0.")
+            method_combination = method_label
+        return method_combination
 
     def fit(self, X, y, sample_weight=None):
         """Fit (estimates) the centroids.
@@ -878,45 +892,62 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         self : MeanField instance
             The MeanField instance.
         """
+        self._n_powers = len(self.power_list)
+        self.method_combination = self._deprecate_method_label(
+            self.method_label, self.method_combination
+        )
         self.classes_ = np.unique(y)
+        self._n_classes = len(self.classes_)
 
+        _, n_channels, _ = X.shape
         if sample_weight is None:
             sample_weight = np.ones(X.shape[0])
 
-        self.covmeans_ = {}
-        for p in self.power_list:
-            means_p = {}
-            for c in self.classes_:
-                means_p[c] = mean_covariance(
+        self.covmeans_ = np.zeros(
+            (self._n_classes, self._n_powers, n_channels, n_channels),
+            dtype=X.dtype,
+        )
+        for ic, c in enumerate(self.classes_):
+            covmeans_ = Parallel(n_jobs=self.n_jobs)(
+                delayed(mean_covariance)(
                     X[y == c],
                     p,
                     metric="power",
                     sample_weight=sample_weight[y == c],
-                )
-            self.covmeans_[p] = means_p
+                ) for p in self.power_list
+            )
+            self.covmeans_[ic] = np.stack(covmeans_, axis=0)
 
         return self
 
-    def _get_label(self, x):
-        m = np.zeros((len(self.power_list), len(self.classes_)))
-        for ip, p in enumerate(self.power_list):
-            for ic, c in enumerate(self.classes_):
-                m[ip, ic] = distance(
-                    x,
-                    self.covmeans_[p][c],
+    def _compute_distances(self, X):
+        n_matrices, _, _ = X.shape
+        dist2 = np.zeros((n_matrices, self._n_classes, self._n_powers))
+        for ic, c in enumerate(self.classes_):
+            for ip, p in enumerate(self.power_list):
+                dist2[:, ic, ip] = distance(
+                    X,
+                    self.covmeans_[ic, ip],
                     metric=self.metric,
                     squared=True,
-                )
+                )[:, 0]
+        return dist2
 
-        if self.method_label == "sum_means":
-            ipmin = np.argmin(np.sum(m, axis=1))
-        elif self.method_label == "inf_means":
-            ipmin = np.where(m == np.min(m))[0][0]
+    def _predict_distances(self, X):
+        """Helper to predict the distances. Equivalent to transform."""
+        dist2 = self._compute_distances(X)
+
+        if self.method_combination == "sum_means":
+            dist2 = np.sum(dist2, axis=2, keepdims=False)
+        elif self.method_combination == "inf_means":
+            dist2 = np.min(dist2, axis=2, keepdims=False)
+        elif self.method_combination is None:
+            dist2 = np.reshape(dist2, (dist2.shape[0], -1))
         else:
-            raise TypeError("method_label must be sum_means or inf_means")
+            raise ValueError("Unsupported method_combination "
+                             f"{self.method_combination}")
 
-        y = self.classes_[np.argmin(m[ipmin])]
-        return y
+        return np.sqrt(dist2)
 
     def predict(self, X):
         """Get the predictions.
@@ -929,36 +960,17 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         Returns
         -------
         pred : ndarray of int, shape (n_matrices,)
-            Predictions for each matrix according to the nearest means field.
+            Predictions for each matrix according to the nearest mean field.
         """
-        pred = Parallel(n_jobs=self.n_jobs)(
-            delayed(self._get_label)(x) for x in X
-        )
-        return np.array(pred)
+        if self.method_combination is None:
+            raise ValueError("Classification by MeanField is not available "
+                             "when method_combination is None")
 
-    def _predict_distances(self, X):
-        """Helper to predict the distance. Equivalent to transform."""
-
-        dist = []
-        for x in X:
-            m = {}
-            for p in self.power_list:
-                m[p] = []
-                for c in self.classes_:
-                    m[p].append(
-                        distance(
-                            x,
-                            self.covmeans_[p][c],
-                            metric=self.metric,
-                        )
-                    )
-            pmin = min(m.items(), key=lambda x: np.sum(x[1]))[0]
-            dist.append(np.array(m[pmin]))
-
-        return np.stack(dist)
+        dist = self._predict_distances(X)
+        return self.classes_[dist.argmin(axis=1)]
 
     def transform(self, X):
-        """Get the distance to each means field.
+        """Get the distance to each mean field.
 
         Parameters
         ----------
@@ -967,8 +979,9 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
 
         Returns
         -------
-        dist : ndarray, shape (n_matrices, n_classes)
-            Distance to each means field according to the metric.
+        dist : ndarray, shape (n_matrices, n_classes) or \
+                ndarray, shape (n_matrices, n_classes x n_powers)
+            Distance to each mean field according to the metric.
         """
         return self._predict_distances(X)
 
@@ -986,8 +999,9 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
 
         Returns
         -------
-        dist : ndarray, shape (n_matrices, n_classes)
-            Distance to each means field according to the metric.
+        dist : ndarray, shape (n_matrices, n_classes) or \
+                ndarray, shape (n_matrices, n_classes x n_powers)
+            Distance to each mean field according to the metric.
         """
         return self.fit(X, y, sample_weight=sample_weight).transform(X)
 
@@ -1004,6 +1018,10 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
         prob : ndarray, shape (n_matrices, n_classes)
             Probabilities for each class.
         """
+        if self.method_combination is None:
+            raise ValueError("Classification by MeanField is not available "
+                             "when method_combination is None")
+
         return softmax(-self._predict_distances(X) ** 2)
 
 

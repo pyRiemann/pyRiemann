@@ -12,6 +12,8 @@ v0.10.dev
 
 - Add example in gallery to compare clustering algorithms on synthetic datasets. :pr:`374` by :user:`qbarthelemy`
 
+- Enhance :class:`pyriemann.classification.MeanField`, to be used as a feature extractor. :pr:`377` by :user:`qbarthelemy`
+
 v0.9 (July 2025)
 ----------------
 
