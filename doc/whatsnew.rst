@@ -14,6 +14,8 @@ v0.10.dev
 
 - Enhance :class:`pyriemann.classification.MeanField`, to be used as a feature extractor. :pr:`377` by :user:`qbarthelemy`
 
+- Update pyRiemann from Python 3.9 - 3.11 to 3.10 - 3.12. :pr:`378` by :user:`qbarthelemy`
+
 v0.9 (July 2025)
 ----------------
 

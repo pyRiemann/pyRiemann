@@ -7,6 +7,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          python-version: '3.10'
       - name: Generate HTML docs
         uses: josh146/sphinx-action@master
         with:
