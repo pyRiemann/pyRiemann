@@ -105,11 +105,8 @@ def download_uavsar(data_path: str, scene: int):
         Scene to download.
     """
     assert scene in [1, 2], f"Unknown scene {scene} for UAVSAR dataset"
-    if scene == 1:
-        url = "https://zenodo.org/records/10625505/files/scene1.npy?download=1"
-    else:
-        url = "https://zenodo.org/records/10625505/files/scene2.npy?download=1"
     filename = f"scene{scene}.npy"
+    url = f"https://zenodo.org/records/10625505/files/{filename}?download=1"
     if not os.path.exists(data_path):
         os.makedirs(data_path, exist_ok=True)
     if not os.path.exists(os.path.join(data_path, filename)):

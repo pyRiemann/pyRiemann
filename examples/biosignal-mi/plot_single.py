@@ -86,7 +86,7 @@ scores = cross_val_score(mdm, cov_data_train, labels, cv=cv, n_jobs=1)
 # Printing the results
 class_balance = np.mean(labels == labels[0])
 class_balance = max(class_balance, 1. - class_balance)
-print("MDM Classification accuracy: %f / Chance level: %f" % (np.mean(scores),
+print("MDM classification accuracy: %f / Chance level: %f" % (np.mean(scores),
                                                               class_balance))
 
 ###############################################################################
@@ -97,14 +97,11 @@ clf = TSClassifier()
 # Use scikit-learn Pipeline with cross_val_score function
 scores = cross_val_score(clf, cov_data_train, labels, cv=cv, n_jobs=1)
 
-# Printing the results
-class_balance = np.mean(labels == labels[0])
-class_balance = max(class_balance, 1. - class_balance)
-print("Tangent space Classification accuracy: %f / Chance level: %f" %
+print("Tangent space classification accuracy: %f / Chance level: %f" %
       (np.mean(scores), class_balance))
 
 ###############################################################################
-# Classification with CSP + logistic regression
+# Classification with CSP + Logistic Regression
 # ---------------------------------------------
 
 # Assemble a classifier
@@ -114,10 +111,7 @@ csp = CSP(n_components=4, reg="ledoit_wolf", log=True)
 clf = Pipeline([("CSP", csp), ("LogisticRegression", lr)])
 scores = cross_val_score(clf, epochs_data_train, labels, cv=cv, n_jobs=1)
 
-# Printing the results
-class_balance = np.mean(labels == labels[0])
-class_balance = max(class_balance, 1. - class_balance)
-print("CSP + LDA Classification accuracy: %f / Chance level: %f" %
+print("CSP + LogReg classification accuracy: %f / Chance level: %f" %
       (np.mean(scores), class_balance))
 
 ###############################################################################
