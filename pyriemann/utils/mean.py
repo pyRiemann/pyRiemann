@@ -61,7 +61,6 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
         B = check_init(init, n)
 
     eye_n = np.eye(n)
-    crit = np.inf
     for _ in range(maxiter):
         J = np.einsum("a,abc->bc", sample_weight, logm(B @ X @ B.conj().T))
         delta = np.real(np.diag(expm(J)))
@@ -368,7 +367,6 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     else:
         M = check_init(init, n)
 
-    crit = np.finfo(np.float64).max
     for _ in range(maxiter):
         invX = np.linalg.inv(0.5 * X + 0.5 * M)
         J = np.einsum("a,abc->bc", sample_weight, invX)
@@ -505,7 +503,6 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
         K = sqrtm(G)
 
     eye_n, sqrt_n = np.eye(n), np.sqrt(n)
-    crit = 10 * zeta
     for _ in range(maxiter):
         H = np.einsum(
             "a,abc->bc",
@@ -634,7 +631,6 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 
     nu = 1.0
     tau = np.finfo(np.float64).max
-    crit = np.finfo(np.float64).max
     for _ in range(maxiter):
         M12, Mm12 = sqrtm(M), invsqrtm(M)
         J = np.einsum("a,abc->bc", sample_weight, logm(Mm12 @ X @ Mm12))
@@ -701,11 +697,12 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     else:
         init = check_init(init, n)
     M = init
+
     for _ in range(maxiter):
         X_ts = log_map_wasserstein(X, M)
         J = np.einsum("a,abc->bc", sample_weight, X_ts)
-        crit = np.linalg.norm(J)
         M = exp_map_wasserstein(J, M)
+        crit = np.linalg.norm(J)
         if crit <= tol:
             break
     else:
@@ -862,7 +859,6 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
 
     nu = 1.0
     tau = np.finfo(np.float64).max
-    crit = np.finfo(np.float64).max
     for _ in range(maxiter):
         maskedM = _apply_masks(np.tile(M, (n_matrices, 1, 1)), masks)
         J = np.zeros((n, n), dtype=X.dtype)
