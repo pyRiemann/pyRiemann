@@ -28,10 +28,9 @@ import numpy as np
 import pandas as pd
 from scipy.linalg import block_diag
 from sklearn.base import BaseEstimator, TransformerMixin
-from sklearn.model_selection import StratifiedKFold
 from sklearn.compose import ColumnTransformer
+from sklearn.model_selection import cross_val_score, StratifiedKFold
 from sklearn.pipeline import Pipeline, make_pipeline
-from sklearn.model_selection import cross_val_score
 
 from pyriemann.classification import SVC
 from pyriemann.estimation import (
