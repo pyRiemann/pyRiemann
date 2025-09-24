@@ -36,7 +36,7 @@ setup(
         "Tracker": "https://github.com/pyRiemann/pyRiemann/issues/",
     },
     platforms="any",
-    python_requires=">=3.10",
+    python_requires=">=3.9",
     install_requires=[
         "numpy>=1.25.0",
         "scipy",
