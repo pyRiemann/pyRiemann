@@ -5,8 +5,10 @@ import pytest
 from conftest import get_metrics
 from pyriemann.spatialfilters import Xdawn, CSP, SPoC, BilinearFilter, AJDC
 
+spfilts = [Xdawn, CSP, SPoC, BilinearFilter, AJDC]
 
-@pytest.mark.parametrize("spfilt", [Xdawn, CSP, SPoC, BilinearFilter, AJDC])
+
+@pytest.mark.parametrize("spfilt", spfilts)
 @pytest.mark.parametrize("n_channels", [3, 5, 7])
 @pytest.mark.parametrize("n_classes", [2, 3])
 def test_spatial_filters(spfilt, n_channels, n_classes,
@@ -24,16 +26,18 @@ def test_spatial_filters(spfilt, n_channels, n_classes,
         n_subjects, n_conditions = 2, 2
         X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
 
-    clf_fit(spfilt, X, labels, n_channels, n_times)
-    clf_fit_independence(spfilt, X, labels, n_channels)
+    sf_fit(spfilt, X, labels, n_channels, n_times)
+    sf_fit_independence(spfilt, X, labels, n_channels)
     if spfilt is CSP:
-        clf_fit_error(spfilt, X, labels)
-    clf_transform(spfilt, X, labels, n_matrices, n_channels, n_times)
+        sf_fit_error(spfilt, X, labels)
+    sf_transform(spfilt, X, labels, n_matrices, n_channels, n_times)
     if spfilt in (CSP, SPoC, BilinearFilter):
-        clf_transform_error(spfilt, X, labels, n_channels)
+        sf_transform_error(spfilt, X, labels, n_channels)
+    if spfilt in (Xdawn, CSP, SPoC, BilinearFilter):
+        sf_fit_transform(spfilt, X, labels)
 
 
-def clf_fit(spfilt, X, labels, n_channels, n_times):
+def sf_fit(spfilt, X, labels, n_channels, n_times):
     n_classes = len(np.unique(labels))
     if spfilt is BilinearFilter:
         n_filters = 4
@@ -61,7 +65,7 @@ def clf_fit(spfilt, X, labels, n_channels, n_times):
         assert sf.patterns_.shape == (n_components, n_channels)
 
 
-def clf_fit_error(spfilt, X, labels):
+def sf_fit_error(spfilt, X, labels):
     sf = spfilt()
     with pytest.raises(ValueError):
         sf.fit(X, labels * 0.0)  # 1 class
@@ -77,7 +81,7 @@ def clf_fit_error(spfilt, X, labels):
         sf.fit(X, X)
 
 
-def clf_transform(spfilt, X, labels, n_matrices, n_channels, n_times):
+def sf_transform(spfilt, X, labels, n_matrices, n_channels, n_times):
     n_classes = len(np.unique(labels))
     if spfilt is BilinearFilter:
         n_filters = 4
@@ -94,10 +98,6 @@ def clf_transform(spfilt, X, labels, n_matrices, n_channels, n_times):
     else:
         Xtr = sf.fit(X, labels).transform(X)
 
-        Xtr1 = sf.fit_transform(X, labels)
-
-        assert_array_equal(Xtr, Xtr1)
-
     if spfilt is AJDC:
         assert Xtr.shape == (n_matrices, n_channels, n_times)
     elif spfilt is BilinearFilter:
@@ -110,7 +110,7 @@ def clf_transform(spfilt, X, labels, n_matrices, n_channels, n_times):
         assert Xtr.shape == (n_matrices, n_components)
 
 
-def clf_transform_error(spfilt, X, labels, n_channels):
+def sf_transform_error(spfilt, X, labels, n_channels):
     if spfilt is BilinearFilter:
         sf = spfilt(np.eye(n_channels))
     elif spfilt is AJDC:
@@ -121,7 +121,18 @@ def clf_transform_error(spfilt, X, labels, n_channels):
         sf.fit(X, labels).transform(X[:, :-1, :-1])
 
 
-def clf_fit_independence(spfilt, X, labels, n_channels):
+def sf_fit_transform(spfilt, X, labels):
+    if spfilt is BilinearFilter:
+        sf = spfilt(filters=np.eye(3, X.shape[-2]))
+    else:
+        sf = spfilt()
+
+    Xtr = sf.fit(X, labels).transform(X)
+    Xtr2 = sf.fit_transform(X, labels)
+    assert_array_equal(Xtr, Xtr2)
+
+
+def sf_fit_independence(spfilt, X, labels, n_channels):
     if spfilt is BilinearFilter:
         sf = spfilt(np.eye(n_channels))
     elif spfilt is AJDC:

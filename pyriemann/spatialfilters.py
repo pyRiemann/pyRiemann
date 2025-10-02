@@ -5,6 +5,7 @@ import numpy as np
 from scipy.linalg import eigh, inv
 from sklearn.base import BaseEstimator, TransformerMixin
 
+from .utils import deprecated
 from .utils.covariance import normalize, get_nondiag_weight, cov_est_functions
 from .utils.mean import mean_covariance
 from .utils.utils import check_function
@@ -533,7 +534,7 @@ class SPoC(CSP):
         return self
 
 
-class AJDC(TransformerMixin, BaseEstimator):
+class AJDC(BaseEstimator):
     """AJDC algorithm.
 
     The approximate joint diagonalization of Fourier cospectral matrices (AJDC)
@@ -773,26 +774,12 @@ class AJDC(TransformerMixin, BaseEstimator):
 
         return self.forward_filters_ @ X
 
+    @deprecated(
+        "fit_transform() is deprecated and will be removed in 0.11.0; "
+        "please use fit().transform()."
+    )
     def fit_transform(self, X, y=None):
-        """Fit and transform in a single function.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_subjects, n_conditions, n_channels, n_times) | \
-                list of n_subjects of list of n_conditions ndarray of shape \
-                (n_channels, n_times), with same n_conditions and n_channels \
-                but different n_times
-            Multi-channel time-series in channel space, acquired for different
-            subjects and under different experimental conditions.
-        y : None
-            Currently not used, here for compatibility with sklearn API.
-
-        Returns
-        -------
-        X_new : ndarray, shape (n_matrices, n_sources, n_times)
-            Multi-channel time-series in source space.
-        """
-        return self.fit(X, y).transform(X)
+        pass
 
     def inverse_transform(self, X, supp=None):
         """Transform source space to channel space.
