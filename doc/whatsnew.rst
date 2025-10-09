@@ -16,6 +16,8 @@ v0.10.dev
 
 - Update pyRiemann from Python 3.9 - 3.11 to 3.10 - 3.12. :pr:`378` by :user:`qbarthelemy`
 
+- Deprecate ``fit_transform()`` of :class:`pyriemann.spatialfilters.AJDC` due to incompatible dimensions. :pr:`382` by :user:`qbarthelemy`
+
 v0.9 (July 2025)
 ----------------
 
