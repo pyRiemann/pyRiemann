@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.testing import assert_array_equal
 import pytest
 from pytest import approx
 
@@ -16,7 +17,7 @@ def test_tangentspace(tspace, get_mats, get_labels, get_weights):
     clf_fit(tspace, mats, labels, weights)
     clf_transform(tspace, mats, labels)
     clf_fit_transform(tspace, mats, labels)
-    clf_fit_transform_independence(tspace, mats, labels)
+    clf_fit_independence(tspace, mats, labels)
     if tspace is TangentSpace:
         clf_transform_wo_fit(tspace, mats)
         clf_inversetransform(tspace, mats)
@@ -37,8 +38,7 @@ def clf_fit(tspace, mats, labels, weights):
 
 def clf_transform(tspace, mats, labels):
     n_matrices, n_channels, n_channels = mats.shape
-    ts = tspace().fit(mats, labels)
-    Xtr = ts.transform(mats)
+    Xtr = tspace().fit(mats, labels).transform(mats)
     if tspace is TangentSpace:
         n_ts = (n_channels * (n_channels + 1)) // 2
         assert Xtr.shape == (n_matrices, n_ts)
@@ -49,15 +49,12 @@ def clf_transform(tspace, mats, labels):
 def clf_fit_transform(tspace, mats, labels):
     n_matrices, n_channels, n_channels = mats.shape
     ts = tspace()
-    Xtr = ts.fit_transform(mats, labels)
-    if tspace is TangentSpace:
-        n_ts = (n_channels * (n_channels + 1)) // 2
-        assert Xtr.shape == (n_matrices, n_ts)
-    else:
-        assert Xtr.shape == (n_matrices, n_channels, n_channels)
+    Xtr = ts.fit(mats, labels).transform(mats)
+    Xtr2 = ts.fit_transform(mats, labels)
+    assert_array_equal(Xtr, Xtr2)
 
 
-def clf_fit_transform_independence(tspace, mats, labels):
+def clf_fit_independence(tspace, mats, labels):
     n_matrices, n_channels, n_channels = mats.shape
     ts = tspace()
     ts.fit(mats, labels)

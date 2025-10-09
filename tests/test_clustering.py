@@ -25,7 +25,9 @@ def test_clustering_two_clusters(kind, clust,
     if clust is Kmeans:
         clt_fit(clust, mats, n_clusters, None)
         clt_predict(clust, mats, n_clusters)
+        clt_fitpredict(clust, mats, n_clusters)
         clt_transform(clust, mats, n_clusters)
+        clt_fittransform(clust, mats)
         clt_jobs(clust, mats, n_clusters)
         clt_centroids(clust, mats, n_clusters)
         clt_fit_independence(clust, mats)
@@ -35,12 +37,14 @@ def test_clustering_two_clusters(kind, clust,
         labels = get_labels(n_matrices, n_classes)
         clt_fit(clust, mats, n_clusters, labels)
         clt_transform_per_class(clust, mats, n_clusters, labels)
+        clt_fittransform_per_class(clust, mats, n_clusters, labels)
         clt_jobs(clust, mats, n_clusters, labels)
         clt_fit_labels_independence(clust, mats, labels)
 
     if clust is MeanShift:
         clt_fit(clust, mats, n_clusters, None)
         clt_predict(clust, mats)
+        clt_fitpredict(clust, mats)
 
     if clust is Potato:
         clt_fit(clust, mats, n_clusters, None)
@@ -63,6 +67,7 @@ def test_clustering_two_clusters(kind, clust,
         clt_predict_proba(clust, mats, n_potatoes)
         clt_partial_fit(clust, mats, n_potatoes)
         clt_fit_independence(clust, mats, n_potatoes)
+        clt_fittransform(clust, mats, n_potatoes)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -132,8 +137,8 @@ def clt_transform(clust, mats, n_clusters=None):
         clt = clust(n_potatoes=n_clusters)
     else:
         clt = clust(n_clusters=n_clusters)
-    clt.fit(mats)
-    transf = clt.transform(mats)
+    transf = clt.fit(mats).transform(mats)
+
     if n_clusters is None:
         assert transf.shape == (n_matrices,)
     else:
@@ -161,11 +166,9 @@ def clt_centroids(clust, mats, n_clusters):
 
 
 def clt_transform_per_class(clust, mats, n_clusters, labels):
-    n_classes = len(np.unique(labels))
-    n_matrices = mats.shape[0]
+    n_classes, n_matrices = len(np.unique(labels)), mats.shape[0]
     clt = clust(n_clusters=n_clusters)
-    clt.fit(mats, labels)
-    transf = clt.transform(mats)
+    transf = clt.fit(mats, labels).transform(mats)
     assert transf.shape == (n_matrices, n_classes * n_clusters)
 
 
@@ -178,9 +181,20 @@ def clt_predict(clust, mats, n_clusters=None):
         clt = clust(n_potatoes=n_clusters)
     else:
         clt = clust(n_clusters=n_clusters)
-    clt.fit(mats)
-    pred = clt.predict(mats)
+    pred = clt.fit(mats).predict(mats)
     assert pred.shape == (n_matrices,)
+
+
+def clt_fitpredict(clust, mats, n_clusters=None):
+    if n_clusters is None:
+        clt = clust()
+    else:
+        clt = clust(n_clusters=n_clusters)
+    if hasattr(clt, "random_state"):
+        clt.set_params(**{"random_state": 42})
+    pred = clt.fit(mats).predict(mats)
+    pred2 = clt.fit_predict(mats)
+    assert_array_equal(pred, pred2)
 
 
 def clt_predict_proba(clust, mats, n=None):
@@ -230,10 +244,22 @@ def clt_fit_labels_independence(clust, mats, labels):
     clt.fit(new_mats, labels).transform(new_mats)
 
 
-def clt_fittransform(clust, mats):
-    clt = clust()
-    transf = clt.fit_transform(mats)
-    transf2 = clt.fit(mats).transform(mats)
+def clt_fittransform(clust, mats, n_clusters=None):
+    if n_clusters is None:
+        clt = clust()
+    elif clust is PotatoField:
+        clt = clust(n_potatoes=n_clusters)
+    if hasattr(clt, "random_state"):
+        clt.set_params(**{"random_state": 42})
+    transf = clt.fit(mats).transform(mats)
+    transf2 = clt.fit_transform(mats)
+    assert_array_equal(transf, transf2)
+
+
+def clt_fittransform_per_class(clust, mats, n_clusters, labels):
+    clt = clust(n_clusters=n_clusters, random_state=42)
+    transf = clt.fit(mats, labels).transform(mats)
+    transf2 = clt.fit_transform(mats, labels)
     assert_array_equal(transf, transf2)
 
 

@@ -131,6 +131,9 @@ def test_whitening_transform(dim_red, metric, rndstate, get_mats):
     if dim_red is not None and "max_cond" in dim_red.keys():
         assert np.linalg.cond(whitmats.mean(axis=0)) <= max_cond
 
+    whitmats2 = whit.fit_transform(mats)
+    assert_array_almost_equal(whitmats, whitmats2)
+
 
 @pytest.mark.parametrize("dim_red", dim_red)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
