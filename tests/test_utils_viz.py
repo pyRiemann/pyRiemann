@@ -1,3 +1,4 @@
+import matplotlib
 import numpy as np
 import pytest
 
@@ -8,6 +9,8 @@ from pyriemann.utils.viz import (
     plot_waveforms
 )
 
+matplotlib.use('Agg')
+
 
 @requires_matplotlib
 def test_embedding(get_mats):
@@ -15,7 +18,7 @@ def test_embedding(get_mats):
     n_matrices, n_channels = 5, 3
     mats = get_mats(n_matrices, n_channels, "spd")
     plot_embedding(mats, y=None, metric="euclid")
-    y = np.ones(mats.shape[0])
+    y = np.ones(n_matrices)
     plot_embedding(mats, y=y, metric="euclid")
 
 
