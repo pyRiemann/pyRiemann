@@ -17,7 +17,8 @@ regress = [SVR, KNearestNeighborRegressor]
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("regres", regress)
-def test_regression(kind, regres, get_mats, get_targets, get_weights, rndstate):
+def test_regression(kind, regres,
+                    get_mats, get_targets, get_weights, rndstate):
     if kind == "hpd" and regres is SVR:
         pytest.skip()
     n_matrices, n_channels = 6, 3
