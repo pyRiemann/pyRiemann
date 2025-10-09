@@ -8,6 +8,7 @@ from scipy.spatial.distance import euclidean
 from scipy.stats import mode
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.dummy import DummyClassifier
+from sklearn.model_selection import cross_val_score, KFold
 from sklearn.pipeline import make_pipeline
 
 from conftest import get_distances, get_means, get_metrics
@@ -61,7 +62,7 @@ def test_mode(X, axis, expected):
 @pytest.mark.parametrize("n_classes", [2, 3])
 @pytest.mark.parametrize("classif", classifs)
 def test_classifier(kind, n_classes, classif,
-                    get_mats, get_labels, get_weights):
+                    get_mats, get_labels, get_weights, rndstate):
     if kind == "hpd" and classif in [FgMDM, TSClassifier, SVC]:
         pytest.skip()
     if n_classes == 2:
@@ -86,6 +87,7 @@ def test_classifier(kind, n_classes, classif,
         clf_jobs(classif, mats, labels)
     if hasattr(classif(), "tsupdate"):
         clf_tsupdate(classif, mats, labels)
+    clf_pipeline(classif, labels, rndstate)
 
 
 def clf_fit(classif, mats, labels, weights):
@@ -128,8 +130,8 @@ def clf_transform(classif, mats, labels):
 
 def clf_fittransform(classif, mats, labels):
     clf = classif()
-    transf = clf.fit_transform(mats, labels)
-    transf2 = clf.fit(mats, labels).transform(mats)
+    transf = clf.fit(mats, labels).transform(mats)
+    transf2 = clf.fit_transform(mats, labels)
     assert_array_equal(transf, transf2)
 
 
@@ -155,6 +157,24 @@ def clf_populate_classes(classif, mats, labels):
 def clf_tsupdate(classif, mats, labels):
     clf = classif(tsupdate=True)
     clf.fit(mats, labels).predict(mats)
+
+
+def clf_pipeline(classif, labels, rndstate):
+    n_matrices, n_channels, n_times = len(labels), 3, 100
+    epochs = rndstate.randn(n_matrices, n_channels, n_times)
+
+    clf = classif()
+    if hasattr(clf, "probability"):
+        clf.set_params(**{"probability": True})
+
+    pip = make_pipeline(Covariances(estimator="scm"), clf)
+    pip.fit(epochs, labels)
+    pip.predict(epochs)
+    pip.predict_proba(epochs)
+    cross_val_score(
+        pip, epochs, labels,
+        cv=KFold(n_splits=3), scoring="accuracy", n_jobs=1
+    )
 
 
 @pytest.mark.parametrize("classif", classifs)
@@ -440,6 +460,7 @@ def test_meanfield(get_mats, get_labels,
         assert pred.shape == (n_matrices,)
         proba = mf.predict_proba(mats)
         assert proba.shape == (n_matrices, n_classes)
+        mf.score(mats, labels)
 
 
 @pytest.mark.parametrize("power_list", [[-1, 0, 1], [0, 0.1]])

@@ -3,18 +3,22 @@ import pickle
 import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
+from sklearn.model_selection import cross_val_score, KFold
+from sklearn.pipeline import make_pipeline
 
 from conftest import get_distances, get_means, get_metrics
+from pyriemann.estimation import Covariances
 from pyriemann.regression import (SVR, KNearestNeighborRegressor)
 from pyriemann.utils.kernel import kernel
 from pyriemann.utils.mean import mean_covariance
 
-regs = [SVR, KNearestNeighborRegressor]
+regress = [SVR, KNearestNeighborRegressor]
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("regres", regs)
-def test_regression(kind, regres, get_mats, get_targets, get_weights):
+@pytest.mark.parametrize("regres", regress)
+def test_regression(kind, regres,
+                    get_mats, get_targets, get_weights, rndstate):
     if kind == "hpd" and regres is SVR:
         pytest.skip()
     n_matrices, n_channels = 6, 3
@@ -26,40 +30,52 @@ def test_regression(kind, regres, get_mats, get_targets, get_weights):
     reg_predict(regres, mats, targets)
     reg_fit_independence(regres, mats, targets)
     reg_score(regres, mats, targets)
+    reg_pipeline(regres, targets, rndstate)
 
 
 def reg_fit(regres, mats, targets, weights):
     n_matrices, n_channels, _ = mats.shape
-    clf = regres().fit(mats, targets)
+    reg = regres().fit(mats, targets)
 
-    if clf is SVR:
-        assert clf.data_.shape == (n_matrices, n_channels, n_channels)
-    elif clf is KNearestNeighborRegressor:
-        assert clf.covmeans_.shape == (n_matrices, n_channels, n_channels)
-        assert clf.values_.shape == (n_matrices,)
+    if reg is SVR:
+        assert reg.data_.shape == (n_matrices, n_channels, n_channels)
+    elif reg is KNearestNeighborRegressor:
+        assert reg.covmeans_.shape == (n_matrices, n_channels, n_channels)
+        assert reg.values_.shape == (n_matrices,)
 
-    clf.fit(mats, targets, sample_weight=weights)
+    reg.fit(mats, targets, sample_weight=weights)
 
 
 def reg_predict(regres, mats, targets):
-    clf = regres()
-    clf.fit(mats, targets)
-    predicted = clf.predict(mats)
+    reg = regres()
+    predicted = reg.fit(mats, targets).predict(mats)
     assert predicted.shape == (len(targets),)
 
 
 def reg_fit_independence(regres, mats, targets):
-    clf = regres()
-    clf.fit(mats, targets).predict(mats)
+    reg = regres()
+    reg.fit(mats, targets).predict(mats)
     # retraining with different size should erase previous fit
     new_mats = mats[:, :-1, :-1]
-    clf.fit(new_mats, targets).predict(new_mats)
+    reg.fit(new_mats, targets).predict(new_mats)
 
 
 def reg_score(regres, mats, targets):
-    clf = regres()
-    clf.fit(mats, targets)
-    clf.score(mats, targets)
+    reg = regres()
+    reg.fit(mats, targets).score(mats, targets)
+
+
+def reg_pipeline(regres, targets, rndstate):
+    n_matrices, n_channels, n_times = len(targets), 3, 100
+    epochs = rndstate.randn(n_matrices, n_channels, n_times)
+
+    pip = make_pipeline(Covariances(estimator="scm"), regres())
+    pip.fit(epochs, targets)
+    pip.predict(epochs)
+    cross_val_score(
+        pip, epochs, targets,
+        cv=KFold(n_splits=2), scoring="r2", n_jobs=1
+    )
 
 
 @pytest.mark.parametrize("regres", [KNearestNeighborRegressor])
@@ -85,7 +101,7 @@ def test_metric_dist(regres, mean, dist, get_mats, get_targets):
     clf.fit(mats, targets).predict(mats)
 
 
-@pytest.mark.parametrize("regres", regs)
+@pytest.mark.parametrize("regres", regress)
 @pytest.mark.parametrize("metric", [42, "faulty", {"foo": "bar"}])
 def test_metric_wrong_keys(regres, metric, get_mats, get_targets):
     n_matrices, n_channels = 6, 3
@@ -96,7 +112,7 @@ def test_metric_wrong_keys(regres, metric, get_mats, get_targets):
         clf.fit(mats, targets).predict(mats)
 
 
-@pytest.mark.parametrize("regres", regs)
+@pytest.mark.parametrize("regres", regress)
 @pytest.mark.parametrize("metric", get_metrics())
 def test_metric_str(regres, metric, get_mats, get_targets):
     n_matrices, n_channels = 6, 3
