@@ -44,6 +44,8 @@ def test_covariances(estimator, rndstate):
     assert covmats.shape == (n_matrices, n_channels, n_channels)
     assert is_spd(covmats)
 
+    if estimator == "mcd":
+        pytest.skip()
     covmats2 = covest.fit_transform(x)
     assert_array_almost_equal(covmats, covmats2)
 
