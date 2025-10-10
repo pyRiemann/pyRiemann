@@ -39,10 +39,13 @@ def test_covariances(estimator, rndstate):
     x = rndstate.randn(n_matrices, n_channels, n_times)
 
     covest = Covariances(estimator=estimator).fit(x)
-    covmats = covest.fit_transform(x)
+    covmats = covest.transform(x)
     assert covest.get_params() == dict(estimator=estimator)
     assert covmats.shape == (n_matrices, n_channels, n_channels)
     assert is_spd(covmats)
+
+    covmats2 = covest.fit_transform(x)
+    assert_array_almost_equal(covmats, covmats2)
 
 
 @pytest.mark.parametrize(
@@ -92,7 +95,7 @@ def test_time_delay_covariances(delays, rndstate):
     x = rndstate.randn(n_matrices, n_channels, n_times)
 
     covest = TimeDelayCovariances(delays=delays)
-    covmats = covest.fit_transform(x)
+    covmats = covest.fit(x).transform(x)
     assert covest.get_params() == dict(estimator="scm", delays=delays)
     if isinstance(delays, int):
         n_delays = delays
@@ -102,7 +105,10 @@ def test_time_delay_covariances(delays, rndstate):
                              n_delays * n_channels)
     assert covest.Xtd_.shape == (n_matrices, n_delays * n_channels, n_times)
     assert is_spd(covmats)
-    assert ~is_hankel(covmats[0])
+    assert not is_hankel(covmats[0])
+
+    covmats2 = covest.fit_transform(x)
+    assert_array_almost_equal(covmats, covmats2)
 
 
 @pytest.mark.parametrize("estimator", estim)
@@ -115,7 +121,7 @@ def test_erp_covariances(estimator, svd, n_classes, rndstate, get_labels):
     labels = get_labels(n_matrices, n_classes)
 
     covest = ERPCovariances(estimator=estimator, svd=svd)
-    covmats = covest.fit_transform(x, labels)
+    covmats = covest.fit(x, labels).transform(x)
     assert covest.get_params() == dict(
         classes=None,
         estimator=estimator,
@@ -166,7 +172,7 @@ def test_xdawn_covariances_est(est, xdawn_est, rndstate, get_labels):
         estimator=est,
         xdawn_estimator=xdawn_est
     )
-    covmats = covest.fit_transform(x, labels)
+    covmats = covest.fit(x, labels).transform(x)
     assert covest.get_params() == dict(
         nfilter=nfilter,
         applyfilters=True,
@@ -265,6 +271,9 @@ def test_xspectra(estim, rndstate):
     else:
         assert is_hpsd(spmats.transpose(0, 3, 1, 2))
 
+    spmats2 = spest.fit_transform(x)
+    assert_array_almost_equal(spmats, spmats2)
+
 
 @pytest.mark.parametrize("coh", coh)
 def test_coherences(coh, rndstate):
@@ -284,10 +293,13 @@ def test_coherences(coh, rndstate):
         n_freqs = 65
 
     cohest.fit(x)
-    cohmats = cohest.fit_transform(x)
+    cohmats = cohest.transform(x)
     assert cohmats.shape == (n_matrices, n_channels, n_channels, n_freqs)
     if coh in ["ordinary", "instantaneous"]:
         assert is_spsd(cohmats.transpose(0, 3, 1, 2))
+
+    cohmats2 = cohest.fit_transform(x)
+    assert_array_almost_equal(cohmats, cohmats2)
 
 
 @pytest.mark.parametrize(
@@ -306,9 +318,13 @@ def test_kernels(metric, rndstate):
     n_matrices, n_channels, n_times = 2, 5, 10
     x = rndstate.randn(n_matrices, n_channels, n_times)
 
-    kernels = Kernels(metric=metric).fit_transform(x)
+    est = Kernels(metric=metric)
+    kernels = est.fit(x).transform(x)
     assert kernels.shape == (n_matrices, n_channels, n_channels)
     assert is_spd(kernels)
+
+    kernels2 = est.fit_transform(x)
+    assert_array_almost_equal(kernels, kernels2)
 
 
 def test_kernels_linear(rndstate):
@@ -352,7 +368,7 @@ def test_shrinkage(shrinkage, kind, get_mats):
     sh = Shrinkage(shrinkage=shrinkage)
     assert sh.get_params() == dict(shrinkage=shrinkage)
 
-    shmats = sh.fit_transform(mats)
+    shmats = sh.fit(mats).transform(mats)
     assert shmats.shape == mats.shape
     assert is_hpd(shmats)
 
@@ -362,3 +378,6 @@ def test_shrinkage(shrinkage, kind, get_mats):
     )
     assert_raises(AssertionError, assert_array_equal, mats.real, shmats.real)
     assert_array_equal(mats.imag, shmats.imag)
+
+    shmats2 = sh.fit_transform(mats)
+    assert_array_almost_equal(shmats, shmats2)
