@@ -6,15 +6,11 @@ from joblib import Parallel, delayed
 import numpy as np
 from scipy.stats import norm, chi2
 import sklearn
-from sklearn.base import (
-    BaseEstimator,
-    TransformerMixin,
-    ClusterMixin,
-    clone,
-)
-from sklearn.cluster import KMeans as _KMeans
+from sklearn.base import BaseEstimator, TransformerMixin, clone
+from sklearn.cluster import KMeans as sklearnKMeans
 
-from .classification import MDM, SpdClassifMixin
+from .base import SpdClassifMixin, SpdClustMixin, SpdTransfMixin
+from .classification import MDM
 from .utils.distance import distance, pairwise_distance
 from .utils.mean import mean_covariance
 from .utils.geodesic import geodesic
@@ -22,32 +18,11 @@ from .utils.tangentspace import exp_map, log_map
 from .utils.utils import check_metric, check_function
 
 
-class SpdClustMixin(ClusterMixin):
-    """ClusterMixin for SPD matrices"""
-
-    def fit_predict(self, X, y=None):
-        """Fit and predict in a single function.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y : None
-            Not used, here for compatibility with sklearn API.
-
-        Returns
-        -------
-        pred : ndarray of int, shape (n_matrices,)
-            Prediction for each matrix according to the closest cluster.
-        """
-        return self.fit(X, y).predict(X)
-
-
 def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
     if random_state is not None:
         random_state = np.random.RandomState(random_state)
     if sklearn.__version__ < "1.3.0":
-        return _KMeans(n_clusters=n_clusters, init=init)._init_centroids(
+        return sklearnKMeans(n_clusters=n_clusters, init=init)._init_centroids(
             X,
             x_squared_norms,
             init,
@@ -55,7 +30,7 @@ def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
         )
     else:
         n_matrices = X.shape[0]
-        return _KMeans(n_clusters=n_clusters, init=init)._init_centroids(
+        return sklearnKMeans(n_clusters=n_clusters, init=init)._init_centroids(
             X,
             x_squared_norms,
             init,
@@ -97,7 +72,7 @@ def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,
     return labels, inertia, mdm
 
 
-class Kmeans(SpdClassifMixin, SpdClustMixin, TransformerMixin, BaseEstimator):
+class Kmeans(SpdClassifMixin, SpdClustMixin, SpdTransfMixin, BaseEstimator):
     """Clustering by k-means with SPD/HPD matrices as inputs.
 
     The k-means is a clustering method used to find clusters that minimize the
@@ -283,23 +258,6 @@ class Kmeans(SpdClassifMixin, SpdClustMixin, TransformerMixin, BaseEstimator):
         """
         return self.mdm_.transform(X)
 
-    def fit_transform(self, X, y=None):
-        """Fit and transform in a single function.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD/HPD matrices.
-        y : None
-            Not used, here for compatibility with sklearn API.
-
-        Returns
-        -------
-        dist : ndarray, shape (n_matrices, n_clusters)
-            Distance to each centroid according to the metric.
-        """
-        return self.fit(X, y).transform(X)
-
     def centroids(self):
         """Helper for fast access to the centroids.
 
@@ -311,7 +269,7 @@ class Kmeans(SpdClassifMixin, SpdClustMixin, TransformerMixin, BaseEstimator):
         return self.mdm_.covmeans_
 
 
-class KmeansPerClassTransform(TransformerMixin, BaseEstimator):
+class KmeansPerClassTransform(SpdTransfMixin, BaseEstimator):
     """Clustering by k-means for each class with SPD/HPD matrices as inputs.
 
     Parameters
@@ -381,23 +339,6 @@ class KmeansPerClassTransform(TransformerMixin, BaseEstimator):
         mdm.metric_mean, mdm.metric_dist = check_metric(self.metric)
         mdm.covmeans_ = self.covmeans_
         return mdm._predict_distances(X)
-
-    def fit_transform(self, X, y):
-        """Fit and transform in a single function.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD/HPD matrices.
-        y : ndarray, shape (n_matrices,)
-            Labels corresponding to each matrix.
-
-        Returns
-        -------
-        dist : ndarray, shape (n_matrices, n_centroids)
-            Distance to each centroid according to the metric.
-        """
-        return self.fit(X, y).transform(X)
 
 
 @np.vectorize

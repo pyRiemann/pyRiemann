@@ -3,17 +3,18 @@ import functools
 
 from joblib import Parallel, delayed
 import numpy as np
-from sklearn.base import BaseEstimator, ClassifierMixin, TransformerMixin
+from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.svm import SVC as sklearnSVC
 from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 
+from .base import SpdClassifMixin, SpdTransfMixin
+from .tangentspace import FGDA, TangentSpace
 from .utils.kernel import kernel
 from .utils.mean import mean_covariance
 from .utils.distance import distance
 from .utils.utils import check_metric
-from .tangentspace import FGDA, TangentSpace
 
 
 def _mode_1d(X):
@@ -27,37 +28,14 @@ def _mode_2d(X, axis=1):
     return mode
 
 
-class SpdClassifMixin(ClassifierMixin):
-    """ClassifierMixin for SPD matrices"""
-
-    def score(self, X, y, sample_weight=None):
-        """Return the mean accuracy on the given test data and labels.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Test set of SPD matrices.
-        y : ndarray, shape (n_matrices,)
-            True labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default=None
-            Weights for each matrix.
-
-        Returns
-        -------
-        score : float
-            Mean accuracy of clf.predict(X) wrt. y.
-        """
-        return super().score(X, y, sample_weight)
-
-
-class MDM(SpdClassifMixin, TransformerMixin, BaseEstimator):
+class MDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     r"""Classification by Minimum Distance to Mean.
 
     For each of the given classes :math:`k = 1, \ldots, K`, a centroid
     :math:`\mathbf{M}^k` is estimated according to the chosen metric.
 
-    Then, for each new matrix :math:`\mathbf{X}`, the class is affected
-    according to the nearest centroid [1]_:
+    Then, for each new SPD/HPD matrix :math:`\mathbf{X}`, the class is
+    affected according to the nearest centroid [1]_:
 
     .. math::
         \hat{k} = \arg \min_{k} d (\mathbf{X}, \mathbf{M}^k)
@@ -191,25 +169,6 @@ class MDM(SpdClassifMixin, TransformerMixin, BaseEstimator):
         """
         return self._predict_distances(X)
 
-    def fit_transform(self, X, y, sample_weight=None):
-        """Fit and transform in a single function.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD/HPD matrices.
-        y : ndarray, shape (n_matrices,)
-            Labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
-
-        Returns
-        -------
-        dist : ndarray, shape (n_matrices, n_classes)
-            Distance to each centroid according to the metric.
-        """
-        return self.fit(X, y, sample_weight=sample_weight).transform(X)
-
     def predict_proba(self, X):
         """Predict proba using softmax of negative squared distances.
 
@@ -226,7 +185,7 @@ class MDM(SpdClassifMixin, TransformerMixin, BaseEstimator):
         return softmax(-self._predict_distances(X) ** 2)
 
 
-class FgMDM(SpdClassifMixin, TransformerMixin, BaseEstimator):
+class FgMDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     """Classification by Minimum Distance to Mean with geodesic filtering.
 
     Apply geodesic filtering described in [1]_, and classify using MDM.
@@ -355,30 +314,11 @@ class FgMDM(SpdClassifMixin, TransformerMixin, BaseEstimator):
 
         Returns
         -------
-        dist : ndarray, shape (n_matrices, n_cluster)
+        dist : ndarray, shape (n_matrices, n_classes)
             Distance to each centroid according to the metric.
         """
         cov = self._fgda.transform(X)
         return self._mdm.transform(cov)
-
-    def fit_transform(self, X, y, sample_weight=None):
-        """Fit and transform in a single function.
-
-        Parameters
-        ----------
-        X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
-        y : ndarray, shape (n_matrices,)
-            Labels for each matrix.
-        sample_weight : None | ndarray, shape (n_matrices,), default=None
-            Weights for each matrix. If None, it uses equal weights.
-
-        Returns
-        -------
-        dist : ndarray, shape (n_matrices, n_cluster)
-            Distance to each centroid according to the metric.
-        """
-        return self.fit(X, y, sample_weight=sample_weight).transform(X)
 
 
 class TSClassifier(SpdClassifMixin, BaseEstimator):
@@ -772,8 +712,9 @@ class SVC(sklearnSVC):
         elif isinstance(self.Cref, np.ndarray):
             self.Cref_ = self.Cref
         else:
-            raise TypeError(f"Cref must be np.ndarray, callable or None, is "
-                            f"{self.Cref}.")
+            raise TypeError(
+                f"Cref must be np.ndarray, callable or None, is {self.Cref}."
+            )
 
     def _set_kernel(self):
         if callable(self.kernel_fct):
@@ -796,7 +737,7 @@ class SVC(sklearnSVC):
             )
 
 
-class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
+class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     """Classification by Mean Field.
 
     The Mean Field estimates several power means for each class.
@@ -1003,7 +944,7 @@ class MeanField(SpdClassifMixin, TransformerMixin, BaseEstimator):
                 ndarray, shape (n_matrices, n_classes x n_powers)
             Distance to each mean field according to the metric.
         """
-        return self.fit(X, y, sample_weight=sample_weight).transform(X)
+        return super().fit_transform(X, y, sample_weight=sample_weight)
 
     def predict_proba(self, X):
         """Predict proba using softmax of negative squared distances.
