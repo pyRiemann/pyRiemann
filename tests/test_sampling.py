@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pyriemann.datasets.sampling import sample_gaussian_spd
+from pyriemann.datasets import sample_gaussian_spd, RandomOverSampler
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.test import is_sym_pos_def as is_spd
 
@@ -66,3 +66,18 @@ def test_sample_gaussian_spd_sigma_errors():
         sample_gaussian_spd(-n_matrices, mean, sigma)
     with pytest.raises(ValueError):  # n_matrices is not an integer
         sample_gaussian_spd(4.2, mean, sigma)
+
+
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.parametrize("n_jobs", [1, -1])
+def test_random_over_sampler(metric, n_jobs):
+    n_matrices_by_class, n_dim, sigma = 6, 2, 1.
+    mean = np.eye(n_dim)
+    X = sample_gaussian_spd(2 * n_matrices_by_class, mean, sigma)
+    y = np.array([0] * n_matrices_by_class + [1] * n_matrices_by_class)
+
+    ros = RandomOverSampler(metric=metric, n_jobs=n_jobs)
+    Xr, yr = ros.fit_resample(X, y)
+
+    assert Xr.shape[0] == yr.shape[0]
+    assert Xr.shape[1:] == (n_dim, n_dim)

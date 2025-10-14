@@ -7,6 +7,7 @@ from scipy.stats import multivariate_normal
 from sklearn.utils import check_random_state
 
 from ..utils.base import sqrtm
+from ..utils.geodesic import geodesic
 from ..utils.test import is_sym_pos_semi_def as is_spsd
 
 
@@ -539,3 +540,81 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         warnings.warn(msg)
 
     return samples
+
+
+class RandomOverSampler():
+    """Random over-sampling for SPD/HPD matrices.
+
+    For each class, matrices are interpolated along the geodesic between all
+    existing pairs of matrices [1]_.
+
+    Parameters
+    ----------
+    metric : string, default="riemann"
+        Metric used for interpolation
+        (see :func:`pyriemann.utils.geodesic.geodesic`).
+    random_state : int | RandomState instance | None, default=None
+        Pass an int for reproducible output across multiple function calls.
+    n_jobs : int, default=1
+        Number of jobs to use for the computation. This works by computing
+        each of the class centroid in parallel.
+        If -1 all CPUs are used. If 1 is given, no parallel computing code is
+        used at all, which is useful for debugging. For n_jobs below -1,
+        (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
+        are used.
+
+    References
+    ----------
+    .. [1] `Data augmentation in Riemannian space for brain-computer interfaces
+        <https://hal.archives-ouvertes.fr/hal-00681328>`_
+        E. Kalunga, S. Chevallier and Q. Barthélemy.
+        ICML Workshop on Statistics, Machine Learning and Neuroscience, 2015.
+    """
+
+    def __init__(self, metric="riemann", random_state=None, n_jobs=1):
+        """Init."""
+        self.metric = metric
+        self.random_state = random_state
+        self.n_jobs = n_jobs
+
+    def fit_resample(self, X, y):
+        """Resample the matrices.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD/HPD matrices.
+        y : ndarray, shape (n_matrices,)
+            Labels for each matrix.
+
+        Returns
+        -------
+        X_resampled : ndarray, shape (n_matrices_new, n_channels, n_channels)
+            Set of resampled SPD/HPD matrices.
+        y_resampled : ndarray, shape (n_matrices_new,)
+            Labels for each resampled matrix.
+        """
+        self._classes = np.unique(y)
+        self._rs = check_random_state(self.random_state)
+
+        res = Parallel(n_jobs=self.n_jobs)(
+            delayed(self._resample)(X[y == c], c)
+            for c in self._classes
+        )
+
+        X_resampled_, y_resampled_ = zip(*res)
+        X_resampled = np.concatenate(X_resampled_, axis=0)
+        y_resampled = np.concatenate(y_resampled_, axis=0)
+        return X_resampled, y_resampled
+
+    def _resample(self, X, y):
+        n_matrices, _, _ = X.shape
+        X_resampled = []
+
+        for i in range(n_matrices):
+            for j in range(i + 1, n_matrices):
+                alpha = self._rs.uniform(0, 1)
+                X_resampled.append(
+                    geodesic(X[i], X[j], alpha, metric=self.metric)
+                )
+        return X_resampled, np.full(len(X_resampled), y)
