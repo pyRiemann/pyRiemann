@@ -566,7 +566,7 @@ class RandomOverSampler():
     References
     ----------
     .. [1] `Data augmentation in Riemannian space for brain-computer interfaces
-        <https://hal.archives-ouvertes.fr/hal-00681328>`_
+        <https://hal.science/hal-01351990/>`_
         E. Kalunga, S. Chevallier and Q. Barthélemy.
         ICML Workshop on Statistics, Machine Learning and Neuroscience, 2015.
     """
