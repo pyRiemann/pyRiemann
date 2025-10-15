@@ -4,6 +4,7 @@ import warnings
 from joblib import Parallel, delayed
 import numpy as np
 from scipy.stats import multivariate_normal
+from sklearn.base import BaseEstimator
 from sklearn.utils import check_random_state
 
 from ..utils.base import sqrtm
@@ -542,26 +543,39 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
     return samples
 
 
-class RandomOverSampler():
+class RandomOverSampler(BaseEstimator):
     """Random over-sampling for SPD/HPD matrices.
 
-    For each class, matrices are interpolated along the geodesic between all
-    existing pairs of matrices [1]_.
+    For each class, output SPD/HPD matrices are interpolated along the geodesic
+    between input SPD/HPD matrices [1]_.
 
     Parameters
     ----------
     metric : string, default="riemann"
-        Metric used for interpolation
+        Metric used for SPD/HPD matrices interpolation
         (see :func:`pyriemann.utils.geodesic.geodesic`).
+    sampling_strategy : str, default="auto"
+        Specify the class targeted by the resampling. The number of matrices in
+        the different classes will be equalized. Possible choices are:
+
+        - "minority": resample only the minority class;
+        - "not minority": resample all classes but the minority class;
+        - "not majority": resample all classes but the majority class;
+        - "all": resample all classes;
+        - "auto": equivalent to "not majority".
     random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
         Number of jobs to use for the computation. This works by computing
-        each of the class centroid in parallel.
+        each of the class resampling in parallel.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
         used at all, which is useful for debugging. For n_jobs below -1,
         (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
         are used.
+
+    Notes
+    -----
+    .. versionadded:: 0.10
 
     References
     ----------
@@ -571,11 +585,38 @@ class RandomOverSampler():
         ICML Workshop on Statistics, Machine Learning and Neuroscience, 2015.
     """
 
-    def __init__(self, metric="riemann", random_state=None, n_jobs=1):
+    def __init__(
+        self,
+        metric="riemann",
+        sampling_strategy="auto",
+        random_state=None,
+        n_jobs=1
+    ):
         """Init."""
         self.metric = metric
+        self.sampling_strategy = sampling_strategy
         self.random_state = random_state
         self.n_jobs = n_jobs
+
+    def fit(self, X, y):
+        """Check parameters of the sampler.
+
+        You should use ``fit_resample`` in all cases.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD/HPD matrices.
+        y : ndarray, shape (n_matrices,)
+            Labels for each matrix.
+
+        Returns
+        -------
+        self : object
+            Return the instance itself.
+        """
+        self._rs = check_random_state(self.random_state)
+        return self
 
     def fit_resample(self, X, y):
         """Resample the matrices.
@@ -594,27 +635,67 @@ class RandomOverSampler():
         y_resampled : ndarray, shape (n_matrices_new,)
             Labels for each resampled matrix.
         """
-        self._classes = np.unique(y)
-        self._rs = check_random_state(self.random_state)
+        self.fit(X, y)
+
+        _, self._channels, _ = X.shape
+        output_counts = self._check_sampling_strategy(y)
 
         res = Parallel(n_jobs=self.n_jobs)(
-            delayed(self._resample)(X[y == c], c)
-            for c in self._classes
+            delayed(self._resample)(X[y == c], c, n_mats)
+            for c, n_mats in output_counts.items()
         )
 
         X_resampled_, y_resampled_ = zip(*res)
-        X_resampled = np.concatenate(X_resampled_, axis=0)
-        y_resampled = np.concatenate(y_resampled_, axis=0)
+        X_resampled = np.concatenate((X,) + X_resampled_, axis=0)
+        y_resampled = np.concatenate((y,) + y_resampled_, axis=0)
         return X_resampled, y_resampled
 
-    def _resample(self, X, y):
-        n_matrices, _, _ = X.shape
-        X_resampled = []
+    def _check_sampling_strategy(self, y):
 
-        for i in range(n_matrices):
-            for j in range(i + 1, n_matrices):
-                alpha = self._rs.uniform(0, 1)
-                X_resampled.append(
-                    geodesic(X[i], X[j], alpha, metric=self.metric)
-                )
-        return X_resampled, np.full(len(X_resampled), y)
+        classes, counts = np.unique(y, return_counts=True)
+        input_counts = dict(zip(classes, counts))
+        n_mats_majority = max(input_counts.values())
+
+        if self.sampling_strategy == "minority":
+            class_minority = min(input_counts, key=input_counts.get)
+            return {
+                key: n_mats_majority - value
+                for (key, value) in input_counts.items()
+                if key == class_minority
+            }
+
+        if self.sampling_strategy == "not minority":
+            class_minority = min(input_counts, key=input_counts.get)
+            return {
+                key: n_mats_majority - value
+                for (key, value) in input_counts.items()
+                if key != class_minority
+            }
+
+        if self.sampling_strategy in ["not majority", "auto"]:
+            class_majority = max(input_counts, key=input_counts.get)
+            return {
+                key: n_mats_majority - value
+                for (key, value) in input_counts.items()
+                if key != class_majority
+            }
+
+        if self.sampling_strategy == "all":
+            return {
+                key: n_mats_majority - value
+                for (key, value) in input_counts.items()
+            }
+
+        raise ValueError(
+            f"Sampling strategy {self.sampling_strategy} is not supported."
+        )
+
+    def _resample(self, X, y, n_mats):
+        X_resampled = np.empty((n_mats, self._channels, self._channels))
+
+        for n in range(n_mats):
+            i, j = np.random.choice(len(X), size=2, replace=False)
+            alpha = self._rs.uniform(0, 1)
+            X_resampled[n] = geodesic(X[i], X[j], alpha, metric=self.metric)
+
+        return X_resampled, np.full(n_mats, y)

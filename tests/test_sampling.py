@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.testing import assert_array_equal
 import pytest
 
 from pyriemann.datasets import sample_gaussian_spd, RandomOverSampler
@@ -68,16 +69,49 @@ def test_sample_gaussian_spd_sigma_errors():
         sample_gaussian_spd(4.2, mean, sigma)
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("n_jobs", [1, -1])
-def test_random_over_sampler(metric, n_jobs):
-    n_matrices_by_class, n_dim, sigma = 6, 2, 1.
-    mean = np.eye(n_dim)
-    X = sample_gaussian_spd(2 * n_matrices_by_class, mean, sigma)
+def test_random_over_sampler(kind, metric, n_jobs, get_mats):
+    n_matrices_by_class, n_dim = 6, 2
+    X = get_mats(2 * n_matrices_by_class, n_dim, kind)
     y = np.array([0] * n_matrices_by_class + [1] * n_matrices_by_class)
 
     ros = RandomOverSampler(metric=metric, n_jobs=n_jobs)
+    ros.fit(X, y)
     Xr, yr = ros.fit_resample(X, y)
 
+    assert Xr.ndim == 3
     assert Xr.shape[0] == yr.shape[0]
     assert Xr.shape[1:] == (n_dim, n_dim)
+
+
+@pytest.mark.parametrize("sampling_strategy",
+    ["minority", "not minority", "not majority", "all", "auto"]
+)
+def test_random_over_sampler_strategy(sampling_strategy, get_mats):
+    n_dim = 3
+    n1, lab1 = 15, 0
+    X1, y1 = get_mats(n1, n_dim, "spd"), np.full(n1, lab1)
+    n2, lab2 = 10, 1
+    X2, y2 = get_mats(n2, n_dim, "spd"), np.full(n2, lab2)
+    n3, lab3 = 5, 2
+    X3, y3 = get_mats(n3, n_dim, "spd"), np.full(n3, lab3)
+    X, y = np.concatenate((X1, X2, X3)), np.concatenate((y1, y2, y3))
+
+    ros = RandomOverSampler(sampling_strategy=sampling_strategy)
+    Xr, yr = ros.fit_resample(X, y)
+
+    assert_array_equal(X, Xr[:len(X)])
+    assert_array_equal(y, yr[:len(y)])
+
+    assert len(yr[yr == lab1]) == n1
+    if sampling_strategy == "minority":
+        assert len(yr[yr == lab2]) == n2
+        assert len(yr[yr == lab3]) == n1
+    elif sampling_strategy == "not minority":
+        assert len(yr[yr == lab2]) == n1
+        assert len(yr[yr == lab3]) == n3
+    elif sampling_strategy in ["not majority", "auto", "all"]:
+        assert len(yr[yr == lab2]) == n1
+        assert len(yr[yr == lab3]) == n1
