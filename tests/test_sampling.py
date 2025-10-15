@@ -86,7 +86,8 @@ def test_random_over_sampler(kind, metric, n_jobs, get_mats):
     assert Xr.shape[1:] == (n_dim, n_dim)
 
 
-@pytest.mark.parametrize("sampling_strategy",
+@pytest.mark.parametrize(
+    "sampling_strategy",
     ["minority", "not minority", "not majority", "all", "auto"]
 )
 def test_random_over_sampler_strategy(sampling_strategy, get_mats):
