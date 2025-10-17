@@ -1,4 +1,4 @@
-from .sampling import sample_gaussian_spd
+from .sampling import sample_gaussian_spd, RandomOverSampler
 from .simulated import (
     make_matrices,
     make_masks,
@@ -15,4 +15,5 @@ __all__ = [
     "make_gaussian_blobs",
     "make_outliers",
     "make_classification_transfer",
+    "RandomOverSampler",
 ]
