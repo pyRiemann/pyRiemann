@@ -18,6 +18,8 @@ v0.10.dev
 
 - Deprecate ``fit_transform()`` of :class:`pyriemann.spatialfilters.AJDC` due to incompatible dimensions. :pr:`382` by :user:`qbarthelemy`
 
+- Add :func:`pyriemann.utils.tangentspace.transport` for parallel transport of positive-definite matrices. :pr:`388` by :user:`qbarthelemy`
+
 v0.9 (July 2025)
 ----------------
 

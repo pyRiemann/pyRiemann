@@ -194,4 +194,3 @@ def test_transport(get_mats, kind, metric):
     X = get_mats(n_matrices, n_channels, kind)
     X_tr = transport(X, np.eye(n_channels), np.eye(n_channels), metric=metric)
     assert X == approx(X_tr)
-
