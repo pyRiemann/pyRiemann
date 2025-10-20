@@ -145,15 +145,15 @@ def exp_map_riemann(X, Cref, Cm12=False):
     r"""Project matrices back to manifold by Riemannian exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
-    to SPD/HPD manifold with Riemannian exponential map
+    to SPD/HPD manifold with affine-invariant Riemannian exponential map
     according to a reference SPD/HPD matrix :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
         \mathbf{X}_\text{original} = \mathbf{C}_\text{ref}^{1/2}
         \exp(\mathbf{X}) \mathbf{C}_\text{ref}^{1/2}
 
-    When Cm12=True, it returns the full Riemannian exponential map as in
-    Section 3.4 of [1]_:
+    When Cm12=True, it returns the full affine-invariant Riemannian exponential
+    map as in Section 3.4 of [1]_:
 
     .. math::
         \mathbf{X}_\text{original} = \mathbf{C}_\text{ref}^{1/2}
@@ -411,15 +411,15 @@ def log_map_riemann(X, Cref, C12=False):
     r"""Project matrices in tangent space by Riemannian logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
-    to tangent space by Riemannian logarithmic map
+    to tangent space by affine-invariant Riemannian logarithmic map
     according to a SPD/HPD reference matrix :math:`\mathbf{C}_\text{ref}` is:
 
     .. math::
         \mathbf{X}_\text{new} = \log ( \mathbf{C}_\text{ref}^{-1/2}
         \mathbf{X} \mathbf{C}_\text{ref}^{-1/2})
 
-    When C12=True, it returns the full Riemannian logarithmic map as in
-    Section 3.4 of [1]_:
+    When C12=True, it returns the full affine-invariant Riemannian logarithmic
+    map as in Section 3.4 of [1]_:
 
     .. math::
         \mathbf{X}_\text{new} = \mathbf{C}_\text{ref}^{1/2}
@@ -688,22 +688,91 @@ def untangent_space(T, Cref, *, metric="riemann"):
 
 ###############################################################################
 
-# NOT IN API
-def transport(X, A, B):
-    r"""Parallel transport of matrices in tangent space.
+
+def transport_euclid(X, A, B):
+    """Parallel transport for Euclidean metric.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        Matrices in tangent space.
+    A : ndarray, shape (n, n)
+        Initial SPD/HPD matrix.
+    B : ndarray, shape (n, n)
+        Final SPD/HPD matrix.
+
+    Returns
+    -------
+    X_new : ndarray, shape (..., n, n)
+        Transported matrices in tangent space, equal to X.
+
+    Notes
+    -----
+    .. versionadded:: 0.10
+
+    See Also
+    --------
+    transport
+    """
+    return X
+
+
+def transport_logeuclid(X, A, B):
+    r"""Parallel transport for log-Euclidean metric.
+
+    The parallel transport of matrices :math:`\mathbf{X}` in tangent space
+    from an initial SPD/HPD matrix :math:`\mathbf{A}` to a final SPD/HPD
+    matrix :math:`\mathbf{B}` for log-Euclidean metric is:
+
+    .. math::
+        \mathbf{X}_\text{new} = \mathbf{X}
+        + (\log \mathbf{B}  - \log \mathbf{A})
+
+    Warning: this function must be applied to matrices :math:`\mathbf{X}`
+    already projected in tangent space with a logarithmic map,
+    not to SPD/HPD matrices in manifold.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        Symmetric/Hermitian matrices in tangent space.
+    A : ndarray, shape (n, n)
+        Initial SPD/HPD matrix.
+    B : ndarray, shape (n, n)
+        Final SPD/HPD matrix.
+
+    Returns
+    -------
+    X_new : ndarray, shape (..., n, n)
+        Transported matrices in tangent space.
+
+    Notes
+    -----
+    .. versionadded:: 0.10
+
+    See Also
+    --------
+    transport
+    """
+    return X + (logm(B) - logm(A))
+
+
+def transport_riemann(X, A, B):
+    r"""Parallel transport for affine-invariant Riemannian metric.
 
     The parallel transport of matrices :math:`\mathbf{X}` in tangent space
     from an initial SPD/HPD matrix :math:`\mathbf{A}` to a final SPD/HPD
     matrix :math:`\mathbf{B}` according to the Levi-Civita connection along
-    the geodesic under the affine-invariant metric is [1]_:
+    the geodesic under the affine-invariant Riemannian metric is [1]_:
 
     .. math::
         \mathbf{X}_\text{new} = \mathbf{E} \mathbf{X} \mathbf{E}^H
 
     where :math:`\mathbf{E} = (\mathbf{B} \mathbf{A}^{-1})^{1/2}`.
 
-    Warning: this function must be applied to matrices already projected in
-    tangent space with a logarithmic map, not to SPD/HPD matrices in manifold.
+    Warning: this function must be applied to matrices :math:`\mathbf{X}`
+    already projected in tangent space with a logarithmic map,
+    not to SPD/HPD matrices in manifold.
 
     Parameters
     ----------
@@ -723,6 +792,12 @@ def transport(X, A, B):
     -----
     .. versionchanged:: 0.8
         Change input arguments.
+    .. versionchanged:: 0.10
+        Rename function and add to API.
+
+    See Also
+    --------
+    transport
 
     References
     ----------
@@ -737,3 +812,53 @@ def transport(X, A, B):
     E = A12 @ sqrtm(A12inv @ B @ A12inv) @ A12inv
     X_new = E @ X @ E.conj().T
     return X_new
+
+
+transport_functions = {
+    "euclid": transport_euclid,
+    "logeuclid": transport_logeuclid,
+    "riemann": transport_riemann,
+}
+
+
+def transport(X, A, B, metric="riemann"):
+    r"""Parallel transport.
+
+    The parallel transport of matrices :math:`\mathbf{X}` in tangent space
+    from an initial SPD/HPD matrix :math:`\mathbf{A}` to a final SPD/HPD
+    matrix :math:`\mathbf{B}`.
+
+    Warning: this function must be applied to matrices :math:`\mathbf{X}`
+    already projected in tangent space with a logarithmic map,
+    not to SPD/HPD matrices in manifold.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        Symmetric/Hermitian matrices in tangent space.
+    A : ndarray, shape (n, n)
+        Initial SPD/HPD matrix.
+    B : ndarray, shape (n, n)
+        Final SPD/HPD matrix.
+    metric : string | callable, default="riemann"
+        Metric used for parallel transport, can be:
+        "euclid", "logeuclid", "riemann",
+        or a callable function.
+
+    Returns
+    -------
+    X_new : ndarray, shape (..., n, n)
+        Transported matrices in tangent space.
+
+    Notes
+    -----
+    .. versionadded:: 0.10
+
+    See Also
+    --------
+    transport_euclid
+    transport_logeuclid
+    transport_riemann
+    """
+    transport_function = check_function(metric, transport_functions)
+    return transport_function(X, A, B)

@@ -21,6 +21,9 @@ from pyriemann.utils.tangentspace import (
     tangent_space,
     untangent_space,
     transport,
+    transport_euclid,
+    transport_logeuclid,
+    transport_riemann,
 )
 
 
@@ -173,9 +176,22 @@ def test_tangent_and_untangent_space(kind, metric, get_mats):
     assert X_ut == approx(X)
 
 
+@pytest.mark.parametrize("fun", [
+    transport_euclid, transport_logeuclid, transport_riemann
+])
+def test_transport_riemann(get_mats, fun):
+    n_matrices, n_channels = 7, 3
+    X = get_mats(n_matrices, n_channels, "herm")
+    A, B = get_mats(2, n_channels, "hpd")
+    X_tr = fun(X, A, B)
+    assert X_tr.shape == X.shape
+
+
 @pytest.mark.parametrize("kind", ["sym", "herm"])
-def test_transport(get_mats, kind):
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+def test_transport(get_mats, kind, metric):
     n_matrices, n_channels = 10, 3
     X = get_mats(n_matrices, n_channels, kind)
-    X_tr = transport(X, np.eye(n_channels), np.eye(n_channels))
+    X_tr = transport(X, np.eye(n_channels), np.eye(n_channels), metric=metric)
     assert X == approx(X_tr)
+
