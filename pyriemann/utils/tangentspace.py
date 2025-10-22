@@ -704,7 +704,7 @@ def transport_euclid(X, A=None, B=None):
     Returns
     -------
     X_new : ndarray, shape (..., n, m)
-        Transported matrices, equal to X.
+        Matrices, equal to X.
 
     Notes
     -----
@@ -727,11 +727,11 @@ def transport_logeuclid(X, A, B):
 
     .. math::
         \mathbf{X}_\text{new} = \mathbf{X}
-        + (\log \mathbf{B}  - \log \mathbf{A})
+        + (\log \mathbf{B} - \log \mathbf{A})
 
     Warning: this function must be applied to matrices :math:`\mathbf{X}`
-    already projected in tangent space with a logarithmic map,
-    not to SPD/HPD matrices in manifold.
+    already projected in tangent space with a logarithmic map at
+    :math:`\mathbf{A}`, not to SPD/HPD matrices in manifold.
 
     Parameters
     ----------
@@ -745,7 +745,7 @@ def transport_logeuclid(X, A, B):
     Returns
     -------
     X_new : ndarray, shape (..., n, n)
-        Transported matrices in tangent space.
+        Matrices in tangent space transported from A to B.
 
     Notes
     -----
@@ -771,7 +771,7 @@ def transport_riemann(X, A, B):
     from an initial SPD/HPD matrix :math:`\mathbf{A}` to a final SPD/HPD
     matrix :math:`\mathbf{B}` according to the Levi-Civita connection along
     the geodesic under the affine-invariant Riemannian metric is given by
-    Eq.(22) of [1]_:
+    Eq.(3.4) of [1]_:
 
     .. math::
         \mathbf{X}_\text{new} = \mathbf{E} \mathbf{X} \mathbf{E}^H
@@ -779,8 +779,8 @@ def transport_riemann(X, A, B):
     where :math:`\mathbf{E} = (\mathbf{B} \mathbf{A}^{-1})^{1/2}`.
 
     Warning: this function must be applied to matrices :math:`\mathbf{X}`
-    already projected in tangent space with a logarithmic map,
-    not to SPD/HPD matrices in manifold.
+    already projected in tangent space with a logarithmic map at
+    :math:`\mathbf{A}`, not to SPD/HPD matrices in manifold.
 
     Parameters
     ----------
@@ -794,7 +794,7 @@ def transport_riemann(X, A, B):
     Returns
     -------
     X_new : ndarray, shape (..., n, n)
-        Transported matrices in tangent space.
+        Matrices in tangent space transported from A to B.
 
     Notes
     -----
@@ -811,12 +811,13 @@ def transport_riemann(X, A, B):
     ----------
     .. [1] `Conic geometric optimisation on the manifold of positive definite
         matrices
-        <https://arxiv.org/pdf/1312.1039>`_
+        <https://optml.mit.edu/papers/sra_hosseini_gopt.pdf>`_
         S. Sra and R. Hosseini. SIAM Journal on Optimization, 2015.
     """
-    # (BA^{-1})^{1/2} = A^{1/2}(A^{-1/2}BA^{-1/2})^{1/2}A^{-1/2}
-    A12inv = invsqrtm(A)
-    A12 = sqrtm(A)
+    # BA^{-1} is not sym => use sqrtm from scipy
+    # E = scipy.linalg.sqrtm(B @ np.linalg.inv(A))
+    # (BA^{-1})^{1/2} = A^{1/2} (A^{-1/2}BA^{-1/2})^{1/2} A^{-1/2}
+    A12, A12inv = sqrtm(A), invsqrtm(A)
     E = A12 @ sqrtm(A12inv @ B @ A12inv) @ A12inv
     X_new = E @ X @ E.conj().T
     return X_new
@@ -837,8 +838,8 @@ def transport(X, A, B, metric="riemann"):
     matrix :math:`\mathbf{B}`, according to a metric.
 
     Warning: this function must be applied to matrices :math:`\mathbf{X}`
-    already projected in tangent space with a logarithmic map,
-    not to SPD/HPD matrices in manifold.
+    already projected in tangent space with a logarithmic map at
+    :math:`\mathbf{A}`, not to SPD/HPD matrices in manifold.
 
     Parameters
     ----------
@@ -856,7 +857,7 @@ def transport(X, A, B, metric="riemann"):
     Returns
     -------
     X_new : ndarray, shape (..., n, n)
-        Transported matrices in tangent space.
+        Matrices in tangent space transported from A to B.
 
     Notes
     -----
