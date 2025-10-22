@@ -190,6 +190,10 @@ Datasets
     sample_gaussian_spd
     make_classification_transfer
 
+    :template: class.rst
+
+    RandomOverSampler
+
 Utils function
 --------------
 
