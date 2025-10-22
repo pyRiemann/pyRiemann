@@ -18,6 +18,8 @@ v0.10.dev
 
 - Deprecate ``fit_transform()`` of :class:`pyriemann.spatialfilters.AJDC` due to incompatible dimensions. :pr:`382` by :user:`qbarthelemy`
 
+- Add :class:`pyriemann.datasets.RandomOverSampler` for data augmentation of positive-definite matrices. :pr:`387` by :user:`qbarthelemy`
+
 v0.9 (July 2025)
 ----------------
 
