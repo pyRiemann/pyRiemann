@@ -179,7 +179,7 @@ def test_tangent_and_untangent_space(kind, metric, get_mats):
 @pytest.mark.parametrize("fun", [
     transport_euclid, transport_logeuclid, transport_riemann
 ])
-def test_transport_riemann(get_mats, fun):
+def test_transport(get_mats, fun):
     n_matrices, n_channels = 7, 3
     X = get_mats(n_matrices, n_channels, "herm")
     A, B = get_mats(2, n_channels, "hpd")
@@ -187,10 +187,14 @@ def test_transport_riemann(get_mats, fun):
     assert X_tr.shape == X.shape
 
 
-@pytest.mark.parametrize("kind", ["sym", "herm"])
-@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-def test_transport(get_mats, kind, metric):
+@pytest.mark.parametrize("metric", ["logeuclid", "riemann"])
+def test_transport_properties(get_mats, metric):
     n_matrices, n_channels = 10, 3
-    X = get_mats(n_matrices, n_channels, kind)
-    X_tr = transport(X, np.eye(n_channels), np.eye(n_channels), metric=metric)
-    assert X == approx(X_tr)
+    X = get_mats(n_matrices, n_channels, "sym")
+
+    Xt = transport(X, np.eye(n_channels), np.eye(n_channels), metric=metric)
+    assert X == approx(Xt)
+
+    A = get_mats(1, n_channels, "spd")[0]
+    Xt = transport(X, A, A, metric=metric)
+    assert X == approx(Xt)

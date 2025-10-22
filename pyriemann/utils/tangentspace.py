@@ -314,7 +314,7 @@ def log_map_logchol(X, Cref):
     r"""Project matrices in tangent space by log-Cholesky logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
-    to tangent space by log-Cholesky logarithmic map, see [1]_ Table 2.
+    to tangent space by log-Cholesky logarithmic map, see Table 2 of [1]_ .
 
     Parameters
     ----------
@@ -689,22 +689,22 @@ def untangent_space(T, Cref, *, metric="riemann"):
 ###############################################################################
 
 
-def transport_euclid(X, A, B):
+def transport_euclid(X, A=None, B=None):
     """Parallel transport for Euclidean metric.
 
     Parameters
     ----------
-    X : ndarray, shape (..., n, n)
-        Matrices in tangent space.
-    A : ndarray, shape (n, n)
-        Initial SPD/HPD matrix.
-    B : ndarray, shape (n, n)
-        Final SPD/HPD matrix.
+    X : ndarray, shape (..., n, m)
+        Matrices.
+    A : None | ndarray, shape (n, m), default=None
+        Initial matrix, unused.
+    B : None | ndarray, shape (n, m), default=None
+        Final matrix, unused.
 
     Returns
     -------
-    X_new : ndarray, shape (..., n, n)
-        Transported matrices in tangent space, equal to X.
+    X_new : ndarray, shape (..., n, m)
+        Transported matrices, equal to X.
 
     Notes
     -----
@@ -722,7 +722,8 @@ def transport_logeuclid(X, A, B):
 
     The parallel transport of matrices :math:`\mathbf{X}` in tangent space
     from an initial SPD/HPD matrix :math:`\mathbf{A}` to a final SPD/HPD
-    matrix :math:`\mathbf{B}` for log-Euclidean metric is:
+    matrix :math:`\mathbf{B}` for log-Euclidean metric is given in Table 4 of
+    [1]_:
 
     .. math::
         \mathbf{X}_\text{new} = \mathbf{X}
@@ -753,6 +754,12 @@ def transport_logeuclid(X, A, B):
     See Also
     --------
     transport
+
+    References
+    ----------
+    .. [1] `O(n)-invariant Riemannian metrics on SPD matrices
+        <https://www.sciencedirect.com/science/article/pii/S0024379522004360>`_
+        Y. Thanwerdas & X. Pennec. Linear Algebra and its Applications, 2023.
     """
     return X + (logm(B) - logm(A))
 
@@ -763,7 +770,8 @@ def transport_riemann(X, A, B):
     The parallel transport of matrices :math:`\mathbf{X}` in tangent space
     from an initial SPD/HPD matrix :math:`\mathbf{A}` to a final SPD/HPD
     matrix :math:`\mathbf{B}` according to the Levi-Civita connection along
-    the geodesic under the affine-invariant Riemannian metric is [1]_:
+    the geodesic under the affine-invariant Riemannian metric is given by
+    Eq.(22) of [1]_:
 
     .. math::
         \mathbf{X}_\text{new} = \mathbf{E} \mathbf{X} \mathbf{E}^H
@@ -824,9 +832,9 @@ transport_functions = {
 def transport(X, A, B, metric="riemann"):
     r"""Parallel transport.
 
-    The parallel transport of matrices :math:`\mathbf{X}` in tangent space
+    Parallel transport of matrices :math:`\mathbf{X}` in tangent space
     from an initial SPD/HPD matrix :math:`\mathbf{A}` to a final SPD/HPD
-    matrix :math:`\mathbf{B}`.
+    matrix :math:`\mathbf{B}`, according to a metric.
 
     Warning: this function must be applied to matrices :math:`\mathbf{X}`
     already projected in tangent space with a logarithmic map,
@@ -835,7 +843,7 @@ def transport(X, A, B, metric="riemann"):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        Symmetric/Hermitian matrices in tangent space.
+        Matrices in tangent space.
     A : ndarray, shape (n, n)
         Initial SPD/HPD matrix.
     B : ndarray, shape (n, n)
