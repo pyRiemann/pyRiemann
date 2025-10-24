@@ -2,7 +2,9 @@ import numpy as np
 import pytest
 from pytest import approx
 
+from pyriemann.spatialfilters import Whitening
 from pyriemann.utils.distance import distance_riemann
+from pyriemann.utils.mean import mean_riemann
 from pyriemann.utils.tangentspace import (
     exp_map,
     exp_map_euclid,
@@ -21,6 +23,9 @@ from pyriemann.utils.tangentspace import (
     tangent_space,
     untangent_space,
     transport,
+    transport_euclid,
+    transport_logeuclid,
+    transport_riemann,
 )
 
 
@@ -164,7 +169,7 @@ def test_untangent_space_ndarray(metric, rndstate):
     "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
 ])
 def test_tangent_and_untangent_space(kind, metric, get_mats):
-    """Test tangent space projection then back-projection should be identity"""
+    """Tangent space projection then back-projection should be identity"""
     n_matrices, n_channels = 10, 3
     mats = get_mats(n_matrices, n_channels, kind)
     X, C = mats[:n_matrices - 1], mats[-1]
@@ -173,9 +178,36 @@ def test_tangent_and_untangent_space(kind, metric, get_mats):
     assert X_ut == approx(X)
 
 
-@pytest.mark.parametrize("kind", ["sym", "herm"])
-def test_transport(get_mats, kind):
+@pytest.mark.parametrize("fun", [
+    transport_euclid, transport_logeuclid, transport_riemann
+])
+def test_transport(get_mats, fun):
+    n_matrices, n_channels = 7, 3
+    X = get_mats(n_matrices, n_channels, "herm")
+    A, B = get_mats(2, n_channels, "hpd")
+    X_tr = fun(X, A, B)
+    assert X_tr.shape == X.shape
+
+
+@pytest.mark.parametrize("metric", ["logeuclid", "riemann"])
+def test_transport_properties(get_mats, metric):
     n_matrices, n_channels = 10, 3
-    X = get_mats(n_matrices, n_channels, kind)
-    X_tr = transport(X, np.eye(n_channels), np.eye(n_channels))
-    assert X == approx(X_tr)
+    X = get_mats(n_matrices, n_channels, "sym")
+
+    A = get_mats(1, n_channels, "spd")[0]
+    Xt = transport(X, A, A, metric=metric)
+    assert X == approx(Xt)
+
+
+def test_transport_vs_whitening(get_mats):
+    """Transport from mean to identity should be equivalent to a whitening"""
+    n_matrices, n_channels = 15, 2
+    X = get_mats(n_matrices, n_channels, "spd")
+
+    Xw = Whitening(dim_red=None, metric="riemann").fit_transform(X)
+
+    M = mean_riemann(X)
+    T = log_map_riemann(X, M, C12=True)
+    Tt = transport(T, M, np.eye(n_channels), metric="riemann")
+    Xt = exp_map_riemann(Tt, np.eye(n_channels), Cm12=True)
+    assert Xw == approx(Xt)

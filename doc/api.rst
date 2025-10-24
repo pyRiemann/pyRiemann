@@ -332,6 +332,10 @@ Tangent Space
     unupper
     tangent_space
     untangent_space
+    transport
+    transport_euclid
+    transport_logeuclid
+    transport_riemann
 
 Base
 ~~~~~~~~~~~~~~~~~~~~~~

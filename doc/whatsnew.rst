@@ -20,6 +20,8 @@ v0.10.dev
 
 - Add :class:`pyriemann.datasets.RandomOverSampler` for data augmentation of positive-definite matrices. :pr:`387` by :user:`qbarthelemy`
 
+- Add :func:`pyriemann.utils.tangentspace.transport` for parallel transport of positive-definite matrices. :pr:`388` by :user:`qbarthelemy`
+
 v0.9 (July 2025)
 ----------------
 
