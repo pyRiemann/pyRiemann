@@ -2,6 +2,7 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 import pytest
 
+from pyriemann.datasets.simulated import _make_eyes
 from pyriemann.utils.base import (
     ctranspose,
     expm,
@@ -130,14 +131,14 @@ def test_funm_properties(get_mats, kind):
 
     # invsqrtm
     isC = invsqrtm(C)
-    Eye = np.repeat(np.eye(n_dim)[np.newaxis, :, :], n_matrices, axis=0)
-    assert_array_almost_equal(isC @ C @ isC, Eye, decimal=10)
+    eyes = _make_eyes(n_matrices, n_dim)
+    assert_array_almost_equal(isC @ C @ isC, eyes, decimal=10)
     assert_array_almost_equal(isC @ isC, invC, decimal=10)
 
     # sqrtm
     sC = sqrtm(C)
     assert_array_almost_equal(ctranspose(sC) @ sC, C, decimal=10)
-    assert_array_almost_equal(isC @ C @ isC, Eye, decimal=10)
+    assert_array_almost_equal(isC @ C @ isC, eyes, decimal=10)
 
     # powm
     assert_array_almost_equal(powm(C, 0.5), sC, decimal=10)

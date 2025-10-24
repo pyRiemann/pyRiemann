@@ -3,6 +3,7 @@ from numpy.testing import assert_array_almost_equal
 import pytest
 
 from pyriemann.datasets.simulated import (
+    _make_eyes,
     mat_kinds,
     make_matrices,
     make_masks,
@@ -42,6 +43,16 @@ def test_make_matrices(rndstate, kind):
         return
     if kind == "comp":
         assert not is_real(X)
+        return
+
+    if kind in ["inv", "cinv"]:
+        assert np.all(np.linalg.det(X) != 0)
+        return
+
+    if kind in ["orth", "unit"]:
+        eyes = _make_eyes(n_matrices, n_dim)
+        assert_array_almost_equal(X @ ctranspose(X), eyes)
+        assert_array_almost_equal(ctranspose(X) @ X, eyes)
         return
 
     # all other types are symmetric or Hermitian
