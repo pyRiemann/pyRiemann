@@ -21,8 +21,8 @@ from pyriemann.utils.test import (
 
 
 @pytest.mark.parametrize("kind", mat_kinds)
-def test_make_matrices(rndstate, kind):
-    """Test function for make matrices."""
+def test_make_matrices_square(rndstate, kind):
+    """Test make_matrices for square matrices."""
     n_matrices, n_dim = 5, 3
     X = make_matrices(
         n_matrices=n_matrices,
@@ -74,6 +74,19 @@ def test_make_matrices(rndstate, kind):
     elif kind == "hpsd":
         assert is_hpsd(X)
         assert not is_hpd(X, tol=1e-9)
+
+
+@pytest.mark.parametrize("kind", ["real", "comp"])
+def test_make_matrices_rect(rndstate, kind):
+    """Test make_matrices for rectangular matrices."""
+    n_matrices, n_dim1, n_dim2 = 5, 3, 4
+    X = make_matrices(
+        n_matrices=n_matrices,
+        n_dim=[n_dim1, n_dim2],
+        kind=kind,
+        rs=rndstate
+    )
+    assert X.shape == (n_matrices, n_dim1, n_dim2)
 
 
 @pytest.mark.parametrize("kind", ["spd", "spsd", "hpd", "hpsd"])
