@@ -53,7 +53,7 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
         Number of matrices to generate.
     n_dim : int | list of int
         If int, dimension of square matrices to generate.
-        If list of 2 ints, dimension of rectangular matrices to generate.
+        If list, dimensions of matrices to generate.
     kind : {"real", "comp", "inv", "orth, "sym", "spd", "spsd", "cinv", \
             "unit", "herm", "hpd", "hpsd"}
         Kind of matrices to generate:
@@ -94,8 +94,8 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
 
     Returns
     -------
-    mats : ndarray, shape (n_matrices, n_dim, n_dim)
-        Set of generated square matrices.
+    mats : ndarray, shape (n_matrices, n_dim, n_dim) or (n_matrices, *n_dim)
+        Set of generated matrices.
     evals : ndarray, shape (n_matrices, n_dim)
         Eigen values used for "spd", "spsd", "hpd" and "hpsd".
         Only returned if ``return_params=True``.
@@ -109,19 +109,17 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
     .. versionchanged:: 0.8
         Add support for kinds "sym" and "herm".
     .. versionchanged:: 0.10
-        Add support for rectangular matrices, and for kinds "inv" and "cinv",
+        Add support for non-square matrices, and for kinds "inv" and "cinv",
         "orth", and "unit".
     """
     rs = check_random_state(rs)
 
     if isinstance(n_dim, list):
-        if len(n_dim) < 2:
-            raise ValueError("n_dim list must contain at least two elements")
         if kind not in ["real", "comp"]:
             raise ValueError(f"Unsupported matrix kind: {kind}")
-        X = rs.randn(n_matrices, n_dim[0], n_dim[1])
+        X = rs.randn(n_matrices, *n_dim)
         if kind == "comp":
-            X = X + 1j * rs.randn(n_matrices, n_dim[0], n_dim[1])
+            X = X + 1j * rs.randn(n_matrices, *n_dim)
         return X
 
     if not isinstance(n_dim, int):
