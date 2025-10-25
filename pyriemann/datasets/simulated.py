@@ -8,28 +8,68 @@ from ..utils.distance import distance_riemann
 from ..utils.base import ctranspose, invsqrtm, powm, sqrtm, expm
 
 
-mat_kinds = ["real", "sym", "comp", "spd", "spsd", "herm", "hpd", "hpsd"]
+def _make_eyes(n_matrices, n_dim):
+    """Generate a 3d array of stacked np.eye matrices.
+
+    Parameters
+    ----------
+    n_matrices : int
+        Number of matrices to generate.
+    n_dim : int
+        Dimension of eye matrices to generate.
+
+    Returns
+    -------
+    X : ndarray, shape (n_matrices, n_dim, n_dim)
+        Set of np.eye matrices.
+    """
+    return np.repeat(np.eye(n_dim)[np.newaxis, :, :], n_matrices, axis=0)
+
+
+mat_kinds = [
+    "real",
+    "comp",
+    "inv",
+    "orth",
+    "sym",
+    "cinv",
+    "unit",
+    "spd",
+    "spsd",
+    "herm",
+    "hpd",
+    "hpsd",
+]
 
 
 def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
                   evals_low=0.5, evals_high=2.0, eigvecs_same=False,
                   eigvecs_mean=0.0, eigvecs_std=1.0):
-    """Generate square matrices, with specific properties.
+    """Generate matrices with specific properties.
 
     Parameters
     ----------
     n_matrices : int
-        Number of square matrices to generate.
-    n_dim : int
-        Dimension of square matrices to generate.
-    kind : {"real", "sym", "spd", "spsd", "comp", "herm", "hpd", "hpsd"}
-        Kind of square matrices to generate:
+        Number of matrices to generate.
+    n_dim : int | list of int
+        If int, dimension of square matrices to generate.
+        If list, dimensions of matrices to generate.
+    kind : {"real", "comp", "inv", "orth, "sym", "spd", "spsd", "cinv", \
+            "unit", "herm", "hpd", "hpsd"}
+        Kind of matrices to generate:
 
         - "real" for real-valued matrices;
+        - "comp" for complex-valued matrices.
+
+        Kind of square matrices to generate:
+
+        - "inv" for invertible real-valued matrices;
+        - "orth" for orthogonal matrices;
         - "sym" for symmetric real-valued matrices;
         - "spd" for symmetric positive-definite matrices;
         - "spsd" for symmetric positive semi-definite matrices;
-        - "comp" for complex-valued matrices;
+        - "cinv" for invertible complex-valued matrices;
+        - "unit" for unitary matrices;
         - "herm" for Hermitian matrices;
         - "hpd" for Hermitian positive-definite matrices;
         - "hpsd" for Hermitian positive semi-definite matrices.
@@ -54,8 +94,8 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
 
     Returns
     -------
-    mats : ndarray, shape (n_matrices, n_dim, n_dim)
-        Set of generated square matrices.
+    mats : ndarray, shape (n_matrices, n_dim, n_dim) or (n_matrices, *n_dim)
+        Set of generated matrices.
     evals : ndarray, shape (n_matrices, n_dim)
         Eigen values used for "spd", "spsd", "hpd" and "hpsd".
         Only returned if ``return_params=True``.
@@ -68,17 +108,46 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
     .. versionadded:: 0.5
     .. versionchanged:: 0.8
         Add support for kinds "sym" and "herm".
+    .. versionchanged:: 0.10
+        Add support for non-square matrices, and for kinds "inv" and "cinv",
+        "orth", and "unit".
     """
-    if kind not in mat_kinds:
-        raise ValueError(f"Unsupported matrix kind: {kind}")
     rs = check_random_state(rs)
 
+    if isinstance(n_dim, list):
+        if kind not in ["real", "comp"]:
+            raise ValueError(f"Unsupported matrix kind: {kind}")
+        X = rs.randn(n_matrices, *n_dim)
+        if kind == "comp":
+            X = X + 1j * rs.randn(n_matrices, *n_dim)
+        return X
+
+    if not isinstance(n_dim, int):
+        raise ValueError(f"Unsupported n_dim type: {type(n_dim)}")
+    if kind not in mat_kinds:
+        raise ValueError(f"Unsupported matrix kind: {kind}")
+
+    if kind in ["inv", "cinv"]:
+        while True:
+            X = rs.randn(n_matrices, n_dim, n_dim)
+            if kind == "cinv":
+                X = X + 1j * rs.randn(n_matrices, n_dim, n_dim)
+            if np.all(np.linalg.det(X) != 0):
+                return X
+
     X = eigvecs_std * rs.randn(n_matrices, n_dim, n_dim) + eigvecs_mean
+
+    if kind == "unit":
+        Y = eigvecs_std * rs.randn(n_matrices, n_dim, n_dim) + eigvecs_mean
+        X = X + 1j * Y
+    if kind in ["orth", "unit"]:
+        return np.linalg.qr(X)[0]
 
     if kind == "real":
         return X
     if kind == "sym":
         return X + X.transpose(0, 2, 1)
+
     if kind in ["comp", "herm", "hpd", "hpsd"]:
         Y = eigvecs_std * rs.randn(n_matrices, n_dim, n_dim) + eigvecs_mean
         if kind == "herm":
@@ -104,10 +173,7 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
     # eigen vectors
     if eigvecs_same:
         X = X[0]
-    if np.__version__ < "1.22.0" and X.ndim > 2:
-        evecs = np.array([np.linalg.qr(x)[0] for x in X])
-    else:
-        evecs = np.linalg.qr(X)[0]
+    evecs = np.linalg.qr(X)[0]
 
     # conjugation
     if eigvecs_same:

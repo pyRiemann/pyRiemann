@@ -3,6 +3,7 @@ from numpy.testing import assert_array_almost_equal
 import pytest
 
 from pyriemann.datasets.simulated import (
+    _make_eyes,
     mat_kinds,
     make_matrices,
     make_masks,
@@ -20,8 +21,8 @@ from pyriemann.utils.test import (
 
 
 @pytest.mark.parametrize("kind", mat_kinds)
-def test_make_matrices(rndstate, kind):
-    """Test function for make matrices."""
+def test_make_matrices_square(rndstate, kind):
+    """Test make_matrices for square matrices."""
     n_matrices, n_dim = 5, 3
     X = make_matrices(
         n_matrices=n_matrices,
@@ -44,6 +45,16 @@ def test_make_matrices(rndstate, kind):
         assert not is_real(X)
         return
 
+    if kind in ["inv", "cinv"]:
+        assert np.all(np.linalg.det(X) != 0)
+        return
+
+    if kind in ["orth", "unit"]:
+        eyes = _make_eyes(n_matrices, n_dim)
+        assert_array_almost_equal(X @ ctranspose(X), eyes)
+        assert_array_almost_equal(ctranspose(X) @ X, eyes)
+        return
+
     # all other types are symmetric or Hermitian
     assert_array_almost_equal(X, ctranspose(X))
 
@@ -63,6 +74,20 @@ def test_make_matrices(rndstate, kind):
     elif kind == "hpsd":
         assert is_hpsd(X)
         assert not is_hpd(X, tol=1e-9)
+
+
+@pytest.mark.parametrize("kind", ["real", "comp"])
+@pytest.mark.parametrize("n_dim", [[3], [3, 4], [3, 4, 5]])
+def test_make_matrices_nonsquare(rndstate, kind, n_dim):
+    """Test make_matrices for non-square matrices."""
+    n_matrices = 6
+    X = make_matrices(
+        n_matrices=n_matrices,
+        n_dim=n_dim,
+        kind=kind,
+        rs=rndstate
+    )
+    assert X.shape == (n_matrices, *n_dim)
 
 
 @pytest.mark.parametrize("kind", ["spd", "spsd", "hpd", "hpsd"])

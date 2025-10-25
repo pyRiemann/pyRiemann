@@ -22,6 +22,8 @@ v0.10.dev
 
 - Add :func:`pyriemann.utils.tangentspace.transport` for parallel transport of positive-definite matrices. :pr:`388` by :user:`qbarthelemy`
 
+- Enhance :func:`pyriemann.datasets.make_matrices` to generate invertible, orthogonal, unitary or non-square matrices. :pr:`389` by :user:`qbarthelemy`
+
 v0.9 (July 2025)
 ----------------
 
