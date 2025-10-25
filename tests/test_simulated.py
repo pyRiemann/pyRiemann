@@ -77,16 +77,17 @@ def test_make_matrices_square(rndstate, kind):
 
 
 @pytest.mark.parametrize("kind", ["real", "comp"])
-def test_make_matrices_rect(rndstate, kind):
-    """Test make_matrices for rectangular matrices."""
-    n_matrices, n_dim1, n_dim2 = 5, 3, 4
+@pytest.mark.parametrize("n_dim", [[3], [3, 4], [3, 4, 5]])
+def test_make_matrices_nonsquare(rndstate, kind, n_dim):
+    """Test make_matrices for non-square matrices."""
+    n_matrices = 6
     X = make_matrices(
         n_matrices=n_matrices,
-        n_dim=[n_dim1, n_dim2],
+        n_dim=n_dim,
         kind=kind,
         rs=rndstate
     )
-    assert X.shape == (n_matrices, n_dim1, n_dim2)
+    assert X.shape == (n_matrices, *n_dim)
 
 
 @pytest.mark.parametrize("kind", ["spd", "spsd", "hpd", "hpsd"])
