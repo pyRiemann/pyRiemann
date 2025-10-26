@@ -14,7 +14,8 @@ for the classification of fNIRS data [1]_. The ``HybridBlocks`` estimator
 builds upon this strength by allowing for even finer control and tuning of
 block-specific properties, which may further enhance classification accuracy.
 We can then apply shrinkage independently to each block for
-optimal performance [1]_.
+optimal performance [1]_. Proof-of-principle work also shows sensitive and
+specific fNIRS-based awareness detection using related methodology [2]_.
 """
 
 # Author: Tim Näher
@@ -455,6 +456,17 @@ plt.show()
 ###############################################################################
 # References
 # ----------
-# .. [1] `Riemannian Geometry for the classification of brain states with fNIRS
-#    <https://www.biorxiv.org/content/10.1101/2024.09.06.611347v1>`_
-#    T. Näher, L. Bastian, A. Vorreuther, P. Fries, R. Goebel, B. Sorger.
+# .. [1] Näher T, Bastian L, Vorreuther A, Fries P, Goebel R, Sorger B.
+#        Riemannian geometry boosts functional near-infrared spectroscopy-based
+#        brain-state classification accuracy.
+#        Neurophotonics. 2025 Oct;12(4):045002.
+#        doi:10.1117/1.NPh.12.4.045002. Epub 2025 Oct 15.
+#        PMID: 41104354; PMCID: PMC12523035.
+#
+# .. [2] Bastian L, Näher T, Vorreuther A, Lührs M, Benitez Andonegui A,
+#        Fries P, Riecke L, Sorger B.
+#        Sensitive and specific fNIRS-based approach for awareness detection
+#        in disorders of consciousness: proof of principle in healthy adults.
+#        Neurophotonics. 2025 Oct;12(4):045001.
+#        doi:10.1117/1.NPh.12.4.045001. Epub 2025 Oct 15.
+#        PMID: 41104355; PMCID: PMC12521986.
