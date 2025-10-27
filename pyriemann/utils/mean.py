@@ -562,9 +562,9 @@ def mean_poweuclid(X, p, *, sample_weight=None):
 
     if p == 1:
         return mean_euclid(X, sample_weight=sample_weight)
-    elif p == 0:
+    if p == 0:
         return mean_logeuclid(X, sample_weight=sample_weight)
-    elif p == -1:
+    if p == -1:
         return mean_harmonic(X, sample_weight=sample_weight)
 
     M = powm(mean_euclid(powm(X, p), sample_weight=sample_weight), 1/p)
