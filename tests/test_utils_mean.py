@@ -42,11 +42,11 @@ from pyriemann.utils.mean import (
 def test_mean(kind, mean, get_mats):
     """Test the shape of mean"""
     n_matrices, n_channels = 5, 3
-    mats = get_mats(n_matrices, n_channels, kind)
+    X = get_mats(n_matrices, n_channels, kind)
     if mean == mean_power:
-        M = mean(mats, 0.42)
+        M = mean(X, 0.42)
     else:
-        M = mean(mats)
+        M = mean(X)
     assert M.shape == (n_channels, n_channels)
 
 
@@ -65,13 +65,13 @@ def test_mean(kind, mean, get_mats):
 def test_mean_init(kind, mean, get_mats):
     """Test the shape of mean with init"""
     n_matrices, n_channels = 4, 3
-    mats = get_mats(n_matrices, n_channels, kind)
+    X = get_mats(n_matrices, n_channels, kind)
 
-    init = mats[0]
+    init = X[0]
     if mean == mean_power:
-        M = mean(mats, 0.123, init=init)
+        M = mean(X, 0.123, init=init)
     else:
-        M = mean(mats, init=init)
+        M = mean(X, init=init)
     assert M.shape == (n_channels, n_channels)
 
 
@@ -93,12 +93,12 @@ def test_mean_init(kind, mean, get_mats):
 def test_mean_weight_zero(kind, mean, get_mats, get_weights):
     """Setting one weight to almost 0 it's almost like not passing the mat"""
     n_matrices, n_channels = 5, 3
-    mats = get_mats(n_matrices, n_channels, kind)
+    X = get_mats(n_matrices, n_channels, kind)
     weights = get_weights(n_matrices)
 
-    M = mean(mats[1:], sample_weight=weights[1:])
+    M = mean(X[1:], sample_weight=weights[1:])
     weights[0] = 1e-12
-    Mw = mean(mats, sample_weight=weights)
+    Mw = mean(X, sample_weight=weights)
     assert M == approx(Mw, rel=1e-6, abs=1e-8)
 
 
@@ -118,10 +118,10 @@ def test_mean_weight_zero(kind, mean, get_mats, get_weights):
 )
 def test_mean_weight_error(mean, get_mats, get_weights):
     n_matrices, n_channels = 3, 2
-    mats = get_mats(n_matrices, n_channels, "spd")
+    X = get_mats(n_matrices, n_channels, "spd")
     weights = get_weights(n_matrices + 1)
     with pytest.raises(ValueError):
-        mean(mats, sample_weight=weights)
+        mean(X, sample_weight=weights)
 
 
 @pytest.mark.parametrize(
@@ -138,12 +138,12 @@ def test_mean_weight_error(mean, get_mats, get_weights):
 def test_mean_warning_convergence(mean, get_mats):
     """Test warning for convergence not reached """
     n_matrices, n_channels = 3, 2
-    mats = get_mats(n_matrices, n_channels, "spd")
+    X = get_mats(n_matrices, n_channels, "spd")
     with pytest.warns(UserWarning):
         if mean == mean_power:
-            mean(mats, 0.3, maxiter=0)
+            mean(X, 0.3, maxiter=0)
         else:
-            mean(mats, maxiter=0)
+            mean(X, maxiter=0)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -166,19 +166,19 @@ def test_mean_warning_convergence(mean, get_mats):
 def test_mean_of_means(kind, mean, get_mats):
     """Test mean of submeans equal to grand mean"""
     n_matrices, n_channels = 10, 3
-    mats = get_mats(n_matrices, n_channels, kind)
+    X = get_mats(n_matrices, n_channels, kind)
     if mean in [mean_power, mean_poweuclid]:
         p = -0.42
-        C = mean(mats, p)
-        C1 = mean(mats[:n_matrices//2], p)
-        C2 = mean(mats[n_matrices//2:], p)
-        C3 = mean(np.array([C1, C2]), p)
+        M = mean(X, p)
+        M1 = mean(X[:n_matrices//2], p)
+        M2 = mean(X[n_matrices//2:], p)
+        M3 = mean(np.array([M1, M2]), p)
     else:
-        C = mean(mats)
-        C1 = mean(mats[:n_matrices//2])
-        C2 = mean(mats[n_matrices//2:])
-        C3 = mean(np.array([C1, C2]))
-    assert C3 == approx(C, 6)
+        M = mean(X)
+        M1 = mean(X[:n_matrices//2])
+        M2 = mean(X[n_matrices//2:])
+        M3 = mean(np.array([M1, M2]))
+    assert M3 == approx(M, 6)
 
 
 @pytest.mark.parametrize(
@@ -202,164 +202,216 @@ def test_mean_of_means(kind, mean, get_mats):
 def test_mean_of_single_matrix(mean, get_mats):
     """Test the mean of a single matrix"""
     n_channels = 3
-    mats = get_mats(1, n_channels, "spd")
+    X = get_mats(1, n_channels, "spd")
     if mean in [mean_power, mean_poweuclid]:
-        M = mean(mats, 0.42)
+        M = mean(X, 0.42)
     else:
-        M = mean(mats)
-    assert M == approx(mats[0])
+        M = mean(X)
+    assert M == approx(X[0])
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("mean", [
+    mean_logeuclid,
+    mean_riemann,
+])
+def test_mean_property_joint_homogeneity(kind, mean, get_mats, rndstate):
+    """Test joint homogeneity"""
+    n_matrices, n_channels = 5, 3
+    X = get_mats(n_matrices, n_channels, kind)
+
+    # P2 in [Nakamura2009]
+    a = rndstate.uniform(low=1.0, high=2.0, size=n_matrices)
+    assert mean(a[:, np.newaxis, np.newaxis] * X) == approx(gmean(a) * mean(X))
+
+    # P2' in [Nakamura2009]
+    a = rndstate.uniform(0.01, 5.0)
+    assert mean(a * X) == approx(a * mean(X))
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("mean", [
+    mean_logeuclid,
+    mean_riemann,
+])
+def test_mean_property_determinant_identity(kind, mean, get_mats, rndstate):
+    """Test determinant identity, P9 in [Nakamura2009]"""
+    n_matrices, n_channels = 5, 3
+    X = get_mats(n_matrices, n_channels, kind)
+    assert np.linalg.det(mean(X)) == approx(gmean(np.linalg.det(X)))
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("mean", [
+    mean_logeuclid,  # Th 3.13 in [Arsigny2007]
+    mean_riemann,  # P3 in [Moakher2005]
+])
+def test_mean_property_invariance_inversion(kind, mean, get_mats):
+    """Test invariance under inversion, also called self-duality"""
+    n_matrices, n_channels = 5, 3
+    X = get_mats(n_matrices, n_channels, kind)
+    assert mean(X) == approx(np.linalg.inv(mean(np.linalg.inv(X))))
+
+
+@pytest.mark.parametrize("kind, kindQ", [("spd", "orth"), ("hpd", "unit")])
+@pytest.mark.parametrize("mean", [
+    mean_logeuclid,  # Th 3.13 in [Arsigny2007]
+    mean_riemann,  # P2 in [Moakher2005]
+])
+def test_mean_property_invariance_similarity(kind, kindQ, mean,
+                                             get_mats, rndstate):
+    """Test invariance by similarity, ie a scale and a rotation"""
+    n_matrices, n_channels = 5, 3
+    X = get_mats(n_matrices, n_channels, kind)
+    Q = get_mats(1, n_channels, kindQ)[0]
+    Qh = Q.conj().T
+    scale = rndstate.uniform(0.01, 10.0)
+    assert scale * Q @ mean(X) @ Qh == approx(mean(scale * Q @ X @ Qh))
+
+
+@pytest.mark.parametrize("kind, kindW", [("spd", "inv"), ("hpd", "cinv")])
+@pytest.mark.parametrize("mean", [
+    mean_riemann,  # P2 in [Moakher2005]
+])
+def test_mean_property_invariance_congruence(kind, kindW, mean, get_mats):
+    """Test invariance under congruence, ie an invertible transform"""
+    n_matrices, n_channels = 5, 3
+    X = get_mats(n_matrices, n_channels, kind)
+    W = get_mats(1, n_channels, kindW)[0]
+    Wh = W.conj().T
+    assert W @ mean(X) @ Wh == approx(mean(W @ X @ Wh))
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_mean_alm(kind, get_mats):
-    """Test the ALM mean"""
     n_matrices, n_channels = 3, 3
-    mats = get_mats(n_matrices, n_channels, kind)
-    C_alm = mean_alm(mats)
-    assert C_alm.shape == (n_channels, n_channels)
-    C_riem = mean_riemann(mats)
-    assert C_alm == approx(C_riem, abs=1e-6, rel=1e-3)
+    X = get_mats(n_matrices, n_channels, kind)
+    M = mean_alm(X)
+    assert M.shape == (n_channels, n_channels)
+    assert M == approx(mean_riemann(X), abs=1e-6, rel=1e-3)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_mean_alm_2matrices(kind, get_mats):
-    """Test the ALM mean with 2 matrices"""
     n_matrices, n_channels = 2, 3
-    mats = get_mats(n_matrices, n_channels, kind)
-    C = mean_alm(mats)
-    assert np.all(C == geodesic_riemann(mats[0], mats[1], alpha=0.5))
+    X = get_mats(n_matrices, n_channels, kind)
+    assert mean_alm(X) == approx(geodesic_riemann(X[0], X[1], alpha=0.5))
 
 
-@pytest.mark.parametrize("complex_valued", [True, False])
-def test_mean_euclid(rndstate, complex_valued):
-    """Test the Euclidean mean for generic matrices"""
-    n_matrices, n_dim0, n_dim1 = 10, 3, 4
-    mats = rndstate.randn(n_matrices, n_dim0, n_dim1)
-    if complex_valued:
-        mats = mats + 1j * rndstate.randn(n_matrices, n_dim0, n_dim1)
-    assert mean_euclid(mats) == approx(mats.mean(axis=0))
+@pytest.mark.parametrize("kind", ["real", "comp"])
+def test_mean_euclid(kind, get_mats):
+    """Euclidean mean for non-square matrices"""
+    n_matrices, n_dim1, n_dim2 = 10, 3, 4
+    X = get_mats(n_matrices, [n_dim1, n_dim2], kind)
+    assert mean_euclid(X) == approx(X.mean(axis=0))
+
+
+@pytest.mark.parametrize("kind", ["inv", "cinv"])
+def test_mean_harmonic(kind, get_mats):
+    """harmonic mean of invertible matrices"""
+    n_matrices, n_channels = 4, 5
+    X = get_mats(n_matrices, n_channels, kind)
+    mean_harmonic(X)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_mean_power(kind, get_mats, get_weights):
-    """Test the power mean"""
     n_matrices, n_channels = 3, 3
-    mats = get_mats(n_matrices, n_channels, kind)
-    assert mean_power(mats, 1) == approx(mean_euclid(mats))
-    assert mean_power(mats, 0) == approx(mean_riemann(mats))
-    assert mean_power(mats, -1) == approx(mean_harmonic(mats))
+    X = get_mats(n_matrices, n_channels, kind)
+    assert mean_power(X, 1) == approx(mean_euclid(X))
+    assert mean_power(X, 0) == approx(mean_riemann(X))
+    assert mean_power(X, -1) == approx(mean_harmonic(X))
 
     weights = get_weights(n_matrices)
-    mean_power(mats, 0.42, sample_weight=weights)
+    mean_power(X, 0.42, sample_weight=weights)
 
 
 def test_mean_power_errors(get_mats):
     n_matrices, n_channels = 3, 2
-    mats = get_mats(n_matrices, n_channels, "spd")
+    X = get_mats(n_matrices, n_channels, "spd")
 
     with pytest.raises(ValueError):  # exponent is not a scalar
-        mean_power(mats, [1])
+        mean_power(X, [1])
     with pytest.raises(ValueError):  # exponent is not in [-1,1]
-        mean_power(mats, 3)
+        mean_power(X, 3)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_mean_poweuclid(kind, get_mats, get_weights):
     n_matrices, n_channels = 10, 4
-    mats = get_mats(n_matrices, n_channels, kind)
-    assert mean_poweuclid(mats, 1) == approx(mean_euclid(mats))
-    assert mean_poweuclid(mats, 0) == approx(mean_logeuclid(mats))
-    assert mean_poweuclid(mats, -1) == approx(mean_harmonic(mats))
+    X = get_mats(n_matrices, n_channels, kind)
+    assert mean_poweuclid(X, 1) == approx(mean_euclid(X))
+    assert mean_poweuclid(X, 0) == approx(mean_logeuclid(X))
+    assert mean_poweuclid(X, -1) == approx(mean_harmonic(X))
 
     weights = get_weights(n_matrices)
-    mean_poweuclid(mats, 0.42, sample_weight=weights)
+    mean_poweuclid(X, 0.42, sample_weight=weights)
 
 
 def test_mean_poweuclid_error(get_mats):
     n_matrices, n_channels = 3, 2
-    mats = get_mats(n_matrices, n_channels, "spd")
+    X = get_mats(n_matrices, n_channels, "spd")
 
     with pytest.raises(ValueError):  # exponent is not a scalar
-        mean_poweuclid(mats, [1])
+        mean_poweuclid(X, [1])
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("init", [True, False])
-def test_mean_riemann(kind, init, get_mats_params):
+def test_mean_riemann_same_eigenvecs(kind, get_mats_params):
     """Test the Riemannian mean with same eigen vectors"""
     n_matrices, n_channels = 10, 3
-    mats, eigvals, eigvecs = get_mats_params(n_matrices, n_channels, kind)
-    if init:
-        C = mean_riemann(mats, init=mats[0])
-    else:
-        C = mean_riemann(mats)
+    X, eigvals, eigvecs = get_mats_params(n_matrices, n_channels, kind)
+    M = mean_riemann(X)
     eigval = np.exp(np.mean(np.log(eigvals), axis=0))
-    Ctrue = eigvecs @ np.diag(eigval) @ eigvecs.conj().T
-    assert C == approx(Ctrue)
-
-
-@pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_mean_riemann_properties(kind, get_mats):
-    n_matrices, n_channels = 5, 3
-    mats = get_mats(n_matrices, n_channels, kind)
-    C = mean_riemann(mats)
-
-    # congruence-invariance, P2 in [Moakher2005] or P6 in [Nakamura2009]
-    W = np.random.normal(size=(n_channels, n_channels))  # must be invertible
-    assert W @ C @ W.T == approx(mean_riemann(W @ mats @ W.T))
-
-    # self-duality, P3 in [Moakher2005] or P8 in [Nakamura2009]
-    assert C == approx(np.linalg.inv(mean_riemann(np.linalg.inv(mats))))
-
-    # determinant identity, P9 in [Nakamura2009]
-    assert np.linalg.det(C) == approx(gmean(np.linalg.det(mats)))
+    Mtrue = eigvecs @ np.diag(eigval) @ eigvecs.conj().T
+    assert M == approx(Mtrue)
 
 
 @pytest.mark.parametrize("init", [True, False])
 def test_mean_masked_riemann(init, get_mats, get_masks):
     """Test the masked Riemannian mean"""
     n_matrices, n_channels = 5, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
+    X = get_mats(n_matrices, n_channels, "spd")
     masks = get_masks(n_matrices, n_channels)
     if init:
-        C = maskedmean_riemann(mats, masks, tol=10e-3, init=mats[0])
+        M = maskedmean_riemann(X, masks, tol=10e-3, init=X[0])
     else:
-        C = maskedmean_riemann(mats, masks, tol=10e-3)
-    assert C.shape == (n_channels, n_channels)
+        M = maskedmean_riemann(X, masks, tol=10e-3)
+    assert M.shape == (n_channels, n_channels)
 
 
 @pytest.mark.parametrize("init", [True, False])
 def test_mean_nan_riemann(init, get_mats, rndstate):
     """Test the Riemannian NaN-mean"""
     n_matrices, n_channels = 10, 6
-    mats = get_mats(n_matrices, n_channels, "spd")
-    emean = np.mean(mats, axis=0)
+    X = get_mats(n_matrices, n_channels, "spd")
+    emean = np.mean(X, axis=0)
     for i in range(n_matrices):
         corrup_channels = rndstate.choice(
             np.arange(0, n_channels), size=n_channels // 3, replace=False)
         for j in corrup_channels:
-            mats[i, j] = np.nan
-            mats[i, :, j] = np.nan
+            X[i, j] = np.nan
+            X[i, :, j] = np.nan
     if init:
-        C = nanmean_riemann(mats, tol=10e-3, init=emean)
+        M = nanmean_riemann(X, tol=10e-3, init=emean)
     else:
-        C = nanmean_riemann(mats, tol=10e-3)
-    assert C.shape == (n_channels, n_channels)
+        M = nanmean_riemann(X, tol=10e-3)
+    assert M.shape == (n_channels, n_channels)
 
 
 def test_mean_nan_riemann_errors(get_mats):
     """Test the Riemannian NaN-mean errors"""
     n_matrices, n_channels = 5, 4
-    mats = get_mats(n_matrices, n_channels, "spd")
+    X = get_mats(n_matrices, n_channels, "spd")
 
     with pytest.raises(ValueError):  # not symmetric NaN values
-        mats_ = mats.copy()
-        mats_[0, 0] = np.nan  # corrup only a row, not its corresp column
-        nanmean_riemann(mats_)
+        X_ = X.copy()
+        X_[0, 0] = np.nan  # corrup only a row, not its corresp column
+        nanmean_riemann(X_)
     with pytest.raises(ValueError):  # not rows and columns NaN values
-        mats_ = mats.copy()
-        mats_[1, 0, 1] = np.nan  # corrup an off-diagonal value
-        nanmean_riemann(mats_)
+        X_ = X.copy()
+        X_[1, 0, 1] = np.nan  # corrup an off-diagonal value
+        nanmean_riemann(X_)
 
 
 def callable_np_average(X, sample_weight=None):
@@ -387,23 +439,23 @@ def callable_np_average(X, sample_weight=None):
 def test_mean_covariance_metric(metric, mean, get_mats):
     """Test mean_covariance for metric"""
     n_matrices, n_channels = 3, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
+    X = get_mats(n_matrices, n_channels, "spd")
     if metric in ["power", "poweuclid"]:
         p = 0.1
-        assert mean(mats, p) == approx(mean_covariance(mats, p, metric=metric))
+        assert mean(X, p) == approx(mean_covariance(X, p, metric=metric))
     else:
-        assert mean(mats) == approx(mean_covariance(mats, metric=metric))
+        assert mean(X) == approx(mean_covariance(X, metric=metric))
 
 
 def test_mean_covariance_arguments(get_mats):
     """Test mean_covariance with different args and kwargs"""
-    n_matrices, n_channels = 3, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
+    n_matrices, n_channels = 3, 2
+    X = get_mats(n_matrices, n_channels, "spd")
 
-    mean_covariance(mats)
-    mean_covariance(mats, 0.2, metric="power", zeta=10e-3)
-    mean_covariance(mats, 0.3, metric="poweuclid", sample_weight=None)
+    mean_covariance(X)
+    mean_covariance(X, 0.2, metric="power", zeta=10e-3)
+    mean_covariance(X, 0.3, metric="poweuclid", sample_weight=None)
 
-    mean_covariance(mats, metric="ale", maxiter=5)
-    mean_covariance(mats, metric="logdet", tol=10e-3)
-    mean_covariance(mats, metric="riemann", init=np.eye(n_channels))
+    mean_covariance(X, metric="ale", maxiter=5)
+    mean_covariance(X, metric="logdet", tol=10e-3)
+    mean_covariance(X, metric="riemann", init=np.eye(n_channels))

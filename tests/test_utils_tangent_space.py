@@ -95,13 +95,11 @@ def test_maps_log_exp(kind, log_map_, exp_map_, get_mats):
     assert exp_map_(log_map_(X, C), C) == approx(X)
 
 
-@pytest.mark.parametrize("complex_valued", [True, False])
-def test_map_euclid(rndstate, complex_valued):
-    """Test Euclidean map for generic matrices"""
-    n_matrices, n_dim0, n_dim1 = 5, 3, 4
-    mats = rndstate.randn(n_matrices, n_dim0, n_dim1)
-    if complex_valued:
-        mats = mats + 1j * rndstate.randn(n_matrices, n_dim0, n_dim1)
+@pytest.mark.parametrize("kind", ["real", "comp"])
+def test_map_euclid(kind, get_mats):
+    """Euclidean map for non-square matrices"""
+    n_matrices, n_dim1, n_dim2 = 5, 3, 4
+    mats = get_mats(n_matrices, [n_dim1, n_dim2], kind)
     X, C = mats[:n_matrices - 1], mats[-1]
     assert exp_map_euclid(log_map_euclid(X, C), C) == approx(X)
 
@@ -137,9 +135,8 @@ def test_tangent_space_ndarray(metric, get_mats):
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_tangent_space_riemann_properties(kind, get_mats):
-    n_matrices, n_channels = 2, 3
-    mats = get_mats(n_matrices, n_channels, kind)
-    A, B = mats[0], mats[1]
+    n_channels = 3
+    A, B = get_mats(2, n_channels, kind)
 
     # equivalent definitions of Riemannian distance, Eq(7) in [Barachant2012]
     dist = distance_riemann(A, B)
@@ -150,11 +147,11 @@ def test_tangent_space_riemann_properties(kind, get_mats):
 @pytest.mark.parametrize("metric", [
     "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
 ])
-def test_untangent_space_ndarray(metric, rndstate):
+def test_untangent_space_ndarray(metric, get_mats):
     """Test untangent space projection"""
     n_matrices, n_channels = 10, 3
     n_ts = (n_channels * (n_channels + 1)) // 2
-    T = rndstate.randn(n_matrices, n_ts)
+    T = get_mats(n_matrices, [n_ts], "real")
     X = untangent_space(T, np.eye(n_channels), metric=metric)
     assert X.shape == (n_matrices, n_channels, n_channels)
 
