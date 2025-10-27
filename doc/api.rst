@@ -257,7 +257,6 @@ Means
     mean_alm
     mean_euclid
     mean_harmonic
-    mean_identity
     mean_kullback_sym
     mean_logchol
     mean_logdet

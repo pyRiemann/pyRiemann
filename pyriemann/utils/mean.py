@@ -5,6 +5,7 @@ import warnings
 
 import numpy as np
 
+from . import deprecated
 from .ajd import ajd_pham
 from .base import sqrtm, invsqrtm, logm, expm, powm
 from .distance import distance_riemann
@@ -204,6 +205,7 @@ def mean_harmonic(X, sample_weight=None):
     return M
 
 
+@deprecated("mean_identity is deprecated and will be removed in 0.11.0.")
 def mean_identity(X, sample_weight=None):
     r"""Identity matrix corresponding to the matrices dimension.
 
