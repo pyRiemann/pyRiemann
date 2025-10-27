@@ -215,11 +215,42 @@ def test_mean_of_single_matrix(mean, get_mats):
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("mean", [
+    mean_logeuclid,
+    mean_riemann,
+])
+def test_mean_property_joint_homogeneity(kind, mean, get_mats, rndstate):
+    """Test joint homogeneity"""
+    n_matrices, n_channels = 5, 3
+    X = get_mats(n_matrices, n_channels, kind)
+
+    # P2 in [Nakamura2009]
+    a = rndstate.uniform(low=1.0, high=2.0, size=n_matrices)
+    assert mean(a[:, np.newaxis, np.newaxis] * X) == approx(gmean(a) * mean(X))
+
+    # P2' in [Nakamura2009]
+    a = rndstate.uniform(0.01, 5.0)
+    assert mean(a * X) == approx(a * mean(X))
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("mean", [
+    mean_logeuclid,
+    mean_riemann,
+])
+def test_mean_property_determinant_identity(kind, mean, get_mats, rndstate):
+    """Test determinant identity, P9 in [Nakamura2009]"""
+    n_matrices, n_channels = 5, 3
+    X = get_mats(n_matrices, n_channels, kind)
+    assert np.linalg.det(mean(X)) == approx(gmean(np.linalg.det(X)))
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("mean", [
     mean_logeuclid,  # Th 3.13 in [Arsigny2007]
-    mean_riemann,  # P3 in [Moakher2005] or P8 in [Nakamura2009]
+    mean_riemann,  # P3 in [Moakher2005]
 ])
 def test_mean_property_invariance_inversion(kind, mean, get_mats):
-    """Test invariance under inversion, also called self-duality """
+    """Test invariance under inversion, also called self-duality"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
     assert mean(X) == approx(np.linalg.inv(mean(np.linalg.inv(X))))
@@ -228,7 +259,7 @@ def test_mean_property_invariance_inversion(kind, mean, get_mats):
 @pytest.mark.parametrize("kind, kindQ", [("spd", "orth"), ("hpd", "unit")])
 @pytest.mark.parametrize("mean", [
     mean_logeuclid,  # Th 3.13 in [Arsigny2007]
-    mean_riemann,  # P3 in [Moakher2005] or P8 in [Nakamura2009]
+    mean_riemann,  # P2 in [Moakher2005]
 ])
 def test_mean_property_invariance_similarity(kind, kindQ, mean,
                                              get_mats, rndstate):
@@ -243,9 +274,10 @@ def test_mean_property_invariance_similarity(kind, kindQ, mean,
 
 @pytest.mark.parametrize("kind, kindW", [("spd", "inv"), ("hpd", "cinv")])
 @pytest.mark.parametrize("mean", [
-    mean_riemann,  # P2 in [Moakher2005] or P6 in [Nakamura2009]
+    mean_riemann,  # P2 in [Moakher2005]
 ])
 def test_mean_property_invariance_congruence(kind, kindW, mean, get_mats):
+    """Test invariance under congruence, ie an invertible transform"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
     W = get_mats(1, n_channels, kindW)[0]
@@ -256,19 +288,17 @@ def test_mean_property_invariance_congruence(kind, kindW, mean, get_mats):
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_mean_alm(kind, get_mats):
     n_matrices, n_channels = 3, 3
-    mats = get_mats(n_matrices, n_channels, kind)
-    M_alm = mean_alm(mats)
-    assert M_alm.shape == (n_channels, n_channels)
-    M_riem = mean_riemann(mats)
-    assert M_alm == approx(M_riem, abs=1e-6, rel=1e-3)
+    X = get_mats(n_matrices, n_channels, kind)
+    M = mean_alm(X)
+    assert M.shape == (n_channels, n_channels)
+    assert M == approx(mean_riemann(X), abs=1e-6, rel=1e-3)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_mean_alm_2matrices(kind, get_mats):
     n_matrices, n_channels = 2, 3
     X = get_mats(n_matrices, n_channels, kind)
-    M = mean_alm(X)
-    assert np.all(M == geodesic_riemann(X[0], X[1], alpha=0.5))
+    assert mean_alm(X) == approx(geodesic_riemann(X[0], X[1], alpha=0.5))
 
 
 @pytest.mark.parametrize("kind", ["real", "comp"])
@@ -336,28 +366,14 @@ def test_mean_poweuclid_error(get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("init", [True, False])
-def test_mean_riemann(kind, init, get_mats_params):
+def test_mean_riemann_same_eigenvecs(kind, get_mats_params):
     """Test the Riemannian mean with same eigen vectors"""
     n_matrices, n_channels = 10, 3
     X, eigvals, eigvecs = get_mats_params(n_matrices, n_channels, kind)
-    if init:
-        M = mean_riemann(X, init=X[0])
-    else:
-        M = mean_riemann(X)
+    M = mean_riemann(X)
     eigval = np.exp(np.mean(np.log(eigvals), axis=0))
     Mtrue = eigvecs @ np.diag(eigval) @ eigvecs.conj().T
     assert M == approx(Mtrue)
-
-
-@pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_mean_riemann_properties(kind, get_mats):
-    n_matrices, n_channels = 5, 3
-    X = get_mats(n_matrices, n_channels, kind)
-    M = mean_riemann(X)
-
-    # determinant identity, P9 in [Nakamura2009]
-    assert np.linalg.det(M) == approx(gmean(np.linalg.det(X)))
 
 
 @pytest.mark.parametrize("init", [True, False])
