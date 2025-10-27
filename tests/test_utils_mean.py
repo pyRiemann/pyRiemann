@@ -10,7 +10,6 @@ from pyriemann.utils.mean import (
     mean_alm,
     mean_euclid,
     mean_harmonic,
-    mean_identity,
     mean_kullback_sym,
     mean_logdet,
     mean_logchol,
@@ -31,7 +30,6 @@ from pyriemann.utils.mean import (
         mean_ale,
         mean_euclid,
         mean_harmonic,
-        mean_identity,
         mean_kullback_sym,
         mean_logdet,
         mean_logeuclid,
@@ -155,7 +153,6 @@ def test_mean_warning_convergence(mean, get_mats):
         mean_ale,
         mean_euclid,
         mean_harmonic,
-        mean_identity,
         mean_kullback_sym,
         mean_logchol,
         mean_logdet,
@@ -317,12 +314,6 @@ def test_mean_harmonic(kind, get_mats):
     mean_harmonic(X)
 
 
-def test_mean_identity(get_mats):
-    n_matrices, n_channels = 2, 3
-    X = get_mats(n_matrices, n_channels, "spd")
-    assert np.all(mean_identity(X) == np.eye(n_channels))
-
-
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_mean_power(kind, get_mats, get_weights):
     n_matrices, n_channels = 3, 3
@@ -434,7 +425,6 @@ def callable_np_average(X, sample_weight=None):
         ("alm", mean_alm),
         ("euclid", mean_euclid),
         ("harmonic", mean_harmonic),
-        ("identity", mean_identity),
         ("kullback_sym", mean_kullback_sym),
         ("logchol", mean_logchol),
         ("logdet", mean_logdet),

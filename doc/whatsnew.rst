@@ -24,6 +24,8 @@ v0.10.dev
 
 - Enhance :func:`pyriemann.datasets.make_matrices` to generate invertible, orthogonal, unitary or non-square matrices. :pr:`389` by :user:`qbarthelemy`
 
+- Deprecate ``mean_identity``. :pr:`392` by :user:`qbarthelemy`
+
 v0.9 (July 2025)
 ----------------
 

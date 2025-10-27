@@ -103,7 +103,6 @@ def get_means():
         "ale",
         "euclid",
         "harmonic",
-        "identity",
         "kullback_sym",
         "logchol",
         "logdet",

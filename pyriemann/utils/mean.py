@@ -5,6 +5,7 @@ import warnings
 
 import numpy as np
 
+from . import deprecated
 from .ajd import ajd_pham
 from .base import sqrtm, invsqrtm, logm, expm, powm
 from .distance import distance_riemann
@@ -14,10 +15,10 @@ from .utils import check_weights, check_function, check_init
 
 
 def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
-    """AJD-based log-Euclidean (ALE) mean of SPD matrices.
+    """AJD-based log-Euclidean (ALE) mean of SPD/HPD matrices.
 
-    Return the mean of a set of SPD matrices using the approximate joint
-    diagonalization (AJD) based log-Euclidean (ALE) mean [1]_.
+    Approximate joint diagonalization (AJD) based log-Euclidean (ALE) mean of
+    SPD/HPD matrices [1]_.
 
     Parameters
     ----------
@@ -81,7 +82,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
 def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None):
     r"""Ando-Li-Mathias (ALM) mean of SPD/HPD matrices.
 
-    Return the geometric mean recursively [1]_, generalizing from:
+    Ando-Li-Mathias (ALM) mean is computed recursively, generalizing from [1]_:
 
     .. math::
         \mathbf{M} = X_1^{\frac{1}{2}} (X_1^{-\frac{1}{2}}X_2^{\frac{1}{2}}
@@ -204,6 +205,7 @@ def mean_harmonic(X, sample_weight=None):
     return M
 
 
+@deprecated("mean_identity is deprecated and will be removed in 0.11.0.")
 def mean_identity(X, sample_weight=None):
     r"""Identity matrix corresponding to the matrices dimension.
 
@@ -481,12 +483,12 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
         return mean_euclid(X, sample_weight=sample_weight)
     if p == 0:
         return mean_riemann(
-                X,
-                sample_weight=sample_weight,
-                init=init,
-                tol=zeta,
-                maxiter=maxiter,
-               )
+            X,
+            sample_weight=sample_weight,
+            init=init,
+            tol=zeta,
+            maxiter=maxiter,
+        )
     if p == -1:
         return mean_harmonic(X, sample_weight=sample_weight)
 
