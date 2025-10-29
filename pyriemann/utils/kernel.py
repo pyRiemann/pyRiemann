@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from .base import invsqrtm, logm
+from .base import ctranspose, invsqrtm, logm
 from .mean import mean_riemann
 from .utils import check_function
 
@@ -49,6 +49,8 @@ def kernel_euclid(X, Y=None, *, Cref=None, reg=1e-10):
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.8
+        Add parameter Cref to use a reference matrix.
 
     See Also
     --------
@@ -61,13 +63,14 @@ def kernel_euclid(X, Y=None, *, Cref=None, reg=1e-10):
         <https://doi.org/10.1016/j.neunet.2009.06.035>`_
         J. Farquhar. Neural Networks, 2009
     """
-    def kernelfct(X, Cref):
-        if Cref is None:
-            return X, Cref
-        else:
-            return X - Cref, Cref
+    X, Y, are_xy_equal = _check_xy(X, Y)
+    if Cref is None:
+        Xt_, Y_ = ctranspose(X), Y
+    else:
+        _check_cref(X, Cref)
+        Xt_, Y_ = ctranspose(X - Cref), Y - Cref
 
-    return _apply_matrix_kernel(kernelfct, X, Y, Cref=Cref, reg=reg)
+    return _apply_matrix_kernel(Xt_, Y_, are_xy_equal, reg=reg)
 
 
 def kernel_logeuclid(X, Y=None, *, Cref=None, reg=1e-10):
@@ -132,13 +135,15 @@ def kernel_logeuclid(X, Y=None, *, Cref=None, reg=1e-10):
         <https://ieeexplore.ieee.org/abstract/document/5684490>`_
         E. Wang, W. Guo, L. Dai, K. Lee, B. Ma and H. Li. IEEE ISCSLP, 2010
     """
-    def kernelfct(X, Cref):
-        if Cref is None:
-            return logm(X), Cref
-        else:
-            return logm(X) - logm(Cref), Cref
+    X, Y, are_xy_equal = _check_xy(X, Y)
+    if Cref is None:
+        X_, Y_ = logm(X), logm(Y)
+    else:
+        _check_cref(X, Cref)
+        logCref = logm(Cref)
+        X_, Y_ = logm(X) - logCref, logm(Y) - logCref
 
-    return _apply_matrix_kernel(kernelfct, X, Y, Cref=Cref, reg=reg)
+    return _apply_matrix_kernel(X_, Y_, are_xy_equal, reg=reg)
 
 
 def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
@@ -192,53 +197,47 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
         A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
         Elsevier, 2013, 112, pp.172-178.
     """
-    def kernelfct(X, Cref):
-        if Cref is None:
-            Cref = mean_riemann(X)
+    X, Y, are_xy_equal = _check_xy(X, Y)
+    if Cref is None:
+        Cref = mean_riemann(X)
+    else:
+        _check_cref(X, Cref)
+    Cm12 = invsqrtm(Cref)
+    X_, Y_ = logm(Cm12 @ X @ Cm12), logm(Cm12 @ Y @ Cm12)
 
-        C_invsq = invsqrtm(Cref)
-        X_ = logm(C_invsq @ X @ C_invsq)
-        return X_, Cref
-
-    return _apply_matrix_kernel(kernelfct, X, Y, Cref=Cref, reg=reg)
+    return _apply_matrix_kernel(X_, Y_, are_xy_equal, reg=reg)
 
 
 ###############################################################################
 
 
-def _check_dimensions(X, Y, Cref):
-    """Check for matching dimensions in X, Y and Cref."""
-    if not isinstance(Y, type(None)):
-        assert Y.shape[1:] == X.shape[1:], "Dimension of matrices in Y must "\
-                                           "match dimension of matrices in " \
-                                           f"X. Expected {X.shape[1:]}, got " \
-                                           f"{Y.shape[1:]}."
-
-    if not isinstance(Cref, type(None)):
-        assert Cref.shape == X.shape[1:], "Dimension of Cref must match " \
-                                          "dimension of matrices in X. " \
-                                          f"Expected {X.shape[1:]}, got " \
-                                          f"{Cref.shape}."
-
-
-def _apply_matrix_kernel(kernel_fct, X, Y=None, *, Cref=None, reg=1e-10):
-    """Apply a matrix kernel function."""
-    _check_dimensions(X, Y, Cref)
-    n_matrices_X, n, n = X.shape
-
-    X_, Cref = kernel_fct(X, Cref)
-
-    if Y is None or np.array_equal(X, Y):
-        Y_ = X_
+def _check_xy(X, Y):
+    if Y is None:
+        return X, X, True
     else:
-        Y_, _ = kernel_fct(Y, Cref)
+        if Y.shape[1:] != X.shape[1:]:
+            raise ValueError(
+                "Dimension of matrices in Y must match dimension of matrices "
+                "in X. Expected {X.shape[1:]}, got {Y.shape[1:]}."
+            )
+        return X, Y, False
 
-    # calculate scalar products: K[i,j] = np.trace(X_[i]^T @ Y_[j])
-    X_T = X_.transpose((0, 2, 1))
-    K = np.einsum('acb,dbc->ad', X_T, Y_, optimize=True)
+
+def _check_cref(X, Cref):
+    if Cref.shape != X.shape[1:]:
+        raise ValueError(
+            "Dimension of Cref must match dimension of matrices in X. "
+            f"Expected {X.shape[1:]}, got {Cref.shape}."
+        )
+
+
+def _apply_matrix_kernel(Xt, Y, are_xy_equal, reg):
+    # products K[i,j] = trace(Xt[i] @ Y[j])
+    K = np.einsum("imn,jnm->ij", Xt, Y, optimize=True)
 
     # regularization due to numerical errors
-    if np.array_equal(X_, Y_):
+    if are_xy_equal:
+        n_matrices_X = Xt.shape[0]
         K.flat[:: n_matrices_X + 1] += reg
 
     return K
