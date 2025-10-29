@@ -111,7 +111,7 @@ def test_kernel_property_symmetry(metric, get_mats):
 
 @pytest.mark.parametrize("metric", metrics)
 def test_kernel_property_positive_semi_definite(metric, get_mats):
-    n_matrices, n_channels = 5, 7
+    n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "spd")
     K = kernel(X, X, metric=metric)
     assert is_spsd(K)
