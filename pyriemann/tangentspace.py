@@ -12,11 +12,11 @@ class TangentSpace(TransformerMixin, BaseEstimator):
 
     """Tangent space projection.
 
-    Tangent space projection maps a set of SPD matrices to their
+    Tangent space projection maps a set of SPD/HPD matrices to their
     tangent space according to [1]_. The tangent space projection can be
     seen as a kernel operation, cf [2]_. After projection, each matrix is
     represented as a vector of size :math:`n (n+1)/2`, where :math:`n` is the
-    dimension of the SPD matrices.
+    dimension of the SPD/HPD matrices.
 
     Tangent space projection is useful to convert SPD matrices in
     Euclidean vectors while conserving the inner structure of the manifold.
@@ -25,8 +25,9 @@ class TangentSpace(TransformerMixin, BaseEstimator):
 
     Tangent space projection is a local approximation of the manifold. It takes
     one parameter, the reference matrix, that is usually estimated using the
-    geometric mean of the SPD matrices set you project. If the function ``fit``
-    is not called, the identity matrix will be used as reference matrix.
+    geometric mean of the SPD/HPD matrices set you project.
+    If the function ``fit`` is not called, the identity matrix will be used as
+    reference matrix.
     This can lead to serious degradation of performances.
     The approximation will be bigger if the matrices in the set are scattered
     in the manifold, and lower if they are grouped in a small region of the
@@ -86,7 +87,7 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None
             Not used, here for compatibility with sklearn API.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
@@ -141,12 +142,12 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
         ts : ndarray, shape (n_matrices, n_ts)
-            Tangent space projections of SPD matrices.
+            Tangent space projections of SPD/HPD matrices.
         """
         self.metric_mean, self.metric_map = check_metric(
             self.metric, ["mean", "map"]
@@ -165,7 +166,7 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None
             Not used, here for compatibility with sklearn API.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
@@ -174,7 +175,7 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         Returns
         -------
         ts : ndarray, shape (n_matrices, n_ts)
-            Tangent space projections of SPD matrices.
+            Tangent space projections of SPD/HPD matrices.
         """
         self.metric_mean, self.metric_map = check_metric(
             self.metric, ["mean", "map"]
@@ -200,7 +201,7 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         Returns
         -------
         X_new : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices corresponding to each of tangent vector.
+            Set of SPD/HPD matrices corresponding to each of tangent vector.
         """
         self.metric_mean, self.metric_map = check_metric(
             self.metric, ["mean", "map"]
@@ -214,8 +215,8 @@ class FGDA(TransformerMixin, BaseEstimator):
     """Fisher geodesic discriminant analysis.
 
     Fisher geodesic discriminant analysis (FGDA)
-    projects matrices in tangent space,
-    applies a Fisher linear discriminant analysis (FLDA) to reduce dimention,
+    projects SPD matrices in tangent space,
+    applies a Fisher linear discriminant analysis (FLDA) to reduce dimension,
     and projects filtered tangent vectors back in the manifold [1]_.
 
     Parameters
