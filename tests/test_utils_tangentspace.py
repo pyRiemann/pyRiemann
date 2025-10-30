@@ -28,9 +28,11 @@ from pyriemann.utils.tangentspace import (
     transport_riemann,
 )
 
+metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
+
 
 @pytest.mark.parametrize(
-    "fun_map", [
+    "fmap", [
         exp_map_euclid,
         exp_map_logchol,
         exp_map_logeuclid,
@@ -43,23 +45,21 @@ from pyriemann.utils.tangentspace import (
         log_map_wasserstein
     ]
 )
-def test_maps_ndarray(fun_map, get_mats):
+def test_maps_ndarray(fmap, get_mats):
     """Test log and exp maps"""
     n_matrices, n_channels = 6, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
-    Xt = fun_map(mats, np.eye(n_channels))
+    X = get_mats(n_matrices, n_channels, "spd")
+    Xt = fmap(X, np.eye(n_channels))
     assert Xt.shape == (n_matrices, n_channels, n_channels)
 
     n_sets = 2
-    mats_4d = np.asarray([mats for _ in range(n_sets)])
-    Xt = fun_map(mats_4d, np.eye(n_channels))
+    X_4d = np.asarray([X for _ in range(n_sets)])
+    Xt = fmap(X_4d, np.eye(n_channels))
     assert Xt.shape == (n_sets, n_matrices, n_channels, n_channels)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("metric", [
-    "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
-])
+@pytest.mark.parametrize("metric", metrics)
 def test_map_log_exp(kind, metric, get_mats):
     """Test log then exp maps should be identity"""
     n_matrices, n_channels = 9, 2
@@ -108,17 +108,15 @@ def test_map_euclid(kind, get_mats):
 def test_upper_and_unupper(kind, get_mats):
     """Test upper then unupper should be identity"""
     n_matrices, n_channels = 7, 3
-    mats = get_mats(n_matrices, n_channels, kind)
-    assert unupper(upper(mats)) == approx(mats)
+    X = get_mats(n_matrices, n_channels, kind)
+    assert unupper(upper(X)) == approx(X)
 
     n_sets = 2
-    mats_4d = np.asarray([mats for _ in range(n_sets)])
-    assert unupper(upper(mats_4d)) == approx(mats_4d)
+    X_4d = np.asarray([X for _ in range(n_sets)])
+    assert unupper(upper(X_4d)) == approx(X_4d)
 
 
-@pytest.mark.parametrize("metric", [
-    "euclid", "logchol", "logeuclid", "riemann"
-])
+@pytest.mark.parametrize("metric", metrics)
 def test_tangent_space_ndarray(metric, get_mats):
     """Test tangent space projection"""
     n_matrices, n_channels = 6, 3
@@ -144,9 +142,7 @@ def test_tangent_space_riemann_properties(kind, get_mats):
     assert dist == approx(np.linalg.norm(s))
 
 
-@pytest.mark.parametrize("metric", [
-    "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
-])
+@pytest.mark.parametrize("metric", metrics)
 def test_untangent_space_ndarray(metric, get_mats):
     """Test untangent space projection"""
     n_matrices, n_channels = 10, 3
@@ -162,9 +158,7 @@ def test_untangent_space_ndarray(metric, get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("metric", [
-    "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
-])
+@pytest.mark.parametrize("metric", metrics)
 def test_tangent_and_untangent_space(kind, metric, get_mats):
     """Tangent space projection then back-projection should be identity"""
     n_matrices, n_channels = 10, 3
@@ -175,14 +169,14 @@ def test_tangent_and_untangent_space(kind, metric, get_mats):
     assert X_ut == approx(X)
 
 
-@pytest.mark.parametrize("fun", [
+@pytest.mark.parametrize("ftransport", [
     transport_euclid, transport_logeuclid, transport_riemann
 ])
-def test_transport(get_mats, fun):
+def test_transport(ftransport, get_mats):
     n_matrices, n_channels = 7, 3
     X = get_mats(n_matrices, n_channels, "herm")
     A, B = get_mats(2, n_channels, "hpd")
-    X_tr = fun(X, A, B)
+    X_tr = ftransport(X, A, B)
     assert X_tr.shape == X.shape
 
 

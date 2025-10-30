@@ -26,6 +26,8 @@ v0.10.dev
 
 - Deprecate ``mean_identity``. :pr:`392` by :user:`qbarthelemy`
 
+- Enhance :class:`pyriemann.tangentspace.TangentSpace` to support HPD matrices. :pr:`394` by :user:`qbarthelemy`
+
 v0.9 (July 2025)
 ----------------
 
