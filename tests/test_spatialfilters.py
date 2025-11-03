@@ -11,34 +11,33 @@ spfilts = [Xdawn, CSP, SPoC, BilinearFilter, AJDC]
 @pytest.mark.parametrize("spfilt", spfilts)
 @pytest.mark.parametrize("n_channels", [3, 5, 7])
 @pytest.mark.parametrize("n_classes", [2, 3])
-def test_spatial_filters(spfilt, n_channels, n_classes,
-                         get_mats, rndstate, get_labels):
+def test_spatial_filters(spfilt, n_channels, n_classes, get_mats, get_labels):
     if n_classes == 2:
         n_matrices, n_times = 10, 256
     else:
         n_matrices, n_times = 9, 256
-    labels = get_labels(n_matrices, n_classes)
     if spfilt is Xdawn:
-        X = rndstate.randn(n_matrices, n_channels, n_times)
+        X = get_mats(n_matrices, [n_channels, n_times], "real")
     elif spfilt in (CSP, SPoC, BilinearFilter):
         X = get_mats(n_matrices, n_channels, "spd")
     elif spfilt is AJDC:
         n_subjects, n_conditions = 2, 2
-        X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
+        X = get_mats(n_subjects, [n_conditions, n_channels, n_times], "real")
+    y = get_labels(n_matrices, n_classes)
 
-    sf_fit(spfilt, X, labels, n_channels, n_times)
-    sf_fit_independence(spfilt, X, labels, n_channels)
+    sf_fit(spfilt, X, y, n_channels, n_times)
+    sf_fit_independence(spfilt, X, y, n_channels)
     if spfilt is CSP:
-        sf_fit_error(spfilt, X, labels)
-    sf_transform(spfilt, X, labels, n_matrices, n_channels, n_times)
+        sf_fit_error(spfilt, X, y)
+    sf_transform(spfilt, X, y, n_matrices, n_channels, n_times)
     if spfilt in (CSP, SPoC, BilinearFilter):
-        sf_transform_error(spfilt, X, labels, n_channels)
+        sf_transform_error(spfilt, X, y, n_channels)
     if spfilt in (Xdawn, CSP, SPoC, BilinearFilter):
-        sf_fit_transform(spfilt, X, labels)
+        sf_fit_transform(spfilt, X, y)
 
 
-def sf_fit(spfilt, X, labels, n_channels, n_times):
-    n_classes = len(np.unique(labels))
+def sf_fit(spfilt, X, y, n_channels, n_times):
+    n_classes = len(np.unique(y))
     if spfilt is BilinearFilter:
         n_filters = 4
         sf = spfilt(filters=np.eye(n_filters, n_channels))
@@ -47,7 +46,7 @@ def sf_fit(spfilt, X, labels, n_channels, n_times):
     else:
         sf = spfilt()
 
-    sf.fit(X, labels)
+    sf.fit(X, y)
 
     if spfilt is AJDC:
         assert sf.forward_filters_.shape == (sf.n_sources_, n_channels)
@@ -65,24 +64,24 @@ def sf_fit(spfilt, X, labels, n_channels, n_times):
         assert sf.patterns_.shape == (n_components, n_channels)
 
 
-def sf_fit_error(spfilt, X, labels):
+def sf_fit_error(spfilt, X, y):
     sf = spfilt()
     with pytest.raises(ValueError):
-        sf.fit(X, labels * 0.0)  # 1 class
+        sf.fit(X, y * 0.0)  # 1 class
     with pytest.raises(ValueError):
-        sf.fit(X, labels[:1])  # unequal # of samples
+        sf.fit(X, y[:1])  # unequal # of samples
     with pytest.raises(TypeError):
         sf.fit(X, "foo")  # y must be an array
     with pytest.raises(TypeError):
-        sf.fit("foo", labels)  # X must be an array
+        sf.fit("foo", y)  # X must be an array
     with pytest.raises(ValueError):
-        sf.fit(X[:, 0], labels)
+        sf.fit(X[:, 0], y)
     with pytest.raises(ValueError):
         sf.fit(X, X)
 
 
-def sf_transform(spfilt, X, labels, n_matrices, n_channels, n_times):
-    n_classes = len(np.unique(labels))
+def sf_transform(spfilt, X, y, n_matrices, n_channels, n_times):
+    n_classes = len(np.unique(y))
     if spfilt is BilinearFilter:
         n_filters = 4
         sf = spfilt(filters=np.eye(n_filters, n_channels))
@@ -91,12 +90,12 @@ def sf_transform(spfilt, X, labels, n_matrices, n_channels, n_times):
     else:
         sf = spfilt()
     if spfilt is AJDC:
-        sf.fit(X, labels)
+        sf.fit(X, y)
         X_new = np.squeeze(X[0])
         n_matrices = X_new.shape[0]
         Xtr = sf.transform(X_new)
     else:
-        Xtr = sf.fit(X, labels).transform(X)
+        Xtr = sf.fit(X, y).transform(X)
 
     if spfilt is AJDC:
         assert Xtr.shape == (n_matrices, n_channels, n_times)
@@ -110,7 +109,7 @@ def sf_transform(spfilt, X, labels, n_matrices, n_channels, n_times):
         assert Xtr.shape == (n_matrices, n_components)
 
 
-def sf_transform_error(spfilt, X, labels, n_channels):
+def sf_transform_error(spfilt, X, y, n_channels):
     if spfilt is BilinearFilter:
         sf = spfilt(np.eye(n_channels))
     elif spfilt is AJDC:
@@ -118,28 +117,28 @@ def sf_transform_error(spfilt, X, labels, n_channels):
     else:
         sf = spfilt()
     with pytest.raises(ValueError):
-        sf.fit(X, labels).transform(X[:, :-1, :-1])
+        sf.fit(X, y).transform(X[:, :-1, :-1])
 
 
-def sf_fit_transform(spfilt, X, labels):
+def sf_fit_transform(spfilt, X, y):
     if spfilt is BilinearFilter:
         sf = spfilt(filters=np.eye(3, X.shape[-2]))
     else:
         sf = spfilt()
 
-    Xtr = sf.fit(X, labels).transform(X)
-    Xtr2 = sf.fit_transform(X, labels)
+    Xtr = sf.fit(X, y).transform(X)
+    Xtr2 = sf.fit_transform(X, y)
     assert_array_equal(Xtr, Xtr2)
 
 
-def sf_fit_independence(spfilt, X, labels, n_channels):
+def sf_fit_independence(spfilt, X, y, n_channels):
     if spfilt is BilinearFilter:
         sf = spfilt(np.eye(n_channels))
     elif spfilt is AJDC:
         sf = spfilt(dim_red={"max_cond": 10})
     else:
         sf = spfilt()
-    sf.fit(X, labels)
+    sf.fit(X, y)
     if spfilt is Xdawn:
         X_new = X[:, :-1, :]
     elif spfilt in (CSP, SPoC, BilinearFilter):
@@ -147,21 +146,21 @@ def sf_fit_independence(spfilt, X, labels, n_channels):
     elif spfilt is AJDC:
         X_new = X[:, :, :-1, :]
     # retraining with different size should erase previous fit
-    sf.fit(X_new, labels)
+    sf.fit(X_new, y)
 
 
 @pytest.mark.parametrize("n_channels", [3, 4, 5])
 @pytest.mark.parametrize("use_baseline_cov", [True, False])
-def test_xdawn_baselinecov(n_channels, use_baseline_cov, rndstate, get_labels):
+def test_xdawn_baselinecov(n_channels, use_baseline_cov, get_mats, get_labels):
     n_classes, n_matrices, n_times = 2, 6, 100
-    x = rndstate.randn(n_matrices, n_channels, n_times)
-    labels = get_labels(n_matrices, n_classes)
+    X = get_mats(n_matrices, [n_channels, n_times], "real")
+    y = get_labels(n_matrices, n_classes)
     if use_baseline_cov:
         baseline_cov = np.identity(n_channels)
     else:
         baseline_cov = None
     xd = Xdawn(baseline_cov=baseline_cov)
-    xd.fit(x, labels).transform(x)
+    xd.fit(X, y).transform(X)
     n_components = min(n_channels, xd.nfilter)
     assert xd.filters_.shape == (n_classes * n_components, n_channels)
 
@@ -172,16 +171,16 @@ def test_xdawn_baselinecov(n_channels, use_baseline_cov, rndstate, get_labels):
 @pytest.mark.parametrize("ajd_method", ["ajd_pham", "rjd", "uwedge"])
 def test_csp(n_filters, metric, log, ajd_method, get_mats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 4
-    mats = get_mats(n_matrices, n_channels, "spd")
-    labels = get_labels(n_matrices, n_classes)
+    X = get_mats(n_matrices, n_channels, "spd")
+    y = get_labels(n_matrices, n_classes)
 
     n_components = min(n_channels, n_filters)
 
     csp = CSP(nfilter=n_filters, metric=metric, log=log, ajd_method=ajd_method)
-    csp.fit(mats, labels)
+    csp.fit(X, y)
     assert csp.filters_.shape == (n_components, n_channels)
     assert csp.patterns_.shape == (n_components, n_channels)
-    Xtr = csp.transform(mats)
+    Xtr = csp.transform(X)
     if log:
         assert Xtr.shape == (n_matrices, n_components)
     else:
@@ -190,26 +189,26 @@ def test_csp(n_filters, metric, log, ajd_method, get_mats, get_labels):
 
 def test_bilinearfilter_errors(get_mats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
-    labels = get_labels(n_matrices, n_classes)
+    X = get_mats(n_matrices, n_channels, "spd")
+    y = get_labels(n_matrices, n_classes)
 
     with pytest.raises(TypeError):
-        BilinearFilter("foo").fit(mats, labels)
+        BilinearFilter("foo").fit(X, y)
     with pytest.raises(TypeError):
-        BilinearFilter(np.eye(3), log="foo").fit(mats, labels)
+        BilinearFilter(np.eye(3), log="foo").fit(X, y)
 
 
 @pytest.mark.parametrize("n_filters", [3, 4])
 @pytest.mark.parametrize("log", [True, False])
 def test_bilinearfilter(n_filters, log, get_mats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 4
-    mats = get_mats(n_matrices, n_channels, "spd")
-    labels = get_labels(n_matrices, n_classes)
+    X = get_mats(n_matrices, n_channels, "spd")
+    y = get_labels(n_matrices, n_classes)
 
     bf = BilinearFilter(np.eye(n_filters, n_channels), log=log)
-    bf.fit(mats, labels)
+    bf.fit(X, y)
     assert bf.filters_.shape == (n_filters, n_channels)
-    Xtr = bf.transform(mats)
+    Xtr = bf.transform(X)
     if log:
         assert Xtr.shape == (n_matrices, n_filters)
     else:
@@ -224,9 +223,9 @@ def test_ajdc_init():
     assert ajdc.verbose
 
 
-def test_ajdc_fit(rndstate):
+def test_ajdc_fit(get_mats):
     n_subjects, n_conditions, n_channels, n_times = 5, 3, 8, 512
-    X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
+    X = get_mats(n_subjects, [n_conditions, n_channels, n_times], "real")
     ajdc = AJDC(dim_red={"n_components": n_channels - 1}).fit(X)
     assert ajdc.forward_filters_.shape == (ajdc.n_sources_, n_channels)
     assert ajdc.backward_filters_.shape == (n_channels, ajdc.n_sources_)
@@ -234,49 +233,48 @@ def test_ajdc_fit(rndstate):
         AJDC().fit(X)
 
 
-def test_ajdc_fit_error(rndstate):
+def test_ajdc_fit_error(get_mats, rndstate):
     n_subjects, n_conditions, n_channels, n_times = 2, 3, 8, 512
     ajdc = AJDC(dim_red={"expl_var": 0.9})
     with pytest.raises(ValueError):  # unequal # of conditions
         ajdc.fit(
             [
-                rndstate.randn(n_conditions, n_channels, n_times),
-                rndstate.randn(n_conditions + 1, n_channels, n_times),
+                get_mats(n_conditions, [n_channels, n_times], "real"),
+                get_mats(n_conditions + 1, [n_channels, n_times], "real"),
             ]
         )
     with pytest.raises(ValueError):  # unequal # of channels
         ajdc.fit(
             [
-                rndstate.randn(n_conditions, n_channels, n_times),
-                rndstate.randn(n_conditions, n_channels + 1, n_times),
+                get_mats(n_conditions, [n_channels, n_times], "real"),
+                get_mats(n_conditions, [n_channels + 1, n_times], "real"),
             ]
         )
-    X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
+    X = get_mats(n_subjects, [n_conditions, n_channels, n_times], "real")
     V = rndstate.randn(n_channels, n_channels - 1)
     ajdc = AJDC(dim_red={'warm_restart': V})
     with pytest.raises(ValueError):  # initial diag not square
         ajdc.fit(X)
 
 
-def test_ajdc_transform_error(rndstate):
+def test_ajdc_transform_error(get_mats):
     n_subjects, n_conditions, n_channels, n_times = 2, 2, 4, 256
-    X = rndstate.randn(n_subjects, n_conditions, n_channels, n_times)
+    X = get_mats(n_subjects, [n_conditions, n_channels, n_times], "real")
     ajdc = AJDC(dim_red={"warm_restart": np.eye(n_channels - 1)}).fit(X)
     n_matrices = 4
-    X_new = rndstate.randn(n_matrices, n_channels, n_times)
+    X_new = get_mats(n_matrices, [n_channels, n_times], "real")
     with pytest.raises(ValueError):  # not 3 dims
         ajdc.transform(X_new[0])
     with pytest.raises(ValueError):  # unequal # of chans
-        ajdc.transform(rndstate.randn(n_matrices, n_channels + 1, 1))
+        ajdc.transform(get_mats(1, [n_channels + 1, n_channels], "real"))
 
 
 def test_ajdc_fit_variable_input(rndstate):
-    n_subjects, n_cond, n_chan, n_times = 2, 2, 3, 256
-    X = rndstate.randn(n_subjects, n_cond, n_chan, n_times)
+    n_conditions, n_chan, n_times = 2, 3, 256
     ajdc = AJDC(dim_red={"expl_var": 0.9})
     # 3 subjects, same # conditions and channels, different # of times
     X = [
-        rndstate.randn(n_cond, n_chan, n_times + rndstate.randint(500))
+        rndstate.randn(n_conditions, n_chan, n_times + rndstate.randint(500))
         for _ in range(3)
     ]
     ajdc.fit(X)

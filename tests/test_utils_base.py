@@ -35,53 +35,53 @@ def test_ctranspose(get_mats):
 
 def test_expm():
     """Test matrix exponential"""
-    C = 2 * np.eye(n_channels)
-    Ctrue = np.exp(2) * np.eye(n_channels)
-    assert_array_almost_equal(expm(C), Ctrue, decimal=10)
+    X = 2 * np.eye(n_channels)
+    Xtrue = np.exp(2) * np.eye(n_channels)
+    assert_array_almost_equal(expm(X), Xtrue, decimal=10)
 
 
 def test_invsqrtm():
     """Test matrix inverse square root"""
-    C = 2 * np.eye(n_channels)
-    Ctrue = (1.0 / np.sqrt(2)) * np.eye(n_channels)
-    assert_array_almost_equal(invsqrtm(C), Ctrue, decimal=10)
+    X = 2 * np.eye(n_channels)
+    Xtrue = (1.0 / np.sqrt(2)) * np.eye(n_channels)
+    assert_array_almost_equal(invsqrtm(X), Xtrue, decimal=10)
 
 
 def test_logm():
     """Test matrix logarithm"""
-    C = 2 * np.eye(n_channels)
-    Ctrue = np.log(2) * np.eye(n_channels)
-    assert_array_almost_equal(logm(C), Ctrue, decimal=10)
+    X = 2 * np.eye(n_channels)
+    Xtrue = np.log(2) * np.eye(n_channels)
+    assert_array_almost_equal(logm(X), Xtrue, decimal=10)
 
 
 def test_powm():
     """Test matrix power"""
-    C = 2 * np.eye(n_channels)
-    Ctrue = (2 ** 0.3) * np.eye(n_channels)
-    assert_array_almost_equal(powm(C, 0.3), Ctrue, decimal=10)
+    X = 2 * np.eye(n_channels)
+    Xtrue = (2 ** 0.3) * np.eye(n_channels)
+    assert_array_almost_equal(powm(X, 0.3), Xtrue, decimal=10)
 
 
 def test_sqrtm():
     """Test matrix square root"""
-    C = 2 * np.eye(n_channels)
-    Ctrue = np.sqrt(2) * np.eye(n_channels)
-    assert_array_almost_equal(sqrtm(C), Ctrue, decimal=10)
+    X = 2 * np.eye(n_channels)
+    Xtrue = np.sqrt(2) * np.eye(n_channels)
+    assert_array_almost_equal(sqrtm(X), Xtrue, decimal=10)
 
-    C = np.array([[1, -1j], [1j, 1]])
-    Ctrue = np.sqrt(2) / 2 * C
-    assert_array_almost_equal(sqrtm(C), Ctrue, decimal=10)
+    X = np.array([[1, -1j], [1j, 1]])
+    Xtrue = np.sqrt(2) / 2 * X
+    assert_array_almost_equal(sqrtm(X), Xtrue, decimal=10)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("funm", [expm, invsqrtm, logm, powm, sqrtm])
 def test_funm_all(kind, funm, get_mats):
     n_matrices, n_dim = 10, 3
-    C = get_mats(n_matrices, n_dim, kind)
+    X = get_mats(n_matrices, n_dim, kind)
     if funm is powm:
-        D = funm(C, 0.42)
+        Xt = funm(X, 0.42)
     else:
-        D = funm(C)
-    assert D.shape == (n_matrices, n_dim, n_dim)
+        Xt = funm(X)
+    assert Xt.shape == (n_matrices, n_dim, n_dim)
 
 
 def test_funm_error():
@@ -95,81 +95,81 @@ def test_funm_error():
 
 @pytest.mark.parametrize("funm", [expm, invsqrtm, logm, powm, sqrtm])
 def test_funm_ndarray(funm):
-    def test(funm, C):
+    def test(funm, X):
         if funm == powm:
-            D = funm(C, 0.2)
+            Xt = funm(X, 0.2)
         else:
-            D = funm(C)
-        assert C.shape == D.shape
+            Xt = funm(X)
+        assert X.shape == Xt.shape
 
     n_matrices = 6
-    C_3d = np.asarray([np.eye(n_channels) for _ in range(n_matrices)])
-    test(funm, C_3d)
+    X_3d = np.asarray([np.eye(n_channels) for _ in range(n_matrices)])
+    test(funm, X_3d)
 
     n_sets = 5
-    C_4d = np.asarray([C_3d for _ in range(n_sets)])
-    test(funm, C_4d)
+    X_4d = np.asarray([X_3d for _ in range(n_sets)])
+    test(funm, X_4d)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_funm_properties(get_mats, kind):
     n_matrices, n_dim = 10, 3
-    C = get_mats(n_matrices, n_dim, kind)
-    invC = np.linalg.inv(C)
+    X = get_mats(n_matrices, n_dim, kind)
+    invX = np.linalg.inv(X)
 
     # expm and logm
-    eC, lC = expm(C), logm(C)
-    assert_array_almost_equal(eC.conj(), expm(C.conj()), decimal=10)
+    eX, lX = expm(X), logm(X)
+    assert_array_almost_equal(eX.conj(), expm(X.conj()), decimal=10)
     assert_array_almost_equal(
-        np.linalg.det(eC),
-        np.exp(np.trace(C, axis1=-2, axis2=-1)),
+        np.linalg.det(eX),
+        np.exp(np.trace(X, axis1=-2, axis2=-1)),
         decimal=10,
     )
-    assert_array_almost_equal(logm(eC), C, decimal=10)
-    assert_array_almost_equal(expm(lC), C, decimal=10)
-    assert_array_almost_equal(expm(-lC), invC, decimal=10)
+    assert_array_almost_equal(logm(eX), X, decimal=10)
+    assert_array_almost_equal(expm(lX), X, decimal=10)
+    assert_array_almost_equal(expm(-lX), invX, decimal=10)
 
     # invsqrtm
-    isC = invsqrtm(C)
+    isX = invsqrtm(X)
     eyes = _make_eyes(n_matrices, n_dim)
-    assert_array_almost_equal(isC @ C @ isC, eyes, decimal=10)
-    assert_array_almost_equal(isC @ isC, invC, decimal=10)
+    assert_array_almost_equal(isX @ X @ isX, eyes, decimal=10)
+    assert_array_almost_equal(isX @ isX, invX, decimal=10)
 
     # sqrtm
-    sC = sqrtm(C)
-    assert_array_almost_equal(ctranspose(sC) @ sC, C, decimal=10)
-    assert_array_almost_equal(isC @ C @ isC, eyes, decimal=10)
+    sX = sqrtm(X)
+    assert_array_almost_equal(ctranspose(sX) @ sX, X, decimal=10)
+    assert_array_almost_equal(isX @ X @ isX, eyes, decimal=10)
 
     # powm
-    assert_array_almost_equal(powm(C, 0.5), sC, decimal=10)
-    assert_array_almost_equal(powm(C, -0.5), isC, decimal=10)
+    assert_array_almost_equal(powm(X, 0.5), sX, decimal=10)
+    assert_array_almost_equal(powm(X, -0.5), isX, decimal=10)
     alpha = 0.3
     assert_array_almost_equal(
-        powm(C, alpha=alpha),
-        expm(alpha * logm(C)),
+        powm(X, alpha=alpha),
+        expm(alpha * logm(X)),
         decimal=10,
     )
 
 
 def test_check_raise():
     """Test check SPD matrices"""
-    C = 2 * np.ones((10, n_channels, n_channels))
+    X = 2 * np.ones((10, n_channels, n_channels))
     # This is an indirect check, the riemannian mean must crash when the
     # matrices are not SPD.
     with pytest.warns(RuntimeWarning):
         with pytest.raises(ValueError):
-            mean_riemann(C)
+            mean_riemann(X)
 
 
 def test_nearest_sym_pos_def(get_mats):
     n_matrices = 3
-    mats = get_mats(n_matrices, n_channels, "spd")
-    D = mats.diagonal(axis1=1, axis2=2)
-    psd = np.array([mat - np.diag(d) for mat, d in zip(mats, D)])
+    X = get_mats(n_matrices, n_channels, "spd")
+    D = X.diagonal(axis1=1, axis2=2)
+    Psd = np.array([x - np.diag(d) for x, d in zip(X, D)])
 
-    assert not is_pos_def(psd)
-    assert is_sym_pos_def(nearest_sym_pos_def(mats))
-    assert is_sym_pos_def(nearest_sym_pos_def(psd))
+    assert not is_pos_def(Psd)
+    assert is_sym_pos_def(nearest_sym_pos_def(X))
+    assert is_sym_pos_def(nearest_sym_pos_def(Psd))
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -197,8 +197,7 @@ def test_first_divided_difference(get_mats, kind):
 
 def test_ddlogm(get_mats):
     """Test directional derivative of log."""
-    n_matrices = 2
-    X, Cref = get_mats(n_matrices, n_channels, "spd")
+    X, Cref = get_mats(2, n_channels, "spd")
     fdd_logm = ddlogm(X, Cref)
     assert fdd_logm.shape == X.shape
 
@@ -209,8 +208,7 @@ def test_ddlogm(get_mats):
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_ddexpm(get_mats, kind):
     """Test directional derivative of exp."""
-    n_matrices = 2
-    X, Cref = get_mats(n_matrices, n_channels, kind)
+    X, Cref = get_mats(2, n_channels, kind)
     fdd_expm = ddexpm(X, Cref)
     assert fdd_expm.shape == X.shape
 
