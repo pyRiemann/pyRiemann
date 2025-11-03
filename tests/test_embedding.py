@@ -23,22 +23,22 @@ def test_embedding(kind, embd, metric, get_mats):
     if kind == "hpd" and embd is LocallyLinearEmbedding:
         pytest.skip()
     n_matrices, n_channels, n_comp = 8, 3, 4
-    mats = get_mats(n_matrices, n_channels, kind)
+    X = get_mats(n_matrices, n_channels, kind)
 
-    embd_fit(embd, mats, metric, n_comp)
-    embd_fit_transform(embd, mats, metric, n_comp)
-    embd_fit_independence(embd, mats, metric, n_comp)
+    embd_fit(embd, X, metric, n_comp)
+    embd_fit_transform(embd, X, metric, n_comp)
+    embd_fit_independence(embd, X, metric, n_comp)
     if embd is LocallyLinearEmbedding:
-        embd_transform(embd, mats, metric, n_comp)
-        embd_transform_error(embd, mats, metric, n_comp)
+        embd_transform(embd, X, metric, n_comp)
+        embd_transform_error(embd, X, metric, n_comp)
     if metric in ["logeuclid", "riemann"]:
         embd_result(embd, metric)
 
 
-def embd_fit(embedding, mats, metric, n_components):
-    n_matrices, n_channels, n_channels = mats.shape
+def embd_fit(embedding, X, metric, n_components):
+    n_matrices, n_channels, n_channels = X.shape
     embd = embedding(metric=metric, n_components=n_components)
-    embd.fit(mats)
+    embd.fit(X)
     if embedding is TSNE:
         assert embd.embedding_.shape == (n_matrices, n_components,
                                          n_components)
@@ -50,37 +50,37 @@ def embd_fit(embedding, mats, metric, n_components):
         assert isinstance(embd.error_, float)
 
 
-def embd_fit_transform(embedding, mats, metric, n_components):
-    n_matrices, n_channels, n_channels = mats.shape
+def embd_fit_transform(embedding, X, metric, n_components):
+    n_matrices, n_channels, n_channels = X.shape
     embd = embedding(metric=metric, n_components=n_components)
-    transformed = embd.fit_transform(mats)
+    transformed = embd.fit_transform(X)
     if embedding is TSNE:
         assert transformed.shape == (n_matrices, n_components, n_components)
     else:
         assert transformed.shape == (n_matrices, n_components)
 
 
-def embd_transform(embedding, mats, metric, n_components):
-    n_matrices, n_channels, n_channels = mats.shape
+def embd_transform(embedding, X, metric, n_components):
+    n_matrices, n_channels, n_channels = X.shape
     embd = embedding(metric=metric, n_components=n_components)
-    embd = embd.fit(mats)
-    transformed = embd.transform(mats[:-1])
+    embd = embd.fit(X)
+    transformed = embd.transform(X[:-1])
     assert transformed.shape == (n_matrices - 1, n_components)
 
 
-def embd_transform_error(embedding, mats, metric, n_components):
+def embd_transform_error(embedding, X, metric, n_components):
     embd = embedding(metric=metric, n_components=n_components)
-    embd = embd.fit(mats)
+    embd = embd.fit(X)
     with pytest.raises(ValueError):
-        embd.transform(mats[:-1, :-1, :-1])
+        embd.transform(X[:-1, :-1, :-1])
 
 
-def embd_fit_independence(embedding, mats, metric, n_components):
-    n_matrices, n_channels, n_channels = mats.shape
+def embd_fit_independence(embedding, X, metric, n_components):
+    n_matrices, n_channels, n_channels = X.shape
     embd = embedding(metric=metric, n_components=n_components)
-    embd = embd.fit(mats)
+    embd = embd.fit(X)
     # retraining with different size should erase previous fit
-    new_mats = mats[:-1, :-1, :-1]
+    new_mats = X[:-1, :-1, :-1]
     embd = embd.fit(new_mats)
     if embedding is TSNE:
         assert embd.embedding_.shape == (n_matrices - 1, n_components,
@@ -112,22 +112,22 @@ def test_embd_n_comp(n_components, embd, get_mats):
         # t-SNE would take too long with 100 components
         return
     n_matrices, n_channels = 8, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
+    X = get_mats(n_matrices, n_channels, "spd")
     embd = embd(n_components=n_components)
     if n_matrices <= n_components:
         with pytest.raises(ValueError):
-            embd.fit(mats)
+            embd.fit(X)
     else:
-        embd.fit(mats)
+        embd.fit(X)
 
 
 @pytest.mark.parametrize("embd", embds)
 def test_embd_metric_error(embd, get_mats):
     n_matrices, n_channels = 8, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
+    X = get_mats(n_matrices, n_channels, "spd")
     with pytest.raises(ValueError):
         embd = embd(n_components=1, metric="foooo")
-        embd.fit(mats)
+        embd.fit(X)
 
 
 @pytest.mark.parametrize("metric", get_metrics())
@@ -135,10 +135,10 @@ def test_embd_metric_error(embd, get_mats):
 def test_spectral_embedding_parameters(metric, eps, get_mats):
     """Test SpectralEmbedding."""
     n_matrices, n_channels, n_comps = 6, 3, 2
-    mats = get_mats(n_matrices, n_channels, "spd")
+    X = get_mats(n_matrices, n_channels, "spd")
     embd = SpectralEmbedding(metric=metric, n_components=n_comps, eps=eps)
-    covembd = embd.fit_transform(mats)
-    assert covembd.shape == (n_matrices, n_comps)
+    Xt = embd.fit_transform(X)
+    assert Xt.shape == (n_matrices, n_comps)
 
 
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
@@ -149,22 +149,22 @@ def test_locally_linear_embedding_parameters(metric, n_neighbors, reg,
                                              kernel_fct, get_mats):
     """Test LocallyLinearEmbedding."""
     n_matrices, n_channels, n_components = n_neighbors + 5, 3, 2
-    mats = get_mats(n_matrices, n_channels, "spd")
+    X = get_mats(n_matrices, n_channels, "spd")
     embd = LocallyLinearEmbedding(
         metric=metric,
         n_components=n_components,
         n_neighbors=n_neighbors,
         kernel=kernel_fct,
     )
-    covembd = embd.fit_transform(mats)
-    assert covembd.shape == (n_matrices, n_components)
+    Xt = embd.fit_transform(X)
+    assert Xt.shape == (n_matrices, n_components)
 
 
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_locally_linear_embedding_kernel(metric, get_mats):
     """Test LocallyLinearEmbedding, kernel parameter."""
     n_matrices, n_channels, n_components = 6, 3, 2
-    mats = get_mats(n_matrices, n_channels, "spd")
+    X = get_mats(n_matrices, n_channels, "spd")
 
     def kfun(X, Y=None, Cref=None, metric=None):
         return kernel_functions[metric](X, Y, Cref=Cref)
@@ -174,25 +174,25 @@ def test_locally_linear_embedding_kernel(metric, get_mats):
         n_components=n_components,
         kernel=kfun,
     )
-    mats_tf = embd.fit_transform(mats)
+    Xt = embd.fit_transform(X)
 
     embd2 = LocallyLinearEmbedding(
         metric=metric,
         n_components=n_components,
         kernel=None,
     )
-    mats_tf2 = embd2.fit_transform(mats)
+    Xt2 = embd2.fit_transform(X)
 
-    assert np.array_equal(mats_tf, mats_tf2)
+    assert np.array_equal(Xt, Xt2)
 
 
 def test_barycenter_weights_func(get_mats):
     """Test barycenter_weights helper function."""
     n_matrices, n_channels = 4, 3
-    mats = get_mats(n_matrices, n_channels, "spd")
+    X = get_mats(n_matrices, n_channels, "spd")
     weights = barycenter_weights(
-        mats,
-        mats,
+        X,
+        X,
         np.array([[1, 2], [2, 3], [3, 0], [0, 1]])
     )
     assert weights.shape == (n_matrices, 2)
@@ -201,9 +201,9 @@ def test_barycenter_weights_func(get_mats):
 def test_locally_linear_embedding_func(get_mats):
     """Test locally_linear_embedding helper function."""
     n_matrices, n_channels, n_comps, n_neighbors = 4, 3, 2, 2
-    mats = get_mats(n_matrices, n_channels, "spd")
+    X = get_mats(n_matrices, n_channels, "spd")
     embedding, error = locally_linear_embedding(
-        mats, n_neighbors=n_neighbors, n_components=n_comps
+        X, n_neighbors=n_neighbors, n_components=n_comps
     )
     assert embedding.shape == (n_matrices, n_comps)
     assert isinstance(error, float)
