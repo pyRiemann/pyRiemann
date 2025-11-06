@@ -60,10 +60,11 @@ def test_median_euclid_scalars(n_values, rndstate):
     assert np_med == approx(py_med)
 
 
+@pytest.mark.parametrize("n_dim1, n_dim2", [(4, 5), (5, 4)])
 @pytest.mark.parametrize("kind", ["real", "comp"])
-def test_median_euclid(kind, get_mats):
+def test_median_euclid(n_dim1, n_dim2, kind, get_mats):
     """Euclidean median for non-square matrices"""
-    n_matrices, n_dim1, n_dim2 = 10, 3, 4
+    n_matrices = 10
     X = get_mats(n_matrices, [n_dim1, n_dim2], kind)
     assert median_euclid(X).shape == (n_dim1, n_dim2)
 

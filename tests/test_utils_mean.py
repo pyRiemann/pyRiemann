@@ -1,8 +1,9 @@
 import numpy as np
 import pytest
 from pytest import approx
-from scipy.stats import gmean
+from scipy.stats import gmean, hmean
 
+from pyriemann.utils.base import invsqrtm, logm, sqrtm
 from pyriemann.utils.geodesic import geodesic_riemann
 from pyriemann.utils.mean import (
     mean_covariance,
@@ -231,6 +232,7 @@ def test_mean_property_joint_homogeneity(kind, mean, get_mats, rndstate):
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("mean", [
+    mean_logchol,  # Corollary 13 in [Lin2019]
     mean_logeuclid,
     mean_riemann,
 ])
@@ -244,7 +246,7 @@ def test_mean_property_determinant_identity(kind, mean, get_mats, rndstate):
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("mean", [
     mean_logeuclid,  # Th 3.13 in [Arsigny2007]
-    mean_riemann,  # P3 in [Moakher2005]
+    mean_riemann,  # P8 in [Nakamura2009]
 ])
 def test_mean_property_invariance_inversion(kind, mean, get_mats):
     """Test invariance under inversion, also called self-duality"""
@@ -256,7 +258,7 @@ def test_mean_property_invariance_inversion(kind, mean, get_mats):
 @pytest.mark.parametrize("kind, kindQ", [("spd", "orth"), ("hpd", "unit")])
 @pytest.mark.parametrize("mean", [
     mean_logeuclid,  # Th 3.13 in [Arsigny2007]
-    mean_riemann,  # P2 in [Moakher2005]
+    mean_riemann,  # P6 in [Nakamura2009]
 ])
 def test_mean_property_invariance_similarity(kind, kindQ, mean,
                                              get_mats, rndstate):
@@ -271,7 +273,7 @@ def test_mean_property_invariance_similarity(kind, kindQ, mean,
 
 @pytest.mark.parametrize("kind, kindW", [("spd", "inv"), ("hpd", "cinv")])
 @pytest.mark.parametrize("mean", [
-    mean_riemann,  # P2 in [Moakher2005]
+    mean_riemann,  # P6 in [Nakamura2009]
 ])
 def test_mean_property_invariance_congruence(kind, kindW, mean, get_mats):
     """Test invariance under congruence, ie an invertible transform"""
@@ -298,12 +300,13 @@ def test_mean_alm_2matrices(kind, get_mats):
     assert mean_alm(X) == approx(geodesic_riemann(X[0], X[1], alpha=0.5))
 
 
+@pytest.mark.parametrize("n_dim1, n_dim2", [(4, 5), (5, 4)])
 @pytest.mark.parametrize("kind", ["real", "comp"])
-def test_mean_euclid(kind, get_mats):
+def test_mean_euclid(n_dim1, n_dim2, kind, get_mats):
     """Euclidean mean for non-square matrices"""
-    n_matrices, n_dim1, n_dim2 = 10, 3, 4
+    n_matrices = 10
     X = get_mats(n_matrices, [n_dim1, n_dim2], kind)
-    assert mean_euclid(X) == approx(X.mean(axis=0))
+    assert mean_euclid(X) == approx(np.mean(X, axis=0))
 
 
 @pytest.mark.parametrize("kind", ["inv", "cinv"])
@@ -312,6 +315,24 @@ def test_mean_harmonic(kind, get_mats):
     n_matrices, n_channels = 4, 5
     X = get_mats(n_matrices, n_channels, kind)
     mean_harmonic(X)
+
+
+@pytest.mark.parametrize("n_values", [3, 5, 7])
+def test_mean_harmonic_scalars(n_values, rndstate):
+    """Compare harmonic mean to scipy.hmean for scalars"""
+    values = rndstate.uniform(0.1, 10, size=n_values)
+    sp_hmean = hmean(values)
+    py_hmean = mean_harmonic(values[..., np.newaxis, np.newaxis])[0, 0]
+    assert sp_hmean == approx(py_hmean)
+
+
+@pytest.mark.parametrize("n_values", [4, 6, 8])
+def test_mean_logeuclid_scalars(n_values, rndstate):
+    """Compare log-Euclidean mean to scipy.gmean for scalars"""
+    values = rndstate.uniform(0.1, 10, size=n_values)
+    sp_gmean = gmean(values)
+    py_lemean = mean_logeuclid(values[..., np.newaxis, np.newaxis])[0, 0]
+    assert sp_gmean == approx(py_lemean)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -354,6 +375,22 @@ def test_mean_poweuclid_error(get_mats):
 
     with pytest.raises(ValueError):  # exponent is not a scalar
         mean_poweuclid(X, [1])
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_mean_riemann_solution(kind, get_mats):
+    """AIR mean is solution to the nonlinear matrix equations"""
+    n_matrices, n_channels = 5, 3
+    X = get_mats(n_matrices, n_channels, kind)
+    M = mean_riemann(X, tol=10e-16, maxiter=500)
+    Zero = np.zeros((n_channels, n_channels))
+
+    Mm12 = invsqrtm(M)
+    assert np.sum(logm(Mm12 @ X @ Mm12), axis=0) == approx(Zero)
+
+    # Eq(1.2) in [Lim2012]
+    M12 = sqrtm(M)
+    assert np.sum(logm(M12 @ np.linalg.inv(X) @ M12), axis=0) == approx(Zero)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])

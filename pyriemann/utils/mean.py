@@ -1,6 +1,5 @@
 """Means of SPD/HPD matrices."""
 
-from copy import deepcopy
 import warnings
 
 import numpy as np
@@ -140,11 +139,11 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None):
             s = np.mod(np.arange(h, h + n_matrices - 1) + 1, n_matrices)
             M_iter[h] = mean_alm(M[s], sample_weight=sample_weight[s])
 
-        norm_iter = np.linalg.norm(M_iter[0] - M[0], 2)
-        norm_c = np.linalg.norm(M[0], 2)
+        norm_iter = np.linalg.norm(M_iter[0] - M[0], ord=2)
+        norm_c = np.linalg.norm(M[0], ord=2)
         if (norm_iter / norm_c) < tol:
             break
-        M = deepcopy(M_iter)
+        M = M_iter.copy()
     else:
         warnings.warn("Convergence not reached")
 
@@ -273,7 +272,7 @@ def mean_logchol(X, sample_weight=None):
 
     Log-Cholesky mean :math:`\mathbf{M}` is
     :math:`\mathbf{M} = \mathbf{L} \mathbf{L}^H`,
-    where :math:`\mathbf{L}` is computed as [1]_:
+    where :math:`\mathbf{L}` is computed as Eq(4.3) in [1]_:
 
     .. math::
         \mathbf{L} = \sum_i w_i \text{lower}(\text{chol}(\mathbf{X}_i)) +
@@ -311,23 +310,23 @@ def mean_logchol(X, sample_weight=None):
     sample_weight = check_weights(sample_weight, n_matrices)
 
     X_chol = np.linalg.cholesky(X)
-    mean = np.zeros(X.shape[-2:], dtype=X.dtype)
+    L = np.zeros(X.shape[-2:], dtype=X.dtype)
 
     tri0, tri1 = np.tril_indices(n_channels, -1)
-    mean[tri0, tri1] = np.average(
+    L[tri0, tri1] = np.average(
         X_chol[:, tri0, tri1],
         axis=0,
         weights=sample_weight,
     )
 
     diag0, diag1 = np.diag_indices(n_channels)
-    mean[diag0, diag1] = np.exp(np.average(
+    L[diag0, diag1] = np.exp(np.average(
         np.log(X_chol[:, diag0, diag1]),
         axis=0,
         weights=sample_weight,
     ))
 
-    return mean @ mean.conj().T
+    return L @ L.conj().T
 
 
 def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
@@ -578,12 +577,12 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 
     The affine-invariant Riemannian mean minimizes the sum of squared
     affine-invariant Riemannian distances :math:`d_R` to all SPD/HPD matrices
-    [1]_ [2]_:
+    [1]_:
 
     .. math::
          \arg \min_{\mathbf{M}} \sum_i w_i \ d_R (\mathbf{M}, \mathbf{X}_i)^2
 
-    For the convergence, the implemented stopping criterion comes from [3]_.
+    For the convergence, the implemented stopping criterion comes from [2]_.
 
     Parameters
     ----------
@@ -615,11 +614,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         <https://ieeexplore.ieee.org/document/1318725>`_
         P.T. Fletcher, C. Lu, S. M. Pizer, S. Joshi.
         IEEE Trans Med Imaging, 2004, 23(8), pp. 995-1005
-    .. [2] `A differential geometric approach to the geometric mean of
-        symmetric positive-definite matrices
-        <https://epubs.siam.org/doi/10.1137/S0895479803436937>`_
-        M. Moakher. SIAM J Matrix Anal Appl, 2005, 26 (3), pp. 735-747
-    .. [3] `Approximate Joint Diagonalization and Geometric Mean of Symmetric
+    .. [2] `Approximate Joint Diagonalization and Geometric Mean of Symmetric
         Positive Definite Matrices
         <https://arxiv.org/abs/1505.07343>`_
         M. Congedo, B. Afsari, A. Barachant, M. Moakher. PLOS ONE, 2015
