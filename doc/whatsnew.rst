@@ -28,6 +28,8 @@ v0.10.dev
 
 - Enhance :class:`pyriemann.tangentspace.TangentSpace` to support HPD matrices. :pr:`394` by :user:`qbarthelemy`
 
+- Speedup of the ALM mean :func:`pyriemann.utils.mean.mean_alm`. :pr:`398` by :user:`qbarthelemy`
+
 v0.9 (July 2025)
 ----------------
 
@@ -234,7 +236,7 @@ v0.3 (July 2022)
 
 - Deprecate ``pyriemann.utils.viz.plot_confusion_matrix`` as sklearn integrate its own version. :pr:`135` by :user:`sylvchev`
 
-- Add Ando-Li-Mathias mean estimation in :func:`pyriemann.utils.mean.mean_covariance`. :pr:`56` by :user:`sylvchev`
+- Add Ando-Li-Mathias (ALM) mean in :func:`pyriemann.utils.mean.mean_alm`. :pr:`56` by :user:`sylvchev`
 
 - Add Schaefer-Strimmer covariance estimator in :func:`pyriemann.utils.covariance.covariances`, and an example to compare estimators :pr:`59` by :user:`sylvchev`
 
