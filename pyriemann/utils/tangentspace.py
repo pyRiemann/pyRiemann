@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from .base import expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
+from .base import ctranspose, expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
 from .utils import check_function
 
 
@@ -90,7 +90,7 @@ def exp_map_logchol(X, Cref):
     exp_map[..., diag0, diag1] = np.exp(diff_bracket[..., diag0, diag1]) \
         * Cref_chol[..., diag0, diag1]
 
-    return exp_map @ exp_map.conj().swapaxes(-1, -2)
+    return exp_map @ ctranspose(exp_map)
 
 
 def exp_map_logeuclid(X, Cref):
@@ -351,8 +351,7 @@ def log_map_logchol(X, Cref):
     res[..., diag0, diag1] = Cref_chol[..., diag0, diag1] * \
         np.log(X_chol[..., diag0, diag1] / Cref_chol[..., diag0, diag1])
 
-    X_new = Cref_chol @ res.conj().swapaxes(-1, -2) + \
-        res @ Cref_chol.conj().swapaxes(-1, -2)
+    X_new = Cref_chol @ ctranspose(res) + res @ ctranspose(Cref_chol)
 
     return X_new
 
@@ -404,7 +403,8 @@ def log_map_logeuclid(X, Cref):
     """
     _check_dimensions(X, Cref)
     logCref = logm(Cref)
-    return ddexpm(logm(X) - logCref, logCref)
+    X_new = ddexpm(logm(X) - logCref, logCref)
+    return X_new
 
 
 def log_map_riemann(X, Cref, C12=False):
@@ -717,6 +717,67 @@ def transport_euclid(X, A=None, B=None):
     return X
 
 
+def transport_logchol(X, A, B):
+    r"""Parallel transport for log-Cholesky metric.
+
+    The parallel transport of matrices :math:`\mathbf{X}` in tangent space
+    from an initial SPD/HPD matrix :math:`\mathbf{A}` to a final SPD/HPD
+    matrix :math:`\mathbf{B}` for log-Cholesky metric is given in Proposition 7
+    of [1]_:
+
+    .. math::
+        \mathbf{X}_\text{new} = \text{lower}(\mathbf{X}) +
+        \text{diag}(\text{chol}(\mathbf{B}))
+        \text{diag}(\text{chol}(\mathbf{A}))^{-1}
+        \text{diag}(\text{chol}(\mathbf{X}))
+
+    Warning: this function must be applied to matrices :math:`\mathbf{X}`
+    already projected in tangent space with a logarithmic map at
+    :math:`\mathbf{A}`, not to SPD/HPD matrices in manifold.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        Symmetric/Hermitian matrices in tangent space.
+    A : ndarray, shape (n, n)
+        Initial SPD/HPD matrix.
+    B : ndarray, shape (n, n)
+        Final SPD/HPD matrix.
+
+    Returns
+    -------
+    X_new : ndarray, shape (..., n, n)
+        Matrices in tangent space transported from A to B.
+
+    Notes
+    -----
+    .. versionadded:: 0.10
+
+    See Also
+    --------
+    transport
+
+    References
+    ----------
+    .. [1] `Riemannian geometry of symmetric positive definite matrices via
+        Cholesky decomposition
+        <https://arxiv.org/pdf/1908.09326>`_
+        Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
+    """
+    A_chol, B_chol = np.linalg.cholesky(A), np.linalg.cholesky(B)
+
+    X_new = np.zeros_like(X)
+
+    tri0, tri1 = np.tril_indices(X.shape[-1], -1)
+    X_new[..., tri0, tri1] = X[..., tri0, tri1]
+
+    diag0, diag1 = np.diag_indices(X.shape[-1])
+    X_new[..., diag0, diag1] = B_chol[..., diag0, diag1] \
+        / A_chol[..., diag0, diag1] * X[..., diag0, diag1]
+
+    return X_new
+
+
 def transport_logeuclid(X, A, B):
     r"""Parallel transport for log-Euclidean metric.
 
@@ -825,6 +886,7 @@ def transport_riemann(X, A, B):
 
 transport_functions = {
     "euclid": transport_euclid,
+    "logchol": transport_logchol,
     "logeuclid": transport_logeuclid,
     "riemann": transport_riemann,
 }

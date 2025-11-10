@@ -333,6 +333,7 @@ Tangent Space
     untangent_space
     transport
     transport_euclid
+    transport_logchol
     transport_logeuclid
     transport_riemann
 
