@@ -199,22 +199,25 @@ def test_transport_ndarray(ftransport, get_mats):
 def test_transport_properties(ftransport, get_mats):
     n_matrices, n_channels = 10, 3
     X = get_mats(n_matrices, n_channels, "sym")
+    A, B = get_mats(2, n_channels, "spd")
 
-    A = get_mats(1, n_channels, "spd")[0]
     assert ftransport(X, A, A) == approx(X)
 
+    assert ftransport(ftransport(X, A, B), B, A) == approx(X)
 
-def test_transport_riemann_property_isometry(get_mats):
+
+def test_transport_riemann_property_linear(get_mats):
     n_matrices, n_channels = 7, 4
     X = get_mats(n_matrices, n_channels, "sym")
     Y = get_mats(n_matrices, n_channels, "sym")
     A, B = get_mats(2, n_channels, "spd")
+
     Xt, Yt = transport_riemann(X, A, B), transport_riemann(Y, A, B)
     assert transport_riemann(X + Y, A, B) == approx(Xt + Yt)
 
 
 def test_transport_riemann_vs_whitening(get_mats):
-    """Transport from mean to identity should be equivalent to a whitening"""
+    """AIR PT from mean to identity should be equivalent to a whitening"""
     n_matrices, n_channels = 15, 2
     X = get_mats(n_matrices, n_channels, "spd")
 
