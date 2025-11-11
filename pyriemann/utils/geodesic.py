@@ -1,8 +1,57 @@
 """Geodesics for SPD/HPD matrices."""
 import numpy as np
 
-from .base import sqrtm, invsqrtm, powm, logm, expm
+from .base import ctranspose, sqrtm, invsqrtm, powm, logm, expm
 from .utils import check_function
+
+
+def geodesic_chol(A, B, alpha=0.5):
+    r"""Cholesky geodesic between SPD/HPD matrices.
+
+    The matrix at position :math:`\alpha` on the Cholesky geodesic
+    between two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is
+    :math:`\mathbf{C} = \mathbf{L} \mathbf{L}^H`,
+    where :math:`\mathbf{L}` is computed as [1]_:
+
+    .. math::
+        \mathbf{L} = (1-\alpha) \text{chol}(\mathbf{A}) +
+                     \alpha \text{chol}(\mathbf{B})
+
+    :math:`\mathbf{C}` is equal to :math:`\mathbf{A}` if :math:`\alpha` = 0,
+    and :math:`\mathbf{B}` if :math:`\alpha` = 1.
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices.
+    alpha : float, default=0.5
+        Position on the geodesic.
+
+    Returns
+    -------
+    C : ndarray, shape (..., n, n)
+        SPD/HPD matrices on the Cholesky geodesic.
+
+    Notes
+    -----
+    ..versionadded:: 0.10
+
+    See Also
+    --------
+    geodesic
+
+    References
+    ----------
+    .. [1] `Non-Euclidean statistics for covariance matrices, with applications
+        to diffusion tensor imaging
+        <https://doi.org/10.1214/09-AOAS249>`_
+        I.L. Dryden, A. Koloydenko, D. Zhou.
+        Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
+    """
+    geo = (1 - alpha) * np.linalg.cholesky(A) + alpha * np.linalg.cholesky(B)
+    return geo @ ctranspose(geo)
 
 
 def geodesic_euclid(A, B, alpha=0.5):
@@ -30,6 +79,10 @@ def geodesic_euclid(A, B, alpha=0.5):
     -------
     C : ndarray, shape (..., n, m)
         Matrices on the Euclidean geodesic.
+
+    See Also
+    --------
+    geodesic
     """
     return (1 - alpha) * A + alpha * B
 
@@ -59,6 +112,10 @@ def geodesic_logchol(A, B, alpha=0.5):
     -----
     ..versionadded:: 0.7
 
+    See Also
+    --------
+    geodesic
+
     References
     ----------
     .. [1] `Riemannian geometry of symmetric positive definite matrices via
@@ -78,7 +135,7 @@ def geodesic_logchol(A, B, alpha=0.5):
     geo[..., diag0, diag1] = A_chol[..., diag0, diag1] ** (1 - alpha) * \
         B_chol[..., diag0, diag1] ** alpha
 
-    return geo @ geo.conj().swapaxes(-1, -2)
+    return geo @ ctranspose(geo)
 
 
 def geodesic_logeuclid(A, B, alpha=0.5):
@@ -107,6 +164,10 @@ def geodesic_logeuclid(A, B, alpha=0.5):
     -------
     C : ndarray, shape (..., n, n)
         SPD/HPD matrices on the log-Euclidean geodesic.
+
+    See Also
+    --------
+    geodesic
     """
     return expm((1 - alpha) * logm(A) + alpha * logm(B))
 
@@ -138,6 +199,10 @@ def geodesic_riemann(A, B, alpha=0.5):
     -------
     C : ndarray, shape (..., n, n)
         SPD/HPD matrices on the affine-invariant Riemannian geodesic.
+
+    See Also
+    --------
+    geodesic
     """
     sA, isA = sqrtm(A), invsqrtm(A)
     C = sA @ powm(isA @ B @ isA, alpha) @ sA
@@ -176,6 +241,10 @@ def geodesic_wasserstein(A, B, alpha=0.5):
     -----
     ..versionadded:: 0.8
 
+    See Also
+    --------
+    geodesic
+
     References
     ----------
     .. [1] `Wasserstein Riemannian geometry of Gaussian densities
@@ -194,6 +263,7 @@ def geodesic_wasserstein(A, B, alpha=0.5):
 
 
 geodesic_functions = {
+    "chol": geodesic_chol,
     "euclid": geodesic_euclid,
     "logchol": geodesic_logchol,
     "logeuclid": geodesic_logeuclid,
@@ -218,13 +288,22 @@ def geodesic(A, B, alpha, metric="riemann"):
         Position on the geodesic.
     metric : string | callable, default="riemann"
         Metric used for geodesic, can be:
-        "euclid", "logchol", "logeuclid", "riemann", "wasserstein",
+        "chol", "euclid", "logchol", "logeuclid", "riemann", "wasserstein",
         or a callable function.
 
     Returns
     -------
     C : ndarray, shape (..., n, n)
         Matrices on the geodesic.
+
+    See Also
+    --------
+    geodesic_chol
+    geodesic_euclid
+    geodesic_logchol
+    geodesic_logeuclid
+    geodesic_riemann
+    geodesic_wasserstein
     """
     geodesic_function = check_function(metric, geodesic_functions)
     C = geodesic_function(A, B, alpha)

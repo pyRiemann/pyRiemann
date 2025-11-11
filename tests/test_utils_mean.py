@@ -9,6 +9,7 @@ from pyriemann.utils.mean import (
     mean_covariance,
     mean_ale,
     mean_alm,
+    mean_chol,
     mean_euclid,
     mean_harmonic,
     mean_kullback_sym,
@@ -29,6 +30,7 @@ from pyriemann.utils.mean import (
     "mean",
     [
         mean_ale,
+        mean_chol,
         mean_euclid,
         mean_harmonic,
         mean_kullback_sym,
@@ -152,6 +154,7 @@ def test_mean_warning_convergence(mean, get_mats):
     "mean",
     [
         mean_ale,
+        mean_chol,
         mean_euclid,
         mean_harmonic,
         mean_kullback_sym,
@@ -187,6 +190,7 @@ def test_mean_of_means(kind, mean, get_mats):
     [
         mean_ale,
         mean_alm,
+        mean_chol,
         mean_euclid,
         mean_harmonic,
         mean_kullback_sym,
@@ -460,6 +464,7 @@ def callable_np_average(X, sample_weight=None):
     [
         ("ale", mean_ale),
         ("alm", mean_alm),
+        ("chol", mean_chol),
         ("euclid", mean_euclid),
         ("harmonic", mean_harmonic),
         ("kullback_sym", mean_kullback_sym),

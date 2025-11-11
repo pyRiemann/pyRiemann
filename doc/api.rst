@@ -255,6 +255,7 @@ Means
     mean_covariance
     mean_ale
     mean_alm
+    mean_chol
     mean_euclid
     mean_harmonic
     mean_kullback_sym
@@ -288,6 +289,7 @@ Geodesics
     :toctree: generated/
 
     geodesic
+    geodesic_chol
     geodesic_euclid
     geodesic_logchol
     geodesic_logeuclid
