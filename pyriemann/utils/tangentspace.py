@@ -498,7 +498,7 @@ def log_map_wasserstein(X, Cref):
     P12inv = invsqrtm(Cref)
     sqrt_bracket = sqrtm(P12 @ X @ P12)
     tmp = P12inv @ sqrt_bracket @ P12
-    return tmp + tmp.conj().swapaxes(-2, -1) - 2 * Cref
+    return tmp + ctranspose(tmp) - 2 * Cref
 
 
 log_map_functions = {

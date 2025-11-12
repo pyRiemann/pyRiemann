@@ -201,12 +201,14 @@ def test_transport_properties(ftransport, get_mats):
     X = get_mats(n_matrices, n_channels, "sym")
     A, B = get_mats(2, n_channels, "spd")
 
+    # trivial transport
     assert ftransport(X, A, A) == approx(X)
 
+    # reversibility
     assert ftransport(ftransport(X, A, B), B, A) == approx(X)
 
 
-def test_transport_riemann_property_linear(get_mats):
+def test_transport_riemann_property_linearity(get_mats):
     n_matrices, n_channels = 7, 4
     X = get_mats(n_matrices, n_channels, "sym")
     Y = get_mats(n_matrices, n_channels, "sym")
