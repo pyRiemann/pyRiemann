@@ -150,6 +150,48 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None):
     return M_iter.mean(axis=0)
 
 
+def mean_chol(X, sample_weight=None):
+    r"""Mean of SPD/HPD matrices according to the Cholesky metric.
+
+    Cholesky mean :math:`\mathbf{M}` is
+    :math:`\mathbf{M} = \mathbf{L} \mathbf{L}^H`,
+    where :math:`\mathbf{L}` is computed as [1]_:
+
+    .. math::
+        \mathbf{L} = \sum_i w_i \text{chol}(\mathbf{X}_i)
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (n, n)
+        Cholesky mean.
+
+    Notes
+    -----
+    .. versionadded:: 0.10
+
+    See Also
+    --------
+    mean_covariance
+
+    References
+    ----------
+    .. [1] `Non-Euclidean statistics for covariance matrices, with applications
+        to diffusion tensor imaging
+        <https://doi.org/10.1214/09-AOAS249>`_
+        I.L. Dryden, A. Koloydenko, D. Zhou.
+        Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
+    """
+    L = mean_euclid(np.linalg.cholesky(X), sample_weight=sample_weight)
+    return L @ L.conj().T
+
+
 def mean_euclid(X, sample_weight=None):
     r"""Mean of matrices according to the Euclidean metric.
 
@@ -714,6 +756,7 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 mean_functions = {
     "ale": mean_ale,
     "alm": mean_alm,
+    "chol": mean_chol,
     "euclid": mean_euclid,
     "harmonic": mean_harmonic,
     "identity": mean_identity,
@@ -741,7 +784,7 @@ def mean_covariance(X, *args, metric="riemann", sample_weight=None, **kwargs):
         The arguments passed to the sub function.
     metric : string | callable, default="riemann"
         Metric for mean estimation, can be:
-        "ale", "alm", "euclid", "harmonic", "identity", "kullback_sym",
+        "ale", "alm", "chol", "euclid", "harmonic", "identity", "kullback_sym",
         "logchol", "logdet", "logeuclid", "riemann", "wasserstein",
         or a callable function.
         If an exponent is given in args, it can be "power", "poweuclid".

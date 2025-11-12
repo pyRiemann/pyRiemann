@@ -30,6 +30,8 @@ v0.10.dev
 
 - Speedup of the ALM mean :func:`pyriemann.utils.mean.mean_alm`. :pr:`398` by :user:`qbarthelemy`
 
+- Add :func:`pyriemann.utils.geodesic.geodesic_chol` and :func:`pyriemann.utils.mean.mean_chol`. :pr:`399` by :user:`qbarthelemy`
+
 - Add :func:`pyriemann.utils.tangentspace.transport_logchol` for parallel transport with log-Cholesky metric. :pr:`400` by :user:`qbarthelemy`
 
 v0.9 (July 2025)
