@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from .base import expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
+from .base import ctranspose, expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
 from .utils import check_function
 
 
@@ -90,7 +90,7 @@ def exp_map_logchol(X, Cref):
     exp_map[..., diag0, diag1] = np.exp(diff_bracket[..., diag0, diag1]) \
         * Cref_chol[..., diag0, diag1]
 
-    return exp_map @ exp_map.conj().swapaxes(-1, -2)
+    return exp_map @ ctranspose(exp_map)
 
 
 def exp_map_logeuclid(X, Cref):
@@ -339,8 +339,7 @@ def log_map_logchol(X, Cref):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    X_chol = np.linalg.cholesky(X)
-    Cref_chol = np.linalg.cholesky(Cref)
+    X_chol, Cref_chol = np.linalg.cholesky(X), np.linalg.cholesky(Cref)
 
     res = np.zeros_like(X)
 
@@ -351,8 +350,7 @@ def log_map_logchol(X, Cref):
     res[..., diag0, diag1] = Cref_chol[..., diag0, diag1] * \
         np.log(X_chol[..., diag0, diag1] / Cref_chol[..., diag0, diag1])
 
-    X_new = Cref_chol @ res.conj().swapaxes(-1, -2) + \
-        res @ Cref_chol.conj().swapaxes(-1, -2)
+    X_new = Cref_chol @ ctranspose(res) + res @ Cref_chol.conj().T
 
     return X_new
 
@@ -404,7 +402,8 @@ def log_map_logeuclid(X, Cref):
     """
     _check_dimensions(X, Cref)
     logCref = logm(Cref)
-    return ddexpm(logm(X) - logCref, logCref)
+    X_new = ddexpm(logm(X) - logCref, logCref)
+    return X_new
 
 
 def log_map_riemann(X, Cref, C12=False):
@@ -499,7 +498,7 @@ def log_map_wasserstein(X, Cref):
     P12inv = invsqrtm(Cref)
     sqrt_bracket = sqrtm(P12 @ X @ P12)
     tmp = P12inv @ sqrt_bracket @ P12
-    return tmp + tmp.conj().swapaxes(-2, -1) - 2 * Cref
+    return tmp + ctranspose(tmp) - 2 * Cref
 
 
 log_map_functions = {
@@ -717,6 +716,68 @@ def transport_euclid(X, A=None, B=None):
     return X
 
 
+def transport_logchol(X, A, B):
+    r"""Parallel transport for log-Cholesky metric.
+
+    The parallel transport of matrices :math:`\mathbf{X}` in tangent space
+    from an initial SPD/HPD matrix :math:`\mathbf{A}` to a final SPD/HPD
+    matrix :math:`\mathbf{B}` for log-Cholesky metric is given in Proposition 7
+    of [1]_.
+
+    Warning: this function must be applied to matrices :math:`\mathbf{X}`
+    already projected in tangent space with a logarithmic map at
+    :math:`\mathbf{A}`, not to SPD/HPD matrices in manifold.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        Symmetric/Hermitian matrices in tangent space.
+    A : ndarray, shape (n, n)
+        Initial SPD/HPD matrix.
+    B : ndarray, shape (n, n)
+        Final SPD/HPD matrix.
+
+    Returns
+    -------
+    X_new : ndarray, shape (..., n, n)
+        Matrices in tangent space transported from A to B.
+
+    Notes
+    -----
+    .. versionadded:: 0.10
+
+    See Also
+    --------
+    transport
+
+    References
+    ----------
+    .. [1] `Riemannian geometry of symmetric positive definite matrices via
+        Cholesky decomposition
+        <https://arxiv.org/pdf/1908.09326>`_
+        Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
+    """
+    A_chol, B_chol = np.linalg.cholesky(A), np.linalg.cholesky(B)
+    A_invchol = np.linalg.inv(A_chol)
+
+    tri0, tri1 = np.tril_indices(X.shape[-1], -1)
+    diag0, diag1 = np.diag_indices(X.shape[-1])
+
+    P = A_invchol @ X @ A_invchol.T
+    P12 = np.zeros_like(P)
+    P12[..., tri0, tri1] = P[..., tri0, tri1]
+    P12[..., diag0, diag1] = P[..., diag0, diag1] / 2
+    X_ = A_chol @ P12
+
+    T = np.zeros_like(X)
+    T[..., tri0, tri1] = X_[..., tri0, tri1]
+    T[..., diag0, diag1] = B_chol[..., diag0, diag1] \
+        / A_chol[..., diag0, diag1] * X_[..., diag0, diag1]
+
+    X_new = B_chol @ ctranspose(T) + T @ B_chol.conj().T
+    return X_new
+
+
 def transport_logeuclid(X, A, B):
     r"""Parallel transport for log-Euclidean metric.
 
@@ -825,6 +886,7 @@ def transport_riemann(X, A, B):
 
 transport_functions = {
     "euclid": transport_euclid,
+    "logchol": transport_logchol,
     "logeuclid": transport_logeuclid,
     "riemann": transport_riemann,
 }
@@ -866,6 +928,7 @@ def transport(X, A, B, metric="riemann"):
     See Also
     --------
     transport_euclid
+    transport_logchol
     transport_logeuclid
     transport_riemann
     """

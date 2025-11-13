@@ -24,6 +24,7 @@ from pyriemann.utils.tangentspace import (
     untangent_space,
     transport,
     transport_euclid,
+    transport_logchol,
     transport_logeuclid,
     transport_riemann,
 )
@@ -95,10 +96,11 @@ def test_maps_log_exp(kind, log_map_, exp_map_, get_mats):
     assert exp_map_(log_map_(X, C), C) == approx(X)
 
 
+@pytest.mark.parametrize("n_dim1, n_dim2", [(4, 5), (5, 4)])
 @pytest.mark.parametrize("kind", ["real", "comp"])
-def test_map_euclid(kind, get_mats):
+def test_map_euclid(n_dim1, n_dim2, kind, get_mats):
     """Euclidean map for non-square matrices"""
-    n_matrices, n_dim1, n_dim2 = 5, 3, 4
+    n_matrices = 7
     mats = get_mats(n_matrices, [n_dim1, n_dim2], kind)
     X, C = mats[:n_matrices - 1], mats[-1]
     assert exp_map_euclid(log_map_euclid(X, C), C) == approx(X)
@@ -170,28 +172,54 @@ def test_tangent_and_untangent_space(kind, metric, get_mats):
 
 
 @pytest.mark.parametrize("ftransport", [
-    transport_euclid, transport_logeuclid, transport_riemann
+    transport_euclid,
+    transport_logchol,
+    transport_logeuclid,
+    transport_riemann,
 ])
-def test_transport(ftransport, get_mats):
+def test_transport_ndarray(ftransport, get_mats):
     n_matrices, n_channels = 7, 3
     X = get_mats(n_matrices, n_channels, "herm")
     A, B = get_mats(2, n_channels, "hpd")
+
     X_tr = ftransport(X, A, B)
     assert X_tr.shape == X.shape
 
+    n_sets = 2
+    X_4d = np.asarray([X for _ in range(n_sets)])
+    X_tr = ftransport(X_4d, A, B)
+    assert X_tr.shape == X_4d.shape
 
-@pytest.mark.parametrize("metric", ["logeuclid", "riemann"])
-def test_transport_properties(get_mats, metric):
+
+@pytest.mark.parametrize("ftransport", [
+    transport_logchol,
+    transport_logeuclid,
+    transport_riemann,
+])
+def test_transport_properties(ftransport, get_mats):
     n_matrices, n_channels = 10, 3
     X = get_mats(n_matrices, n_channels, "sym")
+    A, B = get_mats(2, n_channels, "spd")
 
-    A = get_mats(1, n_channels, "spd")[0]
-    Xt = transport(X, A, A, metric=metric)
-    assert X == approx(Xt)
+    # trivial transport
+    assert ftransport(X, A, A) == approx(X)
+
+    # reversibility
+    assert ftransport(ftransport(X, A, B), B, A) == approx(X)
 
 
-def test_transport_vs_whitening(get_mats):
-    """Transport from mean to identity should be equivalent to a whitening"""
+def test_transport_riemann_property_linearity(get_mats):
+    n_matrices, n_channels = 7, 4
+    X = get_mats(n_matrices, n_channels, "sym")
+    Y = get_mats(n_matrices, n_channels, "sym")
+    A, B = get_mats(2, n_channels, "spd")
+
+    Xt, Yt = transport_riemann(X, A, B), transport_riemann(Y, A, B)
+    assert transport_riemann(X + Y, A, B) == approx(Xt + Yt)
+
+
+def test_transport_riemann_vs_whitening(get_mats):
+    """AIR PT from mean to identity should be equivalent to a whitening"""
     n_matrices, n_channels = 15, 2
     X = get_mats(n_matrices, n_channels, "spd")
 
