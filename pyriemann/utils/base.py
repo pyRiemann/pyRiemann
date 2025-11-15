@@ -35,6 +35,16 @@ def ctranspose(X):
 ###############################################################################
 
 
+def _recursive(fun, A, B, *args, **kwargs):
+    """Recursive function with two inputs."""
+    if A.ndim == 2:
+        return fun(A, B, *args, **kwargs)
+    else:
+        return np.asarray(
+            [_recursive(fun, a, b, *args, **kwargs) for a, b in zip(A, B)]
+        )
+
+
 def _matrix_operator(X, operator):
     """Matrix function for SPD/HPD matrices."""
     if not isinstance(X, np.ndarray) or X.ndim < 2:

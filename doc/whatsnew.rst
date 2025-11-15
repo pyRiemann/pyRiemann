@@ -34,6 +34,8 @@ v0.10.dev
 
 - Add :func:`pyriemann.utils.tangentspace.transport_logchol` for parallel transport with log-Cholesky metric. :pr:`400` by :user:`qbarthelemy`
 
+- Add :func:`pyriemann.utils.distance.distance_thompson`. :pr:`401` by :user:`qbarthelemy`
+
 v0.9 (July 2025)
 ----------------
 

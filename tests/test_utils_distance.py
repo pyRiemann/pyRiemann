@@ -2,6 +2,7 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 import pytest
 from pytest import approx
+from scipy.linalg import eigvalsh
 from scipy.spatial.distance import euclidean, mahalanobis
 
 from conftest import get_distances
@@ -17,6 +18,7 @@ from pyriemann.utils.distance import (
     distance_logeuclid,
     distance_poweuclid,
     distance_riemann,
+    distance_thompson,
     distance_wasserstein,
     distance,
     pairwise_distance,
@@ -39,6 +41,7 @@ def get_dist_func():
         distance_logdet,
         distance_logeuclid,
         distance_riemann,
+        distance_thompson,
         distance_wasserstein,
     ]
     for df in dist_func:
@@ -63,6 +66,7 @@ def callable_sp_euclidean(A, B, squared=False):
         ("logdet", distance_logdet),
         ("logeuclid", distance_logeuclid),
         ("riemann", distance_riemann),
+        ("thompson", distance_thompson),
         ("wasserstein", distance_wasserstein),
         (callable_sp_euclidean, distance_euclid),
     ],
@@ -113,13 +117,15 @@ def test_distance_ndarray(dist, get_mats):
     n_matrices, n_channels = 5, 3
     A = get_mats(n_matrices, n_channels, "spd")
     B = get_mats(n_matrices, n_channels, "spd")
+
     assert isinstance(dist(A[0], B[0]), float)  # 2D arrays
+
     assert dist(A, B).shape == (n_matrices,)  # 3D arrays
 
-    n_sets = 5
+    n_sets = 4
     C = np.asarray([A for _ in range(n_sets)])
     D = np.asarray([B for _ in range(n_sets)])
-    assert dist(C, D).shape == (n_sets, n_matrices,)  # 4D arrays
+    assert dist(C, D).shape == (n_sets, n_matrices)  # 4D arrays
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -150,6 +156,7 @@ def test_distance_property_separability(kind, dist, get_mats):
     distance_logdet,
     distance_logeuclid,
     distance_riemann,
+    distance_thompson,
     distance_wasserstein,
 ])
 def test_distance_property_symmetry(kind, dist, get_mats):
@@ -170,6 +177,7 @@ def test_distance_property_triangle_inequality(kind, dist, get_mats):
 @pytest.mark.parametrize("dist", [
     distance_logeuclid,  # Th 3.6 in [Arsigny2007]
     distance_riemann,  # Th 1 (v) of [Forstner2003]
+    distance_thompson,  # Eq(4.7a) in [Sra2015]
 ])
 def test_distance_property_invariance_under_inversion(kind, dist, get_mats):
     """Test invariance under inversion"""
@@ -185,6 +193,7 @@ def test_distance_property_invariance_under_inversion(kind, dist, get_mats):
     distance_kullback,
     distance_logeuclid,
     distance_riemann,
+    distance_thompson,
     distance_wasserstein,
 ])
 def test_distance_property_invariance_rotation(kind, kindQ, dist, get_mats):
@@ -199,6 +208,7 @@ def test_distance_property_invariance_rotation(kind, kindQ, dist, get_mats):
 @pytest.mark.parametrize("dist", [
     distance_logeuclid,  # Prop 3.11 in [Arsigny2007]
     distance_riemann,
+    distance_thompson,  # Eq(4.7b) in [Sra2015]
 ])
 def test_distance_property_invariance_similarity(kind, kindQ, dist,
                                                  get_mats, rndstate):
@@ -215,6 +225,7 @@ def test_distance_property_invariance_similarity(kind, kindQ, dist,
 @pytest.mark.parametrize("dist", [
     distance_kullback,
     distance_riemann,  # Th 1 (iv) of [Forstner2003]
+    distance_thompson,  # Eq(4.7b) in [Sra2015]
 ])
 def test_distance_property_invariance_congruence(kind, kindW, dist, get_mats):
     """Test invariance under congruence, ie an invertible transform"""
@@ -225,12 +236,12 @@ def test_distance_property_invariance_congruence(kind, kindW, dist, get_mats):
     assert dist(A, B) == approx(dist(WAW, WBW))
 
 
+@pytest.mark.parametrize("n_dim1, n_dim2", [(4, 5), (5, 4)])
 @pytest.mark.parametrize("kind", ["real", "comp"])
-def test_distance_euclid(kind, get_mats):
+def test_distance_euclid(n_dim1, n_dim2, kind, get_mats):
     """Euclidean distance between non-square matrices"""
-    n_dim1, n_dim2 = 3, 4
     A, B = get_mats(2, [n_dim1, n_dim2], kind)
-    distance_euclid(A, B)
+    assert distance_euclid(A, B) == approx(euclidean(A.flatten(), B.flatten()))
 
 
 @pytest.mark.parametrize("kind", ["inv", "cinv"])
@@ -271,7 +282,7 @@ def test_distance_poweuclid(kind, get_mats):
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_distance_riemann_implementation(kind, get_mats):
-    """Test equivalence with Eq(6.13) in [Bhatia2007] """
+    """Test equivalence with Eq(6.13) in [Bhatia2007]"""
     n_channels = 6
     A, B = get_mats(2, n_channels, kind)
 
@@ -294,6 +305,25 @@ def test_distance_riemann_properties(kind, get_mats, rndstate):
     dist_1 = distance_riemann(A, geodesic(A, B, alpha, metric="riemann"))
     dist_2 = alpha * distance_riemann(A, B)
     assert dist_1 == approx(dist_2)
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_distance_thompson_implementation(kind, get_mats):
+    n_channels = 5
+    A, B = get_mats(2, n_channels, kind)
+    d = distance_thompson(A, B)
+
+    # Eq(4.6) in [Sra2015]
+    Bm12 = invsqrtm(B)
+    assert d == approx(np.linalg.norm(logm(Bm12 @ A @ Bm12), ord=2))
+
+    # Eq(1.2) in [Mostajeran2024]
+    d2 = np.log(max(eigvalsh(A, B).max(), 1 / eigvalsh(A, B).min()))
+    assert d == approx(d2)
+
+    # Eq(1.4) in [Mostajeran2024]
+    d2 = np.log(max(eigvalsh(A, B).max(), eigvalsh(B, A).max()))
+    assert d == approx(d2)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
