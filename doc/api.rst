@@ -239,6 +239,7 @@ Distances
     distance_logeuclid
     distance_poweuclid
     distance_riemann
+    distance_thompson
     distance_wasserstein
     pairwise_distance
 
