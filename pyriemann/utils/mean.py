@@ -8,7 +8,7 @@ from . import deprecated
 from .ajd import ajd_pham
 from .base import sqrtm, invsqrtm, logm, expm, powm
 from .distance import distance_riemann
-from .geodesic import geodesic_riemann
+from .geodesic import geodesic_riemann, geodesic_thompson
 from .tangentspace import log_map_wasserstein, exp_map_wasserstein
 from .utils import check_weights, check_function, check_init
 
@@ -690,6 +690,65 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     return M
 
 
+def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
+    """Mean of SPD/HPD matrices according to the Thompson metric.
+
+    The Thompson mean of SPD/HPD matrices is described in [1]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    tol : float, default=1e-6
+        Tolerance to stop the gradient descent.
+    maxiter : int, default=50
+        Maximum number of iterations.
+    init : None | ndarray, shape (n, n), default=None
+        A SPD/HPD matrix used to initialize the gradient descent.
+        If None, the weighted Euclidean mean is used.
+    sample_weight : None
+        Not used.
+
+    Returns
+    -------
+    M : ndarray, shape (n, n)
+        Thompson mean.
+
+    Notes
+    -----
+    .. versionadded:: 0.10
+
+    See Also
+    --------
+    mean_covariance
+
+    References
+    ----------
+    .. [1] `Differential geometry with extreme eigenvalues in the positive
+        semidefinite cone
+        <https://arxiv.org/pdf/2304.07347>`_
+        C. Mostajeran, N. Da Costa, G. Van Goffrier and R. Sepulchre.
+        SIAM Journal on Matrix Analysis and Applications, 2024
+    """
+    n_matrices, n, _ = X.shape
+    if init is None:
+        M = mean_euclid(X)
+    else:
+        M = check_init(init, n)
+
+    for i in range(maxiter):
+        Mnew = geodesic_thompson(M, X[i % n_matrices], 1 / (i + 2))
+
+        crit = np.linalg.norm(Mnew - M, ord="fro")
+        M = Mnew
+        if crit <= tol:
+            break
+    else:
+        warnings.warn("Convergence not reached")
+
+    return M
+
+
 def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the Wasserstein metric.
 
@@ -767,6 +826,7 @@ mean_functions = {
     "power": mean_power,
     "poweuclid": mean_poweuclid,
     "riemann": mean_riemann,
+    "thompson": mean_thompson,
     "wasserstein": mean_wasserstein,
 }
 
@@ -785,7 +845,7 @@ def mean_covariance(X, *args, metric="riemann", sample_weight=None, **kwargs):
     metric : string | callable, default="riemann"
         Metric for mean estimation, can be:
         "ale", "alm", "chol", "euclid", "harmonic", "identity", "kullback_sym",
-        "logchol", "logdet", "logeuclid", "riemann", "wasserstein",
+        "logchol", "logdet", "logeuclid", "riemann", "thompson", "wasserstein",
         or a callable function.
         If an exponent is given in args, it can be "power", "poweuclid".
     sample_weight : None | ndarray, shape (n_matrices,), default=None

@@ -266,6 +266,7 @@ Means
     mean_power
     mean_poweuclid
     mean_riemann
+    mean_thompson
     mean_wasserstein
     maskedmean_riemann
     nanmean_riemann
@@ -295,6 +296,7 @@ Geodesics
     geodesic_logchol
     geodesic_logeuclid
     geodesic_riemann
+    geodesic_thompson
     geodesic_wasserstein
 
 Kernels
