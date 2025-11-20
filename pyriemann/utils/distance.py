@@ -4,7 +4,7 @@ import numpy as np
 from scipy.linalg import eigvalsh, solve
 from sklearn.metrics import euclidean_distances
 
-from .base import invsqrtm, logm, powm, sqrtm
+from .base import _recursive, invsqrtm, logm, powm, sqrtm
 from .test import is_real_type
 from .utils import check_function
 
@@ -16,16 +16,6 @@ def _check_inputs(A, B):
         raise ValueError("Inputs must have equal dimensions")
     if A.ndim < 2:
         raise ValueError("Inputs must be at least a 2D ndarray")
-
-
-def _recursive(fun, A, B, *args, **kwargs):
-    """Recursive function with two inputs."""
-    if A.ndim == 2:
-        return fun(A, B, *args, **kwargs)
-    else:
-        return np.asarray(
-            [_recursive(fun, a, b, *args, **kwargs) for a, b in zip(A, B)]
-        )
 
 
 ###############################################################################
@@ -110,7 +100,7 @@ def distance_euclid(A, B, squared=False):
     distance
     """
     _check_inputs(A, B)
-    d = np.linalg.norm(A - B, ord='fro', axis=(-2, -1))
+    d = np.linalg.norm(A - B, ord="fro", axis=(-2, -1))
     return d ** 2 if squared else d
 
 
@@ -434,9 +424,9 @@ def distance_poweuclid(A, B, p, squared=False):
 
     if p == 1:
         return distance_euclid(A, B, squared=squared)
-    elif p == 0:
+    if p == 0:
         return distance_logeuclid(A, B, squared=squared)
-    elif p == -1:
+    if p == -1:
         return distance_harmonic(A, B, squared=squared)
 
     return distance_euclid(
@@ -454,6 +444,7 @@ def distance_riemann(A, B, squared=False):
 
     .. math::
         d(\mathbf{A},\mathbf{B}) =
+        \Vert \log(\mathbf{B}^{-1/2} \mathbf{A} \mathbf{B}^{-1/2}) \Vert_F =
         {\left( \sum_i \log(\lambda_i)^2 \right)}^{1/2}
 
     where :math:`\lambda_i` are the joint eigenvalues of :math:`\mathbf{A}` and
@@ -481,14 +472,61 @@ def distance_riemann(A, B, squared=False):
 
     References
     ----------
-    .. [1] `A differential geometric approach to the geometric mean of
-        symmetric positive-definite matrices
-        <https://epubs.siam.org/doi/10.1137/S0895479803436937>`_
-        M. Moakher. SIAM J Matrix Anal Appl, 2005, 26 (3), pp. 735-747
+    .. [1] `A metric for covariance matrices
+        <https://www.ipb.uni-bonn.de/pdfs/Forstner1999Metric.pdf>`_
+        W. Förstner & B. Moonen.
+        Geodesy-the Challenge of the 3rd Millennium, 2003
     """
     _check_inputs(A, B)
     d2 = (np.log(_recursive(eigvalsh, A, B))**2).sum(axis=-1)
     return d2 if squared else np.sqrt(d2)
+
+
+def distance_thompson(A, B, squared=False):
+    r"""Thompson distance between SPD/HPD matrices.
+
+    The Thompson distance between two SPD/HPD matrices :math:`\mathbf{A}` and
+    :math:`\mathbf{B}` is [1]_:
+
+    .. math::
+        d(\mathbf{A},\mathbf{B}) =
+        \Vert \log(\mathbf{B}^{-1/2} \mathbf{A} \mathbf{B}^{-1/2}) \Vert_2 =
+        \max_i | \log(\lambda_i) |
+
+    where :math:`\lambda_i` are the joint eigenvalues of :math:`\mathbf{A}` and
+    :math:`\mathbf{B}`.
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices, same dimensions as A.
+    squared : bool, default=False
+        Return squared distance.
+
+    Returns
+    -------
+    d : float or ndarray, shape (...,)
+        Thompson distance between A and B.
+
+    Notes
+    -----
+    .. versionadded:: 0.10
+
+    See Also
+    --------
+    distance
+
+    References
+    ----------
+    .. [1] `On certain contraction mappings in a partially ordered vector space
+        <https://www.cs.umd.edu/projects/reucaar/ThompsonGeom.pdf>`_
+        A.C.Thompson. Proceedings of the American Mathematical Society, 1963.
+    """
+    _check_inputs(A, B)
+    d = (np.abs(np.log(_recursive(eigvalsh, A, B)))).max(axis=-1)
+    return d ** 2 if squared else d
 
 
 def distance_wasserstein(A, B, squared=False):
@@ -550,6 +588,7 @@ distance_functions = {
     "logdet": distance_logdet,
     "logeuclid": distance_logeuclid,
     "riemann": distance_riemann,
+    "thompson": distance_thompson,
     "wasserstein": distance_wasserstein,
 }
 
@@ -570,7 +609,7 @@ def distance(A, B, metric="riemann", squared=False):
         Metric for distance, can be:
         "chol", "euclid", "harmonic", "kullback", "kullback_right",
         "kullback_sym", "logchol", "logdet", "logeuclid", "riemann",
-        "wasserstein",
+        "thompson", "wasserstein",
         or a callable function.
     squared : bool, default=False
         Return squared distance.
@@ -581,6 +620,21 @@ def distance(A, B, metric="riemann", squared=False):
     -------
     d : float or ndarray, shape (n_matrices, 1)
         Distance between A and B.
+
+    See Also
+    --------
+    distance_chol
+    distance_euclid
+    distance_harmonic
+    distance_kullback
+    distance_kullback_right
+    distance_kullback_sym
+    distance_logchol
+    distance_logdet
+    distance_logeuclid
+    distance_riemann
+    distance_thompson
+    distance_wasserstein
 
     References
     ----------

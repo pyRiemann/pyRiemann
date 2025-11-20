@@ -19,6 +19,7 @@ from pyriemann.utils.mean import (
     mean_power,
     mean_poweuclid,
     mean_riemann,
+    mean_thompson,
     mean_wasserstein,
     maskedmean_riemann,
     nanmean_riemann,
@@ -38,6 +39,7 @@ from pyriemann.utils.mean import (
         mean_logeuclid,
         mean_power,
         mean_riemann,
+        mean_thompson,
         mean_wasserstein,
         nanmean_riemann,
     ],
@@ -61,6 +63,7 @@ def test_mean(kind, mean, get_mats):
         mean_logdet,
         mean_power,
         mean_riemann,
+        mean_thompson,
         mean_wasserstein,
         nanmean_riemann,
     ]
@@ -134,6 +137,7 @@ def test_mean_weight_error(mean, get_mats, get_weights):
         mean_logdet,
         mean_power,
         mean_riemann,
+        mean_thompson,
         mean_wasserstein,
         nanmean_riemann
     ]
@@ -200,6 +204,7 @@ def test_mean_of_means(kind, mean, get_mats):
         mean_power,
         mean_poweuclid,
         mean_riemann,
+        mean_thompson,
         mean_wasserstein,
         nanmean_riemann,
     ],
@@ -219,6 +224,7 @@ def test_mean_of_single_matrix(mean, get_mats):
 @pytest.mark.parametrize("mean", [
     mean_logeuclid,
     mean_riemann,
+    # mean_thompson,  # Th 6.16 (4) in [Mostajeran2024], KO
 ])
 def test_mean_property_joint_homogeneity(kind, mean, get_mats, rndstate):
     """Test joint homogeneity"""
@@ -262,7 +268,8 @@ def test_mean_property_invariance_inversion(kind, mean, get_mats):
 @pytest.mark.parametrize("kind, kindQ", [("spd", "orth"), ("hpd", "unit")])
 @pytest.mark.parametrize("mean", [
     mean_logeuclid,  # Th 3.13 in [Arsigny2007]
-    mean_riemann,  # P6 in [Nakamura2009]
+    mean_riemann,
+    mean_thompson,
 ])
 def test_mean_property_invariance_similarity(kind, kindQ, mean,
                                              get_mats, rndstate):
@@ -278,6 +285,7 @@ def test_mean_property_invariance_similarity(kind, kindQ, mean,
 @pytest.mark.parametrize("kind, kindW", [("spd", "inv"), ("hpd", "cinv")])
 @pytest.mark.parametrize("mean", [
     mean_riemann,  # P6 in [Nakamura2009]
+    mean_thompson,  # Th 6.16 (3) in [Mostajeran2024]
 ])
 def test_mean_property_invariance_congruence(kind, kindW, mean, get_mats):
     """Test invariance under congruence, ie an invertible transform"""
@@ -474,6 +482,7 @@ def callable_np_average(X, sample_weight=None):
         ("power", mean_power),
         ("poweuclid", mean_poweuclid),
         ("riemann", mean_riemann),
+        ("thompson", mean_thompson),
         ("wasserstein", mean_wasserstein),
         (callable_np_average, mean_euclid),
     ],

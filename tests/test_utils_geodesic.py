@@ -9,6 +9,7 @@ from pyriemann.utils.geodesic import (
     geodesic_logchol,
     geodesic_logeuclid,
     geodesic_riemann,
+    geodesic_thompson,
     geodesic_wasserstein
 )
 from pyriemann.utils.mean import mean_covariance
@@ -20,6 +21,7 @@ metrics = [
     "logchol",
     "logeuclid",
     "riemann",
+    "thompson",
     "wasserstein"
 ]
 
@@ -27,6 +29,8 @@ metrics = [
 def assert_geodesics(metric, A, B, M):
     assert geodesic(A, B, 0, metric=metric) == approx(A)
     assert geodesic(A, B, 1, metric=metric) == approx(B)
+    if metric == "thompson":
+        pytest.skip()
     assert geodesic(A, B, 0.5, metric=metric) == approx(M)
 
 
@@ -38,6 +42,7 @@ def assert_geodesics(metric, A, B, M):
         geodesic_logchol,
         geodesic_logeuclid,
         geodesic_riemann,
+        geodesic_thompson,
         geodesic_wasserstein,
     ],
 )
@@ -105,6 +110,7 @@ def test_geodesic_properties(kind, metric, get_mats, rndstate):
 @pytest.mark.parametrize("gfun", [
     geodesic_logeuclid,
     geodesic_riemann,
+    geodesic_thompson,  # Prop 4.3 in [Mostajeran2024]
 ])
 def test_geodesic_property_joint_homogeneity(kind, gfun, get_mats, rndstate):
     n_channels = 3
@@ -133,6 +139,7 @@ def test_geodesic_property_invariance_inversion(kind, gfun,
 @pytest.mark.parametrize("kind, kindW", [("spd", "inv"), ("hpd", "cinv")])
 @pytest.mark.parametrize("gfun", [
     geodesic_riemann,
+    geodesic_thompson,  # Prop 4.1 in [Mostajeran2024]
 ])
 def test_geodesic_property_invariance_congruence(kind, kindW, gfun,
                                                  get_mats, rndstate):
@@ -163,3 +170,16 @@ def test_geodesic_riemann(kind, get_mats, rndstate):
     # WG9 in [Nakamura2009]
     det = (np.linalg.det(A) ** (1 - alpha)) * (np.linalg.det(B) ** alpha)
     assert np.linalg.det(G) == approx(det)
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_geodesic_thompson(kind, get_mats, rndstate):
+    """Equivalence with AIR geodesic for 2x2 matrices"""
+    n_channels = 2
+    A, B = get_mats(2, n_channels, kind)
+    alpha = rndstate.uniform(0.01, 0.99)
+
+    # Prop 4.2 in [Mostajeran2024]
+    Gt = geodesic_thompson(A, B, alpha)
+    Gr = geodesic_riemann(A, B, alpha)
+    assert Gt == approx(Gr)
