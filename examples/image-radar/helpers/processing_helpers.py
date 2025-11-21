@@ -10,7 +10,6 @@ from math import ceil
 
 import numpy as np
 from numpy.lib.stride_tricks import sliding_window_view
-from numpy.typing import ArrayLike
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.decomposition import PCA
 
@@ -30,10 +29,10 @@ class PCAImage(BaseEstimator, TransformerMixin):
     def __init__(self, n_components=None):
         self.n_components = n_components
 
-    def fit(self, X: ArrayLike, y=None):
+    def fit(self, X, y=None):
         return self
 
-    def transform(self, X: ArrayLike):
+    def transform(self, X):
         """Reduce 3rd dimension of data using PCA.
 
         Parameters
@@ -59,10 +58,10 @@ class PCAImage(BaseEstimator, TransformerMixin):
         X_new = pca.fit_transform(X_new)
         return X_new.reshape(X.shape[:2] + (X_new.shape[-1],))
 
-    def fit_transform(self, X: ArrayLike, y=None):
+    def fit_transform(self, X, y=None):
         return self.fit(X).transform(X)
 
-    def _complex_pca(self, X: ArrayLike):
+    def _complex_pca(self, X):
         """Center and reduce data by PCA.
 
         Parameters
@@ -103,15 +102,11 @@ class SlidingWindowVectorize(BaseEstimator, TransformerMixin):
         Overlap between windows.
     """
 
-    def __init__(self, window_size: int, overlap: int = 0):
-        assert window_size % 2 == 1, "Window size must be odd."
-        assert overlap >= 0, "Overlap must be positive."
-        assert overlap <= window_size//2, \
-            "Overlap must be smaller or equal than int(window_size/2)."
+    def __init__(self, window_size, overlap=0):
         self.window_size = window_size
         self.overlap = overlap
 
-    def fit(self, X: ArrayLike, y=None):
+    def fit(self, X, y=None):
         """Keep in memory n_rows and n_columns of original data.
 
         Parameters
@@ -124,10 +119,15 @@ class SlidingWindowVectorize(BaseEstimator, TransformerMixin):
         self : SlidingWindowVectorize instance
             The SlidingWindowVectorize instance.
         """
+        assert self.window_size % 2 == 1, "Window size must be odd."
+        assert self.overlap >= 0, "Overlap must be positive."
+        assert self.overlap <= self.window_size // 2, \
+            "Overlap must be smaller or equal than int(window_size/2)."
+
         self.n_rows, self.n_columns, _ = X.shape
         return self
 
-    def transform(self, X: ArrayLike) -> ArrayLike:
+    def transform(self, X):
         """Transform original data with a sliding window.
 
         Transform original three-dimensional data into a sliding window view
@@ -161,10 +161,10 @@ class SlidingWindowVectorize(BaseEstimator, TransformerMixin):
         X_new = X.reshape((-1, X.shape[2], X.shape[3]*X.shape[4]))
         return X_new
 
-    def fit_transform(self, X: ArrayLike, y=None):
+    def fit_transform(self, X, y=None):
         return self.fit(X).transform(X)
 
-    def inverse_predict(self, y: ArrayLike) -> ArrayLike:
+    def inverse_predict(self, y):
         """Transform predictions over sliding windows back to original data.
 
         Transform the predictions over sliding windows data back to original
