@@ -13,6 +13,9 @@ from urllib.request import urlretrieve
 from scipy.io import loadmat
 
 
+logging.basicConfig(level=logging.INFO, force=True)
+
+
 def download_salinas(data_path):
     """Download the Salinas dataset.
 
