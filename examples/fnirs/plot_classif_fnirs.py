@@ -44,7 +44,7 @@ from pyriemann.estimation import (
 from pyriemann.utils.covariance import cov_est_functions
 
 
-logging.basicConfig(level=logging.INFO, force=True)
+logging.getLogger("root").setLevel(logging.INFO)
 
 
 ###############################################################################
