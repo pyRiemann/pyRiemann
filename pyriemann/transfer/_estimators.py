@@ -564,9 +564,11 @@ class TLRotate(TransformerMixin, BaseEstimator):
     n_clusters : int, default=3
         For inputs in tangent space, number of clusters used to split data.
     tol_step : float, default=1e-9
-        For inputs in manifold. Stopping criterion based on the norm of the descent direction.
+        For inputs in manifold. Stopping criterion based on the norm of 
+        the descent direction.
     maxiter : int, default=10_000
-        For inputs in manifold. Maximum number of iterations in the optimization procedure.
+        For inputs in manifold. Maximum number of iterations in the 
+        optimization procedure.
 
     Attributes
     ----------
