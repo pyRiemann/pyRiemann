@@ -20,7 +20,6 @@ specific fNIRS-based awareness detection using related methodology [2]_.
 
 # Author: Tim Näher
 
-import logging
 import os
 from urllib.request import urlretrieve
 
@@ -42,9 +41,7 @@ from pyriemann.estimation import (
     ker_est_functions,
 )
 from pyriemann.utils.covariance import cov_est_functions
-
-
-logging.getLogger().setLevel(logging.INFO)
+from pyriemann.utils._logging import logger
 
 
 ###############################################################################
@@ -334,11 +331,13 @@ def download_fnirs(data_path):
 
     if not os.path.exists(data_path):
         os.makedirs(data_path, exist_ok=True)
+    logger.info("\n")
     for filename in filenames:
         src = f"https://zenodo.org/records/13841869/files/{filename}.npy"
         dst = os.path.join(data_path, f"{filename}.npy")
         if not os.path.exists(dst):
-            logging.info(f"Downloading file {filename} from {src} to {dst}.")
+            msg = f"Downloading file '{filename}' from '{src}' to '{dst}'."
+            logger.info(msg)
             urlretrieve(src, dst)
 
 

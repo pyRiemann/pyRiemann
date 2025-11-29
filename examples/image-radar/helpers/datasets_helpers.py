@@ -6,14 +6,12 @@ Datasets Remote Sensing Helpers
 This file contains helper functions for handling remote sensing datasets
 """
 
-import logging
 import os
 from urllib.request import urlretrieve
 
 from scipy.io import loadmat
 
-
-logging.basicConfig(level=logging.INFO, force=True)
+from pyriemann.utils._logging import logger
 
 
 def download_salinas(data_path):
@@ -34,10 +32,12 @@ def download_salinas(data_path):
 
     if not os.path.exists(data_path):
         os.makedirs(data_path, exist_ok=True)
+    logger.info("\n")
     for src, filename in zip(srcs, filenames):
         dst = os.path.join(data_path, filename)
         if not os.path.exists(dst):
-            logging.info(f"Downloading file {filename} from {src} to {dst}.")
+            msg = f"Downloading file '{filename}' from '{src}' to '{dst}'."
+            logger.info(msg)
             urlretrieve(src, dst)
 
 
@@ -106,5 +106,6 @@ def download_uavsar(data_path, scene):
         os.makedirs(data_path, exist_ok=True)
     dst = os.path.join(data_path, filename)
     if not os.path.exists(dst):
-        logging.info(f"Downloading file {filename} from {src} to {dst}.")
+        logger.info("\n")
+        logger.info(f"Downloading file '{filename}' from '{src}' to '{dst}'.")
         urlretrieve(src, dst)
