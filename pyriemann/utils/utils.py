@@ -78,7 +78,7 @@ def check_metric(metric, expected_keys=["mean", "distance"]):
         return [metric[k] for k in expected_keys]
 
     else:
-        raise TypeError("metric must be str or dict, but got {type(metric)}")
+        raise TypeError(f"metric must be str or dict, but got {type(metric)}")
 
 
 def check_function(fun, functions):

@@ -21,7 +21,6 @@ specific fNIRS-based awareness detection using related methodology [2]_.
 # Author: Tim Näher
 
 import os
-from pathlib import Path
 from urllib.request import urlretrieve
 
 import matplotlib.pyplot as plt
@@ -42,6 +41,7 @@ from pyriemann.estimation import (
     ker_est_functions,
 )
 from pyriemann.utils.covariance import cov_est_functions
+from pyriemann.utils._logging import logger
 
 
 ###############################################################################
@@ -319,32 +319,36 @@ class HybridBlocks(TransformerMixin, BaseEstimator):
         return pd.DataFrame(data_dict)
 
 
+def download_fnirs(data_path):
+    """Download the dataset.
+
+    Parameters
+    ----------
+    data_path : str
+        Path to the destination folder for data download.
+    """
+    filenames = ["X", "y"]
+
+    if not os.path.exists(data_path):
+        os.makedirs(data_path, exist_ok=True)
+    logger.info("\n")
+    for filename in filenames:
+        src = f"https://zenodo.org/records/13841869/files/{filename}.npy"
+        dst = os.path.join(data_path, f"{filename}.npy")
+        if not os.path.exists(dst):
+            msg = f"Downloading file '{filename}' from '{src}' to '{dst}'."
+            logger.info(msg)
+            urlretrieve(src, dst)
+
+
 ###############################################################################
 # Download example data and plot
 # ------------------------------
 
-X_url = "https://zenodo.org/records/13841869/files/X.npy"
-y_url = "https://zenodo.org/records/13841869/files/y.npy"
-
-data_path = Path("./data")
-data_path.mkdir(exist_ok=True)
-X_path, y_path = data_path / "X.npy", data_path / "y.npy"
-
-
-# Function to download the files if they don't already exist
-def download_file(url, file_path):
-    if not os.path.isfile(file_path):
-        print(f"Downloading {file_path} from {url}")
-        urlretrieve(url, file_path)
-        print(f"Downloaded {file_path}")
-
-
-# Download
-download_file(X_url, X_path)
-download_file(y_url, y_path)
-
-# Load the dataset
-X, y = np.load(X_path), np.load(y_path)
+data_path = "./data"
+download_fnirs(data_path)
+X = np.load(os.path.join(data_path, "X.npy"))
+y = np.load(os.path.join(data_path, "y.npy"))
 
 print(
     f"Data loaded: {X.shape[0]} trials, {X.shape[1]} channels, "
@@ -462,7 +466,6 @@ plt.show()
 #        Neurophotonics. 2025 Oct;12(4):045002.
 #        doi:10.1117/1.NPh.12.4.045002. Epub 2025 Oct 15.
 #        PMID: 41104354; PMCID: PMC12523035.
-#
 # .. [2] Bastian L, Näher T, Vorreuther A, Lührs M, Benitez Andonegui A,
 #        Fries P, Riecke L, Sorger B.
 #        Sensitive and specific fNIRS-based approach for awareness detection

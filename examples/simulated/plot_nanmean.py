@@ -1,6 +1,6 @@
 """
 ===============================================================================
-Estimate mean of SPD matrices with NaN values
+Mean of SPD matrices with NaN values
 ===============================================================================
 
 Estimate the mean of SPD matrices corrupted by NaN values [1]_.
