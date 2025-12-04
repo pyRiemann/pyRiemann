@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-from conftest import requires_matplotlib
 from pyriemann.stats import PermutationDistance, PermutationModel
 from pyriemann.spatialfilters import CSP
 
@@ -55,7 +54,6 @@ def test_permutation_pairwise_unique(get_mats, get_labels):
     p.test(X, y)
 
 
-@requires_matplotlib
 def test_permutation_pairwise_plot(get_mats, get_labels):
     """Test one way permutation with estimator"""
     n_matrices, n_channels, n_classes = 6, 3, 2

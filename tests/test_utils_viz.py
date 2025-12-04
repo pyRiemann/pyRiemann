@@ -2,7 +2,6 @@ import matplotlib
 import numpy as np
 import pytest
 
-from conftest import requires_matplotlib
 from pyriemann.utils.viz import (
     plot_embedding,
     plot_cospectra,
@@ -12,7 +11,6 @@ from pyriemann.utils.viz import (
 matplotlib.use("Agg")
 
 
-@requires_matplotlib
 def test_embedding(get_mats):
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "spd")
@@ -22,7 +20,6 @@ def test_embedding(get_mats):
     plot_embedding(X, y=y, metric="euclid")
 
 
-@requires_matplotlib
 def test_embedding_error_raise(get_mats):
     """Test ValueError for unknown embedding type."""
     n_matrices, n_channels = 5, 3
@@ -31,7 +28,6 @@ def test_embedding_error_raise(get_mats):
         plot_embedding(X, y=None, metric="euclid", embd_type="foo")
 
 
-@requires_matplotlib
 def test_cospectra():
     """Test plot_cospectra"""
     n_freqs, n_channels = 16, 3
@@ -40,7 +36,6 @@ def test_cospectra():
     plot_cospectra(X, freqs)
 
 
-@requires_matplotlib
 @pytest.mark.parametrize("display", ["all", "mean", "mean+/-std", "hist"])
 def test_plot_waveforms(display):
     """Test plot_waveforms"""

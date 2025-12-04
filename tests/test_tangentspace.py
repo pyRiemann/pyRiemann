@@ -3,7 +3,6 @@ from numpy.testing import assert_array_equal
 import pytest
 from pytest import approx
 
-from conftest import get_metrics
 from pyriemann.tangentspace import TangentSpace, FGDA
 
 metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
@@ -96,7 +95,7 @@ def test_tangentspaces_metric_wrong_keys(tspace, metric, get_mats, get_labels):
 
 @pytest.mark.parametrize("fit", [True, False])
 @pytest.mark.parametrize("tsupdate", [True, False])
-@pytest.mark.parametrize("metric_mean", get_metrics())
+@pytest.mark.parametrize("metric_mean", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("metric_map", metrics)
 def test_tangentspace_init(fit, tsupdate, metric_mean, metric_map, get_mats):
     n_matrices, n_channels = 4, 3
@@ -133,7 +132,7 @@ def test_tangentspace_matdim_error():
 
 
 @pytest.mark.parametrize("tsupdate", [True, False])
-@pytest.mark.parametrize("metric_mean", get_metrics())
+@pytest.mark.parametrize("metric_mean", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("metric_map", metrics)
 def test_fgda_init(tsupdate, metric_mean, metric_map, get_mats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 3
