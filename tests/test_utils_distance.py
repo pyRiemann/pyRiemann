@@ -326,22 +326,20 @@ def test_distance_thompson_implementation(kind, get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("metric",
-    [
-        "chol",
-        "euclid",
-        "harmonic",
-        "kullback",
-        "kullback_right",
-        "kullback_sym",
-        "logchol",
-        "logdet",
-        "logeuclid",
-        "riemann",
-        "thompson",
-        "wasserstein",
-    ]
-)
+@pytest.mark.parametrize("metric", [
+    "chol",
+    "euclid",
+    "harmonic",
+    "kullback",
+    "kullback_right",
+    "kullback_sym",
+    "logchol",
+    "logdet",
+    "logeuclid",
+    "riemann",
+    "thompson",
+    "wasserstein",
+])
 @pytest.mark.parametrize("Y", [None, True])
 @pytest.mark.parametrize("squared", [False, True])
 def test_pairwise_distance(kind, metric, Y, squared, get_mats):
