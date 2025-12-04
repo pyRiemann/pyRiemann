@@ -5,7 +5,6 @@ from pytest import approx
 from scipy.linalg import eigvalsh
 from scipy.spatial.distance import euclidean, mahalanobis
 
-from conftest import get_distances
 from pyriemann.utils.distance import (
     distance_chol,
     distance_euclid,
@@ -208,7 +207,7 @@ def test_distance_property_invariance_rotation(kind, kindQ, dist, get_mats):
 @pytest.mark.parametrize("dist", [
     distance_logeuclid,  # Prop 3.11 in [Arsigny2007]
     distance_riemann,
-    distance_thompson,  # Eq(4.7b) in [Sra2015]
+    distance_thompson,
 ])
 def test_distance_property_invariance_similarity(kind, kindQ, dist,
                                                  get_mats, rndstate):
@@ -327,10 +326,25 @@ def test_distance_thompson_implementation(kind, get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("dist", get_distances())
+@pytest.mark.parametrize("metric",
+    [
+        "chol",
+        "euclid",
+        "harmonic",
+        "kullback",
+        "kullback_right",
+        "kullback_sym",
+        "logchol",
+        "logdet",
+        "logeuclid",
+        "riemann",
+        "thompson",
+        "wasserstein",
+    ]
+)
 @pytest.mark.parametrize("Y", [None, True])
 @pytest.mark.parametrize("squared", [False, True])
-def test_pairwise_distance(kind, dist, Y, squared, get_mats):
+def test_pairwise_distance(kind, metric, Y, squared, get_mats):
     n_matrices_X, n_matrices_Y, n_channels = 6, 4, 5
     X = get_mats(n_matrices_X, n_channels, kind)
     if Y is None:
@@ -340,19 +354,19 @@ def test_pairwise_distance(kind, dist, Y, squared, get_mats):
         Y = get_mats(n_matrices_Y, n_channels, kind)
         Y_ = Y
 
-    pdist = pairwise_distance(X, Y, metric=dist, squared=squared)
+    pdist = pairwise_distance(X, Y, metric=metric, squared=squared)
     assert pdist.shape == (n_matrices_X, n_matrices_Y)
 
     for i in range(n_matrices_X):
         for j in range(n_matrices_Y):
             assert np.isclose(
                 pdist[i, j],
-                distance(X[i], Y_[j], metric=dist, squared=squared),
+                distance(X[i], Y_[j], metric=metric, squared=squared),
                 atol=1e-5,
                 rtol=1e-5,
             )
 
-    if Y is None and dist not in ["kullback", "kullback_right"]:
+    if Y is None and metric not in ["kullback", "kullback_right"]:
         assert is_sym(pdist)
     else:
         assert not is_sym(pdist)

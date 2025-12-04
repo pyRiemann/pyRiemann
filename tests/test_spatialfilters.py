@@ -2,7 +2,6 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 
-from conftest import get_metrics
 from pyriemann.spatialfilters import Xdawn, CSP, SPoC, BilinearFilter, AJDC
 
 spfilts = [Xdawn, CSP, SPoC, BilinearFilter, AJDC]
@@ -166,7 +165,7 @@ def test_xdawn_baselinecov(n_channels, use_baseline_cov, get_mats, get_labels):
 
 
 @pytest.mark.parametrize("n_filters", [3, 4, 5])
-@pytest.mark.parametrize("metric", get_metrics())
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("log", [True, False])
 @pytest.mark.parametrize("ajd_method", ["ajd_pham", "rjd", "uwedge"])
 def test_csp(n_filters, metric, log, ajd_method, get_mats, get_labels):

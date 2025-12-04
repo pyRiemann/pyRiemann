@@ -11,7 +11,6 @@ from sklearn.dummy import DummyClassifier
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.pipeline import make_pipeline
 
-from conftest import get_distances, get_means, get_metrics
 from pyriemann.estimation import Covariances
 from pyriemann.utils.kernel import kernel
 from pyriemann.utils.mean import mean_covariance
@@ -201,7 +200,7 @@ def test_metric_errors(classif, metric, get_mats, get_labels):
 
 
 @pytest.mark.parametrize("classif", classifs)
-@pytest.mark.parametrize("metric", get_metrics())
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_metric_str(classif, metric, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
@@ -224,8 +223,12 @@ def call_dist(A, B, squared=False):
     return euclidean(A.flatten(), B.flatten())
 
 
-@pytest.mark.parametrize("metric_mean", list(get_means()) + [call_mean])
-@pytest.mark.parametrize("metric_dist", list(get_distances()) + [call_dist])
+@pytest.mark.parametrize("metric_mean", [
+    "euclid", "logeuclid", "riemann", call_mean
+])
+@pytest.mark.parametrize("metric_dist", [
+    "euclid", "logeuclid", "riemann", call_dist
+])
 @pytest.mark.parametrize("n_classes", [2, 3, 4])
 def test_mdm(metric_mean, metric_dist, n_classes, get_mats, get_labels):
     n_matrices, n_channels = 4 * n_classes, 3
@@ -250,8 +253,8 @@ def test_mdm_hpd(kind, metric, get_mats, get_labels):
     clf.fit(X, y).predict_proba(X)
 
 
-@pytest.mark.parametrize("metric_mean", get_means())
-@pytest.mark.parametrize("metric_dist", get_distances())
+@pytest.mark.parametrize("metric_mean", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric_dist", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("metric_map", [
     "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
 ])
@@ -284,7 +287,7 @@ def test_knn(k, get_mats, get_labels):
         assert_array_equal(y, preds)
 
 
-@pytest.mark.parametrize("metric_mean", get_means())
+@pytest.mark.parametrize("metric_mean", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("metric_map", [
     "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
 ])
@@ -433,7 +436,7 @@ def test_svc_kernel_error(get_mats, get_labels):
 @pytest.mark.parametrize("method_combination", [
     "sum_means", "inf_means", None
 ])
-@pytest.mark.parametrize("metric", get_distances())
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_meanfield(get_mats, get_labels,
                    power_list, method_combination, metric):
     n_powers = len(power_list)
@@ -476,8 +479,8 @@ def test_meanfield_transformer(get_mats, get_labels, power_list):
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("n_classes", [1, 2, 3])
-@pytest.mark.parametrize("metric_mean", get_means())
-@pytest.mark.parametrize("metric_dist", get_distances())
+@pytest.mark.parametrize("metric_mean", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.parametrize("metric_dist", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("exponent", [1, 2])
 def test_class_distinctiveness(kind, n_classes, metric_mean, metric_dist,
                                exponent, get_mats, get_labels):

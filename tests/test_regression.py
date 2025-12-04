@@ -6,7 +6,6 @@ import pytest
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.pipeline import make_pipeline
 
-from conftest import get_distances, get_means, get_metrics
 from pyriemann.estimation import Covariances
 from pyriemann.regression import SVR, KNearestNeighborRegressor
 from pyriemann.utils.kernel import kernel
@@ -91,8 +90,8 @@ def test_metric_dict_error(regres, mean, dist, get_mats, get_targets):
 
 
 @pytest.mark.parametrize("regres", [KNearestNeighborRegressor])
-@pytest.mark.parametrize("mean", get_means())
-@pytest.mark.parametrize("dist", get_distances())
+@pytest.mark.parametrize("mean", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.parametrize("dist", ["euclid", "logeuclid", "riemann"])
 def test_metric_dist(regres, mean, dist, get_mats, get_targets):
     n_matrices, n_channels = 4, 3
     X = get_mats(n_matrices, n_channels, "spd")
@@ -113,7 +112,7 @@ def test_metric_wrong_keys(regres, metric, get_mats, get_targets):
 
 
 @pytest.mark.parametrize("regres", regress)
-@pytest.mark.parametrize("metric", get_metrics())
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_metric_str(regres, metric, get_mats, get_targets):
     n_matrices, n_channels = 6, 3
     X = get_mats(n_matrices, n_channels, "spd")

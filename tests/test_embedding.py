@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 from sklearn.neighbors import NearestCentroid
 
-from conftest import get_metrics
 from pyriemann.datasets import make_gaussian_blobs
 from pyriemann.embedding import (
     SpectralEmbedding,
@@ -130,7 +129,7 @@ def test_embd_metric_error(embd, get_mats):
         embd.fit(X)
 
 
-@pytest.mark.parametrize("metric", get_metrics())
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("eps", [None, 0.1])
 def test_spectral_embedding_parameters(metric, eps, get_mats):
     """Test SpectralEmbedding."""

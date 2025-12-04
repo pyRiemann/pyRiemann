@@ -2,7 +2,6 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 
-from conftest import get_metrics
 from pyriemann.clustering import (
     Kmeans,
     KmeansPerClassTransform,
@@ -268,7 +267,7 @@ def clt_fittransform_per_class(clust, X, n_clusters, y):
 @pytest.mark.parametrize("clust", [Kmeans, KmeansPerClassTransform])
 @pytest.mark.parametrize("init", ["random", "ndarray"])
 @pytest.mark.parametrize("n_init", [1, 5])
-@pytest.mark.parametrize("metric", get_metrics())
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_kmeans(clust, init, n_init, metric, get_mats, get_labels):
     n_clusters, n_classes, n_matrices, n_channels = 2, 3, 9, 5
     X = get_mats(n_matrices, n_channels, "spd")
