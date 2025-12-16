@@ -938,7 +938,11 @@ class TLEstimator(BaseEstimator):
         else:
             self.estimator.fit(X_dec, y_dec, sample_weight=weights)
 
+        self._is_fitted = True
         return self
+
+    def __sklearn_is_fitted__(self):
+        return hasattr(self, "_is_fitted") and self._is_fitted
 
     def predict(self, X):
         """Get the predictions.
