@@ -22,10 +22,19 @@ from pyriemann.classification import (
     TSClassifier,
     SVC,
     MeanField,
+    NearestConvexHull,
     class_distinctiveness,
 )
 
-classifs = [MDM, FgMDM, KNearestNeighbor, TSClassifier, SVC, MeanField]
+classifs = [
+    MDM,
+    FgMDM,
+    KNearestNeighbor,
+    TSClassifier,
+    SVC,
+    MeanField,
+    NearestConvexHull,
+]
 
 
 @pytest.mark.parametrize(
@@ -62,7 +71,8 @@ def test_mode(X, axis, expected):
 @pytest.mark.parametrize("classif", classifs)
 def test_classifier(kind, n_classes, classif,
                     get_mats, get_labels, get_weights):
-    if kind == "hpd" and classif in [FgMDM, TSClassifier, SVC]:
+    if kind == "hpd" and \
+            classif in [FgMDM, TSClassifier, SVC, NearestConvexHull]:
         pytest.skip()
     if n_classes == 2:
         n_matrices, n_channels = 6, 3
@@ -202,17 +212,13 @@ def test_metric_errors(classif, metric, get_mats, get_labels):
 @pytest.mark.parametrize("classif", classifs)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_metric_str(classif, metric, get_mats, get_labels):
+    if classif is NearestConvexHull and metric in ["euclid", "riemann"]:
+        pytest.skip()
     n_matrices, n_channels, n_classes = 6, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_labels(n_matrices, n_classes)
-
     clf = classif(metric=metric)
-    if classif in [SVC, FgMDM, TSClassifier] \
-            and metric not in ["euclid", "logchol", "logeuclid", "riemann"]:
-        with pytest.raises((KeyError, ValueError)):
-            clf.fit(X, y).predict(X)
-    else:
-        clf.fit(X, y).predict(X)
+    clf.fit(X, y).predict(X)
 
 
 def call_mean(X, sample_weight=None):

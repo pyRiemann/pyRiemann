@@ -39,6 +39,8 @@ v0.10.dev
 
 - Fix sklearn error ``This Pipeline instance is not fitted yet``. :pr:`406` by :user:`qbarthelemy`
 
+- Add :class:`pyriemann.classification.NearestConvexHull`. :pr:`405` by :user:`qbarthelemy`
+
 v0.9 (July 2025)
 ----------------
 
