@@ -982,8 +982,7 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     metric : string, default="logeuclid"
         Current implementation is available only for log-Euclidean distance.
     n_jobs : int, default=1
-        Number of jobs to use for the computation. This works by computing
-        each of the class centroid in parallel.
+        Number of jobs to use for the computation.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
         used at all, which is useful for debugging. For n_jobs below -1,
         (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
