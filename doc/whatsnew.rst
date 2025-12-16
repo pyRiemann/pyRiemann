@@ -37,6 +37,8 @@ v0.10.dev
 - Add Thompson metric: :func:`pyriemann.utils.distance.distance_thompson`, :func:`pyriemann.utils.geodesic.geodesic_thompson`,
   and :func:`pyriemann.utils.mean.mean_thompson`. :pr:`401` by :user:`qbarthelemy`
 
+- Fix sklearn error ``This Pipeline instance is not fitted yet``. :pr:`406` by :user:`qbarthelemy`
+
 v0.9 (July 2025)
 ----------------
 
@@ -52,7 +54,7 @@ v0.9 (July 2025)
 
 - Avoid duplicating code when using joblib. :pr:`359` by :user:`qbarthelemy`
 
-- Fix sklearn warning. :pr:`358` by :user:`qbarthelemy`
+- Fix sklearn warning ``This Pipeline instance is not fitted yet``. :pr:`358` by :user:`qbarthelemy`
 
 - Add :func:`pyriemann.utils.tangentspace.log_map` and :func:`pyriemann.utils.tangentspace.exp_map`. :pr:`363` by :user:`qbarthelemy`
 
