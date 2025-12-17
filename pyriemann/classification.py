@@ -987,6 +987,8 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         used at all, which is useful for debugging. For n_jobs below -1,
         (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
         are used.
+    method : str, default="SLSQP"
+        Type of solver, see [2]_.
 
     Attributes
     ----------
@@ -1011,12 +1013,14 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         <https://arxiv.org/pdf/1806.05343>`_
         K. Zhao, A. Wiliem, S. Chen, and B. C. Lovell,
         Image and Vision Computing, 2019.
-    """
+    .. [2] https://docs.scipy.org/doc/scipy/reference/generated/scipy.optimize.minimize.html
+    """  # noqa
 
-    def __init__(self, metric="logeuclid", n_jobs=1):
+    def __init__(self, metric="logeuclid", n_jobs=1, method="SLSQP"):
         """Init."""
         self.metric = metric
         self.n_jobs = n_jobs
+        self.method = method
 
     def fit(self, X, y, sample_weight=None):
         """Fit (store the training data).
@@ -1118,7 +1122,7 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         res = minimize(
             fun,
             w0,
-            method="SLSQP",
+            method=self.method,
             jac=jac,
             bounds=[(0.0, None)] * n_matrices,
             constraints=cons,

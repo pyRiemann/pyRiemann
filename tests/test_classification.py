@@ -25,6 +25,7 @@ from pyriemann.classification import (
     NearestConvexHull,
     class_distinctiveness,
 )
+from pyriemann.datasets import make_gaussian_blobs
 
 classifs = [
     MDM,
@@ -481,6 +482,29 @@ def test_meanfield_transformer(get_mats, get_labels, power_list):
     )
     pip.fit(X, y)
     pip.predict(X)
+
+
+def test_nch(rndstate):
+    n_matrices, n_channels = 50, 3
+    X, y = make_gaussian_blobs(
+        n_matrices=n_matrices,
+        n_dim=n_channels,
+        class_sep=10., class_disp=1.0,
+        random_state=rndstate,
+    )
+
+    nch = NearestConvexHull().fit(X, y)
+    assert_array_equal(nch.mats_, X)
+    assert_array_equal(nch.classmats_, y)
+
+    X_ = X[y == nch.classes_[0]]
+    dist = nch.transform(X_)
+    assert np.all(dist[:, 0] < dist[:, 1])
+
+    # distance to hull should be equal to zero for the center of training set
+    M = mean_covariance(X_)
+    dist = nch.transform(M[np.newaxis, :, :])
+    assert dist[0, 0] <= 1e-3
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
