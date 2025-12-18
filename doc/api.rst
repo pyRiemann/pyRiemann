@@ -56,6 +56,7 @@ Classification
     KNearestNeighbor
     SVC
     MeanField
+    NearestConvexHull
 
 .. autosummary::
     :toctree: generated/

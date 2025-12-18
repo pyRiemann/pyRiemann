@@ -9,7 +9,7 @@ import sklearn
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.cluster import KMeans as sklearnKMeans
 
-from .base import SpdClassifMixin, SpdClustMixin, SpdTransfMixin
+from ._base import SpdClassifMixin, SpdClustMixin, SpdTransfMixin
 from .classification import MDM
 from .utils.distance import distance, pairwise_distance
 from .utils.mean import mean_covariance

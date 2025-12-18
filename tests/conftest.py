@@ -38,6 +38,11 @@ def get_weights(rndstate):
 @pytest.fixture
 def get_labels():
     def _get_labels(n_matrices, n_classes):
+        if n_matrices % n_classes != 0:
+            raise ValueError(
+                "Number of matrices must be divisible by number of classes."
+            )
+
         return np.arange(n_classes).repeat(n_matrices // n_classes)
 
     return _get_labels

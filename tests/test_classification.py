@@ -22,10 +22,20 @@ from pyriemann.classification import (
     TSClassifier,
     SVC,
     MeanField,
+    NearestConvexHull,
     class_distinctiveness,
 )
+from pyriemann.datasets import make_gaussian_blobs
 
-classifs = [MDM, FgMDM, KNearestNeighbor, TSClassifier, SVC, MeanField]
+classifs = [
+    MDM,
+    FgMDM,
+    KNearestNeighbor,
+    TSClassifier,
+    SVC,
+    MeanField,
+    NearestConvexHull,
+]
 
 
 @pytest.mark.parametrize(
@@ -62,7 +72,8 @@ def test_mode(X, axis, expected):
 @pytest.mark.parametrize("classif", classifs)
 def test_classifier(kind, n_classes, classif,
                     get_mats, get_labels, get_weights):
-    if kind == "hpd" and classif in [FgMDM, TSClassifier, SVC]:
+    if kind == "hpd" and \
+            classif in [FgMDM, TSClassifier, SVC, NearestConvexHull]:
         pytest.skip()
     if n_classes == 2:
         n_matrices, n_channels = 6, 3
@@ -202,17 +213,13 @@ def test_metric_errors(classif, metric, get_mats, get_labels):
 @pytest.mark.parametrize("classif", classifs)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_metric_str(classif, metric, get_mats, get_labels):
+    if classif is NearestConvexHull and metric in ["euclid", "riemann"]:
+        pytest.skip()
     n_matrices, n_channels, n_classes = 6, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_labels(n_matrices, n_classes)
-
     clf = classif(metric=metric)
-    if classif in [SVC, FgMDM, TSClassifier] \
-            and metric not in ["euclid", "logchol", "logeuclid", "riemann"]:
-        with pytest.raises((KeyError, ValueError)):
-            clf.fit(X, y).predict(X)
-    else:
-        clf.fit(X, y).predict(X)
+    clf.fit(X, y).predict(X)
 
 
 def call_mean(X, sample_weight=None):
@@ -475,6 +482,29 @@ def test_meanfield_transformer(get_mats, get_labels, power_list):
     )
     pip.fit(X, y)
     pip.predict(X)
+
+
+def test_nch(rndstate):
+    n_matrices, n_channels = 50, 3
+    X, y = make_gaussian_blobs(
+        n_matrices=n_matrices,
+        n_dim=n_channels,
+        class_sep=10., class_disp=1.0,
+        random_state=rndstate,
+    )
+
+    nch = NearestConvexHull().fit(X, y)
+    assert_array_equal(nch.mats_, X)
+    assert_array_equal(nch.classmats_, y)
+
+    X_ = X[y == nch.classes_[0]]
+    dist = nch.transform(X_)
+    assert np.all(dist[:, 0] < dist[:, 1])
+
+    # distance to hull should be equal to zero for the center of training set
+    M = mean_covariance(X_)
+    dist = nch.transform(M[np.newaxis, :, :])
+    assert dist[0, 0] <= 1e-3
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
