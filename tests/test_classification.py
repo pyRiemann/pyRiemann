@@ -121,9 +121,9 @@ def clf_predict_proba(classif, X, y):
     clf = classif()
     if hasattr(clf, "probability"):
         clf.set_params(**{"probability": True})
-    proba = clf.fit(X, y).predict_proba(X)
-    assert proba.shape == (n_matrices, n_classes)
-    assert proba.sum(axis=1) == approx(np.ones(n_matrices))
+    prob = clf.fit(X, y).predict_proba(X)
+    assert prob.shape == (n_matrices, n_classes)
+    assert prob.sum(axis=1) == approx(np.ones(n_matrices))
 
 
 def clf_score(classif, X, y):
@@ -465,8 +465,8 @@ def test_meanfield(get_mats, get_labels,
         assert transf.shape == (n_matrices, n_classes)
         pred = mf.predict(X)
         assert pred.shape == (n_matrices,)
-        proba = mf.predict_proba(X)
-        assert proba.shape == (n_matrices, n_classes)
+        prob = mf.predict_proba(X)
+        assert prob.shape == (n_matrices, n_classes)
         mf.score(X, y)
 
 

@@ -88,6 +88,7 @@ Clustering
     Kmeans
     KmeansPerClassTransform
     MeanShift
+    GaussianMixture
     Potato
     PotatoField
 

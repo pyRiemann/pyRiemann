@@ -1,23 +1,35 @@
 import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
+from pytest import approx
 
 from pyriemann.clustering import (
     Kmeans,
     KmeansPerClassTransform,
     MeanShift,
+    GaussianMixture,
     Potato,
     PotatoField,
 )
 
-clusts = [Kmeans, KmeansPerClassTransform, MeanShift, Potato, PotatoField]
+clusts = [
+    Kmeans,
+    KmeansPerClassTransform,
+    MeanShift,
+    GaussianMixture,
+    Potato,
+    PotatoField,
+]
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("clust", clusts)
 def test_clustering_two_clusters(kind, clust,
                                  get_mats, get_labels, get_weights):
-    n_clusters, n_matrices, n_channels = 2, 6, 4
+    if kind == "hpd" and clust in [GaussianMixture]:
+        pytest.skip()
+
+    n_clusters, n_matrices, n_channels = 2, 40, 3
     X = get_mats(n_matrices, n_channels, kind)
     weights = get_weights(n_matrices)
 
@@ -44,6 +56,12 @@ def test_clustering_two_clusters(kind, clust,
         clt_fit(clust, X, n_clusters, None)
         clt_predict(clust, X)
         clt_fitpredict(clust, X)
+
+    if clust is GaussianMixture:
+        clt_fit(clust, X, n_clusters, None)
+        clt_predict(clust, X)
+        clt_fitpredict(clust, X)
+        clt_predict_proba(clust, X)
 
     if clust is Potato:
         clt_fit(clust, X, n_clusters, None)
@@ -74,7 +92,10 @@ def test_clustering_two_clusters(kind, clust,
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("clust", clusts)
 def test_clustering_three_clusters(kind, clust, get_mats, get_labels):
-    n_clusters, n_matrices, n_channels = 3, 6, 2
+    if kind == "hpd" and clust in [GaussianMixture]:
+        pytest.skip()
+
+    n_clusters, n_matrices, n_channels = 3, 30, 2
     X = get_mats(n_matrices, n_channels, kind)
 
     if clust is Kmeans:
@@ -96,6 +117,12 @@ def test_clustering_three_clusters(kind, clust, get_mats, get_labels):
         clt_fit(clust, X, n_clusters, None)
         clt_predict(clust, X)
 
+    if clust is GaussianMixture:
+        clt_fit(clust, X, n_clusters, None)
+        clt_predict(clust, X)
+        clt_fitpredict(clust, X)
+        clt_predict_proba(clust, X)
+
 
 def clt_fit(clust, X, n_clusters, labels):
     n_matrices, n_channels, _ = X.shape
@@ -109,14 +136,22 @@ def clt_fit(clust, X, n_clusters, labels):
         assert len(clt.mdm_.covmeans_) <= n_clusters
         assert clt.mdm_.covmeans_.shape[1:] == (n_channels, n_channels)
         assert_array_equal(clt.mdm_.covmeans_, clt.centroids())
+        return
     if clust is KmeansPerClassTransform:
         assert clt.classes_.shape == (n_classes,)
         assert len(clt.covmeans_) <= n_clusters * n_classes
         assert clt.covmeans_.shape[1:] == (n_channels, n_channels)
+        return
     if clust is MeanShift:
         assert clt.labels_.shape == (n_matrices,)
         assert len(clt.modes_) >= 1
         assert clt.modes_.shape[1:] == (n_channels, n_channels)
+        return
+    if clust is GaussianMixture:
+        assert len(clt.components_) == clt.n_components
+        assert clt.weights_.shape == (clt.n_components,)
+        assert clt.weights_.sum() == approx(1)
+        return
     if clust is Potato:
         assert clt.covmean_.shape == (n_channels, n_channels)
 
@@ -194,6 +229,8 @@ def clt_fitpredict(clust, X, n_clusters=None):
     if hasattr(clt, "random_state"):
         clt.set_params(**{"random_state": 42})
     pred = clt.fit(X).predict(X)
+    if hasattr(clt, "random_state"):
+        clt.set_params(**{"random_state": 42})
     pred2 = clt.fit_predict(X)
     assert_array_equal(pred, pred2)
 
@@ -206,8 +243,10 @@ def clt_predict_proba(clust, X, n=None):
         n_matrices = len(X[0])
         clt = clust(n_potatoes=n)
     clt.fit(X)
-    proba = clt.predict_proba(X)
-    assert proba.shape == (n_matrices,)
+    prob = clt.predict_proba(X)
+    assert prob.shape[0] == n_matrices
+    if prob.ndim > 1:
+        assert prob.sum(axis=-1) == approx(np.ones(n_matrices))
 
 
 def clt_partial_fit(clust, X, n=None):
@@ -316,6 +355,21 @@ def test_meanshift(kernel, metric, get_mats, get_labels):
         metric=metric,
     )
     clt.fit(X)
+
+
+@pytest.mark.parametrize("n_components", [2, 4])
+def test_gmm_init(n_components, get_mats, get_weights):
+    n_matrices, n_channels = 50, 2
+    X = get_mats(n_matrices, n_channels, "spd")
+    means_init = get_mats(n_components, n_channels, "spd")
+    weights_init = get_weights(n_components)
+
+    gmm = GaussianMixture(
+        n_components=n_components,
+        means_init=means_init,
+        weights_init=weights_init,
+    )
+    gmm.fit(X)
 
 
 @pytest.mark.parametrize("use_weight", [True, False])

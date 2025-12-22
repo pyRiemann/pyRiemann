@@ -46,8 +46,8 @@ def reg_fit(regres, X, y, weights):
 
 def reg_predict(regres, X, y):
     reg = regres()
-    predicted = reg.fit(X, y).predict(X)
-    assert predicted.shape == (len(y),)
+    pred = reg.fit(X, y).predict(X)
+    assert pred.shape == (len(y),)
 
 
 def reg_fit_independence(regres, X, y):

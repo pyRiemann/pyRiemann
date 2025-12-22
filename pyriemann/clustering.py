@@ -8,14 +8,16 @@ from scipy.stats import norm, chi2
 import sklearn
 from sklearn.base import BaseEstimator, TransformerMixin, clone
 from sklearn.cluster import KMeans as sklearnKMeans
+from sklearn.utils.validation import check_random_state
 
 from ._base import SpdClassifMixin, SpdClustMixin, SpdTransfMixin
 from .classification import MDM
-from .utils.distance import distance, pairwise_distance
+from .utils.distance import distance, pairwise_distance, distance_mahalanobis
 from .utils.mean import mean_covariance
 from .utils.geodesic import geodesic
 from .utils.tangentspace import exp_map, log_map
-from .utils.utils import check_metric, check_function
+from .utils.utils import check_metric, check_function, check_weights
+from .utils.tangentspace import tangent_space
 
 
 def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
@@ -341,6 +343,9 @@ class KmeansPerClassTransform(SpdTransfMixin, BaseEstimator):
         return mdm._predict_distances(X)
 
 
+###############################################################################
+
+
 @np.vectorize
 def kernel_normal(x):
     return np.exp(- x ** 2)
@@ -523,6 +528,300 @@ class MeanShift(SpdClustMixin, BaseEstimator):
         )
         dist = np.concatenate(dist, axis=1)
         return dist.argmin(axis=1)
+
+
+###############################################################################
+
+
+class Gaussian():
+    """Gaussian model.
+
+    Gaussian model for Riemannian manifold of SPD matrices [1]_,
+    defined with a mean in manifold and a covariance in tangent space.
+
+    Parameters
+    ----------
+    n : integer
+        Dimension of the matrices.
+    mu : ndarray, shape (n, n)
+        Mean of the Gaussian, in manifold.
+    sigma : None | ndarray, shape (n * (n + 1) / 2, n * (n + 1) / 2), \
+            default=None
+        Covariance of the Gaussian, in tangent space.
+        If None, it uses identity matrix.
+
+    Notes
+    -----
+    .. versionadded:: 0.10
+
+    References
+    ----------
+    .. [1] `Intrinsic statistics on Riemannian manifolds: Basic tools for
+        geometric measurements
+        <https://www.cis.jhu.edu/~tingli/App_of_Lie_group/Intrinsic%20Statistics%20on%20Riemannian%20Manifolds.pdf>`_
+        X. Pennec. Journal of Mathematical Imaging and Vision, 2006
+    """  # noqa
+    def __init__(self, n, mu, sigma=None):
+        self.n = n
+        self.mu = mu
+        if sigma is None:
+            sigma = np.eye(n * (n + 1) // 2)
+        self.sigma = sigma
+
+    def pdf(self, X, reg=1e-20):
+        """Compute approximate probability density function of matrices.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n, n)
+            Set of SPD matrices.
+
+        Returns
+        -------
+        pdf : ndarray, shape (n_matrices,)
+            Probability density function of each matrix.
+        """
+        TangVec = tangent_space(X, self.mu)
+        dist = distance_mahalanobis(TangVec.T, self.sigma, squared=True)
+        num = np.exp(-0.5 * dist)
+        # denom = np.sqrt(((2 * np.pi)**self.n) * np.linalg.det(self.sigma))
+        # but (2pi)^n will be simplified with upcoming normalizations
+        denom = np.sqrt(np.linalg.det(self.sigma))
+        return num / (denom + reg)
+
+    def update_mean(self, X, sample_weight):
+        """Update mean in manifold.
+
+        Compute weighted mean of matrices, initialized on previous mean.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n, n)
+            Set of SPD matrices.
+        sample_weight : ndarray, shape (n_matrices,)
+            Weights for each matrix.
+        """
+        self.mu = mean_covariance(X, sample_weight=sample_weight, init=self.mu)
+
+    def update_covariance(self, X, sample_weight, reg=1e-16):
+        """Update covariance in tangent space.
+
+        Compute weighted covariance of tangent vectors.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n, n)
+            Set of SPD matrices.
+        sample_weight : ndarray, shape (n_matrices,)
+            Weights for each matrix.
+        """
+        TangVec = tangent_space(X, self.mu)
+        sigma = TangVec.T @ (sample_weight[:, np.newaxis] * TangVec)
+        self.sigma = sigma / (sample_weight.sum() + reg)
+
+
+class GaussianMixture(SpdClustMixin, BaseEstimator):
+    """Gaussian mixture model.
+
+    Representation of a Gaussian mixture model probability distribution for SPD
+    matrices.
+
+    Parameters
+    ----------
+    n_components : integer, default=3
+        The number of mixture components.
+    weights_init : None | ndarray, shape (n_components,), defaut=None
+        Initial weights. If None, it randomly selects training matrices.
+    means_init : None | ndarray, shape (n_components,), defaut=None
+        Initial means of Gaussians. If None, it uses identity matrices.
+    tol : float, default=1e-5
+        Tolerance to stop the EM algorithm.
+    maxiter : int, default=100
+        Maximum number of iterations of EM algorithm.
+    random_state : None | integer | np.RandomState, default=None
+        The generator used to initialize the Gaussian models. If an integer is
+        given, it fixes the seed. Defaults to the global numpy random
+        number generator.
+
+    Attributes
+    ----------
+    weights_ : ndarray, shape (n_components,)
+        The weights of each mixture components.
+    components_ : list, len (n_components)
+        The components of the mixture.
+
+    Notes
+    -----
+    .. versionadded:: 0.10
+
+    References
+    ----------
+    .. [1] `Gaussian mixture regression on symmetric positive definite matrices
+        manifolds: Application to wrist motion estimation with sEMG
+        <https://calinon.ch/papers/Jaquier-IROS2017.pdf>`_
+        N. Jacquier & S. Calinon. IEEE IROS, 2017
+    """
+    def __init__(
+        self,
+        n_components=3,
+        weights_init=None,
+        means_init=None,
+        tol=1e-5,
+        maxiter=100,
+        random_state=None
+    ):
+        """Init."""
+        self.n_components = n_components
+        self.weights_init = weights_init
+        self.means_init = means_init
+        self.tol = tol
+        self.maxiter = maxiter
+        self.random_state = random_state
+
+    def _get_proba(self, X, reg=1e-16):
+        """Compute a posteriori probabilities.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+
+        Returns
+        -------
+        prob : ndarray, shape (n_matrices, n_components)
+            Probability of each component given matrix.
+        """
+        num = np.zeros((X.shape[0], self.n_components))
+        for k in range(self.n_components):
+            num[:, k] = self.weights_[k] * self.components_[k].pdf(X)
+        prob = num / (num.sum(axis=1)[:, np.newaxis] + reg)
+        return prob
+
+    def fit(self, X, y=None):
+        """Fit the mixture with EM.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        self : GaussianMixture instance
+            The GaussianMixture instance.
+        """
+        n_matrices, n_channels, _ = X.shape
+        if (n_channels * (n_channels + 1) // 2 > n_matrices):
+            raise ValueError("Not enough matrices for training GMM.")
+
+        # initialization
+        self.random_state = check_random_state(self.random_state)
+
+        if isinstance(self.means_init, np.ndarray) and self.means_init.shape \
+                == (self.n_components, n_channels, n_channels):
+            means_init = self.means_init
+        else:
+            inds = self.random_state.randint(
+                n_matrices,
+                size=(self.n_components,)
+            )
+            means_init = X[inds]
+
+        self.components_ = []
+        for k in range(self.n_components):
+            self.components_.append(Gaussian(n_channels, means_init[k]))
+
+        self.weights_ = check_weights(self.weights_init, self.n_components)
+
+        # expectation-maximization
+        crit = 0
+        for _ in range(self.maxiter):
+            # e-step
+            prob = self._get_proba(X)
+
+            # m-step
+            for k in range(self.n_components):
+                self.components_[k].update_mean(X, prob[:, k])
+                self.components_[k].update_covariance(X, prob[:, k])
+            self.weights_ = prob.sum(axis=0) / n_matrices
+            # re-normalization (due to approximated Gaussian pdf?)
+            self.weights_ = self.weights_ / self.weights_.sum()
+
+            # check convergence
+            prob = np.clip(prob, a_min=1e-10, a_max=1)
+            crit_new = np.sum(-np.log(prob))
+            if abs(crit_new - crit) < self.tol:
+                break
+            crit = crit_new
+        else:
+            warnings.warn("EM convergence not reached")
+
+        return self
+
+    def predict_proba(self, X):
+        """Predict probabilities.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+
+        Returns
+        -------
+        prob : ndarray, shape (n_matrices, n_components)
+            Probabilities for each component.
+        """
+        return self._get_proba(X)
+
+    def predict(self, X):
+        """Get the predictions.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+
+        Returns
+        -------
+        pred : ndarray of int, shape (n_matrices,)
+            Predictions for each matrix.
+        """
+        prob = self._get_proba(X)
+        return np.argmax(prob, axis=1)
+
+# from datasets import sample_gaussian_spd
+    # def sample(self, n_matrices=1):
+    #     """Generate random matrices from the fitted Gaussian distribution.
+    #
+    #     Parameters
+    #     ----------
+    #     n_matrices : int, default=1
+    #         Number of matrices to generate.
+    #
+    #     Returns
+    #     -------
+    #     X : array, shape (n_matrices, n_channels, n_channels)
+    #         Randomly generated matrices.
+    #     y : array, shape (n_matrices,)
+    #         Component labels.
+    #     """
+    #     y = self.random_state.randint(self.n_components, size=(n_matrices,))
+    #
+    #     X = np.zeros((n_matrices, self.dim, self.dim))
+    #     for i in np.unique(y):
+    #         X[y == i] = sample_gaussian_spd(
+    #             np.count_nonzero(y == i),
+    #             mean=self.components_[i].mu,
+    #             sigma=self.components_[i].sigma,  # TODO
+    #             random_state=self.random_state
+    #         )
+    #
+    #     return X, y
+
+
+###############################################################################
 
 
 class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
@@ -1100,7 +1399,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         for i in range(self.n_potatoes):
             _check_n_matrices(X[i], n_matrices)
             p[i] = self._potatoes[i].predict_proba(X[i])
-        p[p < 1e-10] = 1e-10  # avoid trouble with log
+        p = np.clip(p, a_min=1e-10, a_max=1)  # avoid trouble with log
         q = - 2 * np.sum(np.log(p), axis=0)
         proba = self._get_proba(q)
         return proba
