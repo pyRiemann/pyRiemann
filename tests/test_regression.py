@@ -60,7 +60,8 @@ def reg_fit_independence(regres, X, y):
 
 def reg_score(regres, X, y):
     reg = regres()
-    reg.fit(X, y).score(X, y)
+    score = reg.fit(X, y).score(X, y)
+    assert isinstance(score, float)
 
 
 def reg_pipeline(regres, y, get_mats, kind):
@@ -118,13 +119,7 @@ def test_metric_str(regres, metric, get_mats, get_targets):
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_targets(n_matrices)
     reg = regres(metric=metric)
-
-    if regres is SVR and metric not in ["euclid", "logchol",
-                                        "logeuclid", "riemann"]:
-        with pytest.raises(ValueError):
-            reg.fit(X, y).predict(X)
-    else:
-        reg.fit(X, y).predict(X)
+    reg.fit(X, y).predict(X)
 
 
 @pytest.mark.parametrize("dist", ["not_real", 42])

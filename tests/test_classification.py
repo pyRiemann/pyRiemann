@@ -128,7 +128,8 @@ def clf_predict_proba(classif, X, y):
 
 def clf_score(classif, X, y):
     clf = classif()
-    clf.fit(X, y).score(X, y)
+    score = clf.fit(X, y).score(X, y)
+    assert isinstance(score, float)
 
 
 def clf_transform(classif, X, y):

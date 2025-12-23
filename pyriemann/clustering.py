@@ -697,6 +697,10 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         prob = num / (num.sum(axis=1)[:, np.newaxis] + reg)
         return prob
 
+    def _apply_log(self, prob):
+        prob = np.clip(prob, a_min=1e-10, a_max=1)
+        return np.log(prob)
+
     def fit(self, X, y=None):
         """Fit the mixture with EM.
 
@@ -750,8 +754,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
             self.weights_ = self.weights_ / self.weights_.sum()
 
             # check convergence
-            prob = np.clip(prob, a_min=1e-10, a_max=1)
-            crit_new = np.sum(-np.log(prob))
+            crit_new = np.sum(-self._apply_log(prob))
             if abs(crit_new - crit) < self.tol:
                 break
             crit = crit_new
@@ -791,34 +794,24 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         prob = self._get_proba(X)
         return np.argmax(prob, axis=1)
 
-# from datasets import sample_gaussian_spd
-    # def sample(self, n_matrices=1):
-    #     """Generate random matrices from the fitted Gaussian distribution.
-    #
-    #     Parameters
-    #     ----------
-    #     n_matrices : int, default=1
-    #         Number of matrices to generate.
-    #
-    #     Returns
-    #     -------
-    #     X : array, shape (n_matrices, n_channels, n_channels)
-    #         Randomly generated matrices.
-    #     y : array, shape (n_matrices,)
-    #         Component labels.
-    #     """
-    #     y = self.random_state.randint(self.n_components, size=(n_matrices,))
-    #
-    #     X = np.zeros((n_matrices, self.dim, self.dim))
-    #     for i in np.unique(y):
-    #         X[y == i] = sample_gaussian_spd(
-    #             np.count_nonzero(y == i),
-    #             mean=self.components_[i].mu,
-    #             sigma=self.components_[i].sigma,  # TODO
-    #             random_state=self.random_state
-    #         )
-    #
-    #     return X, y
+    def score(self, X, y=None):
+        """Compute the average log-likelihood of the given matrices.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+        y : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        score : float
+            Log-likelihood of matrices under the Gaussian mixture model.
+        """
+        prob = self._get_proba(X)
+        loglik = self._apply_log(prob)
+        return loglik.sum(axis=1).mean()
 
 
 ###############################################################################

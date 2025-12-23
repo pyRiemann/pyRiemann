@@ -62,6 +62,7 @@ def test_clustering_two_clusters(kind, clust,
         clt_predict(clust, X)
         clt_fitpredict(clust, X)
         clt_predict_proba(clust, X)
+        clt_score(clust, X)
 
     if clust is Potato:
         clt_fit(clust, X, n_clusters, None)
@@ -122,6 +123,7 @@ def test_clustering_three_clusters(kind, clust, get_mats, get_labels):
         clt_predict(clust, X)
         clt_fitpredict(clust, X)
         clt_predict_proba(clust, X)
+        clt_score(clust, X)
 
 
 def clt_fit(clust, X, n_clusters, labels):
@@ -301,6 +303,12 @@ def clt_fittransform_per_class(clust, X, n_clusters, y):
     Xt = clt.fit(X, y).transform(X)
     Xt2 = clt.fit_transform(X, y)
     assert_array_equal(Xt, Xt2)
+
+
+def clt_score(clust, X, y=None):
+    clt = clust()
+    score = clt.fit(X, y).score(X, y)
+    assert isinstance(score, float)
 
 
 @pytest.mark.parametrize("clust", [Kmeans, KmeansPerClassTransform])
