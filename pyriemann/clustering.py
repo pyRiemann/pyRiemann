@@ -453,7 +453,9 @@ class MeanShift(SpdClustMixin, BaseEstimator):
             The MeanShift instance.
         """
         self._kernel_fun = check_function(self.kernel, ker_clust_functions)
-        self.metric_map, self.metric_dist = check_metric(self.metric)
+        self._metric_map, self._metric_dist = check_metric(
+            self.metric, ["map", "dist"]
+        )
         if self.bandwidth is None:
             self._bandwidth = self._estimate_bandwidth(X, quantile=0.3)
         self._bandwidth2 = self._bandwidth ** 2
@@ -470,7 +472,7 @@ class MeanShift(SpdClustMixin, BaseEstimator):
         return self
 
     def _estimate_bandwidth(self, X, quantile):
-        dist = pairwise_distance(X, None, metric=self.metric_dist)
+        dist = pairwise_distance(X, None, metric=self._metric_dist)
         dist = np.triu(dist, 1)
         dist_sorted = np.sort(dist[dist > 0])
         bandwidth = dist_sorted[floor(quantile * len(dist_sorted))]
@@ -479,11 +481,11 @@ class MeanShift(SpdClustMixin, BaseEstimator):
 
     def _seek_mode(self, X, mean):
         for _ in range(self.max_iter):
-            T = log_map(X, mean, metric=self.metric_map)
-            dist2 = distance(X, mean, metric=self.metric_dist, squared=True)
+            T = log_map(X, mean, metric=self._metric_map)
+            dist2 = distance(X, mean, metric=self._metric_dist, squared=True)
             weights = self._kernel_fun(dist2[:, 0] / self._bandwidth2)
             meanshift = np.einsum("a,abc->bc", weights, T) / np.sum(weights)
-            mean = exp_map(meanshift, mean, metric=self.metric_map)
+            mean = exp_map(meanshift, mean, metric=self._metric_map)
             if np.linalg.norm(meanshift) <= self.tol:
                 break
         else:
@@ -494,7 +496,7 @@ class MeanShift(SpdClustMixin, BaseEstimator):
     def _fuse_mode(self, in_modes):
         out_modes = in_modes.copy()
         in_modes = np.stack(in_modes, axis=0)
-        dist = pairwise_distance(in_modes, None, metric=self.metric_dist)
+        dist = pairwise_distance(in_modes, None, metric=self._metric_dist)
         np.fill_diagonal(dist, self._bandwidth + 1)
         for i in range(dist.shape[0] - 1, -1, -1):
             if np.min(dist[i]) < self._bandwidth:
@@ -523,7 +525,7 @@ class MeanShift(SpdClustMixin, BaseEstimator):
             Prediction for each matrix according to the closest mode.
         """
         dist = Parallel(n_jobs=self.n_jobs)(
-            delayed(distance)(X, mode, self.metric_dist)
+            delayed(distance)(X, mode, self._metric_dist)
             for mode in self.modes_
         )
         dist = np.concatenate(dist, axis=1)
@@ -549,6 +551,13 @@ class Gaussian():
             default=None
         Covariance of the Gaussian, in tangent space.
         If None, it uses identity matrix.
+    metric : string | dict, default="riemann"
+        Metric used for mean update (for the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for tangent space map
+        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        The metric can be a dict with two keys, "mean" and "map"
+        in order to pass different metrics.
 
     Notes
     -----
@@ -561,14 +570,18 @@ class Gaussian():
         <https://www.cis.jhu.edu/~tingli/App_of_Lie_group/Intrinsic%20Statistics%20on%20Riemannian%20Manifolds.pdf>`_
         X. Pennec. Journal of Mathematical Imaging and Vision, 2006
     """  # noqa
-    def __init__(self, n, mu, sigma=None):
+    def __init__(self, n, mu, sigma=None, metric="riemann"):
         self.n = n
         self.mu = mu
         if sigma is None:
             sigma = np.eye(n * (n + 1) // 2)
         self.sigma = sigma
+        self.metric = metric
+        self._metric_mean, self._metric_map = check_metric(
+            metric, ["mean", "map"]
+        )
 
-    def pdf(self, X, reg=1e-20):
+    def pdf(self, X, reg=1e-16):
         """Compute approximate probability density function of matrices.
 
         Parameters
@@ -581,7 +594,7 @@ class Gaussian():
         pdf : ndarray, shape (n_matrices,)
             Probability density function of each matrix.
         """
-        TangVec = tangent_space(X, self.mu)
+        TangVec = tangent_space(X, self.mu, metric=self._metric_map)
         dist = distance_mahalanobis(TangVec.T, self.sigma, squared=True)
         num = np.exp(-0.5 * dist)
         # denom = np.sqrt(((2 * np.pi)**self.n) * np.linalg.det(self.sigma))
@@ -601,7 +614,12 @@ class Gaussian():
         sample_weight : ndarray, shape (n_matrices,)
             Weights for each matrix.
         """
-        self.mu = mean_covariance(X, sample_weight=sample_weight, init=self.mu)
+        self.mu = mean_covariance(
+            X,
+            metric=self._metric_mean,
+            sample_weight=sample_weight,
+            init=self.mu
+        )
 
     def update_covariance(self, X, sample_weight, reg=1e-16):
         """Update covariance in tangent space.
@@ -615,7 +633,7 @@ class Gaussian():
         sample_weight : ndarray, shape (n_matrices,)
             Weights for each matrix.
         """
-        TangVec = tangent_space(X, self.mu)
+        TangVec = tangent_space(X, self.mu, metric=self._metric_map)
         sigma = TangVec.T @ (sample_weight[:, np.newaxis] * TangVec)
         self.sigma = sigma / (sample_weight.sum() + reg)
 
@@ -630,6 +648,13 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
     ----------
     n_components : integer, default=3
         The number of mixture components.
+    metric : string | dict, default="riemann"
+        Metric used for mean update (for the list of supported metrics,
+        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        for tangent space map
+        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        The metric can be a dict with two keys, "mean" and "map"
+        in order to pass different metrics.
     weights_init : None | ndarray, shape (n_components,), defaut=None
         Initial weights. If None, it randomly selects training matrices.
     means_init : None | ndarray, shape (n_components,), defaut=None
@@ -664,6 +689,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
     def __init__(
         self,
         n_components=3,
+        metric="riemann",
         weights_init=None,
         means_init=None,
         tol=1e-5,
@@ -672,6 +698,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
     ):
         """Init."""
         self.n_components = n_components
+        self.metric = metric
         self.weights_init = weights_init
         self.means_init = means_init
         self.tol = tol
@@ -735,7 +762,14 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
 
         self.components_ = []
         for k in range(self.n_components):
-            self.components_.append(Gaussian(n_channels, means_init[k]))
+            self.components_.append(
+                Gaussian(
+                    n_channels,
+                    mu=means_init[k],
+                    sigma=None,
+                    metric=self.metric,
+                )
+            )
 
         self.weights_ = check_weights(self.weights_init, self.n_components)
 

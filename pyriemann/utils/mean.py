@@ -77,7 +77,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     return M
 
 
-def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None):
+def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
     r"""Ando-Li-Mathias (ALM) mean of SPD/HPD matrices.
 
     Ando-Li-Mathias (ALM) mean is computed recursively, generalizing from [1]_:
@@ -93,7 +93,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None):
     ----------
     X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
-    tol : float, default=10e-14
+    tol : float, default=1e-14
         Tolerance to stop the gradient descent.
     maxiter : int, default=100
         Maximum number of iterations.
@@ -146,10 +146,10 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None):
     else:
         warnings.warn("Convergence not reached")
 
-    return M_iter.mean(axis=0)
+    return np.mean(M_iter, axis=0)
 
 
-def mean_chol(X, sample_weight=None):
+def mean_chol(X, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the Cholesky metric.
 
     Cholesky mean :math:`\mathbf{M}` is
@@ -191,7 +191,7 @@ def mean_chol(X, sample_weight=None):
     return L @ L.conj().T
 
 
-def mean_euclid(X, sample_weight=None):
+def mean_euclid(X, sample_weight=None, **kwargs):
     r"""Mean of matrices according to the Euclidean metric.
 
     .. math::
@@ -218,7 +218,7 @@ def mean_euclid(X, sample_weight=None):
     return np.average(X, axis=0, weights=sample_weight)
 
 
-def mean_harmonic(X, sample_weight=None):
+def mean_harmonic(X, sample_weight=None, **kwargs):
     r"""Harmonic mean of invertible matrices.
 
     .. math::
@@ -245,7 +245,7 @@ def mean_harmonic(X, sample_weight=None):
     return M
 
 
-def mean_kullback_sym(X, sample_weight=None):
+def mean_kullback_sym(X, sample_weight=None, **kwargs):
     """Mean of SPD/HPD matrices according to Kullback-Leibler divergence.
 
     Symmetrized Kullback-Leibler mean is the geometric mean between the
@@ -281,7 +281,7 @@ def mean_kullback_sym(X, sample_weight=None):
     return M
 
 
-def mean_logchol(X, sample_weight=None):
+def mean_logchol(X, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the log-Cholesky metric.
 
     Log-Cholesky mean :math:`\mathbf{M}` is
@@ -397,7 +397,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     return M
 
 
-def mean_logeuclid(X, sample_weight=None):
+def mean_logeuclid(X, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the log-Euclidean metric.
 
     Log-Euclidean mean is [1]_:
@@ -539,7 +539,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     return M
 
 
-def mean_poweuclid(X, p, *, sample_weight=None):
+def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the power Euclidean metric.
 
     Power Euclidean mean of order :math:`p` is [1]_:
