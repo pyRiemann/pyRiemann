@@ -26,7 +26,7 @@ def corrupt(mats, n_corrup_channels_max, rs):
     n_matrices, n_channels, _ = mats.shape
     all_n_corrup_channels, all_corrup_channels = np.zeros(n_matrices), []
     for i_matrix in range(n_matrices):
-        n_corrupt_channels = rs.randint(n_corrup_channels_max + 1, size=1)
+        n_corrupt_channels = rs.randint(n_corrup_channels_max + 1)
         corrup_channels = rs.choice(
             np.arange(0, n_channels), size=n_corrupt_channels, replace=False)
         for i_channel in corrup_channels:
