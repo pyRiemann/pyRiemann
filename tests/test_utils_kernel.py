@@ -113,7 +113,7 @@ def test_kernel_property_symmetry(metric, get_mats):
 def test_kernel_property_positive_semi_definite(metric, get_mats):
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "spd")
-    K = kernel(X, X, metric=metric)
+    K = kernel(X, X, metric=metric, reg=1e-8)
     assert is_spsd(K)
 
 
