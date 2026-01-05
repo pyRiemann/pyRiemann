@@ -34,7 +34,7 @@ def get_zscores(cov_00, cov_01, cov_11, potato):
     cov = np.array([[cov_00, cov_01], [cov_01, cov_11]])
     with np.testing.suppress_warnings() as sup:
         sup.filter(RuntimeWarning)
-        return potato.transform(cov[np.newaxis, ...])
+        return potato.transform(cov[np.newaxis, ...])[0]
 
 
 def plot_potato_2D(ax, cax, X, Y, p_zscores, p_center, covs, p_colors, clabel):
