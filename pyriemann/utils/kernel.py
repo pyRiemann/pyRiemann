@@ -38,8 +38,9 @@ def kernel_euclid(X, Y=None, *, Cref=None, reg=1e-10):
 
         .. versionadded:: 0.8
     reg : float, default=1e-10
-        Regularization parameter to mitigate numerical errors in kernel
-        matrix estimation.
+        When Y is None, regularization parameter to mitigate numerical errors
+        in kernel matrix estimation, to provide a positive-definite kernel
+        matrix.
 
     Returns
     -------
@@ -105,8 +106,9 @@ def kernel_logeuclid(X, Y=None, *, Cref=None, reg=1e-10):
 
         .. versionadded:: 0.8
     reg : float, default=1e-10
-        Regularization parameter to mitigate numerical errors in kernel
-        matrix estimation.
+        When Y is None, regularization parameter to mitigate numerical errors
+        in kernel matrix estimation, to provide a positive-definite kernel
+        matrix.
 
     Returns
     -------
@@ -173,8 +175,9 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
         If None, Cref is calculated as the Riemannian mean of X, see
         :func:`pyriemann.utils.mean.mean_riemann`.
     reg : float, default=1e-10
-        Regularization parameter to mitigate numerical errors in kernel
-        matrix estimation.
+        When Y is None, regularization parameter to mitigate numerical errors
+        in kernel matrix estimation, to provide a positive-definite kernel
+        matrix.
 
     Returns
     -------
@@ -235,9 +238,9 @@ def _apply_matrix_kernel(Xt, Y, are_xy_equal, reg):
     # products K[i,j] = trace(Xt[i] @ Y[j])
     K = np.einsum("imn,jnm->ij", Xt, Y, optimize=True)
 
-    # regularization due to numerical errors
+    # regularization to mitigate numerical errors
     if are_xy_equal:
-        n_matrices_X = Xt.shape[0]
+        n_matrices_X = K.shape[0]
         K.flat[:: n_matrices_X + 1] += reg
 
     return K
@@ -270,8 +273,9 @@ def kernel(X, Y=None, *, Cref=None, metric="riemann", reg=1e-10):
         Metric used for tangent space and mean estimation, can be:
         "euclid", "logeuclid", "riemann", or a callable function.
     reg : float, default=1e-10
-        Regularization parameter to mitigate numerical errors in kernel
-        matrix estimation, to provide a positive-definite kernel matrix.
+        When Y is None, regularization parameter to mitigate numerical errors
+        in kernel matrix estimation, to provide a positive-definite kernel
+        matrix.
 
     Returns
     -------

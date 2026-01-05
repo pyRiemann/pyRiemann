@@ -23,8 +23,8 @@ metrics = ["euclid", "logeuclid", "riemann"]
 def test_kernel_build(metric, get_mats):
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "spd")
-    K = kernel(X, X, metric=metric)
-    assert_array_almost_equal(K, globals()[f"kernel_{metric}"](X))
+    K = kernel(X, metric=metric)
+    assert_array_equal(K, globals()[f"kernel_{metric}"](X))
 
 
 @pytest.mark.parametrize("metric", metrics)
@@ -64,7 +64,8 @@ def test_kernel_x_x(metric, get_mats):
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "spd")
     K = kernel(X, X, metric=metric)
-    assert K.shape == (n_matrices, n_matrices)
+    K1 = kernel(X, metric=metric, reg=0)
+    assert_array_equal(K, K1)
 
 
 @pytest.mark.parametrize("metric", metrics)
@@ -113,7 +114,7 @@ def test_kernel_property_symmetry(metric, get_mats):
 def test_kernel_property_positive_semi_definite(metric, get_mats):
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "spd")
-    K = kernel(X, X, metric=metric, reg=1e-6)
+    K = kernel(X, metric=metric)
     assert is_spsd(K)
 
 
@@ -138,24 +139,23 @@ def test_kernel_euclid(n_dim1, n_dim2, get_mats):
 
 
 def test_kernel_logeuclid(get_mats):
+    """Eq(10) of [Barachant2013]: log-Euclidean kernel equivalent to Riemannian
+    kernel used with Cref equal to identity"""
     n_matrices_X, n_matrices_Y, n_channels = 5, 4, 3
     X = get_mats(n_matrices_X, n_channels, "spd")
     Y = get_mats(n_matrices_Y, n_channels, "spd")
-    Cref = np.eye(n_channels)
 
-    # equivalence with Riemannian kernel when Cref is identity
-    # Eq(10) of [Barachant2013]
-    Kle = kernel_logeuclid(X, Y, Cref=Cref)
-    Kr = kernel_riemann(X, Y, Cref=Cref)
+    Kle = kernel_logeuclid(X, Y)
+    Kr = kernel_riemann(X, Y, Cref=np.eye(n_channels))
     assert_array_almost_equal(Kle, Kr)
 
 
 def test_kernel_riemann(get_mats):
+    """Test correctness"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "spd")
     K = kernel_riemann(X, Cref=np.eye(n_channels), reg=0)
 
-    # test correctness
     log_X = logm(X)
     tensor = np.tensordot(log_X, log_X.T, axes=1)
     K1 = np.trace(tensor, axis1=1, axis2=2)
