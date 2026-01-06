@@ -10,6 +10,7 @@ from sklearn.utils import check_random_state
 from ..utils.base import sqrtm
 from ..utils.geodesic import geodesic
 from ..utils.test import is_sym_pos_semi_def as is_spsd
+from ..utils.tangentspace import exp_map_riemann, unupper
 
 
 def _pdf_r(r, sigma):
@@ -33,7 +34,7 @@ def _pdf_r(r, sigma):
         Probability density function applied to r.
     """
 
-    if (sigma <= 0):
+    if sigma <= 0:
         raise ValueError(f"sigma must be a positive number (Got {sigma})")
 
     n_dim = len(r)
@@ -68,7 +69,7 @@ def _rejection_sampling_2D_gfunction_plus(sigma, r_sample):
     .. versionadded:: 0.4
 
     """
-    mu_a = np.array([-sigma**2 / 2, (sigma**2) / 2])
+    mu_a = np.array([-(sigma**2) / 2, (sigma**2) / 2])
     cov_matrix = (sigma**2) * np.eye(2)
     m = np.pi * (sigma**2) * np.exp(sigma**2 / 4)
     if r_sample[0] >= r_sample[1]:
@@ -100,7 +101,7 @@ def _rejection_sampling_2D_gfunction_minus(sigma, r_sample):
     .. versionadded:: 0.4
 
     """
-    mu_b = np.array([(sigma**2) / 2, -sigma**2 / 2])
+    mu_b = np.array([(sigma**2) / 2, -(sigma**2) / 2])
     cov_matrix = (sigma**2) * np.eye(2)
     m = np.pi * (sigma**2) * np.exp(sigma**2 / 4)
     if r_sample[0] < r_sample[1]:
@@ -110,8 +111,9 @@ def _rejection_sampling_2D_gfunction_minus(sigma, r_sample):
     return 0
 
 
-def _rejection_sampling_2D(n_samples, sigma, random_state=None,
-                           return_acceptance_rate=False):
+def _rejection_sampling_2D(
+    n_samples, sigma, random_state=None, return_acceptance_rate=False
+):
     """Rejection sampling algorithm for the 2D case.
 
     Implementation of a rejection sampling algorithm. The implementation
@@ -146,8 +148,8 @@ def _rejection_sampling_2D(n_samples, sigma, random_state=None,
     .. versionadded:: 0.4
 
     """
-    mu_a = np.array([-sigma**2 / 2, (sigma**2) / 2])
-    mu_b = np.array([(sigma**2) / 2, -sigma**2 / 2])
+    mu_a = np.array([-(sigma**2) / 2, (sigma**2) / 2])
+    mu_b = np.array([(sigma**2) / 2, -(sigma**2) / 2])
     cov_matrix = (sigma**2) * np.eye(2)
     r_samples = []
     cpt = 0
@@ -155,7 +157,7 @@ def _rejection_sampling_2D(n_samples, sigma, random_state=None,
     rs = check_random_state(random_state)
     while cpt != n_samples:
         acc += 1
-        if (rs.binomial(1, 0.5, 1) == 1):
+        if rs.binomial(1, 0.5, 1) == 1:
             r_sample = multivariate_normal.rvs(mu_a, cov_matrix, 1, rs)
             res = _rejection_sampling_2D_gfunction_plus(sigma, r_sample)
             if rs.rand(1) < res:
@@ -210,7 +212,7 @@ def _slice_one_sample(ptarget, x0, w, rs):
         # step 3 : create a horizontal interval (xl_i, xr_i) enclosing xt_i
         r = rs.rand()
         xl_i = xt[i] - r * w
-        xr_i = xt[i] + (1-r) * w
+        xr_i = xt[i] + (1 - r) * w
         while ptarget(xt + (xl_i - xt[i]) * ei) > uprime_i:
             xl_i = xl_i - w
         while ptarget(xt + (xr_i - xt[i]) * ei) > uprime_i:
@@ -235,8 +237,9 @@ def _slice_one_sample(ptarget, x0, w, rs):
     return xt
 
 
-def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
-                    random_state=None, n_jobs=1):
+def _slice_sampling(
+    ptarget, n_samples, x0, n_burnin=20, thin=10, random_state=None, n_jobs=1
+):
     """Slice sampling procedure.
 
     Implementation of a slice sampling algorithm for sampling from any target
@@ -276,13 +279,9 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
     """
 
     if (n_samples <= 0) or (not isinstance(n_samples, int)):
-        raise ValueError(
-            f"n_samples must be a positive integer (Got {n_samples})"
-        )
+        raise ValueError(f"n_samples must be a positive integer (Got {n_samples})")
     if (n_burnin <= 0) or (not isinstance(n_burnin, int)):
-        raise ValueError(
-            f"n_samples must be a positive integer (Got {n_burnin})"
-        )
+        raise ValueError(f"n_samples must be a positive integer (Got {n_burnin})")
     if (thin <= 0) or (not isinstance(thin, int)):
         raise ValueError(f"thin must be a positive integer (Got {thin})")
 
@@ -292,17 +291,17 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
     n_samples_total = (n_samples + n_burnin) * thin
 
     samples = Parallel(n_jobs=n_jobs)(
-        delayed(_slice_one_sample)(ptarget, x0, w, rs)
-        for _ in range(n_samples_total)
+        delayed(_slice_one_sample)(ptarget, x0, w, rs) for _ in range(n_samples_total)
     )
 
-    samples = np.array(samples)[(n_burnin * thin):][::thin]
+    samples = np.array(samples)[(n_burnin * thin) :][::thin]
 
     return samples
 
 
-def _sample_parameter_r(n_samples, n_dim, sigma,
-                        random_state=None, n_jobs=1, sampling_method="auto"):
+def _sample_parameter_r(
+    n_samples, n_dim, sigma, random_state=None, n_jobs=1, sampling_method="auto"
+):
     """Sample the r parameters of a Riemannian Gaussian distribution.
 
     Sample the logarithm of the eigenvalues of a SPD matrix following a
@@ -344,15 +343,13 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
         Theory, vol. 63, pp. 2153–2170, 2017.
     """
     if sampling_method not in ["slice", "rejection", "auto"]:
-        raise ValueError(f"Unknown sampling method {sampling_method}, "
-                         "try slice or rejection")
-    if n_dim == 2 and sampling_method != "slice":
-        return _rejection_sampling_2D(n_samples, sigma,
-                                      random_state=random_state)
-    if n_dim != 2 and sampling_method == "rejection":
         raise ValueError(
-            f"n_dim={n_dim} is not yet supported with rejection sampling"
+            f"Unknown sampling method {sampling_method}, " "try slice or rejection"
         )
+    if n_dim == 2 and sampling_method != "slice":
+        return _rejection_sampling_2D(n_samples, sigma, random_state=random_state)
+    if n_dim != 2 and sampling_method == "rejection":
+        raise ValueError(f"n_dim={n_dim} is not yet supported with rejection sampling")
     rs = check_random_state(random_state)
     x0 = rs.randn(n_dim)
     ptarget = partial(_pdf_r, sigma=sigma)
@@ -400,8 +397,9 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
     return u_samples
 
 
-def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
-                                  n_jobs=1, sampling_method="auto"):
+def _sample_gaussian_spd_centered(
+    n_matrices, n_dim, sigma, random_state=None, n_jobs=1, sampling_method="auto"
+):
     """Sample a Riemannian Gaussian distribution centered at the Identity.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at the
@@ -470,16 +468,19 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
     return samples
 
 
-def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
-                        n_jobs=1, sampling_method="auto"):
+def sample_gaussian_spd(
+    n_matrices, mean, sigma, random_state=None, n_jobs=1, sampling_method="auto"
+):
     """Sample a Riemannian Gaussian distribution.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at
-    mean and with dispersion parametrized by sigma. This distribution has been
-    defined in [1]_ and generalizes the notion of a Gaussian distribution to
-    the space of SPD matrices. The sampling is based on a spectral
-    factorization of SPD matrices in terms of their eigenvectors (U-parameters)
-    and the log of the eigenvalues (r-parameters).
+    mean and with dispersion parametrized by sigma. If sigma is a float, it 
+    samples from the distribution defined in [1]_ that generalizes the notion 
+    of a Gaussian distribution to the space of SPD matrices. If sigma is a
+    covariance matrix, it samples from the wrapped Gaussian distribution
+    defined in [2]_. For the Gaussian distribution defined in [1]_, the sampling 
+    is based on a spectral factorization of SPD matrices in terms of their
+    eigenvectors (U-parameters) and the log of the eigenvalues (r-parameters).
 
     Parameters
     ----------
@@ -487,8 +488,10 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         How many matrices to generate.
     mean : ndarray, shape (n_dim, n_dim)
         Center of the Riemannian Gaussian distribution.
-    sigma : float
-        Dispersion of the Riemannian Gaussian distribution.
+    sigma : float | ndarray, shape (n_dim * (n_dim + 1) / 2, \
+            n_dim * (n_dim + 1) / 2)
+        If float, dispersion of the Riemannian Gaussian distribution [1]_.
+        If ndarray, covariance matrix of the wrapped Gaussian distribution [2]_. 
     random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
@@ -517,22 +520,46 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         <https://hal.archives-ouvertes.fr/hal-01710191>`_
         S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton. IEEE Trans Inf
         Theory, vol. 63, pp. 2153–2170, 2017.
+    
+    .. [2] `Wrapped gaussian on the manifold of symmetric positive 
+        definite matrices
+        <https://openreview.net/pdf?id=EhStXG4dCS>`
+        T. de Surrel, F. Lotte, S. Chevallier, and F. Yger. International 
+        Conference on Machine Learning (ICML), July 2025, Vancouver, Canada.
     """
 
     n_dim = mean.shape[0]
-    # dispersion is corrected w.r.t. dimension
-    samples_centered = _sample_gaussian_spd_centered(
-        n_matrices=n_matrices,
-        n_dim=n_dim,
-        sigma=sigma / np.sqrt(n_dim),
-        random_state=random_state,
-        n_jobs=n_jobs,
-        sampling_method=sampling_method,
-    )
 
-    # apply the parallel transport to mean on each of the samples
-    mean_sqrt = sqrtm(mean)
-    samples = mean_sqrt @ samples_centered @ mean_sqrt
+    if isinstance(sigma, np.ndarray):
+        # Sampling from the wrapped Gaussian distribution
+
+        # Sample from the multivariate normal distribution
+        t = np.random.multivariate_normal(
+            size=n_matrices, mean=np.zeros(n_dim * (n_dim + 1) // 2), cov=sigma
+        )
+
+        # Send to the tangent space at mean
+        mean_sqrt = sqrtm(mean)
+        samples_TS = mean_sqrt @ unupper(t) @ mean_sqrt
+
+        # Map back to the manifold
+        samples = exp_map_riemann(samples_TS, mean, Cm12=True)
+
+    else:
+        # Sampling from the Riemannian Gaussian distribution
+        # dispersion is corrected w.r.t. dimension
+        samples_centered = _sample_gaussian_spd_centered(
+            n_matrices=n_matrices,
+            n_dim=n_dim,
+            sigma=sigma / np.sqrt(n_dim),
+            random_state=random_state,
+            n_jobs=n_jobs,
+            sampling_method=sampling_method,
+        )
+
+        # apply the parallel transport to mean on each of the samples
+        mean_sqrt = sqrtm(mean)
+        samples = mean_sqrt @ samples_centered @ mean_sqrt
 
     if not is_spsd(samples):
         msg = "Some of the sampled matrices are very badly conditioned and \
@@ -586,11 +613,7 @@ class RandomOverSampler(BaseEstimator):
     """
 
     def __init__(
-        self,
-        metric="riemann",
-        sampling_strategy="auto",
-        random_state=None,
-        n_jobs=1
+        self, metric="riemann", sampling_strategy="auto", random_state=None, n_jobs=1
     ):
         """Init."""
         self.metric = metric
@@ -682,8 +705,7 @@ class RandomOverSampler(BaseEstimator):
 
         if self.sampling_strategy == "all":
             return {
-                key: n_mats_majority - value
-                for (key, value) in input_counts.items()
+                key: n_mats_majority - value for (key, value) in input_counts.items()
             }
 
         raise ValueError(
