@@ -10,7 +10,7 @@
 
 pyRiemann is a Python machine learning package based on [scikit-learn](http://scikit-learn.org/stable/modules/classes.html) API.
 It provides a high-level interface for processing and classification of real (*resp*. complex)-valued multivariate data
-through the Riemannian geometry of symmetric (*resp*. Hermitian)
+through the [Riemannian geometry](https://en.wikipedia.org/wiki/Riemannian_geometry) of symmetric (*resp*. Hermitian)
 [positive definite](https://en.wikipedia.org/wiki/Definite_matrix) (SPD) (*resp*. HPD) matrices.
 
 The documentation is available on http://pyriemann.readthedocs.io/en/latest/
@@ -27,7 +27,8 @@ and classifying them using the Riemannian geometry of SPD matrices [[1]](#1).
 
 For BCI applications, studied paradigms are motor imagery [[2]](#2) [[3]](#3),
 event-related potentials (ERP) [[4]](#4) and steady-state visually evoked potentials (SSVEP) [[5]](#5).
-Using extended labels, API allows multisource transfer learning between sessions or subjects [[6]](#6).
+Using extended labels, API allows multisource [transfer learning](https://en.wikipedia.org/wiki/Transfer_learning)
+between sessions or subjects [[6]](#6).
 
 Another application is [remote sensing](https://en.wikipedia.org/wiki/Remote_sensing),
 estimating covariance matrices over spatial coordinates of radar images using a sliding window,
@@ -169,9 +170,9 @@ pytest
                   Gregoire Cattan and
                   Arthur Lebeurrier},
   title        = {pyRiemann},
-  month        = jul,
-  year         = 2025,
-  version      = {v0.9},
+  month        = jan,
+  year         = 2026,
+  version      = {v0.10},
   publisher    = {Zenodo},
   doi          = {10.5281/zenodo.593816},
   url          = {https://doi.org/10.5281/zenodo.593816}
