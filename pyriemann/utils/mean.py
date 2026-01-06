@@ -4,7 +4,6 @@ import warnings
 
 import numpy as np
 
-from . import deprecated
 from .ajd import ajd_pham
 from .base import sqrtm, invsqrtm, logm, expm, powm
 from .distance import distance_riemann
@@ -243,33 +242,6 @@ def mean_harmonic(X, sample_weight=None):
     """
     T = mean_euclid(np.linalg.inv(X), sample_weight=sample_weight)
     M = np.linalg.inv(T)
-    return M
-
-
-@deprecated("mean_identity is deprecated and will be removed in 0.11.0.")
-def mean_identity(X, sample_weight=None):
-    r"""Identity matrix corresponding to the matrices dimension.
-
-    .. math::
-        \mathbf{M} = \mathbf{I}_n
-
-    Parameters
-    ----------
-    X : ndarray, shape (n_matrices, n, n)
-        Set of square matrices.
-    sample_weight : None
-        Not used, here for compatibility with other means.
-
-    Returns
-    -------
-    M : ndarray, shape (n, n)
-        Identity matrix.
-
-    See Also
-    --------
-    mean_covariance
-    """
-    M = np.eye(X.shape[-1])
     return M
 
 
@@ -818,7 +790,6 @@ mean_functions = {
     "chol": mean_chol,
     "euclid": mean_euclid,
     "harmonic": mean_harmonic,
-    "identity": mean_identity,
     "kullback_sym": mean_kullback_sym,
     "logdet": mean_logdet,
     "logchol": mean_logchol,

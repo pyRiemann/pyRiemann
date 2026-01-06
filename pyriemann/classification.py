@@ -799,24 +799,15 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     def __init__(
         self,
         power_list=[-1, 0, 1],
-        method_label="",
         method_combination="sum_means",
         metric="riemann",
         n_jobs=1,
     ):
         """Init."""
         self.power_list = power_list
-        self.method_label = method_label
         self.method_combination = method_combination
         self.metric = metric
         self.n_jobs = n_jobs
-
-    def _deprecate_method_label(self, method_label, method_combination):
-        if method_label != "":
-            print("DeprecationWarning: input method_label has been renamed "
-                  "into method_combination and will be removed in 0.11.0.")
-            method_combination = method_label
-        return method_combination
 
     def fit(self, X, y, sample_weight=None):
         """Fit (estimates) the centroids.
@@ -836,9 +827,6 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
             The MeanField instance.
         """
         self._n_powers = len(self.power_list)
-        self.method_combination = self._deprecate_method_label(
-            self.method_label, self.method_combination
-        )
         self.classes_ = np.unique(y)
         self._n_classes = len(self.classes_)
 

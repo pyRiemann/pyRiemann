@@ -20,6 +20,7 @@ set.
 
 from functools import partial
 from time import time
+import warnings
 
 import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
@@ -40,8 +41,8 @@ from pyriemann.datasets import make_matrices, make_gaussian_blobs
 @partial(np.vectorize, excluded=["clf"])
 def get_proba(cov_00, cov_01, cov_11, clf):
     cov = np.array([[cov_00, cov_01], [cov_01, cov_11]])
-    with np.testing.suppress_warnings() as sup:
-        sup.filter(RuntimeWarning)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
         return clf.predict_proba(cov[np.newaxis, ...])[0, 1]
 
 

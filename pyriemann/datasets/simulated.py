@@ -53,7 +53,7 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
         Number of matrices to generate.
     n_dim : int | list of int
         If int, dimension of square matrices to generate.
-        If list, dimensions of matrices to generate.
+        If list, dimensions of "real" or "comp" matrices to generate.
     kind : {"real", "comp", "inv", "orth, "sym", "spd", "spsd", "cinv", \
             "unit", "herm", "hpd", "hpsd"}
         Kind of matrices to generate:
@@ -94,7 +94,7 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
 
     Returns
     -------
-    mats : ndarray, shape (n_matrices, n_dim, n_dim) or (n_matrices, *n_dim)
+    mats : ndarray, shape (n_matrices, n_dim, n_dim) or (n_matrices, \\*n_dim)
         Set of generated matrices.
     evals : ndarray, shape (n_matrices, n_dim)
         Eigen values used for "spd", "spsd", "hpd" and "hpsd".
@@ -179,7 +179,7 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
     if eigvecs_same:
         mats = np.empty((n_matrices, n_dim, n_dim), dtype=X.dtype)
         for i in range(n_matrices):
-            mats[i] = (evecs * evals[i]) @ evecs.conj().T
+            mats[i] = (evecs * evals[i]) @ ctranspose(evecs)
     else:
         mats = (evecs * evals[:, np.newaxis, :]) @ ctranspose(evecs)
 

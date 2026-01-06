@@ -5,7 +5,6 @@ import numpy as np
 from scipy.linalg import eigh, inv
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from .utils import deprecated
 from .utils.covariance import normalize, get_nondiag_weight, cov_est_functions
 from .utils.mean import mean_covariance
 from .utils.utils import check_function
@@ -773,13 +772,6 @@ class AJDC(BaseEstimator):
             )
 
         return self.forward_filters_ @ X
-
-    @deprecated(
-        "fit_transform() is deprecated and will be removed in 0.11.0; "
-        "please use fit().transform()."
-    )
-    def fit_transform(self, X, y=None):
-        pass
 
     def inverse_transform(self, X, supp=None):
         """Transform source space to channel space.
