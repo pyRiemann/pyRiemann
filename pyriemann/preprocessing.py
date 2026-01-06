@@ -142,9 +142,7 @@ class Whitening(TransformerMixin, BaseEstimator):
                 raise ValueError(
                     "Value expl_var must be included in (0, 1] (Got %d)"
                     % dim_red_val)
-            cum_expl_var = np.cumulative_sum(
-                self._eigvals / self._eigvals.sum(),
-            )
+            cum_expl_var = np.cumsum(self._eigvals / self._eigvals.sum())
             if self.verbose:
                 print("Cumulative explained variance: \n %r"
                       % cum_expl_var)
