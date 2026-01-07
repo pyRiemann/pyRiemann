@@ -537,9 +537,17 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
     if isinstance(sigma, np.ndarray):
         # Sampling from the wrapped Gaussian distribution
 
+        if sigma.shape != (n_dim * (n_dim + 1) // 2,
+                               n_dim * (n_dim + 1) // 2):
+            raise ValueError("sigma must be a covariance matrix of shape  \
+                (n_dim * (n_dim + 1) / 2, n_dim * (n_dim + 1) / 2).")
+
+        rs = check_random_state(random_state)
         # Sample from the multivariate normal distribution
-        t = np.random.multivariate_normal(
-            size=n_matrices, mean=np.zeros(n_dim * (n_dim + 1) // 2), cov=sigma
+        t = rs.multivariate_normal(
+            size=n_matrices,
+            mean=np.zeros(n_dim * (n_dim + 1) // 2),
+            cov=sigma,
         )
 
         # Send to the tangent space at mean

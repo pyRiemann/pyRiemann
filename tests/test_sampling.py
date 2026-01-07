@@ -9,9 +9,10 @@ from pyriemann.utils.test import is_sym_pos_def as is_spd
 
 @pytest.mark.parametrize("n_jobs", [1, -1])
 @pytest.mark.parametrize("sampling_method", ["auto", "slice", "rejection"])
-def test_sample_gaussian_spd_dim2(n_jobs, sampling_method):
+@pytest.mark.parametrize("sigma", [1., np.eye(3)])
+def test_sample_gaussian_spd_dim2(n_jobs, sampling_method, sigma):
     """Test Riemannian Gaussian sampling for dim=2."""
-    n_matrices, n_dim, sigma = 5, 2, 1.
+    n_matrices, n_dim = 5, 2
     mean = np.eye(n_dim)
     X = sample_gaussian_spd(n_matrices, mean, sigma, random_state=42,
                             n_jobs=n_jobs, sampling_method=sampling_method)
@@ -61,7 +62,7 @@ def test_sample_gaussian_spd_sigma_errors():
     mean, sigma = np.eye(n_dim), 2.
     with pytest.raises(ValueError):  # mean is not a matrix
         sample_gaussian_spd(n_matrices, np.ones(n_dim), sigma)
-    with pytest.raises(ValueError):  # sigma is not a scalar
+    with pytest.raises(ValueError):  # sigma is not the right shape
         sample_gaussian_spd(n_matrices, mean, np.ones(n_dim))
     with pytest.raises(ValueError):  # n_matrices is negative
         sample_gaussian_spd(-n_matrices, mean, sigma)
