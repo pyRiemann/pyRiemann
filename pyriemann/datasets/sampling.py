@@ -282,7 +282,7 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
         )
     if (n_burnin <= 0) or (not isinstance(n_burnin, int)):
         raise ValueError(
-            f"n_samples must be a positive integer (Got {n_burnin})"
+            f"n_burnin must be a positive integer (Got {n_burnin})"
         )
     if (thin <= 0) or (not isinstance(thin, int)):
         raise ValueError(f"thin must be a positive integer (Got {thin})")
@@ -538,7 +538,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         # Sampling from the wrapped Gaussian distribution
 
         if sigma.shape != (n_dim * (n_dim + 1) // 2,
-                               n_dim * (n_dim + 1) // 2):
+                           n_dim * (n_dim + 1) // 2):
             raise ValueError("sigma must be a covariance matrix of shape  \
                 (n_dim * (n_dim + 1) / 2, n_dim * (n_dim + 1) / 2).")
 
