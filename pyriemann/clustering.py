@@ -656,9 +656,10 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
     weights_init : None | ndarray, shape (n_components,), defaut=None
-        Initial weights. If None, it randomly selects training matrices.
+        Initial weights. If None, it uses equal weights.
     means_init : None | ndarray, shape (n_components,), defaut=None
-        Initial means of Gaussians. If None, it uses identity matrices.
+        Initial means of Gaussians. If None, it randomly selects training
+        matrices.
     tol : float, default=1e-5
         Tolerance to stop the EM algorithm.
     maxiter : int, default=100
