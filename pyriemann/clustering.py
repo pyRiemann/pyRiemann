@@ -588,7 +588,8 @@ class Gaussian():
         ----------
         X : ndarray, shape (n_matrices, n, n)
             Set of SPD matrices.
-
+        reg : float, default=1e-16
+             Regularization parameter for normalization term
         Returns
         -------
         pdf : ndarray, shape (n_matrices,)
@@ -632,6 +633,8 @@ class Gaussian():
             Set of SPD matrices.
         sample_weight : ndarray, shape (n_matrices,)
             Weights for each matrix.
+        reg : float, default=1e-16
+             Regularization parameter for sample weight normalization 
         """
         TangVec = tangent_space(X, self.mu, metric=self._metric_map)
         sigma = TangVec.T @ (sample_weight[:, np.newaxis] * TangVec)
@@ -642,7 +645,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
     """Gaussian mixture model.
 
     Representation of a Gaussian mixture model probability distribution for SPD
-    matrices.
+    matrices [1]_.
 
     Parameters
     ----------
@@ -713,6 +716,8 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
+        reg : float, default=1e-16
+            Regularization parameter for weighted components 
 
         Returns
         -------
