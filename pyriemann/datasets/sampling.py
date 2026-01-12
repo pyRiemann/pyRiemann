@@ -476,14 +476,16 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
     """Sample a Riemannian Gaussian distribution.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at
-    mean and with dispersion parametrized by sigma. If sigma is a float, it
-    samples from the distribution defined in [1]_ that generalizes the notion
-    of a Gaussian distribution to the space of SPD matrices. If sigma is a
-    covariance matrix, it samples from the wrapped Gaussian distribution
-    defined in [2]_. For the Gaussian distribution defined in [1]_, the
-    sampling is based on a spectral factorization of SPD matrices in terms
-    of their eigenvectors (U-parameters) and the log of the eigenvalues
-    (r-parameters).
+    mean and with dispersion parametrized by sigma.
+
+    If sigma is a float, it samples from the distribution defined in [1]_ that
+    generalizes the notion of a Gaussian distribution to the space of SPD
+    matrices. This sampling is based on a spectral factorization of SPD
+    matrices in terms of their eigenvectors (U-parameters) and the log of the
+    eigenvalues (r-parameters).
+
+    If sigma is a covariance matrix, it samples from the wrapped Gaussian
+    distribution defined in [2]_.
 
     Parameters
     ----------
@@ -557,7 +559,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         # Map back to the manifold
         samples = exp_map_riemann(samples_TS, mean, Cm12=True)
 
-    else:
+    elif isinstance(sigma, float):
         # dispersion is corrected w.r.t. dimension
         samples_centered = _sample_gaussian_spd_centered(
             n_matrices=n_matrices,
@@ -571,6 +573,9 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         # apply the parallel transport to mean on each of the samples
         mean_sqrt = sqrtm(mean)
         samples = mean_sqrt @ samples_centered @ mean_sqrt
+    else:
+        raise ValueError("sigma must be either a float or a covariance \
+                         matrix.")
 
     if not is_spsd(samples):
         msg = "Some of the sampled matrices are very badly conditioned and \
