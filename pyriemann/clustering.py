@@ -589,7 +589,7 @@ class Gaussian():
         X : ndarray, shape (n_matrices, n, n)
             Set of SPD matrices.
         reg : float, default=1e-16
-             Regularization parameter for normalization term
+            Regularization parameter for normalization term.
         Returns
         -------
         pdf : ndarray, shape (n_matrices,)
@@ -634,7 +634,7 @@ class Gaussian():
         sample_weight : ndarray, shape (n_matrices,)
             Weights for each matrix.
         reg : float, default=1e-16
-             Regularization parameter for sample weight normalization 
+            Regularization parameter for sample weight normalization.
         """
         TangVec = tangent_space(X, self.mu, metric=self._metric_map)
         sigma = TangVec.T @ (sample_weight[:, np.newaxis] * TangVec)
@@ -649,7 +649,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
 
     Parameters
     ----------
-    n_components : integer, default=3
+    n_components : integer, default=1
         The number of mixture components.
     metric : string | dict, default="riemann"
         Metric used for mean update (for the list of supported metrics,
@@ -681,7 +681,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
 
     Notes
     -----
-    .. versionadded:: 0.10
+    .. versionadded:: 0.11
 
     References
     ----------
@@ -692,7 +692,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
     """
     def __init__(
         self,
-        n_components=3,
+        n_components=1,
         metric="riemann",
         weights_init=None,
         means_init=None,
@@ -717,7 +717,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         reg : float, default=1e-16
-            Regularization parameter for weighted components 
+            Regularization parameter for weighted components.
 
         Returns
         -------
