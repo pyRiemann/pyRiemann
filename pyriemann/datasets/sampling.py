@@ -559,7 +559,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         # Map back to the manifold
         samples = exp_map_riemann(samples_TS, mean, Cm12=True)
 
-    elif isinstance(sigma, float):
+    elif isinstance(sigma, (int,float)):
         # dispersion is corrected w.r.t. dimension
         samples_centered = _sample_gaussian_spd_centered(
             n_matrices=n_matrices,
