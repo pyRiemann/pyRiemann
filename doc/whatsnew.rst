@@ -10,6 +10,8 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.11.dev
 ---------
 
+- Enhance :func:`pyriemann.datasets.sample_gaussian_spd` adding support for dispersion defined as a covariance matrix.. :pr:`412` by :user:`thibaultdesurrel`
+
 v0.10 (January 2026)
 --------------------
 
