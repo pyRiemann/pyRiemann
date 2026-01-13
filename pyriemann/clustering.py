@@ -12,6 +12,7 @@ from sklearn.utils.validation import check_random_state
 
 from ._base import SpdClassifMixin, SpdClustMixin, SpdTransfMixin
 from .classification import MDM
+from .datasets import sample_gaussian_spd
 from .utils.distance import distance, pairwise_distance, distance_mahalanobis
 from .utils.mean import mean_covariance
 from .utils.geodesic import geodesic
@@ -582,14 +583,15 @@ class Gaussian():
         )
 
     def pdf(self, X, reg=1e-16):
-        """Compute approximate probability density function of matrices.
+        """Compute approximate probability density function (pdf) of matrices.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n, n)
             Set of SPD matrices.
         reg : float, default=1e-16
-            Regularization parameter for normalization term.
+            Regularization parameter for pdf normalization term.
+
         Returns
         -------
         pdf : ndarray, shape (n_matrices,)
@@ -619,10 +621,10 @@ class Gaussian():
             X,
             metric=self._metric_mean,
             sample_weight=sample_weight,
-            init=self.mu
+            init=self.mu,
         )
 
-    def update_covariance(self, X, sample_weight, reg=1e-16):
+    def update_covariance(self, X, sample_weight):
         """Update covariance in tangent space.
 
         Compute weighted covariance of tangent vectors.
@@ -633,24 +635,22 @@ class Gaussian():
             Set of SPD matrices.
         sample_weight : ndarray, shape (n_matrices,)
             Weights for each matrix.
-        reg : float, default=1e-16
-            Regularization parameter for sample weight normalization.
         """
         TangVec = tangent_space(X, self.mu, metric=self._metric_map)
         sigma = TangVec.T @ (sample_weight[:, np.newaxis] * TangVec)
-        self.sigma = sigma / (sample_weight.sum() + reg)
+        self.sigma = sigma / sample_weight.sum()
 
 
 class GaussianMixture(SpdClustMixin, BaseEstimator):
     """Gaussian mixture model.
 
-    Representation of a Gaussian mixture model probability distribution for SPD
-    matrices [1]_.
+    Representation of a Gaussian mixture model (GMM) probability distribution
+    for SPD matrices by expectation-maximization (EM) algorithm [1]_.
 
     Parameters
     ----------
     n_components : integer, default=1
-        The number of mixture components.
+        Number of mixture components.
     metric : string | dict, default="riemann"
         Metric used for mean update (for the list of supported metrics,
         see :func:`pyriemann.utils.mean.mean_covariance`) and
@@ -671,6 +671,8 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         The generator used to initialize the Gaussian models. If an integer is
         given, it fixes the seed. Defaults to the global numpy random
         number generator.
+    verbose : bool, default=False
+        Verbose flag.
 
     Attributes
     ----------
@@ -698,7 +700,8 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         means_init=None,
         tol=1e-5,
         maxiter=100,
-        random_state=None
+        random_state=None,
+        verbose=False,
     ):
         """Init."""
         self.n_components = n_components
@@ -708,31 +711,48 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         self.tol = tol
         self.maxiter = maxiter
         self.random_state = random_state
+        self.verbose = verbose
+
+    def _get_wlik(self, X):
+        """Compute weighted likelihoods.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+
+        Returns
+        -------
+        wlik : ndarray, shape (n_matrices, n_components)
+            Weighted likelihood of each matrix given component.
+        """
+        wlik = np.zeros((X.shape[0], self.n_components))
+        for k in range(self.n_components):
+            wlik[:, k] = self.weights_[k] * self.components_[k].pdf(X)
+        return wlik
 
     def _get_proba(self, X, reg=1e-16):
-        """Compute a posteriori probabilities.
+        """Compute posterior probabilities.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
         reg : float, default=1e-16
-            Regularization parameter for weighted components.
+            Regularization parameter for probabilities normalization.
 
         Returns
         -------
         prob : ndarray, shape (n_matrices, n_components)
-            Probability of each component given matrix.
+            Probability of each matrix given component.
         """
-        num = np.zeros((X.shape[0], self.n_components))
-        for k in range(self.n_components):
-            num[:, k] = self.weights_[k] * self.components_[k].pdf(X)
-        prob = num / (num.sum(axis=1)[:, np.newaxis] + reg)
+        num = self._get_wlik(X)
+        prob = num / (np.sum(num, axis=1, keepdims=True) + reg)
         return prob
 
-    def _apply_log(self, prob):
-        prob = np.clip(prob, a_min=1e-10, a_max=1)
-        return np.log(prob)
+    def _log(self, X):
+        """Log after clip."""
+        return np.log(np.clip(X, a_min=1e-10, a_max=None))
 
     def fit(self, X, y=None):
         """Fit the mixture with EM.
@@ -789,13 +809,15 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
             for k in range(self.n_components):
                 self.components_[k].update_mean(X, prob[:, k])
                 self.components_[k].update_covariance(X, prob[:, k])
-            self.weights_ = prob.sum(axis=0) / n_matrices
+            self.weights_ = np.sum(prob, axis=0) / n_matrices
             # re-normalization (due to approximated Gaussian pdf?)
             self.weights_ = self.weights_ / self.weights_.sum()
 
             # check convergence
-            crit_new = np.sum(-self._apply_log(prob))
-            if abs(crit_new - crit) < self.tol:
+            crit_new = -np.sum(self._log(np.sum(self._get_wlik(X), axis=1)))
+            if self.verbose:
+                print(f"neg log-likelihood = {crit_new}")
+            if crit - crit_new < self.tol:
                 break
             crit = crit_new
         else:
@@ -849,9 +871,36 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         score : float
             Log-likelihood of matrices under the Gaussian mixture model.
         """
-        prob = self._get_proba(X)
-        loglik = self._apply_log(prob)
-        return loglik.sum(axis=1).mean()
+        lik = np.sum(self._get_wlik(X), axis=1)
+        return np.mean(self._log(lik))
+
+    def sample(self, n_matrices=1):
+        """Generate random matrices from the fitted Gaussian distribution.
+
+        Parameters
+        ----------
+        n_matrices : int, default=1
+            Number of matrices to generate.
+
+        Returns
+        -------
+        X : array, shape (n_matrices, n_channels, n_channels)
+            Randomly generated matrices.
+        y : array, shape (n_matrices,)
+            Component labels.
+        """
+        y = self.random_state.randint(self.n_components, size=(n_matrices,))
+
+        X = np.zeros((n_matrices, self.dim, self.dim))
+        for i in np.unique(y):
+            X[y == i] = sample_gaussian_spd(
+                np.count_nonzero(y == i),
+                mean=self.components_[i].mu,
+                sigma=self.components_[i].sigma,
+                random_state=self.random_state
+            )
+
+        return X, y
 
 
 ###############################################################################
