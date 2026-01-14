@@ -877,6 +877,9 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
     def sample(self, n_matrices=1):
         """Generate random matrices from the fitted Gaussian distribution.
 
+        Warning: GMM is calibrated using the Gaussian model [1]_,
+        while this sampling uses the wrapped Gaussian model [2]_.
+
         Parameters
         ----------
         n_matrices : int, default=1
@@ -888,7 +891,18 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
             Randomly generated matrices.
         y : array, shape (n_matrices,)
             Component labels.
-        """
+
+        References
+        ----------
+        .. [1] `Intrinsic statistics on Riemannian manifolds: Basic tools for
+            geometric measurements
+            <https://www.cis.jhu.edu/~tingli/App_of_Lie_group/Intrinsic%20Statistics%20on%20Riemannian%20Manifolds.pdf>`_
+            X. Pennec. Journal of Mathematical Imaging and Vision, 2006
+        .. [2] `Wrapped gaussian on the manifold of symmetric positive
+            definite matrices
+            <https://openreview.net/pdf?id=EhStXG4dCS>`_
+            T. de Surrel, F. Lotte, S. Chevallier, and F. Yger. ICML, 2025
+        """  # noqa
         y = self.random_state.randint(self.n_components, size=(n_matrices,))
 
         X = np.zeros((n_matrices, self.dim, self.dim))
