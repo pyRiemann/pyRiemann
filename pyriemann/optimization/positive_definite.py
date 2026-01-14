@@ -194,7 +194,7 @@ def _get_initial_solution(n_matrices, n_components, random_state):
     initial_sol = sample_gaussian_spd(
         n_matrices,
         mean=np.eye(n_components),
-        sigma=1,
+        sigma=1.,
         random_state=random_state,
     )
     return initial_sol

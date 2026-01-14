@@ -10,6 +10,7 @@ from sklearn.utils import check_random_state
 from ..utils.base import sqrtm
 from ..utils.geodesic import geodesic
 from ..utils.test import is_sym_pos_semi_def as is_spsd
+from ..utils.tangentspace import exp_map_riemann, unupper
 
 
 def _pdf_r(r, sigma):
@@ -249,12 +250,12 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
     ptarget : function with one input
         The target pdf to sample from or a multiple of it.
     n_samples : int
-        How many samples to get from the ptarget distribution.
+        Number of samples to get from the ptarget distribution.
     x0 : ndarray
         Initial state for the MCMC procedure. Note that the shape of this array
         defines the dimensionality n_dim of the matrices to be sampled.
     n_burnin : int, default=20
-        How many samples to discard from the beginning of the chain generated
+        Number of samples to discard from the beginning of the chain generated
         by the slice sampling procedure. Usually the first samples are prone to
         non-stationary behavior and do not follow very well the target pdf.
     thin : int, default=10
@@ -267,7 +268,7 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
         Number of jobs to use for the computation. This works by computing
-        each of the class centroid in parallel. If -1 all CPUs are used.
+        each sample in parallel. If -1 all CPUs are used.
 
     Returns
     -------
@@ -281,7 +282,7 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
         )
     if (n_burnin <= 0) or (not isinstance(n_burnin, int)):
         raise ValueError(
-            f"n_samples must be a positive integer (Got {n_burnin})"
+            f"n_burnin must be a positive integer (Got {n_burnin})"
         )
     if (thin <= 0) or (not isinstance(thin, int)):
         raise ValueError(f"thin must be a positive integer (Got {thin})")
@@ -313,7 +314,7 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
     Parameters
     ----------
     n_samples : int
-        How many samples to generate.
+        Number of samples to generate.
     n_dim : int
         Dimensionality of the SPD matrices to be sampled.
     sigma : float
@@ -322,7 +323,7 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
         Number of jobs to use for the computation. This works by computing
-        each of the class centroid in parallel. If -1 all CPUs are used.
+        each sample in parallel. If -1 all CPUs are used.
     sampling_method : {"auto", "slice", "rejection"}, default="auto"
         Method used to sample parameter r: "auto", "slice" or "rejection".
         If "auto", sampling_method will be equal to "slice" for n_dim != 2 and
@@ -378,7 +379,7 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
     Parameters
     ----------
     n_samples : int
-        How many samples to generate.
+        Number of samples to generate.
     n_dim : int
         Dimensionality of the SPD matrices to be sampled.
     random_state : int | RandomState instance | None, default=None
@@ -411,7 +412,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
     Parameters
     ----------
     n_matrices : int
-        How many matrices to generate.
+        Number of matrices to generate.
     n_dim : int
         Dimensionality of the SPD matrices to be sampled.
     sigma : float
@@ -420,7 +421,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
         Number of jobs to use for the computation. This works by computing
-        each of the class centroid in parallel. If -1 all CPUs are used.
+        each sample in parallel. If -1 all CPUs are used.
     sampling_method : {"auto", "slice", "rejection"}, default="auto"
         Method used to sample parameter r: "auto", "slice" or "rejection".
         If "auto", sampling_method will be equal to "slice" for n_dim != 2 and
@@ -475,27 +476,37 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
     """Sample a Riemannian Gaussian distribution.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at
-    mean and with dispersion parametrized by sigma. This distribution has been
-    defined in [1]_ and generalizes the notion of a Gaussian distribution to
-    the space of SPD matrices. The sampling is based on a spectral
-    factorization of SPD matrices in terms of their eigenvectors (U-parameters)
-    and the log of the eigenvalues (r-parameters).
+    mean and with dispersion parametrized by sigma.
+
+    If sigma is a float, it samples from the distribution defined in [1]_ that
+    generalizes the notion of a Gaussian distribution to the space of SPD
+    matrices. This sampling is based on a spectral factorization of SPD
+    matrices in terms of their eigenvectors (U-parameters) and the log of the
+    eigenvalues (r-parameters).
+
+    If sigma is a covariance matrix, it samples from the wrapped Gaussian
+    distribution defined in [2]_.
 
     Parameters
     ----------
     n_matrices : int
-        How many matrices to generate.
+        Number of matrices to generate.
     mean : ndarray, shape (n_dim, n_dim)
         Center of the Riemannian Gaussian distribution.
-    sigma : float
-        Dispersion of the Riemannian Gaussian distribution.
+    sigma : float | ndarray, shape (n_dim * (n_dim + 1) / 2, \
+            n_dim * (n_dim + 1) / 2)
+        If float, dispersion of the Riemannian Gaussian distribution [1]_.
+        If ndarray, covariance matrix of the wrapped Gaussian
+        distribution [2]_.
     random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
-        The number of jobs to use for the computation. This works by computing
-        each of the class centroid in parallel. If -1 all CPUs are used.
+        When sigma is a float,
+        the number of jobs to use for the computation. This works by computing
+        each sample in parallel. If -1 all CPUs are used.
     sampling_method : {"auto", "slice", "rejection"}, default="auto"
-        Method used to sample eigenvalues: "auto", "slice" or "rejection".
+        When sigma is a float,
+        method used to sample eigenvalues: "auto", "slice" or "rejection".
         If "auto", sampling_method will be equal to "slice" for n_dim != 2 and
         equal to "rejection" for n_dim = 2.
 
@@ -509,6 +520,8 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.11
+        Add support for dispersion defined as a covariance matrix.
 
     References
     ----------
@@ -517,22 +530,53 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         <https://hal.archives-ouvertes.fr/hal-01710191>`_
         S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton. IEEE Trans Inf
         Theory, vol. 63, pp. 2153–2170, 2017.
+    .. [2] `Wrapped gaussian on the manifold of symmetric positive
+        definite matrices
+        <https://openreview.net/pdf?id=EhStXG4dCS>`_
+        T. de Surrel, F. Lotte, S. Chevallier, and F. Yger. International
+        Conference on Machine Learning (ICML), July 2025, Vancouver, Canada.
     """
 
-    n_dim = mean.shape[0]
-    # dispersion is corrected w.r.t. dimension
-    samples_centered = _sample_gaussian_spd_centered(
-        n_matrices=n_matrices,
-        n_dim=n_dim,
-        sigma=sigma / np.sqrt(n_dim),
-        random_state=random_state,
-        n_jobs=n_jobs,
-        sampling_method=sampling_method,
-    )
+    n_dim, _ = mean.shape
 
-    # apply the parallel transport to mean on each of the samples
-    mean_sqrt = sqrtm(mean)
-    samples = mean_sqrt @ samples_centered @ mean_sqrt
+    if isinstance(sigma, (int, float)):
+        # generate samples centered at identity
+        samples_centered = _sample_gaussian_spd_centered(
+            n_matrices=n_matrices,
+            n_dim=n_dim,
+            sigma=sigma / np.sqrt(n_dim),  # dispersion corrected w.r.t. dim
+            random_state=random_state,
+            n_jobs=n_jobs,
+            sampling_method=sampling_method,
+        )
+
+        # apply the parallel transport from identity to mean on samples
+        mean_sqrt = sqrtm(mean)
+        samples = mean_sqrt @ samples_centered @ mean_sqrt
+
+    elif isinstance(sigma, np.ndarray):
+        n_ts = n_dim * (n_dim + 1) // 2
+        if sigma.shape != (n_ts, n_ts):
+            raise ValueError(
+                f"sigma must be a covariance matrix of shape ({n_ts}, {n_ts})."
+            )
+
+        # generate samples from the multivariate normal distribution
+        rs = check_random_state(random_state)
+        samples_ts_norm = rs.multivariate_normal(
+            size=n_matrices,
+            mean=np.zeros(n_ts),
+            cov=sigma,
+        )
+
+        # send the tangent space at mean
+        mean_sqrt = sqrtm(mean)
+        samples_ts = mean_sqrt @ unupper(samples_ts_norm) @ mean_sqrt
+        # map back to the manifold
+        samples = exp_map_riemann(samples_ts, mean, Cm12=True)
+
+    else:
+        raise ValueError("sigma must be either a float or a ndarray.")
 
     if not is_spsd(samples):
         msg = "Some of the sampled matrices are very badly conditioned and \
