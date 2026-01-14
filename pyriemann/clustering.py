@@ -905,7 +905,8 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         """  # noqa
         y = self.random_state.randint(self.n_components, size=(n_matrices,))
 
-        X = np.zeros((n_matrices, self.dim, self.dim))
+        n_channels = self.components_[0].n
+        X = np.zeros((n_matrices, n_channels, n_channels))
         for i in np.unique(y):
             X[y == i] = sample_gaussian_spd(
                 np.count_nonzero(y == i),

@@ -379,10 +379,10 @@ def test_gmm_init(n_components, get_mats, get_weights):
     )
     gmm.fit(X)
 
-    # n_sampled_matrices = 20
-    # X, y = gmm.sample(n_sampled_matrices)
-    # assert X.shape == (n_sampled_matrices, n_channels, n_channels)
-    # assert y.shape == (n_sampled_matrices, )
+    n_sampled_matrices = 20
+    X, y = gmm.sample(n_sampled_matrices)
+    assert X.shape == (n_sampled_matrices, n_channels, n_channels)
+    assert y.shape == (n_sampled_matrices,)
 
 
 @pytest.mark.parametrize("use_weight", [True, False])
