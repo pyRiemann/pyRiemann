@@ -539,8 +539,8 @@ class MeanShift(SpdClustMixin, BaseEstimator):
 class Gaussian():
     """Gaussian model.
 
-    Gaussian model for Riemannian manifold of SPD matrices [1]_,
-    defined with a mean in manifold and a covariance in tangent space.
+    Gaussian model for Riemannian manifold of SPD matrices,
+    defined with a mean in manifold and a covariance in tangent space [1]_.
 
     Parameters
     ----------
@@ -562,7 +562,7 @@ class Gaussian():
 
     Notes
     -----
-    .. versionadded:: 0.10
+    .. versionadded:: 0.11
 
     References
     ----------
@@ -600,7 +600,7 @@ class Gaussian():
         TangVec = tangent_space(X, self.mu, metric=self._metric_map)
         dist = distance_mahalanobis(TangVec.T, self.sigma, squared=True)
         num = np.exp(-0.5 * dist)
-        # denom = np.sqrt(((2 * np.pi)**self.n) * np.linalg.det(self.sigma))
+        # denom = np.sqrt(((2 * np.pi) ** self.n) * np.linalg.det(self.sigma))
         # but (2pi)^n will be simplified with upcoming normalizations
         denom = np.sqrt(np.linalg.det(self.sigma))
         return num / (denom + reg)
@@ -678,8 +678,10 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
     ----------
     weights_ : ndarray, shape (n_components,)
         The weights of each mixture components.
-    components_ : list, len (n_components)
-        The components of the mixture.
+    means_ : ndarray, shape (n_components, n_channels, n_channels)
+        The mean of each mixture component.
+    covariances_ : ndarray, shape (n_components, n_ts, n_ts)
+        The covariance of each mixture component.
 
     Notes
     -----
@@ -713,6 +715,14 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         self.random_state = random_state
         self.verbose = verbose
 
+    @property
+    def means_(self):
+        return np.stack([component.mu for component in self._components])
+
+    @property
+    def covariances_(self):
+        return np.stack([component.sigma for component in self._components])
+
     def _get_wlik(self, X):
         """Compute weighted likelihoods.
 
@@ -728,7 +738,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         """
         wlik = np.zeros((X.shape[0], self.n_components))
         for k in range(self.n_components):
-            wlik[:, k] = self.weights_[k] * self.components_[k].pdf(X)
+            wlik[:, k] = self.weights_[k] * self._components[k].pdf(X)
         return wlik
 
     def _get_proba(self, X, reg=1e-16):
@@ -744,7 +754,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         Returns
         -------
         prob : ndarray, shape (n_matrices, n_components)
-            Probability of each matrix given component.
+            Posterior probability of each component given matrix.
         """
         num = self._get_wlik(X)
         prob = num / (np.sum(num, axis=1, keepdims=True) + reg)
@@ -786,9 +796,9 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
             )
             means_init = X[inds]
 
-        self.components_ = []
+        self._components = []
         for k in range(self.n_components):
-            self.components_.append(
+            self._components.append(
                 Gaussian(
                     n_channels,
                     mu=means_init[k],
@@ -806,12 +816,12 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
             prob = self._get_proba(X)
 
             # m-step
-            for k in range(self.n_components):
-                self.components_[k].update_mean(X, prob[:, k])
-                self.components_[k].update_covariance(X, prob[:, k])
             self.weights_ = np.sum(prob, axis=0) / n_matrices
-            # re-normalization (due to approximated Gaussian pdf?)
+            # re-normalization (necessary because of approx Gaussian pdf?)
             self.weights_ = self.weights_ / self.weights_.sum()
+            for k in range(self.n_components):
+                self._components[k].update_mean(X, prob[:, k])
+                self._components[k].update_covariance(X, prob[:, k])
 
             # check convergence
             crit_new = -np.sum(self._log(np.sum(self._get_wlik(X), axis=1)))
@@ -905,13 +915,15 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         """  # noqa
         y = self.random_state.randint(self.n_components, size=(n_matrices,))
 
-        n_channels = self.components_[0].n
-        X = np.zeros((n_matrices, n_channels, n_channels))
+        means, covariances = self.means_, self.covariances_
+        n_channels = means.shape[-1]
+
+        X = np.zeros((n_matrices, means.shape[-1], n_channels))
         for i in np.unique(y):
             X[y == i] = sample_gaussian_spd(
                 np.count_nonzero(y == i),
-                mean=self.components_[i].mu,
-                sigma=self.components_[i].sigma,
+                mean=means[i],
+                sigma=covariances[i],
                 random_state=self.random_state
             )
 

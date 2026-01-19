@@ -7,10 +7,12 @@ from pyriemann.clustering import (
     Kmeans,
     KmeansPerClassTransform,
     MeanShift,
+    Gaussian,
     GaussianMixture,
     Potato,
     PotatoField,
 )
+from pyriemann.utils.tangentspace import tangent_space
 
 clusts = [
     Kmeans,
@@ -150,9 +152,11 @@ def clt_fit(clust, X, n_clusters, labels):
         assert clt.modes_.shape[1:] == (n_channels, n_channels)
         return
     if clust is GaussianMixture:
-        assert len(clt.components_) == clt.n_components
         assert clt.weights_.shape == (clt.n_components,)
         assert clt.weights_.sum() == approx(1)
+        assert clt.means_.shape == (clt.n_components, n_channels, n_channels)
+        n_ts = n_channels * (n_channels + 1) // 2
+        assert clt.covariances_.shape == (clt.n_components, n_ts, n_ts)
         return
     if clust is Potato:
         assert clt.covmean_.shape == (n_channels, n_channels)
@@ -365,8 +369,33 @@ def test_meanshift(kernel, metric, get_mats, get_labels):
     clt.fit(X)
 
 
+def test_gaussian(get_mats, get_weights):
+    n_matrices, n = 13, 3
+    X = get_mats(n_matrices, n, "spd")
+    weights = get_weights(n_matrices)
+
+    gm = Gaussian(n=n, mu=X[0], metric="riemann")
+
+    gm.update_mean(X, weights)
+    assert gm.mu.shape == (n, n)
+
+    gm.update_covariance(X, weights)
+    n_ts = n * (n + 1) // 2
+    assert gm.sigma.shape == (n_ts, n_ts)
+
+    pdf = gm.pdf(X)
+    assert pdf.shape == (n_matrices,)
+
+    tv = tangent_space(X, gm.mu, metric="riemann")[0]
+    dist = tv.T @ np.linalg.inv(gm.sigma) @ tv
+    num = np.exp(-0.5 * dist)
+    denom = np.sqrt(np.linalg.det(gm.sigma))
+    pdf_ = num / (denom + 1e-16)
+    assert pdf[0] == approx(pdf_)
+
+
 @pytest.mark.parametrize("n_components", [2, 4])
-def test_gmm_init(n_components, get_mats, get_weights):
+def test_gmm(n_components, get_mats, get_weights):
     n_matrices, n_channels = 50, 2
     X = get_mats(n_matrices, n_channels, "spd")
     means_init = get_mats(n_components, n_channels, "spd")
@@ -383,6 +412,9 @@ def test_gmm_init(n_components, get_mats, get_weights):
     X, y = gmm.sample(n_sampled_matrices)
     assert X.shape == (n_sampled_matrices, n_channels, n_channels)
     assert y.shape == (n_sampled_matrices,)
+
+
+###############################################################################
 
 
 @pytest.mark.parametrize("use_weight", [True, False])
