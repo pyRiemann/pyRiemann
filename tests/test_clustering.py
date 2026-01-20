@@ -389,7 +389,7 @@ def test_gaussian(get_mats, get_weights):
     tv = tangent_space(X, gm.mu, metric="riemann")[0]
     dist = tv.T @ np.linalg.inv(gm.sigma) @ tv
     num = np.exp(-0.5 * dist)
-    denom = np.sqrt(np.linalg.det(gm.sigma))
+    denom = np.sqrt(((2 * np.pi) ** n) * np.linalg.det(gm.sigma))
     pdf_ = num / (denom + 1e-16)
     assert pdf[0] == approx(pdf_)
 

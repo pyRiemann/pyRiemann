@@ -582,7 +582,7 @@ class Gaussian():
             metric, ["mean", "map"]
         )
 
-    def pdf(self, X, reg=1e-16):
+    def pdf(self, X, reg=1e-16, use_pi=True):
         """Compute approximate probability density function (pdf) of matrices.
 
         Parameters
@@ -591,6 +591,10 @@ class Gaussian():
             Set of SPD matrices.
         reg : float, default=1e-16
             Regularization parameter for pdf normalization term.
+        use_pi : bool, default=True
+            If true, use (2 pi)^n to compute the full denominator.
+            If false, do not use (2 pi)^n, because will be simplified with
+            upcoming normalizations.
 
         Returns
         -------
@@ -600,9 +604,11 @@ class Gaussian():
         TangVec = tangent_space(X, self.mu, metric=self._metric_map)
         dist = distance_mahalanobis(TangVec.T, self.sigma, squared=True)
         num = np.exp(-0.5 * dist)
-        # denom = np.sqrt(((2 * np.pi) ** self.n) * np.linalg.det(self.sigma))
-        # but (2pi)^n will be simplified with upcoming normalizations
-        denom = np.sqrt(np.linalg.det(self.sigma))
+        det = np.linalg.det(self.sigma)
+        if use_pi:
+            denom = np.sqrt(((2 * np.pi) ** self.n) * det)
+        else:
+            denom = np.sqrt(det)
         return num / (denom + reg)
 
     def update_mean(self, X, sample_weight):
@@ -723,13 +729,17 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
     def covariances_(self):
         return np.stack([component.sigma for component in self._components])
 
-    def _get_wlik(self, X):
+    def _get_wlik(self, X, use_pi=True):
         """Compute weighted likelihoods.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
+        use_pi : bool, default=True
+            If true, use (2 pi)^n to compute the full denominator of pdf.
+            If false, do not use (2 pi)^n, because will be simplified with
+            upcoming normalizations.
 
         Returns
         -------
@@ -751,12 +761,13 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         reg : float, default=1e-16
             Regularization parameter for probabilities normalization.
 
+
         Returns
         -------
         prob : ndarray, shape (n_matrices, n_components)
             Posterior probability of each component given matrix.
         """
-        num = self._get_wlik(X)
+        num = self._get_wlik(X, use_pi=False)
         prob = num / (np.sum(num, axis=1, keepdims=True) + reg)
         return prob
 
