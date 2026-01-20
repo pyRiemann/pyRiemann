@@ -582,7 +582,7 @@ class Gaussian():
             metric, ["mean", "map"]
         )
 
-    def pdf(self, X, reg=1e-16, use_pi=True):
+    def pdf(self, X, *, reg=1e-16, use_pi=True):
         """Compute approximate probability density function (pdf) of matrices.
 
         Parameters
@@ -683,11 +683,11 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
     Attributes
     ----------
     weights_ : ndarray, shape (n_components,)
-        The weights of each mixture components.
+        Weight of each mixture component.
     means_ : ndarray, shape (n_components, n_channels, n_channels)
-        The mean of each mixture component.
+        Mean of each mixture component.
     covariances_ : ndarray, shape (n_components, n_ts, n_ts)
-        The covariance of each mixture component.
+        Covariance of each mixture component.
 
     Notes
     -----
@@ -748,7 +748,8 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         """
         wlik = np.zeros((X.shape[0], self.n_components))
         for k in range(self.n_components):
-            wlik[:, k] = self.weights_[k] * self._components[k].pdf(X)
+            lik = self._components[k].pdf(X, use_pi=use_pi)
+            wlik[:, k] = self.weights_[k] * lik
         return wlik
 
     def _get_proba(self, X, reg=1e-16):
@@ -760,7 +761,6 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
             Set of SPD matrices.
         reg : float, default=1e-16
             Regularization parameter for probabilities normalization.
-
 
         Returns
         -------
@@ -838,7 +838,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
             crit_new = -np.sum(self._log(np.sum(self._get_wlik(X), axis=1)))
             if self.verbose:
                 print(f"neg log-likelihood = {crit_new}")
-            if crit - crit_new < self.tol:
+            if abs(crit - crit_new) < self.tol:
                 break
             crit = crit_new
         else:
