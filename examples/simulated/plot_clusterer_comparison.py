@@ -23,6 +23,7 @@ import numpy as np
 from pyriemann.clustering import (
     Kmeans,
     MeanShift,
+    GaussianMixture,
 )
 from pyriemann.datasets import make_matrices, make_gaussian_blobs
 
@@ -112,10 +113,11 @@ def plot_clusterers(metric):
 # -----------------------
 
 names = [
-    "k-means, 2 clusters",
-    "k-means, 3 clusters",
-    "mean shift, uniform kernel",
-    "mean shift, normal kernel",
+    "k-means\n2 clusters",
+    "k-means\n3 clusters",
+    "mean shift\nuniform kernel",
+    "mean shift\nnormal kernel",
+    "gaussian mixture\n3 clusters",
 ]
 n_jobs = 4
 clusts = [
@@ -123,6 +125,7 @@ clusts = [
     Kmeans(n_clusters=3, n_jobs=n_jobs),
     MeanShift(kernel="uniform", n_jobs=n_jobs),
     MeanShift(kernel="normal", n_jobs=n_jobs),
+    GaussianMixture(n_components=3),
 ]
 n_clusts = len(clusts)
 
