@@ -10,6 +10,62 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
+
+      # Restore cached datasets to avoid re-downloading from Zenodo
+      - name: Restore cached datasets
+        id: cache-datasets
+        uses: actions/cache/restore@v4
+        with:
+          path: |
+            ~/pyriemann_data
+            ~/.mne
+          key: docs-${{ runner.os }}-pyriemann-data-v1
+
+      # Pre-download datasets when cache is cold
+      - name: Pre-download datasets (cold cache)
+        if: steps.cache-datasets.outputs.cache-hit != 'true'
+        run: |
+          pip install -e .
+          python -c "
+          import os
+          import time
+          from urllib.request import urlretrieve
+
+          data_path = os.path.expanduser('~/pyriemann_data')
+          os.makedirs(data_path, exist_ok=True)
+
+          datasets = [
+              # Salinas
+              ('https://zenodo.org/records/15771735/files/Salinas.mat?download=1', 'Salinas.mat'),
+              ('https://zenodo.org/records/15771735/files/Salinas_corrected.mat?download=1', 'Salinas_corrected.mat'),
+              ('https://zenodo.org/records/15771735/files/Salinas_gt.mat?download=1', 'Salinas_gt.mat'),
+              # UAVSAR
+              ('https://zenodo.org/records/10625505/files/scene1.npy?download=1', 'scene1.npy'),
+              ('https://zenodo.org/records/10625505/files/scene2.npy?download=1', 'scene2.npy'),
+              # fNIRS
+              ('https://zenodo.org/records/13841869/files/X.npy?download=1', 'X_fnirs.npy'),
+              ('https://zenodo.org/records/13841869/files/y.npy?download=1', 'y_fnirs.npy'),
+          ]
+
+          for url, filename in datasets:
+              dst = os.path.join(data_path, filename)
+              if not os.path.exists(dst):
+                  print(f'Downloading {filename}...')
+                  urlretrieve(url, dst)
+                  time.sleep(30)  # Delay to avoid Zenodo rate limiting
+          print('All datasets downloaded!')
+          "
+
+      # Save cache after downloading (only on cache miss)
+      - name: Save datasets cache
+        if: steps.cache-datasets.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: |
+            ~/pyriemann_data
+            ~/.mne
+          key: docs-${{ runner.os }}-pyriemann-data-v1
+
       - name: Generate HTML docs
         uses: gcattan/sphinx-action@master
         with:
@@ -18,6 +74,10 @@ jobs:
             apt-get update
             pip install -e .
             pip install -r doc/requirements.txt
+        env:
+          PYRIEMANN_DATA_PATH: /github/home/pyriemann_data
+          SPHINX_GALLERY_PARALLEL: ${{ steps.cache-datasets.outputs.cache-hit == 'true' }}
+
       - name:  Upload generated HTML as artifact
         uses: actions/upload-artifact@v4
         with:
