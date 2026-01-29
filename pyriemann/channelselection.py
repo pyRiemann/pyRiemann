@@ -102,7 +102,7 @@ class ElectrodeSelection(TransformerMixin, BaseEstimator):
                         di[idx] += distance(
                             self.covmeans_[i][:, sub][sub, :],
                             self.covmeans_[j][:, sub][sub, :],
-                            metric=mdm.metric_dist,
+                            metric=mdm._metric_dist,
                         )
 
             torm = di.argmax()

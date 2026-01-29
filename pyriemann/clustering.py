@@ -47,7 +47,7 @@ def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,
     """helper to fit a single run of centroid."""
     # init random state if provided
     mdm = MDM(metric=metric, n_jobs=n_jobs)
-    mdm.metric_mean, mdm.metric_dist = check_metric(metric)
+    mdm._metric_mean, mdm._metric_dist = check_metric(metric)
     squared_norms = np.linalg.norm(X, ord="fro", axis=(1, 2))**2
     mdm.covmeans_ = _init_centroids(
         X,
@@ -339,7 +339,7 @@ class KmeansPerClassTransform(SpdTransfMixin, BaseEstimator):
             Distance to each centroid according to the metric.
         """
         mdm = MDM(metric=self.metric, n_jobs=self._km.n_jobs)
-        mdm.metric_mean, mdm.metric_dist = check_metric(self.metric)
+        mdm._metric_mean, mdm._metric_dist = check_metric(self.metric)
         mdm.covmeans_ = self.covmeans_
         return mdm._predict_distances(X)
 

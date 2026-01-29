@@ -98,13 +98,13 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         self : TangentSpace instance
             The TangentSpace instance.
         """
-        self.metric_mean, self.metric_map = check_metric(
+        self._metric_mean, self._metric_map = check_metric(
             self.metric, ["mean", "map"]
         )
 
         self.reference_ = mean_covariance(
             X,
-            metric=self.metric_mean,
+            metric=self._metric_mean,
             sample_weight=sample_weight
         )
         return self
@@ -149,16 +149,16 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         ts : ndarray, shape (n_matrices, n_ts)
             Tangent space projections of SPD/HPD matrices.
         """
-        self.metric_mean, self.metric_map = check_metric(
+        self._metric_mean, self._metric_map = check_metric(
             self.metric, ["mean", "map"]
         )
         self._check_reference_points(X)
 
         if self.tsupdate:
-            Cr = mean_covariance(X, metric=self.metric_mean)
+            Cr = mean_covariance(X, metric=self._metric_mean)
         else:
             Cr = self.reference_
-        return tangent_space(X, Cr, metric=self.metric_map)
+        return tangent_space(X, Cr, metric=self._metric_map)
 
     def fit_transform(self, X, y=None, sample_weight=None):
         """Fit and transform in a single function.
@@ -177,16 +177,16 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         ts : ndarray, shape (n_matrices, n_ts)
             Tangent space projections of SPD/HPD matrices.
         """
-        self.metric_mean, self.metric_map = check_metric(
+        self._metric_mean, self._metric_map = check_metric(
             self.metric, ["mean", "map"]
         )
 
         self.reference_ = mean_covariance(
             X,
-            metric=self.metric_mean,
+            metric=self._metric_mean,
             sample_weight=sample_weight
         )
-        return tangent_space(X, self.reference_, metric=self.metric_map)
+        return tangent_space(X, self.reference_, metric=self._metric_map)
 
     def inverse_transform(self, X):
         """Inverse transform.
@@ -203,11 +203,11 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         X_new : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD/HPD matrices corresponding to each of tangent vector.
         """
-        self.metric_mean, self.metric_map = check_metric(
+        self._metric_mean, self._metric_map = check_metric(
             self.metric, ["mean", "map"]
         )
         self._check_reference_points(X)
-        return untangent_space(X, self.reference_, metric=self.metric_map)
+        return untangent_space(X, self.reference_, metric=self._metric_map)
 
 
 class FGDA(TransformerMixin, BaseEstimator):
