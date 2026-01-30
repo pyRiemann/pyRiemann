@@ -10,11 +10,11 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.11.dev
 ---------
 
-- Add CI caching for Zenodo datasets to speed up documentation builds and avoid rate limiting. :pr:`417` by :user:`bruAristimunha`
-
 - Enhance :func:`pyriemann.datasets.sample_gaussian_spd` adding support for dispersion defined as a covariance matrix. :pr:`412` by :user:`thibaultdesurrel`
 
 - Add :class:`pyriemann.clustering.GaussianMixture`. :pr:`411` by :user:`qbarthelemy`
+
+- Add CI caching for Zenodo datasets to speed up documentation builds and avoid rate limiting. :pr:`417` by :user:`bruAristimunha`
 
 v0.10 (January 2026)
 --------------------
