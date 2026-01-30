@@ -111,7 +111,7 @@ class MDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         self : MDM instance
             The MDM instance.
         """
-        self.metric_mean, self.metric_dist = check_metric(self.metric)
+        self._metric_mean, self._metric_dist = check_metric(self.metric)
         self.classes_ = np.unique(y)
 
         if sample_weight is None:
@@ -120,7 +120,7 @@ class MDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         self.covmeans_ = Parallel(n_jobs=self.n_jobs)(
             delayed(mean_covariance)(
                 X[y == c],
-                metric=self.metric_mean,
+                metric=self._metric_mean,
                 sample_weight=sample_weight[y == c]
             ) for c in self.classes_
         )
@@ -133,7 +133,7 @@ class MDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         """Helper to predict the distance. Equivalent to transform."""
 
         dist = Parallel(n_jobs=self.n_jobs)(
-            delayed(distance)(X, covmean, self.metric_dist)
+            delayed(distance)(X, covmean, self._metric_dist)
             for covmean in self.covmeans_
         )
 
@@ -503,7 +503,7 @@ class KNearestNeighbor(MDM):
         self : NearestNeighbor instance
             The NearestNeighbor instance.
         """
-        self.metric_mean, self.metric_dist = check_metric(self.metric)
+        self._metric_mean, self._metric_dist = check_metric(self.metric)
         self.covmeans_ = X
         self.classmeans_ = y
         self.classes_ = np.unique(y)
@@ -967,8 +967,8 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
 
     Parameters
     ----------
-    metric : string, default="logeuclid"
-        Current implementation is available only for log-Euclidean distance.
+    metric : {"euclid", "logeuclid"}, default="logeuclid"
+        Metric used for mean estimation and distance.
     n_jobs : int, default=1
         Number of jobs to use for the computation.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
@@ -994,6 +994,8 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.10
+    .. versionchanged:: 0.11
+        Add support for Euclidean metric.
 
     References
     ----------
@@ -1027,7 +1029,7 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         self : NearestConvexHull instance
             The NearestConvexHull instance.
         """
-        if self.metric != "logeuclid":
+        if self.metric not in ["euclid", "logeuclid"]:
             raise ValueError(f"NCH does not support metric {self.metric}")
 
         self.mats_ = X
@@ -1069,13 +1071,15 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         n_matrices_A, _, _ = A.shape
         n_matrices_B, _, _ = B.shape
 
-        A_, B_ = logm(A), logm(B)
+        if self.metric == "euclid":
+            A_, B_ = A, B
+        elif self.metric == "logeuclid":
+            A_, B_ = logm(A), logm(B)
 
         D1 = np.zeros((n_matrices_A, n_matrices_A))
         for i in range(n_matrices_A):
             for j in range(i, n_matrices_A):
-                D1[i, j] = np.trace(A_[i] @ A_[j])
-                D1[j, i] = D1[i, j]
+                D1[i, j] = D1[j, i] = np.trace(A_[i] @ A_[j])
 
         D2 = np.zeros((n_matrices_B, n_matrices_A))
         for i in range(n_matrices_B):

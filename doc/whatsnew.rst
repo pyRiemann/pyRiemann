@@ -14,6 +14,8 @@ v0.11.dev
 
 - Add :class:`pyriemann.clustering.GaussianMixture`. :pr:`411` by :user:`qbarthelemy`
 
+- Enhance :class:`pyriemann.classification.NearestConvexHull` to support "euclid" metric. :pr:`415` by :user:`qbarthelemy`
+
 - Add CI caching for Zenodo datasets to speed up documentation builds and avoid rate limiting. :pr:`417` by :user:`bruAristimunha`
 
 v0.10 (January 2026)

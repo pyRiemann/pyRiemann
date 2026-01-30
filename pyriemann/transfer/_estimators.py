@@ -1215,7 +1215,7 @@ class MDWM(MDM):
         self : MDWM instance
             The MDWM instance.
         """
-        self.metric_mean, self.metric_dist = check_metric(self.metric)
+        self._metric_mean, self._metric_dist = check_metric(self.metric)
 
         if not 0 <= self.domain_tradeoff <= 1:
             raise ValueError(
@@ -1244,7 +1244,7 @@ class MDWM(MDM):
             Parallel(n_jobs=self.n_jobs)(
                 delayed(mean_covariance)(
                     X_src[y_src == c],
-                    metric=self.metric_mean,
+                    metric=self._metric_mean,
                     sample_weight=sample_weight[y_src == c],
                 ) for c in self.classes_
             )
@@ -1254,7 +1254,7 @@ class MDWM(MDM):
             Parallel(n_jobs=self.n_jobs)(
                 delayed(mean_covariance)(
                     X_tgt[y_tgt == c],
-                    metric=self.metric_mean,
+                    metric=self._metric_mean,
                 ) for c in self.classes_
             )
         )
@@ -1263,7 +1263,7 @@ class MDWM(MDM):
             self.source_means_,
             self.target_means_,
             self.domain_tradeoff,
-            metric=self.metric_mean,
+            metric=self._metric_mean,
         )
 
         return self

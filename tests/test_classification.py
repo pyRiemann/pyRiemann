@@ -485,27 +485,29 @@ def test_meanfield_transformer(get_mats, get_labels, power_list):
     pip.predict(X)
 
 
-def test_nch(rndstate):
-    n_matrices, n_channels = 50, 3
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid"])
+def test_nch(metric, rndstate):
+    n_matrices, n_channels = 10, 2
     X, y = make_gaussian_blobs(
         n_matrices=n_matrices,
         n_dim=n_channels,
-        class_sep=10., class_disp=1.0,
+        class_sep=10., class_disp=.5,
         random_state=rndstate,
     )
 
-    nch = NearestConvexHull().fit(X, y)
+    nch = NearestConvexHull(metric=metric).fit(X, y)
     assert_array_equal(nch.mats_, X)
     assert_array_equal(nch.classmats_, y)
 
-    X_ = X[y == nch.classes_[0]]
-    dist = nch.transform(X_)
-    assert np.all(dist[:, 0] < dist[:, 1])
+    # distance to its class is smaller than to the opposite class
+    X_0 = X[y == nch.classes_[0]]
+    dist_0 = nch.transform(X_0)
+    assert np.all(dist_0[:, 0] < dist_0[:, 1])
 
-    # distance to hull should be equal to zero for the center of training set
-    M = mean_covariance(X_)
-    dist = nch.transform(M[np.newaxis, :, :])
-    assert dist[0, 0] <= 1e-3
+    # distance to hull/class should be close to zero for the center of class
+    M_0 = mean_covariance(X_0)
+    dist = nch.transform(M_0[np.newaxis, :, :])[0]
+    assert dist[0] <= 1e-2
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])

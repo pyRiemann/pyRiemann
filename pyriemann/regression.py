@@ -218,7 +218,7 @@ class KNearestNeighborRegressor(RegressorMixin, MDM):
         self : KNearestNeighborRegressor instance
             The KNearestNeighborRegressor instance.
         """
-        self.metric_mean, self.metric_dist = check_metric(self.metric)
+        self._metric_mean, self._metric_dist = check_metric(self.metric)
         self.values_ = y
         self.covmeans_ = X
 
