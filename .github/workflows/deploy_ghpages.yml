@@ -19,7 +19,7 @@ jobs:
           path: |
             examples/fnirs/data
             examples/image-radar/data
-            /github/home/mne_data
+            ~/mne_data
           key: docs-${{ runner.os }}-pyriemann-data-v2
 
       # Pre-download datasets when cache is cold
