@@ -78,7 +78,7 @@ jobs:
           path: |
             examples/fnirs/data
             examples/image-radar/data
-            /github/home/mne_data
+            ~/mne_data
           key: docs-${{ runner.os }}-pyriemann-data-v2
 
       - name: Generate HTML docs
