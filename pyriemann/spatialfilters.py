@@ -6,7 +6,7 @@ from scipy.linalg import eigh, inv
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from .utils.covariance import normalize, get_nondiag_weight, cov_est_functions
-from .utils.mean import mean_covariance
+from .utils.mean import gmean
 from .utils.utils import check_function
 from .utils.ajd import ajd, ajd_pham
 from . import estimation as est
@@ -298,7 +298,7 @@ class CSP(BilinearFilter):
     metric : str, default="euclid"
         Metric used for the estimation of mean covariance matrices.
         For the list of supported metrics,
-        see :func:`pyriemann.utils.mean.mean_covariance`.
+        see :func:`pyriemann.utils.mean.gmean`.
     log : bool, default=True
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.
@@ -391,7 +391,7 @@ class CSP(BilinearFilter):
         # estimate class means
         C = []
         for c in classes:
-            C.append(mean_covariance(X[y == c], metric=self.metric))
+            C.append(gmean(X[y == c], metric=self.metric))
         C = np.array(C)
 
         # Switch between binary and multiclass
@@ -401,7 +401,7 @@ class CSP(BilinearFilter):
             ix = np.argsort(np.abs(evals - 0.5))[::-1]
         elif len(classes) > 2:
             evecs, D = ajd(C, method=self.ajd_method)
-            Ctot = mean_covariance(C, metric=self.metric)
+            Ctot = gmean(C, metric=self.metric)
             evecs = evecs.T
 
             # normalize
@@ -458,7 +458,7 @@ class SPoC(CSP):
     metric : str, default="euclid"
         Metric used for the estimation of mean covariance matrices.
         For the list of supported metrics,
-        see :func:`pyriemann.utils.mean.mean_covariance`.
+        see :func:`pyriemann.utils.mean.gmean`.
     log : bool, default=True
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.
@@ -508,11 +508,11 @@ class SPoC(CSP):
         target -= target.mean()
         target /= target.std()
 
-        C = mean_covariance(X, metric=self.metric)
+        C = gmean(X, metric=self.metric)
         Ce = np.zeros_like(X)
         for i in range(Ce.shape[0]):
             Ce[i] = X[i] * target[i]
-        Cz = mean_covariance(Ce, metric=self.metric)
+        Cz = gmean(Ce, metric=self.metric)
 
         # solve eigenvalue decomposition
         evals, evecs = eigh(Cz, C)

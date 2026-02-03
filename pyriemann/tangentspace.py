@@ -3,7 +3,7 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 
-from .utils.mean import mean_covariance
+from .utils.mean import gmean
 from .utils.tangentspace import tangent_space, untangent_space
 from .utils.utils import check_metric
 
@@ -41,8 +41,7 @@ class TangentSpace(TransformerMixin, BaseEstimator):
     metric : string | dict, default="riemann"
         The type of metric used
         for reference matrix estimation (for the list of supported metrics
-        see :func:`pyriemann.utils.mean.mean_covariance`) and
-        for tangent space map
+        see :func:`pyriemann.utils.mean.gmean`) and for tangent space map
         (see :func:`pyriemann.utils.tangent_space.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
@@ -102,7 +101,7 @@ class TangentSpace(TransformerMixin, BaseEstimator):
             self.metric, ["mean", "map"]
         )
 
-        self.reference_ = mean_covariance(
+        self.reference_ = gmean(
             X,
             metric=self._metric_mean,
             sample_weight=sample_weight
@@ -155,7 +154,7 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         self._check_reference_points(X)
 
         if self.tsupdate:
-            Cr = mean_covariance(X, metric=self._metric_mean)
+            Cr = gmean(X, metric=self._metric_mean)
         else:
             Cr = self.reference_
         return tangent_space(X, Cr, metric=self._metric_map)
@@ -181,7 +180,7 @@ class TangentSpace(TransformerMixin, BaseEstimator):
             self.metric, ["mean", "map"]
         )
 
-        self.reference_ = mean_covariance(
+        self.reference_ = gmean(
             X,
             metric=self._metric_mean,
             sample_weight=sample_weight
@@ -224,8 +223,7 @@ class FGDA(TransformerMixin, BaseEstimator):
     metric : string | dict, default="riemann"
         The type of metric used
         for reference matrix estimation (for the list of supported metrics
-        see :func:`pyriemann.utils.mean.mean_covariance`) and
-        for tangent space map
+        see :func:`pyriemann.utils.mean.gmean`) and for tangent space map
         (see :func:`pyriemann.utils.tangent_space.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.

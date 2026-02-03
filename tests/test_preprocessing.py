@@ -3,7 +3,7 @@ from numpy.testing import assert_array_almost_equal
 import pytest
 
 from pyriemann.spatialfilters import Whitening
-from pyriemann.utils.mean import mean_covariance
+from pyriemann.utils.mean import gmean
 
 n_components = 3
 expl_var = 0.9
@@ -124,7 +124,7 @@ def test_whitening_transform(dim_red, metric, get_mats):
     assert Xwhit.shape == (n_matrices, n_comp, n_comp)
     # after whitening, mean = identity
     assert_array_almost_equal(
-        mean_covariance(Xwhit, metric=metric),
+        gmean(Xwhit, metric=metric),
         np.eye(n_comp),
         decimal=3,
     )

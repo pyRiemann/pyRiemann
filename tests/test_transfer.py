@@ -33,7 +33,7 @@ from pyriemann.transfer import (
     MDWM,
 )
 from pyriemann.utils.distance import distance, distance_riemann
-from pyriemann.utils.mean import mean_covariance, mean_riemann
+from pyriemann.utils.mean import gmean, mean_riemann
 from pyriemann.utils.tangentspace import tangent_space
 from pyriemann.utils.utils import check_weights
 
@@ -153,9 +153,9 @@ def test_tlcenter_manifold(rndstate, get_weights,
         Xd = X_rct[idx]
         if use_weight:
             weights_d = check_weights(weights[idx], np.sum(idx))
-            Md = mean_covariance(Xd, metric=metric, sample_weight=weights_d)
+            Md = gmean(Xd, metric=metric, sample_weight=weights_d)
         else:
-            Md = mean_covariance(Xd, metric=metric)
+            Md = gmean(Xd, metric=metric)
         assert Md == pytest.approx(np.eye(2))
 
     # Test transform
@@ -196,9 +196,9 @@ def test_tlcenter_manifold_fit_transf(rndstate, get_weights,
         if use_weight:
             weights = np.concatenate((weights_1, weights_2))
             weights_d = check_weights(weights[idx], np.sum(idx))
-            Md = mean_covariance(Xd, metric=metric, sample_weight=weights_d)
+            Md = gmean(Xd, metric=metric, sample_weight=weights_d)
         else:
-            Md = mean_covariance(Xd, metric=metric)
+            Md = gmean(Xd, metric=metric)
         assert Md == pytest.approx(np.eye(2))
 
 
@@ -655,9 +655,9 @@ def test_mdwm(rndstate, domain_tradeoff, metric, n_jobs):
     elif domain_tradeoff == 0.5:
         X_0 = X[y == clf.classes_[0]]
         X_1 = X[y == clf.classes_[1]]
-    M_0 = mean_covariance(X_0, metric=metric)
+    M_0 = gmean(X_0, metric=metric)
     assert clf.covmeans_[0] == pytest.approx(M_0)
-    M_1 = mean_covariance(X_1, metric=metric)
+    M_1 = gmean(X_1, metric=metric)
     assert clf.covmeans_[1] == pytest.approx(M_1)
 
     # test predict
