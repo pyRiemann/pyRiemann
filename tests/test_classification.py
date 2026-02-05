@@ -13,7 +13,7 @@ from sklearn.pipeline import make_pipeline
 
 from pyriemann.estimation import Covariances
 from pyriemann.utils.kernel import kernel
-from pyriemann.utils.mean import mean_covariance
+from pyriemann.utils.mean import gmean
 from pyriemann.classification import (
     _mode_2d,
     MDM,
@@ -354,7 +354,7 @@ def test_svc_cref_metric(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_labels(n_matrices, n_classes)
-    Cref = mean_covariance(X, metric=metric)
+    Cref = gmean(X, metric=metric)
 
     rsvc = SVC(Cref=Cref).fit(X, y)
     rsvc_1 = SVC(Cref=None, metric=metric).fit(X, y)
@@ -366,7 +366,7 @@ def test_svc_cref_callable(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_labels(n_matrices, n_classes)
-    def Cref(X): return mean_covariance(X, metric=metric)
+    def Cref(X): return gmean(X, metric=metric)
 
     rsvc = SVC(Cref=Cref).fit(X, y)
     rsvc_1 = SVC(metric=metric).fit(X, y)
@@ -385,7 +385,7 @@ def test_svc_cref_error(get_mats, get_labels, metric):
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_labels(n_matrices, n_classes)
 
-    def Cref(X, met): mean_covariance(X, metric=met)
+    def Cref(X, met): gmean(X, metric=met)
     with pytest.raises(TypeError):
         SVC(Cref=Cref).fit(X, y)
 
@@ -505,7 +505,7 @@ def test_nch(metric, rndstate):
     assert np.all(dist_0[:, 0] < dist_0[:, 1])
 
     # distance to hull/class should be close to zero for the center of class
-    M_0 = mean_covariance(X_0)
+    M_0 = gmean(X_0)
     dist = nch.transform(M_0[np.newaxis, :, :])[0]
     assert dist[0] <= 1e-2
 

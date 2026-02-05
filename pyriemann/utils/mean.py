@@ -4,6 +4,7 @@ import warnings
 
 import numpy as np
 
+from . import deprecated
 from .ajd import ajd_pham
 from .base import sqrtm, invsqrtm, logm, expm, powm
 from .distance import distance_riemann
@@ -43,7 +44,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
 
     See Also
     --------
-    mean_covariance
+    gmean
 
     References
     ----------
@@ -111,7 +112,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
 
     See Also
     --------
-    mean_covariance
+    gmean
 
     References
     ----------
@@ -177,7 +178,7 @@ def mean_chol(X, sample_weight=None, **kwargs):
 
     See Also
     --------
-    mean_covariance
+    gmean
 
     References
     ----------
@@ -213,7 +214,7 @@ def mean_euclid(X, sample_weight=None, **kwargs):
 
     See Also
     --------
-    mean_covariance
+    gmean
     """
     return np.average(X, axis=0, weights=sample_weight)
 
@@ -238,7 +239,7 @@ def mean_harmonic(X, sample_weight=None, **kwargs):
 
     See Also
     --------
-    mean_covariance
+    gmean
     """
     T = mean_euclid(np.linalg.inv(X), sample_weight=sample_weight)
     M = np.linalg.inv(T)
@@ -265,7 +266,7 @@ def mean_kullback_sym(X, sample_weight=None, **kwargs):
 
     See Also
     --------
-    mean_covariance
+    gmean
 
     References
     ----------
@@ -311,7 +312,7 @@ def mean_logchol(X, sample_weight=None, **kwargs):
 
     See Also
     --------
-    mean_covariance
+    gmean
 
     References
     ----------
@@ -373,7 +374,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
 
     See Also
     --------
-    mean_covariance
+    gmean
     """
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
@@ -419,7 +420,7 @@ def mean_logeuclid(X, sample_weight=None, **kwargs):
 
     See Also
     --------
-    mean_covariance
+    gmean
 
     References
     ----------
@@ -473,7 +474,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
 
     See Also
     --------
-    mean_covariance
+    gmean
 
     References
     ----------
@@ -563,7 +564,7 @@ def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
 
     See Also
     --------
-    mean_covariance
+    gmean
 
     References
     ----------
@@ -619,7 +620,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 
     See Also
     --------
-    mean_covariance
+    gmean
 
     References
     ----------
@@ -692,7 +693,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
 
     See Also
     --------
-    mean_covariance
+    gmean
 
     References
     ----------
@@ -748,7 +749,7 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 
     See Also
     --------
-    mean_covariance
+    gmean
 
     References
     ----------
@@ -802,7 +803,7 @@ mean_functions = {
 }
 
 
-def mean_covariance(X, *args, metric="riemann", sample_weight=None, **kwargs):
+def gmean(X, *args, metric="riemann", sample_weight=None, **kwargs):
     """Mean of matrices according to a metric.
 
     Compute the mean of a set of matrices according to a metric [1]_.
@@ -845,6 +846,14 @@ def mean_covariance(X, *args, metric="riemann", sample_weight=None, **kwargs):
         **kwargs,
     )
     return M
+
+
+@deprecated(
+    "mean_covariance() is deprecated and will be removed in 0.13.0; "
+    "please use gmean()."
+)
+def mean_covariance(X, *args, metric="riemann", sample_weight=None, **kwargs):
+    return gmean(X, *args, metric="riemann", sample_weight=None, **kwargs)
 
 
 ###############################################################################
@@ -910,7 +919,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
     See Also
     --------
     mean_riemann
-    mean_covariance
+    gmean
 
     References
     ----------
@@ -987,7 +996,7 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
     See Also
     --------
     maskedmean_riemann
-    mean_covariance
+    gmean
 
     References
     ----------

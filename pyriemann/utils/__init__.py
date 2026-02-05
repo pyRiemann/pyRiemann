@@ -1,6 +1,6 @@
 from .docs import deprecated  # noqa: F401
 from .mean import (
-    mean_covariance,
+    gmean,
     mean_ale,
     mean_alm,
     mean_euclid,
@@ -21,7 +21,7 @@ from .median import (
 
 
 __all__ = [
-    "mean_covariance",
+    "gmean",
     "mean_ale",
     "mean_alm",
     "mean_euclid",
