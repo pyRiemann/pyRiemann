@@ -18,6 +18,8 @@ v0.11.dev
 
 - Deprecate ``mean_covariance``, renamed into :func:`pyriemann.utils.mean.gmean`. :pr:`419` by :user:`qbarthelemy`
 
+- Correct log-Euclidean parallel transport. :pr:`420` by :user:`qbarthelemy`
+
 v0.10 (January 2026)
 --------------------
 
