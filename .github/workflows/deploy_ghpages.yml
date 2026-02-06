@@ -5,6 +5,8 @@ on: [push, pull_request]
 jobs:
   build_docs:
     runs-on: ubuntu-latest
+    env:
+      PYRIEMANN_DATA_PATH: ${{ github.workspace }}/pyriemann_data
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
@@ -16,11 +18,8 @@ jobs:
         id: cache-datasets
         uses: actions/cache/restore@v4
         with:
-          path: |
-            examples/fnirs/data
-            examples/image-radar/data
-            ~/mne_data
-          key: docs-${{ runner.os }}-pyriemann-data-v2
+          path: pyriemann_data
+          key: docs-${{ runner.os }}-pyriemann-data-v3
 
       # Pre-download datasets when cache is cold
       - name: Pre-download datasets (cold cache)
@@ -31,36 +30,46 @@ jobs:
           import os
           import time
           from urllib.request import urlretrieve
+          from pyriemann.datasets.utils import get_data_path
 
-          # fNIRS data - examples/fnirs/plot_classif_fnirs.py uses './data'
-          fnirs_path = 'examples/fnirs/data'
+          # fNIRS data
+          fnirs_path = get_data_path('fnirs')
           os.makedirs(fnirs_path, exist_ok=True)
           fnirs_files = [
               ('https://zenodo.org/records/13841869/files/X.npy?download=1', 'X.npy'),
               ('https://zenodo.org/records/13841869/files/y.npy?download=1', 'y.npy'),
           ]
 
-          # image-radar data - examples use './data'
-          radar_path = 'examples/image-radar/data'
-          os.makedirs(radar_path, exist_ok=True)
-          radar_files = [
+          # image-radar data
+          salinas_path = get_data_path('salinas')
+          os.makedirs(salinas_path, exist_ok=True)
+          uavsar_path = get_data_path('uavsar')
+          os.makedirs(uavsar_path, exist_ok=True)
+          salinas_files = [
               ('https://zenodo.org/records/15771735/files/Salinas.mat?download=1', 'Salinas.mat'),
               ('https://zenodo.org/records/15771735/files/Salinas_corrected.mat?download=1', 'Salinas_corrected.mat'),
               ('https://zenodo.org/records/15771735/files/Salinas_gt.mat?download=1', 'Salinas_gt.mat'),
+          ]
+          uavsar_files = [
               ('https://zenodo.org/records/10625505/files/scene1.npy?download=1', 'scene1.npy'),
               ('https://zenodo.org/records/10625505/files/scene2.npy?download=1', 'scene2.npy'),
           ]
 
-          # SSVEP data - MNE fetches to /github/home/mne_data/MNE-ssvepexo-data
-          ssvep_path = '/github/home/mne_data/MNE-ssvepexo-data'
+          # SSVEP data
+          ssvep_path = get_data_path('ssvep')
           os.makedirs(ssvep_path, exist_ok=True)
           ssvep_files = [
-              ('https://zenodo.org/record/2392979/files/subject12_run2_raw.fif?download=1', 'subject12_run2_raw.fif'),
-              ('https://zenodo.org/record/2392979/files/subject12_run5_raw.fif?download=1', 'subject12_run5_raw.fif'),
+              ('https://zenodo.org/record/2392979/files/subject12_run2_raw.fif', 'subject12_run2_raw.fif'),
+              ('https://zenodo.org/record/2392979/files/subject12_run5_raw.fif', 'subject12_run5_raw.fif'),
           ]
 
           # Download all files with delays
-          for path, files in [(fnirs_path, fnirs_files), (radar_path, radar_files), (ssvep_path, ssvep_files)]:
+          for path, files in [
+              (fnirs_path, fnirs_files),
+              (salinas_path, salinas_files),
+              (uavsar_path, uavsar_files),
+              (ssvep_path, ssvep_files),
+          ]:
               for url, filename in files:
                   dst = os.path.join(path, filename)
                   if not os.path.exists(dst):
@@ -75,11 +84,8 @@ jobs:
         if: steps.cache-datasets.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: |
-            examples/fnirs/data
-            examples/image-radar/data
-            ~/mne_data
-          key: docs-${{ runner.os }}-pyriemann-data-v2
+          path: pyriemann_data
+          key: docs-${{ runner.os }}-pyriemann-data-v3
 
       - name: Generate HTML docs
         uses: gcattan/sphinx-action@master
@@ -90,6 +96,7 @@ jobs:
             pip install -e .
             pip install -r doc/requirements.txt
         env:
+          PYRIEMANN_DATA_PATH: /github/workspace/pyriemann_data
           SPHINX_GALLERY_PARALLEL: ${{ steps.cache-datasets.outputs.cache-hit == 'true' }}
 
       - name:  Upload generated HTML as artifact
