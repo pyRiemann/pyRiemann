@@ -1,12 +1,13 @@
 import numpy as np
 import pytest
 from pytest import approx
-from scipy.stats import gmean, hmean
+from scipy.stats import hmean, gmean as gmean_sp
 
 from pyriemann.utils.base import invsqrtm, logm, sqrtm
 from pyriemann.utils.geodesic import geodesic_riemann
 from pyriemann.utils.mean import (
     mean_covariance,
+    gmean,
     mean_ale,
     mean_alm,
     mean_chol,
@@ -233,7 +234,7 @@ def test_mean_property_joint_homogeneity(kind, mean, get_mats, rndstate):
 
     # P2 in [Nakamura2009]
     a = rndstate.uniform(low=1.0, high=2.0, size=n_matrices)
-    assert mean(a[:, np.newaxis, np.newaxis] * X) == approx(gmean(a) * mean(X))
+    assert mean(a[:, None, None] * X) == approx(gmean_sp(a) * mean(X))
 
     # P2' in [Nakamura2009]
     a = rndstate.uniform(0.01, 5.0)
@@ -250,7 +251,7 @@ def test_mean_property_determinant_identity(kind, mean, get_mats, rndstate):
     """Test determinant identity, P9 in [Nakamura2009]"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
-    assert np.linalg.det(mean(X)) == approx(gmean(np.linalg.det(X)))
+    assert np.linalg.det(mean(X)) == approx(gmean_sp(np.linalg.det(X)))
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -342,9 +343,9 @@ def test_mean_harmonic_scalars(n_values, rndstate):
 def test_mean_logeuclid_scalars(n_values, rndstate):
     """Compare log-Euclidean mean to scipy.gmean for scalars"""
     values = rndstate.uniform(0.1, 10, size=n_values)
-    sp_gmean = gmean(values)
-    py_lemean = mean_logeuclid(values[..., np.newaxis, np.newaxis])[0, 0]
-    assert sp_gmean == approx(py_lemean)
+    sp_mean = gmean_sp(values)
+    py_mean = mean_logeuclid(values[..., np.newaxis, np.newaxis])[0, 0]
+    assert sp_mean == approx(py_mean)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -487,26 +488,35 @@ def callable_np_average(X, sample_weight=None):
         (callable_np_average, mean_euclid),
     ],
 )
-def test_mean_covariance_metric(metric, mean, get_mats):
-    """Test mean_covariance for metric"""
+def test_gmean_metric(metric, mean, get_mats):
+    """Test gmean for metric"""
     n_matrices, n_channels = 3, 3
     X = get_mats(n_matrices, n_channels, "spd")
     if metric in ["power", "poweuclid"]:
         p = 0.1
-        assert mean(X, p) == approx(mean_covariance(X, p, metric=metric))
+        assert mean(X, p) == approx(gmean(X, p, metric=metric))
     else:
-        assert mean(X) == approx(mean_covariance(X, metric=metric))
+        assert mean(X) == approx(gmean(X, metric=metric))
 
 
-def test_mean_covariance_arguments(get_mats):
-    """Test mean_covariance with different args and kwargs"""
+def test_gmean_arguments(get_mats):
+    """Test gmean with different args and kwargs"""
     n_matrices, n_channels = 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
 
-    mean_covariance(X)
-    mean_covariance(X, 0.2, metric="power", zeta=10e-3)
-    mean_covariance(X, 0.3, metric="poweuclid", sample_weight=None)
+    gmean(X)
+    gmean(X, 0.2, metric="power", zeta=10e-3)
+    gmean(X, 0.3, metric="poweuclid", sample_weight=None)
 
-    mean_covariance(X, metric="ale", maxiter=5)
-    mean_covariance(X, metric="logdet", tol=10e-3)
-    mean_covariance(X, metric="riemann", init=np.eye(n_channels))
+    gmean(X, metric="ale", maxiter=5)
+    gmean(X, metric="logdet", tol=10e-3)
+    gmean(X, metric="riemann", init=np.eye(n_channels))
+
+
+def test_mean_covariance_deprecation(get_mats):
+    import warnings
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        mean_covariance(get_mats(3, 2, "spd"))
+        assert len(w) >= 1
+        assert issubclass(w[-1].category, DeprecationWarning)

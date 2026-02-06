@@ -21,7 +21,7 @@ from ..preprocessing import Whitening
 from ..utils.base import invsqrtm, powm, sqrtm
 from ..utils.distance import distance
 from ..utils.geodesic import geodesic
-from ..utils.mean import mean_covariance, mean_riemann
+from ..utils.mean import gmean
 from ..utils.utils import check_weights, check_metric
 
 
@@ -128,7 +128,7 @@ class TLCenter(TransformerMixin, BaseEstimator):
     metric : str, default="riemann"
         For inputs in manifold,
         metric used for mean estimation. For the list of supported metrics,
-        see :func:`pyriemann.utils.mean.mean_covariance`.
+        see :func:`pyriemann.utils.mean.gmean`.
         Note, however, that only when using the "riemann" metric that we are
         ensured to re-center the matrices precisely to the identity.
 
@@ -392,8 +392,8 @@ class TLScale(TransformerMixin, BaseEstimator):
                 if self.centered_data:
                     self._means[d] = np.eye(X.shape[-1])
                 else:
-                    self._means[d] = mean_riemann(
-                        X[idx], sample_weight=sample_weight_d
+                    self._means[d] = gmean(
+                        X[idx], sample_weight=sample_weight_d, metric="riemann"
                     )
                 dist = distance(
                     X[idx],
@@ -668,9 +668,10 @@ class TLRotate(TransformerMixin, BaseEstimator):
         idx = domains == self.target_domain
         X_target, y_target = X[idx], y_enc[idx]
         M_target = np.stack([
-            mean_riemann(
+            gmean(
                 X_target[y_target == label],
                 sample_weight=sample_weight[idx][y_target == label],
+                metric="riemann"
             ) for label in np.unique(y_target)
         ])
 
@@ -679,11 +680,12 @@ class TLRotate(TransformerMixin, BaseEstimator):
         rotations = Parallel(n_jobs=self.n_jobs)(
             delayed(_get_rotation_manifold)(
                 np.stack([
-                    mean_riemann(
+                    gmean(
                         X[domains == d][y_enc[domains == d] == label],
                         sample_weight=sample_weight[domains == d][
                             y_enc[domains == d] == label
-                        ]
+                        ],
+                        metric="riemann"
                     ) for label in np.unique(y_enc[domains == d])
                 ]),
                 M_target,
@@ -1140,8 +1142,7 @@ class MDWM(MDM):
         Name of the target domain in extended labels.
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.mean_covariance`) and
-        for distance estimation
+        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
         (see :func:`pyriemann.utils.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
@@ -1242,7 +1243,7 @@ class MDWM(MDM):
 
         self.source_means_ = np.stack(
             Parallel(n_jobs=self.n_jobs)(
-                delayed(mean_covariance)(
+                delayed(gmean)(
                     X_src[y_src == c],
                     metric=self._metric_mean,
                     sample_weight=sample_weight[y_src == c],
@@ -1252,7 +1253,7 @@ class MDWM(MDM):
 
         self.target_means_ = np.stack(
             Parallel(n_jobs=self.n_jobs)(
-                delayed(mean_covariance)(
+                delayed(gmean)(
                     X_tgt[y_tgt == c],
                     metric=self._metric_mean,
                 ) for c in self.classes_

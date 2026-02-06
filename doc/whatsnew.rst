@@ -17,6 +17,7 @@ v0.11.dev
 - Enhance :class:`pyriemann.classification.NearestConvexHull` to support "euclid" metric. :pr:`415` by :user:`qbarthelemy`
 
 - Add CI caching for Zenodo datasets to speed up documentation builds and avoid rate limiting. :pr:`417` by :user:`bruAristimunha`
+- Deprecate ``mean_covariance``, renamed into :func:`pyriemann.utils.mean.gmean`. :pr:`419` by :user:`qbarthelemy`
 
 v0.10 (January 2026)
 --------------------
@@ -81,7 +82,7 @@ v0.8 (February 2025)
 - Enhance :func:`pyriemann.utils.mean.mean_ale` adding ``init`` parameter,
   and add function ``check_init()`` useful to all ajd and mean functions allowing initialization. :pr:`328` by :user:`qbarthelemy`
 
-- Enhance :func:`pyriemann.utils.mean.mean_covariance` to support "power" and "poweuclid" metrics. :pr:`329` by :user:`qbarthelemy`
+- Enhance ``mean_covariance`` to support "power" and "poweuclid" metrics. :pr:`329` by :user:`qbarthelemy`
 
 - Add tangent space alignment (TSA) in transfer learning module.
   ``TLStretch`` is deprecated and renamed into :class:`pyriemann.transfer._estimators.TLScale`,
@@ -186,7 +187,7 @@ v0.5 (Jun 2023)
 
 - Fix :func:`pyriemann.utils.distance.pairwise_distance` for non-symmetric metrics. :pr:`229` by :user:`qbarthelemy`
 
-- Fix :func:`pyriemann.utils.mean.mean_covariance` used with keyword arguments. :pr:`230` by :user:`qbarthelemy`
+- Fix ``mean_covariance`` used with keyword arguments. :pr:`230` by :user:`qbarthelemy`
 
 - Add functions to test HPD and HPSD matrices, :func:`pyriemann.utils.test.is_herm_pos_def` and :func:`pyriemann.utils.test.is_herm_pos_semi_def`. :pr:`231` by :user:`qbarthelemy`
 

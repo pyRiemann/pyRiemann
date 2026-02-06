@@ -21,8 +21,7 @@ class ElectrodeSelection(TransformerMixin, BaseEstimator):
         The number of electrode to keep in the final subset.
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.mean_covariance`) and
-        for distance estimation
+        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
         (see :func:`pyriemann.utils.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.

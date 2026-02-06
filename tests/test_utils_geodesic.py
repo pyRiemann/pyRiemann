@@ -12,7 +12,7 @@ from pyriemann.utils.geodesic import (
     geodesic_thompson,
     geodesic_wasserstein
 )
-from pyriemann.utils.mean import mean_covariance
+from pyriemann.utils.mean import gmean
 
 
 metrics = [
@@ -83,7 +83,7 @@ def test_geodesic_random(kind, metric, get_mats):
     n_matrices, n_channels = 2, 5
     X = get_mats(n_matrices, n_channels, kind)
     A, B = X[0], X[1]
-    M = mean_covariance(X, metric=metric)
+    M = gmean(X, metric=metric)
     assert_geodesics(metric, A, B, M)
 
 
