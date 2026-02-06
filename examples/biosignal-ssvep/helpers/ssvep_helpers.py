@@ -1,11 +1,14 @@
 """ Local functions for SSVEP examples """
 
 import os
+from urllib.request import urlretrieve
 
 from mne import create_info
-from mne.datasets import fetch_dataset
 from mne.io import RawArray
 import numpy as np
+
+from pyriemann.datasets.utils import get_data_path
+from pyriemann.utils._logging import logger
 
 
 SSVEP_HASHES = {
@@ -48,37 +51,39 @@ SSVEP_HASHES = {
 }
 
 
-def download_data(subject=1, session=1):
-    """Download data for SSVEP examples using MNE
+def download_data(subject=1, session=1, data_path=None):
+    """Download data for SSVEP examples.
 
     Parameters
     ----------
     subject : int, default=1
-        Subject id
+        Subject id.
     session : int, default=1
-        Session number
+        Session number.
+    data_path : str | None, default=None
+        Path to the destination folder for data download.
+        If None, defaults to ``get_data_path("ssvep")``.
 
     Returns
     -------
     destination : str
-        Path to downloaded data
+        Path to downloaded .fif file.
     """
-    DATASET_URL = "https://zenodo.org/record/2392979/files/"
-    fname = f"subject{subject:02d}_run{session + 1}_raw.fif"
-    url = f"{DATASET_URL}{fname}"
-    dhash = SSVEP_HASHES[fname]
-    archive_name = url.split("/")[-4:]
-    dataset_params = {
-        "dataset_name": "ssvep",
-        "archive_name": "/".join(archive_name),
-        "hash": dhash,
-        "url": url,
-        "folder_name": "MNE-ssvepexo-data",
-        "config_key": "MNE_DATASETS_SSVEPEXO_PATH"
-    }
-    data_path = fetch_dataset(dataset_params, force_update=True)
+    if data_path is None:
+        data_path = get_data_path("ssvep")
 
-    return os.path.join(data_path, *archive_name)
+    if not os.path.exists(data_path):
+        os.makedirs(data_path, exist_ok=True)
+
+    fname = f"subject{subject:02d}_run{session + 1}_raw.fif"
+    url = f"https://zenodo.org/record/2392979/files/{fname}"
+    dst = os.path.join(data_path, fname)
+
+    if not os.path.exists(dst):
+        logger.info(f"Downloading file '{fname}' from '{url}' to '{dst}'.")
+        urlretrieve(url, dst)
+
+    return dst
 
 
 def bandpass_filter(raw, l_freq, h_freq, method="iir", verbose=False):
