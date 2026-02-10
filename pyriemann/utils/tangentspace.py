@@ -730,7 +730,7 @@ def transport_logchol(X, A, B):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        Symmetric/Hermitian matrices in tangent space.
+        Symmetric/Hermitian matrices in tangent space at A.
     A : ndarray, shape (n, n)
         Initial SPD/HPD matrix.
     B : ndarray, shape (n, n)
@@ -744,6 +744,8 @@ def transport_logchol(X, A, B):
     Notes
     -----
     .. versionadded:: 0.10
+    .. versionchanged:: 0.11
+        Correct formula for HPD matrices.
 
     See Also
     --------
@@ -762,7 +764,7 @@ def transport_logchol(X, A, B):
     tri0, tri1 = np.tril_indices(X.shape[-1], -1)
     diag0, diag1 = np.diag_indices(X.shape[-1])
 
-    P = A_invchol @ X @ A_invchol.T
+    P = A_invchol @ X @ A_invchol.conj().T
     P12 = np.zeros_like(P)
     P12[..., tri0, tri1] = P[..., tri0, tri1]
     P12[..., diag0, diag1] = P[..., diag0, diag1] / 2
@@ -797,7 +799,7 @@ def transport_logeuclid(X, A, B):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        Symmetric/Hermitian matrices in tangent space.
+        Symmetric/Hermitian matrices in tangent space at A.
     A : ndarray, shape (n, n)
         Initial SPD/HPD matrix.
     B : ndarray, shape (n, n)
@@ -812,7 +814,7 @@ def transport_logeuclid(X, A, B):
     -----
     .. versionadded:: 0.10
     .. versionchanged:: 0.11
-        Correct formula of log-Euclidean parallel transport.
+        Correct formula.
 
     See Also
     --------
@@ -848,7 +850,7 @@ def transport_riemann(X, A, B):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        Symmetric/Hermitian matrices in tangent space.
+        Symmetric/Hermitian matrices in tangent space at A.
     A : ndarray, shape (n, n)
         Initial SPD/HPD matrix.
     B : ndarray, shape (n, n)
@@ -895,7 +897,7 @@ transport_functions = {
 
 
 def transport(X, A, B, metric="riemann"):
-    r"""Parallel transport.
+    r"""Parallel transport according to a specified metric.
 
     Parallel transport of matrices :math:`\mathbf{X}` in tangent space
     from an initial SPD/HPD matrix :math:`\mathbf{A}` to a final SPD/HPD
@@ -908,7 +910,7 @@ def transport(X, A, B, metric="riemann"):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        Matrices in tangent space.
+        Matrices in tangent space at A.
     A : ndarray, shape (n, n)
         Initial SPD/HPD matrix.
     B : ndarray, shape (n, n)
