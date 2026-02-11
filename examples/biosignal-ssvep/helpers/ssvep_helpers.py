@@ -7,7 +7,7 @@ from mne import create_info
 from mne.io import RawArray
 import numpy as np
 
-from pyriemann.datasets.utils import get_data_path
+from pyriemann.utils._data import get_data_path
 from pyriemann.utils._logging import logger
 
 

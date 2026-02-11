@@ -1,6 +1,7 @@
 """Utility functions for dataset management."""
 
 import os
+from pathlib import Path
 
 
 def get_data_path(dataset_name=None):
@@ -23,9 +24,11 @@ def get_data_path(dataset_name=None):
     """
     base = os.environ.get("PYRIEMANN_DATA_PATH")
     if base is None:
-        base = os.path.join(os.path.expanduser("~"), "pyriemann_data")
-    base = os.path.abspath(base)
+        base = Path.home() / "pyriemann_data"
+    else:
+        base = Path(base)
+    base = base.resolve()
 
     if dataset_name is not None:
-        return os.path.join(base, dataset_name)
-    return base
+        return str(base / dataset_name)
+    return str(base)

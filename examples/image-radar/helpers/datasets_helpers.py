@@ -11,7 +11,7 @@ from urllib.request import urlretrieve
 
 from scipy.io import loadmat
 
-from pyriemann.datasets.utils import get_data_path
+from pyriemann.utils._data import get_data_path
 from pyriemann.utils._logging import logger
 
 

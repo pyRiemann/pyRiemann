@@ -6,7 +6,7 @@ from .simulated import (
     make_outliers,
     make_classification_transfer,
 )
-from .utils import get_data_path
+from pyriemann.utils._data import get_data_path
 
 
 __all__ = [

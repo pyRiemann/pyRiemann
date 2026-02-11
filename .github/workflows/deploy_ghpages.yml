@@ -7,6 +7,7 @@ jobs:
     runs-on: ubuntu-latest
     env:
       PYRIEMANN_DATA_PATH: ${{ github.workspace }}/pyriemann_data
+      MNE_DATA: ${{ github.workspace }}/mne_data
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v4
@@ -18,19 +19,22 @@ jobs:
         id: cache-datasets
         uses: actions/cache/restore@v4
         with:
-          path: pyriemann_data
-          key: docs-${{ runner.os }}-pyriemann-data-v3
+          path: |
+            pyriemann_data
+            mne_data
+          key: docs-${{ runner.os }}-pyriemann-data-v4
 
       # Pre-download datasets when cache is cold
       - name: Pre-download datasets (cold cache)
         if: steps.cache-datasets.outputs.cache-hit != 'true'
         run: |
           pip install -e .
+          pip install mne
           python -c "
           import os
           import time
           from urllib.request import urlretrieve
-          from pyriemann.datasets.utils import get_data_path
+          from pyriemann.utils._data import get_data_path
 
           # fNIRS data
           fnirs_path = get_data_path('fnirs')
@@ -77,6 +81,19 @@ jobs:
                       urlretrieve(url, dst)
                       time.sleep(30)  # Delay to avoid Zenodo rate limiting
           print('All datasets downloaded!')
+
+          # MNE datasets (eegbci and sample data)
+          import mne
+          from mne.datasets import eegbci, sample
+          mne.set_config('MNE_DATA', os.environ['MNE_DATA'], set_env=False)
+
+          # Download eegbci data
+          for subject, runs in {1: [6, 10], 2: [5], 7: [4, 6, 8, 10, 14]}.items():
+              eegbci.load_data(subject, runs, update_path=True)
+
+          # Download MNE sample data
+          sample.data_path(download=True, update_path=True)
+          print('All MNE datasets downloaded!')
           "
 
       # Save cache after downloading (only on cache miss)
@@ -84,8 +101,10 @@ jobs:
         if: steps.cache-datasets.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
-          path: pyriemann_data
-          key: docs-${{ runner.os }}-pyriemann-data-v3
+          path: |
+            pyriemann_data
+            mne_data
+          key: docs-${{ runner.os }}-pyriemann-data-v4
 
       - name: Generate HTML docs
         uses: gcattan/sphinx-action@master
@@ -97,6 +116,7 @@ jobs:
             pip install -r doc/requirements.txt
         env:
           PYRIEMANN_DATA_PATH: /github/workspace/pyriemann_data
+          MNE_DATA: /github/workspace/mne_data
           SPHINX_GALLERY_PARALLEL: ${{ steps.cache-datasets.outputs.cache-hit == 'true' }}
 
       - name:  Upload generated HTML as artifact

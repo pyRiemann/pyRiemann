@@ -15,7 +15,7 @@ import numpy as np
 from sklearn.pipeline import Pipeline
 
 from pyriemann.clustering import Kmeans
-from pyriemann.datasets.utils import get_data_path
+from pyriemann.utils._data import get_data_path
 from pyriemann.estimation import Covariances
 from helpers.datasets_helpers import download_uavsar
 from helpers.processing_helpers import SlidingWindowVectorize
