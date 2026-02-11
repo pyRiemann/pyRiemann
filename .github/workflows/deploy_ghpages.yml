@@ -77,6 +77,7 @@ jobs:
           import mne
           from mne.datasets import eegbci, sample, fetch_dataset
           mne.set_config('MNE_DATA', os.environ['MNE_DATA'], set_env=False)
+          os.makedirs(os.environ['MNE_DATA'], exist_ok=True)
 
           # Download eegbci data
           for subject, runs in {1: [6, 10], 2: [5], 7: [4, 6, 8, 10, 14]}.items():
