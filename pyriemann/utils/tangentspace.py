@@ -105,9 +105,9 @@ def exp_map_logeuclid(X, Cref):
         \mathbf{X}_\text{original} = \exp \left( \log(\mathbf{C}_\text{ref})
         + [D_{\mathbf{C}_\text{ref}} \log] \left(\mathbf{X}\right) \right)
 
-    where :math:`[D_{\mathbf{C}_\text{ref}} \log] \left( \mathbf{X}\right)`
+    where :math:`[D_{\mathbf{A}} \log] \left( \mathbf{B}\right)`
     indicates the differential of the matrix logarithm at point
-    :math:`\mathbf{C}_\text{ref}` applied to :math:`\mathbf{X}`.
+    :math:`\mathbf{A}` applied to :math:`\mathbf{B}`.
     Calculation is performed according to Eq. (5) in [2]_.
 
     Parameters
@@ -222,7 +222,6 @@ def exp_map_wasserstein(X, Cref):
         L. Malagò, L. Montrucchio, G. Pistone. Information Geometry, 2018, 1,
         pp. 137–179.
     """
-
     d, V = np.linalg.eigh(Cref)
     C = 1 / (d[:, None] + d[None, :])
 
@@ -367,9 +366,9 @@ def log_map_logeuclid(X, Cref):
         \mathbf{X}_\text{new} = [D_{\log(\mathbf{C}_\text{ref})} \exp] \left(
         \log(\mathbf{X}) - \log(\mathbf{C}_\text{ref}) \right)
 
-    where :math:`[D_{\log(\mathbf{C}_\text{ref})} \exp]\left(\mathbf{X}\right)`
+    where :math:`[D_{\mathbf{A}} \exp]\left(\mathbf{B}\right)`
     indicates the differential of the matrix exponential at point
-    :math:`\log(\mathbf{C}_\text{ref})` applied to :math:`\mathbf{X}`.
+    :math:`\mathbf{A}` applied to :math:`\mathbf{B}`.
     Calculation is performed according to Eq. (7) in [2]_.
 
     Parameters
@@ -731,7 +730,7 @@ def transport_logchol(X, A, B):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        Symmetric/Hermitian matrices in tangent space.
+        Symmetric/Hermitian matrices in tangent space at A.
     A : ndarray, shape (n, n)
         Initial SPD/HPD matrix.
     B : ndarray, shape (n, n)
@@ -745,6 +744,8 @@ def transport_logchol(X, A, B):
     Notes
     -----
     .. versionadded:: 0.10
+    .. versionchanged:: 0.11
+        Correct formula for HPD matrices.
 
     See Also
     --------
@@ -763,7 +764,7 @@ def transport_logchol(X, A, B):
     tri0, tri1 = np.tril_indices(X.shape[-1], -1)
     diag0, diag1 = np.diag_indices(X.shape[-1])
 
-    P = A_invchol @ X @ A_invchol.T
+    P = A_invchol @ X @ A_invchol.conj().T
     P12 = np.zeros_like(P)
     P12[..., tri0, tri1] = P[..., tri0, tri1]
     P12[..., diag0, diag1] = P[..., diag0, diag1] / 2
@@ -787,8 +788,9 @@ def transport_logeuclid(X, A, B):
     [1]_:
 
     .. math::
-        \mathbf{X}_\text{new} = \mathbf{X}
-        + (\log \mathbf{B} - \log \mathbf{A})
+        \mathbf{X}_\text{new} = [D_{\log \mathbf{B}} \exp] \left(
+        [D_{\mathbf{A}} \log]\left(\mathbf{X}\right)
+        \right)
 
     Warning: this function must be applied to matrices :math:`\mathbf{X}`
     already projected in tangent space with a logarithmic map at
@@ -797,7 +799,7 @@ def transport_logeuclid(X, A, B):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        Symmetric/Hermitian matrices in tangent space.
+        Symmetric/Hermitian matrices in tangent space at A.
     A : ndarray, shape (n, n)
         Initial SPD/HPD matrix.
     B : ndarray, shape (n, n)
@@ -811,6 +813,8 @@ def transport_logeuclid(X, A, B):
     Notes
     -----
     .. versionadded:: 0.10
+    .. versionchanged:: 0.11
+        Correct formula.
 
     See Also
     --------
@@ -822,7 +826,7 @@ def transport_logeuclid(X, A, B):
         <https://www.sciencedirect.com/science/article/pii/S0024379522004360>`_
         Y. Thanwerdas & X. Pennec. Linear Algebra and its Applications, 2023.
     """
-    return X + (logm(B) - logm(A))
+    return ddexpm(ddlogm(X, A), logm(B))
 
 
 def transport_riemann(X, A, B):
@@ -846,7 +850,7 @@ def transport_riemann(X, A, B):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        Symmetric/Hermitian matrices in tangent space.
+        Symmetric/Hermitian matrices in tangent space at A.
     A : ndarray, shape (n, n)
         Initial SPD/HPD matrix.
     B : ndarray, shape (n, n)
@@ -860,7 +864,7 @@ def transport_riemann(X, A, B):
     Notes
     -----
     .. versionchanged:: 0.8
-        Change input arguments.
+        Change input arguments and calculation of the function.
     .. versionchanged:: 0.10
         Rename function and add to API.
 
@@ -893,7 +897,7 @@ transport_functions = {
 
 
 def transport(X, A, B, metric="riemann"):
-    r"""Parallel transport.
+    r"""Parallel transport according to a specified metric.
 
     Parallel transport of matrices :math:`\mathbf{X}` in tangent space
     from an initial SPD/HPD matrix :math:`\mathbf{A}` to a final SPD/HPD
@@ -906,14 +910,14 @@ def transport(X, A, B, metric="riemann"):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        Matrices in tangent space.
+        Matrices in tangent space at A.
     A : ndarray, shape (n, n)
         Initial SPD/HPD matrix.
     B : ndarray, shape (n, n)
         Final SPD/HPD matrix.
     metric : string | callable, default="riemann"
         Metric used for parallel transport, can be:
-        "euclid", "logeuclid", "riemann",
+        "euclid", "logchol", "logeuclid", "riemann",
         or a callable function.
 
     Returns
