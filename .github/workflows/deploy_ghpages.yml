@@ -59,20 +59,11 @@ jobs:
               ('https://zenodo.org/records/10625505/files/scene2.npy?download=1', 'scene2.npy'),
           ]
 
-          # SSVEP data
-          ssvep_path = get_data_path('ssvep')
-          os.makedirs(ssvep_path, exist_ok=True)
-          ssvep_files = [
-              ('https://zenodo.org/record/2392979/files/subject12_run2_raw.fif', 'subject12_run2_raw.fif'),
-              ('https://zenodo.org/record/2392979/files/subject12_run5_raw.fif', 'subject12_run5_raw.fif'),
-          ]
-
           # Download all files with delays
           for path, files in [
               (fnirs_path, fnirs_files),
               (salinas_path, salinas_files),
               (uavsar_path, uavsar_files),
-              (ssvep_path, ssvep_files),
           ]:
               for url, filename in files:
                   dst = os.path.join(path, filename)
@@ -82,9 +73,9 @@ jobs:
                       time.sleep(30)  # Delay to avoid Zenodo rate limiting
           print('All datasets downloaded!')
 
-          # MNE datasets (eegbci and sample data)
+          # MNE datasets (eegbci, sample, and SSVEP)
           import mne
-          from mne.datasets import eegbci, sample
+          from mne.datasets import eegbci, sample, fetch_dataset
           mne.set_config('MNE_DATA', os.environ['MNE_DATA'], set_env=False)
 
           # Download eegbci data
@@ -93,6 +84,20 @@ jobs:
 
           # Download MNE sample data
           sample.data_path(download=True, update_path=True)
+
+          # Download SSVEP data via MNE fetch_dataset
+          ssvep_url = 'https://zenodo.org/record/2392979/files/'
+          for fname in ['subject12_run2_raw.fif', 'subject12_run5_raw.fif']:
+              url = f'{ssvep_url}{fname}'
+              archive_name = url.split('/')[-4:]
+              fetch_dataset({
+                  'dataset_name': 'ssvep',
+                  'archive_name': '/'.join(archive_name),
+                  'hash': None,
+                  'url': url,
+                  'folder_name': 'MNE-ssvepexo-data',
+                  'config_key': 'MNE_DATASETS_SSVEPEXO_PATH',
+              }, force_update=True)
           print('All MNE datasets downloaded!')
           "
 
