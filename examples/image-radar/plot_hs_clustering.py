@@ -23,7 +23,6 @@ from helpers.processing_helpers import PCAImage, SlidingWindowVectorize
 # ----------
 
 window_size = 5
-data_path = "./data"
 n_jobs = -1
 max_iter = 100
 small_dataset = True  # Whole image can take time
@@ -35,8 +34,8 @@ estimator = "scm"  # Chose any estimator from "scm", "lwf", "oas", "mcd", "hub"
 # ---------
 
 print("Loading Salinas data")
-download_salinas(data_path)
-data, labels, labels_names = read_salinas(data_path)
+download_salinas()
+data, labels, labels_names = read_salinas()
 data_visualization = data.copy()  # To avoid aliasing when showing data
 n_clusters = len(labels_names)
 

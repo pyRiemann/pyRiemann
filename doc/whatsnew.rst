@@ -20,6 +20,8 @@ v0.11.dev
 
 - Correct log-Euclidean parallel transport. :pr:`420` by :user:`qbarthelemy`
 
+- Add CI caching for Zenodo datasets to speed up documentation builds and avoid rate limiting. :pr:`417` by :user:`bruAristimunha`
+
 v0.10 (January 2026)
 --------------------
 

@@ -15,6 +15,7 @@ import numpy as np
 from sklearn.pipeline import Pipeline
 
 from pyriemann.clustering import Kmeans
+from pyriemann.utils._data import get_data_path
 from pyriemann.estimation import Covariances
 from helpers.datasets_helpers import download_uavsar
 from helpers.processing_helpers import SlidingWindowVectorize
@@ -25,7 +26,6 @@ from helpers.processing_helpers import SlidingWindowVectorize
 # ----------
 
 window_size = 7
-data_path = "./data"
 scene = 1  # Chose between 1 or 2
 date = 0
 n_jobs = -1
@@ -38,7 +38,8 @@ estimator = "scm"  # Chose any estimator from "scm", "lwf", "oas", "mcd", "hub"
 # ---------
 
 print(f"Loading UAVSAR data from scene {scene}.")
-download_uavsar(data_path, scene)
+download_uavsar(scene=scene)
+data_path = get_data_path("uavsar")
 data = np.load(os.path.join(data_path, f"scene{scene}.npy"))
 data = data[:, :, :, date]  # Select one date only
 data_visualization = data.copy()  # To avoid aliasing when showing data
