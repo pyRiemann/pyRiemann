@@ -6,7 +6,6 @@ from .simulated import (
     make_outliers,
     make_classification_transfer,
 )
-from pyriemann.utils._data import get_data_path
 
 
 __all__ = [
@@ -17,5 +16,4 @@ __all__ = [
     "make_outliers",
     "make_classification_transfer",
     "RandomOverSampler",
-    "get_data_path",
 ]
