@@ -701,7 +701,20 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         Sampling frequency of the time-series.
     coh : {"ordinary", "instantaneous", "lagged", "imaginary"}, \
             default="ordinary"
-        Coherence type, see :class:`pyriemann.estimation.Coherences`.
+        Coherence type:
+
+        * "ordinary" for the ordinary coherence, defined in Eq.(22) of [1]_;
+          this normalization of cross-spectral matrices captures both in-phase
+          and out-of-phase correlations. However it is inflated by the
+          artificial in-phase (zero-lag) correlation engendered by volume
+          conduction.
+        * "instantaneous" for the instantaneous coherence, Eq.(26) of [1]_,
+          capturing only in-phase correlation.
+        * "lagged" for the lagged-coherence, Eq.(28) of [1]_, capturing only
+          out-of-phase correlation (not defined for DC and Nyquist bins).
+        * "imaginary" for the imaginary coherence [2]_, Eq.(0.16) of [3]_,
+          capturing out-of-phase correlation but still affected by in-phase
+          correlation.
 
     Returns
     -------
@@ -709,6 +722,24 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         Squared coherence matrices, for each frequency bin.
     freqs : ndarray, shape (n_freqs,)
         Frequencies associated to coherence.
+
+    References
+    ----------
+    .. [1] `Instantaneous and lagged measurements of linear
+        and nonlinear dependence between groups of multivariate time series:
+        frequency decomposition
+        <https://arxiv.org/ftp/arxiv/papers/0711/0711.1455.pdf>`_
+        R. Pascual-Marqui. Technical report, 2007.
+    .. [2] `Identifying true brain interaction from EEG data using the
+        imaginary part of coherency
+        <https://doi.org/10.1016/j.clinph.2004.04.029>`_
+        G. Nolte, O. Bai, L. Wheaton, Z. Mari, S. Vorbach, M. Hallett.
+        Clinical Neurophysioly, Volume 115, Issue 10, October 2004,
+        Pages 2292-2307
+    .. [3] `Non-Parametric Synchronization Measures used in EEG
+        and MEG
+        <https://hal.archives-ouvertes.fr/hal-01868538v2>`_
+        M. Congedo. Technical Report, 2018.
     """
     S, freqs = cross_spectrum(
         X,
