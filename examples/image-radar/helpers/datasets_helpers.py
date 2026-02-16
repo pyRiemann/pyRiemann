@@ -11,17 +11,21 @@ from urllib.request import urlretrieve
 
 from scipy.io import loadmat
 
+from pyriemann.utils._data import get_data_path
 from pyriemann.utils._logging import logger
 
 
-def download_salinas(data_path):
+def download_salinas(data_path=None):
     """Download the Salinas dataset.
 
     Parameters
     ----------
-    data_path : str
+    data_path : str | None, default=None
         Path to the destination folder for data download.
+        If None, defaults to ``get_data_path("salinas")``.
     """
+    if data_path is None:
+        data_path = get_data_path("salinas")
     src_base = "https://zenodo.org/records/15771735/files/"
     srcs = [
         src_base + "Salinas.mat?download=1",
@@ -41,13 +45,14 @@ def download_salinas(data_path):
             urlretrieve(src, dst)
 
 
-def read_salinas(data_path, version="corrected"):
+def read_salinas(data_path=None, version="corrected"):
     """Read Salinas hyperspectral data.
 
     Parameters
     ----------
-    data_path : str
+    data_path : str | None, default=None
         Path to the folder for data reading.
+        If None, defaults to ``get_data_path("salinas")``.
     version : {"corrected", "raw"}, default="corrected"
         Version of the data to read.
 
@@ -60,6 +65,8 @@ def read_salinas(data_path, version="corrected"):
     labels_names : dict[int, str]
         Dictionary mapping labels to their names.
     """
+    if data_path is None:
+        data_path = get_data_path("salinas")
     if version == "corrected":
         data_file = os.path.join(data_path, "Salinas_corrected.mat")
     else:
@@ -88,16 +95,19 @@ def read_salinas(data_path, version="corrected"):
     return data, labels, labels_names
 
 
-def download_uavsar(data_path, scene):
+def download_uavsar(data_path=None, scene=1):
     """Download the UAVSAR dataset.
 
     Parameters
     ----------
-    data_path : str
+    data_path : str | None, default=None
         Path to the destination folder for data download.
-    scene : {1, 2}
+        If None, defaults to ``get_data_path("uavsar")``.
+    scene : {1, 2}, default=1
         Scene index to download.
     """
+    if data_path is None:
+        data_path = get_data_path("uavsar")
     assert scene in [1, 2], f"Unknown scene {scene} for UAVSAR dataset"
     filename = f"scene{scene}.npy"
     src = f"https://zenodo.org/records/10625505/files/{filename}?download=1"
