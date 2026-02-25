@@ -22,6 +22,9 @@ v0.11.dev
 
 - Add CI caching for Zenodo datasets to speed up documentation builds and avoid rate limiting. :pr:`417` by :user:`bruAristimunha`
 
+- Enhance :class:`pyriemann.classification.TSClassifier` and :class:`pyriemann.transfer.TLClassifier`
+  to support classifiers without sample weights. :pr:`422` by :user:`qbarthelemy`
+
 v0.10 (January 2026)
 --------------------
 
