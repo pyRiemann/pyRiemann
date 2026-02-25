@@ -7,7 +7,7 @@ from pytest import approx
 from scipy.spatial.distance import euclidean
 from scipy.stats import mode
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-from sklearn.dummy import DummyClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.pipeline import make_pipeline
 
@@ -308,13 +308,15 @@ def test_tsclassifier_metrics(metric_mean, metric_map, get_mats, get_labels):
     clf.fit(X, y).predict(X)
 
 
-def test_tsclassifier_fit(get_mats, get_labels):
+@pytest.mark.parametrize("clf", [LDA(), LogisticRegression()])
+def test_tsclassifier_fit(clf, get_mats, get_labels, get_weights):
     n_matrices, n_channels, n_classes = 6, 3, 3
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_labels(n_matrices, n_classes)
+    weights = get_weights(n_matrices)
 
-    clf = TSClassifier(clf=DummyClassifier())
-    clf.fit(X, y).predict(X)
+    tsclf = TSClassifier(clf=clf)
+    tsclf.fit(X, y, sample_weight=weights).predict(X)
 
 
 def test_tsclassifier_clf_error(get_mats, get_labels):

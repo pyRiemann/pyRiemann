@@ -2,6 +2,7 @@ import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
 from pytest import approx
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.model_selection import KFold, StratifiedShuffleSplit
 from sklearn.pipeline import make_pipeline, Pipeline
@@ -504,7 +505,15 @@ def test_tlclassifier_manifold(rndstate, clf, domains_weight):
     tlclassifier(clf, X, y_enc, domains_weight)
 
 
-@pytest.mark.parametrize("clf", [LinearSVC(), LogisticRegression()])
+@pytest.mark.parametrize(
+    "clf",
+    [
+        LinearSVC(),
+        LogisticRegression(),
+        LDA(),
+        make_pipeline(LDA()),
+    ]
+)
 @pytest.mark.parametrize("domains_weight", [(1, 0), (0, 1), (1, 1)])
 def test_tlclassifier_tangentspace(rndstate, clf, domains_weight):
     """Test wrapper for classifiers in tangent space"""
