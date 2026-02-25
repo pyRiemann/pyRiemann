@@ -16,7 +16,7 @@ from .utils.base import logm
 from .utils.kernel import kernel
 from .utils.mean import gmean
 from .utils.distance import distance
-from .utils.utils import check_metric
+from .utils.utils import check_metric, check_param_in_func
 
 
 def _mode_1d(X):
@@ -358,6 +358,8 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.2.4
+    .. versionchanged:: 0.8
+        Rename TSclassifier into TSClassifier.
 
     References
     ----------
@@ -398,11 +400,11 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
 
         ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
         self._pipe = make_pipeline(ts, self.clf)
-        sample_weight_dict = {}
-        for step in self._pipe.steps:
-            step_name = step[0]
-            sample_weight_dict[step_name + "__sample_weight"] = sample_weight
-        self._pipe.fit(X, y, **sample_weight_dict)
+        param_weight = {}
+        for (step_name, step_estimator) in self._pipe.steps:
+            if check_param_in_func("sample_weight", step_estimator.fit):
+                param_weight[step_name + "__sample_weight"] = sample_weight
+        self._pipe.fit(X, y, **param_weight)
         return self
 
     def predict(self, X):

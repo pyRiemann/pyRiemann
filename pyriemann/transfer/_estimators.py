@@ -22,7 +22,7 @@ from ..utils.base import invsqrtm, powm, sqrtm
 from ..utils.distance import distance
 from ..utils.geodesic import geodesic
 from ..utils.mean import gmean
-from ..utils.utils import check_weights, check_metric
+from ..utils.utils import check_weights, check_metric, check_param_in_func
 
 
 ###############################################################################
@@ -932,13 +932,16 @@ class TLEstimator(BaseEstimator):
             weights = None
 
         if isinstance(self.estimator, Pipeline):
-            sample_weight = {}
-            for step in self.estimator.steps:
-                step_name = step[0]
-                sample_weight[step_name + "__sample_weight"] = weights
-            self.estimator.fit(X_dec, y_dec, **sample_weight)
+            param_weight = {}
+            for (step_name, step_estimator) in self.estimator.steps:
+                if check_param_in_func("sample_weight", step_estimator.fit):
+                    param_weight[step_name + "__sample_weight"] = weights
+            self.estimator.fit(X_dec, y_dec, **param_weight)
         else:
-            self.estimator.fit(X_dec, y_dec, sample_weight=weights)
+            if check_param_in_func("sample_weight", self.estimator.fit):
+                self.estimator.fit(X_dec, y_dec, sample_weight=weights)
+            else:
+                self.estimator.fit(X_dec, y_dec)
 
         self._is_fitted = True
         return self

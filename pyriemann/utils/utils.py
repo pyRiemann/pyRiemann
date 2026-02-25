@@ -1,3 +1,5 @@
+import inspect
+
 import numpy as np
 
 
@@ -143,3 +145,26 @@ def check_init(init, n):
             f"Should be ({n},{n}) but got {init.shape}."
         )
     return init
+
+
+def check_param_in_func(param, func):
+    """Check if a parameter is an argument of a function.
+
+    Parameters
+    ----------
+    param : str
+        Name of the parameter to check.
+    func : callable
+        Function to check.
+
+    Returns
+    -------
+    ret : bool
+        True if param is an argument of a function, else False.
+
+    Notes
+    -----
+    .. versionadded:: 0.11
+    """
+    sig = inspect.signature(func).parameters
+    return (param in sig)
