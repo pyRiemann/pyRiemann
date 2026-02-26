@@ -2,6 +2,7 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 from pytest import approx
+from scipy.spatial.distance import euclidean
 
 from pyriemann.clustering import (
     Kmeans,
@@ -507,7 +508,40 @@ def test_potato_specific_labels(get_mats):
     pt.fit(X, y=[2] * n_matrices)
 
 
-def test_potatofield_fit(get_mats):
+def callable_sp_euclidean(A, B, squared=False):
+    return euclidean(A.flatten(), B.flatten())
+
+
+@pytest.mark.parametrize(
+    "metric",
+    [
+        "riemann",
+        {"mean": "logeuclid", "distance": "riemann"},
+        ["riemann", "logeuclid"],
+        [
+            {"mean": "riemann", "distance": "riemann"},
+            {"mean": "logeuclid", "distance": "riemann"},
+        ],
+        [
+            "riemann",
+            {"mean": "logeuclid", "distance": "riemann"},
+        ],
+        [
+            "riemann",
+            {"mean": "riemann", "distance": callable_sp_euclidean},
+        ],
+    ]
+)
+def test_potatofield_fit_metric(metric, get_mats):
+    n_potatoes, n_matrices, n_channels = 2, 6, 3
+    X1 = get_mats(n_matrices, n_channels, "hpd")
+    X2 = get_mats(n_matrices, n_channels + 1, "hpd")
+    X = [X1, X2]
+
+    PotatoField(n_potatoes=n_potatoes, metric=metric).fit(X)
+
+
+def test_potatofield_fit_errors(get_mats):
     n_potatoes, n_matrices, n_channels = 2, 6, 3
     X1 = get_mats(n_matrices, n_channels, "spd")
     X2 = get_mats(n_matrices, n_channels + 1, "spd")

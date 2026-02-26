@@ -6,7 +6,7 @@ from joblib import Parallel, delayed
 import numpy as np
 from scipy.stats import norm, chi2
 import sklearn
-from sklearn.base import BaseEstimator, TransformerMixin, clone
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.cluster import KMeans as sklearnKMeans
 from sklearn.utils.validation import check_random_state
 
@@ -1270,12 +1270,18 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
     z_threshold : float, default=3
         Threshold on z-score of distance to reject artifacts. It is the number
         of standard deviations from the mean of distances to the centroid.
-    metric : string | dict, default="riemann"
+    metric : string | dict | list, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
         see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
         (see :func:`pyriemann.utils.distance.distance`).
-        The metric can be a dict with two keys, "mean" and "distance"
-        in order to pass different metrics.
+        The metric can be a single str;
+        or a dict with two keys, "mean" and "distance",
+        in order to pass different metrics for mean and distance;
+        or a list of ``n_potatoes`` str or dict,
+        in order to pass different metrics for each potato [2]_.
+
+        .. versionchanged:: 0.11
+            Allow a different metric per potato.
     n_iter_max : int, default=10
         The maximum number of iteration to reach convergence.
     pos_label : int, default=1
@@ -1296,9 +1302,13 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
     .. [1] `The Riemannian Potato Field: A Tool for Online Signal Quality Index
         of EEG
         <https://hal.archives-ouvertes.fr/hal-02015909>`_
-        Q. Barthélemy, L. Mayaud, D. Ojeda, and M. Congedo. IEEE Transactions
-        on Neural Systems and Rehabilitation Engineering, IEEE Institute of
-        Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
+        Q. Barthélemy, L. Mayaud, D. Ojeda, and M. Congedo. IEEE
+        Transactions on Neural Systems and Rehabilitation Engineering, 2019
+    .. [2] `Improved Riemannian potato field: an Automatic Artifact Rejection
+        Method for EEG
+        <https://arxiv.org/pdf/2509.09264>`_
+        D. Hajhassani, Q. Barthélemy, J. Mattout & M. Congedo.
+        Biomedical Signal Processing and Control, 2026
     """
 
     def __init__(
@@ -1352,17 +1362,33 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         self._check_length(X)
         n_matrices = X[0].shape[0]
 
-        pt = Potato(
-            metric=self.metric,
-            threshold=self.z_threshold,
-            n_iter_max=self.n_iter_max,
-            pos_label=self.pos_label,
-            neg_label=self.neg_label,
-        )
+        if isinstance(self.metric, (str, dict)):
+            metric = [self.metric] * self.n_potatoes
+        elif isinstance(self.metric, list):
+            if len(self.metric) == self.n_potatoes:
+                metric = self.metric
+            else:
+                raise ValueError(
+                    f"Metric must be a list with {self.n_potatoes} elements."
+                )
+        else:
+            raise TypeError(
+                "Metric must be a str, a dict or a list, "
+                f"but got {type(self.metric)}."
+            )
+
+
         self._potatoes = []
         for i in range(self.n_potatoes):
             _check_n_matrices(X[i], n_matrices)
-            self._potatoes.append(clone(pt))
+            pt = Potato(
+                metric=metric[i],
+                threshold=self.z_threshold,
+                n_iter_max=self.n_iter_max,
+                pos_label=self.pos_label,
+                neg_label=self.neg_label,
+            )
+            self._potatoes.append(pt)
             self._potatoes[i].fit(X[i], y, sample_weight=sample_weight)
 
         return self
