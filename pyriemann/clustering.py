@@ -1377,7 +1377,6 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
                 f"but got {type(self.metric)}."
             )
 
-
         self._potatoes = []
         for i in range(self.n_potatoes):
             _check_n_matrices(X[i], n_matrices)
