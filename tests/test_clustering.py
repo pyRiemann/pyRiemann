@@ -509,8 +509,9 @@ def test_potato_specific_labels(get_mats):
     pt.fit(X, y=[2] * n_matrices)
 
 
-def callable_sp_euclidean(A, B, squared=False):
-    return euclidean(A.flatten(), B.flatten())
+def callable_diageuclid(A, B, squared=False):
+    """Euclidean distance between diagonals of square matrices"""
+    return euclidean(np.diag(A), np.diag(B))
 
 
 @pytest.mark.parametrize(
@@ -529,7 +530,7 @@ def callable_sp_euclidean(A, B, squared=False):
         ],
         [
             "riemann",
-            {"mean": "riemann", "distance": callable_sp_euclidean},
+            {"mean": "riemann", "distance": callable_diageuclid},
         ],
     ]
 )
@@ -586,6 +587,10 @@ def test_potatofield_fit_errors(get_mats):
         pf.fit([X1, X1, X2])
     with pytest.raises(ValueError):  # n_matrices not equal
         pf.fit([X1, X2[:1]])
+    with pytest.raises(ValueError):  # metric not str, dict or list
+        PotatoField(metric=42).fit(X)
+    with pytest.raises(ValueError):  # method_combination not str or callable
+        PotatoField(method_combination=42).fit(X)
 
 
 @pytest.mark.parametrize(

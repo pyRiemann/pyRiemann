@@ -967,14 +967,14 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
     neg_label : int, default=0
         The negative label corresponding to artifact data.
 
-    Notes
-    -----
-    .. versionadded:: 0.2.3
-
     Attributes
     ----------
     covmean_ : ndarray, shape (n_channels, n_channels)
         Centroid of potato.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.3
 
     See Also
     --------
@@ -1087,6 +1087,10 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         -------
         self : Potato instance
             The Potato instance.
+
+        Notes
+        -----
+        .. versionadded:: 0.3
         """
         if not hasattr(self, "_mdm"):
             raise ValueError(
@@ -1205,6 +1209,10 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         proba : ndarray, shape (n_matrices,)
             Matrix is considered as normal/clean for high value of proba.
             It is considered as abnormal/artifacted for low value of proba.
+
+        Notes
+        -----
+        .. versionadded:: 0.2.7
         """
         z = self.transform(X)
         proba = self._get_proba(z)
@@ -1288,12 +1296,12 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         The positive label corresponding to clean data.
     neg_label : int, default=0
         The negative label corresponding to artifact data.
-    method_combination : {"fisher", "stouffer", callable}, default="fisher"
+    method_combination : {"fisher", "stouffer"} | callable, default="fisher"
         Method to combine probabilities from the different potatoes:
 
         * fisher: Fisher's method;
         * stouffer: Stouffer's z-score method;
-        * callable: for a custom combination function with an axis argument.
+        * callable: for a custom combination function, with an axis argument.
 
         .. versionadded:: 0.11
 
