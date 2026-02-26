@@ -1293,7 +1293,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
 
         * fisher: Fisher's method;
         * stouffer: Stouffer's z-score method;
-        * callable: for a custom combination with an axis argument.
+        * callable: for a custom combination function with an axis argument.
 
         .. versionadded:: 0.11
 
@@ -1542,7 +1542,6 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         proba : ndarray, shape (n_matrices,)
             Matrix is considered as normal/clean for high value of proba.
             It is considered as abnormal/artifacted for low value of proba.
-            
         """
         self._check_length(X)
         n_matrices = X[0].shape[0]
@@ -1559,7 +1558,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
                 method=self.method_combination,
                 axis=0,
             )
-        elif isinstance(self.method_combination, callable):
+        elif hasattr(self.method_combination, '__call__'):
             proba = self.method_combination(probas, axis=0)
         else:
             raise TypeError(

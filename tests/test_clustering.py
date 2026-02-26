@@ -563,7 +563,10 @@ def test_potatofield_fit_combination(method_combination, get_mats):
     X3 = get_mats(n_matrices, n_channels + 2, "hpd")
     X = [X1, X2, X3]
 
-    pf = PotatoField(n_potatoes=n_potatoes).fit(X)
+    pf = PotatoField(
+        n_potatoes=n_potatoes,
+        method_combination=method_combination,
+    ).fit(X)
     pf.predict_proba(X)
 
 
