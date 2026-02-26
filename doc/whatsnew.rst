@@ -25,7 +25,7 @@ v0.11.dev
 - Enhance :class:`pyriemann.classification.TSClassifier` and :class:`pyriemann.transfer.TLClassifier`
   to support classifiers without sample weights. :pr:`422` by :user:`qbarthelemy`
 
-- Enhance :class:`pyriemann.clustering.PotatoField`, allowing a different metric per potato. :pr:`423` by :user:`qbarthelemy`
+- Enhance :class:`pyriemann.clustering.PotatoField`, allowing a different metric per potato and adding a parameter ``method_combination``. :pr:`423` by :user:`qbarthelemy`
 
 v0.10 (January 2026)
 --------------------

@@ -4,7 +4,7 @@ import warnings
 
 from joblib import Parallel, delayed
 import numpy as np
-from scipy.stats import norm, chi2
+from scipy.stats import combine_pvalues, norm
 import sklearn
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.cluster import KMeans as sklearnKMeans
@@ -1266,7 +1266,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         Number of potatoes in the field.
     p_threshold : float, default=0.01
         Threshold on probability to being clean, in (0, 1), combining
-        probabilities of potatoes using Fisher's method.
+        probabilities of potatoes using ``method_combination``.
     z_threshold : float, default=3
         Threshold on z-score of distance to reject artifacts. It is the number
         of standard deviations from the mean of distances to the centroid.
@@ -1288,6 +1288,14 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         The positive label corresponding to clean data.
     neg_label : int, default=0
         The negative label corresponding to artifact data.
+    method_combination : {"fisher", "stouffer", callable}, default="fisher"
+        Method to combine probabilities from the different potatoes:
+
+        * fisher: Fisher's method;
+        * stouffer: Stouffer's z-score method;
+        * callable: for a custom combination with an axis argument.
+
+        .. versionadded:: 0.11
 
     Notes
     -----
@@ -1320,6 +1328,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         n_iter_max=10,
         pos_label=1,
         neg_label=0,
+        method_combination="fisher",
     ):
         """Init."""
         self.n_potatoes = int(n_potatoes)
@@ -1329,6 +1338,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         self.n_iter_max = n_iter_max
         self.pos_label = pos_label
         self.neg_label = neg_label
+        self.method_combination = method_combination
 
     def fit(self, X, y=None, sample_weight=None):
         """Fit the potato field.
@@ -1513,10 +1523,11 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         return out
 
     def predict_proba(self, X):
-        """Predict probability obtained combining probabilities of potatoes.
+        """Predict probability combining probabilities of potatoes.
 
-        Predict probability obtained combining probabilities of potatoes using
-        Fisher's method. A threshold of 0.01 can be used.
+        Predict probability combining probabilities of the different potatoes
+        using ``method_combination``.
+        With Fisher's method, a threshold of 0.01 can be used.
 
         Parameters
         ----------
@@ -1531,17 +1542,31 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         proba : ndarray, shape (n_matrices,)
             Matrix is considered as normal/clean for high value of proba.
             It is considered as abnormal/artifacted for low value of proba.
+            
         """
         self._check_length(X)
         n_matrices = X[0].shape[0]
 
-        p = np.zeros((self.n_potatoes, n_matrices))
+        probas = np.zeros((self.n_potatoes, n_matrices))
         for i in range(self.n_potatoes):
             _check_n_matrices(X[i], n_matrices)
-            p[i] = self._potatoes[i].predict_proba(X[i])
-        p = np.clip(p, a_min=1e-10, a_max=1)  # avoid trouble with log
-        q = - 2 * np.sum(np.log(p), axis=0)
-        proba = self._get_proba(q)
+            probas[i] = self._potatoes[i].predict_proba(X[i])
+        probas = np.clip(probas, a_min=1e-10, a_max=1)  # avoid trouble w. log
+
+        if isinstance(self.method_combination, str):
+            _, proba = combine_pvalues(
+                probas,
+                method=self.method_combination,
+                axis=0,
+            )
+        elif isinstance(self.method_combination, callable):
+            proba = self.method_combination(probas, axis=0)
+        else:
+            raise TypeError(
+                "method_combination must be a str or a callable, "
+                f"but got {type(self.method_combination)}."
+            )
+
         return proba
 
     def _check_length(self, X):
@@ -1551,8 +1576,3 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
                 "Length of X is not equal to n_potatoes. Should be %d but got "
                 "%d." % (self.n_potatoes, len(X))
             )
-
-    def _get_proba(self, q):
-        """Get proba from a chi-squared value q."""
-        proba = 1 - chi2.cdf(q, df=2 * self.n_potatoes)
-        return proba

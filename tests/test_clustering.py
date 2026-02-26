@@ -3,6 +3,7 @@ from numpy.testing import assert_array_equal
 import pytest
 from pytest import approx
 from scipy.spatial.distance import euclidean
+from scipy.stats import combine_pvalues
 
 from pyriemann.clustering import (
     Kmeans,
@@ -539,6 +540,31 @@ def test_potatofield_fit_metric(metric, get_mats):
     X = [X1, X2]
 
     PotatoField(n_potatoes=n_potatoes, metric=metric).fit(X)
+
+
+def callable_combination(X, axis):
+    _, p_fisher = combine_pvalues(X, method="fisher", axis=axis)
+    _, p_stouffer = combine_pvalues(X, method="stouffer", axis=axis)
+    return np.minimum(p_fisher, p_stouffer)
+
+
+@pytest.mark.parametrize(
+    "method_combination",
+    [
+        "fisher",
+        "stouffer",
+        callable_combination,
+    ]
+)
+def test_potatofield_fit_combination(method_combination, get_mats):
+    n_potatoes, n_matrices, n_channels = 3, 3, 4
+    X1 = get_mats(n_matrices, n_channels, "hpd")
+    X2 = get_mats(n_matrices, n_channels + 1, "hpd")
+    X3 = get_mats(n_matrices, n_channels + 2, "hpd")
+    X = [X1, X2, X3]
+
+    pf = PotatoField(n_potatoes=n_potatoes).fit(X)
+    pf.predict_proba(X)
 
 
 def test_potatofield_fit_errors(get_mats):
