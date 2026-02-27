@@ -4,9 +4,9 @@ import warnings
 
 from joblib import Parallel, delayed
 import numpy as np
-from scipy.stats import norm, chi2
+from scipy.stats import combine_pvalues, norm
 import sklearn
-from sklearn.base import BaseEstimator, TransformerMixin, clone
+from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.cluster import KMeans as sklearnKMeans
 from sklearn.utils.validation import check_random_state
 
@@ -967,14 +967,14 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
     neg_label : int, default=0
         The negative label corresponding to artifact data.
 
-    Notes
-    -----
-    .. versionadded:: 0.2.3
-
     Attributes
     ----------
     covmean_ : ndarray, shape (n_channels, n_channels)
         Centroid of potato.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.3
 
     See Also
     --------
@@ -1087,6 +1087,10 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         -------
         self : Potato instance
             The Potato instance.
+
+        Notes
+        -----
+        .. versionadded:: 0.3
         """
         if not hasattr(self, "_mdm"):
             raise ValueError(
@@ -1205,6 +1209,10 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         proba : ndarray, shape (n_matrices,)
             Matrix is considered as normal/clean for high value of proba.
             It is considered as abnormal/artifacted for low value of proba.
+
+        Notes
+        -----
+        .. versionadded:: 0.2.7
         """
         z = self.transform(X)
         proba = self._get_proba(z)
@@ -1266,22 +1274,36 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         Number of potatoes in the field.
     p_threshold : float, default=0.01
         Threshold on probability to being clean, in (0, 1), combining
-        probabilities of potatoes using Fisher's method.
+        probabilities of potatoes using ``method_combination``.
     z_threshold : float, default=3
         Threshold on z-score of distance to reject artifacts. It is the number
         of standard deviations from the mean of distances to the centroid.
-    metric : string | dict, default="riemann"
+    metric : string | dict | list, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
         see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
         (see :func:`pyriemann.utils.distance.distance`).
-        The metric can be a dict with two keys, "mean" and "distance"
-        in order to pass different metrics.
+        The metric can be a single str;
+        or a dict with two keys, "mean" and "distance",
+        in order to pass different metrics for mean and distance;
+        or a list of ``n_potatoes`` str or dict,
+        in order to pass different metrics for each potato [2]_.
+
+        .. versionchanged:: 0.11
+            Allow a different metric per potato.
     n_iter_max : int, default=10
         The maximum number of iteration to reach convergence.
     pos_label : int, default=1
         The positive label corresponding to clean data.
     neg_label : int, default=0
         The negative label corresponding to artifact data.
+    method_combination : {"fisher", "stouffer"} | callable, default="fisher"
+        Method to combine probabilities from the different potatoes:
+
+        * fisher: Fisher's method;
+        * stouffer: Stouffer's z-score method;
+        * callable: for a custom combination function, with an axis argument.
+
+        .. versionadded:: 0.11
 
     Notes
     -----
@@ -1296,9 +1318,13 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
     .. [1] `The Riemannian Potato Field: A Tool for Online Signal Quality Index
         of EEG
         <https://hal.archives-ouvertes.fr/hal-02015909>`_
-        Q. Barthélemy, L. Mayaud, D. Ojeda, and M. Congedo. IEEE Transactions
-        on Neural Systems and Rehabilitation Engineering, IEEE Institute of
-        Electrical and Electronics Engineers, 2019, 27 (2), pp.244-255
+        Q. Barthélemy, L. Mayaud, D. Ojeda, and M. Congedo. IEEE
+        Transactions on Neural Systems and Rehabilitation Engineering, 2019
+    .. [2] `Improved Riemannian potato field: an Automatic Artifact Rejection
+        Method for EEG
+        <https://arxiv.org/pdf/2509.09264>`_
+        D. Hajhassani, Q. Barthélemy, J. Mattout & M. Congedo.
+        Biomedical Signal Processing and Control, 2026
     """
 
     def __init__(
@@ -1310,6 +1336,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         n_iter_max=10,
         pos_label=1,
         neg_label=0,
+        method_combination="fisher",
     ):
         """Init."""
         self.n_potatoes = int(n_potatoes)
@@ -1319,6 +1346,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         self.n_iter_max = n_iter_max
         self.pos_label = pos_label
         self.neg_label = neg_label
+        self.method_combination = method_combination
 
     def fit(self, X, y=None, sample_weight=None):
         """Fit the potato field.
@@ -1352,17 +1380,32 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         self._check_length(X)
         n_matrices = X[0].shape[0]
 
-        pt = Potato(
-            metric=self.metric,
-            threshold=self.z_threshold,
-            n_iter_max=self.n_iter_max,
-            pos_label=self.pos_label,
-            neg_label=self.neg_label,
-        )
+        if isinstance(self.metric, (str, dict)):
+            metric = [self.metric] * self.n_potatoes
+        elif isinstance(self.metric, list):
+            if len(self.metric) == self.n_potatoes:
+                metric = self.metric
+            else:
+                raise ValueError(
+                    f"Metric must be a list with {self.n_potatoes} elements."
+                )
+        else:
+            raise TypeError(
+                "Metric must be a str, a dict or a list, "
+                f"but got {type(self.metric)}."
+            )
+
         self._potatoes = []
         for i in range(self.n_potatoes):
             _check_n_matrices(X[i], n_matrices)
-            self._potatoes.append(clone(pt))
+            pt = Potato(
+                metric=metric[i],
+                threshold=self.z_threshold,
+                n_iter_max=self.n_iter_max,
+                pos_label=self.pos_label,
+                neg_label=self.neg_label,
+            )
+            self._potatoes.append(pt)
             self._potatoes[i].fit(X[i], y, sample_weight=sample_weight)
 
         return self
@@ -1488,10 +1531,11 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         return out
 
     def predict_proba(self, X):
-        """Predict probability obtained combining probabilities of potatoes.
+        """Predict probability combining probabilities of potatoes.
 
-        Predict probability obtained combining probabilities of potatoes using
-        Fisher's method. A threshold of 0.01 can be used.
+        Predict probability combining probabilities of the different potatoes
+        using ``method_combination``.
+        With Fisher's method, a threshold of 0.01 can be used.
 
         Parameters
         ----------
@@ -1510,13 +1554,26 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         self._check_length(X)
         n_matrices = X[0].shape[0]
 
-        p = np.zeros((self.n_potatoes, n_matrices))
+        probas = np.zeros((self.n_potatoes, n_matrices))
         for i in range(self.n_potatoes):
             _check_n_matrices(X[i], n_matrices)
-            p[i] = self._potatoes[i].predict_proba(X[i])
-        p = np.clip(p, a_min=1e-10, a_max=1)  # avoid trouble with log
-        q = - 2 * np.sum(np.log(p), axis=0)
-        proba = self._get_proba(q)
+            probas[i] = self._potatoes[i].predict_proba(X[i])
+        probas = np.clip(probas, a_min=1e-10, a_max=1)  # avoid trouble w. log
+
+        if isinstance(self.method_combination, str):
+            _, proba = combine_pvalues(
+                probas,
+                method=self.method_combination,
+                axis=0,
+            )
+        elif hasattr(self.method_combination, '__call__'):
+            proba = self.method_combination(probas, axis=0)
+        else:
+            raise TypeError(
+                "method_combination must be a str or a callable, "
+                f"but got {type(self.method_combination)}."
+            )
+
         return proba
 
     def _check_length(self, X):
@@ -1526,8 +1583,3 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
                 "Length of X is not equal to n_potatoes. Should be %d but got "
                 "%d." % (self.n_potatoes, len(X))
             )
-
-    def _get_proba(self, q):
-        """Get proba from a chi-squared value q."""
-        proba = 1 - chi2.cdf(q, df=2 * self.n_potatoes)
-        return proba

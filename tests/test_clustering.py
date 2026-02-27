@@ -2,6 +2,8 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 from pytest import approx
+from scipy.spatial.distance import euclidean
+from scipy.stats import combine_pvalues
 
 from pyriemann.clustering import (
     Kmeans,
@@ -507,7 +509,69 @@ def test_potato_specific_labels(get_mats):
     pt.fit(X, y=[2] * n_matrices)
 
 
-def test_potatofield_fit(get_mats):
+def callable_diageuclid(A, B, squared=False):
+    """Euclidean distance between diagonals of square matrices"""
+    return euclidean(np.diag(A), np.diag(B))
+
+
+@pytest.mark.parametrize(
+    "metric",
+    [
+        "riemann",
+        {"mean": "logeuclid", "distance": "riemann"},
+        ["riemann", "logeuclid"],
+        [
+            {"mean": "riemann", "distance": "riemann"},
+            {"mean": "logeuclid", "distance": "riemann"},
+        ],
+        [
+            "riemann",
+            {"mean": "logeuclid", "distance": "riemann"},
+        ],
+        [
+            "riemann",
+            {"mean": "riemann", "distance": callable_diageuclid},
+        ],
+    ]
+)
+def test_potatofield_fit_metric(metric, get_mats):
+    n_potatoes, n_matrices, n_channels = 2, 6, 3
+    X1 = get_mats(n_matrices, n_channels, "hpd")
+    X2 = get_mats(n_matrices, n_channels + 1, "hpd")
+    X = [X1, X2]
+
+    PotatoField(n_potatoes=n_potatoes, metric=metric).fit(X)
+
+
+def callable_combination(X, axis):
+    _, p_fisher = combine_pvalues(X, method="fisher", axis=axis)
+    _, p_stouffer = combine_pvalues(X, method="stouffer", axis=axis)
+    return np.minimum(p_fisher, p_stouffer)
+
+
+@pytest.mark.parametrize(
+    "method_combination",
+    [
+        "fisher",
+        "stouffer",
+        callable_combination,
+    ]
+)
+def test_potatofield_fit_combination(method_combination, get_mats):
+    n_potatoes, n_matrices, n_channels = 3, 3, 4
+    X1 = get_mats(n_matrices, n_channels, "hpd")
+    X2 = get_mats(n_matrices, n_channels + 1, "hpd")
+    X3 = get_mats(n_matrices, n_channels + 2, "hpd")
+    X = [X1, X2, X3]
+
+    pf = PotatoField(
+        n_potatoes=n_potatoes,
+        method_combination=method_combination,
+    ).fit(X)
+    pf.predict_proba(X)
+
+
+def test_potatofield_fit_errors(get_mats):
     n_potatoes, n_matrices, n_channels = 2, 6, 3
     X1 = get_mats(n_matrices, n_channels, "spd")
     X2 = get_mats(n_matrices, n_channels + 1, "spd")
@@ -523,6 +587,10 @@ def test_potatofield_fit(get_mats):
         pf.fit([X1, X1, X2])
     with pytest.raises(ValueError):  # n_matrices not equal
         pf.fit([X1, X2[:1]])
+    with pytest.raises(ValueError):  # metric not str, dict or list
+        PotatoField(metric=42).fit(X)
+    with pytest.raises(ValueError):  # method_combination not str or callable
+        PotatoField(method_combination=42).fit(X)
 
 
 @pytest.mark.parametrize(
