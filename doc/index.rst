@@ -2,8 +2,11 @@
 
 .. title:: pyRiemann
 
-pyRiemann: Riemannian Geometry for Machine Learning
-====================================================
+pyRiemann
+=========
+
+Riemannian Geometry for Machine Learning
+-----------------------------------------
 
 Machine learning for multivariate data through the Riemannian geometry
 of symmetric positive definite matrices.
