@@ -48,7 +48,10 @@ setup(
         "docs": [
             "sphinx",
             "sphinx-gallery",
-            "sphinx-bootstrap_theme",
+            "furo",
+            "sphinx-copybutton",
+            "sphinx-design",
+            "cffconvert",
             "numpydoc",
             "mne",
             "seaborn",

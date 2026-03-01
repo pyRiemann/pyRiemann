@@ -5,6 +5,8 @@
 /doc/build
 /doc/generated
 /doc/auto_examples
+/doc/CITATION.bib
+/doc/CITATION.apa
 /dist
 *-e
 *.egg-info/

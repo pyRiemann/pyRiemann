@@ -1,0 +1,56 @@
+cff-version: 1.2.0
+title: pyRiemann
+message: >-
+  If you use this software, please cite it using the metadata from this file.
+type: software
+authors:
+  - given-names: Alexandre
+    family-names: Barachant
+  - given-names: Quentin
+    family-names: Barthélemy
+  - given-names: Jean-Rémi
+    family-names: King
+  - given-names: Alexandre
+    family-names: Gramfort
+  - given-names: Sylvain
+    family-names: Chevallier
+  - given-names: Pedro L. C.
+    family-names: Rodrigues
+  - given-names: Emanuele
+    family-names: Olivetti
+  - given-names: Vladislav
+    family-names: Goncharenko
+  - given-names: Gabriel
+    family-names: Wagner vom Berg
+  - given-names: Ghiles
+    family-names: Reguig
+  - given-names: Arthur
+    family-names: Lebeurrier
+  - given-names: Erik
+    family-names: Bjäreholt
+  - given-names: Maria Sayu
+    family-names: Yamamoto
+  - given-names: Pierre
+    family-names: Clisson
+  - given-names: Marie-Constance
+    family-names: Corsi
+  - given-names: Igor
+    family-names: Carrara
+  - given-names: Apolline
+    family-names: Mellot
+  - given-names: Bruna
+    family-names: Junqueira Lopes
+  - given-names: Brent
+    family-names: Gaisford
+  - given-names: Ammar
+    family-names: Mian
+  - given-names: Anton
+    family-names: Andreev
+  - given-names: Gregoire
+    family-names: Cattan
+doi: 10.5281/zenodo.593816
+url: "https://doi.org/10.5281/zenodo.593816"
+repository-code: "https://github.com/pyRiemann/pyRiemann"
+license: BSD-3-Clause
+version: v0.10
+date-released: "2026-01-01"
