@@ -11,7 +11,7 @@ from pyriemann.utils.kernel import (
     kernel,
     kernel_euclid,
     kernel_logeuclid,
-    kernel_riemann
+    kernel_riemann,
 )
 from pyriemann.utils.mean import mean_covariance
 from pyriemann.utils.test import is_sym_pos_semi_def as is_spsd

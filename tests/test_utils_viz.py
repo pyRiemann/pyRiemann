@@ -2,11 +2,7 @@ import matplotlib
 import numpy as np
 import pytest
 
-from pyriemann.utils.viz import (
-    plot_embedding,
-    plot_cospectra,
-    plot_waveforms
-)
+from pyriemann.utils.viz import plot_embedding, plot_cospectra, plot_waveforms
 
 matplotlib.use("Agg")
 

@@ -10,7 +10,7 @@ from pyriemann.utils.geodesic import (
     geodesic_logeuclid,
     geodesic_riemann,
     geodesic_thompson,
-    geodesic_wasserstein
+    geodesic_wasserstein,
 )
 from pyriemann.utils.mean import mean_covariance
 
@@ -22,7 +22,7 @@ metrics = [
     "logeuclid",
     "riemann",
     "thompson",
-    "wasserstein"
+    "wasserstein",
 ]
 
 
@@ -51,14 +51,14 @@ def test_geodesic_ndarray(geo, get_mats):
     A = get_mats(n_matrices, n_channels, "spd")
     B = get_mats(n_matrices, n_channels, "spd")
 
-    assert geo(A[0], B[0], .3).shape == A[0].shape  # 2D arrays
+    assert geo(A[0], B[0], 0.3).shape == A[0].shape  # 2D arrays
 
-    assert geo(A, B, .2).shape == A.shape  # 3D arrays
+    assert geo(A, B, 0.2).shape == A.shape  # 3D arrays
 
     n_sets = 4
     C = np.asarray([A for _ in range(n_sets)])
     D = np.asarray([B for _ in range(n_sets)])
-    assert geo(C, D, .7).shape == C.shape  # 4D arrays
+    assert geo(C, D, 0.7).shape == C.shape  # 4D arrays
 
 
 @pytest.mark.parametrize("metric", metrics)
@@ -71,7 +71,7 @@ def test_geodesic_eye(metric):
     elif metric == "euclid":
         b = 1.5
     elif metric == "wasserstein":
-        b = (9/2 - np.sqrt(8))
+        b = 9 / 2 - np.sqrt(8)
     else:
         b = 2
     assert_geodesics(metric, a * eye, b * eye, eye)
@@ -107,27 +107,32 @@ def test_geodesic_properties(kind, metric, get_mats, rndstate):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("gfun", [
-    geodesic_logeuclid,
-    geodesic_riemann,
-    geodesic_thompson,  # Prop 4.3 in [Mostajeran2024]
-])
+@pytest.mark.parametrize(
+    "gfun",
+    [
+        geodesic_logeuclid,
+        geodesic_riemann,
+        geodesic_thompson,  # Prop 4.3 in [Mostajeran2024]
+    ],
+)
 def test_geodesic_property_joint_homogeneity(kind, gfun, get_mats, rndstate):
     n_channels = 3
     A, B = get_mats(2, n_channels, kind)
     alpha, s1, s2 = rndstate.uniform(0.01, 0.99, size=3)
-    s = (s1 ** (1 - alpha)) * (s2 ** alpha)
+    s = (s1 ** (1 - alpha)) * (s2**alpha)
     assert gfun(s1 * A, s2 * B, alpha) == approx(s * gfun(A, B, alpha))
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("gfun", [
-    geodesic_logeuclid,
-    geodesic_riemann,
-])
-def test_geodesic_property_invariance_inversion(kind, gfun,
-                                                get_mats, rndstate):
-    """Test invariance under inversion, also called self-duality """
+@pytest.mark.parametrize(
+    "gfun",
+    [
+        geodesic_logeuclid,
+        geodesic_riemann,
+    ],
+)
+def test_geodesic_property_invariance_inversion(kind, gfun, get_mats, rndstate):
+    """Test invariance under inversion, also called self-duality"""
     n_channels = 4
     A, B = get_mats(2, n_channels, kind)
     alpha = rndstate.uniform(0.01, 0.99)
@@ -137,12 +142,14 @@ def test_geodesic_property_invariance_inversion(kind, gfun,
 
 
 @pytest.mark.parametrize("kind, kindW", [("spd", "inv"), ("hpd", "cinv")])
-@pytest.mark.parametrize("gfun", [
-    geodesic_riemann,
-    geodesic_thompson,  # Prop 4.1 in [Mostajeran2024]
-])
-def test_geodesic_property_invariance_congruence(kind, kindW, gfun,
-                                                 get_mats, rndstate):
+@pytest.mark.parametrize(
+    "gfun",
+    [
+        geodesic_riemann,
+        geodesic_thompson,  # Prop 4.1 in [Mostajeran2024]
+    ],
+)
+def test_geodesic_property_invariance_congruence(kind, kindW, gfun, get_mats, rndstate):
     """Test invariance under congruence, ie an invertible transform"""
     n_channels = 3
     A, B = get_mats(2, n_channels, kind)

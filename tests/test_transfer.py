@@ -43,8 +43,7 @@ rndstate = 1234
 ###############################################################################
 
 
-def make_classification_transfer_tangspace(rndstate, domains,
-                                           n_vectors_d, n_ts):
+def make_classification_transfer_tangspace(rndstate, domains, n_vectors_d, n_ts):
     n_vectors = n_vectors_d * len(domains)
     X = rndstate.randn(n_vectors, n_ts)
     y = rndstate.randint(0, 3, size=n_vectors)
@@ -87,7 +86,7 @@ def test_encode_decode_domains(rndstate):
     [
         KFold(n_splits=5, shuffle=True),
         StratifiedShuffleSplit(n_splits=5, train_size=0.80),
-    ]
+    ],
 )
 def test_tlsplitter(rndstate, cv):
     """Test wrapper for cross-validation"""
@@ -127,8 +126,7 @@ def test_tldummy(rndstate, space):
 @pytest.mark.parametrize("metric", ["riemann", "euclid"])
 @pytest.mark.parametrize("use_weight", [True, False])
 @pytest.mark.parametrize("target_domain", ["target_domain", ""])
-def test_tlcenter_manifold(rndstate, get_weights,
-                           metric, use_weight, target_domain):
+def test_tlcenter_manifold(rndstate, get_weights, metric, use_weight, target_domain):
     """Test centering matrices to identity"""
     X, y_enc = make_classification_transfer(
         n_matrices=25,
@@ -165,8 +163,9 @@ def test_tlcenter_manifold(rndstate, get_weights,
 @pytest.mark.parametrize("metric", ["riemann", "euclid"])
 @pytest.mark.parametrize("use_weight", [True, False])
 @pytest.mark.parametrize("target_domain", ["target_domain", ""])
-def test_tlcenter_manifold_fit_transf(rndstate, get_weights,
-                                      metric, use_weight, target_domain):
+def test_tlcenter_manifold_fit_transf(
+    rndstate, get_weights, metric, use_weight, target_domain
+):
     """Test .fit_transform() versus .fit().transform()"""
     X, y_enc = make_classification_transfer(
         n_matrices=25,
@@ -239,8 +238,7 @@ def test_tlcenter_tangentspace(rndstate, get_weights, use_weight):
 @pytest.mark.parametrize("use_centered_data", [True, False])
 @pytest.mark.parametrize("metric", ["riemann"])
 @pytest.mark.parametrize("use_weight", [True, False])
-def test_tlscale_manifold(rndstate, get_weights,
-                          use_centered_data, metric, use_weight):
+def test_tlscale_manifold(rndstate, get_weights, use_centered_data, metric, use_weight):
     """Test scaling matrices to a target dispersion"""
     X, y_enc = make_classification_transfer(
         n_matrices=25,
@@ -261,7 +259,7 @@ def test_tlscale_manifold(rndstate, get_weights,
         target_domain="target_domain",
         final_dispersion=1.0,
         centered_data=use_centered_data,
-        metric=metric
+        metric=metric,
     )
     X_str = tlstr.fit_transform(X, y_enc, sample_weight=weights)
 
@@ -357,20 +355,20 @@ def test_tlrotate_manifold(rndstate, get_weights, metric, use_weight):
         d = "source_domain"
         M_rct_label_source = mean_riemann(
             X_rct[domain == d][y[domain == d] == label],
-            sample_weight=matrix_weight[domain == d][y[domain == d] == label]
+            sample_weight=matrix_weight[domain == d][y[domain == d] == label],
         )
         M_rot_label_source = mean_riemann(
             X_rot[domain == d][y[domain == d] == label],
-            sample_weight=matrix_weight[domain == d][y[domain == d] == label]
+            sample_weight=matrix_weight[domain == d][y[domain == d] == label],
         )
         d = "target_domain"
         M_rct_label_target = mean_riemann(
             X_rct[domain == d][y[domain == d] == label],
-            sample_weight=matrix_weight[domain == d][y[domain == d] == label]
+            sample_weight=matrix_weight[domain == d][y[domain == d] == label],
         )
         M_rot_label_target = mean_riemann(
             X_rot[domain == d][y[domain == d] == label],
-            sample_weight=matrix_weight[domain == d][y[domain == d] == label]
+            sample_weight=matrix_weight[domain == d][y[domain == d] == label],
         )
         d_rct = distance_riemann(M_rct_label_source, M_rct_label_target)
         d_rot = distance_riemann(M_rot_label_source, M_rot_label_target)
@@ -383,8 +381,9 @@ def test_tlrotate_manifold(rndstate, get_weights, metric, use_weight):
 @pytest.mark.parametrize("n_components", [1, 3, "max"])
 @pytest.mark.parametrize("n_clusters", [1, 2, 5])
 @pytest.mark.parametrize("use_weight", [True, False])
-def test_tlrotate_tangentspace(rndstate, get_weights,
-                               n_components, n_clusters, use_weight):
+def test_tlrotate_tangentspace(
+    rndstate, get_weights, n_components, n_clusters, use_weight
+):
     """Test rotating vectors"""
     n_ts = 10
     X, y_enc = make_classification_transfer_tangspace(
@@ -429,10 +428,11 @@ def test_tlrotate_tangentspace(rndstate, get_weights,
     [
         MDM(metric="riemann"),
         make_pipeline(MDM(metric="riemann")),
-    ]
+    ],
 )
 @pytest.mark.parametrize(
-    "source_weight, target_weight", [(1, 0), (0, 1), (1, 1)],
+    "source_weight, target_weight",
+    [(1, 0), (0, 1), (1, 1)],
 )
 def test_tlclassifier_mdm(rndstate, clf, source_weight, target_weight):
     """Test wrapper for MDM classifier"""
@@ -489,7 +489,7 @@ def test_tlclassifier_mdm(rndstate, clf, source_weight, target_weight):
         TSClassifier(),
         SVC(metric="riemann"),
         make_pipeline(MeanField(metric="logeuclid")),
-    ]
+    ],
 )
 @pytest.mark.parametrize("domains_weight", [(1, 0), (0, 1), (1, 1)])
 def test_tlclassifier_manifold(rndstate, clf, domains_weight):
@@ -557,7 +557,7 @@ def tlclassifier(clf, X, y_enc, domains_weight, n_classes=2):
         KNearestNeighborRegressor(metric="riemann"),
         make_pipeline(KNearestNeighborRegressor(metric="logeuclid")),
         SVR(metric="riemann"),
-    ]
+    ],
 )
 @pytest.mark.parametrize("domains_weights", [(1, 0, 0), (0, 1, 1), (1, 1, 1)])
 def test_tlregressor_manifold(rndstate, reg, domains_weights):

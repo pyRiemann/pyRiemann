@@ -42,7 +42,7 @@ print(__doc__)
 data_path = str(sample.data_path())
 raw_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw.fif"
 event_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif"
-tmin, tmax = -0., 1
+tmin, tmax = -0.0, 1
 event_id = dict(aud_l=1, aud_r=2, vis_l=3, vis_r=4)
 
 # Setup for reading the raw data
@@ -51,12 +51,23 @@ raw.filter(2, None, method="iir")  # replace baselining with high-pass
 events = mne.read_events(event_fname)
 
 raw.info["bads"] = ["MEG 2443"]  # set bad channels
-picks = mne.pick_types(raw.info, meg=True, eeg=False, stim=False, eog=False,
-                       exclude="bads")
+picks = mne.pick_types(
+    raw.info, meg=True, eeg=False, stim=False, eog=False, exclude="bads"
+)
 
 # Read epochs
-epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=False,
-                    picks=picks, baseline=None, preload=True, verbose=False)
+epochs = mne.Epochs(
+    raw,
+    events,
+    event_id,
+    tmin,
+    tmax,
+    proj=False,
+    picks=picks,
+    baseline=None,
+    preload=True,
+    verbose=False,
+)
 
 X = epochs.get_data(copy=False)
 y = epochs.events[:, -1]
@@ -75,8 +86,7 @@ covs = xdwn.fit(Xtrain, ytrain).transform(Xtest)
 # Spectral Embedding (SE)
 # -----------------------
 
-plot_embedding(covs, ytest, metric="riemann", embd_type="Spectral",
-               normalize=True)
+plot_embedding(covs, ytest, metric="riemann", embd_type="Spectral", normalize=True)
 plt.show()
 
 
@@ -84,8 +94,9 @@ plt.show()
 # Locally Linear Embedding (LLE)
 # ------------------------------
 
-plot_embedding(covs, ytest, metric="riemann", embd_type="LocallyLinear",
-               normalize=False)
+plot_embedding(
+    covs, ytest, metric="riemann", embd_type="LocallyLinear", normalize=False
+)
 plt.show()
 
 
@@ -93,8 +104,9 @@ plt.show()
 # TNSE
 # ------------------------------
 
-plot_embedding(covs, ytest, metric="riemann", embd_type="TSNE",
-               normalize=False, max_iter=50)
+plot_embedding(
+    covs, ytest, metric="riemann", embd_type="TSNE", normalize=False, max_iter=50
+)
 plt.show()
 
 ###############################################################################

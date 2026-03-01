@@ -24,7 +24,7 @@ def plot_cov_estimators(ax, X, estimators):
     plot_cov_ellipse(ax, C_ref, edgecolor="C0", label="Reference")
     for i, est in enumerate(estimators):
         C = Covariances(estimator=est).transform(X[np.newaxis, ...])[0]
-        plot_cov_ellipse(ax, C, edgecolor=f"C{i+2}", label=est)
+        plot_cov_ellipse(ax, C, edgecolor=f"C{i + 2}", label=est)
     ax.legend(loc="upper left")
     return ax
 
@@ -88,10 +88,8 @@ X = np.concatenate((X, Xout), axis=1)
 
 fig, ax = plt.subplots(figsize=(14, 7))
 ax.set_title("Covariance estimations on corrupted dataset")
-ax.scatter(X[0, :n_inliers], X[1, :n_inliers], c="C0", edgecolors="k",
-           label="Inliers")
-ax.scatter(X[0, n_inliers:], X[1, n_inliers:], c="C1", edgecolors="k",
-           label="Outliers")
+ax.scatter(X[0, :n_inliers], X[1, :n_inliers], c="C0", edgecolors="k", label="Inliers")
+ax.scatter(X[0, n_inliers:], X[1, n_inliers:], c="C1", edgecolors="k", label="Outliers")
 ax = plot_cov_estimators(ax, X, estimators)
 plt.show()
 

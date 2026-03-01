@@ -1,4 +1,5 @@
 """Geodesics for SPD/HPD matrices."""
+
 import numpy as np
 from scipy.linalg import eigvalsh
 
@@ -128,12 +129,14 @@ def geodesic_logchol(A, B, alpha=0.5):
     geo = np.zeros_like(A)
 
     tri0, tri1 = np.tril_indices(A_chol.shape[-1], -1)
-    geo[..., tri0, tri1] = (1 - alpha) * A_chol[..., tri0, tri1] + \
-        alpha * B_chol[..., tri0, tri1]
+    geo[..., tri0, tri1] = (1 - alpha) * A_chol[..., tri0, tri1] + alpha * B_chol[
+        ..., tri0, tri1
+    ]
 
     diag0, diag1 = np.diag_indices(A_chol.shape[-1])
-    geo[..., diag0, diag1] = A_chol[..., diag0, diag1] ** (1 - alpha) * \
-        B_chol[..., diag0, diag1] ** alpha
+    geo[..., diag0, diag1] = (
+        A_chol[..., diag0, diag1] ** (1 - alpha) * B_chol[..., diag0, diag1] ** alpha
+    )
 
     return geo @ ctranspose(geo)
 
@@ -272,10 +275,10 @@ def geodesic_thompson(A, B, alpha=0.5):
 
     C = np.zeros_like(A)
 
-    mask = (Emin == Emax)
+    mask = Emin == Emax
     C[mask] = (Emin[mask][..., np.newaxis, np.newaxis] ** alpha) * A[mask]
 
-    Emin_a, Emax_a = Emin ** alpha, Emax ** alpha
+    Emin_a, Emax_a = Emin**alpha, Emax**alpha
     b = (Emax_a - Emin_a)[~mask][..., np.newaxis, np.newaxis]
     a = (Emax * Emin_a - Emin * Emax_a)[~mask][..., np.newaxis, np.newaxis]
     c = b * B[~mask] + a * A[~mask]
@@ -333,8 +336,11 @@ def geodesic_wasserstein(A, B, alpha=0.5):
     A12 = sqrtm(A)
     A12inv = invsqrtm(A)
     AB12 = A12 @ sqrtm(A12 @ B @ A12) @ A12inv
-    return (1-alpha)**2 * A + alpha**2 * B + \
-        alpha*(1-alpha) * (AB12 + ctranspose(AB12))
+    return (
+        (1 - alpha) ** 2 * A
+        + alpha**2 * B
+        + alpha * (1 - alpha) * (AB12 + ctranspose(AB12))
+    )
 
 
 ###############################################################################

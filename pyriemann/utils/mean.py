@@ -63,7 +63,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     for _ in range(maxiter):
         J = np.einsum("a,abc->bc", sample_weight, logm(B @ X @ B.conj().T))
         delta = np.real(np.diag(expm(J)))
-        B = (np.abs(delta) ** -.5)[:, np.newaxis] * B
+        B = (np.abs(delta) ** -0.5)[:, np.newaxis] * B
 
         crit = distance_riemann(eye_n, np.diag(delta))
         if crit <= tol:
@@ -334,11 +334,13 @@ def mean_logchol(X, sample_weight=None, **kwargs):
     )
 
     diag0, diag1 = np.diag_indices(n_channels)
-    L[diag0, diag1] = np.exp(np.average(
-        np.log(X_chol[:, diag0, diag1]),
-        axis=0,
-        weights=sample_weight,
-    ))
+    L[diag0, diag1] = np.exp(
+        np.average(
+            np.log(X_chol[:, diag0, diag1]),
+            axis=0,
+            weights=sample_weight,
+        )
+    )
 
     return L @ L.conj().T
 
@@ -433,8 +435,7 @@ def mean_logeuclid(X, sample_weight=None, **kwargs):
     return M
 
 
-def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
-               init=None):
+def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100, init=None):
     r"""Power mean of SPD/HPD matrices.
 
     Power mean of order :math:`p` is the solution of [1]_ [2]_:
@@ -509,7 +510,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     sample_weight = check_weights(sample_weight, n_matrices)
     phi = 0.375 / np.abs(p)
     if init is None:
-        G = powm(np.einsum("a,abc->bc", sample_weight, powm(X, p)), 1/p)
+        G = powm(np.einsum("a,abc->bc", sample_weight, powm(X, p)), 1 / p)
     else:
         G = check_init(init, n)
     if p > 0:
@@ -522,7 +523,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
         H = np.einsum(
             "a,abc->bc",
             sample_weight,
-            powm(K @ powm(X, np.sign(p)) @ K.conj().T, np.abs(p))
+            powm(K @ powm(X, np.sign(p)) @ K.conj().T, np.abs(p)),
         )
         K = powm(H, -phi) @ K
 
@@ -582,7 +583,7 @@ def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     if p == -1:
         return mean_harmonic(X, sample_weight=sample_weight)
 
-    M = powm(mean_euclid(powm(X, p), sample_weight=sample_weight), 1/p)
+    M = powm(mean_euclid(powm(X, p), sample_weight=sample_weight), 1 / p)
     return M
 
 
@@ -872,8 +873,9 @@ def _apply_masks(X, masks):
     return [m.T @ x @ m for x, m in zip(X, masks)]
 
 
-def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
-                       sample_weight=None):
+def maskedmean_riemann(
+    X, masks, *, tol=10e-9, maxiter=100, init=None, sample_weight=None
+):
     """Masked Riemannian mean of SPD/HPD matrices.
 
     Given masks defined as semi-orthogonal matrices, the masked Riemannian mean
@@ -1009,6 +1011,6 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
         tol=tol,
         maxiter=maxiter,
         init=init,
-        sample_weight=sample_weight
+        sample_weight=sample_weight,
     )
     return M

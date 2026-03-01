@@ -1,4 +1,4 @@
-""" Local functions for SSVEP examples """
+"""Local functions for SSVEP examples"""
 
 import os
 
@@ -74,7 +74,7 @@ def download_data(subject=1, session=1):
         "hash": dhash,
         "url": url,
         "folder_name": "MNE-ssvepexo-data",
-        "config_key": "MNE_DATASETS_SSVEPEXO_PATH"
+        "config_key": "MNE_DATASETS_SSVEPEXO_PATH",
     }
     data_path = fetch_dataset(dataset_params, force_update=True)
 
@@ -82,31 +82,35 @@ def download_data(subject=1, session=1):
 
 
 def bandpass_filter(raw, l_freq, h_freq, method="iir", verbose=False):
-    """ Band-pass filter a signal using MNE """
-    return raw.copy().filter(
-        l_freq=l_freq,
-        h_freq=h_freq,
-        method=method,
-        verbose=verbose
-    ).get_data()
+    """Band-pass filter a signal using MNE"""
+    return (
+        raw.copy()
+        .filter(l_freq=l_freq, h_freq=h_freq, method=method, verbose=verbose)
+        .get_data()
+    )
 
 
 def extend_signal(raw, frequencies, freq_band):
-    """ Extend a signal with filter bank using MNE """
-    raw_ext = np.vstack([
-        bandpass_filter(raw, l_freq=f - freq_band, h_freq=f + freq_band)
-        for f in frequencies
-    ])
+    """Extend a signal with filter bank using MNE"""
+    raw_ext = np.vstack(
+        [
+            bandpass_filter(raw, l_freq=f - freq_band, h_freq=f + freq_band)
+            for f in frequencies
+        ]
+    )
 
     info = create_info(
         ch_names=sum(
-            list(map(lambda f: [
-                ch + "-" + str(f) + "Hz"
-                for ch in raw.ch_names
-            ], frequencies)), []
+            list(
+                map(
+                    lambda f: [ch + "-" + str(f) + "Hz" for ch in raw.ch_names],
+                    frequencies,
+                )
+            ),
+            [],
         ),
         ch_types=["eeg"] * len(raw.ch_names) * len(frequencies),
-        sfreq=int(raw.info["sfreq"])
+        sfreq=int(raw.info["sfreq"]),
     )
 
     return RawArray(raw_ext, info)

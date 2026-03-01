@@ -49,8 +49,9 @@ def _matrix_operator(X, operator):
     """Matrix function for SPD/HPD matrices."""
     if not isinstance(X, np.ndarray) or X.ndim < 2:
         raise ValueError("Input must be at least a 2D ndarray")
-    if X.dtype.char in np.typecodes['AllFloat'] and (
-            np.isinf(X).any() or np.isnan(X).any()):
+    if X.dtype.char in np.typecodes["AllFloat"] and (
+        np.isinf(X).any() or np.isnan(X).any()
+    ):
         raise ValueError(
             "Matrices must be positive definite. "
             "You should add regularization to avoid this error."
@@ -110,7 +111,10 @@ def invsqrtm(C):
     D : ndarray, shape (..., n, n)
         Matrix inverse square root of C.
     """
-    def isqrt(x): return 1. / np.sqrt(x)
+
+    def isqrt(x):
+        return 1.0 / np.sqrt(x)
+
     return _matrix_operator(C, isqrt)
 
 
@@ -164,7 +168,10 @@ def powm(C, alpha):
     D : ndarray, shape (..., n, n)
         Matrix power of C.
     """
-    def power(x): return x**alpha
+
+    def power(x):
+        return x**alpha
+
     return _matrix_operator(C, power)
 
 
@@ -212,6 +219,7 @@ def _nearest_sym_pos_def(S, reg=1e-6):
     P : ndarray, shape (n, n)
         Nearest SPD matrix.
     """
+
     def regularize(X, reg):
         ei, ev = np.linalg.eigh(X)
         if np.min(ei) / np.max(ei) < reg:
@@ -233,7 +241,7 @@ def _nearest_sym_pos_def(S, reg=1e-6):
     k = 1
     while not is_pos_def(P, fast_mode=False):
         mineig = np.min(np.real(np.linalg.eigvals(P)))
-        P += I * (-mineig * k ** 2 + spacing)
+        P += I * (-mineig * k**2 + spacing)
         k += 1
 
     # Regularize
@@ -326,8 +334,9 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
 
     close_ = np.isclose(dif, dif.T, atol=atol, rtol=rtol)
     dif[close_] = fctder(dif[close_])
-    dif[~close_] = (fct(dif[~close_]) - fct(dif.T[~close_])) / \
-                   (dif[~close_] - dif.T[~close_])
+    dif[~close_] = (fct(dif[~close_]) - fct(dif.T[~close_])) / (
+        dif[~close_] - dif.T[~close_]
+    )
     return dif
 
 

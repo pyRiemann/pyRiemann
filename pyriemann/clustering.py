@@ -1,4 +1,5 @@
 """Clustering functions."""
+
 from math import floor
 import warnings
 
@@ -42,13 +43,22 @@ def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
         )
 
 
-def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,
-                metric="riemann", max_iter=100, tol=1e-4, n_jobs=1):
+def _fit_single(
+    X,
+    y=None,
+    n_clusters=2,
+    init="random",
+    random_state=None,
+    metric="riemann",
+    max_iter=100,
+    tol=1e-4,
+    n_jobs=1,
+):
     """helper to fit a single run of centroid."""
     # init random state if provided
     mdm = MDM(metric=metric, n_jobs=n_jobs)
     mdm.metric_mean, mdm.metric_dist = check_metric(metric)
-    squared_norms = np.linalg.norm(X, ord="fro", axis=(1, 2))**2
+    squared_norms = np.linalg.norm(X, ord="fro", axis=(1, 2)) ** 2
     mdm.covmeans_ = _init_centroids(
         X,
         n_clusters,
@@ -68,10 +78,9 @@ def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,
         k += 1
         if (k > max_iter) | (np.mean(labels == old_labels) > (1 - tol)):
             break
-    inertia = sum([
-        sum(dist[labels == mdm.classes_[i], i])
-        for i in range(len(mdm.classes_))
-    ])
+    inertia = sum(
+        [sum(dist[labels == mdm.classes_[i], i]) for i in range(len(mdm.classes_))]
+    )
     return labels, inertia, mdm
 
 
@@ -202,7 +211,8 @@ class Kmeans(SpdClassifMixin, SpdClustMixin, SpdTransfMixin, BaseEstimator):
                     max_iter=self.max_iter,
                     tol=self.tol,
                     n_jobs=1,
-                ) for seed in seeds
+                )
+                for seed in seeds
             )
             labels, inertia, mdm = zip(*res)
 
@@ -349,7 +359,7 @@ class KmeansPerClassTransform(SpdTransfMixin, BaseEstimator):
 
 @np.vectorize
 def kernel_normal(x):
-    return np.exp(- x ** 2)
+    return np.exp(-(x**2))
 
 
 @np.vectorize
@@ -428,7 +438,7 @@ class MeanShift(SpdClustMixin, BaseEstimator):
         metric="riemann",
         tol=1e-3,
         max_iter=100,
-        n_jobs=1
+        n_jobs=1,
     ):
         """Init."""
         self.kernel = kernel
@@ -454,16 +464,12 @@ class MeanShift(SpdClustMixin, BaseEstimator):
             The MeanShift instance.
         """
         self._kernel_fun = check_function(self.kernel, ker_clust_functions)
-        self._metric_map, self._metric_dist = check_metric(
-            self.metric, ["map", "dist"]
-        )
+        self._metric_map, self._metric_dist = check_metric(self.metric, ["map", "dist"])
         if self.bandwidth is None:
             self._bandwidth = self._estimate_bandwidth(X, quantile=0.3)
-        self._bandwidth2 = self._bandwidth ** 2
+        self._bandwidth2 = self._bandwidth**2
 
-        modes = Parallel(n_jobs=self.n_jobs)(
-            delayed(self._seek_mode)(X, x) for x in X
-        )
+        modes = Parallel(n_jobs=self.n_jobs)(delayed(self._seek_mode)(X, x) for x in X)
 
         modes = self._fuse_mode(modes)
 
@@ -526,8 +532,7 @@ class MeanShift(SpdClustMixin, BaseEstimator):
             Prediction for each matrix according to the closest mode.
         """
         dist = Parallel(n_jobs=self.n_jobs)(
-            delayed(distance)(X, mode, self._metric_dist)
-            for mode in self.modes_
+            delayed(distance)(X, mode, self._metric_dist) for mode in self.modes_
         )
         dist = np.concatenate(dist, axis=1)
         return dist.argmin(axis=1)
@@ -536,7 +541,7 @@ class MeanShift(SpdClustMixin, BaseEstimator):
 ###############################################################################
 
 
-class Gaussian():
+class Gaussian:
     """Gaussian model.
 
     Gaussian model for Riemannian manifold of SPD matrices,
@@ -571,6 +576,7 @@ class Gaussian():
         <https://www.cis.jhu.edu/~tingli/App_of_Lie_group/Intrinsic%20Statistics%20on%20Riemannian%20Manifolds.pdf>`_
         X. Pennec. Journal of Mathematical Imaging and Vision, 2006
     """  # noqa
+
     def __init__(self, n, mu, sigma=None, metric="riemann"):
         self.n = n
         self.mu = mu
@@ -578,9 +584,7 @@ class Gaussian():
             sigma = np.eye(n * (n + 1) // 2)
         self.sigma = sigma
         self.metric = metric
-        self._metric_mean, self._metric_map = check_metric(
-            metric, ["mean", "map"]
-        )
+        self._metric_mean, self._metric_map = check_metric(metric, ["mean", "map"])
 
     def pdf(self, X, *, reg=1e-16, use_pi=True):
         """Compute approximate probability density function (pdf) of matrices.
@@ -700,6 +704,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         <https://calinon.ch/papers/Jaquier-IROS2017.pdf>`_
         N. Jacquier & S. Calinon. IEEE IROS, 2017
     """
+
     def __init__(
         self,
         n_components=1,
@@ -791,20 +796,20 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
             The GaussianMixture instance.
         """
         n_matrices, n_channels, _ = X.shape
-        if (n_channels * (n_channels + 1) // 2 > n_matrices):
+        if n_channels * (n_channels + 1) // 2 > n_matrices:
             raise ValueError("Not enough matrices for training GMM.")
 
         # initialization
         self.random_state = check_random_state(self.random_state)
 
-        if isinstance(self.means_init, np.ndarray) and self.means_init.shape \
-                == (self.n_components, n_channels, n_channels):
+        if isinstance(self.means_init, np.ndarray) and self.means_init.shape == (
+            self.n_components,
+            n_channels,
+            n_channels,
+        ):
             means_init = self.means_init
         else:
-            inds = self.random_state.randint(
-                n_matrices,
-                size=(self.n_components,)
-            )
+            inds = self.random_state.randint(n_matrices, size=(self.n_components,))
             means_init = X[inds]
 
         self._components = []
@@ -935,7 +940,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
                 np.count_nonzero(y == i),
                 mean=means[i],
                 sigma=covariances[i],
-                random_state=self.random_state
+                random_state=self.random_state,
             )
 
         return X, y
@@ -1048,10 +1053,12 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         self._mdm = MDM(metric=self.metric)
 
         for _ in range(self.n_iter_max):
-            ix = (y_old == 1)
+            ix = y_old == 1
             if not any(ix):
-                raise ValueError("Iterative outlier removal has rejected all "
-                                 "matrices. Choose a higher threshold.")
+                raise ValueError(
+                    "Iterative outlier removal has rejected all "
+                    "matrices. Choose a higher threshold."
+                )
             self._mdm.fit(X[ix], y_old[ix], sample_weight=sample_weight[ix])
             y = np.zeros(n_matrices)
             d = np.squeeze(np.log(self._mdm.transform(X[ix])))
@@ -1125,9 +1132,7 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
 
         d = np.squeeze(np.log(self._mdm.transform(Xm[np.newaxis, ...])))
         self._mean = (1 - alpha) * self._mean + alpha * d
-        self._std = np.sqrt(
-            (1 - alpha) * self._std**2 + alpha * (d - self._mean)**2
-        )
+        self._std = np.sqrt((1 - alpha) * self._std**2 + alpha * (d - self._mean) ** 2)
 
         self.covmean_ = self._mdm.covmeans_[0]
         return self
@@ -1401,8 +1406,9 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
             The PotatoField instance.
         """
         if not hasattr(self, "_potatoes"):
-            raise ValueError("partial_fit can be called only on an already "
-                             "fitted potato field.")
+            raise ValueError(
+                "partial_fit can be called only on an already fitted potato field."
+            )
 
         self._check_length(X)
         n_matrices = X[0].shape[0]
@@ -1520,7 +1526,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
             _check_n_matrices(X[i], n_matrices)
             p[i] = self._potatoes[i].predict_proba(X[i])
         p = np.clip(p, a_min=1e-10, a_max=1)  # avoid trouble with log
-        q = - 2 * np.sum(np.log(p), axis=0)
+        q = -2 * np.sum(np.log(p), axis=0)
         proba = self._get_proba(q)
         return proba
 

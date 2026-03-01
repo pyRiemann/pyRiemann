@@ -12,7 +12,9 @@ from pyriemann.datasets.simulated import (
 )
 from pyriemann.utils.base import ctranspose
 from pyriemann.utils.test import (
-    is_real, is_sym, is_hermitian,
+    is_real,
+    is_sym,
+    is_hermitian,
     is_sym_pos_def as is_spd,
     is_sym_pos_semi_def as is_spsd,
     is_herm_pos_def as is_hpd,
@@ -81,12 +83,7 @@ def test_make_matrices_square(rndstate, kind):
 def test_make_matrices_nonsquare(rndstate, kind, n_dim):
     """Test make_matrices for non-square matrices."""
     n_matrices = 6
-    X = make_matrices(
-        n_matrices=n_matrices,
-        n_dim=n_dim,
-        kind=kind,
-        rs=rndstate
-    )
+    X = make_matrices(n_matrices=n_matrices, n_dim=n_dim, kind=kind, rs=rndstate)
     assert X.shape == (n_matrices, *n_dim)
 
 
@@ -114,7 +111,11 @@ def test_make_matrices_return(rndstate, kind, n_matrices, n_dim, eigvecs_same):
 
 def test_make_masks(rndstate):
     """Test function for make masks."""
-    n_masks, n_dim0, n_dim1_min, = 5, 10, 3
+    (
+        n_masks,
+        n_dim0,
+        n_dim1_min,
+    ) = 5, 10, 3
     M = make_masks(n_masks, n_dim0, n_dim1_min, rndstate)
 
     for m in M:
@@ -126,59 +127,75 @@ def test_make_masks(rndstate):
 def test_gaussian_blobs():
     """Test function for sampling Gaussian blobs."""
     n_matrices, n_dim = 5, 4
-    X, y = make_gaussian_blobs(n_matrices=n_matrices,
-                               n_dim=n_dim,
-                               class_sep=2.0,
-                               class_disp=1.0,
-                               return_centers=False,
-                               random_state=None)
-    assert X.shape == (2*n_matrices, n_dim, n_dim)  # X shape mismatch
+    X, y = make_gaussian_blobs(
+        n_matrices=n_matrices,
+        n_dim=n_dim,
+        class_sep=2.0,
+        class_disp=1.0,
+        return_centers=False,
+        random_state=None,
+    )
+    assert X.shape == (2 * n_matrices, n_dim, n_dim)  # X shape mismatch
     assert is_spd(X)  # X is an array of SPD matrices
-    assert y.shape == (2*n_matrices,)  # y shape mismatch
+    assert y.shape == (2 * n_matrices,)  # y shape mismatch
     assert np.unique(y).shape == (2,)  # Unexpected number of classes
     assert sum(y == 0) == n_matrices  # Unexpected number of samples in class 0
     assert sum(y == 1) == n_matrices  # Unexpected number of samples in class 1
-    _, _, centers = make_gaussian_blobs(n_matrices=1,
-                                        n_dim=n_dim,
-                                        class_sep=2.0,
-                                        class_disp=1.0,
-                                        return_centers=True,
-                                        random_state=None)
+    _, _, centers = make_gaussian_blobs(
+        n_matrices=1,
+        n_dim=n_dim,
+        class_sep=2.0,
+        class_disp=1.0,
+        return_centers=True,
+        random_state=None,
+    )
     assert centers.shape == (2, n_dim, n_dim)  # centers shape mismatch
 
 
 def test_gaussian_blobs_errors():
-    n_matrices, n_dim, class_sep, class_disp = 5, 4, 2., 1.
+    n_matrices, n_dim, class_sep, class_disp = 5, 4, 2.0, 1.0
     with pytest.raises(ValueError):  # n_matrices is not an integer
-        make_gaussian_blobs(n_matrices=float(n_matrices),
-                            n_dim=n_dim,
-                            class_sep=class_sep,
-                            class_disp=class_disp)
+        make_gaussian_blobs(
+            n_matrices=float(n_matrices),
+            n_dim=n_dim,
+            class_sep=class_sep,
+            class_disp=class_disp,
+        )
     with pytest.raises(ValueError):  # n_matrices is negative
-        make_gaussian_blobs(n_matrices=-n_matrices,
-                            n_dim=n_dim,
-                            class_sep=class_sep,
-                            class_disp=class_disp)
+        make_gaussian_blobs(
+            n_matrices=-n_matrices,
+            n_dim=n_dim,
+            class_sep=class_sep,
+            class_disp=class_disp,
+        )
     with pytest.raises(TypeError):  # n_dim is not an integer
-        make_gaussian_blobs(n_matrices=n_matrices,
-                            n_dim=float(n_dim),
-                            class_sep=class_sep,
-                            class_disp=class_disp)
+        make_gaussian_blobs(
+            n_matrices=n_matrices,
+            n_dim=float(n_dim),
+            class_sep=class_sep,
+            class_disp=class_disp,
+        )
     with pytest.raises(ValueError):  # n_dim is negative
-        make_gaussian_blobs(n_matrices=n_matrices,
-                            n_dim=-n_dim,
-                            class_sep=class_sep,
-                            class_disp=class_disp)
+        make_gaussian_blobs(
+            n_matrices=n_matrices,
+            n_dim=-n_dim,
+            class_sep=class_sep,
+            class_disp=class_disp,
+        )
     with pytest.raises(ValueError):  # class_sep is not a scalar
-        make_gaussian_blobs(n_matrices=n_matrices,
-                            n_dim=n_dim,
-                            class_sep=class_sep * np.ones(n_dim),
-                            class_disp=class_disp)
+        make_gaussian_blobs(
+            n_matrices=n_matrices,
+            n_dim=n_dim,
+            class_sep=class_sep * np.ones(n_dim),
+            class_disp=class_disp,
+        )
     with pytest.raises(ValueError):  # class_disp is not a scalar
-        make_gaussian_blobs(n_matrices=n_matrices,
-                            n_dim=n_dim,
-                            class_sep=class_sep,
-                            class_disp=class_disp * np.ones(n_dim))
+        make_gaussian_blobs(
+            n_matrices=n_matrices,
+            n_dim=n_dim,
+            class_sep=class_sep,
+            class_disp=class_disp * np.ones(n_dim),
+        )
 
 
 @pytest.mark.parametrize("n_matrices", [3, 4, 5])

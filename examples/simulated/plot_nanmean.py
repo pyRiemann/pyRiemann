@@ -28,7 +28,8 @@ def corrupt(mats, n_corrup_channels_max, rs):
     for i_matrix in range(n_matrices):
         n_corrupt_channels = rs.randint(n_corrup_channels_max + 1)
         corrup_channels = rs.choice(
-            np.arange(0, n_channels), size=n_corrupt_channels, replace=False)
+            np.arange(0, n_channels), size=n_corrupt_channels, replace=False
+        )
         for i_channel in corrup_channels:
             mats[i_matrix, i_channel] = np.nan
             mats[i_matrix, :, i_channel] = np.nan
@@ -43,24 +44,30 @@ def corrupt(mats, n_corrup_channels_max, rs):
 
 rs = np.random.RandomState(42)
 n_matrices, n_channels = 100, 10
-mats = make_matrices(
-    n_matrices, n_channels, "spd", rs, evals_low=50, evals_high=130)
+mats = make_matrices(n_matrices, n_channels, "spd", rs, evals_low=50, evals_high=130)
 
 # Compute the reference, the Riemannian mean on all SPD matrices
 C_ref = mean_riemann(mats)
 
 # Corrupt data randomly
 n_corrup_channels_max = n_channels // 2
-print("Maximum number of corrupted channels: {} over {}".format(
-    n_corrup_channels_max, n_channels))
+print(
+    "Maximum number of corrupted channels: {} over {}".format(
+        n_corrup_channels_max, n_channels
+    )
+)
 
 mats, all_n_corrup_channels, all_corrup_channels = corrupt(
-    mats, n_corrup_channels_max, rs)
+    mats, n_corrup_channels_max, rs
+)
 
 fig, ax = plt.subplots(nrows=1, ncols=1)
-ax.set(title="Histogram of the number of corrupted channels",
-       xlabel="Channel count", ylabel="Occurrences")
-plt.hist(all_n_corrup_channels, bins=np.arange(n_corrup_channels_max + 2) - .5)
+ax.set(
+    title="Histogram of the number of corrupted channels",
+    xlabel="Channel count",
+    ylabel="Occurrences",
+)
+plt.hist(all_n_corrup_channels, bins=np.arange(n_corrup_channels_max + 2) - 0.5)
 plt.show()
 
 
@@ -68,9 +75,12 @@ plt.show()
 
 
 fig, ax = plt.subplots(nrows=1, ncols=1)
-ax.set(title="Histogram of the indices of corrupted channels",
-       xlabel="Channel index", ylabel="Occurrences")
-plt.hist(all_corrup_channels, bins=np.arange(n_channels + 1) - .5)
+ax.set(
+    title="Histogram of the indices of corrupted channels",
+    xlabel="Channel index",
+    ylabel="Occurrences",
+)
+plt.hist(all_corrup_channels, bins=np.arange(n_channels + 1) - 0.5)
 plt.show()
 
 
@@ -126,7 +136,8 @@ print(f"Riemannian mean after deletion, distance to ref = {d_mdriem:.3f}")
 # channels [1]_.
 
 mats_orig = make_matrices(
-    n_matrices, n_channels, "spd", rs, evals_low=50, evals_high=130)
+    n_matrices, n_channels, "spd", rs, evals_low=50, evals_high=130
+)
 C_ref = mean_riemann(mats_orig)
 
 df = []
@@ -140,23 +151,29 @@ for n_corrup_channels_max in range(0, n_channels // 2 + 1):
     mats_ = np.delete(mats, np.where(isnan), axis=0)
     C_mdriem = mean_riemann(mats_)
 
-    res_naneucl = {"n_corrupt": n_corrup_channels_max,
-                   "dist": distance_riemann(C_ref, C_naneucl),
-                   "Means": "Euclidean NaN-mean"}
-    res_nanriem = {"n_corrupt": n_corrup_channels_max,
-                   "dist": distance_riemann(C_ref, C_nanriem),
-                   "Means": "Riemannian NaN-mean"}
-    res_mdriem = {"n_corrupt": n_corrup_channels_max,
-                  "dist": distance_riemann(C_ref, C_mdriem),
-                  "Means": "Riemannian mean after deletion"}
+    res_naneucl = {
+        "n_corrupt": n_corrup_channels_max,
+        "dist": distance_riemann(C_ref, C_naneucl),
+        "Means": "Euclidean NaN-mean",
+    }
+    res_nanriem = {
+        "n_corrupt": n_corrup_channels_max,
+        "dist": distance_riemann(C_ref, C_nanriem),
+        "Means": "Riemannian NaN-mean",
+    }
+    res_mdriem = {
+        "n_corrupt": n_corrup_channels_max,
+        "dist": distance_riemann(C_ref, C_mdriem),
+        "Means": "Riemannian mean after deletion",
+    }
     df += [res_naneucl, res_nanriem, res_mdriem]
 df = pd.DataFrame(df)
 
-g = sns.catplot(data=df, x="n_corrupt", y="dist", hue="Means", kind="point",
-                legend_out=False)
+g = sns.catplot(
+    data=df, x="n_corrupt", y="dist", hue="Means", kind="point", legend_out=False
+)
 g.set(title="Influence of corrupted channels")
-g.set_axis_labels("Maximum number of corrupted channels",
-                  "Distance to reference")
+g.set_axis_labels("Maximum number of corrupted channels", "Distance to reference")
 plt.tight_layout()
 plt.show()
 

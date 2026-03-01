@@ -84,11 +84,11 @@ def exp_map_logchol(X, Cref):
 
     exp_map = np.zeros_like(X)
 
-    exp_map[..., tri0, tri1] = Cref_chol[..., tri0, tri1] + \
-        diff[..., tri0, tri1]
+    exp_map[..., tri0, tri1] = Cref_chol[..., tri0, tri1] + diff[..., tri0, tri1]
 
-    exp_map[..., diag0, diag1] = np.exp(diff_bracket[..., diag0, diag1]) \
-        * Cref_chol[..., diag0, diag1]
+    exp_map[..., diag0, diag1] = (
+        np.exp(diff_bracket[..., diag0, diag1]) * Cref_chol[..., diag0, diag1]
+    )
 
     return exp_map @ ctranspose(exp_map)
 
@@ -347,8 +347,9 @@ def log_map_logchol(X, Cref):
     res[..., tri0, tri1] = X_chol[..., tri0, tri1] - Cref_chol[..., tri0, tri1]
 
     diag0, diag1 = np.diag_indices(X.shape[-1])
-    res[..., diag0, diag1] = Cref_chol[..., diag0, diag1] * \
-        np.log(X_chol[..., diag0, diag1] / Cref_chol[..., diag0, diag1])
+    res[..., diag0, diag1] = Cref_chol[..., diag0, diag1] * np.log(
+        X_chol[..., diag0, diag1] / Cref_chol[..., diag0, diag1]
+    )
 
     X_new = Cref_chol @ ctranspose(res) + res @ Cref_chol.conj().T
 
@@ -771,8 +772,9 @@ def transport_logchol(X, A, B):
 
     T = np.zeros_like(X)
     T[..., tri0, tri1] = X_[..., tri0, tri1]
-    T[..., diag0, diag1] = B_chol[..., diag0, diag1] \
-        / A_chol[..., diag0, diag1] * X_[..., diag0, diag1]
+    T[..., diag0, diag1] = (
+        B_chol[..., diag0, diag1] / A_chol[..., diag0, diag1] * X_[..., diag0, diag1]
+    )
 
     X_new = B_chol @ ctranspose(T) + T @ B_chol.conj().T
     return X_new

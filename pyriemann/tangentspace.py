@@ -1,4 +1,5 @@
 """Tangent space functions."""
+
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
@@ -9,7 +10,6 @@ from .utils.utils import check_metric
 
 
 class TangentSpace(TransformerMixin, BaseEstimator):
-
     """Tangent space projection.
 
     Tangent space projection maps a set of SPD/HPD matrices to their
@@ -98,14 +98,10 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         self : TangentSpace instance
             The TangentSpace instance.
         """
-        self.metric_mean, self.metric_map = check_metric(
-            self.metric, ["mean", "map"]
-        )
+        self.metric_mean, self.metric_map = check_metric(self.metric, ["mean", "map"])
 
         self.reference_ = mean_covariance(
-            X,
-            metric=self.metric_mean,
-            sample_weight=sample_weight
+            X, metric=self.metric_mean, sample_weight=sample_weight
         )
         return self
 
@@ -115,8 +111,10 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         if len(X.shape) == 2:
             n_channels = (np.sqrt(1 + 8 * shape_X[1]) - 1) / 2
             if n_channels != int(n_channels):
-                raise ValueError("Shape of tangent space vector does not"
-                                 " correspond to a square matrix.")
+                raise ValueError(
+                    "Shape of tangent space vector does not"
+                    " correspond to a square matrix."
+                )
             return int(n_channels)
         elif len(X.shape) == 3:
             if shape_X[1] != shape_X[2]:
@@ -149,9 +147,7 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         ts : ndarray, shape (n_matrices, n_ts)
             Tangent space projections of SPD/HPD matrices.
         """
-        self.metric_mean, self.metric_map = check_metric(
-            self.metric, ["mean", "map"]
-        )
+        self.metric_mean, self.metric_map = check_metric(self.metric, ["mean", "map"])
         self._check_reference_points(X)
 
         if self.tsupdate:
@@ -177,14 +173,10 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         ts : ndarray, shape (n_matrices, n_ts)
             Tangent space projections of SPD/HPD matrices.
         """
-        self.metric_mean, self.metric_map = check_metric(
-            self.metric, ["mean", "map"]
-        )
+        self.metric_mean, self.metric_map = check_metric(self.metric, ["mean", "map"])
 
         self.reference_ = mean_covariance(
-            X,
-            metric=self.metric_mean,
-            sample_weight=sample_weight
+            X, metric=self.metric_mean, sample_weight=sample_weight
         )
         return tangent_space(X, self.reference_, metric=self.metric_map)
 
@@ -203,15 +195,12 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         X_new : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD/HPD matrices corresponding to each of tangent vector.
         """
-        self.metric_mean, self.metric_map = check_metric(
-            self.metric, ["mean", "map"]
-        )
+        self.metric_mean, self.metric_map = check_metric(self.metric, ["mean", "map"])
         self._check_reference_points(X)
         return untangent_space(X, self.reference_, metric=self.metric_map)
 
 
 class FGDA(TransformerMixin, BaseEstimator):
-
     """Fisher geodesic discriminant analysis.
 
     Fisher geodesic discriminant analysis (FGDA)

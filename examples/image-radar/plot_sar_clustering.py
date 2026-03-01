@@ -57,13 +57,13 @@ if small_dataset:
     reduce_factor_x = 8
     data = data[::reduce_factor_y, ::reduce_factor_x]
     max_iter = 5
-    resolution_x = reduce_factor_x*resolution_x
-    resolution_y = reduce_factor_y*resolution_y
+    resolution_x = reduce_factor_x * resolution_x
+    resolution_y = reduce_factor_y * resolution_y
 height, width, n_features = data.shape
 
 # For visualization of results
-x_values = np.arange(window_size//2, width-window_size//2) * resolution_x
-y_values = np.arange(window_size//2, height-window_size//2) * resolution_y
+x_values = np.arange(window_size // 2, width - window_size // 2) * resolution_x
+y_values = np.arange(window_size // 2, height - window_size // 2) * resolution_y
 X_res, Y_res = np.meshgrid(x_values, y_values)
 
 
@@ -84,28 +84,40 @@ print(f"estimator = {estimator}")
 # --------------------
 
 # Logdet pipeline from [1]
-pipeline_logdet = Pipeline([
-    ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
-    ("covariances", Covariances(estimator=estimator)),
-    ("kmeans", Kmeans(
-        n_clusters=n_clusters,
-        n_jobs=n_jobs,
-        max_iter=max_iter,
-        metric="logdet",
-    ))
-], verbose=True)
+pipeline_logdet = Pipeline(
+    [
+        ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
+        ("covariances", Covariances(estimator=estimator)),
+        (
+            "kmeans",
+            Kmeans(
+                n_clusters=n_clusters,
+                n_jobs=n_jobs,
+                max_iter=max_iter,
+                metric="logdet",
+            ),
+        ),
+    ],
+    verbose=True,
+)
 
 # Riemannian pipeline from [2]
-pipeline_riemann = Pipeline([
-    ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
-    ("covariances", Covariances(estimator=estimator)),
-    ("kmeans", Kmeans(
-        n_clusters=n_clusters,
-        n_jobs=n_jobs,
-        max_iter=max_iter,
-        metric="riemann",
-    ))
-], verbose=True)
+pipeline_riemann = Pipeline(
+    [
+        ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
+        ("covariances", Covariances(estimator=estimator)),
+        (
+            "kmeans",
+            Kmeans(
+                n_clusters=n_clusters,
+                n_jobs=n_jobs,
+                max_iter=max_iter,
+                metric="riemann",
+            ),
+        ),
+    ],
+    verbose=True,
+)
 
 pipelines = [pipeline_logdet, pipeline_riemann]
 pipelines_names = [f"{estimator} and logdet", f"{estimator} and Riemann"]
@@ -117,19 +129,20 @@ pipelines_names = [f"{estimator} and logdet", f"{estimator} and Riemann"]
 print(f"\nStarting clustering with pipelines: {pipelines_names}")
 results = {}
 for pipeline_name, pipeline in zip(pipelines_names, pipelines):
-    print("-"*60)
+    print("-" * 60)
     print(f"Pipeline: {pipeline_name}")
     pipeline.fit(data)
     preds = pipeline.named_steps["kmeans"].labels_
-    results[pipeline_name] = \
-        pipeline.named_steps["sliding_window"].inverse_predict(preds)
-    print("-"*60)
+    results[pipeline_name] = pipeline.named_steps["sliding_window"].inverse_predict(
+        preds
+    )
+    print("-" * 60)
 
 ###############################################################################
 # Plot data
 # ---------
 
-plot_value = 20*np.log10(np.sum(np.abs(data_visualization)**2, axis=2))
+plot_value = 20 * np.log10(np.sum(np.abs(data_visualization) ** 2, axis=2))
 figure, ax = plt.subplots(figsize=(5, 5))
 plt.pcolormesh(X_image, Y_image, plot_value, cmap="gray")
 plt.colorbar()

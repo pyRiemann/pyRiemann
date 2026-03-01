@@ -13,7 +13,7 @@ from pyriemann.utils.base import (
     nearest_sym_pos_def,
     _first_divided_difference,
     ddlogm,
-    ddexpm
+    ddexpm,
 )
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.utils.test import is_pos_def, is_sym_pos_def
@@ -57,7 +57,7 @@ def test_logm():
 def test_powm():
     """Test matrix power"""
     X = 2 * np.eye(n_channels)
-    Xtrue = (2 ** 0.3) * np.eye(n_channels)
+    Xtrue = (2**0.3) * np.eye(n_channels)
     assert_array_almost_equal(powm(X, 0.3), Xtrue, decimal=10)
 
 
@@ -187,12 +187,12 @@ def test_first_divided_difference(get_mats, kind):
     fdd_exp = _first_divided_difference(d, np.exp, np.exp)
     assert_array_almost_equal(np.diag(fdd_exp), np.exp(d))
 
-    fdd_log = _first_divided_difference(d, np.log, lambda x: 1./x)
-    assert_array_almost_equal(np.diag(fdd_log), 1/d)
+    fdd_log = _first_divided_difference(d, np.log, lambda x: 1.0 / x)
+    assert_array_almost_equal(np.diag(fdd_log), 1 / d)
 
     # exp of log is element-wise inverse of log
     fdd_exp_of_log = _first_divided_difference(np.log(d), np.exp, np.exp)
-    assert_array_almost_equal(fdd_exp_of_log, 1/fdd_log)
+    assert_array_almost_equal(fdd_exp_of_log, 1 / fdd_log)
 
 
 def test_ddlogm(get_mats):
@@ -213,4 +213,4 @@ def test_ddexpm(get_mats, kind):
     assert fdd_expm.shape == X.shape
 
     fdd_expm = ddexpm(X, np.eye(n_channels))
-    assert_array_almost_equal(fdd_expm, np.exp(1)*X)
+    assert_array_almost_equal(fdd_expm, np.exp(1) * X)

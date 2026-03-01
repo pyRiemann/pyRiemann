@@ -14,7 +14,7 @@ from pyriemann.utils.ajd import ajd, rjd, ajd_pham, uwedge
         ("ajd_pham", ajd_pham),
         ("uwedge", uwedge),
         (uwedge, uwedge),
-    ]
+    ],
 )
 def test_ajd(kind, method, algo, get_mats):
     """Test ajd algos"""

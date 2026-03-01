@@ -26,8 +26,7 @@ clusts = [
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("clust", clusts)
-def test_clustering_two_clusters(kind, clust,
-                                 get_mats, get_labels, get_weights):
+def test_clustering_two_clusters(kind, clust, get_mats, get_labels, get_weights):
     if kind == "hpd" and clust in [GaussianMixture]:
         pytest.skip()
 
@@ -332,12 +331,7 @@ def test_kmeans(clust, init, n_init, metric, get_mats, get_labels):
             n_init=n_init,
         )
     else:
-        clt = clust(
-            n_clusters=n_clusters,
-            metric=metric,
-            init=init,
-            n_init=n_init
-        )
+        clt = clust(n_clusters=n_clusters, metric=metric, init=init, n_init=n_init)
 
     clt.fit(X, y)
     dists = clt.transform(X)
@@ -349,15 +343,20 @@ def test_kmeans(clust, init, n_init, metric, get_mats, get_labels):
 
 @np.vectorize
 def callable_kernel(x):
-    return np.exp(- np.abs(x))
+    return np.exp(-np.abs(x))
 
 
-@pytest.mark.parametrize("kernel", [
-    "normal", "uniform", callable_kernel,
-])
-@pytest.mark.parametrize("metric", [
-    "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
-])
+@pytest.mark.parametrize(
+    "kernel",
+    [
+        "normal",
+        "uniform",
+        callable_kernel,
+    ],
+)
+@pytest.mark.parametrize(
+    "metric", ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
+)
 def test_meanshift(kernel, metric, get_mats, get_labels):
     n_matrices, n_channels = 10, 3
     X = get_mats(n_matrices, n_channels, "spd")
@@ -514,7 +513,7 @@ def test_potatofield_fit(get_mats):
     X = [X1, X2]
     with pytest.raises(ValueError):  # n_potatoes too low
         PotatoField(n_potatoes=0).fit(X)
-    with pytest.raises(ValueError):   # p_threshold out of bounds
+    with pytest.raises(ValueError):  # p_threshold out of bounds
         PotatoField(p_threshold=0).fit(X)
     with pytest.raises(ValueError):  # p_threshold out of bounds
         PotatoField(p_threshold=1).fit(X)
@@ -525,9 +524,7 @@ def test_potatofield_fit(get_mats):
         pf.fit([X1, X2[:1]])
 
 
-@pytest.mark.parametrize(
-    "method", ["partial_fit", "transform", "predict_proba"]
-)
+@pytest.mark.parametrize("method", ["partial_fit", "transform", "predict_proba"])
 def test_potatofield_method(get_mats, method):
     n_potatoes, n_matrices, n_channels = 2, 6, 3
     X1 = get_mats(n_matrices, n_channels, "spd")

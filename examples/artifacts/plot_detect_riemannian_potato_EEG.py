@@ -39,8 +39,16 @@ def get_zscores(cov_00, cov_01, cov_11, potato):
 
 
 def plot_potato_2D(ax, cax, X, Y, p_zscores, p_center, covs, p_colors, clabel):
-    qcs = ax.contourf(X, Y, p_zscores, levels=20, vmin=p_zscores.min(),
-                      vmax=p_zscores.max(), cmap="RdYlBu_r", alpha=0.5)
+    qcs = ax.contourf(
+        X,
+        Y,
+        p_zscores,
+        levels=20,
+        vmin=p_zscores.min(),
+        vmax=p_zscores.max(),
+        cmap="RdYlBu_r",
+        alpha=0.5,
+    )
     ax.contour(X, Y, p_zscores, levels=[z_th], colors="k")
     sc = ax.scatter(covs[:, 0, 0], covs[:, 1, 1], c=p_colors)
     ax.scatter(p_center[0, 0], p_center[1, 1], c="k", s=100)
@@ -54,11 +62,15 @@ def plot_potato_2D(ax, cax, X, Y, p_zscores, p_center, covs, p_colors, clabel):
 
 def plot_sig(ax, time, sig):
     ax.axis((time[0], time[-1], -15, 15))
-    pl, = ax.plot(time, sig, lw=0.75)
+    (pl,) = ax.plot(time, sig, lw=0.75)
     ax.axhspan(
-        -14, 14, edgecolor="k", facecolor="none",
+        -14,
+        14,
+        edgecolor="k",
+        facecolor="none",
         xmin=-test_time_start / (test_time_end - test_time_start),
-        xmax=(duration - test_time_start) / (test_time_end - test_time_start))
+        xmax=(duration - test_time_start) / (test_time_end - test_time_start),
+    )
     return pl
 
 
@@ -66,8 +78,9 @@ def plot_sig(ax, time, sig):
 # Load EEG data
 # -------------
 
-raw_fname = os.path.join(sample.data_path(), "MEG", "sample",
-                         "sample_audvis_filt-0-40_raw.fif")
+raw_fname = os.path.join(
+    sample.data_path(), "MEG", "sample", "sample_audvis_filt-0-40_raw.fif"
+)
 raw = read_raw_fif(raw_fname, preload=True, verbose=False)
 sfreq = int(raw.info["sfreq"])  # 150 Hz
 
@@ -84,13 +97,14 @@ raw.pick_types(meg=False, eeg=True).apply_proj()
 ch_names = ["EEG 010", "EEG 015"]
 
 # Apply band-pass filter between 1 and 35 Hz
-raw.filter(1., 35., method="iir", picks=ch_names)
+raw.filter(1.0, 35.0, method="iir", picks=ch_names)
 
 # Epoch time-series with a sliding window
-duration = 2.5    # duration of epochs
-interval = 0.2    # interval between successive epochs
+duration = 2.5  # duration of epochs
+interval = 0.2  # interval between successive epochs
 epochs = make_fixed_length_epochs(
-    raw, duration=duration, overlap=duration - interval, verbose=False)
+    raw, duration=duration, overlap=duration - interval, verbose=False
+)
 epochs_data = 5e5 * epochs.get_data(picks=ch_names, copy=False)
 
 # Estimate spatial covariance matrices
@@ -106,7 +120,7 @@ covs = Covariances(estimator="lwf").transform(epochs_data)
 # (in black). The colormap defines the z-score and a chosen isocontour defines
 # the potato. It reproduces Fig 1 of reference [2]_.
 
-z_th = 2.0       # z-score threshold
+z_th = 2.0  # z-score threshold
 train_covs = 40  # nb of matrices to train the potato
 
 
@@ -127,11 +141,9 @@ ep_colors = ["b" if ll == 1 else "r" for ll in ep_labels.tolist()]
 
 # Zscores in the horizontal 2D plane going through the reference
 X, Y = np.meshgrid(np.linspace(1, 31, 100), np.linspace(1, 31, 100))
-rp_zscores = get_zscores(X, np.full_like(X, rp_center[0, 1]), Y,
-                         potato=rpotato)
+rp_zscores = get_zscores(X, np.full_like(X, rp_center[0, 1]), Y, potato=rpotato)
 rp_mzscores = np.ma.masked_where(~np.isfinite(rp_zscores), rp_zscores)
-ep_zscores = get_zscores(X, np.full_like(X, ep_center[0, 1]), Y,
-                         potato=epotato)
+ep_zscores = get_zscores(X, np.full_like(X, ep_center[0, 1]), Y, potato=epotato)
 
 # Plot calibration
 xlabel = "Cov({},{})".format(ch_names[0], ch_names[0])
@@ -139,14 +151,30 @@ ylabel = "Cov({},{})".format(ch_names[1], ch_names[1])
 
 fig, axs = plt.subplots(figsize=(12, 5), nrows=1, ncols=2)
 fig.suptitle("Offline calibration of potatoes", fontsize=16)
-axs[0].set(xlabel=xlabel, ylabel=ylabel,
-           title="2D projection of Riemannian potato")
-plot_potato_2D(axs[0], None, X, Y, rp_mzscores, rp_center, covs[train_set],
-               rp_colors, "Z-score of Riemannian distance to reference")
-axs[1].set(xlabel=xlabel, ylabel=ylabel,
-           title="2D projection of Euclidean potato")
-plot_potato_2D(axs[1], None, X, Y, ep_zscores, ep_center, covs[train_set],
-               ep_colors, "Z-score of Euclidean distance to reference")
+axs[0].set(xlabel=xlabel, ylabel=ylabel, title="2D projection of Riemannian potato")
+plot_potato_2D(
+    axs[0],
+    None,
+    X,
+    Y,
+    rp_mzscores,
+    rp_center,
+    covs[train_set],
+    rp_colors,
+    "Z-score of Riemannian distance to reference",
+)
+axs[1].set(xlabel=xlabel, ylabel=ylabel, title="2D projection of Euclidean potato")
+plot_potato_2D(
+    axs[1],
+    None,
+    X,
+    Y,
+    ep_zscores,
+    ep_center,
+    covs[train_set],
+    ep_colors,
+    "Z-score of Euclidean distance to reference",
+)
 plt.show()
 
 
@@ -161,23 +189,24 @@ plt.show()
 # * static: it is never updated, damaging its efficiency over time;
 # * semi-dynamic: it is updated when EEG is not artifacted.
 
-is_static = False       # static or semi-dynamic mode
+is_static = False  # static or semi-dynamic mode
 
 
 ###############################################################################
 
 # Prepare data for online detection
-test_covs_max = 300     # nb of matrices to visualize in this example
-test_covs_visu = 30     # nb of matrices to display simultaneously
-test_time_start = -2    # start time to display signal
-test_time_end = 5       # end time to display signal
+test_covs_max = 300  # nb of matrices to visualize in this example
+test_covs_visu = 30  # nb of matrices to display simultaneously
+test_time_start = -2  # start time to display signal
+test_time_end = 5  # end time to display signal
 
 time_start = train_covs * interval + test_time_start
 time_end = train_covs * interval + test_time_end
-time = np.linspace(time_start, time_end, int((time_end - time_start) * sfreq),
-                   endpoint=False)
+time = np.linspace(
+    time_start, time_end, int((time_end - time_start) * sfreq), endpoint=False
+)
 eeg_data = 3e5 * raw.get_data(picks=ch_names)
-sig = eeg_data[:, int(time_start * sfreq):int(time_end * sfreq)]
+sig = eeg_data[:, int(time_start * sfreq) : int(time_end * sfreq)]
 covs_visu, rp_colors, ep_colors = np.empty([0, 2, 2]), [], []
 alphas = np.linspace(0, 1, test_covs_visu)
 
@@ -189,19 +218,46 @@ pl_sig0 = plot_sig(ax_sig0, time, sig[0])
 ax_sig1 = fig.add_subplot(gs[1, :], ylabel=ch_names[1])
 pl_sig1 = plot_sig(ax_sig1, time, sig[1])
 ax_sig1.set_xticks([])
-ax_rp = fig.add_subplot(gs[2:4, 0:15], xlabel=xlabel, ylabel=ylabel,
-                        title="2D projection of Riemannian potato")
+ax_rp = fig.add_subplot(
+    gs[2:4, 0:15],
+    xlabel=xlabel,
+    ylabel=ylabel,
+    title="2D projection of Riemannian potato",
+)
 cax_rp = fig.add_subplot(gs[2:4, 15])
-p_rp = plot_potato_2D(ax_rp, cax_rp, X, Y, rp_mzscores, rp_center, covs_visu,
-                      rp_colors, "Z-score of Riemannian distance to reference")
-ax_ep = fig.add_subplot(gs[2:4, 21:36], xlabel=xlabel, ylabel=ylabel,
-                        title="2D projection of Euclidean potato")
+p_rp = plot_potato_2D(
+    ax_rp,
+    cax_rp,
+    X,
+    Y,
+    rp_mzscores,
+    rp_center,
+    covs_visu,
+    rp_colors,
+    "Z-score of Riemannian distance to reference",
+)
+ax_ep = fig.add_subplot(
+    gs[2:4, 21:36],
+    xlabel=xlabel,
+    ylabel=ylabel,
+    title="2D projection of Euclidean potato",
+)
 cax_ep = fig.add_subplot(gs[2:4, 36])
-p_ep = plot_potato_2D(ax_ep, cax_ep, X, Y, ep_zscores, ep_center, covs_visu,
-                      ep_colors, "Z-score of Euclidean distance to reference")
+p_ep = plot_potato_2D(
+    ax_ep,
+    cax_ep,
+    X,
+    Y,
+    ep_zscores,
+    ep_center,
+    covs_visu,
+    ep_colors,
+    "Z-score of Euclidean distance to reference",
+)
 
 
 ###############################################################################
+
 
 # Prepare animation for online detection
 def online_detect(t):
@@ -219,11 +275,14 @@ def online_detect(t):
     # Update data
     time_start = t * interval + test_time_end
     time_end = (t + 1) * interval + test_time_end
-    time_ = np.linspace(time_start, time_end, int(interval * sfreq),
-                        endpoint=False)
-    time = np.r_[time[int(interval * sfreq):], time_]
-    sig = np.hstack((sig[:, int(interval*sfreq):],
-                     eeg_data[:, int(time_start*sfreq):int(time_end*sfreq)]))
+    time_ = np.linspace(time_start, time_end, int(interval * sfreq), endpoint=False)
+    time = np.r_[time[int(interval * sfreq) :], time_]
+    sig = np.hstack(
+        (
+            sig[:, int(interval * sfreq) :],
+            eeg_data[:, int(time_start * sfreq) : int(time_end * sfreq)],
+        )
+    )
     covs_visu = np.vstack((covs_visu, covs[np.newaxis, t]))
     rp_colors.append("b" if rp_label == 1 else "r")
     ep_colors.append("b" if ep_label == 1 else "r")
@@ -248,9 +307,14 @@ def online_detect(t):
 
 interval_display = 1.0  # can be changed for a slower display
 
-potato = FuncAnimation(fig, online_detect,
-                       frames=range(train_covs, test_covs_max),
-                       interval=interval_display, blit=False, repeat=False)
+potato = FuncAnimation(
+    fig,
+    online_detect,
+    frames=range(train_covs, test_covs_max),
+    interval=interval_display,
+    blit=False,
+    repeat=False,
+)
 
 
 ###############################################################################

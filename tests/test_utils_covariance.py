@@ -7,16 +7,19 @@ from sklearn.covariance import empirical_covariance
 
 
 from pyriemann.utils.covariance import (
-    covariances, covariances_EP, covariances_X, eegtocov,
-    cross_spectrum, cospectrum, coherence,
-    normalize, get_nondiag_weight, block_covariances, _complex_estimator
+    covariances,
+    covariances_EP,
+    covariances_X,
+    eegtocov,
+    cross_spectrum,
+    cospectrum,
+    coherence,
+    normalize,
+    get_nondiag_weight,
+    block_covariances,
+    _complex_estimator,
 )
-from pyriemann.utils.test import (
-    is_real,
-    is_hermitian,
-    is_sym_pos_def,
-    is_herm_pos_def
-)
+from pyriemann.utils.test import is_real, is_hermitian, is_sym_pos_def, is_herm_pos_def
 
 
 estimators = ["corr", "cov", "lwf", "mcd", "oas", "sch", "scm"]
@@ -44,13 +47,11 @@ def test_covariances(estimator, get_mats):
 
         if estimator == "corr":
             assert_array_almost_equal(
-                np.diagonal(cov, axis1=-2, axis2=-1),
-                np.ones((n_matrices, n_channels))
+                np.diagonal(cov, axis1=-2, axis2=-1), np.ones((n_matrices, n_channels))
             )
         elif estimator == "tyl":
             assert_array_almost_equal(
-                np.trace(cov, axis1=-2, axis2=-1),
-                np.full(n_matrices, n_channels)
+                np.trace(cov, axis1=-2, axis2=-1), np.full(n_matrices, n_channels)
             )
 
 
@@ -61,15 +62,14 @@ def test_covariance_scm_real(assume_centered, get_mats):
     X = get_mats(n_matrices, [n_channels, n_times], "real")
 
     cov = covariances(X, estimator="scm", assume_centered=assume_centered)
-    cov_sklearn = np.asarray([
-        empirical_covariance(x.T, assume_centered=assume_centered)
-        for x in X
-    ])
+    cov_sklearn = np.asarray(
+        [empirical_covariance(x.T, assume_centered=assume_centered) for x in X]
+    )
     assert_array_almost_equal(cov, cov_sklearn, 10)
 
 
 def test_covariance_scm_complex(get_mats):
-    """ Test correctness of decorator for complex estimator on complex data"""
+    """Test correctness of decorator for complex estimator on complex data"""
     n_matrices, n_channels, n_times = 4, 3, 60
     X = get_mats(n_matrices, [n_channels, n_times], "comp")
 
@@ -78,6 +78,7 @@ def test_covariance_scm_complex(get_mats):
     @_complex_estimator
     def complex_scm_sklearn(x):
         return empirical_covariance(x.T, assume_centered=True)
+
     cov_decorator = np.asarray([complex_scm_sklearn(x) for x in X])
     assert_array_almost_equal(cov, cov_decorator, 10)
 
@@ -116,16 +117,14 @@ def test_covariances_X(estimator, get_mats):
     if estimator == "mcd":
         pytest.skip()
     elif estimator is None:
-        cov = covariances_X(X, alpha=5.)
+        cov = covariances_X(X, alpha=5.0)
     else:
-        cov = covariances_X(X, estimator=estimator, alpha=5.)
+        cov = covariances_X(X, estimator=estimator, alpha=5.0)
     n_dim_cov = n_channels + n_times
     assert cov.shape == (n_matrices, n_dim_cov, n_dim_cov)
 
 
-@pytest.mark.parametrize(
-    "estimator", estimators + [np.cov, "truc", None]
-)
+@pytest.mark.parametrize("estimator", estimators + [np.cov, "truc", None])
 def test_block_covariances_est(estimator, get_mats):
     """Test block covariance for multiple estimators"""
     n_matrices, n_channels, n_times = 2, 12, 100
@@ -157,9 +156,7 @@ def test_block_covariances(get_mats):
 
     cov = block_covariances(X, [3, 5, 4], estimator="cov")
     cov2 = covariances(X, estimator="cov")
-    covcomp = block_diag(*(cov2[0, :3, :3],
-                           cov2[0, 3:8, 3:8],
-                           cov2[0, 8:12, 8:12]))
+    covcomp = block_diag(*(cov2[0, :3, :3], cov2[0, 3:8, 3:8], cov2[0, 8:12, 8:12]))
     assert_array_almost_equal(cov[0], covcomp)
 
 
@@ -235,11 +232,7 @@ def test_covariances_cross_spectrum(rndstate):
     # test equivalence between pyriemann and scipy for cross-spectra
     X = rndstate.randn(2, n_times)
     fs, window, overlap = 64, 128, 0.5
-    cross_pr, freqs_pr = cross_spectrum(
-        X,
-        fs=fs,
-        window=window,
-        overlap=overlap)
+    cross_pr, freqs_pr = cross_spectrum(X, fs=fs, window=window, overlap=overlap)
     cross_pr = cross_pr[0, 1] / np.linalg.norm(cross_pr[0, 1])  # unit norm
     freqs_sp, cross_sp = csd(
         X[0],
@@ -285,9 +278,7 @@ def test_covariances_cospectrum(rndstate):
     assert_array_almost_equal(cosp_pr, cosp_sp, 6)
 
 
-@pytest.mark.parametrize(
-    "coh", ["ordinary", "instantaneous", "lagged", "imaginary"]
-)
+@pytest.mark.parametrize("coh", ["ordinary", "instantaneous", "lagged", "imaginary"])
 def test_covariances_coherence(coh, rndstate):
     """Test coherence"""
     n_channels, n_times = 3, 2048
@@ -297,7 +288,7 @@ def test_covariances_coherence(coh, rndstate):
     assert c.shape[0] == c.shape[1] == n_channels
     assert c.shape[-1] == freqs.shape[0]
     # test if coherence in [0,1]
-    assert np.all((0. <= c) & (c <= 1.))
+    assert np.all((0.0 <= c) & (c <= 1.0))
 
     # test equivalence between pyriemann and scipy for ordinary coherence
     if coh == "ordinary":
@@ -335,18 +326,16 @@ def test_covariances_coherence(coh, rndstate):
     # reference channel: a pure sine + small noise (to avoid nan or inf)
     X[0] = np.sin(2 * np.pi * ft * t) + noise * rndstate.randn((n_times))
     # pi/4 shifted channel = pi/4 lagged phase
-    X[1] = np.sin(2 * np.pi * ft * t + np.pi / 4) \
-        + noise * rndstate.randn((n_times))
+    X[1] = np.sin(2 * np.pi * ft * t + np.pi / 4) + noise * rndstate.randn((n_times))
     # pi/2 shifted channel = quadrature phase
-    X[2] = np.sin(2 * np.pi * ft * t + np.pi / 2) \
-        + noise * rndstate.randn((n_times))
+    X[2] = np.sin(2 * np.pi * ft * t + np.pi / 2) + noise * rndstate.randn((n_times))
     # pi shifted channel = opposite phase
-    X[3] = np.sin(2 * np.pi * ft * t + np.pi) \
-        + noise * rndstate.randn((n_times))
+    X[3] = np.sin(2 * np.pi * ft * t + np.pi) + noise * rndstate.randn((n_times))
 
-    c, freqs = coherence(X, fs=fs, fmin=1, fmax=fs/2-1, window=fs,
-                         overlap=0.5, coh=coh)
-    foi = (freqs == ft)
+    c, freqs = coherence(
+        X, fs=fs, fmin=1, fmax=fs / 2 - 1, window=fs, overlap=0.5, coh=coh
+    )
+    foi = freqs == ft
 
     if coh == "ordinary":
         # ord coh equal 1 between ref and all other channels
@@ -409,20 +398,19 @@ def test_normalize_values(rndstate, get_mats):
     # after corr-normalization => diags = 1 and values in [-1, 1]
     X = get_mats(n_channels, n_channels, "spd")
     Xcn = normalize(X, "corr")
-    assert_array_almost_equal(np.ones(Xcn.shape[:-1]),
-                              np.diagonal(Xcn, axis1=-2, axis2=-1))
+    assert_array_almost_equal(
+        np.ones(Xcn.shape[:-1]), np.diagonal(Xcn, axis1=-2, axis2=-1)
+    )
     assert np.all(-1 <= Xcn) and np.all(Xcn <= 1)
 
     # after trace-normalization => trace equal to 1
     X = rndstate.randn(n_matrices, n_channels, n_channels)
     Xtn = normalize(X, "trace")
-    assert_array_almost_equal(np.ones(Xtn.shape[0]),
-                              np.trace(Xtn, axis1=-2, axis2=-1))
+    assert_array_almost_equal(np.ones(Xtn.shape[0]), np.trace(Xtn, axis1=-2, axis2=-1))
 
     # after determinant-normalization => determinant equal to +/- 1
     Xdn = normalize(X, "determinant")
-    assert_array_almost_equal(np.ones(Xdn.shape[0]),
-                              np.abs(np.linalg.det(Xdn)))
+    assert_array_almost_equal(np.ones(Xdn.shape[0]), np.abs(np.linalg.det(Xdn)))
 
     with pytest.raises(ValueError):  # not at least 2d
         normalize(rndstate.randn(n_channels), "trace")

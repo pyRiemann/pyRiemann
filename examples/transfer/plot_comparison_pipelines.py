@@ -73,7 +73,7 @@ X_enc, y_enc = make_classification_transfer(
     class_sep=0.75,
     class_disp=1.0,
     domain_sep=5.0,
-    theta=3*np.pi/5,
+    theta=3 * np.pi / 5,
     random_state=seed,
 )
 
@@ -92,7 +92,6 @@ tl_cv = TLSplitter(
 # Vary the proportion of the target domain for training
 target_train_frac_array = np.linspace(0.01, 0.20, 10)
 for target_train_frac in tqdm(target_train_frac_array):
-
     # Change fraction of the target training partition
     tl_cv.cv.train_size = target_train_frac
 
@@ -101,7 +100,6 @@ for target_train_frac in tqdm(target_train_frac_array):
 
     # Carry out the cross-validation
     for train_idx, test_idx in tl_cv.split(X_enc, y_enc):
-
         # Split the dataset into training and testing
         X_enc_train, X_enc_test = X_enc[train_idx], X_enc[test_idx]
         y_enc_train, y_enc_test = y_enc[train_idx], y_enc[test_idx]

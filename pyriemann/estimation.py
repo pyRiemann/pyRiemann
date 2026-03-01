@@ -1,12 +1,18 @@
 """Estimation of SPD matrices."""
+
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.covariance import shrunk_covariance
 from sklearn.metrics.pairwise import pairwise_kernels
 
 from .spatialfilters import Xdawn
-from .utils.covariance import (covariances, covariances_EP, cross_spectrum,
-                               coherence, block_covariances)
+from .utils.covariance import (
+    covariances,
+    covariances_EP,
+    cross_spectrum,
+    coherence,
+    block_covariances,
+)
 
 
 def _nextpow2(i):
@@ -198,7 +204,7 @@ class ERPCovariances(TransformerMixin, BaseEstimator):
             # Apply svd if requested
             if self.svd is not None:
                 U, _, _ = np.linalg.svd(P)
-                P = U[:, 0:self.svd].T @ P
+                P = U[:, 0 : self.svd].T @ P
 
             self.P_.append(P)
 
@@ -221,12 +227,7 @@ class ERPCovariances(TransformerMixin, BaseEstimator):
             is None, and to n_channels + n_classes x min(``svd``, n_channels)
             otherwise.
         """
-        covmats = covariances_EP(
-            X,
-            self.P_,
-            estimator=self.estimator,
-            **self.kwds
-        )
+        covmats = covariances_EP(X, self.P_, estimator=self.estimator, **self.kwds)
         return covmats
 
     def fit_transform(self, X, y):
@@ -316,7 +317,7 @@ class XdawnCovariances(TransformerMixin, BaseEstimator):
         estimator="scm",
         xdawn_estimator="scm",
         baseline_cov=None,
-        **kwds
+        **kwds,
     ):
         """Init."""
         self.applyfilters = applyfilters
@@ -373,12 +374,7 @@ class XdawnCovariances(TransformerMixin, BaseEstimator):
         if self.applyfilters:
             X = self.Xd_.transform(X)
 
-        covmats = covariances_EP(
-            X,
-            self.P_,
-            estimator=self.estimator,
-            **self.kwds
-        )
+        covmats = covariances_EP(X, self.P_, estimator=self.estimator, **self.kwds)
         return covmats
 
     def fit_transform(self, X, y):
@@ -899,9 +895,7 @@ class TimeDelayCovariances(TransformerMixin, BaseEstimator):
 ###############################################################################
 
 
-ker_est_functions = [
-    "linear", "poly", "polynomial", "rbf", "laplacian", "cosine"
-]
+ker_est_functions = ["linear", "poly", "polynomial", "rbf", "laplacian", "cosine"]
 
 
 class Kernels(TransformerMixin, BaseEstimator):
@@ -994,12 +988,9 @@ class Kernels(TransformerMixin, BaseEstimator):
 
         K = [
             pairwise_kernels(
-                x,
-                None,
-                metric=self.metric,
-                n_jobs=self.n_jobs,
-                **self.kwds
-            ) for x in X
+                x, None, metric=self.metric, n_jobs=self.n_jobs, **self.kwds
+            )
+            for x in X
         ]
 
         return np.asarray(K)

@@ -1,4 +1,5 @@
 """Module for regression functions."""
+
 import functools
 
 import numpy as np
@@ -139,8 +140,10 @@ class SVR(sklearnSVR):
         elif isinstance(self.Cref, np.ndarray):
             self.Cref_ = self.Cref
         else:
-            raise TypeError("Cref has to be np.ndarray, callable or None. But "
-                            f"has type {type(self.Cref)}.")
+            raise TypeError(
+                "Cref has to be np.ndarray, callable or None. But "
+                f"has type {type(self.Cref)}."
+            )
 
     def _set_kernel(self):
         if callable(self.kernel_fct):
@@ -156,8 +159,9 @@ class SVR(sklearnSVR):
                 metric=self.metric,
             )
         else:
-            raise TypeError(f"kernel must be 'precomputed' or callable, is "
-                            f"{self.kernel}.")
+            raise TypeError(
+                f"kernel must be 'precomputed' or callable, is {self.kernel}."
+            )
 
 
 class KNearestNeighborRegressor(RegressorMixin, MDM):
@@ -241,9 +245,9 @@ class KNearestNeighborRegressor(RegressorMixin, MDM):
         idx = np.argsort(dist)
         dist_sorted = np.take_along_axis(dist, idx, axis=1)
         neighbors_values = self.values_[idx]
-        softmax_dist = softmax(-dist_sorted[:, 0:self.n_neighbors]**2)
-        knn_values = neighbors_values[:, 0:self.n_neighbors]
-        out = np.sum(knn_values*softmax_dist, axis=1)
+        softmax_dist = softmax(-(dist_sorted[:, 0 : self.n_neighbors] ** 2))
+        knn_values = neighbors_values[:, 0 : self.n_neighbors]
+        out = np.sum(knn_values * softmax_dist, axis=1)
         return out
 
     def score(self, X, y):

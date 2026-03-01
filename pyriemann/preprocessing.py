@@ -85,11 +85,7 @@ class Whitening(TransformerMixin, BaseEstimator):
             The Whitening instance.
         """
         # weighted mean of input matrices
-        self._mean = mean_covariance(
-            X,
-            metric=self.metric,
-            sample_weight=sample_weight
-        )
+        self._mean = mean_covariance(X, metric=self.metric, sample_weight=sample_weight)
 
         # whitening without dimension reduction
         if self.dim_red is None:
@@ -104,8 +100,9 @@ class Whitening(TransformerMixin, BaseEstimator):
             self._reduce_and_whiten()
 
         else:
-            raise ValueError("Unknown type for parameter dim_red: %r"
-                             % type(self.dim_red))
+            raise ValueError(
+                "Unknown type for parameter dim_red: %r" % type(self.dim_red)
+            )
 
         self._n_matrices_cum = X.shape[0]
 
@@ -114,7 +111,7 @@ class Whitening(TransformerMixin, BaseEstimator):
     def _get_eig(self):
         """Compute eigen values and eigen vectors."""
         eigvals, eigvecs = eigh(self._mean, eigvals_only=False)
-        self._eigvals = eigvals[::-1]       # sort eigvals in descending order
+        self._eigvals = eigvals[::-1]  # sort eigvals in descending order
         self._eigvecs = np.fliplr(eigvecs)  # idem for eigvecs
 
     def _get_n_components(self, X):
@@ -122,59 +119,61 @@ class Whitening(TransformerMixin, BaseEstimator):
         if len(self.dim_red) > 1:
             raise ValueError(
                 "Dictionary dim_red must contain only one element (Got %d)"
-                % len(self.dim_red))
+                % len(self.dim_red)
+            )
         dim_red_key = next(iter(self.dim_red))
         dim_red_val = self.dim_red.get(dim_red_key)
 
         if dim_red_key == "n_components":
             if dim_red_val < 1:
                 raise ValueError(
-                    "Value n_components must be superior to 1 (Got %d)"
-                    % dim_red_val)
+                    "Value n_components must be superior to 1 (Got %d)" % dim_red_val
+                )
             if not isinstance(dim_red_val, numbers.Integral):
                 raise ValueError(
                     "n_components=%d must be of type int (Got %r)"
-                    % (dim_red_val, type(dim_red_val)))
+                    % (dim_red_val, type(dim_red_val))
+                )
             self.n_components_ = min(dim_red_val, X.shape[-1])
 
         elif dim_red_key == "expl_var":
             if not 0 < dim_red_val <= 1:
                 raise ValueError(
-                    "Value expl_var must be included in (0, 1] (Got %d)"
-                    % dim_red_val)
+                    "Value expl_var must be included in (0, 1] (Got %d)" % dim_red_val
+                )
             cum_expl_var = np.cumsum(self._eigvals / self._eigvals.sum())
             if self.verbose:
-                print("Cumulative explained variance: \n %r"
-                      % cum_expl_var)
-            self.n_components_ = np.searchsorted(
-                cum_expl_var, dim_red_val, side="right") + 1
+                print("Cumulative explained variance: \n %r" % cum_expl_var)
+            self.n_components_ = (
+                np.searchsorted(cum_expl_var, dim_red_val, side="right") + 1
+            )
 
         elif dim_red_key == "max_cond":
             if dim_red_val <= 1:
                 raise ValueError(
                     "Value max_cond must be strictly superior to 1 "
-                    "(Got %d)" % dim_red_val)
+                    "(Got %d)" % dim_red_val
+                )
             conds = self._eigvals[0] / self._eigvals
             if self.verbose:
                 print("Condition numbers: \n %r" % conds)
-            self.n_components_ = np.searchsorted(
-                conds, dim_red_val, side="left")
+            self.n_components_ = np.searchsorted(conds, dim_red_val, side="left")
 
         else:
-            raise ValueError(
-                "Unknown key in parameter dim_red: %r" % dim_red_key)
+            raise ValueError("Unknown key in parameter dim_red: %r" % dim_red_key)
 
         if self.verbose:
-            print("Dimension reduction of Whitening on %d components"
-                  % self.n_components_)
+            print(
+                "Dimension reduction of Whitening on %d components" % self.n_components_
+            )
 
     def _reduce_and_whiten(self):
         """Compute spatial filters to reduce and whiten matrices."""
         # dimension reduction
-        pca_filters = self._eigvecs[:, :self.n_components_]
-        pca_sqrtvals = np.sqrt(self._eigvals[:self.n_components_])
+        pca_filters = self._eigvecs[:, : self.n_components_]
+        pca_sqrtvals = np.sqrt(self._eigvals[: self.n_components_])
         # whitening
-        self.filters_ = pca_filters * (1. / pca_sqrtvals)[np.newaxis, :]
+        self.filters_ = pca_filters * (1.0 / pca_sqrtvals)[np.newaxis, :]
         self.inv_filters_ = pca_sqrtvals[:, np.newaxis] * pca_filters.T
 
     def partial_fit(self, X, y=None, *, sample_weight=None, alpha=None):
@@ -223,7 +222,8 @@ class Whitening(TransformerMixin, BaseEstimator):
         elif n_channels != self._mean.shape[-1]:
             raise ValueError(
                 "X does not have the good number of channels. Should be %d but"
-                " got %d." % (self._mean.shape[-1], n_channels))
+                " got %d." % (self._mean.shape[-1], n_channels)
+            )
         else:
             Xm = mean_covariance(
                 X,

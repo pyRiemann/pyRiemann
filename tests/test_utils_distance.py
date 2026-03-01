@@ -146,18 +146,21 @@ def test_distance_property_separability(kind, dist, get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("dist", [
-    distance_chol,
-    distance_euclid,
-    distance_harmonic,
-    distance_kullback_sym,
-    distance_logchol,
-    distance_logdet,
-    distance_logeuclid,
-    distance_riemann,
-    distance_thompson,
-    distance_wasserstein,
-])
+@pytest.mark.parametrize(
+    "dist",
+    [
+        distance_chol,
+        distance_euclid,
+        distance_harmonic,
+        distance_kullback_sym,
+        distance_logchol,
+        distance_logdet,
+        distance_logeuclid,
+        distance_riemann,
+        distance_thompson,
+        distance_wasserstein,
+    ],
+)
 def test_distance_property_symmetry(kind, dist, get_mats):
     n_channels = 5
     A, B = get_mats(2, n_channels, kind)
@@ -173,11 +176,14 @@ def test_distance_property_triangle_inequality(kind, dist, get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("dist", [
-    distance_logeuclid,  # Th 3.6 in [Arsigny2007]
-    distance_riemann,  # Th 1 (v) of [Forstner2003]
-    distance_thompson,  # Eq(4.7a) in [Sra2015]
-])
+@pytest.mark.parametrize(
+    "dist",
+    [
+        distance_logeuclid,  # Th 3.6 in [Arsigny2007]
+        distance_riemann,  # Th 1 (v) of [Forstner2003]
+        distance_thompson,  # Eq(4.7a) in [Sra2015]
+    ],
+)
 def test_distance_property_invariance_under_inversion(kind, dist, get_mats):
     """Test invariance under inversion"""
     n_channels = 4
@@ -186,15 +192,18 @@ def test_distance_property_invariance_under_inversion(kind, dist, get_mats):
 
 
 @pytest.mark.parametrize("kind, kindQ", [("spd", "orth"), ("hpd", "unit")])
-@pytest.mark.parametrize("dist", [
-    distance_euclid,
-    distance_harmonic,
-    distance_kullback,
-    distance_logeuclid,
-    distance_riemann,
-    distance_thompson,
-    distance_wasserstein,
-])
+@pytest.mark.parametrize(
+    "dist",
+    [
+        distance_euclid,
+        distance_harmonic,
+        distance_kullback,
+        distance_logeuclid,
+        distance_riemann,
+        distance_thompson,
+        distance_wasserstein,
+    ],
+)
 def test_distance_property_invariance_rotation(kind, kindQ, dist, get_mats):
     n_channels = 4
     A, B = get_mats(2, n_channels, kind)
@@ -204,13 +213,15 @@ def test_distance_property_invariance_rotation(kind, kindQ, dist, get_mats):
 
 
 @pytest.mark.parametrize("kind, kindQ", [("spd", "orth"), ("hpd", "unit")])
-@pytest.mark.parametrize("dist", [
-    distance_logeuclid,  # Prop 3.11 in [Arsigny2007]
-    distance_riemann,
-    distance_thompson,
-])
-def test_distance_property_invariance_similarity(kind, kindQ, dist,
-                                                 get_mats, rndstate):
+@pytest.mark.parametrize(
+    "dist",
+    [
+        distance_logeuclid,  # Prop 3.11 in [Arsigny2007]
+        distance_riemann,
+        distance_thompson,
+    ],
+)
+def test_distance_property_invariance_similarity(kind, kindQ, dist, get_mats, rndstate):
     """Test invariance by similarity, ie a scale and a rotation"""
     n_channels = 5
     A, B = get_mats(2, n_channels, kind)
@@ -221,11 +232,14 @@ def test_distance_property_invariance_similarity(kind, kindQ, dist,
 
 
 @pytest.mark.parametrize("kind, kindW", [("spd", "inv"), ("hpd", "cinv")])
-@pytest.mark.parametrize("dist", [
-    distance_kullback,
-    distance_riemann,  # Th 1 (iv) of [Forstner2003]
-    distance_thompson,  # Eq(4.7b) in [Sra2015]
-])
+@pytest.mark.parametrize(
+    "dist",
+    [
+        distance_kullback,
+        distance_riemann,  # Th 1 (iv) of [Forstner2003]
+        distance_thompson,  # Eq(4.7b) in [Sra2015]
+    ],
+)
 def test_distance_property_invariance_congruence(kind, kindW, dist, get_mats):
     """Test invariance under congruence, ie an invertible transform"""
     n_channels = 4
@@ -255,8 +269,11 @@ def test_distance_harmonic(kind, get_mats):
 def test_distance_kullback_implementation(kind, get_mats):
     n_channels = 6
     A, B = get_mats(2, n_channels, kind)
-    d = 0.5*(np.trace(np.linalg.inv(B) @ A) - n_channels
-             + np.log(np.linalg.det(B) / np.linalg.det(A)))
+    d = 0.5 * (
+        np.trace(np.linalg.inv(B) @ A)
+        - n_channels
+        + np.log(np.linalg.det(B) / np.linalg.det(A))
+    )
     assert distance_kullback(A, B) == approx(d)
 
 
@@ -264,8 +281,10 @@ def test_distance_kullback_implementation(kind, get_mats):
 def test_distance_logdet_implementation(kind, get_mats):
     n_channels = 6
     A, B = get_mats(2, n_channels, kind)
-    d = np.sqrt(np.log(np.linalg.det((A + B) / 2.0))
-                - 0.5 * np.log(np.linalg.det(A)*np.linalg.det(B)))
+    d = np.sqrt(
+        np.log(np.linalg.det((A + B) / 2.0))
+        - 0.5 * np.log(np.linalg.det(A) * np.linalg.det(B))
+    )
     assert distance_logdet(A, B) == approx(d)
 
 
@@ -326,20 +345,23 @@ def test_distance_thompson_implementation(kind, get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("metric", [
-    "chol",
-    "euclid",
-    "harmonic",
-    "kullback",
-    "kullback_right",
-    "kullback_sym",
-    "logchol",
-    "logdet",
-    "logeuclid",
-    "riemann",
-    "thompson",
-    "wasserstein",
-])
+@pytest.mark.parametrize(
+    "metric",
+    [
+        "chol",
+        "euclid",
+        "harmonic",
+        "kullback",
+        "kullback_right",
+        "kullback_sym",
+        "logchol",
+        "logdet",
+        "logeuclid",
+        "riemann",
+        "thompson",
+        "wasserstein",
+    ],
+)
 @pytest.mark.parametrize("Y", [None, True])
 @pytest.mark.parametrize("squared", [False, True])
 def test_pairwise_distance(kind, metric, Y, squared, get_mats):

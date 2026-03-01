@@ -2,11 +2,19 @@ import numpy as np
 import pytest
 
 from pyriemann.utils.test import (
-    is_square, is_sym, is_skew_sym, is_hankel,
-    is_real, is_real_type, is_hermitian,
-    is_pos_def, is_pos_semi_def,
-    is_sym_pos_def, is_sym_pos_semi_def,
-    is_herm_pos_def, is_herm_pos_semi_def,
+    is_square,
+    is_sym,
+    is_skew_sym,
+    is_hankel,
+    is_real,
+    is_real_type,
+    is_hermitian,
+    is_pos_def,
+    is_pos_semi_def,
+    is_sym_pos_def,
+    is_sym_pos_semi_def,
+    is_herm_pos_def,
+    is_herm_pos_semi_def,
 )
 
 

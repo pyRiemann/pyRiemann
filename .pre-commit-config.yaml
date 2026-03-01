@@ -12,8 +12,8 @@ repos:
       - id: check-case-conflict
       - id: mixed-line-ending
 
-  - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.8.4
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.14.10
     hooks:
-      - id: flake8
-        additional_dependencies: [flake8-bugbear]
+      - id: ruff
+      - id: ruff-format

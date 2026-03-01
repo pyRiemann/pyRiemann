@@ -51,12 +51,12 @@ if small_dataset:
     reduce_factor = 5
     data = data[::reduce_factor, ::reduce_factor]
     max_iter = 5
-    resolution = reduce_factor*resolution
+    resolution = reduce_factor * resolution
 height, width, n_features = data.shape
 
 # For visualization of results
-x_values = np.arange(window_size//2, width-window_size//2) * resolution
-y_values = np.arange(window_size//2, height-window_size//2) * resolution
+x_values = np.arange(window_size // 2, width - window_size // 2) * resolution
+y_values = np.arange(window_size // 2, height - window_size // 2) * resolution
 X_res, Y_res = np.meshgrid(x_values, y_values)
 
 
@@ -76,29 +76,41 @@ print(f"estimator = {estimator}")
 # Pipelines definition
 # --------------------
 
-pipeline_euclid = Pipeline([
-    ("pca", PCAImage(n_components=n_components)),
-    ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
-    ("covariances", Covariances(estimator=estimator)),
-    ("kmeans", Kmeans(
-        n_clusters=n_clusters,
-        n_jobs=n_jobs,
-        max_iter=max_iter,
-        metric="euclid",
-    ))
-], verbose=True)
+pipeline_euclid = Pipeline(
+    [
+        ("pca", PCAImage(n_components=n_components)),
+        ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
+        ("covariances", Covariances(estimator=estimator)),
+        (
+            "kmeans",
+            Kmeans(
+                n_clusters=n_clusters,
+                n_jobs=n_jobs,
+                max_iter=max_iter,
+                metric="euclid",
+            ),
+        ),
+    ],
+    verbose=True,
+)
 
-pipeline_riemann = Pipeline([
-    ("pca", PCAImage(n_components=n_components)),
-    ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
-    ("covariances", Covariances(estimator=estimator)),
-    ("kmeans", Kmeans(
-        n_clusters=n_clusters,
-        n_jobs=n_jobs,
-        max_iter=max_iter,
-        metric="riemann",
-    ))
-], verbose=True)
+pipeline_riemann = Pipeline(
+    [
+        ("pca", PCAImage(n_components=n_components)),
+        ("sliding_window", SlidingWindowVectorize(window_size=window_size)),
+        ("covariances", Covariances(estimator=estimator)),
+        (
+            "kmeans",
+            Kmeans(
+                n_clusters=n_clusters,
+                n_jobs=n_jobs,
+                max_iter=max_iter,
+                metric="riemann",
+            ),
+        ),
+    ],
+    verbose=True,
+)
 
 pipelines = [pipeline_euclid, pipeline_riemann]
 pipelines_names = [
@@ -113,13 +125,14 @@ pipelines_names = [
 print(f"\nStarting clustering with pipelines: {pipelines_names}")
 results = {}
 for pipeline_name, pipeline in zip(pipelines_names, pipelines):
-    print("-"*60)
+    print("-" * 60)
     print(f"Pipeline: {pipeline_name}")
     pipeline.fit(data)
     preds = pipeline.named_steps["kmeans"].labels_
-    results[pipeline_name] = \
-        pipeline.named_steps["sliding_window"].inverse_predict(preds)
-    print("-"*60)
+    results[pipeline_name] = pipeline.named_steps["sliding_window"].inverse_predict(
+        preds
+    )
+    print("-" * 60)
 
 ###############################################################################
 # Plot data

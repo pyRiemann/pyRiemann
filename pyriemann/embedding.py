@@ -58,7 +58,6 @@ class SpectralEmbedding(BaseEstimator):
         self.eps = eps
 
     def _get_affinity_matrix(self, X):
-
         # make matrix with pairwise distances between matrices
         distmatrix = pairwise_distance(X, metric=self.metric)
 
@@ -252,8 +251,7 @@ class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
         _check_dimensions(self.data_, X)
         pairwise_dists = pairwise_distance(X, self.data_, metric=self.metric)
         ind = np.array(
-            [np.argsort(dist)[1: self.n_neighbors + 1]
-             for dist in pairwise_dists]
+            [np.argsort(dist)[1 : self.n_neighbors + 1] for dist in pairwise_dists]
         )
 
         weights = barycenter_weights(
@@ -371,7 +369,7 @@ class TSNE(BaseEstimator):
             self.metric,
             self.max_iter,
             self.random_state,
-            _compute_jointprob_student
+            _compute_jointprob_student,
         )
 
         return self
@@ -521,7 +519,7 @@ def locally_linear_embedding(
     n_matrices, n_channels, n_channels = X.shape
     pairwise_distances = pairwise_distance(X, metric=metric)
     neighbors = np.array(
-        [np.argsort(dist)[1: n_neighbors + 1] for dist in pairwise_distances]
+        [np.argsort(dist)[1 : n_neighbors + 1] for dist in pairwise_distances]
     )
 
     B = barycenter_weights(
@@ -602,8 +600,7 @@ def _compute_jointprob_student(X, metric):
     Dsq = pairwise_distance(X, metric=metric, squared=True)
 
     denominator = np.sum(
-        [np.sum([np.delete(1 / (1 + Dsq[k, :]), k)])
-         for k in range(n_matrices)]
+        [np.sum([np.delete(1 / (1 + Dsq[k, :]), k)]) for k in range(n_matrices)]
     )
     P = 1 / (1 + Dsq) / denominator
     np.fill_diagonal(P, 0)

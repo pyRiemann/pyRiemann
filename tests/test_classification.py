@@ -70,10 +70,8 @@ def test_mode(X, axis, expected):
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("n_classes", [2, 3])
 @pytest.mark.parametrize("classif", classifs)
-def test_classifier(kind, n_classes, classif,
-                    get_mats, get_labels, get_weights):
-    if kind == "hpd" and \
-            classif in [FgMDM, TSClassifier, SVC, NearestConvexHull]:
+def test_classifier(kind, n_classes, classif, get_mats, get_labels, get_weights):
+    if kind == "hpd" and classif in [FgMDM, TSClassifier, SVC, NearestConvexHull]:
         pytest.skip()
     if n_classes == 2:
         n_matrices, n_channels = 6, 3
@@ -182,10 +180,7 @@ def clf_pipeline(classif, labels, get_mats):
     pip.fit(X, labels)
     pip.predict(X)
     pip.predict_proba(X)
-    cross_val_score(
-        pip, X, labels,
-        cv=KFold(n_splits=3), scoring="accuracy", n_jobs=1
-    )
+    cross_val_score(pip, X, labels, cv=KFold(n_splits=3), scoring="accuracy", n_jobs=1)
 
 
 @pytest.mark.parametrize("classif", classifs)
@@ -231,12 +226,8 @@ def call_dist(A, B, squared=False):
     return euclidean(A.flatten(), B.flatten())
 
 
-@pytest.mark.parametrize("metric_mean", [
-    "euclid", "logeuclid", "riemann", call_mean
-])
-@pytest.mark.parametrize("metric_dist", [
-    "euclid", "logeuclid", "riemann", call_dist
-])
+@pytest.mark.parametrize("metric_mean", ["euclid", "logeuclid", "riemann", call_mean])
+@pytest.mark.parametrize("metric_dist", ["euclid", "logeuclid", "riemann", call_dist])
 @pytest.mark.parametrize("n_classes", [2, 3, 4])
 def test_mdm(metric_mean, metric_dist, n_classes, get_mats, get_labels):
     n_matrices, n_channels = 4 * n_classes, 3
@@ -249,9 +240,7 @@ def test_mdm(metric_mean, metric_dist, n_classes, get_mats, get_labels):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("metric", [
-    "euclid", "logchol", "logeuclid", "riemann"
-])
+@pytest.mark.parametrize("metric", ["euclid", "logchol", "logeuclid", "riemann"])
 def test_mdm_hpd(kind, metric, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 4, 2
     X = get_mats(n_matrices, n_channels, kind)
@@ -263,19 +252,17 @@ def test_mdm_hpd(kind, metric, get_mats, get_labels):
 
 @pytest.mark.parametrize("metric_mean", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("metric_dist", ["euclid", "logeuclid", "riemann"])
-@pytest.mark.parametrize("metric_map", [
-    "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
-])
+@pytest.mark.parametrize(
+    "metric_map", ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
+)
 def test_fgmdm(metric_mean, metric_dist, metric_map, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 4, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_labels(n_matrices, n_classes)
 
-    clf = FgMDM(metric={
-        "mean": metric_mean,
-        "distance": metric_dist,
-        "map": metric_map
-    })
+    clf = FgMDM(
+        metric={"mean": metric_mean, "distance": metric_dist, "map": metric_map}
+    )
     clf.fit(X, y).predict(X)
 
 
@@ -296,9 +283,9 @@ def test_knn(k, get_mats, get_labels):
 
 
 @pytest.mark.parametrize("metric_mean", ["euclid", "logeuclid", "riemann"])
-@pytest.mark.parametrize("metric_map", [
-    "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
-])
+@pytest.mark.parametrize(
+    "metric_map", ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
+)
 def test_tsclassifier_metrics(metric_mean, metric_map, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 4, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
@@ -366,7 +353,9 @@ def test_svc_cref_callable(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_labels(n_matrices, n_classes)
-    def Cref(X): return mean_covariance(X, metric=metric)
+
+    def Cref(X):
+        return mean_covariance(X, metric=metric)
 
     rsvc = SVC(Cref=Cref).fit(X, y)
     rsvc_1 = SVC(metric=metric).fit(X, y)
@@ -385,7 +374,9 @@ def test_svc_cref_error(get_mats, get_labels, metric):
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_labels(n_matrices, n_classes)
 
-    def Cref(X, met): mean_covariance(X, metric=met)
+    def Cref(X, met):
+        mean_covariance(X, metric=met)
+
     with pytest.raises(TypeError):
         SVC(Cref=Cref).fit(X, y)
 
@@ -407,8 +398,8 @@ def test_svc_kernel_callable(get_mats, get_labels, metric):
 
     def custom_kernel(X, Y, Cref, metric):
         return np.ones((len(X), len(Y)))
-    SVC(kernel_fct=custom_kernel,
-        metric=metric).fit(X, y).predict(X[:-1])
+
+    SVC(kernel_fct=custom_kernel, metric=metric).fit(X, y).predict(X[:-1])
 
     # check if pickleable
     pickle.dumps(rsvc)
@@ -432,6 +423,7 @@ def test_svc_kernel_error(get_mats, get_labels):
 
     def custom_kernel(X, Y, Cref):
         return np.ones((len(X), len(Y)))
+
     with pytest.raises(TypeError):
         SVC(kernel_fct=custom_kernel, metric="euclid").fit(X, y)
 
@@ -441,12 +433,9 @@ def test_svc_kernel_error(get_mats, get_labels):
 
 
 @pytest.mark.parametrize("power_list", [[-1, 0, 1], [0, 0.1]])
-@pytest.mark.parametrize("method_combination", [
-    "sum_means", "inf_means", None
-])
+@pytest.mark.parametrize("method_combination", ["sum_means", "inf_means", None])
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-def test_meanfield(get_mats, get_labels,
-                   power_list, method_combination, metric):
+def test_meanfield(get_mats, get_labels, power_list, method_combination, metric):
     n_powers = len(power_list)
     n_matrices, n_channels, n_classes = 8, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
@@ -490,7 +479,8 @@ def test_nch(rndstate):
     X, y = make_gaussian_blobs(
         n_matrices=n_matrices,
         n_dim=n_channels,
-        class_sep=10., class_disp=1.0,
+        class_sep=10.0,
+        class_disp=1.0,
         random_state=rndstate,
     )
 
@@ -513,8 +503,9 @@ def test_nch(rndstate):
 @pytest.mark.parametrize("metric_mean", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("metric_dist", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("exponent", [1, 2])
-def test_class_distinctiveness(kind, n_classes, metric_mean, metric_dist,
-                               exponent, get_mats, get_labels):
+def test_class_distinctiveness(
+    kind, n_classes, metric_mean, metric_dist, exponent, get_mats, get_labels
+):
     """Test function for class distinctiveness measure for two class problem"""
     n_matrices, n_channels = 6, 3
     X = get_mats(n_matrices, n_channels, kind)
@@ -530,7 +521,7 @@ def test_class_distinctiveness(kind, n_classes, metric_mean, metric_dist,
         y,
         exponent,
         metric={"mean": metric_mean, "distance": metric_dist},
-        return_num_denom=True
+        return_num_denom=True,
     )
     assert class_dis >= 0  # negative class_dis value
     assert num >= 0  # negative numerator value

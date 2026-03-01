@@ -39,8 +39,7 @@ def embd_fit(embedding, X, metric, n_components):
     embd = embedding(metric=metric, n_components=n_components)
     embd.fit(X)
     if embedding is TSNE:
-        assert embd.embedding_.shape == (n_matrices, n_components,
-                                         n_components)
+        assert embd.embedding_.shape == (n_matrices, n_components, n_components)
     else:
         assert embd.embedding_.shape == (n_matrices, n_components)
 
@@ -82,8 +81,7 @@ def embd_fit_independence(embedding, X, metric, n_components):
     new_mats = X[:-1, :-1, :-1]
     embd = embd.fit(new_mats)
     if embedding is TSNE:
-        assert embd.embedding_.shape == (n_matrices - 1, n_components,
-                                         n_components)
+        assert embd.embedding_.shape == (n_matrices - 1, n_components, n_components)
     else:
         assert embd.embedding_.shape == (n_matrices - 1, n_components)
 
@@ -92,7 +90,7 @@ def embd_result(embedding, metric):
     X, y = make_gaussian_blobs(
         n_matrices=10,
         n_dim=2,
-        class_sep=10.,
+        class_sep=10.0,
         class_disp=1,
     )
 
@@ -101,7 +99,7 @@ def embd_result(embedding, metric):
     if embedding is TSNE:
         X_ = X_[:, 0]
     score = NearestCentroid().fit(X_, y).score(X_, y)
-    assert score == 1.
+    assert score == 1.0
 
 
 @pytest.mark.parametrize("n_components", [2, 4, 100])
@@ -144,8 +142,9 @@ def test_spectral_embedding_parameters(metric, eps, get_mats):
 @pytest.mark.parametrize("n_neighbors", [2, 4, 8, 16])
 @pytest.mark.parametrize("reg", [1e-3, 0])
 @pytest.mark.parametrize("kernel_fct", [kernel, None])
-def test_locally_linear_embedding_parameters(metric, n_neighbors, reg,
-                                             kernel_fct, get_mats):
+def test_locally_linear_embedding_parameters(
+    metric, n_neighbors, reg, kernel_fct, get_mats
+):
     """Test LocallyLinearEmbedding."""
     n_matrices, n_channels, n_components = n_neighbors + 5, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
@@ -189,11 +188,7 @@ def test_barycenter_weights_func(get_mats):
     """Test barycenter_weights helper function."""
     n_matrices, n_channels = 4, 3
     X = get_mats(n_matrices, n_channels, "spd")
-    weights = barycenter_weights(
-        X,
-        X,
-        np.array([[1, 2], [2, 3], [3, 0], [0, 1]])
-    )
+    weights = barycenter_weights(X, X, np.array([[1, 2], [2, 3], [3, 0], [0, 1]]))
     assert weights.shape == (n_matrices, 2)
 
 

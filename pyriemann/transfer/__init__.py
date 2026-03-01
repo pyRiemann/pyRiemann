@@ -1,8 +1,4 @@
-from ._tools import (
-    encode_domains,
-    decode_domains,
-    TLSplitter
-)
+from ._tools import encode_domains, decode_domains, TLSplitter
 
 from ._estimators import (
     TLDummy,

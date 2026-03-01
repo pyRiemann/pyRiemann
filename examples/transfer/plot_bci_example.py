@@ -34,15 +34,16 @@ from pyriemann.transfer import (
     TLClassifier,
     TLSplitter,
 )
+
 set_log_level(verbose=False)
 
 
 ###############################################################################
 
-def get_subject_dataset(subject):
 
+def get_subject_dataset(subject):
     # Consider epochs that start 1s after cue onset.
-    tmin, tmax = 1., 2.
+    tmin, tmax = 1.0, 2.0
     event_id = dict(hands=2, feet=3)
     runs = [6, 10]  # motor imagery: hands vs feet
 
@@ -55,12 +56,13 @@ def get_subject_dataset(subject):
 
     # Select only EEG channels
     picks = pick_types(
-        raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
+        raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads"
+    )
     # select only nine electrodes: F3, Fz, F4, C3, Cz, C4, P3, Pz, P4
     picks = picks[[31, 33, 35, 8, 10, 12, 48, 50, 52]]
 
     # Apply band-pass filter
-    raw.filter(7., 35., method="iir", picks=picks)
+    raw.filter(7.0, 35.0, method="iir", picks=picks)
 
     # Check the events
     events, _ = events_from_annotations(raw, event_id=dict(T1=2, T2=3))
@@ -76,7 +78,8 @@ def get_subject_dataset(subject):
         picks=picks,
         baseline=None,
         preload=True,
-        verbose=False)
+        verbose=False,
+    )
 
     # Extract the labels for each event
     labels = epochs.events[:, -1] - 2
@@ -130,7 +133,6 @@ clf_base = MDM()
 
 # Consider different subjects as target
 for i_subject in tqdm(range(n_subjects)):
-
     # Change the target domain
     tl_cv.target_domain = f"subject_{subject_list[i_subject]:02}"
 
@@ -139,7 +141,6 @@ for i_subject in tqdm(range(n_subjects)):
 
     # Carry out the cross-validation
     for train_idx, test_idx in tl_cv.split(X_enc, y_enc):
-
         # Split the dataset into training and testing
         X_enc_train, X_enc_test = X_enc[train_idx], X_enc[test_idx]
         y_enc_train, y_enc_test = y_enc[train_idx], y_enc[test_idx]

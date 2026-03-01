@@ -14,7 +14,7 @@ if version is None:
 
 is_python3 = sys.version_info.major >= 3
 kwargs_open = {"encoding": "utf8"} if is_python3 else {}
-with open('README.md', 'r', **kwargs_open) as fid:
+with open("README.md", "r", **kwargs_open) as fid:
     long_description = fid.read()
 
 description = "Machine learning for multivariate data with Riemannian geometry"
@@ -57,11 +57,7 @@ setup(
             "seaborn",
             "pandas",
         ],
-        "tests": [
-            "pytest",
-            "seaborn",
-            "flake8"
-        ],
+        "tests": ["pytest", "seaborn", "flake8"],
     },
     zip_safe=False,
 )

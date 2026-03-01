@@ -109,12 +109,10 @@ def _run_minimization(
     maxiter=10_000,
     maxiter_linesearch=32,
 ):
-
     Q_1 = Q_ini
 
     # loop over iterations
     for _ in range(maxiter):
-
         # get the current value for the loss function
         F_1 = _loss(Q_1, X_target, X_source, weights, metric=metric)
 
@@ -131,7 +129,7 @@ def _run_minimization(
         Q = _retract(Q_1, -alpha * direction)
         F = _loss(Q, X_target, X_source, weights, metric=metric)
         for _ in range(maxiter_linesearch):
-            if F_1 - F > r * alpha * np.linalg.norm(direction)**2:
+            if F_1 - F > r * alpha * np.linalg.norm(direction) ** 2:
                 break
             alpha = tau * alpha
             Q = _retract(Q_1, -alpha * direction)
@@ -215,11 +213,15 @@ def _get_rotation_manifold(
         N. Boumal. To appear with Cambridge University Press. June, 2022
     """
     if X_source.shape[0] != X_target.shape[0]:
-        raise ValueError("Number of matrices in each domain doesn't match. "
-                         f"Got {X_source.shape[0]} and {X_target.shape[0]}.")
+        raise ValueError(
+            "Number of matrices in each domain doesn't match. "
+            f"Got {X_source.shape[0]} and {X_target.shape[0]}."
+        )
     if X_source.shape[1:] != X_target.shape[1:]:
-        raise ValueError("Number of channels in each domain doesn't match. "
-                         f"Got {X_source.shape[1:]} and {X_target.shape[1:]}.")
+        raise ValueError(
+            "Number of channels in each domain doesn't match. "
+            f"Got {X_source.shape[1:]} and {X_target.shape[1:]}."
+        )
     weights = check_weights(weights, len(X_source))
 
     # initialize the solution with an educated guess
@@ -304,8 +306,9 @@ def _get_rotation_tangentspace(X_source, X_target, expl_var):
         2022
     """
     if X_source.shape != X_target.shape:
-        raise ValueError("Inputs shapes don't match. "
-                         f"Got {X_source.shape} and {X_target.shape}.")
+        raise ValueError(
+            f"Inputs shapes don't match. Got {X_source.shape} and {X_target.shape}."
+        )
 
     C = X_source.T @ X_target
     u, s, vh = np.linalg.svd(C)

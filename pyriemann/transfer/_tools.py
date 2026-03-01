@@ -86,7 +86,7 @@ def decode_domains(X_enc, y_enc):
     return X_enc, np.array(y), np.array(domain)
 
 
-class TLSplitter():
+class TLSplitter:
     """Class for handling the cross-validation splits of multi-domain data.
 
     This is a wrapper to sklearn's cross-validation iterators [1]_ which
@@ -110,6 +110,7 @@ class TLSplitter():
     ----------
     .. [1] https://scikit-learn.org/stable/modules/cross_validation.html#cross-validation-iterators
     """  # noqa
+
     def __init__(self, target_domain, cv):
         self.target_domain = target_domain
         self.cv = cv
@@ -144,9 +145,7 @@ class TLSplitter():
         # index of training-split for the target data
         ss_target = self.cv.split(idx_target, y_target)
         for train_sub_idx_target, test_sub_idx_target in ss_target:
-            train_idx = np.concatenate(
-                [idx_source, idx_target[train_sub_idx_target]]
-            )
+            train_idx = np.concatenate([idx_source, idx_target[train_sub_idx_target]])
             test_idx = idx_target[test_sub_idx_target]
             yield train_idx, test_idx
 

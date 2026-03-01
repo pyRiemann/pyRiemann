@@ -79,8 +79,9 @@ def test_whitening_fit(use_weight, dim_red, metric, get_mats, get_weights):
 @pytest.mark.parametrize("alpha", [0, 0.5, 1, None])
 @pytest.mark.parametrize("dim_red", dim_red)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-def test_whitening_partial_fit(use_weight, alpha, dim_red, metric,
-                               get_mats, get_weights):
+def test_whitening_partial_fit(
+    use_weight, alpha, dim_red, metric, get_mats, get_weights
+):
     """Test Whitening partial_fit"""
     n_matrices, n_channels = 6, 5
     X = get_mats(n_matrices, n_channels, "spd")

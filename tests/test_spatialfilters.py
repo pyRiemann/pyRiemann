@@ -251,7 +251,7 @@ def test_ajdc_fit_error(get_mats, rndstate):
         )
     X = get_mats(n_subjects, [n_conditions, n_channels, n_times], "real")
     V = rndstate.randn(n_channels, n_channels - 1)
-    ajdc = AJDC(dim_red={'warm_restart': V})
+    ajdc = AJDC(dim_red={"warm_restart": V})
     with pytest.raises(ValueError):  # initial diag not square
         ajdc.fit(X)
 
@@ -280,10 +280,8 @@ def test_ajdc_fit_variable_input(rndstate):
 
     # 2 subjects, 2 conditions, same # channels, different # of times
     X = [
-        [rndstate.randn(n_chan, n_times + rndstate.randint(500))
-         for _ in range(2)],
-        [rndstate.randn(n_chan, n_times + rndstate.randint(500))
-         for _ in range(2)],
+        [rndstate.randn(n_chan, n_times + rndstate.randint(500)) for _ in range(2)],
+        [rndstate.randn(n_chan, n_times + rndstate.randint(500)) for _ in range(2)],
     ]
     ajdc.fit(X)
 

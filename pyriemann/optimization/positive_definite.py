@@ -91,9 +91,7 @@ def _norm(point, tangent_vector, metric):
     else:
         p_inv_tv = np.linalg.solve(point, tangent_vector)
         norm = np.sqrt(
-            np.tensordot(
-                p_inv_tv, ctranspose(p_inv_tv), axes=tangent_vector.ndim
-            )
+            np.tensordot(p_inv_tv, ctranspose(p_inv_tv), axes=tangent_vector.ndim)
         )
 
     return norm
@@ -146,15 +144,12 @@ def _riemannian_gradient(Y, P, Q, Dsq, metric):
 
     grad = np.zeros((n_matrices, n_components, n_components))
     for i in range(n_matrices):
-
         if metric == "riemann":
-            grad_dist = - (
-                Y_sqrt[i] @ logm(Y_invsqrt[i] @ Y @ Y_invsqrt[i]) @ Y_sqrt[i]
-            )
+            grad_dist = -(Y_sqrt[i] @ logm(Y_invsqrt[i] @ Y @ Y_invsqrt[i]) @ Y_sqrt[i])
         elif metric == "logeuclid":
             grad_dist = Y[i] @ ddlogm(logm(Y[i]) - logm(Y), Y[i]) @ Y[i]
         elif metric == "euclid":
-            grad_dist = (Y[i] - Y)
+            grad_dist = Y[i] - Y
         else:
             raise ValueError(
                 f"Unknown metric '{metric}'. "
@@ -163,8 +158,7 @@ def _riemannian_gradient(Y, P, Q, Dsq, metric):
             )
 
         grad[i] = 4 * np.sum(
-            ((P[i] - Q[i]) / (1 + Dsq[i]))[:, np.newaxis, np.newaxis]
-            * grad_dist,
+            ((P[i] - Q[i]) / (1 + Dsq[i]))[:, np.newaxis, np.newaxis] * grad_dist,
             axis=0,
         )
     return grad
@@ -194,7 +188,7 @@ def _get_initial_solution(n_matrices, n_components, random_state):
     initial_sol = sample_gaussian_spd(
         n_matrices,
         mean=np.eye(n_components),
-        sigma=1.,
+        sigma=1.0,
         random_state=random_state,
     )
     return initial_sol

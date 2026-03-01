@@ -38,7 +38,7 @@ def plot_clusterers(metric):
 
     # iterate over datasets
     for i_dataset, X in enumerate(datasets):
-        print(f"Dataset n°{i_dataset+1}")
+        print(f"Dataset n°{i_dataset + 1}")
 
         x_min, x_max = X[:, 0, 0].min(), X[:, 0, 0].max()
         y_min, y_max = X[:, 0, 1].min(), X[:, 0, 1].max()
@@ -81,12 +81,7 @@ def plot_clusterers(metric):
 
             # plot
             ax = plt.subplot(n_datasets, n_clusts, i, projection="3d")
-            ax.scatter(
-                X[:, 0, 0],
-                X[:, 0, 1],
-                X[:, 1, 1],
-                color=colors[y_pred]
-            )
+            ax.scatter(X[:, 0, 0], X[:, 0, 1], X[:, 1, 1], color=colors[y_pred])
 
             if i_dataset == 0:
                 ax.set_title(name)
@@ -133,38 +128,80 @@ rs = np.random.RandomState(2025)
 n_matrices, n_channels = 50, 2
 
 datasets = [
-    np.concatenate([
-        make_matrices(
-            n_matrices, n_channels, "spd", rs,
-            evals_low=10, evals_high=14, eigvecs_mean=0.0, eigvecs_std=1.0,
-        ),
-        make_matrices(
-            n_matrices, n_channels, "spd", rs,
-            evals_low=14, evals_high=18, eigvecs_mean=5.0, eigvecs_std=2.0,
-        )
-    ]),
-    np.concatenate([
-        make_matrices(
-            n_matrices, n_channels, "spd", rs,
-            evals_low=4, evals_high=8, eigvecs_mean=0.0, eigvecs_std=0.5,
-        ),
-        make_matrices(
-            n_matrices, n_channels, "spd", rs,
-            evals_low=9, evals_high=13, eigvecs_mean=2.0, eigvecs_std=1.0,
-        ),
-        make_matrices(
-            n_matrices, n_channels, "spd", rs,
-            evals_low=14, evals_high=18, eigvecs_mean=5.0, eigvecs_std=2.0,
-        )
-    ]),
+    np.concatenate(
+        [
+            make_matrices(
+                n_matrices,
+                n_channels,
+                "spd",
+                rs,
+                evals_low=10,
+                evals_high=14,
+                eigvecs_mean=0.0,
+                eigvecs_std=1.0,
+            ),
+            make_matrices(
+                n_matrices,
+                n_channels,
+                "spd",
+                rs,
+                evals_low=14,
+                evals_high=18,
+                eigvecs_mean=5.0,
+                eigvecs_std=2.0,
+            ),
+        ]
+    ),
+    np.concatenate(
+        [
+            make_matrices(
+                n_matrices,
+                n_channels,
+                "spd",
+                rs,
+                evals_low=4,
+                evals_high=8,
+                eigvecs_mean=0.0,
+                eigvecs_std=0.5,
+            ),
+            make_matrices(
+                n_matrices,
+                n_channels,
+                "spd",
+                rs,
+                evals_low=9,
+                evals_high=13,
+                eigvecs_mean=2.0,
+                eigvecs_std=1.0,
+            ),
+            make_matrices(
+                n_matrices,
+                n_channels,
+                "spd",
+                rs,
+                evals_low=14,
+                evals_high=18,
+                eigvecs_mean=5.0,
+                eigvecs_std=2.0,
+            ),
+        ]
+    ),
     make_gaussian_blobs(
-        2*n_matrices, n_channels, random_state=rs, n_jobs=4,
-        class_sep=5., class_disp=.5,
+        2 * n_matrices,
+        n_channels,
+        random_state=rs,
+        n_jobs=4,
+        class_sep=5.0,
+        class_disp=0.5,
     )[0],
     make_gaussian_blobs(
-        2*n_matrices, n_channels, random_state=rs, n_jobs=4,
-        class_sep=2., class_disp=.5,
-    )[0]
+        2 * n_matrices,
+        n_channels,
+        random_state=rs,
+        n_jobs=4,
+        class_sep=2.0,
+        class_disp=0.5,
+    )[0],
 ]
 n_datasets = len(datasets)
 
