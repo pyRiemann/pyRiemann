@@ -6,48 +6,73 @@ type: software
 authors:
   - given-names: Alexandre
     family-names: Barachant
+    orcid: "https://orcid.org/0000-0001-8202-6287"
   - given-names: Quentin
     family-names: Barthélemy
+    orcid: "https://orcid.org/0000-0002-7059-6028"
   - given-names: Jean-Rémi
     family-names: King
+    orcid: "https://orcid.org/0000-0002-2121-170X"
   - given-names: Alexandre
     family-names: Gramfort
+    orcid: "https://orcid.org/0000-0001-9791-4404"
   - given-names: Sylvain
     family-names: Chevallier
+    orcid: "https://orcid.org/0000-0003-3027-8241"
   - given-names: Pedro L. C.
     family-names: Rodrigues
+    orcid: "https://orcid.org/0000-0003-3534-317X"
   - given-names: Emanuele
     family-names: Olivetti
+    orcid: "https://orcid.org/0000-0001-7653-1519"
   - given-names: Vladislav
     family-names: Goncharenko
+    orcid: "https://orcid.org/0000-0002-9243-6914"
   - given-names: Gabriel
     family-names: Wagner vom Berg
+    orcid: "https://orcid.org/0009-0009-3675-641X"
   - given-names: Ghiles
     family-names: Reguig
+    orcid: "https://orcid.org/0009-0008-0362-1407"
   - given-names: Arthur
     family-names: Lebeurrier
+    orcid: "https://orcid.org/0009-0005-4220-5519"
   - given-names: Erik
     family-names: Bjäreholt
+    orcid: "https://orcid.org/0000-0003-1350-9677"
   - given-names: Maria Sayu
     family-names: Yamamoto
+    orcid: "https://orcid.org/0000-0002-6058-2060"
   - given-names: Pierre
     family-names: Clisson
+    orcid: "https://orcid.org/0000-0002-3123-9597"
   - given-names: Marie-Constance
     family-names: Corsi
+    orcid: "https://orcid.org/0000-0002-6262-5036"
   - given-names: Igor
     family-names: Carrara
+    orcid: "https://orcid.org/0000-0002-2580-094X"
   - given-names: Apolline
     family-names: Mellot
+    orcid: "https://orcid.org/0000-0002-7001-9749"
   - given-names: Bruna
     family-names: Junqueira Lopes
+    orcid: "https://orcid.org/0000-0003-4703-9343"
   - given-names: Brent
     family-names: Gaisford
+    orcid: "https://orcid.org/0009-0008-1611-9387"
   - given-names: Ammar
     family-names: Mian
+    orcid: "https://orcid.org/0000-0003-1796-8707"
   - given-names: Anton
     family-names: Andreev
+    orcid: "https://orcid.org/0000-0002-4466-4525"
   - given-names: Gregoire
     family-names: Cattan
+    orcid: "https://orcid.org/0000-0002-7515-0690"
+  - given-names: Bruno
+    family-names: Aristimunha
+    orcid: "https://orcid.org/0000-0001-5258-2995"
 doi: 10.5281/zenodo.593816
 url: "https://doi.org/10.5281/zenodo.593816"
 repository-code: "https://github.com/pyRiemann/pyRiemann"
