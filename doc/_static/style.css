@@ -222,21 +222,41 @@ dd {
 /* ============================================================================
    Gallery
    ============================================================================ */
+.sphx-glr-thumbnails {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+    gap: 16px;
+}
+
 .sphx-glr-thumbcontainer {
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
     background: white;
+    width: 100% !important;
+    max-width: none !important;
+    float: none !important;
+    margin: 0 !important;
+}
+
+/* Avoid oversized cards on sections that have a single example. */
+.sphx-glr-thumbnails > .sphx-glr-thumbcontainer:only-child {
+    justify-self: start;
+    width: min(100%, 460px) !important;
+}
+
+.sphx-glr-thumbcontainer img {
+    max-width: 100% !important;
+    max-height: none !important;
+    width: 100%;
+    height: auto;
+    transition: transform 0.3s ease;
 }
 
 .sphx-glr-thumbcontainer:hover {
     transform: translateY(-8px);
     box-shadow: 0 8px 24px rgba(46, 90, 138, 0.2);
-}
-
-.sphx-glr-thumbcontainer img {
-    transition: transform 0.3s ease;
 }
 
 .sphx-glr-thumbcontainer:hover img {
@@ -300,8 +320,13 @@ footer {
    Expand content when right TOC is hidden (API pages with :hide-toc:)
    ============================================================================ */
 .page:has(.toc-drawer.no-toc) .content {
-    width: auto;
+    width: 100%;
     max-width: 70em;
+}
+
+/* Use full width on gallery index pages so thumbnail grids can expand. */
+.page:has(.toc-drawer.no-toc) .content:has(.sphx-glr-thumbnails) {
+    max-width: none;
 }
 
 /* ============================================================================

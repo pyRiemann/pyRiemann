@@ -392,4 +392,4 @@ intersphinx_mapping = {
 
 
 def setup(app):
-    app.add_css_file('style.css')
+    app.add_css_file('style.css', priority=900)
