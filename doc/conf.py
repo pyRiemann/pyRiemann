@@ -29,6 +29,7 @@ curdir = os.path.dirname(__file__)
 sys.path.append(os.path.abspath(os.path.join(curdir, 'sphinxext')))
 
 matplotlib.use('Agg')
+mne.viz.set_browser_backend('matplotlib')
 
 from sphinx_gallery.sorting import ExplicitOrder
 
@@ -202,14 +203,20 @@ html_theme = 'furo'
 
 html_theme_options = {
     "light_css_variables": {
-        "color-brand-primary": "#4c72b0",
-        "color-brand-content": "#4c72b0",
-        "color-admonition-background": "rgba(76, 114, 176, 0.1)",
+        "color-brand-primary": "#2e5a8a",
+        "color-brand-content": "#2e5a8a",
+        "color-highlight-on-target": "rgba(212, 168, 44, 0.15)",
+        "color-admonition-background": "rgba(46, 90, 138, 0.1)",
+        "color-admonition-title--note": "#d4a82c",
+        "color-admonition-title-background--note": "rgba(212, 168, 44, 0.15)",
     },
     "dark_css_variables": {
-        "color-brand-primary": "#7eb0d5",
-        "color-brand-content": "#7eb0d5",
-        "color-admonition-background": "rgba(126, 176, 213, 0.1)",
+        "color-brand-primary": "#e8c840",
+        "color-brand-content": "#e8c840",
+        "color-highlight-on-target": "rgba(232, 200, 64, 0.15)",
+        "color-admonition-background": "rgba(232, 200, 64, 0.1)",
+        "color-admonition-title--note": "#e8c840",
+        "color-admonition-title-background--note": "rgba(232, 200, 64, 0.15)",
     },
     "sidebar_hide_name": False,
     "navigation_with_keys": True,

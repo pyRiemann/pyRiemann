@@ -7,10 +7,11 @@
    Color Palette
    ============================================================================ */
 :root {
-    --pyriemann-blue: #4c72b0;
-    --pyriemann-light-blue: #7eb0d5;
+    --pyriemann-blue: #2e5a8a;
+    --pyriemann-gold: #d4a82c;
+    --pyriemann-light-blue: #5a8abb;
     --pyriemann-teal: #16a085;
-    --pyriemann-dark: #2c3e50;
+    --pyriemann-dark: #1e3a5c;
     --pyriemann-light: #ecf0f1;
     --success-green: #27ae60;
     --warning-orange: #e67e22;
@@ -35,7 +36,7 @@ h1, h2, h3, h4, h5, h6 {
 h1 {
     font-size: 2.5rem !important;
     padding-bottom: 0.3em;
-    border-bottom: 3px solid var(--pyriemann-light-blue);
+    border-bottom: 3px solid var(--pyriemann-gold);
 }
 
 h2 {
@@ -59,7 +60,7 @@ code {
     border-radius: 4px;
     font-family: "Consolas", "Monaco", "Courier New", monospace;
     font-size: 0.9em;
-    border: 1px solid rgba(76, 114, 176, 0.1);
+    border: 1px solid rgba(46, 90, 138, 0.1);
 }
 
 pre {
@@ -76,7 +77,7 @@ pre {
 }
 
 pre:hover {
-    box-shadow: 0 4px 16px rgba(76, 114, 176, 0.15);
+    box-shadow: 0 4px 16px rgba(46, 90, 138, 0.15);
 }
 
 pre code {
@@ -123,8 +124,8 @@ a.reference.external::after {
 }
 
 .admonition.note {
-    background: linear-gradient(135deg, #e3f2fd 0%, #f5f9ff 100%);
-    border-left-color: var(--pyriemann-blue);
+    background: linear-gradient(135deg, #fdf8e8 0%, #fffdf5 100%);
+    border-left-color: var(--pyriemann-gold);
 }
 
 .admonition.warning {
@@ -157,7 +158,7 @@ table {
 
 thead {
     background: linear-gradient(135deg, var(--pyriemann-blue), var(--pyriemann-light-blue));
-    color: white;
+    color: #fff;
 }
 
 thead th {
@@ -175,7 +176,7 @@ tbody tr {
 }
 
 tbody tr:hover {
-    background-color: rgba(76, 114, 176, 0.05);
+    background-color: rgba(46, 90, 138, 0.05);
 }
 
 tbody td {
@@ -231,7 +232,7 @@ dd {
 
 .sphx-glr-thumbcontainer:hover {
     transform: translateY(-8px);
-    box-shadow: 0 8px 24px rgba(76, 114, 176, 0.2);
+    box-shadow: 0 8px 24px rgba(46, 90, 138, 0.2);
 }
 
 .sphx-glr-thumbcontainer img {
@@ -269,14 +270,14 @@ input[type="search"], input[type="text"] {
 input[type="search"]:focus, input[type="text"]:focus {
     border-color: var(--pyriemann-blue);
     outline: none;
-    box-shadow: 0 0 0 3px rgba(76, 114, 176, 0.1);
+    box-shadow: 0 0 0 3px rgba(46, 90, 138, 0.1);
 }
 
 /* ============================================================================
    Blockquotes
    ============================================================================ */
 blockquote {
-    border-left: 4px solid var(--pyriemann-light-blue);
+    border-left: 4px solid var(--pyriemann-gold);
     padding: 1em 1.5em;
     margin: 1.5em 0;
     background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
@@ -346,7 +347,7 @@ footer {
    Accessibility
    ============================================================================ */
 :focus {
-    outline: 3px solid var(--pyriemann-light-blue);
+    outline: 3px solid var(--pyriemann-gold);
     outline-offset: 2px;
 }
 
@@ -419,7 +420,7 @@ html {
 }
 
 .api-card:focus {
-    outline: 3px solid var(--pyriemann-light-blue);
+    outline: 3px solid var(--pyriemann-gold);
     outline-offset: 2px;
 }
 
@@ -454,7 +455,7 @@ html {
 }
 
 .card-module .api-card-icon {
-    background: rgba(76, 114, 176, 0.12);
+    background: rgba(46, 90, 138, 0.12);
     color: var(--pyriemann-blue);
 }
 
@@ -483,7 +484,7 @@ html {
 }
 
 .tag-module {
-    background: rgba(76, 114, 176, 0.12);
+    background: rgba(46, 90, 138, 0.12);
     color: var(--pyriemann-blue);
 }
 
@@ -537,7 +538,7 @@ html {
 }
 
 [data-theme="dark"] .api-card.card-module:hover {
-    border-color: var(--pyriemann-light-blue);
+    border-color: var(--pyriemann-gold);
 }
 
 [data-theme="dark"] .api-card.card-utils:hover {
