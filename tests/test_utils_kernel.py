@@ -13,7 +13,7 @@ from pyriemann.utils.kernel import (
     kernel_logeuclid,
     kernel_riemann,
 )
-from pyriemann.utils.mean import mean_covariance
+from pyriemann.utils.mean import gmean
 from pyriemann.utils.test import is_sym_pos_semi_def as is_spsd
 
 metrics = ["euclid", "logeuclid", "riemann"]
@@ -91,7 +91,7 @@ def test_kernel_cref(n_channels, metric, get_mats):
     elif metric == "logeuclid":
         Cref = np.eye(n_channels)
     elif metric == "riemann":
-        Cref = mean_covariance(X)
+        Cref = gmean(X)
     K1 = kernel(X, Y, Cref=Cref, metric=metric)
     assert_array_equal(K, K1)
 

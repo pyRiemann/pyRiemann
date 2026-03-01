@@ -15,9 +15,9 @@ from ._base import SpdClassifMixin, SpdTransfMixin
 from .tangentspace import FGDA, TangentSpace
 from .utils.base import logm
 from .utils.kernel import kernel
-from .utils.mean import mean_covariance
+from .utils.mean import gmean
 from .utils.distance import distance
-from .utils.utils import check_metric
+from .utils.utils import check_metric, check_param_in_func
 
 
 def _mode_1d(X):
@@ -47,8 +47,7 @@ class MDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     ----------
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.mean_covariance`) and
-        for distance estimation
+        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
         (see :func:`pyriemann.utils.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
@@ -112,17 +111,18 @@ class MDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         self : MDM instance
             The MDM instance.
         """
-        self.metric_mean, self.metric_dist = check_metric(self.metric)
+        self._metric_mean, self._metric_dist = check_metric(self.metric)
         self.classes_ = np.unique(y)
 
         if sample_weight is None:
             sample_weight = np.ones(X.shape[0])
 
         self.covmeans_ = Parallel(n_jobs=self.n_jobs)(
-            delayed(mean_covariance)(
-                X[y == c], metric=self.metric_mean, sample_weight=sample_weight[y == c]
-            )
-            for c in self.classes_
+            delayed(gmean)(
+                X[y == c],
+                metric=self._metric_mean,
+                sample_weight=sample_weight[y == c]
+            ) for c in self.classes_
         )
 
         self.covmeans_ = np.stack(self.covmeans_, axis=0)
@@ -133,7 +133,7 @@ class MDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         """Helper to predict the distance. Equivalent to transform."""
 
         dist = Parallel(n_jobs=self.n_jobs)(
-            delayed(distance)(X, covmean, self.metric_dist)
+            delayed(distance)(X, covmean, self._metric_dist)
             for covmean in self.covmeans_
         )
 
@@ -200,7 +200,7 @@ class FgMDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     ----------
     metric : string | dict, default="riemann"
         Metric used for reference matrix estimation (for the list of supported
-        metrics, see :func:`pyriemann.utils.mean.mean_covariance`),
+        metrics, see :func:`pyriemann.utils.mean.gmean`),
         for distance estimation (see :func:`pyriemann.utils.distance.distance`)
         and for tangent space map
         (see :func:`pyriemann.utils.tangent_space.tangent_space`).
@@ -335,8 +335,7 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
     metric : string | dict, default="riemann"
         The type of metric used
         for reference matrix estimation (for the list of supported metrics
-        see :func:`pyriemann.utils.mean.mean_covariance`) and
-        for tangent space map
+        see :func:`pyriemann.utils.mean.gmean`) and for tangent space map
         (see :func:`pyriemann.utils.tangent_space.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
@@ -360,6 +359,8 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.2.4
+    .. versionchanged:: 0.8
+        Rename TSclassifier into TSClassifier.
 
     References
     ----------
@@ -399,11 +400,11 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
 
         ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
         self._pipe = make_pipeline(ts, self.clf)
-        sample_weight_dict = {}
-        for step in self._pipe.steps:
-            step_name = step[0]
-            sample_weight_dict[step_name + "__sample_weight"] = sample_weight
-        self._pipe.fit(X, y, **sample_weight_dict)
+        param_weight = {}
+        for (step_name, step_estimator) in self._pipe.steps:
+            if check_param_in_func("sample_weight", step_estimator.fit):
+                param_weight[step_name + "__sample_weight"] = sample_weight
+        self._pipe.fit(X, y, **param_weight)
         return self
 
     def predict(self, X):
@@ -451,8 +452,7 @@ class KNearestNeighbor(MDM):
         Number of neighbors.
     metric : string | dict, default="riemann"
         Metric used for means estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.mean_covariance`) and
-        for distance estimation
+        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
         (see :func:`pyriemann.utils.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
@@ -502,7 +502,7 @@ class KNearestNeighbor(MDM):
         self : NearestNeighbor instance
             The NearestNeighbor instance.
         """
-        self.metric_mean, self.metric_dist = check_metric(self.metric)
+        self._metric_mean, self._metric_dist = check_metric(self.metric)
         self.covmeans_ = X
         self.classmeans_ = y
         self.classes_ = np.unique(y)
@@ -707,7 +707,7 @@ class SVC(sklearnSVC):
 
     def _set_cref(self, X):
         if self.Cref is None:
-            self.Cref_ = mean_covariance(X, metric=self.metric)
+            self.Cref_ = gmean(X, metric=self.metric)
         elif callable(self.Cref):
             self.Cref_ = self.Cref(X)
         elif isinstance(self.Cref, np.ndarray):
@@ -833,7 +833,7 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         )
         for ic, c in enumerate(self.classes_):
             covmeans_ = Parallel(n_jobs=self.n_jobs)(
-                delayed(mean_covariance)(
+                delayed(gmean)(
                     X[y == c],
                     p,
                     metric="power",
@@ -966,8 +966,8 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
 
     Parameters
     ----------
-    metric : string, default="logeuclid"
-        Current implementation is available only for log-Euclidean distance.
+    metric : {"euclid", "logeuclid"}, default="logeuclid"
+        Metric used for mean estimation and distance.
     n_jobs : int, default=1
         Number of jobs to use for the computation.
         If -1 all CPUs are used. If 1 is given, no parallel computing code is
@@ -993,6 +993,8 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.10
+    .. versionchanged:: 0.11
+        Add support for Euclidean metric.
 
     References
     ----------
@@ -1026,7 +1028,7 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         self : NearestConvexHull instance
             The NearestConvexHull instance.
         """
-        if self.metric != "logeuclid":
+        if self.metric not in ["euclid", "logeuclid"]:
             raise ValueError(f"NCH does not support metric {self.metric}")
 
         self.mats_ = X
@@ -1066,13 +1068,15 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         n_matrices_A, _, _ = A.shape
         n_matrices_B, _, _ = B.shape
 
-        A_, B_ = logm(A), logm(B)
+        if self.metric == "euclid":
+            A_, B_ = A, B
+        elif self.metric == "logeuclid":
+            A_, B_ = logm(A), logm(B)
 
         D1 = np.zeros((n_matrices_A, n_matrices_A))
         for i in range(n_matrices_A):
             for j in range(i, n_matrices_A):
-                D1[i, j] = np.trace(A_[i] @ A_[j])
-                D1[j, i] = D1[i, j]
+                D1[i, j] = D1[j, i] = np.trace(A_[i] @ A_[j])
 
         D2 = np.zeros((n_matrices_B, n_matrices_A))
         for i in range(n_matrices_B):
@@ -1082,7 +1086,7 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         dist = np.zeros((n_matrices_B, 1))
         for i in range(n_matrices_B):
             weights = self._find_weights_to_convex_hull(D1, D2[i])
-            H = mean_covariance(A, metric=self.metric, sample_weight=weights)
+            H = gmean(A, metric=self.metric, sample_weight=weights)
             dist[i] = distance(H, B[i], metric=self.metric)
 
         return dist
@@ -1218,8 +1222,7 @@ def class_distinctiveness(X, y, exponent=1, metric="riemann", return_num_denom=F
           within the classes.
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.mean_covariance`) and
-        for distance estimation
+        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
         (see :func:`pyriemann.utils.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
@@ -1255,14 +1258,16 @@ def class_distinctiveness(X, y, exponent=1, metric="riemann", return_num_denom=F
     if len(classes) <= 1:
         raise ValueError("y must contain at least two classes")
 
-    means = np.array([mean_covariance(X[y == c], metric=metric_mean) for c in classes])
+    means = np.array([
+        gmean(X[y == c], metric=metric_mean) for c in classes
+    ])
 
     if len(classes) == 2:
         num = distance(means[0], means[1], metric=metric_dist) ** exponent
         denom = 0.5 * _get_within(X, y, means, classes, exponent, metric_dist)
 
     else:
-        mean_all = mean_covariance(means, metric=metric_mean)
+        mean_all = gmean(means, metric=metric_mean)
         dists_between = [
             distance(m, mean_all, metric=metric_dist) ** exponent for m in means
         ]

@@ -6,7 +6,7 @@ import numpy as np
 from sklearn.model_selection import cross_val_score
 
 from .utils.distance import distance, pairwise_distance
-from .utils.mean import mean_covariance
+from .utils.mean import gmean
 from .utils.utils import check_metric
 from .classification import MDM
 
@@ -262,7 +262,7 @@ class PermutationDistance(BasePermutation):
         0.05 p-value.
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.mean_covariance`) and
+        see :func:`pyriemann.utils.mean.gmean`) and
         for distance estimation
         (see :func:`pyriemann.utils.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
@@ -352,11 +352,14 @@ class PermutationDistance(BasePermutation):
     def __init_transform(self, X):
         """Init tr"""
         self.mdm = MDM(metric=self.metric, n_jobs=self.n_jobs)
-        self.mdm.metric_mean, self.mdm.metric_dist = check_metric(self.metric)
+        self.mdm._metric_mean, self.mdm._metric_dist = \
+            check_metric(self.metric)
         if self.mode == "ftest":
-            self.global_mean = mean_covariance(X, metric=self.mdm.metric_mean)
+            self.global_mean = gmean(X, metric=self.mdm._metric_mean)
         elif self.mode == "pairwise":
-            X = pairwise_distance(X, metric=self.mdm.metric_dist, squared=True)
+            X = pairwise_distance(
+                X, metric=self.mdm._metric_dist, squared=True
+            )
         return X
 
     def _score_ftest(self, X, y):
@@ -371,7 +374,7 @@ class PermutationDistance(BasePermutation):
             di = distance(
                 covmeans[ix],
                 self.global_mean,
-                metric=mdm.metric_dist,
+                metric=mdm._metric_dist,
                 squared=True,
             )
             between += np.sum(y == classe) * di
@@ -383,7 +386,7 @@ class PermutationDistance(BasePermutation):
             within += distance(
                 X[y == classe],
                 covmeans[ix],
-                metric=mdm.metric_dist,
+                metric=mdm._metric_dist,
                 squared=True,
             ).sum()
         within /= len(y) - n_classes
@@ -398,7 +401,7 @@ class PermutationDistance(BasePermutation):
 
         # estimates distances between means
         n_classes = len(covmeans)
-        pairs = pairwise_distance(covmeans, metric=mdm.metric_dist)
+        pairs = pairwise_distance(covmeans, metric=mdm._metric_dist)
         mean_dist = np.triu(pairs).sum()
         mean_dist /= (n_classes * (n_classes - 1)) / 2.0
 
@@ -407,7 +410,7 @@ class PermutationDistance(BasePermutation):
             di = distance(
                 X[y == classe],
                 covmeans[ix],
-                metric=mdm.metric_dist,
+                metric=mdm._metric_dist,
                 squared=True,
             ).mean()
             dist += di / np.sum(y == classe)

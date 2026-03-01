@@ -28,6 +28,7 @@ from pyriemann.utils.tangentspace import (
     transport_logeuclid,
     transport_riemann,
 )
+from pyriemann.utils.test import is_hermitian
 
 metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
 
@@ -196,34 +197,30 @@ def test_transport_ndarray(ftransport, get_mats):
     assert X_tr.shape == X_4d.shape
 
 
-@pytest.mark.parametrize(
-    "ftransport",
-    [
-        transport_logchol,
-        transport_logeuclid,
-        transport_riemann,
-    ],
-)
-def test_transport_properties(ftransport, get_mats):
+@pytest.mark.parametrize("kindX, kindAB", [("sym", "spd"), ("herm", "hpd")])
+@pytest.mark.parametrize("ftransport", [
+    transport_logchol,
+    transport_logeuclid,
+    transport_riemann,
+])
+def test_transport_properties(kindX, kindAB, ftransport, get_mats):
     n_matrices, n_channels = 10, 3
-    X = get_mats(n_matrices, n_channels, "sym")
-    A, B = get_mats(2, n_channels, "spd")
+    X = get_mats(n_matrices, n_channels, kindX)
+    A, B = get_mats(2, n_channels, kindAB)
 
     # trivial transport
     assert ftransport(X, A, A) == approx(X)
 
+    # keep symmetry
+    assert is_hermitian(ftransport(X, A, B))
+
     # reversibility
     assert ftransport(ftransport(X, A, B), B, A) == approx(X)
 
-
-def test_transport_riemann_property_linearity(get_mats):
-    n_matrices, n_channels = 7, 4
-    X = get_mats(n_matrices, n_channels, "sym")
-    Y = get_mats(n_matrices, n_channels, "sym")
-    A, B = get_mats(2, n_channels, "spd")
-
-    Xt, Yt = transport_riemann(X, A, B), transport_riemann(Y, A, B)
-    assert transport_riemann(X + Y, A, B) == approx(Xt + Yt)
+    # linearity
+    Y = get_mats(n_matrices, n_channels, kindX)
+    Xt, Yt = ftransport(X, A, B), ftransport(Y, A, B)
+    assert ftransport(X + Y, A, B) == approx(Xt + Yt)
 
 
 def test_transport_riemann_vs_whitening(get_mats):

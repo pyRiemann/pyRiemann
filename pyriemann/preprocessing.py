@@ -6,7 +6,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 
 from .utils.base import sqrtm, invsqrtm
 from .utils.geodesic import geodesic
-from .utils.mean import mean_covariance
+from .utils.mean import gmean
 
 
 class Whitening(TransformerMixin, BaseEstimator):
@@ -21,7 +21,7 @@ class Whitening(TransformerMixin, BaseEstimator):
         Metric for the estimation of mean matrix used for whitening and
         dimension reduction.
         For the list of supported metrics,
-        see :func:`pyriemann.utils.mean.mean_covariance`.
+        see :func:`pyriemann.utils.mean.gmean`.
     dim_red : None | dict, default=None
         If ``None`` :
             no dimension reduction during whitening.
@@ -85,7 +85,11 @@ class Whitening(TransformerMixin, BaseEstimator):
             The Whitening instance.
         """
         # weighted mean of input matrices
-        self._mean = mean_covariance(X, metric=self.metric, sample_weight=sample_weight)
+        self._mean = gmean(
+            X,
+            metric=self.metric,
+            sample_weight=sample_weight
+        )
 
         # whitening without dimension reduction
         if self.dim_red is None:
@@ -213,7 +217,7 @@ class Whitening(TransformerMixin, BaseEstimator):
             return self
 
         if not hasattr(self, "_mean"):
-            self._mean = mean_covariance(
+            self._mean = gmean(
                 X,
                 metric=self.metric,
                 sample_weight=sample_weight,
@@ -225,7 +229,7 @@ class Whitening(TransformerMixin, BaseEstimator):
                 " got %d." % (self._mean.shape[-1], n_channels)
             )
         else:
-            Xm = mean_covariance(
+            Xm = gmean(
                 X,
                 metric=self.metric,
                 sample_weight=sample_weight,

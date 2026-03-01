@@ -14,8 +14,8 @@ from ..preprocessing import Whitening
 from ..utils.base import invsqrtm, powm, sqrtm
 from ..utils.distance import distance
 from ..utils.geodesic import geodesic
-from ..utils.mean import mean_covariance, mean_riemann
-from ..utils.utils import check_weights, check_metric
+from ..utils.mean import gmean
+from ..utils.utils import check_weights, check_metric, check_param_in_func
 
 
 ###############################################################################
@@ -121,7 +121,7 @@ class TLCenter(TransformerMixin, BaseEstimator):
     metric : str, default="riemann"
         For inputs in manifold,
         metric used for mean estimation. For the list of supported metrics,
-        see :func:`pyriemann.utils.mean.mean_covariance`.
+        see :func:`pyriemann.utils.mean.gmean`.
         Note, however, that only when using the "riemann" metric that we are
         ensured to re-center the matrices precisely to the identity.
 
@@ -385,7 +385,9 @@ class TLScale(TransformerMixin, BaseEstimator):
                 if self.centered_data:
                     self._means[d] = np.eye(X.shape[-1])
                 else:
-                    self._means[d] = mean_riemann(X[idx], sample_weight=sample_weight_d)
+                    self._means[d] = gmean(
+                        X[idx], sample_weight=sample_weight_d, metric="riemann"
+                    )
                 dist = distance(
                     X[idx],
                     self._means[d],
@@ -658,31 +660,27 @@ class TLRotate(TransformerMixin, BaseEstimator):
         """
         idx = domains == self.target_domain
         X_target, y_target = X[idx], y_enc[idx]
-        M_target = np.stack(
-            [
-                mean_riemann(
-                    X_target[y_target == label],
-                    sample_weight=sample_weight[idx][y_target == label],
-                )
-                for label in np.unique(y_target)
-            ]
-        )
+        M_target = np.stack([
+            gmean(
+                X_target[y_target == label],
+                sample_weight=sample_weight[idx][y_target == label],
+                metric="riemann"
+            ) for label in np.unique(y_target)
+        ])
 
         source_domains = np.unique(domains)
         source_domains = source_domains[source_domains != self.target_domain]
         rotations = Parallel(n_jobs=self.n_jobs)(
             delayed(_get_rotation_manifold)(
-                np.stack(
-                    [
-                        mean_riemann(
-                            X[domains == d][y_enc[domains == d] == label],
-                            sample_weight=sample_weight[domains == d][
-                                y_enc[domains == d] == label
-                            ],
-                        )
-                        for label in np.unique(y_enc[domains == d])
-                    ]
-                ),
+                np.stack([
+                    gmean(
+                        X[domains == d][y_enc[domains == d] == label],
+                        sample_weight=sample_weight[domains == d][
+                            y_enc[domains == d] == label
+                        ],
+                        metric="riemann"
+                    ) for label in np.unique(y_enc[domains == d])
+                ]),
                 M_target,
                 weights=self.weights,
                 metric=self.metric,
@@ -925,13 +923,16 @@ class TLEstimator(BaseEstimator):
             weights = None
 
         if isinstance(self.estimator, Pipeline):
-            sample_weight = {}
-            for step in self.estimator.steps:
-                step_name = step[0]
-                sample_weight[step_name + "__sample_weight"] = weights
-            self.estimator.fit(X_dec, y_dec, **sample_weight)
+            param_weight = {}
+            for (step_name, step_estimator) in self.estimator.steps:
+                if check_param_in_func("sample_weight", step_estimator.fit):
+                    param_weight[step_name + "__sample_weight"] = weights
+            self.estimator.fit(X_dec, y_dec, **param_weight)
         else:
-            self.estimator.fit(X_dec, y_dec, sample_weight=weights)
+            if check_param_in_func("sample_weight", self.estimator.fit):
+                self.estimator.fit(X_dec, y_dec, sample_weight=weights)
+            else:
+                self.estimator.fit(X_dec, y_dec)
 
         self._is_fitted = True
         return self
@@ -1135,8 +1136,7 @@ class MDWM(MDM):
         Name of the target domain in extended labels.
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.mean_covariance`) and
-        for distance estimation
+        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
         (see :func:`pyriemann.utils.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
@@ -1210,7 +1210,7 @@ class MDWM(MDM):
         self : MDWM instance
             The MDWM instance.
         """
-        self.metric_mean, self.metric_dist = check_metric(self.metric)
+        self._metric_mean, self._metric_dist = check_metric(self.metric)
 
         if not 0 <= self.domain_tradeoff <= 1:
             raise ValueError(
@@ -1237,9 +1237,9 @@ class MDWM(MDM):
 
         self.source_means_ = np.stack(
             Parallel(n_jobs=self.n_jobs)(
-                delayed(mean_covariance)(
+                delayed(gmean)(
                     X_src[y_src == c],
-                    metric=self.metric_mean,
+                    metric=self._metric_mean,
                     sample_weight=sample_weight[y_src == c],
                 )
                 for c in self.classes_
@@ -1248,11 +1248,10 @@ class MDWM(MDM):
 
         self.target_means_ = np.stack(
             Parallel(n_jobs=self.n_jobs)(
-                delayed(mean_covariance)(
+                delayed(gmean)(
                     X_tgt[y_tgt == c],
-                    metric=self.metric_mean,
-                )
-                for c in self.classes_
+                    metric=self._metric_mean,
+                ) for c in self.classes_
             )
         )
 
@@ -1260,7 +1259,7 @@ class MDWM(MDM):
             self.source_means_,
             self.target_means_,
             self.domain_tradeoff,
-            metric=self.metric_mean,
+            metric=self._metric_mean,
         )
 
         return self

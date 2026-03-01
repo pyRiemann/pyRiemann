@@ -16,3 +16,4 @@
 *.egg-info/
 .vscode/
 sandbox/
+pyriemann_data/

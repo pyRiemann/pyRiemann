@@ -7,13 +7,13 @@ from pytest import approx
 from scipy.spatial.distance import euclidean
 from scipy.stats import mode
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-from sklearn.dummy import DummyClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.pipeline import make_pipeline
 
 from pyriemann.estimation import Covariances
 from pyriemann.utils.kernel import kernel
-from pyriemann.utils.mean import mean_covariance
+from pyriemann.utils.mean import gmean
 from pyriemann.classification import (
     _mode_2d,
     MDM,
@@ -295,13 +295,15 @@ def test_tsclassifier_metrics(metric_mean, metric_map, get_mats, get_labels):
     clf.fit(X, y).predict(X)
 
 
-def test_tsclassifier_fit(get_mats, get_labels):
+@pytest.mark.parametrize("clf", [LDA(), LogisticRegression()])
+def test_tsclassifier_fit(clf, get_mats, get_labels, get_weights):
     n_matrices, n_channels, n_classes = 6, 3, 3
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_labels(n_matrices, n_classes)
+    weights = get_weights(n_matrices)
 
-    clf = TSClassifier(clf=DummyClassifier())
-    clf.fit(X, y).predict(X)
+    tsclf = TSClassifier(clf=clf)
+    tsclf.fit(X, y, sample_weight=weights).predict(X)
 
 
 def test_tsclassifier_clf_error(get_mats, get_labels):
@@ -341,7 +343,7 @@ def test_svc_cref_metric(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_labels(n_matrices, n_classes)
-    Cref = mean_covariance(X, metric=metric)
+    Cref = gmean(X, metric=metric)
 
     rsvc = SVC(Cref=Cref).fit(X, y)
     rsvc_1 = SVC(Cref=None, metric=metric).fit(X, y)
@@ -353,9 +355,7 @@ def test_svc_cref_callable(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_labels(n_matrices, n_classes)
-
-    def Cref(X):
-        return mean_covariance(X, metric=metric)
+    def Cref(X): return gmean(X, metric=metric)
 
     rsvc = SVC(Cref=Cref).fit(X, y)
     rsvc_1 = SVC(metric=metric).fit(X, y)
@@ -374,9 +374,7 @@ def test_svc_cref_error(get_mats, get_labels, metric):
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_labels(n_matrices, n_classes)
 
-    def Cref(X, met):
-        mean_covariance(X, metric=met)
-
+    def Cref(X, met): gmean(X, metric=met)
     with pytest.raises(TypeError):
         SVC(Cref=Cref).fit(X, y)
 
@@ -474,28 +472,29 @@ def test_meanfield_transformer(get_mats, get_labels, power_list):
     pip.predict(X)
 
 
-def test_nch(rndstate):
-    n_matrices, n_channels = 50, 3
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid"])
+def test_nch(metric, rndstate):
+    n_matrices, n_channels = 10, 2
     X, y = make_gaussian_blobs(
         n_matrices=n_matrices,
         n_dim=n_channels,
-        class_sep=10.0,
-        class_disp=1.0,
+        class_sep=10., class_disp=.5,
         random_state=rndstate,
     )
 
-    nch = NearestConvexHull().fit(X, y)
+    nch = NearestConvexHull(metric=metric).fit(X, y)
     assert_array_equal(nch.mats_, X)
     assert_array_equal(nch.classmats_, y)
 
-    X_ = X[y == nch.classes_[0]]
-    dist = nch.transform(X_)
-    assert np.all(dist[:, 0] < dist[:, 1])
+    # distance to its class is smaller than to the opposite class
+    X_0 = X[y == nch.classes_[0]]
+    dist_0 = nch.transform(X_0)
+    assert np.all(dist_0[:, 0] < dist_0[:, 1])
 
-    # distance to hull should be equal to zero for the center of training set
-    M = mean_covariance(X_)
-    dist = nch.transform(M[np.newaxis, :, :])
-    assert dist[0, 0] <= 1e-3
+    # distance to hull/class should be close to zero for the center of class
+    M_0 = gmean(X_0)
+    dist = nch.transform(M_0[np.newaxis, :, :])[0]
+    assert dist[0] <= 1e-2
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])

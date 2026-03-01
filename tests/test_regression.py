@@ -9,7 +9,7 @@ from sklearn.pipeline import make_pipeline
 from pyriemann.estimation import Covariances
 from pyriemann.regression import SVR, KNearestNeighborRegressor
 from pyriemann.utils.kernel import kernel
-from pyriemann.utils.mean import mean_covariance
+from pyriemann.utils.mean import gmean
 
 regress = [SVR, KNearestNeighborRegressor]
 
@@ -169,7 +169,7 @@ def test_svr_cref_metric(get_mats, get_targets, metric):
     n_matrices, n_channels = 6, 3
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_targets(n_matrices)
-    Cref = mean_covariance(X, metric=metric)
+    Cref = gmean(X, metric=metric)
 
     rsvc = SVR(Cref=Cref).fit(X, y)
     rsvc_1 = SVR(Cref=None, metric=metric).fit(X, y)
@@ -181,9 +181,7 @@ def test_svc_cref_callable(get_mats, get_targets, metric):
     n_matrices, n_channels = 6, 3
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_targets(n_matrices)
-
-    def Cref(X):
-        return mean_covariance(X, metric=metric)
+    def Cref(X): return gmean(X, metric=metric)
 
     rsvc = SVR(Cref=Cref).fit(X, y)
     rsvc_1 = SVR(metric=metric).fit(X, y)
@@ -201,9 +199,7 @@ def test_svc_cref_error(get_mats, get_targets, metric):
     n_matrices, n_channels = 6, 3
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_targets(n_matrices)
-
-    def Cref(X, met):
-        mean_covariance(X, metric=met)
+    def Cref(X, met): gmean(X, metric=met)
 
     with pytest.raises(TypeError):
         SVR(Cref=Cref).fit(X, y)

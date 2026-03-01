@@ -108,6 +108,11 @@ sphinx_gallery_conf = {
     "plot_gallery": "True",
 }
 
+# Control parallel execution based on cache state (for CI)
+_parallel_env = os.environ.get('SPHINX_GALLERY_PARALLEL', 'True')
+if _parallel_env.lower() in ('false', '0', 'no'):
+    sphinx_gallery_conf['parallel'] = False
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
 autodoc_default_options = {"inherited-members": True}

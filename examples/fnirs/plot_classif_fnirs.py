@@ -40,6 +40,7 @@ from pyriemann.estimation import (
     Shrinkage,
     ker_est_functions,
 )
+from pyriemann.utils._data import get_data_path
 from pyriemann.utils.covariance import cov_est_functions
 from pyriemann.utils._logging import logger
 
@@ -317,14 +318,17 @@ class HybridBlocks(TransformerMixin, BaseEstimator):
         return pd.DataFrame(data_dict)
 
 
-def download_fnirs(data_path):
+def download_fnirs(data_path=None):
     """Download the dataset.
 
     Parameters
     ----------
-    data_path : str
+    data_path : str | None, default=None
         Path to the destination folder for data download.
+        If None, defaults to ``get_data_path("fnirs")``.
     """
+    if data_path is None:
+        data_path = get_data_path("fnirs")
     filenames = ["X", "y"]
 
     if not os.path.exists(data_path):
@@ -343,8 +347,8 @@ def download_fnirs(data_path):
 # Download example data and plot
 # ------------------------------
 
-data_path = "./data"
-download_fnirs(data_path)
+download_fnirs()
+data_path = get_data_path("fnirs")
 X = np.load(os.path.join(data_path, "X.npy"))
 y = np.load(os.path.join(data_path, "y.npy"))
 

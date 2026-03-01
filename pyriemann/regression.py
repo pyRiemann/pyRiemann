@@ -10,7 +10,7 @@ from sklearn.utils.extmath import softmax
 
 from .utils.kernel import kernel
 from .classification import MDM
-from .utils.mean import mean_covariance
+from .utils.mean import gmean
 from .utils.utils import check_metric
 
 
@@ -134,7 +134,7 @@ class SVR(sklearnSVR):
 
     def _set_cref(self, X):
         if self.Cref is None:
-            self.Cref_ = mean_covariance(X, metric=self.metric)
+            self.Cref_ = gmean(X, metric=self.metric)
         elif callable(self.Cref):
             self.Cref_ = self.Cref(X)
         elif isinstance(self.Cref, np.ndarray):
@@ -181,8 +181,7 @@ class KNearestNeighborRegressor(RegressorMixin, MDM):
         Number of neighbors.
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.mean_covariance`) and
-        for distance estimation
+        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
         (see :func:`pyriemann.utils.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
@@ -222,7 +221,7 @@ class KNearestNeighborRegressor(RegressorMixin, MDM):
         self : KNearestNeighborRegressor instance
             The KNearestNeighborRegressor instance.
         """
-        self.metric_mean, self.metric_dist = check_metric(self.metric)
+        self._metric_mean, self._metric_dist = check_metric(self.metric)
         self.values_ = y
         self.covmeans_ = X
 

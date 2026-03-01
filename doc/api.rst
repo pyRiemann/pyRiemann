@@ -676,7 +676,7 @@ Means
 .. autosummary::
     :toctree: generated/
 
-    mean_covariance
+    gmean
     mean_ale
     mean_alm
     mean_chol
