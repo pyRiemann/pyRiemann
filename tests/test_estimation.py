@@ -24,7 +24,7 @@ from pyriemann.utils.test import (
     is_sym_pos_semi_def as is_spsd,
     is_herm_pos_def as is_hpd,
     is_herm_pos_semi_def as is_hpsd,
-    is_hankel,
+    is_hankel
 )
 
 estim = ["corr", "cov", "lwf", "mcd", "oas", "sch", "scm"]
@@ -69,35 +69,25 @@ def test_covariances_kwds(estimator, kwds, get_mats):
 
     Xt_none = Covariances(estimator=estimator).fit_transform(X)
     Xt_kwds = Covariances(estimator=estimator, **kwds).fit_transform(X)
-    assert_raises(AssertionError, assert_array_equal, Xt_none, Xt_kwds)
+    assert_raises(
+        AssertionError, assert_array_equal, Xt_none, Xt_kwds
+    )
 
 
 def test_time_delay_covariances_xtd():
-    X = np.array(
-        [
-            [[1, 2, 3, 4, 5], [11, 12, 13, 14, 15]],
-            [[-1, -2, -3, -4, -5], [-11, -12, -13, -14, -15]],
-        ]
-    )
+    X = np.array([
+        [[1, 2, 3, 4, 5], [11, 12, 13, 14, 15]],
+        [[-1, -2, -3, -4, -5], [-11, -12, -13, -14, -15]]
+    ])
 
     covest = TimeDelayCovariances(delays=[1])
     covest.fit_transform(X)
-    Xtd = np.array(
-        [
-            [
-                [1, 2, 3, 4, 5],
-                [11, 12, 13, 14, 15],
-                [5, 1, 2, 3, 4],
-                [15, 11, 12, 13, 14],
-            ],
-            [
-                [-1, -2, -3, -4, -5],
-                [-11, -12, -13, -14, -15],
-                [-5, -1, -2, -3, -4],
-                [-15, -11, -12, -13, -14],
-            ],
-        ]
-    )
+    Xtd = np.array([
+        [[1, 2, 3, 4, 5], [11, 12, 13, 14, 15],
+         [5, 1, 2, 3, 4], [15, 11, 12, 13, 14]],
+        [[-1, -2, -3, -4, -5], [-11, -12, -13, -14, -15],
+         [-5, -1, -2, -3, -4], [-15, -11, -12, -13, -14]]
+    ])
     assert_array_equal(covest.Xtd_, Xtd)
 
 
@@ -113,7 +103,8 @@ def test_time_delay_covariances(delays, get_mats):
         n_delays = delays
     elif isinstance(delays, list):
         n_delays = 1 + len(delays)
-    assert Xt.shape == (n_matrices, n_delays * n_channels, n_delays * n_channels)
+    assert Xt.shape == (n_matrices, n_delays * n_channels,
+                        n_delays * n_channels)
     assert covest.Xtd_.shape == (n_matrices, n_delays * n_channels, n_times)
     assert is_spd(Xt)
     assert not is_hankel(Xt[0])
@@ -133,7 +124,11 @@ def test_erp_covariances(estimator, svd, n_classes, get_mats, get_labels):
 
     covest = ERPCovariances(estimator=estimator, svd=svd)
     covmats = covest.fit(X, y).transform(X)
-    assert covest.get_params() == dict(classes=None, estimator=estimator, svd=svd)
+    assert covest.get_params() == dict(
+        classes=None,
+        estimator=estimator,
+        svd=svd
+    )
     if svd is None:
         protosize = n_classes * n_channels
         covsize = (1 + n_classes) * n_channels
@@ -158,7 +153,7 @@ def test_erp_covariances_classes(n_classes, get_mats, get_labels):
 
 
 def test_erp_covariances_svd_error(get_mats, get_labels):
-    """Assert error on param svd"""
+    """Assert error on param svd """
     n_classes, n_matrices, n_channels, n_times = 2, 4, 3, 10
     X = get_mats(n_matrices, [n_channels, n_times], "real")
     y = get_labels(n_matrices, n_classes)
@@ -174,7 +169,11 @@ def test_xdawn_covariances_est(est, xdawn_est, get_mats, get_labels):
     X = get_mats(n_matrices, [n_channels, n_times], "real")
     y = get_labels(n_matrices, n_classes)
 
-    covest = XdawnCovariances(nfilter, estimator=est, xdawn_estimator=xdawn_est)
+    covest = XdawnCovariances(
+        nfilter,
+        estimator=est,
+        xdawn_estimator=xdawn_est
+    )
     covmats = covest.fit(X, y).transform(X)
     assert covest.get_params() == dict(
         nfilter=nfilter,
@@ -195,9 +194,8 @@ def test_xdawn_covariances_est(est, xdawn_est, get_mats, get_labels):
 @pytest.mark.parametrize("nfilter", [2, 4, 6])
 @pytest.mark.parametrize("applyfilters", [True, False])
 @pytest.mark.parametrize("baseline", [True, False])
-def test_xdawn_covariances_filters(
-    n_classes, nfilter, applyfilters, baseline, get_mats, get_labels
-):
+def test_xdawn_covariances_filters(n_classes, nfilter, applyfilters, baseline,
+                                   get_mats, get_labels):
     n_matrices, n_channels, n_times = 3 * n_classes, 4, 128
     X = get_mats(n_matrices, [n_channels, n_times], "real")
     y = get_labels(n_matrices, n_classes)
@@ -315,7 +313,7 @@ def test_coherences(coh, get_mats):
         "rbf",
         "laplacian",
         "cosine",
-    ],
+    ]
 )
 def test_kernels(metric, get_mats):
     """Test Kernels"""
@@ -357,7 +355,9 @@ def test_kernels_kwds(metric, kwds, get_mats):
 
     kernels_none = Kernels(metric=metric).fit_transform(X)
     kernels_kwds = Kernels(metric=metric, **kwds).fit_transform(X)
-    assert_raises(AssertionError, assert_array_equal, kernels_none, kernels_kwds)
+    assert_raises(
+        AssertionError, assert_array_equal, kernels_none, kernels_kwds
+    )
 
 
 @pytest.mark.parametrize("shrinkage", [0.1, 0.9])
@@ -374,7 +374,10 @@ def test_shrinkage(shrinkage, kind, get_mats):
     assert Xt.shape == X.shape
     assert is_hpd(Xt)
 
-    assert_array_equal(shrunk_covariance(X[0].real, shrinkage), Xt[0].real)
+    assert_array_equal(
+        shrunk_covariance(X[0].real, shrinkage),
+        Xt[0].real
+    )
     assert_raises(AssertionError, assert_array_equal, X.real, Xt.real)
     assert_array_equal(X.imag, Xt.imag)
 

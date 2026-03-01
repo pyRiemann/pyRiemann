@@ -1,5 +1,4 @@
 """Tangent space functions."""
-
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
@@ -10,6 +9,7 @@ from .utils.utils import check_metric
 
 
 class TangentSpace(TransformerMixin, BaseEstimator):
+
     """Tangent space projection.
 
     Tangent space projection maps a set of SPD/HPD matrices to their
@@ -114,10 +114,8 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         if len(X.shape) == 2:
             n_channels = (np.sqrt(1 + 8 * shape_X[1]) - 1) / 2
             if n_channels != int(n_channels):
-                raise ValueError(
-                    "Shape of tangent space vector does not"
-                    " correspond to a square matrix."
-                )
+                raise ValueError("Shape of tangent space vector does not"
+                                 " correspond to a square matrix.")
             return int(n_channels)
         elif len(X.shape) == 3:
             if shape_X[1] != shape_X[2]:
@@ -212,6 +210,7 @@ class TangentSpace(TransformerMixin, BaseEstimator):
 
 
 class FGDA(TransformerMixin, BaseEstimator):
+
     """Fisher geodesic discriminant analysis.
 
     Fisher geodesic discriminant analysis (FGDA)

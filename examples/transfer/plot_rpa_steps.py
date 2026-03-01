@@ -28,8 +28,8 @@ X_enc, y_enc = make_classification_transfer(
     class_sep=2.0,
     class_disp=0.25,
     domain_sep=2.0,
-    theta=np.pi / 4,
-    random_state=seed,
+    theta=np.pi/4,
+    random_state=seed
 )
 
 # generate dataset
@@ -58,9 +58,9 @@ X_rot = rot.fit_transform(X_rct, y_enc)
 points = np.concatenate([X_org, X_rct, X_rot, np.eye(2)[None, :, :]])
 S = emb.fit_transform(points)
 S = S - S[-1]
-embedded_points["origin"] = S[: 4 * n_matrices]
-embedded_points["rct"] = S[4 * n_matrices : 8 * n_matrices]
-embedded_points["rot"] = S[8 * n_matrices : -1]
+embedded_points["origin"] = S[:4*n_matrices]
+embedded_points["rct"] = S[4*n_matrices:8*n_matrices]
+embedded_points["rot"] = S[8*n_matrices:-1]
 
 
 ###############################################################################
@@ -79,32 +79,22 @@ for axi, step, title in zip(ax, steps, titles):
     axi.scatter(
         S_source[y_source == "1"][:, 0],
         S_source[y_source == "1"][:, 1],
-        c="C0",
-        s=50,
-        alpha=0.50,
+        c="C0", s=50, alpha=0.50,
     )
     axi.scatter(
         S_source[y_source == "2"][:, 0],
         S_source[y_source == "2"][:, 1],
-        c="C1",
-        s=50,
-        alpha=0.50,
+        c="C1", s=50, alpha=0.50,
     )
     axi.scatter(
         S_target[y_target == "1"][:, 0],
         S_target[y_target == "1"][:, 1],
-        c="C0",
-        s=50,
-        alpha=0.30,
-        marker="^",
+        c="C0", s=50, alpha=0.30, marker="^",
     )
     axi.scatter(
         S_target[y_target == "2"][:, 0],
         S_target[y_target == "2"][:, 1],
-        c="C1",
-        s=50,
-        alpha=0.30,
-        marker="^",
+        c="C1", s=50, alpha=0.30, marker="^",
     )
     axi.scatter(S[-1, 0], S[-1, 1], c="k", s=80, marker="*")
     axi.set_xlim(-0.60, +1.60)

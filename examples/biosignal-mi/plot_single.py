@@ -29,7 +29,7 @@ from pyriemann.estimation import Covariances
 
 # avoid classification of evoked responses by using epochs that start 1s after
 # cue onset.
-tmin, tmax = 1.0, 2.0
+tmin, tmax = 1., 2.
 event_id = dict(hands=2, feet=3)
 subject = 7
 runs = [6, 10]  # motor imagery: hands vs feet
@@ -40,12 +40,13 @@ raw_files = [
 ]
 raw = concatenate_raws(raw_files)
 
-picks = pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
+picks = pick_types(
+    raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
 # subsample elecs
 picks = picks[::2]
 
 # Apply band-pass filter
-raw.filter(7.0, 35.0, method="iir", picks=picks)
+raw.filter(7., 35., method="iir", picks=picks)
 
 events, _ = events_from_annotations(raw, event_id=dict(T1=2, T2=3))
 
@@ -84,11 +85,9 @@ scores = cross_val_score(mdm, cov_data_train, labels, cv=cv, n_jobs=1)
 
 # Printing the results
 class_balance = np.mean(labels == labels[0])
-class_balance = max(class_balance, 1.0 - class_balance)
-print(
-    "MDM classification accuracy: %f / Chance level: %f"
-    % (np.mean(scores), class_balance)
-)
+class_balance = max(class_balance, 1. - class_balance)
+print("MDM classification accuracy: %f / Chance level: %f" % (np.mean(scores),
+                                                              class_balance))
 
 ###############################################################################
 # Classification with Tangent Space Logistic Regression
@@ -98,10 +97,8 @@ clf = TSClassifier()
 # Use scikit-learn Pipeline with cross_val_score function
 scores = cross_val_score(clf, cov_data_train, labels, cv=cv, n_jobs=1)
 
-print(
-    "Tangent space classification accuracy: %f / Chance level: %f"
-    % (np.mean(scores), class_balance)
-)
+print("Tangent space classification accuracy: %f / Chance level: %f" %
+      (np.mean(scores), class_balance))
 
 ###############################################################################
 # Classification with CSP + Logistic Regression
@@ -114,10 +111,8 @@ csp = CSP(n_components=4, reg="ledoit_wolf", log=True)
 clf = Pipeline([("CSP", csp), ("LogisticRegression", lr)])
 scores = cross_val_score(clf, epochs_data_train, labels, cv=cv, n_jobs=1)
 
-print(
-    "CSP + LogReg classification accuracy: %f / Chance level: %f"
-    % (np.mean(scores), class_balance)
-)
+print("CSP + LogReg classification accuracy: %f / Chance level: %f" %
+      (np.mean(scores), class_balance))
 
 ###############################################################################
 # Display MDM centroids
@@ -130,11 +125,13 @@ fig, axes = plt.subplots(1, 2, figsize=[8, 4])
 ch_names = [ch.replace(".", "") for ch in epochs.ch_names]
 
 df = pd.DataFrame(data=mdm.covmeans_[0], index=ch_names, columns=ch_names)
-g = sns.heatmap(df, ax=axes[0], square=True, cbar=False, xticklabels=2, yticklabels=2)
+g = sns.heatmap(
+    df, ax=axes[0], square=True, cbar=False, xticklabels=2, yticklabels=2)
 g.set_title("Mean covariance - hands")
 
 df = pd.DataFrame(data=mdm.covmeans_[1], index=ch_names, columns=ch_names)
-g = sns.heatmap(df, ax=axes[1], square=True, cbar=False, xticklabels=2, yticklabels=2)
+g = sns.heatmap(
+    df, ax=axes[1], square=True, cbar=False, xticklabels=2, yticklabels=2)
 plt.xticks(rotation="vertical")
 plt.yticks(rotation="horizontal")
 g.set_title("Mean covariance - feets")

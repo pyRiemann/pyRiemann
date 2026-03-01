@@ -31,13 +31,15 @@ from helpers.ssvep_helpers import download_data, extend_signal
 ###############################################################################
 
 clabel = ["resting-state", "13 Hz", "17 Hz", "21 Hz"]
-clist = plt.cm.viridis(np.array([0, 1, 2, 3]) / 3)
+clist = plt.cm.viridis(np.array([0, 1, 2, 3])/3)
 cmap = "viridis"
 
 
 def plot_pga(ax, data, labels, centers):
     sc = ax.scatter(data[:, 0], data[:, 1], c=labels, marker="P", cmap=cmap)
-    ax.scatter(centers[:, 0], centers[:, 1], c=clist, marker="o", s=100, cmap=cmap)
+    ax.scatter(
+        centers[:, 0], centers[:, 1], c=clist, marker="o", s=100, cmap=cmap
+        )
     ax.set(xlabel="PGA, 1st axis", ylabel="PGA, 2nd axis")
     for i in range(len(clabel)):
         ax.scatter([], [], color=clist[i], marker="o", s=50, label=clabel[i])
@@ -53,8 +55,8 @@ frequencies = [13, 17, 21]
 freq_band = 0.1
 events_id = {"13 Hz": 2, "17 Hz": 4, "21 Hz": 3, "resting-state": 1}
 
-duration = 2.5  # duration of epochs
-interval = 0.5  # interval between successive epochs for online processing
+duration = 2.5    # duration of epochs
+interval = 0.5   # interval between successive epochs for online processing
 
 # Subject 12: first 4 sessions for training, last session for test
 
@@ -67,7 +69,9 @@ raw_ext = extend_signal(raw, frequencies, freq_band)
 epochs = Epochs(
     raw_ext, events, events_id, tmin=2, tmax=5, baseline=None, verbose=False
 ).get_data(copy=False)
-x_train = BlockCovariances(estimator="lwf", block_size=ch_count).transform(epochs)
+x_train = BlockCovariances(
+    estimator="lwf", block_size=ch_count
+).transform(epochs)
 y_train = events[:, 2]
 
 # Testing set
@@ -77,7 +81,9 @@ raw_ext = extend_signal(raw, frequencies, freq_band)
 epochs = make_fixed_length_epochs(
     raw_ext, duration=duration, overlap=duration - interval, verbose=False
 ).get_data(copy=False)
-x_test = BlockCovariances(estimator="lwf", block_size=ch_count).transform(epochs)
+x_test = BlockCovariances(
+    estimator="lwf", block_size=ch_count
+).transform(epochs)
 
 
 ###############################################################################
@@ -100,7 +106,10 @@ mdm.fit(x_train, y_train)
 # tangent space at the grand average, and apply a principal component analysis
 # (PCA) to obtain an unsupervised dimension reduction [1]_.
 
-pga = make_pipeline(TangentSpace(metric="riemann", tsupdate=False), PCA(n_components=2))
+pga = make_pipeline(
+    TangentSpace(metric="riemann", tsupdate=False),
+    PCA(n_components=2)
+)
 
 ts_train = pga.fit_transform(x_train)
 ts_means = pga.transform(np.array(mdm.covmeans_))
@@ -134,7 +143,7 @@ plt.show()
 # classification is used here.
 
 # Prepare data for online classification
-test_visu = 50  # nb of matrices to display simultaneously
+test_visu = 50     # nb of matrices to display simultaneously
 colors, ts_visu = [], np.empty([0, 2])
 alphas = np.linspace(0, 1, test_visu)
 
@@ -146,7 +155,6 @@ pl.axes.set_ylim(-5, 5)
 
 
 ###############################################################################
-
 
 # Prepare animation for online classification
 def online_classify(t):
@@ -173,14 +181,9 @@ def online_classify(t):
 
 interval_display = 1.0  # can be changed for a slower display
 
-visu = FuncAnimation(
-    fig,
-    online_classify,
-    frames=range(0, len(x_test)),
-    interval=interval_display,
-    blit=False,
-    repeat=False,
-)
+visu = FuncAnimation(fig, online_classify,
+                     frames=range(0, len(x_test)),
+                     interval=interval_display, blit=False, repeat=False)
 
 
 ###############################################################################

@@ -36,11 +36,7 @@ def check_weights(weights, n_weights, *, check_positivity=False):
         if weights.shape != (n_weights,):
             raise ValueError(
                 "Weights do not have the good shape. Should be (%d,) but got "
-                "%s."
-                % (
-                    n_weights,
-                    weights.shape,
-                )
+                "%s." % (n_weights, weights.shape,)
             )
         if check_positivity and any(weights <= 0):
             raise ValueError("Weights must be strictly positive.")
@@ -113,14 +109,13 @@ def check_function(fun, functions):
     """
     if isinstance(fun, str):
         if fun not in functions.keys():
-            raise ValueError(
-                f"Unknown function name '{fun}'. Must be one of "
-                f"{' '.join(functions.keys())}"
-            )
+            raise ValueError(f"Unknown function name '{fun}'. Must be one of "
+                             f"{' '.join(functions.keys())}")
         else:
             fun = functions[fun]
-    elif not hasattr(fun, "__call__"):
-        raise ValueError(f"Argument must be a string or a callable (Got {type(fun)}).")
+    elif not hasattr(fun, '__call__'):
+        raise ValueError("Argument must be a string or a callable "
+                         f"(Got {type(fun)}).")
     return fun
 
 

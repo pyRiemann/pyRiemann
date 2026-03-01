@@ -27,7 +27,7 @@ sns.set_style("whitegrid")
 
 # avoid classification of evoked responses by using epochs that start 1s after
 # cue onset.
-tmin, tmax = -2.0, 6.0
+tmin, tmax = -2., 6.
 event_id = dict(hands=2, feet=3)
 subject = 1
 runs = [6, 10]  # motor imagery: hands vs feet
@@ -39,9 +39,10 @@ raw_files = [
 raw = concatenate_raws(raw_files)
 
 events, _ = events_from_annotations(raw, event_id=dict(T1=2, T2=3))
-picks = pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
+picks = pick_types(
+    raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
 
-raw.filter(7.0, 35.0, method="iir", picks=picks)
+raw.filter(7., 35., method="iir", picks=picks)
 
 epochs = Epochs(
     raw,
@@ -78,7 +79,7 @@ Fv = []
 # For each frequency bin, estimate the stats
 t_init = time()
 for t in time_bins:
-    covmats = covest.fit_transform(epochs_data[:, ::1, t : (t + window)])
+    covmats = covest.fit_transform(epochs_data[:, ::1, t:(t + window)])
     p_test = PermutationDistance(1000, metric="riemann", mode="pairwise")
     p, F = p_test.test(covmats, labels, verbose=False)
     pv.append(p)

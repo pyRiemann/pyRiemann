@@ -53,7 +53,7 @@ def plot_classifiers(metric):
 
     # iterate over datasets
     for i_dataset, (X, y) in enumerate(datasets):
-        print(f"Dataset n°{i_dataset + 1}")
+        print(f"Dataset n°{i_dataset+1}")
 
         # split dataset into training and test part
         X_train, X_test, y_train, y_test = train_test_split(
@@ -75,7 +75,7 @@ def plot_classifiers(metric):
             X_train[:, 1, 1],
             c=y_train,
             cmap=cm_bright,
-            edgecolors="k",
+            edgecolors="k"
         )
         # plot the testing matrices
         ax.scatter(
@@ -85,7 +85,7 @@ def plot_classifiers(metric):
             c=y_test,
             cmap=cm_bright,
             alpha=0.6,
-            edgecolors="k",
+            edgecolors="k"
         )
         ax.set_xlim(x_min, x_max)
         ax.set_ylim(y_min, y_max)
@@ -109,24 +109,26 @@ def plot_classifiers(metric):
             t0 = time()
             score = clf.score(X_test, y_test)
             t2 = time() - t0
-            print(f" {name}:\n  training time={t1:.5f}\n  test time    ={t2:.5f}")
+            print(
+                f" {name}:\n  training time={t1:.5f}\n  test time    ={t2:.5f}"
+            )
 
             ax = plt.subplot(n_datasets, n_classifs + 1, i, projection="3d")
 
             # plot the decision boundaries for horizontal 2D planes going
             # through the mean value of the third coordinates
             xx, yy = np.meshgrid(rx, ry)
-            zz = get_proba(xx, yy, X[:, 1, 1].mean() * np.ones_like(xx), clf=clf)
+            zz = get_proba(xx, yy, X[:, 1, 1].mean()*np.ones_like(xx), clf=clf)
             zz = np.ma.masked_where(~np.isfinite(zz), zz)
             ax.contourf(xx, yy, zz, zdir="z", offset=z_min, cmap=cm, alpha=0.5)
 
             xx, zz = np.meshgrid(rx, rz)
-            yy = get_proba(xx, X[:, 0, 1].mean() * np.ones_like(xx), zz, clf=clf)
+            yy = get_proba(xx, X[:, 0, 1].mean()*np.ones_like(xx), zz, clf=clf)
             yy = np.ma.masked_where(~np.isfinite(yy), yy)
             ax.contourf(xx, yy, zz, zdir="y", offset=y_max, cmap=cm, alpha=0.5)
 
             yy, zz = np.meshgrid(ry, rz)
-            xx = get_proba(X[:, 0, 0].mean() * np.ones_like(yy), yy, zz, clf=clf)
+            xx = get_proba(X[:, 0, 0].mean()*np.ones_like(yy), yy, zz, clf=clf)
             xx = np.ma.masked_where(~np.isfinite(xx), xx)
             ax.contourf(xx, yy, zz, zdir="x", offset=x_min, cmap=cm, alpha=0.5)
 
@@ -137,7 +139,7 @@ def plot_classifiers(metric):
                 X_train[:, 1, 1],
                 c=y_train,
                 cmap=cm_bright,
-                edgecolors="k",
+                edgecolors="k"
             )
             # plot the testing matrices
             ax.scatter(
@@ -147,7 +149,7 @@ def plot_classifiers(metric):
                 c=y_test,
                 cmap=cm_bright,
                 edgecolors="k",
-                alpha=0.6,
+                alpha=0.6
             )
 
             if i_dataset == 0:
@@ -159,7 +161,7 @@ def plot_classifiers(metric):
                 ("%.2f" % score).lstrip("0"),
                 size=15,
                 horizontalalignment="right",
-                verticalalignment="bottom",
+                verticalalignment="bottom"
             )
             ax.set_xlim(x_min, x_max)
             ax.set_ylim(y_min, y_max)
@@ -195,47 +197,35 @@ y = np.concatenate([np.zeros(n_matrices), np.ones(n_matrices)])
 
 datasets = [
     (
-        np.concatenate(
-            [
-                make_matrices(
-                    n_matrices, n_channels, "spd", rs, evals_low=10, evals_high=14
-                ),
-                make_matrices(
-                    n_matrices, n_channels, "spd", rs, evals_low=13, evals_high=17
-                ),
-            ]
-        ),
-        y,
+        np.concatenate([
+            make_matrices(
+                n_matrices, n_channels, "spd", rs, evals_low=10, evals_high=14
+            ),
+            make_matrices(
+                n_matrices, n_channels, "spd", rs, evals_low=13, evals_high=17
+            )
+        ]),
+        y
     ),
     (
-        np.concatenate(
-            [
-                make_matrices(
-                    n_matrices, n_channels, "spd", rs, evals_low=10, evals_high=14
-                ),
-                make_matrices(
-                    n_matrices, n_channels, "spd", rs, evals_low=11, evals_high=15
-                ),
-            ]
-        ),
-        y,
+        np.concatenate([
+            make_matrices(
+                n_matrices, n_channels, "spd", rs, evals_low=10, evals_high=14
+            ),
+            make_matrices(
+                n_matrices, n_channels, "spd", rs, evals_low=11, evals_high=15
+            )
+        ]),
+        y
     ),
     make_gaussian_blobs(
-        2 * n_matrices,
-        n_channels,
-        random_state=rs,
-        class_sep=1.0,
-        class_disp=0.5,
-        n_jobs=4,
+        2*n_matrices, n_channels, random_state=rs, class_sep=1., class_disp=.5,
+        n_jobs=4
     ),
     make_gaussian_blobs(
-        2 * n_matrices,
-        n_channels,
-        random_state=rs,
-        class_sep=0.5,
-        class_disp=0.5,
-        n_jobs=4,
-    ),
+        2*n_matrices, n_channels, random_state=rs, class_sep=.5, class_disp=.5,
+        n_jobs=4
+    )
 ]
 n_datasets = len(datasets)
 

@@ -67,7 +67,7 @@ def test_mean(kind, mean, get_mats):
         mean_thompson,
         mean_wasserstein,
         nanmean_riemann,
-    ],
+    ]
 )
 def test_mean_init(kind, mean, get_mats):
     """Test the shape of mean with init"""
@@ -132,8 +132,7 @@ def test_mean_weight_error(mean, get_mats, get_weights):
 
 
 @pytest.mark.parametrize(
-    "mean",
-    [
+    "mean", [
         mean_ale,
         mean_alm,
         mean_logdet,
@@ -141,11 +140,11 @@ def test_mean_weight_error(mean, get_mats, get_weights):
         mean_riemann,
         mean_thompson,
         mean_wasserstein,
-        nanmean_riemann,
-    ],
+        nanmean_riemann
+    ]
 )
 def test_mean_warning_convergence(mean, get_mats):
-    """Test warning for convergence not reached"""
+    """Test warning for convergence not reached """
     n_matrices, n_channels = 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
     with pytest.warns(UserWarning):
@@ -180,13 +179,13 @@ def test_mean_of_means(kind, mean, get_mats):
     if mean in [mean_power, mean_poweuclid]:
         p = -0.42
         M = mean(X, p)
-        M1 = mean(X[: n_matrices // 2], p)
-        M2 = mean(X[n_matrices // 2 :], p)
+        M1 = mean(X[:n_matrices//2], p)
+        M2 = mean(X[n_matrices//2:], p)
         M3 = mean(np.array([M1, M2]), p)
     else:
         M = mean(X)
-        M1 = mean(X[: n_matrices // 2])
-        M2 = mean(X[n_matrices // 2 :])
+        M1 = mean(X[:n_matrices//2])
+        M2 = mean(X[n_matrices//2:])
         M3 = mean(np.array([M1, M2]))
     assert M3 == approx(M, 6)
 
@@ -223,14 +222,11 @@ def test_mean_of_single_matrix(mean, get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize(
-    "mean",
-    [
-        mean_logeuclid,
-        mean_riemann,
-        # mean_thompson,  # Th 6.16 (4) in [Mostajeran2024], KO
-    ],
-)
+@pytest.mark.parametrize("mean", [
+    mean_logeuclid,
+    mean_riemann,
+    # mean_thompson,  # Th 6.16 (4) in [Mostajeran2024], KO
+])
 def test_mean_property_joint_homogeneity(kind, mean, get_mats, rndstate):
     """Test joint homogeneity"""
     n_matrices, n_channels = 5, 3
@@ -246,14 +242,11 @@ def test_mean_property_joint_homogeneity(kind, mean, get_mats, rndstate):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize(
-    "mean",
-    [
-        mean_logchol,  # Corollary 13 in [Lin2019]
-        mean_logeuclid,
-        mean_riemann,
-    ],
-)
+@pytest.mark.parametrize("mean", [
+    mean_logchol,  # Corollary 13 in [Lin2019]
+    mean_logeuclid,
+    mean_riemann,
+])
 def test_mean_property_determinant_identity(kind, mean, get_mats, rndstate):
     """Test determinant identity, P9 in [Nakamura2009]"""
     n_matrices, n_channels = 5, 3
@@ -262,13 +255,10 @@ def test_mean_property_determinant_identity(kind, mean, get_mats, rndstate):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize(
-    "mean",
-    [
-        mean_logeuclid,  # Th 3.13 in [Arsigny2007]
-        mean_riemann,  # P8 in [Nakamura2009]
-    ],
-)
+@pytest.mark.parametrize("mean", [
+    mean_logeuclid,  # Th 3.13 in [Arsigny2007]
+    mean_riemann,  # P8 in [Nakamura2009]
+])
 def test_mean_property_invariance_inversion(kind, mean, get_mats):
     """Test invariance under inversion, also called self-duality"""
     n_matrices, n_channels = 5, 3
@@ -277,15 +267,13 @@ def test_mean_property_invariance_inversion(kind, mean, get_mats):
 
 
 @pytest.mark.parametrize("kind, kindQ", [("spd", "orth"), ("hpd", "unit")])
-@pytest.mark.parametrize(
-    "mean",
-    [
-        mean_logeuclid,  # Th 3.13 in [Arsigny2007]
-        mean_riemann,
-        mean_thompson,
-    ],
-)
-def test_mean_property_invariance_similarity(kind, kindQ, mean, get_mats, rndstate):
+@pytest.mark.parametrize("mean", [
+    mean_logeuclid,  # Th 3.13 in [Arsigny2007]
+    mean_riemann,
+    mean_thompson,
+])
+def test_mean_property_invariance_similarity(kind, kindQ, mean,
+                                             get_mats, rndstate):
     """Test invariance by similarity, ie a scale and a rotation"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
@@ -296,13 +284,10 @@ def test_mean_property_invariance_similarity(kind, kindQ, mean, get_mats, rndsta
 
 
 @pytest.mark.parametrize("kind, kindW", [("spd", "inv"), ("hpd", "cinv")])
-@pytest.mark.parametrize(
-    "mean",
-    [
-        mean_riemann,  # P6 in [Nakamura2009]
-        mean_thompson,  # Th 6.16 (3) in [Mostajeran2024]
-    ],
-)
+@pytest.mark.parametrize("mean", [
+    mean_riemann,  # P6 in [Nakamura2009]
+    mean_thompson,  # Th 6.16 (3) in [Mostajeran2024]
+])
 def test_mean_property_invariance_congruence(kind, kindW, mean, get_mats):
     """Test invariance under congruence, ie an invertible transform"""
     n_matrices, n_channels = 5, 3
@@ -453,8 +438,7 @@ def test_mean_nan_riemann(init, get_mats, rndstate):
     emean = np.mean(X, axis=0)
     for i in range(n_matrices):
         corrup_channels = rndstate.choice(
-            np.arange(0, n_channels), size=n_channels // 3, replace=False
-        )
+            np.arange(0, n_channels), size=n_channels // 3, replace=False)
         for j in corrup_channels:
             X[i, j] = np.nan
             X[i, :, j] = np.nan

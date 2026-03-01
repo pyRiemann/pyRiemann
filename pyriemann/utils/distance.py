@@ -101,7 +101,7 @@ def distance_euclid(A, B, squared=False):
     """
     _check_inputs(A, B)
     d = np.linalg.norm(A - B, ord="fro", axis=(-2, -1))
-    return d**2 if squared else d
+    return d ** 2 if squared else d
 
 
 def distance_harmonic(A, B, squared=False):
@@ -177,10 +177,10 @@ def distance_kullback(A, B, squared=False):
     """
     _check_inputs(A, B)
     n = A.shape[-1]
-    tr = np.trace(_recursive(solve, B, A, assume_a="pos"), axis1=-2, axis2=-1)
+    tr = np.trace(_recursive(solve, B, A, assume_a='pos'), axis1=-2, axis2=-1)
     logdet = np.linalg.slogdet(B)[1] - np.linalg.slogdet(A)[1]
     d = 0.5 * (tr - n + logdet).real
-    return d**2 if squared else d
+    return d ** 2 if squared else d
 
 
 def distance_kullback_right(A, B, squared=False):
@@ -225,7 +225,7 @@ def distance_kullback_sym(A, B, squared=False):
         and engineering sciences, 1946, 186 (1007), pp. 453-461
     """
     d = distance_kullback(A, B) + distance_kullback_right(A, B)
-    return d**2 if squared else d
+    return d ** 2 if squared else d
 
 
 def distance_logchol(A, B, squared=False):
@@ -275,22 +275,16 @@ def distance_logchol(A, B, squared=False):
     A_chol, B_chol = np.linalg.cholesky(A), np.linalg.cholesky(B)
 
     tri0, tri1 = np.tril_indices(A_chol.shape[-1], -1)
-    triagular_part = (
-        np.linalg.norm(
-            A_chol[..., tri0, tri1] - B_chol[..., tri0, tri1],
-            axis=-1,
-        )
-        ** 2
-    )
+    triagular_part = np.linalg.norm(
+        A_chol[..., tri0, tri1] - B_chol[..., tri0, tri1],
+        axis=-1,
+    ) ** 2
 
     diag0, diag1 = np.diag_indices(A_chol.shape[-1])
-    diagonal_part = (
-        np.linalg.norm(
-            np.log(A_chol[..., diag0, diag1]) - np.log(B_chol[..., diag0, diag1]),
-            axis=-1,
-        )
-        ** 2
-    )
+    diagonal_part = np.linalg.norm(
+        np.log(A_chol[..., diag0, diag1]) - np.log(B_chol[..., diag0, diag1]),
+        axis=-1,
+    ) ** 2
 
     d2 = triagular_part + diagonal_part
     return d2 if squared else np.sqrt(d2)
@@ -484,7 +478,7 @@ def distance_riemann(A, B, squared=False):
         Geodesy-the Challenge of the 3rd Millennium, 2003
     """
     _check_inputs(A, B)
-    d2 = (np.log(_recursive(eigvalsh, A, B)) ** 2).sum(axis=-1)
+    d2 = (np.log(_recursive(eigvalsh, A, B))**2).sum(axis=-1)
     return d2 if squared else np.sqrt(d2)
 
 
@@ -532,7 +526,7 @@ def distance_thompson(A, B, squared=False):
     """
     _check_inputs(A, B)
     d = (np.abs(np.log(_recursive(eigvalsh, A, B)))).max(axis=-1)
-    return d**2 if squared else d
+    return d ** 2 if squared else d
 
 
 def distance_wasserstein(A, B, squared=False):
@@ -678,9 +672,8 @@ def _euclidean_distances(X, Y=None, squared=False):
     else:
         Yreal, Yimag = Y.real, Y.imag
 
-    dist2 = euclidean_distances(X.real, Yreal, squared=True) + euclidean_distances(
-        X.imag, Yimag, squared=True
-    )
+    dist2 = euclidean_distances(X.real, Yreal, squared=True) + \
+        euclidean_distances(X.imag, Yimag, squared=True)
     return dist2 if squared else np.sqrt(dist2)
 
 
@@ -784,7 +777,10 @@ def _pairwise_distance_logchol(X, Y=None, squared=False):
     diag0, diag1 = np.diag_indices(X_chol.shape[-1])
 
     if Y is None:
-        triagular_part = _euclidean_distances(X_chol[..., tri0, tri1], squared=True)
+        triagular_part = _euclidean_distances(
+            X_chol[..., tri0, tri1],
+            squared=True
+        )
         diagonal_part = _euclidean_distances(
             np.log(X_chol[..., diag0, diag1]),
             squared=True,
@@ -879,9 +875,9 @@ def _pairwise_distance_riemann(X, Y=None, squared=False):
 
     # row by row so it fits in memory
     for i, x_ in enumerate(Xinv12):
-        evals_ = np.linalg.eigvalsh(x_ @ Y[i * XisY :] @ x_)
+        evals_ = np.linalg.eigvalsh(x_ @ Y[i * XisY:] @ x_)
         d2 = np.sum(np.log(evals_) ** 2, -1)
-        dist[i, i * XisY :] = d2
+        dist[i, i * XisY:] = d2
 
     if XisY:
         dist += dist.T

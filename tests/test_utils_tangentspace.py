@@ -34,8 +34,7 @@ metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
 
 
 @pytest.mark.parametrize(
-    "fmap",
-    [
+    "fmap", [
         exp_map_euclid,
         exp_map_logchol,
         exp_map_logeuclid,
@@ -45,8 +44,8 @@ metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
         log_map_logchol,
         log_map_logeuclid,
         log_map_riemann,
-        log_map_wasserstein,
-    ],
+        log_map_wasserstein
+    ]
 )
 def test_maps_ndarray(fmap, get_mats):
     """Test log and exp maps"""
@@ -73,8 +72,7 @@ def test_map_log_exp(kind, metric, get_mats):
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize(
-    "log_map_, exp_map_",
-    zip(
+    "log_map_, exp_map_", zip(
         [
             log_map_euclid,
             log_map_logchol,
@@ -88,8 +86,8 @@ def test_map_log_exp(kind, metric, get_mats):
             exp_map_logeuclid,
             exp_map_riemann,
             exp_map_wasserstein,
-        ],
-    ),
+        ]
+    )
 )
 def test_maps_log_exp(kind, log_map_, exp_map_, get_mats):
     """Test log then exp maps should be identity"""
@@ -105,7 +103,7 @@ def test_map_euclid(n_dim1, n_dim2, kind, get_mats):
     """Euclidean map for non-square matrices"""
     n_matrices = 7
     mats = get_mats(n_matrices, [n_dim1, n_dim2], kind)
-    X, C = mats[: n_matrices - 1], mats[-1]
+    X, C = mats[:n_matrices - 1], mats[-1]
     assert exp_map_euclid(log_map_euclid(X, C), C) == approx(X)
 
 
@@ -168,21 +166,18 @@ def test_tangent_and_untangent_space(kind, metric, get_mats):
     """Tangent space projection then back-projection should be identity"""
     n_matrices, n_channels = 10, 3
     mats = get_mats(n_matrices, n_channels, kind)
-    X, C = mats[: n_matrices - 1], mats[-1]
+    X, C = mats[:n_matrices - 1], mats[-1]
     X_t = tangent_space(X, C, metric=metric)
     X_ut = untangent_space(X_t, C, metric=metric)
     assert X_ut == approx(X)
 
 
-@pytest.mark.parametrize(
-    "ftransport",
-    [
-        transport_euclid,
-        transport_logchol,
-        transport_logeuclid,
-        transport_riemann,
-    ],
-)
+@pytest.mark.parametrize("ftransport", [
+    transport_euclid,
+    transport_logchol,
+    transport_logeuclid,
+    transport_riemann,
+])
 def test_transport_ndarray(ftransport, get_mats):
     n_matrices, n_channels = 7, 3
     X = get_mats(n_matrices, n_channels, "herm")

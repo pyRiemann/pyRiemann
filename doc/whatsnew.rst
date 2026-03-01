@@ -185,7 +185,7 @@ v0.6 (April 2024)
 
 - Enhance ajd module and add a generic :func:`pyriemann.utils.ajd.ajd` function. :pr:`238` by :user:`qbarthelemy`
 
-- Add :func:`pyriemann.utils.viz.plot_bihist`, :func:`pyriemann.utils.viz.plot_biscatter` and :func:`pyriemann.utils.viz.plot_cov_ellipse` for display. :pr:`287`
+- Add :func:`pyriemann.utils.viz.plot_bihist`, :func:`pyriemann.utils.viz.plot_biscatter` and :func:`pyriemann.utils.viz.plot_cov_ellipse` for display. :pr:`287` 
   by :user:`qbarthelemy` and :user:`gcattan`
 
 - Add :class:`pyriemann.estimation.CrossSpectra` and deprecate ``CospCovariances`` renamed into :class:`pyriemann.estimation.CoSpectra`. :pr:`288` by :user:`qbarthelemy`
@@ -239,7 +239,7 @@ v0.4 (Feb 2023)
 
 - Add ``score()`` to :class:`pyriemann.regression.KNearestNeighborRegressor`. :pr:`205` by :user:`qbarthelemy`
 
-- Add Transfer Learning module and examples, including RPA and MDWM. :pr:`189` by :user:`plcrodrigues`, :user:`qbarthelemy` and :user:`sylvchev`
+- Add Transfer Learning module and examples, including RPA and MDWM. :pr:`189` by :user:`plcrodrigues`, :user:`qbarthelemy` and :user:`sylvchev` 
 
 - Add class distinctiveness function to measure the distinctiveness between classes on the manifold,
   :func:`pyriemann.classification.class_distinctiveness`, and complete an example in gallery to show how it works on synthetic datasets. :pr:`215` by :user:`MSYamamoto`

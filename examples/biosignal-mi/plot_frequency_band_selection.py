@@ -42,7 +42,8 @@ raw_files = [
     for f in eegbci.load_data(subject, runs, update_path=True)
 ]
 raw = concatenate_raws(raw_files)
-picks = pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
+picks = pick_types(
+    raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
 # subsample elecs
 picks = picks[::2]
 
@@ -56,7 +57,8 @@ cv = ShuffleSplit(n_splits=1, test_size=0.2, random_state=42)
 # Apply band-pass filter using a wide frequency band, 5-35 Hz.
 # Train and evaluate classifier.
 t0 = time()
-raw_filter = raw.copy().filter(5.0, 35.0, method="iir", picks=picks, verbose=False)
+raw_filter = raw.copy().filter(5., 35., method="iir", picks=picks,
+                               verbose=False)
 
 events, _ = events_from_annotations(raw_filter, event_id, verbose=False)
 
@@ -71,8 +73,7 @@ epochs = Epochs(
     picks=picks,
     baseline=None,
     preload=True,
-    verbose=False,
-)
+    verbose=False)
 labels = epochs.events[:, -1] - 2
 
 # Get epochs
@@ -85,7 +86,8 @@ cov_data_baseline = Covariances().transform(epochs_data_baseline)
 model = MDM(metric=dict(mean="riemann", distance="riemann"))
 
 # Classification with minimum distance to mean
-acc_baseline = cross_val_score(model, cov_data_baseline, labels, cv=cv, n_jobs=1)
+acc_baseline = cross_val_score(model, cov_data_baseline, labels,
+                               cv=cv, n_jobs=1)
 t1 = time() - t0
 
 ###############################################################################
@@ -97,26 +99,19 @@ t1 = time() - t0
 #
 # Define parameters for frequency band selection
 t2 = time()
-freq_band = [5.0, 35.0]
-sub_band_width = 4.0
-sub_band_step = 2.0
+freq_band = [5., 35.]
+sub_band_width = 4.
+sub_band_step = 2.
 alpha = 0.4
 
 # Select frequency band using training set
-best_freq, all_class_dis = freq_selection_class_dis(
-    raw,
-    freq_band,
-    sub_band_width,
-    sub_band_step,
-    alpha,
-    tmin,
-    tmax,
-    picks,
-    event_id,
-    cv,
-    return_class_dis=True,
-    verbose=False,
-)
+best_freq, all_class_dis = \
+    freq_selection_class_dis(raw, freq_band, sub_band_width,
+                             sub_band_step, alpha,
+                             tmin, tmax,
+                             picks, event_id,
+                             cv,
+                             return_class_dis=True, verbose=False)
 
 print(f"Selected frequency band : {best_freq[0][0]} - {best_freq[0][1]} Hz")
 
@@ -125,9 +120,9 @@ print(f"Selected frequency band : {best_freq[0][0]} - {best_freq[0][1]} Hz")
 # performance using test set
 
 # Apply band-pass filter using the best frequency band
-best_raw_filter = raw.copy().filter(
-    best_freq[0][0], best_freq[0][1], method="iir", picks=picks, verbose=False
-)
+best_raw_filter = raw.copy().filter(best_freq[0][0], best_freq[0][1],
+                                    method="iir", picks=picks,
+                                    verbose=False)
 
 events, _ = events_from_annotations(best_raw_filter, event_id, verbose=False)
 
@@ -159,13 +154,14 @@ t3 = time() - t2
 # Compare pipelines: accuracies and training times
 # ------------------------------------------------
 
-print(
-    "Classification accuracy without frequency band selection: "
-    + f"{acc_baseline[0]:.02f}"
-)
-print("Total computational time without frequency band selection: " + f"{t1:.5f} s")
-print("Classification accuracy with frequency band selection: " + f"{acc[0]:.02f}")
-print("Total computational time with frequency band selection: " + f"{t3:.5f} s")
+print("Classification accuracy without frequency band selection: "
+      + f"{acc_baseline[0]:.02f}")
+print("Total computational time without frequency band selection: "
+      + f"{t1:.5f} s")
+print("Classification accuracy with frequency band selection: "
+      + f"{acc[0]:.02f}")
+print("Total computational time with frequency band selection: "
+      + f"{t3:.5f} s")
 
 ###############################################################################
 # Plot selected frequency bands
@@ -174,12 +170,11 @@ print("Total computational time with frequency band selection: " + f"{t3:.5f} s"
 # Plot the class distinctiveness values for each sub_band,
 # along with the highlight of the finally selected frequency band.
 
-subband_fmin = list(
-    np.arange(freq_band[0], freq_band[1] - sub_band_width + 1.0, sub_band_step)
-)
-subband_fmax = list(
-    np.arange(freq_band[0] + sub_band_width, freq_band[1] + 1.0, sub_band_step)
-)
+subband_fmin = list(np.arange(freq_band[0],
+                              freq_band[1] - sub_band_width + 1.,
+                              sub_band_step))
+subband_fmax = list(np.arange(freq_band[0] + sub_band_width,
+                              freq_band[1] + 1., sub_band_step))
 n_subband = len(subband_fmin)
 
 x = list(range(0, n_subband, 1))
@@ -191,14 +186,11 @@ freq_end = subband_fmax.index(best_freq[0][1])
 plt.subplot(1, 1, 1)
 plt.grid()
 plt.plot(x, all_class_dis[0], marker="o")
-plt.xticks(
-    list(range(0, 14, 1)),
-    [[int(i), int(j)] for i, j in zip(subband_fmin, subband_fmax)],
-)
+plt.xticks(list(range(0, 14, 1)),
+           [[int(i), int(j)] for i, j in zip(subband_fmin, subband_fmax)])
 
-plt.axvspan(
-    freq_start, freq_end, color="orange", alpha=0.3, label="Selected frequency band"
-)
+plt.axvspan(freq_start, freq_end, color="orange", alpha=0.3,
+            label="Selected frequency band")
 plt.ylabel("Class distinctiveness")
 plt.xlabel("Filter bank [Hz]")
 plt.title("Class distinctiveness value of each subband")
@@ -207,10 +199,8 @@ plt.legend(loc="upper right")
 fig.tight_layout()
 plt.show()
 
-print(
-    "Optimal frequency band for this subject is "
-    f"{best_freq[0][0]} - {best_freq[0][1]} Hz"
-)
+print("Optimal frequency band for this subject is "
+      f"{best_freq[0][0]} - {best_freq[0][1]} Hz")
 
 ###############################################################################
 # References

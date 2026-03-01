@@ -12,7 +12,8 @@ def rndstate():
 @pytest.fixture
 def get_mats(rndstate):
     def _gen_mat(n_matrices, n_dim, kind):
-        return make_matrices(n_matrices, n_dim, kind, rndstate, return_params=False)
+        return make_matrices(n_matrices, n_dim, kind, rndstate,
+                             return_params=False)
 
     return _gen_mat
 
@@ -20,9 +21,8 @@ def get_mats(rndstate):
 @pytest.fixture
 def get_mats_params(rndstate):
     def _gen_mat_params(n_matrices, n_dim, kind):
-        return make_matrices(
-            n_matrices, n_dim, kind, rndstate, return_params=True, eigvecs_same=True
-        )
+        return make_matrices(n_matrices, n_dim, kind, rndstate,
+                             return_params=True, eigvecs_same=True)
 
     return _gen_mat_params
 

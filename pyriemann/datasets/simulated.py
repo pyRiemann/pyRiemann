@@ -42,18 +42,9 @@ mat_kinds = [
 ]
 
 
-def make_matrices(
-    n_matrices,
-    n_dim,
-    kind,
-    rs=None,
-    return_params=False,
-    evals_low=0.5,
-    evals_high=2.0,
-    eigvecs_same=False,
-    eigvecs_mean=0.0,
-    eigvecs_std=1.0,
-):
+def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
+                  evals_low=0.5, evals_high=2.0, eigvecs_same=False,
+                  eigvecs_mean=0.0, eigvecs_std=1.0):
     """Generate matrices with specific properties.
 
     Parameters
@@ -167,7 +158,9 @@ def make_matrices(
 
     # eigen values
     if evals_low <= 0.0:
-        raise ValueError(f"Lowest value must be strictly positive (Got {evals_low}).")
+        raise ValueError(
+            f"Lowest value must be strictly positive (Got {evals_low})."
+        )
     if evals_high <= evals_low:
         raise ValueError(
             "Highest value must be superior to lowest value "
@@ -230,19 +223,10 @@ def make_masks(n_masks, n_dim0, n_dim1_min, rs=None):
     return masks
 
 
-def make_gaussian_blobs(
-    n_matrices=100,
-    n_dim=2,
-    class_sep=1.0,
-    class_disp=1.0,
-    return_centers=False,
-    center_dataset=False,
-    random_state=None,
-    centers=None,
-    *,
-    n_jobs=1,
-    sampling_method="auto",
-):
+def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
+                        return_centers=False, center_dataset=False,
+                        random_state=None, centers=None, *, n_jobs=1,
+                        sampling_method="auto"):
     """Generate SPD matrices for two classes.
 
     Generate a set of SPD matrices drawn from Riemannian Gaussian
@@ -303,7 +287,7 @@ def make_gaussian_blobs(
     if centers is None:
         C0_in = np.eye(n_dim)  # first class mean at Identity at first
         Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
-        Pv = (Pv + Pv.T) / 2  # symmetrize
+        Pv = (Pv + Pv.T)/2   # symmetrize
         Pv = Pv / np.linalg.norm(Pv)  # normalize
         P = expm(Pv)  # take it back to the SPD manifold
         C1_in = powm(P, alpha=class_sep)  # control distance to Identity
@@ -318,7 +302,7 @@ def make_gaussian_blobs(
         sigma=class_disp,
         random_state=seeds[0],
         n_jobs=n_jobs,
-        sampling_method=sampling_method,
+        sampling_method=sampling_method
     )
     y0 = np.zeros(n_matrices)
 
@@ -329,7 +313,7 @@ def make_gaussian_blobs(
         sigma=class_disp,
         random_state=seeds[1],
         n_jobs=n_jobs,
-        sampling_method=sampling_method,
+        sampling_method=sampling_method
     )
 
     y1 = np.ones(n_matrices)
@@ -368,7 +352,8 @@ def make_gaussian_blobs(
         return X, y
 
 
-def make_outliers(n_matrices, mean, sigma, outlier_coeff=10, random_state=None):
+def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
+                  random_state=None):
     """Generate outlier matrices.
 
     Generate matrices that are outliers for a given Riemannian Gaussian
@@ -490,7 +475,7 @@ def make_classification_transfer(
     )
     y1_source = [class_names[0]] * n_matrices
     Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
-    Pv = (Pv + Pv.T) / 2  # symmetrize
+    Pv = (Pv + Pv.T)/2  # symmetrize
     Pv /= np.linalg.norm(Pv)  # normalize
     P = expm(Pv)  # take it back to the SPD manifold
     M2_source = powm(P, alpha=class_sep)  # control distance to identity
@@ -536,14 +521,15 @@ def make_classification_transfer(
 
     # create SPD matrix for the translation between domains
     Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
-    Pv = (Pv + Pv.T) / 2  # symmetrize
+    Pv = (Pv + Pv.T)/2  # symmetrize
     Pv /= np.linalg.norm(Pv)  # normalize
     P = expm(Pv)  # take it to the manifold
     P = powm(P, alpha=domain_sep)  # control distance to identity
     P = sqrtm(P)  # transport matrix
 
     # create orthogonal matrix for the rotation part
-    Q = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+    Q = np.array([[np.cos(theta), -np.sin(theta)],
+                  [np.sin(theta), np.cos(theta)]])
 
     # transform the matrices from the target domain
     A = P @ Q

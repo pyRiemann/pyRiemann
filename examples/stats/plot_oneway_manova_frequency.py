@@ -27,7 +27,7 @@ sns.set_style("whitegrid")
 
 # avoid classification of evoked responses by using epochs that start 1s after
 # cue onset.
-tmin, tmax = 1.0, 3.0
+tmin, tmax = 1., 3.
 event_id = dict(hands=2, feet=3)
 subject = 1
 runs = [6, 10]  # motor imagery: hands vs feet
@@ -39,7 +39,8 @@ raw_files = [
 raw = concatenate_raws(raw_files)
 
 events, _ = events_from_annotations(raw, event_id=dict(T1=2, T2=3))
-picks = pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
+picks = pick_types(
+    raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
 
 # Read epochs (train will be done only between 1 and 2s)
 # Testing will be done with a running classifier
@@ -63,7 +64,8 @@ epochs_data = epochs.get_data(copy=False)
 # compute cospectral covariance matrices
 fmin = 2.0
 fmax = 40.0
-cosp = CoSpectra(window=128, overlap=0.98, fmin=fmin, fmax=fmax, fs=160.0)
+cosp = CoSpectra(
+    window=128, overlap=0.98, fmin=fmin, fmax=fmax, fs=160.0)
 covmats = cosp.fit_transform(epochs_data[:, ::4, :])
 
 fr = np.fft.fftfreq(128)[0:64] * 160

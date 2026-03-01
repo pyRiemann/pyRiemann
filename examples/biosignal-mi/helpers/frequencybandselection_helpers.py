@@ -13,20 +13,12 @@ from pyriemann.estimation import Covariances
 from pyriemann.classification import class_distinctiveness
 
 
-def freq_selection_class_dis(
-    raw,
-    freq_band=(5.0, 35.0),
-    sub_band_width=4,
-    sub_band_step=2,
-    alpha=0.4,
-    tmin=0.5,
-    tmax=2.5,
-    picks=None,
-    event_id=None,
-    cv=None,
-    return_class_dis=False,
-    verbose=None,
-):
+def freq_selection_class_dis(raw, freq_band=(5., 35.), sub_band_width=4,
+                             sub_band_step=2, alpha=0.4,
+                             tmin=0.5, tmax=2.5,
+                             picks=None, event_id=None,
+                             cv=None,
+                             return_class_dis=False, verbose=None):
     r"""Select optimal frequency band based on class distinctiveness measure.
 
     Optimal frequency band is selected by combining a filter bank with
@@ -103,40 +95,38 @@ def freq_selection_class_dis(
        in Medicine & Biology Society (EMBC2022), 2022.
     """
 
-    subband_fmin = list(
-        np.arange(freq_band[0], freq_band[1] - sub_band_width + 1.0, sub_band_step)
-    )
-    subband_fmax = list(
-        np.arange(freq_band[0] + sub_band_width, freq_band[1] + 1.0, sub_band_step)
-    )
+    subband_fmin = list(np.arange(freq_band[0],
+                                  freq_band[1] - sub_band_width + 1.,
+                                  sub_band_step))
+    subband_fmax = list(np.arange(freq_band[0] + sub_band_width,
+                                  freq_band[1] + 1., sub_band_step))
     n_subband = len(subband_fmin)
 
     all_sub_band_cov = []
 
     for fmin, fmax in zip(subband_fmin, subband_fmax):
-        cov_data, labels = _get_filtered_cov(
-            raw, picks, event_id, fmin, fmax, tmin, tmax, verbose
-        )
+        cov_data, labels = _get_filtered_cov(raw, picks,
+                                             event_id,
+                                             fmin,
+                                             fmax,
+                                             tmin, tmax, verbose)
         all_sub_band_cov.append(cov_data)
 
     all_cv_best_freq = []
     all_cv_class_dis = []
-    for i, (train_ind, test_ind) in enumerate(cv.split(all_sub_band_cov[0], labels)):
+    for i, (train_ind, test_ind) in enumerate(cv.split(all_sub_band_cov[0],
+                                                       labels)):
+
         all_class_dis = []
         for ii in range(n_subband):
             class_dis = class_distinctiveness(
-                all_sub_band_cov[ii][train_ind],
-                labels[train_ind],
-                exponent=1,
-                metric="riemann",
-                return_num_denom=False,
-            )
+                all_sub_band_cov[ii][train_ind], labels[train_ind],
+                exponent=1, metric="riemann", return_num_denom=False)
             all_class_dis.append(class_dis)
         all_cv_class_dis.append(all_class_dis)
 
-        best_freq = _get_best_freq_band(
-            all_class_dis, n_subband, subband_fmin, subband_fmax, alpha
-        )
+        best_freq = _get_best_freq_band(all_class_dis, n_subband,
+                                        subband_fmin, subband_fmax, alpha)
 
         all_cv_best_freq.append(best_freq)
 
@@ -150,13 +140,11 @@ def _get_filtered_cov(raw, picks, event_id, fmin, fmax, tmin, tmax, verbose):
     """Private function to apply band-pass filter and estimate
     covariance matrix."""
 
-    best_raw_filter = raw.copy().filter(
-        fmin, fmax, method="iir", picks=picks, verbose=verbose
-    )
+    best_raw_filter = raw.copy().filter(fmin, fmax, method="iir", picks=picks,
+                                        verbose=verbose)
 
-    events, _ = events_from_annotations(
-        best_raw_filter, event_id=event_id, verbose=verbose
-    )
+    events, _ = events_from_annotations(best_raw_filter, event_id=event_id,
+                                        verbose=verbose)
 
     epochs = Epochs(
         best_raw_filter,
@@ -168,8 +156,7 @@ def _get_filtered_cov(raw, picks, event_id, fmin, fmax, tmin, tmax, verbose):
         picks=picks,
         baseline=None,
         preload=True,
-        verbose=verbose,
-    )
+        verbose=verbose)
     labels = epochs.events[:, -1] - 2
 
     epochs_data = epochs.get_data(units="uV", copy=False)
@@ -179,9 +166,10 @@ def _get_filtered_cov(raw, picks, event_id, fmin, fmax, tmin, tmax, verbose):
     return cov_data, labels
 
 
-def _get_best_freq_band(all_class_dis, n_subband, subband_fmin, subband_fmax, alpha):
+def _get_best_freq_band(all_class_dis, n_subband, subband_fmin, subband_fmax,
+                        alpha):
     """Private function to select frequency bands whose class dis value are
-    higher than the user-specific threshold."""
+     higher than the user-specific threshold."""
 
     fmaxstart = np.argmax(all_class_dis)
 

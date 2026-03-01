@@ -32,19 +32,22 @@ random_state = 42  # ensure reproducibility
 # Generate the samples on three different conditions
 mean = make_matrices(1, n_dim, "spd")[0]  # random reference point
 
-samples_1 = sample_gaussian_spd(
-    n_matrices=n_matrices, mean=mean, sigma=sigma, random_state=random_state
-)
-samples_2 = sample_gaussian_spd(
-    n_matrices=n_matrices, mean=mean, sigma=sigma / 2, random_state=random_state
-)
-samples_3 = sample_gaussian_spd(
-    n_matrices=n_matrices, mean=epsilon * mean, sigma=sigma, random_state=random_state
-)
+samples_1 = sample_gaussian_spd(n_matrices=n_matrices,
+                                mean=mean,
+                                sigma=sigma,
+                                random_state=random_state)
+samples_2 = sample_gaussian_spd(n_matrices=n_matrices,
+                                mean=mean,
+                                sigma=sigma/2,
+                                random_state=random_state)
+samples_3 = sample_gaussian_spd(n_matrices=n_matrices,
+                                mean=epsilon*mean,
+                                sigma=sigma,
+                                random_state=random_state)
 
 # Stack all of the samples into one data array for the embedding
 samples = np.concatenate([samples_1, samples_2, samples_3])
-labels = np.array(n_matrices * [1] + n_matrices * [2] + n_matrices * [3])
+labels = np.array(n_matrices*[1] + n_matrices*[2] + n_matrices*[3])
 
 ###############################################################################
 # Apply the spectral embedding over the SPD matrices
@@ -67,7 +70,8 @@ ax.set_xticks([-1, -0.5, 0, 0.5, 1.0])
 ax.set_xticklabels([-1, -0.5, 0, 0.5, 1.0], fontsize=12)
 ax.set_yticks([-1, -0.5, 0, 0.5, 1.0])
 ax.set_yticklabels([-1, -0.5, 0, 0.5, 1.0], fontsize=12)
-ax.set_title(r"Spectral embedding of data points (fixed $n_{dim} = 4$)", fontsize=14)
+ax.set_title(r"Spectral embedding of data points (fixed $n_{dim} = 4$)",
+             fontsize=14)
 ax.set_xlabel(r"$\phi_1$", fontsize=14)
 ax.set_ylabel(r"$\phi_2$", fontsize=14)
 ax.legend()

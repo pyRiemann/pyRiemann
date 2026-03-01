@@ -74,11 +74,11 @@ def is_hankel(X):
 
     for i in range(n):
         for j in range(n):
-            if i + j < n:
-                if X[i, j] != X[i + j, 0]:
+            if (i + j < n):
+                if (X[i, j] != X[i + j, 0]):
                     return False
             else:
-                if X[i, j] != X[i + j - n + 1, n - 1]:
+                if (X[i, j] != X[i + j - n + 1, n - 1]):
                     return False
 
     return True

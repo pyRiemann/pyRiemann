@@ -34,7 +34,7 @@ def _pdf_r(r, sigma):
         Probability density function applied to r.
     """
 
-    if sigma <= 0:
+    if (sigma <= 0):
         raise ValueError(f"sigma must be a positive number (Got {sigma})")
 
     n_dim = len(r)
@@ -69,7 +69,7 @@ def _rejection_sampling_2D_gfunction_plus(sigma, r_sample):
     .. versionadded:: 0.4
 
     """
-    mu_a = np.array([-(sigma**2) / 2, (sigma**2) / 2])
+    mu_a = np.array([-sigma**2 / 2, (sigma**2) / 2])
     cov_matrix = (sigma**2) * np.eye(2)
     m = np.pi * (sigma**2) * np.exp(sigma**2 / 4)
     if r_sample[0] >= r_sample[1]:
@@ -101,7 +101,7 @@ def _rejection_sampling_2D_gfunction_minus(sigma, r_sample):
     .. versionadded:: 0.4
 
     """
-    mu_b = np.array([(sigma**2) / 2, -(sigma**2) / 2])
+    mu_b = np.array([(sigma**2) / 2, -sigma**2 / 2])
     cov_matrix = (sigma**2) * np.eye(2)
     m = np.pi * (sigma**2) * np.exp(sigma**2 / 4)
     if r_sample[0] < r_sample[1]:
@@ -111,9 +111,8 @@ def _rejection_sampling_2D_gfunction_minus(sigma, r_sample):
     return 0
 
 
-def _rejection_sampling_2D(
-    n_samples, sigma, random_state=None, return_acceptance_rate=False
-):
+def _rejection_sampling_2D(n_samples, sigma, random_state=None,
+                           return_acceptance_rate=False):
     """Rejection sampling algorithm for the 2D case.
 
     Implementation of a rejection sampling algorithm. The implementation
@@ -148,8 +147,8 @@ def _rejection_sampling_2D(
     .. versionadded:: 0.4
 
     """
-    mu_a = np.array([-(sigma**2) / 2, (sigma**2) / 2])
-    mu_b = np.array([(sigma**2) / 2, -(sigma**2) / 2])
+    mu_a = np.array([-sigma**2 / 2, (sigma**2) / 2])
+    mu_b = np.array([(sigma**2) / 2, -sigma**2 / 2])
     cov_matrix = (sigma**2) * np.eye(2)
     r_samples = []
     cpt = 0
@@ -157,7 +156,7 @@ def _rejection_sampling_2D(
     rs = check_random_state(random_state)
     while cpt != n_samples:
         acc += 1
-        if rs.binomial(1, 0.5, 1) == 1:
+        if (rs.binomial(1, 0.5, 1) == 1):
             r_sample = multivariate_normal.rvs(mu_a, cov_matrix, 1, rs)
             res = _rejection_sampling_2D_gfunction_plus(sigma, r_sample)
             if rs.rand(1) < res:
@@ -199,6 +198,7 @@ def _slice_one_sample(ptarget, x0, w, rs):
     n_dim = len(x0)
 
     for i in range(n_dim):
+
         ei = np.zeros(n_dim)
         ei[i] = 1
 
@@ -211,7 +211,7 @@ def _slice_one_sample(ptarget, x0, w, rs):
         # step 3 : create a horizontal interval (xl_i, xr_i) enclosing xt_i
         r = rs.rand()
         xl_i = xt[i] - r * w
-        xr_i = xt[i] + (1 - r) * w
+        xr_i = xt[i] + (1-r) * w
         while ptarget(xt + (xl_i - xt[i]) * ei) > uprime_i:
             xl_i = xl_i - w
         while ptarget(xt + (xr_i - xt[i]) * ei) > uprime_i:
@@ -236,9 +236,8 @@ def _slice_one_sample(ptarget, x0, w, rs):
     return xt
 
 
-def _slice_sampling(
-    ptarget, n_samples, x0, n_burnin=20, thin=10, random_state=None, n_jobs=1
-):
+def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
+                    random_state=None, n_jobs=1):
     """Slice sampling procedure.
 
     Implementation of a slice sampling algorithm for sampling from any target
@@ -278,9 +277,13 @@ def _slice_sampling(
     """
 
     if (n_samples <= 0) or (not isinstance(n_samples, int)):
-        raise ValueError(f"n_samples must be a positive integer (Got {n_samples})")
+        raise ValueError(
+            f"n_samples must be a positive integer (Got {n_samples})"
+        )
     if (n_burnin <= 0) or (not isinstance(n_burnin, int)):
-        raise ValueError(f"n_burnin must be a positive integer (Got {n_burnin})")
+        raise ValueError(
+            f"n_burnin must be a positive integer (Got {n_burnin})"
+        )
     if (thin <= 0) or (not isinstance(thin, int)):
         raise ValueError(f"thin must be a positive integer (Got {thin})")
 
@@ -290,17 +293,17 @@ def _slice_sampling(
     n_samples_total = (n_samples + n_burnin) * thin
 
     samples = Parallel(n_jobs=n_jobs)(
-        delayed(_slice_one_sample)(ptarget, x0, w, rs) for _ in range(n_samples_total)
+        delayed(_slice_one_sample)(ptarget, x0, w, rs)
+        for _ in range(n_samples_total)
     )
 
-    samples = np.array(samples)[(n_burnin * thin) :][::thin]
+    samples = np.array(samples)[(n_burnin * thin):][::thin]
 
     return samples
 
 
-def _sample_parameter_r(
-    n_samples, n_dim, sigma, random_state=None, n_jobs=1, sampling_method="auto"
-):
+def _sample_parameter_r(n_samples, n_dim, sigma,
+                        random_state=None, n_jobs=1, sampling_method="auto"):
     """Sample the r parameters of a Riemannian Gaussian distribution.
 
     Sample the logarithm of the eigenvalues of a SPD matrix following a
@@ -342,13 +345,15 @@ def _sample_parameter_r(
         Theory, vol. 63, pp. 2153–2170, 2017.
     """
     if sampling_method not in ["slice", "rejection", "auto"]:
-        raise ValueError(
-            f"Unknown sampling method {sampling_method}, try slice or rejection"
-        )
+        raise ValueError(f"Unknown sampling method {sampling_method}, "
+                         "try slice or rejection")
     if n_dim == 2 and sampling_method != "slice":
-        return _rejection_sampling_2D(n_samples, sigma, random_state=random_state)
+        return _rejection_sampling_2D(n_samples, sigma,
+                                      random_state=random_state)
     if n_dim != 2 and sampling_method == "rejection":
-        raise ValueError(f"n_dim={n_dim} is not yet supported with rejection sampling")
+        raise ValueError(
+            f"n_dim={n_dim} is not yet supported with rejection sampling"
+        )
     rs = check_random_state(random_state)
     x0 = rs.randn(n_dim)
     ptarget = partial(_pdf_r, sigma=sigma)
@@ -396,9 +401,8 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
     return u_samples
 
 
-def _sample_gaussian_spd_centered(
-    n_matrices, n_dim, sigma, random_state=None, n_jobs=1, sampling_method="auto"
-):
+def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
+                                  n_jobs=1, sampling_method="auto"):
     """Sample a Riemannian Gaussian distribution centered at the Identity.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at the
@@ -467,9 +471,8 @@ def _sample_gaussian_spd_centered(
     return samples
 
 
-def sample_gaussian_spd(
-    n_matrices, mean, sigma, random_state=None, n_jobs=1, sampling_method="auto"
-):
+def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
+                        n_jobs=1, sampling_method="auto"):
     """Sample a Riemannian Gaussian distribution.
 
     Sample SPD matrices from a Riemannian Gaussian distribution centered at
@@ -627,7 +630,11 @@ class RandomOverSampler(BaseEstimator):
     """
 
     def __init__(
-        self, metric="riemann", sampling_strategy="auto", random_state=None, n_jobs=1
+        self,
+        metric="riemann",
+        sampling_strategy="auto",
+        random_state=None,
+        n_jobs=1
     ):
         """Init."""
         self.metric = metric
@@ -688,6 +695,7 @@ class RandomOverSampler(BaseEstimator):
         return X_resampled, y_resampled
 
     def _check_sampling_strategy(self, y):
+
         classes, counts = np.unique(y, return_counts=True)
         input_counts = dict(zip(classes, counts))
         n_mats_majority = max(input_counts.values())
@@ -718,7 +726,8 @@ class RandomOverSampler(BaseEstimator):
 
         if self.sampling_strategy == "all":
             return {
-                key: n_mats_majority - value for (key, value) in input_counts.items()
+                key: n_mats_majority - value
+                for (key, value) in input_counts.items()
             }
 
         raise ValueError(

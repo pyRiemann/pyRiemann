@@ -14,14 +14,8 @@ def test_sample_gaussian_spd_float_dim2(n_jobs, sampling_method, sigma):
     """Test for dim=2 with a float sigma."""
     n_matrices, n_dim = 5, 2
     mean = np.eye(n_dim)
-    X = sample_gaussian_spd(
-        n_matrices,
-        mean,
-        sigma,
-        random_state=42,
-        n_jobs=n_jobs,
-        sampling_method=sampling_method,
-    )
+    X = sample_gaussian_spd(n_matrices, mean, sigma, random_state=42,
+                            n_jobs=n_jobs, sampling_method=sampling_method)
     assert X.shape == (n_matrices, n_dim, n_dim)  # X shape mismatch
     assert is_spd(X)  # X is an array of SPD matrices
 
@@ -33,14 +27,8 @@ def test_sample_gaussian_spd_float(n_dim, n_jobs, sampling_method):
     """Test for dim>2 with a float sigma."""
     n_matrices = 5
     mean, sigma = np.eye(n_dim), 2.5
-    X = sample_gaussian_spd(
-        n_matrices,
-        mean,
-        sigma,
-        random_state=42,
-        n_jobs=n_jobs,
-        sampling_method=sampling_method,
-    )
+    X = sample_gaussian_spd(n_matrices, mean, sigma, random_state=42,
+                            n_jobs=n_jobs, sampling_method=sampling_method)
     assert X.shape == (n_matrices, n_dim, n_dim)  # X shape mismatch
     assert is_spd(X)  # X is an array of SPD matrices
 
@@ -57,19 +45,23 @@ def test_sample_gaussian_spd_ndarray(n_dim):
 
 def test_sample_gaussian_spd_error():
     with pytest.raises(ValueError):  # unknown sampling method
-        sample_gaussian_spd(5, np.eye(2), 1.0, sampling_method="blabla")
+        sample_gaussian_spd(5, np.eye(2), 1., sampling_method="blabla")
     with pytest.raises(ValueError):  # dim=3 not yet supported with rejection
         n_dim = 3
-        sample_gaussian_spd(5, np.eye(n_dim), 1.0, sampling_method="rejection")
+        sample_gaussian_spd(5, np.eye(n_dim), 1., sampling_method="rejection")
 
 
 @pytest.mark.parametrize("n_jobs", [1, -1])
 def test_sample_gaussian_spd_sigma(n_jobs):
     """Test sigma parameter from Riemannian Gaussian sampling."""
-    n_matrices, n_dim, sig_1, sig_2 = 5, 4, 1.0, 2.0
+    n_matrices, n_dim, sig_1, sig_2 = 5, 4, 1., 2.
     mean = np.eye(n_dim)
-    X1 = sample_gaussian_spd(n_matrices, mean, sig_1, random_state=42, n_jobs=n_jobs)
-    X2 = sample_gaussian_spd(n_matrices, mean, sig_2, random_state=66, n_jobs=n_jobs)
+    X1 = sample_gaussian_spd(
+        n_matrices, mean, sig_1, random_state=42, n_jobs=n_jobs
+        )
+    X2 = sample_gaussian_spd(
+        n_matrices, mean, sig_2, random_state=66, n_jobs=n_jobs
+        )
     avg_d1 = np.mean([distance_riemann(X1_i, mean) for X1_i in X1])
     avg_d2 = np.mean([distance_riemann(X2_i, mean) for X2_i in X2])
     assert avg_d1 < avg_d2
@@ -77,7 +69,7 @@ def test_sample_gaussian_spd_sigma(n_jobs):
 
 def test_sample_gaussian_spd_sigma_errors():
     n_matrices, n_dim = 3, 4
-    mean, sigma = np.eye(n_dim), 2.0
+    mean, sigma = np.eye(n_dim), 2.
     with pytest.raises(ValueError):  # mean is not a matrix
         sample_gaussian_spd(n_matrices, np.ones(n_dim), sigma)
     with pytest.raises(ValueError):  # sigma is not the right shape
@@ -106,7 +98,8 @@ def test_random_over_sampler(kind, metric, n_jobs, get_mats):
 
 
 @pytest.mark.parametrize(
-    "sampling_strategy", ["minority", "not minority", "not majority", "all", "auto"]
+    "sampling_strategy",
+    ["minority", "not minority", "not majority", "all", "auto"]
 )
 def test_random_over_sampler_strategy(sampling_strategy, get_mats):
     n_dim = 3
@@ -121,8 +114,8 @@ def test_random_over_sampler_strategy(sampling_strategy, get_mats):
     ros = RandomOverSampler(sampling_strategy=sampling_strategy)
     Xr, yr = ros.fit_resample(X, y)
 
-    assert_array_equal(X, Xr[: len(X)])
-    assert_array_equal(y, yr[: len(y)])
+    assert_array_equal(X, Xr[:len(X)])
+    assert_array_equal(y, yr[:len(y)])
 
     assert len(yr[yr == lab1]) == n1
     if sampling_strategy == "minority":

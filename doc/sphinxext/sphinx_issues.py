@@ -18,7 +18,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
-
 import re
 
 from docutils import nodes, utils
@@ -76,6 +75,7 @@ def cve_role(name, rawtext, text, lineno, inliner, options=None, content=None):
 
 
 class IssueRole(object):
+
     EXTERNAL_REPO_REGEX = re.compile(r"^(\w+)/(.+)([#@])([\w]+)$")
 
     def __init__(

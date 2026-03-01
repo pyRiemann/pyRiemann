@@ -16,7 +16,6 @@ from sklearn.decomposition import PCA
 
 ###############################################################################
 
-
 class PCAImage(BaseEstimator, TransformerMixin):
     """Dimension reduction on 3rd dimension using PCA.
 
@@ -47,9 +46,8 @@ class PCAImage(BaseEstimator, TransformerMixin):
             Output data, reduced along its 3rd dimension.
         """
         if np.iscomplexobj(X):
-            assert isinstance(self.n_components, int), (
+            assert isinstance(self.n_components, int), \
                 "n_components should be an int when using complex data."
-            )
             if self.n_components >= X.shape[2]:
                 return X
             return self._complex_pca(X)
@@ -78,7 +76,7 @@ class PCAImage(BaseEstimator, TransformerMixin):
         """
         # center pixels
         n_rows, n_columns, n_features = X.shape
-        Xr = X.reshape((n_rows * n_columns, n_features))
+        Xr = X.reshape((n_rows*n_columns, n_features))
         Xr_mean = np.mean(Xr, axis=0)
         X = X - Xr_mean
         Xr = Xr - Xr_mean
@@ -89,7 +87,7 @@ class PCAImage(BaseEstimator, TransformerMixin):
         scm = Xr.conj().T @ Xr / len(Xr)
         _, eigvecs = np.linalg.eigh(scm)
         eigvecs = np.fliplr(eigvecs)
-        X_new = X @ eigvecs[:, : self.n_components]
+        X_new = X @ eigvecs[:, :self.n_components]
         return X_new
 
 
@@ -123,9 +121,8 @@ class SlidingWindowVectorize(BaseEstimator, TransformerMixin):
         """
         assert self.window_size % 2 == 1, "Window size must be odd."
         assert self.overlap >= 0, "Overlap must be positive."
-        assert self.overlap <= self.window_size // 2, (
+        assert self.overlap <= self.window_size // 2, \
             "Overlap must be smaller or equal than int(window_size/2)."
-        )
 
         self.n_rows, self.n_columns, _ = X.shape
         return self
@@ -154,14 +151,14 @@ class SlidingWindowVectorize(BaseEstimator, TransformerMixin):
         )
         if self.overlap is not None:
             if self.overlap > 0:
-                X = X[:: self.overlap, :: self.overlap]
+                X = X[::self.overlap, ::self.overlap]
         else:
-            X = X[:: self.window_size // 2, :: self.window_size // 2]
-            self.overlap = self.window_size // 2
+            X = X[::self.window_size//2, ::self.window_size//2]
+            self.overlap = self.window_size//2
 
         # reshape to (n_pixels, n_samples, n_features) with
         # n_pixels = axis0*axis1, n_samples = axis3*axis_4, n_features = axis2
-        X_new = X.reshape((-1, X.shape[2], X.shape[3] * X.shape[4]))
+        X_new = X.reshape((-1, X.shape[2], X.shape[3]*X.shape[4]))
         return X_new
 
     def fit_transform(self, X, y=None):
@@ -190,7 +187,7 @@ class SlidingWindowVectorize(BaseEstimator, TransformerMixin):
 
         # take into account overlap
         if self.overlap > 0:
-            n_new_rows = ceil(n_new_rows / self.overlap)
-            n_new_columns = ceil(n_new_columns / self.overlap)
+            n_new_rows = ceil(n_new_rows/self.overlap)
+            n_new_columns = ceil(n_new_columns/self.overlap)
 
         return y.reshape((n_new_rows, n_new_columns))

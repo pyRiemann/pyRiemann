@@ -48,14 +48,11 @@ eeg_data = raw.get_data()
 # Plot few seconds of signal from the `Oz` electrode using matplotlib
 
 n_seconds = 2
-time = np.linspace(0, n_seconds, n_seconds * sfreq, endpoint=False)[np.newaxis, :]
+time = np.linspace(0, n_seconds, n_seconds * sfreq,
+                   endpoint=False)[np.newaxis, :]
 plt.figure(figsize=(10, 4))
-plt.plot(
-    time.T,
-    eeg_data[np.array(raw.ch_names) == "Oz", : n_seconds * sfreq].T,
-    color="C0",
-    lw=0.5,
-)
+plt.plot(time.T, eeg_data[np.array(raw.ch_names) == "Oz", :n_seconds*sfreq].T,
+         color="C0", lw=0.5)
 plt.xlabel("Time (s)")
 plt.ylabel(r"Oz ($\mu$V)")
 plt.show()
@@ -65,7 +62,8 @@ plt.show()
 
 plt.figure(figsize=(10, 4))
 for ch_idx, ch_name in enumerate(raw.ch_names):
-    plt.plot(time.T, eeg_data[ch_idx, : n_seconds * sfreq].T, lw=0.5, label=ch_name)
+    plt.plot(time.T, eeg_data[ch_idx, :n_seconds*sfreq].T, lw=0.5,
+             label=ch_name)
 plt.xlabel("Time (s)")
 plt.ylabel(r"EEG ($\mu$V)")
 plt.legend(loc="upper right")
@@ -74,13 +72,8 @@ plt.show()
 ###############################################################################
 # With MNE, it is much easier to visualize the data
 
-raw.plot(
-    duration=n_seconds,
-    start=0,
-    n_channels=8,
-    scalings={"eeg": 4e-2},
-    color={"eeg": "steelblue"},
-)
+raw.plot(duration=n_seconds, start=0, n_channels=8, scalings={"eeg": 4e-2},
+         color={"eeg": "steelblue"})
 
 ###############################################################################
 # Extended signals for spatial covariance
@@ -100,27 +93,23 @@ raw_ext = extend_signal(raw, frequencies, freq_band)
 ###############################################################################
 # Plot the extended signal
 
-raw_ext.plot(
-    duration=n_seconds,
-    start=14,
-    n_channels=24,
-    scalings={"eeg": 5e-4},
-    color={"eeg": "steelblue"},
-)
+raw_ext.plot(duration=n_seconds, start=14, n_channels=24,
+             scalings={"eeg": 5e-4}, color={"eeg": "steelblue"})
 
 ###############################################################################
 # Building Epochs and plotting 3 s of the signal from electrode Oz for a trial
 
-epochs = Epochs(raw_ext, events, event_id, tmin=2, tmax=5, baseline=None).get_data(
-    copy=False
-)
+epochs = Epochs(
+    raw_ext, events, event_id, tmin=2, tmax=5, baseline=None
+).get_data(copy=False)
 
 n_seconds = 3
-time = np.linspace(0, n_seconds, n_seconds * sfreq, endpoint=False)[np.newaxis, :]
+time = np.linspace(0, n_seconds, n_seconds * sfreq,
+                   endpoint=False)[np.newaxis, :]
 channels = range(0, len(raw_ext.ch_names), len(raw.ch_names))
 plt.figure(figsize=(7, 5))
 for f, c in zip(frequencies, channels):
-    plt.plot(epochs[5, c, :].T, label=str(int(f)) + " Hz")
+    plt.plot(epochs[5, c, :].T, label=str(int(f))+" Hz")
 plt.xlabel("Time (s)")
 plt.ylabel(r"Oz after filtering ($\mu$V)")
 plt.legend(loc="upper right")
@@ -137,18 +126,19 @@ plt.show()
 # The covariance matrices will be estimated using the Ledoit-Wolf shrinkage
 # estimator on the extended signal.
 
-cov_ext_trials = BlockCovariances(estimator="lwf", block_size=8).transform(epochs)
+cov_ext_trials = BlockCovariances(
+    estimator="lwf", block_size=8
+).transform(epochs)
 
 # This plot shows an example of a covariance matrix observed for each class:
 ch_names = raw_ext.info["ch_names"]
 
 plt.figure(figsize=(7, 7))
 for i, l in enumerate(event_id):
-    ax = plt.subplot(2, 2, i + 1)
-    plt.imshow(
-        cov_ext_trials[events[:, 2] == event_id[l]][0], cmap=plt.get_cmap("RdBu_r")
-    )
-    plt.title("Cov for class: " + l)
+    ax = plt.subplot(2, 2, i+1)
+    plt.imshow(cov_ext_trials[events[:, 2] == event_id[l]][0],
+               cmap=plt.get_cmap("RdBu_r"))
+    plt.title("Cov for class: "+l)
     plt.xticks([])
     if i == 0 or i == 2:
         plt.yticks(np.arange(len(ch_names)), ch_names)
@@ -176,9 +166,9 @@ for i, l in enumerate(event_id):
 
 plt.figure(figsize=(7, 7))
 for i, l in enumerate(event_id):
-    ax = plt.subplot(2, 2, i + 1)
+    ax = plt.subplot(2, 2, i+1)
     plt.imshow(cov_centers[i], cmap=plt.get_cmap("RdBu_r"))
-    plt.title("Cov mean for class: " + l)
+    plt.title("Cov mean for class: "+l)
     plt.xticks([])
     if i == 0 or i == 2:
         plt.yticks(np.arange(len(ch_names)), ch_names)
@@ -196,11 +186,8 @@ print("Number of trials: {}".format(len(cov_ext_trials)))
 cv = RepeatedKFold(n_splits=2, n_repeats=10, random_state=42)
 mdm = MDM(metric=dict(mean="riemann", distance="riemann"))
 scores = cross_val_score(mdm, cov_ext_trials, events[:, 2], cv=cv, n_jobs=1)
-print(
-    "MDM accuracy: {:.2f}% +/- {:.2f}".format(
-        np.mean(scores) * 100, np.std(scores) * 100
-    )
-)
+print("MDM accuracy: {:.2f}% +/- {:.2f}".format(np.mean(scores)*100,
+                                                np.std(scores)*100))
 # The obtained results are 80.62% +/- 16.29 for this session, with a repeated
 # 10-fold validation.
 

@@ -1,5 +1,4 @@
 """Spatial filtering function."""
-
 import warnings
 
 import numpy as np
@@ -71,7 +70,8 @@ class Xdawn(TransformerMixin, BaseEstimator):
         pp.1382-1386.
     """
 
-    def __init__(self, nfilter=4, classes=None, estimator="scm", baseline_cov=None):
+    def __init__(self, nfilter=4, classes=None, estimator="scm",
+                 baseline_cov=None):
         """Init."""
         self.nfilter = nfilter
         self.classes = classes
@@ -99,14 +99,15 @@ class Xdawn(TransformerMixin, BaseEstimator):
         """
         n_trials, n_channels, n_times = X.shape
 
-        self.classes_ = np.unique(y) if self.classes is None else self.classes
+        self.classes_ = (np.unique(y) if self.classes is None else
+                         self.classes)
 
         Cx = self.baseline_cov
         if Cx is None:
             tmp = X.transpose((1, 2, 0))
-            Cx = np.asarray(
-                self.estimator_fn(tmp.reshape(n_channels, n_times * n_trials))
-            )
+            Cx = np.asarray(self.estimator_fn(
+                tmp.reshape(n_channels, n_times * n_trials)
+            ))
 
         self.evokeds_ = []
         self.filters_ = []
@@ -125,9 +126,9 @@ class Xdawn(TransformerMixin, BaseEstimator):
             V = evecs
             A = np.linalg.pinv(V.T)
             # create the reduced prototyped response
-            self.filters_.append(V[:, 0 : self.nfilter].T)
-            self.patterns_.append(A[:, 0 : self.nfilter].T)
-            self.evokeds_.append(V[:, 0 : self.nfilter].T @ P)
+            self.filters_.append(V[:, 0:self.nfilter].T)
+            self.patterns_.append(A[:, 0:self.nfilter].T)
+            self.evokeds_.append(V[:, 0:self.nfilter].T @ P)
 
         self.evokeds_ = np.concatenate(self.evokeds_, axis=0)
         self.filters_ = np.concatenate(self.filters_, axis=0)
@@ -417,8 +418,8 @@ class CSP(BilinearFilter):
                 for i, c in enumerate(classes):
                     tmp = evecs[:, j].T @ C[i] @ evecs[:, j]
                     a += Pc[i] * np.log(np.sqrt(tmp))
-                    b += Pc[i] * (tmp**2 - 1)
-                mi = -(a + (3.0 / 16) * (b**2))
+                    b += Pc[i] * (tmp ** 2 - 1)
+                mi = - (a + (3.0 / 16) * (b ** 2))
                 mutual_info.append(mi)
             ix = np.argsort(mutual_info)[::-1]
         else:
@@ -430,8 +431,8 @@ class CSP(BilinearFilter):
         # spatial patterns
         A = np.linalg.pinv(evecs.T)
 
-        self.filters_ = evecs[:, 0 : self.nfilter].T
-        self.patterns_ = A[:, 0 : self.nfilter].T
+        self.filters_ = evecs[:, 0:self.nfilter].T
+        self.patterns_ = A[:, 0:self.nfilter].T
 
         return self
 
@@ -526,8 +527,8 @@ class SPoC(CSP):
         # spatial patterns
         A = np.linalg.pinv(evecs.T)
 
-        self.filters_ = evecs[:, 0 : self.nfilter].T
-        self.patterns_ = A[:, 0 : self.nfilter].T
+        self.filters_ = evecs[:, 0:self.nfilter].T
+        self.patterns_ = A[:, 0:self.nfilter].T
 
         return self
 
@@ -641,16 +642,8 @@ class AJDC(BaseEstimator):
         Issue 4, 2000
     """
 
-    def __init__(
-        self,
-        window=128,
-        overlap=0.5,
-        fmin=None,
-        fmax=None,
-        fs=None,
-        dim_red=None,
-        verbose=True,
-    ):
+    def __init__(self, window=128, overlap=0.5, fmin=None, fmax=None, fs=None,
+                 dim_red=None, verbose=True):
         """Init."""
 
         self.window = window
@@ -721,11 +714,8 @@ class AJDC(BaseEstimator):
         init = None
         if self.dim_red is None:
             warnings.warn("Parameter dim_red should not be let to None")
-        elif (
-            isinstance(self.dim_red, dict)
-            and len(self.dim_red) == 1
-            and next(iter(self.dim_red)) == "warm_restart"
-        ):
+        elif isinstance(self.dim_red, dict) and len(self.dim_red) == 1 \
+                and next(iter(self.dim_red)) == "warm_restart":
             init = self.dim_red["warm_restart"]
             if init.ndim != 2 or init.shape[0] != init.shape[1]:
                 raise ValueError(
@@ -849,11 +839,8 @@ class AJDC(BaseEstimator):
         src_var = np.zeros((X.shape[0], self.n_sources_))
         for s in range(self.n_sources_):
             src_var[:, s] = np.trace(
-                self.backward_filters_[:, s]
-                * self.forward_filters_[s].T
-                * cov
-                * self.forward_filters_[s]
-                * self.backward_filters_[:, s].T,
+                self.backward_filters_[:, s] * self.forward_filters_[s].T * cov
+                * self.forward_filters_[s] * self.backward_filters_[:, s].T,
                 axis1=-2,
                 axis2=-1,
             )

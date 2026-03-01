@@ -33,7 +33,7 @@ print(__doc__)
 data_path = sample.data_path()
 raw_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw.fif"
 event_fname = data_path + "/MEG/sample/sample_audvis_filt-0-40_raw-eve.fif"
-tmin, tmax = -0.0, 1
+tmin, tmax = -0., 1
 event_id = dict(aud_l=1, aud_r=2, vis_l=3, vis_r=4)
 
 # Setup for reading the raw data
@@ -42,23 +42,12 @@ raw.filter(2, None, method="iir")  # replace baselining with high-pass
 events = mne.read_events(event_fname)
 
 raw.info["bads"] = ["MEG 2443"]  # set bad channels
-picks = mne.pick_types(
-    raw.info, meg="grad", eeg=False, stim=False, eog=False, exclude="bads"
-)
+picks = mne.pick_types(raw.info, meg="grad", eeg=False, stim=False, eog=False,
+                       exclude="bads")
 
 # Read epochs
-epochs = mne.Epochs(
-    raw,
-    events,
-    event_id,
-    tmin,
-    tmax,
-    proj=False,
-    picks=picks,
-    baseline=None,
-    preload=True,
-    verbose=False,
-)
+epochs = mne.Epochs(raw, events, event_id, tmin, tmax, proj=False,
+                    picks=picks, baseline=None, preload=True, verbose=False)
 
 labels = epochs.events[::5, -1]
 
@@ -71,9 +60,8 @@ n_perms = 100
 # ----------------------------------------
 
 t_init = time()
-p_test = PermutationDistance(
-    n_perms, metric="riemann", mode="pairwise", estimator=XdawnCovariances(2)
-)
+p_test = PermutationDistance(n_perms, metric="riemann", mode="pairwise",
+                             estimator=XdawnCovariances(2))
 p, F = p_test.test(epochs_data, labels)
 duration = time() - t_init
 
@@ -90,9 +78,8 @@ plt.show()
 # --------------------------------------
 
 t_init = time()
-p_test = PermutationDistance(
-    n_perms, metric="riemann", mode="ttest", estimator=XdawnCovariances(2)
-)
+p_test = PermutationDistance(n_perms, metric="riemann", mode="ttest",
+                             estimator=XdawnCovariances(2))
 p, F = p_test.test(epochs_data, labels)
 duration = time() - t_init
 
@@ -109,9 +96,8 @@ plt.show()
 # --------------------------------------
 
 t_init = time()
-p_test = PermutationDistance(
-    n_perms, metric="riemann", mode="ftest", estimator=XdawnCovariances(2)
-)
+p_test = PermutationDistance(n_perms, metric="riemann", mode="ftest",
+                             estimator=XdawnCovariances(2))
 p, F = p_test.test(epochs_data, labels)
 duration = time() - t_init
 
@@ -127,9 +113,8 @@ plt.show()
 # Classification based permutation test
 # -------------------------------------
 
-clf = make_pipeline(
-    XdawnCovariances(2), TangentSpace("logeuclid"), LogisticRegression()
-)
+clf = make_pipeline(XdawnCovariances(2), TangentSpace("logeuclid"),
+                    LogisticRegression())
 
 t_init = time()
 p_test = PermutationModel(n_perms, model=clf, cv=3)

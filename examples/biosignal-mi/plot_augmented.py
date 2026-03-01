@@ -37,13 +37,11 @@ from pyriemann.tangentspace import TangentSpace
 # Define the Augmented Covariance
 # -------------------------------
 
-
 class AugmentedDataset(BaseEstimator, TransformerMixin):
     """This transformation creates an embedding version of the current dataset.
 
     The implementation and the application is described in [1]_.
     """
-
     def __init__(self, order=1, lag=1):
         self.order = order
         self.lag = lag
@@ -57,7 +55,7 @@ class AugmentedDataset(BaseEstimator, TransformerMixin):
 
         X_new = np.concatenate(
             [
-                X[:, :, p * self.lag : -(self.order - p) * self.lag]
+                X[:, :, p * self.lag: -(self.order - p) * self.lag]
                 for p in range(0, self.order)
             ],
             axis=1,
@@ -72,7 +70,7 @@ class AugmentedDataset(BaseEstimator, TransformerMixin):
 
 # Avoid classification of evoked responses by using epochs that start 1s after
 # cue onset.
-tmin, tmax = 1.0, 2.0
+tmin, tmax = 1., 2.
 event_id = dict(hands=2, feet=3)
 subject = 7
 runs = [6, 10, 14]  # motor imagery: hands vs feet
@@ -83,12 +81,13 @@ raw_files = [
 ]
 raw = concatenate_raws(raw_files)
 
-picks = pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
+picks = pick_types(
+    raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
 # subsample elecs
 picks = picks[::2]
 
 # Apply band-pass filter
-raw.filter(7.0, 35.0, method="iir", picks=picks)
+raw.filter(7., 35., method="iir", picks=picks)
 
 events, _ = events_from_annotations(raw, event_id=dict(T1=2, T2=3))
 
@@ -104,16 +103,17 @@ epochs = Epochs(
     picks=picks,
     baseline=None,
     preload=True,
-    verbose=False,
-)
+    verbose=False)
 
 # get epochs
 X = 1e6 * epochs.get_data(copy=False)
 y = epochs.events[:, -1] - 2
 
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.3, random_state=0, shuffle=True, stratify=y
-)
+X_train, X_test, y_train, y_test = train_test_split(X, y,
+                                                    test_size=0.3,
+                                                    random_state=0,
+                                                    shuffle=True,
+                                                    stratify=y)
 
 
 ###############################################################################
@@ -125,22 +125,18 @@ X_train, X_test, y_train, y_test = train_test_split(
 # reconstruction [1]_
 
 pipelines = {}
-pipelines["ACM(Grid)+TGSP+SVM"] = Pipeline(
-    steps=[
-        ("augmenteddataset", AugmentedDataset()),
-        ("Covariances", Covariances("oas")),
-        ("Tangent_Space", TangentSpace(metric="riemann")),
-        ("SVM", SVC(kernel="linear")),
-    ]
-)
+pipelines["ACM(Grid)+TGSP+SVM"] = Pipeline(steps=[
+    ("augmenteddataset", AugmentedDataset()),
+    ("Covariances", Covariances("oas")),
+    ("Tangent_Space", TangentSpace(metric="riemann")),
+    ("SVM", SVC(kernel="linear"))
+])
 
-pipelines["ACM(Grid)+MDM"] = Pipeline(
-    steps=[
-        ("augmenteddataset", AugmentedDataset()),
-        ("Covariances", Covariances("oas")),
-        ("MDM", MDM(metric=dict(mean="riemann", distance="riemann"))),
-    ]
-)
+pipelines["ACM(Grid)+MDM"] = Pipeline(steps=[
+    ("augmenteddataset", AugmentedDataset()),
+    ("Covariances", Covariances("oas")),
+    ("MDM", MDM(metric=dict(mean="riemann", distance="riemann")))
+])
 
 # Define the inner CV scheme for the nested cross-validation of
 # hyper-parameter search
@@ -182,10 +178,13 @@ for ppn, ppl in pipelines_grid.items():
     res = {
         "pipeline": ppn,
         "order": score.best_params_["augmenteddataset__order"],
-        "lag": score.best_params_["augmenteddataset__lag"],
+        "lag": score.best_params_["augmenteddataset__lag"]
     }
 
-    res_best = {"pipeline": ppn, "best_estimator": score.best_estimator_}
+    res_best = {
+        "pipeline": ppn,
+        "best_estimator": score.best_estimator_
+    }
     best_estimator.append(res_best)
     results_grid.append(res)
 
@@ -195,30 +194,26 @@ print(results_grid)
 
 # Update the pipeline with the best pipeline obtained with GridSearch process
 pipelines["ACM(Grid)+TGSP+SVM"] = best_estimator.loc[
-    best_estimator["pipeline"] == "ACM(Grid)+TGSP+SVM", "best_estimator"
-].values[0]
+    best_estimator["pipeline"] == "ACM(Grid)+TGSP+SVM",
+    "best_estimator"].values[0]
 
 pipelines["ACM(Grid)+MDM"] = best_estimator.loc[
-    best_estimator["pipeline"] == "ACM(Grid)+MDM", "best_estimator"
-].values[0]
+    best_estimator["pipeline"] == "ACM(Grid)+MDM",
+    "best_estimator"].values[0]
 
 
 ###############################################################################
 # Define pipelines with usual covariance matrix (CM)
-pipelines["CM+TGSP+SVM"] = Pipeline(
-    steps=[
-        ("Covariances", Covariances("oas")),
-        ("Tangent_Space", TangentSpace(metric="riemann")),
-        ("SVM", SVC(kernel="linear")),
-    ]
-)
+pipelines["CM+TGSP+SVM"] = Pipeline(steps=[
+    ("Covariances", Covariances("oas")),
+    ("Tangent_Space", TangentSpace(metric="riemann")),
+    ("SVM", SVC(kernel="linear"))
+])
 
-pipelines["CM+MDM"] = Pipeline(
-    steps=[
-        ("Covariances", Covariances("cov")),
-        ("MDM", MDM(metric=dict(mean="riemann", distance="riemann"))),
-    ]
-)
+pipelines["CM+MDM"] = Pipeline(steps=[
+    ("Covariances", Covariances("cov")),
+    ("MDM", MDM(metric=dict(mean="riemann", distance="riemann")))
+])
 
 
 ###############################################################################
@@ -240,7 +235,7 @@ for ppn, ppl in pipelines.items():
         "score": score,
         "pipeline": ppn,
         "Features": ppn.split("+")[0],
-        "Classifiers": ppn.split("+", 1)[1],
+        "Classifiers": ppn.split("+", 1)[1]
     }
     results.append(res)
 results = pd.DataFrame(results)
@@ -254,7 +249,11 @@ for _, row in results.sort_values(by="score", ascending=False).iterrows():
 # ----
 
 sns.pointplot(
-    data=results, x="Features", y="score", hue="Classifiers", order=["CM", "ACM(Grid)"]
+    data=results,
+    x="Features",
+    y="score",
+    hue="Classifiers",
+    order=["CM", "ACM(Grid)"]
 )
 plt.show()
 

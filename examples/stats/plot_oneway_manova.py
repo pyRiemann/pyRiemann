@@ -29,7 +29,7 @@ sns.set_style("whitegrid")
 
 # avoid classification of evoked responses by using epochs that start 1s after
 # cue onset.
-tmin, tmax = 1.0, 3.0
+tmin, tmax = 1., 3.
 event_id = dict(hands=2, feet=3)
 subject = 1
 runs = [6, 10]  # motor imagery: hands vs feet
@@ -41,11 +41,12 @@ raw_files = [
 raw = concatenate_raws(raw_files)
 
 # Apply band-pass filter
-raw.filter(7.0, 35.0, method="iir")
+raw.filter(7., 35., method="iir")
 
 events, _ = events_from_annotations(raw, event_id=dict(T1=2, T2=3))
 
-picks = pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
+picks = pick_types(
+    raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
 picks = picks[::4]
 
 # Read epochs (train will be done only between 1 and 2s)

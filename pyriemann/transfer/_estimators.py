@@ -2,12 +2,19 @@ import warnings
 
 from joblib import Parallel, delayed
 import numpy as np
-from sklearn.base import BaseEstimator, TransformerMixin, is_classifier, is_regressor
+from sklearn.base import (
+    BaseEstimator,
+    TransformerMixin,
+    is_classifier,
+    is_regressor
+)
 from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score, r2_score
 from sklearn.pipeline import Pipeline
 
-from ..optimization.grassmann import _get_rotation_manifold, _get_rotation_tangentspace
+from ..optimization.grassmann import (
+    _get_rotation_manifold, _get_rotation_tangentspace
+)
 from ._tools import decode_domains
 from ..classification import MDM
 from ..preprocessing import Whitening
@@ -686,8 +693,7 @@ class TLRotate(TransformerMixin, BaseEstimator):
                 metric=self.metric,
                 tol_step=self.tol_step,
                 maxiter=self.maxiter,
-            )
-            for d in source_domains
+            ) for d in source_domains
         )
 
         self.rotations_ = {}
@@ -708,7 +714,9 @@ class TLRotate(TransformerMixin, BaseEstimator):
 
         if self.n_components == "max":
             self.n_components = X.shape[1]
-        self._src_pca = [PCA(n_components=self.n_components) for _ in range(n_classes)]
+        self._src_pca = [
+            PCA(n_components=self.n_components) for _ in range(n_classes)
+        ]
 
         self.rotations_ = {}
         source_domains = np.unique(domains)
@@ -756,12 +764,10 @@ class TLRotate(TransformerMixin, BaseEstimator):
         """
         is_valid = True
         classes = np.unique(y)
-        anchors = np.array(
-            [
-                np.average(X[y == c], axis=0, weights=sample_weight[y == c])
-                for c in classes
-            ]
-        )
+        anchors = np.array([
+            np.average(X[y == c], axis=0, weights=sample_weight[y == c])
+            for c in classes
+        ])
 
         for i, c in enumerate(classes):
             Xc = X[y == c]
@@ -779,7 +785,7 @@ class TLRotate(TransformerMixin, BaseEstimator):
             for j in range(self.n_components):
                 inds = np.argsort(Xc_pca[:, j], axis=0)
                 anchor = [
-                    np.mean(Xc[inds[round(k * r) : round((k + 1) * r)]], axis=0)
+                    np.mean(Xc[inds[round(k*r):round((k+1)*r)]], axis=0)
                     for k in range(self.n_clusters)
                 ]
                 anchors = np.vstack([anchors, anchor])
@@ -846,7 +852,8 @@ class TLRotate(TransformerMixin, BaseEstimator):
                 X_new[idx] = X[idx]
             else:
                 if X.ndim == 3:
-                    X_new[idx] = self.rotations_[d] @ X[idx] @ self.rotations_[d].T
+                    X_new[idx] = self.rotations_[d] @ X[idx] \
+                        @ self.rotations_[d].T
                 else:
                     X_new[idx] = X[idx] @ self.rotations_[d]
 
@@ -908,7 +915,9 @@ class TLEstimator(BaseEstimator):
             The TLEstimator instance.
         """
         if not (is_regressor(self.estimator) or is_classifier(self.estimator)):
-            raise TypeError("Estimator has to be either a classifier or a regressor.")
+            raise TypeError(
+                "Estimator has to be either a classifier or a regressor."
+            )
 
         X_dec, y_dec, domains = decode_domains(X, y_enc)
 
@@ -1241,8 +1250,7 @@ class MDWM(MDM):
                     X_src[y_src == c],
                     metric=self._metric_mean,
                     sample_weight=sample_weight[y_src == c],
-                )
-                for c in self.classes_
+                ) for c in self.classes_
             )
         )
 

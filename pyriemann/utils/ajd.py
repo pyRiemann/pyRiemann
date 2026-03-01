@@ -78,7 +78,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
                 crit = crit | (np.abs(s) > eps)
 
                 # update of A and V matrices
-                if np.abs(s) > eps:
+                if (np.abs(s) > eps):
                     tmp = A[:, Ip].copy()
                     A[:, Ip] = c * A[:, Ip] + s * A[:, Iq]
                     A[:, Iq] = c * A[:, Iq] - s * tmp
@@ -191,10 +191,11 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
                 crit += n_matrices * (g12 * np.conj(h12) + g21 * h21) / 2.0
 
                 tmp = 1 + 0.5j * np.imag(h12 * h21)
-                tmp = tmp + np.sqrt(tmp**2 - h12 * h21)
+                tmp = tmp + np.sqrt(tmp ** 2 - h12 * h21)
                 if np.isrealobj(X):
                     tmp = np.real(tmp)
-                tau = np.array([[1, np.conj(-h12 / tmp)], [np.conj(-h21 / tmp), 1]])
+                tau = np.array([[1, np.conj(-h12 / tmp)],
+                                [np.conj(-h21 / tmp), 1]])
 
                 A[[ii, jj], :] = tau.conj() @ A[[ii, jj], :]
                 tmp = np.c_[A[:, Ii], A[:, Ij]]
@@ -282,7 +283,7 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
         M[:, Il] = 0.5 * (M[:, Il] + M[:, Il].T)
         Ms[:, Il] = V @ M[:, Il] @ V.T
         Rs[:, k] = np.diag(Ms[:, Il])
-    crit = np.sum(Ms**2) - np.sum(Rs**2)
+    crit = np.sum(Ms ** 2) - np.sum(Rs ** 2)
 
     for _ in range(n_iter_max):
         B = Rs @ Rs.T
@@ -296,7 +297,7 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
         V = np.linalg.solve(A0, V)
 
         Raux = V @ M[:, 0:n] @ V.T
-        aux = 1.0 / np.sqrt(np.abs(np.diag(Raux)))
+        aux = 1. / np.sqrt(np.abs(np.diag(Raux)))
         V = aux[:, np.newaxis] * V
 
         for k in range(n_matrices):
@@ -304,7 +305,7 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
             Il = np.arange(ini, ini + n)
             Ms[:, Il] = V @ M[:, Il] @ V.T
             Rs[:, k] = np.diag(Ms[:, Il])
-        crit_new = np.sum(Ms**2) - np.sum(Rs**2)
+        crit_new = np.sum(Ms ** 2) - np.sum(Rs ** 2)
 
         if np.abs(crit_new - crit) < eps:
             break

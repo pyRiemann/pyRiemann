@@ -39,7 +39,6 @@ def _complex_estimator(func):
         R. Abrahamsson, Y. Selen and P. Stoica. 2007 IEEE International
         Conference on Acoustics, Speech and Signal Processing, Volume 2, 2007.
     """
-
     @wraps(func)
     def wrapper(X, **kwds):
         iscomplex = np.iscomplexobj(X)
@@ -48,13 +47,11 @@ def _complex_estimator(func):
             X = np.concatenate((X.real, X.imag), axis=0)
         cov = func(X, **kwds)
         if iscomplex:
-            cov = (
-                cov[:n_channels, :n_channels]
-                + cov[n_channels:, n_channels:]
-                + 1j * (cov[n_channels:, :n_channels] - cov[:n_channels, n_channels:])
-            )
+            cov = cov[:n_channels, :n_channels] \
+                + cov[n_channels:, n_channels:] \
+                + 1j * (cov[n_channels:, :n_channels]
+                        - cov[:n_channels, n_channels:])
         return cov
-
     return wrapper
 
 
@@ -94,18 +91,8 @@ def _tyl(X, **kwds):
     return covariance_mest(X, "tyl", **kwds)
 
 
-def covariance_mest(
-    X,
-    m_estimator,
-    *,
-    init=None,
-    tol=10e-3,
-    n_iter_max=50,
-    assume_centered=False,
-    q=0.9,
-    nu=5,
-    norm="trace",
-):
+def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
+                    assume_centered=False, q=0.9, nu=5, norm="trace"):
     r"""Robust M-estimators.
 
     Robust M-estimator based covariance matrix [1]_, computed by fixed point
@@ -203,7 +190,6 @@ def covariance_mest(
         def weight_func(x):  # Eq.(42) in [1]
             return (2 * n_channels + nu) / (nu + 2 * x)
     elif m_estimator == "tyl":
-
         def weight_func(x):  # Example 2, Section V-C in [1]
             return n_channels / x
     else:
@@ -217,6 +203,7 @@ def covariance_mest(
         cov = init
 
     for _ in range(n_iter_max):
+
         dist2 = distance_mahalanobis(X, cov, squared=True)
         Xw = np.sqrt(weight_func(dist2)) * X
         cov_new = Xw @ Xw.conj().T / n_times
@@ -281,18 +268,18 @@ def covariance_sch(X):
     C_scm = X_c @ X_c.T / n_times
 
     # Compute optimal gamma, the weigthing between SCM and shrinkage estimator
-    R = n_times / ((n_times - 1.0) * np.outer(X.std(axis=1), X.std(axis=1)))
+    R = (n_times / ((n_times - 1.) * np.outer(X.std(axis=1), X.std(axis=1))))
     R *= C_scm
-    var_R = (X_c**2) @ (X_c**2).T - 2 * C_scm * (X_c @ X_c.T)
-    var_R += n_times * C_scm**2
+    var_R = (X_c ** 2) @ (X_c ** 2).T - 2 * C_scm * (X_c @ X_c.T)
+    var_R += n_times * C_scm ** 2
     Xvar = np.outer(X.var(axis=1), X.var(axis=1))
     var_R *= n_times / ((n_times - 1) ** 3 * Xvar)
     R -= np.diag(np.diag(R))
     var_R -= np.diag(np.diag(var_R))
-    gamma = max(0, min(1, var_R.sum() / (R**2).sum()))
+    gamma = max(0, min(1, var_R.sum() / (R ** 2).sum()))
 
-    sigma = (1.0 - gamma) * (n_times / (n_times - 1.0)) * C_scm
-    shrinkage = gamma * (n_times / (n_times - 1.0)) * np.diag(np.diag(C_scm))
+    sigma = (1. - gamma) * (n_times / (n_times - 1.)) * C_scm
+    shrinkage = gamma * (n_times / (n_times - 1.)) * np.diag(np.diag(C_scm))
     return sigma + shrinkage
 
 
@@ -441,12 +428,9 @@ def covariances_EP(X, P, estimator="cov", **kwds):
     n_channels_proto, n_times_p = P.shape
     if n_times_p != n_times:
         raise ValueError(
-            f"X and P do not have the same n_times: {n_times} and {n_times_p}"
-        )
-    covmats = np.empty(
-        (n_matrices, n_channels + n_channels_proto, n_channels + n_channels_proto),
-        dtype=X.dtype,
-    )
+            f"X and P do not have the same n_times: {n_times} and {n_times_p}")
+    covmats = np.empty((n_matrices, n_channels + n_channels_proto,
+                        n_channels + n_channels_proto), dtype=X.dtype)
     for i in range(n_matrices):
         covmats[i] = est(np.concatenate((P, X[i]), axis=0), **kwds)
     return covmats
@@ -483,26 +467,24 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
         Engineering (MaxEnt'14), Sep 2014, Amboise, France. pp.495
     """
     if alpha <= 0:
-        raise ValueError(f"Parameter alpha must be strictly positive (Got {alpha})")
+        raise ValueError(
+            f"Parameter alpha must be strictly positive (Got {alpha})")
     est = check_function(estimator, cov_est_functions)
     n_matrices, n_channels, n_times = X.shape
 
-    Hchannels = (
-        np.eye(n_channels)
+    Hchannels = np.eye(n_channels) \
         - np.outer(np.ones(n_channels), np.ones(n_channels)) / n_channels
-    )
-    Htimes = np.eye(n_times) - np.outer(np.ones(n_times), np.ones(n_times)) / n_times
+    Htimes = np.eye(n_times) \
+        - np.outer(np.ones(n_times), np.ones(n_times)) / n_times
     X = Hchannels @ X @ Htimes  # Eq(8), double centering
 
-    covmats = np.empty((n_matrices, n_channels + n_times, n_channels + n_times))
+    covmats = np.empty(
+        (n_matrices, n_channels + n_times, n_channels + n_times))
     for i in range(n_matrices):
-        Y = np.concatenate(
-            (
-                np.concatenate((X[i], alpha * np.eye(n_channels)), axis=1),  # top
-                np.concatenate((alpha * np.eye(n_times), X[i].T), axis=1),  # bottom
-            ),
-            axis=0,
-        )  # Eq(9)
+        Y = np.concatenate((
+            np.concatenate((X[i], alpha * np.eye(n_channels)), axis=1),  # top
+            np.concatenate((alpha * np.eye(n_times), X[i].T), axis=1)  # bottom
+        ), axis=0)  # Eq(9)
         covmats[i] = est(Y, **kwds)
     return covmats / (2 * alpha)  # Eq(10)
 
@@ -536,15 +518,14 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
     n_matrices, n_channels, n_times = X.shape
 
     if np.sum(blocks) != n_channels:
-        raise ValueError(
-            "Sum of individual block sizes must match number of channels of X."
-        )
+        raise ValueError("Sum of individual block sizes "
+                         "must match number of channels of X.")
 
     covmats = np.empty((n_matrices, n_channels, n_channels))
     for i in range(n_matrices):
         blockcov, idx_start = [], 0
         for j in blocks:
-            blockcov.append(est(X[i, idx_start : idx_start + j, :], **kwds))
+            blockcov.append(est(X[i, idx_start:idx_start+j, :], **kwds))
             idx_start += j
         covmats[i] = block_diag(*tuple(blockcov))
 
@@ -565,8 +546,8 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator="cov"):
     n_times, n_channels = sig.shape
     jump = int(window * overlapp)
     ix = 0
-    while ix + window < n_times:
-        X.append(est(sig[ix : ix + window, :].T))
+    while (ix + window < n_times):
+        X.append(est(sig[ix:ix + window, :].T))
         ix = ix + jump
 
     return np.array(X)
@@ -610,7 +591,9 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     if window < 1:
         raise ValueError("Value window must be a positive integer")
     if not 0 < overlap < 1:
-        raise ValueError(f"Value overlap must be included in (0, 1) (Got {overlap})")
+        raise ValueError(
+            f"Value overlap must be included in (0, 1) (Got {overlap})"
+        )
 
     n_channels, n_times = X.shape
     n_freqs = int(window / 2) + 1  # X real signal => compute half-spectrum
@@ -620,7 +603,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     # FFT calculation on all windows
     shape = (n_channels, n_windows, window)
-    strides = X.strides[:-1] + (step * X.strides[-1], X.strides[-1])
+    strides = X.strides[:-1]+(step*X.strides[-1], X.strides[-1])
     Xs = np.lib.stride_tricks.as_strided(X, shape=shape, strides=strides)
     fdata = np.fft.rfft(Xs * win, n=window).transpose(1, 0, 2)
 
@@ -649,7 +632,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     S = np.zeros((n_channels, n_channels, n_freqs), dtype=complex)
     for i in range(n_freqs):
         S[:, :, i] = fdata[:, :, i].conj().T @ fdata[:, :, i]
-    S /= n_windows * np.linalg.norm(win) ** 2
+    S /= n_windows * np.linalg.norm(win)**2
 
     # normalization to respect Parseval's theorem with the half-spectrum
     # excepted DC bin (always), and Nyquist bin (when window is even)
@@ -698,9 +681,8 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     return S.real, freqs
 
 
-def coherence(
-    X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None, coh="ordinary"
-):
+def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
+              coh="ordinary"):
     """Compute squared coherence.
 
     Parameters
@@ -767,7 +749,7 @@ def coherence(
         fmax=fmax,
         fs=fs,
     )
-    S2 = np.abs(S) ** 2  # squared cross-spectral modulus
+    S2 = np.abs(S)**2  # squared cross-spectral modulus
 
     C = np.zeros_like(S2)
     f_inds = np.arange(0, C.shape[-1], dtype=int)
@@ -776,17 +758,13 @@ def coherence(
     if coh == "lagged":
         if freqs is None:
             f_inds = np.arange(1, C.shape[-1] - 1, dtype=int)
-            warnings.warn(
-                "DC and Nyquist bins are not defined for lagged-"
-                "coherence: filled with zeros"
-            )
+            warnings.warn("DC and Nyquist bins are not defined for lagged-"
+                          "coherence: filled with zeros")
         else:
             f_inds_ = f_inds[(freqs > 0) & (freqs < fs / 2)]
             if not np.array_equal(f_inds_, f_inds):
-                warnings.warn(
-                    "DC and Nyquist bins are not defined for lagged-"
-                    "coherence: filled with zeros"
-                )
+                warnings.warn("DC and Nyquist bins are not defined for lagged-"
+                              "coherence: filled with zeros")
             f_inds = f_inds_
 
     for f in f_inds:
@@ -795,14 +773,14 @@ def coherence(
         if coh == "ordinary":
             C[..., f] = S2[..., f] / psd_prod
         elif coh == "instantaneous":
-            C[..., f] = (S[..., f].real) ** 2 / psd_prod
+            C[..., f] = (S[..., f].real)**2 / psd_prod
         elif coh == "lagged":
-            np.fill_diagonal(S[..., f].real, 0.0)  # prevent div by zero on diag
-            denom = psd_prod - (S[..., f].real) ** 2
+            np.fill_diagonal(S[..., f].real, 0.)  # prevent div by zero on diag
+            denom = psd_prod - (S[..., f].real)**2
             denom[abs(denom) < 1e-10] = 1e-10
-            C[..., f] = (S[..., f].imag) ** 2 / denom
+            C[..., f] = (S[..., f].imag)**2 / denom
         elif coh == "imaginary":
-            C[..., f] = (S[..., f].imag) ** 2 / psd_prod
+            C[..., f] = (S[..., f].imag)**2 / psd_prod
         else:
             raise ValueError(f"{coh} is not a supported coherence")
 

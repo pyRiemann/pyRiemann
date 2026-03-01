@@ -1,7 +1,0 @@
-[lint]
-select = ["E", "F", "W"]
-ignore = ["E501"]
-
-[lint.per-file-ignores]
-"doc/conf.py" = ["E402", "F401"]
-"examples/**" = ["E741"]

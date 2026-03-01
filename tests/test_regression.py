@@ -72,7 +72,10 @@ def reg_pipeline(regres, y, get_mats, kind):
     pip = make_pipeline(Covariances(estimator="scm"), regres())
     pip.fit(epochs, y)
     pip.predict(epochs)
-    cross_val_score(pip, epochs, y, cv=KFold(n_splits=2), scoring="r2", n_jobs=1)
+    cross_val_score(
+        pip, epochs, y,
+        cv=KFold(n_splits=2), scoring="r2", n_jobs=1
+    )
 
 
 @pytest.mark.parametrize("regres", [KNearestNeighborRegressor])
@@ -158,7 +161,7 @@ def test_svr_params_error(get_mats, get_targets):
     y = get_targets(n_matrices)
 
     with pytest.raises(TypeError):
-        SVR(C="hello").fit(X, y)
+        SVR(C='hello').fit(X, y)
 
     with pytest.raises(TypeError):
         SVR(foo=5)
@@ -223,12 +226,10 @@ def test_svc_kernel_callable(get_mats, get_targets, metric):
 
     def custom_kernel(X, Y, Cref, metric):
         return np.ones((len(X), len(Y)))
-
     SVR(kernel_fct=custom_kernel, metric=metric).fit(X, y).predict(X[:-1])
 
     def custom_kernel(X, Y, Cref):
         return np.ones((len(X), len(Y)))
-
     with pytest.raises(TypeError):
         SVR(kernel_fct=custom_kernel, metric=metric).fit(X, y)
 

@@ -22,17 +22,17 @@ def multiset_perm_number(y):
 def unique_permutations(elements):
     """Return the list of unique permutations."""
     if len(elements) == 1:
-        yield (elements[0],)
+        yield (elements[0], )
     else:
         unique_elements = set(elements)
         for first_element in unique_elements:
             remaining_elements = list(elements)
             remaining_elements.remove(first_element)
             for sub_permutation in unique_permutations(remaining_elements):
-                yield (first_element,) + sub_permutation
+                yield (first_element, ) + sub_permutation
 
 
-class BasePermutation:
+class BasePermutation():
     """Base object for permutations test"""
 
     def test(self, X, y, groups=None, verbose=True):
@@ -88,9 +88,8 @@ class BasePermutation:
 
     def _print_progress(self, ii):
         """Print permutation progress"""
-        sys.stdout.write(
-            "Performing permutations : [%.1f%%]\r" % ((100.0 * (ii + 1)) / self.n_perms)
-        )
+        sys.stdout.write("Performing permutations : [%.1f%%]\r" %
+                         ((100. * (ii + 1)) / self.n_perms))
         sys.stdout.flush()
 
     def _initial_transform(self, X):
@@ -104,7 +103,7 @@ class BasePermutation:
         else:
             indices = np.arange(len(groups))
             for group in np.unique(groups):
-                this_mask = groups == group
+                this_mask = (groups == group)
                 indices[this_mask] = rs.permutation(indices[this_mask])
         return y[indices]
 
@@ -378,7 +377,7 @@ class PermutationDistance(BasePermutation):
                 squared=True,
             )
             between += np.sum(y == classe) * di
-        between /= n_classes - 1
+        between /= (n_classes - 1)
 
         # estimates within class variability
         within = 0
@@ -389,7 +388,7 @@ class PermutationDistance(BasePermutation):
                 metric=mdm._metric_dist,
                 squared=True,
             ).sum()
-        within /= len(y) - n_classes
+        within /= (len(y) - n_classes)
 
         score = between / within
         return score
@@ -413,7 +412,7 @@ class PermutationDistance(BasePermutation):
                 metric=mdm._metric_dist,
                 squared=True,
             ).mean()
-            dist += di / np.sum(y == classe)
+            dist += (di / np.sum(y == classe))
         score = mean_dist / np.sqrt(dist)
         return score
 
@@ -425,13 +424,14 @@ class PermutationDistance(BasePermutation):
         total_ss = X.sum() / (2 * n_samples)
         pattern = np.zeros((n_samples, n_samples))
         for classe in classes:
-            ix = y == classe
-            pattern += np.outer(ix, ix) / ix.sum()
+            ix = (y == classe)
+            pattern += (np.outer(ix, ix) / ix.sum())
 
         within_ss = (X * pattern).sum() / 2
 
         between_ss = total_ss - within_ss
 
-        score = (between_ss / (n_classes - 1)) / (within_ss / (n_samples - n_classes))
+        score = ((between_ss / (n_classes - 1)) / (within_ss /
+                                                   (n_samples - n_classes)))
 
         return score

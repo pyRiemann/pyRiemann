@@ -42,35 +42,26 @@ def plot_detection(ax, rp_label, rpf_label):
     height = ylims[1] - ylims[0]
     if not rp_label:
         r1 = ax.axhspan(
-            ylims[0] + 0.06 * height,
-            ylims[1] - 0.05 * height,
-            edgecolor="r",
-            facecolor="none",
+            ylims[0] + 0.06 * height, ylims[1] - 0.05 * height,
+            edgecolor="r", facecolor="none",
             xmin=-test_time_start / test_duration - 0.005,
-            xmax=(duration - test_time_start) / test_duration - 0.005,
-        )
+            xmax=(duration - test_time_start) / test_duration - 0.005)
         labels.append(r1)
         ax.text(0.25, 0.95, "RP", color="r", size=16, transform=ax.transAxes)
     if not rpf_label:
         r2 = ax.axhspan(
-            ylims[0] + 0.05 * height,
-            ylims[1] - 0.06 * height,
-            edgecolor="m",
-            facecolor="none",
+            ylims[0] + 0.05 * height, ylims[1] - 0.06 * height,
+            edgecolor="m", facecolor="none",
             xmin=-test_time_start / test_duration + 0.005,
-            xmax=(duration - test_time_start) / test_duration + 0.005,
-        )
+            xmax=(duration - test_time_start) / test_duration + 0.005)
         labels.append(r2)
         ax.text(0.65, 0.95, "RPF", color="m", size=16, transform=ax.transAxes)
     if rp_label and rpf_label:
         r3 = ax.axhspan(
-            ylims[0] + 0.05 * height,
-            ylims[1] - 0.05 * height,
-            edgecolor="k",
-            facecolor="none",
+            ylims[0] + 0.05 * height, ylims[1] - 0.05 * height,
+            edgecolor="k", facecolor="none",
             xmin=-test_time_start / test_duration,
-            xmax=(duration - test_time_start) / test_duration,
-        )
+            xmax=(duration - test_time_start) / test_duration)
         labels.append(r3)
     return labels
 
@@ -91,37 +82,14 @@ sfreq = int(raw.info["sfreq"])  # 160 Hz
 
 # Select the 21 channels of the 10-20 montage
 raw.pick_channels(
-    [
-        "Fp1",
-        "Fpz",
-        "Fp2",
-        "F7",
-        "F3",
-        "Fz",
-        "F4",
-        "F8",
-        "T7",
-        "C3",
-        "Cz",
-        "C4",
-        "T8",
-        "P7",
-        "P3",
-        "Pz",
-        "P4",
-        "P8",
-        "O1",
-        "Oz",
-        "O2",
-    ],
-    ordered=True,
-)
+    ["Fp1", "Fpz", "Fp2", "F7", "F3", "Fz", "F4", "F8", "T7", "C3", "Cz", "C4",
+     "T8", "P7", "P3", "Pz", "P4", "P8", "O1", "Oz", "O2"], ordered=True)
 ch_names = raw.ch_names
 ch_count = len(ch_names)
 
 # Define time-series epoching with a sliding window
-duration = 2.5  # duration of epochs
-interval = 0.2  # interval between epochs
+duration = 2.5    # duration of epochs
+interval = 0.2    # interval between epochs
 
 
 ###############################################################################
@@ -132,8 +100,8 @@ interval = 0.2  # interval between epochs
 # 35 Hz.
 
 # RP definition
-z_th = 2.0  # z-score threshold
-low_freq, high_freq = 1.0, 35.0
+z_th = 2.0           # z-score threshold
+low_freq, high_freq = 1., 35.
 rp = Potato(metric="riemann", threshold=z_th)
 
 # EEG processing for RP
@@ -144,7 +112,7 @@ rp_epochs = make_fixed_length_epochs(  # epoch time-series
 rp_covs = Covariances(estimator="scm").transform(rp_epochs)
 
 # RP training
-train_covs = 45  # nb of matrices for training
+train_covs = 45      # nb of matrices for training
 train_set = range(train_covs)
 rp.fit(rp_covs[train_set])
 
@@ -163,35 +131,30 @@ rp.fit(rp_covs[train_set])
 # desirable brain modulations to be detected as artifactual.
 
 # RPF definition
-p_th = 0.01  # probability threshold
+p_th = 0.01          # probability threshold
 rpf_config = {
     "RPF eye_blinks": {  # for eye-blinks
         "ch_names": ["Fp1", "Fpz", "Fp2"],
-        "low_freq": 1.0,
-        "high_freq": 20.0,
-    },
+        "low_freq": 1.,
+        "high_freq": 20.},
     "RPF occipital": {  # for high-frequency artifacts in occipital area
         "ch_names": ["O1", "Oz", "O2"],
-        "low_freq": 25.0,
-        "high_freq": 45.0,
-        "cov_normalization": "trace",
-    },  # trace-norm to be insensitive to power
+        "low_freq": 25.,
+        "high_freq": 45.,
+        "cov_normalization": "trace"},  # trace-norm to be insensitive to power
     "RPF global_lf": {  # for low-frequency artifacts in all channels
         "ch_names": None,
         "low_freq": 0.5,
-        "high_freq": 3.0,
-    },
+        "high_freq": 3.}
 }
-rpf = PotatoField(
-    metric="riemann", z_threshold=z_th, p_threshold=p_th, n_potatoes=len(rpf_config)
-)
+rpf = PotatoField(metric="riemann", z_threshold=z_th, p_threshold=p_th,
+                  n_potatoes=len(rpf_config))
 
 # EEG processing for RPF
 rpf_covs = []
 for p in rpf_config.values():  # loop on potatoes
-    rpf_sig = filter_bandpass(
-        raw, p.get("low_freq"), p.get("high_freq"), channels=p.get("ch_names")
-    )
+    rpf_sig = filter_bandpass(raw, p.get("low_freq"), p.get("high_freq"),
+                              channels=p.get("ch_names"))
     rpf_epochs = make_fixed_length_epochs(
         rpf_sig, duration=duration, overlap=duration - interval, verbose=False
     ).get_data(copy=False)
@@ -214,21 +177,20 @@ rpf.fit([c[train_set] for c in rpf_covs])
 # not artifacted [1]_.
 
 # Prepare data for online detection
-test_covs_max = 400  # nb of epochs to visualize in this example
-test_covs_visu = 100  # nb of z-scores/proba to display simultaneously
-test_time_start = -2  # start time to display signal
-test_time_end = 5  # end time to display signal
+test_covs_max = 400     # nb of epochs to visualize in this example
+test_covs_visu = 100    # nb of z-scores/proba to display simultaneously
+test_time_start = -2    # start time to display signal
+test_time_end = 5       # end time to display signal
 
 test_duration = test_time_end - test_time_start
 time_start = train_covs * interval + test_time_start
 time_end = train_covs * interval + test_time_end
-time = np.linspace(
-    time_start, time_end, int((time_end - time_start) * sfreq), endpoint=False
-)
-raw.filter(l_freq=0.5, h_freq=75.0, method="iir", verbose=False)
+time = np.linspace(time_start, time_end, int((time_end - time_start) * sfreq),
+                   endpoint=False)
+raw.filter(l_freq=0.5, h_freq=75., method="iir", verbose=False)
 eeg_data = 1e5 * raw.get_data()
-sig = eeg_data[:, int(time_start * sfreq) : int(time_end * sfreq)]
-eeg_offset = -15 * np.linspace(1, ch_count, ch_count, endpoint=False)
+sig = eeg_data[:, int(time_start * sfreq):int(time_end * sfreq)]
+eeg_offset = - 15 * np.linspace(1, ch_count, ch_count, endpoint=False)
 covs_t, covs_z = np.empty([0]), np.empty([len(rpf_config) + 1, 0])
 covs_p = np.empty([0])
 
@@ -256,7 +218,6 @@ axp.legend(loc="upper right")
 
 ###############################################################################
 
-
 # Prepare animation for online detection
 def online_detect(t):
     global time, sig, labels, covs_t, covs_z, covs_p
@@ -275,16 +236,14 @@ def online_detect(t):
     # Update data
     time_start = t * interval + test_time_end
     time_end = (t + 1) * interval + test_time_end
-    time_ = np.linspace(time_start, time_end, int(interval * sfreq), endpoint=False)
-    time = np.r_[time[int(interval * sfreq) :], time_]
-    sig = np.hstack(
-        (
-            sig[:, int(interval * sfreq) :],
-            eeg_data[:, int(time_start * sfreq) : int(time_end * sfreq)],
-        )
-    )
+    time_ = np.linspace(time_start, time_end, int(interval * sfreq),
+                        endpoint=False)
+    time = np.r_[time[int(interval * sfreq):], time_]
+    sig = np.hstack((sig[:, int(interval * sfreq):],
+                     eeg_data[:, int(time_start*sfreq):int(time_end*sfreq)]))
     covs_t = np.r_[covs_t, time_start]
-    covs_z = np.hstack((covs_z, np.vstack((rp_zscore[np.newaxis], rpf_zscores.T))))
+    covs_z = np.hstack((covs_z,
+                        np.vstack((rp_zscore[np.newaxis], rpf_zscores.T))))
     covs_p = np.r_[covs_p, rpf_proba]
     if len(covs_p) > test_covs_visu:
         covs_t, covs_z, covs_p = covs_t[1:], covs_z[:, 1:], covs_p[1:]
@@ -307,14 +266,9 @@ def online_detect(t):
 
 interval_display = 1.0  # can be changed for a slower display
 
-potato = FuncAnimation(
-    fig,
-    online_detect,
-    frames=range(train_covs, test_covs_max),
-    interval=interval_display,
-    blit=False,
-    repeat=False,
-)
+potato = FuncAnimation(fig, online_detect,
+                       frames=range(train_covs, test_covs_max),
+                       interval=interval_display, blit=False, repeat=False)
 
 
 ###############################################################################

@@ -59,12 +59,8 @@ def test_check_metric_errortype():
 
 
 def test_check_function():
-    def aaa():
-        return True
-
-    def bbb():
-        return False
-
+    def aaa(): return True
+    def bbb(): return False
     available_funs = {"aaa": aaa, "bbb": bbb}
 
     fun = check_function("aaa", available_funs)

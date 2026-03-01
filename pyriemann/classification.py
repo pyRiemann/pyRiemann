@@ -1,5 +1,4 @@
 """Module for classification function."""
-
 import functools
 
 from joblib import Parallel, delayed
@@ -184,7 +183,7 @@ class MDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         prob : ndarray, shape (n_matrices, n_classes)
             Probabilities for each class.
         """
-        return softmax(-(self._predict_distances(X) ** 2))
+        return softmax(-self._predict_distances(X) ** 2)
 
 
 class FgMDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
@@ -371,7 +370,8 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
         Elsevier, 2013, 112, pp.172-178.
     """
 
-    def __init__(self, metric="riemann", tsupdate=False, clf=LogisticRegression()):
+    def __init__(self, metric="riemann", tsupdate=False,
+                 clf=LogisticRegression()):
         """Init."""
         self.metric = metric
         self.tsupdate = tsupdate
@@ -524,7 +524,7 @@ class KNearestNeighbor(MDM):
         """
         dist = self._predict_distances(X)
         neighbors_classes = self.classmeans_[np.argsort(dist)]
-        pred = _mode_2d(neighbors_classes[:, 0 : self.n_neighbors], axis=1)
+        pred = _mode_2d(neighbors_classes[:, 0:self.n_neighbors], axis=1)
         return pred
 
     def predict_proba(self, X):
@@ -546,13 +546,13 @@ class KNearestNeighbor(MDM):
         idx = np.argsort(dist)
         dist_sorted = np.take_along_axis(dist, idx, axis=1)
         neighbors_classes = self.classmeans_[idx]
-        probas = softmax(-(dist_sorted[:, 0 : self.n_neighbors] ** 2))
+        probas = softmax(-dist_sorted[:, 0:self.n_neighbors] ** 2)
 
         prob = np.zeros((n_matrices, len(self.classes_)))
         for m in range(n_matrices):
             for ic, c in enumerate(self.classes_):
                 prob[m, ic] = np.sum(
-                    probas[m, neighbors_classes[m, 0 : self.n_neighbors] == c]
+                    probas[m, neighbors_classes[m, 0:self.n_neighbors] == c]
                 )
 
         return prob
@@ -659,7 +659,7 @@ class SVC(sklearnSVC):
         max_iter=-1,
         decision_function_shape="ovr",
         break_ties=False,
-        random_state=None,
+        random_state=None
     ):
         """Init."""
         self.Cref = Cref
@@ -678,7 +678,7 @@ class SVC(sklearnSVC):
             max_iter=max_iter,
             decision_function_shape=decision_function_shape,
             break_ties=break_ties,
-            random_state=random_state,
+            random_state=random_state
         )
 
     def fit(self, X, y, sample_weight=None):
@@ -720,15 +720,21 @@ class SVC(sklearnSVC):
     def _set_kernel(self):
         if callable(self.kernel_fct):
             self.kernel = functools.partial(
-                self.kernel_fct, Cref=self.Cref_, metric=self.metric
+                self.kernel_fct,
+                Cref=self.Cref_,
+                metric=self.metric
             )
-        elif self.kernel_fct is None or (
-            isinstance(self.kernel_fct, str) and self.kernel_fct == "precomputed"
-        ):
-            self.kernel = functools.partial(kernel, Cref=self.Cref_, metric=self.metric)
+        elif self.kernel_fct is None or (isinstance(self.kernel_fct, str) and
+                                         self.kernel_fct == "precomputed"):
+            self.kernel = functools.partial(
+                kernel,
+                Cref=self.Cref_,
+                metric=self.metric
+            )
         else:
             raise TypeError(
-                f"kernel_fct must be None, 'precomputed' or callable, is {self.kernel}."
+                "kernel_fct must be None, 'precomputed' or callable, is "
+                f"{self.kernel}."
             )
 
 
@@ -838,8 +844,7 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
                     p,
                     metric="power",
                     sample_weight=sample_weight[y == c],
-                )
-                for p in self.power_list
+                ) for p in self.power_list
             )
             self.covmeans_[ic] = np.stack(covmeans_, axis=0)
 
@@ -869,9 +874,8 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         elif self.method_combination is None:
             dist2 = np.reshape(dist2, (dist2.shape[0], -1))
         else:
-            raise ValueError(
-                f"Unsupported method_combination {self.method_combination}"
-            )
+            raise ValueError("Unsupported method_combination "
+                             f"{self.method_combination}")
 
         return np.sqrt(dist2)
 
@@ -889,10 +893,8 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
             Predictions for each matrix according to the nearest mean field.
         """
         if self.method_combination is None:
-            raise ValueError(
-                "Classification by MeanField is not available "
-                "when method_combination is None"
-            )
+            raise ValueError("Classification by MeanField is not available "
+                             "when method_combination is None")
 
         dist = self._predict_distances(X)
         return self.classes_[dist.argmin(axis=1)]
@@ -947,12 +949,10 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
             Probabilities for each class.
         """
         if self.method_combination is None:
-            raise ValueError(
-                "Classification by MeanField is not available "
-                "when method_combination is None"
-            )
+            raise ValueError("Classification by MeanField is not available "
+                             "when method_combination is None")
 
-        return softmax(-(self._predict_distances(X) ** 2))
+        return softmax(-self._predict_distances(X) ** 2)
 
 
 class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
@@ -1039,8 +1039,10 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     def _predict_distances(self, X):
         """Helper to predict the distance."""
         dist = Parallel(n_jobs=self.n_jobs)(
-            delayed(self._predict_distance)(self.mats_[self.classmats_ == c], X)
-            for c in self.classes_
+            delayed(self._predict_distance)(
+                self.mats_[self.classmats_ == c],
+                X
+            ) for c in self.classes_
         )
         dist = np.concatenate(dist, axis=1)
         return dist
@@ -1048,22 +1050,22 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     def _predict_distance(self, A, B):
         """Distance to a convex hull of SPD matrices.
 
-        Distance between each SPD matrix of B and the convex hull of a set of
-        SPD matrices A.
+       Distance between each SPD matrix of B and the convex hull of a set of
+       SPD matrices A.
 
-         Parameters
-         ----------
-         A : ndarray, shape (n_matrices_A, n, n)
-             Set of SPD matrices.
-         B : ndarray, shape (n_matrices_B, n, n)
-             Set of SPD matrices.
+        Parameters
+        ----------
+        A : ndarray, shape (n_matrices_A, n, n)
+            Set of SPD matrices.
+        B : ndarray, shape (n_matrices_B, n, n)
+            Set of SPD matrices.
 
-         Returns
-         -------
-         dist : ndarray, shape (n_matrices_B, 1)
-             Distance between each SPD matrix b of B and the convex hull of the
-             set of SPD matrices A, defined as the distance between b and
-             the matrix of the convex hull closest to matrix b.
+        Returns
+        -------
+        dist : ndarray, shape (n_matrices_B, 1)
+            Distance between each SPD matrix b of B and the convex hull of the
+            set of SPD matrices A, defined as the distance between b and
+            the matrix of the convex hull closest to matrix b.
         """
         n_matrices_A, _, _ = A.shape
         n_matrices_B, _, _ = B.shape
@@ -1102,13 +1104,11 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         def jac(w):
             return 2.0 * D1 @ w - 2.0 * d2
 
-        cons = [
-            {
-                "type": "eq",
-                "fun": lambda w: np.sum(w) - 1.0,
-                "jac": lambda w: np.ones_like(w),
-            }
-        ]
+        cons = [{
+            "type": "eq",
+            "fun": lambda w: np.sum(w) - 1.0,
+            "jac": lambda w: np.ones_like(w)
+        }]
 
         res = minimize(
             fun,
@@ -1117,7 +1117,7 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
             jac=jac,
             bounds=[(0.0, None)] * n_matrices,
             constraints=cons,
-            options={"maxiter": 50, "ftol": 1e-6, "disp": False},
+            options={"maxiter": 50, "ftol": 1e-6, "disp": False}
         )
         weights = np.clip(res.x, 0.0, 1.0)
 
@@ -1152,7 +1152,7 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         prob : ndarray, shape (n_matrices, n_classes)
             Probabilities for each class.
         """
-        return softmax(-(self._predict_distances(X) ** 2))
+        return softmax(-self._predict_distances(X) ** 2)
 
     def transform(self, X):
         """Get the distance to each convex hull.
@@ -1173,7 +1173,8 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
 ###############################################################################
 
 
-def class_distinctiveness(X, y, exponent=1, metric="riemann", return_num_denom=False):
+def class_distinctiveness(X, y, exponent=1, metric="riemann",
+                          return_num_denom=False):
     r"""Measure class distinctiveness between classes of SPD/HPD matrices.
 
     For two class problem, the class distinctiveness between class :math:`K_1`
@@ -1269,7 +1270,8 @@ def class_distinctiveness(X, y, exponent=1, metric="riemann", return_num_denom=F
     else:
         mean_all = gmean(means, metric=metric_mean)
         dists_between = [
-            distance(m, mean_all, metric=metric_dist) ** exponent for m in means
+            distance(m, mean_all, metric=metric_dist) ** exponent
+            for m in means
         ]
         num = np.sum(dists_between)
         denom = _get_within(X, y, means, classes, exponent, metric_dist)
@@ -1287,7 +1289,8 @@ def _get_within(X, y, means, classes, exponent, metric):
     sigmas = []
     for ic, c in enumerate(classes):
         dists_within = [
-            distance(x, means[ic], metric=metric) ** exponent for x in X[y == c]
+            distance(x, means[ic], metric=metric) ** exponent
+            for x in X[y == c]
         ]
         sigmas.append(np.mean(dists_within))
     sum_sigmas = np.sum(sigmas)

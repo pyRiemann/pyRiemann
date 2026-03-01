@@ -123,13 +123,8 @@ event_ids = dict(hands=2, feet=3)
 # - Laplacian.
 
 estimators = [
-    "cov-lwf",
-    "cov-oas",
-    "cov-sch",
-    "cov-scm",
-    "ker-rbf",
-    "ker-polynomial",
-    "ker-laplacian",
+    "cov-lwf", "cov-oas", "cov-sch", "cov-scm",
+    "ker-rbf", "ker-polynomial", "ker-laplacian",
 ]
 tmin = -0.2
 w_len = np.linspace(0.5, 2.5, 5)
@@ -154,7 +149,8 @@ for wl in w_len:
         else:
             covs = Covariances(estimator=est_param).transform(X)
         evals, _ = np.linalg.eigh(covs)
-        dfc.extend([dict(estimator=est, wlen=wl, cond=max(e) / min(e)) for e in evals])
+        dfc.extend([dict(estimator=est, wlen=wl, cond=max(e) / min(e))
+                    for e in evals])
 dfc = pd.DataFrame(dfc)
 
 ###############################################################################

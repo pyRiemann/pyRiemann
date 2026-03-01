@@ -67,7 +67,9 @@ raw_files = [
 ]
 raw = concatenate_raws(raw_files)
 
-picks = pick_types(raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads")
+picks = pick_types(
+    raw.info, meg=False, eeg=True, stim=False, eog=False, exclude="bads"
+)
 # subsample elecs
 picks = picks[::2]
 
@@ -182,9 +184,8 @@ results = pd.DataFrame(results)
 # Plot
 # ----
 
-list_fc_ens = ["ensemble", "CSP+optSVM", "FgMDM"] + [
-    sm + "+elasticnet" for sm in spectral_met
-]
+list_fc_ens = ["ensemble", "CSP+optSVM", "FgMDM"] + \
+    [sm + "+elasticnet" for sm in spectral_met]
 
 g = sns.catplot(
     data=results,

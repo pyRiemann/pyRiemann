@@ -1,5 +1,4 @@
 """Helpers for vizualization."""
-
 import matplotlib.pyplot as plt
 from matplotlib.patches import Ellipse
 import matplotlib.transforms as transforms
@@ -54,9 +53,9 @@ def plot_embedding(
     if embd_type == "Spectral":
         e = SpectralEmbedding(n_components=2, metric=metric)
     elif embd_type == "LocallyLinear":
-        e = LocallyLinearEmbedding(
-            n_components=2, n_neighbors=X.shape[1], metric=metric
-        )
+        e = LocallyLinearEmbedding(n_components=2,
+                                   n_neighbors=X.shape[1],
+                                   metric=metric)
     elif embd_type == "TSNE":
         e = TSNE(n_components=2, metric=metric, max_iter=max_iter)
     else:
@@ -126,7 +125,8 @@ def plot_cospectra(X, freqs, *, ylabels=None, title="Cospectra"):
         raise ValueError("Input X has not 3 dimensions")
     n_freqs, n_channels, _ = X.shape
     if freqs.shape != (n_freqs,):
-        raise ValueError("Input freqs has not the same number of frequencies as X")
+        raise ValueError(
+            "Input freqs has not the same number of frequencies as X")
 
     fig = plt.figure(figsize=(12, 7))
     fig.suptitle(title)
@@ -147,19 +147,9 @@ def plot_cospectra(X, freqs, *, ylabels=None, title="Cospectra"):
     return fig
 
 
-def plot_waveforms(
-    X,
-    display,
-    *,
-    times=None,
-    color="gray",
-    alpha=0.5,
-    linewidth=1.5,
-    color_mean="k",
-    color_std="gray",
-    n_bins=50,
-    cmap=None,
-):
+def plot_waveforms(X, display, *, times=None, color="gray", alpha=0.5,
+                   linewidth=1.5, color_mean="k", color_std="gray", n_bins=50,
+                   cmap=None):
     """Plot repetitions of a multichannel waveform.
 
     Parameters
@@ -205,7 +195,8 @@ def plot_waveforms(
     if times is None:
         times = np.arange(n_times)
     elif times.shape != (n_times,):
-        raise ValueError("Parameter times has not the same number of values as X")
+        raise ValueError(
+            "Parameter times has not the same number of values as X")
 
     fig, axes = plt.subplots(nrows=n_channels, ncols=1)
     if n_channels == 1:
@@ -213,33 +204,25 @@ def plot_waveforms(
     channels = np.arange(n_channels)
 
     if display == "all":
-        for channel, ax in zip(channels, axes):
+        for (channel, ax) in zip(channels, axes):
             for i_rep in range(n_reps):
                 ax.plot(times, X[i_rep, channel], c=color, alpha=alpha)
 
     elif display in ["mean", "mean+/-std"]:
         mean = np.mean(X, axis=0)
-        for channel, ax in zip(channels, axes):
+        for (channel, ax) in zip(channels, axes):
             ax.plot(times, mean[channel], c=color_mean, lw=linewidth)
         if display == "mean+/-std":
             std = np.std(X, axis=0)
-            for channel, ax in zip(channels, axes):
-                ax.fill_between(
-                    times,
-                    mean[channel] - std[channel],
-                    mean[channel] + std[channel],
-                    color=color_std,
-                )
+            for (channel, ax) in zip(channels, axes):
+                ax.fill_between(times, mean[channel] - std[channel],
+                                mean[channel] + std[channel], color=color_std)
 
     elif display == "hist":
         times_rep = np.repeat(times[np.newaxis, :], n_reps, axis=0)
-        for channel, ax in zip(channels, axes):
-            ax.hist2d(
-                times_rep.ravel(),
-                X[:, channel, :].ravel(),
-                bins=(n_times, n_bins),
-                cmap=cmap,
-            )
+        for (channel, ax) in zip(channels, axes):
+            ax.hist2d(times_rep.ravel(), X[:, channel, :].ravel(),
+                      bins=(n_times, n_bins), cmap=cmap)
 
     else:
         raise ValueError(f"Unknown parameter display {display}")
@@ -258,7 +241,7 @@ def _add_alpha(colors, alphas):
         raise ImportError("Install matplotlib to add alpha")
 
     cols = [to_rgb(c) for c in colors]
-    return [(c[0], c[1], c[2], a) for c, a in zip(cols, alphas[-len(cols) :])]
+    return [(c[0], c[1], c[2], a) for c, a in zip(cols, alphas[-len(cols):])]
 
 
 def plot_cov_ellipse(ax, X, n_std=2.5, **kwds):
@@ -294,13 +277,8 @@ def plot_cov_ellipse(ax, X, n_std=2.5, **kwds):
     pearson = X[0, 1] / np.sqrt(X[0, 0] * X[1, 1])
     ell_radius_x = np.sqrt(1 + pearson)
     ell_radius_y = np.sqrt(1 - pearson)
-    ellipse = Ellipse(
-        (0, 0),
-        width=ell_radius_x * 2,
-        height=ell_radius_y * 2,
-        facecolor="none",
-        **kwds,
-    )
+    ellipse = Ellipse((0, 0), width=ell_radius_x * 2, height=ell_radius_y * 2,
+                      facecolor='none', **kwds)
     scale_x = np.sqrt(X[0, 0]) * n_std
     scale_y = np.sqrt(X[1, 1]) * n_std
     transf = transforms.Affine2D().rotate_deg(45).scale(scale_x, scale_y)

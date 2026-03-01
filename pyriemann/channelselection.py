@@ -1,5 +1,4 @@
 """Code for channel selection."""
-
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
@@ -8,6 +7,7 @@ from .classification import MDM
 
 
 class ElectrodeSelection(TransformerMixin, BaseEstimator):
+
     """Channel selection based on a Riemannian geometry criterion.
 
     For each class, a centroid is estimated, and the channel selection is based

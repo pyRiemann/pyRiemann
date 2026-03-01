@@ -61,7 +61,6 @@ random_state = 42  # Random state for reproducibility
 
 class Stacker(TransformerMixin, BaseEstimator):
     """Stacks values of a DataFrame column into a 3D array."""
-
     def fit(self, X, y=None):
         self._is_fitted = True
         return self
@@ -80,7 +79,6 @@ class FlattenTransformer(TransformerMixin, BaseEstimator):
 
     ColumnTransformer requires 2D output, so this transformer is needed
     """
-
     def fit(self, X, y=None):
         self._is_fitted = True
         return self
@@ -176,7 +174,9 @@ class HybridBlocks(TransformerMixin, BaseEstimator):
         elif isinstance(self.block_size, list):
             self._block_sizes = self.block_size
             if sum(self._block_sizes) != n_channels:
-                raise ValueError("Sum of block sizes must equal number of channels")
+                raise ValueError(
+                    "Sum of block sizes must equal number of channels"
+                )
         else:
             raise ValueError("block_size must be int or list of ints")
         n_blocks = len(self._block_sizes)
@@ -232,7 +232,11 @@ class HybridBlocks(TransformerMixin, BaseEstimator):
             # Add kernel or covariance estimator depending on metric param
             if metric in ker_est_functions:
                 name = "kernels"
-                estimator = Kernels(metric=metric, n_jobs=self.n_jobs, **self.kwargs)
+                estimator = Kernels(
+                    metric=metric,
+                    n_jobs=self.n_jobs,
+                    **self.kwargs
+                )
             elif metric in cov_est_functions.keys():
                 name = "covariances"
                 estimator = Covariances(estimator=metric, **self.kwargs)
@@ -302,12 +306,10 @@ class HybridBlocks(TransformerMixin, BaseEstimator):
             transformed_blocks.append(block)
 
         # Construct the block diagonal matrices
-        X_new = np.array(
-            [
-                block_diag(*[Xt[i] for Xt in transformed_blocks])
-                for i in range(X.shape[0])
-            ]
-        )
+        X_new = np.array([
+            block_diag(*[Xt[i] for Xt in transformed_blocks])
+            for i in range(X.shape[0])
+        ])
         return X_new
 
     def _prepare_dataframe(self, X):
@@ -353,7 +355,8 @@ X = np.load(os.path.join(data_path, "X.npy"))
 y = np.load(os.path.join(data_path, "y.npy"))
 
 print(
-    f"Data loaded: {X.shape[0]} trials, {X.shape[1]} channels, {X.shape[2]} time points"
+    f"Data loaded: {X.shape[0]} trials, {X.shape[1]} channels, "
+    f"{X.shape[2]} time points"
 )
 
 # Get trials with the label "OP" for "Own Paradigm"
@@ -383,14 +386,11 @@ plt.show()
 # Define the pipeline with HybridBlocks and SVC classifier
 pipeline_hybrid_blocks = Pipeline(
     [
-        (
-            "block_kernels",
-            HybridBlocks(
-                block_size=block_size,
-                metric=["cov", "rbf"],
-                shrinkage=[0.01, 0],
-            ),
-        ),
+        ("block_kernels", HybridBlocks(
+            block_size=block_size,
+            metric=["cov", "rbf"],
+            shrinkage=[0.01, 0],
+        )),
         ("classifier", SVC(metric="riemann", C=0.1)),
     ]
 )
@@ -398,30 +398,33 @@ pipeline_hybrid_blocks = Pipeline(
 # Define the pipeline with BlockCovariances and SVC classifier
 pipeline_blockcovariances = Pipeline(
     [
-        (
-            "covariances",
-            BlockCovariances(
-                block_size=block_size,
-                estimator="lwf",
-                shrinkage=0.01,
-            ),
-        ),
+        ("covariances", BlockCovariances(
+            block_size=block_size,
+            estimator="lwf",
+            shrinkage=0.01,
+        )),
         ("classifier", SVC(metric="riemann", C=0.1)),
     ]
 )
 
 # Define cross-validation
-cv = StratifiedKFold(n_splits=cv_splits, random_state=random_state, shuffle=True)
+cv = StratifiedKFold(
+    n_splits=cv_splits,
+    random_state=random_state,
+    shuffle=True
+)
 
 ###############################################################################
 # Fit the pipelines
 # -----------------
 cv_scores_hybrid_blocks = cross_val_score(
-    pipeline_hybrid_blocks, X, y, cv=cv, scoring="accuracy", n_jobs=n_jobs
+    pipeline_hybrid_blocks, X, y,
+    cv=cv, scoring="accuracy", n_jobs=n_jobs
 )
 
 cv_scores_blockcovariances = cross_val_score(
-    pipeline_blockcovariances, X, y, cv=cv, scoring="accuracy", n_jobs=n_jobs
+    pipeline_blockcovariances, X, y,
+    cv=cv, scoring="accuracy", n_jobs=n_jobs
 )
 
 ###############################################################################
