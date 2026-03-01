@@ -368,3 +368,212 @@ footer {
 html {
     scroll-behavior: smooth;
 }
+
+/* ============================================================================
+   API Card Navigation Grid
+   ============================================================================ */
+.api-section-header {
+    margin: 2em 0 1em;
+    padding: 0 0 0.5em;
+    border-bottom: 2px solid var(--pyriemann-light);
+}
+
+.api-section-header h2 {
+    margin: 0 0 0.25em;
+    font-size: 1.6rem !important;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.api-section-header p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.api-card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1.25rem 0 2rem;
+}
+
+.api-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--pyriemann-light);
+    border-radius: 10px;
+    padding: 1.25rem;
+    background: #fff;
+    text-decoration: none !important;
+    color: inherit !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    cursor: pointer;
+}
+
+.api-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.api-card:focus {
+    outline: 3px solid var(--pyriemann-light-blue);
+    outline-offset: 2px;
+}
+
+.api-card.card-module:hover {
+    border-color: var(--pyriemann-blue);
+}
+
+.api-card.card-utils:hover {
+    border-color: var(--pyriemann-teal);
+}
+
+.api-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+}
+
+.api-card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.api-card-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.card-module .api-card-icon {
+    background: rgba(76, 114, 176, 0.12);
+    color: var(--pyriemann-blue);
+}
+
+.card-module .api-card-icon svg {
+    fill: var(--pyriemann-blue);
+    stroke: var(--pyriemann-blue);
+}
+
+.card-utils .api-card-icon {
+    background: rgba(22, 160, 133, 0.12);
+    color: var(--pyriemann-teal);
+}
+
+.card-utils .api-card-icon svg {
+    fill: var(--pyriemann-teal);
+    stroke: var(--pyriemann-teal);
+}
+
+.api-card-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.15em 0.55em;
+    border-radius: 4px;
+}
+
+.tag-module {
+    background: rgba(76, 114, 176, 0.12);
+    color: var(--pyriemann-blue);
+}
+
+.tag-utils {
+    background: rgba(22, 160, 133, 0.12);
+    color: var(--pyriemann-teal);
+}
+
+.api-card-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0 0 0.35rem;
+    color: var(--pyriemann-dark);
+    line-height: 1.3;
+}
+
+.api-card a:hover .api-card-title,
+.api-card:hover .api-card-title {
+    color: var(--pyriemann-blue);
+}
+
+.card-utils:hover .api-card-title {
+    color: var(--pyriemann-teal);
+}
+
+.api-card-desc {
+    font-size: 0.83rem;
+    color: #6c757d;
+    margin: 0 0 0.75rem;
+    line-height: 1.45;
+    flex-grow: 1;
+}
+
+.api-card-footer {
+    font-size: 0.75rem;
+    color: #95a5a6;
+    font-weight: 500;
+    border-top: 1px solid var(--pyriemann-light);
+    padding-top: 0.6rem;
+    margin-top: auto;
+}
+
+/* ---- Dark Mode ---- */
+[data-theme="dark"] .api-card {
+    background: #1e1e1e;
+    border-color: #333;
+}
+
+[data-theme="dark"] .api-card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .api-card.card-module:hover {
+    border-color: var(--pyriemann-light-blue);
+}
+
+[data-theme="dark"] .api-card.card-utils:hover {
+    border-color: var(--pyriemann-teal);
+}
+
+[data-theme="dark"] .api-card-title {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .api-card-desc {
+    color: #999;
+}
+
+[data-theme="dark"] .api-card-footer {
+    color: #777;
+    border-top-color: #333;
+}
+
+[data-theme="dark"] .api-section-header {
+    border-bottom-color: #333;
+}
+
+[data-theme="dark"] .api-section-header p {
+    color: #999;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 900px) {
+    .api-card-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .api-card-grid {
+        grid-template-columns: 1fr;
+    }
+}

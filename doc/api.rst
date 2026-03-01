@@ -4,9 +4,416 @@
 API reference
 =============
 
+pyRiemann provides two levels of API: **Modules** with scikit-learn compatible
+estimators and transformers, and **Utility Functions** implementing low-level
+Riemannian geometry operations.
+
+.. raw:: html
+
+   <div class="api-section-header">
+     <h2>Modules</h2>
+     <p>Scikit-learn compatible estimators and transformers for BCI and SPD matrix pipelines.</p>
+   </div>
+
+   <div class="api-card-grid">
+
+     <a class="api-card card-module" href="#estimation-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <rect x="3" y="3" width="7" height="7" fill="currentColor" opacity="0.3" stroke="currentColor"/>
+             <rect x="14" y="3" width="7" height="7" fill="currentColor" opacity="0.3" stroke="currentColor"/>
+             <rect x="3" y="14" width="7" height="7" fill="currentColor" opacity="0.3" stroke="currentColor"/>
+             <rect x="14" y="14" width="7" height="7" fill="currentColor" opacity="0.3" stroke="currentColor"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-module">Module</span>
+       </div>
+       <div class="api-card-title">SPD Estimation</div>
+       <div class="api-card-desc">Covariance, cross-spectra, coherence, and kernel matrix estimators.</div>
+       <div class="api-card-footer">10 classes</div>
+     </a>
+
+     <a class="api-card card-module" href="#embedding-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <circle cx="5" cy="12" r="2" fill="currentColor" opacity="0.5"/>
+             <circle cx="19" cy="5" r="2" fill="currentColor" opacity="0.5"/>
+             <circle cx="19" cy="19" r="2" fill="currentColor" opacity="0.5"/>
+             <path d="M7 12 L17 6" stroke="currentColor"/>
+             <path d="M7 12 L17 18" stroke="currentColor"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-module">Module</span>
+       </div>
+       <div class="api-card-title">Embedding</div>
+       <div class="api-card-desc">Spectral embedding, locally linear embedding, and t-SNE for SPD manifolds.</div>
+       <div class="api-card-footer">3 classes, 2 functions</div>
+     </a>
+
+     <a class="api-card card-module" href="#classification-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <circle cx="12" cy="12" r="9" stroke="currentColor"/>
+             <circle cx="12" cy="12" r="5" stroke="currentColor"/>
+             <circle cx="12" cy="12" r="1.5" fill="currentColor"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-module">Module</span>
+       </div>
+       <div class="api-card-title">Classification</div>
+       <div class="api-card-desc">MDM, FgMDM, TSClassifier, SVC, and nearest convex hull classifiers.</div>
+       <div class="api-card-footer">7 classes, 1 function</div>
+     </a>
+
+     <a class="api-card card-module" href="#regression-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <line x1="3" y1="20" x2="21" y2="4" stroke="currentColor"/>
+             <circle cx="6" cy="16" r="1.5" fill="currentColor" opacity="0.5"/>
+             <circle cx="10" cy="14" r="1.5" fill="currentColor" opacity="0.5"/>
+             <circle cx="15" cy="8" r="1.5" fill="currentColor" opacity="0.5"/>
+             <circle cx="19" cy="5" r="1.5" fill="currentColor" opacity="0.5"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-module">Module</span>
+       </div>
+       <div class="api-card-title">Regression</div>
+       <div class="api-card-desc">KNN and SVR regressors operating on SPD manifolds.</div>
+       <div class="api-card-footer">2 classes</div>
+     </a>
+
+     <a class="api-card card-module" href="#clustering-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <circle cx="7" cy="7" r="2" fill="currentColor" opacity="0.4"/>
+             <circle cx="10" cy="9" r="1.5" fill="currentColor" opacity="0.4"/>
+             <circle cx="17" cy="8" r="2" fill="currentColor" opacity="0.6"/>
+             <circle cx="15" cy="10" r="1.5" fill="currentColor" opacity="0.6"/>
+             <circle cx="9" cy="17" r="2" fill="currentColor" opacity="0.8"/>
+             <circle cx="12" cy="16" r="1.5" fill="currentColor" opacity="0.8"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-module">Module</span>
+       </div>
+       <div class="api-card-title">Clustering</div>
+       <div class="api-card-desc">K-means, mean shift, Gaussian mixture, and Potato artifact detection.</div>
+       <div class="api-card-footer">6 classes</div>
+     </a>
+
+     <a class="api-card card-module" href="#tangentspace-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <path d="M4 18 Q12 4 20 18" stroke="currentColor" fill="none"/>
+             <line x1="6" y1="10" x2="18" y2="10" stroke="currentColor" stroke-dasharray="2"/>
+             <circle cx="12" cy="10" r="2" fill="currentColor" opacity="0.5"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-module">Module</span>
+       </div>
+       <div class="api-card-title">Tangent Space</div>
+       <div class="api-card-desc">Projection to and from the tangent space with FGDA.</div>
+       <div class="api-card-footer">2 classes</div>
+     </a>
+
+     <a class="api-card card-module" href="#spatialfilter-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <path d="M3 12 Q7 4 12 12 Q17 20 21 12" stroke="currentColor" fill="none"/>
+             <path d="M3 12 Q7 20 12 12 Q17 4 21 12" stroke="currentColor" fill="none" opacity="0.3"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-module">Module</span>
+       </div>
+       <div class="api-card-title">Spatial Filtering</div>
+       <div class="api-card-desc">Xdawn, CSP, SPoC, bilinear filter, and AJDC spatial filters.</div>
+       <div class="api-card-footer">5 classes</div>
+     </a>
+
+     <a class="api-card card-module" href="#preprocessing-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <path d="M4 4 L20 4 L18 20 L6 20 Z" stroke="currentColor" fill="currentColor" opacity="0.15"/>
+             <line x1="8" y1="10" x2="16" y2="10" stroke="currentColor"/>
+             <line x1="8" y1="14" x2="16" y2="14" stroke="currentColor"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-module">Module</span>
+       </div>
+       <div class="api-card-title">Preprocessing</div>
+       <div class="api-card-desc">Whitening transform for SPD matrices.</div>
+       <div class="api-card-footer">1 class</div>
+     </a>
+
+     <a class="api-card card-module" href="#channelselection-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" fill="none"/>
+             <line x1="8" y1="5" x2="8" y2="19" stroke="currentColor" opacity="0.3"/>
+             <line x1="13" y1="5" x2="13" y2="19" stroke="currentColor" opacity="0.3"/>
+             <rect x="9" y="5" width="4" height="14" fill="currentColor" opacity="0.15"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-module">Module</span>
+       </div>
+       <div class="api-card-title">Channel Selection</div>
+       <div class="api-card-desc">Electrode selection and flat channel removal for EEG.</div>
+       <div class="api-card-footer">2 classes</div>
+     </a>
+
+     <a class="api-card card-module" href="#transfer-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <path d="M4 12 L14 12" stroke="currentColor"/>
+             <path d="M11 8 L15 12 L11 16" stroke="currentColor" fill="none"/>
+             <path d="M20 12 L10 12" stroke="currentColor" opacity="0.3"/>
+             <path d="M13 18 L9 14" stroke="currentColor" opacity="0.3" fill="none"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-module">Module</span>
+       </div>
+       <div class="api-card-title">Transfer Learning</div>
+       <div class="api-card-desc">Domain adaptation with TLCenter, TLRotate, MDWM, and more.</div>
+       <div class="api-card-footer">9 classes, 2 functions</div>
+     </a>
+
+     <a class="api-card card-module" href="#stats-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <rect x="4" y="14" width="4" height="6" fill="currentColor" opacity="0.3" stroke="currentColor"/>
+             <rect x="10" y="8" width="4" height="12" fill="currentColor" opacity="0.5" stroke="currentColor"/>
+             <rect x="16" y="4" width="4" height="16" fill="currentColor" opacity="0.7" stroke="currentColor"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-module">Module</span>
+       </div>
+       <div class="api-card-title">Stats</div>
+       <div class="api-card-desc">Permutation tests for distances and classification models.</div>
+       <div class="api-card-footer">2 classes</div>
+     </a>
+
+     <a class="api-card card-module" href="#datasets-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <ellipse cx="12" cy="7" rx="8" ry="3" stroke="currentColor" fill="currentColor" opacity="0.15"/>
+             <path d="M4 7 L4 17 C4 18.7 7.6 20 12 20 C16.4 20 20 18.7 20 17 L20 7" stroke="currentColor" fill="none"/>
+             <path d="M4 12 C4 13.7 7.6 15 12 15 C16.4 15 20 13.7 20 12" stroke="currentColor" fill="none" opacity="0.4"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-module">Module</span>
+       </div>
+       <div class="api-card-title">Datasets</div>
+       <div class="api-card-desc">Synthetic data generators and oversampling for SPD matrices.</div>
+       <div class="api-card-footer">1 class, 6 functions</div>
+     </a>
+
+   </div>
+
+   <div class="api-section-header">
+     <h2>Utility Functions</h2>
+     <p>Low-level Riemannian geometry functions for distances, means, geodesics, and matrix operations.</p>
+   </div>
+
+   <div class="api-card-grid">
+
+     <a class="api-card card-utils" href="#covariance-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" fill="none"/>
+             <line x1="3" y1="9" x2="21" y2="9" stroke="currentColor" opacity="0.3"/>
+             <line x1="3" y1="15" x2="21" y2="15" stroke="currentColor" opacity="0.3"/>
+             <line x1="9" y1="3" x2="9" y2="21" stroke="currentColor" opacity="0.3"/>
+             <line x1="15" y1="3" x2="15" y2="21" stroke="currentColor" opacity="0.3"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-utils">Utils</span>
+       </div>
+       <div class="api-card-title">Covariance</div>
+       <div class="api-card-desc">Covariance estimation, cross-spectrum, normalization, and processing.</div>
+       <div class="api-card-footer">11 functions</div>
+     </a>
+
+     <a class="api-card card-utils" href="#distance-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <circle cx="5" cy="12" r="2.5" stroke="currentColor" fill="currentColor" opacity="0.3"/>
+             <circle cx="19" cy="12" r="2.5" stroke="currentColor" fill="currentColor" opacity="0.3"/>
+             <line x1="7.5" y1="12" x2="16.5" y2="12" stroke="currentColor" stroke-dasharray="3"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-utils">Utils</span>
+       </div>
+       <div class="api-card-title">Distances</div>
+       <div class="api-card-desc">Riemann, LogEuclid, Wasserstein, and other SPD distance functions.</div>
+       <div class="api-card-footer">14 functions</div>
+     </a>
+
+     <a class="api-card card-utils" href="#mean-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <circle cx="6" cy="8" r="1.5" fill="currentColor" opacity="0.4"/>
+             <circle cx="18" cy="8" r="1.5" fill="currentColor" opacity="0.4"/>
+             <circle cx="6" cy="18" r="1.5" fill="currentColor" opacity="0.4"/>
+             <circle cx="18" cy="18" r="1.5" fill="currentColor" opacity="0.4"/>
+             <circle cx="12" cy="13" r="3" stroke="currentColor" fill="currentColor" opacity="0.3"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-utils">Utils</span>
+       </div>
+       <div class="api-card-title">Means</div>
+       <div class="api-card-desc">Riemannian, Euclidean, log-Euclidean, harmonic, and other mean estimators.</div>
+       <div class="api-card-footer">16 functions</div>
+     </a>
+
+     <a class="api-card card-utils" href="#median-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <line x1="12" y1="4" x2="12" y2="20" stroke="currentColor"/>
+             <circle cx="6" cy="10" r="1.5" fill="currentColor" opacity="0.4"/>
+             <circle cx="9" cy="14" r="1.5" fill="currentColor" opacity="0.4"/>
+             <circle cx="15" cy="11" r="1.5" fill="currentColor" opacity="0.4"/>
+             <circle cx="18" cy="16" r="1.5" fill="currentColor" opacity="0.4"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-utils">Utils</span>
+       </div>
+       <div class="api-card-title">Medians</div>
+       <div class="api-card-desc">Euclidean and Riemannian geometric median estimators.</div>
+       <div class="api-card-footer">2 functions</div>
+     </a>
+
+     <a class="api-card card-utils" href="#geodesic-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <path d="M4 18 Q8 6 12 12 Q16 18 20 6" stroke="currentColor" fill="none"/>
+             <circle cx="4" cy="18" r="2" fill="currentColor" opacity="0.5"/>
+             <circle cx="20" cy="6" r="2" fill="currentColor" opacity="0.5"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-utils">Utils</span>
+       </div>
+       <div class="api-card-title">Geodesics</div>
+       <div class="api-card-desc">Shortest paths on the SPD manifold for various metrics.</div>
+       <div class="api-card-footer">8 functions</div>
+     </a>
+
+     <a class="api-card card-utils" href="#kernel-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <circle cx="12" cy="12" r="8" stroke="currentColor" fill="none"/>
+             <circle cx="12" cy="12" r="4" stroke="currentColor" fill="currentColor" opacity="0.15"/>
+             <circle cx="12" cy="12" r="1" fill="currentColor"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-utils">Utils</span>
+       </div>
+       <div class="api-card-title">Kernels</div>
+       <div class="api-card-desc">Riemannian, Euclidean, and log-Euclidean kernel functions.</div>
+       <div class="api-card-footer">4 functions</div>
+     </a>
+
+     <a class="api-card card-utils" href="#ts-base-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <path d="M4 18 Q12 4 20 18" stroke="currentColor" fill="none"/>
+             <line x1="6" y1="10" x2="18" y2="10" stroke="currentColor" stroke-dasharray="2"/>
+             <path d="M10 10 L14 10" stroke="currentColor" stroke-width="3"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-utils">Utils</span>
+       </div>
+       <div class="api-card-title">Tangent Space</div>
+       <div class="api-card-desc">Exponential, logarithmic maps, and parallel transport operations.</div>
+       <div class="api-card-footer">19 functions</div>
+     </a>
+
+     <a class="api-card card-utils" href="#base-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <text x="4" y="17" font-size="14" font-weight="bold" fill="currentColor" font-family="serif" opacity="0.7">fx</text>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-utils">Utils</span>
+       </div>
+       <div class="api-card-title">Base</div>
+       <div class="api-card-desc">Matrix exponential, logarithm, square root, and power functions.</div>
+       <div class="api-card-footer">9 functions</div>
+     </a>
+
+     <a class="api-card card-utils" href="#ajd-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <rect x="3" y="6" width="7" height="7" rx="1" stroke="currentColor" fill="currentColor" opacity="0.15" transform="rotate(-10 6.5 9.5)"/>
+             <rect x="8" y="8" width="7" height="7" rx="1" stroke="currentColor" fill="currentColor" opacity="0.25" transform="rotate(5 11.5 11.5)"/>
+             <rect x="13" y="10" width="7" height="7" rx="1" stroke="currentColor" fill="currentColor" opacity="0.35"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-utils">Utils</span>
+       </div>
+       <div class="api-card-title">Approx. Joint Diag.</div>
+       <div class="api-card-desc">Pham, RJD, and UWEDGE algorithms for joint diagonalization.</div>
+       <div class="api-card-footer">4 functions</div>
+     </a>
+
+     <a class="api-card card-utils" href="#mat-test-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <path d="M9 12 L11 14 L15 10" stroke="currentColor" stroke-width="2.5"/>
+             <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" fill="none"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-utils">Utils</span>
+       </div>
+       <div class="api-card-title">Matrix Tests</div>
+       <div class="api-card-desc">Tests for symmetry, positive definiteness, and Hermitian properties.</div>
+       <div class="api-card-footer">12 functions</div>
+     </a>
+
+     <a class="api-card card-utils" href="#viz-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <polyline points="4,18 8,10 12,14 16,6 20,10" stroke="currentColor" fill="none"/>
+             <line x1="4" y1="20" x2="20" y2="20" stroke="currentColor" opacity="0.3"/>
+             <line x1="4" y1="4" x2="4" y2="20" stroke="currentColor" opacity="0.3"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-utils">Utils</span>
+       </div>
+       <div class="api-card-title">Visualization</div>
+       <div class="api-card-desc">Plotting for embeddings, cospectra, covariance ellipses, and waveforms.</div>
+       <div class="api-card-footer">6 functions</div>
+     </a>
+
+   </div>
+
+   <hr style="margin: 2.5em 0; border: none; border-top: 1px solid #e0e0e0;">
+
+.. _estimation_api:
+
 SPD Matrices Estimation
 -----------------------
-.. _estimation_api:
 .. currentmodule:: pyriemann.estimation
 
 .. autosummary::
@@ -24,9 +431,10 @@ SPD Matrices Estimation
     Kernels
     Shrinkage
 
+.. _embedding_api:
+
 Embedding
 ---------
-.. _embedding_api:
 .. currentmodule:: pyriemann.embedding
 
 .. autosummary::
@@ -41,9 +449,10 @@ Embedding
     LocallyLinearEmbedding
     TSNE
 
+.. _classification_api:
+
 Classification
 --------------
-.. _classification_api:
 .. currentmodule:: pyriemann.classification
 
 .. autosummary::
@@ -64,9 +473,10 @@ Classification
 
     class_distinctiveness
 
+.. _regression_api:
+
 Regression
 --------------
-.. _regression_api:
 .. currentmodule:: pyriemann.regression
 
 .. autosummary::
@@ -76,9 +486,10 @@ Regression
     KNearestNeighborRegressor
     SVR
 
+.. _clustering_api:
+
 Clustering
 ------------------
-.. _clustering_api:
 .. currentmodule:: pyriemann.clustering
 
 .. autosummary::
@@ -92,9 +503,10 @@ Clustering
     Potato
     PotatoField
 
+.. _tangentspace_api:
+
 Tangent Space
 ------------------
-.. _tangentspace_api:
 .. currentmodule:: pyriemann.tangentspace
 
 .. autosummary::
@@ -104,9 +516,10 @@ Tangent Space
     TangentSpace
     FGDA
 
+.. _spatialfilter_api:
+
 Spatial Filtering
 ------------------
-.. _spatialfilter_api:
 .. currentmodule:: pyriemann.spatialfilters
 
 .. autosummary::
@@ -119,9 +532,10 @@ Spatial Filtering
     BilinearFilter
     AJDC
 
+.. _preprocessing_api:
+
 Preprocessing
 -------------
-.. _preprocessing_api:
 .. currentmodule:: pyriemann.preprocessing
 
 .. autosummary::
@@ -130,9 +544,10 @@ Preprocessing
 
     Whitening
 
+.. _channelselection_api:
+
 Channel selection
 ------------------
-.. _channelselection_api:
 .. currentmodule:: pyriemann.channelselection
 
 .. autosummary::
@@ -142,9 +557,10 @@ Channel selection
     ElectrodeSelection
     FlatChannelRemover
 
+.. _transfer_api:
+
 Transfer Learning
 -----------------
-.. _transfer_api:
 .. currentmodule:: pyriemann.transfer
 
 .. autosummary::
@@ -165,9 +581,10 @@ Transfer Learning
     TLRotate
     MDWM
 
+.. _stats_api:
+
 Stats
 ------------------
-.. _stats_api:
 .. currentmodule:: pyriemann.stats
 
 .. autosummary::
@@ -177,9 +594,10 @@ Stats
     PermutationDistance
     PermutationModel
 
+.. _datasets_api:
+
 Datasets
 ------------------
-.. _datasets_api:
 .. currentmodule:: pyriemann.datasets
 
 .. autosummary::
@@ -201,9 +619,10 @@ Utils function
 
 Utils functions are low level functions that implement most base components of Riemannian geometry.
 
+.. _covariance_api:
+
 Covariance processing
 ~~~~~~~~~~~~~~~~~~~~~
-.. _covariance_api:
 .. currentmodule:: pyriemann.utils.covariance
 
 .. autosummary::
@@ -222,9 +641,10 @@ Covariance processing
     normalize
     get_nondiag_weight
 
+.. _distance_api:
+
 Distances
 ~~~~~~~~~~~~~~~~~~~~~~
-.. _distance_api:
 .. currentmodule:: pyriemann.utils.distance
 
 .. autosummary::
@@ -247,9 +667,10 @@ Distances
 
     distance_mahalanobis
 
+.. _mean_api:
+
 Means
 ~~~~~~~~~~~~~~~~~~~~~~
-.. _mean_api:
 .. currentmodule:: pyriemann.utils.mean
 
 .. autosummary::
@@ -273,9 +694,10 @@ Means
     maskedmean_riemann
     nanmean_riemann
 
+.. _median_api:
+
 Medians
 ~~~~~~~~~~~~~~~~~~~~~~
-.. _median_api:
 .. currentmodule:: pyriemann.utils
 
 .. autosummary::
@@ -284,9 +706,10 @@ Medians
     median_euclid
     median_riemann
 
+.. _geodesic_api:
+
 Geodesics
 ~~~~~~~~~~~~~~~~~~~~~~
-.. _geodesic_api:
 .. currentmodule:: pyriemann.utils.geodesic
 
 .. autosummary::
@@ -301,9 +724,10 @@ Geodesics
     geodesic_thompson
     geodesic_wasserstein
 
+.. _kernel_api:
+
 Kernels
 ~~~~~~~~~~~~~~~~~~~~~~
-.. _kernel_api:
 .. currentmodule:: pyriemann.utils.kernel
 
 .. autosummary::
@@ -314,9 +738,10 @@ Kernels
     kernel_logeuclid
     kernel_riemann
 
+.. _ts_base_api:
+
 Tangent Space
 ~~~~~~~~~~~~~~~~~~~~~~
-.. _ts_base_api:
 .. currentmodule:: pyriemann.utils.tangentspace
 
 .. autosummary::
@@ -344,9 +769,10 @@ Tangent Space
     transport_logeuclid
     transport_riemann
 
+.. _base_api:
+
 Base
 ~~~~~~~~~~~~~~~~~~~~~~
-.. _base_api:
 .. currentmodule:: pyriemann.utils.base
 
 .. autosummary::
@@ -362,9 +788,10 @@ Base
     ddexpm
     ddlogm
 
+.. _ajd_api:
+
 Aproximate Joint Diagonalization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. _ajd_api:
 .. currentmodule:: pyriemann.utils.ajd
 
 .. autosummary::
@@ -375,9 +802,10 @@ Aproximate Joint Diagonalization
     rjd
     uwedge
 
+.. _mat_test_api:
+
 Matrix Tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. _mat_test_api:
 .. currentmodule:: pyriemann.utils.test
 
 .. autosummary::
@@ -396,9 +824,10 @@ Matrix Tests
     is_herm_pos_def
     is_herm_pos_semi_def
 
+.. _viz_api:
+
 Visualization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. _viz_api:
 .. currentmodule:: pyriemann.utils.viz
 
 .. autosummary::
