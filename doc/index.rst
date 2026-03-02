@@ -14,14 +14,14 @@ of symmetric positive definite matrices.
 .. raw:: html
 
    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 1.5em 0;">
-     <a href="auto_examples/biosignal-mi/plot_single.html" style="border: 1px solid #eee; border-radius: 8px; overflow: hidden; transition: box-shadow 0.3s;">
-       <img src="_images/sphx_glr_plot_single_thumb.png" style="width: 100%; display: block;" alt="Motor imagery single subject">
+     <a href="auto_examples/covariance-estimation/plot_covariance_estimation_robust.html" style="border: 1px solid #eee; border-radius: 8px; overflow: hidden; transition: box-shadow 0.3s;">
+       <img src="_images/sphx_glr_plot_covariance_estimation_robust_thumb.png" style="width: 100%; display: block;" alt="Robust covariance estimation">
      </a>
      <a href="auto_examples/biosignal-erp/plot_classify_MEG_mdm.html" style="border: 1px solid #eee; border-radius: 8px; overflow: hidden; transition: box-shadow 0.3s;">
        <img src="_images/sphx_glr_plot_classify_MEG_mdm_thumb.png" style="width: 100%; display: block;" alt="MEG classification MDM">
      </a>
-     <a href="auto_examples/biosignal-erp/plot_classify_EEG_tangentspace.html" style="border: 1px solid #eee; border-radius: 8px; overflow: hidden; transition: box-shadow 0.3s;">
-       <img src="_images/sphx_glr_plot_classify_EEG_tangentspace_thumb.png" style="width: 100%; display: block;" alt="EEG tangent space classification">
+     <a href="auto_examples/artifacts/plot_detect_riemannian_potato_EEG.html" style="border: 1px solid #eee; border-radius: 8px; overflow: hidden; transition: box-shadow 0.3s;">
+       <img src="_images/sphx_glr_plot_detect_riemannian_potato_EEG_thumb.png" style="width: 100%; display: block;" alt="Riemannian potato EEG artifact detection">
      </a>
      <a href="auto_examples/stats/plot_oneway_manova_frequency.html" style="border: 1px solid #eee; border-radius: 8px; overflow: hidden; transition: box-shadow 0.3s;">
        <img src="_images/sphx_glr_plot_oneway_manova_frequency_thumb.png" style="width: 100%; display: block;" alt="One-way MANOVA frequency">
