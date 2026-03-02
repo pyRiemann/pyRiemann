@@ -10,10 +10,6 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.11.dev
 ---------
 
-- Modernize documentation: migrate from Bootstrap to Furo theme, add card-based API navigation with sphinx-design, and fix Sphinx build warnings. :pr:`424` by :user:`bruAristimunha`
-
-- Add ORCID identifiers and new contributors to CITATION.cff. :pr:`424` by :user:`bruAristimunha`
-
 - Enhance :func:`pyriemann.datasets.sample_gaussian_spd` adding support for dispersion defined as a covariance matrix. :pr:`412` by :user:`thibaultdesurrel`
 
 - Add :class:`pyriemann.clustering.GaussianMixture`. :pr:`411` by :user:`qbarthelemy`
@@ -30,6 +26,10 @@ v0.11.dev
   to support classifiers without sample weights. :pr:`422` by :user:`qbarthelemy`
 
 - Enhance :class:`pyriemann.clustering.PotatoField`, allowing a different metric per potato and adding a parameter ``method_combination``. :pr:`423` by :user:`qbarthelemy`
+
+- Modernize documentation: migrate from Bootstrap to Furo theme, add card-based API navigation with sphinx-design, and fix Sphinx build warnings. :pr:`424` by :user:`bruAristimunha`
+
+- Add ORCID identifiers and new contributors to CITATION.cff. :pr:`424` by :user:`bruAristimunha`
 
 v0.10 (January 2026)
 --------------------
