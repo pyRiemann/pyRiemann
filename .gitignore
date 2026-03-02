@@ -3,8 +3,14 @@
 .coverage
 .coveralls.yml
 /doc/build
+/doc/_build
 /doc/generated
 /doc/auto_examples
+/doc/CITATION.bib
+/doc/CITATION.apa
+/doc/sg_execution_times.rst
+/examples/fnirs/data/
+/examples/image-radar/data/
 /dist
 *-e
 *.egg-info/

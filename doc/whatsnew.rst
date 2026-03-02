@@ -27,6 +27,10 @@ v0.11.dev
 
 - Enhance :class:`pyriemann.clustering.PotatoField`, allowing a different metric per potato and adding a parameter ``method_combination``. :pr:`423` by :user:`qbarthelemy`
 
+- Modernize documentation: migrate from Bootstrap to Furo theme, add card-based API navigation with sphinx-design, and fix Sphinx build warnings. :pr:`424` by :user:`bruAristimunha`
+
+- Add ORCID identifiers and new contributors to CITATION.cff. :pr:`424` by :user:`bruAristimunha`
+
 v0.10 (January 2026)
 --------------------
 
