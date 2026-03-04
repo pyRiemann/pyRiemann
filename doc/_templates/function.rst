@@ -1,3 +1,5 @@
+:hide-toc:
+
 {{ fullname }}
 {{ underline }}
 

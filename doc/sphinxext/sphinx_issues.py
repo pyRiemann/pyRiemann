@@ -210,7 +210,9 @@ def setup(app):
     app.add_role("pr", pr_role)
     app.add_role("user", user_role)
     app.add_role("commit", commit_role)
-    app.add_role("cve", cve_role)
+    import sphinx
+    if sphinx.version_info < (8, 1):
+        app.add_role("cve", cve_role)
     return {
         "version": __version__,
         "parallel_read_safe": True,

@@ -14,6 +14,8 @@
 
 import sys
 import os
+from datetime import datetime
+
 import matplotlib
 
 # mne update path
@@ -27,9 +29,27 @@ curdir = os.path.dirname(__file__)
 sys.path.append(os.path.abspath(os.path.join(curdir, 'sphinxext')))
 
 matplotlib.use('Agg')
+mne.viz.set_browser_backend('matplotlib')
 
-import sphinx_bootstrap_theme
 from sphinx_gallery.sorting import ExplicitOrder
+
+# Generate CITATION.bib from CITATION.cff at build time
+try:
+    from cffconvert import Citation
+    _cff_path = os.path.join(curdir, '..', 'CITATION.cff')
+    with open(_cff_path) as _f:
+        _citation = Citation(cffstr=_f.read())
+    _bibtex = _citation.as_bibtex()
+    _bibtex = _bibtex.replace('@misc{YourReferenceHere,', '@software{pyriemann,')
+    _bib_path = os.path.join(curdir, 'CITATION.bib')
+    with open(_bib_path, 'w') as _f:
+        _f.write(_bibtex)
+    # Generate APA-like citation text
+    _apa_path = os.path.join(curdir, 'CITATION.apa')
+    with open(_apa_path, 'w') as _f:
+        _f.write(_citation.as_apalike().strip())
+except Exception as _e:
+    print(f"Warning: could not generate CITATION.bib from CITATION.cff: {_e}")
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -51,14 +71,13 @@ extensions = [
     'sphinx.ext.coverage',
     'sphinx.ext.doctest',
     'sphinx.ext.intersphinx',
-    # 'sphinx.ext.linkcode',
     'sphinx.ext.mathjax',
-    # 'sphinx.ext.imgmath',
     'sphinx.ext.todo',
+    'sphinx.ext.viewcode',
     'numpydoc',
     'sphinx_issues',
-    # 'sphinx.ext.ifconfig',
-    # 'sphinx.ext.viewcode',
+    'sphinx_copybutton',
+    'sphinx_design',
     'sphinx_gallery.gen_gallery',
 ]
 plot_include_source = True
@@ -116,7 +135,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'pyRiemann'
-copyright = u'2015-2025, pyRiemann Contributors'
+copyright = f'2015-{datetime.now().year}, pyRiemann Contributors'
 author = u'Alexandre Barachant'
 
 # The version info for the project you're documenting, acts as replacement for
@@ -180,31 +199,34 @@ todo_include_todos = True
 
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
-html_theme = 'bootstrap'
+html_theme = 'furo'
 
-# Theme options are theme-specific and customize the look and feel of a theme
-# further.  For a list of options available for each theme, see the
-# documentation.
 html_theme_options = {
-    'source_link_position':
-    "footer",
-    'bootswatch_theme':
-    "flatly",
-    'navbar_sidebarrel':
-    False,
-    'bootstrap_version':
-    "3",
-    'navbar_links': [("API", "api"), ("Gallery", "auto_examples/index")],
-    'navigation_depth': 2,
-    'collapse_navigation': True,
+    "light_css_variables": {
+        "color-brand-primary": "#2e5a8a",
+        "color-brand-content": "#2e5a8a",
+        "color-highlight-on-target": "rgba(212, 168, 44, 0.15)",
+        "color-admonition-background": "rgba(46, 90, 138, 0.1)",
+        "color-admonition-title--note": "#d4a82c",
+        "color-admonition-title-background--note": "rgba(212, 168, 44, 0.15)",
+    },
+    "dark_css_variables": {
+        "color-brand-primary": "#e8c840",
+        "color-brand-content": "#e8c840",
+        "color-highlight-on-target": "rgba(232, 200, 64, 0.15)",
+        "color-admonition-background": "rgba(232, 200, 64, 0.1)",
+        "color-admonition-title--note": "#e8c840",
+        "color-admonition-title-background--note": "rgba(232, 200, 64, 0.15)",
+    },
+    "sidebar_hide_name": False,
+    "navigation_with_keys": True,
+    "top_of_page_button": "edit",
+    "source_repository": "https://github.com/pyRiemann/pyRiemann",
+    "source_branch": "master",
+    "source_directory": "doc/",
 }
 
-# Add any paths that contain custom themes here, relative to this directory.
-html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
-
-# The name for this set of Sphinx documents.  If None, it defaults to
-# "<project> v<release> documentation".
-#html_title = None
+html_title = f"{project} {version}"
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #html_short_title = None
@@ -364,11 +386,10 @@ texinfo_documents = [
 
 # Example configuration for intersphinx: refer to the Python standard library.
 intersphinx_mapping = {
-    "python": ('https://docs.python.org/', None),
+    "python": ('https://docs.python.org/3', None),
     "sklearn": ("https://scikit-learn.org/stable/", None),
 }
 
 
 def setup(app):
-    app.add_js_file('copybutton.js')
-    app.add_css_file('style.css')
+    app.add_css_file('style.css', priority=900)

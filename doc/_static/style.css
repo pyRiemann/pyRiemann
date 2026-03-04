@@ -1,117 +1,605 @@
-body { color: #444444 !important; }
+/* ============================================================================
+   pyRiemann Custom Styles
+   Modern styling for Riemannian geometry documentation
+   ============================================================================ */
 
-h1 { font-size: 40px !important; }
-h2 { font-size: 32px !important; }
-h3 { font-size: 24px !important; }
-h4 { font-size: 18px !important; }
-h5 { font-size: 14px !important; }
-h6 { font-size: 10px !important; }
-
-footer a{
-
-    color: #4c72b0 !important;
-}
-a.reference {
-    color: #4c72b0 !important;
-}
-
-blockquote p {
-    font-size: 14px !important;
+/* ============================================================================
+   Color Palette
+   ============================================================================ */
+:root {
+    --pyriemann-blue: #2e5a8a;
+    --pyriemann-gold: #d4a82c;
+    --pyriemann-light-blue: #5a8abb;
+    --pyriemann-teal: #16a085;
+    --pyriemann-dark: #1e3a5c;
+    --pyriemann-light: #ecf0f1;
+    --success-green: #27ae60;
+    --warning-orange: #e67e22;
 }
 
-blockquote {
-    padding-top: 4px !important;
-    padding-bottom: 4px !important;
-    margin: 0 0 0px !important;
+/* ============================================================================
+   Typography Enhancements
+   ============================================================================ */
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                 "Helvetica Neue", Arial, sans-serif;
+    line-height: 1.7;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    margin-top: 1.5em;
+    margin-bottom: 0.75em;
+}
+
+h1 {
+    font-size: 2.5rem !important;
+    padding-bottom: 0.3em;
+    border-bottom: 3px solid var(--pyriemann-gold);
+}
+
+h2 {
+    font-size: 2rem !important;
+    color: var(--pyriemann-blue);
+    border-bottom: 2px solid var(--pyriemann-light);
+    padding-bottom: 0.3em;
+}
+
+h3 {
+    font-size: 1.5rem !important;
+    color: var(--pyriemann-dark);
+}
+
+/* ============================================================================
+   Code Blocks
+   ============================================================================ */
+code {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    padding: 0.2em 0.4em;
+    border-radius: 4px;
+    font-family: "Consolas", "Monaco", "Courier New", monospace;
+    font-size: 0.9em;
+    border: 1px solid rgba(46, 90, 138, 0.1);
 }
 
 pre {
-    background-color: #f6f6f9 !important;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border: 1px solid var(--pyriemann-light);
+    border-left: 4px solid var(--pyriemann-blue);
+    border-radius: 8px;
+    padding: 1.5em;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    transition: box-shadow 0.3s ease;
 }
 
-code {
-    color: #49759c !important;
-    background-color: transparent; !important;
+pre:hover {
+    box-shadow: 0 4px 16px rgba(46, 90, 138, 0.15);
 }
 
-code.descclassname {
-    padding-right: 0px !important;
-}
-
-code.descname {
-    padding-left: 0px !important;
-}
-
-dt:target, span.highlighted {
-    background-color: #ffffff !important;
-}
-
-ul {
-    padding-left: 20px !important;
-}
-
-ul.dropdown-menu {
-    padding-left: 0px !important;
-}
-
-.alert-info {
-    background-color: #adb8cb !important;
-    border-color: #adb8cb !important;
-    color: #2c3e50 !important;
-}
-
-/* From https://github.com/twbs/bootstrap/issues/1768 */
-*[id]:before {
-  /* display: block; */
-  content: " ";
-  margin-top: -60px;
-  height: 60px;
-  visibility: hidden;
-}
-
-.dataframe table {
-    /*Uncomment to center tables horizontally*/
-    /* margin-left: auto; */
-    /* margin-right: auto; */
+pre code {
+    background: transparent;
     border: none;
-    border-collapse: collapse;
-    border-spacing: 0;
-    font-size: 12px;
-    table-layout: fixed;
+    padding: 0;
+    color: inherit;
 }
 
-.dataframe thead {
-    border-bottom: 1px solid;
-    vertical-align: bottom;
+/* ============================================================================
+   Links
+   ============================================================================ */
+a {
+    color: var(--pyriemann-blue);
+    text-decoration: none;
+    transition: all 0.3s ease;
 }
 
-.dataframe tr, th, td {
-    text-align: left;
-    vertical-align: middle;
-    padding: 0.5em 0.5em;
-    line-height: normal;
-    white-space: normal;
-    max-width: none;
-    border: none;
+a:hover {
+    color: var(--pyriemann-dark);
 }
 
-.dataframe th {
-    font-weight: bold;
+a.reference.external::after {
+    content: " \2197";
+    font-size: 0.8em;
+    opacity: 0.6;
 }
 
+/* ============================================================================
+   Admonitions
+   ============================================================================ */
+.admonition {
+    border-radius: 8px;
+    padding: 1em 1.5em;
+    margin: 1.5em 0;
+    border-left: 4px solid;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.admonition:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+}
+
+.admonition.note {
+    background: linear-gradient(135deg, #fdf8e8 0%, #fffdf5 100%);
+    border-left-color: var(--pyriemann-gold);
+}
+
+.admonition.warning {
+    background: linear-gradient(135deg, #fff3e0 0%, #fffaf5 100%);
+    border-left-color: var(--warning-orange);
+}
+
+.admonition.tip {
+    background: linear-gradient(135deg, #e8f5e9 0%, #f5fdf5 100%);
+    border-left-color: var(--success-green);
+}
+
+.admonition-title {
+    font-weight: 600;
+    margin-bottom: 0.5em;
+    font-size: 1.1em;
+}
+
+/* ============================================================================
+   Tables
+   ============================================================================ */
 table {
-    margin-bottom: 20px;
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1.5em 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+    border-radius: 8px;
+    overflow: hidden;
 }
 
-tbody tr:nth-child(odd) {
-    background: #f5f5f5;
+thead {
+    background: linear-gradient(135deg, var(--pyriemann-blue), var(--pyriemann-light-blue));
+    color: #fff;
+}
+
+thead th {
+    padding: 1em;
+    text-align: left;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85em;
+    letter-spacing: 0.05em;
+}
+
+tbody tr {
+    border-bottom: 1px solid var(--pyriemann-light);
+    transition: background-color 0.2s ease;
 }
 
 tbody tr:hover {
-    background: rgba(66, 165, 245, 0.2);
+    background-color: rgba(46, 90, 138, 0.05);
 }
 
-div.body {
-    min-width: None;
-    max-width: None;
+tbody td {
+    padding: 0.75em 1em;
+}
+
+tbody tr:nth-child(even) {
+    background-color: #f8f9fa;
+}
+
+/* ============================================================================
+   API Documentation
+   ============================================================================ */
+dl.class, dl.function, dl.method {
+    border: 1px solid var(--pyriemann-light);
+    border-radius: 8px;
+    padding: 1.5em;
+    margin: 1.5em 0;
+    background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+dt {
+    font-weight: 600;
+    color: var(--pyriemann-dark);
+    padding: 0.5em 0;
+}
+
+dd {
+    margin-left: 0;
+    padding-left: 1.5em;
+}
+
+.sig-name {
+    color: var(--pyriemann-blue);
+    font-weight: 600;
+}
+
+.sig-param {
+    color: var(--pyriemann-teal);
+}
+
+/* ============================================================================
+   Gallery
+   ============================================================================ */
+.sphx-glr-thumbnails {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important;
+    gap: 16px;
+}
+
+.sphx-glr-thumbcontainer {
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+    background: white;
+    width: 100% !important;
+    max-width: none !important;
+    float: none !important;
+    margin: 0 !important;
+}
+
+/* Avoid oversized cards on sections that have a single example. */
+.sphx-glr-thumbnails > .sphx-glr-thumbcontainer:only-child {
+    justify-self: start;
+    width: min(100%, 460px) !important;
+}
+
+.sphx-glr-thumbcontainer img {
+    max-width: 100% !important;
+    max-height: none !important;
+    width: 100%;
+    height: auto;
+    transition: transform 0.3s ease;
+}
+
+.sphx-glr-thumbcontainer:hover {
+    transform: translateY(-8px);
+    box-shadow: 0 8px 24px rgba(46, 90, 138, 0.2);
+}
+
+.sphx-glr-thumbcontainer:hover img {
+    transform: scale(1.05);
+}
+
+/* ============================================================================
+   Copy Button Enhancement
+   ============================================================================ */
+.copybtn {
+    background: var(--pyriemann-blue);
+    opacity: 0.7;
+    transition: all 0.3s ease;
+}
+
+.copybtn:hover {
+    opacity: 1;
+    transform: scale(1.1);
+}
+
+/* ============================================================================
+   Search Box
+   ============================================================================ */
+input[type="search"], input[type="text"] {
+    border: 2px solid var(--pyriemann-light);
+    border-radius: 6px;
+    padding: 0.6em 1em;
+    transition: all 0.3s ease;
+}
+
+input[type="search"]:focus, input[type="text"]:focus {
+    border-color: var(--pyriemann-blue);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(46, 90, 138, 0.1);
+}
+
+/* ============================================================================
+   Blockquotes
+   ============================================================================ */
+blockquote {
+    border-left: 4px solid var(--pyriemann-gold);
+    padding: 1em 1.5em;
+    margin: 1.5em 0;
+    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+    border-radius: 0 8px 8px 0;
+    font-style: italic;
+    color: var(--pyriemann-dark);
+}
+
+/* ============================================================================
+   Footer
+   ============================================================================ */
+footer {
+    border-top: 2px solid var(--pyriemann-light);
+    padding-top: 2em;
+    margin-top: 3em;
+    color: #6c757d;
+}
+
+/* ============================================================================
+   Expand content when right TOC is hidden (API pages with :hide-toc:)
+   ============================================================================ */
+.page:has(.toc-drawer.no-toc) .content {
+    width: 100%;
+    max-width: 70em;
+}
+
+/* Use full width on gallery index pages so thumbnail grids can expand. */
+.page:has(.toc-drawer.no-toc) .content:has(.sphx-glr-thumbnails) {
+    max-width: none;
+}
+
+/* ============================================================================
+   Responsive Design
+   ============================================================================ */
+@media (max-width: 768px) {
+    h1 {
+        font-size: 2rem !important;
+    }
+
+    h2 {
+        font-size: 1.5rem !important;
+    }
+
+    pre {
+        padding: 1em;
+    }
+
+    table {
+        font-size: 0.9em;
+    }
+}
+
+/* ============================================================================
+   Print Styles
+   ============================================================================ */
+@media print {
+    .sidebar, .related, .footer {
+        display: none;
+    }
+
+    body {
+        color: black;
+    }
+
+    a {
+        color: black;
+        text-decoration: underline;
+    }
+}
+
+/* ============================================================================
+   Accessibility
+   ============================================================================ */
+:focus {
+    outline: 3px solid var(--pyriemann-gold);
+    outline-offset: 2px;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+/* ============================================================================
+   Smooth Scrolling
+   ============================================================================ */
+html {
+    scroll-behavior: smooth;
+}
+
+/* ============================================================================
+   API Card Navigation Grid
+   ============================================================================ */
+.api-section-header {
+    margin: 2em 0 1em;
+    padding: 0 0 0.5em;
+    border-bottom: 2px solid var(--pyriemann-light);
+}
+
+.api-section-header h2 {
+    margin: 0 0 0.25em;
+    font-size: 1.6rem !important;
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.api-section-header p {
+    margin: 0;
+    color: #6c757d;
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.api-card-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+    margin: 1.25rem 0 2rem;
+}
+
+.api-card {
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--pyriemann-light);
+    border-radius: 10px;
+    padding: 1.25rem;
+    background: #fff;
+    text-decoration: none !important;
+    color: inherit !important;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
+    cursor: pointer;
+}
+
+.api-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.1);
+}
+
+.api-card:focus {
+    outline: 3px solid var(--pyriemann-gold);
+    outline-offset: 2px;
+}
+
+.api-card.card-module:hover {
+    border-color: var(--pyriemann-blue);
+}
+
+.api-card.card-utils:hover {
+    border-color: var(--pyriemann-teal);
+}
+
+.api-card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.75rem;
+}
+
+.api-card-icon {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.api-card-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+.card-module .api-card-icon {
+    background: rgba(46, 90, 138, 0.12);
+    color: var(--pyriemann-blue);
+}
+
+.card-module .api-card-icon svg {
+    fill: var(--pyriemann-blue);
+    stroke: var(--pyriemann-blue);
+}
+
+.card-utils .api-card-icon {
+    background: rgba(22, 160, 133, 0.12);
+    color: var(--pyriemann-teal);
+}
+
+.card-utils .api-card-icon svg {
+    fill: var(--pyriemann-teal);
+    stroke: var(--pyriemann-teal);
+}
+
+.api-card-tag {
+    font-size: 0.65rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding: 0.15em 0.55em;
+    border-radius: 4px;
+}
+
+.tag-module {
+    background: rgba(46, 90, 138, 0.12);
+    color: var(--pyriemann-blue);
+}
+
+.tag-utils {
+    background: rgba(22, 160, 133, 0.12);
+    color: var(--pyriemann-teal);
+}
+
+.api-card-title {
+    font-size: 1.05rem;
+    font-weight: 600;
+    margin: 0 0 0.35rem;
+    color: var(--pyriemann-dark);
+    line-height: 1.3;
+}
+
+.api-card a:hover .api-card-title,
+.api-card:hover .api-card-title {
+    color: var(--pyriemann-blue);
+}
+
+.card-utils:hover .api-card-title {
+    color: var(--pyriemann-teal);
+}
+
+.api-card-desc {
+    font-size: 0.83rem;
+    color: #6c757d;
+    margin: 0 0 0.75rem;
+    line-height: 1.45;
+    flex-grow: 1;
+}
+
+.api-card-footer {
+    font-size: 0.75rem;
+    color: #95a5a6;
+    font-weight: 500;
+    border-top: 1px solid var(--pyriemann-light);
+    padding-top: 0.6rem;
+    margin-top: auto;
+}
+
+/* ---- Dark Mode ---- */
+[data-theme="dark"] .api-card {
+    background: #1e1e1e;
+    border-color: #333;
+}
+
+[data-theme="dark"] .api-card:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+[data-theme="dark"] .api-card.card-module:hover {
+    border-color: var(--pyriemann-gold);
+}
+
+[data-theme="dark"] .api-card.card-utils:hover {
+    border-color: var(--pyriemann-teal);
+}
+
+[data-theme="dark"] .api-card-title {
+    color: #e0e0e0;
+}
+
+[data-theme="dark"] .api-card-desc {
+    color: #999;
+}
+
+[data-theme="dark"] .api-card-footer {
+    color: #777;
+    border-top-color: #333;
+}
+
+[data-theme="dark"] .api-section-header {
+    border-bottom-color: #333;
+}
+
+[data-theme="dark"] .api-section-header p {
+    color: #999;
+}
+
+/* ---- Responsive ---- */
+@media (max-width: 900px) {
+    .api-card-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+@media (max-width: 600px) {
+    .api-card-grid {
+        grid-template-columns: 1fr;
+    }
 }

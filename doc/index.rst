@@ -1,98 +1,136 @@
-.. raw:: html
+:hide-toc:
 
-   <style type="text/css">
-   .thumbnail {{
-       position: relative;
-       float: left;
-       margin: 10px;
-       width: 180px;
-       height: 200px;
-   }}
+.. title:: pyRiemann
 
-   .thumbnail img {{
-       position: absolute;
-       display: inline;
-       left: 0;
-       width: 170px;
-       height: 170px;
-   }}
+pyRiemann
+=========
 
-   </style>
+Riemannian Geometry for Machine Learning
+-----------------------------------------
 
-pyRiemann: Machine learning for multivariate data with Riemannian geometry
-==========================================================================
+Machine learning for multivariate data through the Riemannian geometry
+of symmetric positive definite matrices.
 
 .. raw:: html
 
-    <div style="clear: both"></div>
-    <div class="container-fluid hidden-xs hidden-sm">
-      <div class="row">
-       <a href="auto_examples/motor-imagery/plot_single.html">
-         <div class="col-md-3 thumbnail">
-           <img src="_images/sphx_glr_plot_single_thumb.png">
-         </div>
-       </a>
-       <a href="auto_examples/ERP/plot_classify_MEG_mdm.html">
-         <div class="col-md-3 thumbnail">
-           <img src="_images/sphx_glr_plot_classify_MEG_mdm_thumb.png">
-         </div>
-       </a>
-       <a href="auto_examples/ERP/plot_classify_EEG_tangentspace.html">
-         <div class="col-md-3 thumbnail">
-           <img src="_images/sphx_glr_plot_classify_EEG_tangentspace_thumb.png">
-         </div>
-       </a>
-       <a href="auto_examples/stats/plot_oneWay_Manova_frequency.html">
-         <div class="col-md-3 thumbnail">
-           <img src="_images/sphx_glr_plot_oneWay_Manova_frequency_thumb.png">
-         </div>
-       </a>
-     </div>
+   <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 1.5em 0;">
+     <a href="auto_examples/covariance-estimation/plot_covariance_estimation_robust.html" style="border: 1px solid #eee; border-radius: 8px; overflow: hidden; transition: box-shadow 0.3s;">
+       <img src="_images/sphx_glr_plot_covariance_estimation_robust_thumb.png" style="width: 100%; display: block;" alt="Robust covariance estimation">
+     </a>
+     <a href="auto_examples/biosignal-erp/plot_classify_MEG_mdm.html" style="border: 1px solid #eee; border-radius: 8px; overflow: hidden; transition: box-shadow 0.3s;">
+       <img src="_images/sphx_glr_plot_classify_MEG_mdm_thumb.png" style="width: 100%; display: block;" alt="MEG classification MDM">
+     </a>
+     <a href="auto_examples/artifacts/plot_detect_riemannian_potato_EEG.html" style="border: 1px solid #eee; border-radius: 8px; overflow: hidden; transition: box-shadow 0.3s;">
+       <img src="_images/sphx_glr_plot_detect_riemannian_potato_EEG_thumb.png" style="width: 100%; display: block;" alt="Riemannian potato EEG artifact detection">
+     </a>
+     <a href="auto_examples/stats/plot_oneway_manova_frequency.html" style="border: 1px solid #eee; border-radius: 8px; overflow: hidden; transition: box-shadow 0.3s;">
+       <img src="_images/sphx_glr_plot_oneway_manova_frequency_thumb.png" style="width: 100%; display: block;" alt="One-way MANOVA frequency">
+     </a>
    </div>
 
-   <br>
+.. grid:: 3
+   :gutter: 3
 
-   <div class="container-fluid">
-     <div class="row">
-       <div class="col-md-9">
+   .. grid-item-card:: Quick Start
+      :link: installing
+      :link-type: doc
+      :text-align: center
 
-pyRiemann is a Python machine learning package based on scikit-learn API.
-It provides a high-level interface for processing and classification of real (resp. complex)-valued multivariate data
-through the Riemannian geometry of symmetric (resp. Hermitian) positive definite (SPD) (resp. HPD) matrices.
+      Get up and running with pyRiemann.
 
-For a brief introduction to the ideas behind the package, you can read the
-:ref:`introductory notes <introduction>`. More practical information is on the
-:ref:`installation page <installing>`. You may also want to browse the
-`example gallery <auto_examples/index.html>`_ to get a sense for what you can do with pyRiemann
-and :ref:`API reference <api_ref>` to find out how.
+      +++
+      :ref:`Installation guide <installing>`
 
-To see the code or report a bug, please visit the `github repository
-<https://github.com/pyRiemann/pyRiemann>`_.
+   .. grid-item-card:: Examples
+      :link: auto_examples/index
+      :link-type: doc
+      :text-align: center
 
-.. raw:: html
+      Browse the example gallery for tutorials and use cases.
 
-       </div>
-       <div class="col-md-3">
-         <div class="panel panel-default">
-           <div class="panel-heading">
-             <h3 class="panel-title">Content</h3>
-           </div>
-       <div class="panel-body">
+      +++
+      `Example gallery <auto_examples/index.html>`_
+
+   .. grid-item-card:: API Reference
+      :link: api
+      :link-type: doc
+      :text-align: center
+
+      Detailed documentation for all modules, classes, and functions.
+
+      +++
+      :ref:`API docs <api_ref>`
+
+Overview
+--------
+
+pyRiemann is a Python package for machine learning with multivariate data,
+using the Riemannian geometry of symmetric (resp. Hermitian) positive definite
+(SPD) (resp. HPD) matrices. It provides a high-level interface fully compatible
+with scikit-learn, making it easy to build powerful pipelines for
+classification, regression, and clustering.
+
+**Key features:**
+
+- **Riemannian Geometry** -- Leverage distances, means, and tangent space
+  projections on the SPD manifold.
+- **scikit-learn Compatible** -- All estimators follow the scikit-learn API.
+  Build pipelines, use cross-validation, and grid search out of the box.
+- **Brain-Computer Interfaces** -- State-of-the-art processing and
+  classification of EEG, MEG, and fNIRS signals.
+- **Remote Sensing** -- Apply Riemannian methods to SAR image classification.
+- **Transfer Learning** -- Domain adaptation tools for cross-session and
+  cross-subject generalization.
+
+Example
+-------
+
+Build a simple BCI classification pipeline using covariance matrices and the
+Minimum Distance to Mean (MDM) classifier:
+
+.. code-block:: python
+
+   from pyriemann.estimation import Covariances
+   from pyriemann.classification import MDM
+   from sklearn.pipeline import make_pipeline
+
+   pipeline = make_pipeline(
+       Covariances(estimator="lwf"),
+       MDM(metric="riemann"),
+   )
+   pipeline.fit(X_train, y_train)
+   print(pipeline.score(X_test, y_test))
+
+Citing pyRiemann
+----------------
+
+If you use pyRiemann in a scientific publication, please cite it using
+the `Zenodo DOI <https://doi.org/10.5281/zenodo.593816>`_:
+
+.. literalinclude:: CITATION.apa
+   :language: text
+
+**BibTeX entry:**
+
+.. literalinclude:: CITATION.bib
+   :language: bibtex
 
 .. toctree::
-   :maxdepth: 1
+   :hidden:
+   :caption: Getting Started
 
    Introduction <introduction>
-   Release notes <whatsnew>
    Installing <installing>
+
+.. toctree::
+   :hidden:
+   :caption: User Guide
+
    Example gallery <auto_examples/index>
+   Release notes <whatsnew>
+
+.. toctree::
+   :hidden:
+   :caption: API Documentation
+
    API reference <api>
-
-.. raw:: html
-
-       </div>
-     </div>
-   </div>
-
-   </div>
-   </div>
