@@ -2,15 +2,9 @@
 
 import numpy as np
 
+from ._backend import check_matrix_pair
 from .base import ctranspose, expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
 from .utils import check_function
-
-
-def _check_dimensions(X, Cref):
-    n_1, n_2 = X.shape[-2:]
-    n_3, n_4 = Cref.shape
-    if not (n_1 == n_2 == n_3 == n_4):
-        raise ValueError("Inputs have incompatible dimensions.")
 
 
 def exp_map_euclid(X, Cref):
@@ -141,7 +135,7 @@ def exp_map_logeuclid(X, Cref):
     return expm(logm(Cref) + ddlogm(X, Cref))
 
 
-def exp_map_riemann(X, Cref, Cm12=False):
+def exp_map_riemann(X, Cref, Cm12=False, *, backend=None):
     r"""Project matrices back to manifold by Riemannian exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
@@ -184,14 +178,15 @@ def exp_map_riemann(X, Cref, Cm12=False):
         <https://link.springer.com/article/10.1007/s11263-005-3222-z>`_
         X. Pennec, P. Fillard, N. Ayache. IJCV, 2006, 66(1), pp. 41-66.
     """
+    backend = check_matrix_pair(X, Cref, require_square=True, backend=backend)
     if Cm12:
-        Cm12 = invsqrtm(Cref)
+        Cm12 = invsqrtm(Cref, backend=backend)
         X = Cm12 @ X @ Cm12
-    C12 = sqrtm(Cref)
-    return C12 @ expm(X) @ C12
+    C12 = sqrtm(Cref, backend=backend)
+    return C12 @ expm(X, backend=backend) @ C12
 
 
-def exp_map_wasserstein(X, Cref):
+def exp_map_wasserstein(X, Cref, *, backend=None):
     r"""Project matrices back to manifold by Wasserstein exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
@@ -222,13 +217,14 @@ def exp_map_wasserstein(X, Cref):
         L. Malagò, L. Montrucchio, G. Pistone. Information Geometry, 2018, 1,
         pp. 137–179.
     """
-    d, V = np.linalg.eigh(Cref)
-    C = 1 / (d[:, None] + d[None, :])
+    backend = check_matrix_pair(X, Cref, require_square=True, backend=backend)
+    d, V = backend.eigh(Cref)
+    C = 1 / (d[..., :, None] + d[..., None, :])
 
-    X_rotated = V.conj().T @ X @ V
+    X_rotated = ctranspose(V, backend=backend) @ X @ V
     X_tmp = C * X_rotated
-    X_tmp = X_tmp @ np.diag(d) @ X_tmp
-    X_tmp = V @ X_tmp @ V.conj().T
+    X_tmp = X_tmp @ backend.diag_embed(d) @ X_tmp
+    X_tmp = V @ X_tmp @ ctranspose(V, backend=backend)
 
     return Cref + X + X_tmp
 
@@ -399,13 +395,13 @@ def log_map_logeuclid(X, Cref):
         <https://ieeexplore.ieee.org/document/10735221>`_
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
-    _check_dimensions(X, Cref)
+    check_matrix_pair(X, Cref, require_square=True)
     logCref = logm(Cref)
     X_new = ddexpm(logm(X) - logCref, logCref)
     return X_new
 
 
-def log_map_riemann(X, Cref, C12=False):
+def log_map_riemann(X, Cref, C12=False, *, backend=None):
     r"""Project matrices in tangent space by Riemannian logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
@@ -448,16 +444,16 @@ def log_map_riemann(X, Cref, C12=False):
         <https://link.springer.com/article/10.1007/s11263-005-3222-z>`_
         X. Pennec, P. Fillard, N. Ayache. IJCV, 2006, 66(1), pp. 41-66.
     """
-    _check_dimensions(X, Cref)
-    Cm12 = invsqrtm(Cref)
-    X_new = logm(Cm12 @ X @ Cm12)
+    backend = check_matrix_pair(X, Cref, require_square=True, backend=backend)
+    Cm12 = invsqrtm(Cref, backend=backend)
+    X_new = logm(Cm12 @ X @ Cm12, backend=backend)
     if C12:
-        C12 = sqrtm(Cref)
+        C12 = sqrtm(Cref, backend=backend)
         X_new = C12 @ X_new @ C12
     return X_new
 
 
-def log_map_wasserstein(X, Cref):
+def log_map_wasserstein(X, Cref, *, backend=None):
     r"""Project matrices in tangent space by Wasserstein logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
@@ -492,12 +488,12 @@ def log_map_wasserstein(X, Cref):
         L. Malagò, L. Montrucchio, G. Pistone. Information Geometry, 2018, 1,
         pp. 137–179.
     """
-    _check_dimensions(X, Cref)
-    P12 = sqrtm(Cref)
-    P12inv = invsqrtm(Cref)
-    sqrt_bracket = sqrtm(P12 @ X @ P12)
+    backend = check_matrix_pair(X, Cref, require_square=True, backend=backend)
+    P12 = sqrtm(Cref, backend=backend)
+    P12inv = invsqrtm(Cref, backend=backend)
+    sqrt_bracket = sqrtm(P12 @ X @ P12, backend=backend)
     tmp = P12inv @ sqrt_bracket @ P12
-    return tmp + ctranspose(tmp) - 2 * Cref
+    return tmp + ctranspose(tmp, backend=backend) - 2 * Cref
 
 
 log_map_functions = {

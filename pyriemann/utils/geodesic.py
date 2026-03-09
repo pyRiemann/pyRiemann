@@ -2,6 +2,7 @@
 import numpy as np
 from scipy.linalg import eigvalsh
 
+from ._backend import _broadcast_batch_shapes, resolve_backend
 from .base import _recursive, ctranspose, sqrtm, invsqrtm, powm, logm, expm
 from .utils import check_function
 
@@ -88,7 +89,7 @@ def geodesic_euclid(A, B, alpha=0.5):
     return (1 - alpha) * A + alpha * B
 
 
-def geodesic_logchol(A, B, alpha=0.5):
+def geodesic_logchol(A, B, alpha=0.5, *, backend=None):
     r"""Log-Cholesky geodesic between SPD/HPD matrices.
 
     The matrix at position :math:`\alpha` on the log-Cholesky geodesic
@@ -123,22 +124,24 @@ def geodesic_logchol(A, B, alpha=0.5):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    A_chol, B_chol = np.linalg.cholesky(A), np.linalg.cholesky(B)
+    backend = resolve_backend(A, B, backend=backend)
+    A_chol, B_chol = backend.cholesky(A), backend.cholesky(B)
 
-    geo = np.zeros_like(A)
+    batch_shape = _broadcast_batch_shapes(A_chol, B_chol)
+    geo = backend.zeros(batch_shape + A_chol.shape[-2:], like=A_chol)
 
-    tri0, tri1 = np.tril_indices(A_chol.shape[-1], -1)
+    tri0, tri1 = backend.tril_indices(A_chol.shape[-1], -1, like=A_chol)
     geo[..., tri0, tri1] = (1 - alpha) * A_chol[..., tri0, tri1] + \
         alpha * B_chol[..., tri0, tri1]
 
-    diag0, diag1 = np.diag_indices(A_chol.shape[-1])
+    diag0, diag1 = backend.diag_indices(A_chol.shape[-1], like=A_chol)
     geo[..., diag0, diag1] = A_chol[..., diag0, diag1] ** (1 - alpha) * \
         B_chol[..., diag0, diag1] ** alpha
 
-    return geo @ ctranspose(geo)
+    return geo @ ctranspose(geo, backend=backend)
 
 
-def geodesic_logeuclid(A, B, alpha=0.5):
+def geodesic_logeuclid(A, B, alpha=0.5, *, backend=None):
     r"""Log-Euclidean geodesic between SPD/HPD matrices.
 
     The matrix at position :math:`\alpha` on the log-Euclidean geodesic
@@ -177,10 +180,15 @@ def geodesic_logeuclid(A, B, alpha=0.5):
         V. Arsigny, P. Fillard, X. Pennec, N. Ayache.
         SIAM J Matrix Anal Appl, 2007, 29 (1), pp. 328-347
     """
-    return expm((1 - alpha) * logm(A) + alpha * logm(B))
+    backend = resolve_backend(A, B, backend=backend)
+    return expm(
+        (1 - alpha) * logm(A, backend=backend) +
+        alpha * logm(B, backend=backend),
+        backend=backend,
+    )
 
 
-def geodesic_riemann(A, B, alpha=0.5):
+def geodesic_riemann(A, B, alpha=0.5, *, backend=None):
     r"""Affine-invariant Riemannian geodesic between SPD/HPD matrices.
 
     The matrix at position :math:`\alpha` on the affine-invariant Riemannian
@@ -219,8 +227,10 @@ def geodesic_riemann(A, B, alpha=0.5):
         R. Bhatia and J. Holbrook.
         Linear Algebra and its Applications, 2006
     """
-    sA, isA = sqrtm(A), invsqrtm(A)
-    C = sA @ powm(isA @ B @ isA, alpha) @ sA
+    backend = resolve_backend(A, B, backend=backend)
+    sA = sqrtm(A, backend=backend)
+    isA = invsqrtm(A, backend=backend)
+    C = sA @ powm(isA @ B @ isA, alpha, backend=backend) @ sA
     return C
 
 
@@ -287,7 +297,7 @@ def geodesic_thompson(A, B, alpha=0.5):
     return C
 
 
-def geodesic_wasserstein(A, B, alpha=0.5):
+def geodesic_wasserstein(A, B, alpha=0.5, *, backend=None):
     r"""Wasserstein geodesic between SPD/HPD matrices.
 
     The matrix at position :math:`\alpha` on the Wasserstein geodesic between
@@ -330,11 +340,12 @@ def geodesic_wasserstein(A, B, alpha=0.5):
         L. Malagò, L. Montrucchio, G. Pistone.
         Information Geometry, 2018, 1, pp. 137–179.
     """
-    A12 = sqrtm(A)
-    A12inv = invsqrtm(A)
-    AB12 = A12 @ sqrtm(A12 @ B @ A12) @ A12inv
+    backend = resolve_backend(A, B, backend=backend)
+    A12 = sqrtm(A, backend=backend)
+    A12inv = invsqrtm(A, backend=backend)
+    AB12 = A12 @ sqrtm(A12 @ B @ A12, backend=backend) @ A12inv
     return (1-alpha)**2 * A + alpha**2 * B + \
-        alpha*(1-alpha) * (AB12 + ctranspose(AB12))
+        alpha*(1-alpha) * (AB12 + ctranspose(AB12, backend=backend))
 
 
 ###############################################################################

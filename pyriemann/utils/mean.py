@@ -4,9 +4,10 @@ import warnings
 
 import numpy as np
 
+from ._backend import resolve_backend
 from . import deprecated
 from .ajd import ajd_pham
-from .base import sqrtm, invsqrtm, logm, expm, powm
+from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann, geodesic_thompson
 from .tangentspace import log_map_wasserstein, exp_map_wasserstein
@@ -70,7 +71,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
         if crit <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     J = np.einsum("a,abc->bc", sample_weight, logm(B @ X @ B.conj().T))
     A = np.linalg.inv(B)
@@ -145,7 +146,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
             break
         M = M_iter.copy()
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return np.mean(M_iter, axis=0)
 
@@ -192,7 +193,7 @@ def mean_chol(X, sample_weight=None, **kwargs):
     return L @ L.conj().T
 
 
-def mean_euclid(X, sample_weight=None, **kwargs):
+def mean_euclid(X, sample_weight=None, *, backend=None, **kwargs):
     r"""Mean of matrices according to the Euclidean metric.
 
     .. math::
@@ -216,7 +217,15 @@ def mean_euclid(X, sample_weight=None, **kwargs):
     --------
     gmean
     """
-    return np.average(X, axis=0, weights=sample_weight)
+    backend = resolve_backend(X, backend=backend)
+    if sample_weight is not None:
+        sample_weight = check_weights(
+            sample_weight,
+            X.shape[0],
+            backend=backend,
+            like=X,
+        )
+    return backend.weighted_average(X, weights=sample_weight, axis=0)
 
 
 def mean_harmonic(X, sample_weight=None, **kwargs):
@@ -282,7 +291,7 @@ def mean_kullback_sym(X, sample_weight=None, **kwargs):
     return M
 
 
-def mean_logchol(X, sample_weight=None, **kwargs):
+def mean_logchol(X, sample_weight=None, *, backend=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the log-Cholesky metric.
 
     Log-Cholesky mean :math:`\mathbf{M}` is
@@ -321,27 +330,33 @@ def mean_logchol(X, sample_weight=None, **kwargs):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
+    backend = resolve_backend(X, backend=backend)
     n_matrices, _, n_channels = X.shape
-    sample_weight = check_weights(sample_weight, n_matrices)
-
-    X_chol = np.linalg.cholesky(X)
-    L = np.zeros(X.shape[-2:], dtype=X.dtype)
-
-    tri0, tri1 = np.tril_indices(n_channels, -1)
-    L[tri0, tri1] = np.average(
-        X_chol[:, tri0, tri1],
-        axis=0,
-        weights=sample_weight,
+    sample_weight = check_weights(
+        sample_weight,
+        n_matrices,
+        backend=backend,
+        like=X,
     )
 
-    diag0, diag1 = np.diag_indices(n_channels)
-    L[diag0, diag1] = np.exp(np.average(
-        np.log(X_chol[:, diag0, diag1]),
-        axis=0,
+    X_chol = backend.cholesky(X)
+    L = backend.zeros(X.shape[-2:], like=X)
+
+    tri0, tri1 = backend.tril_indices(n_channels, -1, like=X_chol)
+    L[tri0, tri1] = backend.weighted_average(
+        X_chol[:, tri0, tri1],
         weights=sample_weight,
+        axis=0,
+    )
+
+    diag0, diag1 = backend.diag_indices(n_channels, like=X_chol)
+    L[diag0, diag1] = backend.exp(backend.weighted_average(
+        backend.log(X_chol[:, diag0, diag1]),
+        weights=sample_weight,
+        axis=0,
     ))
 
-    return L @ L.conj().T
+    return L @ ctranspose(L, backend=backend)
 
 
 def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
@@ -393,12 +408,12 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         if crit <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return M
 
 
-def mean_logeuclid(X, sample_weight=None, **kwargs):
+def mean_logeuclid(X, sample_weight=None, *, backend=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the log-Euclidean metric.
 
     Log-Euclidean mean is [1]_:
@@ -430,7 +445,15 @@ def mean_logeuclid(X, sample_weight=None, **kwargs):
         V. Arsigny, P. Fillard, X. Pennec, and N. Ayache. SIAM Journal on
         Matrix Analysis and Applications. Volume 29, Issue 1 (2007).
     """
-    M = expm(mean_euclid(logm(X), sample_weight=sample_weight))
+    backend = resolve_backend(X, backend=backend)
+    M = expm(
+        mean_euclid(
+            logm(X, backend=backend),
+            sample_weight=sample_weight,
+            backend=backend,
+        ),
+        backend=backend,
+    )
     return M
 
 
@@ -531,7 +554,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
         if crit <= zeta:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     M = K.conj().T @ K
     if p > 0:
@@ -587,7 +610,9 @@ def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     return M
 
 
-def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
+def mean_riemann(
+    X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None, backend=None
+):
     r"""Mean of SPD/HPD matrices according to the Riemannian metric.
 
     The affine-invariant Riemannian mean minimizes the sum of squared
@@ -634,21 +659,32 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         <https://arxiv.org/abs/1505.07343>`_
         M. Congedo, B. Afsari, A. Barachant, M. Moakher. PLOS ONE, 2015
     """
+    backend = resolve_backend(X, backend=backend)
     n_matrices, n, _ = X.shape
-    sample_weight = check_weights(sample_weight, n_matrices)
+    sample_weight = check_weights(
+        sample_weight,
+        n_matrices,
+        backend=backend,
+        like=X,
+    )
     if init is None:
-        M = mean_euclid(X, sample_weight=sample_weight)
+        M = mean_euclid(X, sample_weight=sample_weight, backend=backend)
     else:
-        M = check_init(init, n)
+        M = check_init(init, n, backend=backend, like=X)
 
     nu = 1.0
-    tau = np.finfo(np.float64).max
+    tau = float("inf")
     for _ in range(maxiter):
-        M12, Mm12 = sqrtm(M), invsqrtm(M)
-        J = np.einsum("a,abc->bc", sample_weight, logm(Mm12 @ X @ Mm12))
-        M = M12 @ expm(nu * J) @ M12
+        M12 = sqrtm(M, backend=backend)
+        Mm12 = invsqrtm(M, backend=backend)
+        J = backend.weighted_average(
+            logm(Mm12 @ X @ Mm12, backend=backend),
+            weights=sample_weight,
+            axis=0,
+        )
+        M = M12 @ expm(nu * J, backend=backend) @ M12
 
-        crit = np.linalg.norm(J, ord="fro")
+        crit = backend.as_float(backend.norm_fro(J))
         h = nu * crit
         if h < tau:
             nu = 0.95 * nu
@@ -658,7 +694,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         if crit <= tol or nu <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return M
 
@@ -717,12 +753,14 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
         if crit <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return M
 
 
-def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
+def mean_wasserstein(
+    X, tol=10e-9, maxiter=50, init=None, sample_weight=None, *, backend=None
+):
     r"""Mean of SPD/HPD matrices according to the Wasserstein metric.
 
     Wasserstein mean [1]_ is implemented as the inductive mean [2]_,
@@ -761,23 +799,29 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         <https://arxiv.org/abs/2302.14618>`_
         J. Zheng, H. Huang, Y. Yi, Y. Li, S.-C. Lin, ArXiv, 2023
     """
+    backend = resolve_backend(X, backend=backend)
     n_matrices, n, _ = X.shape
-    sample_weight = check_weights(sample_weight, n_matrices)
+    sample_weight = check_weights(
+        sample_weight,
+        n_matrices,
+        backend=backend,
+        like=X,
+    )
     if init is None:
-        init = mean_euclid(X, sample_weight=sample_weight)
+        init = mean_euclid(X, sample_weight=sample_weight, backend=backend)
     else:
-        init = check_init(init, n)
+        init = check_init(init, n, backend=backend, like=X)
     M = init
 
     for _ in range(maxiter):
-        X_ts = log_map_wasserstein(X, M)
-        J = np.einsum("a,abc->bc", sample_weight, X_ts)
-        M = exp_map_wasserstein(J, M)
-        crit = np.linalg.norm(J)
+        X_ts = log_map_wasserstein(X, M, backend=backend)
+        J = backend.weighted_average(X_ts, weights=sample_weight, axis=0)
+        M = exp_map_wasserstein(J, M, backend=backend)
+        crit = backend.as_float(backend.norm_fro(J))
         if crit <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return M
 
@@ -959,7 +1003,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
         if crit <= tol or nu <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return M
 

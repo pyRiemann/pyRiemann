@@ -2,10 +2,11 @@
 
 import numpy as np
 
+from ._backend import resolve_backend
 from .test import is_pos_def
 
 
-def ctranspose(X):
+def ctranspose(X, *, backend=None):
     """Conjugate transpose operator.
 
     Conjugate transpose operator for complex-valued array,
@@ -29,7 +30,8 @@ def ctranspose(X):
     ----------
     .. [1] https://en.wikipedia.org/wiki/Conjugate_transpose
     """
-    return np.swapaxes(X.conj(), -2, -1)
+    backend = resolve_backend(X, backend=backend)
+    return backend.swapaxes(backend.conj(X), -2, -1)
 
 
 ###############################################################################
@@ -45,24 +47,28 @@ def _recursive(fun, A, B, *args, **kwargs):
         )
 
 
-def _matrix_operator(X, operator):
+def _matrix_operator(X, operator, *, backend=None):
     """Matrix function for SPD/HPD matrices."""
-    if not isinstance(X, np.ndarray) or X.ndim < 2:
-        raise ValueError("Input must be at least a 2D ndarray")
-    if X.dtype.char in np.typecodes['AllFloat'] and (
-            np.isinf(X).any() or np.isnan(X).any()):
+    backend = resolve_backend(X, backend=backend)
+    if not backend.is_array(X) or X.ndim < 2:
+        raise ValueError("Input must be at least a 2D ndarray or tensor")
+    if X.shape[-2] != X.shape[-1]:
+        raise ValueError("Input must contain square matrices")
+    if backend.is_floating_dtype(X) and not backend.all_finite(X):
         raise ValueError(
             "Matrices must be positive definite. "
             "You should add regularization to avoid this error."
         )
 
-    eigvals, eigvecs = np.linalg.eigh(X)
+    eigvals, eigvecs = backend.eigh(X)
     eigvals = operator(eigvals)
-    X_new = eigvecs @ (np.expand_dims(eigvals, -1) * ctranspose(eigvecs))
+    X_new = eigvecs @ (eigvals[..., None] * ctranspose(
+        eigvecs, backend=backend
+    ))
     return X_new
 
 
-def expm(C):
+def expm(C, *, backend=None):
     r"""Exponential of SPD/HPD matrices.
 
     The symmetric matrix exponential of a SPD/HPD matrix
@@ -84,10 +90,11 @@ def expm(C):
     D : ndarray, shape (..., n, n)
         Matrix exponential of C.
     """
-    return _matrix_operator(C, np.exp)
+    backend = resolve_backend(C, backend=backend)
+    return _matrix_operator(C, backend.exp, backend=backend)
 
 
-def invsqrtm(C):
+def invsqrtm(C, *, backend=None):
     r"""Inverse square root of SPD/HPD matrices.
 
     The symmetric matrix inverse square root of a SPD/HPD matrix
@@ -110,11 +117,15 @@ def invsqrtm(C):
     D : ndarray, shape (..., n, n)
         Matrix inverse square root of C.
     """
-    def isqrt(x): return 1. / np.sqrt(x)
-    return _matrix_operator(C, isqrt)
+    backend = resolve_backend(C, backend=backend)
+
+    def isqrt(x):
+        return 1. / backend.sqrt(x)
+
+    return _matrix_operator(C, isqrt, backend=backend)
 
 
-def logm(C):
+def logm(C, *, backend=None):
     r"""Logarithm of SPD/HPD matrices.
 
     The symmetric matrix logarithm of a SPD/HPD matrix
@@ -136,10 +147,11 @@ def logm(C):
     D : ndarray, shape (..., n, n)
         Matrix logarithm of C.
     """
-    return _matrix_operator(C, np.log)
+    backend = resolve_backend(C, backend=backend)
+    return _matrix_operator(C, backend.log, backend=backend)
 
 
-def powm(C, alpha):
+def powm(C, alpha, *, backend=None):
     r"""Power of SPD/HPD matrices.
 
     The symmetric matrix power :math:`\alpha` of a SPD/HPD matrix
@@ -164,11 +176,14 @@ def powm(C, alpha):
     D : ndarray, shape (..., n, n)
         Matrix power of C.
     """
-    def power(x): return x**alpha
-    return _matrix_operator(C, power)
+    def power(x):
+        return x**alpha
+
+    backend = resolve_backend(C, backend=backend)
+    return _matrix_operator(C, power, backend=backend)
 
 
-def sqrtm(C):
+def sqrtm(C, *, backend=None):
     r"""Square root of SPD/HPD matrices.
 
     The symmetric matrix square root of a SPD/HPD matrix
@@ -191,7 +206,8 @@ def sqrtm(C):
     D : ndarray, shape (..., n, n)
         Matrix square root of C.
     """
-    return _matrix_operator(C, np.sqrt)
+    backend = resolve_backend(C, backend=backend)
+    return _matrix_operator(C, backend.sqrt, backend=backend)
 
 
 ###############################################################################

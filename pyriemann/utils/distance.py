@@ -4,6 +4,7 @@ import numpy as np
 from scipy.linalg import eigvalsh, solve
 from sklearn.metrics import euclidean_distances
 
+from ._backend import check_matrix_pair, resolve_backend
 from .base import _recursive, invsqrtm, logm, powm, sqrtm
 from .test import is_real_type
 from .utils import check_function
@@ -16,6 +17,10 @@ def _check_inputs(A, B):
         raise ValueError("Inputs must have equal dimensions")
     if A.ndim < 2:
         raise ValueError("Inputs must be at least a 2D ndarray")
+
+
+def _last_axis_norm2(x, backend):
+    return backend.sum(backend.abs(x) ** 2, axis=-1)
 
 
 ###############################################################################
@@ -69,7 +74,7 @@ def distance_chol(A, B, squared=False):
     )
 
 
-def distance_euclid(A, B, squared=False):
+def distance_euclid(A, B, squared=False, *, backend=None):
     r"""Euclidean distance between matrices.
 
     The Euclidean distance between two matrices :math:`\mathbf{A}` and
@@ -99,8 +104,8 @@ def distance_euclid(A, B, squared=False):
     --------
     distance
     """
-    _check_inputs(A, B)
-    d = np.linalg.norm(A - B, ord="fro", axis=(-2, -1))
+    backend = check_matrix_pair(A, B, backend=backend)
+    d = backend.norm_fro(A - B)
     return d ** 2 if squared else d
 
 
@@ -228,7 +233,7 @@ def distance_kullback_sym(A, B, squared=False):
     return d ** 2 if squared else d
 
 
-def distance_logchol(A, B, squared=False):
+def distance_logchol(A, B, squared=False, *, backend=None):
     r"""Log-Cholesky distance between SPD/HPD matrices.
 
     The log-Cholesky distance between two SPD/HPD matrices :math:`\mathbf{A}`
@@ -271,23 +276,24 @@ def distance_logchol(A, B, squared=False):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    _check_inputs(A, B)
-    A_chol, B_chol = np.linalg.cholesky(A), np.linalg.cholesky(B)
+    backend = check_matrix_pair(A, B, backend=backend)
+    A_chol, B_chol = backend.cholesky(A), backend.cholesky(B)
 
-    tri0, tri1 = np.tril_indices(A_chol.shape[-1], -1)
-    triagular_part = np.linalg.norm(
+    tri0, tri1 = backend.tril_indices(A_chol.shape[-1], -1, like=A_chol)
+    triangular_part = _last_axis_norm2(
         A_chol[..., tri0, tri1] - B_chol[..., tri0, tri1],
-        axis=-1,
-    ) ** 2
+        backend,
+    )
 
-    diag0, diag1 = np.diag_indices(A_chol.shape[-1])
-    diagonal_part = np.linalg.norm(
-        np.log(A_chol[..., diag0, diag1]) - np.log(B_chol[..., diag0, diag1]),
-        axis=-1,
-    ) ** 2
+    diag0, diag1 = backend.diag_indices(A_chol.shape[-1], like=A_chol)
+    diagonal_part = _last_axis_norm2(
+        backend.log(A_chol[..., diag0, diag1]) -
+        backend.log(B_chol[..., diag0, diag1]),
+        backend,
+    )
 
-    d2 = triagular_part + diagonal_part
-    return d2 if squared else np.sqrt(d2)
+    d2 = triangular_part + diagonal_part
+    return d2 if squared else backend.sqrt(d2)
 
 
 def distance_logdet(A, B, squared=False):
@@ -336,7 +342,7 @@ def distance_logdet(A, B, squared=False):
     return d2 if squared else np.sqrt(d2)
 
 
-def distance_logeuclid(A, B, squared=False):
+def distance_logeuclid(A, B, squared=False, *, backend=None):
     r"""Log-Euclidean distance between SPD/HPD matrices.
 
     The log-Euclidean distance between two SPD/HPD matrices :math:`\mathbf{A}`
@@ -374,7 +380,13 @@ def distance_logeuclid(A, B, squared=False):
         V. Arsigny, P. Fillard, X. Pennec, N. Ayache.
         SIAM J Matrix Anal Appl, 2007, 29 (1), pp. 328-347
     """
-    return distance_euclid(logm(A), logm(B), squared=squared)
+    backend = resolve_backend(A, B, backend=backend)
+    return distance_euclid(
+        logm(A, backend=backend),
+        logm(B, backend=backend),
+        squared=squared,
+        backend=backend,
+    )
 
 
 def distance_poweuclid(A, B, p, squared=False):
@@ -436,7 +448,7 @@ def distance_poweuclid(A, B, p, squared=False):
     ) / abs(p)
 
 
-def distance_riemann(A, B, squared=False):
+def distance_riemann(A, B, squared=False, *, backend=None):
     r"""Affine-invariant Riemannian distance between SPD/HPD matrices.
 
     The affine-invariant Riemannian distance between two SPD/HPD matrices
@@ -477,9 +489,14 @@ def distance_riemann(A, B, squared=False):
         W. Förstner & B. Moonen.
         Geodesy-the Challenge of the 3rd Millennium, 2003
     """
-    _check_inputs(A, B)
-    d2 = (np.log(_recursive(eigvalsh, A, B))**2).sum(axis=-1)
-    return d2 if squared else np.sqrt(d2)
+    backend = check_matrix_pair(A, B, backend=backend)
+    if backend.name == "numpy" and A.shape == B.shape:
+        d2 = (np.log(_recursive(eigvalsh, A, B))**2).sum(axis=-1)
+    else:
+        Binv12 = invsqrtm(B, backend=backend)
+        eigvals = backend.eigvalsh(Binv12 @ A @ Binv12)
+        d2 = backend.sum(backend.log(eigvals) ** 2, axis=-1)
+    return d2 if squared else backend.sqrt(d2)
 
 
 def distance_thompson(A, B, squared=False):
@@ -529,7 +546,7 @@ def distance_thompson(A, B, squared=False):
     return d ** 2 if squared else d
 
 
-def distance_wasserstein(A, B, squared=False):
+def distance_wasserstein(A, B, squared=False, *, backend=None):
     r"""Wasserstein distance between SPSD/HPSD matrices.
 
     The Wasserstein distance between two SPSD/HPSD matrices :math:`\mathbf{A}`
@@ -570,11 +587,14 @@ def distance_wasserstein(A, B, squared=False):
         <https://www.ams.org/journals/tran/1969-135-00/S0002-9947-1969-0236719-2/S0002-9947-1969-0236719-2.pdf>`_
         D. Bures. Trans Am Math Soc, 1969, 135, pp. 199-212
     """  # noqa
-    _check_inputs(A, B)
-    B12 = sqrtm(B)
-    d2 = np.trace(A + B - 2 * sqrtm(B12 @ A @ B12), axis1=-2, axis2=-1)
-    d2 = np.maximum(0, d2.real)
-    return d2 if squared else np.sqrt(d2)
+    backend = check_matrix_pair(A, B, backend=backend)
+    B12 = sqrtm(B, backend=backend)
+    d2 = backend.sum(
+        backend.diagonal(A + B - 2 * sqrtm(B12 @ A @ B12, backend=backend)),
+        axis=-1,
+    )
+    d2 = backend.maximum(backend.real(d2), 0)
+    return d2 if squared else backend.sqrt(d2)
 
 
 distance_functions = {

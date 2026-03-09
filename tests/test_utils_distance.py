@@ -47,6 +47,17 @@ def get_dist_func():
         yield df
 
 
+BROADCAST_DISTANCE_FUNCS = {
+    distance_chol,
+    distance_euclid,
+    distance_harmonic,
+    distance_logchol,
+    distance_logeuclid,
+    distance_riemann,
+    distance_wasserstein,
+}
+
+
 def callable_sp_euclidean(A, B, squared=False):
     return euclidean(A.flatten(), B.flatten())
 
@@ -100,8 +111,11 @@ def test_distance_between_set_and_matrix(dist, get_mats):
     n_matrices, n_channels = 10, 4
     X = get_mats(n_matrices, n_channels, "spd")
 
-    with pytest.raises(ValueError):
-        dist(X, X[-1])
+    if dist in BROADCAST_DISTANCE_FUNCS:
+        assert dist(X, X[-1]).shape == (n_matrices,)
+    else:
+        with pytest.raises(ValueError):
+            dist(X, X[-1])
 
     assert distance(X, X[-1], metric=dist).shape == (n_matrices, 1)
 
