@@ -151,6 +151,15 @@ def _torch_tril_indices(n, k=0, *, like=None):
     return torch.tril_indices(n, n, offset=k, device=_like_device(like))
 
 
+def _numpy_triu_indices(n, k=0, *, like=None):
+    return np.triu_indices(n, k)
+
+
+def _torch_triu_indices(n, k=0, *, like=None):
+    _require_torch()
+    return torch.triu_indices(n, n, offset=k, device=_like_device(like))
+
+
 _SHARED_UNARY_OPS = ("conj", "real", "sqrt", "log", "exp", "abs")
 _LINALG_OPS = ("eigh", "eigvalsh", "cholesky", "inv", "solve", "slogdet")
 
@@ -161,6 +170,7 @@ _NUMPY_OPS = {
     "any": lambda x: bool(np.any(x)),
     "sum": lambda x, axis=None: np.sum(x, axis=axis),
     "mean": lambda x, axis=0: np.mean(x, axis=axis),
+    "stack": lambda xs, axis=0: np.stack(xs, axis=axis),
     "weighted_average": _numpy_weighted_average,
     "eye": _numpy_eye,
     "ones": _numpy_ones,
@@ -170,6 +180,7 @@ _NUMPY_OPS = {
     "diagonal": lambda x: np.diagonal(x, axis1=-2, axis2=-1),
     "diag_indices": _numpy_diag_indices,
     "tril_indices": _numpy_tril_indices,
+    "triu_indices": _numpy_triu_indices,
     "swapaxes": np.swapaxes,
     "maximum": np.maximum,
     "norm_fro": lambda x: np.linalg.norm(x, ord="fro", axis=(-2, -1)),
@@ -184,6 +195,7 @@ _TORCH_OPS = {} if torch is None else {
         x, dim=axis
     ),
     "mean": lambda x, axis=0: torch.mean(x, dim=axis),
+    "stack": lambda xs, axis=0: torch.stack(xs, dim=axis),
     "weighted_average": _torch_weighted_average,
     "eye": _torch_eye,
     "ones": _torch_ones,
@@ -193,6 +205,7 @@ _TORCH_OPS = {} if torch is None else {
     "diagonal": lambda x: torch.diagonal(x, dim1=-2, dim2=-1),
     "diag_indices": _torch_diag_indices,
     "tril_indices": _torch_tril_indices,
+    "triu_indices": _torch_triu_indices,
     "swapaxes": torch.swapaxes,
     "maximum": lambda x, y: torch.maximum(
         x, torch.as_tensor(y, device=x.device, dtype=x.dtype)

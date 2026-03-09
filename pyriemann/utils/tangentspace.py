@@ -1,8 +1,10 @@
 """Tangent space for SPD/HPD matrices."""
 
+import math
+
 import numpy as np
 
-from ._backend import check_matrix_pair
+from ._backend import check_matrix_pair, resolve_backend
 from .base import ctranspose, expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
 from .utils import check_function
 
@@ -36,7 +38,7 @@ def exp_map_euclid(X, Cref):
     return X + Cref
 
 
-def exp_map_logchol(X, Cref):
+def exp_map_logchol(X, Cref, *, backend=None):
     r"""Project matrices back to manifold by log-Cholesky exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
@@ -65,26 +67,29 @@ def exp_map_logchol(X, Cref):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    Cref_chol = np.linalg.cholesky(Cref)
-    Cref_invchol = np.linalg.inv(Cref_chol)
+    backend = check_matrix_pair(X, Cref, require_square=True, backend=backend)
+    Cref_chol = backend.cholesky(Cref)
+    Cref_invchol = backend.inv(Cref_chol)
 
-    tri0, tri1 = np.tril_indices(X.shape[-1], -1)
-    diag0, diag1 = np.diag_indices(X.shape[-1])
+    tri0, tri1 = backend.tril_indices(X.shape[-1], -1, like=X)
+    diag0, diag1 = backend.diag_indices(X.shape[-1], like=X)
 
-    diff_bracket = Cref_invchol @ X @ Cref_invchol.conj().T
+    diff_bracket = Cref_invchol @ X @ ctranspose(Cref_invchol, backend=backend)
     diff_bracket[..., tri1, tri0] = 0
     diff_bracket[..., diag0, diag1] /= 2
     diff = Cref_chol @ diff_bracket
 
-    exp_map = np.zeros_like(X)
+    exp_map = backend.zeros(diff.shape, like=diff)
 
     exp_map[..., tri0, tri1] = Cref_chol[..., tri0, tri1] + \
         diff[..., tri0, tri1]
 
-    exp_map[..., diag0, diag1] = np.exp(diff_bracket[..., diag0, diag1]) \
-        * Cref_chol[..., diag0, diag1]
+    exp_map[..., diag0, diag1] = (
+        backend.exp(diff_bracket[..., diag0, diag1]) *
+        Cref_chol[..., diag0, diag1]
+    )
 
-    return exp_map @ ctranspose(exp_map)
+    return exp_map @ ctranspose(exp_map, backend=backend)
 
 
 def exp_map_logeuclid(X, Cref):
@@ -305,7 +310,7 @@ def log_map_euclid(X, Cref):
     return X - Cref
 
 
-def log_map_logchol(X, Cref):
+def log_map_logchol(X, Cref, *, backend=None):
     r"""Project matrices in tangent space by log-Cholesky logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
@@ -334,18 +339,28 @@ def log_map_logchol(X, Cref):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    X_chol, Cref_chol = np.linalg.cholesky(X), np.linalg.cholesky(Cref)
+    backend = check_matrix_pair(X, Cref, require_square=True, backend=backend)
+    X_chol = backend.cholesky(X)
+    Cref_chol = backend.cholesky(Cref)
 
-    res = np.zeros_like(X)
+    batch_shape = np.broadcast_shapes(
+        X_chol.shape[:-2],
+        Cref_chol.shape[:-2],
+    )
+    res = backend.zeros(batch_shape + X_chol.shape[-2:], like=X_chol)
 
-    tri0, tri1 = np.tril_indices(X.shape[-1], -1)
+    tri0, tri1 = backend.tril_indices(X.shape[-1], -1, like=X)
     res[..., tri0, tri1] = X_chol[..., tri0, tri1] - Cref_chol[..., tri0, tri1]
 
-    diag0, diag1 = np.diag_indices(X.shape[-1])
-    res[..., diag0, diag1] = Cref_chol[..., diag0, diag1] * \
-        np.log(X_chol[..., diag0, diag1] / Cref_chol[..., diag0, diag1])
+    diag0, diag1 = backend.diag_indices(X.shape[-1], like=X)
+    res[..., diag0, diag1] = Cref_chol[..., diag0, diag1] * backend.log(
+            X_chol[..., diag0, diag1] / Cref_chol[..., diag0, diag1]
+    )
 
-    X_new = Cref_chol @ ctranspose(res) + res @ Cref_chol.conj().T
+    X_new = (
+        Cref_chol @ ctranspose(res, backend=backend) +
+        res @ ctranspose(Cref_chol, backend=backend)
+    )
 
     return X_new
 
@@ -543,7 +558,7 @@ def log_map(X, Cref, *, metric="riemann"):
 ###############################################################################
 
 
-def upper(X):
+def upper(X, *, backend=None):
     r"""Return the weighted upper triangular part of matrices.
 
     This function computes the minimal representation of a matrix in tangent
@@ -572,16 +587,20 @@ def upper(X):
         O. Tuzel, F. Porikli, and P. Meer. IEEE Transactions on Pattern
         Analysis and Machine Intelligence, Volume 30, Issue 10, October 2008.
     """
+    backend = resolve_backend(X, backend=backend)
     n = X.shape[-1]
     if X.shape[-2] != n:
         raise ValueError("Matrices must be square")
-    idx = np.triu_indices_from(np.empty((n, n)))
-    coeffs = (np.sqrt(2) * np.triu(np.ones((n, n)), 1) + np.eye(n))[idx]
+    idx = backend.triu_indices(n, like=X)
+    idx_no_diag = backend.triu_indices(n, k=1, like=X)
+    coeffs = backend.ones((n, n), like=X, dtype=backend.real_dtype(X))
+    coeffs[idx_no_diag[0], idx_no_diag[1]] = math.sqrt(2.0)
+    coeffs = coeffs[idx[0], idx[1]]
     T = coeffs * X[..., idx[0], idx[1]]
     return T
 
 
-def unupper(T):
+def unupper(T, *, backend=None):
     """Inverse upper function.
 
     This function is the inverse of upper function: it reconstructs symmetric/
@@ -605,14 +624,15 @@ def unupper(T):
     -----
     .. versionadded:: 0.4
     """
+    backend = resolve_backend(T, backend=backend)
     dims = T.shape
-    n = int((np.sqrt(1 + 8 * dims[-1]) - 1) / 2)
-    X = np.empty((*dims[:-1], n, n), dtype=T.dtype)
-    idx = np.triu_indices_from(np.empty((n, n)))
+    n = int((math.sqrt(1 + 8 * dims[-1]) - 1) / 2)
+    X = backend.zeros((*dims[:-1], n, n), like=T, dtype=T.dtype)
+    idx = backend.triu_indices(n, like=T)
     X[..., idx[0], idx[1]] = T
-    idx = np.triu_indices_from(np.empty((n, n)), k=1)
-    X[..., idx[0], idx[1]] /= np.sqrt(2)
-    X[..., idx[1], idx[0]] = X[..., idx[0], idx[1]].conj()
+    idx = backend.triu_indices(n, k=1, like=T)
+    X[..., idx[0], idx[1]] /= math.sqrt(2.0)
+    X[..., idx[1], idx[0]] = backend.conj(X[..., idx[0], idx[1]])
     return X
 
 

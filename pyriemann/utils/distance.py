@@ -27,7 +27,7 @@ def _last_axis_norm2(x, backend):
 # Distances between matrices
 
 
-def distance_chol(A, B, squared=False):
+def distance_chol(A, B, squared=False, *, backend=None):
     r"""Cholesky distance between SPD/HPD matrices.
 
     The Cholesky distance between two SPD/HPD matrices :math:`\mathbf{A}`
@@ -67,10 +67,12 @@ def distance_chol(A, B, squared=False):
         I.L. Dryden, A. Koloydenko, D. Zhou.
         Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
     """
+    backend = resolve_backend(A, B, backend=backend)
     return distance_euclid(
-        np.linalg.cholesky(A),
-        np.linalg.cholesky(B),
+        backend.cholesky(A),
+        backend.cholesky(B),
         squared=squared,
+        backend=backend,
     )
 
 
@@ -109,7 +111,7 @@ def distance_euclid(A, B, squared=False, *, backend=None):
     return d ** 2 if squared else d
 
 
-def distance_harmonic(A, B, squared=False):
+def distance_harmonic(A, B, squared=False, *, backend=None):
     r"""Harmonic distance between invertible matrices.
 
     The harmonic distance between two invertible matrices :math:`\mathbf{A}`
@@ -139,7 +141,13 @@ def distance_harmonic(A, B, squared=False):
     --------
     distance
     """
-    return distance_euclid(np.linalg.inv(A), np.linalg.inv(B), squared=squared)
+    backend = resolve_backend(A, B, backend=backend)
+    return distance_euclid(
+        backend.inv(A),
+        backend.inv(B),
+        squared=squared,
+        backend=backend,
+    )
 
 
 def distance_kullback(A, B, squared=False):
@@ -612,6 +620,16 @@ distance_functions = {
     "wasserstein": distance_wasserstein,
 }
 
+_BROADCASTABLE_DISTANCE_FUNCTIONS = {
+    distance_chol,
+    distance_euclid,
+    distance_harmonic,
+    distance_logchol,
+    distance_logeuclid,
+    distance_riemann,
+    distance_wasserstein,
+}
+
 
 def distance(A, B, metric="riemann", squared=False):
     """Distance between matrices according to a metric.
@@ -665,14 +683,21 @@ def distance(A, B, metric="riemann", squared=False):
         Neuroinformatics, Springer, 2021, 19 (1), pp.93-106
     """
     distance_function = check_function(metric, distance_functions)
+    backend = resolve_backend(A, B)
 
     shape_A, shape_B = A.shape, B.shape
     if shape_A == shape_B:
         d = distance_function(A, B, squared=squared)
     elif len(shape_A) == 3 and len(shape_B) == 2:
-        d = np.empty((shape_A[0], 1))
-        for i in range(shape_A[0]):
-            d[i] = distance_function(A[i], B, squared=squared)
+        if distance_function in _BROADCASTABLE_DISTANCE_FUNCTIONS:
+            d = distance_function(A, B, squared=squared)
+        else:
+            d = backend.stack(
+                [distance_function(A[i], B, squared=squared)
+                 for i in range(shape_A[0])],
+                axis=0,
+            )
+        d = d[..., None]
     else:
         raise ValueError("Inputs have incompatible dimensions.")
 
@@ -935,6 +960,33 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
     --------
     distance
     """
+    distance_function = check_function(metric, distance_functions)
+    backend = resolve_backend(X, Y)
+    if backend.name != "numpy":
+        if Y is None:
+            Y_ = X
+        else:
+            Y_ = Y
+        if distance_function in _BROADCASTABLE_DISTANCE_FUNCTIONS:
+            return distance_function(
+                X[:, None, ...],
+                Y_[None, ...],
+                squared=squared,
+            )
+        return backend.stack(
+            [
+                backend.stack(
+                    [
+                        distance_function(X[i], Y_[j], squared=squared)
+                        for j in range(len(Y_))
+                    ],
+                    axis=0,
+                )
+                for i in range(len(X))
+            ],
+            axis=0,
+        )
+
     if metric == "euclid":
         return _pairwise_distance_euclid(X, Y=Y, squared=squared)
     elif metric == "harmonic":

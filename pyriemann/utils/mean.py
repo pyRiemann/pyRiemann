@@ -151,7 +151,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
     return np.mean(M_iter, axis=0)
 
 
-def mean_chol(X, sample_weight=None, **kwargs):
+def mean_chol(X, sample_weight=None, *, backend=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the Cholesky metric.
 
     Cholesky mean :math:`\mathbf{M}` is
@@ -189,8 +189,13 @@ def mean_chol(X, sample_weight=None, **kwargs):
         I.L. Dryden, A. Koloydenko, D. Zhou.
         Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
     """
-    L = mean_euclid(np.linalg.cholesky(X), sample_weight=sample_weight)
-    return L @ L.conj().T
+    backend = resolve_backend(X, backend=backend)
+    L = mean_euclid(
+        backend.cholesky(X),
+        sample_weight=sample_weight,
+        backend=backend,
+    )
+    return L @ ctranspose(L, backend=backend)
 
 
 def mean_euclid(X, sample_weight=None, *, backend=None, **kwargs):
@@ -228,7 +233,7 @@ def mean_euclid(X, sample_weight=None, *, backend=None, **kwargs):
     return backend.weighted_average(X, weights=sample_weight, axis=0)
 
 
-def mean_harmonic(X, sample_weight=None, **kwargs):
+def mean_harmonic(X, sample_weight=None, *, backend=None, **kwargs):
     r"""Harmonic mean of invertible matrices.
 
     .. math::
@@ -250,12 +255,17 @@ def mean_harmonic(X, sample_weight=None, **kwargs):
     --------
     gmean
     """
-    T = mean_euclid(np.linalg.inv(X), sample_weight=sample_weight)
-    M = np.linalg.inv(T)
+    backend = resolve_backend(X, backend=backend)
+    T = mean_euclid(
+        backend.inv(X),
+        sample_weight=sample_weight,
+        backend=backend,
+    )
+    M = backend.inv(T)
     return M
 
 
-def mean_kullback_sym(X, sample_weight=None, **kwargs):
+def mean_kullback_sym(X, sample_weight=None, *, backend=None, **kwargs):
     """Mean of SPD/HPD matrices according to Kullback-Leibler divergence.
 
     Symmetrized Kullback-Leibler mean is the geometric mean between the
@@ -285,9 +295,18 @@ def mean_kullback_sym(X, sample_weight=None, **kwargs):
         M. Moakher and P. Batchelor. Visualization and Processing of Tensor
         Fields, pp. 285-298, 2006
     """
-    M_euclid = mean_euclid(X, sample_weight=sample_weight)
-    M_harmonic = mean_harmonic(X, sample_weight=sample_weight)
-    M = geodesic_riemann(M_euclid, M_harmonic, 0.5)
+    backend = resolve_backend(X, backend=backend)
+    M_euclid = mean_euclid(
+        X,
+        sample_weight=sample_weight,
+        backend=backend,
+    )
+    M_harmonic = mean_harmonic(
+        X,
+        sample_weight=sample_weight,
+        backend=backend,
+    )
+    M = geodesic_riemann(M_euclid, M_harmonic, 0.5, backend=backend)
     return M
 
 

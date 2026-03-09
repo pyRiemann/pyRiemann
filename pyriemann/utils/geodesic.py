@@ -7,7 +7,7 @@ from .base import _recursive, ctranspose, sqrtm, invsqrtm, powm, logm, expm
 from .utils import check_function
 
 
-def geodesic_chol(A, B, alpha=0.5):
+def geodesic_chol(A, B, alpha=0.5, *, backend=None):
     r"""Cholesky geodesic between SPD/HPD matrices.
 
     The matrix at position :math:`\alpha` on the Cholesky geodesic
@@ -52,8 +52,9 @@ def geodesic_chol(A, B, alpha=0.5):
         I.L. Dryden, A. Koloydenko, D. Zhou.
         Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
     """
-    geo = (1 - alpha) * np.linalg.cholesky(A) + alpha * np.linalg.cholesky(B)
-    return geo @ ctranspose(geo)
+    backend = resolve_backend(A, B, backend=backend)
+    geo = (1 - alpha) * backend.cholesky(A) + alpha * backend.cholesky(B)
+    return geo @ ctranspose(geo, backend=backend)
 
 
 def geodesic_euclid(A, B, alpha=0.5):
