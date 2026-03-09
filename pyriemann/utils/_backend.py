@@ -160,14 +160,46 @@ def _torch_triu_indices(n, k=0, *, like=None):
     return torch.triu_indices(n, n, offset=k, device=_like_device(like))
 
 
-_SHARED_UNARY_OPS = ("conj", "real", "sqrt", "log", "exp", "abs")
-_LINALG_OPS = ("eigh", "eigvalsh", "cholesky", "inv", "solve", "slogdet")
+_SHARED_UNARY_OPS = (
+    "conj",
+    "real",
+    "sqrt",
+    "log",
+    "exp",
+    "abs",
+    "imag",
+    "cos",
+    "sin",
+)
+_LINALG_OPS = (
+    "eig",
+    "eigh",
+    "eigvalsh",
+    "cholesky",
+    "inv",
+    "solve",
+    "slogdet",
+    "svd",
+)
 
 _NUMPY_OPS = {
     **_module_ops(np, _SHARED_UNARY_OPS),
     **_module_ops(np.linalg, _LINALG_OPS),
+    "all": lambda x, axis=None: bool(np.all(x)) if axis is None else np.all(
+        x,
+        axis=axis,
+    ),
     "all_finite": lambda x: np.isfinite(x).all(),
     "any": lambda x: bool(np.any(x)),
+    "arctan2": np.arctan2,
+    "concatenate": lambda xs, axis=0: np.concatenate(xs, axis=axis),
+    "isclose": np.isclose,
+    "isnan": np.isnan,
+    "where": np.where,
+    "min": lambda x, axis=None: np.min(x, axis=axis),
+    "max": lambda x, axis=None: np.max(x, axis=axis),
+    "minimum": np.minimum,
+    "outer": np.outer,
     "sum": lambda x, axis=None: np.sum(x, axis=axis),
     "mean": lambda x, axis=0: np.mean(x, axis=axis),
     "stack": lambda xs, axis=0: np.stack(xs, axis=axis),
@@ -189,8 +221,27 @@ _NUMPY_OPS = {
 _TORCH_OPS = {} if torch is None else {
     **_module_ops(torch, _SHARED_UNARY_OPS),
     **_module_ops(torch.linalg, _LINALG_OPS),
+    "all": lambda x, axis=None: (
+        bool(torch.all(x).item()) if axis is None else torch.all(x, dim=axis)
+    ),
     "all_finite": lambda x: bool(torch.isfinite(x).all().item()),
     "any": lambda x: bool(torch.any(x).item()),
+    "arctan2": torch.atan2,
+    "concatenate": lambda xs, axis=0: torch.cat(xs, dim=axis),
+    "isclose": torch.isclose,
+    "isnan": torch.isnan,
+    "where": torch.where,
+    "min": lambda x, axis=None: torch.min(x) if axis is None else torch.min(
+        x, dim=axis
+    ).values,
+    "max": lambda x, axis=None: torch.max(x) if axis is None else torch.max(
+        x, dim=axis
+    ).values,
+    "minimum": lambda x, y: torch.minimum(
+        x,
+        torch.as_tensor(y, device=x.device, dtype=x.dtype),
+    ),
+    "outer": torch.outer,
     "sum": lambda x, axis=None: torch.sum(x) if axis is None else torch.sum(
         x, dim=axis
     ),
@@ -259,7 +310,10 @@ numpy_backend = _Backend(
     ops=_NUMPY_OPS,
     asarray_fn=_numpy_asarray,
     real_dtype_fn=_numpy_real_dtype,
-    is_floating_dtype_fn=lambda x: np.issubdtype(x.dtype, np.floating),
+    is_floating_dtype_fn=lambda x: np.issubdtype(
+        np.asarray(x).real.dtype,
+        np.floating,
+    ),
 )
 
 torch_backend = _Backend(

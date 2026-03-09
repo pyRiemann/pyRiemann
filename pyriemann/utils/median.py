@@ -4,6 +4,7 @@ import warnings
 
 import numpy as np
 
+from ._backend import resolve_backend
 from .base import sqrtm, invsqrtm, logm, expm
 from .distance import distance
 from .mean import mean_euclid
@@ -57,33 +58,42 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
         2000, vol. 97, no 4, p. 1423-1426
     .. [3] https://numpy.org/doc/stable/reference/generated/numpy.median.html
     """
+    backend = resolve_backend(X)
     n_matrices, _, _ = X.shape
-    weights = check_weights(weights, n_matrices)
+    weights = check_weights(weights, n_matrices, backend=backend, like=X)
     if init is None:
-        M = mean_euclid(X, sample_weight=weights)
+        M = mean_euclid(X, sample_weight=weights, backend=backend)
     else:
-        M = init
+        M = backend.asarray(init, like=X, dtype=X.dtype)
 
     for _ in range(maxiter):
         dists = distance(X, M, metric="euclid")[:, 0]
         is_zero = (dists == 0)
 
         w = weights[~is_zero] / dists[~is_zero]
-        Mnew = mean_euclid(X[~is_zero], sample_weight=w)  # Eq(2.4) of [2]
+        Mnew = mean_euclid(
+            X[~is_zero],
+            sample_weight=w,
+            backend=backend,
+        )  # Eq(2.4) of [2]
 
-        n_zeros = np.sum(is_zero)
-        if n_zeros > 0:
-            R = np.einsum("a,abc->bc", w, X[~is_zero] - M)  # Eq(2.7)
-            r = np.linalg.norm(R, ord="fro")
-            rinv = 0 if r == 0 else np.mean(weights[is_zero]) / r
+        if backend.any(is_zero):
+            R = backend.sum(
+                w[:, np.newaxis, np.newaxis] * (X[~is_zero] - M),
+                axis=0,
+            )  # Eq(2.7)
+            r = backend.as_float(backend.norm_fro(R))
+            rinv = 0 if r == 0 else backend.as_float(
+                backend.mean(weights[is_zero])
+            ) / r
             Mnew = max(0, 1 - rinv) * Mnew + min(1, rinv) * M  # Eq(2.6)
 
-        crit = np.linalg.norm(Mnew - M, ord="fro")
+        crit = backend.as_float(backend.norm_fro(Mnew - M))
         M = Mnew
         if crit <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return M
 
@@ -148,12 +158,13 @@ def median_riemann(
         raise ValueError(
             f"Value step_size must be included in (0, 2] (Got {step_size})"
         )
+    backend = resolve_backend(X)
     n_matrices, _, _ = X.shape
-    weights = check_weights(weights, n_matrices)
+    weights = check_weights(weights, n_matrices, backend=backend, like=X)
     if init is None:
-        M = mean_euclid(X, sample_weight=weights)
+        M = mean_euclid(X, sample_weight=weights, backend=backend)
     else:
-        M = init
+        M = backend.asarray(init, like=X, dtype=X.dtype)
 
     for _ in range(maxiter):
         dists = distance(X, M, metric="riemann")[:, 0]
@@ -161,15 +172,20 @@ def median_riemann(
         w = weights[~is_zero] / dists[~is_zero]
 
         # Eq(11) of [1]
-        M12, Mm12 = sqrtm(M), invsqrtm(M)
-        tangvecs = logm(Mm12 @ X[~is_zero] @ Mm12)
-        J = np.einsum("a,abc->bc", w / np.sum(w), tangvecs)
-        M = M12 @ expm(step_size * J) @ M12
+        M12 = sqrtm(M, backend=backend)
+        Mm12 = invsqrtm(M, backend=backend)
+        tangvecs = logm(Mm12 @ X[~is_zero] @ Mm12, backend=backend)
+        J = backend.weighted_average(
+            tangvecs,
+            weights=w / backend.sum(w),
+            axis=0,
+        )
+        M = M12 @ expm(step_size * J, backend=backend) @ M12
 
-        crit = np.linalg.norm(J, ord="fro")
+        crit = backend.as_float(backend.norm_fro(J))
         if crit <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return M

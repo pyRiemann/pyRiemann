@@ -37,3 +37,29 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
+
+  torch-utils:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python 3.11
+      uses: actions/setup-python@v2
+      with:
+        python-version: '3.11'
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+    - name: Install package with torch
+      run: |
+        python -m pip install .[tests,tests_torch]
+    - name: Test torch backend utils
+      run: |
+        pytest \
+          tests/test_utils_base.py \
+          tests/test_utils_distance.py \
+          tests/test_utils_geodesic.py \
+          tests/test_utils_mean.py \
+          tests/test_utils_tangentspace.py \
+          tests/test_utils_torch_backend.py

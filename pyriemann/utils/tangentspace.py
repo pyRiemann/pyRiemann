@@ -92,7 +92,7 @@ def exp_map_logchol(X, Cref, *, backend=None):
     return exp_map @ ctranspose(exp_map, backend=backend)
 
 
-def exp_map_logeuclid(X, Cref):
+def exp_map_logeuclid(X, Cref, *, backend=None):
     r"""Project matrices back to manifold by log-Euclidean exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
@@ -137,7 +137,11 @@ def exp_map_logeuclid(X, Cref):
         <https://ieeexplore.ieee.org/document/10735221>`_
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
-    return expm(logm(Cref) + ddlogm(X, Cref))
+    backend = check_matrix_pair(X, Cref, require_square=True, backend=backend)
+    return expm(
+        logm(Cref, backend=backend) + ddlogm(X, Cref, backend=backend),
+        backend=backend,
+    )
 
 
 def exp_map_riemann(X, Cref, Cm12=False, *, backend=None):
@@ -365,7 +369,7 @@ def log_map_logchol(X, Cref, *, backend=None):
     return X_new
 
 
-def log_map_logeuclid(X, Cref):
+def log_map_logeuclid(X, Cref, *, backend=None):
     r"""Project matrices in tangent space by log-Euclidean logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
@@ -410,9 +414,13 @@ def log_map_logeuclid(X, Cref):
         <https://ieeexplore.ieee.org/document/10735221>`_
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
-    check_matrix_pair(X, Cref, require_square=True)
-    logCref = logm(Cref)
-    X_new = ddexpm(logm(X) - logCref, logCref)
+    backend = check_matrix_pair(X, Cref, require_square=True, backend=backend)
+    logCref = logm(Cref, backend=backend)
+    X_new = ddexpm(
+        logm(X, backend=backend) - logCref,
+        logCref,
+        backend=backend,
+    )
     return X_new
 
 
@@ -731,7 +739,7 @@ def transport_euclid(X, A=None, B=None):
     return X
 
 
-def transport_logchol(X, A, B):
+def transport_logchol(X, A, B, *, backend=None):
     r"""Parallel transport for log-Cholesky metric.
 
     The parallel transport of matrices :math:`\mathbf{X}` in tangent space
@@ -774,28 +782,31 @@ def transport_logchol(X, A, B):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    A_chol, B_chol = np.linalg.cholesky(A), np.linalg.cholesky(B)
-    A_invchol = np.linalg.inv(A_chol)
+    backend = resolve_backend(X, A, B, backend=backend)
+    A_chol = backend.cholesky(A)
+    B_chol = backend.cholesky(B)
+    A_invchol = backend.inv(A_chol)
 
-    tri0, tri1 = np.tril_indices(X.shape[-1], -1)
-    diag0, diag1 = np.diag_indices(X.shape[-1])
+    tri0, tri1 = backend.tril_indices(X.shape[-1], -1, like=X)
+    diag0, diag1 = backend.diag_indices(X.shape[-1], like=X)
 
-    P = A_invchol @ X @ A_invchol.conj().T
-    P12 = np.zeros_like(P)
+    P = A_invchol @ X @ ctranspose(A_invchol, backend=backend)
+    P12 = backend.zeros_like(P)
     P12[..., tri0, tri1] = P[..., tri0, tri1]
     P12[..., diag0, diag1] = P[..., diag0, diag1] / 2
     X_ = A_chol @ P12
 
-    T = np.zeros_like(X)
+    T = backend.zeros_like(X)
     T[..., tri0, tri1] = X_[..., tri0, tri1]
     T[..., diag0, diag1] = B_chol[..., diag0, diag1] \
         / A_chol[..., diag0, diag1] * X_[..., diag0, diag1]
 
-    X_new = B_chol @ ctranspose(T) + T @ B_chol.conj().T
+    X_new = B_chol @ ctranspose(T, backend=backend) + \
+        T @ ctranspose(B_chol, backend=backend)
     return X_new
 
 
-def transport_logeuclid(X, A, B):
+def transport_logeuclid(X, A, B, *, backend=None):
     r"""Parallel transport for log-Euclidean metric.
 
     The parallel transport of matrices :math:`\mathbf{X}` in tangent space
@@ -842,10 +853,15 @@ def transport_logeuclid(X, A, B):
         <https://www.sciencedirect.com/science/article/pii/S0024379522004360>`_
         Y. Thanwerdas & X. Pennec. Linear Algebra and its Applications, 2023.
     """
-    return ddexpm(ddlogm(X, A), logm(B))
+    backend = resolve_backend(X, A, B, backend=backend)
+    return ddexpm(
+        ddlogm(X, A, backend=backend),
+        logm(B, backend=backend),
+        backend=backend,
+    )
 
 
-def transport_riemann(X, A, B):
+def transport_riemann(X, A, B, *, backend=None):
     r"""Parallel transport for affine-invariant Riemannian metric.
 
     The parallel transport of matrices :math:`\mathbf{X}` in tangent space
@@ -898,9 +914,11 @@ def transport_riemann(X, A, B):
     # BA^{-1} is not sym => use sqrtm from scipy
     # E = scipy.linalg.sqrtm(B @ np.linalg.inv(A))
     # (BA^{-1})^{1/2} = A^{1/2} (A^{-1/2}BA^{-1/2})^{1/2} A^{-1/2}
-    A12, A12inv = sqrtm(A), invsqrtm(A)
-    E = A12 @ sqrtm(A12inv @ B @ A12inv) @ A12inv
-    X_new = E @ X @ E.conj().T
+    backend = resolve_backend(X, A, B, backend=backend)
+    A12 = sqrtm(A, backend=backend)
+    A12inv = invsqrtm(A, backend=backend)
+    E = A12 @ sqrtm(A12inv @ B @ A12inv, backend=backend) @ A12inv
+    X_new = E @ X @ ctranspose(E, backend=backend)
     return X_new
 
 

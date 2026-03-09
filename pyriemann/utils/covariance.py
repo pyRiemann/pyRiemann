@@ -2,13 +2,460 @@ import warnings
 from functools import wraps
 
 import numpy as np
-from scipy.linalg import block_diag
 from scipy.stats import chi2
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd
+from sklearn.utils import check_random_state
 
+from ._backend import resolve_backend
+from .base import ctranspose
 from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
-from .utils import check_function
+from .utils import check_function, check_init
+
+try:  # pragma: no cover - torch is optional
+    import torch
+except ImportError:  # pragma: no cover - torch is optional
+    torch = None
+
+
+def _to_numpy(X):
+    return X if isinstance(X, np.ndarray) else X.detach().cpu().numpy()
+
+
+def _from_numpy(X, *, like):
+    backend = resolve_backend(like)
+    return backend.asarray(X, like=like, dtype=like.dtype)
+
+
+def _apply_numpy_estimator(func, X, **kwds):
+    cov = func(_to_numpy(X), **kwds)
+    return cov if isinstance(X, np.ndarray) else _from_numpy(cov, like=X)
+
+
+def _cov(X, **kwds):
+    if kwds:
+        return _apply_numpy_estimator(np.cov, X, **kwds)
+    backend = resolve_backend(X)
+    X_c = X - backend.mean(X, axis=1)[:, np.newaxis]
+    return X_c @ ctranspose(X_c, backend=backend) / (X.shape[1] - 1)
+
+
+def _corr(X, **kwds):
+    if kwds or not is_real_type(X):
+        return _apply_numpy_estimator(np.corrcoef, X, **kwds)
+    return normalize(_cov(X), "corr")
+
+
+def _make_complex(real_part, imag_part, *, like):
+    if isinstance(like, np.ndarray):
+        return real_part + 1j * imag_part
+    return torch.complex(real_part, imag_part)
+
+
+def _as_samples_by_features(X, *, assume_centered=False, backend=None):
+    backend = resolve_backend(X, backend=backend)
+    X = backend.swapaxes(X, 0, 1)
+    if not assume_centered:
+        X = X - backend.mean(X, axis=0)
+    return X, backend
+
+
+def _empirical_covariance_features(X, *, assume_centered=False, backend=None):
+    backend = resolve_backend(X, backend=backend)
+    if X.ndim == 1:
+        X = X.reshape(1, -1)
+
+    if X.shape[0] == 1:
+        warnings.warn(
+            "Only one sample available. You may want to reshape your data "
+            "array",
+            stacklevel=2,
+        )
+
+    if assume_centered:
+        covariance = ctranspose(X, backend=backend) @ X / X.shape[0]
+    else:
+        X = X - backend.mean(X, axis=0)
+        covariance = ctranspose(X, backend=backend) @ X / X.shape[0]
+
+    if covariance.ndim == 0:
+        covariance = covariance.reshape(1, 1)
+    return covariance
+
+
+def _shrink_covariance(emp_cov, shrinkage, *, backend=None):
+    backend = resolve_backend(emp_cov, backend=backend)
+    n_features = emp_cov.shape[-1]
+    shrunk_cov = (1.0 - shrinkage) * emp_cov
+    mu = backend.as_float(backend.sum(backend.diagonal(emp_cov)) / n_features)
+    diag0, diag1 = backend.diag_indices(n_features, like=emp_cov)
+    shrunk_cov[diag0, diag1] += shrinkage * mu
+    return shrunk_cov
+
+
+def _one_feature_covariance(X_samples, *, backend):
+    cov = backend.mean(X_samples ** 2, axis=0).reshape(1, 1)
+    return cov, 0.0
+
+
+def _ledoit_wolf_torch(X, *, assume_centered=False, block_size=1000):
+    del block_size  # kept for API compatibility
+    X_samples, backend = _as_samples_by_features(
+        X,
+        assume_centered=assume_centered,
+    )
+
+    if X_samples.shape[1] == 1:
+        return _one_feature_covariance(X_samples, backend=backend)
+
+    n_samples, n_features = X_samples.shape
+    X2 = X_samples ** 2
+    emp_cov_trace = backend.sum(X2, axis=0) / n_samples
+    mu = backend.as_float(backend.sum(emp_cov_trace) / n_features)
+    beta_ = backend.as_float(
+        backend.sum(ctranspose(X2, backend=backend) @ X2)
+    )
+    gram = ctranspose(X_samples, backend=backend) @ X_samples
+    delta_ = backend.as_float(backend.sum(gram ** 2)) / (n_samples ** 2)
+    beta = (beta_ / n_samples - delta_) / (n_features * n_samples)
+    delta = (
+        delta_
+        - 2.0 * mu * backend.as_float(backend.sum(emp_cov_trace))
+        + n_features * mu ** 2
+    ) / n_features
+    beta = min(beta, delta)
+    shrinkage = 0.0 if beta == 0 else beta / delta
+    emp_cov = covariance_scm(X, assume_centered=assume_centered)
+    return _shrink_covariance(emp_cov, shrinkage, backend=backend), shrinkage
+
+
+def _oas_torch(X, *, assume_centered=False):
+    X_samples, backend = _as_samples_by_features(
+        X,
+        assume_centered=assume_centered,
+    )
+
+    if X_samples.shape[1] == 1:
+        return _one_feature_covariance(X_samples, backend=backend)
+
+    n_samples, n_features = X_samples.shape
+    emp_cov = covariance_scm(X, assume_centered=assume_centered)
+    alpha = backend.as_float(backend.sum(emp_cov ** 2)) / (n_features ** 2)
+    mu = backend.as_float(backend.sum(backend.diagonal(emp_cov)) / n_features)
+    mu_squared = mu ** 2
+    num = alpha + mu_squared
+    den = (n_samples + 1) * (alpha - mu_squared / n_features)
+    shrinkage = 1.0 if den == 0 else min(num / den, 1.0)
+    return _shrink_covariance(emp_cov, shrinkage, backend=backend), shrinkage
+
+
+def _fast_logdet_backend(A, *, backend=None):
+    backend = resolve_backend(A, backend=backend)
+    sign, ld = backend.slogdet(A)
+    if backend.as_float(sign) <= 0 or not np.isfinite(backend.as_float(ld)):
+        return -np.inf
+    return backend.as_float(ld)
+
+
+def _mahalanobis_dist_sq_features(X, location, covariance):
+    precision = torch.linalg.pinv(covariance, hermitian=True)
+    X_centered = X - location
+    dist = torch.sum((X_centered @ precision) * X_centered, dim=1)
+    return dist, precision
+
+
+def _support_from_dist_torch(dist, n_support):
+    support = torch.zeros(dist.shape[0], dtype=torch.bool, device=dist.device)
+    support[torch.argsort(dist)[:n_support]] = True
+    return support
+
+
+def _mcd_1d_torch(X, n_support):
+    X = X.reshape(-1)
+    n_samples = X.shape[0]
+
+    if n_support < n_samples:
+        X_sorted, _ = torch.sort(X)
+        diff = X_sorted[n_support:] - X_sorted[:(n_samples - n_support)]
+        halves_start = torch.nonzero(
+            diff == torch.min(diff),
+            as_tuple=False,
+        ).flatten()
+        location = 0.5 * (
+            X_sorted[n_support + halves_start] + X_sorted[halves_start]
+        ).mean()
+        support = _support_from_dist_torch(torch.abs(X - location), n_support)
+        covariance = torch.var(X[support], correction=0).reshape(1, 1)
+    else:
+        support = torch.ones(n_samples, dtype=torch.bool, device=X.device)
+        covariance = torch.var(X, correction=0).reshape(1, 1)
+        location = torch.mean(X)
+
+    location = location.reshape(1)
+    dist, _ = _mahalanobis_dist_sq_features(
+        X.reshape(-1, 1),
+        location,
+        covariance,
+    )
+    return location, covariance, support, dist
+
+
+def _c_step_torch(
+    X,
+    n_support,
+    *,
+    random_state,
+    remaining_iterations=30,
+    initial_estimates=None,
+):
+    n_samples = X.shape[0]
+    dist = torch.full(
+        (n_samples,),
+        float("inf"),
+        dtype=X.dtype,
+        device=X.device,
+    )
+    if initial_estimates is None:
+        perm = torch.as_tensor(
+            random_state.permutation(n_samples),
+            device=X.device,
+        )
+        support = torch.zeros(n_samples, dtype=torch.bool, device=X.device)
+        support[perm[:n_support]] = True
+    else:
+        dist, precision = _mahalanobis_dist_sq_features(X, *initial_estimates)
+        support = _support_from_dist_torch(dist, n_support)
+
+    X_support = X[support]
+    location = torch.mean(X_support, dim=0)
+    covariance = _empirical_covariance_features(
+        X_support,
+        assume_centered=False,
+    )
+
+    det = _fast_logdet_backend(covariance)
+    if np.isinf(det):
+        precision = torch.linalg.pinv(covariance, hermitian=True)
+
+    previous_det = np.inf
+    while (
+        det < previous_det
+        and remaining_iterations > 0
+        and not np.isinf(det)
+    ):
+        previous_location = location.clone()
+        previous_covariance = covariance.clone()
+        previous_det = det
+        previous_support = support.clone()
+
+        dist, precision = _mahalanobis_dist_sq_features(
+            X,
+            location,
+            covariance,
+        )
+        support = torch.zeros(n_samples, dtype=torch.bool, device=X.device)
+        support[torch.argsort(dist)[:n_support]] = True
+        X_support = X[support]
+        location = torch.mean(X_support, dim=0)
+        covariance = _empirical_covariance_features(
+            X_support,
+            assume_centered=False,
+        )
+        det = _fast_logdet_backend(covariance)
+        remaining_iterations -= 1
+
+    previous_dist = dist
+    dist = torch.sum(((X - location) @ precision) * (X - location), dim=1)
+    if np.isinf(det):
+        results = location, covariance, det, support, dist
+    elif np.allclose(det, previous_det):
+        results = location, covariance, det, support, dist
+    elif det > previous_det:
+        warnings.warn(
+            "Determinant has increased; this should not happen: "
+            "log(det) > log(previous_det) (%.15f > %.15f). "
+            "You may want to try with a higher value of "
+            "support_fraction (current value: %.3f)."
+            % (det, previous_det, n_support / n_samples),
+            RuntimeWarning,
+            stacklevel=2,
+        )
+        results = (
+            previous_location,
+            previous_covariance,
+            previous_det,
+            previous_support,
+            previous_dist,
+        )
+    else:
+        results = location, covariance, det, support, dist
+
+    if remaining_iterations == 0:
+        results = location, covariance, det, support, dist
+
+    return results
+
+
+def _select_candidates_torch(
+    X,
+    n_support,
+    n_trials,
+    *,
+    select=1,
+    n_iter=30,
+    random_state=None,
+):
+    random_state = check_random_state(random_state)
+
+    if isinstance(n_trials, int):
+        run_from_estimates = False
+    elif isinstance(n_trials, tuple):
+        run_from_estimates = True
+        estimates_list = n_trials
+        n_trials = estimates_list[0].shape[0]
+    else:
+        raise TypeError(
+            "Invalid 'n_trials' parameter, expected tuple or integer, got "
+            f"{n_trials} ({type(n_trials)})"
+        )
+
+    all_estimates = [
+        _c_step_torch(
+            X,
+            n_support,
+            remaining_iterations=n_iter,
+            initial_estimates=None if not run_from_estimates else (
+                estimates_list[0][j],
+                estimates_list[1][j],
+            ),
+            random_state=random_state,
+        )
+        for j in range(n_trials)
+    ]
+
+    all_locs, all_covs, all_dets, all_supports, all_ds = zip(*all_estimates)
+    index_best = np.argsort(all_dets)[:select]
+    best_locations = torch.stack([all_locs[i] for i in index_best], dim=0)
+    best_covariances = torch.stack([all_covs[i] for i in index_best], dim=0)
+    best_supports = torch.stack([all_supports[i] for i in index_best], dim=0)
+    best_ds = torch.stack([all_ds[i] for i in index_best], dim=0)
+    return best_locations, best_covariances, best_supports, best_ds
+
+
+def _fast_mcd_torch(X, *, support_fraction=None, random_state=None):
+    X = X.T
+    random_state = check_random_state(random_state)
+    n_samples, n_features = X.shape
+
+    if n_samples < 2:
+        raise ValueError(
+            "Minimum Covariance Determinant requires at least 2 samples."
+        )
+
+    if support_fraction is None:
+        n_support = int(np.ceil(0.5 * (n_samples + n_features + 1)))
+    else:
+        n_support = int(support_fraction * n_samples)
+
+    if n_features == 1:
+        return _mcd_1d_torch(X, n_support)
+
+    if n_samples > 500:
+        n_subsets = n_samples // 300
+        n_samples_subsets = n_samples // n_subsets
+        samples_shuffle = torch.as_tensor(
+            random_state.permutation(n_samples),
+            device=X.device,
+        )
+        h_subset = int(
+            np.ceil(n_samples_subsets * (n_support / float(n_samples)))
+        )
+        n_trials_tot = 500
+        n_best_sub = 10
+        n_trials = max(10, n_trials_tot // n_subsets)
+        all_best_locations = []
+        all_best_covariances = []
+        for i in range(n_subsets):
+            low_bound = i * n_samples_subsets
+            high_bound = low_bound + n_samples_subsets
+            current_subset = X[samples_shuffle[low_bound:high_bound]]
+            best_locs, best_covs, _, _ = _select_candidates_torch(
+                current_subset,
+                h_subset,
+                n_trials,
+                select=n_best_sub,
+                n_iter=2,
+                random_state=random_state,
+            )
+            all_best_locations.extend(list(best_locs))
+            all_best_covariances.extend(list(best_covs))
+
+        n_samples_merged = min(1500, n_samples)
+        h_merged = int(
+            np.ceil(n_samples_merged * (n_support / float(n_samples)))
+        )
+        n_best_merged = 10 if n_samples > 1500 else 1
+        selection = torch.as_tensor(
+            random_state.permutation(n_samples)[:n_samples_merged],
+            device=X.device,
+        )
+        locations_merged, covariances_merged, supports_merged, d = (
+            _select_candidates_torch(
+                X[selection],
+                h_merged,
+                n_trials=(
+                    torch.stack(all_best_locations, dim=0),
+                    torch.stack(all_best_covariances, dim=0),
+                ),
+                select=n_best_merged,
+                random_state=random_state,
+            )
+        )
+        if n_samples < 1500:
+            location = locations_merged[0]
+            covariance = covariances_merged[0]
+            support = torch.zeros(n_samples, dtype=torch.bool, device=X.device)
+            dist = torch.zeros(n_samples, dtype=X.dtype, device=X.device)
+            support[selection] = supports_merged[0]
+            dist[selection] = d[0]
+        else:
+            locations_full, covariances_full, supports_full, d = (
+                _select_candidates_torch(
+                    X,
+                    n_support,
+                    n_trials=(locations_merged, covariances_merged),
+                    select=1,
+                    random_state=random_state,
+                )
+            )
+            location = locations_full[0]
+            covariance = covariances_full[0]
+            support = supports_full[0]
+            dist = d[0]
+    else:
+        locations_best, covariances_best, _, _ = _select_candidates_torch(
+            X,
+            n_support,
+            n_trials=30,
+            select=10,
+            n_iter=2,
+            random_state=random_state,
+        )
+        locations_full, covariances_full, supports_full, d = (
+            _select_candidates_torch(
+                X,
+                n_support,
+                n_trials=(locations_best, covariances_best),
+                select=1,
+                random_state=random_state,
+            )
+        )
+        location = locations_full[0]
+        covariance = covariances_full[0]
+        support = supports_full[0]
+        dist = d[0]
+
+    return location, covariance, support, dist
 
 
 def _complex_estimator(func):
@@ -41,16 +488,21 @@ def _complex_estimator(func):
     """
     @wraps(func)
     def wrapper(X, **kwds):
-        iscomplex = np.iscomplexobj(X)
+        backend = resolve_backend(X)
+        iscomplex = not is_real_type(X)
         if iscomplex:
-            n_channels, n_times = X.shape
-            X = np.concatenate((X.real, X.imag), axis=0)
+            n_channels, _ = X.shape
+            X = backend.concatenate(
+                (backend.real(X), backend.imag(X)),
+                axis=0,
+            )
         cov = func(X, **kwds)
         if iscomplex:
-            cov = cov[:n_channels, :n_channels] \
-                + cov[n_channels:, n_channels:] \
-                + 1j * (cov[n_channels:, :n_channels]
-                        - cov[:n_channels, n_channels:])
+            cov = _make_complex(
+                cov[:n_channels, :n_channels] + cov[n_channels:, n_channels:],
+                cov[n_channels:, :n_channels] - cov[:n_channels, n_channels:],
+                like=X,
+            )
         return cov
     return wrapper
 
@@ -58,22 +510,28 @@ def _complex_estimator(func):
 @_complex_estimator
 def _lwf(X, **kwds):
     """Wrapper for sklearn ledoit wolf covariance estimator"""
-    C, _ = ledoit_wolf(X.T, **kwds)
-    return C
+    if isinstance(X, np.ndarray):
+        C, _ = ledoit_wolf(X.T, **kwds)
+        return C
+    return _ledoit_wolf_torch(X, **kwds)[0]
 
 
 @_complex_estimator
 def _mcd(X, **kwds):
     """Wrapper for sklearn mcd covariance estimator"""
-    _, C, _, _ = fast_mcd(X.T, **kwds)
-    return C
+    if isinstance(X, np.ndarray):
+        _, C, _, _ = fast_mcd(X.T, **kwds)
+        return C
+    return _fast_mcd_torch(X, **kwds)[1]
 
 
 @_complex_estimator
 def _oas(X, **kwds):
     """Wrapper for sklearn oas covariance estimator"""
-    C, _ = oas(X.T, **kwds)
-    return C
+    if isinstance(X, np.ndarray):
+        C, _ = oas(X.T, **kwds)
+        return C
+    return _oas_torch(X, **kwds)[0]
 
 
 def _hub(X, **kwds):
@@ -173,6 +631,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         <https://projecteuclid.org/journals/annals-of-statistics/volume-15/issue-1/A-Distribution-Free-M-Estimator-of-Multivariate-Scatter/10.1214/aos/1176350263.full>`_
         D.E. Tyler. The Annals of Statistics, 1987.
     """  # noqa
+    backend = resolve_backend(X, init)
     n_channels, n_times = X.shape
 
     if m_estimator == "hub":
@@ -182,7 +641,10 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         def weight_func(x):  # Example 1, Section V-C in [1]
             c2 = chi2.ppf(q, n_channels) / 2
             b = chi2.cdf(2 * c2, n_channels + 1) + c2 * (1 - q) / n_channels
-            return np.minimum(1, c2 / x) / b
+            return backend.minimum(
+                backend.ones(x.shape, like=x, dtype=backend.real_dtype(x)),
+                c2 / x,
+            ) / b
     elif m_estimator == "stu":
         if nu <= 0:
             raise ValueError(f"Value nu must be strictly positive (Got {nu})")
@@ -196,25 +658,25 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         raise ValueError(f"Unsupported m_estimator: {m_estimator}")
 
     if not assume_centered:
-        X -= np.mean(X, axis=1, keepdims=True)
+        X = X - backend.mean(X, axis=1)[:, np.newaxis]
     if init is None:
-        cov = X @ X.conj().T / n_times
+        cov = X @ ctranspose(X, backend=backend) / n_times
     else:
-        cov = init
+        cov = check_init(init, n_channels, backend=backend, like=X)
 
     for _ in range(n_iter_max):
 
-        dist2 = distance_mahalanobis(X, cov, squared=True)
-        Xw = np.sqrt(weight_func(dist2)) * X
-        cov_new = Xw @ Xw.conj().T / n_times
+        dist2 = distance_mahalanobis(X, cov, squared=True, backend=backend)
+        Xw = backend.sqrt(weight_func(dist2))[np.newaxis, :] * X
+        cov_new = Xw @ ctranspose(Xw, backend=backend) / n_times
 
-        norm_delta = np.linalg.norm(cov_new - cov, ord="fro")
-        norm_cov = np.linalg.norm(cov, ord="fro")
+        norm_delta = backend.as_float(backend.norm_fro(cov_new - cov))
+        norm_cov = backend.as_float(backend.norm_fro(cov))
         cov = cov_new
         if (norm_delta / norm_cov) <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     if m_estimator == "tyl":
         cov = normalize(cov, norm)
@@ -224,7 +686,6 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     return cov
 
 
-@_complex_estimator
 def covariance_sch(X):
     r"""Schaefer-Strimmer shrunk covariance estimator.
 
@@ -263,23 +724,63 @@ def covariance_sch(X):
         J. Schafer, and K. Strimmer. Statistical Applications in Genetics and
         Molecular Biology, Volume 4, Issue 1, 2005.
     """
+    backend = resolve_backend(X)
+    if not is_real_type(X):
+        n_channels, _ = X.shape
+        X_ri = backend.concatenate(
+            (backend.real(X), backend.imag(X)),
+            axis=0,
+        )
+        cov = covariance_sch(X_ri)
+        return (
+            cov[:n_channels, :n_channels]
+            + cov[n_channels:, n_channels:]
+            + 1j * (
+                cov[n_channels:, :n_channels]
+                - cov[:n_channels, n_channels:]
+            )
+        )
+
     _, n_times = X.shape
-    X_c = X - X.mean(axis=1, keepdims=True)
-    C_scm = X_c @ X_c.T / n_times
+    X_c = X - backend.mean(X, axis=1)[:, np.newaxis]
+    C_scm = X_c @ ctranspose(X_c, backend=backend) / n_times
 
     # Compute optimal gamma, the weigthing between SCM and shrinkage estimator
-    R = (n_times / ((n_times - 1.) * np.outer(X.std(axis=1), X.std(axis=1))))
+    std = (
+        X.std(axis=1)
+        if isinstance(X, np.ndarray)
+        else torch.std(X, dim=1, correction=0)
+    )
+    R = n_times / ((n_times - 1.) * backend.outer(std, std))
     R *= C_scm
-    var_R = (X_c ** 2) @ (X_c ** 2).T - 2 * C_scm * (X_c @ X_c.T)
+    var_R = (X_c ** 2) @ ctranspose(X_c ** 2, backend=backend)
+    var_R -= 2 * C_scm * (X_c @ ctranspose(X_c, backend=backend))
     var_R += n_times * C_scm ** 2
-    Xvar = np.outer(X.var(axis=1), X.var(axis=1))
+    var = (
+        X.var(axis=1)
+        if isinstance(X, np.ndarray)
+        else torch.var(X, dim=1, correction=0)
+    )
+    Xvar = backend.outer(var, var)
     var_R *= n_times / ((n_times - 1) ** 3 * Xvar)
-    R -= np.diag(np.diag(R))
-    var_R -= np.diag(np.diag(var_R))
-    gamma = max(0, min(1, var_R.sum() / (R ** 2).sum()))
+    diag0, diag1 = backend.diag_indices(R.shape[-1], like=R)
+    R[diag0, diag1] = 0
+    var_R[diag0, diag1] = 0
+    denom = backend.as_float(backend.sum(R ** 2))
+    gamma = 0 if denom == 0 else max(
+        0,
+        min(
+            1,
+            backend.as_float(backend.sum(var_R)) / denom,
+        ),
+    )
 
     sigma = (1. - gamma) * (n_times / (n_times - 1.)) * C_scm
-    shrinkage = gamma * (n_times / (n_times - 1.)) * np.diag(np.diag(C_scm))
+    shrinkage = (
+        gamma
+        * (n_times / (n_times - 1.))
+        * backend.diag_embed(backend.diagonal(C_scm))
+    )
     return sigma + shrinkage
 
 
@@ -312,22 +813,19 @@ def covariance_scm(X, *, assume_centered=False):
     ----------
     .. [1] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
     """  # noqa
+    backend = resolve_backend(X)
     _, n_times = X.shape
-
-    if assume_centered:
-        cov = X @ X.conj().T / n_times
-    else:
-        cov = np.cov(X, bias=1)
-
-    return cov
+    if not assume_centered:
+        X = X - backend.mean(X, axis=1)[:, np.newaxis]
+    return X @ ctranspose(X, backend=backend) / n_times
 
 
 ###############################################################################
 
 
 cov_est_functions = {
-    "corr": np.corrcoef,
-    "cov": np.cov,
+    "corr": _corr,
+    "cov": _cov,
     "hub": _hub,
     "lwf": _lwf,
     "mcd": _mcd,
@@ -396,7 +894,8 @@ def covariances(X, estimator="cov", **kwds):
     """  # noqa
     est = check_function(estimator, cov_est_functions)
     n_matrices, n_channels, n_times = X.shape
-    covmats = np.empty((n_matrices, n_channels, n_channels), dtype=X.dtype)
+    backend = resolve_backend(X)
+    covmats = backend.zeros((n_matrices, n_channels, n_channels), like=X)
     for i in range(n_matrices):
         covmats[i] = est(X[i], **kwds)
     return covmats
@@ -425,14 +924,24 @@ def covariances_EP(X, P, estimator="cov", **kwds):
     """
     est = check_function(estimator, cov_est_functions)
     n_matrices, n_channels, n_times = X.shape
+    backend = resolve_backend(X, P)
     n_channels_proto, n_times_p = P.shape
     if n_times_p != n_times:
         raise ValueError(
             f"X and P do not have the same n_times: {n_times} and {n_times_p}")
-    covmats = np.empty((n_matrices, n_channels + n_channels_proto,
-                        n_channels + n_channels_proto), dtype=X.dtype)
+    covmats = backend.zeros(
+        (
+            n_matrices,
+            n_channels + n_channels_proto,
+            n_channels + n_channels_proto,
+        ),
+        like=X,
+    )
     for i in range(n_matrices):
-        covmats[i] = est(np.concatenate((P, X[i]), axis=0), **kwds)
+        covmats[i] = est(
+            backend.concatenate((P, X[i]), axis=0),
+            **kwds,
+        )
     return covmats
 
 
@@ -471,19 +980,35 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
             f"Parameter alpha must be strictly positive (Got {alpha})")
     est = check_function(estimator, cov_est_functions)
     n_matrices, n_channels, n_times = X.shape
+    backend = resolve_backend(X)
 
-    Hchannels = np.eye(n_channels) \
-        - np.outer(np.ones(n_channels), np.ones(n_channels)) / n_channels
-    Htimes = np.eye(n_times) \
-        - np.outer(np.ones(n_times), np.ones(n_times)) / n_times
+    Hchannels = backend.eye(n_channels, like=X) - backend.outer(
+        backend.ones(n_channels, like=X, dtype=backend.real_dtype(X)),
+        backend.ones(n_channels, like=X, dtype=backend.real_dtype(X)),
+    ) / n_channels
+    Htimes = backend.eye(n_times, like=X) - backend.outer(
+        backend.ones(n_times, like=X, dtype=backend.real_dtype(X)),
+        backend.ones(n_times, like=X, dtype=backend.real_dtype(X)),
+    ) / n_times
     X = Hchannels @ X @ Htimes  # Eq(8), double centering
 
-    covmats = np.empty(
-        (n_matrices, n_channels + n_times, n_channels + n_times))
+    covmats = backend.zeros(
+        (n_matrices, n_channels + n_times, n_channels + n_times),
+        like=X,
+    )
     for i in range(n_matrices):
-        Y = np.concatenate((
-            np.concatenate((X[i], alpha * np.eye(n_channels)), axis=1),  # top
-            np.concatenate((alpha * np.eye(n_times), X[i].T), axis=1)  # bottom
+        Y = backend.concatenate((
+            backend.concatenate(
+                (X[i], alpha * backend.eye(n_channels, like=X)),
+                axis=1,
+            ),
+            backend.concatenate(
+                (
+                    alpha * backend.eye(n_times, like=X),
+                    backend.swapaxes(X[i], -2, -1),
+                ),
+                axis=1,
+            ),
         ), axis=0)  # Eq(9)
         covmats[i] = est(Y, **kwds)
     return covmats / (2 * alpha)  # Eq(10)
@@ -516,18 +1041,21 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
     """
     est = check_function(estimator, cov_est_functions)
     n_matrices, n_channels, n_times = X.shape
+    backend = resolve_backend(X)
 
-    if np.sum(blocks) != n_channels:
+    if sum(blocks) != n_channels:
         raise ValueError("Sum of individual block sizes "
                          "must match number of channels of X.")
 
-    covmats = np.empty((n_matrices, n_channels, n_channels))
+    covmats = backend.zeros((n_matrices, n_channels, n_channels), like=X)
     for i in range(n_matrices):
-        blockcov, idx_start = [], 0
+        idx_start = 0
         for j in blocks:
-            blockcov.append(est(X[i, idx_start:idx_start+j, :], **kwds))
+            covmats[i, idx_start:idx_start+j, idx_start:idx_start+j] = est(
+                X[i, idx_start:idx_start+j, :],
+                **kwds,
+            )
             idx_start += j
-        covmats[i] = block_diag(*tuple(blockcov))
 
     return covmats
 
@@ -538,10 +1066,11 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
 def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator="cov"):
     """Convert EEG signal to covariance using sliding window."""
     est = check_function(estimator, cov_est_functions)
+    backend = resolve_backend(sig)
     X = []
     if padding:
-        padd = np.zeros((int(window / 2), sig.shape[1]))
-        sig = np.concatenate((padd, sig, padd), axis=0)
+        padd = backend.zeros((int(window / 2), sig.shape[1]), like=sig)
+        sig = backend.concatenate((padd, sig, padd), axis=0)
 
     n_times, n_channels = sig.shape
     jump = int(window * overlapp)
@@ -550,7 +1079,7 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator="cov"):
         X.append(est(sig[ix:ix + window, :].T))
         ix = ix + jump
 
-    return np.array(X)
+    return backend.stack(X, axis=0)
 
 
 ###############################################################################
@@ -595,17 +1124,31 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             f"Value overlap must be included in (0, 1) (Got {overlap})"
         )
 
+    backend = resolve_backend(X)
     n_channels, n_times = X.shape
     n_freqs = int(window / 2) + 1  # X real signal => compute half-spectrum
     step = int((1.0 - overlap) * window)
     n_windows = int((n_times - window) / step + 1)
-    win = np.hanning(window)
+    if isinstance(X, np.ndarray):
+        win = np.hanning(window)
 
-    # FFT calculation on all windows
-    shape = (n_channels, n_windows, window)
-    strides = X.strides[:-1]+(step*X.strides[-1], X.strides[-1])
-    Xs = np.lib.stride_tricks.as_strided(X, shape=shape, strides=strides)
-    fdata = np.fft.rfft(Xs * win, n=window).transpose(1, 0, 2)
+        # FFT calculation on all windows
+        shape = (n_channels, n_windows, window)
+        strides = X.strides[:-1] + (step * X.strides[-1], X.strides[-1])
+        Xs = np.lib.stride_tricks.as_strided(X, shape=shape, strides=strides)
+        fdata = np.fft.rfft(Xs * win, n=window).transpose(1, 0, 2)
+    else:
+        X = X.contiguous()
+        win = torch.hann_window(
+            window,
+            periodic=False,
+            dtype=backend.real_dtype(X),
+            device=X.device,
+        )
+        shape = (n_channels, n_windows, window)
+        strides = (X.stride(0), step * X.stride(1), X.stride(1))
+        Xs = X.as_strided(shape, strides)
+        fdata = torch.fft.rfft(Xs * win, n=window).permute(1, 0, 2)
 
     # adjust frequency range to specified range
     if fs is not None:
@@ -617,22 +1160,37 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             raise ValueError("Parameter fmax must be superior to fmin")
         if 2.0 * fmax > fs:  # check Nyquist-Shannon
             raise ValueError("Parameter fmax must be inferior to fs/2")
-        f = np.arange(0, n_freqs, dtype=int) * float(fs / window)
+        if isinstance(X, np.ndarray):
+            f = np.arange(0, n_freqs, dtype=int) * float(fs / window)
+        else:
+            f = torch.arange(
+                0,
+                n_freqs,
+                device=X.device,
+                dtype=backend.real_dtype(X),
+            ) * float(fs / window)
         fix = (f >= fmin) & (f <= fmax)
         fdata = fdata[:, :, fix]
         freqs = f[fix]
     else:
         if fmin is not None:
-            warnings.warn("Parameter fmin not used because fs is None")
+            warnings.warn(
+                "Parameter fmin not used because fs is None",
+                stacklevel=2,
+            )
         if fmax is not None:
-            warnings.warn("Parameter fmax not used because fs is None")
+            warnings.warn(
+                "Parameter fmax not used because fs is None",
+                stacklevel=2,
+            )
         freqs = None
 
     n_freqs = fdata.shape[2]
-    S = np.zeros((n_channels, n_channels, n_freqs), dtype=complex)
+    S = backend.zeros((n_channels, n_channels, n_freqs), like=fdata)
     for i in range(n_freqs):
-        S[:, :, i] = fdata[:, :, i].conj().T @ fdata[:, :, i]
-    S /= n_windows * np.linalg.norm(win)**2
+        spec = fdata[:, :, i]
+        S[:, :, i] = ctranspose(spec, backend=backend) @ spec
+    S /= n_windows * backend.sum(win ** 2)
 
     # normalization to respect Parseval's theorem with the half-spectrum
     # excepted DC bin (always), and Nyquist bin (when window is even)
@@ -678,7 +1236,7 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         fs=fs,
     )
 
-    return S.real, freqs
+    return resolve_backend(S).real(S), freqs
 
 
 def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
@@ -749,38 +1307,54 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         fmax=fmax,
         fs=fs,
     )
-    S2 = np.abs(S)**2  # squared cross-spectral modulus
+    backend = resolve_backend(S)
+    S2 = backend.abs(S) ** 2  # squared cross-spectral modulus
 
-    C = np.zeros_like(S2)
-    f_inds = np.arange(0, C.shape[-1], dtype=int)
+    C = backend.zeros_like(S2)
+    f_inds = list(range(C.shape[-1]))
 
     # lagged coh not defined for DC and Nyquist bins, because S is real
     if coh == "lagged":
         if freqs is None:
-            f_inds = np.arange(1, C.shape[-1] - 1, dtype=int)
-            warnings.warn("DC and Nyquist bins are not defined for lagged-"
-                          "coherence: filled with zeros")
+            f_inds = list(range(1, C.shape[-1] - 1))
+            warnings.warn(
+                "DC and Nyquist bins are not defined for lagged-"
+                "coherence: filled with zeros",
+                stacklevel=2,
+            )
         else:
-            f_inds_ = f_inds[(freqs > 0) & (freqs < fs / 2)]
-            if not np.array_equal(f_inds_, f_inds):
-                warnings.warn("DC and Nyquist bins are not defined for lagged-"
-                              "coherence: filled with zeros")
+            if isinstance(freqs, np.ndarray):
+                f_inds_ = np.where((freqs > 0) & (freqs < fs / 2))[0].tolist()
+            else:
+                f_inds_ = torch.nonzero(
+                    (freqs > 0) & (freqs < fs / 2),
+                    as_tuple=False,
+                ).flatten().tolist()
+            if f_inds_ != f_inds:
+                warnings.warn(
+                    "DC and Nyquist bins are not defined for lagged-"
+                    "coherence: filled with zeros",
+                    stacklevel=2,
+                )
             f_inds = f_inds_
 
     for f in f_inds:
-        psd = np.sqrt(np.diag(S2[..., f]))
-        psd_prod = np.outer(psd, psd)
+        psd = backend.sqrt(backend.diagonal(S2[..., f]))
+        psd_prod = backend.outer(psd, psd)
         if coh == "ordinary":
             C[..., f] = S2[..., f] / psd_prod
         elif coh == "instantaneous":
-            C[..., f] = (S[..., f].real)**2 / psd_prod
+            C[..., f] = backend.real(S[..., f]) ** 2 / psd_prod
         elif coh == "lagged":
-            np.fill_diagonal(S[..., f].real, 0.)  # prevent div by zero on diag
-            denom = psd_prod - (S[..., f].real)**2
-            denom[abs(denom) < 1e-10] = 1e-10
-            C[..., f] = (S[..., f].imag)**2 / denom
+            S_real = backend.real(S[..., f])
+            S_real_copy = backend.zeros_like(S_real)
+            S_real_copy[...] = S_real
+            diag0, diag1 = backend.diag_indices(S_real.shape[-1], like=S_real)
+            S_real_copy[diag0, diag1] = 0.0
+            denom = backend.maximum(psd_prod - S_real_copy ** 2, 1e-10)
+            C[..., f] = backend.imag(S[..., f]) ** 2 / denom
         elif coh == "imaginary":
-            C[..., f] = (S[..., f].imag)**2 / psd_prod
+            C[..., f] = backend.imag(S[..., f]) ** 2 / psd_prod
         else:
             raise ValueError(f"{coh} is not a supported coherence")
 
@@ -812,24 +1386,32 @@ def normalize(X, norm):
     Xn : ndarray, shape (..., n, n)
         Set of normalized matrices, same dimensions as X.
     """
+    backend = resolve_backend(X)
     if not is_square(X):
         raise ValueError("Matrices must be square")
 
     if norm == "corr":
-        stddev = np.sqrt(np.abs(np.diagonal(X, axis1=-2, axis2=-1)))
-        denom = np.expand_dims(stddev, axis=-2) * stddev[..., np.newaxis]
+        stddev = backend.sqrt(backend.abs(backend.diagonal(X)))
+        denom = stddev[..., :, np.newaxis] * stddev[..., np.newaxis, :]
     elif norm == "trace":
-        denom = np.trace(X, axis1=-2, axis2=-1)
+        denom = backend.sum(backend.diagonal(X), axis=-1)
     elif norm == "determinant":
-        denom = np.abs(np.linalg.det(X)) ** (1 / X.shape[-1])
+        _, logabsdet = backend.slogdet(X)
+        denom = backend.exp(logabsdet / X.shape[-1])
     else:
         raise ValueError(f"{norm} is not a supported normalization")
 
-    denom = np.expand_dims(denom, axis=tuple(range(denom.ndim, X.ndim)))
+    while denom.ndim < X.ndim:
+        denom = denom[..., np.newaxis]
     Xn = X / denom
 
     if norm == "corr":
-        np.clip(Xn, -1, 1, out=Xn)
+        if not is_real_type(Xn):
+            return Xn
+        if isinstance(Xn, np.ndarray):
+            np.clip(Xn, -1, 1, out=Xn)
+        else:
+            Xn = torch.clamp(Xn, -1, 1)
 
     return Xn
 
@@ -858,13 +1440,14 @@ def get_nondiag_weight(X):
         M. Congedo, C. Gouy-Pailler, C. Jutten. Clinical Neurophysiology,
         Elsevier, 2008, 119 (12), pp.2677-2686.
     """
+    backend = resolve_backend(X)
     if not is_square(X):
         raise ValueError("Matrices must be square")
 
     X2 = X**2
     # sum of squared diagonal elements
-    denom = np.trace(X2, axis1=-2, axis2=-1)
+    denom = backend.sum(backend.diagonal(X2), axis=-1)
     # sum of squared off-diagonal elements
-    num = np.sum(X2, axis=(-2, -1)) - denom
+    num = backend.sum(X2, axis=(-2, -1)) - denom
     weights = (1.0 / (X.shape[-1] - 1)) * (num / denom)
     return weights

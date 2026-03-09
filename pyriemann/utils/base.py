@@ -3,7 +3,6 @@
 import numpy as np
 
 from ._backend import resolve_backend
-from .test import is_pos_def
 
 
 def ctranspose(X, *, backend=None):
@@ -213,7 +212,20 @@ def sqrtm(C, *, backend=None):
 ###############################################################################
 
 
-def _nearest_sym_pos_def(S, reg=1e-6):
+def _is_pos_def(X, backend, tol=0.0, fast_mode=False):
+    """Check positive definiteness with the active array backend."""
+    if fast_mode:
+        try:
+            backend.cholesky(X)
+            return True
+        except Exception:
+            return False
+
+    eigvals = backend.real(backend.eigvalsh(X))
+    return not backend.any(eigvals <= tol)
+
+
+def _nearest_sym_pos_def(S, reg=1e-6, *, backend=None):
     """Find the nearest SPD matrix.
 
     Parameters
@@ -228,35 +240,45 @@ def _nearest_sym_pos_def(S, reg=1e-6):
     P : ndarray, shape (n, n)
         Nearest SPD matrix.
     """
+    backend = resolve_backend(S, backend=backend)
+
     def regularize(X, reg):
-        ei, ev = np.linalg.eigh(X)
-        if np.min(ei) / np.max(ei) < reg:
-            X = ev @ np.diag(ei + reg) @ ev.T
+        ei, ev = backend.eigh(X)
+        ratio = backend.as_float(
+            backend.min(backend.real(ei)) / backend.max(backend.real(ei))
+        )
+        if ratio < reg:
+            X = ev @ backend.diag_embed(ei + reg) @ ctranspose(
+                ev,
+                backend=backend,
+            )
         return X
 
-    A = (S + S.T) / 2
-    _, s, V = np.linalg.svd(A)
-    H = V.T @ (s[:, np.newaxis] * V)
+    A = (S + ctranspose(S, backend=backend)) / 2
+    _, s, Vh = backend.svd(A)
+    H = ctranspose(Vh, backend=backend) @ (s[:, None] * Vh)
     B = (A + H) / 2
-    P = (B + B.T) / 2
+    P = (B + ctranspose(B, backend=backend)) / 2
 
-    if is_pos_def(P):
+    if _is_pos_def(P, backend):
         # Regularize if already PD
         return regularize(P, reg)
 
-    spacing = np.spacing(np.linalg.norm(A))
-    I = np.eye(S.shape[0])  # noqa
+    spacing = np.spacing(backend.as_float(backend.norm_fro(A)))
+    eye_n = backend.eye(S.shape[0], like=S)
     k = 1
-    while not is_pos_def(P, fast_mode=False):
-        mineig = np.min(np.real(np.linalg.eigvals(P)))
-        P += I * (-mineig * k ** 2 + spacing)
+    while not _is_pos_def(P, backend, fast_mode=False):
+        mineig = backend.as_float(
+            backend.min(backend.real(backend.eigvalsh(P)))
+        )
+        P += eye_n * (-mineig * k ** 2 + spacing)
         k += 1
 
     # Regularize
     return regularize(P, reg)
 
 
-def nearest_sym_pos_def(X, reg=1e-6):
+def nearest_sym_pos_def(X, reg=1e-6, *, backend=None):
     """Find the nearest SPD matrices.
 
     A NumPy port of John D'Errico's ``nearestSPD`` MATLAB code [1]_,
@@ -287,13 +309,31 @@ def nearest_sym_pos_def(X, reg=1e-6):
         <https://www.sciencedirect.com/science/article/pii/0024379588902236>`_
         N.J. Higham, Linear Algebra and its Applications, vol 103, 1988
     """
-    return np.array([_nearest_sym_pos_def(x, reg) for x in X])
+    backend = resolve_backend(X, backend=backend)
+    if not backend.is_array(X) or X.ndim < 2:
+        raise ValueError("Input must be at least a 2D ndarray or tensor")
+    if X.shape[-2] != X.shape[-1]:
+        raise ValueError("Input must contain square matrices")
+    if X.ndim == 2:
+        return _nearest_sym_pos_def(X, reg, backend=backend)
+    return backend.stack(
+        [_nearest_sym_pos_def(x, reg, backend=backend) for x in X],
+        axis=0,
+    )
 
 
 ###############################################################################
 
 
-def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
+def _first_divided_difference(
+    d,
+    fct,
+    fctder,
+    atol=1e-12,
+    rtol=1e-12,
+    *,
+    backend=None,
+):
     r"""First divided difference of a matrix function.
 
     First divided difference of a matrix function applied to the eigenvalues
@@ -338,16 +378,24 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
     .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
         R. Bhatia, Springer, 1997
     """
-    dif = np.repeat(d[None, :], len(d), axis=0)
+    backend = resolve_backend(d, backend=backend)
+    di = d[..., :, None]
+    dj = d[..., None, :]
+    close_ = backend.isclose(di, dj, atol=atol, rtol=rtol)
+    den = di - dj
+    den_safe = backend.where(
+        close_,
+        backend.asarray(1, like=den, dtype=den.dtype),
+        den,
+    )
+    return backend.where(
+        close_,
+        fctder(di),
+        (fct(di) - fct(dj)) / den_safe,
+    )
 
-    close_ = np.isclose(dif, dif.T, atol=atol, rtol=rtol)
-    dif[close_] = fctder(dif[close_])
-    dif[~close_] = (fct(dif[~close_]) - fct(dif.T[~close_])) / \
-                   (dif[~close_] - dif.T[~close_])
-    return dif
 
-
-def ddexpm(X, Cref):
+def ddexpm(X, Cref, *, backend=None):
     r"""Directional derivative of the matrix exponential.
 
     The directional derivative of the matrix exponential at a SPD/HPD matrix
@@ -385,13 +433,19 @@ def ddexpm(X, Cref):
     .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
         R. Bhatia, Springer, 1997
     """
+    backend = resolve_backend(X, Cref, backend=backend)
+    d, V = backend.eigh(Cref)
+    expfdd = _first_divided_difference(
+        d,
+        backend.exp,
+        backend.exp,
+        backend=backend,
+    )
+    Vh = ctranspose(V, backend=backend)
+    return V @ (expfdd * (Vh @ X @ V)) @ Vh
 
-    d, V = np.linalg.eigh(Cref)
-    expfdd = _first_divided_difference(d, np.exp, np.exp)
-    return V @ (expfdd * (V.conj().T @ X @ V)) @ V.conj().T
 
-
-def ddlogm(X, Cref):
+def ddlogm(X, Cref, *, backend=None):
     r"""Directional derivative of the matrix logarithm.
 
     The directional derivative of the matrix logarithm at a SPD/HPD matrix
@@ -429,7 +483,13 @@ def ddlogm(X, Cref):
     .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
         R. Bhatia, Springer, 1997
     """
-
-    d, V = np.linalg.eigh(Cref)
-    logfdd = _first_divided_difference(d, np.log, lambda x: 1 / x)
-    return V @ (logfdd * (V.conj().T @ X @ V)) @ V.conj().T
+    backend = resolve_backend(X, Cref, backend=backend)
+    d, V = backend.eigh(Cref)
+    logfdd = _first_divided_difference(
+        d,
+        backend.log,
+        lambda x: 1 / x,
+        backend=backend,
+    )
+    Vh = ctranspose(V, backend=backend)
+    return V @ (logfdd * (Vh @ X @ V)) @ Vh

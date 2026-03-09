@@ -4,6 +4,7 @@ import warnings
 
 import numpy as np
 
+from ._backend import resolve_backend
 from .utils import check_weights, check_function, check_init
 
 
@@ -49,58 +50,83 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
         J.-F. Cardoso and A. Souloumiac, SIAM Journal on Matrix Analysis and
         Applications, 17(1), pp. 161–164, 1996.
     """
+    backend = resolve_backend(X, init)
     n_matrices, _, _ = X.shape
     # reshape input matrix
-    A = np.concatenate(X, 0).T
+    A = backend.swapaxes(X, 0, 1).reshape(X.shape[-1], -1)
+    A_copy = backend.zeros_like(A)
+    A_copy[...] = A
+    A = A_copy
     n, n_matrices_x_n = A.shape
 
     # init variables
     if init is None:
-        V = np.eye(n)
+        V = backend.eye(n, like=X)
     else:
-        V = check_init(init, n)
+        V = check_init(init, n, backend=backend, like=X)
 
     for _ in range(n_iter_max):
         crit = False
         for p in range(n):
             for q in range(p + 1, n):
-                Ip = np.arange(p, n_matrices_x_n, n)
-                Iq = np.arange(q, n_matrices_x_n, n)
+                Ip = list(range(p, n_matrices_x_n, n))
+                Iq = list(range(q, n_matrices_x_n, n))
 
                 # computation of Givens rotations
-                g = np.array([A[p, Ip] - A[q, Iq], A[p, Iq] + A[q, Ip]])
-                gg = g @ g.T
+                g = backend.stack(
+                    (A[p, Ip] - A[q, Iq], A[p, Iq] + A[q, Ip]),
+                    axis=0,
+                )
+                gg = g @ backend.swapaxes(g, -2, -1)
                 ton = gg[0, 0] - gg[1, 1]
                 toff = gg[0, 1] + gg[1, 0]
-                theta = 0.5 * np.arctan2(toff, ton + np.sqrt(ton**2 + toff**2))
-                c = np.cos(theta)
-                s = np.sin(theta)
-                crit = crit | (np.abs(s) > eps)
+                theta = 0.5 * backend.arctan2(
+                    toff,
+                    ton + backend.sqrt(ton**2 + toff**2),
+                )
+                c = backend.cos(theta)
+                s = backend.sin(theta)
+                abs_s = backend.as_float(backend.abs(s))
+                crit = crit or (abs_s > eps)
 
                 # update of A and V matrices
-                if (np.abs(s) > eps):
-                    tmp = A[:, Ip].copy()
+                if abs_s > eps:
+                    tmp = backend.zeros_like(A[:, Ip])
+                    tmp[...] = A[:, Ip]
                     A[:, Ip] = c * A[:, Ip] + s * A[:, Iq]
                     A[:, Iq] = c * A[:, Iq] - s * tmp
 
-                    tmp = A[p, :].copy()
+                    tmp = backend.zeros_like(A[p, :])
+                    tmp[...] = A[p, :]
                     A[p, :] = c * A[p, :] + s * A[q, :]
                     A[q, :] = c * A[q, :] - s * tmp
 
-                    tmp = V[:, p].copy()
+                    tmp = backend.zeros_like(V[:, p])
+                    tmp[...] = V[:, p]
                     V[:, p] = c * V[:, p] + s * V[:, q]
                     V[:, q] = c * V[:, q] - s * tmp
 
         if not crit:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
-    D = np.reshape(A, (n, n_matrices, n)).transpose(1, 0, 2)
-    return V, D
+    D = backend.swapaxes(A.reshape(n, n_matrices, n), 0, 1)
+    return (
+        backend.asarray(V, like=X, dtype=X.dtype),
+        backend.asarray(D, like=X, dtype=X.dtype),
+    )
 
 
-def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
+def ajd_pham(
+    X,
+    *,
+    init=None,
+    eps=1e-6,
+    n_iter_max=20,
+    sample_weight=None,
+    backend=None,
+):
     """Approximate joint diagonalization based on Pham's algorithm.
 
     This is a direct implementation of the AJD algorithm [1]_, optimizing a
@@ -143,77 +169,94 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
         D.-T. Pham. SIAM Journal on Matrix Analysis and Applications, 22(4),
         pp. 1136-1152, 2000.
     """
+    backend = resolve_backend(X, backend=backend)
     n_matrices, _, _ = X.shape
     normalized_weight = check_weights(
         sample_weight,
         n_matrices,
         check_positivity=True,
+        backend=backend,
+        like=X,
     )  # sum = 1
 
-    # reshape input matrix
-    A = np.concatenate(X, axis=0).T
+    # Flatten matrix batches along columns while preserving the original
+    # matrix-wise block structure used by Pham's updates.
+    A = backend.swapaxes(backend.swapaxes(X, 0, 2), 1, 2)
+    A = A.reshape(X.shape[-1], n_matrices * X.shape[-1])
+    A_copy = backend.zeros_like(A)
+    A_copy[...] = A
+    A = A_copy
     n, n_matrices_x_n = A.shape
 
-    # init variables
     if init is None:
-        V = np.eye(n)
+        V = backend.eye(n, like=X)
     else:
-        V = check_init(init, n)
-    V = V.astype(X.dtype)
+        V = check_init(init, n, backend=backend, like=X)
+    V = backend.asarray(V, like=X, dtype=X.dtype)
     epsilon = n * (n - 1) * eps
+    is_real = backend.real_dtype(X) == X.dtype
 
     for _ in range(n_iter_max):
         crit = 0
         for ii in range(1, n):
             for jj in range(ii):
-                Ii = np.arange(ii, n_matrices_x_n, n)
-                Ij = np.arange(jj, n_matrices_x_n, n)
+                Ii = list(range(ii, n_matrices_x_n, n))
+                Ij = list(range(jj, n_matrices_x_n, n))
 
                 c1 = A[ii, Ii]
                 c2 = A[jj, Ij]
 
-                g12 = np.average(A[ii, Ij] / c1, weights=normalized_weight)
-                g21 = np.average(A[ii, Ij] / c2, weights=normalized_weight)
+                g12 = backend.sum(normalized_weight * (A[ii, Ij] / c1))
+                g21 = backend.sum(normalized_weight * (A[ii, Ij] / c2))
 
-                omega21 = np.average(c1 / c2, weights=normalized_weight)
-                omega12 = np.average(c2 / c1, weights=normalized_weight)
-                omega = np.sqrt(omega12 * omega21)
+                omega21 = backend.sum(normalized_weight * (c1 / c2))
+                omega12 = backend.sum(normalized_weight * (c2 / c1))
+                omega = backend.sqrt(omega12 * omega21)
 
-                tmp = np.sqrt(omega21 / omega12)
+                tmp = backend.sqrt(omega21 / omega12)
                 tmp1 = (tmp * g12 + g21) / (omega + 1)
-                if np.isrealobj(X):
-                    omega = max(omega - 1, 1e-9)
+                if is_real:
+                    omega = backend.maximum(omega - 1, 1e-9)
                 tmp2 = (tmp * g12 - g21) / omega
 
                 h12 = tmp1 + tmp2
-                h21 = np.conj((tmp1 - tmp2) / tmp)
+                h21 = backend.conj((tmp1 - tmp2) / tmp)
 
-                crit += n_matrices * (g12 * np.conj(h12) + g21 * h21) / 2.0
+                crit += backend.as_float(backend.real(
+                    n_matrices * (
+                        g12 * backend.conj(h12) + g21 * h21
+                    ) / 2.0
+                ))
 
-                tmp = 1 + 0.5j * np.imag(h12 * h21)
-                tmp = tmp + np.sqrt(tmp ** 2 - h12 * h21)
-                if np.isrealobj(X):
-                    tmp = np.real(tmp)
-                tau = np.array([[1, np.conj(-h12 / tmp)],
-                                [np.conj(-h21 / tmp), 1]])
+                if is_real:
+                    tau_den = 1 + backend.real(backend.sqrt(1 - h12 * h21))
+                else:
+                    tau_den = 1 + 0.5j * backend.imag(h12 * h21)
+                    tau_den = tau_den + backend.sqrt(
+                        tau_den ** 2 - h12 * h21
+                    )
 
-                A[[ii, jj], :] = tau.conj() @ A[[ii, jj], :]
-                tmp = np.c_[A[:, Ii], A[:, Ij]]
-                tmp = np.reshape(tmp, (n * n_matrices, 2), order="F")
-                tmp = tmp @ tau.T
+                tau = backend.eye(2, like=X)
+                tau[0, 1] = backend.conj(-h12 / tau_den)
+                tau[1, 0] = backend.conj(-h21 / tau_den)
 
-                tmp = np.reshape(tmp, (n, n_matrices * 2), order="F")
-                A[:, Ii] = tmp[:, :n_matrices]
-                A[:, Ij] = tmp[:, n_matrices:]
+                A[[ii, jj], :] = backend.conj(tau) @ A[[ii, jj], :]
+                tmp = backend.stack((A[:, Ii], A[:, Ij]), axis=-1)
+                tmp = tmp @ backend.swapaxes(tau, -2, -1)
+                A[:, Ii] = tmp[..., 0]
+                A[:, Ij] = tmp[..., 1]
                 V[[ii, jj], :] = tau @ V[[ii, jj], :]
 
         if crit < epsilon:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
-    D = np.reshape(A, (n, -1, n)).transpose(1, 0, 2).conj()
-    return V.astype(X.dtype), D.astype(X.dtype)
+    D = backend.conj(backend.swapaxes(A.reshape(n, n_matrices, n), 0, 1))
+    return (
+        backend.asarray(V, like=X, dtype=X.dtype),
+        backend.asarray(D, like=X, dtype=X.dtype),
+    )
 
 
 def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
@@ -262,59 +305,81 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
         P. Tichavsky and A. Yeredor. IEEE Trans Signal Process, 57(3), pp.
         878 - 891, 2009.
     """
+    backend = resolve_backend(X, init)
     n_matrices, _, _ = X.shape
     # reshape input matrix
-    M = np.concatenate(X, 0).T
+    M = backend.swapaxes(X, 0, 1).reshape(X.shape[-1], -1)
+    M_copy = backend.zeros_like(M)
+    M_copy[...] = M
+    M = M_copy
     n, n_matrices_x_n = M.shape
 
     # init variables
     if init is None:
-        E, H = np.linalg.eig(M[:, 0:n])
-        V = H.T / np.sqrt(np.abs(E))[:, np.newaxis]
+        E, H = backend.eig(M[:, 0:n])
+        if backend.real_dtype(X) == X.dtype:
+            E = backend.real(E)
+            H = backend.real(H)
+        V = backend.swapaxes(H, -2, -1) / backend.sqrt(
+            backend.abs(E)
+        )[:, np.newaxis]
     else:
-        V = check_init(init, n)
+        V = check_init(init, n, backend=backend, like=X)
 
-    Ms = np.array(M)
-    Rs = np.zeros((n, n_matrices))
+    Ms = backend.zeros_like(M)
+    Ms[...] = M
+    Rs = backend.zeros((n, n_matrices), like=X)
 
     for k in range(n_matrices):
         ini = k * n
-        Il = np.arange(ini, ini + n)
-        M[:, Il] = 0.5 * (M[:, Il] + M[:, Il].T)
-        Ms[:, Il] = V @ M[:, Il] @ V.T
-        Rs[:, k] = np.diag(Ms[:, Il])
-    crit = np.sum(Ms ** 2) - np.sum(Rs ** 2)
+        Il = list(range(ini, ini + n))
+        M[:, Il] = 0.5 * (M[:, Il] + backend.swapaxes(M[:, Il], -2, -1))
+        Ms[:, Il] = V @ M[:, Il] @ backend.swapaxes(V, -2, -1)
+        Rs[:, k] = backend.diagonal(Ms[:, Il])
+    crit = backend.as_float(backend.real(
+        backend.sum(Ms ** 2) - backend.sum(Rs ** 2)
+    ))
 
     for _ in range(n_iter_max):
-        B = Rs @ Rs.T
-        C1 = np.zeros((n, n))
+        B = Rs @ backend.swapaxes(Rs, -2, -1)
+        C1 = backend.zeros((n, n), like=X)
         for i in range(n):
-            C1[:, i] = np.sum(Ms[:, i:n_matrices_x_n:n] * Rs, axis=1)
+            C1[:, i] = backend.sum(Ms[:, i:n_matrices_x_n:n] * Rs, axis=1)
 
-        D0 = B * B.T - np.outer(np.diag(B), np.diag(B))
-        A0 = (C1 * B - np.diag(B)[:, np.newaxis] * C1.T) / (D0 + np.eye(n))
-        A0.flat[:: n + 1] += 1
-        V = np.linalg.solve(A0, V)
+        diag_b = backend.diagonal(B)
+        D0 = B * backend.swapaxes(B, -2, -1) - backend.outer(diag_b, diag_b)
+        A0 = (
+            C1 * B
+            - diag_b[:, np.newaxis] * backend.swapaxes(C1, -2, -1)
+        ) / (D0 + backend.eye(n, like=X))
+        diag0, diag1 = backend.diag_indices(n, like=X)
+        A0[diag0, diag1] += 1
+        V = backend.solve(A0, V)
 
-        Raux = V @ M[:, 0:n] @ V.T
-        aux = 1. / np.sqrt(np.abs(np.diag(Raux)))
+        Raux = V @ M[:, 0:n] @ backend.swapaxes(V, -2, -1)
+        aux = 1. / backend.sqrt(backend.abs(backend.diagonal(Raux)))
         V = aux[:, np.newaxis] * V
 
         for k in range(n_matrices):
             ini = k * n
-            Il = np.arange(ini, ini + n)
-            Ms[:, Il] = V @ M[:, Il] @ V.T
-            Rs[:, k] = np.diag(Ms[:, Il])
-        crit_new = np.sum(Ms ** 2) - np.sum(Rs ** 2)
+            Il = list(range(ini, ini + n))
+            Ms[:, Il] = V @ M[:, Il] @ backend.swapaxes(V, -2, -1)
+            Rs[:, k] = backend.diagonal(Ms[:, Il])
+        crit_new = backend.as_float(backend.real(
+            backend.sum(Ms ** 2) - backend.sum(Rs ** 2)
+        ))
 
-        if np.abs(crit_new - crit) < eps:
+        if abs(crit_new - crit) < eps:
             break
         crit = crit_new
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
-    D = np.reshape(Ms, (n, n_matrices, n)).transpose(1, 0, 2)
-    return V, D
+    D = backend.swapaxes(Ms.reshape(n, n_matrices, n), 0, 1)
+    return (
+        backend.asarray(V, like=X, dtype=X.dtype),
+        backend.asarray(D, like=X, dtype=X.dtype),
+    )
 
 
 ###############################################################################

@@ -1,7 +1,7 @@
 """Distances between SPD/HPD matrices."""
 
 import numpy as np
-from scipy.linalg import eigvalsh, solve
+from scipy.linalg import eigvalsh
 from sklearn.metrics import euclidean_distances
 
 from ._backend import check_matrix_pair, resolve_backend
@@ -150,7 +150,7 @@ def distance_harmonic(A, B, squared=False, *, backend=None):
     )
 
 
-def distance_kullback(A, B, squared=False):
+def distance_kullback(A, B, squared=False, *, backend=None):
     r"""Kullback-Leibler divergence between SPD/HPD matrices.
 
     The left Kullback-Leibler divergence between two SPD/HPD matrices
@@ -188,20 +188,20 @@ def distance_kullback(A, B, squared=False):
         S. Kullback S, R. Leibler.
         The Annals of Mathematical Statistics, 1951, 22 (1), pp. 79-86
     """
-    _check_inputs(A, B)
+    backend = check_matrix_pair(A, B, require_square=True, backend=backend)
     n = A.shape[-1]
-    tr = np.trace(_recursive(solve, B, A, assume_a='pos'), axis1=-2, axis2=-1)
-    logdet = np.linalg.slogdet(B)[1] - np.linalg.slogdet(A)[1]
-    d = 0.5 * (tr - n + logdet).real
+    tr = backend.sum(backend.diagonal(backend.inv(B) @ A), axis=-1)
+    logdet = backend.slogdet(B)[1] - backend.slogdet(A)[1]
+    d = 0.5 * backend.real(tr - n + logdet)
     return d ** 2 if squared else d
 
 
-def distance_kullback_right(A, B, squared=False):
+def distance_kullback_right(A, B, squared=False, *, backend=None):
     """Wrapper for right Kullback-Leibler divergence."""
-    return distance_kullback(B, A, squared=squared)
+    return distance_kullback(B, A, squared=squared, backend=backend)
 
 
-def distance_kullback_sym(A, B, squared=False):
+def distance_kullback_sym(A, B, squared=False, *, backend=None):
     r"""Symmetrized Kullback-Leibler divergence between SPD/HPD matrices.
 
     The symmetrized Kullback-Leibler divergence between two SPD/HPD matrices
@@ -237,7 +237,11 @@ def distance_kullback_sym(A, B, squared=False):
         Proceedings of the Royal Society of London A: mathematical, physical
         and engineering sciences, 1946, 186 (1007), pp. 453-461
     """
-    d = distance_kullback(A, B) + distance_kullback_right(A, B)
+    d = distance_kullback(A, B, backend=backend) + distance_kullback_right(
+        A,
+        B,
+        backend=backend,
+    )
     return d ** 2 if squared else d
 
 
@@ -304,7 +308,7 @@ def distance_logchol(A, B, squared=False, *, backend=None):
     return d2 if squared else backend.sqrt(d2)
 
 
-def distance_logdet(A, B, squared=False):
+def distance_logdet(A, B, squared=False, *, backend=None):
     r"""Log-det distance between SPD/HPD matrices.
 
     The log-det distance between two SPD/HPD matrices :math:`\mathbf{A}` and
@@ -342,12 +346,12 @@ def distance_logdet(A, B, squared=False):
         I.S. Dhillon, J.A. Tropp.
         SIAM J Matrix Anal Appl, 2007, 29 (4), pp. 1120-1146
     """
-    _check_inputs(A, B)
-    logdet_ApB = np.linalg.slogdet((A + B) / 2.0)[1]
-    logdet_AxB = np.linalg.slogdet(A @ B)[1]
+    backend = check_matrix_pair(A, B, require_square=True, backend=backend)
+    logdet_ApB = backend.slogdet((A + B) / 2.0)[1]
+    logdet_AxB = backend.slogdet(A @ B)[1]
     d2 = logdet_ApB - 0.5 * logdet_AxB
-    d2 = np.maximum(0, d2)
-    return d2 if squared else np.sqrt(d2)
+    d2 = backend.maximum(backend.real(d2), 0)
+    return d2 if squared else backend.sqrt(d2)
 
 
 def distance_logeuclid(A, B, squared=False, *, backend=None):
@@ -507,7 +511,7 @@ def distance_riemann(A, B, squared=False, *, backend=None):
     return d2 if squared else backend.sqrt(d2)
 
 
-def distance_thompson(A, B, squared=False):
+def distance_thompson(A, B, squared=False, *, backend=None):
     r"""Thompson distance between SPD/HPD matrices.
 
     The Thompson distance between two SPD/HPD matrices :math:`\mathbf{A}` and
@@ -549,8 +553,10 @@ def distance_thompson(A, B, squared=False):
         <https://www.cs.umd.edu/projects/reucaar/ThompsonGeom.pdf>`_
         A.C.Thompson. Proceedings of the American Mathematical Society, 1963.
     """
-    _check_inputs(A, B)
-    d = (np.abs(np.log(_recursive(eigvalsh, A, B)))).max(axis=-1)
+    backend = check_matrix_pair(A, B, require_square=True, backend=backend)
+    Binv12 = invsqrtm(B, backend=backend)
+    eigvals = backend.eigvalsh(Binv12 @ A @ Binv12)
+    d = backend.max(backend.abs(backend.log(eigvals)), axis=-1)
     return d ** 2 if squared else d
 
 
@@ -624,9 +630,14 @@ _BROADCASTABLE_DISTANCE_FUNCTIONS = {
     distance_chol,
     distance_euclid,
     distance_harmonic,
+    distance_kullback,
+    distance_kullback_right,
+    distance_kullback_sym,
     distance_logchol,
+    distance_logdet,
     distance_logeuclid,
     distance_riemann,
+    distance_thompson,
     distance_wasserstein,
 }
 
@@ -1024,7 +1035,7 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
 # Distances between vectors and matrices
 
 
-def distance_mahalanobis(X, cov, mean=None, squared=False):
+def distance_mahalanobis(X, cov, mean=None, squared=False, *, backend=None):
     r"""Mahalanobis distance between vectors and a Gaussian distribution.
 
     The Mahalanobis distance between a vector :math:`x \in \mathbb{C}^n` and a
@@ -1062,9 +1073,10 @@ def distance_mahalanobis(X, cov, mean=None, squared=False):
     ----------
     .. [1] https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.mahalanobis.html
     """  # noqa
+    backend = resolve_backend(X, cov, mean, backend=backend)
     if mean is not None:
-        X -= mean
+        X = X - mean
 
-    Xw = invsqrtm(cov) @ X
-    d2 = np.einsum("ij,ji->i", Xw.conj().T, Xw).real
-    return d2 if squared else np.sqrt(d2)
+    Xw = invsqrtm(cov, backend=backend) @ X
+    d2 = backend.real(backend.sum(backend.conj(Xw) * Xw, axis=0))
+    return d2 if squared else backend.sqrt(d2)

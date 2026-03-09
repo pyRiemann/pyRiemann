@@ -1,9 +1,11 @@
 """Geodesics for SPD/HPD matrices."""
-import numpy as np
-from scipy.linalg import eigvalsh
 
-from ._backend import _broadcast_batch_shapes, resolve_backend
-from .base import _recursive, ctranspose, sqrtm, invsqrtm, powm, logm, expm
+from ._backend import (
+    _broadcast_batch_shapes,
+    check_matrix_pair,
+    resolve_backend,
+)
+from .base import ctranspose, sqrtm, invsqrtm, powm, logm, expm
 from .utils import check_function
 
 
@@ -235,7 +237,7 @@ def geodesic_riemann(A, B, alpha=0.5, *, backend=None):
     return C
 
 
-def geodesic_thompson(A, B, alpha=0.5):
+def geodesic_thompson(A, B, alpha=0.5, *, backend=None):
     r"""Thompson geodesic between SPD/HPD matrices.
 
     The matrix at position :math:`\alpha` on a possible Thompson geodesic
@@ -275,27 +277,29 @@ def geodesic_thompson(A, B, alpha=0.5):
         C. Mostajeran, N. Da Costa, G. Van Goffrier and R. Sepulchre.
         SIAM Journal on Matrix Analysis and Applications, 2024
     """
-    A_ndim = A.ndim
-    while A.ndim < 3:
-        A, B = A[np.newaxis, ...], B[np.newaxis, ...]
-    E = _recursive(eigvalsh, B, A)
-    Emin, Emax = E.min(axis=-1), E.max(axis=-1)
+    backend = check_matrix_pair(A, B, require_square=True, backend=backend)
+    Ainvsqrt = invsqrtm(A, backend=backend)
+    E = backend.eigvalsh(Ainvsqrt @ B @ Ainvsqrt)
+    Emin = backend.min(E, axis=-1)
+    Emax = backend.max(E, axis=-1)
+    mask = backend.isclose(Emin, Emax)
 
-    C = np.zeros_like(A)
+    Emin_a = Emin ** alpha
+    Emax_a = Emax ** alpha
+    a = Emax * Emin_a - Emin * Emax_a
+    b = Emax_a - Emin_a
+    den = Emax - Emin
+    den_safe = backend.where(
+        mask,
+        backend.asarray(1, like=den, dtype=den.dtype),
+        den,
+    )
 
-    mask = (Emin == Emax)
-    C[mask] = (Emin[mask][..., np.newaxis, np.newaxis] ** alpha) * A[mask]
-
-    Emin_a, Emax_a = Emin ** alpha, Emax ** alpha
-    b = (Emax_a - Emin_a)[~mask][..., np.newaxis, np.newaxis]
-    a = (Emax * Emin_a - Emin * Emax_a)[~mask][..., np.newaxis, np.newaxis]
-    c = b * B[~mask] + a * A[~mask]
-    C[~mask] = c / (Emax - Emin)[~mask][..., np.newaxis, np.newaxis]
-
-    if A_ndim < 3:
-        C = C[0]
-
-    return C
+    C_equal = Emin_a[..., None, None] * A
+    C_general = (
+        b[..., None, None] * B + a[..., None, None] * A
+    ) / den_safe[..., None, None]
+    return backend.where(mask[..., None, None], C_equal, C_general)
 
 
 def geodesic_wasserstein(A, B, alpha=0.5, *, backend=None):

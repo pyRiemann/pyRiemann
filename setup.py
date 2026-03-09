@@ -41,6 +41,7 @@ setup(
         "numpy>=1.25.0",
         "scipy",
         "scikit-learn>=0.24",
+        "einops",
         "joblib",
         "matplotlib",
     ],
@@ -58,6 +59,9 @@ setup(
             "pytest",
             "seaborn",
             "flake8"
+        ],
+        "tests_torch": [
+            "torch",
         ],
     },
     zip_safe=False,

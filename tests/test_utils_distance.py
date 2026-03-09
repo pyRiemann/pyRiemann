@@ -51,9 +51,14 @@ BROADCAST_DISTANCE_FUNCS = {
     distance_chol,
     distance_euclid,
     distance_harmonic,
+    distance_kullback,
+    distance_kullback_right,
+    distance_kullback_sym,
     distance_logchol,
+    distance_logdet,
     distance_logeuclid,
     distance_riemann,
+    distance_thompson,
     distance_wasserstein,
 }
 
