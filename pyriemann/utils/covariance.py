@@ -110,7 +110,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series, real or complex-valued.
     m_estimator : {"hub", "stu", "tyl"}
         Type of M-estimator:
@@ -256,12 +256,12 @@ def covariance_sch(X):
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series, real or complex-valued.
 
     Returns
     -------
-    cov : ndarray, shape (n_channels, n_channels)
+    cov : ndarray, shape (..., n_channels, n_channels)
         Schaefer-Strimmer shrunk covariance matrix.
 
     Notes
@@ -286,9 +286,7 @@ def covariance_sch(X):
     R = (n_times / ((n_times - 1.) * std_outer)) * C_scm
 
     X_c2 = X_c ** 2
-    var_R = X_c2 @ np.swapaxes(X_c2, -2, -1) \
-        - 2 * C_scm * (X_c @ np.swapaxes(X_c, -2, -1))
-    var_R += n_times * C_scm ** 2
+    var_R = X_c2 @ np.swapaxes(X_c2, -2, -1) - n_times * C_scm ** 2
     var = X.var(axis=-1)
     var_outer = var[..., :, np.newaxis] * var[..., np.newaxis, :]
     var_R *= n_times / ((n_times - 1) ** 3 * var_outer)
@@ -297,8 +295,11 @@ def covariance_sch(X):
     diag_idx = np.arange(R.shape[-1])
     R[..., diag_idx, diag_idx] = 0
     var_R[..., diag_idx, diag_idx] = 0
+    R2_sum = np.sum(R ** 2, axis=(-2, -1))
     gamma = np.clip(
-        np.sum(var_R, axis=(-2, -1)) / np.sum(R ** 2, axis=(-2, -1)), 0, 1,
+        np.where(R2_sum == 0, 0.0,
+                 np.sum(var_R, axis=(-2, -1)) / R2_sum),
+        0, 1,
     )
     gamma = np.expand_dims(gamma, axis=(-2, -1))
 
@@ -320,7 +321,7 @@ def covariance_scm(X, *, assume_centered=False):
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series, real or complex-valued.
     assume_centered : bool, default=False
         If True, data will not be centered before computation.
@@ -330,7 +331,7 @@ def covariance_scm(X, *, assume_centered=False):
 
     Returns
     -------
-    cov : ndarray, shape (n_channels, n_channels)
+    cov : ndarray, shape (..., n_channels, n_channels)
         Sample covariance matrix.
 
     Notes
@@ -375,7 +376,7 @@ def covariances(X, estimator="cov", **kwds):
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series, real or complex-valued.
     estimator : string | callable, default="cov"
         Covariance matrix estimator [est]_:
@@ -403,7 +404,7 @@ def covariances(X, estimator="cov", **kwds):
 
     Returns
     -------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+    covmats : ndarray, shape (..., n_channels, n_channels)
         Covariance matrices.
 
     References
@@ -438,7 +439,7 @@ def covariances_EP(X, P, estimator="cov", **kwds):
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series.
     P : ndarray, shape (n_channels_proto, n_times)
         Multi-channel prototype.
@@ -450,7 +451,7 @@ def covariances_EP(X, P, estimator="cov", **kwds):
 
     Returns
     -------
-    covmats : ndarray, shape (n_matrices, n_channels + n_channels_proto, \
+    covmats : ndarray, shape (..., n_channels + n_channels_proto, \
             n_channels + n_channels_proto)
         Covariance matrices.
     """
@@ -475,7 +476,7 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series.
     estimator : string | callable, default="cov"
         Covariance matrix estimator, see
@@ -487,7 +488,7 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
 
     Returns
     -------
-    covmats : ndarray, shape (n_matrices, n_channels + n_times, n_channels + \
+    covmats : ndarray, shape (..., n_channels + n_times, n_channels + \
             n_times)
         Covariance matrices.
 
@@ -539,7 +540,7 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series.
     blocks: list of int
         List of block sizes.
@@ -551,7 +552,7 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
 
     Returns
     -------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+    covmats : ndarray, shape (..., n_channels, n_channels)
         Block diagonal covariance matrices.
     """
     est = check_function(estimator, cov_est_functions)
@@ -604,7 +605,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series, real-valued.
     window : int, default=128
         Length of the FFT window used for spectral estimation.
@@ -619,7 +620,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Returns
     -------
-    S : ndarray, shape (n_channels, n_channels, n_freqs)
+    S : ndarray, shape (..., n_channels, n_channels, n_freqs)
         Cross-spectral matrices, for each frequency bin.
     freqs : ndarray, shape (n_freqs,)
         Frequencies associated to cross-spectra.
@@ -641,6 +642,12 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     if X.ndim > 2:
         original_shape = X.shape
         X_flat = X.reshape(-1, original_shape[-2], original_shape[-1])
+        if X_flat.shape[0] == 0:
+            # Compute freqs from a dummy call to stay consistent
+            n_freqs = int(window / 2) + 1
+            S = np.empty((*original_shape[:-1], original_shape[-2], n_freqs))
+            freqs = np.arange(n_freqs, dtype=float)
+            return S, freqs
         results = [
             cross_spectrum(x, window=window, overlap=overlap,
                            fmin=fmin, fmax=fmax, fs=fs)
@@ -704,7 +711,7 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series, real-valued.
     window : int, default=128
         Length of the FFT window used for spectral estimation.
@@ -719,7 +726,7 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Returns
     -------
-    S : ndarray, shape (n_channels, n_channels, n_freqs)
+    S : ndarray, shape (..., n_channels, n_channels, n_freqs)
         Co-spectral matrices, for each frequency bin.
     freqs : ndarray, shape (n_freqs,)
         Frequencies associated to cospectra.
@@ -742,7 +749,7 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series, real-valued.
     window : int, default=128
         Length of the FFT window used for spectral estimation.
@@ -799,6 +806,11 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
     if X.ndim > 2:
         original_shape = X.shape
         X_flat = X.reshape(-1, original_shape[-2], original_shape[-1])
+        if X_flat.shape[0] == 0:
+            n_freqs = int(window / 2) + 1
+            C = np.empty((*original_shape[:-1], original_shape[-2], n_freqs))
+            freqs = np.arange(n_freqs, dtype=float)
+            return C, freqs
         results = [
             coherence(x, window=window, overlap=overlap,
                       fmin=fmin, fmax=fmax, fs=fs, coh=coh)

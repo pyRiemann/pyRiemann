@@ -13,8 +13,20 @@ from .tangentspace import log_map_wasserstein, exp_map_wasserstein
 from .utils import check_weights, check_function, check_init
 
 
-def _batch_norm(X):
-    """Frobenius norm, max over batch elements for convergence checks."""
+def _batch_norm(X, ord=None):
+    """Matrix norm, max over batch elements for convergence checks.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        Input matrices.
+    ord : {None, 2}, default=None
+        Norm type. None for Frobenius norm, 2 for spectral norm.
+    """
+    if ord is not None:
+        # spectral norm: compute per matrix using svd
+        s = np.linalg.svd(X, compute_uv=False)
+        return np.max(s[..., 0])
     return np.max(np.linalg.norm(X, axis=(-2, -1)))
 
 
@@ -158,7 +170,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
             s = np.mod(np.arange(h, h + n_matrices - 1) + 1, n_matrices)
             M_iter[h] = mean_alm(M[s], sample_weight=sample_weight[s])
 
-        crit = _batch_norm(M_iter[0] - M[0]) / _batch_norm(M[0])
+        crit = _batch_norm(M_iter[0] - M[0], ord=2) / _batch_norm(M[0], ord=2)
         if crit < tol:
             break
         M = M_iter.copy()
