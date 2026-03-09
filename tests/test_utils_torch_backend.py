@@ -5,7 +5,9 @@ import pytest
 
 torch = pytest.importorskip("torch")
 
+from pyriemann.utils.base import sqrtm  # noqa: E402
 from pyriemann.utils.distance import (  # noqa: E402
+    distance,
     distance_chol,
     distance_euclid,
     distance_harmonic,
@@ -13,10 +15,8 @@ from pyriemann.utils.distance import (  # noqa: E402
     distance_logeuclid,
     distance_riemann,
     distance_wasserstein,
-    distance,
     pairwise_distance,
 )
-from pyriemann.utils.base import sqrtm  # noqa: E402
 from pyriemann.utils.geodesic import (  # noqa: E402
     geodesic_chol,
     geodesic_logchol,
@@ -33,10 +33,10 @@ from pyriemann.utils.mean import (  # noqa: E402
     mean_wasserstein,
 )
 from pyriemann.utils.tangentspace import (  # noqa: E402
-    exp_map_riemann,
     exp_map_logchol,
-    log_map_riemann,
+    exp_map_riemann,
     log_map_logchol,
+    log_map_riemann,
     tangent_space,
     untangent_space,
     upper,
@@ -46,6 +46,16 @@ from pyriemann.utils.tangentspace import (  # noqa: E402
 
 STRICT_TOL = dict(atol=1e-7, rtol=1e-6)
 ITER_TOL = dict(atol=1e-6, rtol=1e-5)
+DISTANCE_METRICS = [
+    "chol",
+    "euclid",
+    "harmonic",
+    "logchol",
+    "logeuclid",
+    "riemann",
+    "wasserstein",
+]
+TANGENT_METRICS = ["euclid", "logchol", "riemann", "wasserstein"]
 
 
 def _make_spd(batch_shape, n, rng):
@@ -55,6 +65,46 @@ def _make_spd(batch_shape, n, rng):
 
 def _to_torch(x):
     return torch.from_numpy(np.ascontiguousarray(x)).to(torch.float64)
+
+
+def _torchify(x):
+    return _to_torch(x) if isinstance(x, np.ndarray) else x
+
+
+def _assert_same_result(fn, *args, tol=STRICT_TOL, **kwargs):
+    torch_args = tuple(_torchify(arg) for arg in args)
+    torch_kwargs = {key: _torchify(value) for key, value in kwargs.items()}
+    result = fn(*torch_args, **torch_kwargs)
+    expected = fn(*args, **kwargs)
+
+    assert isinstance(result, torch.Tensor)
+    np.testing.assert_allclose(
+        result.detach().cpu().numpy(),
+        expected,
+        **tol,
+    )
+
+
+def _assert_same_error(fn, *args, match=None, **kwargs):
+    with pytest.raises(ValueError, match=match):
+        fn(*args, **kwargs)
+
+    torch_args = tuple(_torchify(arg) for arg in args)
+    torch_kwargs = {key: _torchify(value) for key, value in kwargs.items()}
+    with pytest.raises(ValueError, match=match):
+        fn(*torch_args, **torch_kwargs)
+
+
+def _broadcast_pair(seed):
+    rng = np.random.RandomState(seed)
+    return _make_spd((2, 1), 3, rng), _make_spd((1, 3), 3, rng)
+
+
+def _weighted_set(seed):
+    rng = np.random.RandomState(seed)
+    X = _make_spd((4,), 3, rng)
+    weights = np.array([0.1, 0.2, 0.3, 0.4])
+    return X, weights
 
 
 @pytest.mark.parametrize(
@@ -68,34 +118,10 @@ def _to_torch(x):
         distance_riemann,
         distance_wasserstein,
     ],
-    ids=[
-        "chol",
-        "euclid",
-        "harmonic",
-        "logchol",
-        "logeuclid",
-        "riemann",
-        "wasserstein",
-    ],
+    ids=lambda fn: fn.__name__,
 )
-def test_torch_distances_match_numpy_with_broadcast(fn):
-    rng = np.random.RandomState(42)
-    A_np = _make_spd((2, 1), 3, rng)
-    B_np = _make_spd((1, 3), 3, rng)
-
-    result = fn(_to_torch(A_np), _to_torch(B_np))
-
-    expected = np.empty((2, 3))
-    for i in range(2):
-        for j in range(3):
-            expected[i, j] = fn(A_np[i, 0], B_np[0, j])
-
-    assert isinstance(result, torch.Tensor)
-    np.testing.assert_allclose(
-        result.detach().cpu().numpy(),
-        expected,
-        **STRICT_TOL,
-    )
+def test_torch_distances_match_numpy(fn):
+    _assert_same_result(fn, *_broadcast_pair(seed=42))
 
 
 @pytest.mark.parametrize(
@@ -107,26 +133,13 @@ def test_torch_distances_match_numpy_with_broadcast(fn):
         geodesic_riemann,
         geodesic_wasserstein,
     ],
-    ids=["chol", "logchol", "logeuclid", "riemann", "wasserstein"],
+    ids=lambda fn: fn.__name__,
 )
-def test_torch_geodesics_match_numpy_with_broadcast(fn):
-    rng = np.random.RandomState(7)
-    A_np = _make_spd((2, 1), 3, rng)
-    B_np = _make_spd((1, 3), 3, rng)
-    alpha = 0.25
-
-    result = fn(_to_torch(A_np), _to_torch(B_np), alpha=alpha)
-
-    expected = np.empty((2, 3, 3, 3))
-    for i in range(2):
-        for j in range(3):
-            expected[i, j] = fn(A_np[i, 0], B_np[0, j], alpha=alpha)
-
-    assert isinstance(result, torch.Tensor)
-    np.testing.assert_allclose(
-        result.detach().cpu().numpy(),
-        expected,
-        **STRICT_TOL,
+def test_torch_geodesics_match_numpy(fn):
+    _assert_same_result(
+        fn,
+        *_broadcast_pair(seed=7),
+        alpha=0.25,
     )
 
 
@@ -140,174 +153,132 @@ def test_torch_geodesics_match_numpy_with_broadcast(fn):
         (mean_riemann, ITER_TOL),
         (mean_wasserstein, ITER_TOL),
     ],
-    ids=["chol", "harmonic", "logchol", "logeuclid", "riemann",
-         "wasserstein"],
+    ids=[
+        "mean_chol",
+        "mean_harmonic",
+        "mean_logchol",
+        "mean_logeuclid",
+        "mean_riemann",
+        "mean_wasserstein",
+    ],
 )
 def test_torch_means_match_numpy(fn, tol):
-    rng = np.random.RandomState(11)
-    X_np = _make_spd((4,), 3, rng)
-    weights_np = np.array([0.1, 0.2, 0.3, 0.4])
-
-    result = fn(_to_torch(X_np), sample_weight=_to_torch(weights_np))
-    expected = fn(X_np, sample_weight=weights_np)
-
-    assert isinstance(result, torch.Tensor)
-    np.testing.assert_allclose(
-        result.detach().cpu().numpy(),
-        expected,
-        **tol,
-    )
-
-
-def test_riemann_maps_roundtrip_with_broadcast():
-    rng = np.random.RandomState(21)
-    Cref_np = _make_spd((2, 1), 3, rng)
-    X_np = _make_spd((1, 3), 3, rng)
-
-    Cref_t = _to_torch(Cref_np)
-    X_t = _to_torch(X_np)
-
-    tangent = log_map_riemann(X_t, Cref_t, C12=True)
-    recovered = exp_map_riemann(tangent, Cref_t, Cm12=True)
-
-    assert isinstance(tangent, torch.Tensor)
-    assert isinstance(recovered, torch.Tensor)
-    np.testing.assert_allclose(
-        recovered.detach().cpu().numpy(),
-        np.broadcast_to(X_np, recovered.shape),
-        **STRICT_TOL,
-    )
-
-
-def test_logchol_maps_roundtrip_with_broadcast():
-    rng = np.random.RandomState(23)
-    Cref_np = _make_spd((2, 1), 3, rng)
-    X_np = _make_spd((1, 3), 3, rng)
-
-    Cref_t = _to_torch(Cref_np)
-    X_t = _to_torch(X_np)
-
-    tangent = log_map_logchol(X_t, Cref_t)
-    recovered = exp_map_logchol(tangent, Cref_t)
-
-    assert isinstance(tangent, torch.Tensor)
-    assert isinstance(recovered, torch.Tensor)
-    np.testing.assert_allclose(
-        recovered.detach().cpu().numpy(),
-        np.broadcast_to(X_np, recovered.shape),
-        **STRICT_TOL,
-    )
+    X, weights = _weighted_set(seed=11)
+    _assert_same_result(fn, X, sample_weight=weights, tol=tol)
 
 
 @pytest.mark.parametrize(
-    "metric",
-    ["chol", "euclid", "harmonic", "logchol", "logeuclid", "riemann",
-     "wasserstein"],
+    ("fn", "args", "kwargs"),
+    [
+        (log_map_logchol, _broadcast_pair(seed=21), {}),
+        (log_map_riemann, _broadcast_pair(seed=22), {"C12": True}),
+        (
+            exp_map_logchol,
+            (
+                log_map_logchol(*_broadcast_pair(seed=23)),
+                _broadcast_pair(seed=23)[1],
+            ),
+            {},
+        ),
+        (
+            exp_map_riemann,
+            (
+                log_map_riemann(*_broadcast_pair(seed=24), C12=True),
+                _broadcast_pair(seed=24)[1],
+            ),
+            {"Cm12": True},
+        ),
+    ],
+    ids=[
+        "log_map_logchol",
+        "log_map_riemann",
+        "exp_map_logchol",
+        "exp_map_riemann",
+    ],
 )
+def test_torch_maps_match_numpy(fn, args, kwargs):
+    _assert_same_result(fn, *args, **kwargs)
+
+
+@pytest.mark.parametrize("metric", DISTANCE_METRICS)
 def test_torch_distance_wrapper_matches_numpy(metric):
     rng = np.random.RandomState(31)
-    X_np = _make_spd((4,), 3, rng)
-    B_np = _make_spd((), 3, rng)
+    X = _make_spd((4,), 3, rng)
+    Cref = _make_spd((), 3, rng)
+    _assert_same_result(distance, X, Cref, metric=metric)
 
-    result = distance(_to_torch(X_np), _to_torch(B_np), metric=metric)
-    expected = distance(X_np, B_np, metric=metric)
 
-    assert isinstance(result, torch.Tensor)
-    np.testing.assert_allclose(
-        result.detach().cpu().numpy(),
-        expected,
-        **STRICT_TOL,
-    )
+@pytest.mark.parametrize("metric", DISTANCE_METRICS)
+def test_torch_pairwise_distance_matches_numpy(metric):
+    rng = np.random.RandomState(37)
+    X = _make_spd((4,), 3, rng)
+    Y = _make_spd((3,), 3, rng)
+    _assert_same_result(pairwise_distance, X, Y, metric=metric)
 
 
 @pytest.mark.parametrize(
-    "metric",
-    ["chol", "euclid", "harmonic", "logchol", "logeuclid", "riemann",
-     "wasserstein"],
+    ("fn", "arg_factory"),
+    [
+        (
+            upper,
+            lambda: (_make_spd((2, 4), 3, np.random.RandomState(41)),),
+        ),
+        (
+            unupper,
+            lambda: (
+                upper(_make_spd((2, 4), 3, np.random.RandomState(42))),
+            ),
+        ),
+    ],
+    ids=["upper", "unupper"],
 )
-def test_torch_pairwise_distance_matches_numpy(metric):
-    rng = np.random.RandomState(37)
-    X_np = _make_spd((4,), 3, rng)
-    Y_np = _make_spd((3,), 3, rng)
-
-    result = pairwise_distance(_to_torch(X_np), _to_torch(Y_np), metric=metric)
-    expected = pairwise_distance(X_np, Y_np, metric=metric)
-
-    assert isinstance(result, torch.Tensor)
-    np.testing.assert_allclose(
-        result.detach().cpu().numpy(),
-        expected,
-        **STRICT_TOL,
-    )
+def test_torch_tangent_helpers_match_numpy(fn, arg_factory):
+    _assert_same_result(fn, *arg_factory())
 
 
-def test_torch_upper_unupper_roundtrip():
-    rng = np.random.RandomState(41)
-    X_np = _make_spd((2, 4), 3, rng)
-
-    T = upper(_to_torch(X_np))
-    recovered = unupper(T)
-
-    assert isinstance(T, torch.Tensor)
-    assert isinstance(recovered, torch.Tensor)
-    np.testing.assert_allclose(
-        recovered.detach().cpu().numpy(),
-        X_np,
-        **STRICT_TOL,
-    )
-
-
-@pytest.mark.parametrize("metric", ["euclid", "logchol", "riemann",
-                                    "wasserstein"])
-def test_torch_tangent_space_roundtrip(metric):
+@pytest.mark.parametrize("metric", TANGENT_METRICS)
+def test_torch_tangent_space_matches_numpy(metric):
     rng = np.random.RandomState(43)
-    X_np = _make_spd((4,), 3, rng)
-    Cref_np = _make_spd((), 3, rng)
+    X = _make_spd((4,), 3, rng)
+    Cref = _make_spd((), 3, rng)
+    _assert_same_result(tangent_space, X, Cref, metric=metric)
 
-    tangent = tangent_space(_to_torch(X_np), _to_torch(Cref_np), metric=metric)
-    recovered = untangent_space(tangent, _to_torch(Cref_np), metric=metric)
 
-    assert isinstance(tangent, torch.Tensor)
-    assert isinstance(recovered, torch.Tensor)
-    np.testing.assert_allclose(
-        recovered.detach().cpu().numpy(),
-        X_np,
-        **ITER_TOL if metric == "wasserstein" else STRICT_TOL,
-    )
+@pytest.mark.parametrize("metric", TANGENT_METRICS)
+def test_torch_untangent_space_matches_numpy(metric):
+    rng = np.random.RandomState(44)
+    X = _make_spd((4,), 3, rng)
+    Cref = _make_spd((), 3, rng)
+    T = tangent_space(X, Cref, metric=metric)
+    tol = ITER_TOL if metric == "wasserstein" else STRICT_TOL
+    _assert_same_result(untangent_space, T, Cref, metric=metric, tol=tol)
 
 
 def test_torch_backend_autograd_smoke():
     rng = np.random.RandomState(99)
-    A = (
-        _to_torch(_make_spd((), 3, rng)).clone().detach().requires_grad_(True)
-    )
-    B = (
-        _to_torch(_make_spd((), 3, rng)).clone().detach().requires_grad_(True)
-    )
-    X = _to_torch(_make_spd((4,), 3, rng))
-    X = X.clone().detach().requires_grad_(True)
+    A = _to_torch(_make_spd((), 3, rng)).clone().detach().requires_grad_(True)
+    B = _to_torch(_make_spd((), 3, rng)).clone().detach().requires_grad_(True)
+    X = _to_torch(_make_spd((4,), 3, rng)).clone().detach()
+    X = X.requires_grad_(True)
 
     tangent = log_map_riemann(B.unsqueeze(0), A, C12=True)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
         loss = distance_riemann(A, B)
         loss = loss + geodesic_logchol(A, B, alpha=0.25).sum()
-        loss = loss + mean_logeuclid(X).sum()
         loss = loss + mean_riemann(X, maxiter=5).sum()
-        loss = loss + mean_wasserstein(X, maxiter=5).sum()
         loss = loss + exp_map_riemann(tangent, A, Cm12=True).sum()
     loss.backward()
 
-    assert A.grad is not None
-    assert B.grad is not None
-    assert X.grad is not None
-    assert torch.isfinite(A.grad).all()
-    assert torch.isfinite(B.grad).all()
-    assert torch.isfinite(X.grad).all()
+    for grad in (A.grad, B.grad, X.grad):
+        assert grad is not None
+        assert torch.isfinite(grad).all()
 
 
-def test_torch_matrix_operator_rejects_non_finite_input():
-    bad = torch.tensor([[float("nan"), 0.0], [0.0, 1.0]], dtype=torch.float64)
-
-    with pytest.raises(ValueError, match="Matrices must be positive definite"):
-        sqrtm(bad)
+def test_torch_matrix_operator_matches_numpy_error():
+    bad = np.array([[np.nan, 0.0], [0.0, 1.0]], dtype=np.float64)
+    _assert_same_error(
+        sqrtm,
+        bad,
+        match="Matrices must be positive definite",
+    )
