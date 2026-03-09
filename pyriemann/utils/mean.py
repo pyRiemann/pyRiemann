@@ -6,11 +6,16 @@ import numpy as np
 
 from . import deprecated
 from .ajd import ajd_pham
-from .base import sqrtm, invsqrtm, logm, expm, powm
+from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann, geodesic_thompson
 from .tangentspace import log_map_wasserstein, exp_map_wasserstein
 from .utils import check_weights, check_function, check_init
+
+
+def _batch_norm(X):
+    """Frobenius norm, max over batch elements for convergence checks."""
+    return np.max(np.linalg.norm(X, axis=(-2, -1)))
 
 
 def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
@@ -53,7 +58,21 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
         <https://arxiv.org/abs/1505.07343>`_
         M. Congedo, B. Afsari, A. Barachant, M. Moakher. PLOS ONE, 2015
     """
-    n_matrices, n, _ = X.shape
+    n_matrices = X.shape[0]
+    n = X.shape[-1]
+    batch_shape = X.shape[1:-2]
+
+    if len(batch_shape) > 0:
+        n_batch = int(np.prod(batch_shape))
+        X_flat = X.reshape(n_matrices, n_batch, n, n)
+        results = np.empty((n_batch, n, n), dtype=X.dtype)
+        for b in range(n_batch):
+            results[b] = mean_ale(
+                X_flat[:, b], tol=tol, maxiter=maxiter,
+                sample_weight=sample_weight, init=init,
+            )
+        return results.reshape(*batch_shape, n, n)
+
     sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
         B = ajd_pham(X)[0]
@@ -121,7 +140,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
         T. Ando, C.-K. Li, and R. Mathias. Linear Algebra and its Applications.
         Volume 385, July 2004, Pages 305-334.
     """
-    n_matrices, _, _ = X.shape
+    n_matrices = X.shape[0]
     sample_weight = check_weights(sample_weight, n_matrices)
 
     if n_matrices == 1:
@@ -139,9 +158,8 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
             s = np.mod(np.arange(h, h + n_matrices - 1) + 1, n_matrices)
             M_iter[h] = mean_alm(M[s], sample_weight=sample_weight[s])
 
-        norm_iter = np.linalg.norm(M_iter[0] - M[0], ord=2)
-        norm_c = np.linalg.norm(M[0], ord=2)
-        if (norm_iter / norm_c) < tol:
+        crit = _batch_norm(M_iter[0] - M[0]) / _batch_norm(M[0])
+        if crit < tol:
             break
         M = M_iter.copy()
     else:
@@ -189,7 +207,7 @@ def mean_chol(X, sample_weight=None, **kwargs):
         Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
     """
     L = mean_euclid(np.linalg.cholesky(X), sample_weight=sample_weight)
-    return L @ L.conj().T
+    return L @ ctranspose(L)
 
 
 def mean_euclid(X, sample_weight=None, **kwargs):
@@ -321,27 +339,28 @@ def mean_logchol(X, sample_weight=None, **kwargs):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    n_matrices, _, n_channels = X.shape
+    n_matrices = X.shape[0]
+    n_channels = X.shape[-1]
     sample_weight = check_weights(sample_weight, n_matrices)
 
     X_chol = np.linalg.cholesky(X)
-    L = np.zeros(X.shape[-2:], dtype=X.dtype)
+    L = np.zeros(X.shape[1:], dtype=X.dtype)
 
     tri0, tri1 = np.tril_indices(n_channels, -1)
-    L[tri0, tri1] = np.average(
-        X_chol[:, tri0, tri1],
+    L[..., tri0, tri1] = np.average(
+        X_chol[..., tri0, tri1],
         axis=0,
         weights=sample_weight,
     )
 
     diag0, diag1 = np.diag_indices(n_channels)
-    L[diag0, diag1] = np.exp(np.average(
-        np.log(X_chol[:, diag0, diag1]),
+    L[..., diag0, diag1] = np.exp(np.average(
+        np.log(X_chol[..., diag0, diag1]),
         axis=0,
         weights=sample_weight,
     ))
 
-    return L @ L.conj().T
+    return L @ ctranspose(L)
 
 
 def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
@@ -376,7 +395,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     --------
     gmean
     """
-    n_matrices, n, _ = X.shape
+    n_matrices, n = X.shape[0], X.shape[-1]
     sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
         M = mean_euclid(X, sample_weight=sample_weight)
@@ -385,10 +404,10 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
 
     for _ in range(maxiter):
         invX = np.linalg.inv(0.5 * X + 0.5 * M)
-        J = np.einsum("a,abc->bc", sample_weight, invX)
+        J = np.average(invX, axis=0, weights=sample_weight)
         Mnew = np.linalg.inv(J)
 
-        crit = np.linalg.norm(Mnew - M, ord="fro")
+        crit = _batch_norm(Mnew - M)
         M = Mnew
         if crit <= tol:
             break
@@ -506,11 +525,13 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     if p == -1:
         return mean_harmonic(X, sample_weight=sample_weight)
 
-    n_matrices, n, _ = X.shape
+    n_matrices, n = X.shape[0], X.shape[-1]
     sample_weight = check_weights(sample_weight, n_matrices)
     phi = 0.375 / np.abs(p)
     if init is None:
-        G = powm(np.einsum("a,abc->bc", sample_weight, powm(X, p)), 1/p)
+        G = powm(
+            np.average(powm(X, p), axis=0, weights=sample_weight), 1/p
+        )
     else:
         G = check_init(init, n)
     if p > 0:
@@ -520,20 +541,20 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
 
     eye_n, sqrt_n = np.eye(n), np.sqrt(n)
     for _ in range(maxiter):
-        H = np.einsum(
-            "a,abc->bc",
-            sample_weight,
-            powm(K @ powm(X, np.sign(p)) @ K.conj().T, np.abs(p))
+        H = np.average(
+            powm(K @ powm(X, np.sign(p)) @ ctranspose(K), np.abs(p)),
+            axis=0,
+            weights=sample_weight,
         )
         K = powm(H, -phi) @ K
 
-        crit = np.linalg.norm(H - eye_n) / sqrt_n
+        crit = _batch_norm(H - eye_n) / sqrt_n
         if crit <= zeta:
             break
     else:
         warnings.warn("Convergence not reached")
 
-    M = K.conj().T @ K
+    M = ctranspose(K) @ K
     if p > 0:
         M = np.linalg.inv(M)
 
@@ -634,7 +655,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         <https://arxiv.org/abs/1505.07343>`_
         M. Congedo, B. Afsari, A. Barachant, M. Moakher. PLOS ONE, 2015
     """
-    n_matrices, n, _ = X.shape
+    n_matrices, n = X.shape[0], X.shape[-1]
     sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
         M = mean_euclid(X, sample_weight=sample_weight)
@@ -645,10 +666,12 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     tau = np.finfo(np.float64).max
     for _ in range(maxiter):
         M12, Mm12 = sqrtm(M), invsqrtm(M)
-        J = np.einsum("a,abc->bc", sample_weight, logm(Mm12 @ X @ Mm12))
+        J = np.average(
+            logm(Mm12 @ X @ Mm12), axis=0, weights=sample_weight
+        )
         M = M12 @ expm(nu * J) @ M12
 
-        crit = np.linalg.norm(J, ord="fro")
+        crit = _batch_norm(J)
         h = nu * crit
         if h < tau:
             nu = 0.95 * nu
@@ -703,7 +726,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
         C. Mostajeran, N. Da Costa, G. Van Goffrier and R. Sepulchre.
         SIAM Journal on Matrix Analysis and Applications, 2024
     """
-    n_matrices, n, _ = X.shape
+    n_matrices, n = X.shape[0], X.shape[-1]
     if init is None:
         M = mean_euclid(X)
     else:
@@ -712,7 +735,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     for i in range(maxiter):
         Mnew = geodesic_thompson(M, X[i % n_matrices], 1 / (i + 2))
 
-        crit = np.linalg.norm(Mnew - M, ord="fro")
+        crit = _batch_norm(Mnew - M)
         M = Mnew
         if crit <= tol:
             break
@@ -761,7 +784,7 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         <https://arxiv.org/abs/2302.14618>`_
         J. Zheng, H. Huang, Y. Yi, Y. Li, S.-C. Lin, ArXiv, 2023
     """
-    n_matrices, n, _ = X.shape
+    n_matrices, n = X.shape[0], X.shape[-1]
     sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
         init = mean_euclid(X, sample_weight=sample_weight)
@@ -771,9 +794,9 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 
     for _ in range(maxiter):
         X_ts = log_map_wasserstein(X, M)
-        J = np.einsum("a,abc->bc", sample_weight, X_ts)
+        J = np.average(X_ts, axis=0, weights=sample_weight)
         M = exp_map_wasserstein(J, M)
-        crit = np.linalg.norm(J)
+        crit = _batch_norm(J)
         if crit <= tol:
             break
     else:
@@ -929,6 +952,21 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
         F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
         Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
+    n_matrices = X.shape[0]
+    n = X.shape[-1]
+    batch_shape = X.shape[1:-2]
+
+    if len(batch_shape) > 0:
+        n_batch = int(np.prod(batch_shape))
+        X_flat = X.reshape(n_matrices, n_batch, n, n)
+        results = np.empty((n_batch, n, n), dtype=X.dtype)
+        for b in range(n_batch):
+            results[b] = maskedmean_riemann(
+                X_flat[:, b], masks, tol=tol, maxiter=maxiter,
+                init=init, sample_weight=sample_weight,
+            )
+        return results.reshape(*batch_shape, n, n)
+
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
     maskedX = _apply_masks(X, masks)
@@ -1006,6 +1044,21 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
         F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
         Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
+    n_matrices = X.shape[0]
+    n = X.shape[-1]
+    batch_shape = X.shape[1:-2]
+
+    if len(batch_shape) > 0:
+        n_batch = int(np.prod(batch_shape))
+        X_flat = X.reshape(n_matrices, n_batch, n, n)
+        results = np.empty((n_batch, n, n), dtype=X.dtype)
+        for b in range(n_batch):
+            results[b] = nanmean_riemann(
+                X_flat[:, b], tol=tol, maxiter=maxiter,
+                init=init, sample_weight=sample_weight,
+            )
+        return results.reshape(*batch_shape, n, n)
+
     n_matrices, n, _ = X.shape
     if init is None:
         init = np.nanmean(X, axis=0) + 1e-6 * np.eye(n)

@@ -271,7 +271,10 @@ def nearest_sym_pos_def(X, reg=1e-6):
         <https://www.sciencedirect.com/science/article/pii/0024379588902236>`_
         N.J. Higham, Linear Algebra and its Applications, vol 103, 1988
     """
-    return np.array([_nearest_sym_pos_def(x, reg) for x in X])
+    original_shape = X.shape
+    X_flat = X.reshape(-1, original_shape[-2], original_shape[-1])
+    result = np.array([_nearest_sym_pos_def(x, reg) for x in X_flat])
+    return result.reshape(original_shape)
 
 
 ###############################################################################
@@ -295,7 +298,7 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
 
     Parameters
     ----------
-    d : ndarray, shape (n,)
+    d : ndarray, shape (..., n)
         Eigenvalues of a symmetric matrix.
     fct : callable
         Function to apply to eigenvalues of d. Has to be defined for all
@@ -310,7 +313,7 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
 
     Returns
     -------
-    FDD : ndarray, shape (n, n)
+    FDD : ndarray, shape (..., n, n)
         First divided difference of the function applied to the eigenvalues.
 
     Notes
@@ -322,13 +325,12 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
     .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
         R. Bhatia, Springer, 1997
     """
-    dif = np.repeat(d[None, :], len(d), axis=0)
+    di = d[..., :, np.newaxis]  # (..., n, 1)
+    dj = d[..., np.newaxis, :]  # (..., 1, n)
 
-    close_ = np.isclose(dif, dif.T, atol=atol, rtol=rtol)
-    dif[close_] = fctder(dif[close_])
-    dif[~close_] = (fct(dif[~close_]) - fct(dif.T[~close_])) / \
-                   (dif[~close_] - dif.T[~close_])
-    return dif
+    close_ = np.isclose(di, dj, atol=atol, rtol=rtol)
+    safe_diff = np.where(close_, np.ones_like(di - dj), di - dj)
+    return np.where(close_, fctder(di), (fct(di) - fct(dj)) / safe_diff)
 
 
 def ddexpm(X, Cref):
@@ -372,7 +374,7 @@ def ddexpm(X, Cref):
 
     d, V = np.linalg.eigh(Cref)
     expfdd = _first_divided_difference(d, np.exp, np.exp)
-    return V @ (expfdd * (V.conj().T @ X @ V)) @ V.conj().T
+    return V @ (expfdd * (ctranspose(V) @ X @ V)) @ ctranspose(V)
 
 
 def ddlogm(X, Cref):
@@ -416,4 +418,4 @@ def ddlogm(X, Cref):
 
     d, V = np.linalg.eigh(Cref)
     logfdd = _first_divided_difference(d, np.log, lambda x: 1 / x)
-    return V @ (logfdd * (V.conj().T @ X @ V)) @ V.conj().T
+    return V @ (logfdd * (ctranspose(V) @ X @ V)) @ ctranspose(V)
