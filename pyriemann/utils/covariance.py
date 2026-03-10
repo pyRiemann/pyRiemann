@@ -6,7 +6,7 @@ from scipy.linalg import block_diag
 from scipy.stats import chi2
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
-from .distance import distance_mahalanobis
+from .base import invsqrtm
 from .test import is_square, is_real_type
 from .utils import check_function
 
@@ -173,20 +173,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         <https://projecteuclid.org/journals/annals-of-statistics/volume-15/issue-1/A-Distribution-Free-M-Estimator-of-Multivariate-Scatter/10.1214/aos/1176350263.full>`_
         D.E. Tyler. The Annals of Statistics, 1987.
     """  # noqa
-    if X.ndim > 2:
-        original_shape = X.shape
-        n_ch = original_shape[-2]
-        X_flat = X.reshape(-1, original_shape[-2], original_shape[-1])
-        result = np.array([
-            covariance_mest(x, m_estimator, init=init, tol=tol,
-                            n_iter_max=n_iter_max,
-                            assume_centered=assume_centered,
-                            q=q, nu=nu, norm=norm)
-            for x in X_flat
-        ])
-        return result.reshape(*original_shape[:-2], n_ch, n_ch)
-
-    n_channels, n_times = X.shape
+    n_channels, n_times = X.shape[-2], X.shape[-1]
 
     if m_estimator == "hub":
         if not 0 < q <= 1:
@@ -209,22 +196,32 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         raise ValueError(f"Unsupported m_estimator: {m_estimator}")
 
     if not assume_centered:
-        X -= np.mean(X, axis=1, keepdims=True)
+        X = X - np.mean(X, axis=-1, keepdims=True)
     if init is None:
-        cov = X @ X.conj().T / n_times
+        cov = X @ np.swapaxes(X.conj(), -2, -1) / n_times
     else:
         cov = init
 
     for _ in range(n_iter_max):
+        # Inline Mahalanobis distance (batch-compatible)
+        cov_invsqrt = invsqrtm(cov)
+        Xw_mah = cov_invsqrt @ X  # (..., n_ch, n_times)
+        dist2 = np.sum(np.abs(Xw_mah)**2, axis=-2).real  # (..., n_times)
 
-        dist2 = distance_mahalanobis(X, cov, squared=True)
-        Xw = np.sqrt(weight_func(dist2)) * X
-        cov_new = Xw @ Xw.conj().T / n_times
+        Xw = np.sqrt(weight_func(dist2))[..., np.newaxis, :] * X
+        cov_new = Xw @ np.swapaxes(Xw.conj(), -2, -1) / n_times
 
-        norm_delta = np.linalg.norm(cov_new - cov, ord="fro")
-        norm_cov = np.linalg.norm(cov, ord="fro")
-        cov = cov_new
-        if (norm_delta / norm_cov) <= tol:
+        norm_delta = np.linalg.norm(
+            cov_new - cov, ord="fro", axis=(-2, -1)
+        )
+        norm_cov = np.linalg.norm(cov, ord="fro", axis=(-2, -1))
+
+        # Freeze converged elements to match per-element behavior
+        converged = norm_delta / np.where(norm_cov == 0, 1.0, norm_cov) <= tol
+        cov = np.where(
+            converged[..., np.newaxis, np.newaxis], cov, cov_new
+        )
+        if np.all(converged):
             break
     else:
         warnings.warn("Convergence not reached")
@@ -368,6 +365,9 @@ cov_est_functions = {
 }
 
 
+_BATCH_ESTIMATORS = {covariance_scm, covariance_sch, _hub, _stu, _tyl}
+
+
 def covariances(X, estimator="cov", **kwds):
     """Estimation of covariance matrices.
 
@@ -424,6 +424,11 @@ def covariances(X, estimator="cov", **kwds):
         Conference on Acoustics, Speech and Signal Processing, Volume 2, 2007.
     """  # noqa
     est = check_function(estimator, cov_est_functions)
+
+    if est in _BATCH_ESTIMATORS:
+        return est(X, **kwds)
+
+    # Fallback for non-batch estimators
     original_shape = X.shape
     n_channels, n_times = original_shape[-2], original_shape[-1]
     X_flat = X.reshape(-1, n_channels, n_times)
@@ -463,6 +468,15 @@ def covariances_EP(X, P, estimator="cov", **kwds):
         raise ValueError(
             f"X and P do not have the same n_times: {n_times} and {n_times_p}")
     n_out = n_channels + n_channels_proto
+
+    if est in _BATCH_ESTIMATORS:
+        P_broadcast = np.broadcast_to(
+            P, (*original_shape[:-2], n_channels_proto, n_times)
+        )
+        XP = np.concatenate((P_broadcast, X), axis=-2)
+        return est(XP, **kwds)
+
+    # Fallback for non-batch estimators
     X_flat = X.reshape(-1, n_channels, n_times)
     n_flat = X_flat.shape[0]
     covmats = np.empty((n_flat, n_out, n_out), dtype=X.dtype)
@@ -514,9 +528,27 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
         - np.outer(np.ones(n_times), np.ones(n_times)) / n_times
     X = Hchannels @ X @ Htimes  # Eq(8), double centering
 
+    n_out = n_channels + n_times
+
+    if est in _BATCH_ESTIMATORS:
+        batch_shape = original_shape[:-2]
+        I_ch = np.broadcast_to(
+            alpha * np.eye(n_channels),
+            (*batch_shape, n_channels, n_channels),
+        )
+        I_t = np.broadcast_to(
+            alpha * np.eye(n_times),
+            (*batch_shape, n_times, n_times),
+        )
+        Xt = np.swapaxes(X, -2, -1)
+        top = np.concatenate([X, I_ch], axis=-1)
+        bot = np.concatenate([I_t, Xt], axis=-1)
+        Y = np.concatenate([top, bot], axis=-2)  # Eq(9)
+        return est(Y, **kwds) / (2 * alpha)  # Eq(10)
+
+    # Fallback for non-batch estimators
     X_flat = X.reshape(-1, n_channels, n_times)
     n_flat = X_flat.shape[0]
-    n_out = n_channels + n_times
     covmats = np.empty((n_flat, n_out, n_out))
     for i in range(n_flat):
         Y = np.concatenate((
@@ -563,6 +595,17 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
         raise ValueError("Sum of individual block sizes "
                          "must match number of channels of X.")
 
+    if est in _BATCH_ESTIMATORS:
+        covmats = np.zeros((*original_shape[:-2], n_channels, n_channels))
+        idx_start = 0
+        for j in blocks:
+            block_cov = est(X[..., idx_start:idx_start+j, :], **kwds)
+            covmats[..., idx_start:idx_start+j, idx_start:idx_start+j] = \
+                block_cov
+            idx_start += j
+        return covmats
+
+    # Fallback for non-batch estimators
     X_flat = X.reshape(-1, n_channels, n_times)
     n_flat = X_flat.shape[0]
     covmats = np.empty((n_flat, n_channels, n_channels))
@@ -639,35 +682,19 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             f"Value overlap must be included in (0, 1) (Got {overlap})"
         )
 
-    if X.ndim > 2:
-        original_shape = X.shape
-        X_flat = X.reshape(-1, original_shape[-2], original_shape[-1])
-        if X_flat.shape[0] == 0:
-            # Compute freqs from a dummy call to stay consistent
-            n_freqs = int(window / 2) + 1
-            S = np.empty((*original_shape[:-1], original_shape[-2], n_freqs))
-            freqs = np.arange(n_freqs, dtype=float)
-            return S, freqs
-        results = [
-            cross_spectrum(x, window=window, overlap=overlap,
-                           fmin=fmin, fmax=fmax, fs=fs)
-            for x in X_flat
-        ]
-        S = np.array([r[0] for r in results])
-        S = S.reshape(*original_shape[:-2], *S.shape[1:])
-        return S, results[0][1]
-
-    n_channels, n_times = X.shape
+    n_channels, n_times = X.shape[-2], X.shape[-1]
     n_freqs = int(window / 2) + 1  # X real signal => compute half-spectrum
     step = int((1.0 - overlap) * window)
     n_windows = int((n_times - window) / step + 1)
     win = np.hanning(window)
 
-    # FFT calculation on all windows
-    shape = (n_channels, n_windows, window)
-    strides = X.strides[:-1]+(step*X.strides[-1], X.strides[-1])
-    Xs = np.lib.stride_tricks.as_strided(X, shape=shape, strides=strides)
-    fdata = np.fft.rfft(Xs * win, n=window).transpose(1, 0, 2)
+    # Sliding window view handles any batch dims:
+    # (..., n_channels, n_times) -> (..., n_channels, n_windows, window)
+    Xs = np.lib.stride_tricks.sliding_window_view(
+        X, window, axis=-1
+    )[..., ::step, :]
+    # FFT: (..., n_channels, n_windows, n_freqs)
+    fdata = np.fft.rfft(Xs * win, n=window)
 
     # adjust frequency range to specified range
     if fs is not None:
@@ -681,7 +708,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             raise ValueError("Parameter fmax must be inferior to fs/2")
         f = np.arange(0, n_freqs, dtype=int) * float(fs / window)
         fix = (f >= fmin) & (f <= fmax)
-        fdata = fdata[:, :, fix]
+        fdata = fdata[..., fix]
         freqs = f[fix]
     else:
         if fmin is not None:
@@ -690,10 +717,9 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             warnings.warn("Parameter fmax not used because fs is None")
         freqs = None
 
-    n_freqs = fdata.shape[2]
-    S = np.zeros((n_channels, n_channels, n_freqs), dtype=complex)
-    for i in range(n_freqs):
-        S[:, :, i] = fdata[:, :, i].conj().T @ fdata[:, :, i]
+    # Cross-spectral matrix via einsum over windows:
+    # (..., n_channels, n_channels, n_freqs)
+    S = np.einsum('...cwf,...dwf->...cdf', fdata.conj(), fdata)
     S /= n_windows * np.linalg.norm(win)**2
 
     # normalization to respect Parseval's theorem with the half-spectrum
@@ -803,23 +829,6 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         <https://hal.archives-ouvertes.fr/hal-01868538v2>`_
         M. Congedo. Technical Report, 2018.
     """
-    if X.ndim > 2:
-        original_shape = X.shape
-        X_flat = X.reshape(-1, original_shape[-2], original_shape[-1])
-        if X_flat.shape[0] == 0:
-            n_freqs = int(window / 2) + 1
-            C = np.empty((*original_shape[:-1], original_shape[-2], n_freqs))
-            freqs = np.arange(n_freqs, dtype=float)
-            return C, freqs
-        results = [
-            coherence(x, window=window, overlap=overlap,
-                      fmin=fmin, fmax=fmax, fs=fs, coh=coh)
-            for x in X_flat
-        ]
-        C = np.array([r[0] for r in results])
-        C = C.reshape(*original_shape[:-2], *C.shape[1:])
-        return C, results[0][1]
-
     S, freqs = cross_spectrum(
         X,
         window=window,
@@ -828,8 +837,10 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         fmax=fmax,
         fs=fs,
     )
+    # S: (..., n_channels, n_channels, n_freqs)
     S2 = np.abs(S)**2  # squared cross-spectral modulus
 
+    n_channels = S.shape[-3]
     C = np.zeros_like(S2)
     f_inds = np.arange(0, C.shape[-1], dtype=int)
 
@@ -846,22 +857,26 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
                               "coherence: filled with zeros")
             f_inds = f_inds_
 
-    for f in f_inds:
-        psd = np.sqrt(np.diag(S2[..., f]))
-        psd_prod = np.outer(psd, psd)
-        if coh == "ordinary":
-            C[..., f] = S2[..., f] / psd_prod
-        elif coh == "instantaneous":
-            C[..., f] = (S[..., f].real)**2 / psd_prod
-        elif coh == "lagged":
-            np.fill_diagonal(S[..., f].real, 0.)  # prevent div by zero on diag
-            denom = psd_prod - (S[..., f].real)**2
-            denom[abs(denom) < 1e-10] = 1e-10
-            C[..., f] = (S[..., f].imag)**2 / denom
-        elif coh == "imaginary":
-            C[..., f] = (S[..., f].imag)**2 / psd_prod
-        else:
-            raise ValueError(f"{coh} is not a supported coherence")
+    # Vectorized PSD: diagonal of S2 across channels
+    diag_idx = np.arange(n_channels)
+    psd = np.sqrt(S2[..., diag_idx, diag_idx, :])  # (..., n_ch, n_freqs)
+    psd_prod = psd[..., :, np.newaxis, :] * psd[..., np.newaxis, :, :]
+    # psd_prod: (..., n_ch, n_ch, n_freqs)
+
+    if coh == "ordinary":
+        C[..., f_inds] = S2[..., f_inds] / psd_prod[..., f_inds]
+    elif coh == "instantaneous":
+        C[..., f_inds] = (S[..., f_inds].real)**2 / psd_prod[..., f_inds]
+    elif coh == "lagged":
+        S_real = S.real.copy()
+        S_real[..., diag_idx, diag_idx, :] = 0.0  # zero diagonal
+        denom = psd_prod[..., f_inds] - S_real[..., f_inds]**2
+        denom = np.where(np.abs(denom) < 1e-10, 1e-10, denom)
+        C[..., f_inds] = (S[..., f_inds].imag)**2 / denom
+    elif coh == "imaginary":
+        C[..., f_inds] = (S[..., f_inds].imag)**2 / psd_prod[..., f_inds]
+    else:
+        raise ValueError(f"{coh} is not a supported coherence")
 
     return C, freqs
 

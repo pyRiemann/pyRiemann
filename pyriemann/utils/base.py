@@ -2,8 +2,6 @@
 
 import numpy as np
 
-from .test import is_pos_def
-
 
 def ctranspose(X):
     """Conjugate transpose operator.
@@ -197,49 +195,6 @@ def sqrtm(C):
 ###############################################################################
 
 
-def _nearest_sym_pos_def(S, reg=1e-6):
-    """Find the nearest SPD matrix.
-
-    Parameters
-    ----------
-    S : ndarray, shape (n, n)
-        Square matrix.
-    reg : float, default=1e-6
-        Regularization parameter.
-
-    Returns
-    -------
-    P : ndarray, shape (n, n)
-        Nearest SPD matrix.
-    """
-    def regularize(X, reg):
-        ei, ev = np.linalg.eigh(X)
-        if np.min(ei) / np.max(ei) < reg:
-            X = ev @ np.diag(ei + reg) @ ev.T
-        return X
-
-    A = (S + S.T) / 2
-    _, s, V = np.linalg.svd(A)
-    H = V.T @ (s[:, np.newaxis] * V)
-    B = (A + H) / 2
-    P = (B + B.T) / 2
-
-    if is_pos_def(P):
-        # Regularize if already PD
-        return regularize(P, reg)
-
-    spacing = np.spacing(np.linalg.norm(A))
-    I = np.eye(S.shape[0])  # noqa
-    k = 1
-    while not is_pos_def(P, fast_mode=False):
-        mineig = np.min(np.real(np.linalg.eigvals(P)))
-        P += I * (-mineig * k ** 2 + spacing)
-        k += 1
-
-    # Regularize
-    return regularize(P, reg)
-
-
 def nearest_sym_pos_def(X, reg=1e-6):
     """Find the nearest SPD matrices.
 
@@ -248,14 +203,14 @@ def nearest_sym_pos_def(X, reg=1e-6):
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n, n)
+    X : ndarray, shape (..., n, n)
         Square matrices.
     reg : float, default=1e-6
         Regularization parameter.
 
     Returns
     -------
-    P : ndarray, shape (n_matrices, n, n)
+    P : ndarray, shape (..., n, n)
         Nearest SPD matrices.
 
     Notes
@@ -271,10 +226,43 @@ def nearest_sym_pos_def(X, reg=1e-6):
         <https://www.sciencedirect.com/science/article/pii/0024379588902236>`_
         N.J. Higham, Linear Algebra and its Applications, vol 103, 1988
     """
-    original_shape = X.shape
-    X_flat = X.reshape(-1, original_shape[-2], original_shape[-1])
-    result = np.array([_nearest_sym_pos_def(x, reg) for x in X_flat])
-    return result.reshape(original_shape)
+    n = X.shape[-1]
+
+    # Symmetrize
+    A = (X + np.swapaxes(X, -2, -1)) / 2
+
+    # SVD: np.linalg.svd handles batch dims natively
+    _, s, Vh = np.linalg.svd(A)
+    H = np.swapaxes(Vh, -2, -1) @ (s[..., :, np.newaxis] * Vh)
+    B = (A + H) / 2
+    P = (B + np.swapaxes(B, -2, -1)) / 2
+
+    # PD fix: iteratively shift non-PD matrices
+    eigvals = np.linalg.eigvalsh(P)
+    needs_fix = np.any(eigvals <= 0, axis=-1)  # (...,)
+
+    if np.any(needs_fix):
+        spacing = np.spacing(np.linalg.norm(A, axis=(-2, -1)))
+        I = np.eye(n)  # noqa
+        k = 1
+        while np.any(needs_fix) and k < 100:
+            mineig = np.min(np.linalg.eigvalsh(P), axis=-1)
+            shift = np.where(needs_fix, -mineig * k**2 + spacing, 0.0)
+            P = P + shift[..., np.newaxis, np.newaxis] * I
+            eigvals = np.linalg.eigvalsh(P)
+            needs_fix = np.any(eigvals <= 0, axis=-1)
+            k += 1
+
+    # Regularize
+    ei, ev = np.linalg.eigh(P)
+    ratio = np.min(ei, axis=-1) / np.max(ei, axis=-1)
+    needs_reg = ratio < reg  # (...,)
+    if np.any(needs_reg):
+        ei_reg = ei + reg
+        P_reg = ev @ (ei_reg[..., :, np.newaxis] * np.swapaxes(ev, -2, -1))
+        P = np.where(needs_reg[..., np.newaxis, np.newaxis], P_reg, P)
+
+    return P
 
 
 ###############################################################################
