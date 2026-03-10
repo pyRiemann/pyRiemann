@@ -102,7 +102,9 @@ def test_base_unary(func, batch_shape):
 
 
 @pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
-@pytest.mark.parametrize("func", [ddexpm, ddlogm, log_map_riemann, log_map_logchol])
+@pytest.mark.parametrize(
+    "func", [ddexpm, ddlogm, log_map_riemann, log_map_logchol],
+)
 def test_unary_with_ref(func, batch_shape):
     """Functions taking (X, Cref) where Cref is a 2D reference matrix."""
     X = _make_batch_spd(batch_shape)
@@ -271,7 +273,7 @@ def _make_mean_input(batch_shape, seed=42):
     mean_logchol,
     pytest.param(mean_ale, id="mean_ale"),
     pytest.param(mean_alm, id="mean_alm"),
-    # tol=1e-12 tightens convergence so batched and single-element results match
+    # tol=1e-12 tightens convergence so batched and single match
     pytest.param(partial(mean_logdet, tol=1e-12), id="mean_logdet"),
     mean_thompson,
     pytest.param(partial(mean_power, p=0.5), id="mean_power"),
