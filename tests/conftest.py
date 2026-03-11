@@ -37,29 +37,9 @@ def to_numpy(x):
     return x
 
 
-class _Approx:
-    """Like pytest.approx but transparently handles torch tensors."""
-
-    # Tell numpy not to handle ufuncs (like ==) with this object,
-    # so Python falls through to _Approx.__eq__ instead.
-    __array_ufunc__ = None
-
-    def __init__(self, expected, *args, **kwargs):
-        self._approx = pytest.approx(to_numpy(expected), *args, **kwargs)
-
-    def __eq__(self, actual):
-        return self._approx.__eq__(to_numpy(actual))
-
-    def __ne__(self, actual):
-        return not self.__eq__(actual)
-
-    def __repr__(self):
-        return repr(self._approx)
-
-
 def approx(expected, *args, **kwargs):
     """Backend-agnostic replacement for ``pytest.approx``."""
-    return _Approx(expected, *args, **kwargs)
+    return pytest.approx(to_numpy(expected), *args, **kwargs)
 
 
 def assert_array_almost_equal(actual, expected, decimal=6):
