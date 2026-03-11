@@ -4,7 +4,7 @@ import warnings
 
 import numpy as np
 
-from ._backend import get_namespace, diag_indices, is_numpy_namespace, xpd
+from ._backend import get_namespace, diag_indices, xpd
 from .utils import check_weights, check_function, check_init
 
 
@@ -177,8 +177,6 @@ def ajd_pham(
         like=X,
     )  # sum = 1
 
-    # Flatten matrix batches along columns while preserving the original
-    # matrix-wise block structure used by Pham's updates.
     A = xp.swapaxes(xp.swapaxes(X, 0, 2), 1, 2)
     A = A.reshape(X.shape[-1], n_matrices * X.shape[-1])
     A_copy = xp.zeros_like(A)

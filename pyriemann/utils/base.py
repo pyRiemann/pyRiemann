@@ -2,7 +2,7 @@
 
 import numpy as np
 
-from ._backend import get_namespace, is_backend_array, xpd, diag_embed
+from ._backend import get_namespace, xpd, diag_embed
 
 
 def ctranspose(X):
@@ -49,7 +49,7 @@ def _recursive(fun, A, B, *args, **kwargs):
 def _matrix_operator(X, operator):
     """Matrix function for SPD/HPD matrices."""
     xp = get_namespace(X)
-    if not is_backend_array(X) or X.ndim < 2:
+    if not hasattr(X, "ndim") or X.ndim < 2:
         raise ValueError("Input must be at least a 2D ndarray or tensor")
     if X.shape[-2] != X.shape[-1]:
         raise ValueError("Input must contain square matrices")
@@ -305,7 +305,7 @@ def nearest_sym_pos_def(X, reg=1e-6):
         N.J. Higham, Linear Algebra and its Applications, vol 103, 1988
     """
     xp = get_namespace(X)
-    if not is_backend_array(X) or X.ndim < 2:
+    if not hasattr(X, "ndim") or X.ndim < 2:
         raise ValueError("Input must be at least a 2D ndarray or tensor")
     if X.shape[-2] != X.shape[-1]:
         raise ValueError("Input must contain square matrices")
