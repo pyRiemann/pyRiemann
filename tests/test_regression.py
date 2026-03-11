@@ -14,6 +14,7 @@ from pyriemann.utils.mean import gmean
 regress = [SVR, KNearestNeighborRegressor]
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("regres", regress)
 def test_regression(kind, regres, get_mats, get_targets, get_weights):
@@ -78,6 +79,7 @@ def reg_pipeline(regres, y, get_mats, kind):
     )
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("regres", [KNearestNeighborRegressor])
 @pytest.mark.parametrize("mean", ["faulty", 42])
 @pytest.mark.parametrize("dist", ["not_real", 27])
@@ -90,6 +92,7 @@ def test_metric_dict_error(regres, mean, dist, get_mats, get_targets):
         reg.fit(X, y).predict(X)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("regres", [KNearestNeighborRegressor])
 @pytest.mark.parametrize("mean", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("dist", ["euclid", "logeuclid", "riemann"])
@@ -101,6 +104,7 @@ def test_metric_dist(regres, mean, dist, get_mats, get_targets):
     reg.fit(X, y).predict(X)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("regres", regress)
 @pytest.mark.parametrize("metric", [42, "faulty", {"foo": "bar"}])
 def test_metric_wrong_keys(regres, metric, get_mats, get_targets):
@@ -112,6 +116,7 @@ def test_metric_wrong_keys(regres, metric, get_mats, get_targets):
         reg.fit(X, y).predict(X)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("regres", regress)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_metric_str(regres, metric, get_mats, get_targets):
@@ -122,6 +127,7 @@ def test_metric_str(regres, metric, get_mats, get_targets):
     reg.fit(X, y).predict(X)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("dist", ["not_real", 42])
 def test_knn_dict_dist(dist, get_mats, get_targets):
     n_matrices, n_channels = 6, 3
@@ -132,6 +138,7 @@ def test_knn_dict_dist(dist, get_mats, get_targets):
         knn.fit(X, y).predict(X)
 
 
+@pytest.mark.numpy_only
 def test_1nn(get_mats, get_targets):
     """Test KNearestNeighborRegressor with K=1"""
     n_matrices, n_channels = 9, 3
@@ -155,6 +162,7 @@ def test_svr_params():
     assert rsvr.max_iter == 501
 
 
+@pytest.mark.numpy_only
 def test_svr_params_error(get_mats, get_targets):
     n_matrices, n_channels = 6, 3
     X = get_mats(n_matrices, n_channels, "spd")
@@ -167,6 +175,7 @@ def test_svr_params_error(get_mats, get_targets):
         SVR(foo=5)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svr_cref_metric(get_mats, get_targets, metric):
     n_matrices, n_channels = 6, 3
@@ -179,6 +188,7 @@ def test_svr_cref_metric(get_mats, get_targets, metric):
     assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_cref_callable(get_mats, get_targets, metric):
     n_matrices, n_channels = 6, 3
@@ -197,6 +207,7 @@ def test_svc_cref_callable(get_mats, get_targets, metric):
     assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_cref_error(get_mats, get_targets, metric):
     n_matrices, n_channels = 6, 3
@@ -212,6 +223,7 @@ def test_svc_cref_error(get_mats, get_targets, metric):
         SVR(Cref=Cref).fit(X, y)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_kernel_callable(get_mats, get_targets, metric):
     n_matrices, n_channels = 6, 3

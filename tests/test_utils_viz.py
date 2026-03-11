@@ -11,6 +11,7 @@ from pyriemann.utils.viz import (
 matplotlib.use("Agg")
 
 
+@pytest.mark.numpy_only
 def test_embedding(get_mats):
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "spd")
@@ -20,6 +21,7 @@ def test_embedding(get_mats):
     plot_embedding(X, y=y, metric="euclid")
 
 
+@pytest.mark.numpy_only
 def test_embedding_error_raise(get_mats):
     """Test ValueError for unknown embedding type."""
     n_matrices, n_channels = 5, 3

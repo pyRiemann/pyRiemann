@@ -1,11 +1,10 @@
 import numpy as np
-from numpy.testing import (
-    assert_array_equal,
-    assert_array_almost_equal,
-    assert_raises,
-)
+from numpy.testing import assert_raises
 import pytest
 
+from conftest import assert_array_equal, assert_array_almost_equal
+
+from pyriemann.utils._backend import get_namespace, xpd as device
 from pyriemann.utils.base import logm
 from pyriemann.utils.kernel import (
     kernel,
@@ -86,10 +85,13 @@ def test_kernel_cref(n_channels, metric, get_mats):
     Y = get_mats(n_matrices_Y, n_channels, "spd")
     K = kernel(X, Y, metric=metric)
 
+    xp = get_namespace(X)
     if metric == "euclid":
-        Cref = np.zeros((n_channels, n_channels))
+        Cref = xp.zeros(
+            (n_channels, n_channels), dtype=X.dtype, device=device(X)
+        )
     elif metric == "logeuclid":
-        Cref = np.eye(n_channels)
+        Cref = xp.eye(n_channels, dtype=X.dtype, device=device(X))
     elif metric == "riemann":
         Cref = gmean(X)
     K1 = kernel(X, Y, Cref=Cref, metric=metric)
@@ -118,6 +120,7 @@ def test_kernel_property_positive_semi_definite(metric, get_mats):
     assert is_spsd(K)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("n_dim1, n_dim2", [(4, 5), (5, 4)])
 def test_kernel_euclid(n_dim1, n_dim2, get_mats):
     """Euclidean kernel for non-square matrices"""
@@ -145,11 +148,14 @@ def test_kernel_logeuclid(get_mats):
     X = get_mats(n_matrices_X, n_channels, "spd")
     Y = get_mats(n_matrices_Y, n_channels, "spd")
 
+    xp = get_namespace(X)
+    Cref = xp.eye(n_channels, dtype=X.dtype, device=device(X))
     Kle = kernel_logeuclid(X, Y)
-    Kr = kernel_riemann(X, Y, Cref=np.eye(n_channels))
+    Kr = kernel_riemann(X, Y, Cref=Cref)
     assert_array_almost_equal(Kle, Kr)
 
 
+@pytest.mark.numpy_only
 def test_kernel_riemann(get_mats):
     """Test correctness"""
     n_matrices, n_channels = 5, 3

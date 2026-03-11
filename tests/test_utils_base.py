@@ -1,8 +1,8 @@
 import numpy as np
-from numpy.testing import assert_array_almost_equal
+from conftest import assert_array_almost_equal, to_numpy
 import pytest
 
-from pyriemann.datasets.simulated import _make_eyes
+from pyriemann.utils._backend import get_namespace, xpd as device
 from pyriemann.utils.base import (
     ctranspose,
     expm,
@@ -115,14 +115,18 @@ def test_funm_ndarray(funm):
 def test_funm_properties(get_mats, kind):
     n_matrices, n_dim = 10, 3
     X = get_mats(n_matrices, n_dim, kind)
-    invX = np.linalg.inv(X)
+    xp = get_namespace(X)
+    invX = xp.linalg.inv(X)
 
     # expm and logm
     eX, lX = expm(X), logm(X)
     assert_array_almost_equal(eX.conj(), expm(X.conj()), decimal=10)
     assert_array_almost_equal(
-        np.linalg.det(eX),
-        np.exp(np.trace(X, axis1=-2, axis2=-1)),
+        to_numpy(xp.linalg.det(eX)),
+        to_numpy(xp.exp(xp.sum(
+            X * xp.eye(n_dim, dtype=X.dtype, device=device(X)),
+            axis=(-2, -1),
+        ))),
         decimal=10,
     )
     assert_array_almost_equal(logm(eX), X, decimal=10)
@@ -131,7 +135,10 @@ def test_funm_properties(get_mats, kind):
 
     # invsqrtm
     isX = invsqrtm(X)
-    eyes = _make_eyes(n_matrices, n_dim)
+    eyes = xp.broadcast_to(
+        xp.eye(n_dim, dtype=X.dtype, device=device(X)),
+        (n_matrices, n_dim, n_dim),
+    )
     assert_array_almost_equal(isX @ X @ isX, eyes, decimal=10)
     assert_array_almost_equal(isX @ isX, invX, decimal=10)
 
@@ -151,6 +158,7 @@ def test_funm_properties(get_mats, kind):
     )
 
 
+@pytest.mark.numpy_only
 def test_check_raise():
     """Test check SPD matrices"""
     X = 2 * np.ones((10, n_channels, n_channels))
@@ -161,14 +169,16 @@ def test_check_raise():
             mean_riemann(X)
 
 
+@pytest.mark.numpy_only
 def test_nearest_sym_pos_def(get_mats):
     n_matrices = 3
     X = get_mats(n_matrices, n_channels, "spd")
-    D = X.diagonal(axis1=1, axis2=2)
-    Psd = np.array([x - np.diag(d) for x, d in zip(X, D)])
+    X_np = to_numpy(X)
+    D = X_np.diagonal(axis1=1, axis2=2)
+    Psd = np.array([x - np.diag(d) for x, d in zip(X_np, D)])
 
     assert not is_pos_def(Psd)
-    assert is_sym_pos_def(nearest_sym_pos_def(X))
+    assert is_sym_pos_def(nearest_sym_pos_def(X_np))
     assert is_sym_pos_def(nearest_sym_pos_def(Psd))
 
 
@@ -177,31 +187,42 @@ def test_first_divided_difference(get_mats, kind):
     """Test first divided difference."""
     n_matrices = 1
     X = get_mats(n_matrices, n_channels, kind)[0]
-    d = np.linalg.eigvalsh(X)
+    xp = get_namespace(X)
+    d = xp.linalg.eigvalsh(X)
 
     fdd_id = _first_divided_difference(d, lambda x: x, lambda x: x)
     assert fdd_id.shape == X.shape
-    assert_array_almost_equal(np.diag(fdd_id), d)
-    assert_array_almost_equal(fdd_id[np.triu_indices_from(fdd_id, k=1)], 1)
+    d_np = to_numpy(d)
+    fdd_id_np = to_numpy(fdd_id)
+    assert_array_almost_equal(np.diag(fdd_id_np), d_np)
+    assert_array_almost_equal(
+        fdd_id_np[np.triu_indices_from(fdd_id_np, k=1)], 1
+    )
 
-    fdd_exp = _first_divided_difference(d, np.exp, np.exp)
-    assert_array_almost_equal(np.diag(fdd_exp), np.exp(d))
+    fdd_exp = _first_divided_difference(d, xp.exp, xp.exp)
+    assert_array_almost_equal(
+        np.diag(to_numpy(fdd_exp)), np.exp(d_np)
+    )
 
-    fdd_log = _first_divided_difference(d, np.log, lambda x: 1./x)
-    assert_array_almost_equal(np.diag(fdd_log), 1/d)
+    fdd_log = _first_divided_difference(d, xp.log, lambda x: 1./x)
+    assert_array_almost_equal(np.diag(to_numpy(fdd_log)), 1/d_np)
 
     # exp of log is element-wise inverse of log
-    fdd_exp_of_log = _first_divided_difference(np.log(d), np.exp, np.exp)
-    assert_array_almost_equal(fdd_exp_of_log, 1/fdd_log)
+    fdd_exp_of_log = _first_divided_difference(
+        xp.log(d), xp.exp, xp.exp
+    )
+    assert_array_almost_equal(fdd_exp_of_log, 1/to_numpy(fdd_log))
 
 
 def test_ddlogm(get_mats):
     """Test directional derivative of log."""
     X, Cref = get_mats(2, n_channels, "spd")
+    xp = get_namespace(X)
     fdd_logm = ddlogm(X, Cref)
     assert fdd_logm.shape == X.shape
 
-    fdd_logm = ddlogm(X, np.eye(n_channels))
+    eye = xp.eye(n_channels, dtype=X.dtype, device=device(X))
+    fdd_logm = ddlogm(X, eye)
     assert_array_almost_equal(fdd_logm, X)
 
 
@@ -209,8 +230,45 @@ def test_ddlogm(get_mats):
 def test_ddexpm(get_mats, kind):
     """Test directional derivative of exp."""
     X, Cref = get_mats(2, n_channels, kind)
+    xp = get_namespace(X)
     fdd_expm = ddexpm(X, Cref)
     assert fdd_expm.shape == X.shape
 
-    fdd_expm = ddexpm(X, np.eye(n_channels))
-    assert_array_almost_equal(fdd_expm, np.exp(1)*X)
+    eye = xp.eye(n_channels, dtype=X.dtype, device=device(X))
+    fdd_expm = ddexpm(X, eye)
+    assert_array_almost_equal(fdd_expm, np.exp(1) * to_numpy(X))
+
+
+def test_autograd_smoke():
+    torch = pytest.importorskip("torch")
+    rng = np.random.RandomState(199)
+
+    def _make_spd(shape, n):
+        mats = rng.standard_normal((*shape, n, n))
+        return mats @ np.swapaxes(mats, -1, -2) + 0.25 * np.eye(n)
+
+    def _to_torch(x):
+        return torch.from_numpy(np.ascontiguousarray(x)).to(torch.float64)
+
+    from pyriemann.utils.distance import distance_riemann
+    from pyriemann.utils.geodesic import geodesic_logchol
+    from pyriemann.utils.mean import mean_riemann
+    from pyriemann.utils.tangentspace import log_map_riemann, exp_map_riemann
+
+    A = _to_torch(_make_spd((), 3)).clone().detach().requires_grad_(True)
+    B = _to_torch(_make_spd((), 3)).clone().detach().requires_grad_(True)
+    X = _to_torch(_make_spd((4,), 3)).clone().detach().requires_grad_(True)
+
+    import warnings
+    tangent = log_map_riemann(B.unsqueeze(0), A, C12=True)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", UserWarning)
+        loss = distance_riemann(A, B)
+        loss = loss + geodesic_logchol(A, B, alpha=0.25).sum()
+        loss = loss + mean_riemann(X, maxiter=5).sum()
+        loss = loss + exp_map_riemann(tangent, A, Cm12=True).sum()
+    loss.backward()
+
+    for grad in (A.grad, B.grad, X.grad):
+        assert grad is not None
+        assert torch.isfinite(grad).all()

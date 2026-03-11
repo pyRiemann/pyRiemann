@@ -1,10 +1,10 @@
 import numpy as np
-from numpy.testing import assert_array_almost_equal
 import pytest
-from pytest import approx
 from scipy.linalg import eigvalsh
 from scipy.spatial.distance import euclidean, mahalanobis
 
+from conftest import approx, assert_array_almost_equal
+from pyriemann.utils._backend import get_namespace, xpd as device
 from pyriemann.utils.distance import (
     distance_chol,
     distance_euclid,
@@ -83,7 +83,10 @@ def callable_sp_euclidean(A, B, squared=False):
         ("riemann", distance_riemann),
         ("thompson", distance_thompson),
         ("wasserstein", distance_wasserstein),
-        (callable_sp_euclidean, distance_euclid),
+        pytest.param(
+            callable_sp_euclidean, distance_euclid,
+            marks=pytest.mark.numpy_only,
+        ),
     ],
 )
 def test_distance_metric(kind, metric, dist, get_mats):
@@ -91,7 +94,6 @@ def test_distance_metric(kind, metric, dist, get_mats):
     A, B = get_mats(2, n_channels, kind)
     d = distance(A, B, metric=metric)
     assert d == approx(dist(A, B))
-    assert np.isreal(d)
 
 
 def test_distance_metric_error(get_mats):
@@ -115,6 +117,7 @@ def test_distance_squared(kind, dist, get_mats):
 def test_distance_between_set_and_matrix(dist, get_mats):
     n_matrices, n_channels = 10, 4
     X = get_mats(n_matrices, n_channels, "spd")
+    xp = get_namespace(X)
 
     if dist in BROADCAST_DISTANCE_FUNCS:
         assert dist(X, X[-1]).shape == (n_matrices,)
@@ -125,7 +128,7 @@ def test_distance_between_set_and_matrix(dist, get_mats):
     assert distance(X, X[-1], metric=dist).shape == (n_matrices, 1)
 
     n_sets = 5
-    X_4d = np.asarray([X for _ in range(n_sets)])
+    X_4d = xp.stack([X] * n_sets, axis=0)
     with pytest.raises(ValueError):
         distance(X_4d, X, metric=dist)
 
@@ -135,14 +138,16 @@ def test_distance_ndarray(dist, get_mats):
     n_matrices, n_channels = 5, 3
     A = get_mats(n_matrices, n_channels, "spd")
     B = get_mats(n_matrices, n_channels, "spd")
+    xp = get_namespace(A)
 
-    assert isinstance(dist(A[0], B[0]), float)  # 2D arrays
+    d = dist(A[0], B[0])  # 2D arrays -> scalar
+    assert (d.ndim == 0) if hasattr(d, 'ndim') else isinstance(d, float)
 
     assert dist(A, B).shape == (n_matrices,)  # 3D arrays
 
     n_sets = 4
-    C = np.asarray([A for _ in range(n_sets)])
-    D = np.asarray([B for _ in range(n_sets)])
+    C = xp.stack([A] * n_sets, axis=0)
+    D = xp.stack([B] * n_sets, axis=0)
     assert dist(C, D).shape == (n_sets, n_matrices)  # 4D arrays
 
 
@@ -160,8 +165,10 @@ def test_distance_property_geodesic(kind, dist, get_mats):
 def test_distance_property_separability(kind, dist, get_mats):
     n_channels = 5
     A = get_mats(1, n_channels, kind)[0]
+    xp = get_namespace(A)
     assert dist(A, A) == approx(0, abs=2e-7)
-    assert dist(np.eye(n_channels), np.eye(n_channels)) == approx(0)
+    Id = xp.eye(n_channels, dtype=A.dtype, device=device(A))
+    assert dist(Id, Id) == approx(0)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -201,7 +208,8 @@ def test_distance_property_invariance_under_inversion(kind, dist, get_mats):
     """Test invariance under inversion"""
     n_channels = 4
     A, B = get_mats(2, n_channels, kind)
-    assert dist(A, B) == approx(dist(np.linalg.inv(A), np.linalg.inv(B)))
+    xp = get_namespace(A)
+    assert dist(A, B) == approx(dist(xp.linalg.inv(A), xp.linalg.inv(B)))
 
 
 @pytest.mark.parametrize("kind, kindQ", [("spd", "orth"), ("hpd", "unit")])
@@ -254,6 +262,7 @@ def test_distance_property_invariance_congruence(kind, kindW, dist, get_mats):
     assert dist(A, B) == approx(dist(WAW, WBW))
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("n_dim1, n_dim2", [(4, 5), (5, 4)])
 @pytest.mark.parametrize("kind", ["real", "comp"])
 def test_distance_euclid(n_dim1, n_dim2, kind, get_mats):
@@ -274,8 +283,9 @@ def test_distance_harmonic(kind, get_mats):
 def test_distance_kullback_implementation(kind, get_mats):
     n_channels = 6
     A, B = get_mats(2, n_channels, kind)
-    d = 0.5*(np.trace(np.linalg.inv(B) @ A) - n_channels
-             + np.log(np.linalg.det(B) / np.linalg.det(A)))
+    xp = get_namespace(A)
+    d = 0.5*(xp.linalg.trace(xp.linalg.inv(B) @ A) - n_channels
+             + xp.log(xp.linalg.det(B) / xp.linalg.det(A)))
     assert distance_kullback(A, B) == approx(d)
 
 
@@ -283,8 +293,9 @@ def test_distance_kullback_implementation(kind, get_mats):
 def test_distance_logdet_implementation(kind, get_mats):
     n_channels = 6
     A, B = get_mats(2, n_channels, kind)
-    d = np.sqrt(np.log(np.linalg.det((A + B) / 2.0))
-                - 0.5 * np.log(np.linalg.det(A)*np.linalg.det(B)))
+    xp = get_namespace(A)
+    d = xp.sqrt(xp.log(xp.linalg.det((A + B) / 2.0))
+                - 0.5 * xp.log(xp.linalg.det(A) * xp.linalg.det(B)))
     assert distance_logdet(A, B) == approx(d)
 
 
@@ -303,9 +314,10 @@ def test_distance_riemann_implementation(kind, get_mats):
     """Test equivalence with Eq(6.13) in [Bhatia2007]"""
     n_channels = 6
     A, B = get_mats(2, n_channels, kind)
+    xp = get_namespace(A)
 
     Bm12 = invsqrtm(B)
-    d = np.linalg.norm(logm(Bm12 @ A @ Bm12), ord="fro")
+    d = xp.linalg.norm(logm(Bm12 @ A @ Bm12), ord="fro")
     assert distance_riemann(A, B) == approx(d)
 
 
@@ -313,10 +325,11 @@ def test_distance_riemann_implementation(kind, get_mats):
 def test_distance_riemann_properties(kind, get_mats, rndstate):
     n_channels = 6
     A, B = get_mats(2, n_channels, kind)
+    xp = get_namespace(A)
     dist_AB = distance_riemann(A, B)
 
     # exponential metric increasing property, Eq(6.8) in [Bhatia2007]
-    assert dist_AB >= np.linalg.norm(logm(A) - logm(B))
+    assert float(dist_AB) >= float(xp.linalg.norm(logm(A) - logm(B)))
 
     # proportionality, Eq(6.12) in [Bhatia2007]
     alpha = rndstate.uniform(0.01, 10.0)
@@ -325,6 +338,7 @@ def test_distance_riemann_properties(kind, get_mats, rndstate):
     assert dist_1 == approx(dist_2)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_distance_thompson_implementation(kind, get_mats):
     n_channels = 5
@@ -377,8 +391,8 @@ def test_pairwise_distance(kind, metric, Y, squared, get_mats):
     for i in range(n_matrices_X):
         for j in range(n_matrices_Y):
             assert np.isclose(
-                pdist[i, j],
-                distance(X[i], Y_[j], metric=metric, squared=squared),
+                float(pdist[i, j]),
+                float(distance(X[i], Y_[j], metric=metric, squared=squared)),
                 atol=1e-5,
                 rtol=1e-5,
             )
@@ -389,6 +403,7 @@ def test_pairwise_distance(kind, metric, Y, squared, get_mats):
         assert not is_sym(pdist)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("kind", ["real", "comp"])
 def test_distance_mahalanobis(kind, get_mats):
     n_channels, n_times = 2, 50
@@ -398,6 +413,7 @@ def test_distance_mahalanobis(kind, get_mats):
     assert np.all(np.isreal(d))
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("mean", [True, None])
 def test_distance_mahalanobis_scipy(mean, get_mats):
     """Test equivalence between pyriemann and scipy for real data"""

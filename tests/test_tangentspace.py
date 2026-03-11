@@ -8,6 +8,7 @@ from pyriemann.tangentspace import TangentSpace, FGDA
 metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("tspace", [TangentSpace, FGDA])
 def test_tangentspace(kind, tspace, get_mats, get_labels, get_weights):
@@ -82,6 +83,7 @@ def ts_inversetransform(tspace, X):
     assert ts.inverse_transform(ts.transform(X)) == approx(X)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("tspace", [TangentSpace, FGDA])
 @pytest.mark.parametrize("metric", [42, "faulty", {"foo": "bar"}])
 def test_tangentspaces_metric_wrong_keys(tspace, metric, get_mats, get_labels):
@@ -93,6 +95,7 @@ def test_tangentspaces_metric_wrong_keys(tspace, metric, get_mats, get_labels):
         ts.fit(X, y).transform(X)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("fit", [True, False])
 @pytest.mark.parametrize("tsupdate", [True, False])
 @pytest.mark.parametrize("metric_mean", ["euclid", "logeuclid", "riemann"])
@@ -131,6 +134,7 @@ def test_tangentspace_matdim_error():
         ts.transform(too_many_dim)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("tsupdate", [True, False])
 @pytest.mark.parametrize("metric_mean", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("metric_map", metrics)

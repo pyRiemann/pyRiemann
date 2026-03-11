@@ -1,10 +1,6 @@
 import numpy as np
-from numpy.testing import assert_array_almost_equal
 import pytest
-from scipy.linalg import block_diag
-from scipy.signal import welch, csd, coherence as coherence_sp
-from sklearn.covariance import empirical_covariance
-
+from conftest import assert_array_almost_equal, to_numpy
 
 from pyriemann.utils.covariance import (
     covariances, covariances_EP, covariances_X, eegtocov,
@@ -24,7 +20,10 @@ m_estimators = ["hub", "stu", "tyl"]
 
 
 @pytest.mark.parametrize(
-    "estimator", estimators + m_estimators + [np.cov, "truc", None]
+    "estimator", estimators + m_estimators + [
+        pytest.param(np.cov, marks=pytest.mark.numpy_only),
+        "truc", None,
+    ]
 )
 def test_covariances(estimator, get_mats):
     """Test covariance for multiple estimators"""
@@ -43,20 +42,25 @@ def test_covariances(estimator, get_mats):
         assert is_sym_pos_def(cov)
 
         if estimator == "corr":
+            cov_np = to_numpy(cov)
             assert_array_almost_equal(
-                np.diagonal(cov, axis1=-2, axis2=-1),
+                np.diagonal(cov_np, axis1=-2, axis2=-1),
                 np.ones((n_matrices, n_channels))
             )
         elif estimator == "tyl":
+            cov_np = to_numpy(cov)
             assert_array_almost_equal(
-                np.trace(cov, axis1=-2, axis2=-1),
+                np.trace(cov_np, axis1=-2, axis2=-1),
                 np.full(n_matrices, n_channels)
             )
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("assume_centered", [True, False])
 def test_covariance_scm_real(assume_centered, get_mats):
     """Test equivalence between pyriemann and sklearn estimator on real data"""
+    from sklearn.covariance import empirical_covariance
+
     n_matrices, n_channels, n_times = 3, 4, 50
     X = get_mats(n_matrices, [n_channels, n_times], "real")
 
@@ -68,8 +72,11 @@ def test_covariance_scm_real(assume_centered, get_mats):
     assert_array_almost_equal(cov, cov_sklearn, 10)
 
 
+@pytest.mark.numpy_only
 def test_covariance_scm_complex(get_mats):
     """ Test correctness of decorator for complex estimator on complex data"""
+    from sklearn.covariance import empirical_covariance
+
     n_matrices, n_channels, n_times = 4, 3, 60
     X = get_mats(n_matrices, [n_channels, n_times], "comp")
 
@@ -124,7 +131,10 @@ def test_covariances_X(estimator, get_mats):
 
 
 @pytest.mark.parametrize(
-    "estimator", estimators + [np.cov, "truc", None]
+    "estimator", estimators + [
+        pytest.param(np.cov, marks=pytest.mark.numpy_only),
+        "truc", None,
+    ]
 )
 def test_block_covariances_est(estimator, get_mats):
     """Test block covariance for multiple estimators"""
@@ -142,8 +152,11 @@ def test_block_covariances_est(estimator, get_mats):
         assert cov.shape == (n_matrices, n_channels, n_channels)
 
 
+@pytest.mark.numpy_only
 def test_block_covariances(get_mats):
     """Test block covariance"""
+    from scipy.linalg import block_diag
+
     n_matrices, n_channels, n_times = 2, 12, 100
     X = get_mats(n_matrices, [n_channels, n_times], "real")
 
@@ -171,7 +184,10 @@ def test_covariances_eegtocov(rndstate):
     assert cov.shape[1:] == (n_channels, n_channels)
 
 
+@pytest.mark.numpy_only
 def test_covariances_cross_spectrum(rndstate):
+    from scipy.signal import welch, csd
+
     n_channels, n_times = 3, 1000
     X = rndstate.randn(n_channels, n_times)
     cross_spectrum(X)
@@ -258,8 +274,11 @@ def test_covariances_cross_spectrum(rndstate):
     assert_array_almost_equal(cross_pr, cross_sp, 6)
 
 
+@pytest.mark.numpy_only
 def test_covariances_cospectrum(rndstate):
     """Test cospectrum"""
+    from scipy.signal import csd
+
     X = rndstate.randn(3, 1000)
     cospectrum(X)
     cospectrum(X, fs=128, fmin=2, fmax=40)
@@ -285,11 +304,14 @@ def test_covariances_cospectrum(rndstate):
     assert_array_almost_equal(cosp_pr, cosp_sp, 6)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize(
     "coh", ["ordinary", "instantaneous", "lagged", "imaginary"]
 )
 def test_covariances_coherence(coh, rndstate):
     """Test coherence"""
+    from scipy.signal import coherence as coherence_sp
+
     n_channels, n_times = 3, 2048
     X = rndstate.randn(n_channels, n_times)
 
@@ -409,20 +431,23 @@ def test_normalize_values(rndstate, get_mats):
     # after corr-normalization => diags = 1 and values in [-1, 1]
     X = get_mats(n_channels, n_channels, "spd")
     Xcn = normalize(X, "corr")
-    assert_array_almost_equal(np.ones(Xcn.shape[:-1]),
-                              np.diagonal(Xcn, axis1=-2, axis2=-1))
-    assert np.all(-1 <= Xcn) and np.all(Xcn <= 1)
+    Xcn_np = to_numpy(Xcn)
+    assert_array_almost_equal(np.ones(Xcn_np.shape[:-1]),
+                              np.diagonal(Xcn_np, axis1=-2, axis2=-1))
+    assert np.all(-1 <= Xcn_np) and np.all(Xcn_np <= 1)
 
     # after trace-normalization => trace equal to 1
     X = rndstate.randn(n_matrices, n_channels, n_channels)
     Xtn = normalize(X, "trace")
-    assert_array_almost_equal(np.ones(Xtn.shape[0]),
-                              np.trace(Xtn, axis1=-2, axis2=-1))
+    Xtn_np = to_numpy(Xtn)
+    assert_array_almost_equal(np.ones(Xtn_np.shape[0]),
+                              np.trace(Xtn_np, axis1=-2, axis2=-1))
 
     # after determinant-normalization => determinant equal to +/- 1
     Xdn = normalize(X, "determinant")
-    assert_array_almost_equal(np.ones(Xdn.shape[0]),
-                              np.abs(np.linalg.det(Xdn)))
+    Xdn_np = to_numpy(Xdn)
+    assert_array_almost_equal(np.ones(Xdn_np.shape[0]),
+                              np.abs(np.linalg.det(Xdn_np)))
 
     with pytest.raises(ValueError):  # not at least 2d
         normalize(rndstate.randn(n_channels), "trace")

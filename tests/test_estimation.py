@@ -32,6 +32,7 @@ m_estim = ["hub", "stu", "tyl"]
 coh = ["ordinary", "instantaneous", "lagged", "imaginary"]
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("estimator", estim + m_estim)
 def test_covariances(estimator, get_mats):
     """Test Covariances"""
@@ -63,6 +64,7 @@ def test_covariances(estimator, get_mats):
         ("tyl", {"n_iter_max": 20, "norm": "determinant"}),
     ],
 )
+@pytest.mark.numpy_only
 def test_covariances_kwds(estimator, kwds, get_mats):
     n_matrices, n_channels, n_times = 3, 3, 100
     X = get_mats(n_matrices, [n_channels, n_times], "real") + 1
@@ -91,6 +93,7 @@ def test_time_delay_covariances_xtd():
     assert_array_equal(covest.Xtd_, Xtd)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("delays", [4, [1, 5]])
 def test_time_delay_covariances(delays, get_mats):
     n_matrices, n_channels, n_times = 2, 3, 100
@@ -113,6 +116,7 @@ def test_time_delay_covariances(delays, get_mats):
     assert_array_almost_equal(Xt, Xt2)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("estimator", estim)
 @pytest.mark.parametrize("svd", [None, 2, 3, 4])
 @pytest.mark.parametrize("n_classes", [2, 3, 4])
@@ -140,6 +144,7 @@ def test_erp_covariances(estimator, svd, n_classes, get_mats, get_labels):
     assert is_spsd(covmats)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("n_classes", [2, 3])
 def test_erp_covariances_classes(n_classes, get_mats, get_labels):
     n_matrices, n_channels, n_times = 3 * n_classes, 3, 100
@@ -152,6 +157,7 @@ def test_erp_covariances_classes(n_classes, get_mats, get_labels):
     assert is_spsd(covmats)
 
 
+@pytest.mark.numpy_only
 def test_erp_covariances_svd_error(get_mats, get_labels):
     """Assert error on param svd """
     n_classes, n_matrices, n_channels, n_times = 2, 4, 3, 10
@@ -161,6 +167,7 @@ def test_erp_covariances_svd_error(get_mats, get_labels):
         ERPCovariances(svd="42").fit(X, y)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("est", estim)
 @pytest.mark.parametrize("xdawn_est", estim)
 def test_xdawn_covariances_est(est, xdawn_est, get_mats, get_labels):
@@ -190,6 +197,7 @@ def test_xdawn_covariances_est(est, xdawn_est, get_mats, get_labels):
     assert is_spsd(covmats)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("n_classes", [1, 2, 3])
 @pytest.mark.parametrize("nfilter", [2, 4, 6])
 @pytest.mark.parametrize("applyfilters", [True, False])
@@ -227,6 +235,7 @@ def test_xdawn_covariances_filters(n_classes, nfilter, applyfilters, baseline,
     assert covmats.shape == (n_matrices, covsize, covsize)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("block_size", [1, 6, [4, 8], np.array([5, 7])])
 @pytest.mark.parametrize("estim", estim)
 def test_block_covariances(block_size, estim, get_mats):
@@ -242,6 +251,7 @@ def test_block_covariances(block_size, estim, get_mats):
     assert is_spd(covmats)
 
 
+@pytest.mark.numpy_only
 def test_block_covariances_errors(get_mats):
     """Test BlockCovariances errors"""
     n_matrices, n_channels, n_times = 2, 12, 100
@@ -255,6 +265,7 @@ def test_block_covariances_errors(get_mats):
         BlockCovariances(block_size="[4, 4, 5]").fit_transform(X)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("estim", [CrossSpectra, CoSpectra])
 def test_xspectra(estim, get_mats):
     """Test CrossSpectra and CoSpectra"""
@@ -277,6 +288,7 @@ def test_xspectra(estim, get_mats):
     assert_array_almost_equal(spmats, spmats2)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("coh", coh)
 def test_coherences(coh, get_mats):
     """Test fit Coherences"""
@@ -315,6 +327,7 @@ def test_coherences(coh, get_mats):
         "cosine",
     ]
 )
+@pytest.mark.numpy_only
 def test_kernels(metric, get_mats):
     """Test Kernels"""
     n_matrices, n_channels, n_times = 2, 5, 10
@@ -329,6 +342,7 @@ def test_kernels(metric, get_mats):
     assert_array_almost_equal(kernels, kernels2)
 
 
+@pytest.mark.numpy_only
 def test_kernels_linear(get_mats):
     """Test that linear kernels are related to covariances"""
     n_matrices, n_channels, n_times = 3, 4, 50
@@ -349,6 +363,7 @@ def test_kernels_linear(get_mats):
         ("laplacian", {"gamma": 0.5}),
     ],
 )
+@pytest.mark.numpy_only
 def test_kernels_kwds(metric, kwds, get_mats):
     n_matrices, n_channels, n_times = 3, 6, 10
     X = get_mats(n_matrices, [n_channels, n_times], "real")
@@ -360,6 +375,7 @@ def test_kernels_kwds(metric, kwds, get_mats):
     )
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("shrinkage", [0.1, 0.9])
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_shrinkage(shrinkage, kind, get_mats):

@@ -15,6 +15,7 @@ from pyriemann.utils.kernel import kernel, kernel_functions
 embds = [SpectralEmbedding, LocallyLinearEmbedding, TSNE]
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("embd", embds)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
@@ -104,6 +105,7 @@ def embd_result(embedding, metric):
     assert score == 1.
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("n_components", [2, 4, 100])
 @pytest.mark.parametrize("embd", embds)
 def test_embd_n_comp(n_components, embd, get_mats):
@@ -120,6 +122,7 @@ def test_embd_n_comp(n_components, embd, get_mats):
         embd.fit(X)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("embd", embds)
 def test_embd_metric_error(embd, get_mats):
     n_matrices, n_channels = 8, 3
@@ -129,6 +132,7 @@ def test_embd_metric_error(embd, get_mats):
         embd.fit(X)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("eps", [None, 0.1])
 def test_spectral_embedding_parameters(metric, eps, get_mats):
@@ -140,6 +144,7 @@ def test_spectral_embedding_parameters(metric, eps, get_mats):
     assert Xt.shape == (n_matrices, n_comps)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("n_neighbors", [2, 4, 8, 16])
 @pytest.mark.parametrize("reg", [1e-3, 0])
@@ -159,6 +164,7 @@ def test_locally_linear_embedding_parameters(metric, n_neighbors, reg,
     assert Xt.shape == (n_matrices, n_components)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_locally_linear_embedding_kernel(metric, get_mats):
     """Test LocallyLinearEmbedding, kernel parameter."""
@@ -185,6 +191,7 @@ def test_locally_linear_embedding_kernel(metric, get_mats):
     assert np.array_equal(Xt, Xt2)
 
 
+@pytest.mark.numpy_only
 def test_barycenter_weights_func(get_mats):
     """Test barycenter_weights helper function."""
     n_matrices, n_channels = 4, 3
@@ -197,6 +204,7 @@ def test_barycenter_weights_func(get_mats):
     assert weights.shape == (n_matrices, 2)
 
 
+@pytest.mark.numpy_only
 def test_locally_linear_embedding_func(get_mats):
     """Test locally_linear_embedding helper function."""
     n_matrices, n_channels, n_comps, n_neighbors = 4, 3, 2, 2

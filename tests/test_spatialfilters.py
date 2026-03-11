@@ -7,6 +7,7 @@ from pyriemann.spatialfilters import Xdawn, CSP, SPoC, BilinearFilter, AJDC
 spfilts = [Xdawn, CSP, SPoC, BilinearFilter, AJDC]
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("spfilt", spfilts)
 @pytest.mark.parametrize("n_channels", [3, 5, 7])
 @pytest.mark.parametrize("n_classes", [2, 3])
@@ -148,6 +149,7 @@ def sf_fit_independence(spfilt, X, y, n_channels):
     sf.fit(X_new, y)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("n_channels", [3, 4, 5])
 @pytest.mark.parametrize("use_baseline_cov", [True, False])
 def test_xdawn_baselinecov(n_channels, use_baseline_cov, get_mats, get_labels):
@@ -164,6 +166,7 @@ def test_xdawn_baselinecov(n_channels, use_baseline_cov, get_mats, get_labels):
     assert xd.filters_.shape == (n_classes * n_components, n_channels)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("n_filters", [3, 4, 5])
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("log", [True, False])
@@ -186,6 +189,7 @@ def test_csp(n_filters, metric, log, ajd_method, get_mats, get_labels):
         assert Xtr.shape == (n_matrices, n_components, n_components)
 
 
+@pytest.mark.numpy_only
 def test_bilinearfilter_errors(get_mats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 3
     X = get_mats(n_matrices, n_channels, "spd")
@@ -197,6 +201,7 @@ def test_bilinearfilter_errors(get_mats, get_labels):
         BilinearFilter(np.eye(3), log="foo").fit(X, y)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("n_filters", [3, 4])
 @pytest.mark.parametrize("log", [True, False])
 def test_bilinearfilter(n_filters, log, get_mats, get_labels):
@@ -222,6 +227,7 @@ def test_ajdc_init():
     assert ajdc.verbose
 
 
+@pytest.mark.numpy_only
 def test_ajdc_fit(get_mats):
     n_subjects, n_conditions, n_channels, n_times = 5, 3, 8, 512
     X = get_mats(n_subjects, [n_conditions, n_channels, n_times], "real")
@@ -232,6 +238,7 @@ def test_ajdc_fit(get_mats):
         AJDC().fit(X)
 
 
+@pytest.mark.numpy_only
 def test_ajdc_fit_error(get_mats, rndstate):
     n_subjects, n_conditions, n_channels, n_times = 2, 3, 8, 512
     ajdc = AJDC(dim_red={"expl_var": 0.9})
@@ -256,6 +263,7 @@ def test_ajdc_fit_error(get_mats, rndstate):
         ajdc.fit(X)
 
 
+@pytest.mark.numpy_only
 def test_ajdc_transform_error(get_mats):
     n_subjects, n_conditions, n_channels, n_times = 2, 2, 4, 256
     X = get_mats(n_subjects, [n_conditions, n_channels, n_times], "real")

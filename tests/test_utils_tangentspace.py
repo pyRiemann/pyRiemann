@@ -1,8 +1,9 @@
 import numpy as np
 import pytest
-from pytest import approx
+from conftest import approx
 
 from pyriemann.spatialfilters import Whitening
+from pyriemann.utils._backend import get_namespace, xpd as device
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.utils.tangentspace import (
@@ -51,12 +52,14 @@ def test_maps_ndarray(fmap, get_mats):
     """Test log and exp maps"""
     n_matrices, n_channels = 6, 3
     X = get_mats(n_matrices, n_channels, "spd")
-    Xt = fmap(X, np.eye(n_channels))
+    xp = get_namespace(X)
+    eye = xp.eye(n_channels, dtype=X.dtype, device=device(X))
+    Xt = fmap(X, eye)
     assert Xt.shape == (n_matrices, n_channels, n_channels)
 
     n_sets = 2
-    X_4d = np.asarray([X for _ in range(n_sets)])
-    Xt = fmap(X_4d, np.eye(n_channels))
+    X_4d = xp.stack([X] * n_sets, axis=0)
+    Xt = fmap(X_4d, eye)
     assert Xt.shape == (n_sets, n_matrices, n_channels, n_channels)
 
 
@@ -112,10 +115,11 @@ def test_upper_and_unupper(kind, get_mats):
     """Test upper then unupper should be identity"""
     n_matrices, n_channels = 7, 3
     X = get_mats(n_matrices, n_channels, kind)
+    xp = get_namespace(X)
     assert unupper(upper(X)) == approx(X)
 
     n_sets = 2
-    X_4d = np.asarray([X for _ in range(n_sets)])
+    X_4d = xp.stack([X] * n_sets, axis=0)
     assert unupper(upper(X_4d)) == approx(X_4d)
 
 
@@ -125,12 +129,14 @@ def test_tangent_space_ndarray(metric, get_mats):
     n_matrices, n_channels = 6, 3
     n_ts = (n_channels * (n_channels + 1)) // 2
     X = get_mats(n_matrices, n_channels, "spd")
-    Xts = tangent_space(X, np.eye(n_channels), metric=metric)
+    xp = get_namespace(X)
+    eye = xp.eye(n_channels, dtype=X.dtype, device=device(X))
+    Xts = tangent_space(X, eye, metric=metric)
     assert Xts.shape == (n_matrices, n_ts)
 
     n_sets = 2
-    X_4d = np.asarray([X for _ in range(n_sets)])
-    Xts = tangent_space(X_4d, np.eye(n_channels), metric=metric)
+    X_4d = xp.stack([X] * n_sets, axis=0)
+    Xts = tangent_space(X_4d, eye, metric=metric)
     assert Xts.shape == (n_sets, n_matrices, n_ts)
 
 
@@ -138,11 +144,14 @@ def test_tangent_space_ndarray(metric, get_mats):
 def test_tangent_space_riemann_properties(kind, get_mats):
     n_channels = 3
     A, B = get_mats(2, n_channels, kind)
+    xp = get_namespace(A)
 
     # equivalent definitions of Riemannian distance, Eq(7) in [Barachant2012]
     dist = distance_riemann(A, B)
     s = tangent_space(A, B, metric="riemann")
-    assert dist == approx(np.linalg.norm(s))
+    assert dist == approx(
+        float(xp.linalg.vector_norm(xp.reshape(s, (-1,))))
+    )
 
 
 @pytest.mark.parametrize("metric", metrics)
@@ -151,12 +160,14 @@ def test_untangent_space_ndarray(metric, get_mats):
     n_matrices, n_channels = 10, 3
     n_ts = (n_channels * (n_channels + 1)) // 2
     T = get_mats(n_matrices, [n_ts], "real")
-    X = untangent_space(T, np.eye(n_channels), metric=metric)
+    xp = get_namespace(T)
+    eye = xp.eye(n_channels, dtype=T.dtype, device=device(T))
+    X = untangent_space(T, eye, metric=metric)
     assert X.shape == (n_matrices, n_channels, n_channels)
 
     n_sets = 2
-    T_4d = np.asarray([T for _ in range(n_sets)])
-    X = untangent_space(T_4d, np.eye(n_channels), metric=metric)
+    T_4d = xp.stack([T] * n_sets, axis=0)
+    X = untangent_space(T_4d, eye, metric=metric)
     assert X.shape == (n_sets, n_matrices, n_channels, n_channels)
 
 
@@ -181,13 +192,14 @@ def test_tangent_and_untangent_space(kind, metric, get_mats):
 def test_transport_ndarray(ftransport, get_mats):
     n_matrices, n_channels = 7, 3
     X = get_mats(n_matrices, n_channels, "herm")
+    xp = get_namespace(X)
     A, B = get_mats(2, n_channels, "hpd")
 
     X_tr = ftransport(X, A, B)
     assert X_tr.shape == X.shape
 
     n_sets = 2
-    X_4d = np.asarray([X for _ in range(n_sets)])
+    X_4d = xp.stack([X] * n_sets, axis=0)
     X_tr = ftransport(X_4d, A, B)
     assert X_tr.shape == X_4d.shape
 
@@ -218,6 +230,7 @@ def test_transport_properties(kindX, kindAB, ftransport, get_mats):
     assert ftransport(X + Y, A, B) == approx(Xt + Yt)
 
 
+@pytest.mark.numpy_only
 def test_transport_riemann_vs_whitening(get_mats):
     """AIR PT from mean to identity should be equivalent to a whitening"""
     n_matrices, n_channels = 15, 2

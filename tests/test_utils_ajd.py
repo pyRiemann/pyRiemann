@@ -1,8 +1,8 @@
 import numpy as np
-from numpy.testing import assert_array_equal
 import pytest
-from pytest import approx
 
+from conftest import approx, assert_array_equal
+from pyriemann.utils._backend import get_namespace, xpd
 from pyriemann.utils.ajd import ajd, rjd, ajd_pham, uwedge
 
 
@@ -28,9 +28,11 @@ def test_ajd(kind, method, algo, get_mats):
     assert V.shape == (n_channels, n_channels)
     assert D.shape == (n_matrices, n_channels, n_channels)
 
+    xp = get_namespace(X)
     if method == "rjd":
         assert D == approx(V.T @ X @ V)
-        assert V.T @ V == approx(np.eye(n_channels))  # check orthogonality
+        eye = xp.eye(n_channels, dtype=X.dtype, device=xpd(X))
+        assert V.T @ V == approx(eye)  # check orthogonality
     else:
         assert D == approx(V @ X @ V.T)
 
@@ -71,12 +73,14 @@ def test_ajdpham_weight_none_equivalent_uniform(kind, get_mats):
     """Test pham's ajd weights: none is equivalent to uniform values"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
+    xp = get_namespace(X)
+    ones = xp.ones(n_matrices, dtype=X.dtype, device=xpd(X))
     V, D = ajd_pham(X)
-    Vw, Dw = ajd_pham(X, sample_weight=np.ones(n_matrices))
+    Vw, Dw = ajd_pham(X, sample_weight=ones)
     assert_array_equal(V, Vw)
     assert_array_equal(D, Dw)
 
-    ajd(X, method="ajd_pham", sample_weight=np.ones(n_matrices))
+    ajd(X, method="ajd_pham", sample_weight=ones)
 
 
 def test_ajdpham_weight_positive(get_mats, get_weights):

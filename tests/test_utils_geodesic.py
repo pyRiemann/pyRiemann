@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
-from pytest import approx
+from conftest import approx
 
+from pyriemann.utils._backend import get_namespace
 from pyriemann.utils.geodesic import (
     geodesic,
     geodesic_chol,
@@ -50,14 +51,15 @@ def test_geodesic_ndarray(geo, get_mats):
     n_matrices, n_channels = 5, 3
     A = get_mats(n_matrices, n_channels, "spd")
     B = get_mats(n_matrices, n_channels, "spd")
+    xp = get_namespace(A)
 
     assert geo(A[0], B[0], .3).shape == A[0].shape  # 2D arrays
 
     assert geo(A, B, .2).shape == A.shape  # 3D arrays
 
     n_sets = 4
-    C = np.asarray([A for _ in range(n_sets)])
-    D = np.asarray([B for _ in range(n_sets)])
+    C = xp.stack([A] * n_sets, axis=0)
+    D = xp.stack([B] * n_sets, axis=0)
     assert geo(C, D, .7).shape == C.shape  # 4D arrays
 
 
@@ -130,9 +132,10 @@ def test_geodesic_property_invariance_inversion(kind, gfun,
     """Test invariance under inversion, also called self-duality """
     n_channels = 4
     A, B = get_mats(2, n_channels, kind)
+    xp = get_namespace(A)
     alpha = rndstate.uniform(0.01, 0.99)
     G = gfun(A, B, alpha)
-    Ginv = np.linalg.inv(gfun(np.linalg.inv(A), np.linalg.inv(B), alpha))
+    Ginv = xp.linalg.inv(gfun(xp.linalg.inv(A), xp.linalg.inv(B), alpha))
     assert G == approx(Ginv)
 
 
@@ -164,12 +167,14 @@ def test_geodesic_euclid(n_dim1, n_dim2, kind, get_mats):
 def test_geodesic_riemann(kind, get_mats, rndstate):
     n_channels = 4
     A, B = get_mats(2, n_channels, kind)
+    xp = get_namespace(A)
     alpha = rndstate.uniform(0.01, 0.99)
     G = geodesic_riemann(A, B, alpha)
 
     # WG9 in [Nakamura2009]
-    det = (np.linalg.det(A) ** (1 - alpha)) * (np.linalg.det(B) ** alpha)
-    assert np.linalg.det(G) == approx(det)
+    det = (complex(xp.linalg.det(A)) ** (1 - alpha)) \
+        * (complex(xp.linalg.det(B)) ** alpha)
+    assert complex(xp.linalg.det(G)) == approx(det)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
