@@ -1182,10 +1182,11 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
     if init is None:
         is_nan = xp.isnan(X)
         counts = xp.sum(~is_nan, axis=0)
-        safe_counts = (
-            counts.copy() if hasattr(counts, "copy") else counts.clone()
+        safe_counts = xp.where(
+            counts == 0,
+            xp.asarray(1, dtype=counts.dtype, device=xpd(counts)),
+            counts,
         )
-        safe_counts[safe_counts == 0] = 1
         init = xp.sum(
             xp.where(is_nan, 0.0, X),
             axis=0,

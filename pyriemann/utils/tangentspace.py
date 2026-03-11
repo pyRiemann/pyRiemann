@@ -860,7 +860,6 @@ def transport_logeuclid(X, A, B):
         <https://www.sciencedirect.com/science/article/pii/S0024379522004360>`_
         Y. Thanwerdas & X. Pennec. Linear Algebra and its Applications, 2023.
     """
-    xp = get_namespace(X, A, B)
     return ddexpm(
         ddlogm(X, A),
         logm(B),
