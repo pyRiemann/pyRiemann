@@ -6,7 +6,10 @@ from scipy.stats import chi2
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 from sklearn.utils import check_random_state
 
-from ._backend import resolve_backend
+from ._backend import (
+    get_namespace, diag_embed, diag_indices, weighted_average,
+    is_numpy_namespace, is_torch_namespace, xpd,
+)
 from .base import ctranspose
 from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
@@ -23,8 +26,8 @@ def _to_numpy(X):
 
 
 def _from_numpy(X, *, like):
-    backend = resolve_backend(like)
-    return backend.asarray(X, like=like, dtype=like.dtype)
+    xp = get_namespace(like)
+    return xp.asarray(X, dtype=like.dtype, device=xpd(like))
 
 
 def _apply_numpy_estimator(func, X, **kwds):
@@ -35,13 +38,13 @@ def _apply_numpy_estimator(func, X, **kwds):
 def _cov(X, **kwds):
     if kwds:
         return _apply_numpy_estimator(np.cov, X, **kwds)
-    backend = resolve_backend(X)
-    X_c = X - backend.mean(X, axis=1)[:, np.newaxis]
-    return X_c @ ctranspose(X_c, backend=backend) / (X.shape[1] - 1)
+    xp = get_namespace(X)
+    X_c = X - xp.mean(X, axis=1)[:, np.newaxis]
+    return X_c @ ctranspose(X_c) / (X.shape[1] - 1)
 
 
 def _corr(X, **kwds):
-    if kwds or not is_real_type(X):
+    if kwds:
         return _apply_numpy_estimator(np.corrcoef, X, **kwds)
     return normalize(_cov(X), "corr")
 
@@ -52,16 +55,16 @@ def _make_complex(real_part, imag_part, *, like):
     return torch.complex(real_part, imag_part)
 
 
-def _as_samples_by_features(X, *, assume_centered=False, backend=None):
-    backend = resolve_backend(X, backend=backend)
-    X = backend.swapaxes(X, 0, 1)
+def _as_samples_by_features(X, *, assume_centered=False):
+    xp = get_namespace(X)
+    X = xp.swapaxes(X, 0, 1)
     if not assume_centered:
-        X = X - backend.mean(X, axis=0)
-    return X, backend
+        X = X - xp.mean(X, axis=0)
+    return X, xp
 
 
-def _empirical_covariance_features(X, *, assume_centered=False, backend=None):
-    backend = resolve_backend(X, backend=backend)
+def _empirical_covariance_features(X, *, assume_centered=False):
+    xp = get_namespace(X)
     if X.ndim == 1:
         X = X.reshape(1, -1)
 
@@ -73,88 +76,88 @@ def _empirical_covariance_features(X, *, assume_centered=False, backend=None):
         )
 
     if assume_centered:
-        covariance = ctranspose(X, backend=backend) @ X / X.shape[0]
+        covariance = ctranspose(X) @ X / X.shape[0]
     else:
-        X = X - backend.mean(X, axis=0)
-        covariance = ctranspose(X, backend=backend) @ X / X.shape[0]
+        X = X - xp.mean(X, axis=0)
+        covariance = ctranspose(X) @ X / X.shape[0]
 
     if covariance.ndim == 0:
         covariance = covariance.reshape(1, 1)
     return covariance
 
 
-def _shrink_covariance(emp_cov, shrinkage, *, backend=None):
-    backend = resolve_backend(emp_cov, backend=backend)
+def _shrink_covariance(emp_cov, shrinkage):
+    xp = get_namespace(emp_cov)
     n_features = emp_cov.shape[-1]
     shrunk_cov = (1.0 - shrinkage) * emp_cov
-    mu = backend.as_float(backend.sum(backend.diagonal(emp_cov)) / n_features)
-    diag0, diag1 = backend.diag_indices(n_features, like=emp_cov)
+    mu = float(xp.sum(xp.linalg.diagonal(emp_cov)) / n_features)
+    diag0, diag1 = diag_indices(n_features, xp=xp, like=emp_cov)
     shrunk_cov[diag0, diag1] += shrinkage * mu
     return shrunk_cov
 
 
-def _one_feature_covariance(X_samples, *, backend):
-    cov = backend.mean(X_samples ** 2, axis=0).reshape(1, 1)
+def _one_feature_covariance(X_samples, *, xp):
+    cov = xp.mean(X_samples ** 2, axis=0).reshape(1, 1)
     return cov, 0.0
 
 
 def _ledoit_wolf_torch(X, *, assume_centered=False, block_size=1000):
     del block_size  # kept for API compatibility
-    X_samples, backend = _as_samples_by_features(
+    X_samples, xp = _as_samples_by_features(
         X,
         assume_centered=assume_centered,
     )
 
     if X_samples.shape[1] == 1:
-        return _one_feature_covariance(X_samples, backend=backend)
+        return _one_feature_covariance(X_samples, xp=xp)
 
     n_samples, n_features = X_samples.shape
     X2 = X_samples ** 2
-    emp_cov_trace = backend.sum(X2, axis=0) / n_samples
-    mu = backend.as_float(backend.sum(emp_cov_trace) / n_features)
-    beta_ = backend.as_float(
-        backend.sum(ctranspose(X2, backend=backend) @ X2)
+    emp_cov_trace = xp.sum(X2, axis=0) / n_samples
+    mu = float(xp.sum(emp_cov_trace) / n_features)
+    beta_ = float(
+        xp.sum(ctranspose(X2) @ X2)
     )
-    gram = ctranspose(X_samples, backend=backend) @ X_samples
-    delta_ = backend.as_float(backend.sum(gram ** 2)) / (n_samples ** 2)
+    gram = ctranspose(X_samples) @ X_samples
+    delta_ = float(xp.sum(gram ** 2)) / (n_samples ** 2)
     beta = (beta_ / n_samples - delta_) / (n_features * n_samples)
     delta = (
         delta_
-        - 2.0 * mu * backend.as_float(backend.sum(emp_cov_trace))
+        - 2.0 * mu * float(xp.sum(emp_cov_trace))
         + n_features * mu ** 2
     ) / n_features
     beta = min(beta, delta)
     shrinkage = 0.0 if beta == 0 else beta / delta
     emp_cov = covariance_scm(X, assume_centered=assume_centered)
-    return _shrink_covariance(emp_cov, shrinkage, backend=backend), shrinkage
+    return _shrink_covariance(emp_cov, shrinkage), shrinkage
 
 
 def _oas_torch(X, *, assume_centered=False):
-    X_samples, backend = _as_samples_by_features(
+    X_samples, xp = _as_samples_by_features(
         X,
         assume_centered=assume_centered,
     )
 
     if X_samples.shape[1] == 1:
-        return _one_feature_covariance(X_samples, backend=backend)
+        return _one_feature_covariance(X_samples, xp=xp)
 
     n_samples, n_features = X_samples.shape
     emp_cov = covariance_scm(X, assume_centered=assume_centered)
-    alpha = backend.as_float(backend.sum(emp_cov ** 2)) / (n_features ** 2)
-    mu = backend.as_float(backend.sum(backend.diagonal(emp_cov)) / n_features)
+    alpha = float(xp.sum(emp_cov ** 2)) / (n_features ** 2)
+    mu = float(xp.sum(xp.linalg.diagonal(emp_cov)) / n_features)
     mu_squared = mu ** 2
     num = alpha + mu_squared
     den = (n_samples + 1) * (alpha - mu_squared / n_features)
     shrinkage = 1.0 if den == 0 else min(num / den, 1.0)
-    return _shrink_covariance(emp_cov, shrinkage, backend=backend), shrinkage
+    return _shrink_covariance(emp_cov, shrinkage), shrinkage
 
 
-def _fast_logdet_backend(A, *, backend=None):
-    backend = resolve_backend(A, backend=backend)
-    sign, ld = backend.slogdet(A)
-    if backend.as_float(sign) <= 0 or not np.isfinite(backend.as_float(ld)):
+def _fast_logdet_backend(A):
+    xp = get_namespace(A)
+    sign, ld = xp.linalg.slogdet(A)
+    if float(sign) <= 0 or not np.isfinite(float(ld)):
         return -np.inf
-    return backend.as_float(ld)
+    return float(ld)
 
 
 def _mahalanobis_dist_sq_features(X, location, covariance):
@@ -488,12 +491,12 @@ def _complex_estimator(func):
     """
     @wraps(func)
     def wrapper(X, **kwds):
-        backend = resolve_backend(X)
+        xp = get_namespace(X)
         iscomplex = not is_real_type(X)
         if iscomplex:
             n_channels, _ = X.shape
-            X = backend.concatenate(
-                (backend.real(X), backend.imag(X)),
+            X = xp.concat(
+                (xp.real(X), xp.imag(X)),
                 axis=0,
             )
         cov = func(X, **kwds)
@@ -631,7 +634,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         <https://projecteuclid.org/journals/annals-of-statistics/volume-15/issue-1/A-Distribution-Free-M-Estimator-of-Multivariate-Scatter/10.1214/aos/1176350263.full>`_
         D.E. Tyler. The Annals of Statistics, 1987.
     """  # noqa
-    backend = resolve_backend(X, init)
+    xp = get_namespace(X, init)
     n_channels, n_times = X.shape
 
     if m_estimator == "hub":
@@ -641,8 +644,8 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         def weight_func(x):  # Example 1, Section V-C in [1]
             c2 = chi2.ppf(q, n_channels) / 2
             b = chi2.cdf(2 * c2, n_channels + 1) + c2 * (1 - q) / n_channels
-            return backend.minimum(
-                backend.ones(x.shape, like=x, dtype=backend.real_dtype(x)),
+            return xp.minimum(
+                xp.ones(x.shape, dtype=x.real.dtype, device=xpd(x)),
                 c2 / x,
             ) / b
     elif m_estimator == "stu":
@@ -658,20 +661,20 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         raise ValueError(f"Unsupported m_estimator: {m_estimator}")
 
     if not assume_centered:
-        X = X - backend.mean(X, axis=1)[:, np.newaxis]
+        X = X - xp.mean(X, axis=1)[:, np.newaxis]
     if init is None:
-        cov = X @ ctranspose(X, backend=backend) / n_times
+        cov = X @ ctranspose(X) / n_times
     else:
-        cov = check_init(init, n_channels, backend=backend, like=X)
+        cov = check_init(init, n_channels, like=X)
 
     for _ in range(n_iter_max):
 
-        dist2 = distance_mahalanobis(X, cov, squared=True, backend=backend)
-        Xw = backend.sqrt(weight_func(dist2))[np.newaxis, :] * X
-        cov_new = Xw @ ctranspose(Xw, backend=backend) / n_times
+        dist2 = distance_mahalanobis(X, cov, squared=True)
+        Xw = xp.sqrt(weight_func(dist2))[np.newaxis, :] * X
+        cov_new = Xw @ ctranspose(Xw) / n_times
 
-        norm_delta = backend.as_float(backend.norm_fro(cov_new - cov))
-        norm_cov = backend.as_float(backend.norm_fro(cov))
+        norm_delta = float(xp.linalg.matrix_norm(cov_new - cov))
+        norm_cov = float(xp.linalg.matrix_norm(cov))
         cov = cov_new
         if (norm_delta / norm_cov) <= tol:
             break
@@ -724,11 +727,11 @@ def covariance_sch(X):
         J. Schafer, and K. Strimmer. Statistical Applications in Genetics and
         Molecular Biology, Volume 4, Issue 1, 2005.
     """
-    backend = resolve_backend(X)
+    xp = get_namespace(X)
     if not is_real_type(X):
         n_channels, _ = X.shape
-        X_ri = backend.concatenate(
-            (backend.real(X), backend.imag(X)),
+        X_ri = xp.concat(
+            (xp.real(X), xp.imag(X)),
             axis=0,
         )
         cov = covariance_sch(X_ri)
@@ -742,8 +745,8 @@ def covariance_sch(X):
         )
 
     _, n_times = X.shape
-    X_c = X - backend.mean(X, axis=1)[:, np.newaxis]
-    C_scm = X_c @ ctranspose(X_c, backend=backend) / n_times
+    X_c = X - xp.mean(X, axis=1)[:, np.newaxis]
+    C_scm = X_c @ ctranspose(X_c) / n_times
 
     # Compute optimal gamma, the weigthing between SCM and shrinkage estimator
     std = (
@@ -751,27 +754,27 @@ def covariance_sch(X):
         if isinstance(X, np.ndarray)
         else torch.std(X, dim=1, correction=0)
     )
-    R = n_times / ((n_times - 1.) * backend.outer(std, std))
+    R = n_times / ((n_times - 1.) * xp.linalg.outer(std, std))
     R *= C_scm
-    var_R = (X_c ** 2) @ ctranspose(X_c ** 2, backend=backend)
-    var_R -= 2 * C_scm * (X_c @ ctranspose(X_c, backend=backend))
+    var_R = (X_c ** 2) @ ctranspose(X_c ** 2)
+    var_R -= 2 * C_scm * (X_c @ ctranspose(X_c))
     var_R += n_times * C_scm ** 2
     var = (
         X.var(axis=1)
         if isinstance(X, np.ndarray)
         else torch.var(X, dim=1, correction=0)
     )
-    Xvar = backend.outer(var, var)
+    Xvar = xp.linalg.outer(var, var)
     var_R *= n_times / ((n_times - 1) ** 3 * Xvar)
-    diag0, diag1 = backend.diag_indices(R.shape[-1], like=R)
+    diag0, diag1 = diag_indices(R.shape[-1], xp=xp, like=R)
     R[diag0, diag1] = 0
     var_R[diag0, diag1] = 0
-    denom = backend.as_float(backend.sum(R ** 2))
+    denom = float(xp.sum(R ** 2))
     gamma = 0 if denom == 0 else max(
         0,
         min(
             1,
-            backend.as_float(backend.sum(var_R)) / denom,
+            float(xp.sum(var_R)) / denom,
         ),
     )
 
@@ -779,7 +782,7 @@ def covariance_sch(X):
     shrinkage = (
         gamma
         * (n_times / (n_times - 1.))
-        * backend.diag_embed(backend.diagonal(C_scm))
+        * diag_embed(xp.linalg.diagonal(C_scm), xp=xp)
     )
     return sigma + shrinkage
 
@@ -813,11 +816,11 @@ def covariance_scm(X, *, assume_centered=False):
     ----------
     .. [1] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
     """  # noqa
-    backend = resolve_backend(X)
+    xp = get_namespace(X)
     _, n_times = X.shape
     if not assume_centered:
-        X = X - backend.mean(X, axis=1)[:, np.newaxis]
-    return X @ ctranspose(X, backend=backend) / n_times
+        X = X - xp.mean(X, axis=1)[:, np.newaxis]
+    return X @ ctranspose(X) / n_times
 
 
 ###############################################################################
@@ -894,8 +897,8 @@ def covariances(X, estimator="cov", **kwds):
     """  # noqa
     est = check_function(estimator, cov_est_functions)
     n_matrices, n_channels, n_times = X.shape
-    backend = resolve_backend(X)
-    covmats = backend.zeros((n_matrices, n_channels, n_channels), like=X)
+    xp = get_namespace(X)
+    covmats = xp.zeros((n_matrices, n_channels, n_channels), dtype=X.dtype, device=xpd(X))
     for i in range(n_matrices):
         covmats[i] = est(X[i], **kwds)
     return covmats
@@ -924,22 +927,23 @@ def covariances_EP(X, P, estimator="cov", **kwds):
     """
     est = check_function(estimator, cov_est_functions)
     n_matrices, n_channels, n_times = X.shape
-    backend = resolve_backend(X, P)
+    xp = get_namespace(X, P)
     n_channels_proto, n_times_p = P.shape
     if n_times_p != n_times:
         raise ValueError(
             f"X and P do not have the same n_times: {n_times} and {n_times_p}")
-    covmats = backend.zeros(
+    covmats = xp.zeros(
         (
             n_matrices,
             n_channels + n_channels_proto,
             n_channels + n_channels_proto,
         ),
-        like=X,
+        dtype=X.dtype,
+        device=xpd(X),
     )
     for i in range(n_matrices):
         covmats[i] = est(
-            backend.concatenate((P, X[i]), axis=0),
+            xp.concat((P, X[i]), axis=0),
             **kwds,
         )
     return covmats
@@ -980,32 +984,33 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
             f"Parameter alpha must be strictly positive (Got {alpha})")
     est = check_function(estimator, cov_est_functions)
     n_matrices, n_channels, n_times = X.shape
-    backend = resolve_backend(X)
+    xp = get_namespace(X)
 
-    Hchannels = backend.eye(n_channels, like=X) - backend.outer(
-        backend.ones(n_channels, like=X, dtype=backend.real_dtype(X)),
-        backend.ones(n_channels, like=X, dtype=backend.real_dtype(X)),
+    Hchannels = xp.eye(n_channels, dtype=X.real.dtype, device=xpd(X)) - xp.linalg.outer(
+        xp.ones(n_channels, dtype=X.real.dtype, device=xpd(X)),
+        xp.ones(n_channels, dtype=X.real.dtype, device=xpd(X)),
     ) / n_channels
-    Htimes = backend.eye(n_times, like=X) - backend.outer(
-        backend.ones(n_times, like=X, dtype=backend.real_dtype(X)),
-        backend.ones(n_times, like=X, dtype=backend.real_dtype(X)),
+    Htimes = xp.eye(n_times, dtype=X.real.dtype, device=xpd(X)) - xp.linalg.outer(
+        xp.ones(n_times, dtype=X.real.dtype, device=xpd(X)),
+        xp.ones(n_times, dtype=X.real.dtype, device=xpd(X)),
     ) / n_times
     X = Hchannels @ X @ Htimes  # Eq(8), double centering
 
-    covmats = backend.zeros(
+    covmats = xp.zeros(
         (n_matrices, n_channels + n_times, n_channels + n_times),
-        like=X,
+        dtype=X.dtype,
+        device=xpd(X),
     )
     for i in range(n_matrices):
-        Y = backend.concatenate((
-            backend.concatenate(
-                (X[i], alpha * backend.eye(n_channels, like=X)),
+        Y = xp.concat((
+            xp.concat(
+                (X[i], alpha * xp.eye(n_channels, dtype=X.dtype, device=xpd(X))),
                 axis=1,
             ),
-            backend.concatenate(
+            xp.concat(
                 (
-                    alpha * backend.eye(n_times, like=X),
-                    backend.swapaxes(X[i], -2, -1),
+                    alpha * xp.eye(n_times, dtype=X.dtype, device=xpd(X)),
+                    xp.swapaxes(X[i], -2, -1),
                 ),
                 axis=1,
             ),
@@ -1041,13 +1046,13 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
     """
     est = check_function(estimator, cov_est_functions)
     n_matrices, n_channels, n_times = X.shape
-    backend = resolve_backend(X)
+    xp = get_namespace(X)
 
     if sum(blocks) != n_channels:
         raise ValueError("Sum of individual block sizes "
                          "must match number of channels of X.")
 
-    covmats = backend.zeros((n_matrices, n_channels, n_channels), like=X)
+    covmats = xp.zeros((n_matrices, n_channels, n_channels), dtype=X.dtype, device=xpd(X))
     for i in range(n_matrices):
         idx_start = 0
         for j in blocks:
@@ -1066,11 +1071,11 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
 def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator="cov"):
     """Convert EEG signal to covariance using sliding window."""
     est = check_function(estimator, cov_est_functions)
-    backend = resolve_backend(sig)
+    xp = get_namespace(sig)
     X = []
     if padding:
-        padd = backend.zeros((int(window / 2), sig.shape[1]), like=sig)
-        sig = backend.concatenate((padd, sig, padd), axis=0)
+        padd = xp.zeros((int(window / 2), sig.shape[1]), dtype=sig.dtype, device=xpd(sig))
+        sig = xp.concat((padd, sig, padd), axis=0)
 
     n_times, n_channels = sig.shape
     jump = int(window * overlapp)
@@ -1079,7 +1084,7 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator="cov"):
         X.append(est(sig[ix:ix + window, :].T))
         ix = ix + jump
 
-    return backend.stack(X, axis=0)
+    return xp.stack(X, axis=0)
 
 
 ###############################################################################
@@ -1124,7 +1129,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             f"Value overlap must be included in (0, 1) (Got {overlap})"
         )
 
-    backend = resolve_backend(X)
+    xp = get_namespace(X)
     n_channels, n_times = X.shape
     n_freqs = int(window / 2) + 1  # X real signal => compute half-spectrum
     step = int((1.0 - overlap) * window)
@@ -1142,7 +1147,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         win = torch.hann_window(
             window,
             periodic=False,
-            dtype=backend.real_dtype(X),
+            dtype=X.real.dtype,
             device=X.device,
         )
         shape = (n_channels, n_windows, window)
@@ -1167,7 +1172,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
                 0,
                 n_freqs,
                 device=X.device,
-                dtype=backend.real_dtype(X),
+                dtype=X.real.dtype,
             ) * float(fs / window)
         fix = (f >= fmin) & (f <= fmax)
         fdata = fdata[:, :, fix]
@@ -1186,11 +1191,11 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         freqs = None
 
     n_freqs = fdata.shape[2]
-    S = backend.zeros((n_channels, n_channels, n_freqs), like=fdata)
+    S = xp.zeros((n_channels, n_channels, n_freqs), dtype=fdata.dtype, device=xpd(fdata))
     for i in range(n_freqs):
         spec = fdata[:, :, i]
-        S[:, :, i] = ctranspose(spec, backend=backend) @ spec
-    S /= n_windows * backend.sum(win ** 2)
+        S[:, :, i] = ctranspose(spec) @ spec
+    S /= n_windows * xp.sum(win ** 2)
 
     # normalization to respect Parseval's theorem with the half-spectrum
     # excepted DC bin (always), and Nyquist bin (when window is even)
@@ -1236,7 +1241,7 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         fs=fs,
     )
 
-    return resolve_backend(S).real(S), freqs
+    return get_namespace(S).real(S), freqs
 
 
 def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
@@ -1307,10 +1312,10 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         fmax=fmax,
         fs=fs,
     )
-    backend = resolve_backend(S)
-    S2 = backend.abs(S) ** 2  # squared cross-spectral modulus
+    xp = get_namespace(S)
+    S2 = xp.abs(S) ** 2  # squared cross-spectral modulus
 
-    C = backend.zeros_like(S2)
+    C = xp.zeros_like(S2)
     f_inds = list(range(C.shape[-1]))
 
     # lagged coh not defined for DC and Nyquist bins, because S is real
@@ -1339,22 +1344,25 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
             f_inds = f_inds_
 
     for f in f_inds:
-        psd = backend.sqrt(backend.diagonal(S2[..., f]))
-        psd_prod = backend.outer(psd, psd)
+        psd = xp.sqrt(xp.linalg.diagonal(S2[..., f]))
+        psd_prod = xp.linalg.outer(psd, psd)
         if coh == "ordinary":
             C[..., f] = S2[..., f] / psd_prod
         elif coh == "instantaneous":
-            C[..., f] = backend.real(S[..., f]) ** 2 / psd_prod
+            C[..., f] = xp.real(S[..., f]) ** 2 / psd_prod
         elif coh == "lagged":
-            S_real = backend.real(S[..., f])
-            S_real_copy = backend.zeros_like(S_real)
+            S_real = xp.real(S[..., f])
+            S_real_copy = xp.zeros_like(S_real)
             S_real_copy[...] = S_real
-            diag0, diag1 = backend.diag_indices(S_real.shape[-1], like=S_real)
+            diag0, diag1 = diag_indices(S_real.shape[-1], xp=xp, like=S_real)
             S_real_copy[diag0, diag1] = 0.0
-            denom = backend.maximum(psd_prod - S_real_copy ** 2, 1e-10)
-            C[..., f] = backend.imag(S[..., f]) ** 2 / denom
+            denom = xp.maximum(
+                psd_prod - S_real_copy ** 2,
+                xp.asarray(1e-10, dtype=psd_prod.dtype, device=xpd(psd_prod)),
+            )
+            C[..., f] = xp.imag(S[..., f]) ** 2 / denom
         elif coh == "imaginary":
-            C[..., f] = backend.imag(S[..., f]) ** 2 / psd_prod
+            C[..., f] = xp.imag(S[..., f]) ** 2 / psd_prod
         else:
             raise ValueError(f"{coh} is not a supported coherence")
 
@@ -1386,18 +1394,18 @@ def normalize(X, norm):
     Xn : ndarray, shape (..., n, n)
         Set of normalized matrices, same dimensions as X.
     """
-    backend = resolve_backend(X)
+    xp = get_namespace(X)
     if not is_square(X):
         raise ValueError("Matrices must be square")
 
     if norm == "corr":
-        stddev = backend.sqrt(backend.abs(backend.diagonal(X)))
+        stddev = xp.sqrt(xp.abs(xp.linalg.diagonal(X)))
         denom = stddev[..., :, np.newaxis] * stddev[..., np.newaxis, :]
     elif norm == "trace":
-        denom = backend.sum(backend.diagonal(X), axis=-1)
+        denom = xp.sum(xp.linalg.diagonal(X), axis=-1)
     elif norm == "determinant":
-        _, logabsdet = backend.slogdet(X)
-        denom = backend.exp(logabsdet / X.shape[-1])
+        _, logabsdet = xp.linalg.slogdet(X)
+        denom = xp.exp(logabsdet / X.shape[-1])
     else:
         raise ValueError(f"{norm} is not a supported normalization")
 
@@ -1440,14 +1448,14 @@ def get_nondiag_weight(X):
         M. Congedo, C. Gouy-Pailler, C. Jutten. Clinical Neurophysiology,
         Elsevier, 2008, 119 (12), pp.2677-2686.
     """
-    backend = resolve_backend(X)
+    xp = get_namespace(X)
     if not is_square(X):
         raise ValueError("Matrices must be square")
 
     X2 = X**2
     # sum of squared diagonal elements
-    denom = backend.sum(backend.diagonal(X2), axis=-1)
+    denom = xp.sum(xp.linalg.diagonal(X2), axis=-1)
     # sum of squared off-diagonal elements
-    num = backend.sum(X2, axis=(-2, -1)) - denom
+    num = xp.sum(X2, axis=(-2, -1)) - denom
     weights = (1.0 / (X.shape[-1] - 1)) * (num / denom)
     return weights

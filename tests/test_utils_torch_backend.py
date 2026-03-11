@@ -65,6 +65,7 @@ from pyriemann.utils.mean import (  # noqa: E402
     mean_ale,
     mean_alm,
     mean_chol,
+    mean_euclid,
     mean_harmonic,
     mean_logchol,
     mean_logdet,
@@ -208,6 +209,15 @@ def _broadcast_pair(seed):
 def _weighted_set(seed, n_matrices=4):
     rng = np.random.RandomState(seed)
     X = _make_spd((n_matrices,), 3, rng)
+    weights = np.arange(1, n_matrices + 1, dtype=np.float64)
+    return X, weights / weights.sum()
+
+
+def _weighted_complex_set(seed, n_matrices=4):
+    rng = np.random.RandomState(seed)
+    X_real = _make_spd((n_matrices,), 3, rng)
+    imag = 0.05 * _make_sym((n_matrices,), 3, rng)
+    X = X_real.astype(np.complex128) + 1j * imag
     weights = np.arange(1, n_matrices + 1, dtype=np.float64)
     return X, weights / weights.sum()
 
@@ -844,6 +854,22 @@ def test_torch_geodesics_match_numpy(_name, fn, arg_factory, kwargs):
 def test_torch_means_match_numpy(_name, fn, arg_factory, kwargs, tol):
     X, weights = arg_factory()
     _assert_same_result(fn, X, sample_weight=weights, tol=tol, **kwargs)
+
+
+@pytest.mark.parametrize(
+    ("_name", "fn", "tol"),
+    [
+        ("mean_euclid", mean_euclid, STRICT_TOL),
+        ("mean_logchol", mean_logchol, STRICT_TOL),
+        ("mean_logdet", mean_logdet, ITER_TOL),
+        ("mean_riemann", mean_riemann, ITER_TOL),
+        ("mean_wasserstein", mean_wasserstein, ITER_TOL),
+        ("mean_ale", mean_ale, ITER_TOL),
+    ],
+)
+def test_torch_complex_weighted_means_match_numpy(_name, fn, tol):
+    X, weights = _weighted_complex_set(82)
+    _assert_same_result(fn, X, sample_weight=weights, tol=tol)
 
 
 @pytest.mark.parametrize(

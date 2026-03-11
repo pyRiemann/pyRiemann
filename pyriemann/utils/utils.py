@@ -1,10 +1,9 @@
 import inspect
 
-from ._backend import resolve_backend
+from ._backend import get_namespace, xpd
 
 
-def check_weights(weights, n_weights, *, check_positivity=False, backend=None,
-                  like=None):
+def check_weights(weights, n_weights, *, check_positivity=False, like=None):
     """Check weights.
 
     If input is None, output weights are equal.
@@ -29,23 +28,23 @@ def check_weights(weights, n_weights, *, check_positivity=False, backend=None,
     -----
     .. versionadded:: 0.4
     """
-    backend = resolve_backend(like, backend=backend)
-    dtype = None if like is None else backend.real_dtype(like)
+    xp = get_namespace(like)
+    dtype = None if like is None else like.real.dtype
 
     if weights is None:
-        weights = backend.ones(n_weights, like=like, dtype=dtype)
+        weights = xp.ones(n_weights, dtype=dtype, device=xpd(like) if like is not None else None)
 
     else:
-        weights = backend.asarray(weights, like=like, dtype=dtype)
+        weights = xp.asarray(weights, dtype=dtype, device=xpd(like) if like is not None else None)
         if weights.shape != (n_weights,):
             raise ValueError(
                 "Weights do not have the good shape. Should be (%d,) but got "
                 "%s." % (n_weights, weights.shape,)
             )
-        if check_positivity and backend.any(weights <= 0):
+        if check_positivity and bool(xp.any(weights <= 0)):
             raise ValueError("Weights must be strictly positive.")
 
-    weights = weights / backend.sum(weights)
+    weights = weights / xp.sum(weights)
     return weights
 
 
@@ -126,7 +125,7 @@ def check_function(fun, functions):
     return fun
 
 
-def check_init(init, n, *, backend=None, like=None):
+def check_init(init, n, *, like=None):
     """Check the initial matrix.
 
     Parameters
@@ -145,9 +144,9 @@ def check_init(init, n, *, backend=None, like=None):
     -----
     .. versionadded:: 0.8
     """
-    backend = resolve_backend(like, backend=backend)
+    xp = get_namespace(like)
     dtype = None if like is None else like.dtype
-    init = backend.asarray(init, like=like, dtype=dtype)
+    init = xp.asarray(init, dtype=dtype, device=xpd(like) if like is not None else None)
     if init.shape != (n, n):
         raise ValueError(
             "Init matrix does not have the good shape. "

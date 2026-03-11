@@ -3,13 +3,16 @@
 from ._backend import (
     _broadcast_batch_shapes,
     check_matrix_pair,
-    resolve_backend,
+    diag_indices,
+    get_namespace,
+    tril_indices,
+    xpd,
 )
 from .base import ctranspose, sqrtm, invsqrtm, powm, logm, expm
 from .utils import check_function
 
 
-def geodesic_chol(A, B, alpha=0.5, *, backend=None):
+def geodesic_chol(A, B, alpha=0.5):
     r"""Cholesky geodesic between SPD/HPD matrices.
 
     The matrix at position :math:`\alpha` on the Cholesky geodesic
@@ -54,9 +57,9 @@ def geodesic_chol(A, B, alpha=0.5, *, backend=None):
         I.L. Dryden, A. Koloydenko, D. Zhou.
         Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
     """
-    backend = resolve_backend(A, B, backend=backend)
-    geo = (1 - alpha) * backend.cholesky(A) + alpha * backend.cholesky(B)
-    return geo @ ctranspose(geo, backend=backend)
+    xp = get_namespace(A, B)
+    geo = (1 - alpha) * xp.linalg.cholesky(A) + alpha * xp.linalg.cholesky(B)
+    return geo @ ctranspose(geo)
 
 
 def geodesic_euclid(A, B, alpha=0.5):
@@ -92,7 +95,7 @@ def geodesic_euclid(A, B, alpha=0.5):
     return (1 - alpha) * A + alpha * B
 
 
-def geodesic_logchol(A, B, alpha=0.5, *, backend=None):
+def geodesic_logchol(A, B, alpha=0.5):
     r"""Log-Cholesky geodesic between SPD/HPD matrices.
 
     The matrix at position :math:`\alpha` on the log-Cholesky geodesic
@@ -127,24 +130,25 @@ def geodesic_logchol(A, B, alpha=0.5, *, backend=None):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    backend = resolve_backend(A, B, backend=backend)
-    A_chol, B_chol = backend.cholesky(A), backend.cholesky(B)
+    xp = get_namespace(A, B)
+    A_chol, B_chol = xp.linalg.cholesky(A), xp.linalg.cholesky(B)
 
     batch_shape = _broadcast_batch_shapes(A_chol, B_chol)
-    geo = backend.zeros(batch_shape + A_chol.shape[-2:], like=A_chol)
+    geo = xp.zeros(batch_shape + A_chol.shape[-2:], dtype=A_chol.dtype,
+                   device=xpd(A_chol))
 
-    tri0, tri1 = backend.tril_indices(A_chol.shape[-1], -1, like=A_chol)
+    tri0, tri1 = tril_indices(A_chol.shape[-1], -1, xp=xp, like=A_chol)
     geo[..., tri0, tri1] = (1 - alpha) * A_chol[..., tri0, tri1] + \
         alpha * B_chol[..., tri0, tri1]
 
-    diag0, diag1 = backend.diag_indices(A_chol.shape[-1], like=A_chol)
+    diag0, diag1 = diag_indices(A_chol.shape[-1], xp=xp, like=A_chol)
     geo[..., diag0, diag1] = A_chol[..., diag0, diag1] ** (1 - alpha) * \
         B_chol[..., diag0, diag1] ** alpha
 
-    return geo @ ctranspose(geo, backend=backend)
+    return geo @ ctranspose(geo)
 
 
-def geodesic_logeuclid(A, B, alpha=0.5, *, backend=None):
+def geodesic_logeuclid(A, B, alpha=0.5):
     r"""Log-Euclidean geodesic between SPD/HPD matrices.
 
     The matrix at position :math:`\alpha` on the log-Euclidean geodesic
@@ -183,15 +187,13 @@ def geodesic_logeuclid(A, B, alpha=0.5, *, backend=None):
         V. Arsigny, P. Fillard, X. Pennec, N. Ayache.
         SIAM J Matrix Anal Appl, 2007, 29 (1), pp. 328-347
     """
-    backend = resolve_backend(A, B, backend=backend)
     return expm(
-        (1 - alpha) * logm(A, backend=backend) +
-        alpha * logm(B, backend=backend),
-        backend=backend,
+        (1 - alpha) * logm(A) +
+        alpha * logm(B),
     )
 
 
-def geodesic_riemann(A, B, alpha=0.5, *, backend=None):
+def geodesic_riemann(A, B, alpha=0.5):
     r"""Affine-invariant Riemannian geodesic between SPD/HPD matrices.
 
     The matrix at position :math:`\alpha` on the affine-invariant Riemannian
@@ -230,14 +232,13 @@ def geodesic_riemann(A, B, alpha=0.5, *, backend=None):
         R. Bhatia and J. Holbrook.
         Linear Algebra and its Applications, 2006
     """
-    backend = resolve_backend(A, B, backend=backend)
-    sA = sqrtm(A, backend=backend)
-    isA = invsqrtm(A, backend=backend)
-    C = sA @ powm(isA @ B @ isA, alpha, backend=backend) @ sA
+    sA = sqrtm(A)
+    isA = invsqrtm(A)
+    C = sA @ powm(isA @ B @ isA, alpha) @ sA
     return C
 
 
-def geodesic_thompson(A, B, alpha=0.5, *, backend=None):
+def geodesic_thompson(A, B, alpha=0.5):
     r"""Thompson geodesic between SPD/HPD matrices.
 
     The matrix at position :math:`\alpha` on a possible Thompson geodesic
@@ -277,21 +278,21 @@ def geodesic_thompson(A, B, alpha=0.5, *, backend=None):
         C. Mostajeran, N. Da Costa, G. Van Goffrier and R. Sepulchre.
         SIAM Journal on Matrix Analysis and Applications, 2024
     """
-    backend = check_matrix_pair(A, B, require_square=True, backend=backend)
-    Ainvsqrt = invsqrtm(A, backend=backend)
-    E = backend.eigvalsh(Ainvsqrt @ B @ Ainvsqrt)
-    Emin = backend.min(E, axis=-1)
-    Emax = backend.max(E, axis=-1)
-    mask = backend.isclose(Emin, Emax)
+    xp = check_matrix_pair(A, B, require_square=True)
+    Ainvsqrt = invsqrtm(A)
+    E = xp.linalg.eigvalsh(Ainvsqrt @ B @ Ainvsqrt)
+    Emin = xp.min(E, axis=-1)
+    Emax = xp.max(E, axis=-1)
+    mask = xp.isclose(Emin, Emax)
 
     Emin_a = Emin ** alpha
     Emax_a = Emax ** alpha
     a = Emax * Emin_a - Emin * Emax_a
     b = Emax_a - Emin_a
     den = Emax - Emin
-    den_safe = backend.where(
+    den_safe = xp.where(
         mask,
-        backend.asarray(1, like=den, dtype=den.dtype),
+        xp.asarray(1, dtype=den.dtype, device=xpd(den)),
         den,
     )
 
@@ -299,10 +300,10 @@ def geodesic_thompson(A, B, alpha=0.5, *, backend=None):
     C_general = (
         b[..., None, None] * B + a[..., None, None] * A
     ) / den_safe[..., None, None]
-    return backend.where(mask[..., None, None], C_equal, C_general)
+    return xp.where(mask[..., None, None], C_equal, C_general)
 
 
-def geodesic_wasserstein(A, B, alpha=0.5, *, backend=None):
+def geodesic_wasserstein(A, B, alpha=0.5):
     r"""Wasserstein geodesic between SPD/HPD matrices.
 
     The matrix at position :math:`\alpha` on the Wasserstein geodesic between
@@ -345,12 +346,11 @@ def geodesic_wasserstein(A, B, alpha=0.5, *, backend=None):
         L. Malagò, L. Montrucchio, G. Pistone.
         Information Geometry, 2018, 1, pp. 137–179.
     """
-    backend = resolve_backend(A, B, backend=backend)
-    A12 = sqrtm(A, backend=backend)
-    A12inv = invsqrtm(A, backend=backend)
-    AB12 = A12 @ sqrtm(A12 @ B @ A12, backend=backend) @ A12inv
+    A12 = sqrtm(A)
+    A12inv = invsqrtm(A)
+    AB12 = A12 @ sqrtm(A12 @ B @ A12) @ A12inv
     return (1-alpha)**2 * A + alpha**2 * B + \
-        alpha*(1-alpha) * (AB12 + ctranspose(AB12, backend=backend))
+        alpha*(1-alpha) * (AB12 + ctranspose(AB12))
 
 
 ###############################################################################

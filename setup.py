@@ -41,6 +41,7 @@ setup(
         "numpy>=1.25.0",
         "scipy",
         "scikit-learn>=0.24",
+        "array-api-compat>=1.11",
         "einops",
         "joblib",
         "matplotlib",

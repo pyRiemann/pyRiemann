@@ -1,13 +1,13 @@
 import numpy as np
 
-from ._backend import resolve_backend
+from ._backend import get_namespace, is_torch_namespace
 
 
-def _get_eigenvals(X, *, backend=None):
+def _get_eigenvals(X):
     """Private function to compute all eigen values."""
-    backend = resolve_backend(X, backend=backend)
+    xp = get_namespace(X)
     n = X.shape[-1]
-    return backend.eig(X.reshape((-1, n, n)))[0]
+    return xp.linalg.eig(X.reshape((-1, n, n)))[0]
 
 
 def is_square(X):
@@ -41,8 +41,8 @@ def is_sym(X):
     """
     if not is_square(X):
         return False
-    backend = resolve_backend(X)
-    return backend.all(backend.isclose(X, backend.swapaxes(X, -2, -1)))
+    xp = get_namespace(X)
+    return bool(xp.all(xp.isclose(X, xp.swapaxes(X, -2, -1))))
 
 
 def is_skew_sym(X):
@@ -60,8 +60,8 @@ def is_skew_sym(X):
     """
     if not is_square(X):
         return False
-    backend = resolve_backend(X)
-    return backend.all(backend.isclose(X, -backend.swapaxes(X, -2, -1)))
+    xp = get_namespace(X)
+    return bool(xp.all(xp.isclose(X, -xp.swapaxes(X, -2, -1))))
 
 
 def is_hankel(X):
@@ -110,9 +110,9 @@ def is_real(X):
     """
     if is_real_type(X):
         return True
-    backend = resolve_backend(X)
-    X_imag = backend.imag(X)
-    return backend.all(backend.isclose(X_imag, backend.zeros_like(X_imag)))
+    xp = get_namespace(X)
+    X_imag = xp.imag(X)
+    return bool(xp.all(xp.isclose(X_imag, xp.zeros_like(X_imag))))
 
 
 def is_real_type(X):
@@ -132,8 +132,8 @@ def is_real_type(X):
     -----
     .. versionadded:: 0.6
     """
-    backend = resolve_backend(X)
-    if backend.name == "torch":
+    xp = get_namespace(X)
+    if is_torch_namespace(xp):
         return not X.dtype.is_complex
     return np.isrealobj(X)
 
@@ -156,8 +156,8 @@ def is_hermitian(X):
     """
     if is_real_type(X):
         return is_sym(X)
-    backend = resolve_backend(X)
-    return is_sym(backend.real(X)) and is_skew_sym(backend.imag(X))
+    xp = get_namespace(X)
+    return is_sym(xp.real(X)) and is_skew_sym(xp.imag(X))
 
 
 def is_pos_def(X, tol=0.0, fast_mode=False):
@@ -181,18 +181,18 @@ def is_pos_def(X, tol=0.0, fast_mode=False):
     ret : bool
         True if all matrices are positive definite.
     """
-    backend = resolve_backend(X)
+    xp = get_namespace(X)
     if fast_mode:
         try:
-            backend.cholesky(X)
+            xp.linalg.cholesky(X)
             return True
         except (np.linalg.LinAlgError, RuntimeError):
             return False
     else:
         if not is_square(X):
             return False
-        eigvals = _get_eigenvals(X, backend=backend)
-        return backend.all(backend.real(eigvals) > tol)
+        eigvals = _get_eigenvals(X)
+        return bool(xp.all(xp.real(eigvals) > tol))
 
 
 def is_pos_semi_def(X):
@@ -208,11 +208,11 @@ def is_pos_semi_def(X):
     ret : bool
         True if all matrices are positive semi-definite.
     """
-    backend = resolve_backend(X)
+    xp = get_namespace(X)
     if not is_square(X):
         return False
-    eigvals = _get_eigenvals(X, backend=backend)
-    return backend.all(backend.real(eigvals) >= 0.0)
+    eigvals = _get_eigenvals(X)
+    return bool(xp.all(xp.real(eigvals) >= 0.0))
 
 
 def is_sym_pos_def(X, tol=0.0):

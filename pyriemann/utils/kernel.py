@@ -2,7 +2,7 @@
 
 from einops import einsum
 
-from ._backend import resolve_backend
+from ._backend import get_namespace, diag_indices, xpd
 from .base import ctranspose, invsqrtm, logm
 from .mean import mean_riemann
 from .utils import check_function
@@ -65,20 +65,19 @@ def kernel_euclid(X, Y=None, *, Cref=None, reg=1e-10):
         <https://doi.org/10.1016/j.neunet.2009.06.035>`_
         J. Farquhar. Neural Networks, 2009
     """
-    backend = resolve_backend(X, Y, Cref)
+    xp = get_namespace(X, Y, Cref)
     X, Y, are_xy_equal = _check_xy(X, Y)
     if Cref is None:
-        Xt_, Y_ = ctranspose(X, backend=backend), Y
+        Xt_, Y_ = ctranspose(X), Y
     else:
         _check_cref(X, Cref)
-        Xt_, Y_ = ctranspose(X - Cref, backend=backend), Y - Cref
+        Xt_, Y_ = ctranspose(X - Cref), Y - Cref
 
     return _apply_matrix_kernel(
         Xt_,
         Y_,
         are_xy_equal,
         reg=reg,
-        backend=backend,
     )
 
 
@@ -145,16 +144,16 @@ def kernel_logeuclid(X, Y=None, *, Cref=None, reg=1e-10):
         <https://ieeexplore.ieee.org/abstract/document/5684490>`_
         E. Wang, W. Guo, L. Dai, K. Lee, B. Ma and H. Li. IEEE ISCSLP, 2010
     """
-    backend = resolve_backend(X, Y, Cref)
+    xp = get_namespace(X, Y, Cref)
     X, Y, are_xy_equal = _check_xy(X, Y)
     if Cref is None:
-        X_, Y_ = logm(X, backend=backend), logm(Y, backend=backend)
+        X_, Y_ = logm(X), logm(Y)
     else:
         _check_cref(X, Cref)
-        logCref = logm(Cref, backend=backend)
+        logCref = logm(Cref)
         X_, Y_ = (
-            logm(X, backend=backend) - logCref,
-            logm(Y, backend=backend) - logCref,
+            logm(X) - logCref,
+            logm(Y) - logCref,
         )
 
     return _apply_matrix_kernel(
@@ -162,7 +161,6 @@ def kernel_logeuclid(X, Y=None, *, Cref=None, reg=1e-10):
         Y_,
         are_xy_equal,
         reg=reg,
-        backend=backend,
     )
 
 
@@ -218,16 +216,16 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
         A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
         Elsevier, 2013, 112, pp.172-178.
     """
-    backend = resolve_backend(X, Y, Cref)
+    xp = get_namespace(X, Y, Cref)
     X, Y, are_xy_equal = _check_xy(X, Y)
     if Cref is None:
-        Cref = mean_riemann(X, backend=backend)
+        Cref = mean_riemann(X)
     else:
         _check_cref(X, Cref)
-    Cm12 = invsqrtm(Cref, backend=backend)
+    Cm12 = invsqrtm(Cref)
     X_, Y_ = (
-        logm(Cm12 @ X @ Cm12, backend=backend),
-        logm(Cm12 @ Y @ Cm12, backend=backend),
+        logm(Cm12 @ X @ Cm12),
+        logm(Cm12 @ Y @ Cm12),
     )
 
     return _apply_matrix_kernel(
@@ -235,7 +233,6 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
         Y_,
         are_xy_equal,
         reg=reg,
-        backend=backend,
     )
 
 
@@ -262,15 +259,15 @@ def _check_cref(X, Cref):
         )
 
 
-def _apply_matrix_kernel(Xt, Y, are_xy_equal, reg, *, backend=None):
+def _apply_matrix_kernel(Xt, Y, are_xy_equal, reg):
     # products K[i,j] = trace(Xt[i] @ Y[j])
-    backend = resolve_backend(Xt, Y, backend=backend)
+    xp = get_namespace(Xt, Y)
     K = einsum(Xt, Y, "i m n, j n m -> i j")
 
     # regularization to mitigate numerical errors
     if are_xy_equal:
         n_matrices_X = K.shape[0]
-        diag0, diag1 = backend.diag_indices(n_matrices_X, like=K)
+        diag0, diag1 = diag_indices(n_matrices_X, xp=xp, like=K)
         K[diag0, diag1] += reg
 
     return K

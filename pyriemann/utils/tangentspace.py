@@ -4,7 +4,15 @@ import math
 
 import numpy as np
 
-from ._backend import check_matrix_pair, resolve_backend
+from ._backend import (
+    check_matrix_pair,
+    diag_embed,
+    diag_indices,
+    get_namespace,
+    tril_indices,
+    triu_indices,
+    xpd,
+)
 from .base import ctranspose, expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
 from .utils import check_function
 
@@ -38,7 +46,7 @@ def exp_map_euclid(X, Cref):
     return X + Cref
 
 
-def exp_map_logchol(X, Cref, *, backend=None):
+def exp_map_logchol(X, Cref):
     r"""Project matrices back to manifold by log-Cholesky exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
@@ -67,32 +75,32 @@ def exp_map_logchol(X, Cref, *, backend=None):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    backend = check_matrix_pair(X, Cref, require_square=True, backend=backend)
-    Cref_chol = backend.cholesky(Cref)
-    Cref_invchol = backend.inv(Cref_chol)
+    xp = check_matrix_pair(X, Cref, require_square=True)
+    Cref_chol = xp.linalg.cholesky(Cref)
+    Cref_invchol = xp.linalg.inv(Cref_chol)
 
-    tri0, tri1 = backend.tril_indices(X.shape[-1], -1, like=X)
-    diag0, diag1 = backend.diag_indices(X.shape[-1], like=X)
+    tri0, tri1 = tril_indices(X.shape[-1], -1, xp=xp, like=X)
+    diag0, diag1 = diag_indices(X.shape[-1], xp=xp, like=X)
 
-    diff_bracket = Cref_invchol @ X @ ctranspose(Cref_invchol, backend=backend)
+    diff_bracket = Cref_invchol @ X @ ctranspose(Cref_invchol)
     diff_bracket[..., tri1, tri0] = 0
     diff_bracket[..., diag0, diag1] /= 2
     diff = Cref_chol @ diff_bracket
 
-    exp_map = backend.zeros(diff.shape, like=diff)
+    exp_map = xp.zeros(diff.shape, dtype=diff.dtype, device=xpd(diff))
 
     exp_map[..., tri0, tri1] = Cref_chol[..., tri0, tri1] + \
         diff[..., tri0, tri1]
 
     exp_map[..., diag0, diag1] = (
-        backend.exp(diff_bracket[..., diag0, diag1]) *
+        xp.exp(diff_bracket[..., diag0, diag1]) *
         Cref_chol[..., diag0, diag1]
     )
 
-    return exp_map @ ctranspose(exp_map, backend=backend)
+    return exp_map @ ctranspose(exp_map)
 
 
-def exp_map_logeuclid(X, Cref, *, backend=None):
+def exp_map_logeuclid(X, Cref):
     r"""Project matrices back to manifold by log-Euclidean exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
@@ -137,14 +145,13 @@ def exp_map_logeuclid(X, Cref, *, backend=None):
         <https://ieeexplore.ieee.org/document/10735221>`_
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
-    backend = check_matrix_pair(X, Cref, require_square=True, backend=backend)
+    xp = check_matrix_pair(X, Cref, require_square=True)
     return expm(
-        logm(Cref, backend=backend) + ddlogm(X, Cref, backend=backend),
-        backend=backend,
+        logm(Cref) + ddlogm(X, Cref),
     )
 
 
-def exp_map_riemann(X, Cref, Cm12=False, *, backend=None):
+def exp_map_riemann(X, Cref, Cm12=False):
     r"""Project matrices back to manifold by Riemannian exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
@@ -187,15 +194,15 @@ def exp_map_riemann(X, Cref, Cm12=False, *, backend=None):
         <https://link.springer.com/article/10.1007/s11263-005-3222-z>`_
         X. Pennec, P. Fillard, N. Ayache. IJCV, 2006, 66(1), pp. 41-66.
     """
-    backend = check_matrix_pair(X, Cref, require_square=True, backend=backend)
+    xp = check_matrix_pair(X, Cref, require_square=True)
     if Cm12:
-        Cm12 = invsqrtm(Cref, backend=backend)
+        Cm12 = invsqrtm(Cref)
         X = Cm12 @ X @ Cm12
-    C12 = sqrtm(Cref, backend=backend)
-    return C12 @ expm(X, backend=backend) @ C12
+    C12 = sqrtm(Cref)
+    return C12 @ expm(X) @ C12
 
 
-def exp_map_wasserstein(X, Cref, *, backend=None):
+def exp_map_wasserstein(X, Cref):
     r"""Project matrices back to manifold by Wasserstein exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
@@ -226,14 +233,15 @@ def exp_map_wasserstein(X, Cref, *, backend=None):
         L. Malagò, L. Montrucchio, G. Pistone. Information Geometry, 2018, 1,
         pp. 137–179.
     """
-    backend = check_matrix_pair(X, Cref, require_square=True, backend=backend)
-    d, V = backend.eigh(Cref)
+    xp = check_matrix_pair(X, Cref, require_square=True)
+    d, V = xp.linalg.eigh(Cref)
     C = 1 / (d[..., :, None] + d[..., None, :])
+    d = xp.asarray(d, dtype=Cref.dtype, device=xpd(Cref))
 
-    X_rotated = ctranspose(V, backend=backend) @ X @ V
+    X_rotated = ctranspose(V) @ X @ V
     X_tmp = C * X_rotated
-    X_tmp = X_tmp @ backend.diag_embed(d) @ X_tmp
-    X_tmp = V @ X_tmp @ ctranspose(V, backend=backend)
+    X_tmp = X_tmp @ diag_embed(d, xp=xp) @ X_tmp
+    X_tmp = V @ X_tmp @ ctranspose(V)
 
     return Cref + X + X_tmp
 
@@ -314,7 +322,7 @@ def log_map_euclid(X, Cref):
     return X - Cref
 
 
-def log_map_logchol(X, Cref, *, backend=None):
+def log_map_logchol(X, Cref):
     r"""Project matrices in tangent space by log-Cholesky logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
@@ -343,33 +351,33 @@ def log_map_logchol(X, Cref, *, backend=None):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    backend = check_matrix_pair(X, Cref, require_square=True, backend=backend)
-    X_chol = backend.cholesky(X)
-    Cref_chol = backend.cholesky(Cref)
+    xp = check_matrix_pair(X, Cref, require_square=True)
+    X_chol = xp.linalg.cholesky(X)
+    Cref_chol = xp.linalg.cholesky(Cref)
 
     batch_shape = np.broadcast_shapes(
         X_chol.shape[:-2],
         Cref_chol.shape[:-2],
     )
-    res = backend.zeros(batch_shape + X_chol.shape[-2:], like=X_chol)
+    res = xp.zeros(batch_shape + X_chol.shape[-2:], dtype=X_chol.dtype, device=xpd(X_chol))
 
-    tri0, tri1 = backend.tril_indices(X.shape[-1], -1, like=X)
+    tri0, tri1 = tril_indices(X.shape[-1], -1, xp=xp, like=X)
     res[..., tri0, tri1] = X_chol[..., tri0, tri1] - Cref_chol[..., tri0, tri1]
 
-    diag0, diag1 = backend.diag_indices(X.shape[-1], like=X)
-    res[..., diag0, diag1] = Cref_chol[..., diag0, diag1] * backend.log(
+    diag0, diag1 = diag_indices(X.shape[-1], xp=xp, like=X)
+    res[..., diag0, diag1] = Cref_chol[..., diag0, diag1] * xp.log(
             X_chol[..., diag0, diag1] / Cref_chol[..., diag0, diag1]
     )
 
     X_new = (
-        Cref_chol @ ctranspose(res, backend=backend) +
-        res @ ctranspose(Cref_chol, backend=backend)
+        Cref_chol @ ctranspose(res) +
+        res @ ctranspose(Cref_chol)
     )
 
     return X_new
 
 
-def log_map_logeuclid(X, Cref, *, backend=None):
+def log_map_logeuclid(X, Cref):
     r"""Project matrices in tangent space by log-Euclidean logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
@@ -414,17 +422,16 @@ def log_map_logeuclid(X, Cref, *, backend=None):
         <https://ieeexplore.ieee.org/document/10735221>`_
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
-    backend = check_matrix_pair(X, Cref, require_square=True, backend=backend)
-    logCref = logm(Cref, backend=backend)
+    xp = check_matrix_pair(X, Cref, require_square=True)
+    logCref = logm(Cref)
     X_new = ddexpm(
-        logm(X, backend=backend) - logCref,
+        logm(X) - logCref,
         logCref,
-        backend=backend,
     )
     return X_new
 
 
-def log_map_riemann(X, Cref, C12=False, *, backend=None):
+def log_map_riemann(X, Cref, C12=False):
     r"""Project matrices in tangent space by Riemannian logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
@@ -467,16 +474,16 @@ def log_map_riemann(X, Cref, C12=False, *, backend=None):
         <https://link.springer.com/article/10.1007/s11263-005-3222-z>`_
         X. Pennec, P. Fillard, N. Ayache. IJCV, 2006, 66(1), pp. 41-66.
     """
-    backend = check_matrix_pair(X, Cref, require_square=True, backend=backend)
-    Cm12 = invsqrtm(Cref, backend=backend)
-    X_new = logm(Cm12 @ X @ Cm12, backend=backend)
+    xp = check_matrix_pair(X, Cref, require_square=True)
+    Cm12 = invsqrtm(Cref)
+    X_new = logm(Cm12 @ X @ Cm12)
     if C12:
-        C12 = sqrtm(Cref, backend=backend)
+        C12 = sqrtm(Cref)
         X_new = C12 @ X_new @ C12
     return X_new
 
 
-def log_map_wasserstein(X, Cref, *, backend=None):
+def log_map_wasserstein(X, Cref):
     r"""Project matrices in tangent space by Wasserstein logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
@@ -511,12 +518,12 @@ def log_map_wasserstein(X, Cref, *, backend=None):
         L. Malagò, L. Montrucchio, G. Pistone. Information Geometry, 2018, 1,
         pp. 137–179.
     """
-    backend = check_matrix_pair(X, Cref, require_square=True, backend=backend)
-    P12 = sqrtm(Cref, backend=backend)
-    P12inv = invsqrtm(Cref, backend=backend)
-    sqrt_bracket = sqrtm(P12 @ X @ P12, backend=backend)
+    xp = check_matrix_pair(X, Cref, require_square=True)
+    P12 = sqrtm(Cref)
+    P12inv = invsqrtm(Cref)
+    sqrt_bracket = sqrtm(P12 @ X @ P12)
     tmp = P12inv @ sqrt_bracket @ P12
-    return tmp + ctranspose(tmp, backend=backend) - 2 * Cref
+    return tmp + ctranspose(tmp) - 2 * Cref
 
 
 log_map_functions = {
@@ -566,7 +573,7 @@ def log_map(X, Cref, *, metric="riemann"):
 ###############################################################################
 
 
-def upper(X, *, backend=None):
+def upper(X):
     r"""Return the weighted upper triangular part of matrices.
 
     This function computes the minimal representation of a matrix in tangent
@@ -595,20 +602,20 @@ def upper(X, *, backend=None):
         O. Tuzel, F. Porikli, and P. Meer. IEEE Transactions on Pattern
         Analysis and Machine Intelligence, Volume 30, Issue 10, October 2008.
     """
-    backend = resolve_backend(X, backend=backend)
+    xp = get_namespace(X)
     n = X.shape[-1]
     if X.shape[-2] != n:
         raise ValueError("Matrices must be square")
-    idx = backend.triu_indices(n, like=X)
-    idx_no_diag = backend.triu_indices(n, k=1, like=X)
-    coeffs = backend.ones((n, n), like=X, dtype=backend.real_dtype(X))
+    idx = triu_indices(n, xp=xp, like=X)
+    idx_no_diag = triu_indices(n, k=1, xp=xp, like=X)
+    coeffs = xp.ones((n, n), dtype=X.real.dtype, device=xpd(X))
     coeffs[idx_no_diag[0], idx_no_diag[1]] = math.sqrt(2.0)
     coeffs = coeffs[idx[0], idx[1]]
     T = coeffs * X[..., idx[0], idx[1]]
     return T
 
 
-def unupper(T, *, backend=None):
+def unupper(T):
     """Inverse upper function.
 
     This function is the inverse of upper function: it reconstructs symmetric/
@@ -632,15 +639,15 @@ def unupper(T, *, backend=None):
     -----
     .. versionadded:: 0.4
     """
-    backend = resolve_backend(T, backend=backend)
+    xp = get_namespace(T)
     dims = T.shape
     n = int((math.sqrt(1 + 8 * dims[-1]) - 1) / 2)
-    X = backend.zeros((*dims[:-1], n, n), like=T, dtype=T.dtype)
-    idx = backend.triu_indices(n, like=T)
+    X = xp.zeros((*dims[:-1], n, n), dtype=T.dtype, device=xpd(T))
+    idx = triu_indices(n, xp=xp, like=T)
     X[..., idx[0], idx[1]] = T
-    idx = backend.triu_indices(n, k=1, like=T)
+    idx = triu_indices(n, k=1, xp=xp, like=T)
     X[..., idx[0], idx[1]] /= math.sqrt(2.0)
-    X[..., idx[1], idx[0]] = backend.conj(X[..., idx[0], idx[1]])
+    X[..., idx[1], idx[0]] = xp.conj(X[..., idx[0], idx[1]])
     return X
 
 
@@ -739,7 +746,7 @@ def transport_euclid(X, A=None, B=None):
     return X
 
 
-def transport_logchol(X, A, B, *, backend=None):
+def transport_logchol(X, A, B):
     r"""Parallel transport for log-Cholesky metric.
 
     The parallel transport of matrices :math:`\mathbf{X}` in tangent space
@@ -782,31 +789,31 @@ def transport_logchol(X, A, B, *, backend=None):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    backend = resolve_backend(X, A, B, backend=backend)
-    A_chol = backend.cholesky(A)
-    B_chol = backend.cholesky(B)
-    A_invchol = backend.inv(A_chol)
+    xp = get_namespace(X, A, B)
+    A_chol = xp.linalg.cholesky(A)
+    B_chol = xp.linalg.cholesky(B)
+    A_invchol = xp.linalg.inv(A_chol)
 
-    tri0, tri1 = backend.tril_indices(X.shape[-1], -1, like=X)
-    diag0, diag1 = backend.diag_indices(X.shape[-1], like=X)
+    tri0, tri1 = tril_indices(X.shape[-1], -1, xp=xp, like=X)
+    diag0, diag1 = diag_indices(X.shape[-1], xp=xp, like=X)
 
-    P = A_invchol @ X @ ctranspose(A_invchol, backend=backend)
-    P12 = backend.zeros_like(P)
+    P = A_invchol @ X @ ctranspose(A_invchol)
+    P12 = xp.zeros_like(P)
     P12[..., tri0, tri1] = P[..., tri0, tri1]
     P12[..., diag0, diag1] = P[..., diag0, diag1] / 2
     X_ = A_chol @ P12
 
-    T = backend.zeros_like(X)
+    T = xp.zeros_like(X)
     T[..., tri0, tri1] = X_[..., tri0, tri1]
     T[..., diag0, diag1] = B_chol[..., diag0, diag1] \
         / A_chol[..., diag0, diag1] * X_[..., diag0, diag1]
 
-    X_new = B_chol @ ctranspose(T, backend=backend) + \
-        T @ ctranspose(B_chol, backend=backend)
+    X_new = B_chol @ ctranspose(T) + \
+        T @ ctranspose(B_chol)
     return X_new
 
 
-def transport_logeuclid(X, A, B, *, backend=None):
+def transport_logeuclid(X, A, B):
     r"""Parallel transport for log-Euclidean metric.
 
     The parallel transport of matrices :math:`\mathbf{X}` in tangent space
@@ -853,15 +860,14 @@ def transport_logeuclid(X, A, B, *, backend=None):
         <https://www.sciencedirect.com/science/article/pii/S0024379522004360>`_
         Y. Thanwerdas & X. Pennec. Linear Algebra and its Applications, 2023.
     """
-    backend = resolve_backend(X, A, B, backend=backend)
+    xp = get_namespace(X, A, B)
     return ddexpm(
-        ddlogm(X, A, backend=backend),
-        logm(B, backend=backend),
-        backend=backend,
+        ddlogm(X, A),
+        logm(B),
     )
 
 
-def transport_riemann(X, A, B, *, backend=None):
+def transport_riemann(X, A, B):
     r"""Parallel transport for affine-invariant Riemannian metric.
 
     The parallel transport of matrices :math:`\mathbf{X}` in tangent space
@@ -914,11 +920,11 @@ def transport_riemann(X, A, B, *, backend=None):
     # BA^{-1} is not sym => use sqrtm from scipy
     # E = scipy.linalg.sqrtm(B @ np.linalg.inv(A))
     # (BA^{-1})^{1/2} = A^{1/2} (A^{-1/2}BA^{-1/2})^{1/2} A^{-1/2}
-    backend = resolve_backend(X, A, B, backend=backend)
-    A12 = sqrtm(A, backend=backend)
-    A12inv = invsqrtm(A, backend=backend)
-    E = A12 @ sqrtm(A12inv @ B @ A12inv, backend=backend) @ A12inv
-    X_new = E @ X @ ctranspose(E, backend=backend)
+    xp = get_namespace(X, A, B)
+    A12 = sqrtm(A)
+    A12inv = invsqrtm(A)
+    E = A12 @ sqrtm(A12inv @ B @ A12inv) @ A12inv
+    X_new = E @ X @ ctranspose(E)
     return X_new
 
 

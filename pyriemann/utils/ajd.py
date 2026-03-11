@@ -4,7 +4,7 @@ import warnings
 
 import numpy as np
 
-from ._backend import resolve_backend
+from ._backend import get_namespace, diag_indices, is_numpy_namespace, xpd
 from .utils import check_weights, check_function, check_init
 
 
@@ -50,20 +50,20 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
         J.-F. Cardoso and A. Souloumiac, SIAM Journal on Matrix Analysis and
         Applications, 17(1), pp. 161–164, 1996.
     """
-    backend = resolve_backend(X, init)
+    xp = get_namespace(X, init)
     n_matrices, _, _ = X.shape
     # reshape input matrix
-    A = backend.swapaxes(X, 0, 1).reshape(X.shape[-1], -1)
-    A_copy = backend.zeros_like(A)
+    A = xp.swapaxes(X, 0, 1).reshape(X.shape[-1], -1)
+    A_copy = xp.zeros_like(A)
     A_copy[...] = A
     A = A_copy
     n, n_matrices_x_n = A.shape
 
     # init variables
     if init is None:
-        V = backend.eye(n, like=X)
+        V = xp.eye(n, dtype=X.dtype, device=xpd(X))
     else:
-        V = check_init(init, n, backend=backend, like=X)
+        V = check_init(init, n, like=X)
 
     for _ in range(n_iter_max):
         crit = False
@@ -73,35 +73,35 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
                 Iq = list(range(q, n_matrices_x_n, n))
 
                 # computation of Givens rotations
-                g = backend.stack(
+                g = xp.stack(
                     (A[p, Ip] - A[q, Iq], A[p, Iq] + A[q, Ip]),
                     axis=0,
                 )
-                gg = g @ backend.swapaxes(g, -2, -1)
+                gg = g @ xp.swapaxes(g, -2, -1)
                 ton = gg[0, 0] - gg[1, 1]
                 toff = gg[0, 1] + gg[1, 0]
-                theta = 0.5 * backend.arctan2(
+                theta = 0.5 * xp.atan2(
                     toff,
-                    ton + backend.sqrt(ton**2 + toff**2),
+                    ton + xp.sqrt(ton**2 + toff**2),
                 )
-                c = backend.cos(theta)
-                s = backend.sin(theta)
-                abs_s = backend.as_float(backend.abs(s))
+                c = xp.cos(theta)
+                s = xp.sin(theta)
+                abs_s = float(xp.abs(s))
                 crit = crit or (abs_s > eps)
 
                 # update of A and V matrices
                 if abs_s > eps:
-                    tmp = backend.zeros_like(A[:, Ip])
+                    tmp = xp.zeros_like(A[:, Ip])
                     tmp[...] = A[:, Ip]
                     A[:, Ip] = c * A[:, Ip] + s * A[:, Iq]
                     A[:, Iq] = c * A[:, Iq] - s * tmp
 
-                    tmp = backend.zeros_like(A[p, :])
+                    tmp = xp.zeros_like(A[p, :])
                     tmp[...] = A[p, :]
                     A[p, :] = c * A[p, :] + s * A[q, :]
                     A[q, :] = c * A[q, :] - s * tmp
 
-                    tmp = backend.zeros_like(V[:, p])
+                    tmp = xp.zeros_like(V[:, p])
                     tmp[...] = V[:, p]
                     V[:, p] = c * V[:, p] + s * V[:, q]
                     V[:, q] = c * V[:, q] - s * tmp
@@ -111,10 +111,10 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
 
-    D = backend.swapaxes(A.reshape(n, n_matrices, n), 0, 1)
+    D = xp.swapaxes(A.reshape(n, n_matrices, n), 0, 1)
     return (
-        backend.asarray(V, like=X, dtype=X.dtype),
-        backend.asarray(D, like=X, dtype=X.dtype),
+        xp.asarray(V, dtype=X.dtype, device=xpd(X)),
+        xp.asarray(D, dtype=X.dtype, device=xpd(X)),
     )
 
 
@@ -125,7 +125,6 @@ def ajd_pham(
     eps=1e-6,
     n_iter_max=20,
     sample_weight=None,
-    backend=None,
 ):
     """Approximate joint diagonalization based on Pham's algorithm.
 
@@ -169,32 +168,31 @@ def ajd_pham(
         D.-T. Pham. SIAM Journal on Matrix Analysis and Applications, 22(4),
         pp. 1136-1152, 2000.
     """
-    backend = resolve_backend(X, backend=backend)
+    xp = get_namespace(X)
     n_matrices, _, _ = X.shape
     normalized_weight = check_weights(
         sample_weight,
         n_matrices,
         check_positivity=True,
-        backend=backend,
         like=X,
     )  # sum = 1
 
     # Flatten matrix batches along columns while preserving the original
     # matrix-wise block structure used by Pham's updates.
-    A = backend.swapaxes(backend.swapaxes(X, 0, 2), 1, 2)
+    A = xp.swapaxes(xp.swapaxes(X, 0, 2), 1, 2)
     A = A.reshape(X.shape[-1], n_matrices * X.shape[-1])
-    A_copy = backend.zeros_like(A)
+    A_copy = xp.zeros_like(A)
     A_copy[...] = A
     A = A_copy
     n, n_matrices_x_n = A.shape
 
     if init is None:
-        V = backend.eye(n, like=X)
+        V = xp.eye(n, dtype=X.dtype, device=xpd(X))
     else:
-        V = check_init(init, n, backend=backend, like=X)
-    V = backend.asarray(V, like=X, dtype=X.dtype)
+        V = check_init(init, n, like=X)
+    V = xp.asarray(V, dtype=X.dtype, device=xpd(X))
     epsilon = n * (n - 1) * eps
-    is_real = backend.real_dtype(X) == X.dtype
+    is_real = xp.isdtype(X.dtype, "real floating")
 
     for _ in range(n_iter_max):
         crit = 0
@@ -206,43 +204,46 @@ def ajd_pham(
                 c1 = A[ii, Ii]
                 c2 = A[jj, Ij]
 
-                g12 = backend.sum(normalized_weight * (A[ii, Ij] / c1))
-                g21 = backend.sum(normalized_weight * (A[ii, Ij] / c2))
+                g12 = xp.sum(normalized_weight * (A[ii, Ij] / c1))
+                g21 = xp.sum(normalized_weight * (A[ii, Ij] / c2))
 
-                omega21 = backend.sum(normalized_weight * (c1 / c2))
-                omega12 = backend.sum(normalized_weight * (c2 / c1))
-                omega = backend.sqrt(omega12 * omega21)
+                omega21 = xp.sum(normalized_weight * (c1 / c2))
+                omega12 = xp.sum(normalized_weight * (c2 / c1))
+                omega = xp.sqrt(omega12 * omega21)
 
-                tmp = backend.sqrt(omega21 / omega12)
+                tmp = xp.sqrt(omega21 / omega12)
                 tmp1 = (tmp * g12 + g21) / (omega + 1)
                 if is_real:
-                    omega = backend.maximum(omega - 1, 1e-9)
+                    omega = xp.maximum(
+                        omega - 1,
+                        xp.asarray(1e-9, dtype=omega.dtype, device=xpd(omega)),
+                    )
                 tmp2 = (tmp * g12 - g21) / omega
 
                 h12 = tmp1 + tmp2
-                h21 = backend.conj((tmp1 - tmp2) / tmp)
+                h21 = xp.conj((tmp1 - tmp2) / tmp)
 
-                crit += backend.as_float(backend.real(
+                crit += float(xp.real(
                     n_matrices * (
-                        g12 * backend.conj(h12) + g21 * h21
+                        g12 * xp.conj(h12) + g21 * h21
                     ) / 2.0
                 ))
 
                 if is_real:
-                    tau_den = 1 + backend.real(backend.sqrt(1 - h12 * h21))
+                    tau_den = 1 + xp.real(xp.sqrt(1 - h12 * h21))
                 else:
-                    tau_den = 1 + 0.5j * backend.imag(h12 * h21)
-                    tau_den = tau_den + backend.sqrt(
+                    tau_den = 1 + 0.5j * xp.imag(h12 * h21)
+                    tau_den = tau_den + xp.sqrt(
                         tau_den ** 2 - h12 * h21
                     )
 
-                tau = backend.eye(2, like=X)
-                tau[0, 1] = backend.conj(-h12 / tau_den)
-                tau[1, 0] = backend.conj(-h21 / tau_den)
+                tau = xp.eye(2, dtype=X.dtype, device=xpd(X))
+                tau[0, 1] = xp.conj(-h12 / tau_den)
+                tau[1, 0] = xp.conj(-h21 / tau_den)
 
-                A[[ii, jj], :] = backend.conj(tau) @ A[[ii, jj], :]
-                tmp = backend.stack((A[:, Ii], A[:, Ij]), axis=-1)
-                tmp = tmp @ backend.swapaxes(tau, -2, -1)
+                A[[ii, jj], :] = xp.conj(tau) @ A[[ii, jj], :]
+                tmp = xp.stack((A[:, Ii], A[:, Ij]), axis=-1)
+                tmp = tmp @ xp.swapaxes(tau, -2, -1)
                 A[:, Ii] = tmp[..., 0]
                 A[:, Ij] = tmp[..., 1]
                 V[[ii, jj], :] = tau @ V[[ii, jj], :]
@@ -252,10 +253,10 @@ def ajd_pham(
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
 
-    D = backend.conj(backend.swapaxes(A.reshape(n, n_matrices, n), 0, 1))
+    D = xp.conj(xp.swapaxes(A.reshape(n, n_matrices, n), 0, 1))
     return (
-        backend.asarray(V, like=X, dtype=X.dtype),
-        backend.asarray(D, like=X, dtype=X.dtype),
+        xp.asarray(V, dtype=X.dtype, device=xpd(X)),
+        xp.asarray(D, dtype=X.dtype, device=xpd(X)),
     )
 
 
@@ -305,68 +306,68 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
         P. Tichavsky and A. Yeredor. IEEE Trans Signal Process, 57(3), pp.
         878 - 891, 2009.
     """
-    backend = resolve_backend(X, init)
+    xp = get_namespace(X, init)
     n_matrices, _, _ = X.shape
     # reshape input matrix
-    M = backend.swapaxes(X, 0, 1).reshape(X.shape[-1], -1)
-    M_copy = backend.zeros_like(M)
+    M = xp.swapaxes(X, 0, 1).reshape(X.shape[-1], -1)
+    M_copy = xp.zeros_like(M)
     M_copy[...] = M
     M = M_copy
     n, n_matrices_x_n = M.shape
 
     # init variables
     if init is None:
-        E, H = backend.eig(M[:, 0:n])
-        if backend.real_dtype(X) == X.dtype:
-            E = backend.real(E)
-            H = backend.real(H)
-        V = backend.swapaxes(H, -2, -1) / backend.sqrt(
-            backend.abs(E)
+        E, H = xp.linalg.eig(M[:, 0:n])
+        if xp.isdtype(X.dtype, "real floating"):
+            E = xp.real(E)
+            H = xp.real(H)
+        V = xp.swapaxes(H, -2, -1) / xp.sqrt(
+            xp.abs(E)
         )[:, np.newaxis]
     else:
-        V = check_init(init, n, backend=backend, like=X)
+        V = check_init(init, n, like=X)
 
-    Ms = backend.zeros_like(M)
+    Ms = xp.zeros_like(M)
     Ms[...] = M
-    Rs = backend.zeros((n, n_matrices), like=X)
+    Rs = xp.zeros((n, n_matrices), dtype=X.dtype, device=xpd(X))
 
     for k in range(n_matrices):
         ini = k * n
         Il = list(range(ini, ini + n))
-        M[:, Il] = 0.5 * (M[:, Il] + backend.swapaxes(M[:, Il], -2, -1))
-        Ms[:, Il] = V @ M[:, Il] @ backend.swapaxes(V, -2, -1)
-        Rs[:, k] = backend.diagonal(Ms[:, Il])
-    crit = backend.as_float(backend.real(
-        backend.sum(Ms ** 2) - backend.sum(Rs ** 2)
+        M[:, Il] = 0.5 * (M[:, Il] + xp.swapaxes(M[:, Il], -2, -1))
+        Ms[:, Il] = V @ M[:, Il] @ xp.swapaxes(V, -2, -1)
+        Rs[:, k] = xp.linalg.diagonal(Ms[:, Il])
+    crit = float(xp.real(
+        xp.sum(Ms ** 2) - xp.sum(Rs ** 2)
     ))
 
     for _ in range(n_iter_max):
-        B = Rs @ backend.swapaxes(Rs, -2, -1)
-        C1 = backend.zeros((n, n), like=X)
+        B = Rs @ xp.swapaxes(Rs, -2, -1)
+        C1 = xp.zeros((n, n), dtype=X.dtype, device=xpd(X))
         for i in range(n):
-            C1[:, i] = backend.sum(Ms[:, i:n_matrices_x_n:n] * Rs, axis=1)
+            C1[:, i] = xp.sum(Ms[:, i:n_matrices_x_n:n] * Rs, axis=1)
 
-        diag_b = backend.diagonal(B)
-        D0 = B * backend.swapaxes(B, -2, -1) - backend.outer(diag_b, diag_b)
+        diag_b = xp.linalg.diagonal(B)
+        D0 = B * xp.swapaxes(B, -2, -1) - xp.linalg.outer(diag_b, diag_b)
         A0 = (
             C1 * B
-            - diag_b[:, np.newaxis] * backend.swapaxes(C1, -2, -1)
-        ) / (D0 + backend.eye(n, like=X))
-        diag0, diag1 = backend.diag_indices(n, like=X)
+            - diag_b[:, np.newaxis] * xp.swapaxes(C1, -2, -1)
+        ) / (D0 + xp.eye(n, dtype=X.dtype, device=xpd(X)))
+        diag0, diag1 = diag_indices(n, xp=xp, like=X)
         A0[diag0, diag1] += 1
-        V = backend.solve(A0, V)
+        V = xp.linalg.solve(A0, V)
 
-        Raux = V @ M[:, 0:n] @ backend.swapaxes(V, -2, -1)
-        aux = 1. / backend.sqrt(backend.abs(backend.diagonal(Raux)))
+        Raux = V @ M[:, 0:n] @ xp.swapaxes(V, -2, -1)
+        aux = 1. / xp.sqrt(xp.abs(xp.linalg.diagonal(Raux)))
         V = aux[:, np.newaxis] * V
 
         for k in range(n_matrices):
             ini = k * n
             Il = list(range(ini, ini + n))
-            Ms[:, Il] = V @ M[:, Il] @ backend.swapaxes(V, -2, -1)
-            Rs[:, k] = backend.diagonal(Ms[:, Il])
-        crit_new = backend.as_float(backend.real(
-            backend.sum(Ms ** 2) - backend.sum(Rs ** 2)
+            Ms[:, Il] = V @ M[:, Il] @ xp.swapaxes(V, -2, -1)
+            Rs[:, k] = xp.linalg.diagonal(Ms[:, Il])
+        crit_new = float(xp.real(
+            xp.sum(Ms ** 2) - xp.sum(Rs ** 2)
         ))
 
         if abs(crit_new - crit) < eps:
@@ -375,10 +376,10 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
 
-    D = backend.swapaxes(Ms.reshape(n, n_matrices, n), 0, 1)
+    D = xp.swapaxes(Ms.reshape(n, n_matrices, n), 0, 1)
     return (
-        backend.asarray(V, like=X, dtype=X.dtype),
-        backend.asarray(D, like=X, dtype=X.dtype),
+        xp.asarray(V, dtype=X.dtype, device=xpd(X)),
+        xp.asarray(D, dtype=X.dtype, device=xpd(X)),
     )
 
 

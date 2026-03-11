@@ -2,10 +2,10 @@
 
 import numpy as np
 
-from ._backend import resolve_backend
+from ._backend import get_namespace, is_backend_array, xpd, diag_embed
 
 
-def ctranspose(X, *, backend=None):
+def ctranspose(X):
     """Conjugate transpose operator.
 
     Conjugate transpose operator for complex-valued array,
@@ -29,8 +29,8 @@ def ctranspose(X, *, backend=None):
     ----------
     .. [1] https://en.wikipedia.org/wiki/Conjugate_transpose
     """
-    backend = resolve_backend(X, backend=backend)
-    return backend.swapaxes(backend.conj(X), -2, -1)
+    xp = get_namespace(X)
+    return xp.swapaxes(xp.conj(X), -2, -1)
 
 
 ###############################################################################
@@ -46,28 +46,27 @@ def _recursive(fun, A, B, *args, **kwargs):
         )
 
 
-def _matrix_operator(X, operator, *, backend=None):
+def _matrix_operator(X, operator):
     """Matrix function for SPD/HPD matrices."""
-    backend = resolve_backend(X, backend=backend)
-    if not backend.is_array(X) or X.ndim < 2:
+    xp = get_namespace(X)
+    if not is_backend_array(X) or X.ndim < 2:
         raise ValueError("Input must be at least a 2D ndarray or tensor")
     if X.shape[-2] != X.shape[-1]:
         raise ValueError("Input must contain square matrices")
-    if backend.is_floating_dtype(X) and not backend.all_finite(X):
+    if xp.isdtype(X.dtype, ("real floating", "complex floating")) \
+            and not bool(xp.all(xp.isfinite(X))):
         raise ValueError(
             "Matrices must be positive definite. "
             "You should add regularization to avoid this error."
         )
 
-    eigvals, eigvecs = backend.eigh(X)
+    eigvals, eigvecs = xp.linalg.eigh(X)
     eigvals = operator(eigvals)
-    X_new = eigvecs @ (eigvals[..., None] * ctranspose(
-        eigvecs, backend=backend
-    ))
+    X_new = eigvecs @ (eigvals[..., None] * ctranspose(eigvecs))
     return X_new
 
 
-def expm(C, *, backend=None):
+def expm(C):
     r"""Exponential of SPD/HPD matrices.
 
     The symmetric matrix exponential of a SPD/HPD matrix
@@ -89,11 +88,11 @@ def expm(C, *, backend=None):
     D : ndarray, shape (..., n, n)
         Matrix exponential of C.
     """
-    backend = resolve_backend(C, backend=backend)
-    return _matrix_operator(C, backend.exp, backend=backend)
+    xp = get_namespace(C)
+    return _matrix_operator(C, xp.exp)
 
 
-def invsqrtm(C, *, backend=None):
+def invsqrtm(C):
     r"""Inverse square root of SPD/HPD matrices.
 
     The symmetric matrix inverse square root of a SPD/HPD matrix
@@ -116,15 +115,15 @@ def invsqrtm(C, *, backend=None):
     D : ndarray, shape (..., n, n)
         Matrix inverse square root of C.
     """
-    backend = resolve_backend(C, backend=backend)
+    xp = get_namespace(C)
 
     def isqrt(x):
-        return 1. / backend.sqrt(x)
+        return 1. / xp.sqrt(x)
 
-    return _matrix_operator(C, isqrt, backend=backend)
+    return _matrix_operator(C, isqrt)
 
 
-def logm(C, *, backend=None):
+def logm(C):
     r"""Logarithm of SPD/HPD matrices.
 
     The symmetric matrix logarithm of a SPD/HPD matrix
@@ -146,11 +145,11 @@ def logm(C, *, backend=None):
     D : ndarray, shape (..., n, n)
         Matrix logarithm of C.
     """
-    backend = resolve_backend(C, backend=backend)
-    return _matrix_operator(C, backend.log, backend=backend)
+    xp = get_namespace(C)
+    return _matrix_operator(C, xp.log)
 
 
-def powm(C, alpha, *, backend=None):
+def powm(C, alpha):
     r"""Power of SPD/HPD matrices.
 
     The symmetric matrix power :math:`\alpha` of a SPD/HPD matrix
@@ -178,11 +177,10 @@ def powm(C, alpha, *, backend=None):
     def power(x):
         return x**alpha
 
-    backend = resolve_backend(C, backend=backend)
-    return _matrix_operator(C, power, backend=backend)
+    return _matrix_operator(C, power)
 
 
-def sqrtm(C, *, backend=None):
+def sqrtm(C):
     r"""Square root of SPD/HPD matrices.
 
     The symmetric matrix square root of a SPD/HPD matrix
@@ -205,27 +203,27 @@ def sqrtm(C, *, backend=None):
     D : ndarray, shape (..., n, n)
         Matrix square root of C.
     """
-    backend = resolve_backend(C, backend=backend)
-    return _matrix_operator(C, backend.sqrt, backend=backend)
+    xp = get_namespace(C)
+    return _matrix_operator(C, xp.sqrt)
 
 
 ###############################################################################
 
 
-def _is_pos_def(X, backend, tol=0.0, fast_mode=False):
+def _is_pos_def(X, xp, tol=0.0, fast_mode=False):
     """Check positive definiteness with the active array backend."""
     if fast_mode:
         try:
-            backend.cholesky(X)
+            xp.linalg.cholesky(X)
             return True
         except Exception:
             return False
 
-    eigvals = backend.real(backend.eigvalsh(X))
-    return not backend.any(eigvals <= tol)
+    eigvals = xp.real(xp.linalg.eigvalsh(X))
+    return not bool(xp.any(eigvals <= tol))
 
 
-def _nearest_sym_pos_def(S, reg=1e-6, *, backend=None):
+def _nearest_sym_pos_def(S, reg=1e-6):
     """Find the nearest SPD matrix.
 
     Parameters
@@ -240,36 +238,33 @@ def _nearest_sym_pos_def(S, reg=1e-6, *, backend=None):
     P : ndarray, shape (n, n)
         Nearest SPD matrix.
     """
-    backend = resolve_backend(S, backend=backend)
+    xp = get_namespace(S)
 
     def regularize(X, reg):
-        ei, ev = backend.eigh(X)
-        ratio = backend.as_float(
-            backend.min(backend.real(ei)) / backend.max(backend.real(ei))
+        ei, ev = xp.linalg.eigh(X)
+        ratio = float(
+            xp.min(xp.real(ei)) / xp.max(xp.real(ei))
         )
         if ratio < reg:
-            X = ev @ backend.diag_embed(ei + reg) @ ctranspose(
-                ev,
-                backend=backend,
-            )
+            X = ev @ diag_embed(ei + reg, xp=xp) @ ctranspose(ev)
         return X
 
-    A = (S + ctranspose(S, backend=backend)) / 2
-    _, s, Vh = backend.svd(A)
-    H = ctranspose(Vh, backend=backend) @ (s[:, None] * Vh)
+    A = (S + ctranspose(S)) / 2
+    _, s, Vh = xp.linalg.svd(A)
+    H = ctranspose(Vh) @ (s[:, None] * Vh)
     B = (A + H) / 2
-    P = (B + ctranspose(B, backend=backend)) / 2
+    P = (B + ctranspose(B)) / 2
 
-    if _is_pos_def(P, backend):
+    if _is_pos_def(P, xp):
         # Regularize if already PD
         return regularize(P, reg)
 
-    spacing = np.spacing(backend.as_float(backend.norm_fro(A)))
-    eye_n = backend.eye(S.shape[0], like=S)
+    spacing = np.spacing(float(xp.linalg.matrix_norm(A)))
+    eye_n = xp.eye(S.shape[0], dtype=S.dtype, device=xpd(S))
     k = 1
-    while not _is_pos_def(P, backend, fast_mode=False):
-        mineig = backend.as_float(
-            backend.min(backend.real(backend.eigvalsh(P)))
+    while not _is_pos_def(P, xp, fast_mode=False):
+        mineig = float(
+            xp.min(xp.real(xp.linalg.eigvalsh(P)))
         )
         P += eye_n * (-mineig * k ** 2 + spacing)
         k += 1
@@ -278,7 +273,7 @@ def _nearest_sym_pos_def(S, reg=1e-6, *, backend=None):
     return regularize(P, reg)
 
 
-def nearest_sym_pos_def(X, reg=1e-6, *, backend=None):
+def nearest_sym_pos_def(X, reg=1e-6):
     """Find the nearest SPD matrices.
 
     A NumPy port of John D'Errico's ``nearestSPD`` MATLAB code [1]_,
@@ -309,15 +304,15 @@ def nearest_sym_pos_def(X, reg=1e-6, *, backend=None):
         <https://www.sciencedirect.com/science/article/pii/0024379588902236>`_
         N.J. Higham, Linear Algebra and its Applications, vol 103, 1988
     """
-    backend = resolve_backend(X, backend=backend)
-    if not backend.is_array(X) or X.ndim < 2:
+    xp = get_namespace(X)
+    if not is_backend_array(X) or X.ndim < 2:
         raise ValueError("Input must be at least a 2D ndarray or tensor")
     if X.shape[-2] != X.shape[-1]:
         raise ValueError("Input must contain square matrices")
     if X.ndim == 2:
-        return _nearest_sym_pos_def(X, reg, backend=backend)
-    return backend.stack(
-        [_nearest_sym_pos_def(x, reg, backend=backend) for x in X],
+        return _nearest_sym_pos_def(X, reg)
+    return xp.stack(
+        [_nearest_sym_pos_def(x, reg) for x in X],
         axis=0,
     )
 
@@ -331,8 +326,6 @@ def _first_divided_difference(
     fctder,
     atol=1e-12,
     rtol=1e-12,
-    *,
-    backend=None,
 ):
     r"""First divided difference of a matrix function.
 
@@ -378,24 +371,24 @@ def _first_divided_difference(
     .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
         R. Bhatia, Springer, 1997
     """
-    backend = resolve_backend(d, backend=backend)
+    xp = get_namespace(d)
     di = d[..., :, None]
     dj = d[..., None, :]
-    close_ = backend.isclose(di, dj, atol=atol, rtol=rtol)
+    close_ = xp.isclose(di, dj, atol=atol, rtol=rtol)
     den = di - dj
-    den_safe = backend.where(
+    den_safe = xp.where(
         close_,
-        backend.asarray(1, like=den, dtype=den.dtype),
+        xp.asarray(1, dtype=den.dtype, device=xpd(den)),
         den,
     )
-    return backend.where(
+    return xp.where(
         close_,
         fctder(di),
         (fct(di) - fct(dj)) / den_safe,
     )
 
 
-def ddexpm(X, Cref, *, backend=None):
+def ddexpm(X, Cref):
     r"""Directional derivative of the matrix exponential.
 
     The directional derivative of the matrix exponential at a SPD/HPD matrix
@@ -433,19 +426,18 @@ def ddexpm(X, Cref, *, backend=None):
     .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
         R. Bhatia, Springer, 1997
     """
-    backend = resolve_backend(X, Cref, backend=backend)
-    d, V = backend.eigh(Cref)
+    xp = get_namespace(X, Cref)
+    d, V = xp.linalg.eigh(Cref)
     expfdd = _first_divided_difference(
         d,
-        backend.exp,
-        backend.exp,
-        backend=backend,
+        xp.exp,
+        xp.exp,
     )
-    Vh = ctranspose(V, backend=backend)
+    Vh = ctranspose(V)
     return V @ (expfdd * (Vh @ X @ V)) @ Vh
 
 
-def ddlogm(X, Cref, *, backend=None):
+def ddlogm(X, Cref):
     r"""Directional derivative of the matrix logarithm.
 
     The directional derivative of the matrix logarithm at a SPD/HPD matrix
@@ -483,13 +475,12 @@ def ddlogm(X, Cref, *, backend=None):
     .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
         R. Bhatia, Springer, 1997
     """
-    backend = resolve_backend(X, Cref, backend=backend)
-    d, V = backend.eigh(Cref)
+    xp = get_namespace(X, Cref)
+    d, V = xp.linalg.eigh(Cref)
     logfdd = _first_divided_difference(
         d,
-        backend.log,
+        xp.log,
         lambda x: 1 / x,
-        backend=backend,
     )
-    Vh = ctranspose(V, backend=backend)
+    Vh = ctranspose(V)
     return V @ (logfdd * (Vh @ X @ V)) @ Vh
