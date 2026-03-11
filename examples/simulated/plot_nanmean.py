@@ -51,8 +51,11 @@ C_ref = mean_riemann(mats)
 
 # Corrupt data randomly
 n_corrup_channels_max = n_channels // 2
-print("Maximum number of corrupted channels: {} over {}".format(
-    n_corrup_channels_max, n_channels))
+msg = (
+    "Maximum number of corrupted channels:"
+    f"{n_corrup_channels_max} over {n_channels}"
+)
+print(msg)
 
 mats, all_n_corrup_channels, all_corrup_channels = corrupt(
     mats, n_corrup_channels_max, rs)
@@ -95,7 +98,7 @@ C_nanriem = nanmean_riemann(mats)
 isnan = np.isnan(np.sum(mats, axis=(1, 2)))
 mats_ = np.delete(mats, np.where(isnan), axis=0)
 perc = len(mats_) / n_matrices * 100
-print("Percentage of uncorrupted matrices: {:.2f} %".format(perc))
+print(f"Percentage of uncorrupted matrices: {perc:.2f} %")
 C_mdriem = mean_riemann(mats_)
 
 
