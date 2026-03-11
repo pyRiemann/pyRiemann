@@ -637,6 +637,11 @@ class CoSpectra(CrossSpectra):
         If transformed, the frequencies associated to cospectra.
         None if ``fs`` is None.
 
+    Notes
+    -----
+    .. versionchanged:: 0.6
+        Rename CospCovariances into CoSpectra.
+
     See Also
     --------
     CrossSpectra
@@ -780,6 +785,12 @@ class TimeDelayCovariances(TransformerMixin, BaseEstimator):
     Xtd_ : ndarray, shape (n_matrices, n_channels x n_delays, n_times)
         Time delay multi-channel time-series, where n_delays is equal to:
         ``delays`` when it is a int, and 1 + len(``delays``) when it is a list.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.4
+    .. versionchanged:: 0.6
+        Rename HankelCovariances into TimeDelayCovariances.
 
     See Also
     --------
