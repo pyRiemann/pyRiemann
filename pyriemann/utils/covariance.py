@@ -6,7 +6,8 @@ from scipy.linalg import block_diag
 from scipy.stats import chi2
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
-from .base import invsqrtm
+from .base import ctranspose
+from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
 from .utils import check_function
 
@@ -58,21 +59,21 @@ def _complex_estimator(func):
 @_complex_estimator
 def _lwf(X, **kwds):
     """Wrapper for sklearn ledoit wolf covariance estimator"""
-    C, _ = ledoit_wolf(X.T, **kwds)
+    C, _ = ledoit_wolf(np.swapaxes(X, -2, -1), **kwds)
     return C
 
 
 @_complex_estimator
 def _mcd(X, **kwds):
     """Wrapper for sklearn mcd covariance estimator"""
-    _, C, _, _ = fast_mcd(X.T, **kwds)
+    _, C, _, _ = fast_mcd(np.swapaxes(X, -2, -1), **kwds)
     return C
 
 
 @_complex_estimator
 def _oas(X, **kwds):
     """Wrapper for sklearn oas covariance estimator"""
-    C, _ = oas(X.T, **kwds)
+    C, _ = oas(np.swapaxes(X, -2, -1), **kwds)
     return C
 
 
@@ -148,7 +149,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
 
     Returns
     -------
-    cov : ndarray, shape (n_channels, n_channels)
+    cov : ndarray, shape (..., n_channels, n_channels)
         Robust M-estimator based covariance matrix.
 
     Notes
@@ -198,18 +199,15 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     if not assume_centered:
         X = X - np.mean(X, axis=-1, keepdims=True)
     if init is None:
-        cov = X @ np.swapaxes(X.conj(), -2, -1) / n_times
+        cov = X @ ctranspose(X) / n_times
     else:
         cov = init
 
     for _ in range(n_iter_max):
-        # Inline Mahalanobis distance (batch-compatible)
-        cov_invsqrt = invsqrtm(cov)
-        Xw_mah = cov_invsqrt @ X  # (..., n_ch, n_times)
-        dist2 = np.sum(np.abs(Xw_mah)**2, axis=-2).real  # (..., n_times)
+        dist2 = distance_mahalanobis(X, cov, squared=True)  # (..., n_times)
 
         Xw = np.sqrt(weight_func(dist2))[..., np.newaxis, :] * X
-        cov_new = Xw @ np.swapaxes(Xw.conj(), -2, -1) / n_times
+        cov_new = Xw @ ctranspose(Xw) / n_times
 
         norm_delta = np.linalg.norm(
             cov_new - cov, ord="fro", axis=(-2, -1)
@@ -343,7 +341,7 @@ def covariance_scm(X, *, assume_centered=False):
 
     if not assume_centered:
         X = X - np.mean(X, axis=-1, keepdims=True)
-    cov = X @ np.swapaxes(X.conj(), -2, -1) / n_times
+    cov = X @ ctranspose(X) / n_times
 
     return cov
 

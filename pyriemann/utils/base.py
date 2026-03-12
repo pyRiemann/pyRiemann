@@ -361,8 +361,9 @@ def ddexpm(X, Cref):
     """
 
     d, V = np.linalg.eigh(Cref)
+    Vh = ctranspose(V)
     expfdd = _first_divided_difference(d, np.exp, np.exp)
-    return V @ (expfdd * (ctranspose(V) @ X @ V)) @ ctranspose(V)
+    return V @ (expfdd * (Vh @ X @ V)) @ Vh
 
 
 def ddlogm(X, Cref):
@@ -405,5 +406,6 @@ def ddlogm(X, Cref):
     """
 
     d, V = np.linalg.eigh(Cref)
+    Vh = ctranspose(V)
     logfdd = _first_divided_difference(d, np.log, lambda x: 1 / x)
-    return V @ (logfdd * (ctranspose(V) @ X @ V)) @ ctranspose(V)
+    return V @ (logfdd * (Vh @ X @ V)) @ Vh

@@ -223,12 +223,13 @@ def exp_map_wasserstein(X, Cref):
         pp. 137–179.
     """
     d, V = np.linalg.eigh(Cref)
+    Vh = ctranspose(V)
     C = 1 / (d[..., :, np.newaxis] + d[..., np.newaxis, :])
 
-    X_rotated = ctranspose(V) @ X @ V
+    X_rotated = Vh @ X @ V
     X_tmp = C * X_rotated
     X_tmp = X_tmp @ (d[..., :, np.newaxis] * X_tmp)
-    X_tmp = V @ X_tmp @ ctranspose(V)
+    X_tmp = V @ X_tmp @ Vh
 
     return Cref + X + X_tmp
 
