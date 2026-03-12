@@ -1,4 +1,4 @@
-"""Inner product for SPD matrices."""
+"""Inner product for SPD/HPD matrices."""
 
 import numpy as np
 
@@ -14,7 +14,7 @@ def innerproduct_euclid(X, Y, *args):
     :math:`\mathbb{R}^{n \times m}` is:
 
     .. math::
-        \mathbf{g}(\mathbf{X}, \mathbf{Y}) = \text{tr}(\mathbf{X}^T \mathbf{Y})
+        \mathbf{g}(\mathbf{X}, \mathbf{Y}) = \text{tr}(\mathbf{X}^H \mathbf{Y})
 
     Parameters
     ----------
@@ -46,27 +46,27 @@ def innerproduct_euclid(X, Y, *args):
 def innerproduct_logeuclid(X, Y, Cref):
     r"""Log-Euclidean inner product.
 
-    Log-Euclidean inner product :math:`\mathbf{g}` between two SPD matrices
+    Log-Euclidean inner product :math:`\mathbf{g}` between two SPD/HPD matrices
     :math:`\mathbf{X}` and :math:`\mathbf{Y}` in
     :math:`\mathbb{R}^{n \times n}` on tangent space at
-    :math:`\mathbf{C}_\text{ref}` is:
+    :math:`\mathbf{C}_\text{ref}` is [1]_:
 
     .. math::
         \mathbf{g}_{\mathbf{C}_\text{ref}}(\mathbf{X}, \mathbf{Y}) =
             \text{tr} \left(
-            [D_{\mathbf{C}_\text{ref}} \log](X)
+            [D_{\mathbf{C}_\text{ref}} \log](X)^*
             [D_{\mathbf{C}_\text{ref}} \log](Y)
             \right)
 
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        First set of SPD matrices.
+        First SPD/HPD matrices.
     Y : ndarray, shape (..., n, n) | None
-        Second set of SPD matrices.
+        Second SPD/HPD matrices.
         If None, Y is set to X, giving the squared norm of X.
     Cref : ndarray, shape (n, n)
-        Reference SPD matrix.
+        Reference SPD/HPD matrix.
 
     Returns
     -------
@@ -80,10 +80,18 @@ def innerproduct_logeuclid(X, Y, Cref):
     See Also
     --------
     innerproduct
+
+    References
+    ----------
+    .. [1] `Geometric means in a novel vector space structure on symmetric
+        positive-definite matrices
+        <https://epubs.siam.org/doi/abs/10.1137/050637996>`_
+        V. Arsigny, P. Fillard, X. Pennec, N. Ayache.
+        SIAM J Matrix Anal Appl, 2007, 29 (1), pp. 328-347
     """
     if Y is None:
         Y = X
-    G = _apply_inner_product(ddlogm(X, Cref), ddlogm(Y, Cref))
+    G = _apply_inner_product(ddlogm(X, Cref).conj(), ddlogm(Y, Cref))
     return G
 
 
@@ -91,26 +99,27 @@ def innerproduct_riemann(X, Y, Cref):
     r"""Affine-invariant Riemannian inner product.
 
     Affine-invariant Riemannian inner product :math:`\mathbf{g}` between two
-    SPD matrices :math:`\mathbf{X}` and :math:`\mathbf{Y}` in
+    SPD/HPD matrices :math:`\mathbf{X}` and :math:`\mathbf{Y}` in
     :math:`\mathbb{R}^{n \times n}` on tangent space at
-    :math:`\mathbf{C}_\text{ref}` is:
+    :math:`\mathbf{C}_\text{ref}` is [1]_:
 
     .. math::
         \mathbf{g}_{\mathbf{C}_\text{ref}}(\mathbf{X}, \mathbf{Y}) =
             \text{tr} \left(
-            \mathbf{C}_\text{ref}^{-1/2} \mathbf{X} \mathbf{C}_\text{ref}^{-1}
-            \mathbf{Y} \mathbf{C}_\text{ref}^{-1/2}
+            (\mathbf{C}_\text{ref}^{-1/2} \mathbf{X}
+             \mathbf{C}_\text{ref}^{-1/2})^*
+            \mathbf{C}_\text{ref}^{-1/2} \mathbf{Y} \mathbf{C}_\text{ref}^{-1/2}
             \right)
 
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        First SPD matrices.
+        First SPD/HPD matrices.
     Y : ndarray, shape (..., n, n) | None
-        Second SPD matrices.
+        Second SPD/HPD matrices.
         If None, Y is set to X, giving the squared norm of X.
     Cref : ndarray, shape (n, n)
-        Reference SPD matrix.
+        Reference SPD/HPD matrix.
 
     Returns
     -------
@@ -124,11 +133,18 @@ def innerproduct_riemann(X, Y, Cref):
     See Also
     --------
     innerproduct
+
+    References
+    ----------
+    .. [1] `A metric for covariance matrices
+        <https://www.ipb.uni-bonn.de/pdfs/Forstner1999Metric.pdf>`_
+        W. Förstner & B. Moonen.
+        Geodesy-the Challenge of the 3rd Millennium, 2003
     """
     if Y is None:
         Y = X
     Cm12 = invsqrtm(Cref)
-    G = _apply_inner_product(Cm12 @ X @ Cm12, Cm12 @ Y @ Cm12)
+    G = _apply_inner_product((Cm12 @ X @ Cm12).conj(), Cm12 @ Y @ Cm12)
     return G
 
 
@@ -138,7 +154,11 @@ def innerproduct_riemann(X, Y, Cref):
 def _apply_inner_product(Xt, Y):
     # product G = trace(Xt @ Y)
     G = np.einsum("...mn,...nm->...", Xt, Y, optimize=True)
-    return G
+
+    if G.size == 1:
+        return G.item()
+    else:
+        return G
 
 
 innerproduct_functions = {
@@ -151,9 +171,8 @@ innerproduct_functions = {
 def innerproduct(X, Y, Cref, metric="riemann"):
     r"""Inner product according to a specified metric.
 
-    It calculates the kernel matrix :math:`\mathbf{K}` of pairwise inner
-    products of two sets :math:`\mathbf{X}` and :math:`\mathbf{Y}`
-    of matrices on the tangent space at :math:`\mathbf{C}_\text{ref}`,
+    It calculates the inner product between matrices :math:`\mathbf{X}` and
+    :math:`\mathbf{Y}` on the tangent space at :math:`\mathbf{C}_\text{ref}`,
     according to a specified metric.
 
     Parameters
