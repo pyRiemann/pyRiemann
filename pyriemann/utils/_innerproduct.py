@@ -9,9 +9,8 @@ from .utils import check_function
 def innerproduct_euclid(X, Y, *args):
     r"""Euclidean inner product.
 
-    Euclidean inner product :math:`\mathbf{g}` between two matrices
-    :math:`\mathbf{X}` and :math:`\mathbf{Y}` in
-    :math:`\mathbb{R}^{n \times m}` is:
+    Euclidean inner product :math:`\mathbf{g}`
+    between matrices :math:`\mathbf{X}` and :math:`\mathbf{Y}` is:
 
     .. math::
         \mathbf{g}(\mathbf{X}, \mathbf{Y}) = \text{tr}(\mathbf{X}^H \mathbf{Y})
@@ -46,10 +45,9 @@ def innerproduct_euclid(X, Y, *args):
 def innerproduct_logeuclid(X, Y, Cref):
     r"""Log-Euclidean inner product.
 
-    Log-Euclidean inner product :math:`\mathbf{g}` between two SPD/HPD matrices
-    :math:`\mathbf{X}` and :math:`\mathbf{Y}` in
-    :math:`\mathbb{R}^{n \times n}` on tangent space at
-    :math:`\mathbf{C}_\text{ref}` is [1]_:
+    Log-Euclidean inner product :math:`\mathbf{g}`
+    between SPD/HPD matrices :math:`\mathbf{X}` and :math:`\mathbf{Y}`
+    on tangent space at :math:`\mathbf{C}_\text{ref}` is [1]_:
 
     .. math::
         \mathbf{g}_{\mathbf{C}_\text{ref}}(\mathbf{X}, \mathbf{Y}) =
@@ -98,17 +96,17 @@ def innerproduct_logeuclid(X, Y, Cref):
 def innerproduct_riemann(X, Y, Cref):
     r"""Affine-invariant Riemannian inner product.
 
-    Affine-invariant Riemannian inner product :math:`\mathbf{g}` between two
-    SPD/HPD matrices :math:`\mathbf{X}` and :math:`\mathbf{Y}` in
-    :math:`\mathbb{R}^{n \times n}` on tangent space at
-    :math:`\mathbf{C}_\text{ref}` is [1]_:
+    Affine-invariant Riemannian inner product :math:`\mathbf{g}`
+    between SPD/HPD matrices :math:`\mathbf{X}` and :math:`\mathbf{Y}`
+    on tangent space at :math:`\mathbf{C}_\text{ref}` is [1]_:
 
     .. math::
         \mathbf{g}_{\mathbf{C}_\text{ref}}(\mathbf{X}, \mathbf{Y}) =
             \text{tr} \left(
             (\mathbf{C}_\text{ref}^{-1/2} \mathbf{X}
-             \mathbf{C}_\text{ref}^{-1/2})^*
-            \mathbf{C}_\text{ref}^{-1/2} \mathbf{Y} \mathbf{C}_\text{ref}^{-1/2}
+            \mathbf{C}_\text{ref}^{-1/2})^*
+            \mathbf{C}_\text{ref}^{-1/2} \mathbf{Y}
+            \mathbf{C}_\text{ref}^{-1/2}
             \right)
 
     Parameters
