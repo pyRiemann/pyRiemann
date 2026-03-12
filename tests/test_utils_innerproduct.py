@@ -67,6 +67,30 @@ def test_innerproduct_x_y(kind, metric, get_mats):
     assert G.shape == (n_matrices,)
 
 
+@pytest.mark.parametrize(
+    "inprod",
+    [
+        innerproduct_euclid,
+        innerproduct_logeuclid,
+        innerproduct_riemann,
+    ],
+)
+def test_innerproduct_ndarray(inprod, get_mats):
+    n_matrices, n_channels = 5, 3
+    A = get_mats(n_matrices, n_channels, "spd")
+    B = get_mats(n_matrices, n_channels, "spd")
+    Cref = get_mats(1, n_channels, "spd")[0]
+
+    assert isinstance(inprod(A[0], B[0], Cref), float)  # 2D arrays
+
+    assert inprod(A, B, Cref).shape == (n_matrices,)  # 3D arrays
+
+    n_sets = 4
+    C = np.asarray([A for _ in range(n_sets)])
+    D = np.asarray([B for _ in range(n_sets)])
+    assert inprod(C, D, Cref).shape == (n_sets, n_matrices)  # 4D arrays
+
+
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("metric", metrics)
 def test_innerproduct_property_conjsymmetry(kind, metric, get_mats):
@@ -130,14 +154,6 @@ def test_innerproduct_euclid(kind, n_dim1, n_dim2, get_mats):
         G2[i] = np.dot(X[i].conj().flatten(), Y[i].flatten())
     assert_array_almost_equal(G, G1)
     assert_array_almost_equal(G, G2)
-
-
-def test_innerproduct_logeuclid(get_mats):
-    n_channels = 4
-    X, Y = get_mats(2, n_channels, "spd")
-    Cref = get_mats(1, n_channels, "spd")[0]
-    G = innerproduct_logeuclid(X, Y, Cref)
-    assert isinstance(G, float)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
