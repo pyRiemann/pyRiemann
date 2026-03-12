@@ -830,6 +830,11 @@ def gmean(X, *args, metric="riemann", sample_weight=None, **kwargs):
     M : ndarray, shape (n, n)
         Mean of matrices.
 
+    Notes
+    -----
+    .. versionchanged:: 0.11
+        Rename mean_covariance into gmean.
+
     References
     ----------
     .. [1] `Review of Riemannian distances and divergences, applied to
