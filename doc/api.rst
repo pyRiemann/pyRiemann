@@ -764,6 +764,11 @@ Tangent Space
     unupper
     tangent_space
     untangent_space
+    innerproduct
+    innerproduct_euclid
+    innerproduct_logeuclid
+    innerproduct_riemann
+    norm
     transport
     transport_euclid
     transport_logchol
