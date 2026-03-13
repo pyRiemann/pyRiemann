@@ -2,10 +2,10 @@ import warnings
 from functools import wraps
 
 import numpy as np
-from scipy.linalg import block_diag
 from scipy.stats import chi2
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
+from .base import ctranspose
 from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
 from .utils import check_function
@@ -43,15 +43,38 @@ def _complex_estimator(func):
     def wrapper(X, **kwds):
         iscomplex = np.iscomplexobj(X)
         if iscomplex:
-            n_channels, n_times = X.shape
-            X = np.concatenate((X.real, X.imag), axis=0)
+            n_channels = X.shape[-2]
+            X = np.concatenate((X.real, X.imag), axis=-2)
         cov = func(X, **kwds)
         if iscomplex:
-            cov = cov[:n_channels, :n_channels] \
-                + cov[n_channels:, n_channels:] \
-                + 1j * (cov[n_channels:, :n_channels]
-                        - cov[:n_channels, n_channels:])
+            cov = cov[..., :n_channels, :n_channels] \
+                + cov[..., n_channels:, n_channels:] \
+                + 1j * (cov[..., n_channels:, :n_channels]
+                        - cov[..., :n_channels, n_channels:])
         return cov
+    return wrapper
+
+
+def _vectorize_estimator(func):
+    """Decorator to vectorize a 2D estimator over batch dimensions.
+
+    Wraps a covariance estimator that accepts a 2D array (n_channels, n_times)
+    to handle arbitrary batch dimensions (..., n_channels, n_times).
+    """
+    @wraps(func)
+    def wrapper(X, **kwds):
+        if X.ndim == 2:
+            return func(X, **kwds)
+        original_shape = X.shape
+        n_channels, n_times = original_shape[-2], original_shape[-1]
+        X_flat = X.reshape(-1, n_channels, n_times)
+        n_flat = X_flat.shape[0]
+        C0 = np.atleast_2d(func(X_flat[0], **kwds))
+        covmats = np.empty((n_flat, *C0.shape), dtype=C0.dtype)
+        covmats[0] = C0
+        for i in range(1, n_flat):
+            covmats[i] = np.atleast_2d(func(X_flat[i], **kwds))
+        return covmats.reshape(*original_shape[:-2], *C0.shape)
     return wrapper
 
 
@@ -110,7 +133,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series, real or complex-valued.
     m_estimator : {"hub", "stu", "tyl"}
         Type of M-estimator:
@@ -148,7 +171,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
 
     Returns
     -------
-    cov : ndarray, shape (n_channels, n_channels)
+    cov : ndarray, shape (..., n_channels, n_channels)
         Robust M-estimator based covariance matrix.
 
     Notes
@@ -173,7 +196,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         <https://projecteuclid.org/journals/annals-of-statistics/volume-15/issue-1/A-Distribution-Free-M-Estimator-of-Multivariate-Scatter/10.1214/aos/1176350263.full>`_
         D.E. Tyler. The Annals of Statistics, 1987.
     """  # noqa
-    n_channels, n_times = X.shape
+    n_channels, n_times = X.shape[-2], X.shape[-1]
 
     if m_estimator == "hub":
         if not 0 < q <= 1:
@@ -196,22 +219,29 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         raise ValueError(f"Unsupported m_estimator: {m_estimator}")
 
     if not assume_centered:
-        X -= np.mean(X, axis=1, keepdims=True)
+        X = X - np.mean(X, axis=-1, keepdims=True)
     if init is None:
-        cov = X @ X.conj().T / n_times
+        cov = X @ ctranspose(X) / n_times
     else:
         cov = init
 
     for _ in range(n_iter_max):
+        dist2 = distance_mahalanobis(X, cov, squared=True)  # (..., n_times)
 
-        dist2 = distance_mahalanobis(X, cov, squared=True)
-        Xw = np.sqrt(weight_func(dist2)) * X
-        cov_new = Xw @ Xw.conj().T / n_times
+        Xw = np.sqrt(weight_func(dist2))[..., np.newaxis, :] * X
+        cov_new = Xw @ ctranspose(Xw) / n_times
 
-        norm_delta = np.linalg.norm(cov_new - cov, ord="fro")
-        norm_cov = np.linalg.norm(cov, ord="fro")
-        cov = cov_new
-        if (norm_delta / norm_cov) <= tol:
+        norm_delta = np.linalg.norm(
+            cov_new - cov, ord="fro", axis=(-2, -1)
+        )
+        norm_cov = np.linalg.norm(cov, ord="fro", axis=(-2, -1))
+
+        # Freeze converged elements to match per-element behavior
+        converged = norm_delta / np.where(norm_cov == 0, 1.0, norm_cov) <= tol
+        cov = np.where(
+            converged[..., np.newaxis, np.newaxis], cov, cov_new
+        )
+        if np.all(converged):
             break
     else:
         warnings.warn("Convergence not reached")
@@ -243,12 +273,12 @@ def covariance_sch(X):
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series, real or complex-valued.
 
     Returns
     -------
-    cov : ndarray, shape (n_channels, n_channels)
+    cov : ndarray, shape (..., n_channels, n_channels)
         Schaefer-Strimmer shrunk covariance matrix.
 
     Notes
@@ -263,23 +293,40 @@ def covariance_sch(X):
         J. Schafer, and K. Strimmer. Statistical Applications in Genetics and
         Molecular Biology, Volume 4, Issue 1, 2005.
     """
-    _, n_times = X.shape
-    X_c = X - X.mean(axis=1, keepdims=True)
-    C_scm = X_c @ X_c.T / n_times
+    n_times = X.shape[-1]
+    X_c = X - X.mean(axis=-1, keepdims=True)
+    C_scm = X_c @ np.swapaxes(X_c, -2, -1) / n_times
 
-    # Compute optimal gamma, the weigthing between SCM and shrinkage estimator
-    R = (n_times / ((n_times - 1.) * np.outer(X.std(axis=1), X.std(axis=1))))
-    R *= C_scm
-    var_R = (X_c ** 2) @ (X_c ** 2).T - 2 * C_scm * (X_c @ X_c.T)
-    var_R += n_times * C_scm ** 2
-    Xvar = np.outer(X.var(axis=1), X.var(axis=1))
-    var_R *= n_times / ((n_times - 1) ** 3 * Xvar)
-    R -= np.diag(np.diag(R))
-    var_R -= np.diag(np.diag(var_R))
-    gamma = max(0, min(1, var_R.sum() / (R ** 2).sum()))
+    # Compute optimal gamma, the weighting between SCM and shrinkage estimator
+    std = X.std(axis=-1)
+    std_outer = std[..., :, np.newaxis] * std[..., np.newaxis, :]
+    R = (n_times / ((n_times - 1.) * std_outer)) * C_scm
+
+    X_c2 = X_c ** 2
+    var_R = X_c2 @ np.swapaxes(X_c2, -2, -1) - n_times * C_scm ** 2
+    var = X.var(axis=-1)
+    var_outer = var[..., :, np.newaxis] * var[..., np.newaxis, :]
+    var_R *= n_times / ((n_times - 1) ** 3 * var_outer)
+
+    # Zero out diagonal (batch-safe replacement for np.diag(np.diag(...)))
+    diag_idx = np.arange(R.shape[-1])
+    R[..., diag_idx, diag_idx] = 0
+    var_R[..., diag_idx, diag_idx] = 0
+    R2_sum = np.sum(R ** 2, axis=(-2, -1))
+    gamma = np.clip(
+        np.where(R2_sum == 0, 0.0,
+                 np.sum(var_R, axis=(-2, -1)) / R2_sum),
+        0, 1,
+    )
+    gamma = np.expand_dims(gamma, axis=(-2, -1))
 
     sigma = (1. - gamma) * (n_times / (n_times - 1.)) * C_scm
-    shrinkage = gamma * (n_times / (n_times - 1.)) * np.diag(np.diag(C_scm))
+
+    # Batch-safe diagonal matrix from C_scm diagonal
+    diag_C = np.diagonal(C_scm, axis1=-2, axis2=-1)
+    shrinkage_diag = np.zeros_like(C_scm)
+    shrinkage_diag[..., diag_idx, diag_idx] = diag_C
+    shrinkage = gamma * (n_times / (n_times - 1.)) * shrinkage_diag
     return sigma + shrinkage
 
 
@@ -291,7 +338,7 @@ def covariance_scm(X, *, assume_centered=False):
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series, real or complex-valued.
     assume_centered : bool, default=False
         If True, data will not be centered before computation.
@@ -301,7 +348,7 @@ def covariance_scm(X, *, assume_centered=False):
 
     Returns
     -------
-    cov : ndarray, shape (n_channels, n_channels)
+    cov : ndarray, shape (..., n_channels, n_channels)
         Sample covariance matrix.
 
     Notes
@@ -312,12 +359,11 @@ def covariance_scm(X, *, assume_centered=False):
     ----------
     .. [1] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
     """  # noqa
-    _, n_times = X.shape
+    n_times = X.shape[-1]
 
-    if assume_centered:
-        cov = X @ X.conj().T / n_times
-    else:
-        cov = np.cov(X, bias=1)
+    if not assume_centered:
+        X = X - np.mean(X, axis=-1, keepdims=True)
+    cov = X @ ctranspose(X) / n_times
 
     return cov
 
@@ -339,6 +385,9 @@ cov_est_functions = {
 }
 
 
+_BATCH_ESTIMATORS = {covariance_scm, covariance_sch, _hub, _stu, _tyl}
+
+
 def covariances(X, estimator="cov", **kwds):
     """Estimation of covariance matrices.
 
@@ -347,7 +396,7 @@ def covariances(X, estimator="cov", **kwds):
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series, real or complex-valued.
     estimator : string | callable, default="cov"
         Covariance matrix estimator [est]_:
@@ -375,7 +424,7 @@ def covariances(X, estimator="cov", **kwds):
 
     Returns
     -------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+    covmats : ndarray, shape (..., n_channels, n_channels)
         Covariance matrices.
 
     References
@@ -395,11 +444,9 @@ def covariances(X, estimator="cov", **kwds):
         Conference on Acoustics, Speech and Signal Processing, Volume 2, 2007.
     """  # noqa
     est = check_function(estimator, cov_est_functions)
-    n_matrices, n_channels, n_times = X.shape
-    covmats = np.empty((n_matrices, n_channels, n_channels), dtype=X.dtype)
-    for i in range(n_matrices):
-        covmats[i] = est(X[i], **kwds)
-    return covmats
+    if est not in _BATCH_ESTIMATORS:
+        est = _vectorize_estimator(est)
+    return est(X, **kwds)
 
 
 def covariances_EP(X, P, estimator="cov", **kwds):
@@ -407,7 +454,7 @@ def covariances_EP(X, P, estimator="cov", **kwds):
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series.
     P : ndarray, shape (n_channels_proto, n_times)
         Multi-channel prototype.
@@ -419,21 +466,24 @@ def covariances_EP(X, P, estimator="cov", **kwds):
 
     Returns
     -------
-    covmats : ndarray, shape (n_matrices, n_channels + n_channels_proto, \
+    covmats : ndarray, shape (..., n_channels + n_channels_proto, \
             n_channels + n_channels_proto)
         Covariance matrices.
     """
     est = check_function(estimator, cov_est_functions)
-    n_matrices, n_channels, n_times = X.shape
+    if est not in _BATCH_ESTIMATORS:
+        est = _vectorize_estimator(est)
+    original_shape = X.shape
     n_channels_proto, n_times_p = P.shape
+    n_times = original_shape[-1]
     if n_times_p != n_times:
         raise ValueError(
             f"X and P do not have the same n_times: {n_times} and {n_times_p}")
-    covmats = np.empty((n_matrices, n_channels + n_channels_proto,
-                        n_channels + n_channels_proto), dtype=X.dtype)
-    for i in range(n_matrices):
-        covmats[i] = est(np.concatenate((P, X[i]), axis=0), **kwds)
-    return covmats
+    P_broadcast = np.broadcast_to(
+        P, (*original_shape[:-2], n_channels_proto, n_times)
+    )
+    XP = np.concatenate((P_broadcast, X), axis=-2)
+    return est(XP, **kwds)
 
 
 def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
@@ -441,7 +491,7 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series.
     estimator : string | callable, default="cov"
         Covariance matrix estimator, see
@@ -453,7 +503,7 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
 
     Returns
     -------
-    covmats : ndarray, shape (n_matrices, n_channels + n_times, n_channels + \
+    covmats : ndarray, shape (..., n_channels + n_times, n_channels + \
             n_times)
         Covariance matrices.
 
@@ -470,7 +520,10 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
         raise ValueError(
             f"Parameter alpha must be strictly positive (Got {alpha})")
     est = check_function(estimator, cov_est_functions)
-    n_matrices, n_channels, n_times = X.shape
+    if est not in _BATCH_ESTIMATORS:
+        est = _vectorize_estimator(est)
+    original_shape = X.shape
+    n_channels, n_times = original_shape[-2], original_shape[-1]
 
     Hchannels = np.eye(n_channels) \
         - np.outer(np.ones(n_channels), np.ones(n_channels)) / n_channels
@@ -478,15 +531,20 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
         - np.outer(np.ones(n_times), np.ones(n_times)) / n_times
     X = Hchannels @ X @ Htimes  # Eq(8), double centering
 
-    covmats = np.empty(
-        (n_matrices, n_channels + n_times, n_channels + n_times))
-    for i in range(n_matrices):
-        Y = np.concatenate((
-            np.concatenate((X[i], alpha * np.eye(n_channels)), axis=1),  # top
-            np.concatenate((alpha * np.eye(n_times), X[i].T), axis=1)  # bottom
-        ), axis=0)  # Eq(9)
-        covmats[i] = est(Y, **kwds)
-    return covmats / (2 * alpha)  # Eq(10)
+    batch_shape = original_shape[:-2]
+    I_ch = np.broadcast_to(
+        alpha * np.eye(n_channels),
+        (*batch_shape, n_channels, n_channels),
+    )
+    I_t = np.broadcast_to(
+        alpha * np.eye(n_times),
+        (*batch_shape, n_times, n_times),
+    )
+    Xt = np.swapaxes(X, -2, -1)
+    top = np.concatenate([X, I_ch], axis=-1)
+    bot = np.concatenate([I_t, Xt], axis=-1)
+    Y = np.concatenate([top, bot], axis=-2)  # Eq(9)
+    return est(Y, **kwds) / (2 * alpha)  # Eq(10)
 
 
 def block_covariances(X, blocks, estimator="cov", **kwds):
@@ -499,7 +557,7 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series.
     blocks: list of int
         List of block sizes.
@@ -511,24 +569,26 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
 
     Returns
     -------
-    covmats : ndarray, shape (n_matrices, n_channels, n_channels)
+    covmats : ndarray, shape (..., n_channels, n_channels)
         Block diagonal covariance matrices.
     """
     est = check_function(estimator, cov_est_functions)
-    n_matrices, n_channels, n_times = X.shape
+    if est not in _BATCH_ESTIMATORS:
+        est = _vectorize_estimator(est)
+    original_shape = X.shape
+    n_channels = original_shape[-2]
 
     if np.sum(blocks) != n_channels:
         raise ValueError("Sum of individual block sizes "
                          "must match number of channels of X.")
 
-    covmats = np.empty((n_matrices, n_channels, n_channels))
-    for i in range(n_matrices):
-        blockcov, idx_start = [], 0
-        for j in blocks:
-            blockcov.append(est(X[i, idx_start:idx_start+j, :], **kwds))
-            idx_start += j
-        covmats[i] = block_diag(*tuple(blockcov))
-
+    covmats = np.zeros((*original_shape[:-2], n_channels, n_channels))
+    idx_start = 0
+    for j in blocks:
+        block_cov = est(X[..., idx_start:idx_start+j, :], **kwds)
+        covmats[..., idx_start:idx_start+j, idx_start:idx_start+j] = \
+            block_cov
+        idx_start += j
     return covmats
 
 
@@ -561,7 +621,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series, real-valued.
     window : int, default=128
         Length of the FFT window used for spectral estimation.
@@ -576,7 +636,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Returns
     -------
-    S : ndarray, shape (n_channels, n_channels, n_freqs)
+    S : ndarray, shape (..., n_channels, n_channels, n_freqs)
         Cross-spectral matrices, for each frequency bin.
     freqs : ndarray, shape (n_freqs,)
         Frequencies associated to cross-spectra.
@@ -595,17 +655,19 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             f"Value overlap must be included in (0, 1) (Got {overlap})"
         )
 
-    n_channels, n_times = X.shape
+    n_times = X.shape[-1]
     n_freqs = int(window / 2) + 1  # X real signal => compute half-spectrum
     step = int((1.0 - overlap) * window)
     n_windows = int((n_times - window) / step + 1)
     win = np.hanning(window)
 
-    # FFT calculation on all windows
-    shape = (n_channels, n_windows, window)
-    strides = X.strides[:-1]+(step*X.strides[-1], X.strides[-1])
-    Xs = np.lib.stride_tricks.as_strided(X, shape=shape, strides=strides)
-    fdata = np.fft.rfft(Xs * win, n=window).transpose(1, 0, 2)
+    # Sliding window view handles any batch dims:
+    # (..., n_channels, n_times) -> (..., n_channels, n_windows, window)
+    Xs = np.lib.stride_tricks.sliding_window_view(
+        X, window, axis=-1
+    )[..., ::step, :]
+    # FFT: (..., n_channels, n_windows, n_freqs)
+    fdata = np.fft.rfft(Xs * win, n=window)
 
     # adjust frequency range to specified range
     if fs is not None:
@@ -619,7 +681,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             raise ValueError("Parameter fmax must be inferior to fs/2")
         f = np.arange(0, n_freqs, dtype=int) * float(fs / window)
         fix = (f >= fmin) & (f <= fmax)
-        fdata = fdata[:, :, fix]
+        fdata = fdata[..., fix]
         freqs = f[fix]
     else:
         if fmin is not None:
@@ -628,10 +690,9 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             warnings.warn("Parameter fmax not used because fs is None")
         freqs = None
 
-    n_freqs = fdata.shape[2]
-    S = np.zeros((n_channels, n_channels, n_freqs), dtype=complex)
-    for i in range(n_freqs):
-        S[:, :, i] = fdata[:, :, i].conj().T @ fdata[:, :, i]
+    # Cross-spectral matrix via einsum over windows:
+    # (..., n_channels, n_channels, n_freqs)
+    S = np.einsum('...cwf,...dwf->...cdf', fdata.conj(), fdata)
     S /= n_windows * np.linalg.norm(win)**2
 
     # normalization to respect Parseval's theorem with the half-spectrum
@@ -649,7 +710,7 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series, real-valued.
     window : int, default=128
         Length of the FFT window used for spectral estimation.
@@ -664,7 +725,7 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     Returns
     -------
-    S : ndarray, shape (n_channels, n_channels, n_freqs)
+    S : ndarray, shape (..., n_channels, n_channels, n_freqs)
         Co-spectral matrices, for each frequency bin.
     freqs : ndarray, shape (n_freqs,)
         Frequencies associated to cospectra.
@@ -687,7 +748,7 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
 
     Parameters
     ----------
-    X : ndarray, shape (n_channels, n_times)
+    X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series, real-valued.
     window : int, default=128
         Length of the FFT window used for spectral estimation.
@@ -749,8 +810,10 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         fmax=fmax,
         fs=fs,
     )
+    # S: (..., n_channels, n_channels, n_freqs)
     S2 = np.abs(S)**2  # squared cross-spectral modulus
 
+    n_channels = S.shape[-3]
     C = np.zeros_like(S2)
     f_inds = np.arange(0, C.shape[-1], dtype=int)
 
@@ -767,22 +830,26 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
                               "coherence: filled with zeros")
             f_inds = f_inds_
 
-    for f in f_inds:
-        psd = np.sqrt(np.diag(S2[..., f]))
-        psd_prod = np.outer(psd, psd)
-        if coh == "ordinary":
-            C[..., f] = S2[..., f] / psd_prod
-        elif coh == "instantaneous":
-            C[..., f] = (S[..., f].real)**2 / psd_prod
-        elif coh == "lagged":
-            np.fill_diagonal(S[..., f].real, 0.)  # prevent div by zero on diag
-            denom = psd_prod - (S[..., f].real)**2
-            denom[abs(denom) < 1e-10] = 1e-10
-            C[..., f] = (S[..., f].imag)**2 / denom
-        elif coh == "imaginary":
-            C[..., f] = (S[..., f].imag)**2 / psd_prod
-        else:
-            raise ValueError(f"{coh} is not a supported coherence")
+    # Vectorized PSD: diagonal of S2 across channels
+    diag_idx = np.arange(n_channels)
+    psd = np.sqrt(S2[..., diag_idx, diag_idx, :])  # (..., n_ch, n_freqs)
+    psd_prod = psd[..., :, np.newaxis, :] * psd[..., np.newaxis, :, :]
+    # psd_prod: (..., n_ch, n_ch, n_freqs)
+
+    if coh == "ordinary":
+        C[..., f_inds] = S2[..., f_inds] / psd_prod[..., f_inds]
+    elif coh == "instantaneous":
+        C[..., f_inds] = (S[..., f_inds].real)**2 / psd_prod[..., f_inds]
+    elif coh == "lagged":
+        S_real = S.real.copy()
+        S_real[..., diag_idx, diag_idx, :] = 0.0  # zero diagonal
+        denom = psd_prod[..., f_inds] - S_real[..., f_inds]**2
+        denom = np.where(np.abs(denom) < 1e-10, 1e-10, denom)
+        C[..., f_inds] = (S[..., f_inds].imag)**2 / denom
+    elif coh == "imaginary":
+        C[..., f_inds] = (S[..., f_inds].imag)**2 / psd_prod[..., f_inds]
+    else:
+        raise ValueError(f"{coh} is not a supported coherence")
 
     return C, freqs
 

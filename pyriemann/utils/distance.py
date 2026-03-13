@@ -965,11 +965,11 @@ def distance_mahalanobis(X, cov, mean=None, squared=False):
 
     Parameters
     ----------
-    X : ndarray, shape (n, n_vectors)
+    X : ndarray, shape (..., n, n_vectors)
         Vectors.
-    cov : ndarray, shape (n, n)
+    cov : ndarray, shape (..., n, n)
         Covariance matrix of the multivariate Gaussian distribution.
-    mean : None | ndarray, shape (n, 1), default=None
+    mean : None | ndarray, shape (..., n, 1), default=None
         Mean vector of the multivariate Gaussian distribution.
         If None, distribution is considered as centered.
     squared : bool, default=False
@@ -979,7 +979,7 @@ def distance_mahalanobis(X, cov, mean=None, squared=False):
 
     Returns
     -------
-    d : ndarray, shape (n_vectors,)
+    d : ndarray, shape (..., n_vectors)
         Mahalanobis distances.
 
     Notes
@@ -991,8 +991,8 @@ def distance_mahalanobis(X, cov, mean=None, squared=False):
     .. [1] https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.mahalanobis.html
     """  # noqa
     if mean is not None:
-        X -= mean
+        X = X - mean
 
     Xw = invsqrtm(cov) @ X
-    d2 = np.einsum("ij,ji->i", Xw.conj().T, Xw).real
+    d2 = np.sum(np.abs(Xw)**2, axis=-2).real
     return d2 if squared else np.sqrt(d2)

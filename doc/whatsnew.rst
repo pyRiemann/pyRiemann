@@ -31,6 +31,8 @@ v0.11.dev
 
 - Add ORCID identifiers and new contributors to CITATION.cff. :pr:`424` by :user:`bruAristimunha`
 
+- Add broadcast compatibility for utility functions, enabling batched SPD/HPD matrix operations. Includes element-wise convergence for iterative mean algorithms and broadcast-compatible Mahalanobis distance. :pr:`426` by :user:`bruAristimunha`
+
 v0.10 (January 2026)
 --------------------
 

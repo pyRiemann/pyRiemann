@@ -8,7 +8,7 @@ from .utils import check_function
 
 def _check_dimensions(X, Cref):
     n_1, n_2 = X.shape[-2:]
-    n_3, n_4 = Cref.shape
+    n_3, n_4 = Cref.shape[-2:]
     if not (n_1 == n_2 == n_3 == n_4):
         raise ValueError("Inputs have incompatible dimensions.")
 
@@ -223,12 +223,13 @@ def exp_map_wasserstein(X, Cref):
         pp. 137–179.
     """
     d, V = np.linalg.eigh(Cref)
-    C = 1 / (d[:, None] + d[None, :])
+    Vh = ctranspose(V)
+    C = 1 / (d[..., :, np.newaxis] + d[..., np.newaxis, :])
 
-    X_rotated = V.conj().T @ X @ V
+    X_rotated = Vh @ X @ V
     X_tmp = C * X_rotated
-    X_tmp = X_tmp @ np.diag(d) @ X_tmp
-    X_tmp = V @ X_tmp @ V.conj().T
+    X_tmp = X_tmp @ (d[..., :, np.newaxis] * X_tmp)
+    X_tmp = V @ X_tmp @ Vh
 
     return Cref + X + X_tmp
 
@@ -764,7 +765,7 @@ def transport_logchol(X, A, B):
     tri0, tri1 = np.tril_indices(X.shape[-1], -1)
     diag0, diag1 = np.diag_indices(X.shape[-1])
 
-    P = A_invchol @ X @ A_invchol.conj().T
+    P = A_invchol @ X @ ctranspose(A_invchol)
     P12 = np.zeros_like(P)
     P12[..., tri0, tri1] = P[..., tri0, tri1]
     P12[..., diag0, diag1] = P[..., diag0, diag1] / 2
@@ -775,7 +776,7 @@ def transport_logchol(X, A, B):
     T[..., diag0, diag1] = B_chol[..., diag0, diag1] \
         / A_chol[..., diag0, diag1] * X_[..., diag0, diag1]
 
-    X_new = B_chol @ ctranspose(T) + T @ B_chol.conj().T
+    X_new = B_chol @ ctranspose(T) + T @ ctranspose(B_chol)
     return X_new
 
 
@@ -884,7 +885,7 @@ def transport_riemann(X, A, B):
     # (BA^{-1})^{1/2} = A^{1/2} (A^{-1/2}BA^{-1/2})^{1/2} A^{-1/2}
     A12, A12inv = sqrtm(A), invsqrtm(A)
     E = A12 @ sqrtm(A12inv @ B @ A12inv) @ A12inv
-    X_new = E @ X @ E.conj().T
+    X_new = E @ X @ ctranspose(E)
     return X_new
 
 
