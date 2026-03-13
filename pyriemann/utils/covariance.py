@@ -2,7 +2,6 @@ import warnings
 from functools import wraps
 
 import numpy as np
-from scipy.linalg import block_diag
 from scipy.stats import chi2
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
@@ -56,24 +55,47 @@ def _complex_estimator(func):
     return wrapper
 
 
+def _vectorize_estimator(func):
+    """Decorator to vectorize a 2D estimator over batch dimensions.
+
+    Wraps a covariance estimator that accepts a 2D array (n_channels, n_times)
+    to handle arbitrary batch dimensions (..., n_channels, n_times).
+    """
+    @wraps(func)
+    def wrapper(X, **kwds):
+        if X.ndim == 2:
+            return func(X, **kwds)
+        original_shape = X.shape
+        n_channels, n_times = original_shape[-2], original_shape[-1]
+        X_flat = X.reshape(-1, n_channels, n_times)
+        n_flat = X_flat.shape[0]
+        C0 = np.atleast_2d(func(X_flat[0], **kwds))
+        covmats = np.empty((n_flat, *C0.shape), dtype=C0.dtype)
+        covmats[0] = C0
+        for i in range(1, n_flat):
+            covmats[i] = np.atleast_2d(func(X_flat[i], **kwds))
+        return covmats.reshape(*original_shape[:-2], *C0.shape)
+    return wrapper
+
+
 @_complex_estimator
 def _lwf(X, **kwds):
     """Wrapper for sklearn ledoit wolf covariance estimator"""
-    C, _ = ledoit_wolf(np.swapaxes(X, -2, -1), **kwds)
+    C, _ = ledoit_wolf(X.T, **kwds)
     return C
 
 
 @_complex_estimator
 def _mcd(X, **kwds):
     """Wrapper for sklearn mcd covariance estimator"""
-    _, C, _, _ = fast_mcd(np.swapaxes(X, -2, -1), **kwds)
+    _, C, _, _ = fast_mcd(X.T, **kwds)
     return C
 
 
 @_complex_estimator
 def _oas(X, **kwds):
     """Wrapper for sklearn oas covariance estimator"""
-    C, _ = oas(np.swapaxes(X, -2, -1), **kwds)
+    C, _ = oas(X.T, **kwds)
     return C
 
 
@@ -422,19 +444,9 @@ def covariances(X, estimator="cov", **kwds):
         Conference on Acoustics, Speech and Signal Processing, Volume 2, 2007.
     """  # noqa
     est = check_function(estimator, cov_est_functions)
-
-    if est in _BATCH_ESTIMATORS:
-        return est(X, **kwds)
-
-    # Fallback for non-batch estimators
-    original_shape = X.shape
-    n_channels, n_times = original_shape[-2], original_shape[-1]
-    X_flat = X.reshape(-1, n_channels, n_times)
-    n_flat = X_flat.shape[0]
-    covmats = np.empty((n_flat, n_channels, n_channels), dtype=X.dtype)
-    for i in range(n_flat):
-        covmats[i] = est(X_flat[i], **kwds)
-    return covmats.reshape(*original_shape[:-2], n_channels, n_channels)
+    if est not in _BATCH_ESTIMATORS:
+        est = _vectorize_estimator(est)
+    return est(X, **kwds)
 
 
 def covariances_EP(X, P, estimator="cov", **kwds):
@@ -459,28 +471,19 @@ def covariances_EP(X, P, estimator="cov", **kwds):
         Covariance matrices.
     """
     est = check_function(estimator, cov_est_functions)
+    if est not in _BATCH_ESTIMATORS:
+        est = _vectorize_estimator(est)
     original_shape = X.shape
-    n_channels, n_times = original_shape[-2], original_shape[-1]
     n_channels_proto, n_times_p = P.shape
+    n_times = original_shape[-1]
     if n_times_p != n_times:
         raise ValueError(
             f"X and P do not have the same n_times: {n_times} and {n_times_p}")
-    n_out = n_channels + n_channels_proto
-
-    if est in _BATCH_ESTIMATORS:
-        P_broadcast = np.broadcast_to(
-            P, (*original_shape[:-2], n_channels_proto, n_times)
-        )
-        XP = np.concatenate((P_broadcast, X), axis=-2)
-        return est(XP, **kwds)
-
-    # Fallback for non-batch estimators
-    X_flat = X.reshape(-1, n_channels, n_times)
-    n_flat = X_flat.shape[0]
-    covmats = np.empty((n_flat, n_out, n_out), dtype=X.dtype)
-    for i in range(n_flat):
-        covmats[i] = est(np.concatenate((P, X_flat[i]), axis=0), **kwds)
-    return covmats.reshape(*original_shape[:-2], n_out, n_out)
+    P_broadcast = np.broadcast_to(
+        P, (*original_shape[:-2], n_channels_proto, n_times)
+    )
+    XP = np.concatenate((P_broadcast, X), axis=-2)
+    return est(XP, **kwds)
 
 
 def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
@@ -517,6 +520,8 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
         raise ValueError(
             f"Parameter alpha must be strictly positive (Got {alpha})")
     est = check_function(estimator, cov_est_functions)
+    if est not in _BATCH_ESTIMATORS:
+        est = _vectorize_estimator(est)
     original_shape = X.shape
     n_channels, n_times = original_shape[-2], original_shape[-1]
 
@@ -526,38 +531,20 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
         - np.outer(np.ones(n_times), np.ones(n_times)) / n_times
     X = Hchannels @ X @ Htimes  # Eq(8), double centering
 
-    n_out = n_channels + n_times
-
-    if est in _BATCH_ESTIMATORS:
-        batch_shape = original_shape[:-2]
-        I_ch = np.broadcast_to(
-            alpha * np.eye(n_channels),
-            (*batch_shape, n_channels, n_channels),
-        )
-        I_t = np.broadcast_to(
-            alpha * np.eye(n_times),
-            (*batch_shape, n_times, n_times),
-        )
-        Xt = np.swapaxes(X, -2, -1)
-        top = np.concatenate([X, I_ch], axis=-1)
-        bot = np.concatenate([I_t, Xt], axis=-1)
-        Y = np.concatenate([top, bot], axis=-2)  # Eq(9)
-        return est(Y, **kwds) / (2 * alpha)  # Eq(10)
-
-    # Fallback for non-batch estimators
-    X_flat = X.reshape(-1, n_channels, n_times)
-    n_flat = X_flat.shape[0]
-    covmats = np.empty((n_flat, n_out, n_out))
-    for i in range(n_flat):
-        Y = np.concatenate((
-            np.concatenate((X_flat[i], alpha * np.eye(n_channels)),
-                           axis=1),
-            np.concatenate((alpha * np.eye(n_times), X_flat[i].T), axis=1)
-        ), axis=0)  # Eq(9)
-        covmats[i] = est(Y, **kwds)
-    return covmats.reshape(
-        *original_shape[:-2], n_out, n_out
-    ) / (2 * alpha)  # Eq(10)
+    batch_shape = original_shape[:-2]
+    I_ch = np.broadcast_to(
+        alpha * np.eye(n_channels),
+        (*batch_shape, n_channels, n_channels),
+    )
+    I_t = np.broadcast_to(
+        alpha * np.eye(n_times),
+        (*batch_shape, n_times, n_times),
+    )
+    Xt = np.swapaxes(X, -2, -1)
+    top = np.concatenate([X, I_ch], axis=-1)
+    bot = np.concatenate([I_t, Xt], axis=-1)
+    Y = np.concatenate([top, bot], axis=-2)  # Eq(9)
+    return est(Y, **kwds) / (2 * alpha)  # Eq(10)
 
 
 def block_covariances(X, blocks, estimator="cov", **kwds):
@@ -586,35 +573,23 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
         Block diagonal covariance matrices.
     """
     est = check_function(estimator, cov_est_functions)
+    if est not in _BATCH_ESTIMATORS:
+        est = _vectorize_estimator(est)
     original_shape = X.shape
-    n_channels, n_times = original_shape[-2], original_shape[-1]
+    n_channels = original_shape[-2]
 
     if np.sum(blocks) != n_channels:
         raise ValueError("Sum of individual block sizes "
                          "must match number of channels of X.")
 
-    if est in _BATCH_ESTIMATORS:
-        covmats = np.zeros((*original_shape[:-2], n_channels, n_channels))
-        idx_start = 0
-        for j in blocks:
-            block_cov = est(X[..., idx_start:idx_start+j, :], **kwds)
-            covmats[..., idx_start:idx_start+j, idx_start:idx_start+j] = \
-                block_cov
-            idx_start += j
-        return covmats
-
-    # Fallback for non-batch estimators
-    X_flat = X.reshape(-1, n_channels, n_times)
-    n_flat = X_flat.shape[0]
-    covmats = np.empty((n_flat, n_channels, n_channels))
-    for i in range(n_flat):
-        blockcov, idx_start = [], 0
-        for j in blocks:
-            blockcov.append(est(X_flat[i, idx_start:idx_start+j, :], **kwds))
-            idx_start += j
-        covmats[i] = block_diag(*tuple(blockcov))
-
-    return covmats.reshape(*original_shape[:-2], n_channels, n_channels)
+    covmats = np.zeros((*original_shape[:-2], n_channels, n_channels))
+    idx_start = 0
+    for j in blocks:
+        block_cov = est(X[..., idx_start:idx_start+j, :], **kwds)
+        covmats[..., idx_start:idx_start+j, idx_start:idx_start+j] = \
+            block_cov
+        idx_start += j
+    return covmats
 
 
 ###############################################################################
