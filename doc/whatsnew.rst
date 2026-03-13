@@ -31,7 +31,7 @@ v0.11.dev
 
 - Add ORCID identifiers and new contributors to CITATION.cff. :pr:`424` by :user:`bruAristimunha`
 
-- Add a private module to compute inner products. :pr:`428` by :user:`qbarthelemy`
+- Add functions to compute inner products. :pr:`428` by :user:`qbarthelemy`
 
 v0.10 (January 2026)
 --------------------

@@ -13,6 +13,9 @@ def _check_dimensions(X, Cref):
         raise ValueError("Inputs have incompatible dimensions.")
 
 
+###############################################################################
+
+
 def exp_map_euclid(X, Cref):
     r"""Project matrices back to manifold by Euclidean exponential map.
 
@@ -682,6 +685,240 @@ def untangent_space(T, Cref, *, metric="riemann"):
     X_ = unupper(T)
     X = exp_map(X_, Cref, metric=metric)
     return X
+
+
+###############################################################################
+
+
+def innerproduct_euclid(X, Y, *args):
+    r"""Euclidean inner product.
+
+    Euclidean inner product :math:`\mathbf{g}`
+    between matrices :math:`\mathbf{X}` and :math:`\mathbf{Y}` is:
+
+    .. math::
+        \mathbf{g}(\mathbf{X}, \mathbf{Y}) = \text{tr}(\mathbf{X}^H \mathbf{Y})
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, m)
+        First  matrices.
+    Y : ndarray, shape (..., n, m) | None
+        Second matrices.
+        If None, Y is set to X, giving the squared norm of X.
+
+    Returns
+    -------
+    G : float or ndarray, shape (...,)
+        Euclidean inner product between X and Y.
+
+    Notes
+    -----
+    .. versionadded:: 0.11
+
+    See Also
+    --------
+    innerproduct
+    """
+    if Y is None:
+        Y = X
+    G = _apply_inner_product(X, Y)
+    return G
+
+
+def innerproduct_logeuclid(X, Y, Cref):
+    r"""Log-Euclidean inner product.
+
+    Log-Euclidean inner product :math:`\mathbf{g}` between
+    symmetric/Hermitian matrices in tangent space :math:`\mathbf{X}`
+    and :math:`\mathbf{Y}` at :math:`\mathbf{C}_\text{ref}` is [1]_:
+
+    .. math::
+        \mathbf{g}_{\mathbf{C}_\text{ref}}(\mathbf{X}, \mathbf{Y}) =
+            \text{tr} \left(
+            [D_{\mathbf{C}_\text{ref}} \log](X)^*
+            [D_{\mathbf{C}_\text{ref}} \log](Y)
+            \right)
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        First symmetric/Hermitian matrices in tangent space at Cref.
+    Y : ndarray, shape (..., n, n) | None
+        Second symmetric/Hermitian matrices in tangent space at Cref.
+        If None, Y is set to X, giving the squared norm of X.
+    Cref : ndarray, shape (n, n)
+        Reference SPD/HPD matrix.
+
+    Returns
+    -------
+    G : float or ndarray, shape (...,)
+        Log-Euclidean inner product between X and Y.
+
+    Notes
+    -----
+    .. versionadded:: 0.11
+
+    See Also
+    --------
+    innerproduct
+
+    References
+    ----------
+    .. [1] `Geometric means in a novel vector space structure on symmetric
+        positive-definite matrices
+        <https://epubs.siam.org/doi/abs/10.1137/050637996>`_
+        V. Arsigny, P. Fillard, X. Pennec, N. Ayache.
+        SIAM J Matrix Anal Appl, 2007, 29 (1), pp. 328-347
+    """
+    if Y is None:
+        Y = X
+    G = _apply_inner_product(ddlogm(X, Cref), ddlogm(Y, Cref))
+    return G
+
+
+def innerproduct_riemann(X, Y, Cref):
+    r"""Affine-invariant Riemannian inner product.
+
+    Affine-invariant Riemannian inner product :math:`\mathbf{g}` between
+    symmetric/Hermitian matrices in tangent space :math:`\mathbf{X}`
+    and :math:`\mathbf{Y}` at :math:`\mathbf{C}_\text{ref}` is [1]_:
+
+    .. math::
+        \mathbf{g}_{\mathbf{C}_\text{ref}}(\mathbf{X}, \mathbf{Y}) =
+            \text{tr} \left(
+            (\mathbf{C}_\text{ref}^{-1/2} \mathbf{X}
+            \mathbf{C}_\text{ref}^{-1/2})^*
+            \mathbf{C}_\text{ref}^{-1/2} \mathbf{Y}
+            \mathbf{C}_\text{ref}^{-1/2}
+            \right)
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        First symmetric/Hermitian matrices in tangent space at Cref.
+    Y : ndarray, shape (..., n, n) | None
+        Second symmetric/Hermitian matrices in tangent space at Cref.
+        If None, Y is set to X, giving the squared norm of X.
+    Cref : ndarray, shape (n, n)
+        Reference SPD/HPD matrix.
+
+    Returns
+    -------
+    G : float or ndarray, shape (...,)
+        Affine-invariant Riemannian inner product between X and Y.
+
+    Notes
+    -----
+    .. versionadded:: 0.11
+
+    See Also
+    --------
+    innerproduct
+
+    References
+    ----------
+    .. [1] `A metric for covariance matrices
+        <https://www.ipb.uni-bonn.de/pdfs/Forstner1999Metric.pdf>`_
+        W. Förstner & B. Moonen.
+        Geodesy-the Challenge of the 3rd Millennium, 2003
+    """
+    if Y is None:
+        Y = X
+    Cm12 = invsqrtm(Cref)
+    G = _apply_inner_product(Cm12 @ X @ Cm12, Cm12 @ Y @ Cm12)
+    return G
+
+
+def _apply_inner_product(X, Y):
+    # product G = trace(X^H @ Y)
+    G = np.einsum("...nm,...nm->...", X.conj(), Y, optimize=True)
+
+    if G.size == 1:
+        return G.item()
+    else:
+        return G
+
+
+innerproduct_functions = {
+    "euclid": innerproduct_euclid,
+    "logeuclid": innerproduct_logeuclid,
+    "riemann": innerproduct_riemann,
+}
+
+
+def innerproduct(X, Y, Cref, metric="riemann"):
+    r"""Inner product according to a specified metric.
+
+    It calculates the inner product between matrices in the tangent space
+    :math:`\mathbf{X}` and :math:`\mathbf{Y}` at :math:`\mathbf{C}_\text{ref}`,
+    according to a specified metric.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        First matrices in tangent space at Cref.
+    Y : ndarray, shape (..., n, n) | None
+        Second matrices in tangent space at Cref.
+        If None, Y is set to X, giving the squared norm of X.
+    Cref : ndarray, shape (n, n) | None
+        Reference matrix.
+    metric : string | callable, default="riemann"
+        Metric used for inner product, can be:
+        "euclid", "logeuclid", "riemann", or a callable function.
+
+    Returns
+    -------
+    G : float or ndarray, shape (...,)
+        Inner product between X and Y.
+
+    Notes
+    -----
+    .. versionadded:: 0.11
+
+    See Also
+    --------
+    innerproduct_euclid
+    innerproduct_logeuclid
+    innerproduct_riemann
+    """
+    innerproduct_function = check_function(metric, innerproduct_functions)
+    G = innerproduct_function(X, Y, Cref)
+    return G
+
+
+def norm(X, Cref, metric="riemann"):
+    r"""Norm according to a specified metric.
+
+    It calculates the norm of matrix :math:`\mathbf{X}`
+    in the tangent space at :math:`\mathbf{C}_\text{ref}`,
+    according to a specified metric.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        Matrices in the tangent space at Cref.
+    Cref : ndarray, shape (n, n) | None
+        Reference matrix.
+    metric : string | callable, default="riemann"
+        Metric used for inner product, can be:
+        "euclid", "logeuclid", "riemann", or a callable function.
+
+    Returns
+    -------
+    N : float or ndarray, shape (...,)
+        Norm of X.
+
+    Notes
+    -----
+    .. versionadded:: 0.11
+
+    See Also
+    --------
+    innerproduct
+    """
+    N2 = innerproduct(X, None, Cref, metric=metric)
+    return np.sqrt(N2)
 
 
 ###############################################################################
