@@ -13,30 +13,9 @@ from .tangentspace import log_map_wasserstein, exp_map_wasserstein
 from .utils import check_weights, check_function, check_init
 
 
-def _convergence_check(delta, tol, ref=None):
-    """Per-element convergence check for batched iterative algorithms.
-
-    Parameters
-    ----------
-    delta : ndarray, shape (..., n, n)
-        Residual (e.g. X_new - X_old, or gradient J).
-    tol : float
-        Convergence tolerance.
-    ref : None | ndarray, shape (..., n, n)
-        Reference for relative criterion. If None, uses absolute criterion.
-
-    Returns
-    -------
-    converged : ndarray, shape (...)
-        Boolean mask of converged elements.
-    max_crit : float
-        Maximum criterion value across all elements.
-    """
-    norms = np.linalg.norm(delta, axis=(-2, -1))  # (...,)
-    if ref is not None:
-        ref_norms = np.linalg.norm(ref, axis=(-2, -1))
-        norms = norms / np.where(ref_norms == 0, 1.0, ref_norms)
-    return norms <= tol, np.max(norms)
+def _batch_norm(X):
+    """Frobenius norm, max over batch elements for convergence checks."""
+    return np.max(np.linalg.norm(X, axis=(-2, -1)))
 
 
 def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
@@ -179,8 +158,8 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
             s = np.mod(np.arange(h, h + n_matrices - 1) + 1, n_matrices)
             M_iter[h] = mean_alm(M[s], sample_weight=sample_weight[s])
 
-        converged, _ = _convergence_check(M_iter[0] - M[0], tol, ref=M[0])
-        if np.all(converged):
+        crit = _batch_norm(M_iter[0] - M[0]) / _batch_norm(M[0])
+        if crit < tol:
             break
         M = M_iter.copy()
     else:
@@ -428,11 +407,9 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         J = np.average(invX, axis=0, weights=sample_weight)
         Mnew = np.linalg.inv(J)
 
-        converged, _ = _convergence_check(Mnew - M, tol)
-        M = np.where(
-            converged[..., np.newaxis, np.newaxis], M, Mnew
-        )
-        if np.all(converged):
+        crit = _batch_norm(Mnew - M)
+        M = Mnew
+        if crit <= tol:
             break
     else:
         warnings.warn("Convergence not reached")
@@ -571,8 +548,8 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
         )
         K = powm(H, -phi) @ K
 
-        converged, _ = _convergence_check(H - eye_n, zeta * sqrt_n)
-        if np.all(converged):
+        crit = _batch_norm(H - eye_n) / sqrt_n
+        if crit <= zeta:
             break
     else:
         warnings.warn("Convergence not reached")
@@ -692,20 +669,16 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         J = np.average(
             logm(Mm12 @ X @ Mm12), axis=0, weights=sample_weight
         )
-        Mnew = M12 @ expm(nu * J) @ M12
+        M = M12 @ expm(nu * J) @ M12
 
-        converged, crit = _convergence_check(J, tol)
-        M = np.where(
-            converged[..., np.newaxis, np.newaxis], M, Mnew
-        )
-
+        crit = _batch_norm(J)
         h = nu * crit
         if h < tau:
             nu = 0.95 * nu
             tau = h
         else:
             nu = 0.5 * nu
-        if np.all(converged) or nu <= tol:
+        if crit <= tol or nu <= tol:
             break
     else:
         warnings.warn("Convergence not reached")
@@ -762,11 +735,9 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     for i in range(maxiter):
         Mnew = geodesic_thompson(M, X[i % n_matrices], 1 / (i + 2))
 
-        converged, _ = _convergence_check(Mnew - M, tol)
-        M = np.where(
-            converged[..., np.newaxis, np.newaxis], M, Mnew
-        )
-        if np.all(converged):
+        crit = _batch_norm(Mnew - M)
+        M = Mnew
+        if crit <= tol:
             break
     else:
         warnings.warn("Convergence not reached")
@@ -824,13 +795,9 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     for _ in range(maxiter):
         X_ts = log_map_wasserstein(X, M)
         J = np.average(X_ts, axis=0, weights=sample_weight)
-        Mnew = exp_map_wasserstein(J, M)
-
-        converged, _ = _convergence_check(J, tol)
-        M = np.where(
-            converged[..., np.newaxis, np.newaxis], M, Mnew
-        )
-        if np.all(converged):
+        M = exp_map_wasserstein(J, M)
+        crit = _batch_norm(J)
+        if crit <= tol:
             break
     else:
         warnings.warn("Convergence not reached")
