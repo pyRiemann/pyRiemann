@@ -70,7 +70,7 @@ def _vectorize_estimator(func):
         X_flat = X.reshape(-1, n_channels, n_times)
         n_flat = X_flat.shape[0]
         C0 = np.atleast_2d(func(X_flat[0], **kwds))
-        covmats = np.empty((n_flat, *C0.shape), dtype=C0.dtype)
+        covmats = np.empty((n_flat, n_channels, n_channels), dtype=X.dtype)
         covmats[0] = C0
         for i in range(1, n_flat):
             covmats[i] = np.atleast_2d(func(X_flat[i], **kwds))
