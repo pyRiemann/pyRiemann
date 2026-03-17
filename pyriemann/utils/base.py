@@ -239,18 +239,18 @@ def nearest_sym_pos_def(X, reg=1e-6):
 
     # PD fix: iteratively shift non-PD matrices
     eigvals = np.linalg.eigvalsh(P)
-    needs_fix = np.any(eigvals <= 0, axis=-1)  # (...,)
+    neg_ev = np.any(eigvals <= 0, axis=-1)  # (...,)
 
-    if np.any(needs_fix):
+    if np.any(neg_ev):
         spacing = np.spacing(np.linalg.norm(A, axis=(-2, -1)))
         I = np.eye(n)  # noqa
         k = 1
-        while np.any(needs_fix) and k < 100:
+        while np.any(neg_ev) and k < 100:
             mineig = np.min(np.linalg.eigvalsh(P), axis=-1)
-            shift = np.where(needs_fix, -mineig * k**2 + spacing, 0.0)
+            shift = np.where(neg_ev, -mineig * k**2 + spacing, 0.0)
             P = P + shift[..., np.newaxis, np.newaxis] * I
             eigvals = np.linalg.eigvalsh(P)
-            needs_fix = np.any(eigvals <= 0, axis=-1)
+            neg_ev = np.any(eigvals <= 0, axis=-1)
             k += 1
 
     # Regularize
