@@ -34,7 +34,7 @@ from pyriemann.utils.tangentspace import (
     transport_logeuclid,
     transport_riemann,
 )
-from pyriemann.utils.test import is_hermitian
+from pyriemann.utils.test import is_hermitian, is_real
 
 metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
 
@@ -221,6 +221,8 @@ def test_innerproduct_x_x(kindX, kindC, metric, get_mats):
     Cref = get_mats(1, n_channels, kindC)[0]
     G = innerproduct(X, X, Cref, metric=metric)
     assert G.shape == (n_matrices,)
+    assert is_real(G)
+
     G1 = innerproduct(X, None, Cref, metric=metric)
     assert_array_equal(G, G1)
 
@@ -235,6 +237,7 @@ def test_innerproduct_x_y(kindX, kindC, metric, get_mats):
     Cref = get_mats(1, n_channels, kindC)[0]
     G = innerproduct(X, Y, Cref, metric=metric)
     assert G.shape == (n_matrices,)
+    assert is_real(G)
 
 
 @pytest.mark.parametrize(
@@ -293,10 +296,12 @@ def test_innerproduct_property_linearity(kindX, kindC, metric,
     Gyz = innerproduct(Y, Z, Cref, metric=metric)
 
     Gaxpbz = innerproduct(a * X + b * Y, Z, Cref, metric=metric)
-    assert_array_almost_equal(Gaxpbz, a.conj() * Gxz + b.conj() * Gyz)
+    aGxzpbGyz = a.conj() * Gxz + b.conj() * Gyz
+    assert_array_almost_equal(Gaxpbz, aGxzpbGyz.real)
 
     Gxaypbz = innerproduct(X, a * Y + b * Z, Cref, metric=metric)
-    assert_array_almost_equal(Gxaypbz, a * Gxy + b * Gxz)
+    aGxypbGxz = a * Gxy + b * Gxz
+    assert_array_almost_equal(Gxaypbz, aGxypbGxz.real)
 
 
 @pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
@@ -318,11 +323,11 @@ def test_innerproduct_euclid(kind, n_dim1, n_dim2, get_mats):
     Y = get_mats(n_matrices, [n_dim1, n_dim2], kind)
     G = innerproduct_euclid(X, Y)
 
-    G1 = np.empty((n_matrices,), dtype=X.dtype)
-    G2 = np.empty((n_matrices,), dtype=X.dtype)
+    G1 = np.empty((n_matrices,))
+    G2 = np.empty((n_matrices,))
     for i in range(n_matrices):
-        G1[i] = np.trace(X[i].conj().T @ Y[i])
-        G2[i] = np.dot(X[i].conj().flatten(), Y[i].flatten())
+        G1[i] = np.trace(X[i].conj().T @ Y[i]).real
+        G2[i] = np.dot(X[i].conj().flatten(), Y[i].flatten()).real
     assert_array_almost_equal(G, G1)
     assert_array_almost_equal(G, G2)
 
@@ -335,12 +340,26 @@ def test_innerproduct_riemann(kindX, kindC, get_mats):
     G = innerproduct_riemann(X, Y, Cref)
 
     # Eq(2.6) in [Moakher2005]
-    Cinv = np.linalg.inv(Cref)
-    G1 = np.trace(Cinv @ X @ Cinv @ Y)
+    G1 = np.trace(np.linalg.solve(Cref, X) @ np.linalg.solve(Cref, Y))
     assert_array_almost_equal(G, G1)
 
-    G2 = np.trace(X @ Cinv @ Y @ Cinv)
-    assert_array_almost_equal(G, G2)
+
+@pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
+@pytest.mark.parametrize("metric", metrics)
+def test_norm_properties(kindX, kindC, metric, get_mats):
+    n_channels = 4
+    X, Y = get_mats(2, n_channels, kindX)
+    Cref = get_mats(1, n_channels, kindC)[0]
+
+    nx = norm(X, Cref, metric=metric)
+    assert isinstance(nx, float)
+
+    # positivity
+    assert nx >= 0
+
+    # triangle inequality
+    ny = norm(Y, Cref, metric=metric)
+    assert norm(X + Y, Cref, metric=metric) <= nx + ny
 
 
 ###############################################################################
@@ -372,7 +391,7 @@ def test_transport_ndarray(ftransport, get_mats):
     "logeuclid",
     "riemann",
 ])
-def test_transport_properties(kindX, kindAB, metric, get_mats):
+def test_transport_properties(kindX, kindAB, metric, get_mats, rndstate):
     n_matrices, n_channels = 10, 3
     X = get_mats(n_matrices, n_channels, kindX)
     A, B = get_mats(2, n_channels, kindAB)
@@ -390,8 +409,10 @@ def test_transport_properties(kindX, kindAB, metric, get_mats):
 
     # linearity
     Y = get_mats(n_matrices, n_channels, kindX)
+    a, b = rndstate.uniform(0.01, 0.99, size=2)
     Yt = transport(Y, A, B, metric=metric)
-    assert transport(X + Y, A, B, metric=metric) == approx(Xt + Yt)
+    aXtpbYt = transport(a * X + b * Y, A, B, metric=metric)
+    assert aXtpbYt == approx(a * Xt + b * Yt)
 
     if metric == "logchol":
         return
@@ -404,7 +425,7 @@ def test_transport_properties(kindX, kindAB, metric, get_mats):
 
 
 def test_transport_riemann_vs_whitening(get_mats):
-    """AIR PT from mean to identity should be equivalent to a whitening"""
+    """AIR PT from mean to identity is equivalent to a whitening"""
     n_matrices, n_channels = 15, 2
     X = get_mats(n_matrices, n_channels, "spd")
 

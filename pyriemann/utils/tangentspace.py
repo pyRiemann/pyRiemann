@@ -832,7 +832,7 @@ def innerproduct_riemann(X, Y, Cref):
 
 def _apply_inner_product(X, Y):
     # product G = trace(X^H @ Y)
-    G = np.einsum("...nm,...nm->...", X.conj(), Y, optimize=True)
+    G = np.einsum("...nm,...nm->...", X.conj(), Y, optimize=True).real
 
     if G.size == 1:
         return G.item()
@@ -890,7 +890,7 @@ def innerproduct(X, Y, Cref, metric="riemann"):
 def norm(X, Cref, metric="riemann"):
     r"""Norm according to a specified metric.
 
-    It calculates the norm of matrix :math:`\mathbf{X}`
+    It calculates the norm of the matrix :math:`\mathbf{X}`
     in the tangent space at :math:`\mathbf{C}_\text{ref}`,
     according to a specified metric.
 
@@ -901,7 +901,7 @@ def norm(X, Cref, metric="riemann"):
     Cref : ndarray, shape (n, n) | None
         Reference matrix.
     metric : string | callable, default="riemann"
-        Metric used for inner product, can be:
+        Metric used for norm, can be:
         "euclid", "logeuclid", "riemann", or a callable function.
 
     Returns
