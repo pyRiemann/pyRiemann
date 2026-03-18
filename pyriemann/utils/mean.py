@@ -13,7 +13,7 @@ from .tangentspace import log_map_wasserstein, exp_map_wasserstein
 from .utils import check_weights, check_function, check_init
 
 
-def _batch_norm(X):
+def _max_norm(X):
     """Frobenius norm, max over batch elements for convergence checks."""
     return np.max(np.linalg.norm(X, axis=(-2, -1)))
 
