@@ -1,6 +1,7 @@
 """Means of SPD/HPD matrices."""
 
 import warnings
+from functools import wraps
 
 import numpy as np
 
@@ -13,11 +14,34 @@ from .tangentspace import log_map_wasserstein, exp_map_wasserstein
 from .utils import check_weights, check_function, check_init
 
 
+def _vectorize_mean(func):
+    """Vectorize a mean function over internal batch dimensions.
+
+    Wraps a mean function that accepts (n_matrices, n, n) to handle
+    arbitrary batch dimensions (n_matrices, ..., n, n).
+    """
+    @wraps(func)
+    def wrapper(X, *args, **kwargs):
+        batch_shape = X.shape[1:-2]
+        if len(batch_shape) == 0:
+            return func(X, *args, **kwargs)
+        n_matrices = X.shape[0]
+        n = X.shape[-1]
+        n_batch = int(np.prod(batch_shape))
+        X_flat = X.reshape(n_matrices, n_batch, n, n)
+        results = np.empty((n_batch, n, n), dtype=X.dtype)
+        for b in range(n_batch):
+            results[b] = func(X_flat[:, b], *args, **kwargs)
+        return results.reshape(*batch_shape, n, n)
+    return wrapper
+
+
 def _max_norm(X):
     """Frobenius norm, max over batch elements for convergence checks."""
     return np.max(np.linalg.norm(X, axis=(-2, -1)))
 
 
+@_vectorize_mean
 def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     """AJD-based log-Euclidean (ALE) mean of SPD/HPD matrices.
 
@@ -60,19 +84,6 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     """
     n_matrices = X.shape[0]
     n = X.shape[-1]
-    batch_shape = X.shape[1:-2]
-
-    if len(batch_shape) > 0:
-        n_batch = int(np.prod(batch_shape))
-        X_flat = X.reshape(n_matrices, n_batch, n, n)
-        results = np.empty((n_batch, n, n), dtype=X.dtype)
-        for b in range(n_batch):
-            results[b] = mean_ale(
-                X_flat[:, b], tol=tol, maxiter=maxiter,
-                sample_weight=sample_weight, init=init,
-            )
-        return results.reshape(*batch_shape, n, n)
-
     sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
         B = ajd_pham(X)[0]
@@ -158,7 +169,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
             s = np.mod(np.arange(h, h + n_matrices - 1) + 1, n_matrices)
             M_iter[h] = mean_alm(M[s], sample_weight=sample_weight[s])
 
-        crit = _batch_norm(M_iter[0] - M[0]) / _batch_norm(M[0])
+        crit = _max_norm(M_iter[0] - M[0]) / _max_norm(M[0])
         if crit < tol:
             break
         M = M_iter.copy()
@@ -407,7 +418,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         J = np.average(invX, axis=0, weights=sample_weight)
         Mnew = np.linalg.inv(J)
 
-        crit = _batch_norm(Mnew - M)
+        crit = _max_norm(Mnew - M)
         M = Mnew
         if crit <= tol:
             break
@@ -548,7 +559,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
         )
         K = powm(H, -phi) @ K
 
-        crit = _batch_norm(H - eye_n) / sqrt_n
+        crit = _max_norm(H - eye_n) / sqrt_n
         if crit <= zeta:
             break
     else:
@@ -671,7 +682,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         )
         M = M12 @ expm(nu * J) @ M12
 
-        crit = _batch_norm(J)
+        crit = _max_norm(J)
         h = nu * crit
         if h < tau:
             nu = 0.95 * nu
@@ -735,7 +746,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     for i in range(maxiter):
         Mnew = geodesic_thompson(M, X[i % n_matrices], 1 / (i + 2))
 
-        crit = _batch_norm(Mnew - M)
+        crit = _max_norm(Mnew - M)
         M = Mnew
         if crit <= tol:
             break
@@ -796,7 +807,7 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         X_ts = log_map_wasserstein(X, M)
         J = np.average(X_ts, axis=0, weights=sample_weight)
         M = exp_map_wasserstein(J, M)
-        crit = _batch_norm(J)
+        crit = _max_norm(J)
         if crit <= tol:
             break
     else:
@@ -904,6 +915,7 @@ def _apply_masks(X, masks):
     return [m.T @ x @ m for x, m in zip(X, masks)]
 
 
+@_vectorize_mean
 def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
                        sample_weight=None):
     """Masked Riemannian mean of SPD/HPD matrices.
@@ -952,21 +964,6 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
         F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
         Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
-    n_matrices = X.shape[0]
-    n = X.shape[-1]
-    batch_shape = X.shape[1:-2]
-
-    if len(batch_shape) > 0:
-        n_batch = int(np.prod(batch_shape))
-        X_flat = X.reshape(n_matrices, n_batch, n, n)
-        results = np.empty((n_batch, n, n), dtype=X.dtype)
-        for b in range(n_batch):
-            results[b] = maskedmean_riemann(
-                X_flat[:, b], masks, tol=tol, maxiter=maxiter,
-                init=init, sample_weight=sample_weight,
-            )
-        return results.reshape(*batch_shape, n, n)
-
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
     maskedX = _apply_masks(X, masks)
@@ -1002,6 +999,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
     return M
 
 
+@_vectorize_mean
 def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
     """Riemannian NaN-mean of SPD/HPD matrices.
 
@@ -1044,21 +1042,6 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
         F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
         Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
-    n_matrices = X.shape[0]
-    n = X.shape[-1]
-    batch_shape = X.shape[1:-2]
-
-    if len(batch_shape) > 0:
-        n_batch = int(np.prod(batch_shape))
-        X_flat = X.reshape(n_matrices, n_batch, n, n)
-        results = np.empty((n_batch, n, n), dtype=X.dtype)
-        for b in range(n_batch):
-            results[b] = nanmean_riemann(
-                X_flat[:, b], tol=tol, maxiter=maxiter,
-                init=init, sample_weight=sample_weight,
-            )
-        return results.reshape(*batch_shape, n, n)
-
     n_matrices, n, _ = X.shape
     if init is None:
         init = np.nanmean(X, axis=0) + 1e-6 * np.eye(n)

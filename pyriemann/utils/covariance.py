@@ -361,6 +361,8 @@ def covariance_scm(X, *, assume_centered=False):
 
     if not assume_centered:
         X = X - np.mean(X, axis=-1, keepdims=True)
+    # Biased (MLE) estimator, dividing by n_times as in sklearn's
+    # empirical_covariance (not n_times - 1).
     cov = X @ ctranspose(X) / n_times
 
     return cov

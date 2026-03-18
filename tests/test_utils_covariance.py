@@ -5,10 +5,11 @@ from scipy.linalg import block_diag
 from scipy.signal import welch, csd, coherence as coherence_sp
 from sklearn.covariance import empirical_covariance
 
-
+from conftest import BATCH_SHAPES, _make_batch_spd, _first
 from pyriemann.utils.covariance import (
     covariances, covariances_EP, covariances_X, eegtocov,
     cross_spectrum, cospectrum, coherence,
+    covariance_mest, covariance_sch, covariance_scm,
     normalize, get_nondiag_weight, block_covariances, _complex_estimator
 )
 from pyriemann.utils.test import (
@@ -462,3 +463,139 @@ def test_get_nondiag_weight(rndstate):
     with pytest.raises(ValueError):  # not square
         shape = (n_matrices, n_channels, n_channels + 2)
         get_nondiag_weight(rndstate.randn(*shape))
+
+
+# ===========================================================
+# Broadcast compatibility tests
+# ===========================================================
+
+N_DIM = 3
+N_CHANNELS = 3
+N_TIMES = 128
+SPEC_WINDOW = 64
+N_FREQS = SPEC_WINDOW // 2 + 1
+
+
+def _make_batch_ts(batch_shape, n_channels=N_CHANNELS, n_times=N_TIMES,
+                   seed=42):
+    """Generate time-series: (*batch_shape, n_channels, n_times)."""
+    rs = np.random.RandomState(seed)
+    return rs.randn(*batch_shape, n_channels, n_times)
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+@pytest.mark.parametrize("func", [
+    covariance_scm,
+    covariance_sch,
+])
+def test_cov_single_trial_broadcast(func, batch_shape):
+    X = _make_batch_ts(batch_shape)
+    result = func(X)
+    assert result.shape == (*batch_shape, N_CHANNELS, N_CHANNELS)
+    idx = _first(batch_shape)
+    np.testing.assert_allclose(result[idx], func(X[idx]), atol=1e-10)
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+@pytest.mark.parametrize("m_est", ["hub", "stu", "tyl"])
+def test_cov_mest_broadcast(m_est, batch_shape):
+    X = _make_batch_ts(batch_shape)
+    result = covariance_mest(X, m_est)
+    assert result.shape == (*batch_shape, N_CHANNELS, N_CHANNELS)
+    idx = _first(batch_shape)
+    np.testing.assert_allclose(
+        result[idx], covariance_mest(X[idx], m_est), atol=1e-6
+    )
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+def test_covariances_broadcast(batch_shape):
+    X = _make_batch_ts(batch_shape)
+    result = covariances(X)
+    assert result.shape == (*batch_shape, N_CHANNELS, N_CHANNELS)
+    idx = _first(batch_shape)
+    np.testing.assert_allclose(result[idx], covariances(X[idx]), atol=1e-10)
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+def test_covariances_EP_broadcast(batch_shape):
+    X = _make_batch_ts(batch_shape)
+    P = np.random.RandomState(77).randn(2, N_TIMES)
+    n_out = N_CHANNELS + 2
+    result = covariances_EP(X, P)
+    assert result.shape == (*batch_shape, n_out, n_out)
+    idx = _first(batch_shape)
+    ref = covariances_EP(X[idx][np.newaxis], P)[0]
+    np.testing.assert_allclose(result[idx], ref, atol=1e-10)
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+def test_covariances_X_broadcast(batch_shape):
+    X = _make_batch_ts(batch_shape)
+    n_out = N_CHANNELS + N_TIMES
+    result = covariances_X(X)
+    assert result.shape == (*batch_shape, n_out, n_out)
+    idx = _first(batch_shape)
+    ref = covariances_X(X[idx][np.newaxis])[0]
+    np.testing.assert_allclose(result[idx], ref, atol=1e-10)
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+def test_block_covariances_broadcast(batch_shape):
+    X = _make_batch_ts(batch_shape)
+    blocks = [1, 2]  # must sum to N_CHANNELS
+    result = block_covariances(X, blocks)
+    assert result.shape == (*batch_shape, N_CHANNELS, N_CHANNELS)
+    idx = _first(batch_shape)
+    ref = block_covariances(X[idx][np.newaxis], blocks)[0]
+    np.testing.assert_allclose(result[idx], ref, atol=1e-10)
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+@pytest.mark.parametrize("func", [
+    cross_spectrum,
+    cospectrum,
+])
+def test_spectral_broadcast(func, batch_shape):
+    X = _make_batch_ts(batch_shape)
+    S, freqs = func(X, window=SPEC_WINDOW)
+    assert S.shape == (*batch_shape, N_CHANNELS, N_CHANNELS, N_FREQS)
+    idx = _first(batch_shape)
+    S_ref, _ = func(X[idx], window=SPEC_WINDOW)
+    np.testing.assert_allclose(S[idx], S_ref, atol=1e-10)
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+@pytest.mark.parametrize("coh_type", [
+    "ordinary", "instantaneous", "lagged", "imaginary",
+])
+def test_coherence_broadcast(coh_type, batch_shape):
+    X = _make_batch_ts(batch_shape)
+    C, freqs = coherence(X, window=SPEC_WINDOW, coh=coh_type)
+    assert C.shape == (*batch_shape, N_CHANNELS, N_CHANNELS, N_FREQS)
+    idx = _first(batch_shape)
+    C_ref, _ = coherence(X[idx], window=SPEC_WINDOW, coh=coh_type)
+    np.testing.assert_allclose(C[idx], C_ref, atol=1e-10)
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+@pytest.mark.parametrize("norm_type", ["corr", "trace", "determinant"])
+def test_normalize_broadcast(norm_type, batch_shape):
+    X = _make_batch_spd(batch_shape)
+    result = normalize(X, norm_type)
+    assert result.shape == (*batch_shape, N_DIM, N_DIM)
+    idx = _first(batch_shape)
+    np.testing.assert_allclose(
+        result[idx], normalize(X[idx], norm_type), atol=1e-10
+    )
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+def test_get_nondiag_weight_broadcast(batch_shape):
+    X = _make_batch_spd(batch_shape)
+    result = get_nondiag_weight(X)
+    assert result.shape == batch_shape
+    idx = _first(batch_shape)
+    np.testing.assert_allclose(
+        result[idx], get_nondiag_weight(X[idx]), atol=1e-10
+    )

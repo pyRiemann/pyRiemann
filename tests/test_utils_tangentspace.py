@@ -2,6 +2,7 @@ import numpy as np
 import pytest
 from pytest import approx
 
+from conftest import BATCH_SHAPES, _make_batch_spd, _make_single_spd, _first
 from pyriemann.spatialfilters import Whitening
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.mean import mean_riemann
@@ -230,3 +231,100 @@ def test_transport_riemann_vs_whitening(get_mats):
     Tt = transport(T, M, np.eye(n_channels), metric="riemann")
     Xt = exp_map_riemann(Tt, np.eye(n_channels), Cm12=True)
     assert Xw == approx(Xt)
+
+
+# ===========================================================
+# Broadcast compatibility tests
+# ===========================================================
+
+N_DIM = 3
+N_VEC = N_DIM * (N_DIM + 1) // 2
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+@pytest.mark.parametrize("func", [log_map_riemann, log_map_logchol])
+def test_log_map_broadcast(func, batch_shape):
+    """Log maps taking (X, Cref) where Cref is a 2D reference matrix."""
+    X = _make_batch_spd(batch_shape)
+    Cref = _make_single_spd()
+    result = func(X, Cref)
+    assert result.shape == (*batch_shape, N_DIM, N_DIM)
+    idx = _first(batch_shape)
+    np.testing.assert_allclose(result[idx], func(X[idx], Cref), atol=1e-10)
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+@pytest.mark.parametrize("func, log_func", [
+    pytest.param(exp_map_riemann, log_map_riemann, id="exp_map_riemann"),
+    pytest.param(exp_map_logchol, log_map_logchol, id="exp_map_logchol"),
+])
+def test_exp_map_broadcast(func, log_func, batch_shape):
+    X = _make_batch_spd(batch_shape, seed=42)
+    Cref = _make_single_spd()
+    T = log_func(X, Cref)  # generate valid tangent vectors
+    result = func(T, Cref)
+    assert result.shape == (*batch_shape, N_DIM, N_DIM)
+    idx = _first(batch_shape)
+    np.testing.assert_allclose(result[idx], func(T[idx], Cref), atol=1e-10)
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+@pytest.mark.parametrize("func", [
+    transport_riemann,
+    transport_logeuclid,
+    transport_logchol,
+])
+def test_transport_broadcast(func, batch_shape):
+    X = _make_batch_spd(batch_shape, seed=42)
+    A = _make_batch_spd(batch_shape, seed=7)
+    B = _make_batch_spd(batch_shape, seed=13)
+    result = func(X, A, B)
+    assert result.shape == (*batch_shape, N_DIM, N_DIM)
+    idx = _first(batch_shape)
+    np.testing.assert_allclose(
+        result[idx], func(X[idx], A[idx], B[idx]), atol=1e-10
+    )
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+def test_upper_broadcast(batch_shape):
+    X = _make_batch_spd(batch_shape)
+    result = upper(X)
+    assert result.shape == (*batch_shape, N_VEC)
+    idx = _first(batch_shape)
+    np.testing.assert_allclose(result[idx], upper(X[idx]), atol=1e-10)
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+def test_unupper_broadcast(batch_shape):
+    X = _make_batch_spd(batch_shape)
+    T = upper(X)
+    result = unupper(T)
+    assert result.shape == (*batch_shape, N_DIM, N_DIM)
+    idx = _first(batch_shape)
+    np.testing.assert_allclose(result[idx], unupper(T[idx]), atol=1e-10)
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+def test_tangent_space_broadcast(batch_shape):
+    X = _make_batch_spd(batch_shape, seed=42)
+    Cref = _make_single_spd()
+    result = tangent_space(X, Cref)
+    assert result.shape == (*batch_shape, N_VEC)
+    idx = _first(batch_shape)
+    np.testing.assert_allclose(
+        result[idx], tangent_space(X[idx], Cref), atol=1e-10
+    )
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+def test_untangent_space_broadcast(batch_shape):
+    X = _make_batch_spd(batch_shape, seed=42)
+    Cref = _make_single_spd()
+    T = tangent_space(X, Cref)
+    result = untangent_space(T, Cref)
+    assert result.shape == (*batch_shape, N_DIM, N_DIM)
+    idx = _first(batch_shape)
+    np.testing.assert_allclose(
+        result[idx], untangent_space(T[idx], Cref), atol=1e-10
+    )

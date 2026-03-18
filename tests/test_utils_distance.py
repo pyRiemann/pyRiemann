@@ -1,3 +1,5 @@
+from functools import partial
+
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 import pytest
@@ -5,6 +7,7 @@ from pytest import approx
 from scipy.linalg import eigvalsh
 from scipy.spatial.distance import euclidean, mahalanobis
 
+from conftest import BATCH_SHAPES, _make_batch_spd, _first
 from pyriemann.utils.distance import (
     distance_chol,
     distance_euclid,
@@ -397,3 +400,35 @@ def test_distance_mahalanobis_scipy(mean, get_mats):
     dist_pr = distance_mahalanobis(X, C, mean=mean)
 
     assert_array_almost_equal(dist_sp, dist_pr)
+
+
+# ===========================================================
+# Broadcast compatibility tests
+# ===========================================================
+
+N_DIM = 3
+
+
+@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
+@pytest.mark.parametrize("func", [
+    distance_chol,
+    distance_euclid,
+    distance_harmonic,
+    distance_logchol,
+    distance_logeuclid,
+    distance_riemann,
+    distance_wasserstein,
+    distance_kullback,
+    distance_kullback_right,
+    distance_kullback_sym,
+    distance_logdet,
+    distance_thompson,
+    pytest.param(partial(distance_poweuclid, p=0.5), id="distance_poweuclid"),
+])
+def test_distance_pair_broadcast(func, batch_shape):
+    A = _make_batch_spd(batch_shape, seed=42)
+    B = _make_batch_spd(batch_shape, seed=7)
+    result = func(A, B)
+    assert result.shape == batch_shape
+    idx = _first(batch_shape)
+    np.testing.assert_allclose(result[idx], func(A[idx], B[idx]), atol=1e-10)

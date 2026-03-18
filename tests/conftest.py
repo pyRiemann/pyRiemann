@@ -62,3 +62,32 @@ def get_targets():
         return np.random.rand(n_matrices)
 
     return _gen_targets
+
+
+# ---- Broadcast compatibility test helpers ----
+
+BATCH_SHAPES = [(2, 3), (2, 3, 4)]
+
+
+def _make_batch_spd(batch_shape, n_dim=3, seed=42):
+    """Generate SPD matrices with shape (*batch_shape, n_dim, n_dim)."""
+    rs = np.random.RandomState(seed)
+    n_total = int(np.prod(batch_shape))
+    flat = make_matrices(n_total, n_dim, "spd", rs, return_params=False)
+    return flat.reshape(*batch_shape, n_dim, n_dim)
+
+
+def _make_single_spd(n_dim=3, seed=99):
+    """Generate a single SPD matrix of shape (n_dim, n_dim)."""
+    rs = np.random.RandomState(seed)
+    return make_matrices(1, n_dim, "spd", rs, return_params=False)[0]
+
+
+def _first(batch_shape):
+    """Index tuple selecting the first element across all batch dims."""
+    return (0,) * len(batch_shape)
+
+
+def _mean_first(batch_shape):
+    """Index selecting X[:, 0, 0, ...] — first batch element, all matrices."""
+    return (slice(None),) + (0,) * len(batch_shape)
