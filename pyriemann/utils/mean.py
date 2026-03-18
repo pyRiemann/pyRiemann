@@ -25,8 +25,7 @@ def _vectorize_mean(func):
         batch_shape = X.shape[1:-2]
         if len(batch_shape) == 0:
             return func(X, *args, **kwargs)
-        n_matrices = X.shape[0]
-        n = X.shape[-1]
+        n_matrices, n = X.shape[0], X.shape[-1]
         n_batch = int(np.prod(batch_shape))
         X_flat = X.reshape(n_matrices, n_batch, n, n)
         results = np.empty((n_batch, n, n), dtype=X.dtype)
@@ -50,7 +49,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n, n)
+    X : ndarray, shape (..., n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=10e-7
         Tolerance to stop the gradient descent.
@@ -58,13 +57,13 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
         Maximum number of iterations.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
-    init : None | ndarray, shape (n, n), default=None
+    init : None | ndarray, shape (..., n, n), default=None
         A SPD/HPD matrix used to initialize the gradient descent.
         If None, the joint diagonalizer of input matrices is used.
 
     Returns
     -------
-    M : ndarray, shape (n, n)
+    M : ndarray, shape (..., n, n)
         ALE mean.
 
     Notes
@@ -82,7 +81,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
         <https://arxiv.org/abs/1505.07343>`_
         M. Congedo, B. Afsari, A. Barachant, M. Moakher. PLOS ONE, 2015
     """
-    n_matrices = X.shape[0]
+    n_matrices = X.shape[-3]
     n = X.shape[-1]
     sample_weight = check_weights(sample_weight, n_matrices)
     if init is None:
@@ -169,7 +168,8 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
             s = np.mod(np.arange(h, h + n_matrices - 1) + 1, n_matrices)
             M_iter[h] = mean_alm(M[s], sample_weight=sample_weight[s])
 
-        crit = _max_norm(M_iter[0] - M[0]) / _max_norm(M[0])
+        norm_iter = np.linalg.norm(M_iter[0] - M[0], ord=2, axis=(-2, -1))
+        norm_c = np.linalg.norm(M[0], ord=2, axis=(-2, -1))
         if crit < tol:
             break
         M = M_iter.copy()
@@ -350,21 +350,20 @@ def mean_logchol(X, sample_weight=None, **kwargs):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    n_matrices = X.shape[0]
-    n_channels = X.shape[-1]
+    n_matrices, n = X.shape[0], X.shape[-1]
     sample_weight = check_weights(sample_weight, n_matrices)
 
     X_chol = np.linalg.cholesky(X)
     L = np.zeros(X.shape[1:], dtype=X.dtype)
 
-    tri0, tri1 = np.tril_indices(n_channels, -1)
+    tri0, tri1 = np.tril_indices(n, -1)
     L[..., tri0, tri1] = np.average(
         X_chol[..., tri0, tri1],
         axis=0,
         weights=sample_weight,
     )
 
-    diag0, diag1 = np.diag_indices(n_channels)
+    diag0, diag1 = np.diag_indices(n)
     L[..., diag0, diag1] = np.exp(np.average(
         np.log(X_chol[..., diag0, diag1]),
         axis=0,

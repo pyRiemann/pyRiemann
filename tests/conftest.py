@@ -73,7 +73,7 @@ def _make_batch_spd(batch_shape, n_dim=3, seed=42):
     """Generate SPD matrices with shape (*batch_shape, n_dim, n_dim)."""
     rs = np.random.RandomState(seed)
     n_total = int(np.prod(batch_shape))
-    flat = make_matrices(n_total, n_dim, "spd", rs, return_params=False)
+    flat = make_matrices(n_total, n_dim, "spd", rndstate, return_params=False)
     return flat.reshape(*batch_shape, n_dim, n_dim)
 
 

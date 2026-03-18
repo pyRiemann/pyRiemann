@@ -231,7 +231,6 @@ def nearest_sym_pos_def(X, reg=1e-6):
     # Symmetrize
     A = (X + np.swapaxes(X, -2, -1)) / 2
 
-    # SVD: np.linalg.svd handles batch dims natively
     _, s, Vh = np.linalg.svd(A)
     H = np.swapaxes(Vh, -2, -1) @ (s[..., :, np.newaxis] * Vh)
     B = (A + H) / 2
@@ -313,8 +312,8 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
     .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
         R. Bhatia, Springer, 1997
     """
-    di = d[..., :, np.newaxis]  # (..., n, 1)
-    dj = d[..., np.newaxis, :]  # (..., 1, n)
+    di = d[..., :, np.newaxis]
+    dj = d[..., np.newaxis, :]
 
     close_ = np.isclose(di, dj, atol=atol, rtol=rtol)
     safe_diff = np.where(close_, np.ones_like(di - dj), di - dj)
