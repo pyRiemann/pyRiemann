@@ -1,9 +1,10 @@
+from functools import partial
+
 import numpy as np
 import pytest
 from pytest import approx
 from scipy.stats import hmean, gmean as gmean_sp
 
-from conftest import _make_batch_spd
 from pyriemann.utils.base import invsqrtm, logm, sqrtm
 from pyriemann.utils.geodesic import geodesic_riemann
 from pyriemann.utils.mean import (
@@ -39,7 +40,7 @@ from pyriemann.utils.mean import (
         mean_kullback_sym,
         mean_logdet,
         mean_logeuclid,
-        mean_power,
+        pytest.param(partial(mean_power, p=0.42), id="mean_power"),
         mean_riemann,
         mean_thompson,
         mean_wasserstein,
@@ -50,24 +51,7 @@ def test_mean(kind, mean, get_mats):
     """Test the shape of mean"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
-    if mean == mean_power:
-        M = mean(X, 0.42)
-    else:
-        M = mean(X)
-    assert M.shape == (n_channels, n_channels)
-
-    # Batch broadcast test (run once per mean function)
-    if kind == "spd":
-        batch_shape = (3, 2)
-        X_b = _make_batch_spd((*batch_shape, n_matrices), n_dim=n_channels)
-        if mean == mean_power:
-            result = mean(X_b, 0.42)
-            ref = mean(X_b[0, 0], 0.42)
-        else:
-            result = mean(X_b)
-            ref = mean(X_b[0, 0])
-        assert result.shape == (*batch_shape, n_channels, n_channels)
-        np.testing.assert_allclose(result[0, 0], ref, atol=1e-4)
+    assert mean(X).shape == (n_channels, n_channels)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -76,7 +60,7 @@ def test_mean(kind, mean, get_mats):
     [
         mean_ale,
         mean_logdet,
-        mean_power,
+        pytest.param(partial(mean_power, p=0.123), id="mean_power"),
         mean_riemann,
         mean_thompson,
         mean_wasserstein,
@@ -87,12 +71,7 @@ def test_mean_init(kind, mean, get_mats):
     """Test the shape of mean with init"""
     n_matrices, n_channels = 4, 3
     X = get_mats(n_matrices, n_channels, kind)
-
-    init = X[0]
-    if mean == mean_power:
-        M = mean(X, 0.123, init=init)
-    else:
-        M = mean(X, init=init)
+    M = mean(X, init=X[0])
     assert M.shape == (n_channels, n_channels)
 
 
@@ -150,7 +129,7 @@ def test_mean_weight_error(mean, get_mats, get_weights):
         mean_ale,
         mean_alm,
         mean_logdet,
-        mean_power,
+        pytest.param(partial(mean_power, p=0.3), id="mean_power"),
         mean_riemann,
         mean_thompson,
         mean_wasserstein,
@@ -162,10 +141,7 @@ def test_mean_warning_convergence(mean, get_mats):
     n_matrices, n_channels = 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
     with pytest.warns(UserWarning):
-        if mean == mean_power:
-            mean(X, 0.3, maxiter=0)
-        else:
-            mean(X, maxiter=0)
+        mean(X, maxiter=0)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -180,8 +156,8 @@ def test_mean_warning_convergence(mean, get_mats):
         mean_logchol,
         mean_logdet,
         mean_logeuclid,
-        mean_power,
-        mean_poweuclid,
+        pytest.param(partial(mean_poweuclid, p=0.4), id="mean_poweuclid"),
+        pytest.param(partial(mean_power, p=0.6), id="mean_power"),
         mean_riemann,
         mean_wasserstein,
     ],
@@ -190,17 +166,10 @@ def test_mean_of_means(kind, mean, get_mats):
     """Test mean of submeans equal to grand mean"""
     n_matrices, n_channels = 10, 3
     X = get_mats(n_matrices, n_channels, kind)
-    if mean in [mean_power, mean_poweuclid]:
-        p = -0.42
-        M = mean(X, p)
-        M1 = mean(X[:n_matrices//2], p)
-        M2 = mean(X[n_matrices//2:], p)
-        M3 = mean(np.array([M1, M2]), p)
-    else:
-        M = mean(X)
-        M1 = mean(X[:n_matrices//2])
-        M2 = mean(X[n_matrices//2:])
-        M3 = mean(np.array([M1, M2]))
+    M = mean(X)
+    M1 = mean(X[:n_matrices//2])
+    M2 = mean(X[n_matrices//2:])
+    M3 = mean(np.array([M1, M2]))
     assert M3 == approx(M, 6)
 
 
@@ -216,8 +185,8 @@ def test_mean_of_means(kind, mean, get_mats):
         mean_logchol,
         mean_logdet,
         mean_logeuclid,
-        mean_power,
-        mean_poweuclid,
+        pytest.param(partial(mean_poweuclid, p=0.7), id="mean_poweuclid"),
+        pytest.param(partial(mean_power, p=0.2), id="mean_power"),
         mean_riemann,
         mean_thompson,
         mean_wasserstein,
@@ -228,11 +197,48 @@ def test_mean_of_single_matrix(mean, get_mats):
     """Test the mean of a single matrix"""
     n_channels = 3
     X = get_mats(1, n_channels, "spd")
-    if mean in [mean_power, mean_poweuclid]:
-        M = mean(X, 0.42)
-    else:
-        M = mean(X)
+    M = mean(X)
     assert M == approx(X[0])
+
+
+@pytest.mark.parametrize(
+    "mean",
+    [
+        mean_ale,
+        mean_alm,
+        mean_chol,
+        mean_euclid,
+        mean_harmonic,
+        mean_kullback_sym,
+        mean_logchol,
+        mean_logdet,
+        mean_logeuclid,
+        pytest.param(partial(mean_poweuclid, p=0.42), id="mean_poweuclid"),
+        pytest.param(partial(mean_power, p=0.3), id="mean_power"),
+        mean_riemann,
+        mean_thompson,
+        mean_wasserstein,
+        nanmean_riemann,
+    ],
+)
+def test_mean_broadcasting(mean, get_mats):
+    n_dim5, n_dim4, n_matrices, n_channels = 2, 5, 3, 4
+    X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")
+
+    # 3D arrays
+    M3 = mean(X[0, 0])
+    assert M3.shape == (n_channels, n_channels)
+
+    # 4D array
+    n_dim4 = 5
+    M4 = mean(X[0])
+    assert M4.shape == (n_dim4, n_channels, n_channels)
+    assert M4[0] == approx(M3)
+
+    # 5D array
+    M5 = mean(X)
+    assert M5.shape == (n_dim5, n_dim4, n_channels, n_channels)
+    assert M5[0, 0] == approx(M3)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -434,26 +440,23 @@ def test_mean_riemann_same_eigenvecs(kind, get_mats_params):
 @pytest.mark.parametrize("init", [True, False])
 def test_mean_masked_riemann(init, get_mats, get_masks):
     """Test the masked Riemannian mean"""
-    n_matrices, n_channels = 5, 3
+    n_matrices, n_channels = 5, 4
     X = get_mats(n_matrices, n_channels, "spd")
     masks = get_masks(n_matrices, n_channels)
     if init:
-        M = maskedmean_riemann(X, masks, tol=10e-3, init=X[0])
+        M = maskedmean_riemann(X, masks, init=X[0])
     else:
-        M = maskedmean_riemann(X, masks, tol=10e-3)
+        M = maskedmean_riemann(X, masks)
     assert M.shape == (n_channels, n_channels)
 
-    # Batch broadcast test
+    # broadcasting
     if not init:
-        batch_shape = (2, 3)
-        X_b = _make_batch_spd(
-            (*batch_shape, n_matrices), n_dim=n_channels
-        )
-        masks_id = [np.eye(n_channels)] * n_matrices
-        result = maskedmean_riemann(X_b, masks_id)
-        assert result.shape == (*batch_shape, n_channels, n_channels)
-        ref = maskedmean_riemann(X_b[0, 0], masks_id)
-        np.testing.assert_allclose(result[0, 0], ref, atol=1e-10)
+        n_dim5, n_dim4 = 2, 3
+        X5 = np.asarray([[X for _ in range(n_dim4)] for _ in range(n_dim5)])
+        #masks = [np.eye(n_channels)] * n_matrices
+        M5 = maskedmean_riemann(X5, masks)
+        assert M5.shape == (n_dim5, n_dim4, n_channels, n_channels)
+        assert M5[0, 0] == approx(M)
 
 
 @pytest.mark.parametrize("init", [True, False])
@@ -516,7 +519,7 @@ def callable_np_average(X, sample_weight=None):
 )
 def test_gmean_metric(metric, mean, get_mats):
     """Test gmean for metric"""
-    n_matrices, n_channels = 3, 3
+    n_matrices, n_channels = 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
     if metric in ["power", "poweuclid"]:
         p = 0.1

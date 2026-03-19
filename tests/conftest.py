@@ -12,8 +12,15 @@ def rndstate():
 @pytest.fixture
 def get_mats(rndstate):
     def _gen_mat(n_matrices, n_dim, kind):
-        return make_matrices(n_matrices, n_dim, kind, rndstate,
-                             return_params=False)
+        if isinstance(n_matrices, int):
+            X = make_matrices(n_matrices, n_dim, kind, rndstate,
+                              return_params=False)
+        else:
+            n_total = int(np.prod(n_matrices))
+            Xflat = make_matrices(n_total, n_dim, kind, rndstate,
+                                  return_params=False)
+            X = Xflat.reshape(*n_matrices, n_dim, n_dim)
+        return X
 
     return _gen_mat
 
