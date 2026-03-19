@@ -179,17 +179,15 @@ plt.show()
 
 ###############################################################################
 # Minimum distance to mean is a simple and robust algorithm for BCI decoding.
-# It reproduces results of [2]_ for the first session of subject 12.
+# It reproduces results of [2]_ for the first session of subject 12,
+# with a repeated 10-fold validation.
 
-print("Number of trials: {}".format(len(cov_ext_trials)))
+print(f"Number of trials: {len(cov_ext_trials)}")
 
 cv = RepeatedKFold(n_splits=2, n_repeats=10, random_state=42)
 mdm = MDM(metric=dict(mean="riemann", distance="riemann"))
 scores = cross_val_score(mdm, cov_ext_trials, events[:, 2], cv=cv, n_jobs=1)
-print("MDM accuracy: {:.2f}% +/- {:.2f}".format(np.mean(scores)*100,
-                                                np.std(scores)*100))
-# The obtained results are 80.62% +/- 16.29 for this session, with a repeated
-# 10-fold validation.
+print(f"MDM accuracy: {np.mean(scores)*100:.2f}% +/- {np.std(scores)*100:.2f}")
 
 ###############################################################################
 # References

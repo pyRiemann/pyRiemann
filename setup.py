@@ -19,6 +19,12 @@ with open('README.md', 'r', **kwargs_open) as fid:
 
 description = "Machine learning for multivariate data with Riemannian geometry"
 
+with open("requirements.txt") as f:
+    requirements = f.read()
+
+with open("doc/requirements.txt") as f:
+    requirements_doc = f.read()
+
 setup(
     name="pyriemann",
     version=version,
@@ -37,23 +43,9 @@ setup(
     },
     platforms="any",
     python_requires=">=3.9",
-    install_requires=[
-        "numpy>=1.25.0",
-        "scipy",
-        "scikit-learn>=0.24",
-        "joblib",
-        "matplotlib",
-    ],
+    install_requires=requirements,
     extras_require={
-        "docs": [
-            "sphinx",
-            "sphinx-gallery",
-            "sphinx-bootstrap_theme",
-            "numpydoc",
-            "mne",
-            "seaborn",
-            "pandas",
-        ],
+        "docs": requirements_doc,
         "tests": [
             "pytest",
             "seaborn",
