@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
 from pytest import approx
 
@@ -22,13 +23,18 @@ from pyriemann.utils.tangentspace import (
     unupper,
     tangent_space,
     untangent_space,
+    innerproduct,
+    innerproduct_euclid,
+    innerproduct_logeuclid,
+    innerproduct_riemann,
+    norm,
     transport,
     transport_euclid,
     transport_logchol,
     transport_logeuclid,
     transport_riemann,
 )
-from pyriemann.utils.test import is_hermitian
+from pyriemann.utils.test import is_hermitian, is_real
 
 metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
 
@@ -172,6 +178,193 @@ def test_tangent_and_untangent_space(kind, metric, get_mats):
     assert X_ut == approx(X)
 
 
+###############################################################################
+
+metrics = ["euclid", "logeuclid", "riemann"]
+
+
+@pytest.mark.parametrize("metric", metrics)
+def test_innerproduct_build(metric, get_mats):
+    n_matrices, n_channels = 5, 3
+    X = get_mats(n_matrices, n_channels, "sym")
+    Y = get_mats(n_matrices, n_channels, "sym")
+    Cref = get_mats(1, n_channels, "spd")[0]
+    K = innerproduct(X, Y, Cref, metric=metric)
+    assert_array_equal(K, globals()[f"innerproduct_{metric}"](X, Y, Cref))
+
+
+def test_innerproduct_metric_string_error(get_mats):
+    """Test generic innerproduct function error raise"""
+    n_matrices, n_channels = 5, 3
+    X = get_mats(n_matrices, n_channels, "sym")
+    with pytest.raises(ValueError):
+        innerproduct(X, X, X[0], metric="foo")
+
+
+@pytest.mark.parametrize("metric", metrics)
+def test_innerproduct_input_dimension_error(metric, get_mats):
+    """Test errors for incorrect dimension"""
+    n_matrices, n_channels = 5, 3
+    X = get_mats(n_matrices, n_channels, "sym")
+    Y = get_mats(n_matrices, n_channels + 1, "sym")
+    Cref = get_mats(1, n_channels + 2, "spd")[0]
+    with pytest.raises(ValueError):
+        innerproduct(X, Y, Cref, metric=metric)
+
+
+@pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
+@pytest.mark.parametrize("metric", metrics)
+def test_innerproduct_x_x(kindX, kindC, metric, get_mats):
+    """Test innerproduct for X = Y"""
+    n_matrices, n_channels = 5, 3
+    X = get_mats(n_matrices, n_channels, kindX)
+    Cref = get_mats(1, n_channels, kindC)[0]
+    G = innerproduct(X, X, Cref, metric=metric)
+    assert G.shape == (n_matrices,)
+    assert is_real(G)
+
+    G1 = innerproduct(X, None, Cref, metric=metric)
+    assert_array_equal(G, G1)
+
+
+@pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
+@pytest.mark.parametrize("metric", metrics)
+def test_innerproduct_x_y(kindX, kindC, metric, get_mats):
+    """Test innerproduct for different X and Y"""
+    n_matrices, n_channels = 4, 3
+    X = get_mats(n_matrices, n_channels, kindX)
+    Y = get_mats(n_matrices, n_channels, kindX)
+    Cref = get_mats(1, n_channels, kindC)[0]
+    G = innerproduct(X, Y, Cref, metric=metric)
+    assert G.shape == (n_matrices,)
+    assert is_real(G)
+
+
+@pytest.mark.parametrize(
+    "finnerproduct",
+    [
+        innerproduct_euclid,
+        innerproduct_logeuclid,
+        innerproduct_riemann,
+    ],
+)
+def test_innerproduct_ndarray(finnerproduct, get_mats):
+    n_matrices, n_channels = 5, 3
+    A = get_mats(n_matrices, n_channels, "sym")
+    B = get_mats(n_matrices, n_channels, "sym")
+    Cref = get_mats(1, n_channels, "spd")[0]
+
+    assert isinstance(finnerproduct(A[0], B[0], Cref), float)  # 2D arrays
+
+    assert finnerproduct(A, B, Cref).shape == (n_matrices,)  # 3D arrays
+
+    n_sets = 4
+    C = np.asarray([A for _ in range(n_sets)])
+    D = np.asarray([B for _ in range(n_sets)])
+    assert finnerproduct(C, D, Cref).shape == (n_sets, n_matrices)  # 4D arrays
+
+
+@pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
+@pytest.mark.parametrize("metric", metrics)
+def test_innerproduct_property_conjsymmetry(kindX, kindC, metric, get_mats):
+    n_matrices, n_channels = 5, 2
+    X = get_mats(n_matrices, n_channels, kindX)
+    Y = get_mats(n_matrices, n_channels, kindX)
+    Cref = get_mats(1, n_channels, kindC)[0]
+    G1 = innerproduct(X, Y, Cref, metric=metric)
+    G2 = innerproduct(Y, X, Cref, metric=metric)
+    assert_array_almost_equal(G1.conj(), G2)
+
+
+@pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
+@pytest.mark.parametrize("metric", metrics)
+def test_innerproduct_property_linearity(kindX, kindC, metric,
+                                         get_mats, rndstate):
+    n_matrices, n_channels = 4, 3
+    X = get_mats(n_matrices, n_channels, kindX)
+    Y = get_mats(n_matrices, n_channels, kindX)
+    Z = get_mats(n_matrices, n_channels, kindX)
+    Cref = get_mats(1, n_channels, kindC)[0]
+    a, b = rndstate.uniform(0.01, 0.99, size=2)
+    if kindX == "herm":
+        a_, b_ = rndstate.uniform(0.01, 0.99, size=2)
+        a += 1j * a_
+        b += 1j * b_
+
+    Gxy = innerproduct(X, Y, Cref, metric=metric)
+    Gxz = innerproduct(X, Z, Cref, metric=metric)
+    Gyz = innerproduct(Y, Z, Cref, metric=metric)
+
+    Gaxpbz = innerproduct(a * X + b * Y, Z, Cref, metric=metric)
+    aGxzpbGyz = a.conj() * Gxz + b.conj() * Gyz
+    assert_array_almost_equal(Gaxpbz, aGxzpbGyz.real)
+
+    Gxaypbz = innerproduct(X, a * Y + b * Z, Cref, metric=metric)
+    aGxypbGxz = a * Gxy + b * Gxz
+    assert_array_almost_equal(Gxaypbz, aGxypbGxz.real)
+
+
+@pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
+@pytest.mark.parametrize("metric", metrics)
+def test_innerproduct_property_pos_def(kindX, kindC, metric, get_mats):
+    n_matrices, n_channels = 5, 3
+    X = get_mats(n_matrices, n_channels, kindX)
+    Cref = get_mats(1, n_channels, kindC)[0]
+    G = innerproduct(X, None, Cref, metric=metric)
+    assert np.all(G > 0)
+
+
+@pytest.mark.parametrize("kind", ["real", "comp"])
+@pytest.mark.parametrize("n_dim1, n_dim2", [(4, 5), (5, 4)])
+def test_innerproduct_euclid(kind, n_dim1, n_dim2, get_mats):
+    """Euclidean inner-product for non-square matrices"""
+    n_matrices = 3
+    X = get_mats(n_matrices, [n_dim1, n_dim2], kind)
+    Y = get_mats(n_matrices, [n_dim1, n_dim2], kind)
+    G = innerproduct_euclid(X, Y)
+
+    G1 = np.empty((n_matrices,))
+    G2 = np.empty((n_matrices,))
+    for i in range(n_matrices):
+        G1[i] = np.trace(X[i].conj().T @ Y[i]).real
+        G2[i] = np.dot(X[i].conj().flatten(), Y[i].flatten()).real
+    assert_array_almost_equal(G, G1)
+    assert_array_almost_equal(G, G2)
+
+
+@pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
+def test_innerproduct_riemann(kindX, kindC, get_mats):
+    n_channels = 5
+    X, Y = get_mats(2, n_channels, kindX)
+    Cref = get_mats(1, n_channels, kindC)[0]
+    G = innerproduct_riemann(X, Y, Cref)
+
+    # Eq(2.6) in [Moakher2005]
+    G1 = np.trace(np.linalg.solve(Cref, X) @ np.linalg.solve(Cref, Y))
+    assert_array_almost_equal(G, G1)
+
+
+@pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
+@pytest.mark.parametrize("metric", metrics)
+def test_norm_properties(kindX, kindC, metric, get_mats):
+    n_channels = 4
+    X, Y = get_mats(2, n_channels, kindX)
+    Cref = get_mats(1, n_channels, kindC)[0]
+
+    nx = norm(X, Cref, metric=metric)
+    assert isinstance(nx, float)
+
+    # positivity
+    assert nx >= 0
+
+    # triangle inequality
+    ny = norm(Y, Cref, metric=metric)
+    assert norm(X + Y, Cref, metric=metric) <= nx + ny
+
+
+###############################################################################
+
+
 @pytest.mark.parametrize("ftransport", [
     transport_euclid,
     transport_logchol,
@@ -193,33 +386,46 @@ def test_transport_ndarray(ftransport, get_mats):
 
 
 @pytest.mark.parametrize("kindX, kindAB", [("sym", "spd"), ("herm", "hpd")])
-@pytest.mark.parametrize("ftransport", [
-    transport_logchol,
-    transport_logeuclid,
-    transport_riemann,
+@pytest.mark.parametrize("metric", [
+    "logchol",
+    "logeuclid",
+    "riemann",
 ])
-def test_transport_properties(kindX, kindAB, ftransport, get_mats):
+def test_transport_properties(kindX, kindAB, metric, get_mats, rndstate):
     n_matrices, n_channels = 10, 3
     X = get_mats(n_matrices, n_channels, kindX)
     A, B = get_mats(2, n_channels, kindAB)
 
+    Xt = transport(X, A, B, metric=metric)
+
     # trivial transport
-    assert ftransport(X, A, A) == approx(X)
+    assert transport(X, A, A, metric=metric) == approx(X)
 
     # keep symmetry
-    assert is_hermitian(ftransport(X, A, B))
+    assert is_hermitian(Xt)
 
     # reversibility
-    assert ftransport(ftransport(X, A, B), B, A) == approx(X)
+    assert transport(Xt, B, A, metric=metric) == approx(X)
 
     # linearity
     Y = get_mats(n_matrices, n_channels, kindX)
-    Xt, Yt = ftransport(X, A, B), ftransport(Y, A, B)
-    assert ftransport(X + Y, A, B) == approx(Xt + Yt)
+    a, b = rndstate.uniform(0.01, 0.99, size=2)
+    Yt = transport(Y, A, B, metric=metric)
+    aXtpbYt = transport(a * X + b * Y, A, B, metric=metric)
+    assert aXtpbYt == approx(a * Xt + b * Yt)
+
+    if metric == "logchol":
+        return
+
+    # isometry, ie keep inner product and norm
+    ia = innerproduct(X, Y, A, metric=metric)
+    ib = innerproduct(Xt, Yt, B, metric=metric)
+    assert ia == approx(ib)
+    assert norm(X, A, metric=metric) == approx(norm(Xt, B, metric=metric))
 
 
 def test_transport_riemann_vs_whitening(get_mats):
-    """AIR PT from mean to identity should be equivalent to a whitening"""
+    """AIR PT from mean to identity is equivalent to a whitening"""
     n_matrices, n_channels = 15, 2
     X = get_mats(n_matrices, n_channels, "spd")
 
