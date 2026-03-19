@@ -18,7 +18,7 @@ def _max_norm(X):
     return np.max(np.linalg.norm(X, axis=(-2, -1)))
 
 
-@_vectorize_nd(n_core=3)
+@_vectorize_nd(n_axes=3)
 def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     """AJD-based log-Euclidean (ALE) mean of SPD/HPD matrices.
 
@@ -84,7 +84,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     return M
 
 
-@_vectorize_nd(n_core=3)
+@_vectorize_nd(n_axes=3)
 def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
     r"""Ando-Li-Mathias (ALM) mean of SPD/HPD matrices.
 
@@ -352,7 +352,7 @@ def mean_logchol(X, sample_weight=None, **kwargs):
     return L @ ctranspose(L)
 
 
-@_vectorize_nd(n_core=3)
+@_vectorize_nd(n_axes=3)
 def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the log-det metric.
 
@@ -443,7 +443,7 @@ def mean_logeuclid(X, sample_weight=None, **kwargs):
     return M
 
 
-@_vectorize_nd(n_core=3)
+@_vectorize_nd(n_axes=3)
 def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
                init=None):
     r"""Power mean of SPD/HPD matrices.
@@ -550,7 +550,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     return M
 
 
-@_vectorize_nd(n_core=3)
+@_vectorize_nd(n_axes=3)
 def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the power Euclidean metric.
 
@@ -598,7 +598,7 @@ def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     return M
 
 
-@_vectorize_nd(n_core=3)
+@_vectorize_nd(n_axes=3)
 def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the Riemannian metric.
 
@@ -734,7 +734,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     return M
 
 
-@_vectorize_nd(n_core=3)
+@_vectorize_nd(n_axes=3)
 def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the Wasserstein metric.
 
@@ -899,7 +899,7 @@ def _apply_masks(X, masks):
     return [m.T @ x @ m for x, m in zip(X, masks)]
 
 
-@_vectorize_nd(n_core=3)
+@_vectorize_nd(n_axes=3)
 def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
                        sample_weight=None):
     """Masked Riemannian mean of SPD/HPD matrices.
@@ -983,7 +983,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
     return M
 
 
-@_vectorize_nd(n_core=3)
+@_vectorize_nd(n_axes=3)
 def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
     """Riemannian NaN-mean of SPD/HPD matrices.
 

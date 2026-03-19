@@ -2,7 +2,6 @@ import numpy as np
 import pytest
 from pytest import approx
 
-from conftest import _make_batch_spd
 from pyriemann.utils.geodesic import (
     geodesic,
     geodesic_chol,
@@ -47,29 +46,30 @@ def assert_geodesics(metric, A, B, M):
         geodesic_wasserstein,
     ],
 )
-def test_geodesic_ndarray(geo, get_mats):
-    n_matrices, n_channels = 5, 3
-    A = get_mats(n_matrices, n_channels, "spd")
-    B = get_mats(n_matrices, n_channels, "spd")
+def test_geodesic_broadcasting(geo, get_mats):
+    n_dim5, n_dim4, n_matrices, n_channels = 2, 6, 5, 3
+    A = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")
+    B = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")
+    alpha = 0.3
 
-    assert geo(A[0], B[0], .3).shape == A[0].shape  # 2D arrays
+    # 2D array
+    G2 = geo(A[0, 0, 0], B[0, 0, 0], alpha)
+    assert G2.shape == (n_channels, n_channels)
 
-    assert geo(A, B, .2).shape == A.shape  # 3D arrays
+    # 3D array
+    G3 = geo(A[0, 0], B[0, 0], alpha)
+    assert G3.shape == (n_matrices, n_channels, n_channels)
+    assert G3[0] == approx(G2)
 
-    n_sets = 4
-    C = np.asarray([A for _ in range(n_sets)])
-    D = np.asarray([B for _ in range(n_sets)])
-    assert geo(C, D, .7).shape == C.shape  # 4D arrays
+    # 4D array
+    G4 = geo(A[0], B[0], alpha)
+    assert G4.shape == (n_dim4, n_matrices, n_channels, n_channels)
+    assert G4[0, 0] == approx(G2)
 
-    # Batch broadcast test
-    batch_shape = (2, 3)
-    A_batch = _make_batch_spd(batch_shape, n_dim=n_channels, seed=42)
-    B_batch = _make_batch_spd(batch_shape, n_dim=n_channels, seed=7)
-    result = geo(A_batch, B_batch, .5)
-    assert result.shape == (*batch_shape, n_channels, n_channels)
-    np.testing.assert_allclose(
-        result[0, 0], geo(A_batch[0, 0], B_batch[0, 0], .5), atol=1e-10
-    )
+    # 5D array
+    G5 = geo(A, B, alpha)
+    assert G5.shape == (n_dim5, n_dim4, n_matrices, n_channels, n_channels)
+    assert G5[0, 0, 0] == approx(G2)
 
 
 @pytest.mark.parametrize("metric", metrics)

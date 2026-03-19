@@ -32,12 +32,12 @@ def ctranspose(X):
     return np.swapaxes(X.conj(), -2, -1)
 
 
-def _vectorize_nd(n_core=2):
+def _vectorize_nd(n_axes=2):
     """Decorator to vectorize a function over leading batch dimensions.
 
     Parameters
     ----------
-    n_core : int, default=2
+    n_axes : int, default=2
         Number of trailing axes that form the core dimensions.
         - n_core=2: (..., n1, n2) -> func(n1, n2) -> (..., m1, m2)
         - n_core=3: (..., k, n1, n2) -> func(k, n1, n2) -> (..., m1, m2)
@@ -45,11 +45,11 @@ def _vectorize_nd(n_core=2):
     def decorator(func):
         @wraps(func)
         def wrapper(X, *args, **kwargs):
-            batch_shape = X.shape[:-n_core]
+            batch_shape = X.shape[:-n_axes]
             if len(batch_shape) == 0:
                 return func(X, *args, **kwargs)
             n_batch = int(np.prod(batch_shape))
-            core_shape = X.shape[-n_core:]
+            core_shape = X.shape[-n_axes:]
             X_flat = X.reshape(n_batch, *core_shape)
             results = []
             for b in range(n_batch):
