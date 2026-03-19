@@ -128,7 +128,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
         T. Ando, C.-K. Li, and R. Mathias. Linear Algebra and its Applications.
         Volume 385, July 2004, Pages 305-334.
     """
-    n_matrices = X.shape[0]
+    n_matrices, _, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices)
 
     if n_matrices == 1:
@@ -146,8 +146,8 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
             s = np.mod(np.arange(h, h + n_matrices - 1) + 1, n_matrices)
             M_iter[h] = mean_alm(M[s], sample_weight=sample_weight[s])
 
-        norm_iter = np.linalg.norm(M_iter[0] - M[0], ord=2, axis=(-2, -1))
-        norm_c = np.linalg.norm(M[0], ord=2, axis=(-2, -1))
+        norm_iter = np.linalg.norm(M_iter[0] - M[0], ord=2)
+        norm_c = np.linalg.norm(M[0], ord=2)
         crit = np.max(norm_iter / norm_c)
         if crit < tol:
             break
@@ -675,7 +675,6 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     return M
 
 
-@_vectorize_nd(n_core=3)
 def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     """Mean of SPD/HPD matrices according to the Thompson metric.
 

@@ -7,7 +7,6 @@ from pytest import approx
 from scipy.linalg import eigvalsh
 from scipy.spatial.distance import euclidean, mahalanobis
 
-from conftest import _make_batch_spd
 from pyriemann.utils.distance import (
     distance_chol,
     distance_euclid,
@@ -45,7 +44,6 @@ dists = [
     distance_thompson,
     distance_wasserstein,
 ]
-
 
 
 def callable_sp_euclidean(A, B, squared=False):

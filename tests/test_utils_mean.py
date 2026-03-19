@@ -453,7 +453,6 @@ def test_mean_masked_riemann(init, get_mats, get_masks):
     if not init:
         n_dim5, n_dim4 = 2, 3
         X5 = np.asarray([[X for _ in range(n_dim4)] for _ in range(n_dim5)])
-        #masks = [np.eye(n_channels)] * n_matrices
         M5 = maskedmean_riemann(X5, masks)
         assert M5.shape == (n_dim5, n_dim4, n_channels, n_channels)
         assert M5[0, 0] == approx(M)
