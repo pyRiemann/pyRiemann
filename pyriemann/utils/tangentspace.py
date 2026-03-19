@@ -75,7 +75,7 @@ def exp_map_logchol(X, Cref):
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
     Cref_chol = np.linalg.cholesky(Cref)
-    Cref_invchol = np.linalg.solve(Cref_chol, np.eye(Cref.shape[0]))
+    Cref_invchol = np.linalg.solve(Cref_chol, np.eye(Cref.shape[-1]))
 
     tri0, tri1 = np.tril_indices(X.shape[-1], -1)
     diag0, diag1 = np.diag_indices(X.shape[-1])
@@ -997,7 +997,7 @@ def transport_logchol(X, A, B):
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
     A_chol, B_chol = np.linalg.cholesky(A), np.linalg.cholesky(B)
-    A_invchol = np.linalg.solve(A_chol, np.eye(A.shape[0]))
+    A_invchol = np.linalg.solve(A_chol, np.eye(A.shape[-1]))
 
     tri0, tri1 = np.tril_indices(X.shape[-1], -1)
     diag0, diag1 = np.diag_indices(X.shape[-1])
