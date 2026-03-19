@@ -1,10 +1,8 @@
-from functools import partial
-
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 import pytest
 
-from conftest import BATCH_SHAPES, _make_batch_spd, _make_single_spd, _first
+from conftest import _make_batch_spd, _make_single_spd
 from pyriemann.datasets.simulated import _make_eyes
 from pyriemann.utils.base import (
     ctranspose,
@@ -96,7 +94,9 @@ def test_funm_error():
         logm([5.2])
 
 
-@pytest.mark.parametrize("funm", [expm, invsqrtm, logm, powm, sqrtm])
+@pytest.mark.parametrize("funm", [
+    expm, invsqrtm, logm, powm, sqrtm, nearest_sym_pos_def,
+])
 def test_funm_ndarray(funm):
     def test(funm, X):
         if funm == powm:
@@ -112,6 +112,18 @@ def test_funm_ndarray(funm):
     n_sets = 5
     X_4d = np.asarray([X_3d for _ in range(n_sets)])
     test(funm, X_4d)
+
+    # Batch broadcast test
+    batch_shape = (3, 2)
+    X_batch = _make_batch_spd(batch_shape, n_dim=n_channels)
+    if funm == powm:
+        result = funm(X_batch, 0.2)
+        ref = funm(X_batch[0, 0], 0.2)
+    else:
+        result = funm(X_batch)
+        ref = funm(X_batch[0, 0])
+    assert result.shape == (*batch_shape, n_channels, n_channels)
+    np.testing.assert_allclose(result[0, 0], ref, atol=1e-10)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -207,6 +219,16 @@ def test_ddlogm(get_mats):
     fdd_logm = ddlogm(X, np.eye(n_channels))
     assert_array_almost_equal(fdd_logm, X)
 
+    # Batch broadcast test
+    batch_shape = (2, 4)
+    X_batch = _make_batch_spd(batch_shape, n_dim=n_channels)
+    Cref_single = _make_single_spd(n_dim=n_channels)
+    result = ddlogm(X_batch, Cref_single)
+    assert result.shape == (*batch_shape, n_channels, n_channels)
+    np.testing.assert_allclose(
+        result[0, 0], ddlogm(X_batch[0, 0], Cref_single), atol=1e-10
+    )
+
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_ddexpm(get_mats, kind):
@@ -218,38 +240,12 @@ def test_ddexpm(get_mats, kind):
     fdd_expm = ddexpm(X, np.eye(n_channels))
     assert_array_almost_equal(fdd_expm, np.exp(1)*X)
 
-
-# ===========================================================
-# Broadcast compatibility tests
-# ===========================================================
-
-N_DIM = 3
-
-
-@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
-@pytest.mark.parametrize("func", [
-    sqrtm,
-    invsqrtm,
-    logm,
-    expm,
-    pytest.param(partial(powm, alpha=0.5), id="powm"),
-    pytest.param(nearest_sym_pos_def, id="nearest_sym_pos_def"),
-])
-def test_base_unary_broadcast(func, batch_shape):
-    X = _make_batch_spd(batch_shape)
-    result = func(X)
-    assert result.shape == (*batch_shape, N_DIM, N_DIM)
-    idx = _first(batch_shape)
-    np.testing.assert_allclose(result[idx], func(X[idx]), atol=1e-10)
-
-
-@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
-@pytest.mark.parametrize("func", [ddexpm, ddlogm])
-def test_base_unary_with_ref_broadcast(func, batch_shape):
-    """Functions taking (X, Cref) where Cref is a 2D reference matrix."""
-    X = _make_batch_spd(batch_shape)
-    Cref = _make_single_spd()
-    result = func(X, Cref)
-    assert result.shape == (*batch_shape, N_DIM, N_DIM)
-    idx = _first(batch_shape)
-    np.testing.assert_allclose(result[idx], func(X[idx], Cref), atol=1e-10)
+    # Batch broadcast test
+    batch_shape = (2, 4)
+    X_batch = _make_batch_spd(batch_shape, n_dim=n_channels)
+    Cref_single = _make_single_spd(n_dim=n_channels)
+    result = ddexpm(X_batch, Cref_single)
+    assert result.shape == (*batch_shape, n_channels, n_channels)
+    np.testing.assert_allclose(
+        result[0, 0], ddexpm(X_batch[0, 0], Cref_single), atol=1e-10
+    )

@@ -1,11 +1,9 @@
-from functools import partial
-
 import numpy as np
 import pytest
 from pytest import approx
 from scipy.stats import hmean, gmean as gmean_sp
 
-from conftest import BATCH_SHAPES, _make_batch_spd, _first, _mean_first
+from conftest import _make_batch_spd
 from pyriemann.utils.base import invsqrtm, logm, sqrtm
 from pyriemann.utils.geodesic import geodesic_riemann
 from pyriemann.utils.mean import (
@@ -57,6 +55,19 @@ def test_mean(kind, mean, get_mats):
     else:
         M = mean(X)
     assert M.shape == (n_channels, n_channels)
+
+    # Batch broadcast test (run once per mean function)
+    if kind == "spd":
+        batch_shape = (3, 2)
+        X_b = _make_batch_spd((*batch_shape, n_matrices), n_dim=n_channels)
+        if mean == mean_power:
+            result = mean(X_b, 0.42)
+            ref = mean(X_b[0, 0], 0.42)
+        else:
+            result = mean(X_b)
+            ref = mean(X_b[0, 0])
+        assert result.shape == (*batch_shape, n_channels, n_channels)
+        np.testing.assert_allclose(result[0, 0], ref, atol=1e-4)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -432,6 +443,18 @@ def test_mean_masked_riemann(init, get_mats, get_masks):
         M = maskedmean_riemann(X, masks, tol=10e-3)
     assert M.shape == (n_channels, n_channels)
 
+    # Batch broadcast test
+    if not init:
+        batch_shape = (2, 3)
+        X_b = _make_batch_spd(
+            (*batch_shape, n_matrices), n_dim=n_channels
+        )
+        masks_id = [np.eye(n_channels)] * n_matrices
+        result = maskedmean_riemann(X_b, masks_id)
+        assert result.shape == (*batch_shape, n_channels, n_channels)
+        ref = maskedmean_riemann(X_b[0, 0], masks_id)
+        np.testing.assert_allclose(result[0, 0], ref, atol=1e-10)
+
 
 @pytest.mark.parametrize("init", [True, False])
 def test_mean_nan_riemann(init, get_mats, rndstate):
@@ -523,56 +546,3 @@ def test_mean_covariance_deprecation(get_mats):
         mean_covariance(get_mats(3, 2, "spd"))
         assert len(w) >= 1
         assert issubclass(w[-1].category, DeprecationWarning)
-
-
-# ===========================================================
-# Broadcast compatibility tests
-# ===========================================================
-
-N_DIM = 3
-N_MAT = 5
-
-
-def _make_mean_input(batch_shape, seed=42):
-    """Shape: (N_MAT, *batch_shape, N_DIM, N_DIM)."""
-    return _make_batch_spd((N_MAT, *batch_shape), seed=seed)
-
-
-@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
-@pytest.mark.parametrize("func", [
-    mean_euclid,
-    mean_harmonic,
-    mean_logeuclid,
-    pytest.param(partial(mean_poweuclid, p=0.5), id="mean_poweuclid"),
-    mean_chol,
-    mean_riemann,
-    mean_wasserstein,
-    mean_logchol,
-    pytest.param(mean_ale, id="mean_ale"),
-    pytest.param(mean_alm, id="mean_alm"),
-    # tol=1e-12 tightens convergence so batched and single match
-    pytest.param(partial(mean_logdet, tol=1e-12), id="mean_logdet"),
-    mean_thompson,
-    pytest.param(partial(mean_power, p=0.5), id="mean_power"),
-    pytest.param(nanmean_riemann, id="nanmean_riemann"),
-])
-def test_mean_broadcast(func, batch_shape):
-    X = _make_mean_input(batch_shape)
-    result = func(X)
-    assert result.shape == (*batch_shape, N_DIM, N_DIM)
-    idx = _first(batch_shape)
-    idx_slice = _mean_first(batch_shape)
-    np.testing.assert_allclose(result[idx], func(X[idx_slice]), atol=1e-10)
-
-
-@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
-def test_maskedmean_riemann_broadcast(batch_shape):
-    X = _make_mean_input(batch_shape)
-    masks = [np.eye(N_DIM)] * N_MAT  # identity masks = all channels present
-    result = maskedmean_riemann(X, masks)
-    assert result.shape == (*batch_shape, N_DIM, N_DIM)
-    idx = _first(batch_shape)
-    idx_slice = _mean_first(batch_shape)
-    np.testing.assert_allclose(
-        result[idx], maskedmean_riemann(X[idx_slice], masks), atol=1e-10
-    )

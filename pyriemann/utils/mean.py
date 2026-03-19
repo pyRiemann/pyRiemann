@@ -1,38 +1,16 @@
 """Means of SPD/HPD matrices."""
 
 import warnings
-from functools import wraps
 
 import numpy as np
 
 from . import deprecated
 from .ajd import ajd_pham
-from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm
+from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann, geodesic_thompson
 from .tangentspace import log_map_wasserstein, exp_map_wasserstein
 from .utils import check_weights, check_function, check_init
-
-
-def _vectorize_mean(func):
-    """Vectorize a mean function over internal batch dimensions.
-
-    Wraps a mean function that accepts (n_matrices, n, n) to handle
-    arbitrary batch dimensions (n_matrices, ..., n, n).
-    """
-    @wraps(func)
-    def wrapper(X, *args, **kwargs):
-        batch_shape = X.shape[1:-2]
-        if len(batch_shape) == 0:
-            return func(X, *args, **kwargs)
-        n_matrices, n = X.shape[0], X.shape[-1]
-        n_batch = int(np.prod(batch_shape))
-        X_flat = X.reshape(n_matrices, n_batch, n, n)
-        results = np.empty((n_batch, n, n), dtype=X.dtype)
-        for b in range(n_batch):
-            results[b] = func(X_flat[:, b], *args, **kwargs)
-        return results.reshape(*batch_shape, n, n)
-    return wrapper
 
 
 def _max_norm(X):
@@ -40,7 +18,7 @@ def _max_norm(X):
     return np.max(np.linalg.norm(X, axis=(-2, -1)))
 
 
-@_vectorize_mean
+@_vectorize_nd(n_core=3)
 def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     """AJD-based log-Euclidean (ALE) mean of SPD/HPD matrices.
 
@@ -107,6 +85,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     return M
 
 
+@_vectorize_nd(n_core=3)
 def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
     r"""Ando-Li-Mathias (ALM) mean of SPD/HPD matrices.
 
@@ -170,6 +149,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
 
         norm_iter = np.linalg.norm(M_iter[0] - M[0], ord=2, axis=(-2, -1))
         norm_c = np.linalg.norm(M[0], ord=2, axis=(-2, -1))
+        crit = np.max(norm_iter / norm_c)
         if crit < tol:
             break
         M = M_iter.copy()
@@ -179,6 +159,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
     return np.mean(M_iter, axis=0)
 
 
+@_vectorize_nd(n_core=3)
 def mean_chol(X, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the Cholesky metric.
 
@@ -221,6 +202,7 @@ def mean_chol(X, sample_weight=None, **kwargs):
     return L @ ctranspose(L)
 
 
+@_vectorize_nd(n_core=3)
 def mean_euclid(X, sample_weight=None, **kwargs):
     r"""Mean of matrices according to the Euclidean metric.
 
@@ -248,6 +230,7 @@ def mean_euclid(X, sample_weight=None, **kwargs):
     return np.average(X, axis=0, weights=sample_weight)
 
 
+@_vectorize_nd(n_core=3)
 def mean_harmonic(X, sample_weight=None, **kwargs):
     r"""Harmonic mean of invertible matrices.
 
@@ -275,6 +258,7 @@ def mean_harmonic(X, sample_weight=None, **kwargs):
     return M
 
 
+@_vectorize_nd(n_core=3)
 def mean_kullback_sym(X, sample_weight=None, **kwargs):
     """Mean of SPD/HPD matrices according to Kullback-Leibler divergence.
 
@@ -311,6 +295,7 @@ def mean_kullback_sym(X, sample_weight=None, **kwargs):
     return M
 
 
+@_vectorize_nd(n_core=3)
 def mean_logchol(X, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the log-Cholesky metric.
 
@@ -373,6 +358,7 @@ def mean_logchol(X, sample_weight=None, **kwargs):
     return L @ ctranspose(L)
 
 
+@_vectorize_nd(n_core=3)
 def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the log-det metric.
 
@@ -427,6 +413,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     return M
 
 
+@_vectorize_nd(n_core=3)
 def mean_logeuclid(X, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the log-Euclidean metric.
 
@@ -463,6 +450,7 @@ def mean_logeuclid(X, sample_weight=None, **kwargs):
     return M
 
 
+@_vectorize_nd(n_core=3)
 def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
                init=None):
     r"""Power mean of SPD/HPD matrices.
@@ -571,6 +559,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     return M
 
 
+@_vectorize_nd(n_core=3)
 def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the power Euclidean metric.
 
@@ -618,6 +607,7 @@ def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     return M
 
 
+@_vectorize_nd(n_core=3)
 def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the Riemannian metric.
 
@@ -696,6 +686,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     return M
 
 
+@_vectorize_nd(n_core=3)
 def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     """Mean of SPD/HPD matrices according to the Thompson metric.
 
@@ -755,6 +746,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     return M
 
 
+@_vectorize_nd(n_core=3)
 def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the Wasserstein metric.
 
@@ -919,7 +911,7 @@ def _apply_masks(X, masks):
     return [m.T @ x @ m for x, m in zip(X, masks)]
 
 
-@_vectorize_mean
+@_vectorize_nd(n_core=3)
 def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
                        sample_weight=None):
     """Masked Riemannian mean of SPD/HPD matrices.
@@ -1003,7 +995,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
     return M
 
 
-@_vectorize_mean
+@_vectorize_nd(n_core=3)
 def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
     """Riemannian NaN-mean of SPD/HPD matrices.
 

@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from pytest import approx
 
-from conftest import BATCH_SHAPES, _make_batch_spd, _first
+from conftest import _make_batch_spd
 from pyriemann.utils.geodesic import (
     geodesic,
     geodesic_chol,
@@ -60,6 +60,16 @@ def test_geodesic_ndarray(geo, get_mats):
     C = np.asarray([A for _ in range(n_sets)])
     D = np.asarray([B for _ in range(n_sets)])
     assert geo(C, D, .7).shape == C.shape  # 4D arrays
+
+    # Batch broadcast test
+    batch_shape = (2, 3)
+    A_batch = _make_batch_spd(batch_shape, n_dim=n_channels, seed=42)
+    B_batch = _make_batch_spd(batch_shape, n_dim=n_channels, seed=7)
+    result = geo(A_batch, B_batch, .5)
+    assert result.shape == (*batch_shape, n_channels, n_channels)
+    np.testing.assert_allclose(
+        result[0, 0], geo(A_batch[0, 0], B_batch[0, 0], .5), atol=1e-10
+    )
 
 
 @pytest.mark.parametrize("metric", metrics)
@@ -184,29 +194,3 @@ def test_geodesic_thompson(kind, get_mats, rndstate):
     Gt = geodesic_thompson(A, B, alpha)
     Gr = geodesic_riemann(A, B, alpha)
     assert Gt == approx(Gr)
-
-
-# ===========================================================
-# Broadcast compatibility tests
-# ===========================================================
-
-N_DIM = 3
-
-
-@pytest.mark.parametrize("batch_shape", BATCH_SHAPES)
-@pytest.mark.parametrize("func", [
-    geodesic_chol,
-    geodesic_euclid,
-    geodesic_logchol,
-    geodesic_logeuclid,
-    geodesic_riemann,
-    geodesic_wasserstein,
-    geodesic_thompson,
-])
-def test_geodesic_pair_broadcast(func, batch_shape):
-    A = _make_batch_spd(batch_shape, seed=42)
-    B = _make_batch_spd(batch_shape, seed=7)
-    result = func(A, B)
-    assert result.shape == (*batch_shape, N_DIM, N_DIM)
-    idx = _first(batch_shape)
-    np.testing.assert_allclose(result[idx], func(A[idx], B[idx]), atol=1e-10)

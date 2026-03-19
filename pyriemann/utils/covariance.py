@@ -5,7 +5,7 @@ import numpy as np
 from scipy.stats import chi2
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
-from .base import ctranspose
+from .base import ctranspose, _vectorize_nd
 from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
 from .utils import check_function
@@ -52,27 +52,6 @@ def _complex_estimator(func):
                 + 1j * (cov[..., n_channels:, :n_channels]
                         - cov[..., :n_channels, n_channels:])
         return cov
-    return wrapper
-
-
-def _vectorize_estimator(func):
-    """Decorator to vectorize a 2D estimator over batch dimensions.
-
-    Wraps a covariance estimator that accepts a 2D array (n_channels, n_times)
-    to handle arbitrary batch dimensions (..., n_channels, n_times).
-    """
-    @wraps(func)
-    def wrapper(X, **kwds):
-        if X.ndim == 2:
-            return func(X, **kwds)
-        original_shape = X.shape
-        n_channels, n_times = original_shape[-2], original_shape[-1]
-        X_flat = X.reshape(-1, n_channels, n_times)
-        n_flat = X_flat.shape[0]
-        covmats = np.empty((n_flat, n_channels, n_channels), dtype=X.dtype)
-        for i in range(n_flat):
-            covmats[i] = np.atleast_2d(func(X_flat[i], **kwds))
-        return covmats.reshape(*original_shape[:-2], n_channels, n_channels)
     return wrapper
 
 
@@ -363,6 +342,8 @@ def covariance_scm(X, *, assume_centered=False):
         X = X - np.mean(X, axis=-1, keepdims=True)
     # Biased (MLE) estimator, dividing by n_times as in sklearn's
     # empirical_covariance (not n_times - 1).
+    # Manual centering and matrix multiply replace np.cov(X, bias=1)
+    # to support batch dimensions and complex data.
     cov = X @ ctranspose(X) / n_times
 
     return cov
@@ -445,7 +426,7 @@ def covariances(X, estimator="cov", **kwds):
     """  # noqa
     est = check_function(estimator, cov_est_functions)
     if est not in _BATCH_ESTIMATORS:
-        est = _vectorize_estimator(est)
+        est = _vectorize_nd()(est)
     return est(X, **kwds)
 
 
@@ -472,7 +453,7 @@ def covariances_EP(X, P, estimator="cov", **kwds):
     """
     est = check_function(estimator, cov_est_functions)
     if est not in _BATCH_ESTIMATORS:
-        est = _vectorize_estimator(est)
+        est = _vectorize_nd()(est)
     original_shape = X.shape
     n_channels_proto, n_times_p = P.shape
     n_times = original_shape[-1]
@@ -521,7 +502,7 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
             f"Parameter alpha must be strictly positive (Got {alpha})")
     est = check_function(estimator, cov_est_functions)
     if est not in _BATCH_ESTIMATORS:
-        est = _vectorize_estimator(est)
+        est = _vectorize_nd()(est)
     original_shape = X.shape
     n_channels, n_times = original_shape[-2], original_shape[-1]
 
@@ -574,7 +555,7 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
     """
     est = check_function(estimator, cov_est_functions)
     if est not in _BATCH_ESTIMATORS:
-        est = _vectorize_estimator(est)
+        est = _vectorize_nd()(est)
     original_shape = X.shape
     n_channels = original_shape[-2]
 
