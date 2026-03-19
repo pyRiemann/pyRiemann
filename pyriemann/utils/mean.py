@@ -77,7 +77,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
         if crit <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     J = np.einsum("a,abc->bc", sample_weight, logm(B @ X @ B.conj().T))
     A = np.linalg.inv(B)
@@ -154,7 +154,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
             break
         M = M_iter.copy()
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return np.mean(M_iter, axis=0)
 
@@ -408,7 +408,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         if crit <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return M
 
@@ -550,7 +550,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
         if crit <= zeta:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     M = ctranspose(K) @ K
     if p > 0:
@@ -681,7 +681,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         if crit <= tol or nu <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return M
 
@@ -741,7 +741,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
         if crit <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return M
 
@@ -802,7 +802,7 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         if crit <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return M
 
@@ -990,7 +990,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
         if crit <= tol or nu <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return M
 

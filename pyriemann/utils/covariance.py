@@ -221,7 +221,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         if np.all(converged):
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     if m_estimator == "tyl":
         cov = normalize(cov, norm)
@@ -666,9 +666,11 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         freqs = f[fix]
     else:
         if fmin is not None:
-            warnings.warn("Parameter fmin not used because fs is None")
+            warnings.warn("Parameter fmin not used because fs is None",
+                          stacklevel=2)
         if fmax is not None:
-            warnings.warn("Parameter fmax not used because fs is None")
+            warnings.warn("Parameter fmax not used because fs is None",
+                          stacklevel=2)
         freqs = None
 
     # Cross-spectral matrix via einsum over windows:
@@ -803,12 +805,12 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         if freqs is None:
             f_inds = np.arange(1, C.shape[-1] - 1, dtype=int)
             warnings.warn("DC and Nyquist bins are not defined for lagged-"
-                          "coherence: filled with zeros")
+                          "coherence: filled with zeros", stacklevel=2)
         else:
             f_inds_ = f_inds[(freqs > 0) & (freqs < fs / 2)]
             if not np.array_equal(f_inds_, f_inds):
                 warnings.warn("DC and Nyquist bins are not defined for lagged-"
-                              "coherence: filled with zeros")
+                              "coherence: filled with zeros", stacklevel=2)
             f_inds = f_inds_
 
     # Vectorized PSD: diagonal of S2 across channels
