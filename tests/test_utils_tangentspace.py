@@ -54,7 +54,6 @@ metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
     ]
 )
 def test_maps_broadcasting(fmap, get_mats):
-    """Test log and exp maps"""
     n_dim5, n_dim4, n_matrices, n_channels = 2, 6, 5, 3
     X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")
     Cref = get_mats(1, n_channels, "spd")[0]
@@ -144,7 +143,6 @@ def test_upper_and_unupper(kind, get_mats):
 
 @pytest.mark.parametrize("metric", metrics)
 def test_tangent_space_broadcasting(metric, get_mats):
-    """Test tangent space projection"""
     n_dim5, n_dim4, n_matrices, n_channels = 4, 6, 5, 3
     n_ts = (n_channels * (n_channels + 1)) // 2
     X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")
@@ -183,7 +181,6 @@ def test_tangent_space_riemann_properties(kind, get_mats):
 
 @pytest.mark.parametrize("metric", metrics)
 def test_untangent_space_broadcasting(metric, get_mats):
-    """Test untangent space projection"""
     n_dim5, n_dim4, n_matrices, n_channels = 4, 6, 10, 3
     n_ts = (n_channels * (n_channels + 1)) // 2
     X = get_mats(n_dim5, [n_dim4, n_matrices, n_ts], "real")
@@ -237,7 +234,6 @@ def test_innerproduct_build(metric, get_mats):
 
 
 def test_innerproduct_metric_string_error(get_mats):
-    """Test generic innerproduct function error raise"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "sym")
     with pytest.raises(ValueError):
@@ -246,7 +242,6 @@ def test_innerproduct_metric_string_error(get_mats):
 
 @pytest.mark.parametrize("metric", metrics)
 def test_innerproduct_input_dimension_error(metric, get_mats):
-    """Test errors for incorrect dimension"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "sym")
     Y = get_mats(n_matrices, n_channels + 1, "sym")

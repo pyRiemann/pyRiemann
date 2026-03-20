@@ -14,7 +14,7 @@ def ctranspose(X):
     Parameters
     ----------
     X : ndarray, shape (..., n, m)
-        Matrices, at least 2D ndarray.
+        Matrices.
 
     Returns
     -------
@@ -52,13 +52,13 @@ def _vectorize_nd(n_axes=2):
             n_batch = np.prod(batch_shape, dtype=int)
             core_shape = X.shape[-n_axes:]
             X_flat = X.reshape(n_batch, *core_shape)
-            results = []
+            X_new = []
             for b in range(n_batch):
-                results.append(
+                X_new.append(
                     np.atleast_2d(func(X_flat[b], *args, **kwargs))
                 )
-            results = np.asarray(results)
-            return results.reshape(*batch_shape, *results.shape[1:])
+            X_new = np.asarray(X_new)
+            return X_new.reshape(*batch_shape, *X_new.shape[1:])
         return wrapper
     return decorator
 
@@ -108,7 +108,7 @@ def expm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
 
     Returns
     -------
@@ -134,7 +134,7 @@ def invsqrtm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
 
     Returns
     -------
@@ -160,7 +160,7 @@ def logm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
 
     Returns
     -------
@@ -186,7 +186,7 @@ def powm(C, alpha):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
     alpha : float
         The power to apply.
 
@@ -215,7 +215,7 @@ def sqrtm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
 
     Returns
     -------

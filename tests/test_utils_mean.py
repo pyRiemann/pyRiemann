@@ -48,7 +48,6 @@ from pyriemann.utils.mean import (
     ],
 )
 def test_mean(kind, mean, get_mats):
-    """Test the shape of mean"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
     assert mean(X).shape == (n_channels, n_channels)
@@ -68,7 +67,6 @@ def test_mean(kind, mean, get_mats):
     ]
 )
 def test_mean_init(kind, mean, get_mats):
-    """Test the shape of mean with init"""
     n_matrices, n_channels = 4, 3
     X = get_mats(n_matrices, n_channels, kind)
     M = mean(X, init=X[0])
@@ -136,8 +134,7 @@ def test_mean_weight_error(mean, get_mats, get_weights):
         nanmean_riemann
     ]
 )
-def test_mean_warning_convergence(mean, get_mats):
-    """Test warning for convergence not reached """
+def test_mean_warning_convergence_not_reached(mean, get_mats):
     n_matrices, n_channels = 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
     with pytest.warns(UserWarning):
@@ -163,7 +160,7 @@ def test_mean_warning_convergence(mean, get_mats):
     ],
 )
 def test_mean_of_means(kind, mean, get_mats):
-    """Test mean of submeans equal to grand mean"""
+    """Test mean of submeans is equal to grand mean"""
     n_matrices, n_channels = 10, 3
     X = get_mats(n_matrices, n_channels, kind)
     M = mean(X)
@@ -248,7 +245,6 @@ def test_mean_broadcasting(mean, get_mats):
     # mean_thompson,  # Th 6.16 (4) in [Mostajeran2024], KO
 ])
 def test_mean_property_joint_homogeneity(kind, mean, get_mats, rndstate):
-    """Test joint homogeneity"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
 
@@ -439,7 +435,6 @@ def test_mean_riemann_same_eigenvecs(kind, get_mats_params):
 
 @pytest.mark.parametrize("init", [True, False])
 def test_mean_masked_riemann(init, get_mats, get_masks):
-    """Test the masked Riemannian mean"""
     n_matrices, n_channels = 5, 4
     X = get_mats(n_matrices, n_channels, "spd")
     masks = get_masks(n_matrices, n_channels)
@@ -460,7 +455,6 @@ def test_mean_masked_riemann(init, get_mats, get_masks):
 
 @pytest.mark.parametrize("init", [True, False])
 def test_mean_nan_riemann(init, get_mats, rndstate):
-    """Test the Riemannian NaN-mean"""
     n_matrices, n_channels = 10, 6
     X = get_mats(n_matrices, n_channels, "spd")
     emean = np.mean(X, axis=0)
@@ -478,7 +472,6 @@ def test_mean_nan_riemann(init, get_mats, rndstate):
 
 
 def test_mean_nan_riemann_errors(get_mats):
-    """Test the Riemannian NaN-mean errors"""
     n_matrices, n_channels = 5, 4
     X = get_mats(n_matrices, n_channels, "spd")
 
@@ -517,7 +510,6 @@ def callable_np_average(X, sample_weight=None):
     ],
 )
 def test_gmean_metric(metric, mean, get_mats):
-    """Test gmean for metric"""
     n_matrices, n_channels = 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
     if metric in ["power", "poweuclid"]:

@@ -189,7 +189,6 @@ def test_distance_property_triangle_inequality(kind, dist, get_mats):
     distance_thompson,  # Eq(4.7a) in [Sra2015]
 ])
 def test_distance_property_invariance_under_inversion(kind, dist, get_mats):
-    """Test invariance under inversion"""
     n_channels = 4
     A, B = get_mats(2, n_channels, kind)
     assert dist(A, B) == approx(dist(np.linalg.inv(A), np.linalg.inv(B)))

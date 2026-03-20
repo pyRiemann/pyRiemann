@@ -1002,7 +1002,7 @@ def transport_logchol(X, A, B):
     tri0, tri1 = np.tril_indices(X.shape[-1], -1)
     diag0, diag1 = np.diag_indices(X.shape[-1])
 
-    P = A_invchol @ X @ ctranspose(A_invchol)
+    P = A_invchol @ X @ A_invchol.conj().T
     P12 = np.zeros_like(P)
     P12[..., tri0, tri1] = P[..., tri0, tri1]
     P12[..., diag0, diag1] = P[..., diag0, diag1] / 2
@@ -1013,7 +1013,7 @@ def transport_logchol(X, A, B):
     T[..., diag0, diag1] = B_chol[..., diag0, diag1] \
         / A_chol[..., diag0, diag1] * X_[..., diag0, diag1]
 
-    X_new = B_chol @ ctranspose(T) + T @ ctranspose(B_chol)
+    X_new = B_chol @ ctranspose(T) + T @ B_chol.conj().T
     return X_new
 
 
@@ -1122,7 +1122,7 @@ def transport_riemann(X, A, B):
     # (BA^{-1})^{1/2} = A^{1/2} (A^{-1/2}BA^{-1/2})^{1/2} A^{-1/2}
     A12, A12inv = sqrtm(A), invsqrtm(A)
     E = A12 @ sqrtm(A12inv @ B @ A12inv) @ A12inv
-    X_new = E @ X @ ctranspose(E)
+    X_new = E @ X @ E.conj().T
     return X_new
 
 

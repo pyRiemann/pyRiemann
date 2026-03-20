@@ -37,35 +37,30 @@ def test_ctranspose(get_mats):
 
 
 def test_expm():
-    """Test matrix exponential"""
     X = 2 * np.eye(n_channels)
     Xtrue = np.exp(2) * np.eye(n_channels)
     assert_array_almost_equal(expm(X), Xtrue, decimal=10)
 
 
 def test_invsqrtm():
-    """Test matrix inverse square root"""
     X = 2 * np.eye(n_channels)
     Xtrue = (1.0 / np.sqrt(2)) * np.eye(n_channels)
     assert_array_almost_equal(invsqrtm(X), Xtrue, decimal=10)
 
 
 def test_logm():
-    """Test matrix logarithm"""
     X = 2 * np.eye(n_channels)
     Xtrue = np.log(2) * np.eye(n_channels)
     assert_array_almost_equal(logm(X), Xtrue, decimal=10)
 
 
 def test_powm():
-    """Test matrix power"""
     X = 2 * np.eye(n_channels)
     Xtrue = (2 ** 0.3) * np.eye(n_channels)
     assert_array_almost_equal(powm(X, 0.3), Xtrue, decimal=10)
 
 
 def test_sqrtm():
-    """Test matrix square root"""
     X = 2 * np.eye(n_channels)
     Xtrue = np.sqrt(2) * np.eye(n_channels)
     assert_array_almost_equal(sqrtm(X), Xtrue, decimal=10)
@@ -194,7 +189,6 @@ def test_nearest_sym_pos_def(get_mats):
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_first_divided_difference(get_mats, kind):
-    """Test first divided difference."""
     n_matrices = 1
     X = get_mats(n_matrices, n_channels, kind)[0]
     d = np.linalg.eigvalsh(X)
@@ -216,8 +210,7 @@ def test_first_divided_difference(get_mats, kind):
 
 
 @pytest.mark.parametrize("ddfun", [ddlogm, ddexpm])
-def test_dd(ddfun, get_mats):
-    """Test directional derivative."""
+def test_directional_derivative(ddfun, get_mats):
     n_dim5, n_dim4, n_matrices, n_channels = 2, 6, 5, 3
     X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "sym")
     Cref = get_mats(1, n_channels, "spd")[0]

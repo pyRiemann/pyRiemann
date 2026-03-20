@@ -1,11 +1,11 @@
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 import pytest
+from pytest import approx
 from scipy.linalg import block_diag
 from scipy.signal import welch, csd, coherence as coherence_sp
 from sklearn.covariance import empirical_covariance
 
-from conftest import _make_batch_spd
 from pyriemann.utils.covariance import (
     covariances, covariances_EP, covariances_X, eegtocov,
     cross_spectrum, cospectrum, coherence,
@@ -53,18 +53,33 @@ def test_covariances(estimator, get_mats):
                 np.full(n_matrices, n_channels)
             )
 
-        # Batch broadcast test
-        batch_shape = (4, 3)
-        rs = np.random.RandomState(42)
-        X_b = rs.randn(*batch_shape, n_channels, n_times)
-        cov_b = covariances(X_b, estimator=estimator)
-        assert cov_b.shape == (*batch_shape, n_channels, n_channels)
-        if estimator != "mcd":  # mcd is randomized, skip element-wise
-            np.testing.assert_allclose(
-                cov_b[0, 0],
-                covariances(X_b[0, 0][np.newaxis], estimator=estimator)[0],
-                atol=1e-6
-            )
+
+@pytest.mark.parametrize(
+    "estimator",
+    ["corr", "cov", "lwf", "oas", "sch", "scm", "hub", "stu", "tyl"]
+)
+def test_covariances_broadcasting(estimator, get_mats):
+    n_dim5, n_dim4, n_matrices, n_channels, n_times = 2, 4, 2, 3, 100
+    X = get_mats(n_dim5, [n_dim4, n_matrices, n_channels, n_times], "real")
+
+    # 2D array
+    C2 = covariances(X[0, 0, 0], estimator=estimator)
+    assert C2.shape == (n_channels, n_channels)
+
+    # 3D array
+    C3 = covariances(X[0, 0], estimator=estimator)
+    assert C3.shape == (n_matrices, n_channels, n_channels)
+    assert C3[0] == approx(C2)
+
+    # 4D array
+    C4 = covariances(X[0], estimator=estimator)
+    assert C4.shape == (n_dim4, n_matrices, n_channels, n_channels)
+    assert C4[0, 0] == approx(C2)
+
+    # 5D array
+    C5 = covariances(X, estimator=estimator)
+    assert C5.shape == (n_dim5, n_dim4, n_matrices, n_channels, n_channels)
+    assert C5[0, 0, 0] == approx(C2)
 
 
 @pytest.mark.parametrize("assume_centered", [True, False])
@@ -107,82 +122,98 @@ def test_covariances_complex(estimator, get_mats):
 
 
 @pytest.mark.parametrize("kind", ["real", "comp"])
-@pytest.mark.parametrize("estimator", estimators + [None])
-def test_covariances_EP(kind, estimator, get_mats):
-    """Test covariance_EP for multiple estimators"""
+@pytest.mark.parametrize("estimator", estimators)
+def test_covariances_ep(kind, estimator, get_mats):
     n_matrices, n_channels_x, n_channels_p, n_times = 2, 3, 3, 100
     X = get_mats(n_matrices, [n_channels_x, n_times], kind)
     P = get_mats(1, [n_channels_p, n_times], kind)[0]
-    if estimator is None:
-        cov = covariances_EP(X, P)
-    else:
-        cov = covariances_EP(X, P, estimator=estimator)
+    cov = covariances_EP(X, P, estimator=estimator)
     n_dim_cov = n_channels_x + n_channels_p
     assert cov.shape == (n_matrices, n_dim_cov, n_dim_cov)
 
-    # Batch broadcast test
-    if kind == "real":
-        batch_shape = (2, 3)
-        rs = np.random.RandomState(42)
-        X_b = rs.randn(*batch_shape, n_channels_x, n_times)
-        P_b = rs.randn(n_channels_p, n_times)
-        cov_b = covariances_EP(X_b, P_b) if estimator is None \
-            else covariances_EP(X_b, P_b, estimator=estimator)
-        assert cov_b.shape == (*batch_shape, n_dim_cov, n_dim_cov)
+
+@pytest.mark.parametrize(
+    "estimator",
+    ["corr", "cov", "lwf", "oas", "sch", "scm", "stu", "tyl"]
+)
+def test_covariances_ep_broadcasting(estimator, get_mats, rndstate):
+    n_dim5, n_dim4, n_matrices, n_times = 3, 4, 2, 100
+    n_channels_x, n_channels_p = 5, 6
+    X = get_mats(n_dim5, [n_dim4, n_matrices, n_channels_x, n_times], "real")
+    P = get_mats(1, [n_channels_p, n_times], "real")[0]
+
+    # 2D array
+    C2 = covariances_EP(X[0, 0, 0], P, estimator=estimator)
+    n_dim_cov = n_channels_x + n_channels_p
+    assert C2.shape == (n_dim_cov, n_dim_cov)
+
+    # 3D array
+    C3 = covariances_EP(X[0, 0], P, estimator=estimator)
+    assert C3.shape == (n_matrices, n_dim_cov, n_dim_cov)
+    assert C3[0] == approx(C2)
+
+    # 4D array
+    C4 = covariances_EP(X[0], P, estimator=estimator)
+    assert C4.shape == (n_dim4, n_matrices, n_dim_cov, n_dim_cov)
+    assert C4[0, 0] == approx(C2)
+
+    # 5D array
+    C5 = covariances_EP(X, P, estimator=estimator)
+    assert C5.shape == (n_dim5, n_dim4, n_matrices, n_dim_cov, n_dim_cov)
+    assert C5[0, 0, 0] == approx(C2)
 
 
-@pytest.mark.parametrize("estimator", estimators + [None])
-def test_covariances_X(estimator, get_mats):
-    """Test covariance_X for multiple estimators"""
+@pytest.mark.parametrize("estimator", estimators)
+def test_covariances_x(estimator, get_mats):
+    if estimator == "mcd":
+        return
+
     n_matrices, n_channels, n_times = 3, 5, 15
     X = get_mats(n_matrices, [n_channels, n_times], "real")
-    if estimator == "mcd":
-        pytest.skip()
-    elif estimator is None:
-        cov = covariances_X(X, alpha=5.)
-    else:
-        cov = covariances_X(X, estimator=estimator, alpha=5.)
+
+    cov = covariances_X(X, estimator=estimator, alpha=5.)
     n_dim_cov = n_channels + n_times
     assert cov.shape == (n_matrices, n_dim_cov, n_dim_cov)
 
-    # Batch broadcast test
-    if estimator != "mcd":
-        batch_shape = (3, 4)
-        rs = np.random.RandomState(42)
-        X_b = rs.randn(*batch_shape, n_channels, n_times)
-        cov_b = covariances_X(X_b, alpha=5.) if estimator is None \
-            else covariances_X(X_b, estimator=estimator, alpha=5.)
-        assert cov_b.shape == (*batch_shape, n_dim_cov, n_dim_cov)
+    # test broadcasting
+    n_dim5, n_dim4, n_matrices, n_channels, n_times = 3, 4, 2, 5, 15
+    X = get_mats(n_dim5, [n_dim4, n_matrices, n_channels, n_times], "real")
+
+    # 2D array
+    C2 = covariances_X(X[0, 0, 0], alpha=4., estimator=estimator)
+    assert C2.shape == (n_dim_cov, n_dim_cov)
+
+    # 5D array
+    C5 = covariances_X(X, alpha=4., estimator=estimator)
+    assert C5.shape == (n_dim5, n_dim4, n_matrices, n_dim_cov, n_dim_cov)
+    assert C5[0, 0, 0] == approx(C2)
 
 
-@pytest.mark.parametrize(
-    "estimator", estimators + [np.cov, "truc", None]
-)
+@pytest.mark.parametrize("estimator", estimators)
 def test_block_covariances_est(estimator, get_mats):
-    """Test block covariance for multiple estimators"""
     n_matrices, n_channels, n_times = 2, 12, 100
     X = get_mats(n_matrices, [n_channels, n_times], "real")
 
-    if estimator is None:
-        cov = block_covariances(X, [4, 4, 4])
-        assert cov.shape == (n_matrices, n_channels, n_channels)
-    elif estimator == "truc":
-        with pytest.raises(ValueError):
-            block_covariances(X, [4, 4, 4], estimator=estimator)
-    else:
-        cov = block_covariances(X, [4, 4, 4], estimator=estimator)
-        assert cov.shape == (n_matrices, n_channels, n_channels)
+    cov = block_covariances(X, [4, 4, 4], estimator=estimator)
+    assert cov.shape == (n_matrices, n_channels, n_channels)
 
-        # Batch broadcast test
-        batch_shape = (2, 2)
-        rs = np.random.RandomState(42)
-        X_b = rs.randn(*batch_shape, n_channels, n_times)
-        cov_b = block_covariances(X_b, [4, 4, 4], estimator=estimator)
-        assert cov_b.shape == (*batch_shape, n_channels, n_channels)
+    # test broadcasting
+    if estimator == "mcd":
+        return
+    n_dim5, n_dim4, n_matrices, n_channels, n_times = 3, 2, 2, 8, 82
+    X = get_mats(n_dim5, [n_dim4, n_matrices, n_channels, n_times], "real")
+
+    # 2D array
+    C2 = block_covariances(X[0, 0, 0], [2, 4, 2], estimator=estimator)
+    assert C2.shape == (n_channels, n_channels)
+
+    # 5D array
+    C5 = block_covariances(X, [2, 4, 2], estimator=estimator)
+    assert C5.shape == (n_dim5, n_dim4, n_matrices, n_channels, n_channels)
+    assert C5[0, 0, 0] == approx(C2)
 
 
 def test_block_covariances(get_mats):
-    """Test block covariance"""
     n_matrices, n_channels, n_times = 2, 12, 100
     X = get_mats(n_matrices, [n_channels, n_times], "real")
 
@@ -202,15 +233,14 @@ def test_block_covariances(get_mats):
     assert_array_almost_equal(cov[0], covcomp)
 
 
-def test_covariances_eegtocov(rndstate):
-    """Test eegtocov"""
+def test_eegtocov(rndstate):
     n_times, n_channels = 1000, 3
     X = rndstate.randn(n_times, n_channels)
     cov = eegtocov(X)
     assert cov.shape[1:] == (n_channels, n_channels)
 
 
-def test_covariances_cross_spectrum(rndstate):
+def test_cross_spectrum_errors(rndstate):
     n_channels, n_times = 3, 1000
     X = rndstate.randn(n_channels, n_times)
     cross_spectrum(X)
@@ -232,6 +262,11 @@ def test_covariances_cross_spectrum(rndstate):
     with pytest.warns(UserWarning):  # fs is None
         cross_spectrum(X, fmax=12)
 
+
+def test_cross_spectrum(rndstate):
+    n_channels, n_times = 3, 1000
+    X = rndstate.randn(n_channels, n_times)
+
     c, freqs = cross_spectrum(X, fs=128, window=256)
     assert c.shape[0] == c.shape[1] == n_channels
     assert c.shape[-1] == freqs.shape[0]
@@ -245,9 +280,13 @@ def test_covariances_cross_spectrum(rndstate):
     # test if auto-spectra are real
     assert is_real(c.diagonal())
 
-    # test equivalence between pyriemann and scipy for (auto-)spectra
+
+def test_cross_spectrum_scipy_auto(rndstate):
+    """"Test equivalence between pyriemann and scipy for (auto-)spectra"""
+    n_times = 1000
     X = rndstate.randn(5, n_times)
     fs, window, overlap = 128, 256, 0.75
+
     spect_pr, freqs_pr = cross_spectrum(
         X,
         fs=fs,
@@ -256,6 +295,7 @@ def test_covariances_cross_spectrum(rndstate):
     )
     spect_pr = np.diagonal(spect_pr.real).T  # auto-spectra on diagonal
     spect_pr = spect_pr / np.linalg.norm(spect_pr)  # unit norm
+
     freqs_sp, spect_sp = welch(
         X,
         fs=fs,
@@ -266,20 +306,26 @@ def test_covariances_cross_spectrum(rndstate):
         scaling="spectrum",
     )
     spect_sp /= np.linalg.norm(spect_sp)  # unit norm
+
     # compare frequencies
     assert_array_almost_equal(freqs_pr, freqs_sp, 6)
     # compare auto-spectra
     assert_array_almost_equal(spect_pr, spect_sp, 6)
 
-    # test equivalence between pyriemann and scipy for cross-spectra
+
+def test_cross_spectrum_scipy_cross(rndstate):
+    """"Test equivalence between pyriemann and scipy for cross-spectra"""
+    n_times = 1000
     X = rndstate.randn(2, n_times)
     fs, window, overlap = 64, 128, 0.5
+
     cross_pr, freqs_pr = cross_spectrum(
         X,
         fs=fs,
         window=window,
         overlap=overlap)
     cross_pr = cross_pr[0, 1] / np.linalg.norm(cross_pr[0, 1])  # unit norm
+
     freqs_sp, cross_sp = csd(
         X[0],
         X[1],
@@ -291,25 +337,30 @@ def test_covariances_cross_spectrum(rndstate):
         scaling="spectrum",
     )
     cross_sp /= np.linalg.norm(cross_sp)  # unit norm
+
     # compare frequencies
     assert_array_almost_equal(freqs_pr, freqs_sp, 6)
     # compare cross-spectra
     assert_array_almost_equal(cross_pr, cross_sp, 6)
 
-    # Batch broadcast test
-    batch_shape = (2, 2)
-    n_ch_b, n_t_b, win = 3, 128, 64
-    rs_b = np.random.RandomState(42)
-    X_b = rs_b.randn(*batch_shape, n_ch_b, n_t_b)
-    S_b, _ = cross_spectrum(X_b, window=win)
-    n_freqs_b = win // 2 + 1
-    assert S_b.shape == (*batch_shape, n_ch_b, n_ch_b, n_freqs_b)
-    S_ref, _ = cross_spectrum(X_b[0, 0], window=win)
-    np.testing.assert_allclose(S_b[0, 0], S_ref, atol=1e-10)
+
+def test_cross_spectrum_broadcasting(rndstate):
+    n_dim4, n_matrices, n_channels, n_times = 4, 6, 3, 1000
+    X = rndstate.randn(n_dim4, n_matrices, n_channels, n_times)
+
+    # 2D array
+    window = 64
+    C2, _ = cross_spectrum(X[0, 0], window=window)
+    n_freqs = window // 2 + 1
+    assert C2.shape == (n_channels, n_channels, n_freqs)
+
+    # 4D array
+    C4, _ = cross_spectrum(X, window=window)
+    assert C4.shape == (n_dim4, n_matrices, n_channels, n_channels, n_freqs)
+    assert C4[0, 0] == approx(C2)
 
 
-def test_covariances_cospectrum(rndstate):
-    """Test cospectrum"""
+def test_cospectrum(rndstate):
     X = rndstate.randn(3, 1000)
     cospectrum(X)
     cospectrum(X, fs=128, fmin=2, fmax=40)
@@ -334,23 +385,27 @@ def test_covariances_cospectrum(rndstate):
     # compare co-spectra
     assert_array_almost_equal(cosp_pr, cosp_sp, 6)
 
-    # Batch broadcast test
-    batch_shape = (2, 3)
-    n_ch_b, n_t_b, win = 3, 128, 64
-    rs_b = np.random.RandomState(42)
-    X_b = rs_b.randn(*batch_shape, n_ch_b, n_t_b)
-    S_b, _ = cospectrum(X_b, window=win)
-    n_freqs_b = win // 2 + 1
-    assert S_b.shape == (*batch_shape, n_ch_b, n_ch_b, n_freqs_b)
-    S_ref, _ = cospectrum(X_b[0, 0], window=win)
-    np.testing.assert_allclose(S_b[0, 0], S_ref, atol=1e-10)
+
+def test_cospectrum_broadcasting(rndstate):
+    n_dim4, n_matrices, n_channels, n_times = 5, 4, 3, 100
+    X = rndstate.randn(n_dim4, n_matrices, n_channels, n_times)
+
+    # 2D array
+    window = 64
+    C2, _ = cospectrum(X[0, 0], window=window)
+    n_freqs = window // 2 + 1
+    assert C2.shape == (n_channels, n_channels, n_freqs)
+
+    # 4D array
+    C4, _ = cospectrum(X, window=window)
+    assert C4.shape == (n_dim4, n_matrices, n_channels, n_channels, n_freqs)
+    assert C4[0, 0] == approx(C2)
 
 
 @pytest.mark.parametrize(
     "coh", ["ordinary", "instantaneous", "lagged", "imaginary"]
 )
-def test_covariances_coherence(coh, rndstate):
-    """Test coherence"""
+def test_coherence(coh, rndstate):
     n_channels, n_times = 3, 2048
     X = rndstate.randn(n_channels, n_times)
 
@@ -387,7 +442,12 @@ def test_covariances_coherence(coh, rndstate):
         coherence(X, coh=coh)
         coherence(X, fs=64, coh=coh)
 
-    # test statistical properties of coherence between phase shifted channels
+
+@pytest.mark.parametrize(
+    "coh", ["ordinary", "instantaneous", "lagged", "imaginary"]
+)
+def test_coherence_properties(coh, rndstate):
+    """Test statistical properties of coherence btw phase shifted channels"""
     fs, ft, n_periods = 16, 4, 20
     t = np.arange(0, n_periods, 1 / fs)
     n_times = t.shape[0]
@@ -435,20 +495,27 @@ def test_covariances_coherence(coh, rndstate):
         # imag coh equal 0 between ref and opposite phase channels
         assert c[0, 3, foi] == pytest.approx(0.0)
 
-    # Batch broadcast test
-    batch_shape = (3, 2)
-    n_ch_b, n_t_b, win = 3, 128, 64
-    rs_b = np.random.RandomState(42)
-    X_b = rs_b.randn(*batch_shape, n_ch_b, n_t_b)
-    C_b, _ = coherence(X_b, window=win, coh=coh)
-    n_freqs_b = win // 2 + 1
-    assert C_b.shape == (*batch_shape, n_ch_b, n_ch_b, n_freqs_b)
-    C_ref, _ = coherence(X_b[0, 0], window=win, coh=coh)
-    np.testing.assert_allclose(C_b[0, 0], C_ref, atol=1e-10)
+
+@pytest.mark.parametrize(
+    "coh", ["ordinary", "instantaneous", "lagged", "imaginary"]
+)
+def test_coherence_broadcasting(coh, rndstate):
+    n_dim4, n_matrices, n_channels, n_times = 5, 4, 3, 100
+    X = rndstate.randn(n_dim4, n_matrices, n_channels, n_times)
+
+    # 2D array
+    window = 64
+    C2, _ = coherence(X[0, 0], window=window, coh=coh)
+    n_freqs = window // 2 + 1
+    assert C2.shape == (n_channels, n_channels, n_freqs)
+
+    # 4D array
+    C4, _ = coherence(X, window=window, coh=coh)
+    assert C4.shape == (n_dim4, n_matrices, n_channels, n_channels, n_freqs)
+    assert C4[0, 0] == approx(C2)
 
 
-def test_covariances_coherence_error(rndstate):
-    """Test coherence error"""
+def test_coherence_error(rndstate):
     n_channels, n_times = 3, 50
     X = rndstate.randn(n_channels, n_times)
     with pytest.raises(ValueError):  # unknown coh
@@ -456,35 +523,31 @@ def test_covariances_coherence_error(rndstate):
 
 
 @pytest.mark.parametrize("norm", ["corr", "trace", "determinant"])
-def test_normalize_shapes(norm, rndstate):
-    """Test normalize shapes"""
-    n_conds, n_matrices, n_channels = 15, 10, 3
+def test_normalize_broadcasting(norm, rndstate):
+    n_dim5, n_dim4, n_matrices, n_channels = 2, 6, 5, 3
+    X = rndstate.randn(n_dim5, n_dim4, n_matrices, n_channels, n_channels)
 
-    # test a 2d array, ie a single square matrix
-    X = rndstate.randn(n_channels, n_channels)
-    Xt = normalize(X, norm)
-    assert X.shape == Xt.shape
-    # test a 3d array, ie a group of square matrices
-    X = rndstate.randn(n_matrices, n_channels, n_channels)
-    Xt = normalize(X, norm)
-    assert X.shape == Xt.shape
-    # test a 4d array, ie a group of groups of square matrices
-    X = rndstate.randn(n_conds, n_matrices, n_channels, n_channels)
-    Xt = normalize(X, norm)
-    assert X.shape == Xt.shape
+    # 2D array
+    N2 = normalize(X[0, 0, 0], norm)
+    assert N2.shape == (n_channels, n_channels)
 
-    # Batch broadcast test
-    batch_shape = (4, 2)
-    X_b = _make_batch_spd(batch_shape, n_dim=n_channels)
-    Xt_b = normalize(X_b, norm)
-    assert Xt_b.shape == (*batch_shape, n_channels, n_channels)
-    np.testing.assert_allclose(
-        Xt_b[0, 0], normalize(X_b[0, 0], norm), atol=1e-10
-    )
+    # 3D array
+    N3 = normalize(X[0, 0], norm)
+    assert N3.shape == (n_matrices, n_channels, n_channels)
+    assert N3[0] == approx(N2)
+
+    # 4D array
+    N4 = normalize(X[0], norm)
+    assert N4.shape == (n_dim4, n_matrices, n_channels, n_channels)
+    assert N4[0, 0] == approx(N2)
+
+    # 5D array
+    N5 = normalize(X, norm)
+    assert N5.shape == (n_dim5, n_dim4, n_matrices, n_channels, n_channels)
+    assert N5[0, 0, 0] == approx(N2)
 
 
-def test_normalize_values(rndstate, get_mats):
-    """Test normalize values"""
+def test_normalize(rndstate, get_mats):
     n_matrices, n_channels = 20, 3
 
     # after corr-normalization => diags = 1 and values in [-1, 1]
@@ -505,6 +568,9 @@ def test_normalize_values(rndstate, get_mats):
     assert_array_almost_equal(np.ones(Xdn.shape[0]),
                               np.abs(np.linalg.det(Xdn)))
 
+
+def test_normalize_errors(rndstate):
+    n_matrices, n_channels = 3, 2
     with pytest.raises(ValueError):  # not at least 2d
         normalize(rndstate.randn(n_channels), "trace")
     with pytest.raises(ValueError):  # not square
@@ -514,41 +580,48 @@ def test_normalize_values(rndstate, get_mats):
         normalize(rndstate.randn(n_matrices, n_channels, n_channels), "abc")
 
 
-def test_get_nondiag_weight(rndstate):
-    """Test get_nondiag_weight"""
-    n_conds, n_matrices, n_channels = 10, 20, 3
+def test_get_nondiag_weight_broadcasting(rndstate):
+    n_dim5, n_dim4, n_matrices, n_channels = 2, 6, 5, 3
+    X = rndstate.randn(n_dim5, n_dim4, n_matrices, n_channels, n_channels)
 
-    # test a 2d array, ie a single square matrix
-    w = get_nondiag_weight(rndstate.randn(n_channels, n_channels))
-    assert np.isscalar(w)
-    # test a 3d array, ie a group of square matrices
-    w = get_nondiag_weight(rndstate.randn(n_matrices, n_channels, n_channels))
-    assert w.shape == (n_matrices,)
-    # test a 4d array, ie a group of groups of square matrices
-    shape = (n_conds, n_matrices, n_channels, n_channels)
-    w = get_nondiag_weight(rndstate.randn(*shape))
-    assert w.shape == (n_conds, n_matrices)
+    # 2D array
+    w2 = get_nondiag_weight(X[0, 0, 0])
+    assert np.isscalar(w2)
+
+    # 3D array
+    W3 = get_nondiag_weight(X[0, 0])
+    assert W3.shape == (n_matrices,)
+    assert W3[0] == approx(w2)
+
+    # 4D array
+    W4 = get_nondiag_weight(X[0])
+    assert W4.shape == (n_dim4, n_matrices,)
+    assert W4[0, 0] == approx(w2)
+
+    # 5D array
+    W5 = get_nondiag_weight(X)
+    assert W5.shape == (n_dim5, n_dim4, n_matrices,)
+    assert W5[0, 0, 0] == approx(w2)
+
+
+def test_get_nondiag_weight(rndstate):
+    n_matrices, n_channels = 7, 3
 
     # 2x2 constant matrices => non-diag weights equal to 1
     X = rndstate.randn(n_matrices, 1, 1) * np.ones((n_matrices, 2, 2))
     w = get_nondiag_weight(X)
     assert_array_almost_equal(w, np.ones(n_matrices))
+
     # diagonal matrices => non-diag weights equal to 0
     X = rndstate.randn(n_matrices, 1, 1) * ([np.eye(n_channels)] * n_matrices)
     w = get_nondiag_weight(X)
     assert_array_almost_equal(w, np.zeros(n_matrices))
 
+
+def test_get_nondiag_weight_errors(rndstate):
+    n_matrices, n_channels = 3, 2
     with pytest.raises(ValueError):  # not at least 2d
         get_nondiag_weight(rndstate.randn(n_channels))
     with pytest.raises(ValueError):  # not square
         shape = (n_matrices, n_channels, n_channels + 2)
         get_nondiag_weight(rndstate.randn(*shape))
-
-    # Batch broadcast test
-    batch_shape = (2, 3)
-    X_b = _make_batch_spd(batch_shape, n_dim=n_channels)
-    w_b = get_nondiag_weight(X_b)
-    assert w_b.shape == batch_shape
-    np.testing.assert_allclose(
-        w_b[0, 0], get_nondiag_weight(X_b[0, 0]), atol=1e-10
-    )

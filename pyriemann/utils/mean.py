@@ -13,11 +13,6 @@ from .tangentspace import log_map_wasserstein, exp_map_wasserstein
 from .utils import check_weights, check_function, check_init
 
 
-def _max_norm(X):
-    """Frobenius norm, max over batch elements for convergence checks."""
-    return np.max(np.linalg.norm(X, axis=(-2, -1)))
-
-
 @_vectorize_nd(n_axes=3)
 def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     """AJD-based log-Euclidean (ALE) mean of SPD/HPD matrices.
@@ -28,7 +23,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices, at least 3D ndarray.
+        Set of SPD/HPD matrices.
     tol : float, default=10e-7
         Tolerance to stop the gradient descent.
     maxiter : int, default=50
@@ -100,7 +95,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices, at least 3D ndarray.
+        Set of SPD/HPD matrices.
     tol : float, default=1e-14
         Tolerance to stop the gradient descent.
     maxiter : int, default=100
@@ -148,8 +143,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
 
         norm_iter = np.linalg.norm(M_iter[0] - M[0], ord=2)
         norm_c = np.linalg.norm(M[0], ord=2)
-        crit = np.max(norm_iter / norm_c)
-        if crit < tol:
+        if norm_iter / norm_c < tol:
             break
         M = M_iter.copy()
     else:
@@ -171,7 +165,7 @@ def mean_chol(X, sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices, at least 3D ndarray.
+        Set of SPD/HPD matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -211,7 +205,7 @@ def mean_euclid(X, sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, m)
-        Set of matrices, at least 3D ndarray.
+        Set of matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -236,7 +230,7 @@ def mean_harmonic(X, sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of invertible matrices, at least 3D ndarray.
+        Set of invertible matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -263,7 +257,7 @@ def mean_kullback_sym(X, sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices, at least 3D ndarray.
+        Set of SPD/HPD matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -305,7 +299,7 @@ def mean_logchol(X, sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices, at least 3D ndarray.
+        Set of SPD/HPD matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -365,7 +359,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices, at least 3D ndarray.
+        Set of SPD/HPD matrices.
     tol : float, default=10e-5
         Tolerance to stop the gradient descent.
     maxiter : int, default=50
@@ -397,7 +391,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         J = np.einsum("a,abc->bc", sample_weight, invX)
         Mnew = np.linalg.inv(J)
 
-        crit = _max_norm(Mnew - M)
+        crit = np.linalg.norm(Mnew - M, ord="fro")
         M = Mnew
         if crit <= tol:
             break
@@ -418,7 +412,7 @@ def mean_logeuclid(X, sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices, at least 3D ndarray.
+        Set of SPD/HPD matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -459,7 +453,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices, at least 3D ndarray.
+        Set of SPD/HPD matrices.
     p : float
         Exponent, in [-1,+1]. For p=0, it returns
         :func:`pyriemann.utils.mean.mean_riemann`.
@@ -537,7 +531,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
         )
         K = powm(H, -phi) @ K
 
-        crit = _max_norm(H - eye_n) / sqrt_n
+        crit = np.linalg.norm(H - eye_n) / sqrt_n
         if crit <= zeta:
             break
     else:
@@ -562,7 +556,7 @@ def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices, at least 3D ndarray.
+        Set of SPD/HPD matrices.
     p : float
         Exponent.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
@@ -614,7 +608,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices, at least 3D ndarray.
+        Set of SPD/HPD matrices.
     tol : float, default=10e-9
         Tolerance to stop the gradient descent.
     maxiter : int, default=50
@@ -660,7 +654,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         J = np.einsum("a,abc->bc", sample_weight, logm(Mm12 @ X @ Mm12))
         M = M12 @ expm(nu * J) @ M12
 
-        crit = _max_norm(J)
+        crit = np.linalg.norm(J, ord="fro")
         h = nu * crit
         if h < tau:
             nu = 0.95 * nu
@@ -675,6 +669,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     return M
 
 
+@_vectorize_nd(n_axes=3)
 def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     """Mean of SPD/HPD matrices according to the Thompson metric.
 
@@ -683,7 +678,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices, at least 3D ndarray.
+        Set of SPD/HPD matrices.
     tol : float, default=1e-6
         Tolerance to stop the gradient descent.
     maxiter : int, default=50
@@ -715,16 +710,16 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
         C. Mostajeran, N. Da Costa, G. Van Goffrier and R. Sepulchre.
         SIAM Journal on Matrix Analysis and Applications, 2024
     """
-    n_matrices, n = X.shape[-3], X.shape[-1]
+    n_matrices, n, _ = X.shape
     if init is None:
         M = mean_euclid(X)
     else:
         M = check_init(init, n)
 
     for i in range(maxiter):
-        Mnew = geodesic_thompson(M, X[..., i % n_matrices, :, :], 1 / (i + 2))
+        Mnew = geodesic_thompson(M, X[i % n_matrices, :, :], 1 / (i + 2))
 
-        crit = _max_norm(Mnew - M)
+        crit = np.linalg.norm(Mnew - M, ord="fro")
         M = Mnew
         if crit <= tol:
             break
@@ -744,7 +739,7 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices, at least 3D ndarray.
+        Set of SPD/HPD matrices.
     tol : float, default=10e-9
         Tolerance to stop the gradient descent.
     maxiter : int, default=50
@@ -786,7 +781,7 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         X_ts = log_map_wasserstein(X, M)
         J = np.einsum("a,abc->bc", sample_weight, X_ts)
         M = exp_map_wasserstein(J, M)
-        crit = _max_norm(J)
+        crit = np.linalg.norm(J)
         if crit <= tol:
             break
     else:
@@ -824,7 +819,7 @@ def gmean(X, *args, metric="riemann", sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of matrices, at least 3D ndarray.
+        Set of matrices.
     *args : tuple
         The arguments passed to the sub function.
     metric : string | callable, default="riemann"
@@ -912,7 +907,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices, at least 3D ndarray.
+        Set of SPD/HPD matrices.
     masks : list of n_matrices ndarray of shape (n, n_i), \
             with different n_i, such that n_i <= n
         Masks, defined as semi-orthogonal matrices. See [1]_.
@@ -993,8 +988,7 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices, corrupted by symmetric NaN values [1]_,
-        at least 3D ndarray.
+        Set of SPD/HPD matrices, corrupted by symmetric NaN values [1]_.
     tol : float, default=10e-9
         Tolerance to stop the gradient descent.
     maxiter : int, default=100
