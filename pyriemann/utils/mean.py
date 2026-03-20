@@ -143,7 +143,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
 
         norm_iter = np.linalg.norm(M_iter[0] - M[0], ord=2)
         norm_c = np.linalg.norm(M[0], ord=2)
-        if norm_iter / norm_c < tol:
+        if (norm_iter / norm_c) < tol:
             break
         M = M_iter.copy()
     else:
@@ -717,7 +717,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
         M = check_init(init, n)
 
     for i in range(maxiter):
-        Mnew = geodesic_thompson(M, X[i % n_matrices, :, :], 1 / (i + 2))
+        Mnew = geodesic_thompson(M, X[i % n_matrices], 1 / (i + 2))
 
         crit = np.linalg.norm(Mnew - M, ord="fro")
         M = Mnew
