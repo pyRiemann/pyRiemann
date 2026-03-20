@@ -406,3 +406,46 @@ def test_distance_mahalanobis_scipy(mean, get_mats):
     dist_pr = distance_mahalanobis(X, C, mean=mean)
 
     assert_array_almost_equal(dist_sp, dist_pr)
+
+
+@pytest.mark.parametrize("mean", [True, None])
+def test_distance_mahalanobis_broadcasting(mean, get_mats, rndstate):
+    n_dim5, n_dim4, n_batch, n_channels, n_vectors = 7, 5, 3, 4, 10
+    cov = get_mats([n_dim5, n_dim4, n_batch], n_channels, "spd")
+    X = rndstate.randn(n_dim5, n_dim4, n_batch, n_channels, n_vectors)
+
+    if mean is True:
+        m = rndstate.randn(n_dim5, n_dim4, n_batch, n_channels, 1)
+    else:
+        m = None
+
+    # 2D array
+    d2 = distance_mahalanobis(
+        X[0, 0, 0], cov[0, 0, 0],
+        mean=m[0, 0, 0] if m is not None else None,
+    )
+    assert d2.shape == (n_vectors,)
+
+    # 3D array
+    D3 = distance_mahalanobis(
+        X[0, 0], cov[0, 0],
+        mean=m[0, 0] if m is not None else None,
+    )
+    assert D3.shape == (n_batch, n_vectors)
+    assert_array_almost_equal(D3[0], d2)
+
+    # 4D array
+    D4 = distance_mahalanobis(
+        X[0], cov[0],
+        mean=m[0] if m is not None else None,
+    )
+    assert D4.shape == (n_dim4, n_batch, n_vectors)
+    assert_array_almost_equal(D4[0, 0], d2)
+
+    # 5D array
+    D5 = distance_mahalanobis(
+        X, cov,
+        mean=m,
+    )
+    assert D5.shape == (n_dim5, n_dim4, n_batch, n_vectors)
+    assert_array_almost_equal(D5[0, 0, 0], d2)
