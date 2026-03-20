@@ -338,12 +338,9 @@ def covariance_scm(X, *, assume_centered=False):
     """  # noqa
     n_times = X.shape[-1]
 
-    if assume_centered:
-        denom = n_times - 1
-    else:
+    if not assume_centered:
         X = X - np.mean(X, axis=-1, keepdims=True)
-        denom = n_times
-    cov = X @ ctranspose(X) / denom
+    cov = X @ ctranspose(X) / n_times
 
     return cov
 
