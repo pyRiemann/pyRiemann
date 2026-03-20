@@ -16,7 +16,7 @@ def get_mats(rndstate):
             X = make_matrices(n_matrices, n_dim, kind, rndstate,
                               return_params=False)
         else:
-            n_total = int(np.prod(n_matrices))
+            n_total = np.prod(n_matrices, dtype=int)
             Xflat = make_matrices(n_total, n_dim, kind, rndstate,
                                   return_params=False)
             X = Xflat.reshape(*n_matrices, n_dim, n_dim)

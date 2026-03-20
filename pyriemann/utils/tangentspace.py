@@ -8,7 +8,7 @@ from .utils import check_function
 
 def _check_dimensions(X, Cref):
     n_1, n_2 = X.shape[-2:]
-    n_3, n_4 = Cref.shape[-2:]
+    n_3, n_4 = Cref.shape
     if not (n_1 == n_2 == n_3 == n_4):
         raise ValueError("Inputs have incompatible dimensions.")
 

@@ -225,7 +225,7 @@ def test_mean_broadcasting(mean, get_mats):
     n_dim5, n_dim4, n_matrices, n_channels = 2, 5, 3, 4
     X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")
 
-    # 3D arrays
+    # 3D array
     M3 = mean(X[0, 0])
     assert M3.shape == (n_channels, n_channels)
 
@@ -449,7 +449,7 @@ def test_mean_masked_riemann(init, get_mats, get_masks):
         M = maskedmean_riemann(X, masks)
     assert M.shape == (n_channels, n_channels)
 
-    # broadcasting
+    # test broadcasting
     if not init:
         n_dim5, n_dim4 = 2, 3
         X5 = np.asarray([[X for _ in range(n_dim4)] for _ in range(n_dim5)])

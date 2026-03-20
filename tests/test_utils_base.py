@@ -1,8 +1,10 @@
+from functools import partial
+
 import numpy as np
 from numpy.testing import assert_array_almost_equal
 import pytest
+from pytest import approx
 
-from conftest import _make_batch_spd, _make_single_spd
 from pyriemann.datasets.simulated import _make_eyes
 from pyriemann.utils.base import (
     ctranspose,
@@ -13,8 +15,8 @@ from pyriemann.utils.base import (
     sqrtm,
     nearest_sym_pos_def,
     _first_divided_difference,
+    ddexpm,
     ddlogm,
-    ddexpm
 )
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.utils.test import is_pos_def, is_sym_pos_def
@@ -74,14 +76,17 @@ def test_sqrtm():
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("funm", [expm, invsqrtm, logm, powm, sqrtm])
+@pytest.mark.parametrize("funm", [
+    expm,
+    invsqrtm,
+    logm,
+    pytest.param(partial(powm, alpha=0.2), id="powm"),
+    sqrtm
+])
 def test_funm_all(kind, funm, get_mats):
     n_matrices, n_dim = 10, 3
     X = get_mats(n_matrices, n_dim, kind)
-    if funm is powm:
-        Xt = funm(X, 0.42)
-    else:
-        Xt = funm(X)
+    Xt = funm(X)
     assert Xt.shape == (n_matrices, n_dim, n_dim)
 
 
@@ -95,35 +100,35 @@ def test_funm_error():
 
 
 @pytest.mark.parametrize("funm", [
-    expm, invsqrtm, logm, powm, sqrtm, nearest_sym_pos_def,
+    expm,
+    invsqrtm,
+    logm,
+    pytest.param(partial(powm, alpha=0.2), id="powm"),
+    sqrtm,
+    nearest_sym_pos_def,
 ])
-def test_funm_ndarray(funm):
-    def test(funm, X):
-        if funm == powm:
-            Xt = funm(X, 0.2)
-        else:
-            Xt = funm(X)
-        assert X.shape == Xt.shape
+def test_funm_broadcasting(funm, get_mats):
+    n_dim5, n_dim4, n_matrices, n_channels = 2, 6, 5, 3
+    X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")
 
-    n_matrices = 6
-    X_3d = np.asarray([np.eye(n_channels) for _ in range(n_matrices)])
-    test(funm, X_3d)
+    # 2D array
+    F2 = funm(X[0, 0, 0])
+    assert F2.shape == (n_channels, n_channels)
 
-    n_sets = 5
-    X_4d = np.asarray([X_3d for _ in range(n_sets)])
-    test(funm, X_4d)
+    # 3D array
+    F3 = funm(X[0, 0])
+    assert F3.shape == (n_matrices, n_channels, n_channels)
+    assert F3[0] == approx(F2)
 
-    # Batch broadcast test
-    batch_shape = (3, 2)
-    X_batch = _make_batch_spd(batch_shape, n_dim=n_channels)
-    if funm == powm:
-        result = funm(X_batch, 0.2)
-        ref = funm(X_batch[0, 0], 0.2)
-    else:
-        result = funm(X_batch)
-        ref = funm(X_batch[0, 0])
-    assert result.shape == (*batch_shape, n_channels, n_channels)
-    np.testing.assert_allclose(result[0, 0], ref, atol=1e-10)
+    # 4D array
+    F4 = funm(X[0])
+    assert F4.shape == (n_dim4, n_matrices, n_channels, n_channels)
+    assert F4[0, 0] == approx(F2)
+
+    # 5D array
+    F5 = funm(X)
+    assert F5.shape == (n_dim5, n_dim4, n_matrices, n_channels, n_channels)
+    assert F5[0, 0, 0] == approx(F2)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -210,42 +215,35 @@ def test_first_divided_difference(get_mats, kind):
     assert_array_almost_equal(fdd_exp_of_log, 1/fdd_log)
 
 
-def test_ddlogm(get_mats):
-    """Test directional derivative of log."""
-    X, Cref = get_mats(2, n_channels, "spd")
-    fdd_logm = ddlogm(X, Cref)
-    assert fdd_logm.shape == X.shape
+@pytest.mark.parametrize("ddfun", [ddlogm, ddexpm])
+def test_dd(ddfun, get_mats):
+    """Test directional derivative."""
+    n_dim5, n_dim4, n_matrices, n_channels = 2, 6, 5, 3
+    X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "sym")
+    Cref = get_mats(1, n_channels, "spd")[0]
 
-    fdd_logm = ddlogm(X, np.eye(n_channels))
-    assert_array_almost_equal(fdd_logm, X)
+    DD = ddfun(X, Cref)
+    assert DD.shape == X.shape
 
-    # Batch broadcast test
-    batch_shape = (2, 4)
-    X_batch = _make_batch_spd(batch_shape, n_dim=n_channels)
-    Cref_single = _make_single_spd(n_dim=n_channels)
-    result = ddlogm(X_batch, Cref_single)
-    assert result.shape == (*batch_shape, n_channels, n_channels)
-    np.testing.assert_allclose(
-        result[0, 0], ddlogm(X_batch[0, 0], Cref_single), atol=1e-10
-    )
+    # test broadcasting
+    assert DD[0, 0] == approx(ddfun(X[0, 0], Cref))
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_ddexpm(get_mats, kind):
-    """Test directional derivative of exp."""
+def test_ddexpm_properties(get_mats, kind):
     X, Cref = get_mats(2, n_channels, kind)
-    fdd_expm = ddexpm(X, Cref)
-    assert fdd_expm.shape == X.shape
+    Xdd = ddexpm(X, Cref)
 
-    fdd_expm = ddexpm(X, np.eye(n_channels))
-    assert_array_almost_equal(fdd_expm, np.exp(1)*X)
+    # identity reference
+    Xdd = ddexpm(X, np.eye(n_channels))
+    assert_array_almost_equal(Xdd, np.exp(1) * X)
 
-    # Batch broadcast test
-    batch_shape = (2, 4)
-    X_batch = _make_batch_spd(batch_shape, n_dim=n_channels)
-    Cref_single = _make_single_spd(n_dim=n_channels)
-    result = ddexpm(X_batch, Cref_single)
-    assert result.shape == (*batch_shape, n_channels, n_channels)
-    np.testing.assert_allclose(
-        result[0, 0], ddexpm(X_batch[0, 0], Cref_single), atol=1e-10
-    )
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_ddlogm_properties(get_mats, kind):
+    X, Cref = get_mats(2, n_channels, kind)
+    Xdd = ddlogm(X, Cref)
+
+    # identity reference
+    Xdd = ddlogm(X, np.eye(n_channels))
+    assert_array_almost_equal(Xdd, X)

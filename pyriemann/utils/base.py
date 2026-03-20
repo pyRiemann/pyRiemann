@@ -38,9 +38,10 @@ def _vectorize_nd(n_axes=2):
     Parameters
     ----------
     n_axes : int, default=2
-        Number of trailing axes that form the core dimensions.
-        - n_core=2: (..., n1, n2) -> func(n1, n2) -> (..., m1, m2)
-        - n_core=3: (..., k, n1, n2) -> func(k, n1, n2) -> (..., m1, m2)
+        Number of trailing axes that form the core dimensions:
+
+        - n_axes=2: (..., n1, n2) -> func(n1, n2) -> (..., m1, m2)
+        - n_axes=3: (..., n1, n2, n3) -> func(n1, n2, n3) -> (..., m1, m2)
     """
     def decorator(func):
         @wraps(func)
@@ -48,7 +49,7 @@ def _vectorize_nd(n_axes=2):
             batch_shape = X.shape[:-n_axes]
             if len(batch_shape) == 0:
                 return func(X, *args, **kwargs)
-            n_batch = int(np.prod(batch_shape))
+            n_batch = np.prod(batch_shape, dtype=int)
             core_shape = X.shape[-n_axes:]
             X_flat = X.reshape(n_batch, *core_shape)
             results = []

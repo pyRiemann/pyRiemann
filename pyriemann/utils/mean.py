@@ -28,7 +28,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices.
+        Set of SPD/HPD matrices, at least 3D ndarray.
     tol : float, default=10e-7
         Tolerance to stop the gradient descent.
     maxiter : int, default=50
@@ -100,7 +100,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices.
+        Set of SPD/HPD matrices, at least 3D ndarray.
     tol : float, default=1e-14
         Tolerance to stop the gradient descent.
     maxiter : int, default=100
@@ -171,7 +171,7 @@ def mean_chol(X, sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices.
+        Set of SPD/HPD matrices, at least 3D ndarray.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -211,7 +211,7 @@ def mean_euclid(X, sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, m)
-        Set of matrices.
+        Set of matrices, at least 3D ndarray.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -236,7 +236,7 @@ def mean_harmonic(X, sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of invertible matrices.
+        Set of invertible matrices, at least 3D ndarray.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -263,7 +263,7 @@ def mean_kullback_sym(X, sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices.
+        Set of SPD/HPD matrices, at least 3D ndarray.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -305,7 +305,7 @@ def mean_logchol(X, sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices.
+        Set of SPD/HPD matrices, at least 3D ndarray.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -365,7 +365,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices.
+        Set of SPD/HPD matrices, at least 3D ndarray.
     tol : float, default=10e-5
         Tolerance to stop the gradient descent.
     maxiter : int, default=50
@@ -418,7 +418,7 @@ def mean_logeuclid(X, sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices.
+        Set of SPD/HPD matrices, at least 3D ndarray.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
@@ -459,7 +459,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices.
+        Set of SPD/HPD matrices, at least 3D ndarray.
     p : float
         Exponent, in [-1,+1]. For p=0, it returns
         :func:`pyriemann.utils.mean.mean_riemann`.
@@ -562,7 +562,7 @@ def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices.
+        Set of SPD/HPD matrices, at least 3D ndarray.
     p : float
         Exponent.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
@@ -614,7 +614,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices.
+        Set of SPD/HPD matrices, at least 3D ndarray.
     tol : float, default=10e-9
         Tolerance to stop the gradient descent.
     maxiter : int, default=50
@@ -683,7 +683,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices.
+        Set of SPD/HPD matrices, at least 3D ndarray.
     tol : float, default=1e-6
         Tolerance to stop the gradient descent.
     maxiter : int, default=50
@@ -744,7 +744,7 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices.
+        Set of SPD/HPD matrices, at least 3D ndarray.
     tol : float, default=10e-9
         Tolerance to stop the gradient descent.
     maxiter : int, default=50
@@ -824,7 +824,7 @@ def gmean(X, *args, metric="riemann", sample_weight=None, **kwargs):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of matrices.
+        Set of matrices, at least 3D ndarray.
     *args : tuple
         The arguments passed to the sub function.
     metric : string | callable, default="riemann"
@@ -912,7 +912,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices.
+        Set of SPD/HPD matrices, at least 3D ndarray.
     masks : list of n_matrices ndarray of shape (n, n_i), \
             with different n_i, such that n_i <= n
         Masks, defined as semi-orthogonal matrices. See [1]_.
@@ -993,7 +993,8 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
-        Set of SPD/HPD matrices, corrupted by symmetric NaN values [1]_.
+        Set of SPD/HPD matrices, corrupted by symmetric NaN values [1]_,
+        at least 3D ndarray.
     tol : float, default=10e-9
         Tolerance to stop the gradient descent.
     maxiter : int, default=100

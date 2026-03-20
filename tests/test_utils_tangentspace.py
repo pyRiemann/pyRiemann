@@ -3,7 +3,6 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
 from pytest import approx
 
-from conftest import _make_batch_spd, _make_single_spd
 from pyriemann.spatialfilters import Whitening
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.mean import mean_riemann
@@ -54,27 +53,30 @@ metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
         log_map_wasserstein
     ]
 )
-def test_maps_ndarray(fmap, get_mats):
+def test_maps_broadcasting(fmap, get_mats):
     """Test log and exp maps"""
-    n_matrices, n_channels = 6, 3
-    X = get_mats(n_matrices, n_channels, "spd")
-    Xt = fmap(X, np.eye(n_channels))
-    assert Xt.shape == (n_matrices, n_channels, n_channels)
+    n_dim5, n_dim4, n_matrices, n_channels = 2, 6, 5, 3
+    X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")
+    Cref = get_mats(1, n_channels, "spd")[0]
 
-    n_sets = 2
-    X_4d = np.asarray([X for _ in range(n_sets)])
-    Xt = fmap(X_4d, np.eye(n_channels))
-    assert Xt.shape == (n_sets, n_matrices, n_channels, n_channels)
+    # 2D array
+    F2 = fmap(X[0, 0, 0], Cref)
+    assert F2.shape == (n_channels, n_channels)
 
-    # Batch broadcast test
-    batch_shape = (4, 3)
-    X_batch = _make_batch_spd(batch_shape, n_dim=n_channels)
-    Cref = np.eye(n_channels)
-    Xt = fmap(X_batch, Cref)
-    assert Xt.shape == (*batch_shape, n_channels, n_channels)
-    np.testing.assert_allclose(
-        Xt[0, 0], fmap(X_batch[0, 0], Cref), atol=1e-10
-    )
+    # 3D array
+    F3 = fmap(X[0, 0], Cref)
+    assert F3.shape == (n_matrices, n_channels, n_channels)
+    assert F3[0] == approx(F2)
+
+    # 4D array
+    F4 = fmap(X[0], Cref)
+    assert F4.shape == (n_dim4, n_matrices, n_channels, n_channels)
+    assert F4[0, 0] == approx(F2)
+
+    # 5D array
+    F5 = fmap(X, Cref)
+    assert F5.shape == (n_dim5, n_dim4, n_matrices, n_channels, n_channels)
+    assert F5[0, 0, 0] == approx(F2)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -127,52 +129,45 @@ def test_map_euclid(n_dim1, n_dim2, kind, get_mats):
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_upper_and_unupper(kind, get_mats):
     """Test upper then unupper should be identity"""
-    n_matrices, n_channels = 7, 3
-    X = get_mats(n_matrices, n_channels, kind)
-    assert unupper(upper(X)) == approx(X)
+    n_dim5, n_dim4, n_matrices, n_channels = 7, 6, 5, 4
+    X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, kind)
 
-    n_sets = 2
-    X_4d = np.asarray([X for _ in range(n_sets)])
-    assert unupper(upper(X_4d)) == approx(X_4d)
+    # 2D array
+    U2 = unupper(upper(X[0, 0, 0]))
+    assert U2 == approx(X[0, 0, 0])
 
-    # Batch broadcast test
-    batch_shape = (5, 2)
-    n_vec = n_channels * (n_channels + 1) // 2
-    X_batch = _make_batch_spd(batch_shape, n_dim=n_channels)
-    T = upper(X_batch)
-    assert T.shape == (*batch_shape, n_vec)
-    np.testing.assert_allclose(T[0, 0], upper(X_batch[0, 0]), atol=1e-10)
-    result = unupper(T)
-    assert result.shape == (*batch_shape, n_channels, n_channels)
-    np.testing.assert_allclose(
-        result[0, 0], unupper(T[0, 0]), atol=1e-10
-    )
+    # 5D array
+    U5 = unupper(upper(X))
+    assert U5 == approx(X)
+    assert U5[0, 0, 0] == approx(U2)
 
 
 @pytest.mark.parametrize("metric", metrics)
-def test_tangent_space_ndarray(metric, get_mats):
+def test_tangent_space_broadcasting(metric, get_mats):
     """Test tangent space projection"""
-    n_matrices, n_channels = 6, 3
+    n_dim5, n_dim4, n_matrices, n_channels = 4, 6, 5, 3
     n_ts = (n_channels * (n_channels + 1)) // 2
-    X = get_mats(n_matrices, n_channels, "spd")
-    Xts = tangent_space(X, np.eye(n_channels), metric=metric)
-    assert Xts.shape == (n_matrices, n_ts)
+    X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")
+    Cref = get_mats(1, n_channels, "spd")[0]
 
-    n_sets = 2
-    X_4d = np.asarray([X for _ in range(n_sets)])
-    Xts = tangent_space(X_4d, np.eye(n_channels), metric=metric)
-    assert Xts.shape == (n_sets, n_matrices, n_ts)
+    # 2D array
+    T2 = tangent_space(X[0, 0, 0], Cref, metric=metric)
+    assert T2.shape == (n_ts,)
 
-    # Batch broadcast test
-    batch_shape = (3, 4)
-    X_batch = _make_batch_spd(batch_shape, n_dim=n_channels)
-    Cref = _make_single_spd(n_dim=n_channels)
-    result = tangent_space(X_batch, Cref, metric=metric)
-    assert result.shape == (*batch_shape, n_ts)
-    np.testing.assert_allclose(
-        result[0, 0], tangent_space(X_batch[0, 0], Cref, metric=metric),
-        atol=1e-10
-    )
+    # 3D array
+    T3 = tangent_space(X[0, 0], Cref, metric=metric)
+    assert T3.shape == (n_matrices, n_ts)
+    assert T3[0] == approx(T2)
+
+    # 4D array
+    T4 = tangent_space(X[0], Cref, metric=metric)
+    assert T4.shape == (n_dim4, n_matrices, n_ts)
+    assert T4[0, 0] == approx(T2)
+
+    # 5D array
+    T5 = tangent_space(X, Cref, metric=metric)
+    assert T5.shape == (n_dim5, n_dim4, n_matrices, n_ts)
+    assert T5[0, 0, 0] == approx(T2)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -187,30 +182,31 @@ def test_tangent_space_riemann_properties(kind, get_mats):
 
 
 @pytest.mark.parametrize("metric", metrics)
-def test_untangent_space_ndarray(metric, get_mats):
+def test_untangent_space_broadcasting(metric, get_mats):
     """Test untangent space projection"""
-    n_matrices, n_channels = 10, 3
+    n_dim5, n_dim4, n_matrices, n_channels = 4, 6, 10, 3
     n_ts = (n_channels * (n_channels + 1)) // 2
-    T = get_mats(n_matrices, [n_ts], "real")
-    X = untangent_space(T, np.eye(n_channels), metric=metric)
-    assert X.shape == (n_matrices, n_channels, n_channels)
+    X = get_mats(n_dim5, [n_dim4, n_matrices, n_ts], "real")
+    Cref = get_mats(1, n_channels, "spd")[0]
 
-    n_sets = 2
-    T_4d = np.asarray([T for _ in range(n_sets)])
-    X = untangent_space(T_4d, np.eye(n_channels), metric=metric)
-    assert X.shape == (n_sets, n_matrices, n_channels, n_channels)
+    # 2D array
+    U2 = untangent_space(X[0, 0, 0], Cref, metric=metric)
+    assert U2.shape == (n_channels, n_channels)
 
-    # Batch broadcast test
-    batch_shape = (4, 2)
-    X_batch = _make_batch_spd(batch_shape, n_dim=n_channels)
-    Cref = _make_single_spd(n_dim=n_channels)
-    T_batch = tangent_space(X_batch, Cref, metric=metric)
-    result = untangent_space(T_batch, Cref, metric=metric)
-    assert result.shape == (*batch_shape, n_channels, n_channels)
-    np.testing.assert_allclose(
-        result[0, 0], untangent_space(T_batch[0, 0], Cref, metric=metric),
-        atol=1e-10
-    )
+    # 3D array
+    U3 = untangent_space(X[0, 0], Cref, metric=metric)
+    assert U3.shape == (n_matrices, n_channels, n_channels)
+    assert U3[0] == approx(U2)
+
+    # 4D array
+    U4 = untangent_space(X[0], Cref, metric=metric)
+    assert U4.shape == (n_dim4, n_matrices, n_channels, n_channels)
+    assert U4[0, 0] == approx(U2)
+
+    # 5D array
+    U5 = untangent_space(X, Cref, metric=metric)
+    assert U5.shape == (n_dim5, n_dim4, n_matrices, n_channels, n_channels)
+    assert U5[0, 0, 0] == approx(U2)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -418,32 +414,30 @@ def test_norm_properties(kindX, kindC, metric, get_mats):
     transport_logeuclid,
     transport_riemann,
 ])
-def test_transport_ndarray(ftransport, get_mats):
-    n_matrices, n_channels = 7, 3
-    X = get_mats(n_matrices, n_channels, "herm")
+def test_transport_broadcasting(ftransport, get_mats):
+    n_dim5, n_dim4, n_matrices, n_channels = 2, 4, 7, 3
+    X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "herm")
     A, B = get_mats(2, n_channels, "hpd")
 
-    X_tr = ftransport(X, A, B)
-    assert X_tr.shape == X.shape
 
-    n_sets = 2
-    X_4d = np.asarray([X for _ in range(n_sets)])
-    X_tr = ftransport(X_4d, A, B)
-    assert X_tr.shape == X_4d.shape
+    # 2D array
+    T2 = ftransport(X[0, 0, 0], A, B)
+    assert T2.shape == (n_channels, n_channels)
 
-    # Batch broadcast test
-    batch_shape = (2, 5)
-    n_dim = n_channels
-    X_batch = _make_batch_spd(batch_shape, n_dim=n_dim, seed=42)
-    A_batch = _make_batch_spd(batch_shape, n_dim=n_dim, seed=7)
-    B_batch = _make_batch_spd(batch_shape, n_dim=n_dim, seed=13)
-    result = ftransport(X_batch, A_batch, B_batch)
-    assert result.shape == (*batch_shape, n_dim, n_dim)
-    np.testing.assert_allclose(
-        result[0, 0],
-        ftransport(X_batch[0, 0], A_batch[0, 0], B_batch[0, 0]),
-        atol=1e-10
-    )
+    # 3D array
+    T3 = ftransport(X[0, 0], A, B)
+    assert T3.shape == (n_matrices, n_channels, n_channels)
+    assert T3[0] == approx(T2)
+
+    # 4D array
+    T4 = ftransport(X[0], A, B)
+    assert T4.shape == (n_dim4, n_matrices, n_channels, n_channels)
+    assert T4[0, 0] == approx(T2)
+
+    # 5D array
+    T5 = ftransport(X, A, B)
+    assert T5.shape == (n_dim5, n_dim4, n_matrices, n_channels, n_channels)
+    assert T5[0, 0, 0] == approx(T2)
 
 
 @pytest.mark.parametrize("kindX, kindAB", [("sym", "spd"), ("herm", "hpd")])
