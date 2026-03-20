@@ -203,7 +203,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         cov = init
 
     for _ in range(n_iter_max):
-        dist2 = distance_mahalanobis(X, cov, squared=True)  # (..., n_times)
+        dist2 = distance_mahalanobis(X, cov, squared=True)
 
         Xw = np.sqrt(weight_func(dist2))[..., np.newaxis, :] * X
         cov_new = Xw @ ctranspose(Xw) / n_times
@@ -338,13 +338,12 @@ def covariance_scm(X, *, assume_centered=False):
     """  # noqa
     n_times = X.shape[-1]
 
-    if not assume_centered:
+    if assume_centered:
+        denom = n_times - 1
+    else:
         X = X - np.mean(X, axis=-1, keepdims=True)
-    # Biased (MLE) estimator, dividing by n_times as in sklearn's
-    # empirical_covariance (not n_times - 1).
-    # Manual centering and matrix multiply replace np.cov(X, bias=1)
-    # to support batch dimensions and complex data.
-    cov = X @ ctranspose(X) / n_times
+        denom = n_times
+    cov = X @ ctranspose(X) / denom
 
     return cov
 
@@ -366,7 +365,11 @@ cov_est_functions = {
 }
 
 
-_BATCH_ESTIMATORS = {covariance_scm, covariance_sch, _hub, _stu, _tyl}
+def _check_cov_estimator(estimator):
+    est = check_function(estimator, cov_est_functions)
+    if est not in [_hub, covariance_sch, covariance_scm, _stu, _tyl]:
+        est = _vectorize_nd()(est)
+    return est
 
 
 def covariances(X, estimator="cov", **kwds):
@@ -424,9 +427,7 @@ def covariances(X, estimator="cov", **kwds):
         R. Abrahamsson, Y. Selen and P. Stoica. 2007 IEEE International
         Conference on Acoustics, Speech and Signal Processing, Volume 2, 2007.
     """  # noqa
-    est = check_function(estimator, cov_est_functions)
-    if est not in _BATCH_ESTIMATORS:
-        est = _vectorize_nd()(est)
+    est = _check_cov_estimator(estimator)
     return est(X, **kwds)
 
 
@@ -451,20 +452,18 @@ def covariances_EP(X, P, estimator="cov", **kwds):
             n_channels + n_channels_proto)
         Covariance matrices.
     """
-    est = check_function(estimator, cov_est_functions)
-    if est not in _BATCH_ESTIMATORS:
-        est = _vectorize_nd()(est)
+    est = _check_cov_estimator(estimator)
     original_shape = X.shape
-    n_channels_proto, n_times_p = P.shape
     n_times = original_shape[-1]
+    n_channels_proto, n_times_p = P.shape
     if n_times_p != n_times:
         raise ValueError(
             f"X and P do not have the same n_times: {n_times} and {n_times_p}")
     P_broadcast = np.broadcast_to(
         P, (*original_shape[:-2], n_channels_proto, n_times)
     )
-    XP = np.concatenate((P_broadcast, X), axis=-2)
-    return est(XP, **kwds)
+    PX = np.concatenate((P_broadcast, X), axis=-2)
+    return est(PX, **kwds)
 
 
 def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
@@ -500,9 +499,7 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
     if alpha <= 0:
         raise ValueError(
             f"Parameter alpha must be strictly positive (Got {alpha})")
-    est = check_function(estimator, cov_est_functions)
-    if est not in _BATCH_ESTIMATORS:
-        est = _vectorize_nd()(est)
+    est = _check_cov_estimator(estimator)
     original_shape = X.shape
     n_channels, n_times = original_shape[-2], original_shape[-1]
 
@@ -553,9 +550,7 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
     covmats : ndarray, shape (..., n_channels, n_channels)
         Block diagonal covariance matrices.
     """
-    est = check_function(estimator, cov_est_functions)
-    if est not in _BATCH_ESTIMATORS:
-        est = _vectorize_nd()(est)
+    est = _check_cov_estimator(estimator)
     original_shape = X.shape
     n_channels = original_shape[-2]
 
@@ -642,7 +637,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     n_windows = int((n_times - window) / step + 1)
     win = np.hanning(window)
 
-    # Sliding window view handles any batch dims:
+    # Sliding window view handles any batch dims
     # (..., n_channels, n_times) -> (..., n_channels, n_windows, window)
     Xs = np.lib.stride_tricks.sliding_window_view(
         X, window, axis=-1
@@ -673,7 +668,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
                           stacklevel=2)
         freqs = None
 
-    # Cross-spectral matrix via einsum over windows:
+    # Cross-spectral matrix via einsum over windows
     # (..., n_channels, n_channels, n_freqs)
     S = np.einsum('...cwf,...dwf->...cdf', fdata.conj(), fdata)
     S /= n_windows * np.linalg.norm(win)**2
@@ -762,7 +757,7 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
 
     Returns
     -------
-    C : ndarray, shape (n_channels, n_channels, n_freqs)
+    C : ndarray, shape (..., n_channels, n_channels, n_freqs)
         Squared coherence matrices, for each frequency bin.
     freqs : ndarray, shape (n_freqs,)
         Frequencies associated to coherence.

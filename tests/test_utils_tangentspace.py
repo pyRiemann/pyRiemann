@@ -419,7 +419,6 @@ def test_transport_broadcasting(ftransport, get_mats):
     X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "herm")
     A, B = get_mats(2, n_channels, "hpd")
 
-
     # 2D array
     T2 = ftransport(X[0, 0, 0], A, B)
     assert T2.shape == (n_channels, n_channels)
