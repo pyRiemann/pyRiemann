@@ -205,20 +205,13 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     for _ in range(n_iter_max):
         dist2 = distance_mahalanobis(X, cov, squared=True)
 
-        Xw = np.sqrt(weight_func(dist2))[..., np.newaxis, :] * X
+        Xw = np.sqrt(weight_func(dist2)) * X
         cov_new = Xw @ ctranspose(Xw) / n_times
 
-        norm_delta = np.linalg.norm(
-            cov_new - cov, ord="fro", axis=(-2, -1)
-        )
-        norm_cov = np.linalg.norm(cov, ord="fro", axis=(-2, -1))
-
-        # Freeze converged elements to match per-element behavior
-        converged = norm_delta / np.where(norm_cov == 0, 1.0, norm_cov) <= tol
-        cov = np.where(
-            converged[..., np.newaxis, np.newaxis], cov, cov_new
-        )
-        if np.all(converged):
+        norm_delta = np.linalg.norm(cov_new - cov, ord="fro")
+        norm_cov = np.linalg.norm(cov, ord="fro")
+        cov = cov_new
+        if (norm_delta / norm_cov) <= tol:
             break
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
@@ -364,7 +357,7 @@ cov_est_functions = {
 
 def _check_cov_estimator(estimator):
     est = check_function(estimator, cov_est_functions)
-    if est not in [_hub, covariance_sch, covariance_scm, _stu, _tyl]:
+    if est not in [covariance_sch, covariance_scm]:
         est = _vectorize_nd()(est)
     return est
 
