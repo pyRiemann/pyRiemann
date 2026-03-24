@@ -303,8 +303,8 @@ def nearest_sym_pos_def(X, reg=1e-6):
 def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
     r"""First divided difference of a matrix function.
 
-    First divided difference of a matrix function applied to the eigenvalues
-    of a symmetric matrix. The first divided difference is defined as [1]_:
+    The first divided difference of a matrix function applied to the
+    eigenvalues :math:`\mathbf{d}` of a symmetric matrix is [1]_:
 
     .. math::
        [FDD(d)]_{i,j} =
@@ -315,17 +315,16 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
            & d_i = d_j
            \end{cases}
 
-
     Parameters
     ----------
     d : ndarray, shape (..., n)
-        Eigenvalues of a symmetric matrix.
+        Eigenvalues of symmetric matrices.
     fct : callable
-        Function to apply to eigenvalues of d. Has to be defined for all
-        possible eigenvalues of d.
+        Function to apply to eigenvalues d. Has to be defined for all
+        possible eigenvalues d.
     fctder : callable
         Derivative of the function to apply. Has to be defined for all
-        possible eigenvalues of d.
+        possible eigenvalues d.
     atol : float, default=1e-12
         Absolute tolerance for equality of eigenvalues.
     rtol : float, default=1e-12

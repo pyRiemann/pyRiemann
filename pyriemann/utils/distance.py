@@ -965,7 +965,7 @@ def distance_mahalanobis(X, cov, mean=None, squared=False):
 
     Parameters
     ----------
-    X : ndarray, shape (..., n, n_vectors)
+    X : ndarray, shape (..., n, m)
         Vectors.
     cov : ndarray, shape (..., n, n)
         Covariance matrix of the multivariate Gaussian distribution.
@@ -979,7 +979,7 @@ def distance_mahalanobis(X, cov, mean=None, squared=False):
 
     Returns
     -------
-    d : ndarray, shape (..., n_vectors)
+    d : ndarray, shape (..., m)
         Mahalanobis distances.
 
     Notes

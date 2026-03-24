@@ -1,5 +1,5 @@
-import warnings
 from functools import wraps
+import warnings
 
 import numpy as np
 from scipy.stats import chi2
@@ -278,7 +278,7 @@ def covariance_sch(X):
     var_outer = var[..., :, np.newaxis] * var[..., np.newaxis, :]
     var_R *= n_times / ((n_times - 1) ** 3 * var_outer)
 
-    # Zero out diagonal (batch-safe replacement for np.diag(np.diag(...)))
+    # Zero out diagonal
     diag_idx = np.arange(R.shape[-1])
     R[..., diag_idx, diag_idx] = 0
     var_R[..., diag_idx, diag_idx] = 0
@@ -292,7 +292,7 @@ def covariance_sch(X):
 
     sigma = (1. - gamma) * (n_times / (n_times - 1.)) * C_scm
 
-    # Batch-safe diagonal matrix from C_scm diagonal
+    # diagonal matrix from C_scm diagonal
     diag_C = np.diagonal(C_scm, axis1=-2, axis2=-1)
     shrinkage_diag = np.zeros_like(C_scm)
     shrinkage_diag[..., diag_idx, diag_idx] = diag_C
@@ -304,7 +304,8 @@ def covariance_scm(X, *, assume_centered=False):
     """Sample covariance estimator.
 
     Sample covariance estimator, re-implementing ``empirical_covariance`` of
-    scikit-learn [1]_, but supporting real and complex-valued data.
+    scikit-learn [1]_, but supporting real and complex-valued data, and
+    broadcasting.
 
     Parameters
     ----------
