@@ -433,6 +433,15 @@ def test_mean_riemann_same_eigenvecs(kind, get_mats_params):
     assert M == approx(Mtrue)
 
 
+def test_mean_riemann_check_raise():
+    """Riemannian mean must crash when the matrices are not SPD"""
+    n_matrices, n_channels = 10, 3
+    X = 2 * np.ones((n_matrices, n_channels, n_channels))
+    with pytest.warns(RuntimeWarning):
+        with pytest.raises(ValueError):
+            mean_riemann(X)
+
+
 @pytest.mark.parametrize("init", [True, False])
 def test_mean_masked_riemann(init, get_mats, get_masks):
     n_matrices, n_channels = 5, 4
