@@ -33,6 +33,8 @@ v0.11.dev
 
 - Add functions to compute inner products. :pr:`428` by :user:`qbarthelemy`
 
+- Add broadcast compatibility for utility functions, enabling batched SPD/HPD matrix operations. Includes broadcast-compatible Mahalanobis distance. :pr:`426` by :user:`bruAristimunha`
+
 v0.10 (January 2026)
 --------------------
 

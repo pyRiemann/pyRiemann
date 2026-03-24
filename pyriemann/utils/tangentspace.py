@@ -75,7 +75,7 @@ def exp_map_logchol(X, Cref):
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
     Cref_chol = np.linalg.cholesky(Cref)
-    Cref_invchol = np.linalg.solve(Cref_chol, np.eye(Cref.shape[0]))
+    Cref_invchol = np.linalg.solve(Cref_chol, np.eye(Cref.shape[-1]))
 
     tri0, tri1 = np.tril_indices(X.shape[-1], -1)
     diag0, diag1 = np.diag_indices(X.shape[-1])
@@ -226,12 +226,13 @@ def exp_map_wasserstein(X, Cref):
         pp. 137–179.
     """
     d, V = np.linalg.eigh(Cref)
-    C = 1 / (d[:, None] + d[None, :])
+    Vh = ctranspose(V)
+    C = 1 / (d[..., :, np.newaxis] + d[..., np.newaxis, :])
 
-    X_rotated = V.conj().T @ X @ V
+    X_rotated = Vh @ X @ V
     X_tmp = C * X_rotated
-    X_tmp = X_tmp @ np.diag(d) @ X_tmp
-    X_tmp = V @ X_tmp @ V.conj().T
+    X_tmp = X_tmp @ (d[..., :, np.newaxis] * X_tmp)
+    X_tmp = V @ X_tmp @ Vh
 
     return Cref + X + X_tmp
 
@@ -996,7 +997,7 @@ def transport_logchol(X, A, B):
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
     A_chol, B_chol = np.linalg.cholesky(A), np.linalg.cholesky(B)
-    A_invchol = np.linalg.solve(A_chol, np.eye(A.shape[0]))
+    A_invchol = np.linalg.solve(A_chol, np.eye(A.shape[-1]))
 
     tri0, tri1 = np.tril_indices(X.shape[-1], -1)
     diag0, diag1 = np.diag_indices(X.shape[-1])
