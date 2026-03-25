@@ -129,7 +129,7 @@ def test_funm_broadcasting(funm, get_mats):
 def test_funm_properties(get_mats, kind):
     n_matrices, n_dim = 10, 3
     X = get_mats(n_matrices, n_dim, kind)
-    invX = np.linalg.inv(X)
+    invX = np.linalg.solve(X, np.eye(n_dim))
 
     # expm and logm
     eX, lX = expm(X), logm(X)

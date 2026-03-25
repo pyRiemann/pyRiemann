@@ -279,7 +279,9 @@ def test_mean_property_invariance_inversion(kind, mean, get_mats):
     """Test invariance under inversion, also called self-duality"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
-    assert mean(X) == approx(np.linalg.inv(mean(np.linalg.inv(X))))
+    X_inv = np.linalg.solve(X, np.eye(n_channels))
+    M_inv = mean(X_inv)
+    assert mean(X) == approx(np.linalg.solve(M_inv, np.eye(n_channels)))
 
 
 @pytest.mark.parametrize("kind, kindQ", [("spd", "orth"), ("hpd", "unit")])
@@ -365,15 +367,21 @@ def test_mean_logeuclid_scalars(n_values, rndstate):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_mean_power(kind, get_mats, get_weights):
+def test_mean_power_equivalence(kind, get_mats, get_weights):
     n_matrices, n_channels = 3, 3
     X = get_mats(n_matrices, n_channels, kind)
     assert mean_power(X, 1) == approx(mean_euclid(X))
     assert mean_power(X, 0) == approx(mean_riemann(X))
     assert mean_power(X, -1) == approx(mean_harmonic(X))
 
+
+@pytest.mark.parametrize("p", [-0.4, 0.7])
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_mean_power(p, kind, get_mats, get_weights):
+    n_matrices, n_channels = 3, 3
+    X = get_mats(n_matrices, n_channels, kind)
     weights = get_weights(n_matrices)
-    mean_power(X, 0.42, sample_weight=weights)
+    mean_power(X, p, sample_weight=weights)
 
 
 def test_mean_power_errors(get_mats):
@@ -419,7 +427,7 @@ def test_mean_riemann_solution(kind, get_mats):
 
     # Eq(1.2) in [Lim2012]
     M12 = sqrtm(M)
-    assert np.sum(logm(M12 @ np.linalg.inv(X) @ M12), axis=0) == approx(Zero)
+    assert np.sum(logm(M12 @ np.linalg.solve(X, M12)), axis=0) == approx(Zero)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])

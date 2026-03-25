@@ -74,7 +74,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
         warnings.warn("Convergence not reached", stacklevel=2)
 
     J = np.einsum("a,abc->bc", sample_weight, logm(B @ X @ B.conj().T))
-    A = np.linalg.inv(B)
+    A = np.linalg.solve(B, eye_n)
     M = A @ expm(J) @ A.conj().T
     return M
 
@@ -243,8 +243,10 @@ def mean_harmonic(X, sample_weight=None, **kwargs):
     --------
     gmean
     """
-    T = mean_euclid(np.linalg.inv(X), sample_weight=sample_weight)
-    M = np.linalg.inv(T)
+    eye_n = np.eye(X.shape[-1])
+    X_inv = np.linalg.solve(X, eye_n)
+    M_inv = mean_euclid(X_inv, sample_weight=sample_weight)
+    M = np.linalg.solve(M_inv, eye_n)
     return M
 
 
@@ -385,11 +387,12 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         M = mean_euclid(X, sample_weight=sample_weight)
     else:
         M = check_init(init, n)
+    eye_n = np.eye(n)
 
     for _ in range(maxiter):
-        invX = np.linalg.inv(0.5 * X + 0.5 * M)
-        J = np.einsum("a,abc->bc", sample_weight, invX)
-        Mnew = np.linalg.inv(J)
+        X_inv = np.linalg.solve(0.5 * X + 0.5 * M, eye_n)
+        J = np.einsum("a,abc->bc", sample_weight, X_inv)
+        Mnew = np.linalg.solve(J, eye_n)
 
         crit = np.linalg.norm(Mnew - M, ord="fro")
         M = Mnew
@@ -539,7 +542,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
 
     M = ctranspose(K) @ K
     if p > 0:
-        M = np.linalg.inv(M)
+        M = np.linalg.solve(M, eye_n)
 
     return M
 

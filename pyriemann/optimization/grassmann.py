@@ -44,10 +44,11 @@ def _grad(Q, X, Y, weights, metric="euclid"):
         return np.einsum("a,abc->bc", weights, -4 * (X - Q @ Y @ Q.T) @ Q @ Y)
 
     elif metric == "riemann":
-        M = np.linalg.inv(X) @ Q @ Y @ Q.T
+        M = np.linalg.solve(X, Q) @ Y @ Q.T
         eigvals, eigvecs = np.linalg.eig(M)
         logeigvals = np.expand_dims(np.log(eigvals), -2)
-        logM = (eigvecs * logeigvals) @ np.linalg.inv(eigvecs)
+        inveigvecs = np.linalg.solve(eigvecs, np.eye(eigvecs.shape[-1]))
+        logM = (eigvecs * logeigvals) @ inveigvecs
         return np.einsum("a,abc->bc", weights, 4 * logM @ Q)
 
     else:
