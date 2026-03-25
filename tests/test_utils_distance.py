@@ -191,7 +191,9 @@ def test_distance_property_triangle_inequality(kind, dist, get_mats):
 def test_distance_property_invariance_under_inversion(kind, dist, get_mats):
     n_channels = 4
     A, B = get_mats(2, n_channels, kind)
-    assert dist(A, B) == approx(dist(np.linalg.inv(A), np.linalg.inv(B)))
+    A_inv = np.linalg.solve(A, np.eye(n_channels))
+    B_inv = np.linalg.solve(B, np.eye(n_channels))
+    assert dist(A, B) == approx(dist(A_inv, B_inv))
 
 
 @pytest.mark.parametrize("kind, kindQ", [("spd", "orth"), ("hpd", "unit")])
@@ -289,14 +291,20 @@ def test_distance_poweuclid(kind, get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_distance_riemann_implementation(kind, get_mats):
-    """Test equivalence with Eq(6.13) in [Bhatia2007]"""
+def test_distance_riemann_implementations(kind, get_mats):
     n_channels = 6
     A, B = get_mats(2, n_channels, kind)
+    d = distance_riemann(A, B)
 
+    # Eq(6.13) in [Bhatia2007]
     Bm12 = invsqrtm(B)
-    d = np.linalg.norm(logm(Bm12 @ A @ Bm12), ord="fro")
-    assert distance_riemann(A, B) == approx(d)
+    d1 = np.linalg.norm(logm(Bm12 @ A @ Bm12), ord="fro")
+    assert d1 == approx(d)
+
+    # Eq(2.9) in [Moakher2005]: middle part is incorrect
+    # https://math.stackexchange.com/a/4137208
+    d2 = np.linalg.norm(logm(np.linalg.solve(A, B)), ord="fro")
+    assert not d2 == d
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
