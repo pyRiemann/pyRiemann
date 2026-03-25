@@ -577,6 +577,42 @@ def distance_wasserstein(A, B, squared=False):
     return d2 if squared else np.sqrt(d2)
 
 
+def distance_diageuclid(A, B, squared=False):
+    r"""Diagonal-Euclidean distance between SPD/HPD matrices.
+
+    The diagonal-Euclidean distance between two SPD/HPD matrices
+    :math:`\mathbf{A}` and :math:`\mathbf{B}` is::
+
+    .. math::
+        d(\mathbf{A},\mathbf{B}) = \left\|
+        \operatorname{diag}(\mathbf{A}) -
+        \operatorname{diag}(\mathbf{B}) \right\|_2
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, m)
+        First matrices, at least 2D ndarray.
+    B : ndarray, shape (..., n, m)
+        Second matrices, same dimensions as A.
+    squared : bool, default=False
+        Return squared distance.
+
+    Returns
+    -------
+    d : float or ndarray, shape (...,)
+        Diagonal-Euclidean distance between A and B.
+
+    See Also
+    --------
+    distance
+    """
+    _check_inputs(A, B)
+    diag_A = np.diagonal(A, axis1=-2, axis2=-1)
+    diag_B = np.diagonal(B, axis1=-2, axis2=-1)
+    d = np.linalg.norm(diag_A - diag_B, axis=-1)
+    return d ** 2 if squared else d
+
+
 distance_functions = {
     "chol": distance_chol,
     "euclid": distance_euclid,
@@ -590,6 +626,7 @@ distance_functions = {
     "riemann": distance_riemann,
     "thompson": distance_thompson,
     "wasserstein": distance_wasserstein,
+    "diageuclid": distance_diageuclid,
 }
 
 
@@ -609,7 +646,7 @@ def distance(A, B, metric="riemann", squared=False):
         Metric for distance, can be:
         "chol", "euclid", "harmonic", "kullback", "kullback_right",
         "kullback_sym", "logchol", "logdet", "logeuclid", "riemann",
-        "thompson", "wasserstein",
+        "thompson", "wasserstein", "diageuclid",
         or a callable function.
     squared : bool, default=False
         Return squared distance.
@@ -635,6 +672,7 @@ def distance(A, B, metric="riemann", squared=False):
     distance_riemann
     distance_thompson
     distance_wasserstein
+    distance_diageuclid
 
     References
     ----------
@@ -802,6 +840,42 @@ def _pairwise_distance_logchol(X, Y=None, squared=False):
     return dist if squared else np.sqrt(dist)
 
 
+def _pairwise_distance_diageuclid(X, Y=None, squared=False):
+    """Pairwise diagonal-Euclidean distance matrix.
+
+    Compute the matrix of diagonal-Euclidean distances between pairs of
+    elements of X and Y.
+
+    Parameters
+    ----------
+    X : ndarray, shape (n_matrices_X, n, n)
+        First set of matrices.
+    Y : None | ndarray, shape (n_matrices_Y, n, n), default=None
+        Second set of matrices. If None, Y is set to X.
+    squared : bool, default=False
+        Return squared distances.
+
+    Returns
+    -------
+    dist : ndarray, shape (n_matrices_X, n_matrices_X) or (n_matrices_X, \
+            n_matrices_Y)
+        Diagonal-Euclidean distances between pairs of elements of X if
+        Y is None, or between elements of X and Y.
+
+    See Also
+    --------
+    pairwise_distance
+    distance_diageuclid
+    """
+    X_diag = np.diagonal(X, axis1=-2, axis2=-1)
+    if Y is None:
+        Y_diag = None
+    else:
+        Y_diag = np.diagonal(Y, axis1=-2, axis2=-1)
+
+    return _pairwise_distance_euclid(X_diag, Y_diag, squared=squared)
+
+
 def _pairwise_distance_logeuclid(X, Y=None, squared=False):
     """Pairwise log-Euclidean distance matrix.
 
@@ -925,6 +999,8 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
         return _pairwise_distance_logeuclid(X, Y=Y, squared=squared)
     elif metric == "riemann":
         return _pairwise_distance_riemann(X, Y=Y, squared=squared)
+    elif metric == "diageuclid":
+        return _pairwise_distance_diageuclid(X, Y=Y, squared=squared)
 
     n_matrices_X, _, _ = X.shape
 

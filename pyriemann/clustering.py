@@ -489,7 +489,7 @@ class MeanShift(SpdClustMixin, BaseEstimator):
             if np.linalg.norm(meanshift) <= self.tol:
                 break
         else:
-            warnings.warn("Convergence not reached")
+            warnings.warn("Convergence not reached", stacklevel=2)
 
         return mean
 
@@ -839,7 +839,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
                 break
             crit = crit_new
         else:
-            warnings.warn("EM convergence not reached")
+            warnings.warn("EM convergence not reached", stacklevel=2)
 
         return self
 
@@ -1116,11 +1116,11 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
 
         Xm = gmean(
             X[y == self.pos_label],
-            metric=self.metric,
+            metric=self._mdm._metric_mean,
             sample_weight=sample_weight[y == self.pos_label],
         )
         self._mdm.covmeans_[0] = geodesic(
-            self._mdm.covmeans_[0], Xm, alpha, metric=self.metric
+            self._mdm.covmeans_[0], Xm, alpha, metric=self._mdm._metric_mean
         )
 
         d = np.squeeze(np.log(self._mdm.transform(Xm[np.newaxis, ...])))
@@ -1566,7 +1566,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
                 method=self.method_combination,
                 axis=0,
             )
-        elif hasattr(self.method_combination, '__call__'):
+        elif callable(self.method_combination):
             proba = self.method_combination(probas, axis=0)
         else:
             raise TypeError(

@@ -124,7 +124,9 @@ rp.fit(rp_covs[train_set])
 # Riemannian potato field (RPF) [1]_ combines several potatoes of low
 # dimensionality, each one designed to capture a different kind of artifact
 # typically affecting some specific spatial area (i.e. subsets of channels)
-# and/or specific frequency bands.
+# and/or specific frequency bands. RPF is further improved in [3]_ by using
+# different distance metrics for each potato, which are suited for detecting
+# different artifact types.
 #
 # BCI or NFB applications aim at the modulation specific brain oscillations, it
 # is thus advisable to exclude such frequencies from potatoes so as to prevent
@@ -147,7 +149,14 @@ rpf_config = {
         "low_freq": 0.5,
         "high_freq": 3.}
 }
-rpf = PotatoField(metric="riemann", z_threshold=z_th, p_threshold=p_th,
+
+# Define metrics for each potato
+metrics = [
+    "riemann",
+    {"mean": "riemann", "distance": "diageuclid"},  # for Myogenic Artifacts
+    "riemann",
+]
+rpf = PotatoField(metric=metrics, z_threshold=z_th, p_threshold=p_th,
                   n_potatoes=len(rpf_config))
 
 # EEG processing for RPF
@@ -302,3 +311,7 @@ HTML(potato.to_jshtml(fps=5, default_mode="loop"))
 #    <https://hal.archives-ouvertes.fr/hal-00781701>`_
 #    A. Barachant, A Andreev, and M. Congedo. TOBI Workshop lV, Jan 2013, Sion,
 #    Switzerland. pp.19-20.
+# .. [3] `Improved Riemannian potato field: an Automatic Artifact Rejection
+#    Method for EEG <https://arxiv.org/pdf/2509.09264>`_
+#    D. Hajhassani, Q. Barthélemy, J. Mattout & M. Congedo. Biomedical Signal
+#    Processing and Control, Volume 112, Part A, 2026.
