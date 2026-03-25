@@ -237,8 +237,6 @@ def clt_fitpredict(clust, X, n_clusters=None):
     if hasattr(clt, "random_state"):
         clt.set_params(**{"random_state": 42})
     pred = clt.fit(X).predict(X)
-    if hasattr(clt, "random_state"):
-        clt.set_params(**{"random_state": 42})
     pred2 = clt.fit_predict(X)
     assert_array_equal(pred, pred2)
 
