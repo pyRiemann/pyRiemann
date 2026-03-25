@@ -46,19 +46,30 @@ def assert_geodesics(metric, A, B, M):
         geodesic_wasserstein,
     ],
 )
-def test_geodesic_ndarray(geo, get_mats):
-    n_matrices, n_channels = 5, 3
-    A = get_mats(n_matrices, n_channels, "spd")
-    B = get_mats(n_matrices, n_channels, "spd")
+def test_geodesic_broadcasting(geo, get_mats):
+    n_dim5, n_dim4, n_matrices, n_channels = 2, 6, 5, 3
+    A = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")
+    B = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")
+    alpha = 0.3
 
-    assert geo(A[0], B[0], .3).shape == A[0].shape  # 2D arrays
+    # 2D array
+    G2 = geo(A[0, 0, 0], B[0, 0, 0], alpha)
+    assert G2.shape == (n_channels, n_channels)
 
-    assert geo(A, B, .2).shape == A.shape  # 3D arrays
+    # 3D array
+    G3 = geo(A[0, 0], B[0, 0], alpha)
+    assert G3.shape == (n_matrices, n_channels, n_channels)
+    assert G3[0] == approx(G2)
 
-    n_sets = 4
-    C = np.asarray([A for _ in range(n_sets)])
-    D = np.asarray([B for _ in range(n_sets)])
-    assert geo(C, D, .7).shape == C.shape  # 4D arrays
+    # 4D array
+    G4 = geo(A[0], B[0], alpha)
+    assert G4.shape == (n_dim4, n_matrices, n_channels, n_channels)
+    assert G4[0, 0] == approx(G2)
+
+    # 5D array
+    G5 = geo(A, B, alpha)
+    assert G5.shape == (n_dim5, n_dim4, n_matrices, n_channels, n_channels)
+    assert G5[0, 0, 0] == approx(G2)
 
 
 @pytest.mark.parametrize("metric", metrics)
@@ -132,8 +143,11 @@ def test_geodesic_property_invariance_inversion(kind, gfun,
     A, B = get_mats(2, n_channels, kind)
     alpha = rndstate.uniform(0.01, 0.99)
     G = gfun(A, B, alpha)
-    Ginv = np.linalg.inv(gfun(np.linalg.inv(A), np.linalg.inv(B), alpha))
-    assert G == approx(Ginv)
+    eye_n = np.eye(n_channels)
+    A_inv = np.linalg.solve(A, eye_n)
+    B_inv = np.linalg.solve(B, eye_n)
+    G_inv = np.linalg.solve(gfun(A_inv, B_inv, alpha), eye_n)
+    assert G == approx(G_inv)
 
 
 @pytest.mark.parametrize("kind, kindW", [("spd", "inv"), ("hpd", "cinv")])

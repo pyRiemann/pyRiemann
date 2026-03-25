@@ -134,7 +134,12 @@ def distance_harmonic(A, B, squared=False):
     --------
     distance
     """
-    return distance_euclid(np.linalg.inv(A), np.linalg.inv(B), squared=squared)
+    eye_n = np.eye(A.shape[-1])
+    return distance_euclid(
+        np.linalg.solve(A, eye_n),
+        np.linalg.solve(B, eye_n),
+        squared=squared,
+    )
 
 
 def distance_kullback(A, B, squared=False):
@@ -737,12 +742,14 @@ def _pairwise_distance_harmonic(X, Y=None, squared=False):
     pairwise_distance
     distance_harmonic
     """
+    eye_n = np.eye(X.shape[-1])
     if Y is None:
-        invY = None
+        Y_inv = None
     else:
-        invY = np.linalg.inv(Y)
+        Y_inv = np.linalg.solve(Y, eye_n)
 
-    return _pairwise_distance_euclid(np.linalg.inv(X), invY, squared=squared)
+    X_inv = np.linalg.solve(X, eye_n)
+    return _pairwise_distance_euclid(X_inv, Y_inv, squared=squared)
 
 
 def _pairwise_distance_logchol(X, Y=None, squared=False):
@@ -965,11 +972,11 @@ def distance_mahalanobis(X, cov, mean=None, squared=False):
 
     Parameters
     ----------
-    X : ndarray, shape (n, n_vectors)
+    X : ndarray, shape (..., n, m)
         Vectors.
-    cov : ndarray, shape (n, n)
+    cov : ndarray, shape (..., n, n)
         Covariance matrix of the multivariate Gaussian distribution.
-    mean : None | ndarray, shape (n, 1), default=None
+    mean : None | ndarray, shape (..., n, 1), default=None
         Mean vector of the multivariate Gaussian distribution.
         If None, distribution is considered as centered.
     squared : bool, default=False
@@ -979,7 +986,7 @@ def distance_mahalanobis(X, cov, mean=None, squared=False):
 
     Returns
     -------
-    d : ndarray, shape (n_vectors,)
+    d : ndarray, shape (..., m)
         Mahalanobis distances.
 
     Notes
@@ -991,8 +998,8 @@ def distance_mahalanobis(X, cov, mean=None, squared=False):
     .. [1] https://docs.scipy.org/doc/scipy/reference/generated/scipy.spatial.distance.mahalanobis.html
     """  # noqa
     if mean is not None:
-        X -= mean
+        X = X - mean
 
     Xw = invsqrtm(cov) @ X
-    d2 = np.einsum("ij,ji->i", Xw.conj().T, Xw).real
+    d2 = np.sum(np.abs(Xw)**2, axis=-2)
     return d2 if squared else np.sqrt(d2)

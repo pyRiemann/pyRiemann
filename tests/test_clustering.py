@@ -237,8 +237,6 @@ def clt_fitpredict(clust, X, n_clusters=None):
     if hasattr(clt, "random_state"):
         clt.set_params(**{"random_state": 42})
     pred = clt.fit(X).predict(X)
-    if hasattr(clt, "random_state"):
-        clt.set_params(**{"random_state": 42})
     pred2 = clt.fit_predict(X)
     assert_array_equal(pred, pred2)
 
@@ -389,7 +387,7 @@ def test_gaussian(get_mats, get_weights):
     assert pdf.shape == (n_matrices,)
 
     tv = tangent_space(X, gm.mu, metric="riemann")[0]
-    dist = tv.T @ np.linalg.inv(gm.sigma) @ tv
+    dist = tv.T @ np.linalg.solve(gm.sigma, tv)
     num = np.exp(-0.5 * dist)
     denom = np.sqrt(((2 * np.pi) ** n) * np.linalg.det(gm.sigma))
     pdf_ = num / (denom + 1e-16)
