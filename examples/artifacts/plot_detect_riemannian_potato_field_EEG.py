@@ -36,6 +36,13 @@ def filter_bandpass(signal, low_freq, high_freq, channels=None, method="iir"):
     return sig
 
 
+def distance_diageuclid(A, B, squared=False):
+    diag_A = np.diagonal(A, axis1=-2, axis2=-1)
+    diag_B = np.diagonal(B, axis1=-2, axis2=-1)
+    d = np.linalg.norm(diag_A - diag_B, ord="fro", axis=-1)
+    return d ** 2 if squared else d
+
+
 def plot_detection(ax, rp_label, rpf_label):
     labels = []
     ylims = ax.get_ylim()
@@ -125,7 +132,7 @@ rp.fit(rp_covs[train_set])
 # dimensionality, each one designed to capture a different kind of artifact
 # typically affecting some specific spatial area (i.e. subsets of channels)
 # and/or specific frequency bands. RPF is further improved in [3]_ by using
-# different distance metrics for each potato, which are suited for detecting
+# different metrics for each potato, which are suited for detecting
 # different artifact types.
 #
 # BCI or NFB applications aim at the modulation specific brain oscillations, it
@@ -133,31 +140,35 @@ rp.fit(rp_covs[train_set])
 # desirable brain modulations to be detected as artifactual.
 
 # RPF definition
-p_th = 0.01          # probability threshold
+p_th = 0.01              # probability threshold
 rpf_config = {
     "RPF eye_blinks": {  # for eye-blinks
         "ch_names": ["Fp1", "Fpz", "Fp2"],
         "low_freq": 1.,
-        "high_freq": 20.},
-    "RPF occipital": {  # for high-frequency artifacts in occipital area
+        "high_freq": 20.,
+        "metric": "riemann",
+    },
+    "RPF occipital": {  # for high-frequency myogenic artifacts
         "ch_names": ["O1", "Oz", "O2"],
         "low_freq": 25.,
         "high_freq": 45.,
-        "cov_normalization": "trace"},  # trace-norm to be insensitive to power
+        "metric": {"mean": "riemann", "distance": distance_diageuclid},
+        "cov_normalization": "trace",  # trace-norm to be insensitive to power
+    },
     "RPF global_lf": {  # for low-frequency artifacts in all channels
         "ch_names": None,
         "low_freq": 0.5,
-        "high_freq": 3.}
+        "high_freq": 3,
+        "metric": "riemann",
+    }
 }
 
-# Define metrics for each potato
-metrics = [
-    "riemann",
-    {"mean": "riemann", "distance": "diageuclid"},  # for Myogenic Artifacts
-    "riemann",
-]
-rpf = PotatoField(metric=metrics, z_threshold=z_th, p_threshold=p_th,
-                  n_potatoes=len(rpf_config))
+rpf = PotatoField(
+    metric=[conf["metric"] for conf in rpf_config.values()],
+    z_threshold=z_th,
+    p_threshold=p_th,
+    n_potatoes=len(rpf_config)
+)
 
 # EEG processing for RPF
 rpf_covs = []

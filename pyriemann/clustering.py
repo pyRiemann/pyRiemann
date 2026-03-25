@@ -489,7 +489,7 @@ class MeanShift(SpdClustMixin, BaseEstimator):
             if np.linalg.norm(meanshift) <= self.tol:
                 break
         else:
-            warnings.warn("Convergence not reached", stacklevel=2)
+            warnings.warn("Convergence not reached")
 
         return mean
 
@@ -839,7 +839,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
                 break
             crit = crit_new
         else:
-            warnings.warn("EM convergence not reached", stacklevel=2)
+            warnings.warn("EM convergence not reached")
 
         return self
 
@@ -1041,6 +1041,7 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         if sample_weight is None:
             sample_weight = np.ones(n_matrices)
 
+        self._metric_mean, _ = check_metric(self.metric)
         self._mdm = MDM(metric=self.metric)
 
         for _ in range(self.n_iter_max):
@@ -1116,11 +1117,11 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
 
         Xm = gmean(
             X[y == self.pos_label],
-            metric=self._mdm._metric_mean,
+            metric=self._metric_mean,
             sample_weight=sample_weight[y == self.pos_label],
         )
         self._mdm.covmeans_[0] = geodesic(
-            self._mdm.covmeans_[0], Xm, alpha, metric=self._mdm._metric_mean
+            self._mdm.covmeans_[0], Xm, alpha, metric=self._metric_mean
         )
 
         d = np.squeeze(np.log(self._mdm.transform(Xm[np.newaxis, ...])))
