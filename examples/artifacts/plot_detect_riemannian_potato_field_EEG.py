@@ -39,7 +39,7 @@ def filter_bandpass(signal, low_freq, high_freq, channels=None, method="iir"):
 def distance_diageuclid(A, B, squared=False):
     diag_A = np.diagonal(A, axis1=-2, axis2=-1)
     diag_B = np.diagonal(B, axis1=-2, axis2=-1)
-    d = np.linalg.norm(diag_A - diag_B, ord="fro", axis=-1)
+    d = np.linalg.norm(diag_A - diag_B, axis=-1)
     return d ** 2 if squared else d
 
 
