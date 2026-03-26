@@ -1041,6 +1041,7 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         if sample_weight is None:
             sample_weight = np.ones(n_matrices)
 
+        self._metric_mean, _ = check_metric(self.metric)
         self._mdm = MDM(metric=self.metric)
 
         for _ in range(self.n_iter_max):
@@ -1116,11 +1117,11 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
 
         Xm = gmean(
             X[y == self.pos_label],
-            metric=self.metric,
+            metric=self._metric_mean,
             sample_weight=sample_weight[y == self.pos_label],
         )
         self._mdm.covmeans_[0] = geodesic(
-            self._mdm.covmeans_[0], Xm, alpha, metric=self.metric
+            self._mdm.covmeans_[0], Xm, alpha, metric=self._metric_mean
         )
 
         d = np.squeeze(np.log(self._mdm.transform(Xm[np.newaxis, ...])))
@@ -1566,7 +1567,7 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
                 method=self.method_combination,
                 axis=0,
             )
-        elif hasattr(self.method_combination, '__call__'):
+        elif callable(self.method_combination):
             proba = self.method_combination(probas, axis=0)
         else:
             raise TypeError(

@@ -538,7 +538,8 @@ def test_potatofield_fit_metric(metric, get_mats):
     X2 = get_mats(n_matrices, n_channels + 1, "hpd")
     X = [X1, X2]
 
-    PotatoField(n_potatoes=n_potatoes, metric=metric).fit(X)
+    pf = PotatoField(n_potatoes=n_potatoes, metric=metric).fit(X)
+    pf.partial_fit(X)
 
 
 def callable_combination(X, axis):
