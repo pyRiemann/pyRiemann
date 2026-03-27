@@ -1,16 +1,33 @@
 """Backend helpers using array-api-compat for NumPy/torch support."""
 
 import numpy as np
-from array_api_compat import (  # noqa: F401 - re-exported
+from array_api_compat import (
     array_namespace as get_namespace,
     device as xpd,
     is_numpy_namespace,
     is_torch_namespace,
 )
-from array_api_extra import (  # noqa: F401 - re-exported
+from array_api_extra import (
     broadcast_shapes,
     create_diagonal,
 )
+
+__all__ = [
+    # Re-exported from array-api-compat
+    "get_namespace",
+    "xpd",
+    "is_numpy_namespace",
+    "is_torch_namespace",
+    # Re-exported from array-api-extra
+    "broadcast_shapes",
+    "create_diagonal",
+    # Custom
+    "check_matrix_pair",
+    "weighted_average",
+    "diag_indices",
+    "tril_indices",
+    "triu_indices",
+]
 
 try:
     import torch
