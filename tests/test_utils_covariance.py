@@ -7,7 +7,7 @@ from scipy.signal import welch, csd, coherence as coherence_sp
 from sklearn.covariance import empirical_covariance
 
 from pyriemann.utils.covariance import (
-    covariances, covariances_EP, covariances_X, eegtocov,
+    covariances, covariance_scm, covariances_EP, covariances_X, eegtocov,
     cross_spectrum, cospectrum, coherence,
     normalize, get_nondiag_weight, block_covariances, _complex_estimator
 )
@@ -88,7 +88,7 @@ def test_covariance_scm_real(assume_centered, get_mats):
     n_matrices, n_channels, n_times = 3, 4, 50
     X = get_mats(n_matrices, [n_channels, n_times], "real")
 
-    cov = covariances(X, estimator="scm", assume_centered=assume_centered)
+    cov = covariance_scm(X, assume_centered=assume_centered)
     cov_sklearn = np.asarray([
         empirical_covariance(x.T, assume_centered=assume_centered)
         for x in X
@@ -97,17 +97,35 @@ def test_covariance_scm_real(assume_centered, get_mats):
 
 
 def test_covariance_scm_complex(get_mats):
-    """ Test correctness of decorator for complex estimator on complex data"""
+    """Test correctness of decorator for complex estimator on complex data"""
     n_matrices, n_channels, n_times = 4, 3, 60
     X = get_mats(n_matrices, [n_channels, n_times], "comp")
 
-    cov = covariances(X, estimator="scm", assume_centered=True)
+    cov = covariance_scm(X, assume_centered=True)
 
     @_complex_estimator
     def complex_scm_sklearn(x):
         return empirical_covariance(x.T, assume_centered=True)
     cov_decorator = np.asarray([complex_scm_sklearn(x) for x in X])
     assert_array_almost_equal(cov, cov_decorator, 10)
+
+
+@pytest.mark.parametrize("kind", ["real", "comp"])
+def test_covariance_scm_weights(kind, get_mats, get_weights):
+    n_set, n_matrices, n_channels, n_times = 5, 4, 3, 20
+    X = get_mats(n_set, [n_matrices, n_channels, n_times], kind)
+
+    # test uniform weights
+    cov = covariance_scm(X)
+    covw = covariance_scm(X, weights=np.ones(n_times))
+    assert cov == approx(covw)
+
+    # setting one weight to almost 0 it's almost like not passing the sample
+    weights = get_weights(n_times)
+    cov = covariance_scm(X[..., 1:], weights=weights[1:])
+    weights[0] = 1e-12
+    covw = covariance_scm(X, weights=weights)
+    assert cov == approx(covw, rel=1e-4, abs=1e-8)
 
 
 @pytest.mark.parametrize("estimator", estimators + m_estimators)

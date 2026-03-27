@@ -8,7 +8,7 @@ from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 from .base import ctranspose, _vectorize_nd
 from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
-from .utils import check_function
+from .utils import check_function, check_weights
 
 
 def _complex_estimator(func):
@@ -300,12 +300,20 @@ def covariance_sch(X):
     return sigma + shrinkage
 
 
-def covariance_scm(X, *, assume_centered=False):
+def covariance_scm(X, *, assume_centered=False, weights=None):
     """Sample covariance estimator.
 
     Sample covariance estimator, re-implementing ``empirical_covariance`` of
-    scikit-learn [1]_, but supporting real and complex-valued data, and
-    broadcasting.
+    scikit-learn [1]_, but supporting:
+
+    - real and complex-valued data,
+    - broadcasting,
+    - weights for time samples.
+
+    .. math::
+        \mathbf{C}_\text{scm} = \mathbf{X} \text{diag}(w) \mathbf{X}^H
+
+    with :math:`w` being the weights which sum to 1.
 
     Parameters
     ----------
@@ -316,6 +324,10 @@ def covariance_scm(X, *, assume_centered=False):
         Useful when working with data whose mean is almost, but not exactly
         zero.
         If False, data will be centered before computation.
+    weights : None | ndarray, shape (n_times,), default=None
+        Weights for each time sample. If None, it uses equal weights.
+
+        .. versionadded:: 0.11
 
     Returns
     -------
@@ -330,11 +342,11 @@ def covariance_scm(X, *, assume_centered=False):
     ----------
     .. [1] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.empirical_covariance.html
     """  # noqa
-    n_times = X.shape[-1]
+    weights = check_weights(weights, X.shape[-1])
 
     if not assume_centered:
-        X = X - np.mean(X, axis=-1, keepdims=True)
-    cov = X @ ctranspose(X) / n_times
+        X = X - np.sum(X * weights, axis=-1, keepdims=True)
+    cov = (X * weights) @ ctranspose(X)
 
     return cov
 
