@@ -3,6 +3,7 @@
 import warnings
 
 import numpy as np
+from einops import rearrange
 
 from ._backend import get_namespace, diag_indices, xpd
 from .utils import check_weights, check_function, check_init
@@ -53,7 +54,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     xp = get_namespace(X, init)
     n_matrices, _, _ = X.shape
     # reshape input matrix: (n_matrices, n, n) -> (n, n_matrices*n)
-    A = xp.reshape(xp.swapaxes(X, 0, 1), (X.shape[-1], -1))
+    A = rearrange(X, 'matrices n1 n2 -> n1 (matrices n2)')
     n, n_matrices_x_n = A.shape
 
     # init variables
@@ -108,7 +109,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
 
-    D = xp.swapaxes(A.reshape(n, n_matrices, n), 0, 1)
+    D = rearrange(A, 'n1 (matrices n2) -> matrices n1 n2', matrices=n_matrices)
     return (
         xp.asarray(V, dtype=X.dtype, device=xpd(X)),
         xp.asarray(D, dtype=X.dtype, device=xpd(X)),
@@ -175,7 +176,7 @@ def ajd_pham(
     )  # sum = 1
 
     # reshape input matrix: (n_matrices, n, n) -> (n, n_matrices*n)
-    A = xp.reshape(xp.swapaxes(X, 0, 1), (X.shape[-1], -1))
+    A = rearrange(X, 'matrices n1 n2 -> n1 (matrices n2)')
     n, n_matrices_x_n = A.shape
 
     if init is None:
@@ -245,7 +246,9 @@ def ajd_pham(
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
 
-    D = xp.conj(xp.swapaxes(A.reshape(n, n_matrices, n), 0, 1))
+    D = xp.conj(rearrange(
+        A, 'n1 (matrices n2) -> matrices n1 n2', matrices=n_matrices,
+    ))
     return (
         xp.asarray(V, dtype=X.dtype, device=xpd(X)),
         xp.asarray(D, dtype=X.dtype, device=xpd(X)),
@@ -300,11 +303,8 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
     """
     xp = get_namespace(X, init)
     n_matrices, _, _ = X.shape
-    # reshape input matrix
-    M = xp.swapaxes(X, 0, 1).reshape(X.shape[-1], -1)
-    M_copy = xp.zeros_like(M)
-    M_copy[...] = M
-    M = M_copy
+    # reshape input matrix: (n_matrices, n, n) -> (n, n_matrices*n)
+    M = rearrange(X, 'matrices n1 n2 -> n1 (matrices n2)')
     n, n_matrices_x_n = M.shape
 
     # init variables
@@ -368,7 +368,9 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
 
-    D = xp.swapaxes(Ms.reshape(n, n_matrices, n), 0, 1)
+    D = rearrange(
+        Ms, 'n1 (matrices n2) -> matrices n1 n2', matrices=n_matrices,
+    )
     return (
         xp.asarray(V, dtype=X.dtype, device=xpd(X)),
         xp.asarray(D, dtype=X.dtype, device=xpd(X)),
