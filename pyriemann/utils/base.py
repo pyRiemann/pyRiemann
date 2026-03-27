@@ -208,9 +208,7 @@ def powm(C, alpha):
     D : ndarray, shape (..., n, n)
         Matrix power of C.
     """
-    def power(x):
-        return x**alpha
-
+    def power(x): return x**alpha
     return _matrix_operator(C, power)
 
 
@@ -320,13 +318,7 @@ def nearest_sym_pos_def(X, reg=1e-6):
 ###############################################################################
 
 
-def _first_divided_difference(
-    d,
-    fct,
-    fctder,
-    atol=1e-12,
-    rtol=1e-12,
-):
+def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
     r"""First divided difference of a matrix function.
 
     The first divided difference of a matrix function applied to the

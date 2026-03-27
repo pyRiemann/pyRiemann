@@ -22,14 +22,7 @@ from .utils import check_weights, check_function, check_init
 
 
 @_vectorize_nd(n_axes=3)
-def mean_ale(
-    X,
-    *,
-    tol=10e-7,
-    maxiter=50,
-    sample_weight=None,
-    init=None,
-):
+def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     """AJD-based log-Euclidean (ALE) mean of SPD/HPD matrices.
 
     Approximate joint diagonalization (AJD) based log-Euclidean (ALE) mean of
@@ -118,14 +111,7 @@ def mean_ale(
 
 
 @_vectorize_nd(n_axes=3)
-def mean_alm(
-    X,
-    *,
-    tol=1e-14,
-    maxiter=100,
-    sample_weight=None,
-    **kwargs,
-):
+def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
     r"""Ando-Li-Mathias (ALM) mean of SPD/HPD matrices.
 
     Ando-Li-Mathias (ALM) mean is computed recursively, generalizing from [1]_:
@@ -434,14 +420,7 @@ def mean_logchol(X, sample_weight=None, **kwargs):
 
 
 @_vectorize_nd(n_axes=3)
-def mean_logdet(
-    X,
-    *,
-    tol=10e-5,
-    maxiter=50,
-    init=None,
-    sample_weight=None,
-):
+def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the log-det metric.
 
     Log-det mean is obtained by an iterative procedure where the update is:
@@ -543,15 +522,8 @@ def mean_logeuclid(X, sample_weight=None, **kwargs):
 
 
 @_vectorize_nd(n_axes=3)
-def mean_power(
-    X,
-    p,
-    *,
-    sample_weight=None,
-    zeta=10e-10,
-    maxiter=100,
-    init=None,
-):
+def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
+               init=None):
     r"""Power mean of SPD/HPD matrices.
 
     Power mean of order :math:`p` is the solution of [1]_ [2]_:
@@ -725,9 +697,7 @@ def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
 
 
 @_vectorize_nd(n_axes=3)
-def mean_riemann(
-    X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None
-):
+def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the Riemannian metric.
 
     The affine-invariant Riemannian mean minimizes the sum of squared
@@ -815,14 +785,7 @@ def mean_riemann(
 
 
 @_vectorize_nd(n_axes=3)
-def mean_thompson(
-    X,
-    *,
-    tol=1e-6,
-    maxiter=50,
-    init=None,
-    sample_weight=None,
-):
+def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     """Mean of SPD/HPD matrices according to the Thompson metric.
 
     The Thompson mean of SPD/HPD matrices is described in [1]_.
@@ -887,9 +850,7 @@ def mean_thompson(
 
 
 @_vectorize_nd(n_axes=3)
-def mean_wasserstein(
-    X, tol=10e-9, maxiter=50, init=None, sample_weight=None
-):
+def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the Wasserstein metric.
 
     Wasserstein mean [1]_ is implemented as the inductive mean [2]_,
