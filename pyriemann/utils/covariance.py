@@ -584,7 +584,7 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
         alpha * xp.eye(n_times, dtype=X.dtype, device=xpd(X)),
         (*batch_shape, n_times, n_times),
     )
-    Xt = xp.swapaxes(X, -2, -1)
+    Xt = X.mT
     top = xp.concat([X, I_ch], axis=-1)
     bot = xp.concat([I_t, Xt], axis=-1)
     Y = xp.concat([top, bot], axis=-2)  # Eq(9)

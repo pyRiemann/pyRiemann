@@ -32,7 +32,7 @@ def ctranspose(X):
     .. [1] https://en.wikipedia.org/wiki/Conjugate_transpose
     """
     xp = get_namespace(X)
-    return xp.swapaxes(xp.conj(X), -2, -1)
+    return xp.conj(X).mT
 
 
 def _vectorize_nd(n_axes=2):

@@ -42,7 +42,7 @@ def is_sym(X):
     if not is_square(X):
         return False
     xp = get_namespace(X)
-    return bool(xp.all(xp.isclose(X, xp.swapaxes(X, -2, -1))))
+    return bool(xp.all(xp.isclose(X, X.mT)))
 
 
 def is_skew_sym(X):
@@ -61,7 +61,7 @@ def is_skew_sym(X):
     if not is_square(X):
         return False
     xp = get_namespace(X)
-    return bool(xp.all(xp.isclose(X, -xp.swapaxes(X, -2, -1))))
+    return bool(xp.all(xp.isclose(X, -X.mT)))
 
 
 def is_hankel(X):

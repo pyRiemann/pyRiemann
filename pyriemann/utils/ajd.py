@@ -74,7 +74,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
                     (A[p, Ip] - A[q, Iq], A[p, Iq] + A[q, Ip]),
                     axis=0,
                 )
-                gg = g @ xp.swapaxes(g, -2, -1)
+                gg = g @ g.mT
                 ton = gg[0, 0] - gg[1, 1]
                 toff = gg[0, 1] + gg[1, 0]
                 theta = 0.5 * xp.atan2(
@@ -235,7 +235,7 @@ def ajd_pham(
 
                 A[[ii, jj], :] = xp.conj(tau) @ A[[ii, jj], :]
                 tmp = xp.stack((A[:, Ii], A[:, Ij]), axis=-1)
-                tmp = tmp @ xp.swapaxes(tau, -2, -1)
+                tmp = tmp @ tau.mT
                 A[:, Ii] = tmp[..., 0]
                 A[:, Ij] = tmp[..., 1]
                 V[[ii, jj], :] = tau @ V[[ii, jj], :]
@@ -313,7 +313,7 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
         if xp.isdtype(X.dtype, "real floating"):
             E = xp.real(E)
             H = xp.real(H)
-        V = xp.swapaxes(H, -2, -1) / xp.sqrt(
+        V = H.mT / xp.sqrt(
             xp.abs(E)
         )[:, np.newaxis]
     else:
@@ -326,37 +326,37 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
     for k in range(n_matrices):
         ini = k * n
         Il = list(range(ini, ini + n))
-        M[:, Il] = 0.5 * (M[:, Il] + xp.swapaxes(M[:, Il], -2, -1))
-        Ms[:, Il] = V @ M[:, Il] @ xp.swapaxes(V, -2, -1)
+        M[:, Il] = 0.5 * (M[:, Il] + M[:, Il].mT)
+        Ms[:, Il] = V @ M[:, Il] @ V.mT
         Rs[:, k] = xp.linalg.diagonal(Ms[:, Il])
     crit = float(xp.real(
         xp.sum(Ms ** 2) - xp.sum(Rs ** 2)
     ))
 
     for _ in range(n_iter_max):
-        B = Rs @ xp.swapaxes(Rs, -2, -1)
+        B = Rs @ Rs.mT
         C1 = xp.zeros((n, n), dtype=X.dtype, device=xpd(X))
         for i in range(n):
             C1[:, i] = xp.sum(Ms[:, i:n_matrices_x_n:n] * Rs, axis=1)
 
         diag_b = xp.linalg.diagonal(B)
-        D0 = B * xp.swapaxes(B, -2, -1) - xp.linalg.outer(diag_b, diag_b)
+        D0 = B * B.mT - xp.linalg.outer(diag_b, diag_b)
         A0 = (
             C1 * B
-            - diag_b[:, np.newaxis] * xp.swapaxes(C1, -2, -1)
+            - diag_b[:, np.newaxis] * C1.mT
         ) / (D0 + xp.eye(n, dtype=X.dtype, device=xpd(X)))
         diag0, diag1 = diag_indices(n, xp=xp, like=X)
         A0[diag0, diag1] += 1
         V = xp.linalg.solve(A0, V)
 
-        Raux = V @ M[:, 0:n] @ xp.swapaxes(V, -2, -1)
+        Raux = V @ M[:, 0:n] @ V.mT
         aux = 1. / xp.sqrt(xp.abs(xp.linalg.diagonal(Raux)))
         V = aux[:, np.newaxis] * V
 
         for k in range(n_matrices):
             ini = k * n
             Il = list(range(ini, ini + n))
-            Ms[:, Il] = V @ M[:, Il] @ xp.swapaxes(V, -2, -1)
+            Ms[:, Il] = V @ M[:, Il] @ V.mT
             Rs[:, k] = xp.linalg.diagonal(Ms[:, Il])
         crit_new = float(xp.real(
             xp.sum(Ms ** 2) - xp.sum(Rs ** 2)
