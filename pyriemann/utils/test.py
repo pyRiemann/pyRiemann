@@ -1,26 +1,12 @@
 import numpy as np
 
+from .._helpers import is_square, is_real_type  # noqa: F401
+
 
 def _get_eigenvals(X):
     """Private function to compute all eigen values."""
     n = X.shape[-1]
     return np.linalg.eigvals(X.reshape((-1, n, n)))
-
-
-def is_square(X):
-    """Check if matrices are square.
-
-    Parameters
-    ----------
-    X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
-
-    Returns
-    -------
-    ret : bool
-        True if matrices are square.
-    """
-    return X.ndim >= 2 and X.shape[-2] == X.shape[-1]
 
 
 def is_sym(X):
@@ -100,26 +86,6 @@ def is_real(X):
         True if all matrices are strictly real.
     """
     return np.allclose(X.imag, np.zeros_like(X.imag))
-
-
-def is_real_type(X):
-    """Check if matrices are real type.
-
-    Parameters
-    ----------
-    X : ndarray, shape (..., n, m)
-        The set of matrices.
-
-    Returns
-    -------
-    ret : bool
-        True if matrices are real type.
-
-    Notes
-    -----
-    .. versionadded:: 0.6
-    """
-    return np.isrealobj(X)
 
 
 def is_hermitian(X):

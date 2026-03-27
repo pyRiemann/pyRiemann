@@ -1,51 +1,12 @@
-import inspect
-
-import numpy as np
-
-
-def check_weights(weights, n_weights, *, check_positivity=False):
-    """Check weights.
-
-    If input is None, output weights are equal.
-    Strict positivity of weights can be checked.
-    In any case, weights are normalized (sum equal to 1).
-
-    Parameters
-    ----------
-    weights : None | ndarray, shape (n_weights,), default=None
-        Input weights. If None, it provides equal weights.
-    n_weights : int
-        Number of weights to provide if None, or to check.
-    check_positivity : bool, default=False
-        Choose if strict positivity of weights is checked.
-
-    Returns
-    -------
-    weights : ndarray, shape (n_weights,)
-        Output checked weights.
-
-    Notes
-    -----
-    .. versionadded:: 0.4
-    """
-    if weights is None:
-        weights = np.ones(n_weights)
-
-    else:
-        weights = np.asarray(weights)
-        if weights.shape != (n_weights,):
-            raise ValueError(
-                "Weights do not have the good shape. Should be (%d,) but got "
-                "%s." % (n_weights, weights.shape,)
-            )
-        if check_positivity and any(weights <= 0):
-            raise ValueError("Weights must be strictly positive.")
-
-    weights /= np.sum(weights)
-    return weights
+from .._helpers import (  # noqa: F401
+    check_function,
+    check_weights,
+    check_init,
+    check_param_in_func,
+)
 
 
-def check_metric(metric, expected_keys=["mean", "distance"]):
+def check_metric(metric, expected_keys=None):
     """Check metric argument.
 
     Parameters
@@ -68,6 +29,8 @@ def check_metric(metric, expected_keys=["mean", "distance"]):
     -----
     .. versionadded:: 0.6
     """
+    if expected_keys is None:
+        expected_keys = ["mean", "distance"]
     if isinstance(metric, str):
         return [metric] * len(expected_keys)
 
@@ -81,90 +44,3 @@ def check_metric(metric, expected_keys=["mean", "distance"]):
 
     else:
         raise TypeError(f"metric must be str or dict, but got {type(metric)}")
-
-
-def check_function(fun, functions):
-    """Check the function to use.
-
-    Parameters
-    ----------
-    fun : string | callable
-        Function to check.
-        If string, it must be one of the keys of ``functions``.
-        If callable, it can be a function defined in API or by the user.
-        In the latter case, the signature of the function as to match the ones
-        defined in ``functions``. This is the user responsibility to ensure
-        this, and will not be checked.
-    functions : dict
-        Functions available in API, used only when ``fun`` is a string.
-
-    Returns
-    -------
-    fun : callable
-        Function to use.
-
-    Notes
-    -----
-    .. versionadded:: 0.6
-    """
-    if isinstance(fun, str):
-        if fun not in functions.keys():
-            raise ValueError(f"Unknown function name '{fun}'. Must be one of "
-                             f"{' '.join(functions.keys())}")
-        else:
-            fun = functions[fun]
-    elif not hasattr(fun, '__call__'):
-        raise ValueError("Argument must be a string or a callable "
-                         f"(Got {type(fun)}).")
-    return fun
-
-
-def check_init(init, n):
-    """Check the initial matrix.
-
-    Parameters
-    ----------
-    init : ndarray, shape (n, n)
-        A square matrix used to initialize the algorithm.
-    n : int
-        Expected dimension of the matrix.
-
-    Returns
-    -------
-    init : ndarray, shape (n, n)
-        The checked square matrix used to initialize the algorithm.
-
-    Notes
-    -----
-    .. versionadded:: 0.8
-    """
-    init = np.asarray(init)
-    if init.shape != (n, n):
-        raise ValueError(
-            "Init matrix does not have the good shape. "
-            f"Should be ({n},{n}) but got {init.shape}."
-        )
-    return init
-
-
-def check_param_in_func(param, func):
-    """Check if a parameter is an argument of a function.
-
-    Parameters
-    ----------
-    param : str
-        Name of the parameter to check.
-    func : callable
-        Function to check.
-
-    Returns
-    -------
-    ret : bool
-        True if param is an argument of a function, else False.
-
-    Notes
-    -----
-    .. versionadded:: 0.11
-    """
-    sig = inspect.signature(func).parameters
-    return (param in sig)
