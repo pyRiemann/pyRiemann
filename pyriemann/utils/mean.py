@@ -6,7 +6,7 @@ import numpy as np
 
 from ._backend import (
     get_namespace,
-    diag_embed,
+    create_diagonal,
     diag_indices,
     tril_indices,
     weighted_average,
@@ -97,9 +97,8 @@ def mean_ale(
 
         crit = distance_riemann(
             eye_n,
-            diag_embed(
+            create_diagonal(
                 xp.asarray(delta, dtype=X.dtype, device=xpd(X)),
-                xp=xp,
             ),
         )
         if float(crit) <= tol:

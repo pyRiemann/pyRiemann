@@ -7,6 +7,7 @@ from array_api_compat import (
     is_torch_namespace,
 )
 from array_api_compat import is_numpy_namespace  # noqa: F401 - re-exported
+from array_api_extra import broadcast_shapes, create_diagonal
 
 try:
     import torch
@@ -14,11 +15,18 @@ except ImportError:
     torch = None
 
 
+# --- Array API compatible functions (from array-api-extra) ---
+
+# create_diagonal: (..., n) -> (..., n, n)  — replaces custom diag_embed
+# broadcast_shapes: shape tuples -> broadcast shape
+
+
 def _broadcast_batch_shapes(*arrays):
+    """Broadcast batch shapes (all dims except last two) of arrays."""
     batch_shapes = [x.shape[:-2] for x in arrays]
     try:
-        return np.broadcast_shapes(*batch_shapes)
-    except ValueError as exc:
+        return broadcast_shapes(*batch_shapes)
+    except Exception as exc:
         raise ValueError("Inputs have incompatible dimensions.") from exc
 
 
@@ -42,7 +50,7 @@ def check_matrix_pair(A, B, *, require_square=False):
     return xp
 
 
-# --- Custom extensions not in Array API ---
+# --- Custom extensions not in Array API or array-api-extra ---
 
 
 def weighted_average(x, weights=None, axis=0, *, xp):
@@ -50,12 +58,6 @@ def weighted_average(x, weights=None, axis=0, *, xp):
         return xp.mean(x, axis=axis)
     weights = xp.asarray(weights, dtype=x.dtype, device=xpd(x))
     return xp.tensordot(weights, x, axes=([0], [axis]))
-
-
-def diag_embed(x, *, xp):
-    if is_torch_namespace(xp):
-        return torch.diag_embed(x)
-    return xp.eye(x.shape[-1], dtype=x.dtype, device=xpd(x)) * x[..., None]
 
 
 def diag_indices(n, *, xp, like=None):

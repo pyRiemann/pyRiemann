@@ -6,7 +6,7 @@ import numpy as np
 
 from ._backend import (
     check_matrix_pair,
-    diag_embed,
+    create_diagonal,
     diag_indices,
     get_namespace,
     tril_indices,
@@ -241,7 +241,7 @@ def exp_map_wasserstein(X, Cref):
 
     X_rotated = ctranspose(V) @ X @ V
     X_tmp = C * X_rotated
-    X_tmp = X_tmp @ diag_embed(d, xp=xp) @ X_tmp
+    X_tmp = X_tmp @ create_diagonal(d) @ X_tmp
     X_tmp = V @ X_tmp @ ctranspose(V)
 
     return Cref + X + X_tmp

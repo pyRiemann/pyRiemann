@@ -4,7 +4,7 @@ from functools import wraps
 
 import numpy as np
 
-from ._backend import get_namespace, xpd, diag_embed
+from ._backend import get_namespace, xpd, create_diagonal
 
 
 def ctranspose(X):
@@ -280,7 +280,7 @@ def _nearest_sym_pos_def(S, reg=1e-6):
             xp.min(xp.real(ei)) / xp.max(xp.real(ei))
         )
         if ratio < reg:
-            X = ev @ diag_embed(ei + reg, xp=xp) @ ctranspose(ev)
+            X = ev @ create_diagonal(ei + reg) @ ctranspose(ev)
         return X
 
     A = (S + ctranspose(S)) / 2

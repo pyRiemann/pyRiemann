@@ -5,7 +5,7 @@ import numpy as np
 from scipy.stats import chi2
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
-from ._backend import get_namespace, diag_embed, diag_indices, xpd
+from ._backend import get_namespace, create_diagonal, diag_indices, xpd
 from .base import ctranspose, _vectorize_nd
 from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
@@ -367,7 +367,7 @@ def covariance_sch(X):
     shrinkage = (
         gamma
         * (n_times / (n_times - 1.))
-        * diag_embed(xp.linalg.diagonal(C_scm), xp=xp)
+        * create_diagonal(xp.linalg.diagonal(C_scm))
     )
     return sigma + shrinkage
 
