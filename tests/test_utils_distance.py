@@ -5,7 +5,7 @@ import pytest
 from scipy.linalg import eigvalsh
 from scipy.spatial.distance import euclidean, mahalanobis
 
-from conftest import approx, assert_array_almost_equal
+from conftest import _to_backend, approx, assert_array_almost_equal
 from pyriemann.utils._backend import get_namespace, xpd as device
 from pyriemann.utils.distance import (
     distance_chol,
@@ -444,13 +444,19 @@ def test_distance_mahalanobis_scipy(mean, get_mats):
 
 
 @pytest.mark.parametrize("mean", [True, None])
-def test_distance_mahalanobis_broadcasting(mean, get_mats, rndstate):
+def test_distance_mahalanobis_broadcasting(mean, get_mats, rndstate, backend):
     n_dim5, n_dim4, n_dim3, n_channels, n_vectors = 2, 5, 3, 4, 10
     cov = get_mats([n_dim5, n_dim4, n_dim3], n_channels, "spd")
-    X = rndstate.randn(n_dim5, n_dim4, n_dim3, n_channels, n_vectors)
+    X = _to_backend(
+        rndstate.randn(n_dim5, n_dim4, n_dim3, n_channels, n_vectors),
+        backend,
+    )
 
     if mean is True:
-        m = rndstate.randn(n_dim5, n_dim4, n_dim3, n_channels, 1)
+        m = _to_backend(
+            rndstate.randn(n_dim5, n_dim4, n_dim3, n_channels, 1),
+            backend,
+        )
     else:
         m = None
 

@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from scipy.stats import hmean, gmean as gmean_sp
 
-from conftest import approx, to_numpy
+from conftest import _to_backend, approx, to_numpy
 from pyriemann.utils._backend import get_namespace, xpd as device
 from pyriemann.utils.base import invsqrtm, logm, sqrtm
 from pyriemann.utils.geodesic import geodesic_riemann
@@ -254,13 +254,15 @@ def test_mean_broadcasting(mean, get_mats):
     mean_riemann,
     # mean_thompson,  # Th 6.16 (4) in [Mostajeran2024], KO
 ])
-def test_mean_property_joint_homogeneity(kind, mean, get_mats, rndstate):
+def test_mean_property_joint_homogeneity(kind, mean, get_mats, rndstate,
+                                         backend):
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
 
     # P2 in [Nakamura2009]
     a = rndstate.uniform(low=1.0, high=2.0, size=n_matrices)
-    assert mean(a[:, None, None] * X) == approx(gmean_sp(a) * mean(X))
+    a_b = _to_backend(a, backend)
+    assert mean(a_b[:, None, None] * X) == approx(gmean_sp(a) * mean(X))
 
     # P2' in [Nakamura2009]
     a = rndstate.uniform(0.01, 5.0)
@@ -479,10 +481,14 @@ def test_mean_masked_riemann(init, get_mats, get_masks):
         M = maskedmean_riemann(X, masks)
     assert M.shape == (n_channels, n_channels)
 
-    # test broadcasting
+    # test broadcasting (numpy only — masks are lists)
     if not init:
+        xp = get_namespace(X)
         n_dim5, n_dim4 = 2, 3
-        X5 = np.asarray([[X for _ in range(n_dim4)] for _ in range(n_dim5)])
+        X5 = xp.stack([
+            xp.stack([X for _ in range(n_dim4)])
+            for _ in range(n_dim5)
+        ])
         M5 = maskedmean_riemann(X5, masks)
         assert M5.shape == (n_dim5, n_dim4, n_channels, n_channels)
         assert M5[0, 0] == approx(M)

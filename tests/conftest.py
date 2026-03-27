@@ -1,13 +1,14 @@
 import numpy as np
 import pytest
 
-from pyriemann.datasets import make_masks, make_matrices
-
 try:
     import torch
     HAS_TORCH = True
+    torch.set_grad_enabled(False)
 except ImportError:
     HAS_TORCH = False
+
+from pyriemann.datasets import make_masks, make_matrices
 
 
 # ---------------------------------------------------------------------------

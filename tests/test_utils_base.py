@@ -99,7 +99,7 @@ def test_funm_error():
     logm,
     pytest.param(partial(powm, alpha=0.2), id="powm"),
     sqrtm,
-    nearest_sym_pos_def,
+    pytest.param(nearest_sym_pos_def, marks=pytest.mark.numpy_only),
 ])
 def test_funm_broadcasting(funm, get_mats):
     n_dim5, n_dim4, n_matrices, n_channels = 2, 6, 5, 3

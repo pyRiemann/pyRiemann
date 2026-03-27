@@ -863,11 +863,12 @@ def innerproduct_riemann(X, Y, Cref):
 
 
 def _apply_inner_product(X, Y):
-    # product G = trace(X^H @ Y)
-    G = np.einsum("...nm,...nm->...", X.conj(), Y, optimize=True).real
+    # product G = trace(X^H @ Y) = sum of element-wise conj(X) * Y
+    xp = get_namespace(X, Y)
+    G = xp.real(xp.sum(xp.conj(X) * Y, axis=(-2, -1)))
 
-    if G.size == 1:
-        return G.item()
+    if G.ndim == 0:
+        return float(G)
     else:
         return G
 

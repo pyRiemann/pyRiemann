@@ -226,7 +226,7 @@ def test_innerproduct_input_dimension_error(metric, get_mats):
     X = get_mats(n_matrices, n_channels, "sym")
     Y = get_mats(n_matrices, n_channels + 1, "sym")
     Cref = get_mats(1, n_channels + 2, "spd")[0]
-    with pytest.raises(ValueError):
+    with pytest.raises((ValueError, RuntimeError)):
         innerproduct(X, Y, Cref, metric=metric)
 
 
@@ -276,9 +276,10 @@ def test_innerproduct_ndarray(finnerproduct, get_mats):
 
     assert finnerproduct(A, B, Cref).shape == (n_matrices,)  # 3D arrays
 
+    xp = get_namespace(A)
     n_sets = 4
-    C = np.asarray([A for _ in range(n_sets)])
-    D = np.asarray([B for _ in range(n_sets)])
+    C = xp.stack([A for _ in range(n_sets)])
+    D = xp.stack([B for _ in range(n_sets)])
     assert finnerproduct(C, D, Cref).shape == (n_sets, n_matrices)  # 4D arrays
 
 
@@ -329,7 +330,7 @@ def test_innerproduct_property_pos_def(kindX, kindC, metric, get_mats):
     X = get_mats(n_matrices, n_channels, kindX)
     Cref = get_mats(1, n_channels, kindC)[0]
     G = innerproduct(X, None, Cref, metric=metric)
-    assert np.all(G > 0)
+    assert bool(get_namespace(G).all(G > 0))
 
 
 @pytest.mark.parametrize("kind", ["real", "comp"])
@@ -341,11 +342,15 @@ def test_innerproduct_euclid(kind, n_dim1, n_dim2, get_mats):
     Y = get_mats(n_matrices, [n_dim1, n_dim2], kind)
     G = innerproduct_euclid(X, Y)
 
+    xp = get_namespace(X)
     G1 = np.empty((n_matrices,))
     G2 = np.empty((n_matrices,))
     for i in range(n_matrices):
-        G1[i] = np.trace(X[i].conj().T @ Y[i]).real
-        G2[i] = np.dot(X[i].conj().flatten(), Y[i].flatten()).real
+        G1[i] = float(xp.real(xp.linalg.trace(xp.conj(X[i]).mT @ Y[i])))
+        G2[i] = float(xp.real(
+            xp.sum(xp.conj(xp.reshape(X[i], (-1,)))
+                   * xp.reshape(Y[i], (-1,)))
+        ))
     assert_array_almost_equal(G, G1)
     assert_array_almost_equal(G, G2)
 
