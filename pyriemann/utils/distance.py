@@ -942,7 +942,7 @@ def _pairwise_distance_riemann(X, Y=None, squared=False):
         dist[i, i * XisY:] = d2
 
     if XisY:
-        dist += dist.T
+        dist += dist.mT
 
     return dist if squared else np.sqrt(dist)
 
@@ -1026,7 +1026,7 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
         for i in range(n_matrices_X):
             for j in range(i + 1, n_matrices_X):
                 dist[i, j] = distance(X[i], X[j], metric, squared=squared)
-        dist += dist.T
+        dist += dist.mT
     else:
         n_matrices_Y, _, _ = Y.shape
         dist = np.empty((n_matrices_X, n_matrices_Y))

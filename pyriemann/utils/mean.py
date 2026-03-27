@@ -1055,7 +1055,7 @@ def _get_masks_from_nan(X):
 
 
 def _apply_masks(X, masks):
-    return [m.T @ x @ m for x, m in zip(X, masks)]
+    return [m.mT @ x @ m for x, m in zip(X, masks)]
 
 
 @_vectorize_nd(n_axes=3)
@@ -1134,7 +1134,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
             tmp = M12 @ logm(
                 Mm12 @ maskedX[i] @ Mm12,
             ) @ M12
-            J += sample_weight[i] * masks[i] @ tmp @ masks[i].T
+            J += sample_weight[i] * masks[i] @ tmp @ masks[i].mT
         M12 = sqrtm(M)
         Mm12 = invsqrtm(M)
         M = M12 @ expm(Mm12 @ (nu * J) @ Mm12) @ M12

@@ -105,21 +105,21 @@ def _complex_estimator(func):
 @_complex_estimator
 def _lwf(X, **kwds):
     """Wrapper for sklearn ledoit wolf covariance estimator"""
-    C, _ = ledoit_wolf(_to_numpy(X).T, **kwds)
+    C, _ = ledoit_wolf(_to_numpy(X).mT, **kwds)
     return C if isinstance(X, np.ndarray) else _from_numpy(C, like=X)
 
 
 @_complex_estimator
 def _mcd(X, **kwds):
     """Wrapper for sklearn mcd covariance estimator"""
-    _, C, _, _ = fast_mcd(_to_numpy(X).T, **kwds)
+    _, C, _, _ = fast_mcd(_to_numpy(X).mT, **kwds)
     return C if isinstance(X, np.ndarray) else _from_numpy(C, like=X)
 
 
 @_complex_estimator
 def _oas(X, **kwds):
     """Wrapper for sklearn oas covariance estimator"""
-    C, _ = oas(_to_numpy(X).T, **kwds)
+    C, _ = oas(_to_numpy(X).mT, **kwds)
     return C if isinstance(X, np.ndarray) else _from_numpy(C, like=X)
 
 
@@ -655,7 +655,7 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator="cov"):
     jump = int(window * overlapp)
     ix = 0
     while (ix + window < n_times):
-        X.append(est(sig[ix:ix + window, :].T))
+        X.append(est(sig[ix:ix + window, :].mT))
         ix = ix + jump
 
     return xp.stack(X, axis=0)
