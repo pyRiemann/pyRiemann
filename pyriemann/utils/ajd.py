@@ -52,11 +52,8 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     """
     xp = get_namespace(X, init)
     n_matrices, _, _ = X.shape
-    # reshape input matrix
-    A = xp.swapaxes(X, 0, 1).reshape(X.shape[-1], -1)
-    A_copy = xp.zeros_like(A)
-    A_copy[...] = A
-    A = A_copy
+    # reshape input matrix: (n_matrices, n, n) -> (n, n_matrices*n)
+    A = xp.reshape(xp.swapaxes(X, 0, 1), (X.shape[-1], -1))
     n, n_matrices_x_n = A.shape
 
     # init variables
@@ -177,11 +174,8 @@ def ajd_pham(
         like=X,
     )  # sum = 1
 
-    A = xp.swapaxes(xp.swapaxes(X, 0, 2), 1, 2)
-    A = A.reshape(X.shape[-1], n_matrices * X.shape[-1])
-    A_copy = xp.zeros_like(A)
-    A_copy[...] = A
-    A = A_copy
+    # reshape input matrix: (n_matrices, n, n) -> (n, n_matrices*n)
+    A = xp.reshape(xp.swapaxes(X, 0, 1), (X.shape[-1], -1))
     n, n_matrices_x_n = A.shape
 
     if init is None:
