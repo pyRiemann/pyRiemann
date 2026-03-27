@@ -1,5 +1,6 @@
 """Means of SPD/HPD matrices."""
 
+import math
 import warnings
 
 import numpy as np
@@ -620,7 +621,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     else:
         K = sqrtm(G)
 
-    eye_n, sqrt_n = xp.eye(n, dtype=X.dtype, device=xpd(X)), np.sqrt(n)
+    eye_n, sqrt_n = xp.eye(n, dtype=X.dtype, device=xpd(X)), math.sqrt(n)
     for _ in range(maxiter):
         H = weighted_average(
             powm(
