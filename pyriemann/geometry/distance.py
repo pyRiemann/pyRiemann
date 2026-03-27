@@ -5,8 +5,7 @@ from scipy.linalg import eigvalsh, solve
 from sklearn.metrics import euclidean_distances
 
 from .base import _recursive, invsqrtm, logm, powm, sqrtm
-from .test import is_real_type
-from .utils import check_function
+from .._helpers import is_real_type, check_function
 
 
 def _check_inputs(A, B):

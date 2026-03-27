@@ -10,6 +10,8 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.11.dev
 ---------
 
+- Move geometry modules (base, covariance, distance, geodesic, mean, median, tangentspace, ajd) from ``utils/`` to standalone ``geometry/`` package. Backward-compatible shims preserve all existing import paths. :pr:`425` by :user:`bruAristimunha`
+
 - Enhance :func:`pyriemann.datasets.sample_gaussian_spd` adding support for dispersion defined as a covariance matrix. :pr:`412` by :user:`thibaultdesurrel`
 
 - Add :class:`pyriemann.clustering.GaussianMixture`. :pr:`411` by :user:`qbarthelemy`

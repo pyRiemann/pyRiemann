@@ -3,7 +3,7 @@ import numpy as np
 from scipy.linalg import eigvalsh
 
 from .base import _recursive, ctranspose, sqrtm, invsqrtm, powm, logm, expm
-from .utils import check_function
+from .._helpers import check_function
 
 
 def geodesic_chol(A, B, alpha=0.5):

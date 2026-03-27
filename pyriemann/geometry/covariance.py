@@ -7,8 +7,7 @@ from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
 from .base import ctranspose, _vectorize_nd
 from .distance import distance_mahalanobis
-from .test import is_square, is_real_type
-from .utils import check_function
+from .._helpers import is_square, is_real_type, check_function
 
 
 def _complex_estimator(func):

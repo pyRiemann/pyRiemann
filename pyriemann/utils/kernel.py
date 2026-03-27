@@ -2,8 +2,8 @@
 
 import numpy as np
 
-from .base import ctranspose, invsqrtm, logm
-from .mean import mean_riemann
+from pyriemann.geometry.base import ctranspose, invsqrtm, logm
+from pyriemann.geometry.mean import mean_riemann
 from .utils import check_function
 
 

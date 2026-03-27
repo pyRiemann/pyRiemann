@@ -4,13 +4,12 @@ import warnings
 
 import numpy as np
 
-from . import deprecated
+from .._helpers import deprecated, check_weights, check_function, check_init
 from .ajd import ajd_pham
 from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann, geodesic_thompson
 from .tangentspace import log_map_wasserstein, exp_map_wasserstein
-from .utils import check_weights, check_function, check_init
 
 
 @_vectorize_nd(n_axes=3)

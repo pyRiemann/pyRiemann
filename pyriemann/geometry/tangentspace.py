@@ -3,7 +3,7 @@
 import numpy as np
 
 from .base import ctranspose, expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
-from .utils import check_function
+from .._helpers import check_function
 
 
 def _check_dimensions(X, Cref):

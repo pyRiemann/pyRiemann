@@ -4,7 +4,7 @@ import warnings
 
 import numpy as np
 
-from .utils import check_weights, check_function, check_init
+from .._helpers import check_weights, check_function, check_init
 
 
 def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):

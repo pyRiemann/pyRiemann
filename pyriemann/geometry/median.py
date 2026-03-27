@@ -7,7 +7,7 @@ import numpy as np
 from .base import sqrtm, invsqrtm, logm, expm
 from .distance import distance
 from .mean import mean_euclid
-from .utils import check_weights
+from .._helpers import check_weights
 
 
 def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
