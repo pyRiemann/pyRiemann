@@ -11,7 +11,6 @@ def test_permutation_badmode():
         PermutationDistance(mode="badmode")
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("mode", ["ttest", "ftest"])
 def test_permutation_mode(mode, get_mats, get_labels):
     """Test one way permutation test"""
@@ -22,7 +21,6 @@ def test_permutation_mode(mode, get_mats, get_labels):
     p.test(X, y)
 
 
-@pytest.mark.numpy_only
 def test_permutation_pairwise(get_mats, get_labels):
     """Test one way permutation pairwise test"""
     n_matrices, n_channels, n_classes = 6, 3, 2
@@ -36,7 +34,6 @@ def test_permutation_pairwise(get_mats, get_labels):
     p.test(X, y, groups=groups)
 
 
-@pytest.mark.numpy_only
 def test_permutation_pairwise_estimator(get_mats, get_labels):
     """Test one way permutation with estimator"""
     n_matrices, n_channels, n_classes = 6, 3, 2
@@ -47,7 +44,6 @@ def test_permutation_pairwise_estimator(get_mats, get_labels):
     p.test(X, y)
 
 
-@pytest.mark.numpy_only
 def test_permutation_pairwise_unique(get_mats, get_labels):
     """Test one way permutation with estimator"""
     n_matrices, n_channels, n_classes = 6, 3, 2
@@ -58,7 +54,6 @@ def test_permutation_pairwise_unique(get_mats, get_labels):
     p.test(X, y)
 
 
-@pytest.mark.numpy_only
 def test_permutation_pairwise_plot(get_mats, get_labels):
     """Test one way permutation with estimator"""
     n_matrices, n_channels, n_classes = 6, 3, 2
@@ -69,7 +64,6 @@ def test_permutation_pairwise_plot(get_mats, get_labels):
     p.plot(nbins=2)
 
 
-@pytest.mark.numpy_only
 def test_permutation_model(get_mats, get_labels):
     """Test one way permutation test"""
     n_matrices, n_channels, n_classes = 6, 3, 2

@@ -67,7 +67,6 @@ def test_mode(X, axis, expected):
         assert_array_equal(actual, sp.ravel())
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("n_classes", [2, 3])
 @pytest.mark.parametrize("classif", classifs)
@@ -189,7 +188,6 @@ def clf_pipeline(classif, labels, get_mats):
     )
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("classif", classifs)
 @pytest.mark.parametrize("mean", ["faulty", 42])
 @pytest.mark.parametrize("dist", ["not_real", 27])
@@ -202,7 +200,6 @@ def test_metric_dict_error(classif, mean, dist, get_mats, get_labels):
         clf.fit(X, y).predict(X)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("classif", classifs)
 @pytest.mark.parametrize("metric", [42, "faulty", {"foo": "bar"}])
 def test_metric_errors(classif, metric, get_mats, get_labels):
@@ -214,7 +211,6 @@ def test_metric_errors(classif, metric, get_mats, get_labels):
         clf.fit(X, y).predict(X)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("classif", classifs)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_metric_str(classif, metric, get_mats, get_labels):
@@ -235,7 +231,6 @@ def call_dist(A, B, squared=False):
     return euclidean(A.flatten(), B.flatten())
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("metric_mean", [
     "euclid", "logeuclid", "riemann", call_mean
 ])
@@ -253,7 +248,6 @@ def test_mdm(metric_mean, metric_dist, n_classes, get_mats, get_labels):
     assert clf.covmeans_.shape == (n_classes, n_channels, n_channels)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("metric", [
     "euclid", "logchol", "logeuclid", "riemann"
@@ -267,7 +261,6 @@ def test_mdm_hpd(kind, metric, get_mats, get_labels):
     clf.fit(X, y).predict_proba(X)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("metric_mean", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("metric_dist", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("metric_map", [
@@ -286,7 +279,6 @@ def test_fgmdm(metric_mean, metric_dist, metric_map, get_mats, get_labels):
     clf.fit(X, y).predict(X)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("k", [1, 3, 4])
 def test_knn(k, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 9, 3, 3
@@ -303,7 +295,6 @@ def test_knn(k, get_mats, get_labels):
         assert_array_equal(y, preds)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("metric_mean", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("metric_map", [
     "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
@@ -317,7 +308,6 @@ def test_tsclassifier_metrics(metric_mean, metric_map, get_mats, get_labels):
     clf.fit(X, y).predict(X)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("clf", [LDA(), LogisticRegression()])
 def test_tsclassifier_fit(clf, get_mats, get_labels, get_weights):
     n_matrices, n_channels, n_classes = 6, 3, 3
@@ -329,7 +319,6 @@ def test_tsclassifier_fit(clf, get_mats, get_labels, get_weights):
     tsclf.fit(X, y, sample_weight=weights).predict(X)
 
 
-@pytest.mark.numpy_only
 def test_tsclassifier_clf_error(get_mats, get_labels):
     """Test TS if not Classifier"""
     n_matrices, n_channels, n_classes = 6, 3, 2
@@ -350,7 +339,6 @@ def test_svc_params():
     assert rsvc.max_iter == 501
 
 
-@pytest.mark.numpy_only
 def test_svc_params_error(get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
@@ -363,7 +351,6 @@ def test_svc_params_error(get_mats, get_labels):
         SVC(foo=5)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_cref_metric(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
@@ -376,7 +363,6 @@ def test_svc_cref_metric(get_mats, get_labels, metric):
     assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_cref_callable(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
@@ -395,7 +381,6 @@ def test_svc_cref_callable(get_mats, get_labels, metric):
     assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_cref_error(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
@@ -410,7 +395,6 @@ def test_svc_cref_error(get_mats, get_labels, metric):
         SVC(Cref=metric).fit(X, y)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_kernel_callable(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
@@ -433,7 +417,6 @@ def test_svc_kernel_callable(get_mats, get_labels, metric):
     pickle.dumps(rsvc_1)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("kernel_fct", [None, "precomputed"])
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svc_kernel_precomputed(get_mats, get_labels, kernel_fct, metric):
@@ -444,7 +427,6 @@ def test_svc_kernel_precomputed(get_mats, get_labels, kernel_fct, metric):
     SVC(kernel_fct=kernel_fct, metric=metric).fit(X, y)
 
 
-@pytest.mark.numpy_only
 def test_svc_kernel_error(get_mats, get_labels):
     n_matrices, n_channels, n_classes = 4, 2, 2
     X = get_mats(n_matrices, n_channels, "spd")
@@ -460,7 +442,6 @@ def test_svc_kernel_error(get_mats, get_labels):
         SVC(kernel_fct=custom_kernel, metric="riemann").fit(X, y)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("power_list", [[-1, 0, 1], [0, 0.1]])
 @pytest.mark.parametrize("method_combination", [
     "sum_means", "inf_means", None
@@ -492,7 +473,6 @@ def test_meanfield(get_mats, get_labels,
         mf.score(X, y)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("power_list", [[-1, 0, 1], [0, 0.1]])
 def test_meanfield_transformer(get_mats, get_labels, power_list):
     n_matrices, n_channels, n_classes = 8, 3, 2
@@ -532,7 +512,6 @@ def test_nch(metric, rndstate):
     assert dist[0] <= 1e-2
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("n_classes", [1, 2, 3])
 @pytest.mark.parametrize("metric_mean", ["euclid", "logeuclid", "riemann"])

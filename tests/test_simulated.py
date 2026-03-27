@@ -181,7 +181,6 @@ def test_gaussian_blobs_errors():
                             class_disp=class_disp * np.ones(n_dim))
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("n_matrices", [3, 4, 5])
 @pytest.mark.parametrize("n_dim", [2, 3, 4])
 def test_make_outliers(rndstate, get_mats, n_matrices, n_dim):

@@ -80,7 +80,6 @@ def test_sample_gaussian_spd_sigma_errors():
         sample_gaussian_spd(4.2, mean, sigma)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("n_jobs", [1, -1])
@@ -98,7 +97,6 @@ def test_random_over_sampler(kind, metric, n_jobs, get_mats):
     assert Xr.shape[1:] == (n_dim, n_dim)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize(
     "sampling_strategy",
     ["minority", "not minority", "not majority", "all", "auto"]

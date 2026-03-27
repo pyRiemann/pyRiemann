@@ -23,7 +23,6 @@ def test_whitening_init():
     assert not whit.verbose
 
 
-@pytest.mark.numpy_only
 def test_whitening_fit_errors(get_mats):
     """Test Whitening"""
     n_matrices, n_channels = 2, 6
@@ -49,7 +48,6 @@ def test_whitening_fit_errors(get_mats):
         Whitening(dim_red=20).fit(X)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("use_weight", [True, False])
 @pytest.mark.parametrize("dim_red", dim_red)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
@@ -77,7 +75,6 @@ def test_whitening_fit(use_weight, dim_red, metric, get_mats, get_weights):
     assert whit.inv_filters_.shape == (n_comp, n_channels)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("use_weight", [True, False])
 @pytest.mark.parametrize("alpha", [0, 0.5, 1, None])
 @pytest.mark.parametrize("dim_red", dim_red)
@@ -100,7 +97,6 @@ def test_whitening_partial_fit(use_weight, alpha, dim_red, metric,
     whit.partial_fit(X, alpha=alpha)
 
 
-@pytest.mark.numpy_only
 def test_whitening_partial_fit_errors(get_mats):
     n_matrices, n_channels = 3, 3
     X = get_mats(n_matrices, n_channels, "spd")
@@ -112,7 +108,6 @@ def test_whitening_partial_fit_errors(get_mats):
         whit.partial_fit(X, alpha=42)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("dim_red", dim_red)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_whitening_transform(dim_red, metric, get_mats):
@@ -140,7 +135,6 @@ def test_whitening_transform(dim_red, metric, get_mats):
     assert_array_almost_equal(Xwhit, Xwhit2)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("dim_red", dim_red)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_whitening_inverse_transform(dim_red, metric, get_mats):
