@@ -611,7 +611,8 @@ def distance_wasserstein(A, B, squared=False):
         axis=-1,
     )
     real_d2 = xp.real(d2)
-    d2 = xp.maximum(real_d2, xp.asarray(0, dtype=real_d2.dtype, device=xpd(d2)))
+    zero = xp.asarray(0, dtype=real_d2.dtype, device=xpd(d2))
+    d2 = xp.maximum(real_d2, zero)
     return d2 if squared else xp.sqrt(d2)
 
 

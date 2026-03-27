@@ -146,7 +146,7 @@ def exp_map_logeuclid(X, Cref):
         <https://ieeexplore.ieee.org/document/10735221>`_
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
-    xp = check_matrix_pair(X, Cref, require_square=True)
+    check_matrix_pair(X, Cref, require_square=True)
     return expm(
         logm(Cref) + ddlogm(X, Cref),
     )
@@ -195,7 +195,7 @@ def exp_map_riemann(X, Cref, Cm12=False):
         <https://link.springer.com/article/10.1007/s11263-005-3222-z>`_
         X. Pennec, P. Fillard, N. Ayache. IJCV, 2006, 66(1), pp. 41-66.
     """
-    xp = check_matrix_pair(X, Cref, require_square=True)
+    check_matrix_pair(X, Cref, require_square=True)
     if Cm12:
         Cm12 = invsqrtm(Cref)
         X = Cm12 @ X @ Cm12
@@ -360,7 +360,10 @@ def log_map_logchol(X, Cref):
         X_chol.shape[:-2],
         Cref_chol.shape[:-2],
     )
-    res = xp.zeros(batch_shape + X_chol.shape[-2:], dtype=X_chol.dtype, device=xpd(X_chol))
+    res = xp.zeros(
+        batch_shape + X_chol.shape[-2:],
+        dtype=X_chol.dtype, device=xpd(X_chol),
+    )
 
     tri0, tri1 = tril_indices(X.shape[-1], -1, xp=xp, like=X)
     res[..., tri0, tri1] = X_chol[..., tri0, tri1] - Cref_chol[..., tri0, tri1]
@@ -423,7 +426,7 @@ def log_map_logeuclid(X, Cref):
         <https://ieeexplore.ieee.org/document/10735221>`_
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
-    xp = check_matrix_pair(X, Cref, require_square=True)
+    check_matrix_pair(X, Cref, require_square=True)
     logCref = logm(Cref)
     X_new = ddexpm(
         logm(X) - logCref,
@@ -475,7 +478,7 @@ def log_map_riemann(X, Cref, C12=False):
         <https://link.springer.com/article/10.1007/s11263-005-3222-z>`_
         X. Pennec, P. Fillard, N. Ayache. IJCV, 2006, 66(1), pp. 41-66.
     """
-    xp = check_matrix_pair(X, Cref, require_square=True)
+    check_matrix_pair(X, Cref, require_square=True)
     Cm12 = invsqrtm(Cref)
     X_new = logm(Cm12 @ X @ Cm12)
     if C12:
@@ -519,7 +522,7 @@ def log_map_wasserstein(X, Cref):
         L. Malagò, L. Montrucchio, G. Pistone. Information Geometry, 2018, 1,
         pp. 137–179.
     """
-    xp = check_matrix_pair(X, Cref, require_square=True)
+    check_matrix_pair(X, Cref, require_square=True)
     P12 = sqrtm(Cref)
     P12inv = invsqrtm(Cref)
     sqrt_bracket = sqrtm(P12 @ X @ P12)
@@ -1155,7 +1158,6 @@ def transport_riemann(X, A, B):
     # BA^{-1} is not sym => use sqrtm from scipy:
     # E = scipy.linalg.sqrtm(B @ np.linalg.inv(A))
     # (BA^{-1})^{1/2} = A^{1/2} (A^{-1/2}BA^{-1/2})^{1/2} A^{-1/2}
-    xp = get_namespace(X, A, B)
     A12 = sqrtm(A)
     A12inv = invsqrtm(A)
     E = A12 @ sqrtm(A12inv @ B @ A12inv) @ A12inv

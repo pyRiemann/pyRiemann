@@ -3,7 +3,6 @@ import pytest
 from conftest import assert_array_almost_equal, to_numpy, approx
 from scipy.linalg import block_diag
 from scipy.signal import welch, csd, coherence as coherence_sp
-from sklearn.covariance import empirical_covariance
 
 from pyriemann.utils.covariance import (
     covariances, covariances_EP, covariances_X, eegtocov,

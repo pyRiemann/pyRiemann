@@ -307,7 +307,6 @@ def _nearest_sym_pos_def(S, reg=1e-6):
     return regularize(P, reg)
 
 
-
 def nearest_sym_pos_def(X, reg=1e-6):
     """Find the nearest SPD matrices.
 

@@ -142,7 +142,7 @@ def test_upper_and_unupper(kind, get_mats):
 
 @pytest.mark.parametrize("metric", metrics)
 def test_tangent_space_broadcasting(metric, get_mats):
-    n_dim5, n_dim4, n_matrices, n_channels = 4, 6, 5, 3
+    n_matrices, n_channels = 5, 3
     n_ts = (n_channels * (n_channels + 1)) // 2
     X = get_mats(n_matrices, n_channels, "spd")
     xp = get_namespace(X)
@@ -172,7 +172,7 @@ def test_tangent_space_riemann_properties(kind, get_mats):
 
 @pytest.mark.parametrize("metric", metrics)
 def test_untangent_space_broadcasting(metric, get_mats):
-    n_dim5, n_dim4, n_matrices, n_channels = 4, 6, 10, 3
+    n_matrices, n_channels = 10, 3
     n_ts = (n_channels * (n_channels + 1)) // 2
     T = get_mats(n_matrices, [n_ts], "real")
     xp = get_namespace(T)

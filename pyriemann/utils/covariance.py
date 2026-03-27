@@ -565,14 +565,17 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
     original_shape = X.shape
     n_channels, n_times = original_shape[-2], original_shape[-1]
 
-    Hchannels = xp.eye(n_channels, dtype=X.real.dtype, device=xpd(X)) - xp.linalg.outer(
-        xp.ones(n_channels, dtype=X.real.dtype, device=xpd(X)),
-        xp.ones(n_channels, dtype=X.real.dtype, device=xpd(X)),
-    ) / n_channels
-    Htimes = xp.eye(n_times, dtype=X.real.dtype, device=xpd(X)) - xp.linalg.outer(
-        xp.ones(n_times, dtype=X.real.dtype, device=xpd(X)),
-        xp.ones(n_times, dtype=X.real.dtype, device=xpd(X)),
-    ) / n_times
+    dt, dev = X.real.dtype, xpd(X)
+    ones_ch = xp.ones(n_channels, dtype=dt, device=dev)
+    Hchannels = (
+        xp.eye(n_channels, dtype=dt, device=dev)
+        - xp.linalg.outer(ones_ch, ones_ch) / n_channels
+    )
+    ones_t = xp.ones(n_times, dtype=dt, device=dev)
+    Htimes = (
+        xp.eye(n_times, dtype=dt, device=dev)
+        - xp.linalg.outer(ones_t, ones_t) / n_times
+    )
     X = Hchannels @ X @ Htimes  # Eq(8), double centering
 
     batch_shape = original_shape[:-2]
@@ -648,7 +651,10 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator="cov"):
     xp = get_namespace(sig)
     X = []
     if padding:
-        padd = xp.zeros((int(window / 2), sig.shape[1]), dtype=sig.dtype, device=xpd(sig))
+        padd = xp.zeros(
+            (int(window / 2), sig.shape[1]),
+            dtype=sig.dtype, device=xpd(sig),
+        )
         sig = xp.concat((padd, sig, padd), axis=0)
 
     n_times, n_channels = sig.shape
@@ -766,7 +772,10 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         freqs = None
 
     n_freqs = fdata.shape[2]
-    S = xp.zeros((n_channels, n_channels, n_freqs), dtype=fdata.dtype, device=xpd(fdata))
+    S = xp.zeros(
+        (n_channels, n_channels, n_freqs),
+        dtype=fdata.dtype, device=xpd(fdata),
+    )
     for i in range(n_freqs):
         spec = fdata[:, :, i]
         S[:, :, i] = ctranspose(spec) @ spec

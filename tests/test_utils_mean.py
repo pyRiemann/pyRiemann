@@ -248,7 +248,6 @@ def test_mean_broadcasting(mean, get_mats):
     assert M5[0, 0] == approx(M3)
 
 
-
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("mean", [
     mean_logeuclid,
