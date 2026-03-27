@@ -107,7 +107,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
         if not crit:
             break
     else:
-        warnings.warn("Convergence not reached", stacklevel=2)
+        warnings.warn("Convergence not reached")
 
     D = rearrange(A, 'n1 (matrices n2) -> matrices n1 n2', matrices=n_matrices)
     return (
@@ -244,7 +244,7 @@ def ajd_pham(
         if crit < epsilon:
             break
     else:
-        warnings.warn("Convergence not reached", stacklevel=2)
+        warnings.warn("Convergence not reached")
 
     D = xp.conj(rearrange(
         A, 'n1 (matrices n2) -> matrices n1 n2', matrices=n_matrices,
@@ -366,7 +366,7 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
             break
         crit = crit_new
     else:
-        warnings.warn("Convergence not reached", stacklevel=2)
+        warnings.warn("Convergence not reached")
 
     D = rearrange(
         Ms, 'n1 (matrices n2) -> matrices n1 n2', matrices=n_matrices,

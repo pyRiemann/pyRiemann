@@ -92,7 +92,7 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
         if crit <= tol:
             break
     else:
-        warnings.warn("Convergence not reached", stacklevel=2)
+        warnings.warn("Convergence not reached")
 
     return M
 
@@ -186,6 +186,6 @@ def median_riemann(
         if crit <= tol:
             break
     else:
-        warnings.warn("Convergence not reached", stacklevel=2)
+        warnings.warn("Convergence not reached")
 
     return M
