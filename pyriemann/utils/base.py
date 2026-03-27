@@ -1,5 +1,7 @@
 """Base functions for SPD/HPD matrices."""
 
+from functools import wraps
+
 import numpy as np
 
 from ._backend import get_namespace, xpd, diag_embed
@@ -14,7 +16,7 @@ def ctranspose(X):
     Parameters
     ----------
     X : ndarray, shape (..., n, m)
-        Matrices, at least 2D ndarray.
+        Matrices.
 
     Returns
     -------
@@ -33,6 +35,36 @@ def ctranspose(X):
     return xp.swapaxes(xp.conj(X), -2, -1)
 
 
+def _vectorize_nd(n_axes=2):
+    """Decorator to vectorize a function over leading batch dimensions.
+
+    Parameters
+    ----------
+    n_axes : int, default=2
+        Number of trailing axes that form the core dimensions:
+
+        - n_axes=2: (..., n1, n2) -> func(n1, n2) -> (..., m1, m2)
+        - n_axes=3: (..., n1, n2, n3) -> func(n1, n2, n3) -> (..., m1, m2)
+    """
+    def decorator(func):
+        @wraps(func)
+        def wrapper(X, *args, **kwargs):
+            batch_shape = X.shape[:-n_axes]
+            if len(batch_shape) == 0:
+                return func(X, *args, **kwargs)
+            xp = get_namespace(X)
+            n_batch = int(np.prod(batch_shape))
+            core_shape = X.shape[-n_axes:]
+            X_flat = xp.reshape(X, (n_batch, *core_shape))
+            X_new = xp.stack(
+                [func(X_flat[b], *args, **kwargs) for b in range(n_batch)],
+                axis=0,
+            )
+            return xp.reshape(X_new, (*batch_shape, *X_new.shape[1:]))
+        return wrapper
+    return decorator
+
+
 ###############################################################################
 
 
@@ -41,8 +73,10 @@ def _recursive(fun, A, B, *args, **kwargs):
     if A.ndim == 2:
         return fun(A, B, *args, **kwargs)
     else:
-        return np.asarray(
-            [_recursive(fun, a, b, *args, **kwargs) for a, b in zip(A, B)]
+        xp = get_namespace(A)
+        return xp.stack(
+            [_recursive(fun, a, b, *args, **kwargs) for a, b in zip(A, B)],
+            axis=0,
         )
 
 
@@ -81,7 +115,7 @@ def expm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
 
     Returns
     -------
@@ -108,7 +142,7 @@ def invsqrtm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
 
     Returns
     -------
@@ -138,7 +172,7 @@ def logm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
 
     Returns
     -------
@@ -165,7 +199,7 @@ def powm(C, alpha):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
     alpha : float
         The power to apply.
 
@@ -196,7 +230,7 @@ def sqrtm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
 
     Returns
     -------
@@ -273,6 +307,7 @@ def _nearest_sym_pos_def(S, reg=1e-6):
     return regularize(P, reg)
 
 
+
 def nearest_sym_pos_def(X, reg=1e-6):
     """Find the nearest SPD matrices.
 
@@ -281,14 +316,14 @@ def nearest_sym_pos_def(X, reg=1e-6):
 
     Parameters
     ----------
-    X : ndarray, shape (n_matrices, n, n)
+    X : ndarray, shape (..., n, n)
         Square matrices.
     reg : float, default=1e-6
         Regularization parameter.
 
     Returns
     -------
-    P : ndarray, shape (n_matrices, n, n)
+    P : ndarray, shape (..., n, n)
         Nearest SPD matrices.
 
     Notes
@@ -329,8 +364,8 @@ def _first_divided_difference(
 ):
     r"""First divided difference of a matrix function.
 
-    First divided difference of a matrix function applied to the eigenvalues
-    of a symmetric matrix. The first divided difference is defined as [1]_:
+    The first divided difference of a matrix function applied to the
+    eigenvalues :math:`\mathbf{d}` of a symmetric matrix is [1]_:
 
     .. math::
        [FDD(d)]_{i,j} =
@@ -341,17 +376,16 @@ def _first_divided_difference(
            & d_i = d_j
            \end{cases}
 
-
     Parameters
     ----------
-    d : ndarray, shape (n,)
-        Eigenvalues of a symmetric matrix.
+    d : ndarray, shape (..., n)
+        Eigenvalues of symmetric matrices.
     fct : callable
-        Function to apply to eigenvalues of d. Has to be defined for all
-        possible eigenvalues of d.
+        Function to apply to eigenvalues d. Has to be defined for all
+        possible eigenvalues d.
     fctder : callable
         Derivative of the function to apply. Has to be defined for all
-        possible eigenvalues of d.
+        possible eigenvalues d.
     atol : float, default=1e-12
         Absolute tolerance for equality of eigenvalues.
     rtol : float, default=1e-12
@@ -359,7 +393,7 @@ def _first_divided_difference(
 
     Returns
     -------
-    FDD : ndarray, shape (n, n)
+    FDD : ndarray, shape (..., n, n)
         First divided difference of the function applied to the eigenvalues.
 
     Notes

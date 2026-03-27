@@ -148,9 +148,10 @@ def distance_harmonic(A, B, squared=False):
     distance
     """
     xp = get_namespace(A, B)
+    eye_n = xp.eye(A.shape[-1], dtype=A.dtype, device=xpd(A))
     return distance_euclid(
-        xp.linalg.inv(A),
-        xp.linalg.inv(B),
+        xp.linalg.solve(A, eye_n),
+        xp.linalg.solve(B, eye_n),
         squared=squared,
     )
 
@@ -796,12 +797,14 @@ def _pairwise_distance_harmonic(X, Y=None, squared=False):
     pairwise_distance
     distance_harmonic
     """
+    eye_n = np.eye(X.shape[-1])
     if Y is None:
-        invY = None
+        Y_inv = None
     else:
-        invY = np.linalg.inv(Y)
+        Y_inv = np.linalg.solve(Y, eye_n)
 
-    return _pairwise_distance_euclid(np.linalg.inv(X), invY, squared=squared)
+    X_inv = np.linalg.solve(X, eye_n)
+    return _pairwise_distance_euclid(X_inv, Y_inv, squared=squared)
 
 
 def _pairwise_distance_logchol(X, Y=None, squared=False):
@@ -1051,11 +1054,11 @@ def distance_mahalanobis(X, cov, mean=None, squared=False):
 
     Parameters
     ----------
-    X : ndarray, shape (n, n_vectors)
+    X : ndarray, shape (..., n, m)
         Vectors.
-    cov : ndarray, shape (n, n)
+    cov : ndarray, shape (..., n, n)
         Covariance matrix of the multivariate Gaussian distribution.
-    mean : None | ndarray, shape (n, 1), default=None
+    mean : None | ndarray, shape (..., n, 1), default=None
         Mean vector of the multivariate Gaussian distribution.
         If None, distribution is considered as centered.
     squared : bool, default=False
@@ -1065,7 +1068,7 @@ def distance_mahalanobis(X, cov, mean=None, squared=False):
 
     Returns
     -------
-    d : ndarray, shape (n_vectors,)
+    d : ndarray, shape (..., m)
         Mahalanobis distances.
 
     Notes
@@ -1081,5 +1084,5 @@ def distance_mahalanobis(X, cov, mean=None, squared=False):
         X = X - mean
 
     Xw = invsqrtm(cov) @ X
-    d2 = xp.real(xp.sum(xp.conj(Xw) * Xw, axis=0))
+    d2 = xp.real(xp.sum(xp.conj(Xw) * Xw, axis=-2))
     return d2 if squared else xp.sqrt(d2)

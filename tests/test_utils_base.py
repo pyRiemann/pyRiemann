@@ -1,6 +1,9 @@
+from functools import partial
+
 import numpy as np
 from conftest import assert_array_almost_equal, to_numpy
 import pytest
+from pytest import approx
 
 from pyriemann.utils._backend import get_namespace, xpd as device
 from pyriemann.utils.base import (
@@ -12,11 +15,10 @@ from pyriemann.utils.base import (
     sqrtm,
     nearest_sym_pos_def,
     _first_divided_difference,
+    ddexpm,
     ddlogm,
-    ddexpm
 )
-from pyriemann.utils.mean import mean_riemann
-from pyriemann.utils.test import is_pos_def, is_sym_pos_def
+from pyriemann.utils.test import is_pos_def, is_sym_pos_def, is_hermitian
 
 
 n_channels = 3
@@ -34,35 +36,30 @@ def test_ctranspose(get_mats):
 
 
 def test_expm():
-    """Test matrix exponential"""
     X = 2 * np.eye(n_channels)
     Xtrue = np.exp(2) * np.eye(n_channels)
     assert_array_almost_equal(expm(X), Xtrue, decimal=10)
 
 
 def test_invsqrtm():
-    """Test matrix inverse square root"""
     X = 2 * np.eye(n_channels)
     Xtrue = (1.0 / np.sqrt(2)) * np.eye(n_channels)
     assert_array_almost_equal(invsqrtm(X), Xtrue, decimal=10)
 
 
 def test_logm():
-    """Test matrix logarithm"""
     X = 2 * np.eye(n_channels)
     Xtrue = np.log(2) * np.eye(n_channels)
     assert_array_almost_equal(logm(X), Xtrue, decimal=10)
 
 
 def test_powm():
-    """Test matrix power"""
     X = 2 * np.eye(n_channels)
     Xtrue = (2 ** 0.3) * np.eye(n_channels)
     assert_array_almost_equal(powm(X, 0.3), Xtrue, decimal=10)
 
 
 def test_sqrtm():
-    """Test matrix square root"""
     X = 2 * np.eye(n_channels)
     Xtrue = np.sqrt(2) * np.eye(n_channels)
     assert_array_almost_equal(sqrtm(X), Xtrue, decimal=10)
@@ -73,14 +70,17 @@ def test_sqrtm():
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("funm", [expm, invsqrtm, logm, powm, sqrtm])
+@pytest.mark.parametrize("funm", [
+    expm,
+    invsqrtm,
+    logm,
+    pytest.param(partial(powm, alpha=0.2), id="powm"),
+    sqrtm
+])
 def test_funm_all(kind, funm, get_mats):
     n_matrices, n_dim = 10, 3
     X = get_mats(n_matrices, n_dim, kind)
-    if funm is powm:
-        Xt = funm(X, 0.42)
-    else:
-        Xt = funm(X)
+    Xt = funm(X)
     assert Xt.shape == (n_matrices, n_dim, n_dim)
 
 
@@ -93,22 +93,35 @@ def test_funm_error():
         logm([5.2])
 
 
-@pytest.mark.parametrize("funm", [expm, invsqrtm, logm, powm, sqrtm])
-def test_funm_ndarray(funm):
-    def test(funm, X):
-        if funm == powm:
-            Xt = funm(X, 0.2)
-        else:
-            Xt = funm(X)
-        assert X.shape == Xt.shape
+@pytest.mark.parametrize("funm", [
+    expm,
+    invsqrtm,
+    logm,
+    pytest.param(partial(powm, alpha=0.2), id="powm"),
+    sqrtm,
+])
+def test_funm_broadcasting(funm, get_mats):
+    n_dim5, n_dim4, n_matrices, n_channels = 2, 6, 5, 3
+    X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")
 
-    n_matrices = 6
-    X_3d = np.asarray([np.eye(n_channels) for _ in range(n_matrices)])
-    test(funm, X_3d)
+    # 2D array
+    F2 = funm(X[0, 0, 0])
+    assert F2.shape == (n_channels, n_channels)
 
-    n_sets = 5
-    X_4d = np.asarray([X_3d for _ in range(n_sets)])
-    test(funm, X_4d)
+    # 3D array
+    F3 = funm(X[0, 0])
+    assert F3.shape == (n_matrices, n_channels, n_channels)
+    assert F3[0] == approx(F2)
+
+    # 4D array
+    F4 = funm(X[0])
+    assert F4.shape == (n_dim4, n_matrices, n_channels, n_channels)
+    assert F4[0, 0] == approx(F2)
+
+    # 5D array
+    F5 = funm(X)
+    assert F5.shape == (n_dim5, n_dim4, n_matrices, n_channels, n_channels)
+    assert F5[0, 0, 0] == approx(F2)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -161,6 +174,7 @@ def test_funm_properties(get_mats, kind):
 @pytest.mark.numpy_only
 def test_check_raise():
     """Test check SPD matrices"""
+    from pyriemann.utils.mean import mean_riemann
     X = 2 * np.ones((10, n_channels, n_channels))
     # This is an indirect check, the riemannian mean must crash when the
     # matrices are not SPD.
@@ -180,6 +194,9 @@ def test_nearest_sym_pos_def(get_mats):
     assert not is_pos_def(Psd)
     assert is_sym_pos_def(nearest_sym_pos_def(X_np))
     assert is_sym_pos_def(nearest_sym_pos_def(Psd))
+
+    X = get_mats([4, 3, n_matrices], n_channels, "spd")
+    nearest_sym_pos_def(X)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -237,6 +254,29 @@ def test_ddexpm(get_mats, kind):
     eye = xp.eye(n_channels, dtype=X.dtype, device=device(X))
     fdd_expm = ddexpm(X, eye)
     assert_array_almost_equal(fdd_expm, np.exp(1) * to_numpy(X))
+
+
+@pytest.mark.numpy_only
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("ddfun", [ddlogm, ddexpm])
+def test_directional_derivative_properties(kind, ddfun, get_mats, rndstate):
+    X, Y, Cref = get_mats(3, n_channels, kind)
+    Xdd = ddfun(X, Cref)
+
+    # linearity
+    a, b = rndstate.uniform(0.01, 0.99, size=2)
+    Ydd = ddfun(Y, Cref)
+    assert ddfun(a * X + b * Y, Cref) == approx(a * Xdd + b * Ydd)
+
+    # self-adjointness wrt Frob inner product
+    assert_array_almost_equal(np.trace(Xdd @ Y), np.trace(X @ Ydd))
+
+    # identity reference
+    Xdd = ddfun(X, np.eye(n_channels))
+    if ddfun is ddexpm:
+        assert_array_almost_equal(Xdd, np.exp(1) * X)
+    elif ddfun is ddlogm:
+        assert_array_almost_equal(Xdd, X)
 
 
 def test_autograd_smoke():

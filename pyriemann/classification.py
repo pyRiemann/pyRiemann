@@ -473,11 +473,14 @@ class KNearestNeighbor(MDM):
     classmeans_ : ndarray, shape (n_matrices,)
         Labels of training set.
 
+    Notes
+    -----
+    .. versionadded:: 0.2.4
+
     See Also
     --------
     Kmeans
     MDM
-
     """
 
     def __init__(self, n_neighbors=5, metric="riemann", n_jobs=1):
@@ -762,6 +765,7 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
           [2]_.
 
         .. versionchanged:: 0.10
+            Rename method_label into method_combination.
     metric : string, default="riemann"
         Metric used for distance estimation during prediction.
         For the list of supported metrics,
@@ -775,6 +779,7 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         Centroids for each class and each power.
 
         .. versionchanged:: 0.10
+            Change dict of dicts of ndarrays into a ndarray.
 
     See Also
     --------
