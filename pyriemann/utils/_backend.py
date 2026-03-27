@@ -1,40 +1,21 @@
 """Backend helpers using array-api-compat for NumPy/torch support."""
 
 import numpy as np
-from array_api_compat import (
-    array_namespace,
+from array_api_compat import (  # noqa: F401 - re-exported
+    array_namespace as get_namespace,
     device as xpd,
+    is_numpy_namespace,
     is_torch_namespace,
 )
-from array_api_compat import is_numpy_namespace  # noqa: F401 - re-exported
-from array_api_extra import broadcast_shapes, create_diagonal
+from array_api_extra import (  # noqa: F401 - re-exported
+    broadcast_shapes,
+    create_diagonal,
+)
 
 try:
     import torch
 except ImportError:
     torch = None
-
-
-# --- Array API compatible functions (from array-api-extra) ---
-
-# create_diagonal: (..., n) -> (..., n, n)  — replaces custom diag_embed
-# broadcast_shapes: shape tuples -> broadcast shape
-
-
-def _broadcast_batch_shapes(*arrays):
-    """Broadcast batch shapes (all dims except last two) of arrays."""
-    batch_shapes = [x.shape[:-2] for x in arrays]
-    try:
-        return broadcast_shapes(*batch_shapes)
-    except Exception as exc:
-        raise ValueError("Inputs have incompatible dimensions.") from exc
-
-
-def get_namespace(*xs):
-    arrays = [x for x in xs if x is not None and hasattr(x, "shape")]
-    if not arrays:
-        return array_namespace(np.empty(0))
-    return array_namespace(*arrays)
 
 
 def check_matrix_pair(A, B, *, require_square=False):
@@ -46,7 +27,10 @@ def check_matrix_pair(A, B, *, require_square=False):
     if require_square and A.shape[-2] != A.shape[-1]:
         raise ValueError("Inputs must contain square matrices")
     if A.shape != B.shape:
-        _broadcast_batch_shapes(A, B)
+        try:
+            broadcast_shapes(A.shape[:-2], B.shape[:-2])
+        except Exception as exc:
+            raise ValueError("Inputs have incompatible dimensions.") from exc
     return xp
 
 
