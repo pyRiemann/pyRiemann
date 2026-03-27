@@ -4,7 +4,7 @@ from functools import wraps
 
 import numpy as np
 
-from ._backend import get_namespace, xpd, create_diagonal
+from ._backend import get_namespace, xpd
 
 
 def ctranspose(X):
@@ -244,69 +244,6 @@ def sqrtm(C):
 ###############################################################################
 
 
-def _is_pos_def(X, xp, tol=0.0, fast_mode=False):
-    """Check positive definiteness with the active array backend."""
-    if fast_mode:
-        try:
-            xp.linalg.cholesky(X)
-            return True
-        except Exception:
-            return False
-
-    eigvals = xp.real(xp.linalg.eigvalsh(X))
-    return not bool(xp.any(eigvals <= tol))
-
-
-def _nearest_sym_pos_def(S, reg=1e-6):
-    """Find the nearest SPD matrix.
-
-    Parameters
-    ----------
-    S : ndarray, shape (n, n)
-        Square matrix.
-    reg : float, default=1e-6
-        Regularization parameter.
-
-    Returns
-    -------
-    P : ndarray, shape (n, n)
-        Nearest SPD matrix.
-    """
-    xp = get_namespace(S)
-
-    def regularize(X, reg):
-        ei, ev = xp.linalg.eigh(X)
-        ratio = float(
-            xp.min(xp.real(ei)) / xp.max(xp.real(ei))
-        )
-        if ratio < reg:
-            X = ev @ create_diagonal(ei + reg) @ ctranspose(ev)
-        return X
-
-    A = (S + ctranspose(S)) / 2
-    _, s, Vh = xp.linalg.svd(A)
-    H = ctranspose(Vh) @ (s[:, None] * Vh)
-    B = (A + H) / 2
-    P = (B + ctranspose(B)) / 2
-
-    if _is_pos_def(P, xp):
-        # Regularize if already PD
-        return regularize(P, reg)
-
-    spacing = np.spacing(float(xp.linalg.matrix_norm(A)))
-    eye_n = xp.eye(S.shape[0], dtype=S.dtype, device=xpd(S))
-    k = 1
-    while not _is_pos_def(P, xp, fast_mode=False):
-        mineig = float(
-            xp.min(xp.real(xp.linalg.eigvalsh(P)))
-        )
-        P += eye_n * (-mineig * k ** 2 + spacing)
-        k += 1
-
-    # Regularize
-    return regularize(P, reg)
-
-
 def nearest_sym_pos_def(X, reg=1e-6):
     """Find the nearest SPD matrices.
 
@@ -338,17 +275,46 @@ def nearest_sym_pos_def(X, reg=1e-6):
         <https://www.sciencedirect.com/science/article/pii/0024379588902236>`_
         N.J. Higham, Linear Algebra and its Applications, vol 103, 1988
     """
-    xp = get_namespace(X)
-    if not hasattr(X, "ndim") or X.ndim < 2:
-        raise ValueError("Input must be at least a 2D ndarray or tensor")
-    if X.shape[-2] != X.shape[-1]:
-        raise ValueError("Input must contain square matrices")
-    if X.ndim == 2:
-        return _nearest_sym_pos_def(X, reg)
-    return xp.stack(
-        [_nearest_sym_pos_def(x, reg) for x in X],
-        axis=0,
-    )
+    n = X.shape[-1]
+
+    # Symmetrize
+    A = (X + X.mT) / 2
+
+    _, s, Vh = np.linalg.svd(A)
+    H = Vh.mT @ (s[..., :, np.newaxis] * Vh)
+    B = (A + H) / 2
+    P = (B + B.mT) / 2
+
+    # PD fix: iteratively shift non-PD matrices
+    eigvals = np.linalg.eigvalsh(P)
+    neg_ev = np.any(eigvals <= 0, axis=-1)  # (...,)
+
+    if np.any(neg_ev):
+        spacing = np.spacing(np.linalg.norm(A, axis=(-2, -1)))
+        I = np.eye(n)  # noqa
+        k = 1
+        while np.any(neg_ev) and k < 100:
+            mineig = np.min(np.linalg.eigvalsh(P), axis=-1)
+            shift = np.where(
+                neg_ev, -mineig * k**2 + spacing, 0.0,
+            )
+            P = P + shift[..., np.newaxis, np.newaxis] * I
+            eigvals = np.linalg.eigvalsh(P)
+            neg_ev = np.any(eigvals <= 0, axis=-1)
+            k += 1
+
+    # Regularize
+    ei, ev = np.linalg.eigh(P)
+    ratio = np.min(ei, axis=-1) / np.max(ei, axis=-1)
+    needs_reg = ratio < reg  # (...,)
+    if np.any(needs_reg):
+        ei_reg = ei + reg
+        P_reg = ev @ (ei_reg[..., :, np.newaxis] * ev.mT)
+        P = np.where(
+            needs_reg[..., np.newaxis, np.newaxis], P_reg, P,
+        )
+
+    return P
 
 
 ###############################################################################
