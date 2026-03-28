@@ -68,7 +68,7 @@ def test_ajdpham(kind, get_mats):
     n_matrices, n_channels = 7, 4
     X = get_mats(n_matrices, n_channels, kind)
     V, D = ajd_pham(X)
-    assert D == approx(V @ X @ V.conj().T)
+    assert D == approx(V @ X @ V.conj().mT)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])

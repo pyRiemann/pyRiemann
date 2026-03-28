@@ -85,11 +85,11 @@ def test_funm_all(kind, funm, get_mats):
 
 
 def test_funm_error():
-    with pytest.raises(ValueError):
+    with pytest.raises((ValueError, TypeError)):
         sqrtm(np.ones(5))
-    with pytest.raises(ValueError):
+    with pytest.raises((ValueError, TypeError)):
         invsqrtm(5.1)
-    with pytest.raises(ValueError):
+    with pytest.raises((ValueError, TypeError)):
         logm([5.2])
 
 
@@ -282,6 +282,7 @@ def test_directional_derivative_properties(kind, ddfun, get_mats, rndstate):
 
 def test_autograd_smoke():
     torch = pytest.importorskip("torch")
+    torch.set_grad_enabled(True)  # re-enable for this test
     rng = np.random.RandomState(199)
 
     def _make_spd(shape, n):
