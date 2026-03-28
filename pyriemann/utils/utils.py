@@ -31,11 +31,13 @@ def check_weights(weights, n_weights, *, check_positivity=False, like=None):
     xp = get_namespace(like)
     dtype = None if like is None else like.real.dtype
 
+    dev = xpd(like) if like is not None else None
+
     if weights is None:
-        weights = xp.ones(n_weights, dtype=dtype, device=xpd(like) if like is not None else None)
+        weights = xp.ones(n_weights, dtype=dtype, device=dev)
 
     else:
-        weights = xp.asarray(weights, dtype=dtype, device=xpd(like) if like is not None else None)
+        weights = xp.asarray(weights, dtype=dtype, device=dev)
         if weights.shape != (n_weights,):
             raise ValueError(
                 "Weights do not have the good shape. Should be (%d,) but got "
@@ -146,7 +148,8 @@ def check_init(init, n, *, like=None):
     """
     xp = get_namespace(like)
     dtype = None if like is None else like.dtype
-    init = xp.asarray(init, dtype=dtype, device=xpd(like) if like is not None else None)
+    dev = xpd(like) if like is not None else None
+    init = xp.asarray(init, dtype=dtype, device=dev)
     if init.shape != (n, n):
         raise ValueError(
             "Init matrix does not have the good shape. "
