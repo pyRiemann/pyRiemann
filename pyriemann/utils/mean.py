@@ -22,7 +22,7 @@ from .tangentspace import log_map_wasserstein, exp_map_wasserstein
 from .utils import check_weights, check_function, check_init
 
 
-@_vectorize_nd(n_axes=3)
+@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     """AJD-based log-Euclidean (ALE) mean of SPD/HPD matrices.
 
@@ -111,7 +111,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     return M
 
 
-@_vectorize_nd(n_axes=3)
+@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
     r"""Ando-Li-Mathias (ALM) mean of SPD/HPD matrices.
 
@@ -352,7 +352,7 @@ def mean_kullback_sym(X, sample_weight=None, **kwargs):
     return M
 
 
-@_vectorize_nd(n_axes=3)
+@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_logchol(X, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the log-Cholesky metric.
 
@@ -460,7 +460,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     gmean
     """
     xp = get_namespace(X)
-    n_matrices, n, _ = X.shape
+    n_matrices, n = X.shape[-3], X.shape[-1]
     sample_weight = check_weights(
         sample_weight,
         n_matrices,
@@ -472,11 +472,11 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         M = check_init(init, n, like=X)
 
     for _ in range(maxiter):
-        invX = xp.linalg.inv(0.5 * X + 0.5 * M)
-        J = weighted_average(invX, weights=sample_weight, axis=0, xp=xp)
+        invX = xp.linalg.inv(0.5 * X + 0.5 * M[..., None, :, :])
+        J = weighted_average(invX, weights=sample_weight, axis=-3, xp=xp)
         Mnew = xp.linalg.inv(J)
 
-        crit = float(xp.linalg.matrix_norm(Mnew - M))
+        crit = float(xp.max(xp.linalg.matrix_norm(Mnew - M)))
         M = Mnew
         if crit <= tol:
             break
@@ -605,7 +605,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     if p == -1:
         return mean_harmonic(X, sample_weight=sample_weight)
 
-    n_matrices, n, _ = X.shape
+    n_matrices, n = X.shape[-3], X.shape[-1]
     sample_weight = check_weights(
         sample_weight,
         n_matrices,
@@ -617,7 +617,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
             weighted_average(
                 powm(X, p),
                 weights=sample_weight,
-                axis=0,
+                axis=-3,
                 xp=xp,
             ),
             1 / p,
@@ -633,18 +633,18 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     for _ in range(maxiter):
         H = weighted_average(
             powm(
-                K @ powm(X, np.sign(p)) @ ctranspose(
-                    K,
+                K[..., None, :, :] @ powm(X, np.sign(p)) @ ctranspose(
+                    K[..., None, :, :],
                 ),
                 np.abs(p),
             ),
             weights=sample_weight,
-            axis=0,
+            axis=-3,
             xp=xp,
         )
         K = powm(H, -phi) @ K
 
-        crit = float(xp.linalg.matrix_norm(H - eye_n)) / sqrt_n
+        crit = float(xp.max(xp.linalg.matrix_norm(H - eye_n))) / sqrt_n
         if crit <= zeta:
             break
     else:
@@ -757,7 +757,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         M. Congedo, B. Afsari, A. Barachant, M. Moakher. PLOS ONE, 2015
     """
     xp = get_namespace(X)
-    n_matrices, n, _ = X.shape
+    n_matrices, n = X.shape[-3], X.shape[-1]
     sample_weight = check_weights(
         sample_weight,
         n_matrices,
@@ -774,14 +774,14 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         M12 = sqrtm(M)
         Mm12 = invsqrtm(M)
         J = weighted_average(
-            logm(Mm12 @ X @ Mm12),
+            logm(Mm12[..., None, :, :] @ X @ Mm12[..., None, :, :]),
             weights=sample_weight,
-            axis=0,
+            axis=-3,
             xp=xp,
         )
         M = M12 @ expm(nu * J) @ M12
 
-        crit = float(xp.linalg.matrix_norm(J))
+        crit = float(xp.max(xp.linalg.matrix_norm(J)))
         h = nu * crit
         if h < tau:
             nu = 0.95 * nu
@@ -838,7 +838,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
         SIAM Journal on Matrix Analysis and Applications, 2024
     """
     xp = get_namespace(X)
-    n_matrices, n, _ = X.shape
+    n_matrices, n = X.shape[-3], X.shape[-1]
     if init is None:
         M = mean_euclid(X)
     else:
@@ -847,11 +847,11 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     for i in range(maxiter):
         Mnew = geodesic_thompson(
             M,
-            X[i % n_matrices],
+            X[..., i % n_matrices, :, :],
             1 / (i + 2),
         )
 
-        crit = float(xp.linalg.matrix_norm(Mnew - M))
+        crit = float(xp.max(xp.linalg.matrix_norm(Mnew - M)))
         M = Mnew
         if crit <= tol:
             break
@@ -902,7 +902,7 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         J. Zheng, H. Huang, Y. Yi, Y. Li, S.-C. Lin, ArXiv, 2023
     """
     xp = get_namespace(X)
-    n_matrices, n, _ = X.shape
+    n_matrices, n = X.shape[-3], X.shape[-1]
     sample_weight = check_weights(
         sample_weight,
         n_matrices,
@@ -916,9 +916,9 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 
     for _ in range(maxiter):
         X_ts = log_map_wasserstein(X, M)
-        J = weighted_average(X_ts, weights=sample_weight, axis=0, xp=xp)
+        J = weighted_average(X_ts, weights=sample_weight, axis=-3, xp=xp)
         M = exp_map_wasserstein(J, M)
-        crit = float(xp.linalg.matrix_norm(J))
+        crit = float(xp.max(xp.linalg.matrix_norm(J)))
         if crit <= tol:
             break
     else:
@@ -1031,7 +1031,7 @@ def _apply_masks(X, masks):
     return [m.mT @ x @ m for x, m in zip(X, masks)]
 
 
-@_vectorize_nd(n_axes=3)
+@_vectorize_nd(n_axes=3, batch_native=False)
 def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
                        sample_weight=None):
     """Masked Riemannian mean of SPD/HPD matrices.
@@ -1127,7 +1127,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
     return M
 
 
-@_vectorize_nd(n_axes=3)
+@_vectorize_nd(n_axes=3, batch_native=False)
 def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
     """Riemannian NaN-mean of SPD/HPD matrices.
 
