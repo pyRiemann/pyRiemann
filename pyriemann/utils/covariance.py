@@ -31,18 +31,25 @@ def _from_numpy(X, *, like):
 
 
 def _cov(X, **kwds):
-    if kwds:
-        cov = np.cov(_to_numpy(X), **kwds)
-        return cov if isinstance(X, np.ndarray) else _from_numpy(cov, like=X)
     xp = get_namespace(X)
-    X_c = X - xp.mean(X, axis=1)[:, np.newaxis]
+    if is_numpy_namespace(xp):
+        return np.cov(X, **kwds)
+    if kwds:
+        # map np.cov kwargs to torch.cov kwargs
+        correction = kwds.pop("ddof", 1)
+        if kwds.pop("bias", False):
+            correction = 0
+        return xp.cov(X, correction=correction, **kwds)
+    X_c = X - xp.mean(X, axis=1)[:, xp.newaxis]
     return X_c @ ctranspose(X_c) / (X.shape[1] - 1)
 
 
 def _corr(X, **kwds):
+    xp = get_namespace(X)
+    if is_numpy_namespace(xp):
+        return np.corrcoef(X, **kwds) if kwds else normalize(_cov(X), "corr")
     if kwds:
-        cov = np.corrcoef(_to_numpy(X), **kwds)
-        return cov if isinstance(X, np.ndarray) else _from_numpy(cov, like=X)
+        return xp.corrcoef(X)
     return normalize(_cov(X), "corr")
 
 
@@ -103,15 +110,29 @@ def _complex_estimator(func):
     return wrapper
 
 
+def _sklearn_array_api(func, X, **kwds):
+    """Call sklearn estimator with array API dispatch if available."""
+    xp = get_namespace(X)
+    if is_numpy_namespace(xp):
+        return func(X.mT, **kwds)
+    try:
+        with config_context(array_api_dispatch=True):
+            return func(X.mT, **kwds)
+    except RuntimeError:
+        # SCIPY_ARRAY_API not set — fall back to numpy conversion
+        result = func(_to_numpy(X).mT, **kwds)
+        if isinstance(result, tuple):
+            return tuple(
+                _from_numpy(r, like=X) if hasattr(r, 'shape') else r
+                for r in result
+            )
+        return _from_numpy(result, like=X)
+
+
 @_complex_estimator
 def _lwf(X, **kwds):
     """Wrapper for sklearn ledoit wolf covariance estimator"""
-    xp = get_namespace(X)
-    if is_numpy_namespace(xp):
-        C, _ = ledoit_wolf(X.mT, **kwds)
-    else:
-        with config_context(array_api_dispatch=True):
-            C, _ = ledoit_wolf(X.mT, **kwds)
+    C, _ = _sklearn_array_api(ledoit_wolf, X, **kwds)
     return C
 
 
@@ -126,12 +147,7 @@ def _mcd(X, **kwds):
 @_complex_estimator
 def _oas(X, **kwds):
     """Wrapper for sklearn oas covariance estimator"""
-    xp = get_namespace(X)
-    if is_numpy_namespace(xp):
-        C, _ = oas(X.mT, **kwds)
-    else:
-        with config_context(array_api_dispatch=True):
-            C, _ = oas(X.mT, **kwds)
+    C, _ = _sklearn_array_api(oas, X, **kwds)
     return C
 
 
