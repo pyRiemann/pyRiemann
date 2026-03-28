@@ -169,8 +169,10 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     )  # sum = 1
 
     # reshape input matrix: (n_matrices, n, n) -> (n, n_matrices*n)
-    A = rearrange(X, 'matrices n1 n2 -> n1 (matrices n2)')
-    n, n_matrices_x_n = A.shape
+    # Matches np.concatenate(X, axis=0).T column ordering for HPD correctness
+    n = X.shape[-1]
+    A = xp.asarray(xp.reshape(X, (-1, n)).mT, copy=True)
+    _, n_matrices_x_n = A.shape
 
     if init is None:
         V = xp.eye(n, dtype=X.dtype, device=xpd(X))
@@ -239,9 +241,9 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     else:
         warnings.warn("Convergence not reached")
 
-    D = xp.conj(rearrange(
-        A, 'n1 (matrices n2) -> matrices n1 n2', matrices=n_matrices,
-    ))
+    D = xp.conj(
+        xp.permute_dims(xp.reshape(A, (n, n_matrices, n)), (1, 0, 2))
+    )
     return (
         xp.asarray(V, dtype=X.dtype, device=xpd(X)),
         xp.asarray(D, dtype=X.dtype, device=xpd(X)),

@@ -59,10 +59,7 @@ def test_ajd_method_error(method):
         ajd(np.ones((3, 2, 2)), method=method)
 
 
-@pytest.mark.parametrize("kind", [
-    "spd",
-    pytest.param("hpd", marks=pytest.mark.numpy_only),
-])
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_ajdpham(kind, get_mats):
     """Test pham's ajd"""
     n_matrices, n_channels = 7, 4

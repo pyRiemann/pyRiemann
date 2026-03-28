@@ -709,32 +709,19 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             f"Value overlap must be included in (0, 1) (Got {overlap})"
         )
 
-    xp = get_namespace(X)
-    n_channels = X.shape[-2]
     n_times = X.shape[-1]
     n_freqs = int(window / 2) + 1  # X real signal => compute half-spectrum
     step = int((1.0 - overlap) * window)
     n_windows = int((n_times - window) / step + 1)
-    if isinstance(X, np.ndarray):
-        win = np.hanning(window)
+    win = np.hanning(window)
 
-        # FFT calculation on all windows
-        shape = (n_channels, n_windows, window)
-        strides = X.strides[:-1] + (step * X.strides[-1], X.strides[-1])
-        Xs = np.lib.stride_tricks.as_strided(X, shape=shape, strides=strides)
-        fdata = np.fft.rfft(Xs * win, n=window).transpose(1, 0, 2)
-    else:
-        X = X.contiguous()
-        win = torch.hann_window(
-            window,
-            periodic=False,
-            dtype=X.real.dtype,
-            device=X.device,
-        )
-        shape = (n_channels, n_windows, window)
-        strides = (X.stride(0), step * X.stride(1), X.stride(1))
-        Xs = X.as_strided(shape, strides)
-        fdata = torch.fft.rfft(Xs * win, n=window).permute(1, 0, 2)
+    # Sliding window view handles any batch dims
+    # (..., n_channels, n_times) -> (..., n_channels, n_windows, window)
+    Xs = np.lib.stride_tricks.sliding_window_view(
+        X, window, axis=-1
+    )[..., ::step, :]
+    # FFT: (..., n_channels, n_windows, n_freqs)
+    fdata = np.fft.rfft(Xs * win, n=window)
 
     # adjust frequency range to specified range
     if fs is not None:
@@ -771,15 +758,10 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             )
         freqs = None
 
-    n_freqs = fdata.shape[2]
-    S = xp.zeros(
-        (n_channels, n_channels, n_freqs),
-        dtype=fdata.dtype, device=xpd(fdata),
-    )
-    for i in range(n_freqs):
-        spec = fdata[:, :, i]
-        S[:, :, i] = ctranspose(spec) @ spec
-    S /= n_windows * xp.sum(win ** 2)
+    # Cross-spectral matrix via einsum over windows
+    # (..., n_channels, n_channels, n_freqs)
+    S = np.einsum('...cwf,...dwf->...cdf', fdata.conj(), fdata)
+    S /= n_windows * np.linalg.norm(win)**2
 
     # normalization to respect Parseval's theorem with the half-spectrum
     # excepted DC bin (always), and Nyquist bin (when window is even)
@@ -896,30 +878,25 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         fmax=fmax,
         fs=fs,
     )
-    xp = get_namespace(S)
-    S2 = xp.abs(S) ** 2  # squared cross-spectral modulus
+    # S: (..., n_channels, n_channels, n_freqs)
+    S2 = np.abs(S) ** 2  # squared cross-spectral modulus
 
-    C = xp.zeros_like(S2)
-    f_inds = list(range(C.shape[-1]))
+    n_channels = S.shape[-3]
+    C = np.zeros_like(S2)
+    f_inds = np.arange(0, C.shape[-1], dtype=int)
 
     # lagged coh not defined for DC and Nyquist bins, because S is real
     if coh == "lagged":
         if freqs is None:
-            f_inds = list(range(1, C.shape[-1] - 1))
+            f_inds = np.arange(1, C.shape[-1] - 1, dtype=int)
             warnings.warn(
                 "DC and Nyquist bins are not defined for lagged-"
                 "coherence: filled with zeros",
                 stacklevel=2,
             )
         else:
-            if isinstance(freqs, np.ndarray):
-                f_inds_ = np.where((freqs > 0) & (freqs < fs / 2))[0].tolist()
-            else:
-                f_inds_ = torch.nonzero(
-                    (freqs > 0) & (freqs < fs / 2),
-                    as_tuple=False,
-                ).flatten().tolist()
-            if f_inds_ != f_inds:
+            f_inds_ = f_inds[(freqs > 0) & (freqs < fs / 2)]
+            if not np.array_equal(f_inds_, f_inds):
                 warnings.warn(
                     "DC and Nyquist bins are not defined for lagged-"
                     "coherence: filled with zeros",
@@ -927,28 +904,32 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
                 )
             f_inds = f_inds_
 
-    for f in f_inds:
-        psd = xp.sqrt(xp.linalg.diagonal(S2[..., f]))
-        psd_prod = xp.linalg.outer(psd, psd)
-        if coh == "ordinary":
-            C[..., f] = S2[..., f] / psd_prod
-        elif coh == "instantaneous":
-            C[..., f] = xp.real(S[..., f]) ** 2 / psd_prod
-        elif coh == "lagged":
-            S_real = xp.real(S[..., f])
-            S_real_copy = xp.zeros_like(S_real)
-            S_real_copy[...] = S_real
-            diag0, diag1 = diag_indices(S_real.shape[-1], xp=xp, like=S_real)
-            S_real_copy[diag0, diag1] = 0.0
-            denom = xp.maximum(
-                psd_prod - S_real_copy ** 2,
-                xp.asarray(1e-10, dtype=psd_prod.dtype, device=xpd(psd_prod)),
-            )
-            C[..., f] = xp.imag(S[..., f]) ** 2 / denom
-        elif coh == "imaginary":
-            C[..., f] = xp.imag(S[..., f]) ** 2 / psd_prod
-        else:
-            raise ValueError(f"{coh} is not a supported coherence")
+    # Vectorized PSD: diagonal of S2 across channels
+    diag_idx = np.arange(n_channels)
+    psd = np.sqrt(S2[..., diag_idx, diag_idx, :])  # (..., n_ch, n_freqs)
+    psd_prod = (
+        psd[..., :, np.newaxis, :]
+        * psd[..., np.newaxis, :, :]
+    )  # (..., n_ch, n_ch, n_freqs)
+
+    if coh == "ordinary":
+        C[..., f_inds] = S2[..., f_inds] / psd_prod[..., f_inds]
+    elif coh == "instantaneous":
+        C[..., f_inds] = (
+            S[..., f_inds].real ** 2 / psd_prod[..., f_inds]
+        )
+    elif coh == "lagged":
+        S_real = S.real.copy()
+        S_real[..., diag_idx, diag_idx, :] = 0.0  # zero diagonal
+        denom = psd_prod[..., f_inds] - S_real[..., f_inds] ** 2
+        denom = np.where(np.abs(denom) < 1e-10, 1e-10, denom)
+        C[..., f_inds] = S[..., f_inds].imag ** 2 / denom
+    elif coh == "imaginary":
+        C[..., f_inds] = (
+            S[..., f_inds].imag ** 2 / psd_prod[..., f_inds]
+        )
+    else:
+        raise ValueError(f"{coh} is not a supported coherence")
 
     return C, freqs
 
