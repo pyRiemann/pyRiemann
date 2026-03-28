@@ -33,7 +33,8 @@ def _from_numpy(X, *, like):
 def _cov(X, **kwds):
     xp = get_namespace(X)
     if is_numpy_namespace(xp):
-        return np.cov(X, **kwds)
+        C = np.cov(X, **kwds)
+        return np.atleast_2d(C)
     if kwds:
         # map np.cov kwargs to torch.cov kwargs
         correction = kwds.pop("ddof", 1)
@@ -677,6 +678,8 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
     idx_start = 0
     for j in blocks:
         block_cov = est(X[..., idx_start:idx_start+j, :], **kwds)
+        if block_cov.ndim < 2:
+            block_cov = xp.reshape(block_cov, (*block_cov.shape, 1, 1))
         covmats[..., idx_start:idx_start+j, idx_start:idx_start+j] = \
             block_cov
         idx_start += j
