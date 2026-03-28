@@ -99,7 +99,7 @@ def test_funm_error():
     logm,
     pytest.param(partial(powm, alpha=0.2), id="powm"),
     sqrtm,
-    pytest.param(nearest_sym_pos_def, marks=pytest.mark.numpy_only),
+    nearest_sym_pos_def,
 ])
 def test_funm_broadcasting(funm, get_mats):
     n_dim5, n_dim4, n_matrices, n_channels = 2, 6, 5, 3
@@ -184,7 +184,6 @@ def test_check_raise():
             mean_riemann(X)
 
 
-@pytest.mark.numpy_only
 def test_nearest_sym_pos_def(get_mats):
     n_matrices = 3
     X = get_mats(n_matrices, n_channels, "spd")
@@ -196,8 +195,10 @@ def test_nearest_sym_pos_def(get_mats):
     assert is_sym_pos_def(nearest_sym_pos_def(X_np))
     assert is_sym_pos_def(nearest_sym_pos_def(Psd))
 
-    X = get_mats([4, 3, n_matrices], n_channels, "spd")
-    nearest_sym_pos_def(X)
+    # test with backend arrays and broadcasting
+    assert is_sym_pos_def(to_numpy(nearest_sym_pos_def(X)))
+    X_5d = get_mats([4, 3, n_matrices], n_channels, "spd")
+    nearest_sym_pos_def(X_5d)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])

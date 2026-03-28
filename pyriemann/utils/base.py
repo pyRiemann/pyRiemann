@@ -273,43 +273,45 @@ def nearest_sym_pos_def(X, reg=1e-6):
         <https://www.sciencedirect.com/science/article/pii/0024379588902236>`_
         N.J. Higham, Linear Algebra and its Applications, vol 103, 1988
     """
+    xp = get_namespace(X)
     n = X.shape[-1]
+    eps = xp.finfo(X.dtype).eps
 
     # Symmetrize
     A = (X + X.mT) / 2
 
-    _, s, Vh = np.linalg.svd(A)
-    H = Vh.mT @ (s[..., :, np.newaxis] * Vh)
+    _, s, Vh = xp.linalg.svd(A)
+    H = Vh.mT @ (s[..., :, xp.newaxis] * Vh)
     B = (A + H) / 2
     P = (B + B.mT) / 2
 
     # PD fix: iteratively shift non-PD matrices
-    eigvals = np.linalg.eigvalsh(P)
-    neg_ev = np.any(eigvals <= 0, axis=-1)  # (...,)
+    eigvals = xp.linalg.eigvalsh(P)
+    neg_ev = xp.any(eigvals <= 0, axis=-1)  # (...,)
 
-    if np.any(neg_ev):
-        spacing = np.spacing(np.linalg.norm(A, axis=(-2, -1)))
-        I = np.eye(n)  # noqa
+    if bool(xp.any(neg_ev)):
+        spacing = xp.abs(xp.linalg.matrix_norm(A)) * eps
+        eye_n = xp.eye(n, dtype=X.dtype, device=xpd(X))
         k = 1
-        while np.any(neg_ev) and k < 100:
-            mineig = np.min(np.linalg.eigvalsh(P), axis=-1)
-            shift = np.where(
+        while bool(xp.any(neg_ev)) and k < 100:
+            mineig = xp.min(xp.linalg.eigvalsh(P), axis=-1)
+            shift = xp.where(
                 neg_ev, -mineig * k**2 + spacing, 0.0,
             )
-            P = P + shift[..., np.newaxis, np.newaxis] * I
-            eigvals = np.linalg.eigvalsh(P)
-            neg_ev = np.any(eigvals <= 0, axis=-1)
+            P = P + shift[..., xp.newaxis, xp.newaxis] * eye_n
+            eigvals = xp.linalg.eigvalsh(P)
+            neg_ev = xp.any(eigvals <= 0, axis=-1)
             k += 1
 
     # Regularize
-    ei, ev = np.linalg.eigh(P)
-    ratio = np.min(ei, axis=-1) / np.max(ei, axis=-1)
+    ei, ev = xp.linalg.eigh(P)
+    ratio = xp.min(ei, axis=-1) / xp.max(ei, axis=-1)
     needs_reg = ratio < reg  # (...,)
-    if np.any(needs_reg):
+    if bool(xp.any(needs_reg)):
         ei_reg = ei + reg
-        P_reg = ev @ (ei_reg[..., :, np.newaxis] * ev.mT)
-        P = np.where(
-            needs_reg[..., np.newaxis, np.newaxis], P_reg, P,
+        P_reg = ev @ (ei_reg[..., :, xp.newaxis] * ev.mT)
+        P = xp.where(
+            needs_reg[..., xp.newaxis, xp.newaxis], P_reg, P,
         )
 
     return P
