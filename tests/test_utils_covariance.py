@@ -125,7 +125,7 @@ def test_covariance_scm_weights(kind, get_mats, get_weights):
     cov = covariance_scm(X[..., 1:], weights=weights[1:])
     weights[0] = 1e-12
     covw = covariance_scm(X, weights=weights)
-    assert cov == approx(covw, rel=1e-4, abs=1e-8)
+    assert cov == approx(covw)
 
 
 @pytest.mark.parametrize("estimator", estimators + m_estimators)
