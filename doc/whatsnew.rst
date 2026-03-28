@@ -37,6 +37,8 @@ v0.11.dev
 
 - Complete example on artifact detection by Riemannian potato field, adding a metric by potato. :pr:`431` by :user:`DavoudYneuro`
 
+- Enhance :func:`pyriemann.utils.covariance.covariance_scm` to estimate weighted sample covariance matrices. :pr:`434` by :user:`qbarthelemy`
+
 v0.10 (January 2026)
 --------------------
 
