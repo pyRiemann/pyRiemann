@@ -301,7 +301,7 @@ def covariance_sch(X):
 
 
 def covariance_scm(X, *, assume_centered=False, weights=None):
-    """Sample covariance estimator.
+    r"""Sample covariance estimator.
 
     Sample covariance estimator, re-implementing ``empirical_covariance`` of
     scikit-learn [1]_, but supporting:
