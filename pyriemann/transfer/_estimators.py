@@ -185,7 +185,7 @@ class TLCenter(TransformerMixin, BaseEstimator):
         """
         _check_inputs(X)
         _, _, domains = decode_domains(X, y_enc)
-        sample_weight = check_weights(sample_weight, X.shape[0])
+        sample_weight = check_weights(sample_weight, X.shape[0], like=X)
 
         self.centers_ = {}
 
@@ -381,12 +381,14 @@ class TLScale(TransformerMixin, BaseEstimator):
         """
         _check_inputs(X)
         _, _, domains = decode_domains(X, y_enc)
-        sample_weight = check_weights(sample_weight, X.shape[0])
+        sample_weight = check_weights(sample_weight, X.shape[0], like=X)
 
         self._means, self.scales_ = {}, {}
         for d in np.unique(domains):
             idx = domains == d
-            sample_weight_d = check_weights(sample_weight[idx], np.sum(idx))
+            sample_weight_d = check_weights(
+                sample_weight[idx], np.sum(idx), like=X,
+            )
 
             if X.ndim == 3:
                 if self.centered_data:
@@ -649,7 +651,7 @@ class TLRotate(TransformerMixin, BaseEstimator):
         """
         _check_inputs(X)
         _, _, domains = decode_domains(X, y_enc)
-        sample_weight = check_weights(sample_weight, X.shape[0])
+        sample_weight = check_weights(sample_weight, X.shape[0], like=X)
 
         if X.ndim == 3:
             self._fit_manifold(X, y_enc, domains, sample_weight)
@@ -746,9 +748,15 @@ class TLRotate(TransformerMixin, BaseEstimator):
                 anchors_src = anchors_src[:n_classes]
                 anchors_tgt = anchors_tgt[:n_classes]
                 if not is_valid_src:
-                    warnings.warn(f"Not enough vectors for source domain {d}")
+                    warnings.warn(
+                        f"Not enough vectors for source domain {d}",
+                        stacklevel=2,
+                    )
                 if not is_valid_tgt:
-                    warnings.warn("Not enough vectors for target domain")
+                    warnings.warn(
+                        "Not enough vectors for target domain",
+                        stacklevel=2,
+                    )
 
             self.rotations_[d] = _get_rotation_tangentspace(
                 anchors_src,
@@ -1242,7 +1250,9 @@ class MDWM(MDM):
                 f"target are {np.unique(y_tgt)}"
             )
 
-        sample_weight = check_weights(sample_weight, X_src.shape[0])
+        sample_weight = check_weights(
+            sample_weight, X_src.shape[0], like=X_src,
+        )
 
         self.source_means_ = np.stack(
             Parallel(n_jobs=self.n_jobs)(

@@ -490,7 +490,7 @@ class MeanShift(SpdClustMixin, BaseEstimator):
             if np.linalg.norm(meanshift) <= self.tol:
                 break
         else:
-            warnings.warn("Convergence not reached")
+            warnings.warn("Convergence not reached", stacklevel=2)
 
         return mean
 
@@ -819,7 +819,9 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
                 )
             )
 
-        self.weights_ = check_weights(self.weights_init, self.n_components)
+        self.weights_ = check_weights(
+            self.weights_init, self.n_components, like=X,
+        )
 
         # expectation-maximization
         crit = 0
@@ -843,7 +845,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
                 break
             crit = crit_new
         else:
-            warnings.warn("EM convergence not reached")
+            warnings.warn("EM convergence not reached", stacklevel=2)
 
         return self
 

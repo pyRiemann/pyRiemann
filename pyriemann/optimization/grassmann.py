@@ -148,7 +148,7 @@ def _run_minimization(
         F_1 = F
 
     else:
-        warnings.warn("Convergence not reached.")
+        warnings.warn("Convergence not reached.", stacklevel=2)
 
     return Q, F
 
@@ -221,7 +221,7 @@ def _get_rotation_manifold(
     if X_source.shape[1:] != X_target.shape[1:]:
         raise ValueError("Number of channels in each domain doesn't match. "
                          f"Got {X_source.shape[1:]} and {X_target.shape[1:]}.")
-    weights = check_weights(weights, len(X_source))
+    weights = check_weights(weights, len(X_source), like=X_source)
 
     # initialize the solution with an educated guess
     Q_ini = _warm_start(X_target, X_source, weights, metric=metric)

@@ -11,21 +11,23 @@ from pyriemann.utils.utils import (
 
 @pytest.mark.parametrize("n_matrices", [3, 4, 5])
 def test_check_weights_none(n_matrices):
-    w = check_weights(None, n_matrices)
+    like = np.ones(n_matrices)
+    w = check_weights(None, n_matrices, like=like)
     assert np.sum(w) == pytest.approx(1.0, abs=1e-10)
 
 
 @pytest.mark.parametrize("n_matrices", [3, 4, 5])
 def test_check_weights_vals(get_weights, n_matrices):
     weights = get_weights(n_matrices) + 1
-    weights = check_weights(weights, n_matrices)
+    weights = check_weights(weights, n_matrices, like=weights)
     assert np.sum(weights) == pytest.approx(1.0, abs=1e-10)
 
 
 def test_check_weights_error_length(get_weights):
     n_matrices = 5
+    weights = get_weights(n_matrices)
     with pytest.raises(ValueError):  # not same length
-        check_weights(get_weights(n_matrices), n_matrices + 1)
+        check_weights(weights, n_matrices + 1, like=weights)
 
 
 def test_check_weights_error_positivity(get_weights):
@@ -33,7 +35,9 @@ def test_check_weights_error_positivity(get_weights):
     weights = get_weights(n_matrices)
     weights[0] = 0
     with pytest.raises(ValueError):  # not strictly positive weight
-        check_weights(weights, n_matrices, check_positivity=True)
+        check_weights(
+            weights, n_matrices, check_positivity=True, like=weights,
+        )
 
 
 def test_check_metric_str():
@@ -64,10 +68,10 @@ def test_check_function():
     available_funs = {"aaa": aaa, "bbb": bbb}
 
     fun = check_function("aaa", available_funs)
-    assert hasattr(fun, "__call__")
+    assert callable(fun)
 
     fun = check_function(aaa, available_funs)
-    assert hasattr(fun, "__call__")
+    assert callable(fun)
 
     with pytest.raises(ValueError):  # unkown function name
         check_function("abc", available_funs)
@@ -77,15 +81,16 @@ def test_check_function():
 
 
 def test_check_init():
+    like = np.ones((3, 3))
     with pytest.raises(ValueError):  # not array
-        check_init(init="init", n=3)
+        check_init(init="init", n=3, like=like)
     with pytest.raises(ValueError):  # not 2D array
-        check_init(init=np.ones((3, 2, 2)), n=3)
+        check_init(init=np.ones((3, 2, 2)), n=3, like=like)
     with pytest.raises(ValueError):  # not 2D array
-        check_init(init=[1, 2, 3], n=3)
+        check_init(init=[1, 2, 3], n=3, like=like)
     with pytest.raises(ValueError):  # not 2D array
-        check_init(init=1, n=3)
+        check_init(init=1, n=3, like=like)
     with pytest.raises(ValueError):  # not square array
-        check_init(init=np.ones((3, 2)), n=3)
+        check_init(init=np.ones((3, 2)), n=3, like=like)
     with pytest.raises(ValueError):  # shape not equal to n
-        check_init(init=np.ones((2, 2)), n=3)
+        check_init(init=np.ones((2, 2)), n=3, like=like)
