@@ -3,9 +3,13 @@ import warnings
 
 import numpy as np
 from scipy.stats import chi2
+from sklearn import config_context
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
-from ._backend import get_namespace, create_diagonal, diag_indices, xpd
+from ._backend import (
+    get_namespace, is_numpy_namespace,
+    create_diagonal, diag_indices, xpd,
+)
 from .base import ctranspose, _vectorize_nd
 from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
@@ -26,14 +30,10 @@ def _from_numpy(X, *, like):
     return xp.asarray(X, dtype=like.dtype, device=xpd(like))
 
 
-def _apply_numpy_estimator(func, X, **kwds):
-    cov = func(_to_numpy(X), **kwds)
-    return cov if isinstance(X, np.ndarray) else _from_numpy(cov, like=X)
-
-
 def _cov(X, **kwds):
     if kwds:
-        return _apply_numpy_estimator(np.cov, X, **kwds)
+        cov = np.cov(_to_numpy(X), **kwds)
+        return cov if isinstance(X, np.ndarray) else _from_numpy(cov, like=X)
     xp = get_namespace(X)
     X_c = X - xp.mean(X, axis=1)[:, np.newaxis]
     return X_c @ ctranspose(X_c) / (X.shape[1] - 1)
@@ -41,7 +41,8 @@ def _cov(X, **kwds):
 
 def _corr(X, **kwds):
     if kwds:
-        return _apply_numpy_estimator(np.corrcoef, X, **kwds)
+        cov = np.corrcoef(_to_numpy(X), **kwds)
+        return cov if isinstance(X, np.ndarray) else _from_numpy(cov, like=X)
     return normalize(_cov(X), "corr")
 
 
@@ -105,13 +106,19 @@ def _complex_estimator(func):
 @_complex_estimator
 def _lwf(X, **kwds):
     """Wrapper for sklearn ledoit wolf covariance estimator"""
-    C, _ = ledoit_wolf(_to_numpy(X).mT, **kwds)
-    return C if isinstance(X, np.ndarray) else _from_numpy(C, like=X)
+    xp = get_namespace(X)
+    if is_numpy_namespace(xp):
+        C, _ = ledoit_wolf(X.mT, **kwds)
+    else:
+        with config_context(array_api_dispatch=True):
+            C, _ = ledoit_wolf(X.mT, **kwds)
+    return C
 
 
 @_complex_estimator
 def _mcd(X, **kwds):
     """Wrapper for sklearn mcd covariance estimator"""
+    # fast_mcd does not support array API yet
     _, C, _, _ = fast_mcd(_to_numpy(X).mT, **kwds)
     return C if isinstance(X, np.ndarray) else _from_numpy(C, like=X)
 
@@ -119,8 +126,13 @@ def _mcd(X, **kwds):
 @_complex_estimator
 def _oas(X, **kwds):
     """Wrapper for sklearn oas covariance estimator"""
-    C, _ = oas(_to_numpy(X).mT, **kwds)
-    return C if isinstance(X, np.ndarray) else _from_numpy(C, like=X)
+    xp = get_namespace(X)
+    if is_numpy_namespace(xp):
+        C, _ = oas(X.mT, **kwds)
+    else:
+        with config_context(array_api_dispatch=True):
+            C, _ = oas(X.mT, **kwds)
+    return C
 
 
 def _hub(X, **kwds):
