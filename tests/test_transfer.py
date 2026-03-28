@@ -153,7 +153,7 @@ def test_tlcenter_manifold(rndstate, get_weights,
         idx = domain == d
         Xd = X_rct[idx]
         if use_weight:
-            weights_d = check_weights(weights[idx], np.sum(idx))
+            weights_d = check_weights(weights[idx], np.sum(idx), like=Xd)
             Md = gmean(Xd, metric=metric, sample_weight=weights_d)
         else:
             Md = gmean(Xd, metric=metric)
@@ -196,7 +196,7 @@ def test_tlcenter_manifold_fit_transf(rndstate, get_weights,
         Xd = X_rct[idx]
         if use_weight:
             weights = np.concatenate((weights_1, weights_2))
-            weights_d = check_weights(weights[idx], np.sum(idx))
+            weights_d = check_weights(weights[idx], np.sum(idx), like=Xd)
             Md = gmean(Xd, metric=metric, sample_weight=weights_d)
         else:
             Md = gmean(Xd, metric=metric)
@@ -271,7 +271,7 @@ def test_tlscale_manifold(rndstate, get_weights,
         idx = domain == d
         Xd = X_str[idx]
         if use_weight:
-            weights_d = check_weights(weights[idx], np.sum(idx))
+            weights_d = check_weights(weights[idx], np.sum(idx), like=Xd)
             Md = mean_riemann(Xd, sample_weight=weights_d)
             dist = distance(Xd, Md, metric=metric, squared=True)
             disp = np.sum(weights_d * np.squeeze(dist))
@@ -351,7 +351,7 @@ def test_tlrotate_manifold(rndstate, get_weights, metric, use_weight):
         X_rct[domain == "target_domain"],
     )
 
-    matrix_weight = check_weights(matrix_weight, len(y_enc))
+    matrix_weight = check_weights(matrix_weight, len(y_enc), like=X_rct)
 
     # check if the distance between the classes of each domain is reduced
     for label in np.unique(y):
