@@ -13,6 +13,7 @@ from sklearn.utils.validation import check_random_state
 from ._base import SpdClassifMixin, SpdClustMixin, SpdTransfMixin
 from .classification import MDM
 from .datasets import sample_gaussian_spd
+from .utils.covariance import covariance_scm
 from .utils.distance import distance, pairwise_distance, distance_mahalanobis
 from .utils.mean import gmean
 from .utils.geodesic import geodesic
@@ -641,8 +642,11 @@ class Gaussian():
             Weights for each matrix.
         """
         TangVec = tangent_space(X, self.mu, metric=self._metric_map)
-        sigma = TangVec.T @ (sample_weight[:, np.newaxis] * TangVec)
-        self.sigma = sigma / sample_weight.sum()
+        self.sigma = covariance_scm(
+            TangVec.T,
+            assume_centered=True,
+            weights=sample_weight,
+        )
 
 
 class GaussianMixture(SpdClustMixin, BaseEstimator):

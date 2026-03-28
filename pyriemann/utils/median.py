@@ -20,6 +20,8 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
     .. math::
         \arg \min_{\mathbf{M}} \sum_i w_i \ d_E (\mathbf{M}, \mathbf{X}_i)
 
+    with :math:`w` being the weights which sum to 1.
+
     Geometric median is different from the marginal median provided by NumPy
     [3]_.
 
@@ -92,7 +94,7 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
         if crit <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return M
 
@@ -114,6 +116,8 @@ def median_riemann(
 
     .. math::
         \arg \min_{\mathbf{M}} \sum_i w_i \ d_R (\mathbf{M}, \mathbf{X}_i)
+
+    with :math:`w` being the weights which sum to 1.
 
     Parameters
     ----------
@@ -186,6 +190,6 @@ def median_riemann(
         if crit <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return M
