@@ -16,7 +16,13 @@ at which the fix is no longer needed.
 # Authors: pyRiemann developers
 # License: BSD-3-Clause
 
-from ._backend import get_namespace, is_numpy_namespace
+from sklearn.covariance import (
+    fast_mcd as _sklearn_mcd,
+    ledoit_wolf as _sklearn_lw,
+    oas as _sklearn_oas,
+)
+
+from ._backend import get_namespace, is_numpy_namespace, to_numpy, from_numpy
 
 
 def _add_to_diagonal(X, value, xp):
@@ -100,7 +106,6 @@ def ledoit_wolf(X, assume_centered=False, block_size=1000):
     xp = get_namespace(X)
 
     if is_numpy_namespace(xp):
-        from sklearn.covariance import ledoit_wolf as _sklearn_lw
         return _sklearn_lw(X, assume_centered=assume_centered,
                            block_size=block_size)
 
@@ -144,7 +149,6 @@ def oas(X, assume_centered=False):
     xp = get_namespace(X)
 
     if is_numpy_namespace(xp):
-        from sklearn.covariance import oas as _sklearn_oas
         return _sklearn_oas(X, assume_centered=assume_centered)
 
     # Non-numpy: our array-API implementation
@@ -198,14 +202,11 @@ def fast_mcd(X, **kwds):
     dist : ndarray, shape (n_samples,)
         Mahalanobis distances.
     """
-    from sklearn.covariance import fast_mcd as _sklearn_mcd
-
     xp = get_namespace(X)
     if is_numpy_namespace(xp):
         return _sklearn_mcd(X, **kwds)
 
     # No torch MCD exists — convert to numpy and back
-    from ._backend import to_numpy, from_numpy
     X_np = to_numpy(X)
     result = _sklearn_mcd(X_np, **kwds)
     return tuple(
