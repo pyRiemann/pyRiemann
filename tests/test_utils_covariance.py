@@ -376,6 +376,22 @@ def test_cross_spectrum_scipy_cross(rndstate):
     assert_array_almost_equal(cross_pr, cross_sp, 6)
 
 
+def test_cross_spectrum_broadcasting(rndstate):
+    n_dim4, n_matrices, n_channels, n_times = 4, 6, 3, 1000
+    X = rndstate.randn(n_dim4, n_matrices, n_channels, n_times)
+
+    # 2D array
+    window = 64
+    C2, _ = cross_spectrum(X[0, 0], window=window)
+    n_freqs = window // 2 + 1
+    assert C2.shape == (n_channels, n_channels, n_freqs)
+
+    # 4D array
+    C4, _ = cross_spectrum(X, window=window)
+    assert C4.shape == (n_dim4, n_matrices, n_channels, n_channels, n_freqs)
+    assert C4[0, 0] == approx(C2)
+
+
 @pytest.mark.numpy_only
 def test_cospectrum(rndstate):
     X = rndstate.randn(3, 1000)
@@ -401,6 +417,22 @@ def test_cospectrum(rndstate):
     assert_array_almost_equal(freqs_pr, freqs_sp, 6)
     # compare co-spectra
     assert_array_almost_equal(cosp_pr, cosp_sp, 6)
+
+
+def test_cospectrum_broadcasting(rndstate):
+    n_dim4, n_matrices, n_channels, n_times = 5, 4, 3, 100
+    X = rndstate.randn(n_dim4, n_matrices, n_channels, n_times)
+
+    # 2D array
+    window = 64
+    C2, _ = cospectrum(X[0, 0], window=window)
+    n_freqs = window // 2 + 1
+    assert C2.shape == (n_channels, n_channels, n_freqs)
+
+    # 4D array
+    C4, _ = cospectrum(X, window=window)
+    assert C4.shape == (n_dim4, n_matrices, n_channels, n_channels, n_freqs)
+    assert C4[0, 0] == approx(C2)
 
 
 @pytest.mark.numpy_only
