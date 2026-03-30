@@ -22,26 +22,20 @@ except ImportError:  # pragma: no cover - torch is optional
 
 
 def _cov(X, **kwds):
+    """Covariance matrix estimator, supporting numpy and torch."""
     xp = get_namespace(X)
     if is_numpy_namespace(xp):
-        C = np.cov(X, **kwds)
-        return np.atleast_2d(C)
-    if kwds:
-        # map np.cov kwargs to torch.cov kwargs
-        correction = kwds.pop("ddof", 1)
-        if kwds.pop("bias", False):
-            correction = 0
-        return xp.cov(X, correction=correction, **kwds)
-    X_c = X - xp.mean(X, axis=1)[:, xp.newaxis]
-    return X_c @ ctranspose(X_c) / (X.shape[1] - 1)
+        return np.atleast_2d(np.cov(X, **kwds))
+    n_times = X.shape[-1]
+    X_c = X - xp.mean(X, axis=-1, keepdims=True)
+    return X_c @ ctranspose(X_c) / (n_times - 1)
 
 
 def _corr(X, **kwds):
+    """Correlation coefficient matrix estimator."""
     xp = get_namespace(X)
     if is_numpy_namespace(xp):
-        return np.corrcoef(X, **kwds) if kwds else normalize(_cov(X), "corr")
-    if kwds:
-        return xp.corrcoef(X)
+        return np.atleast_2d(np.corrcoef(X, **kwds))
     return normalize(_cov(X), "corr")
 
 
