@@ -130,30 +130,44 @@ def test_map_euclid(n_dim1, n_dim2, kind, get_mats):
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_upper_and_unupper(kind, get_mats):
     """Test upper then unupper should be identity"""
-    n_matrices, n_channels = 7, 3
-    X = get_mats(n_matrices, n_channels, kind)
-    xp = get_namespace(X)
-    assert unupper(upper(X)) == approx(X)
+    n_dim5, n_dim4, n_matrices, n_channels = 7, 6, 5, 4
+    X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, kind)
 
-    n_sets = 2
-    X_4d = xp.stack([X] * n_sets, axis=0)
-    assert unupper(upper(X_4d)) == approx(X_4d)
+    # 2D array
+    U2 = unupper(upper(X[0, 0, 0]))
+    assert U2 == approx(X[0, 0, 0])
+
+    # 5D array
+    U5 = unupper(upper(X))
+    assert U5 == approx(X)
+    assert U5[0, 0, 0] == approx(U2)
 
 
 @pytest.mark.parametrize("metric", metrics)
 def test_tangent_space_broadcasting(metric, get_mats):
-    n_matrices, n_channels = 5, 3
+    n_dim5, n_dim4, n_matrices, n_channels = 4, 6, 5, 3
     n_ts = (n_channels * (n_channels + 1)) // 2
-    X = get_mats(n_matrices, n_channels, "spd")
-    xp = get_namespace(X)
-    eye = xp.eye(n_channels, dtype=X.dtype, device=device(X))
-    Xts = tangent_space(X, eye, metric=metric)
-    assert Xts.shape == (n_matrices, n_ts)
+    X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")
+    Cref = get_mats(1, n_channels, "spd")[0]
 
-    n_sets = 2
-    X_4d = xp.stack([X] * n_sets, axis=0)
-    Xts = tangent_space(X_4d, eye, metric=metric)
-    assert Xts.shape == (n_sets, n_matrices, n_ts)
+    # 2D array
+    T2 = tangent_space(X[0, 0, 0], Cref, metric=metric)
+    assert T2.shape == (n_ts,)
+
+    # 3D array
+    T3 = tangent_space(X[0, 0], Cref, metric=metric)
+    assert T3.shape == (n_matrices, n_ts)
+    assert T3[0] == approx(T2)
+
+    # 4D array
+    T4 = tangent_space(X[0], Cref, metric=metric)
+    assert T4.shape == (n_dim4, n_matrices, n_ts)
+    assert T4[0, 0] == approx(T2)
+
+    # 5D array
+    T5 = tangent_space(X, Cref, metric=metric)
+    assert T5.shape == (n_dim5, n_dim4, n_matrices, n_ts)
+    assert T5[0, 0, 0] == approx(T2)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -172,18 +186,29 @@ def test_tangent_space_riemann_properties(kind, get_mats):
 
 @pytest.mark.parametrize("metric", metrics)
 def test_untangent_space_broadcasting(metric, get_mats):
-    n_matrices, n_channels = 10, 3
+    n_dim5, n_dim4, n_matrices, n_channels = 4, 6, 10, 3
     n_ts = (n_channels * (n_channels + 1)) // 2
-    T = get_mats(n_matrices, [n_ts], "real")
-    xp = get_namespace(T)
-    eye = xp.eye(n_channels, dtype=T.dtype, device=device(T))
-    X = untangent_space(T, eye, metric=metric)
-    assert X.shape == (n_matrices, n_channels, n_channels)
+    X = get_mats(n_dim5, [n_dim4, n_matrices, n_ts], "real")
+    Cref = get_mats(1, n_channels, "spd")[0]
 
-    n_sets = 2
-    T_4d = xp.stack([T] * n_sets, axis=0)
-    X = untangent_space(T_4d, eye, metric=metric)
-    assert X.shape == (n_sets, n_matrices, n_channels, n_channels)
+    # 2D array
+    U2 = untangent_space(X[0, 0, 0], Cref, metric=metric)
+    assert U2.shape == (n_channels, n_channels)
+
+    # 3D array
+    U3 = untangent_space(X[0, 0], Cref, metric=metric)
+    assert U3.shape == (n_matrices, n_channels, n_channels)
+    assert U3[0] == approx(U2)
+
+    # 4D array
+    U4 = untangent_space(X[0], Cref, metric=metric)
+    assert U4.shape == (n_dim4, n_matrices, n_channels, n_channels)
+    assert U4[0, 0] == approx(U2)
+
+    # 5D array
+    U5 = untangent_space(X, Cref, metric=metric)
+    assert U5.shape == (n_dim5, n_dim4, n_matrices, n_channels, n_channels)
+    assert U5[0, 0, 0] == approx(U2)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
