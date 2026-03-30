@@ -7,7 +7,7 @@ from sklearn import config_context
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
 from ._backend import (
-    get_namespace, is_numpy_namespace,
+    get_namespace, is_numpy_namespace, to_numpy, from_numpy,
     create_diagonal, diag_indices, xpd,
 )
 from .base import ctranspose, _vectorize_nd
@@ -19,15 +19,6 @@ try:  # pragma: no cover - torch is optional
     import torch
 except ImportError:  # pragma: no cover - torch is optional
     torch = None
-
-
-def _to_numpy(X):
-    return X if isinstance(X, np.ndarray) else X.detach().cpu().numpy()
-
-
-def _from_numpy(X, *, like):
-    xp = get_namespace(like)
-    return xp.asarray(X, dtype=like.dtype, device=xpd(like))
 
 
 def _cov(X, **kwds):
@@ -121,13 +112,13 @@ def _sklearn_array_api(func, X, **kwds):
             return func(X.mT, **kwds)
     except RuntimeError:
         # SCIPY_ARRAY_API not set — fall back to numpy conversion
-        result = func(_to_numpy(X).mT, **kwds)
+        result = func(to_numpy(X).mT, **kwds)
         if isinstance(result, tuple):
             return tuple(
-                _from_numpy(r, like=X) if hasattr(r, 'shape') else r
+                from_numpy(r, like=X) if hasattr(r, 'shape') else r
                 for r in result
             )
-        return _from_numpy(result, like=X)
+        return from_numpy(result, like=X)
 
 
 @_complex_estimator
@@ -141,8 +132,8 @@ def _lwf(X, **kwds):
 def _mcd(X, **kwds):
     """Wrapper for sklearn mcd covariance estimator"""
     # fast_mcd does not support array API yet
-    _, C, _, _ = fast_mcd(_to_numpy(X).mT, **kwds)
-    return C if isinstance(X, np.ndarray) else _from_numpy(C, like=X)
+    _, C, _, _ = fast_mcd(to_numpy(X).mT, **kwds)
+    return C if isinstance(X, np.ndarray) else from_numpy(C, like=X)
 
 
 @_complex_estimator

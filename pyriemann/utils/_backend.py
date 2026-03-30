@@ -23,6 +23,8 @@ __all__ = [
     "create_diagonal",
     # Custom
     "check_matrix_pair",
+    "to_numpy",
+    "from_numpy",
     "weighted_average",
     "diag_indices",
     "tril_indices",
@@ -33,6 +35,17 @@ try:
     import torch
 except ImportError:
     torch = None
+
+
+def to_numpy(X):
+    """Convert array to numpy, detaching from torch if needed."""
+    return X if isinstance(X, np.ndarray) else X.detach().cpu().numpy()
+
+
+def from_numpy(X, *, like):
+    """Convert numpy array to the same backend/device as ``like``."""
+    xp = get_namespace(like)
+    return xp.asarray(X, dtype=like.dtype, device=xpd(like))
 
 
 def check_matrix_pair(A, B, *, require_square=False):
