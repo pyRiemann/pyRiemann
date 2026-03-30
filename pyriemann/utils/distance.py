@@ -550,8 +550,11 @@ def distance_thompson(A, B, squared=False):
         A.C.Thompson. Proceedings of the American Mathematical Society, 1963.
     """
     xp = check_matrix_pair(A, B, require_square=True)
-    isB = invsqrtm(B)
-    d = xp.max(xp.abs(xp.log(xp.linalg.eigvalsh(isB @ A @ isB))), axis=-1)
+    if is_numpy_namespace(xp) and A.shape == B.shape:
+        d = (np.abs(np.log(_recursive(eigvalsh, A, B)))).max(axis=-1)
+    else:
+        isB = invsqrtm(B)
+        d = xp.max(xp.abs(xp.log(xp.linalg.eigvalsh(isB @ A @ isB))), axis=-1)
     return d ** 2 if squared else d
 
 
