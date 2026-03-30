@@ -43,16 +43,7 @@ setup(
     },
     platforms="any",
     python_requires=">=3.9",
-    install_requires=[
-        "numpy>=1.25.0",
-        "scipy",
-        "scikit-learn>=0.24",
-        "array-api-compat>=1.11",
-        "array-api-extra>=0.6",
-        "einops",
-        "joblib",
-        "matplotlib",
-    ],
+    install_requires=requirements,
     extras_require={
         "docs": requirements_doc,
         "tests": [
