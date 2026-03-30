@@ -209,22 +209,17 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
                 h21 = xp.conj((tmp1 - tmp2) / tmp)
 
                 crit += float(xp.real(
-                    n_matrices * (
-                        g12 * xp.conj(h12) + g21 * h21
-                    ) / 2.0
+                    n_matrices * (g12 * xp.conj(h12) + g21 * h21) / 2.0
                 ))
 
                 if is_real:
-                    tau_den = 1 + xp.real(xp.sqrt(1 - h12 * h21))
+                    tmp = 1 + xp.sqrt(1 - h12 * h21)
                 else:
-                    tau_den = 1 + 0.5j * xp.imag(h12 * h21)
-                    tau_den = tau_den + xp.sqrt(
-                        tau_den ** 2 - h12 * h21
-                    )
-
+                    tmp = 1 + 0.5j * xp.imag(h12 * h21)
+                    tmp = tmp + xp.sqrt(tmp ** 2 - h12 * h21)
                 tau = xp.eye(2, dtype=X.dtype, device=xpd(X))
-                tau[0, 1] = xp.conj(-h12 / tau_den)
-                tau[1, 0] = xp.conj(-h21 / tau_den)
+                tau[0, 1] = xp.conj(-h12 / tmp)
+                tau[1, 0] = xp.conj(-h21 / tmp)
 
                 A[[ii, jj], :] = xp.conj(tau) @ A[[ii, jj], :]
                 tmp = xp.stack((A[:, Ii], A[:, Ij]), axis=-1)
