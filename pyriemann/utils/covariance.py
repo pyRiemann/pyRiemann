@@ -21,13 +21,32 @@ except ImportError:  # pragma: no cover - torch is optional
     torch = None
 
 
+def _numpy_to_xp_kwargs(kwds):
+    """Map numpy cov/corrcoef kwargs to torch-compatible kwargs.
+
+    numpy uses ``bias`` and ``ddof``, torch uses ``correction``.
+    ``fweights`` and ``aweights`` have the same name in both.
+    """
+    out = {}
+    if "bias" in kwds:
+        out["correction"] = 0 if kwds.pop("bias") else 1
+    if "ddof" in kwds:
+        out["correction"] = kwds.pop("ddof")
+    # fweights/aweights: same name
+    for k in ("fweights", "aweights"):
+        if k in kwds:
+            out[k] = kwds.pop(k)
+    # rowvar, dtype, y: numpy-only, drop silently
+    return out
+
+
 def _apply_xp(func, X, **kwds):
-    """Call an array-api function, passing **kwds only for numpy."""
+    """Call an array-api function, translating kwargs across backends."""
     xp = get_namespace(X)
     if is_numpy_namespace(xp):
         C = func(X, **kwds)
     else:
-        C = func(X)
+        C = func(X, **_numpy_to_xp_kwargs(kwds))
     if C.ndim < 2:
         C = xp.reshape(C, (1, 1))
     return C
