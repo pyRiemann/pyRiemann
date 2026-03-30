@@ -1,4 +1,5 @@
 from functools import partial
+import warnings
 
 import numpy as np
 from conftest import assert_array_almost_equal, to_numpy
@@ -18,6 +19,10 @@ from pyriemann.utils.base import (
     ddexpm,
     ddlogm,
 )
+from pyriemann.utils.distance import distance_riemann
+from pyriemann.utils.geodesic import geodesic_logchol
+from pyriemann.utils.mean import mean_riemann
+from pyriemann.utils.tangentspace import log_map_riemann, exp_map_riemann
 from pyriemann.utils.test import is_pos_def, is_sym_pos_def
 
 
@@ -293,16 +298,10 @@ def test_autograd_smoke():
     def _to_torch(x):
         return torch.from_numpy(np.ascontiguousarray(x)).to(torch.float64)
 
-    from pyriemann.utils.distance import distance_riemann
-    from pyriemann.utils.geodesic import geodesic_logchol
-    from pyriemann.utils.mean import mean_riemann
-    from pyriemann.utils.tangentspace import log_map_riemann, exp_map_riemann
-
     A = _to_torch(_make_spd((), 3)).clone().detach().requires_grad_(True)
     B = _to_torch(_make_spd((), 3)).clone().detach().requires_grad_(True)
     X = _to_torch(_make_spd((4,), 3)).clone().detach().requires_grad_(True)
 
-    import warnings
     tangent = log_map_riemann(B.unsqueeze(0), A, C12=True)
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", UserWarning)
