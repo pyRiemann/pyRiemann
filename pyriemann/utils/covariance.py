@@ -8,7 +8,7 @@ from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
 from ._backend import (
     get_namespace, is_numpy_namespace, to_numpy, from_numpy,
-    create_diagonal, diag_indices, xpd,
+    diag_indices, xpd,
 )
 from .base import ctranspose, _vectorize_nd
 from .distance import distance_mahalanobis
@@ -370,44 +370,37 @@ def covariance_sch(X):
 
     n_times = X.shape[-1]
     X_c = X - xp.mean(X, axis=-1, keepdims=True)
-    C_scm = X_c @ ctranspose(X_c) / n_times
+    C_scm = X_c @ X_c.mT / n_times
 
     # Compute optimal gamma, the weighting between SCM and shrinkage estimator
-    std = (
-        X.std(axis=-1)
-        if isinstance(X, np.ndarray)
-        else torch.std(X, dim=-1, correction=0)
+    std = xp.std(X, axis=-1, correction=0)
+    std_outer = std[..., :, xp.newaxis] * std[..., xp.newaxis, :]
+    R = (n_times / ((n_times - 1.) * std_outer)) * C_scm
+
+    X_c2 = X_c ** 2
+    var_R = X_c2 @ X_c2.mT - n_times * C_scm ** 2
+    var = xp.var(X, axis=-1, correction=0)
+    var_outer = var[..., :, xp.newaxis] * var[..., xp.newaxis, :]
+    var_R *= n_times / ((n_times - 1) ** 3 * var_outer)
+
+    # Zero out diagonal
+    diag_idx = diag_indices(R.shape[-1], xp=xp, like=R)
+    R[..., diag_idx[0], diag_idx[1]] = 0
+    var_R[..., diag_idx[0], diag_idx[1]] = 0
+    R2_sum = xp.sum(R ** 2, axis=(-2, -1))
+    gamma = xp.where(
+        R2_sum == 0, 0.0,
+        xp.sum(var_R, axis=(-2, -1)) / R2_sum,
     )
-    R = n_times / ((n_times - 1.) * xp.linalg.outer(std, std))
-    R *= C_scm
-    var_R = (X_c ** 2) @ ctranspose(X_c ** 2)
-    var_R -= 2 * C_scm * (X_c @ ctranspose(X_c))
-    var_R += n_times * C_scm ** 2
-    var = (
-        X.var(axis=-1)
-        if isinstance(X, np.ndarray)
-        else torch.var(X, dim=-1, correction=0)
-    )
-    Xvar = xp.linalg.outer(var, var)
-    var_R *= n_times / ((n_times - 1) ** 3 * Xvar)
-    diag0, diag1 = diag_indices(R.shape[-1], xp=xp, like=R)
-    R[diag0, diag1] = 0
-    var_R[diag0, diag1] = 0
-    denom = float(xp.sum(R ** 2))
-    gamma = 0 if denom == 0 else max(
-        0,
-        min(
-            1,
-            float(xp.sum(var_R)) / denom,
-        ),
-    )
+    gamma = xp.clip(gamma, 0, 1)[..., xp.newaxis, xp.newaxis]
 
     sigma = (1. - gamma) * (n_times / (n_times - 1.)) * C_scm
-    shrinkage = (
-        gamma
-        * (n_times / (n_times - 1.))
-        * create_diagonal(xp.linalg.diagonal(C_scm))
-    )
+
+    # diagonal matrix from C_scm diagonal
+    diag_C = xp.linalg.diagonal(C_scm)
+    shrinkage_diag = xp.zeros_like(C_scm)
+    shrinkage_diag[..., diag_idx[0], diag_idx[1]] = diag_C
+    shrinkage = gamma * (n_times / (n_times - 1.)) * shrinkage_diag
     return sigma + shrinkage
 
 
