@@ -24,8 +24,13 @@ except ImportError:  # pragma: no cover - torch is optional
 def _apply_xp(func, X, **kwds):
     """Call an array-api function, passing **kwds only for numpy."""
     xp = get_namespace(X)
-    C = func(X, **kwds) if is_numpy_namespace(xp) else func(X)
-    return C if C.ndim >= 2 else xp.reshape(C, (1, 1))
+    if is_numpy_namespace(xp):
+        C = func(X, **kwds)
+    else:
+        C = func(X)
+    if C.ndim < 2:
+        C = xp.reshape(C, (1, 1))
+    return C
 
 
 def _cov(X, **kwds):
