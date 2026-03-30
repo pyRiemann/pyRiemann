@@ -550,9 +550,8 @@ def distance_thompson(A, B, squared=False):
         A.C.Thompson. Proceedings of the American Mathematical Society, 1963.
     """
     xp = check_matrix_pair(A, B, require_square=True)
-    Binv12 = invsqrtm(B)
-    eigvals = xp.linalg.eigvalsh(Binv12 @ A @ Binv12)
-    d = xp.max(xp.abs(xp.log(eigvals)), axis=-1)
+    isB = invsqrtm(B)
+    d = xp.max(xp.abs(xp.log(xp.linalg.eigvalsh(isB @ A @ isB))), axis=-1)
     return d ** 2 if squared else d
 
 
