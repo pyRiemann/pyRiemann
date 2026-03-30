@@ -79,16 +79,13 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
                 ton = gg[0, 0] - gg[1, 1]
                 toff = gg[0, 1] + gg[1, 0]
                 theta = 0.5 * xp.atan2(
-                    toff,
-                    ton + xp.sqrt(ton**2 + toff**2),
-                )
+                    toff, ton + xp.sqrt(ton**2 + toff**2))
                 c = xp.cos(theta)
                 s = xp.sin(theta)
-                abs_s = float(xp.abs(s))
-                crit = crit or (abs_s > eps)
+                crit = crit | (float(xp.abs(s)) > eps)
 
                 # update of A and V matrices
-                if abs_s > eps:
+                if (float(xp.abs(s)) > eps):
                     tmp = xp.zeros_like(A[:, Ip])
                     tmp[...] = A[:, Ip]
                     A[:, Ip] = c * A[:, Ip] + s * A[:, Iq]
