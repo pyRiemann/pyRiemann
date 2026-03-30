@@ -238,6 +238,28 @@ def test_first_divided_difference(get_mats, kind):
     assert_array_almost_equal(fdd_exp_of_log, 1/to_numpy(fdd_log))
 
 
+@pytest.mark.numpy_only
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_first_divided_difference_properties(get_mats, kind):
+    X = get_mats(1, n_channels, kind)[0]
+    d = np.linalg.eigvalsh(X)
+
+    fdd_id = _first_divided_difference(d, lambda x: x, lambda x: x)
+    assert fdd_id.shape == X.shape
+    assert_array_almost_equal(np.diag(fdd_id), d)
+    assert_array_almost_equal(fdd_id[np.triu_indices_from(fdd_id, k=1)], 1)
+
+    fdd_exp = _first_divided_difference(d, np.exp, np.exp)
+    assert_array_almost_equal(np.diag(fdd_exp), np.exp(d))
+
+    fdd_log = _first_divided_difference(d, np.log, lambda x: 1./x)
+    assert_array_almost_equal(np.diag(fdd_log), 1/d)
+
+    # exp of log is element-wise inverse of log
+    fdd_exp_of_log = _first_divided_difference(np.log(d), np.exp, np.exp)
+    assert_array_almost_equal(fdd_exp_of_log, 1/fdd_log)
+
+
 def test_ddlogm(get_mats):
     """Test directional derivative of log."""
     X, Cref = get_mats(2, n_channels, "spd")
@@ -261,6 +283,19 @@ def test_ddexpm(get_mats, kind):
     eye = xp.eye(n_channels, dtype=X.dtype, device=device(X))
     fdd_expm = ddexpm(X, eye)
     assert_array_almost_equal(fdd_expm, np.exp(1) * to_numpy(X))
+
+
+@pytest.mark.parametrize("ddfun", [ddlogm, ddexpm])
+def test_directional_derivative(ddfun, get_mats):
+    n_dim5, n_dim4, n_matrices, n_channels = 2, 6, 5, 3
+    X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "sym")
+    Cref = get_mats(1, n_channels, "spd")[0]
+
+    DD = ddfun(X, Cref)
+    assert DD.shape == X.shape
+
+    # test broadcasting
+    assert DD[0, 0] == approx(ddfun(X[0, 0], Cref))
 
 
 @pytest.mark.numpy_only

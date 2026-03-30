@@ -414,6 +414,37 @@ def test_transport_ndarray(ftransport, get_mats):
     assert X_tr.shape == X_4d.shape
 
 
+@pytest.mark.parametrize("ftransport", [
+    transport_euclid,
+    transport_logchol,
+    transport_logeuclid,
+    transport_riemann,
+])
+def test_transport_broadcasting(ftransport, get_mats):
+    n_dim5, n_dim4, n_matrices, n_channels = 2, 4, 7, 3
+    X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "herm")
+    A, B = get_mats(2, n_channels, "hpd")
+
+    # 2D array
+    T2 = ftransport(X[0, 0, 0], A, B)
+    assert T2.shape == (n_channels, n_channels)
+
+    # 3D array
+    T3 = ftransport(X[0, 0], A, B)
+    assert T3.shape == (n_matrices, n_channels, n_channels)
+    assert T3[0] == approx(T2)
+
+    # 4D array
+    T4 = ftransport(X[0], A, B)
+    assert T4.shape == (n_dim4, n_matrices, n_channels, n_channels)
+    assert T4[0, 0] == approx(T2)
+
+    # 5D array
+    T5 = ftransport(X, A, B)
+    assert T5.shape == (n_dim5, n_dim4, n_matrices, n_channels, n_channels)
+    assert T5[0, 0, 0] == approx(T2)
+
+
 @pytest.mark.parametrize("kindX, kindAB", [("sym", "spd"), ("herm", "hpd")])
 @pytest.mark.parametrize("metric", [
     "logchol",
