@@ -14,11 +14,6 @@ from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
 from .utils import check_function, check_init, check_weights
 
-try:  # pragma: no cover - torch is optional
-    import torch
-except ImportError:  # pragma: no cover - torch is optional
-    torch = None
-
 
 def _numpy_to_xp_kwargs(kwds):
     """Map numpy cov/corrcoef kwargs to torch-compatible kwargs.
@@ -64,9 +59,7 @@ def _corr(X, **kwds):
 
 
 def _make_complex(real_part, imag_part, *, like):
-    if isinstance(like, np.ndarray):
-        return real_part + 1j * imag_part
-    return torch.complex(real_part, imag_part)
+    return real_part + 1j * imag_part
 
 
 def _complex_estimator(func):
@@ -744,15 +737,7 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             raise ValueError("Parameter fmax must be superior to fmin")
         if 2.0 * fmax > fs:  # check Nyquist-Shannon
             raise ValueError("Parameter fmax must be inferior to fs/2")
-        if isinstance(X, np.ndarray):
-            f = np.arange(0, n_freqs, dtype=int) * float(fs / window)
-        else:
-            f = torch.arange(
-                0,
-                n_freqs,
-                device=X.device,
-                dtype=X.real.dtype,
-            ) * float(fs / window)
+        f = np.arange(0, n_freqs, dtype=int) * float(fs / window)
         fix = (f >= fmin) & (f <= fmax)
         fdata = fdata[..., fix]
         freqs = f[fix]
@@ -992,10 +977,8 @@ def normalize(X, norm):
     if norm == "corr":
         if not is_real_type(Xn):
             return Xn
-        if isinstance(Xn, np.ndarray):
-            np.clip(Xn, -1, 1, out=Xn)
-        else:
-            Xn = torch.clamp(Xn, -1, 1)
+        xp = get_namespace(Xn)
+        Xn = xp.clip(Xn, -1, 1)
 
     return Xn
 
