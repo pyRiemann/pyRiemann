@@ -187,10 +187,7 @@ def geodesic_logeuclid(A, B, alpha=0.5):
         V. Arsigny, P. Fillard, X. Pennec, N. Ayache.
         SIAM J Matrix Anal Appl, 2007, 29 (1), pp. 328-347
     """
-    return expm(
-        (1 - alpha) * logm(A) +
-        alpha * logm(B),
-    )
+    return expm((1 - alpha) * logm(A) + alpha * logm(B))
 
 
 def geodesic_riemann(A, B, alpha=0.5):
@@ -232,8 +229,7 @@ def geodesic_riemann(A, B, alpha=0.5):
         R. Bhatia and J. Holbrook.
         Linear Algebra and its Applications, 2006
     """
-    sA = sqrtm(A)
-    isA = invsqrtm(A)
+    sA, isA = sqrtm(A), invsqrtm(A)
     C = sA @ powm(isA @ B @ isA, alpha) @ sA
     return C
 

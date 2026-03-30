@@ -73,12 +73,7 @@ def kernel_euclid(X, Y=None, *, Cref=None, reg=1e-10):
         _check_cref(X, Cref)
         Xt_, Y_ = ctranspose(X - Cref), Y - Cref
 
-    return _apply_matrix_kernel(
-        Xt_,
-        Y_,
-        are_xy_equal,
-        reg=reg,
-    )
+    return _apply_matrix_kernel(Xt_, Y_, are_xy_equal, reg=reg)
 
 
 def kernel_logeuclid(X, Y=None, *, Cref=None, reg=1e-10):
@@ -151,17 +146,9 @@ def kernel_logeuclid(X, Y=None, *, Cref=None, reg=1e-10):
     else:
         _check_cref(X, Cref)
         logCref = logm(Cref)
-        X_, Y_ = (
-            logm(X) - logCref,
-            logm(Y) - logCref,
-        )
+        X_, Y_ = logm(X) - logCref, logm(Y) - logCref
 
-    return _apply_matrix_kernel(
-        X_,
-        Y_,
-        are_xy_equal,
-        reg=reg,
-    )
+    return _apply_matrix_kernel(X_, Y_, are_xy_equal, reg=reg)
 
 
 def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
@@ -223,17 +210,9 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
     else:
         _check_cref(X, Cref)
     Cm12 = invsqrtm(Cref)
-    X_, Y_ = (
-        logm(Cm12 @ X @ Cm12),
-        logm(Cm12 @ Y @ Cm12),
-    )
+    X_, Y_ = logm(Cm12 @ X @ Cm12), logm(Cm12 @ Y @ Cm12)
 
-    return _apply_matrix_kernel(
-        X_,
-        Y_,
-        are_xy_equal,
-        reg=reg,
-    )
+    return _apply_matrix_kernel(X_, Y_, are_xy_equal, reg=reg)
 
 
 ###############################################################################

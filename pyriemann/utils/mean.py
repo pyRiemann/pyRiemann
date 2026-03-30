@@ -340,14 +340,8 @@ def mean_kullback_sym(X, sample_weight=None, **kwargs):
         M. Moakher and P. Batchelor. Visualization and Processing of Tensor
         Fields, pp. 285-298, 2006
     """
-    M_euclid = mean_euclid(
-        X,
-        sample_weight=sample_weight,
-    )
-    M_harmonic = mean_harmonic(
-        X,
-        sample_weight=sample_weight,
-    )
+    M_euclid = mean_euclid(X, sample_weight=sample_weight)
+    M_harmonic = mean_harmonic(X, sample_weight=sample_weight)
     M = geodesic_riemann(M_euclid, M_harmonic, 0.5)
     return M
 

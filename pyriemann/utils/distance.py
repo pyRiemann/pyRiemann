@@ -243,10 +243,7 @@ def distance_kullback_sym(A, B, squared=False):
         Proceedings of the Royal Society of London A: mathematical, physical
         and engineering sciences, 1946, 186 (1007), pp. 453-461
     """
-    d = distance_kullback(A, B) + distance_kullback_right(
-        A,
-        B,
-    )
+    d = distance_kullback(A, B) + distance_kullback_right(A, B)
     return d ** 2 if squared else d
 
 
@@ -397,11 +394,7 @@ def distance_logeuclid(A, B, squared=False):
         V. Arsigny, P. Fillard, X. Pennec, N. Ayache.
         SIAM J Matrix Anal Appl, 2007, 29 (1), pp. 328-347
     """
-    return distance_euclid(
-        logm(A),
-        logm(B),
-        squared=squared,
-    )
+    return distance_euclid(logm(A), logm(B), squared=squared)
 
 
 def distance_poweuclid(A, B, p, squared=False):
