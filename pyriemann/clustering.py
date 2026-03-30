@@ -490,7 +490,7 @@ class MeanShift(SpdClustMixin, BaseEstimator):
             if np.linalg.norm(meanshift) <= self.tol:
                 break
         else:
-            warnings.warn("Convergence not reached", stacklevel=2)
+            warnings.warn("Convergence not reached")
 
         return mean
 
@@ -845,7 +845,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
                 break
             crit = crit_new
         else:
-            warnings.warn("EM convergence not reached", stacklevel=2)
+            warnings.warn("EM convergence not reached")
 
         return self
 

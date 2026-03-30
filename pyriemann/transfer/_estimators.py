@@ -748,15 +748,9 @@ class TLRotate(TransformerMixin, BaseEstimator):
                 anchors_src = anchors_src[:n_classes]
                 anchors_tgt = anchors_tgt[:n_classes]
                 if not is_valid_src:
-                    warnings.warn(
-                        f"Not enough vectors for source domain {d}",
-                        stacklevel=2,
-                    )
+                    warnings.warn(f"Not enough vectors for source domain {d}")
                 if not is_valid_tgt:
-                    warnings.warn(
-                        "Not enough vectors for target domain",
-                        stacklevel=2,
-                    )
+                    warnings.warn("Not enough vectors for target domain")
 
             self.rotations_[d] = _get_rotation_tangentspace(
                 anchors_src,

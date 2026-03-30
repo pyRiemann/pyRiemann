@@ -35,9 +35,8 @@ def test_check_weights_error_positivity(get_weights):
     weights = get_weights(n_matrices)
     weights[0] = 0
     with pytest.raises(ValueError):  # not strictly positive weight
-        check_weights(
-            weights, n_matrices, check_positivity=True, like=weights,
-        )
+        check_weights(weights, n_matrices,
+                      check_positivity=True, like=weights)
 
 
 def test_check_metric_str():
@@ -68,10 +67,10 @@ def test_check_function():
     available_funs = {"aaa": aaa, "bbb": bbb}
 
     fun = check_function("aaa", available_funs)
-    assert callable(fun)
+    assert hasattr(fun, "__call__")
 
     fun = check_function(aaa, available_funs)
-    assert callable(fun)
+    assert hasattr(fun, "__call__")
 
     with pytest.raises(ValueError):  # unkown function name
         check_function("abc", available_funs)

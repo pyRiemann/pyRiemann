@@ -148,7 +148,7 @@ def _run_minimization(
         F_1 = F
 
     else:
-        warnings.warn("Convergence not reached.", stacklevel=2)
+        warnings.warn("Convergence not reached.")
 
     return Q, F
 
