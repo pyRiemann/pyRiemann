@@ -3,13 +3,12 @@ import warnings
 
 import numpy as np
 from scipy.stats import chi2
-from sklearn import config_context
-from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
 from ._backend import (
-    get_namespace, is_numpy_namespace, to_numpy, from_numpy,
+    get_namespace, is_numpy_namespace,
     diag_indices, xpd,
 )
+from ._fixes import ledoit_wolf, oas, fast_mcd
 from .base import ctranspose, _vectorize_nd
 from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
@@ -121,44 +120,24 @@ def _complex_estimator(func):
     return wrapper
 
 
-def _sklearn_array_api(func, X, **kwds):
-    """Call sklearn estimator with array API dispatch if available."""
-    xp = get_namespace(X)
-    if is_numpy_namespace(xp):
-        return func(X.mT, **kwds)
-    try:
-        with config_context(array_api_dispatch=True):
-            return func(X.mT, **kwds)
-    except RuntimeError:
-        # SCIPY_ARRAY_API not set — fall back to numpy conversion
-        result = func(to_numpy(X).mT, **kwds)
-        if isinstance(result, tuple):
-            return tuple(
-                from_numpy(r, like=X) if hasattr(r, 'shape') else r
-                for r in result
-            )
-        return from_numpy(result, like=X)
-
-
 @_complex_estimator
 def _lwf(X, **kwds):
-    """Wrapper for sklearn ledoit wolf covariance estimator"""
-    C, _ = _sklearn_array_api(ledoit_wolf, X, **kwds)
+    """Wrapper for Ledoit-Wolf covariance estimator"""
+    C, _ = ledoit_wolf(X.mT, **kwds)
     return C
 
 
 @_complex_estimator
 def _mcd(X, **kwds):
-    """Wrapper for sklearn mcd covariance estimator"""
-    # fast_mcd does not support array API yet
-    _, C, _, _ = fast_mcd(to_numpy(X).mT, **kwds)
-    return C if isinstance(X, np.ndarray) else from_numpy(C, like=X)
+    """Wrapper for MCD covariance estimator"""
+    _, C, _, _ = fast_mcd(X.mT, **kwds)
+    return C
 
 
 @_complex_estimator
 def _oas(X, **kwds):
-    """Wrapper for sklearn oas covariance estimator"""
-    C, _ = _sklearn_array_api(oas, X, **kwds)
+    """Wrapper for OAS covariance estimator"""
+    C, _ = oas(X.mT, **kwds)
     return C
 
 
@@ -313,6 +292,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     return cov
 
 
+@_complex_estimator
 def covariance_sch(X):
     r"""Schaefer-Strimmer shrunk covariance estimator.
 
@@ -352,22 +332,6 @@ def covariance_sch(X):
         Molecular Biology, Volume 4, Issue 1, 2005.
     """
     xp = get_namespace(X)
-    if not is_real_type(X):
-        n_channels = X.shape[-2]
-        X_ri = xp.concat(
-            (xp.real(X), xp.imag(X)),
-            axis=-2,
-        )
-        cov = covariance_sch(X_ri)
-        return (
-            cov[..., :n_channels, :n_channels]
-            + cov[..., n_channels:, n_channels:]
-            + 1j * (
-                cov[..., n_channels:, :n_channels]
-                - cov[..., :n_channels, n_channels:]
-            )
-        )
-
     n_times = X.shape[-1]
     X_c = X - xp.mean(X, axis=-1, keepdims=True)
     C_scm = X_c @ X_c.mT / n_times
