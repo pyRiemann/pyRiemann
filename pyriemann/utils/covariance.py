@@ -21,22 +21,23 @@ except ImportError:  # pragma: no cover - torch is optional
     torch = None
 
 
-def _cov(X, **kwds):
-    """Covariance matrix estimator, supporting numpy and torch."""
+def _apply_xp(func, X, **kwds):
+    """Call an array-api function, passing **kwds only for numpy."""
     xp = get_namespace(X)
-    if is_numpy_namespace(xp):
-        return np.atleast_2d(np.cov(X, **kwds))
-    n_times = X.shape[-1]
-    X_c = X - xp.mean(X, axis=-1, keepdims=True)
-    return X_c @ ctranspose(X_c) / (n_times - 1)
+    C = func(X, **kwds) if is_numpy_namespace(xp) else func(X)
+    return C if C.ndim >= 2 else xp.reshape(C, (1, 1))
+
+
+def _cov(X, **kwds):
+    """Covariance matrix estimator."""
+    xp = get_namespace(X)
+    return _apply_xp(xp.cov, X, **kwds)
 
 
 def _corr(X, **kwds):
     """Correlation coefficient matrix estimator."""
     xp = get_namespace(X)
-    if is_numpy_namespace(xp):
-        return np.atleast_2d(np.corrcoef(X, **kwds))
-    return normalize(_cov(X), "corr")
+    return _apply_xp(xp.corrcoef, X, **kwds)
 
 
 def _make_complex(real_part, imag_part, *, like):
