@@ -4,7 +4,7 @@ import pytest
 from conftest import approx
 
 from pyriemann.spatialfilters import Whitening
-from pyriemann.utils._backend import get_namespace, xpd as device
+from pyriemann.utils._backend import get_namespace
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.utils.tangentspace import (
