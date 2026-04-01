@@ -231,7 +231,7 @@ def exp_map_wasserstein(X, Cref):
     """
     xp = check_matrix_pair(X, Cref, require_square=True)
     d, V = xp.linalg.eigh(Cref)
-    C = 1 / (d[..., :, None] + d[..., None, :])
+    C = 1 / (d[:, None] + d[None, :])
     d = xp.asarray(d, dtype=Cref.dtype, device=xpd(Cref))
 
     X_rotated = ctranspose(V) @ X @ V
