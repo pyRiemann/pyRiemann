@@ -1,14 +1,17 @@
 """Geodesics for SPD/HPD matrices."""
 
+from scipy.linalg import eigvalsh
+
 from ._backend import (
     broadcast_shapes,
     check_matrix_pair,
     diag_indices,
     get_namespace,
+    is_numpy_namespace,
     tril_indices,
     xpd,
 )
-from .base import ctranspose, sqrtm, invsqrtm, powm, logm, expm
+from .base import _recursive, ctranspose, sqrtm, invsqrtm, powm, logm, expm
 from .utils import check_function
 
 
@@ -275,8 +278,14 @@ def geodesic_thompson(A, B, alpha=0.5):
         SIAM Journal on Matrix Analysis and Applications, 2024
     """
     xp = check_matrix_pair(A, B, require_square=True)
-    Ainvsqrt = invsqrtm(A)
-    E = xp.linalg.eigvalsh(Ainvsqrt @ B @ Ainvsqrt)
+    if is_numpy_namespace(xp) and A.shape == B.shape:
+        E = _recursive(eigvalsh, B, A)
+    else:
+        # Cholesky reduction: eigvalsh(L^{-1} B L^{-H}) for joint eigenvalues
+        L = xp.linalg.cholesky(A)
+        Y = xp.linalg.solve(L, B)
+        Z = ctranspose(xp.linalg.solve(L, ctranspose(Y)))
+        E = xp.linalg.eigvalsh(Z)
     Emin = xp.min(E, axis=-1)
     Emax = xp.max(E, axis=-1)
     mask = xp.isclose(Emin, Emax)
