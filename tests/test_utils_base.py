@@ -5,7 +5,9 @@ from conftest import assert_array_almost_equal, to_numpy
 import pytest
 from pytest import approx
 
-from pyriemann.utils._backend import get_namespace, create_diagonal, xpd as device
+from pyriemann.utils._backend import (
+    get_namespace, create_diagonal, xpd as device,
+)
 from pyriemann.utils.base import (
     ctranspose,
     expm,
@@ -85,7 +87,7 @@ def test_funm_all(kind, funm, get_mats):
 
 
 def test_funm_error():
-    #the typeError is needed for Torch Tensor.
+    # the TypeError is needed for Torch Tensor.
     with pytest.raises((ValueError, TypeError)):
         sqrtm(np.ones(5))
     with pytest.raises((ValueError, TypeError)):
@@ -255,7 +257,9 @@ def test_directional_derivative_properties(kind, ddfun, get_mats, rndstate):
     assert ddfun(a * X + b * Y, Cref) == approx(a * Xdd + b * Ydd)
 
     # self-adjointness wrt Frob inner product
-    assert_array_almost_equal(xp.linalg.trace(Xdd @ Y), xp.linalg.trace(X @ Ydd))
+    assert_array_almost_equal(
+        xp.linalg.trace(Xdd @ Y), xp.linalg.trace(X @ Ydd)
+    )
 
     eye = xp.eye(n_channels, dtype=X.dtype, device=device(X))
     # identity reference

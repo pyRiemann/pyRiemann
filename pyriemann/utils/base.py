@@ -420,7 +420,7 @@ def ddexpm(X, Cref):
     """
     xp = get_namespace(X, Cref)
     d, V = xp.linalg.eigh(Cref)
-    
+
     Vh = ctranspose(V)
     expfdd = _first_divided_difference(d, xp.exp, xp.exp)
     return V @ (expfdd * (Vh @ X @ V)) @ Vh

@@ -2,8 +2,6 @@
 
 import warnings
 
-import numpy as np
-
 from ._backend import get_namespace, xpd
 from .base import sqrtm, invsqrtm, logm, expm
 from .distance import distance

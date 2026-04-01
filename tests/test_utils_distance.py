@@ -77,6 +77,7 @@ def test_distance_metric(kind, metric, dist, get_mats):
     assert d == approx(dist(A, B))
     assert np.isreal(to_numpy(d))
 
+
 def test_distance_metric_error(get_mats):
     n_channels = 2
     A = get_mats(2, n_channels, "spd")

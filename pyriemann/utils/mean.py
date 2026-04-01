@@ -7,7 +7,10 @@ import numpy as np
 from . import deprecated
 from .ajd import ajd_pham
 from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd
-from ._backend import get_namespace, create_diagonal, diag_indices, tril_indices, weighted_average, xpd, to_numpy, from_numpy
+from ._backend import (
+    get_namespace, create_diagonal, diag_indices, tril_indices,
+    weighted_average, xpd, to_numpy, from_numpy,
+)
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann, geodesic_thompson
 from .tangentspace import log_map_wasserstein, exp_map_wasserstein
@@ -149,7 +152,8 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
         norm_c = float(xp.linalg.matrix_norm(M[0], ord=2))
         if (norm_iter / norm_c) < tol:
             break
-        M = xp.zeros_like(M_iter); M[...] = M_iter
+        M = xp.zeros_like(M_iter)
+        M[...] = M_iter
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
 
@@ -293,7 +297,6 @@ def mean_kullback_sym(X, sample_weight=None, **kwargs):
         M. Moakher and P. Batchelor. Visualization and Processing of Tensor
         Fields, pp. 285-298, 2006
     """
-    xp = get_namespace(X)
     M_euclid = mean_euclid(X, sample_weight=sample_weight)
     M_harmonic = mean_harmonic(X, sample_weight=sample_weight)
     M = geodesic_riemann(M_euclid, M_harmonic, 0.5)
@@ -462,7 +465,6 @@ def mean_logeuclid(X, sample_weight=None, **kwargs):
         V. Arsigny, P. Fillard, X. Pennec, and N. Ayache. SIAM Journal on
         Matrix Analysis and Applications. Volume 29, Issue 1 (2007).
     """
-    xp = get_namespace(X)
     M = expm(mean_euclid(logm(X), sample_weight=sample_weight))
     return M
 
@@ -613,7 +615,6 @@ def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
         <https://arxiv.org/abs/1009.3045>`_
         I.L. Dryden, X. Pennec, & J.M. Peyrat. arXiv, 2010.
     """
-    xp = get_namespace(X)
     if not isinstance(p, (int, float)):
         raise ValueError(f"Exponent p must be a scalar (Got {type(p)})")
 

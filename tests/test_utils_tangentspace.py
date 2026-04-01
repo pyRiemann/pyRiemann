@@ -248,8 +248,8 @@ def test_innerproduct_input_dimension_error(metric, get_mats):
     X = get_mats(n_matrices, n_channels, "sym")
     Y = get_mats(n_matrices, n_channels + 1, "sym")
     Cref = get_mats(1, n_channels + 2, "spd")[0]
-    # Necessary the RunTimeError for torch backend which raises a different error type
-    with pytest.raises((ValueError, RuntimeError)): 
+    # RuntimeError for torch, ValueError for numpy
+    with pytest.raises((ValueError, RuntimeError)):
         innerproduct(X, Y, Cref, metric=metric)
 
 
@@ -369,9 +369,10 @@ def test_innerproduct_euclid(kind, n_dim1, n_dim2, get_mats):
     G1 = np.empty((n_matrices,))
     G2 = np.empty((n_matrices,))
     for i in range(n_matrices):
-        # tr(X^H @ Y)
-        # we need float because of torch to avoid 0-dim array which is not the same as scalar
-        G1[i] = float(xp.real(xp.linalg.trace(xp.conj(X[i]).mT @ Y[i])))
+        # tr(X^H @ Y); float() for torch 0-dim tensor
+        G1[i] = float(xp.real(
+            xp.linalg.trace(xp.conj(X[i]).mT @ Y[i])
+        ))
         # vec(X)^H . vec(Y)
         G2[i] = float(xp.real(
             xp.sum(xp.conj(xp.reshape(X[i], (-1,)))

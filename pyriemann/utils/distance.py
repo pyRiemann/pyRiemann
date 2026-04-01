@@ -13,7 +13,7 @@ from ._backend import (
     tril_indices,
     xpd,
 )
-from .base import _recursive, ctranspose, invsqrtm, logm, powm, sqrtm
+from .base import _recursive, invsqrtm, logm, powm, sqrtm
 from .test import is_real_type
 from .utils import check_function
 
@@ -147,8 +147,8 @@ def distance_harmonic(A, B, squared=False):
     xp = get_namespace(A, B)
     eye_n = xp.eye(A.shape[-1], dtype=A.dtype, device=xpd(A))
     return distance_euclid(
-        xp.linalg.solve(A, eye_n), 
-        xp.linalg.solve(B, eye_n), 
+        xp.linalg.solve(A, eye_n),
+        xp.linalg.solve(B, eye_n),
         squared=squared,
     )
 
@@ -198,8 +198,8 @@ def distance_kullback(A, B, squared=False):
             _recursive(solve, B, A, assume_a='pos'), axis1=-2, axis2=-1,
         )
     else:
-        # I could not find a way to compute the trace of the solution without computing
-        # the whole solution, which is costly. If you know how to do it, please tell me.
+        # trace of solve(B, A) without computing the full solution
+        # is not straightforward; open to suggestions.
         tr = xp.sum(xp.linalg.diagonal(xp.linalg.solve(B, A)), axis=-1)
     logdet = xp.linalg.slogdet(B)[1] - xp.linalg.slogdet(A)[1]
     d = 0.5 * xp.real(tr - n + logdet)
@@ -597,8 +597,9 @@ def distance_wasserstein(A, B, squared=False):
     xp = check_matrix_pair(A, B)
     B12 = sqrtm(B)
     d2 = xp.linalg.trace(A + B - 2 * sqrtm(B12 @ A @ B12))
-    d2 = xp.maximum(xp.real(d2), xp.asarray(0, dtype=xp.real(d2).dtype,
-                                             device=xpd(d2)))
+    real_d2 = xp.real(d2)
+    d2 = xp.maximum(real_d2, xp.asarray(0, dtype=real_d2.dtype,
+                                        device=xpd(d2)))
     return d2 if squared else xp.sqrt(d2)
 
 
@@ -903,8 +904,10 @@ def _pairwise_distance_riemann(X, Y=None, squared=False):
 
     n_matrices_X, n_matrices_Y = len(X), len(Y)
     Xinv12 = invsqrtm(X)
-    dist = xp.zeros((n_matrices_X, n_matrices_Y), dtype=X.real.dtype,
-                     device=xpd(X))
+    dist = xp.zeros(
+        (n_matrices_X, n_matrices_Y),
+        dtype=X.real.dtype, device=xpd(X),
+    )
 
     # row by row so it fits in memory
     for i, x_ in enumerate(Xinv12):
@@ -949,7 +952,7 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
     distance
     """
     xp = get_namespace(X, Y)
-    
+
     if metric == "euclid":
         return _pairwise_distance_euclid(X, Y=Y, squared=squared)
     elif metric == "harmonic":
@@ -975,7 +978,7 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
                 dist[i, j] = distance(X[i], X[j], metric, squared=squared)
         dist = dist + dist.mT
     else:
-        
+
         n_matrices_Y, _, _ = Y.shape
 
         dist = xp.empty((n_matrices_X, n_matrices_Y), dtype=X.real.dtype,

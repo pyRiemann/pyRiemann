@@ -486,6 +486,7 @@ def test_mean_masked_riemann(init, get_mats, get_masks):
         assert M5.shape == (n_dim5, n_dim4, n_channels, n_channels)
         assert M5[0, 0] == approx(M)
 
+
 @pytest.mark.numpy_only
 @pytest.mark.parametrize("init", [True, False])
 def test_mean_nan_riemann(init, get_mats, rndstate):
