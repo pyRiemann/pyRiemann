@@ -155,7 +155,6 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
     return xp.mean(M_iter, axis=0)
 
 
-@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_chol(X, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the Cholesky metric.
 
@@ -199,7 +198,6 @@ def mean_chol(X, sample_weight=None, **kwargs):
     return L @ ctranspose(L)
 
 
-@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_euclid(X, sample_weight=None, **kwargs):
     r"""Mean of matrices according to the Euclidean metric.
 
@@ -225,10 +223,9 @@ def mean_euclid(X, sample_weight=None, **kwargs):
     gmean
     """
     xp = get_namespace(X)
-    return weighted_average(X, weights=sample_weight, axis=0, xp=xp)
+    return weighted_average(X, weights=sample_weight, axis=-3, xp=xp)
 
 
-@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_harmonic(X, sample_weight=None, **kwargs):
     r"""Harmonic mean of invertible matrices.
 
@@ -257,7 +254,6 @@ def mean_harmonic(X, sample_weight=None, **kwargs):
     return M
 
 
-@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_kullback_sym(X, sample_weight=None, **kwargs):
     """Mean of SPD/HPD matrices according to Kullback-Leibler divergence.
 
@@ -406,7 +402,6 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     return M
 
 
-@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_logeuclid(X, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the log-Euclidean metric.
 
@@ -547,7 +542,6 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     return M
 
 
-@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the power Euclidean metric.
 
