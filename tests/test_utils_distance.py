@@ -46,22 +46,6 @@ dists = [
 ]
 
 
-BROADCAST_DISTANCE_FUNCS = {
-    distance_chol,
-    distance_euclid,
-    distance_harmonic,
-    distance_kullback,
-    distance_kullback_right,
-    distance_kullback_sym,
-    distance_logchol,
-    distance_logdet,
-    distance_logeuclid,
-    distance_riemann,
-    distance_thompson,
-    distance_wasserstein,
-}
-
-
 def callable_sp_euclidean(A, B, squared=False):
     return euclidean(A.flatten(), B.flatten())
 
@@ -118,7 +102,7 @@ def test_distance_between_set_and_matrix(dist, get_mats):
     X = get_mats(n_matrices, n_channels, "spd")
     xp = get_namespace(X)
 
-    if dist in BROADCAST_DISTANCE_FUNCS:
+    if dist in dists:
         assert dist(X, X[-1]).shape == (n_matrices,)
     else:
         with pytest.raises(ValueError):

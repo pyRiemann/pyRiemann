@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from conftest import approx
 
-from pyriemann.utils._backend import get_namespace
+from pyriemann.utils._backend import get_namespace, xpd as device
 from pyriemann.utils.geodesic import (
     geodesic,
     geodesic_chol,
@@ -144,9 +144,12 @@ def test_geodesic_property_invariance_inversion(kind, gfun,
     n_channels = 4
     A, B = get_mats(2, n_channels, kind)
     xp = get_namespace(A)
+    eye = xp.eye(n_channels, dtype=A.dtype, device=device(A))
     alpha = rndstate.uniform(0.01, 0.99)
     G = gfun(A, B, alpha)
-    Ginv = xp.linalg.inv(gfun(xp.linalg.inv(A), xp.linalg.inv(B), alpha))
+    invA = xp.linalg.solve(A, eye)
+    invB = xp.linalg.solve(B, eye)
+    Ginv = xp.linalg.solve(gfun(invA, invB, alpha), eye)
     assert G == approx(Ginv)
 
 
@@ -183,9 +186,9 @@ def test_geodesic_riemann(kind, get_mats, rndstate):
     G = geodesic_riemann(A, B, alpha)
 
     # WG9 in [Nakamura2009]
-    det = (complex(xp.linalg.det(A)) ** (1 - alpha)) \
-        * (complex(xp.linalg.det(B)) ** alpha)
-    assert complex(xp.linalg.det(G)) == approx(det)
+    det = (float(xp.real(xp.linalg.det(A))) ** (1 - alpha)) \
+        * (float(xp.real(xp.linalg.det(B))) ** alpha)
+    assert float(xp.real(xp.linalg.det(G))) == approx(det)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])

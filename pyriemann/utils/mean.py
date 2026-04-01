@@ -346,7 +346,6 @@ def mean_kullback_sym(X, sample_weight=None, **kwargs):
     return M
 
 
-@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_logchol(X, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the log-Cholesky metric.
 
@@ -389,7 +388,7 @@ def mean_logchol(X, sample_weight=None, **kwargs):
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
     xp = get_namespace(X)
-    n_matrices, _, n_channels = X.shape
+    n_matrices, n_channels = X.shape[-3], X.shape[-1]
     sample_weight = check_weights(
         sample_weight,
         n_matrices,
@@ -397,28 +396,31 @@ def mean_logchol(X, sample_weight=None, **kwargs):
     )
 
     X_chol = xp.linalg.cholesky(X)
-    L = xp.zeros(X.shape[-2:], dtype=X.dtype, device=xpd(X))
 
     tri0, tri1 = tril_indices(n_channels, -1, xp=xp, like=X_chol)
-    L[tri0, tri1] = weighted_average(
-        X_chol[:, tri0, tri1],
+    diag0, diag1 = diag_indices(n_channels, xp=xp, like=X_chol)
+
+    L_tri = weighted_average(
+        X_chol[..., tri0, tri1],
         weights=sample_weight,
-        axis=0,
+        axis=-2,
         xp=xp,
     )
-
-    diag0, diag1 = diag_indices(n_channels, xp=xp, like=X_chol)
-    L[diag0, diag1] = xp.exp(weighted_average(
-        xp.log(X_chol[:, diag0, diag1]),
+    L_diag = xp.exp(weighted_average(
+        xp.log(X_chol[..., diag0, diag1]),
         weights=sample_weight,
-        axis=0,
+        axis=-2,
         xp=xp,
     ))
+
+    L = xp.zeros(X.shape[:-3] + X.shape[-2:], dtype=X.dtype, device=xpd(X))
+    L[..., tri0, tri1] = L_tri
+    L[..., diag0, diag1] = L_diag
 
     return L @ ctranspose(L)
 
 
-@_vectorize_nd(n_axes=3)
+@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the log-det metric.
 
@@ -465,12 +467,13 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     else:
         M = check_init(init, n, like=X)
 
+    eye_n = xp.eye(n, dtype=X.dtype, device=xpd(X))
     for _ in range(maxiter):
-        invX = xp.linalg.inv(0.5 * X + 0.5 * M[..., None, :, :])
-        J = weighted_average(invX, weights=sample_weight, axis=-3, xp=xp)
-        Mnew = xp.linalg.inv(J)
+        invX = xp.linalg.solve(0.5 * X + 0.5 * M, eye_n)
+        J = weighted_average(invX, weights=sample_weight, axis=0, xp=xp)
+        Mnew = xp.linalg.solve(J, eye_n)
 
-        crit = float(xp.max(xp.linalg.matrix_norm(Mnew - M)))
+        crit = float(xp.linalg.matrix_norm(Mnew - M))
         M = Mnew
         if crit <= tol:
             break
@@ -514,16 +517,11 @@ def mean_logeuclid(X, sample_weight=None, **kwargs):
         V. Arsigny, P. Fillard, X. Pennec, and N. Ayache. SIAM Journal on
         Matrix Analysis and Applications. Volume 29, Issue 1 (2007).
     """
-    M = expm(
-        mean_euclid(
-            logm(X),
-            sample_weight=sample_weight,
-        ),
-    )
+    M = expm(mean_euclid(logm(X), sample_weight=sample_weight))
     return M
 
 
-@_vectorize_nd(n_axes=3)
+@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
                init=None):
     r"""Power mean of SPD/HPD matrices.
@@ -599,7 +597,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     if p == -1:
         return mean_harmonic(X, sample_weight=sample_weight)
 
-    n_matrices, n = X.shape[-3], X.shape[-1]
+    n_matrices, n, _ = X.shape
     sample_weight = check_weights(
         sample_weight,
         n_matrices,
@@ -611,7 +609,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
             weighted_average(
                 powm(X, p),
                 weights=sample_weight,
-                axis=-3,
+                axis=0,
                 xp=xp,
             ),
             1 / p,
@@ -627,18 +625,16 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     for _ in range(maxiter):
         H = weighted_average(
             powm(
-                K[..., None, :, :] @ powm(X, np.sign(p)) @ ctranspose(
-                    K[..., None, :, :],
-                ),
+                K @ powm(X, np.sign(p)) @ ctranspose(K),
                 np.abs(p),
             ),
             weights=sample_weight,
-            axis=-3,
+            axis=0,
             xp=xp,
         )
         K = powm(H, -phi) @ K
 
-        crit = float(xp.max(xp.linalg.matrix_norm(H - eye_n))) / sqrt_n
+        crit = float(xp.linalg.matrix_norm(H - eye_n)) / sqrt_n
         if crit <= zeta:
             break
     else:
@@ -646,7 +642,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
 
     M = ctranspose(K) @ K
     if p > 0:
-        M = xp.linalg.inv(M)
+        M = xp.linalg.solve(M, eye_n)
 
     return M
 
@@ -700,7 +696,7 @@ def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     return M
 
 
-@_vectorize_nd(n_axes=3)
+@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the Riemannian metric.
 
@@ -751,7 +747,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         M. Congedo, B. Afsari, A. Barachant, M. Moakher. PLOS ONE, 2015
     """
     xp = get_namespace(X)
-    n_matrices, n = X.shape[-3], X.shape[-1]
+    n_matrices, n, _ = X.shape
     sample_weight = check_weights(
         sample_weight,
         n_matrices,
@@ -768,14 +764,14 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         M12 = sqrtm(M)
         Mm12 = invsqrtm(M)
         J = weighted_average(
-            logm(Mm12[..., None, :, :] @ X @ Mm12[..., None, :, :]),
+            logm(Mm12 @ X @ Mm12),
             weights=sample_weight,
-            axis=-3,
+            axis=0,
             xp=xp,
         )
         M = M12 @ expm(nu * J) @ M12
 
-        crit = float(xp.max(xp.linalg.matrix_norm(J)))
+        crit = float(xp.linalg.matrix_norm(J))
         h = nu * crit
         if h < tau:
             nu = 0.95 * nu
@@ -790,7 +786,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     return M
 
 
-@_vectorize_nd(n_axes=3)
+@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     """Mean of SPD/HPD matrices according to the Thompson metric.
 
@@ -832,7 +828,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
         SIAM Journal on Matrix Analysis and Applications, 2024
     """
     xp = get_namespace(X)
-    n_matrices, n = X.shape[-3], X.shape[-1]
+    n_matrices, n, _ = X.shape
     if init is None:
         M = mean_euclid(X)
     else:
@@ -841,11 +837,11 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     for i in range(maxiter):
         Mnew = geodesic_thompson(
             M,
-            X[..., i % n_matrices, :, :],
+            X[i % n_matrices],
             1 / (i + 2),
         )
 
-        crit = float(xp.max(xp.linalg.matrix_norm(Mnew - M)))
+        crit = float(xp.linalg.matrix_norm(Mnew - M))
         M = Mnew
         if crit <= tol:
             break
@@ -855,7 +851,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     return M
 
 
-@_vectorize_nd(n_axes=3)
+@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     r"""Mean of SPD/HPD matrices according to the Wasserstein metric.
 
@@ -896,7 +892,7 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         J. Zheng, H. Huang, Y. Yi, Y. Li, S.-C. Lin, ArXiv, 2023
     """
     xp = get_namespace(X)
-    n_matrices, n = X.shape[-3], X.shape[-1]
+    n_matrices, n, _ = X.shape
     sample_weight = check_weights(
         sample_weight,
         n_matrices,
@@ -910,9 +906,9 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 
     for _ in range(maxiter):
         X_ts = log_map_wasserstein(X, M)
-        J = weighted_average(X_ts, weights=sample_weight, axis=-3, xp=xp)
+        J = weighted_average(X_ts, weights=sample_weight, axis=0, xp=xp)
         M = exp_map_wasserstein(J, M)
-        crit = float(xp.max(xp.linalg.matrix_norm(J)))
+        crit = float(xp.linalg.matrix_norm(J))
         if crit <= tol:
             break
     else:

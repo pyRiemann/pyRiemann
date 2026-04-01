@@ -146,10 +146,7 @@ def exp_map_logeuclid(X, Cref):
         <https://ieeexplore.ieee.org/document/10735221>`_
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
-    check_matrix_pair(X, Cref, require_square=True)
-    return expm(
-        logm(Cref) + ddlogm(X, Cref),
-    )
+    return expm(logm(Cref) + ddlogm(X, Cref))
 
 
 def exp_map_riemann(X, Cref, Cm12=False):
@@ -426,12 +423,8 @@ def log_map_logeuclid(X, Cref):
         <https://ieeexplore.ieee.org/document/10735221>`_
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
-    check_matrix_pair(X, Cref, require_square=True)
     logCref = logm(Cref)
-    X_new = ddexpm(
-        logm(X) - logCref,
-        logCref,
-    )
+    X_new = ddexpm(logm(X) - logCref, logCref)
     return X_new
 
 
@@ -1100,10 +1093,7 @@ def transport_logeuclid(X, A, B):
         <https://www.sciencedirect.com/science/article/pii/S0024379522004360>`_
         Y. Thanwerdas & X. Pennec. Linear Algebra and its Applications, 2023.
     """
-    return ddexpm(
-        ddlogm(X, A),
-        logm(B),
-    )
+    return ddexpm(ddlogm(X, A), logm(B))
 
 
 def transport_riemann(X, A, B):

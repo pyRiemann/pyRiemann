@@ -26,7 +26,7 @@ def _check_inputs(A, B):
         raise ValueError("Inputs must be at least a 2D ndarray")
 
 
-def _last_axis_norm2(x, xp):
+def _last_axis_normfro(x, xp):
     return xp.sum(xp.abs(x) ** 2, axis=-1)
 
 
@@ -196,7 +196,7 @@ def distance_kullback(A, B, squared=False):
     """
     xp = check_matrix_pair(A, B, require_square=True)
     n = A.shape[-1]
-    tr = xp.sum(xp.linalg.diagonal(xp.linalg.inv(B) @ A), axis=-1)
+    tr = xp.sum(xp.linalg.diagonal(xp.linalg.solve(B, A)), axis=-1)
     logdet = xp.linalg.slogdet(B)[1] - xp.linalg.slogdet(A)[1]
     d = 0.5 * xp.real(tr - n + logdet)
     return d ** 2 if squared else d
@@ -294,13 +294,13 @@ def distance_logchol(A, B, squared=False):
     A_chol, B_chol = xp.linalg.cholesky(A), xp.linalg.cholesky(B)
 
     tri0, tri1 = tril_indices(A_chol.shape[-1], -1, xp=xp, like=A_chol)
-    triangular_part = _last_axis_norm2(
+    triangular_part = _last_axis_normfro(
         A_chol[..., tri0, tri1] - B_chol[..., tri0, tri1],
         xp,
     )
 
     diag0, diag1 = diag_indices(A_chol.shape[-1], xp=xp, like=A_chol)
-    diagonal_part = _last_axis_norm2(
+    diagonal_part = _last_axis_normfro(
         xp.log(A_chol[..., diag0, diag1]) -
         xp.log(B_chol[..., diag0, diag1]),
         xp,
@@ -626,22 +626,6 @@ distance_functions = {
     "wasserstein": distance_wasserstein,
 }
 
-_BROADCASTABLE_DISTANCE_FUNCTIONS = {
-    distance_chol,
-    distance_euclid,
-    distance_harmonic,
-    distance_kullback,
-    distance_kullback_right,
-    distance_kullback_sym,
-    distance_logchol,
-    distance_logdet,
-    distance_logeuclid,
-    distance_riemann,
-    distance_thompson,
-    distance_wasserstein,
-}
-
-
 def distance(A, B, metric="riemann", squared=False):
     """Distance between matrices according to a metric.
 
@@ -700,7 +684,7 @@ def distance(A, B, metric="riemann", squared=False):
     if shape_A == shape_B:
         d = distance_function(A, B, squared=squared)
     elif len(shape_A) == 3 and len(shape_B) == 2:
-        if distance_function in _BROADCASTABLE_DISTANCE_FUNCTIONS:
+        if distance_function in distance_functions.values():
             d = distance_function(A, B, squared=squared)
         else:
             d = xp.stack(
@@ -980,7 +964,7 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
             Y_ = X
         else:
             Y_ = Y
-        if distance_function in _BROADCASTABLE_DISTANCE_FUNCTIONS:
+        if distance_function in distance_functions.values():
             return distance_function(
                 X[:, None, ...],
                 Y_[None, ...],

@@ -29,15 +29,13 @@ def check_weights(weights, n_weights, *, check_positivity=False, like=None):
     .. versionadded:: 0.4
     """
     xp = get_namespace(like)
-    dtype = None if like is None else like.real.dtype
-
     dev = xpd(like) if like is not None else None
 
     if weights is None:
-        weights = xp.ones(n_weights, dtype=dtype, device=dev)
+        weights = xp.ones(n_weights, dtype=float, device=dev)
 
     else:
-        weights = xp.asarray(weights, dtype=dtype, device=dev)
+        weights = xp.asarray(weights, device=dev)
         if weights.shape != (n_weights,):
             raise ValueError(
                 "Weights do not have the good shape. Should be (%d,) but got "
@@ -50,7 +48,7 @@ def check_weights(weights, n_weights, *, check_positivity=False, like=None):
     return weights
 
 
-def check_metric(metric, expected_keys=None):
+def check_metric(metric, expected_keys=["mean", "distance"]):
     """Check metric argument.
 
     Parameters
@@ -73,9 +71,6 @@ def check_metric(metric, expected_keys=None):
     -----
     .. versionadded:: 0.6
     """
-    if expected_keys is None:
-        expected_keys = ["mean", "distance"]
-
     if isinstance(metric, str):
         return [metric] * len(expected_keys)
 
@@ -147,9 +142,8 @@ def check_init(init, n, *, like=None):
     .. versionadded:: 0.8
     """
     xp = get_namespace(like)
-    dtype = None if like is None else like.dtype
     dev = xpd(like) if like is not None else None
-    init = xp.asarray(init, dtype=dtype, device=dev)
+    init = xp.asarray(init, device=dev)
     if init.shape != (n, n):
         raise ValueError(
             "Init matrix does not have the good shape. "

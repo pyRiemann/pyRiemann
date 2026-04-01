@@ -589,7 +589,7 @@ def test_normalize(rndstate, get_mats):
     Xcn = normalize(X, "corr")
     Xcn_np = to_numpy(Xcn)
     assert_array_almost_equal(np.ones(Xcn_np.shape[:-1]),
-                              np.diagonal(Xcn_np, axis1=-2, axis2=-1))
+                              Xcn_np.diagonal(axis1=-2, axis2=-1))
     assert np.all(-1 <= Xcn_np) and np.all(Xcn_np <= 1)
 
     # after trace-normalization => trace equal to 1
@@ -597,7 +597,7 @@ def test_normalize(rndstate, get_mats):
     Xtn = normalize(X, "trace")
     Xtn_np = to_numpy(Xtn)
     assert_array_almost_equal(np.ones(Xtn_np.shape[0]),
-                              np.trace(Xtn_np, axis1=-2, axis2=-1))
+                              Xtn_np.trace(axis1=-2, axis2=-1))
 
     # after determinant-normalization => determinant equal to +/- 1
     Xdn = normalize(X, "determinant")

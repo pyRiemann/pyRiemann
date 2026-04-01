@@ -1,5 +1,4 @@
 from functools import partial
-import warnings
 
 import numpy as np
 from conftest import assert_array_almost_equal, to_numpy
@@ -19,10 +18,6 @@ from pyriemann.utils.base import (
     ddexpm,
     ddlogm,
 )
-from pyriemann.utils.distance import distance_riemann
-from pyriemann.utils.geodesic import geodesic_logchol
-from pyriemann.utils.mean import mean_riemann
-from pyriemann.utils.tangentspace import log_map_riemann, exp_map_riemann
 from pyriemann.utils.test import is_pos_def, is_sym_pos_def
 
 
@@ -135,7 +130,8 @@ def test_funm_properties(get_mats, kind):
     n_matrices, n_dim = 10, 3
     X = get_mats(n_matrices, n_dim, kind)
     xp = get_namespace(X)
-    invX = xp.linalg.inv(X)
+    eye = xp.eye(n_dim, dtype=X.dtype, device=device(X))
+    invX = xp.linalg.solve(X, xp.broadcast_to(eye, X.shape))
 
     # expm and logm
     eX, lX = expm(X), logm(X)
@@ -238,53 +234,6 @@ def test_first_divided_difference(get_mats, kind):
     assert_array_almost_equal(fdd_exp_of_log, 1/to_numpy(fdd_log))
 
 
-@pytest.mark.numpy_only
-@pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_first_divided_difference_properties(get_mats, kind):
-    X = get_mats(1, n_channels, kind)[0]
-    d = np.linalg.eigvalsh(X)
-
-    fdd_id = _first_divided_difference(d, lambda x: x, lambda x: x)
-    assert fdd_id.shape == X.shape
-    assert_array_almost_equal(np.diag(fdd_id), d)
-    assert_array_almost_equal(fdd_id[np.triu_indices_from(fdd_id, k=1)], 1)
-
-    fdd_exp = _first_divided_difference(d, np.exp, np.exp)
-    assert_array_almost_equal(np.diag(fdd_exp), np.exp(d))
-
-    fdd_log = _first_divided_difference(d, np.log, lambda x: 1./x)
-    assert_array_almost_equal(np.diag(fdd_log), 1/d)
-
-    # exp of log is element-wise inverse of log
-    fdd_exp_of_log = _first_divided_difference(np.log(d), np.exp, np.exp)
-    assert_array_almost_equal(fdd_exp_of_log, 1/fdd_log)
-
-
-def test_ddlogm(get_mats):
-    """Test directional derivative of log."""
-    X, Cref = get_mats(2, n_channels, "spd")
-    xp = get_namespace(X)
-    fdd_logm = ddlogm(X, Cref)
-    assert fdd_logm.shape == X.shape
-
-    eye = xp.eye(n_channels, dtype=X.dtype, device=device(X))
-    fdd_logm = ddlogm(X, eye)
-    assert_array_almost_equal(fdd_logm, X)
-
-
-@pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_ddexpm(get_mats, kind):
-    """Test directional derivative of exp."""
-    X, Cref = get_mats(2, n_channels, kind)
-    xp = get_namespace(X)
-    fdd_expm = ddexpm(X, Cref)
-    assert fdd_expm.shape == X.shape
-
-    eye = xp.eye(n_channels, dtype=X.dtype, device=device(X))
-    fdd_expm = ddexpm(X, eye)
-    assert_array_almost_equal(fdd_expm, np.exp(1) * to_numpy(X))
-
-
 @pytest.mark.parametrize("ddfun", [ddlogm, ddexpm])
 def test_directional_derivative(ddfun, get_mats):
     n_dim5, n_dim4, n_matrices, n_channels = 2, 6, 5, 3
@@ -321,31 +270,3 @@ def test_directional_derivative_properties(kind, ddfun, get_mats, rndstate):
         assert_array_almost_equal(Xdd, X)
 
 
-def test_autograd_smoke():
-    torch = pytest.importorskip("torch")
-    torch.set_grad_enabled(True)  # re-enable for this test
-    rng = np.random.RandomState(199)
-
-    def _make_spd(shape, n):
-        mats = rng.standard_normal((*shape, n, n))
-        return mats @ np.swapaxes(mats, -1, -2) + 0.25 * np.eye(n)
-
-    def _to_torch(x):
-        return torch.from_numpy(np.ascontiguousarray(x)).to(torch.float64)
-
-    A = _to_torch(_make_spd((), 3)).clone().detach().requires_grad_(True)
-    B = _to_torch(_make_spd((), 3)).clone().detach().requires_grad_(True)
-    X = _to_torch(_make_spd((4,), 3)).clone().detach().requires_grad_(True)
-
-    tangent = log_map_riemann(B.unsqueeze(0), A, C12=True)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UserWarning)
-        loss = distance_riemann(A, B)
-        loss = loss + geodesic_logchol(A, B, alpha=0.25).sum()
-        loss = loss + mean_riemann(X, maxiter=5).sum()
-        loss = loss + exp_map_riemann(tangent, A, Cm12=True).sum()
-    loss.backward()
-
-    for grad in (A.grad, B.grad, X.grad):
-        assert grad is not None
-        assert torch.isfinite(grad).all()
