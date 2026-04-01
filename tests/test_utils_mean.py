@@ -440,7 +440,7 @@ def test_mean_riemann_solution(kind, get_mats):
 
     # Eq(1.2) in [Lim2012]
     M12 = sqrtm(M)
-    assert xp.sum(logm(M12 @ xp.linalg.inv(X) @ M12), axis=0) \
+    assert xp.sum(logm(M12 @ xp.linalg.solve(X, M12)), axis=0) \
         == approx(Zero)
 
 
@@ -477,6 +477,13 @@ def test_mean_masked_riemann(init, get_mats, get_masks):
         M = maskedmean_riemann(X, masks, tol=10e-3)
     assert M.shape == (n_channels, n_channels)
 
+    # test broadcasting
+    if not init:
+        n_dim5, n_dim4 = 2, 3
+        X5 = np.asarray([[X for _ in range(n_dim4)] for _ in range(n_dim5)])
+        M5 = maskedmean_riemann(X5, masks)
+        assert M5.shape == (n_dim5, n_dim4, n_channels, n_channels)
+        assert M5[0, 0] == approx(M)
 
 @pytest.mark.numpy_only
 @pytest.mark.parametrize("init", [True, False])
