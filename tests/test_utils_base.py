@@ -1,11 +1,11 @@
 from functools import partial
-
+import math
 import numpy as np
 from conftest import assert_array_almost_equal, to_numpy
 import pytest
 from pytest import approx
 
-from pyriemann.utils._backend import get_namespace, xpd as device
+from pyriemann.utils._backend import get_namespace, create_diagonal, xpd as device
 from pyriemann.utils.base import (
     ctranspose,
     expm,
@@ -177,9 +177,9 @@ def test_funm_properties(get_mats, kind):
 def test_nearest_sym_pos_def(get_mats):
     n_matrices = 3
     X = get_mats(n_matrices, n_channels, "spd")
-    X_np = to_numpy(X)
-    D = X_np.diagonal(axis1=1, axis2=2)
-    Psd = np.array([x - np.diag(d) for x, d in zip(X_np, D)])
+    xp = get_namespace(X)
+    D = xp.linalg.diagonal(X)
+    Psd = X - create_diagonal(D)
 
     assert not is_pos_def(Psd)
     assert is_sym_pos_def(nearest_sym_pos_def(X))
@@ -239,7 +239,6 @@ def test_directional_derivative(ddfun, get_mats):
     assert DD[0, 0] == approx(ddfun(X[0, 0], Cref))
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("ddfun", [ddlogm, ddexpm])
 def test_directional_derivative_properties(kind, ddfun, get_mats, rndstate):
@@ -255,9 +254,10 @@ def test_directional_derivative_properties(kind, ddfun, get_mats, rndstate):
     # self-adjointness wrt Frob inner product
     assert_array_almost_equal(xp.linalg.trace(Xdd @ Y), xp.linalg.trace(X @ Ydd))
 
+    eye = xp.eye(n_channels, dtype=X.dtype, device=device(X))
     # identity reference
-    Xdd = ddfun(X, np.eye(n_channels))
+    Xdd = ddfun(X, eye)
     if ddfun is ddexpm:
-        assert_array_almost_equal(Xdd, np.exp(1) * X)
+        assert_array_almost_equal(Xdd, math.e * X)
     elif ddfun is ddlogm:
         assert_array_almost_equal(Xdd, X)
