@@ -401,7 +401,7 @@ def ddexpm(X, Cref):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
     Cref : ndarray, shape (n, n)
         SPD/HPD matrix.
 
