@@ -67,6 +67,17 @@ def check_matrix_pair(A, B, *, require_square=False):
 # --- Custom extensions not in Array API or array-api-extra ---
 
 
+def pairwise_euclidean(X, Y, *, xp):
+    """Pairwise Euclidean distance matrix, array-API compatible.
+
+    Uses sklearn for numpy (optimized BLAS), torch.cdist for torch (GPU).
+    """
+    if is_numpy_namespace(xp):
+        from sklearn.metrics import euclidean_distances
+        return euclidean_distances(X, Y)
+    return torch.cdist(X, Y, p=2)
+
+
 def weighted_average(x, weights=None, axis=0, *, xp):
     if weights is None:
         return xp.mean(x, axis=axis)

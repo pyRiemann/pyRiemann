@@ -2,9 +2,9 @@
 
 import numpy as np
 from scipy.linalg import eigvalsh, solve
-from sklearn.metrics import euclidean_distances
 
 from ._backend import (
+    pairwise_euclidean,
     check_matrix_pair,
     diag_indices,
     get_namespace,
@@ -694,14 +694,7 @@ def distance(A, B, metric="riemann", squared=False):
     if shape_A == shape_B:
         d = distance_function(A, B, squared=squared)
     elif len(shape_A) == 3 and len(shape_B) == 2:
-        if distance_function in distance_functions.values():
-            d = distance_function(A, B, squared=squared)
-        else:
-            d = xp.stack(
-                [distance_function(A[i], B, squared=squared)
-                 for i in range(shape_A[0])],
-                axis=0,
-            )
+        d = distance_function(A, B, squared=squared)
         d = d[..., None]
     else:
         raise ValueError("Inputs have incompatible dimensions.")
@@ -713,16 +706,10 @@ def distance(A, B, metric="riemann", squared=False):
 
 
 def _euclidean_distances(X, Y=None, squared=False):
-    """Function to extend euclidean_distances of sklearn to complex data.
-
-    Uses sklearn for numpy (optimized BLAS), torch.cdist for torch (GPU).
-    """
+    """Function to extend euclidean_distances of sklearn to complex data."""
     xp = get_namespace(X, Y)
     if is_real_type(X):
-        if is_numpy_namespace(xp):
-            return euclidean_distances(X, Y, squared=squared)
-        import torch
-        dist = torch.cdist(X, X if Y is None else Y, p=2)
+        dist = pairwise_euclidean(X, X if Y is None else Y, xp=xp)
         return dist ** 2 if squared else dist
 
     if Y is None:
