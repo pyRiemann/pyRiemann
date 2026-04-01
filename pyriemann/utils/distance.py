@@ -1,7 +1,7 @@
 """Distances between SPD/HPD matrices."""
 
 import numpy as np
-from scipy.linalg import eigvalsh
+from scipy.linalg import eigvalsh, solve
 from sklearn.metrics import euclidean_distances
 
 from ._backend import (
@@ -196,7 +196,12 @@ def distance_kullback(A, B, squared=False):
     """
     xp = check_matrix_pair(A, B, require_square=True)
     n = A.shape[-1]
-    tr = xp.sum(xp.linalg.diagonal(xp.linalg.solve(B, A)), axis=-1)
+    if is_numpy_namespace(xp) and A.shape == B.shape:
+        tr = np.trace(
+            _recursive(solve, B, A, assume_a='pos'), axis1=-2, axis2=-1,
+        )
+    else:
+        tr = xp.sum(xp.linalg.diagonal(xp.linalg.solve(B, A)), axis=-1)
     logdet = xp.linalg.slogdet(B)[1] - xp.linalg.slogdet(A)[1]
     d = 0.5 * xp.real(tr - n + logdet)
     return d ** 2 if squared else d
