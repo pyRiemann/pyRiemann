@@ -185,6 +185,9 @@ def test_nearest_sym_pos_def(get_mats):
     assert is_sym_pos_def(nearest_sym_pos_def(X))
     assert is_sym_pos_def(nearest_sym_pos_def(Psd))
 
+    X = get_mats([4, 3, n_matrices], n_channels, "spd")
+    nearest_sym_pos_def(X)
+
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_first_divided_difference(get_mats, kind):
