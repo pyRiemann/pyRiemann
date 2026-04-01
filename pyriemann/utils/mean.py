@@ -1,21 +1,13 @@
 """Means of SPD/HPD matrices."""
 
-import math
 import warnings
 
 import numpy as np
 
-from ._backend import (
-    get_namespace,
-    create_diagonal,
-    diag_indices,
-    tril_indices,
-    weighted_average,
-    xpd,
-)
 from . import deprecated
 from .ajd import ajd_pham
-from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd
+from .base import sqrtm, invsqrtm, logm, expm, powm, ctranspose, _vectorize_nd
+from ._backend import get_namespace, create_diagonal, diag_indices, tril_indices, weighted_average, xpd, to_numpy, from_numpy
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann, geodesic_thompson
 from .tangentspace import log_map_wasserstein, exp_map_wasserstein
@@ -31,7 +23,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=10e-7
         Tolerance to stop the gradient descent.
@@ -45,7 +37,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
 
     Returns
     -------
-    M : ndarray, shape (..., n, n)
+    M : ndarray, shape (n, n)
         ALE mean.
 
     Notes
@@ -67,38 +59,23 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
     if init is None:
-        B = ajd_pham(X, sample_weight=sample_weight)[0]
+        B = ajd_pham(X)[0]
     else:
         B = check_init(init, n, like=X)
 
-    eye_n = xp.eye(n, dtype=X.dtype, device=xpd(X))
     for _ in range(maxiter):
-        J = weighted_average(
-            logm(B @ X @ ctranspose(B)),
-            weights=sample_weight,
-            axis=0,
-            xp=xp,
-        )
+        J = weighted_average(logm(B @ X @ ctranspose(B)), weights=sample_weight, axis=0, xp=xp)
         delta = xp.real(xp.linalg.diagonal(expm(J)))
-        B = (xp.abs(delta) ** -0.5)[:, None] * B
+        B = (xp.abs(delta) ** -.5)[:, None] * B
 
-        crit = distance_riemann(
-            eye_n,
-            create_diagonal(
-                xp.asarray(delta, dtype=X.dtype, device=xpd(X)),
-            ),
-        )
+        diag_delta = create_diagonal(delta)
+        crit = distance_riemann(xp.eye(n, dtype=delta.dtype, device=xpd(X)), diag_delta)
         if float(crit) <= tol:
             break
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
 
-    J = weighted_average(
-        logm(B @ X @ ctranspose(B)),
-        weights=sample_weight,
-        axis=0,
-        xp=xp,
-    )
+    J = weighted_average(logm(B @ X @ ctranspose(B)), weights=sample_weight, axis=0, xp=xp)
     A = xp.linalg.inv(B)
     M = A @ expm(J) @ ctranspose(A)
     return M
@@ -119,7 +96,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=1e-14
         Tolerance to stop the gradient descent.
@@ -130,7 +107,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
 
     Returns
     -------
-    M : ndarray, shape (..., n, n)
+    M : ndarray, shape (n, n)
         ALM mean.
 
     Notes
@@ -156,7 +133,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
         return X[0]
 
     if n_matrices == 2:
-        alpha = float(sample_weight[1] / sample_weight[0] / 2)
+        alpha = sample_weight[1] / sample_weight[0] / 2
         M = geodesic_riemann(X[0], X[1], alpha=alpha)
         return M
 
@@ -164,21 +141,21 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
     M_iter = xp.zeros_like(M)
     for _ in range(maxiter):
         for h in range(n_matrices):
-            s = [((h + i + 1) % n_matrices) for i in range(n_matrices - 1)]
+            s = np.mod(np.arange(h, h + n_matrices - 1) + 1, n_matrices)
             M_iter[h] = mean_alm(M[s], sample_weight=sample_weight[s])
 
-        norm_iter = float(xp.linalg.matrix_norm(M_iter[0] - M[0]))
-        norm_c = float(xp.linalg.matrix_norm(M[0]))
+        norm_iter = float(xp.linalg.matrix_norm(M_iter[0] - M[0], ord=2))
+        norm_c = float(xp.linalg.matrix_norm(M[0], ord=2))
         if (norm_iter / norm_c) < tol:
             break
-        M = xp.zeros_like(M_iter)
-        M[...] = M_iter
+        M = xp.zeros_like(M_iter); M[...] = M_iter
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
 
     return xp.mean(M_iter, axis=0)
 
 
+@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_chol(X, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the Cholesky metric.
 
@@ -189,17 +166,16 @@ def mean_chol(X, sample_weight=None, **kwargs):
     .. math::
         \mathbf{L} = \sum_i w_i \text{chol}(\mathbf{X}_i)
 
-
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
     -------
-    M : ndarray, shape (..., n, n)
+    M : ndarray, shape (n, n)
         Cholesky mean.
 
     Notes
@@ -223,6 +199,7 @@ def mean_chol(X, sample_weight=None, **kwargs):
     return L @ ctranspose(L)
 
 
+@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_euclid(X, sample_weight=None, **kwargs):
     r"""Mean of matrices according to the Euclidean metric.
 
@@ -231,17 +208,16 @@ def mean_euclid(X, sample_weight=None, **kwargs):
 
     This mean is also called arithmetic.
 
-
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, m)
+    X : ndarray, shape (n_matrices, n, m)
         Set of matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
     -------
-    M : ndarray, shape (..., n, m)
+    M : ndarray, shape (n, m)
         Euclidean mean.
 
     See Also
@@ -249,32 +225,26 @@ def mean_euclid(X, sample_weight=None, **kwargs):
     gmean
     """
     xp = get_namespace(X)
-    if sample_weight is not None:
-        sample_weight = check_weights(
-            sample_weight,
-            X.shape[-3],
-            like=X,
-        )
-    return weighted_average(X, weights=sample_weight, axis=-3, xp=xp)
+    return weighted_average(X, weights=sample_weight, axis=0, xp=xp)
 
 
+@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_harmonic(X, sample_weight=None, **kwargs):
     r"""Harmonic mean of invertible matrices.
 
     .. math::
         \mathbf{M} = \left( \sum_i w_i \ {\mathbf{X}_i}^{-1} \right)^{-1}
 
-
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of invertible matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
     -------
-    M : ndarray, shape (..., n, n)
+    M : ndarray, shape (n, n)
         Harmonic mean.
 
     See Also
@@ -287,6 +257,7 @@ def mean_harmonic(X, sample_weight=None, **kwargs):
     return M
 
 
+@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_kullback_sym(X, sample_weight=None, **kwargs):
     """Mean of SPD/HPD matrices according to Kullback-Leibler divergence.
 
@@ -295,14 +266,14 @@ def mean_kullback_sym(X, sample_weight=None, **kwargs):
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
     -------
-    M : ndarray, shape (..., n, n)
+    M : ndarray, shape (n, n)
         Symmetrized Kullback-Leibler mean.
 
     See Also
@@ -323,6 +294,7 @@ def mean_kullback_sym(X, sample_weight=None, **kwargs):
     return M
 
 
+@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_logchol(X, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the log-Cholesky metric.
 
@@ -335,17 +307,16 @@ def mean_logchol(X, sample_weight=None, **kwargs):
         \exp \left( \sum_i w_i \log(\text{diag}(\text{chol}(\mathbf{X}_i)))
         \right)
 
-
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
     -------
-    M : ndarray, shape (..., n, n)
+    M : ndarray, shape (n, n)
         Log-Cholesky mean.
 
     Notes
@@ -364,30 +335,17 @@ def mean_logchol(X, sample_weight=None, **kwargs):
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
     xp = get_namespace(X)
-    n_matrices, n_channels = X.shape[-3], X.shape[-1]
+    n_matrices, _, n_channels = X.shape
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
 
     X_chol = xp.linalg.cholesky(X)
+    L = xp.zeros(X.shape[-2:], dtype=X.dtype, device=xpd(X))
 
-    tri0, tri1 = tril_indices(n_channels, -1, xp=xp, like=X_chol)
-    diag0, diag1 = diag_indices(n_channels, xp=xp, like=X_chol)
+    tri0, tri1 = tril_indices(n_channels, -1, xp=xp, like=X)
+    L[tri0, tri1] = weighted_average(X_chol[:, tri0, tri1], weights=sample_weight, axis=0, xp=xp)
 
-    L_tri = weighted_average(
-        X_chol[..., tri0, tri1],
-        weights=sample_weight,
-        axis=-2,
-        xp=xp,
-    )
-    L_diag = xp.exp(weighted_average(
-        xp.log(X_chol[..., diag0, diag1]),
-        weights=sample_weight,
-        axis=-2,
-        xp=xp,
-    ))
-
-    L = xp.zeros(X.shape[:-3] + X.shape[-2:], dtype=X.dtype, device=xpd(X))
-    L[..., tri0, tri1] = L_tri
-    L[..., diag0, diag1] = L_diag
+    diag0, diag1 = diag_indices(n_channels, xp=xp, like=X)
+    L[diag0, diag1] = xp.exp(weighted_average(xp.log(X_chol[:, diag0, diag1]), weights=sample_weight, axis=0, xp=xp))
 
     return L @ ctranspose(L)
 
@@ -402,10 +360,9 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         \mathbf{M} = \left( \sum_i w_i \ \left( 0.5 \mathbf{M}
                      + 0.5 \mathbf{X}_i \right)^{-1} \right)^{-1}
 
-
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=10e-5
         Tolerance to stop the gradient descent.
@@ -419,7 +376,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
 
     Returns
     -------
-    M : ndarray, shape (..., n, n)
+    M : ndarray, shape (n, n)
         Log-det mean.
 
     See Also
@@ -427,18 +384,17 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     gmean
     """
     xp = get_namespace(X)
-    n_matrices, n = X.shape[-3], X.shape[-1]
+    n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
     if init is None:
         M = mean_euclid(X, sample_weight=sample_weight)
     else:
         M = check_init(init, n, like=X)
 
-    eye_n = xp.eye(n, dtype=X.dtype, device=xpd(X))
     for _ in range(maxiter):
-        invX = xp.linalg.solve(0.5 * X + 0.5 * M, eye_n)
+        invX = xp.linalg.inv(0.5 * X + 0.5 * M)
         J = weighted_average(invX, weights=sample_weight, axis=0, xp=xp)
-        Mnew = xp.linalg.solve(J, eye_n)
+        Mnew = xp.linalg.inv(J)
 
         crit = float(xp.linalg.matrix_norm(Mnew - M))
         M = Mnew
@@ -450,6 +406,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     return M
 
 
+@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_logeuclid(X, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the log-Euclidean metric.
 
@@ -458,17 +415,16 @@ def mean_logeuclid(X, sample_weight=None, **kwargs):
     .. math::
         \mathbf{M} = \exp{ \left( \sum_i w_i \ \log{\mathbf{X}_i} \right) }
 
-
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
     -------
-    M : ndarray, shape (..., n, n)
+    M : ndarray, shape (n, n)
         Log-Euclidean mean.
 
     See Also
@@ -502,7 +458,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     p : float
         Exponent, in [-1,+1]. For p=0, it returns
@@ -519,7 +475,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
 
     Returns
     -------
-    M : ndarray, shape (..., n, n)
+    M : ndarray, shape (n, n)
         Power mean.
 
     Notes
@@ -547,8 +503,6 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     if p < -1 or 1 < p:
         raise ValueError("Exponent p must be in [-1,+1]")
 
-    xp = get_namespace(X)
-
     if p == 1:
         return mean_euclid(X, sample_weight=sample_weight)
     if p == 0:
@@ -562,19 +516,12 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     if p == -1:
         return mean_harmonic(X, sample_weight=sample_weight)
 
+    xp = get_namespace(X)
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
     phi = 0.375 / np.abs(p)
     if init is None:
-        G = powm(
-            weighted_average(
-                powm(X, p),
-                weights=sample_weight,
-                axis=0,
-                xp=xp,
-            ),
-            1 / p,
-        )
+        G = powm(weighted_average(powm(X, p), weights=sample_weight, axis=0, xp=xp), 1/p)
     else:
         G = check_init(init, n, like=X)
     if p > 0:
@@ -582,17 +529,9 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     else:
         K = sqrtm(G)
 
-    eye_n, sqrt_n = xp.eye(n, dtype=X.dtype, device=xpd(X)), math.sqrt(n)
+    eye_n, sqrt_n = xp.eye(n, dtype=X.dtype, device=xpd(X)), np.sqrt(n)
     for _ in range(maxiter):
-        H = weighted_average(
-            powm(
-                K @ powm(X, np.sign(p)) @ ctranspose(K),
-                np.abs(p),
-            ),
-            weights=sample_weight,
-            axis=0,
-            xp=xp,
-        )
+        H = weighted_average(powm(K @ powm(X, np.sign(p)) @ ctranspose(K), np.abs(p)), weights=sample_weight, axis=0, xp=xp)
         K = powm(H, -phi) @ K
 
         crit = float(xp.linalg.matrix_norm(H - eye_n)) / sqrt_n
@@ -603,11 +542,12 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
 
     M = ctranspose(K) @ K
     if p > 0:
-        M = xp.linalg.solve(M, eye_n)
+        M = xp.linalg.inv(M)
 
     return M
 
 
+@_vectorize_nd(n_axes=3, batch_native=False)
 def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the power Euclidean metric.
 
@@ -616,10 +556,9 @@ def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     .. math::
         \mathbf{M} = \left( \sum_i w_i \ \mathbf{X}_i^p \right)^{1/p}
 
-
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     p : float
         Exponent.
@@ -628,7 +567,7 @@ def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
 
     Returns
     -------
-    M : ndarray, shape (..., n, n)
+    M : ndarray, shape (n, n)
         Power Euclidean mean.
 
     See Also
@@ -667,13 +606,11 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     .. math::
          \arg \min_{\mathbf{M}} \sum_i w_i \ d_R (\mathbf{M}, \mathbf{X}_i)^2
 
-    with :math:`w` being the weights which sum to 1.
-
     For the convergence, the implemented stopping criterion comes from [2]_.
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=10e-9
         Tolerance to stop the gradient descent.
@@ -687,7 +624,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 
     Returns
     -------
-    M : ndarray, shape (..., n, n)
+    M : ndarray, shape (n, n)
         Affine-invariant Riemannian mean.
 
     See Also
@@ -718,12 +655,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     tau = np.finfo(np.float64).max
     for _ in range(maxiter):
         M12, Mm12 = sqrtm(M), invsqrtm(M)
-        J = weighted_average(
-            logm(Mm12 @ X @ Mm12),
-            weights=sample_weight,
-            axis=0,
-            xp=xp,
-        )
+        J = weighted_average(logm(Mm12 @ X @ Mm12), weights=sample_weight, axis=0, xp=xp)
         M = M12 @ expm(nu * J) @ M12
 
         crit = float(xp.linalg.matrix_norm(J))
@@ -749,7 +681,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=1e-6
         Tolerance to stop the gradient descent.
@@ -763,7 +695,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
 
     Returns
     -------
-    M : ndarray, shape (..., n, n)
+    M : ndarray, shape (n, n)
         Thompson mean.
 
     Notes
@@ -811,7 +743,7 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=10e-9
         Tolerance to stop the gradient descent.
@@ -819,13 +751,13 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         Maximum number of iterations.
     init : None | ndarray, shape (n, n), default=None
         A SPD/HPD matrix used to initialize the gradient descent.
-        If None the weighted Euclidean mean is used.
+        If None the Euclidean mean is used.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
 
     Returns
     -------
-    M : ndarray, shape (..., n, n)
+    M : ndarray, shape (n, n)
         Wasserstein mean.
 
     See Also
@@ -892,7 +824,7 @@ def gmean(X, *args, metric="riemann", sample_weight=None, **kwargs):
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of matrices.
     *args : tuple
         The arguments passed to the sub function.
@@ -909,13 +841,8 @@ def gmean(X, *args, metric="riemann", sample_weight=None, **kwargs):
 
     Returns
     -------
-    M : ndarray, shape (..., n, n)
+    M : ndarray, shape (n, n)
         Mean of matrices.
-
-    Notes
-    -----
-    .. versionchanged:: 0.11
-        Rename mean_covariance into gmean.
 
     References
     ----------
@@ -947,16 +874,16 @@ def mean_covariance(X, *args, metric="riemann", sample_weight=None, **kwargs):
 
 
 def _get_mask_from_nan(X):
-    xp = get_namespace(X)
-    nan_col = xp.all(xp.isnan(X), axis=0)
-    nan_row = xp.all(xp.isnan(X), axis=1)
-    if bool(xp.any(nan_col != nan_row)):
+    nan_col = np.all(np.isnan(X), axis=0)
+    nan_row = np.all(np.isnan(X), axis=1)
+    if not np.array_equal(nan_col, nan_row):
         raise ValueError("NaN values are not symmetric.")
-    keep = ~nan_col
-    subX = X[keep][:, keep]
-    if bool(xp.any(xp.isnan(subX))):
+    nan_inds = np.where(nan_col)
+    subX_ = np.delete(X, nan_inds, axis=0)
+    subX = np.delete(subX_, nan_inds, axis=1)
+    if np.any(np.isnan(subX)):
         raise ValueError("NaN values must fill rows and columns.")
-    mask = xp.eye(X.shape[0], dtype=X.dtype, device=xpd(X))[:, keep]
+    mask = np.delete(np.eye(X.shape[0]), nan_inds, axis=1)
     return mask
 
 
@@ -965,7 +892,7 @@ def _get_masks_from_nan(X):
 
 
 def _apply_masks(X, masks):
-    return [m.mT @ x @ m for x, m in zip(X, masks)]
+    return [m.T @ x @ m for x, m in zip(X, masks)]
 
 
 @_vectorize_nd(n_axes=3, batch_native=False)
@@ -980,7 +907,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices.
     masks : list of n_matrices ndarray of shape (n, n_i), \
             with different n_i, such that n_i <= n
@@ -997,7 +924,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
 
     Returns
     -------
-    M : ndarray, shape (..., n, n)
+    M : ndarray, shape (n, n)
         Masked Riemannian mean.
 
     Notes
@@ -1017,7 +944,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
         F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
         Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
-    xp = get_namespace(X, *masks)
+    xp = get_namespace(X)
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
     maskedX = _apply_masks(X, masks)
@@ -1029,12 +956,12 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
     nu = 1.0
     tau = np.finfo(np.float64).max
     for _ in range(maxiter):
-        maskedM = _apply_masks(xp.stack([M] * n_matrices, axis=0), masks)
+        maskedM = _apply_masks(xp.broadcast_to(M, (n_matrices, n, n)), masks)
         J = xp.zeros((n, n), dtype=X.dtype, device=xpd(X))
         for i in range(n_matrices):
             M12, Mm12 = sqrtm(maskedM[i]), invsqrtm(maskedM[i])
             tmp = M12 @ logm(Mm12 @ maskedX[i] @ Mm12) @ M12
-            J += sample_weight[i] * masks[i] @ tmp @ masks[i].mT
+            J += sample_weight[i] * masks[i] @ tmp @ masks[i].T
         M12, Mm12 = sqrtm(M), invsqrtm(M)
         M = M12 @ expm(Mm12 @ (nu * J) @ Mm12) @ M12
 
@@ -1062,7 +989,7 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
 
     Parameters
     ----------
-    X : ndarray, shape (..., n_matrices, n, n)
+    X : ndarray, shape (n_matrices, n, n)
         Set of SPD/HPD matrices, corrupted by symmetric NaN values [1]_.
     tol : float, default=10e-9
         Tolerance to stop the gradient descent.
@@ -1076,7 +1003,7 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
 
     Returns
     -------
-    M : ndarray, shape (..., n, n)
+    M : ndarray, shape (n, n)
         Riemannian NaN-mean.
 
     Notes
@@ -1096,31 +1023,19 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
         F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
         Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
-    xp = get_namespace(X)
-    n_matrices, n, _ = X.shape
+    X_np = to_numpy(X)
+    n_matrices, n, _ = X_np.shape
     if init is None:
-        is_nan = xp.isnan(X)
-        counts = xp.sum(~is_nan, axis=0)
-        safe_counts = xp.where(
-            counts == 0,
-            xp.asarray(1, dtype=counts.dtype, device=xpd(counts)),
-            counts,
-        )
-        init = xp.sum(
-            xp.where(is_nan, 0.0, X),
-            axis=0,
-        ) / safe_counts
-        init[counts == 0] = np.nan
-        init = init + 1e-6 * xp.eye(n, dtype=X.dtype, device=xpd(X))
+        init = np.nanmean(X_np, axis=0) + 1e-6 * np.eye(n)
     else:
-        init = check_init(init, n, like=X)
+        init = np.asarray(check_init(init, n, like=X_np))
 
     M = maskedmean_riemann(
-        xp.where(xp.isnan(X), 0.0, X),  # avoid nan contamination
-        _get_masks_from_nan(X),
+        np.nan_to_num(X_np),  # avoid nan contamination in matmul
+        _get_masks_from_nan(X_np),
         tol=tol,
         maxiter=maxiter,
         init=init,
         sample_weight=sample_weight
     )
-    return M
+    return from_numpy(M, like=X)

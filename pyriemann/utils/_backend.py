@@ -71,6 +71,11 @@ def weighted_average(x, weights=None, axis=0, *, xp):
     if weights is None:
         return xp.mean(x, axis=axis)
     weights = xp.asarray(weights, dtype=x.dtype, device=xpd(x))
+    if weights.shape[0] != x.shape[axis]:
+        raise ValueError(
+            "Shape of weights must be consistent with shape of a "
+            "along specified axis."
+        )
     return xp.tensordot(weights, x, axes=([0], [axis]))
 
 
