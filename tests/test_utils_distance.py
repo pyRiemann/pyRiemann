@@ -100,12 +100,7 @@ def test_distance_between_set_and_matrix(dist, get_mats):
     X = get_mats(n_matrices, n_channels, "spd")
     xp = get_namespace(X)
 
-    if dist in dists:
-        assert dist(X, X[-1]).shape == (n_matrices,)
-    else:
-        with pytest.raises(ValueError):
-            dist(X, X[-1])
-
+    assert dist(X, X[-1]).shape == (n_matrices,)
     assert distance(X, X[-1], metric=dist).shape == (n_matrices, 1)
 
     n_sets = 5
