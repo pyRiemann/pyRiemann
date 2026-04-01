@@ -12,7 +12,7 @@ from ._backend import (
     tril_indices,
     xpd,
 )
-from .base import _recursive, invsqrtm, logm, powm, sqrtm
+from .base import _recursive, ctranspose, invsqrtm, logm, powm, sqrtm
 from .test import is_real_type
 from .utils import check_function
 
@@ -109,7 +109,7 @@ def distance_euclid(A, B, squared=False):
     distance
     """
     xp = check_matrix_pair(A, B)
-    d = xp.linalg.matrix_norm(A - B, ord='fro')
+    d = xp.linalg.matrix_norm(A - B, ord="fro")
     return d ** 2 if squared else d
 
 
@@ -500,11 +500,17 @@ def distance_riemann(A, B, squared=False):
     """
     xp = check_matrix_pair(A, B)
     if is_numpy_namespace(xp) and A.shape == B.shape:
+        # scipy eigvalsh(A, B) computes generalized eigenvalues directly
         d2 = (np.log(_recursive(eigvalsh, A, B))**2).sum(axis=-1)
     else:
-        # I could not find a way to do this in torch without inverting B.
-        Binv12 = invsqrtm(B)
-        eigvals = xp.linalg.eigvalsh(Binv12 @ A @ Binv12)
+        # torch has no generalized eigvalsh(A, B), so we reduce to
+        # standard eigenvalues via Cholesky: L = chol(B), then
+        # eigvalsh(L^{-1} A L^{-H}) gives the same joint eigenvalues.
+        # This avoids the expensive invsqrtm (full eigen-decomposition).
+        L = xp.linalg.cholesky(B)
+        Y = xp.linalg.solve(L, A)                          # L^{-1} A
+        Z = ctranspose(xp.linalg.solve(L, ctranspose(Y)))  # L^{-1} A L^{-H}
+        eigvals = xp.linalg.eigvalsh(Z)
         d2 = xp.sum(xp.log(eigvals) ** 2, axis=-1)
     return d2 if squared else xp.sqrt(d2)
 
@@ -553,11 +559,15 @@ def distance_thompson(A, B, squared=False):
     """
     xp = check_matrix_pair(A, B, require_square=True)
     if is_numpy_namespace(xp) and A.shape == B.shape:
+        # scipy eigvalsh(A, B) computes generalized eigenvalues directly
         d = (np.abs(np.log(_recursive(eigvalsh, A, B)))).max(axis=-1)
     else:
-        # I could not find a way to do this in torch without inverting B.
-        isB = invsqrtm(B)
-        d = xp.max(xp.abs(xp.log(xp.linalg.eigvalsh(isB @ A @ isB))), axis=-1)
+        # Same Cholesky reduction as distance_riemann: L = chol(B),
+        # eigvalsh(L^{-1} A L^{-H}) gives the joint eigenvalues.
+        L = xp.linalg.cholesky(B)
+        Y = xp.linalg.solve(L, A)
+        Z = ctranspose(xp.linalg.solve(L, ctranspose(Y)))
+        d = xp.max(xp.abs(xp.log(xp.linalg.eigvalsh(Z))), axis=-1)
     return d ** 2 if squared else d
 
 
@@ -916,7 +926,7 @@ def _pairwise_distance_riemann(X, Y=None, squared=False):
     xp = get_namespace(X, Y)
 
     n_matrices_X, n_matrices_Y = len(X), len(Y)
-    Xinv12 = invsqrtm(X)    
+    Xinv12 = invsqrtm(X)
     dist = xp.zeros((n_matrices_X, n_matrices_Y))
 
     # row by row so it fits in memory
