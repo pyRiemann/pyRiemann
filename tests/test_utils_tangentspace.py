@@ -1,7 +1,7 @@
 import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
-from conftest import approx
+from conftest import approx, to_numpy
 
 from pyriemann.spatialfilters import Whitening
 from pyriemann.utils._backend import get_namespace
@@ -174,14 +174,11 @@ def test_tangent_space_broadcasting(metric, get_mats):
 def test_tangent_space_riemann_properties(kind, get_mats):
     n_channels = 3
     A, B = get_mats(2, n_channels, kind)
-    xp = get_namespace(A)
 
     # equivalent definitions of Riemannian distance, Eq(7) in [Barachant2012]
     dist = distance_riemann(A, B)
     s = tangent_space(A, B, metric="riemann")
-    assert dist == approx(
-        float(xp.linalg.vector_norm(xp.reshape(s, (-1,))))
-    )
+    assert dist == approx(np.linalg.norm(to_numpy(s)))
 
 
 @pytest.mark.parametrize("metric", metrics)
