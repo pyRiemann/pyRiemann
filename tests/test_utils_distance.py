@@ -315,6 +315,12 @@ def test_distance_riemann_implementations(kind, get_mats):
     d1 = xp.linalg.norm(logm(Bm12 @ A @ Bm12), ord="fro")
     assert d1 == approx(d)
 
+    # Eq(2.9) in [Moakher2005]: middle part is incorrect
+    # https://math.stackexchange.com/a/4137208
+    eye = xp.eye(n_channels, dtype=A.dtype, device=device(A))
+    d2 = xp.linalg.norm(logm(xp.linalg.solve(A, eye) @ B), ord="fro")
+    assert not d2 == d
+
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_distance_riemann_properties(kind, get_mats, rndstate):
