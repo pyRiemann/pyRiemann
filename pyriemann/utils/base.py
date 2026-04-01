@@ -4,7 +4,7 @@ from functools import wraps
 
 import numpy as np
 
-from ._backend import get_namespace, is_numpy_namespace, xpd
+from ._backend import get_namespace, xpd
 
 
 def ctranspose(X):
