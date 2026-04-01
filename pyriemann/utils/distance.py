@@ -715,16 +715,25 @@ def distance(A, B, metric="riemann", squared=False):
 def _euclidean_distances(X, Y=None, squared=False):
     """Function to extend euclidean_distances of sklearn to complex data."""
     xp = get_namespace(X, Y)
-    if is_real_type(X):
-        return euclidean_distances(X, Y, squared=squared)
+    if is_numpy_namespace(xp):
+        if is_real_type(X):
+            return euclidean_distances(X, Y, squared=squared)
+        if Y is None:
+            Yreal, Yimag = None, None
+        else:
+            Yreal, Yimag = Y.real, Y.imag
+        dist2 = euclidean_distances(X.real, Yreal, squared=True) + \
+            euclidean_distances(X.imag, Yimag, squared=True)
+        return dist2 if squared else np.sqrt(dist2)
 
+    # xp fallback: ||X_i - Y_j||^2 = ||X_i||^2 + ||Y_j||^2 - 2 Re(X_i · Y_j*)
     if Y is None:
-        Yreal, Yimag = None, None
-    else:
-        Yreal, Yimag = Y.real, Y.imag
-
-    dist2 = euclidean_distances(X.real, Yreal, squared=True) + \
-        euclidean_distances(X.imag, Yimag, squared=True)
+        Y = X
+    XX = xp.real(xp.sum(xp.conj(X) * X, axis=-1))  # (n_X,)
+    YY = xp.real(xp.sum(xp.conj(Y) * Y, axis=-1))  # (n_Y,)
+    XY = xp.real(X @ ctranspose(Y))                  # (n_X, n_Y)
+    dist2 = XX[:, None] + YY[None, :] - 2 * XY
+    dist2 = xp.maximum(dist2, xp.asarray(0, dtype=dist2.dtype, device=xpd(dist2)))
     return dist2 if squared else xp.sqrt(dist2)
 
 
@@ -828,8 +837,8 @@ def _pairwise_distance_logchol(X, Y=None, squared=False):
     """
     xp = get_namespace(X, Y)
     X_chol = xp.linalg.cholesky(X)
-    tri0, tri1 = xp.tril_indices(X_chol.shape[-1], -1)
-    diag0, diag1 = xp.diag_indices(X_chol.shape[-1])
+    tri0, tri1 = tril_indices(X_chol.shape[-1], -1, xp=xp, like=X_chol)
+    diag0, diag1 = diag_indices(X_chol.shape[-1], xp=xp, like=X_chol)
 
     if Y is None:
         triagular_part = _euclidean_distances(
@@ -927,16 +936,17 @@ def _pairwise_distance_riemann(X, Y=None, squared=False):
 
     n_matrices_X, n_matrices_Y = len(X), len(Y)
     Xinv12 = invsqrtm(X)
-    dist = xp.zeros((n_matrices_X, n_matrices_Y))
+    dist = xp.zeros((n_matrices_X, n_matrices_Y), dtype=X.real.dtype,
+                     device=xpd(X))
 
     # row by row so it fits in memory
     for i, x_ in enumerate(Xinv12):
         evals_ = xp.linalg.eigvalsh(x_ @ Y[i * XisY:] @ x_)
-        d2 = xp.sum(xp.log(evals_) ** 2, -1)
+        d2 = xp.sum(xp.log(evals_) ** 2, axis=-1)
         dist[i, i * XisY:] = d2
 
     if XisY:
-        dist += dist.mT
+        dist = dist + dist.mT
 
     return dist if squared else xp.sqrt(dist)
 
@@ -971,33 +981,8 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
     --------
     distance
     """
-    distance_function = check_function(metric, distance_functions)
     xp = get_namespace(X, Y)
-    if not is_numpy_namespace(xp):
-        if Y is None:
-            Y_ = X
-        else:
-            Y_ = Y
-        if distance_function in distance_functions.values():
-            return distance_function(
-                X[:, None, ...],
-                Y_[None, ...],
-                squared=squared,
-            )
-        return xp.stack(
-            [
-                xp.stack(
-                    [
-                        distance_function(X[i], Y_[j], squared=squared)
-                        for j in range(len(Y_))
-                    ],
-                    axis=0,
-                )
-                for i in range(len(X))
-            ],
-            axis=0,
-        )
-
+    
     if metric == "euclid":
         return _pairwise_distance_euclid(X, Y=Y, squared=squared)
     elif metric == "harmonic":
@@ -1016,16 +1001,18 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
         Y = X
 
     if Y is None:
-        dist = xp.zeros((n_matrices_X, n_matrices_X), dtype=X.dtype, device=xpd(X))
+        dist = xp.zeros((n_matrices_X, n_matrices_X), dtype=X.real.dtype,
+                        device=xpd(X))
         for i in range(n_matrices_X):
             for j in range(i + 1, n_matrices_X):
                 dist[i, j] = distance(X[i], X[j], metric, squared=squared)
-        dist += dist.mT
+        dist = dist + dist.mT
     else:
         
         n_matrices_Y, _, _ = Y.shape
 
-        dist = xp.empty((n_matrices_X, n_matrices_Y), dtype=X.dtype, device=xpd(X))
+        dist = xp.empty((n_matrices_X, n_matrices_Y), dtype=X.real.dtype,
+                        device=xpd(X))
         for i in range(n_matrices_X):
             for j in range(n_matrices_Y):
                 dist[i, j] = distance(X[i], Y[j], metric, squared=squared)
