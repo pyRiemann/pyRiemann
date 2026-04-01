@@ -16,7 +16,7 @@ def ctranspose(X):
     Parameters
     ----------
     X : ndarray, shape (..., n, m)
-        Matrices.
+        Matrices, at least 2D ndarray.
 
     Returns
     -------
@@ -125,7 +125,7 @@ def expm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices.
+        SPD/HPD matrices, at least 2D ndarray.
 
     Returns
     -------
@@ -152,7 +152,7 @@ def invsqrtm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices.
+        SPD/HPD matrices, at least 2D ndarray.
 
     Returns
     -------
@@ -160,10 +160,7 @@ def invsqrtm(C):
         Matrix inverse square root of C.
     """
     xp = get_namespace(C)
-
-    def isqrt(x):
-        return 1. / xp.sqrt(x)
-
+    def isqrt(x): return 1. / xp.sqrt(x)
     return _matrix_operator(C, isqrt)
 
 
@@ -182,7 +179,7 @@ def logm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices.
+        SPD/HPD matrices, at least 2D ndarray.
 
     Returns
     -------
@@ -209,7 +206,7 @@ def powm(C, alpha):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices.
+        SPD/HPD matrices, at least 2D ndarray.
     alpha : float
         The power to apply.
 
@@ -238,7 +235,7 @@ def sqrtm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices.
+        SPD/HPD matrices, at least 2D ndarray.
 
     Returns
     -------
@@ -411,7 +408,7 @@ def ddexpm(X, Cref):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        SPD/HPD matrices.
+        SPD/HPD matrices, at least 2D ndarray.
     Cref : ndarray, shape (n, n)
         SPD/HPD matrix.
 
@@ -460,7 +457,7 @@ def ddlogm(X, Cref):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        SPD/HPD matrices.
+        SPD/HPD matrices, at least 2D ndarray.
     Cref : ndarray, shape (n, n)
         SPD/HPD matrix.
 

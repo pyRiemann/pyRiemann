@@ -65,16 +65,9 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     """
     xp = get_namespace(X)
     n_matrices, n, _ = X.shape
-    sample_weight = check_weights(
-        sample_weight,
-        n_matrices,
-        like=X,
-    )
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
     if init is None:
-        B = ajd_pham(
-            X,
-            sample_weight=sample_weight,
-        )[0]
+        B = ajd_pham(X, sample_weight=sample_weight)[0]
     else:
         B = check_init(init, n, like=X)
 
@@ -157,11 +150,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
     """
     xp = get_namespace(X)
     n_matrices, _, _ = X.shape
-    sample_weight = check_weights(
-        sample_weight,
-        n_matrices,
-        like=X,
-    )
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
 
     if n_matrices == 1:
         return X[0]
@@ -176,10 +165,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
     for _ in range(maxiter):
         for h in range(n_matrices):
             s = [((h + i + 1) % n_matrices) for i in range(n_matrices - 1)]
-            M_iter[h] = mean_alm(
-                M[s],
-                sample_weight=sample_weight[s],
-            )
+            M_iter[h] = mean_alm(M[s], sample_weight=sample_weight[s])
 
         norm_iter = float(xp.linalg.matrix_norm(M_iter[0] - M[0]))
         norm_c = float(xp.linalg.matrix_norm(M[0]))
@@ -233,10 +219,7 @@ def mean_chol(X, sample_weight=None, **kwargs):
         Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
     """
     xp = get_namespace(X)
-    L = mean_euclid(
-        xp.linalg.cholesky(X),
-        sample_weight=sample_weight,
-    )
+    L = mean_euclid(xp.linalg.cholesky(X), sample_weight=sample_weight)
     return L @ ctranspose(L)
 
 
@@ -299,10 +282,7 @@ def mean_harmonic(X, sample_weight=None, **kwargs):
     gmean
     """
     xp = get_namespace(X)
-    T = mean_euclid(
-        xp.linalg.inv(X),
-        sample_weight=sample_weight,
-    )
+    T = mean_euclid(xp.linalg.inv(X), sample_weight=sample_weight)
     M = xp.linalg.inv(T)
     return M
 
@@ -385,11 +365,7 @@ def mean_logchol(X, sample_weight=None, **kwargs):
     """
     xp = get_namespace(X)
     n_matrices, n_channels = X.shape[-3], X.shape[-1]
-    sample_weight = check_weights(
-        sample_weight,
-        n_matrices,
-        like=X,
-    )
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
 
     X_chol = xp.linalg.cholesky(X)
 
@@ -452,11 +428,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     """
     xp = get_namespace(X)
     n_matrices, n = X.shape[-3], X.shape[-1]
-    sample_weight = check_weights(
-        sample_weight,
-        n_matrices,
-        like=X,
-    )
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
     if init is None:
         M = mean_euclid(X, sample_weight=sample_weight)
     else:
@@ -591,11 +563,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
         return mean_harmonic(X, sample_weight=sample_weight)
 
     n_matrices, n, _ = X.shape
-    sample_weight = check_weights(
-        sample_weight,
-        n_matrices,
-        like=X,
-    )
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
     phi = 0.375 / np.abs(p)
     if init is None:
         G = powm(
@@ -740,21 +708,16 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     """
     xp = get_namespace(X)
     n_matrices, n, _ = X.shape
-    sample_weight = check_weights(
-        sample_weight,
-        n_matrices,
-        like=X,
-    )
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
     if init is None:
         M = mean_euclid(X, sample_weight=sample_weight)
     else:
         M = check_init(init, n, like=X)
 
     nu = 1.0
-    tau = float("inf")
+    tau = np.finfo(np.float64).max
     for _ in range(maxiter):
-        M12 = sqrtm(M)
-        Mm12 = invsqrtm(M)
+        M12, Mm12 = sqrtm(M), invsqrtm(M)
         J = weighted_average(
             logm(Mm12 @ X @ Mm12),
             weights=sample_weight,
@@ -827,11 +790,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
         M = check_init(init, n, like=X)
 
     for i in range(maxiter):
-        Mnew = geodesic_thompson(
-            M,
-            X[i % n_matrices],
-            1 / (i + 2),
-        )
+        Mnew = geodesic_thompson(M, X[i % n_matrices], 1 / (i + 2))
 
         crit = float(xp.linalg.matrix_norm(Mnew - M))
         M = Mnew
@@ -885,11 +844,7 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     """
     xp = get_namespace(X)
     n_matrices, n, _ = X.shape
-    sample_weight = check_weights(
-        sample_weight,
-        n_matrices,
-        like=X,
-    )
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
     if init is None:
         init = mean_euclid(X, sample_weight=sample_weight)
     else:
@@ -1064,11 +1019,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
     """
     xp = get_namespace(X, *masks)
     n_matrices, n, _ = X.shape
-    sample_weight = check_weights(
-        sample_weight,
-        n_matrices,
-        like=X,
-    )
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
     maskedX = _apply_masks(X, masks)
     if init is None:
         M = xp.eye(n, dtype=X.dtype, device=xpd(X))
@@ -1078,20 +1029,13 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
     nu = 1.0
     tau = np.finfo(np.float64).max
     for _ in range(maxiter):
-        maskedM = _apply_masks(
-            xp.stack([M] * n_matrices, axis=0),
-            masks,
-        )
+        maskedM = _apply_masks(xp.stack([M] * n_matrices, axis=0), masks)
         J = xp.zeros((n, n), dtype=X.dtype, device=xpd(X))
         for i in range(n_matrices):
-            M12 = sqrtm(maskedM[i])
-            Mm12 = invsqrtm(maskedM[i])
-            tmp = M12 @ logm(
-                Mm12 @ maskedX[i] @ Mm12,
-            ) @ M12
+            M12, Mm12 = sqrtm(maskedM[i]), invsqrtm(maskedM[i])
+            tmp = M12 @ logm(Mm12 @ maskedX[i] @ Mm12) @ M12
             J += sample_weight[i] * masks[i] @ tmp @ masks[i].mT
-        M12 = sqrtm(M)
-        Mm12 = invsqrtm(M)
+        M12, Mm12 = sqrtm(M), invsqrtm(M)
         M = M12 @ expm(Mm12 @ (nu * J) @ Mm12) @ M12
 
         crit = float(xp.linalg.matrix_norm(J))
