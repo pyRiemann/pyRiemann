@@ -201,9 +201,9 @@ def test_distance_property_invariance_under_inversion(kind, dist, get_mats):
     A, B = get_mats(2, n_channels, kind)
     xp = get_namespace(A)
     eye = xp.eye(n_channels, dtype=A.dtype, device=device(A))
-    assert dist(A, B) == approx(
-        dist(xp.linalg.solve(A, eye), xp.linalg.solve(B, eye))
-    )
+    A_inv = xp.linalg.solve(A, eye)
+    B_inv = xp.linalg.solve(B, eye)
+    assert dist(A, B) == approx(dist(A_inv, B_inv))
 
 
 @pytest.mark.parametrize("kind, kindQ", [("spd", "orth"), ("hpd", "unit")])
@@ -317,8 +317,7 @@ def test_distance_riemann_implementations(kind, get_mats):
 
     # Eq(2.9) in [Moakher2005]: middle part is incorrect
     # https://math.stackexchange.com/a/4137208
-    eye = xp.eye(n_channels, dtype=A.dtype, device=device(A))
-    d2 = xp.linalg.norm(logm(xp.linalg.solve(A, eye) @ B), ord="fro")
+    d2 = xp.linalg.norm(logm(xp.linalg.solve(A, B)), ord="fro")
     assert not d2 == d
 
 
