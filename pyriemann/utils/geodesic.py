@@ -274,6 +274,7 @@ def geodesic_thompson(A, B, alpha=0.5):
         C. Mostajeran, N. Da Costa, G. Van Goffrier and R. Sepulchre.
         SIAM Journal on Matrix Analysis and Applications, 2024
     """
+    # the whole check is done in the check_matrix_pair function
     xp = check_matrix_pair(A, B, require_square=True)
     E = joint_eigvalsh(B, A, xp=xp)
     Emin, Emax = xp.min(E, axis=-1), xp.max(E, axis=-1)
