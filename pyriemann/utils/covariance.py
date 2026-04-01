@@ -947,24 +947,21 @@ def normalize(X, norm):
 
     if norm == "corr":
         stddev = xp.sqrt(xp.abs(xp.linalg.diagonal(X)))
-        denom = stddev[..., :, np.newaxis] * stddev[..., np.newaxis, :]
+        denom = xp.expand_dims(stddev, axis=-2) * stddev[..., np.newaxis]
     elif norm == "trace":
-        denom = xp.sum(xp.linalg.diagonal(X), axis=-1)
+        denom = xp.linalg.trace(X)
     elif norm == "determinant":
-        _, logabsdet = xp.linalg.slogdet(X)
-        denom = xp.exp(logabsdet / X.shape[-1])
+        denom = xp.abs(xp.linalg.det(X)) ** (1 / X.shape[-1])
     else:
         raise ValueError(f"{norm} is not a supported normalization")
 
-    while denom.ndim < X.ndim:
-        denom = denom[..., np.newaxis]
+    for _ in range(X.ndim - denom.ndim):
+        denom = xp.expand_dims(denom, axis=-1)
     Xn = X / denom
 
     if norm == "corr":
-        if not is_real_type(Xn):
-            return Xn
-        xp = get_namespace(Xn)
-        Xn = xp.clip(Xn, -1, 1)
+        if is_real_type(Xn):
+            Xn = xp.clip(Xn, -1, 1)
 
     return Xn
 
