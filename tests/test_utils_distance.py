@@ -196,10 +196,14 @@ def test_distance_property_triangle_inequality(kind, dist, get_mats):
     distance_thompson,  # Eq(4.7a) in [Sra2015]
 ])
 def test_distance_property_invariance_under_inversion(kind, dist, get_mats):
+    """Test invariance under inversion"""
     n_channels = 4
     A, B = get_mats(2, n_channels, kind)
     xp = get_namespace(A)
-    assert dist(A, B) == approx(dist(xp.linalg.inv(A), xp.linalg.inv(B)))
+    eye = xp.eye(n_channels, dtype=A.dtype, device=device(A))
+    assert dist(A, B) == approx(
+        dist(xp.linalg.solve(A, eye), xp.linalg.solve(B, eye))
+    )
 
 
 @pytest.mark.parametrize("kind, kindQ", [("spd", "orth"), ("hpd", "unit")])
