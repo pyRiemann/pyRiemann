@@ -276,26 +276,20 @@ def geodesic_thompson(A, B, alpha=0.5):
     """
     xp = check_matrix_pair(A, B, require_square=True)
     E = joint_eigvalsh(B, A, xp=xp)
-    Emin = xp.min(E, axis=-1)
-    Emax = xp.max(E, axis=-1)
-    mask = xp.isclose(Emin, Emax)
+    Emin, Emax = xp.min(E, axis=-1), xp.max(E, axis=-1)
 
-    Emin_a = Emin ** alpha
-    Emax_a = Emax ** alpha
-    a = Emax * Emin_a - Emin * Emax_a
-    b = Emax_a - Emin_a
-    den = Emax - Emin
-    den_safe = xp.where(
-        mask,
-        xp.asarray(1, dtype=den.dtype, device=xpd(den)),
-        den,
-    )
+    Emin_a, Emax_a = Emin ** alpha, Emax ** alpha
+    # safe denominator to avoid division by zero when Emin ≈ Emax
+    equal = xp.isclose(Emin, Emax)
+    den = xp.where(equal, xp.ones_like(Emin), Emax - Emin)
+    b = (Emax_a - Emin_a)[..., None, None]
+    a = (Emax * Emin_a - Emin * Emax_a)[..., None, None]
+    c = b * B + a * A
 
-    C_equal = Emin_a[..., None, None] * A
-    C_general = (
-        b[..., None, None] * B + a[..., None, None] * A
-    ) / den_safe[..., None, None]
-    return xp.where(mask[..., None, None], C_equal, C_general)
+    C = c / den[..., None, None]
+    # when Emin ≈ Emax, geodesic simplifies to scaling
+    C = xp.where(equal[..., None, None], Emin_a[..., None, None] * A, C)
+    return C
 
 
 def geodesic_wasserstein(A, B, alpha=0.5):
