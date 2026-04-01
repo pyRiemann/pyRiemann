@@ -4,6 +4,7 @@ import warnings
 
 import numpy as np
 
+from ._backend import get_namespace
 from .base import sqrtm, invsqrtm, logm, expm
 from .distance import distance
 from .mean import mean_euclid
@@ -59,6 +60,7 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
         2000, vol. 97, no 4, p. 1423-1426
     .. [3] https://numpy.org/doc/stable/reference/generated/numpy.median.html
     """
+    xp = get_namespace(X)
     n_matrices, _, _ = X.shape
     weights = check_weights(weights, n_matrices, like=X)
     if init is None:
@@ -73,19 +75,19 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
         w = weights[~is_zero] / dists[~is_zero]
         Mnew = mean_euclid(X[~is_zero], sample_weight=w)  # Eq(2.4) of [2]
 
-        n_zeros = np.sum(is_zero)
+        n_zeros = int(xp.sum(is_zero))
         if n_zeros > 0:
-            R = np.einsum("a,abc->bc", w, X[~is_zero] - M)  # Eq(2.7)
-            r = np.linalg.norm(R, ord="fro")
-            rinv = 0 if r == 0 else np.mean(weights[is_zero]) / r
+            R = xp.einsum("a,abc->bc", w, X[~is_zero] - M)  # Eq(2.7)
+            r = float(xp.linalg.matrix_norm(R, ord="fro"))
+            rinv = 0 if r == 0 else float(xp.mean(weights[is_zero])) / r
             Mnew = max(0, 1 - rinv) * Mnew + min(1, rinv) * M  # Eq(2.6)
 
-        crit = np.linalg.norm(Mnew - M, ord="fro")
+        crit = float(xp.linalg.matrix_norm(Mnew - M, ord="fro"))
         M = Mnew
         if crit <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return M
 
@@ -152,6 +154,7 @@ def median_riemann(
         raise ValueError(
             f"Value step_size must be included in (0, 2] (Got {step_size})"
         )
+    xp = get_namespace(X)
     n_matrices, _, _ = X.shape
     weights = check_weights(weights, n_matrices, like=X)
     if init is None:
@@ -167,13 +170,13 @@ def median_riemann(
         # Eq(11) of [1]
         M12, Mm12 = sqrtm(M), invsqrtm(M)
         tangvecs = logm(Mm12 @ X[~is_zero] @ Mm12)
-        J = np.einsum("a,abc->bc", w / np.sum(w), tangvecs)
+        J = xp.einsum("a,abc->bc", w / xp.sum(w), tangvecs)
         M = M12 @ expm(step_size * J) @ M12
 
-        crit = np.linalg.norm(J, ord="fro")
+        crit = float(xp.linalg.matrix_norm(J, ord="fro"))
         if crit <= tol:
             break
     else:
-        warnings.warn("Convergence not reached")
+        warnings.warn("Convergence not reached", stacklevel=2)
 
     return M
