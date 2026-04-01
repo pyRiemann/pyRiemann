@@ -370,6 +370,7 @@ def test_innerproduct_euclid(kind, n_dim1, n_dim2, get_mats):
     G2 = np.empty((n_matrices,))
     for i in range(n_matrices):
         # tr(X^H @ Y)
+        # we need float because of torch to avoid 0-dim array which is not the same as scalar
         G1[i] = float(xp.real(xp.linalg.trace(xp.conj(X[i]).mT @ Y[i])))
         # vec(X)^H . vec(Y)
         G2[i] = float(xp.real(
