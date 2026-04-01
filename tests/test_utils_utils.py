@@ -5,6 +5,7 @@ import pytest
 
 from conftest import _to_backend
 from pyriemann.datasets import make_matrices
+from pyriemann.utils._backend import get_namespace
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.geodesic import geodesic_logchol
 from pyriemann.utils.mean import mean_riemann
@@ -27,8 +28,9 @@ def test_check_weights_none(n_matrices):
 @pytest.mark.parametrize("n_matrices", [3, 4, 5])
 def test_check_weights_vals(get_weights, n_matrices):
     weights = get_weights(n_matrices) + 1
+    xp = get_namespace(weights)
     weights = check_weights(weights, n_matrices, like=weights)
-    assert np.sum(weights) == pytest.approx(1.0, abs=1e-10)
+    assert float(xp.sum(weights)) == pytest.approx(1.0, abs=1e-10)
 
 
 def test_check_weights_error_length(get_weights):
