@@ -841,9 +841,9 @@ def innerproduct_riemann(X, Y, Cref):
 
 
 def _apply_inner_product(X, Y):
-    # product G = trace(X^H @ Y) = sum of element-wise conj(X) * Y
+    # product G = trace(X^H @ Y)
     xp = get_namespace(X, Y)
-    G = xp.real(xp.sum(xp.conj(X) * Y, axis=(-2, -1)))
+    G = xp.einsum("...nm,...nm->...", xp.conj(X), Y).real
 
     if G.ndim == 0:
         return float(G)
@@ -1131,7 +1131,7 @@ def transport_riemann(X, A, B):
     """
     # BA^{-1} is not sym => use sqrtm from scipy:
     # E = scipy.linalg.sqrtm(B @ np.linalg.inv(A))
-    # (BA^{-1})^{1/2} = A^{1/2} (A^{-1/2}BA^{-1/2})^{1/2} A^{-1/2}
+    # But (BA^{-1})^{1/2} = A^{1/2} (A^{-1/2}BA^{-1/2})^{1/2} A^{-1/2}
     A12, A12inv = sqrtm(A), invsqrtm(A)
     E = A12 @ sqrtm(A12inv @ B @ A12inv) @ A12inv
     X_new = E @ X @ ctranspose(E)
