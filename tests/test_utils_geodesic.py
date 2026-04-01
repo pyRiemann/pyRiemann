@@ -144,12 +144,9 @@ def test_geodesic_property_invariance_inversion(kind, gfun,
     n_channels = 4
     A, B = get_mats(2, n_channels, kind)
     xp = get_namespace(A)
-    eye = xp.eye(n_channels, dtype=A.dtype, device=device(A))
     alpha = rndstate.uniform(0.01, 0.99)
     G = gfun(A, B, alpha)
-    invA = xp.linalg.solve(A, eye)
-    invB = xp.linalg.solve(B, eye)
-    Ginv = xp.linalg.solve(gfun(invA, invB, alpha), eye)
+    Ginv = xp.linalg.inv(gfun(xp.linalg.inv(A), xp.linalg.inv(B), alpha))
     assert G == approx(Ginv)
 
 
