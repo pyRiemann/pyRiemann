@@ -233,9 +233,8 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     else:
         warnings.warn("Convergence not reached")
 
-    D = xp.conj(
-        xp.permute_dims(xp.reshape(A, (n, n_matrices, n)), (1, 0, 2))
-    )
+    D = xp.conj(rearrange(A, 'n1 (matrices n2) -> matrices n1 n2',
+                          matrices=n_matrices))
     return (
         xp.asarray(V, dtype=X.dtype, device=xpd(X)),
         xp.asarray(D, dtype=X.dtype, device=xpd(X)),
