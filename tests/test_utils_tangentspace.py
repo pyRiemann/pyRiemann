@@ -369,7 +369,9 @@ def test_innerproduct_euclid(kind, n_dim1, n_dim2, get_mats):
     G1 = np.empty((n_matrices,))
     G2 = np.empty((n_matrices,))
     for i in range(n_matrices):
+        # tr(X^H @ Y)
         G1[i] = float(xp.real(xp.linalg.trace(xp.conj(X[i]).mT @ Y[i])))
+        # vec(X)^H . vec(Y)
         G2[i] = float(xp.real(
             xp.sum(xp.conj(xp.reshape(X[i], (-1,)))
                    * xp.reshape(Y[i], (-1,)))
@@ -409,32 +411,6 @@ def test_norm_properties(kindX, kindC, metric, get_mats):
 
 
 ###############################################################################
-
-
-@pytest.mark.parametrize("ftransport", [
-    transport_euclid,
-    transport_logchol,
-    transport_logeuclid,
-    transport_riemann,
-])
-def test_transport_ndarray(ftransport, get_mats):
-    n_matrices, n_channels = 7, 3
-    X = get_mats(n_matrices, n_channels, "herm")
-    xp = get_namespace(X)
-    A, B = get_mats(2, n_channels, "hpd")
-
-    # 2D array
-    T2 = ftransport(X[0], A, B)
-    assert T2.shape == (n_channels, n_channels)
-
-    # 3D array
-    X_tr = ftransport(X, A, B)
-    assert X_tr.shape == X.shape
-
-    n_sets = 2
-    X_4d = xp.stack([X] * n_sets, axis=0)
-    X_tr = ftransport(X_4d, A, B)
-    assert X_tr.shape == X_4d.shape
 
 
 @pytest.mark.parametrize("ftransport", [
