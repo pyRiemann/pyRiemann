@@ -97,14 +97,14 @@ def rndstate():
 def get_mats(rndstate, backend):
     def _gen_mat(n_matrices, n_dim, kind):
         if isinstance(n_matrices, int):
-            mats = make_matrices(n_matrices, n_dim, kind, rndstate,
-                                 return_params=False)
+            X = make_matrices(n_matrices, n_dim, kind, rndstate,
+                              return_params=False)
         else:
-            n_total = int(np.prod(n_matrices))
+            n_total = np.prod(n_matrices, dtype=int)
             Xflat = make_matrices(n_total, n_dim, kind, rndstate,
                                   return_params=False)
-            mats = Xflat.reshape(*n_matrices, *Xflat.shape[1:])
-        return _to_backend(mats, backend)
+            X = Xflat.reshape(*n_matrices, n_dim, n_dim)
+        return _to_backend(X, backend)
 
     return _gen_mat
 
