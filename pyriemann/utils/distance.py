@@ -672,13 +672,23 @@ def distance(A, B, metric="riemann", squared=False):
     """
     distance_function = check_function(metric, distance_functions)
 
+    xp = get_namespace(A)
     shape_A, shape_B = A.shape, B.shape
     if shape_A == shape_B:
         d = distance_function(A, B, squared=squared)
     elif len(shape_A) == 3 and len(shape_B) == 2:
-        # Small adjust for better broadcasting
-        d = distance_function(A, B, squared=squared)
-        d = d[..., None]
+        # Built-in distance functions handle 3D broadcasting natively;
+        # user-defined callables may not, so loop element-wise.
+        if distance_function in distance_functions.values():
+            d = distance_function(A, B, squared=squared)
+            d = d[..., None]
+        else:
+            d = xp.empty((shape_A[0], 1), dtype=A.real.dtype,
+                         device=xpd(A))
+            for i in range(shape_A[0]):
+                d[i] = distance_function(
+                    A[i], B, squared=squared
+                )
     else:
         raise ValueError("Inputs have incompatible dimensions.")
 
