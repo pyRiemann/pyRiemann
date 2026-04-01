@@ -819,9 +819,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
                 )
             )
 
-        self.weights_ = check_weights(
-            self.weights_init, self.n_components, like=X,
-        )
+        self.weights_ = check_weights(self.weights_init, self.n_components)
 
         # expectation-maximization
         crit = 0
