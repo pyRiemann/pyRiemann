@@ -67,6 +67,24 @@ def check_matrix_pair(A, B, *, require_square=False):
 # --- Custom extensions not in Array API or array-api-extra ---
 
 
+def joint_eigvalsh(A, B, *, xp):
+    """Joint eigenvalues of A and B, ie generalized eigvalsh(A, B).
+
+    Uses scipy for numpy (direct generalized eigvalsh), Cholesky reduction
+    for torch: L = chol(B), eigvalsh(L^{-1} A L^{-H}).
+    """
+    # local imports to avoid circular dependency (_backend <- base <- _backend)
+    if is_numpy_namespace(xp) and A.shape == B.shape:
+        from scipy.linalg import eigvalsh
+        from .base import _recursive
+        return _recursive(eigvalsh, A, B)
+    from .base import ctranspose
+    L = xp.linalg.cholesky(B)
+    Y = xp.linalg.solve(L, A)
+    Z = ctranspose(xp.linalg.solve(L, ctranspose(Y)))
+    return xp.linalg.eigvalsh(Z)
+
+
 def pairwise_euclidean(X, Y, *, xp):
     """Pairwise Euclidean distance matrix, array-API compatible.
 

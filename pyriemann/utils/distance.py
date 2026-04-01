@@ -1,9 +1,10 @@
 """Distances between SPD/HPD matrices."""
 
 import numpy as np
-from scipy.linalg import eigvalsh, solve
+from scipy.linalg import solve
 
 from ._backend import (
+    joint_eigvalsh,
     pairwise_euclidean,
     check_matrix_pair,
     diag_indices,
@@ -499,19 +500,8 @@ def distance_riemann(A, B, squared=False):
         Geodesy-the Challenge of the 3rd Millennium, 2003
     """
     xp = check_matrix_pair(A, B)
-    if is_numpy_namespace(xp) and A.shape == B.shape:
-        # scipy eigvalsh(A, B) computes generalized eigenvalues directly
-        d2 = (np.log(_recursive(eigvalsh, A, B))**2).sum(axis=-1)
-    else:
-        # torch has no generalized eigvalsh(A, B), so we reduce to
-        # standard eigenvalues via Cholesky: L = chol(B), then
-        # eigvalsh(L^{-1} A L^{-H}) gives the same joint eigenvalues.
-        # This avoids the expensive invsqrtm (full eigen-decomposition).
-        L = xp.linalg.cholesky(B)
-        Y = xp.linalg.solve(L, A)                          # L^{-1} A
-        Z = ctranspose(xp.linalg.solve(L, ctranspose(Y)))  # L^{-1} A L^{-H}
-        eigvals = xp.linalg.eigvalsh(Z)
-        d2 = xp.sum(xp.log(eigvals) ** 2, axis=-1)
+    eigvals = joint_eigvalsh(A, B, xp=xp)
+    d2 = xp.sum(xp.log(eigvals) ** 2, axis=-1)
     return d2 if squared else xp.sqrt(d2)
 
 
@@ -558,16 +548,8 @@ def distance_thompson(A, B, squared=False):
         A.C.Thompson. Proceedings of the American Mathematical Society, 1963.
     """
     xp = check_matrix_pair(A, B, require_square=True)
-    if is_numpy_namespace(xp) and A.shape == B.shape:
-        # scipy eigvalsh(A, B) computes generalized eigenvalues directly
-        d = (np.abs(np.log(_recursive(eigvalsh, A, B)))).max(axis=-1)
-    else:
-        # Same Cholesky reduction as distance_riemann: L = chol(B),
-        # eigvalsh(L^{-1} A L^{-H}) gives the joint eigenvalues.
-        L = xp.linalg.cholesky(B)
-        Y = xp.linalg.solve(L, A)
-        Z = ctranspose(xp.linalg.solve(L, ctranspose(Y)))
-        d = xp.max(xp.abs(xp.log(xp.linalg.eigvalsh(Z))), axis=-1)
+    eigvals = joint_eigvalsh(A, B, xp=xp)
+    d = xp.max(xp.abs(xp.log(eigvals)), axis=-1)
     return d ** 2 if squared else d
 
 
