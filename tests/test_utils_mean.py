@@ -292,7 +292,10 @@ def test_mean_property_invariance_inversion(kind, mean, get_mats):
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
     xp = get_namespace(X)
-    assert mean(X) == approx(xp.linalg.inv(mean(xp.linalg.inv(X))))
+    eye = xp.eye(n_channels, dtype=X.dtype, device=device(X))
+    X_inv = xp.linalg.solve(X, eye)
+    M_inv = mean(X_inv)
+    assert mean(X) == approx(xp.linalg.solve(M_inv, eye))
 
 
 @pytest.mark.parametrize("kind, kindQ", [("spd", "orth"), ("hpd", "unit")])
