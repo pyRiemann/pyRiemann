@@ -1069,7 +1069,7 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
     if init is None:
         init = np.nanmean(X_np, axis=0) + 1e-6 * np.eye(n)
     else:
-        init = np.asarray(check_init(init, n, like=X_np))
+        init = np.asarray(check_init(to_numpy(init), n, like=X_np))
 
     M = maskedmean_riemann(
         np.nan_to_num(X_np),  # avoid nan contamination in matmul

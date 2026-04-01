@@ -74,7 +74,7 @@ def test_ajdpham_weight_none_equivalent_uniform(kind, get_mats):
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
     xp = get_namespace(X)
-    ones = xp.ones(n_matrices, dtype=X.dtype, device=xpd(X))
+    ones = xp.ones(n_matrices, dtype=X.real.dtype, device=xpd(X))
     V, D = ajd_pham(X)
     Vw, Dw = ajd_pham(X, sample_weight=ones)
     assert_array_equal(V, Vw)
