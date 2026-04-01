@@ -31,7 +31,7 @@ def check_weights(weights, n_weights, *, check_positivity=False, like=None):
     xp = get_namespace(like)
     dev = xpd(like) if like is not None else None
 
-    dtype = None if like is None else like.dtype
+    dtype = None if like is None else like.real.dtype
 
     if weights is None:
         weights = xp.ones(n_weights, dtype=dtype, device=dev)

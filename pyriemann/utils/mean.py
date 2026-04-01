@@ -58,6 +58,7 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     xp = get_namespace(X)
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
+    sample_weight = xp.asarray(sample_weight, dtype=X.dtype, device=xpd(X))
     if init is None:
         B = ajd_pham(X)[0]
     else:
@@ -405,6 +406,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     xp = get_namespace(X)
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
+    sample_weight = xp.asarray(sample_weight, dtype=X.dtype, device=xpd(X))
     if init is None:
         M = mean_euclid(X, sample_weight=sample_weight)
     else:
@@ -542,6 +544,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
 
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
+    sample_weight = xp.asarray(sample_weight, dtype=X.dtype, device=xpd(X))
     phi = 0.375 / np.abs(p)
     if init is None:
         G = powm(xp.einsum("a,abc->bc", sample_weight, powm(X, p)), 1/p)
@@ -678,6 +681,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     xp = get_namespace(X)
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
+    sample_weight = xp.asarray(sample_weight, dtype=X.dtype, device=xpd(X))
     if init is None:
         M = mean_euclid(X, sample_weight=sample_weight)
     else:
@@ -809,6 +813,7 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     xp = get_namespace(X)
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
+    sample_weight = xp.asarray(sample_weight, dtype=X.dtype, device=xpd(X))
     if init is None:
         init = mean_euclid(X, sample_weight=sample_weight)
     else:
