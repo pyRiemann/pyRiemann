@@ -713,41 +713,26 @@ def distance(A, B, metric="riemann", squared=False):
 
 
 def _euclidean_distances(X, Y=None, squared=False):
-    """Pairwise Euclidean distances, array-API compatible.
+    """Function to extend euclidean_distances of sklearn to complex data.
 
-    Uses sklearn for numpy (optimized BLAS), torch.cdist for torch (GPU),
-    with complex data support via real/imag decomposition.
+    Uses sklearn for numpy (optimized BLAS), torch.cdist for torch (GPU).
     """
     xp = get_namespace(X, Y)
-
-    if is_numpy_namespace(xp):
-        # sklearn path: optimized BLAS for real, decomposition for complex
-        if is_real_type(X):
-            return euclidean_distances(X, Y, squared=squared)
-        if Y is None:
-            Yreal, Yimag = None, None
-        else:
-            Yreal, Yimag = Y.real, Y.imag
-        dist2 = euclidean_distances(X.real, Yreal, squared=True) + \
-            euclidean_distances(X.imag, Yimag, squared=True)
-        return dist2 if squared else np.sqrt(dist2)
-
-    # torch path: use cdist for real, decomposition for complex
-    import torch
     if is_real_type(X):
-        if Y is None:
-            Y = X
-        dist = torch.cdist(X, Y, p=2)
+        if is_numpy_namespace(xp):
+            return euclidean_distances(X, Y, squared=squared)
+        import torch
+        dist = torch.cdist(X, X if Y is None else Y, p=2)
         return dist ** 2 if squared else dist
 
-    # complex: ||a - b||^2 = ||Re(a-b)||^2 + ||Im(a-b)||^2
     if Y is None:
         Yreal, Yimag = None, None
     else:
         Yreal, Yimag = Y.real, Y.imag
+
     dist2 = _euclidean_distances(X.real, Yreal, squared=True) + \
         _euclidean_distances(X.imag, Yimag, squared=True)
-    return dist2 if squared else torch.sqrt(dist2)
+    return dist2 if squared else xp.sqrt(dist2)
 
 
 def _pairwise_distance_euclid(X, Y=None, squared=False):
