@@ -1,5 +1,7 @@
 import inspect
 
+import numpy as np
+
 from ._backend import get_namespace, xpd
 
 
@@ -28,7 +30,10 @@ def check_weights(weights, n_weights, *, check_positivity=False, like=None):
     -----
     .. versionadded:: 0.4
     """
-    xp = get_namespace(like)
+    if like is None:
+        xp = np
+    else:
+        xp = get_namespace(like)
     dev = xpd(like) if like is not None else None
 
     dtype = None if like is None else like.real.dtype
@@ -143,7 +148,10 @@ def check_init(init, n, *, like=None):
     -----
     .. versionadded:: 0.8
     """
-    xp = get_namespace(like)
+    if like is None:
+        xp = np
+    else:
+        xp = get_namespace(like)
     dev = xpd(like) if like is not None else None
     init = xp.asarray(init, device=dev)
     if init.shape != (n, n):
