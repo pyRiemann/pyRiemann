@@ -1,6 +1,7 @@
 """Backend helpers using array-api-compat for NumPy/torch support."""
 
 import numpy as np
+from scipy.linalg import eigvalsh
 from array_api_compat import (
     array_namespace as get_namespace,
     device as xpd,
@@ -73,11 +74,11 @@ def joint_eigvalsh(A, B, *, xp):
     Uses scipy for numpy (direct generalized eigvalsh), Cholesky reduction
     for torch: L = chol(B), eigvalsh(L^{-1} A L^{-H}).
     """
-    # local imports to avoid circular dependency (_backend <- base <- _backend)
     if is_numpy_namespace(xp) and A.shape == B.shape:
-        from scipy.linalg import eigvalsh
+        # local import to avoid circular dependency (_backend <- base)
         from .base import _recursive
         return _recursive(eigvalsh, A, B)
+    # local import to avoid circular dependency (_backend <- base)
     from .base import ctranspose
     L = xp.linalg.cholesky(B)
     Y = xp.linalg.solve(L, A)
