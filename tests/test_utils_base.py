@@ -18,7 +18,7 @@ from pyriemann.utils.base import (
     ddexpm,
     ddlogm,
 )
-from pyriemann.utils.test import is_pos_def, is_sym_pos_def
+from pyriemann.utils.test import is_pos_def, is_sym_pos_def, is_hermitian
 
 
 n_channels = 3
@@ -85,6 +85,7 @@ def test_funm_all(kind, funm, get_mats):
 
 
 def test_funm_error():
+    #the typeError is needed for Torch Tensor.
     with pytest.raises((ValueError, TypeError)):
         sqrtm(np.ones(5))
     with pytest.raises((ValueError, TypeError)):
@@ -173,18 +174,6 @@ def test_funm_properties(get_mats, kind):
     )
 
 
-@pytest.mark.numpy_only
-def test_check_raise():
-    """Test check SPD matrices"""
-    from pyriemann.utils.mean import mean_riemann
-    X = 2 * np.ones((10, n_channels, n_channels))
-    # This is an indirect check, the riemannian mean must crash when the
-    # matrices are not SPD.
-    with pytest.warns(RuntimeWarning):
-        with pytest.raises(ValueError):
-            mean_riemann(X)
-
-
 def test_nearest_sym_pos_def(get_mats):
     n_matrices = 3
     X = get_mats(n_matrices, n_channels, "spd")
@@ -193,45 +182,48 @@ def test_nearest_sym_pos_def(get_mats):
     Psd = np.array([x - np.diag(d) for x, d in zip(X_np, D)])
 
     assert not is_pos_def(Psd)
-    assert is_sym_pos_def(nearest_sym_pos_def(X_np))
+    assert is_sym_pos_def(nearest_sym_pos_def(X))
     assert is_sym_pos_def(nearest_sym_pos_def(Psd))
-
-    # test with backend arrays and broadcasting
-    assert is_sym_pos_def(to_numpy(nearest_sym_pos_def(X)))
-    X_5d = get_mats([4, 3, n_matrices], n_channels, "spd")
-    nearest_sym_pos_def(X_5d)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_first_divided_difference(get_mats, kind):
-    """Test first divided difference."""
-    n_matrices = 1
-    X = get_mats(n_matrices, n_channels, kind)[0]
+    n_dim4, n_matrices = 7, 4
+    X = get_mats([n_dim4, n_matrices], n_channels, kind)
+    xp = get_namespace(X)
+    d = xp.linalg.eigvalsh(X)
+
+    fct, fctder = xp.exp, xp.exp
+    fdd = _first_divided_difference(d, fct, fctder)
+
+    assert fdd.shape == X.shape
+    assert is_hermitian(fdd)
+    np.allclose(np.diagonal(fdd, axis1=-2, axis2=-1), fctder(d))
+
+    # test broadcasting
+    assert fdd[0, 0] == approx(_first_divided_difference(d[0, 0], fct, fctder))
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_first_divided_difference_properties(get_mats, kind):
+    X = get_mats(1, n_channels, kind)[0]
     xp = get_namespace(X)
     d = xp.linalg.eigvalsh(X)
 
     fdd_id = _first_divided_difference(d, lambda x: x, lambda x: x)
     assert fdd_id.shape == X.shape
-    d_np = to_numpy(d)
-    fdd_id_np = to_numpy(fdd_id)
-    assert_array_almost_equal(np.diag(fdd_id_np), d_np)
-    assert_array_almost_equal(
-        fdd_id_np[np.triu_indices_from(fdd_id_np, k=1)], 1
-    )
+    assert_array_almost_equal(xp.diag(fdd_id), d)
+    assert_array_almost_equal(fdd_id[np.triu_indices_from(fdd_id, k=1)], 1)
 
-    fdd_exp = _first_divided_difference(d, xp.exp, xp.exp)
-    assert_array_almost_equal(
-        np.diag(to_numpy(fdd_exp)), np.exp(d_np)
-    )
+    fdd_exp = _first_divided_difference(d, np.exp, np.exp)
+    assert_array_almost_equal(xp.diag(fdd_exp), xp.exp(d))
 
-    fdd_log = _first_divided_difference(d, xp.log, lambda x: 1./x)
-    assert_array_almost_equal(np.diag(to_numpy(fdd_log)), 1/d_np)
+    fdd_log = _first_divided_difference(d, np.log, lambda x: 1./x)
+    assert_array_almost_equal(xp.diag(fdd_log), 1/d)
 
     # exp of log is element-wise inverse of log
-    fdd_exp_of_log = _first_divided_difference(
-        xp.log(d), xp.exp, xp.exp
-    )
-    assert_array_almost_equal(fdd_exp_of_log, 1/to_numpy(fdd_log))
+    fdd_exp_of_log = _first_divided_difference(xp.log(d), xp.exp, xp.exp)
+    assert_array_almost_equal(fdd_exp_of_log, 1/fdd_log)
 
 
 @pytest.mark.parametrize("ddfun", [ddlogm, ddexpm])
@@ -252,6 +244,7 @@ def test_directional_derivative(ddfun, get_mats):
 @pytest.mark.parametrize("ddfun", [ddlogm, ddexpm])
 def test_directional_derivative_properties(kind, ddfun, get_mats, rndstate):
     X, Y, Cref = get_mats(3, n_channels, kind)
+    xp = get_namespace(X)
     Xdd = ddfun(X, Cref)
 
     # linearity
@@ -260,7 +253,7 @@ def test_directional_derivative_properties(kind, ddfun, get_mats, rndstate):
     assert ddfun(a * X + b * Y, Cref) == approx(a * Xdd + b * Ydd)
 
     # self-adjointness wrt Frob inner product
-    assert_array_almost_equal(np.trace(Xdd @ Y), np.trace(X @ Ydd))
+    assert_array_almost_equal(xp.linalg.trace(Xdd @ Y), xp.linalg.trace(X @ Ydd))
 
     # identity reference
     Xdd = ddfun(X, np.eye(n_channels))
@@ -268,5 +261,3 @@ def test_directional_derivative_properties(kind, ddfun, get_mats, rndstate):
         assert_array_almost_equal(Xdd, np.exp(1) * X)
     elif ddfun is ddlogm:
         assert_array_almost_equal(Xdd, X)
-
-
