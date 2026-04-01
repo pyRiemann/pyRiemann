@@ -116,7 +116,7 @@ def check_function(fun, functions):
                              f"{' '.join(functions.keys())}")
         else:
             fun = functions[fun]
-    elif not callable(fun):
+    elif not hasattr(fun, '__call__'):
         raise ValueError("Argument must be a string or a callable "
                          f"(Got {type(fun)}).")
     return fun

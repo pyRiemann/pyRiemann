@@ -421,12 +421,9 @@ def ddexpm(X, Cref):
     """
     xp = get_namespace(X, Cref)
     d, V = xp.linalg.eigh(Cref)
-    expfdd = _first_divided_difference(
-        d,
-        xp.exp,
-        xp.exp,
-    )
+    
     Vh = ctranspose(V)
+    expfdd = _first_divided_difference(d, xp.exp, xp.exp)
     return V @ (expfdd * (Vh @ X @ V)) @ Vh
 
 
@@ -450,7 +447,7 @@ def ddlogm(X, Cref):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
     Cref : ndarray, shape (n, n)
         SPD/HPD matrix.
 
@@ -470,10 +467,7 @@ def ddlogm(X, Cref):
     """
     xp = get_namespace(X, Cref)
     d, V = xp.linalg.eigh(Cref)
-    logfdd = _first_divided_difference(
-        d,
-        xp.log,
-        lambda x: 1 / x,
-    )
+
     Vh = ctranspose(V)
+    logfdd = _first_divided_difference(d, xp.log, lambda x: 1 / x)
     return V @ (logfdd * (Vh @ X @ V)) @ Vh
