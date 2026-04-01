@@ -125,7 +125,7 @@ def expm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
 
     Returns
     -------
@@ -152,7 +152,7 @@ def invsqrtm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
 
     Returns
     -------
@@ -179,7 +179,7 @@ def logm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
 
     Returns
     -------
@@ -206,7 +206,7 @@ def powm(C, alpha):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
     alpha : float
         The power to apply.
 
@@ -235,7 +235,7 @@ def sqrtm(C):
     Parameters
     ----------
     C : ndarray, shape (..., n, n)
-        SPD/HPD matrices, at least 2D ndarray.
+        SPD/HPD matrices.
 
     Returns
     -------
@@ -297,6 +297,8 @@ def nearest_sym_pos_def(X, reg=1e-6):
     neg_ev = xp.any(eigvals <= 0, axis=-1)  # (...,)
 
     if bool(xp.any(neg_ev)):
+        # we don't have spacing numpy in torch,
+        # so we re-implement.
         spacing = xp.abs(xp.linalg.matrix_norm(A)) * eps
         eye_n = xp.eye(n, dtype=X.dtype, device=xpd(X))
         k = 1
@@ -375,17 +377,8 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
     di = d[..., :, None]
     dj = d[..., None, :]
     close_ = xp.isclose(di, dj, atol=atol, rtol=rtol)
-    den = di - dj
-    den_safe = xp.where(
-        close_,
-        xp.asarray(1, dtype=den.dtype, device=xpd(den)),
-        den,
-    )
-    return xp.where(
-        close_,
-        fctder(di),
-        (fct(di) - fct(dj)) / den_safe,
-    )
+    safe_diff = xp.where(close_, xp.ones_like(di - dj), di - dj)
+    return xp.where(close_, fctder(di), (fct(di) - fct(dj)) / safe_diff)
 
 
 def ddexpm(X, Cref):
