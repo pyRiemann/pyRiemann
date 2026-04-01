@@ -148,11 +148,8 @@ def distance_harmonic(A, B, squared=False):
     distance
     """
     xp = get_namespace(A, B)
-    eye_n = xp.eye(A.shape[-1], dtype=A.dtype, device=xpd(A))
     return distance_euclid(
-        xp.linalg.solve(A, eye_n),
-        xp.linalg.solve(B, eye_n),
-        squared=squared,
+        xp.linalg.inv(A), xp.linalg.inv(B), squared=squared,
     )
 
 
@@ -606,13 +603,9 @@ def distance_wasserstein(A, B, squared=False):
     """  # noqa
     xp = check_matrix_pair(A, B)
     B12 = sqrtm(B)
-    d2 = xp.sum(
-        xp.linalg.diagonal(A + B - 2 * sqrtm(B12 @ A @ B12)),
-        axis=-1,
-    )
-    real_d2 = xp.real(d2)
-    zero = xp.asarray(0, dtype=real_d2.dtype, device=xpd(d2))
-    d2 = xp.maximum(real_d2, zero)
+    d2 = xp.linalg.trace(A + B - 2 * sqrtm(B12 @ A @ B12))
+    d2 = xp.maximum(xp.real(d2), xp.asarray(0, dtype=xp.real(d2).dtype,
+                                             device=xpd(d2)))
     return d2 if squared else xp.sqrt(d2)
 
 
@@ -630,6 +623,7 @@ distance_functions = {
     "thompson": distance_thompson,
     "wasserstein": distance_wasserstein,
 }
+
 
 def distance(A, B, metric="riemann", squared=False):
     """Distance between matrices according to a metric.
@@ -782,14 +776,12 @@ def _pairwise_distance_harmonic(X, Y=None, squared=False):
     pairwise_distance
     distance_harmonic
     """
-    eye_n = np.eye(X.shape[-1])
     if Y is None:
-        Y_inv = None
+        invY = None
     else:
-        Y_inv = np.linalg.solve(Y, eye_n)
+        invY = np.linalg.inv(Y)
 
-    X_inv = np.linalg.solve(X, eye_n)
-    return _pairwise_distance_euclid(X_inv, Y_inv, squared=squared)
+    return _pairwise_distance_euclid(np.linalg.inv(X), invY, squared=squared)
 
 
 def _pairwise_distance_logchol(X, Y=None, squared=False):
