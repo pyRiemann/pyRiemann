@@ -570,16 +570,10 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
     n_channels, n_times = original_shape[-2], original_shape[-1]
 
     dt, dev = X.real.dtype, xpd(X)
-    ones_ch = xp.ones(n_channels, dtype=dt, device=dev)
-    Hchannels = (
-        xp.eye(n_channels, dtype=dt, device=dev)
-        - xp.linalg.outer(ones_ch, ones_ch) / n_channels
-    )
-    ones_t = xp.ones(n_times, dtype=dt, device=dev)
-    Htimes = (
-        xp.eye(n_times, dtype=dt, device=dev)
-        - xp.linalg.outer(ones_t, ones_t) / n_times
-    )
+    Hchannels = xp.eye(n_channels, dtype=dt, device=dev) \
+        - xp.ones((n_channels, n_channels), dtype=dt, device=dev) / n_channels
+    Htimes = xp.eye(n_times, dtype=dt, device=dev) \
+        - xp.ones((n_times, n_times), dtype=dt, device=dev) / n_times
     X = Hchannels @ X @ Htimes  # Eq(8), double centering
 
     batch_shape = original_shape[:-2]
