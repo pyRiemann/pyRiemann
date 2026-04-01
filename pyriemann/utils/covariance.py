@@ -408,7 +408,9 @@ def covariance_scm(X, *, assume_centered=False, weights=None):
 
     if not assume_centered:
         X = X - xp.sum(X * weights, axis=-1, keepdims=True)
-    return (X * weights) @ ctranspose(X)
+    cov = (X * weights) @ ctranspose(X)
+
+    return cov
 
 
 ###############################################################################
@@ -743,15 +745,11 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         freqs = f[fix]
     else:
         if fmin is not None:
-            warnings.warn(
-                "Parameter fmin not used because fs is None",
-                stacklevel=2,
-            )
+            warnings.warn("Parameter fmin not used because fs is None",
+                          stacklevel=2)
         if fmax is not None:
-            warnings.warn(
-                "Parameter fmax not used because fs is None",
-                stacklevel=2,
-            )
+            warnings.warn("Parameter fmax not used because fs is None",
+                          stacklevel=2)
         freqs = None
 
     # Cross-spectral matrix via einsum over windows
@@ -875,7 +873,7 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         fs=fs,
     )
     # S: (..., n_channels, n_channels, n_freqs)
-    S2 = np.abs(S) ** 2  # squared cross-spectral modulus
+    S2 = np.abs(S)**2  # squared cross-spectral modulus
 
     n_channels = S.shape[-3]
     C = np.zeros_like(S2)
@@ -885,45 +883,33 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
     if coh == "lagged":
         if freqs is None:
             f_inds = np.arange(1, C.shape[-1] - 1, dtype=int)
-            warnings.warn(
-                "DC and Nyquist bins are not defined for lagged-"
-                "coherence: filled with zeros",
-                stacklevel=2,
-            )
+            warnings.warn("DC and Nyquist bins are not defined for lagged-"
+                          "coherence: filled with zeros", stacklevel=2)
         else:
             f_inds_ = f_inds[(freqs > 0) & (freqs < fs / 2)]
             if not np.array_equal(f_inds_, f_inds):
-                warnings.warn(
-                    "DC and Nyquist bins are not defined for lagged-"
-                    "coherence: filled with zeros",
-                    stacklevel=2,
-                )
+                warnings.warn("DC and Nyquist bins are not defined for lagged-"
+                              "coherence: filled with zeros", stacklevel=2)
             f_inds = f_inds_
 
     # Vectorized PSD: diagonal of S2 across channels
     diag_idx = np.arange(n_channels)
     psd = np.sqrt(S2[..., diag_idx, diag_idx, :])  # (..., n_ch, n_freqs)
-    psd_prod = (
-        psd[..., :, np.newaxis, :]
-        * psd[..., np.newaxis, :, :]
-    )  # (..., n_ch, n_ch, n_freqs)
+    psd_prod = psd[..., :, np.newaxis, :] * psd[..., np.newaxis, :, :]
+    # psd_prod: (..., n_ch, n_ch, n_freqs)
 
     if coh == "ordinary":
         C[..., f_inds] = S2[..., f_inds] / psd_prod[..., f_inds]
     elif coh == "instantaneous":
-        C[..., f_inds] = (
-            S[..., f_inds].real ** 2 / psd_prod[..., f_inds]
-        )
+        C[..., f_inds] = (S[..., f_inds].real)**2 / psd_prod[..., f_inds]
     elif coh == "lagged":
         S_real = S.real.copy()
         S_real[..., diag_idx, diag_idx, :] = 0.0  # zero diagonal
-        denom = psd_prod[..., f_inds] - S_real[..., f_inds] ** 2
+        denom = psd_prod[..., f_inds] - S_real[..., f_inds]**2
         denom = np.where(np.abs(denom) < 1e-10, 1e-10, denom)
-        C[..., f_inds] = S[..., f_inds].imag ** 2 / denom
+        C[..., f_inds] = (S[..., f_inds].imag)**2 / denom
     elif coh == "imaginary":
-        C[..., f_inds] = (
-            S[..., f_inds].imag ** 2 / psd_prod[..., f_inds]
-        )
+        C[..., f_inds] = (S[..., f_inds].imag)**2 / psd_prod[..., f_inds]
     else:
         raise ValueError(f"{coh} is not a supported coherence")
 
