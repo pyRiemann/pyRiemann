@@ -35,7 +35,7 @@ def ctranspose(X):
     return xp.conj(X).mT
 
 
-def _vectorize_nd(n_axes=2, batch_native=True):
+def _vectorize_nd(n_axes=2):
     """Decorator to vectorize a function over leading batch dimensions.
 
     Parameters
@@ -45,12 +45,6 @@ def _vectorize_nd(n_axes=2, batch_native=True):
 
         - n_axes=2: (..., n1, n2) -> func(n1, n2) -> (..., m1, m2)
         - n_axes=3: (..., n1, n2, n3) -> func(n1, n2, n3) -> (..., m1, m2)
-    batch_native : bool, default=True
-        If True, non-numpy backends (e.g. torch) call the function
-        directly — it must handle batch dims natively for optimal GPU
-        parallelism and autograd support.
-        If False, always loops over batch elements (for functions that
-        cannot be made batch-aware, e.g. those using Python lists).
     """
     def decorator(func):
         @wraps(func)
@@ -59,9 +53,6 @@ def _vectorize_nd(n_axes=2, batch_native=True):
             if len(batch_shape) == 0:
                 return func(X, *args, **kwargs)
             xp = get_namespace(X)
-            if batch_native and not is_numpy_namespace(xp):
-                # Non-numpy backends broadcast natively
-                return func(X, *args, **kwargs)
             # Loop over batch elements
             n_batch = int(np.prod(batch_shape))
             core_shape = X.shape[-n_axes:]

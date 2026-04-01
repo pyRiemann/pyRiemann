@@ -425,7 +425,7 @@ cov_est_functions = {
 
 def _check_cov_estimator(estimator):
     est = check_function(estimator, cov_est_functions)
-    est = _vectorize_nd(batch_native=False)(est)
+    est = _vectorize_nd()(est)
     return est
 
 
