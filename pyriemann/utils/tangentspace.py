@@ -93,10 +93,8 @@ def exp_map_logchol(X, Cref):
     exp_map[..., tri0, tri1] = Cref_chol[..., tri0, tri1] + \
         diff[..., tri0, tri1]
 
-    exp_map[..., diag0, diag1] = (
-        xp.exp(diff_bracket[..., diag0, diag1]) *
-        Cref_chol[..., diag0, diag1]
-    )
+    exp_map[..., diag0, diag1] = xp.exp(diff_bracket[..., diag0, diag1]) \
+        * Cref_chol[..., diag0, diag1]
 
     return exp_map @ ctranspose(exp_map)
 
@@ -350,12 +348,10 @@ def log_map_logchol(X, Cref):
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
     xp = check_matrix_pair(X, Cref, require_square=True)
-    X_chol = xp.linalg.cholesky(X)
-    Cref_chol = xp.linalg.cholesky(Cref)
+    X_chol, Cref_chol = xp.linalg.cholesky(X), xp.linalg.cholesky(Cref)
 
     batch_shape = np.broadcast_shapes(
-        X_chol.shape[:-2],
-        Cref_chol.shape[:-2],
+        X_chol.shape[:-2], Cref_chol.shape[:-2],
     )
     res = xp.zeros(
         batch_shape + X_chol.shape[-2:],
@@ -366,15 +362,10 @@ def log_map_logchol(X, Cref):
     res[..., tri0, tri1] = X_chol[..., tri0, tri1] - Cref_chol[..., tri0, tri1]
 
     diag0, diag1 = diag_indices(X.shape[-1], xp=xp, like=X)
-    res[..., diag0, diag1] = Cref_chol[..., diag0, diag1] * xp.log(
-            X_chol[..., diag0, diag1] / Cref_chol[..., diag0, diag1]
-    )
+    res[..., diag0, diag1] = Cref_chol[..., diag0, diag1] * \
+        xp.log(X_chol[..., diag0, diag1] / Cref_chol[..., diag0, diag1])
 
-    X_new = (
-        Cref_chol @ ctranspose(res) +
-        res @ ctranspose(Cref_chol)
-    )
-
+    X_new = Cref_chol @ ctranspose(res) + res @ ctranspose(Cref_chol)
     return X_new
 
 
@@ -1022,8 +1013,7 @@ def transport_logchol(X, A, B):
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
     xp = get_namespace(X, A, B)
-    A_chol = xp.linalg.cholesky(A)
-    B_chol = xp.linalg.cholesky(B)
+    A_chol, B_chol = xp.linalg.cholesky(A), xp.linalg.cholesky(B)
     eye_n = xp.eye(A.shape[-1], dtype=A.dtype, device=xpd(A))
     A_invchol = xp.linalg.solve(A_chol, eye_n)
 
@@ -1041,8 +1031,7 @@ def transport_logchol(X, A, B):
     T[..., diag0, diag1] = B_chol[..., diag0, diag1] \
         / A_chol[..., diag0, diag1] * X_[..., diag0, diag1]
 
-    X_new = B_chol @ ctranspose(T) + \
-        T @ ctranspose(B_chol)
+    X_new = B_chol @ ctranspose(T) + T @ ctranspose(B_chol)
     return X_new
 
 
@@ -1146,11 +1135,10 @@ def transport_riemann(X, A, B):
         <https://optml.mit.edu/papers/sra_hosseini_gopt.pdf>`_
         S. Sra and R. Hosseini. SIAM Journal on Optimization, 2015.
     """
-    # BA^{-1} is not sym => use sqrtm from scipy:
+    # BA^{-1} is not sym => use sqrtm from scipy
     # E = scipy.linalg.sqrtm(B @ np.linalg.inv(A))
     # (BA^{-1})^{1/2} = A^{1/2} (A^{-1/2}BA^{-1/2})^{1/2} A^{-1/2}
-    A12 = sqrtm(A)
-    A12inv = invsqrtm(A)
+    A12, A12inv = sqrtm(A), invsqrtm(A)
     E = A12 @ sqrtm(A12inv @ B @ A12inv) @ A12inv
     X_new = E @ X @ ctranspose(E)
     return X_new

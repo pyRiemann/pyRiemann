@@ -203,7 +203,6 @@ def mean_chol(X, sample_weight=None, **kwargs):
     .. math::
         \mathbf{L} = \sum_i w_i \text{chol}(\mathbf{X}_i)
 
-    with :math:`w` being the weights which sum to 1.
 
     Parameters
     ----------
@@ -244,12 +243,11 @@ def mean_chol(X, sample_weight=None, **kwargs):
 def mean_euclid(X, sample_weight=None, **kwargs):
     r"""Mean of matrices according to the Euclidean metric.
 
-    Euclidean mean is also called arithmetic:
-
     .. math::
         \mathbf{M} = \sum_i w_i \ \mathbf{X}_i
 
-    with :math:`w` being the weights which sum to 1.
+    This mean is also called arithmetic.
+
 
     Parameters
     ----------
@@ -283,7 +281,6 @@ def mean_harmonic(X, sample_weight=None, **kwargs):
     .. math::
         \mathbf{M} = \left( \sum_i w_i \ {\mathbf{X}_i}^{-1} \right)^{-1}
 
-    with :math:`w` being the weights which sum to 1.
 
     Parameters
     ----------
@@ -358,7 +355,6 @@ def mean_logchol(X, sample_weight=None, **kwargs):
         \exp \left( \sum_i w_i \log(\text{diag}(\text{chol}(\mathbf{X}_i)))
         \right)
 
-    with :math:`w` being the weights which sum to 1.
 
     Parameters
     ----------
@@ -430,7 +426,6 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         \mathbf{M} = \left( \sum_i w_i \ \left( 0.5 \mathbf{M}
                      + 0.5 \mathbf{X}_i \right)^{-1} \right)^{-1}
 
-    with :math:`w` being the weights which sum to 1.
 
     Parameters
     ----------
@@ -491,7 +486,6 @@ def mean_logeuclid(X, sample_weight=None, **kwargs):
     .. math::
         \mathbf{M} = \exp{ \left( \sum_i w_i \ \log{\mathbf{X}_i} \right) }
 
-    with :math:`w` being the weights which sum to 1.
 
     Parameters
     ----------
@@ -531,8 +525,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     .. math::
         \mathbf{M} = \sum_i w_i \ \mathbf{M} \sharp_p \mathbf{X}_i
 
-    with :math:`\mathbf{w}` being the weights which sum to 1, and
-    :math:`\mathbf{A} \sharp_p \mathbf{B}` being the geodesic between
+    where :math:`\mathbf{A} \sharp_p \mathbf{B}` is the geodesic between
     matrices :math:`\mathbf{A}` and :math:`\mathbf{B}`.
 
     Parameters
@@ -655,7 +648,6 @@ def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     .. math::
         \mathbf{M} = \left( \sum_i w_i \ \mathbf{X}_i^p \right)^{1/p}
 
-    with :math:`w` being the weights which sum to 1.
 
     Parameters
     ----------
