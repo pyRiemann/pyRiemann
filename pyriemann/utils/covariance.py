@@ -58,10 +58,6 @@ def _corr(X, **kwds):
     return _apply_xp(xp.corrcoef, X, **kwds)
 
 
-def _make_complex(real_part, imag_part, *, like):
-    return real_part + 1j * imag_part
-
-
 def _complex_estimator(func):
     """Decorator to extend a real-valued covariance estimator to complex data.
 
@@ -102,13 +98,10 @@ def _complex_estimator(func):
             )
         cov = func(X, **kwds)
         if iscomplex:
-            cov = _make_complex(
-                cov[..., :n_channels, :n_channels]
-                + cov[..., n_channels:, n_channels:],
-                cov[..., n_channels:, :n_channels]
-                - cov[..., :n_channels, n_channels:],
-                like=X,
-            )
+            cov = cov[..., :n_channels, :n_channels] \
+                + cov[..., n_channels:, n_channels:] \
+                + 1j * (cov[..., n_channels:, :n_channels]
+                        - cov[..., :n_channels, n_channels:])
         return cov
     return wrapper
 

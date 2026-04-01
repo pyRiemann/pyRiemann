@@ -53,7 +53,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     """
     xp = get_namespace(X, init)
     n_matrices, _, _ = X.shape
-    # reshape input matrix: (n_matrices, n, n) -> (n, n_matrices*n)
+    # reshape input matrix
     A = rearrange(X, 'matrices n1 n2 -> n1 (matrices n2)')
     n, n_matrices_x_n = A.shape
 
@@ -165,8 +165,7 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
         like=X,
     )  # sum = 1
 
-    # reshape input matrix: (n_matrices, n, n) -> (n, n_matrices*n)
-    # Matches np.concatenate(X, axis=0).T column ordering for HPD correctness
+    # reshape input matrix
     n = X.shape[-1]
     A = xp.asarray(xp.reshape(X, (-1, n)).mT, copy=True)
     _, n_matrices_x_n = A.shape
@@ -289,7 +288,7 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
     """
     xp = get_namespace(X, init)
     n_matrices, _, _ = X.shape
-    # reshape input matrix: (n_matrices, n, n) -> (n, n_matrices*n)
+    # reshape input matrix
     M = rearrange(X, 'matrices n1 n2 -> n1 (matrices n2)')
     n, n_matrices_x_n = M.shape
 
