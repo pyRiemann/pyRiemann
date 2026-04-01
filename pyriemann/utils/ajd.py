@@ -107,10 +107,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
         warnings.warn("Convergence not reached")
 
     D = rearrange(A, 'n1 (matrices n2) -> matrices n1 n2', matrices=n_matrices)
-    return (
-        xp.asarray(V, dtype=X.dtype, device=xpd(X)),
-        xp.asarray(D, dtype=X.dtype, device=xpd(X)),
-    )
+    return V, D
 
 
 def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
@@ -234,10 +231,7 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
 
     D = xp.conj(rearrange(A, 'n1 (matrices n2) -> matrices n1 n2',
                           matrices=n_matrices))
-    return (
-        xp.asarray(V, dtype=X.dtype, device=xpd(X)),
-        xp.asarray(D, dtype=X.dtype, device=xpd(X)),
-    )
+    return V, D
 
 
 def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
@@ -356,10 +350,7 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
     D = rearrange(
         Ms, 'n1 (matrices n2) -> matrices n1 n2', matrices=n_matrices,
     )
-    return (
-        xp.asarray(V, dtype=X.dtype, device=xpd(X)),
-        xp.asarray(D, dtype=X.dtype, device=xpd(X)),
-    )
+    return V, D
 
 
 ###############################################################################
