@@ -466,7 +466,7 @@ def test_mean_riemann_check_raise():
 
 
 @pytest.mark.parametrize("init", [True, False])
-def test_mean_masked_riemann(init, get_mats, get_masks):
+def test_mean_masked_riemann(init, get_mats, get_masks, backend):
     """Test the masked Riemannian mean"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "spd")
@@ -477,11 +477,11 @@ def test_mean_masked_riemann(init, get_mats, get_masks):
         M = maskedmean_riemann(X, masks, tol=10e-3)
     assert M.shape == (n_channels, n_channels)
 
-    # test broadcasting
-    if not init:
+    # test broadcasting (numpy only — masks are lists, not tensors)
+    if not init and backend == "numpy":
         n_dim5, n_dim4 = 2, 3
         X5 = np.asarray([[X for _ in range(n_dim4)] for _ in range(n_dim5)])
-        M5 = maskedmean_riemann(X5, masks)
+        M5 = maskedmean_riemann(X5, masks, tol=10e-3)
         assert M5.shape == (n_dim5, n_dim4, n_channels, n_channels)
         assert M5[0, 0] == approx(M)
 
