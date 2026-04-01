@@ -94,7 +94,7 @@ def _matrix_operator(X, operator):
     """Matrix function for SPD/HPD matrices."""
     xp = get_namespace(X)
     if not hasattr(X, "ndim") or X.ndim < 2:
-        raise ValueError("Input must be at least a 2D ndarray or tensor")
+        raise ValueError("Input must be at least a 2D ndarray")
     if X.shape[-2] != X.shape[-1]:
         raise ValueError("Input must contain square matrices")
     if xp.isdtype(X.dtype, ("real floating", "complex floating")) \

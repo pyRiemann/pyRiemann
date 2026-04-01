@@ -115,21 +115,21 @@ def _complex_estimator(func):
 
 @_complex_estimator
 def _lwf(X, **kwds):
-    """Wrapper for Ledoit-Wolf covariance estimator"""
+    """Wrapper for sklearn ledoit wolf covariance estimator"""
     C, _ = ledoit_wolf(X.mT, **kwds)
     return C
 
 
 @_complex_estimator
 def _mcd(X, **kwds):
-    """Wrapper for MCD covariance estimator"""
+    """Wrapper for sklearn mcd covariance estimator"""
     _, C, _, _ = fast_mcd(X.mT, **kwds)
     return C
 
 
 @_complex_estimator
 def _oas(X, **kwds):
-    """Wrapper for OAS covariance estimator"""
+    """Wrapper for sklearn oas covariance estimator"""
     C, _ = oas(X.mT, **kwds)
     return C
 

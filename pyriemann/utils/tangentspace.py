@@ -1135,7 +1135,7 @@ def transport_riemann(X, A, B):
         <https://optml.mit.edu/papers/sra_hosseini_gopt.pdf>`_
         S. Sra and R. Hosseini. SIAM Journal on Optimization, 2015.
     """
-    # BA^{-1} is not sym => use sqrtm from scipy
+    # BA^{-1} is not sym => use sqrtm from scipy:
     # E = scipy.linalg.sqrtm(B @ np.linalg.inv(A))
     # (BA^{-1})^{1/2} = A^{1/2} (A^{-1/2}BA^{-1/2})^{1/2} A^{-1/2}
     A12, A12inv = sqrtm(A), invsqrtm(A)
