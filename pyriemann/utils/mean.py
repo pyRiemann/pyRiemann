@@ -416,7 +416,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         J = xp.einsum("a,abc->bc", sample_weight, X_inv)
         Mnew = xp.linalg.solve(J, eye_n)
 
-        crit = float(xp.linalg.matrix_norm(Mnew - M))
+        crit = float(xp.linalg.matrix_norm(Mnew - M, ord="fro"))
         M = Mnew
         if crit <= tol:
             break
@@ -690,7 +690,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         J = xp.einsum("a,abc->bc", sample_weight, logm(Mm12 @ X @ Mm12))
         M = M12 @ expm(nu * J) @ M12
 
-        crit = float(xp.linalg.matrix_norm(J))
+        crit = float(xp.linalg.matrix_norm(J, ord="fro"))
         h = nu * crit
         if h < tau:
             nu = 0.95 * nu
@@ -756,7 +756,7 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     for i in range(maxiter):
         Mnew = geodesic_thompson(M, X[i % n_matrices], 1 / (i + 2))
 
-        crit = float(xp.linalg.matrix_norm(Mnew - M))
+        crit = float(xp.linalg.matrix_norm(Mnew - M, ord="fro"))
         M = Mnew
         if float(crit) <= tol:
             break
@@ -1002,7 +1002,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
         M12, Mm12 = sqrtm(M), invsqrtm(M)
         M = M12 @ expm(Mm12 @ (nu * J) @ Mm12) @ M12
 
-        crit = float(xp.linalg.matrix_norm(J))
+        crit = float(xp.linalg.matrix_norm(J, ord="fro"))
         h = nu * crit
         if h < tau:
             nu = 0.95 * nu
