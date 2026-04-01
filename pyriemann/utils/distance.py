@@ -26,10 +26,6 @@ def _check_inputs(A, B):
         raise ValueError("Inputs must be at least a 2D ndarray")
 
 
-def _last_axis_normfro(x, xp):
-    return xp.sum(xp.abs(x) ** 2, axis=-1)
-
-
 ###############################################################################
 # Distances between matrices
 
@@ -296,17 +292,15 @@ def distance_logchol(A, B, squared=False):
     A_chol, B_chol = xp.linalg.cholesky(A), xp.linalg.cholesky(B)
 
     tri0, tri1 = tril_indices(A_chol.shape[-1], -1, xp=xp, like=A_chol)
-    triangular_part = _last_axis_normfro(
-        A_chol[..., tri0, tri1] - B_chol[..., tri0, tri1],
-        xp,
-    )
+    triangular_part = xp.linalg.vector_norm(
+        A_chol[..., tri0, tri1] - B_chol[..., tri0, tri1], axis=-1,
+    ) ** 2
 
     diag0, diag1 = diag_indices(A_chol.shape[-1], xp=xp, like=A_chol)
-    diagonal_part = _last_axis_normfro(
+    diagonal_part = xp.linalg.vector_norm(
         xp.log(A_chol[..., diag0, diag1]) -
-        xp.log(B_chol[..., diag0, diag1]),
-        xp,
-    )
+        xp.log(B_chol[..., diag0, diag1]), axis=-1,
+    ) ** 2
 
     d2 = triangular_part + diagonal_part
     return d2 if squared else xp.sqrt(d2)
