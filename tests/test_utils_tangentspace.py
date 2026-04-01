@@ -248,7 +248,8 @@ def test_innerproduct_input_dimension_error(metric, get_mats):
     X = get_mats(n_matrices, n_channels, "sym")
     Y = get_mats(n_matrices, n_channels + 1, "sym")
     Cref = get_mats(1, n_channels + 2, "spd")[0]
-    with pytest.raises((ValueError, RuntimeError)):
+    # Necessary the RunTimeError for torch backend which raises a different error type
+    with pytest.raises((ValueError, RuntimeError)): 
         innerproduct(X, Y, Cref, metric=metric)
 
 
