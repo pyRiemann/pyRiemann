@@ -1,7 +1,6 @@
 """Geodesics for SPD/HPD matrices."""
 
 from ._backend import (
-    broadcast_shapes,
     check_matrix_pair,
     diag_indices,
     get_namespace,
@@ -134,7 +133,7 @@ def geodesic_logchol(A, B, alpha=0.5):
     xp = get_namespace(A, B)
     A_chol, B_chol = xp.linalg.cholesky(A), xp.linalg.cholesky(B)
 
-    batch_shape = broadcast_shapes(A_chol.shape[:-2], B_chol.shape[:-2])
+    batch_shape = xp.broadcast_shapes(A_chol.shape[:-2], B_chol.shape[:-2])
     geo = xp.zeros(batch_shape + A_chol.shape[-2:], dtype=A_chol.dtype,
                    device=xpd(A_chol))
 

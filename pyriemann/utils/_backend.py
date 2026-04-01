@@ -9,7 +9,6 @@ from array_api_compat import (
     is_torch_namespace,
 )
 from array_api_extra import (
-    broadcast_shapes,
     create_diagonal,
 )
 
@@ -20,7 +19,6 @@ __all__ = [
     "is_numpy_namespace",
     "is_torch_namespace",
     # Re-exported from array-api-extra
-    "broadcast_shapes",
     "create_diagonal",
     # Custom
     "check_matrix_pair",
@@ -59,7 +57,7 @@ def check_matrix_pair(A, B, *, require_square=False):
         raise ValueError("Inputs must contain square matrices")
     if A.shape != B.shape:
         try:
-            broadcast_shapes(A.shape[:-2], B.shape[:-2])
+            xp.broadcast_shapes(A.shape[:-2], B.shape[:-2])
         except Exception as exc:
             raise ValueError("Inputs have incompatible dimensions.") from exc
     return xp

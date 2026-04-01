@@ -350,7 +350,7 @@ def log_map_logchol(X, Cref):
     xp = check_matrix_pair(X, Cref, require_square=True)
     X_chol, Cref_chol = xp.linalg.cholesky(X), xp.linalg.cholesky(Cref)
 
-    batch_shape = np.broadcast_shapes(
+    batch_shape = xp.broadcast_shapes(
         X_chol.shape[:-2], Cref_chol.shape[:-2],
     )
     res = xp.zeros(
