@@ -116,6 +116,7 @@ def test_time_delay_covariances(delays, get_mats):
 @pytest.mark.parametrize("estimator", estim)
 @pytest.mark.parametrize("svd", [None, 2, 3, 4])
 @pytest.mark.parametrize("n_classes", [2, 3, 4])
+@pytest.mark.numpy_only
 def test_erp_covariances(estimator, svd, n_classes, get_mats, get_labels):
     """Test fit ERPCovariances"""
     n_matrices, n_channels, n_times = 3 * n_classes, 3, 100
@@ -141,6 +142,7 @@ def test_erp_covariances(estimator, svd, n_classes, get_mats, get_labels):
 
 
 @pytest.mark.parametrize("n_classes", [2, 3])
+@pytest.mark.numpy_only
 def test_erp_covariances_classes(n_classes, get_mats, get_labels):
     n_matrices, n_channels, n_times = 3 * n_classes, 3, 100
     X = get_mats(n_matrices, [n_channels, n_times], "real")
@@ -163,6 +165,7 @@ def test_erp_covariances_svd_error(get_mats, get_labels):
 
 @pytest.mark.parametrize("est", estim)
 @pytest.mark.parametrize("xdawn_est", estim)
+@pytest.mark.numpy_only
 def test_xdawn_covariances_est(est, xdawn_est, get_mats, get_labels):
     n_classes, nfilter = 2, 3
     n_matrices, n_channels, n_times = 4, 6, 100
@@ -194,6 +197,7 @@ def test_xdawn_covariances_est(est, xdawn_est, get_mats, get_labels):
 @pytest.mark.parametrize("nfilter", [2, 4, 6])
 @pytest.mark.parametrize("applyfilters", [True, False])
 @pytest.mark.parametrize("baseline", [True, False])
+@pytest.mark.numpy_only
 def test_xdawn_covariances_filters(n_classes, nfilter, applyfilters, baseline,
                                    get_mats, get_labels):
     n_matrices, n_channels, n_times = 3 * n_classes, 4, 128
@@ -329,6 +333,7 @@ def test_kernels(metric, get_mats):
     assert_array_almost_equal(kernels, kernels2)
 
 
+@pytest.mark.numpy_only
 def test_kernels_linear(get_mats):
     """Test that linear kernels are related to covariances"""
     n_matrices, n_channels, n_times = 3, 4, 50
@@ -362,6 +367,7 @@ def test_kernels_kwds(metric, kwds, get_mats):
 
 @pytest.mark.parametrize("shrinkage", [0.1, 0.9])
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.numpy_only
 def test_shrinkage(shrinkage, kind, get_mats):
     """Test Shrinkage"""
     n_matrices, n_channels = 4, 3

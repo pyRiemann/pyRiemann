@@ -35,6 +35,7 @@ def test_electrodeselection(use_label, use_weight,
     assert_array_equal(Xt, Xt2)
 
 
+@pytest.mark.numpy_only
 def test_flatchannelremover(get_mats):
     n_matrices, n_channels, n_times = 10, 10, 3
     X = get_mats(n_matrices, [n_channels, n_times], "real")

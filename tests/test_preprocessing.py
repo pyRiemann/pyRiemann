@@ -137,6 +137,7 @@ def test_whitening_transform(dim_red, metric, get_mats):
 
 @pytest.mark.parametrize("dim_red", dim_red)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.numpy_only
 def test_whitening_inverse_transform(dim_red, metric, get_mats):
     """Test Whitening inverse transform"""
     n_matrices, n_channels = 20, 6

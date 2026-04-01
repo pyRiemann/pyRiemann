@@ -168,6 +168,7 @@ def test_svr_params_error(get_mats, get_targets):
 
 
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
+@pytest.mark.numpy_only
 def test_svr_cref_metric(get_mats, get_targets, metric):
     n_matrices, n_channels = 6, 3
     X = get_mats(n_matrices, n_channels, "spd")
