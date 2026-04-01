@@ -96,6 +96,7 @@ def pairwise_euclidean(X, Y, *, xp):
 
 
 def weighted_average(x, weights=None, axis=0, *, xp):
+    """Weighted average along an axis, matching np.average behavior."""
     if weights is None:
         return xp.mean(x, axis=axis)
     weights = xp.asarray(weights, dtype=x.dtype, device=xpd(x))
@@ -104,6 +105,7 @@ def weighted_average(x, weights=None, axis=0, *, xp):
             "Shape of weights must be consistent with shape of a "
             "along specified axis."
         )
+    weights = weights / xp.sum(weights)
     return xp.tensordot(weights, x, axes=([0], [axis]))
 
 
