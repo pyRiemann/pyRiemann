@@ -4,6 +4,7 @@ from conftest import assert_array_almost_equal, to_numpy, approx
 from scipy.linalg import block_diag
 from scipy.signal import welch, csd, coherence as coherence_sp
 
+from pyriemann.utils._backend import get_namespace
 from pyriemann.utils.covariance import (
     covariances, covariance_scm, covariances_EP, covariances_X, eegtocov,
     cross_spectrum, cospectrum, coherence,
@@ -243,8 +244,6 @@ def test_block_covariances_est(estimator, get_mats):
 
 @pytest.mark.numpy_only
 def test_block_covariances(get_mats):
-    """Test block covariance"""
-
     n_matrices, n_channels, n_times = 2, 12, 100
     X = get_mats(n_matrices, [n_channels, n_times], "real")
 
@@ -587,23 +586,23 @@ def test_normalize(rndstate, get_mats):
     # after corr-normalization => diags = 1 and values in [-1, 1]
     X = get_mats(n_channels, n_channels, "spd")
     Xcn = normalize(X, "corr")
-    Xcn_np = to_numpy(Xcn)
-    assert_array_almost_equal(np.ones(Xcn_np.shape[:-1]),
-                              Xcn_np.diagonal(axis1=-2, axis2=-1))
-    assert np.all(-1 <= Xcn_np) and np.all(Xcn_np <= 1)
+    xp = get_namespace(Xcn)
+    assert_array_almost_equal(np.ones(Xcn.shape[:-1]),
+                              xp.linalg.diagonal(Xcn))
+    assert bool(xp.all(-1 <= Xcn)) and bool(xp.all(Xcn <= 1))
 
     # after trace-normalization => trace equal to 1
     X = rndstate.randn(n_matrices, n_channels, n_channels)
     Xtn = normalize(X, "trace")
-    Xtn_np = to_numpy(Xtn)
-    assert_array_almost_equal(np.ones(Xtn_np.shape[0]),
-                              Xtn_np.trace(axis1=-2, axis2=-1))
+    xp = get_namespace(Xtn)
+    assert_array_almost_equal(np.ones(Xtn.shape[0]),
+                              xp.linalg.trace(Xtn))
 
     # after determinant-normalization => determinant equal to +/- 1
     Xdn = normalize(X, "determinant")
-    Xdn_np = to_numpy(Xdn)
-    assert_array_almost_equal(np.ones(Xdn_np.shape[0]),
-                              np.abs(np.linalg.det(Xdn_np)))
+    xp = get_namespace(Xdn)
+    assert_array_almost_equal(np.ones(Xdn.shape[0]),
+                              xp.abs(xp.linalg.det(Xdn)))
 
 
 def test_normalize_errors(rndstate):
