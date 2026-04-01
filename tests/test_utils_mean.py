@@ -161,20 +161,13 @@ def test_mean_warning_convergence_not_reached(mean, get_mats):
     ],
 )
 def test_mean_of_means(kind, mean, get_mats):
-    """Test mean of submeans equal to grand mean"""
+    """Test mean of submeans is equal to grand mean"""
     n_matrices, n_channels = 10, 3
     X = get_mats(n_matrices, n_channels, kind)
-    if mean in [mean_power, mean_poweuclid]:
-        p = -0.42
-        M = mean(X, p)
-        M1 = mean(X[:n_matrices//2], p)
-        M2 = mean(X[n_matrices//2:], p)
-        M3 = mean(np.array([M1, M2]), p)
-    else:
-        M = mean(X)
-        M1 = mean(X[:n_matrices//2])
-        M2 = mean(X[n_matrices//2:])
-        M3 = mean(np.array([M1, M2]))
+    M = mean(X)
+    M1 = mean(X[:n_matrices//2])
+    M2 = mean(X[n_matrices//2:])
+    M3 = mean(np.array([M1, M2]))
     assert M3 == approx(M, 6)
 
 
