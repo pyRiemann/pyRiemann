@@ -109,7 +109,7 @@ def distance_euclid(A, B, squared=False):
     distance
     """
     xp = check_matrix_pair(A, B)
-    d = xp.linalg.matrix_norm(A - B, ord='fro', axis=(-2, -1))
+    d = xp.linalg.matrix_norm(A - B, ord='fro')
     return d ** 2 if squared else d
 
 
