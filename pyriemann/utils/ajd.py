@@ -5,7 +5,7 @@ import warnings
 import numpy as np
 from einops import rearrange
 
-from ._backend import get_namespace, diag_indices, xpd
+from ._backend import get_namespace, xpd
 from .utils import check_weights, check_function, check_init
 
 
@@ -49,12 +49,12 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     .. [1] `Jacobi angles for simultaneous diagonalization
         <https://epubs.siam.org/doi/abs/10.1137/S0895479893259546>`_
         J.-F. Cardoso and A. Souloumiac, SIAM Journal on Matrix Analysis and
-        Applications, 17(1), pp. 161–164, 1996.
+        Applications, 17(1), pp. 161-164, 1996.
     """
     xp = get_namespace(X, init)
     n_matrices, _, _ = X.shape
     # reshape input matrix
-    A = rearrange(X, 'matrices n1 n2 -> n1 (matrices n2)')
+    A = xp.asarray(xp.reshape(X, (-1, X.shape[-1])).mT, copy=True)
     n, n_matrices_x_n = A.shape
 
     # init variables
@@ -71,10 +71,8 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
                 Iq = list(range(q, n_matrices_x_n, n))
 
                 # computation of Givens rotations
-                g = xp.stack(
-                    (A[p, Ip] - A[q, Iq], A[p, Iq] + A[q, Ip]),
-                    axis=0,
-                )
+                g = xp.stack([A[p, Ip] - A[q, Iq],
+                              A[p, Iq] + A[q, Ip]])
                 gg = g @ g.mT
                 ton = gg[0, 0] - gg[1, 1]
                 toff = gg[0, 1] + gg[1, 0]
@@ -86,27 +84,25 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
 
                 # update of A and V matrices
                 if (float(xp.abs(s)) > eps):
-                    tmp = xp.zeros_like(A[:, Ip])
-                    tmp[...] = A[:, Ip]
+                    tmp = A[:, Ip]
                     A[:, Ip] = c * A[:, Ip] + s * A[:, Iq]
                     A[:, Iq] = c * A[:, Iq] - s * tmp
 
-                    tmp = xp.zeros_like(A[p, :])
-                    tmp[...] = A[p, :]
-                    A[p, :] = c * A[p, :] + s * A[q, :]
-                    A[q, :] = c * A[q, :] - s * tmp
+                    tmp = c * A[p, :] + s * A[q, :]
+                    A[q, :] = c * A[q, :] - s * A[p, :]
+                    A[p, :] = tmp
 
-                    tmp = xp.zeros_like(V[:, p])
-                    tmp[...] = V[:, p]
-                    V[:, p] = c * V[:, p] + s * V[:, q]
-                    V[:, q] = c * V[:, q] - s * tmp
+                    tmp = c * V[:, p] + s * V[:, q]
+                    V[:, q] = c * V[:, q] - s * V[:, p]
+                    V[:, p] = tmp
 
         if not crit:
             break
     else:
         warnings.warn("Convergence not reached")
 
-    D = rearrange(A, 'n1 (matrices n2) -> matrices n1 n2', matrices=n_matrices)
+    D = rearrange(A, 'n1 (matrices n2) -> matrices n1 n2',
+                  matrices=n_matrices)
     return V, D
 
 
@@ -163,10 +159,10 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     )  # sum = 1
 
     # reshape input matrix
-    n = X.shape[-1]
-    A = xp.asarray(xp.reshape(X, (-1, n)).mT, copy=True)
-    _, n_matrices_x_n = A.shape
+    A = xp.asarray(xp.reshape(X, (-1, X.shape[-1])).mT, copy=True)
+    n, n_matrices_x_n = A.shape
 
+    # init variables
     if init is None:
         V = xp.eye(n, dtype=X.dtype, device=xpd(X))
     else:
@@ -195,18 +191,15 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
                 tmp = xp.sqrt(omega21 / omega12)
                 tmp1 = (tmp * g12 + g21) / (omega + 1)
                 if is_real:
-                    omega = xp.maximum(
-                        omega - 1,
-                        xp.asarray(1e-9, dtype=omega.dtype, device=xpd(omega)),
-                    )
+                    omega = max(float(omega) - 1, 1e-9)
                 tmp2 = (tmp * g12 - g21) / omega
 
                 h12 = tmp1 + tmp2
                 h21 = xp.conj((tmp1 - tmp2) / tmp)
 
                 crit += float(xp.real(
-                    n_matrices * (g12 * xp.conj(h12) + g21 * h21) / 2.0
-                ))
+                    n_matrices * (g12 * xp.conj(h12) + g21 * h21)
+                    / 2.0))
 
                 if is_real:
                     tmp = 1 + xp.sqrt(1 - h12 * h21)
@@ -229,8 +222,10 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     else:
         warnings.warn("Convergence not reached")
 
-    D = xp.conj(rearrange(A, 'n1 (matrices n2) -> matrices n1 n2',
-                          matrices=n_matrices))
+    D = xp.conj(rearrange(
+        A, 'n1 (matrices n2) -> matrices n1 n2',
+        matrices=n_matrices,
+    ))
     return V, D
 
 
@@ -283,24 +278,21 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
     xp = get_namespace(X, init)
     n_matrices, _, _ = X.shape
     # reshape input matrix
-    M = rearrange(X, 'matrices n1 n2 -> n1 (matrices n2)')
+    M = xp.asarray(xp.reshape(X, (-1, X.shape[-1])).mT, copy=True)
     n, n_matrices_x_n = M.shape
 
     # init variables
     if init is None:
         E, H = xp.linalg.eig(M[:, 0:n])
         if xp.isdtype(X.dtype, "real floating"):
-            E = xp.real(E)
-            H = xp.real(H)
-        V = H.mT / xp.sqrt(
-            xp.abs(E)
-        )[:, np.newaxis]
+            E, H = xp.real(E), xp.real(H)
+        V = H.mT / xp.sqrt(xp.abs(E))[:, np.newaxis]
     else:
         V = check_init(init, n, like=X)
 
-    Ms = xp.zeros_like(M)
-    Ms[...] = M
+    Ms = xp.asarray(M, copy=True)
     Rs = xp.zeros((n, n_matrices), dtype=X.dtype, device=xpd(X))
+    eye_n = xp.eye(n, dtype=X.dtype, device=xpd(X))
 
     for k in range(n_matrices):
         ini = k * n
@@ -308,24 +300,20 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
         M[:, Il] = 0.5 * (M[:, Il] + M[:, Il].mT)
         Ms[:, Il] = V @ M[:, Il] @ V.mT
         Rs[:, k] = xp.linalg.diagonal(Ms[:, Il])
-    crit = float(xp.real(
-        xp.sum(Ms ** 2) - xp.sum(Rs ** 2)
-    ))
+    crit = float(xp.sum(Ms ** 2) - xp.sum(Rs ** 2))
 
     for _ in range(n_iter_max):
         B = Rs @ Rs.mT
         C1 = xp.zeros((n, n), dtype=X.dtype, device=xpd(X))
         for i in range(n):
-            C1[:, i] = xp.sum(Ms[:, i:n_matrices_x_n:n] * Rs, axis=1)
+            C1[:, i] = xp.sum(
+                Ms[:, i:n_matrices_x_n:n] * Rs, axis=1)
 
         diag_b = xp.linalg.diagonal(B)
         D0 = B * B.mT - xp.linalg.outer(diag_b, diag_b)
-        A0 = (
-            C1 * B
-            - diag_b[:, np.newaxis] * C1.mT
-        ) / (D0 + xp.eye(n, dtype=X.dtype, device=xpd(X)))
-        diag0, diag1 = diag_indices(n, xp=xp, like=X)
-        A0[diag0, diag1] += 1
+        A0 = (C1 * B - diag_b[:, np.newaxis] * C1.mT) \
+            / (D0 + eye_n)
+        A0 += eye_n
         V = xp.linalg.solve(A0, V)
 
         Raux = V @ M[:, 0:n] @ V.mT
@@ -337,9 +325,7 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
             Il = list(range(ini, ini + n))
             Ms[:, Il] = V @ M[:, Il] @ V.mT
             Rs[:, k] = xp.linalg.diagonal(Ms[:, Il])
-        crit_new = float(xp.real(
-            xp.sum(Ms ** 2) - xp.sum(Rs ** 2)
-        ))
+        crit_new = float(xp.sum(Ms ** 2) - xp.sum(Rs ** 2))
 
         if abs(crit_new - crit) < eps:
             break
@@ -347,9 +333,8 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
     else:
         warnings.warn("Convergence not reached")
 
-    D = rearrange(
-        Ms, 'n1 (matrices n2) -> matrices n1 n2', matrices=n_matrices,
-    )
+    D = rearrange(Ms, 'n1 (matrices n2) -> matrices n1 n2',
+                  matrices=n_matrices)
     return V, D
 
 
