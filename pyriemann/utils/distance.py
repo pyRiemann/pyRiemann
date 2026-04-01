@@ -688,12 +688,12 @@ def distance(A, B, metric="riemann", squared=False):
         Neuroinformatics, Springer, 2021, 19 (1), pp.93-106
     """
     distance_function = check_function(metric, distance_functions)
-    xp = get_namespace(A, B)
 
     shape_A, shape_B = A.shape, B.shape
     if shape_A == shape_B:
         d = distance_function(A, B, squared=squared)
     elif len(shape_A) == 3 and len(shape_B) == 2:
+        # Small adjust for better broadcasting
         d = distance_function(A, B, squared=squared)
         d = d[..., None]
     else:
