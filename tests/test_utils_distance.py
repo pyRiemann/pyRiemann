@@ -5,7 +5,7 @@ import pytest
 from scipy.linalg import eigvalsh
 from scipy.spatial.distance import euclidean, mahalanobis
 
-from conftest import _to_backend, approx, assert_array_almost_equal
+from conftest import _to_backend, approx, assert_array_almost_equal, to_numpy
 from pyriemann.utils._backend import get_namespace, xpd as device
 from pyriemann.utils.distance import (
     distance_chol,
@@ -75,7 +75,7 @@ def test_distance_metric(kind, metric, dist, get_mats):
     A, B = get_mats(2, n_channels, kind)
     d = distance(A, B, metric=metric)
     assert d == approx(dist(A, B))
-
+    assert np.isreal(to_numpy(d))
 
 def test_distance_metric_error(get_mats):
     n_channels = 2
