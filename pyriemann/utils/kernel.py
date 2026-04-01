@@ -1,6 +1,5 @@
 """Kernels for SPD matrices."""
 
-from einops import einsum
 
 from ._backend import get_namespace, diag_indices
 from .base import ctranspose, invsqrtm, logm
@@ -241,7 +240,7 @@ def _check_cref(X, Cref):
 def _apply_matrix_kernel(Xt, Y, are_xy_equal, reg):
     # products K[i,j] = trace(Xt[i] @ Y[j])
     xp = get_namespace(Xt, Y)
-    K = einsum(Xt, Y, "i m n, j n m -> i j")
+    K = xp.einsum("i m n, j n m -> i j", Xt, Y)
 
     # regularization to mitigate numerical errors
     if are_xy_equal:
