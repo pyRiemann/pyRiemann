@@ -713,9 +713,15 @@ def distance(A, B, metric="riemann", squared=False):
 
 
 def _euclidean_distances(X, Y=None, squared=False):
-    """Function to extend euclidean_distances of sklearn to complex data."""
+    """Pairwise Euclidean distances, array-API compatible.
+
+    Uses sklearn for numpy (optimized BLAS), torch.cdist for torch (GPU),
+    with complex data support via real/imag decomposition.
+    """
     xp = get_namespace(X, Y)
+
     if is_numpy_namespace(xp):
+        # sklearn path: optimized BLAS for real, decomposition for complex
         if is_real_type(X):
             return euclidean_distances(X, Y, squared=squared)
         if Y is None:
@@ -726,15 +732,22 @@ def _euclidean_distances(X, Y=None, squared=False):
             euclidean_distances(X.imag, Yimag, squared=True)
         return dist2 if squared else np.sqrt(dist2)
 
-    # xp fallback: ||X_i - Y_j||^2 = ||X_i||^2 + ||Y_j||^2 - 2 Re(X_i · Y_j*)
+    # torch path: use cdist for real, decomposition for complex
+    import torch
+    if is_real_type(X):
+        if Y is None:
+            Y = X
+        dist = torch.cdist(X, Y, p=2)
+        return dist ** 2 if squared else dist
+
+    # complex: ||a - b||^2 = ||Re(a-b)||^2 + ||Im(a-b)||^2
     if Y is None:
-        Y = X
-    XX = xp.real(xp.sum(xp.conj(X) * X, axis=-1))  # (n_X,)
-    YY = xp.real(xp.sum(xp.conj(Y) * Y, axis=-1))  # (n_Y,)
-    XY = xp.real(X @ ctranspose(Y))                  # (n_X, n_Y)
-    dist2 = XX[:, None] + YY[None, :] - 2 * XY
-    dist2 = xp.maximum(dist2, xp.asarray(0, dtype=dist2.dtype, device=xpd(dist2)))
-    return dist2 if squared else xp.sqrt(dist2)
+        Yreal, Yimag = None, None
+    else:
+        Yreal, Yimag = Y.real, Y.imag
+    dist2 = _euclidean_distances(X.real, Yreal, squared=True) + \
+        _euclidean_distances(X.imag, Yimag, squared=True)
+    return dist2 if squared else torch.sqrt(dist2)
 
 
 def _pairwise_distance_euclid(X, Y=None, squared=False):
