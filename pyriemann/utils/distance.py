@@ -1052,5 +1052,5 @@ def distance_mahalanobis(X, cov, mean=None, squared=False):
         X = X - mean
 
     Xw = invsqrtm(cov) @ X
-    d2 = xp.einsum("...ij,...ij->...j", xp.conj(Xw), Xw).real
+    d2 = xp.sum(xp.abs(Xw)**2, axis=-2)
     return d2 if squared else xp.sqrt(d2)
