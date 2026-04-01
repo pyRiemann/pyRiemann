@@ -46,8 +46,9 @@ dists = [
 ]
 
 
-def callable_sp_euclidean(A, B, squared=False):
-    return euclidean(A.flatten(), B.flatten())
+def callable_euclidean(A, B, squared=False):
+    xp = get_namespace(A, B)
+    return float(xp.linalg.matrix_norm(A - B))
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -66,10 +67,7 @@ def callable_sp_euclidean(A, B, squared=False):
         ("riemann", distance_riemann),
         ("thompson", distance_thompson),
         ("wasserstein", distance_wasserstein),
-        pytest.param(
-            callable_sp_euclidean, distance_euclid,
-            marks=pytest.mark.numpy_only,
-        ),
+        (callable_euclidean, distance_euclid),
     ],
 )
 def test_distance_metric(kind, metric, dist, get_mats):
