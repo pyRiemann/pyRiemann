@@ -1,7 +1,5 @@
-"""Backend helpers using array-api-compat for NumPy/torch support."""
+"""Backend helpers using array-api-compat for NumPy/PyTorch support."""
 
-import numpy as np
-from scipy.linalg import eigvalsh
 from array_api_compat import (
     array_namespace as get_namespace,
     device as xpd,
@@ -11,6 +9,9 @@ from array_api_compat import (
 from array_api_extra import (
     create_diagonal,
 )
+import numpy as np
+from scipy.linalg import eigvalsh
+
 
 __all__ = [
     # Re-exported from array-api-compat
@@ -24,6 +25,7 @@ __all__ = [
     "check_matrix_pair",
     "to_numpy",
     "from_numpy",
+    "check_like",
     "weighted_average",
     "diag_indices",
     "tril_indices",
@@ -45,6 +47,14 @@ def from_numpy(X, *, like):
     """Convert numpy array to the same backend/device as ``like``."""
     xp = get_namespace(like)
     return xp.asarray(X, dtype=like.dtype, device=xpd(like))
+
+
+def check_like(like):
+    if like is None:
+        xp, dev = np, None
+    else:
+        xp, dev = get_namespace(like), xpd(like)
+    return xp, dev
 
 
 def check_matrix_pair(A, B, *, require_square=False):

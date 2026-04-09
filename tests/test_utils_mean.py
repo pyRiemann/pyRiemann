@@ -253,8 +253,8 @@ def test_mean_property_joint_homogeneity(kind, mean, get_mats, rndstate,
 
     # P2 in [Nakamura2009]
     a = rndstate.uniform(low=1.0, high=2.0, size=n_matrices)
-    a_b = _to_backend(a, backend)
-    assert mean(a_b[:, None, None] * X) == approx(gmean_sp(a) * mean(X))
+    a_ = _to_backend(a, backend)
+    assert mean(a_[:, None, None] * X) == approx(gmean_sp(a) * mean(X))
 
     # P2' in [Nakamura2009]
     a = rndstate.uniform(0.01, 5.0)

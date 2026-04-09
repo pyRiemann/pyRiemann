@@ -16,7 +16,7 @@ def ctranspose(X):
     Parameters
     ----------
     X : ndarray, shape (..., n, m)
-        Matrices, at least 2D ndarray.
+        Matrices.
 
     Returns
     -------
@@ -52,10 +52,9 @@ def _vectorize_nd(n_axes=2):
             batch_shape = X.shape[:-n_axes]
             if len(batch_shape) == 0:
                 return func(X, *args, **kwargs)
-            xp = get_namespace(X)
-            # Loop over batch elements
-            n_batch = int(np.prod(batch_shape))
+            n_batch = np.prod(batch_shape, dtype=int)
             core_shape = X.shape[-n_axes:]
+            xp = get_namespace(X)
             X_flat = xp.reshape(X, (n_batch, *core_shape))
             X_new = xp.stack(
                 [func(X_flat[b], *args, **kwargs) for b in range(n_batch)],

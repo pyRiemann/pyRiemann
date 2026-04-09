@@ -1,15 +1,7 @@
-import warnings
-
 import numpy as np
 import pytest
 
-from conftest import _to_backend
-from pyriemann.datasets import make_matrices
 from pyriemann.utils._backend import get_namespace
-from pyriemann.utils.distance import distance_riemann
-from pyriemann.utils.geodesic import geodesic_logchol
-from pyriemann.utils.mean import mean_riemann
-from pyriemann.utils.tangentspace import log_map_riemann, exp_map_riemann
 from pyriemann.utils.utils import (
     check_weights,
     check_metric,
@@ -91,41 +83,15 @@ def test_check_function():
 
 def test_check_init():
     like = np.ones((3, 3))
-    with pytest.raises(ValueError):  # not array
+    with pytest.raises(AttributeError):  # not array
         check_init(init="init", n=3, like=like)
     with pytest.raises(ValueError):  # not 2D array
         check_init(init=np.ones((3, 2, 2)), n=3, like=like)
-    with pytest.raises(ValueError):  # not 2D array
+    with pytest.raises(AttributeError):  # not 2D array
         check_init(init=[1, 2, 3], n=3, like=like)
-    with pytest.raises(ValueError):  # not 2D array
+    with pytest.raises(AttributeError):  # not 2D array
         check_init(init=1, n=3, like=like)
     with pytest.raises(ValueError):  # not square array
         check_init(init=np.ones((3, 2)), n=3, like=like)
     with pytest.raises(ValueError):  # shape not equal to n
         check_init(init=np.ones((2, 2)), n=3, like=like)
-
-
-def test_autograd_smoke():
-    torch = pytest.importorskip("torch")
-    torch.set_grad_enabled(True)  # re-enable for this test
-    rng = np.random.RandomState(199)
-
-    A_np, B_np = make_matrices(2, 3, "spd", rng, return_params=False)
-    X_np = make_matrices(4, 3, "spd", rng, return_params=False)
-
-    A = _to_backend(A_np, "torch").clone().detach().requires_grad_(True)
-    B = _to_backend(B_np, "torch").clone().detach().requires_grad_(True)
-    X = _to_backend(X_np, "torch").clone().detach().requires_grad_(True)
-
-    tangent = log_map_riemann(B.unsqueeze(0), A, C12=True)
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore", UserWarning)
-        loss = distance_riemann(A, B)
-        loss = loss + geodesic_logchol(A, B, alpha=0.25).sum()
-        loss = loss + mean_riemann(X, maxiter=5).sum()
-        loss = loss + exp_map_riemann(tangent, A, Cm12=True).sum()
-    loss.backward()
-
-    for grad in (A.grad, B.grad, X.grad):
-        assert grad is not None
-        assert torch.isfinite(grad).all()

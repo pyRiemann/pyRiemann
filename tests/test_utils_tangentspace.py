@@ -369,15 +369,12 @@ def test_innerproduct_euclid(kind, n_dim1, n_dim2, get_mats):
     G1 = np.empty((n_matrices,))
     G2 = np.empty((n_matrices,))
     for i in range(n_matrices):
-        # tr(X^H @ Y); float() for torch 0-dim tensor
-        G1[i] = float(xp.real(
-            xp.linalg.trace(xp.conj(X[i]).mT @ Y[i])
-        ))
+        # tr(X^H @ Y)
+        G1[i] = xp.real(xp.linalg.trace(xp.conj(X[i]).mT @ Y[i]))
         # vec(X)^H . vec(Y)
-        G2[i] = float(xp.real(
-            xp.sum(xp.conj(xp.reshape(X[i], (-1,)))
-                   * xp.reshape(Y[i], (-1,)))
-        ))
+        G2[i] = xp.real(
+            xp.sum(xp.conj(xp.reshape(X[i], (-1,))) * xp.reshape(Y[i], (-1,)))
+        )
     assert_array_almost_equal(G, G1)
     assert_array_almost_equal(G, G2)
 

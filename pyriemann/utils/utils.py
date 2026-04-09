@@ -1,8 +1,6 @@
 import inspect
 
-import numpy as np
-
-from ._backend import get_namespace, xpd
+from ._backend import check_like
 
 
 def check_weights(weights, n_weights, *, check_positivity=False, like=None):
@@ -30,11 +28,7 @@ def check_weights(weights, n_weights, *, check_positivity=False, like=None):
     -----
     .. versionadded:: 0.4
     """
-    if like is None:
-        xp = np
-    else:
-        xp = get_namespace(like)
-    dev = xpd(like) if like is not None else None
+    xp, dev = check_like(like)
 
     if weights is None:
         weights = xp.ones(n_weights, dtype=float, device=dev)
@@ -146,13 +140,8 @@ def check_init(init, n, *, like=None):
     -----
     .. versionadded:: 0.8
     """
-    if like is None:
-        xp = np
-    else:
-        xp = get_namespace(like)
-    dev = xpd(like) if like is not None else None
-    dtype = init.dtype if hasattr(init, 'dtype') else None
-    init = xp.asarray(init, dtype=dtype, device=dev)
+    xp, dev = check_like(like)
+    init = xp.asarray(init, dtype=init.dtype, device=dev)
     if init.shape != (n, n):
         raise ValueError(
             "Init matrix does not have the good shape. "
