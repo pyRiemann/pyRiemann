@@ -2,7 +2,7 @@ import warnings
 
 import pytest
 
-from conftest import _to_backend
+from conftest import to_backend
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.geodesic import geodesic_logchol
 from pyriemann.utils.mean import mean_riemann
@@ -10,7 +10,7 @@ from pyriemann.utils.tangentspace import log_map_riemann, exp_map_riemann
 
 
 def _to_torch(X):
-    return _to_backend(X, "torch").clone().detach().requires_grad_(True)
+    return to_backend(X, "torch").clone().detach().requires_grad_(True)
 
 
 def test_autograd_smoke(get_mats):

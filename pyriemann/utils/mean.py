@@ -148,9 +148,9 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
             s = np.mod(np.arange(h, h + n_matrices - 1) + 1, n_matrices)
             M_iter[h] = mean_alm(M[s], sample_weight=sample_weight[s])
 
-        norm_iter = float(xp.linalg.matrix_norm(M_iter[0] - M[0], ord=2))
-        norm_c = float(xp.linalg.matrix_norm(M[0], ord=2))
-        if (norm_iter / norm_c) < tol:
+        norm_iter = xp.linalg.matrix_norm(M_iter[0] - M[0], ord=2)
+        norm_c = xp.linalg.matrix_norm(M[0], ord=2)
+        if norm_iter / norm_c < tol:
             break
         M = xp.zeros_like(M_iter)
         M[...] = M_iter
@@ -420,7 +420,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
         J = xp.einsum("a,abc->bc", sample_weight, X_inv)
         Mnew = xp.linalg.solve(J, eye_n)
 
-        crit = float(xp.linalg.matrix_norm(Mnew - M, ord="fro"))
+        crit = xp.linalg.matrix_norm(Mnew - M, ord="fro")
         M = Mnew
         if crit <= tol:
             break
@@ -565,8 +565,8 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
         )
         K = powm(H, -phi) @ K
 
-        crit = float(xp.linalg.matrix_norm(H - eye_n)) / sqrt_n
-        if float(crit) <= zeta:
+        crit = xp.linalg.matrix_norm(H - eye_n) / sqrt_n
+        if crit <= zeta:
             break
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
@@ -693,7 +693,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         J = xp.einsum("a,abc->bc", sample_weight, logm(Mm12 @ X @ Mm12))
         M = M12 @ expm(nu * J) @ M12
 
-        crit = float(xp.linalg.matrix_norm(J, ord="fro"))
+        crit = xp.linalg.matrix_norm(J, ord="fro")
         h = nu * crit
         if h < tau:
             nu = 0.95 * nu
@@ -759,9 +759,9 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     for i in range(maxiter):
         Mnew = geodesic_thompson(M, X[i % n_matrices], 1 / (i + 2))
 
-        crit = float(xp.linalg.matrix_norm(Mnew - M, ord="fro"))
+        crit = xp.linalg.matrix_norm(Mnew - M, ord="fro")
         M = Mnew
-        if float(crit) <= tol:
+        if crit <= tol:
             break
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
@@ -823,7 +823,7 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         X_ts = log_map_wasserstein(X, M)
         J = xp.einsum("a,abc->bc", sample_weight, X_ts)
         M = exp_map_wasserstein(J, M)
-        crit = float(xp.linalg.matrix_norm(J))
+        crit = xp.linalg.matrix_norm(J)
         if crit <= tol:
             break
     else:
@@ -1006,7 +1006,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
         M12, Mm12 = sqrtm(M), invsqrtm(M)
         M = M12 @ expm(Mm12 @ (nu * J) @ Mm12) @ M12
 
-        crit = float(xp.linalg.matrix_norm(J, ord="fro"))
+        crit = xp.linalg.matrix_norm(J, ord="fro")
         h = nu * crit
         if h < tau:
             nu = 0.95 * nu

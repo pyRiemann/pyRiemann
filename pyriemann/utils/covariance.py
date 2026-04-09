@@ -92,10 +92,7 @@ def _complex_estimator(func):
         iscomplex = not is_real_type(X)
         if iscomplex:
             n_channels = X.shape[-2]
-            X = xp.concat(
-                (xp.real(X), xp.imag(X)),
-                axis=-2,
-            )
+            X = xp.concat((xp.real(X), xp.imag(X)), axis=-2)
         cov = func(X, **kwds)
         if iscomplex:
             cov = cov[..., :n_channels, :n_channels] \
@@ -262,10 +259,10 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
         Xw = xp.sqrt(weight_func(dist2))[np.newaxis, :] * X
         cov_new = Xw @ ctranspose(Xw) / n_times
 
-        norm_delta = float(xp.linalg.matrix_norm(cov_new - cov))
-        norm_cov = float(xp.linalg.matrix_norm(cov))
+        norm_delta = xp.linalg.matrix_norm(cov_new - cov)
+        norm_cov = xp.linalg.matrix_norm(cov)
         cov = cov_new
-        if (norm_delta / norm_cov) <= tol:
+        if norm_delta / norm_cov <= tol:
             break
     else:
         warnings.warn("Convergence not reached", stacklevel=2)

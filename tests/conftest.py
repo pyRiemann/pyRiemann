@@ -3,19 +3,19 @@ import pytest
 
 try:
     import torch
-    HAS_TORCH = True
     torch.set_grad_enabled(False)
+    HAS_TORCH = True
 except ImportError:
     HAS_TORCH = False
 
 from pyriemann.datasets import make_masks, make_matrices
 
 
-# ---------------------------------------------------------------------------
-# Backend-agnostic utilities (importable from test files)
-# ---------------------------------------------------------------------------
+###############################################################################
+# Backend-agnostic utilities
 
-def _to_backend(x, backend):
+
+def to_backend(x, backend):
     """Convert a numpy array to the specified backend."""
     if backend == "numpy" or x is None:
         return x
@@ -39,25 +39,25 @@ def to_numpy(x):
 
 
 def approx(expected, *args, **kwargs):
-    """Backend-agnostic replacement for ``pytest.approx``."""
+    """Backend-agnostic replacement for ``pytest.approx``"""
     return pytest.approx(to_numpy(expected), *args, **kwargs)
 
 
 def assert_array_almost_equal(actual, expected, decimal=6):
-    """Backend-agnostic ``np.testing.assert_array_almost_equal``."""
+    """Backend-agnostic ``np.testing.assert_array_almost_equal``"""
     np.testing.assert_array_almost_equal(
         to_numpy(actual), to_numpy(expected), decimal=decimal,
     )
 
 
 def assert_array_equal(actual, expected):
-    """Backend-agnostic ``np.testing.assert_array_equal``."""
+    """Backend-agnostic ``np.testing.assert_array_equal``"""
     np.testing.assert_array_equal(to_numpy(actual), to_numpy(expected))
 
 
-# ---------------------------------------------------------------------------
+###############################################################################
 # Markers
-# ---------------------------------------------------------------------------
+
 
 def pytest_configure(config):
     config.addinivalue_line(
@@ -74,9 +74,9 @@ def _skip_numpy_only(request):
                 pytest.skip("numpy-only test")
 
 
-# ---------------------------------------------------------------------------
+###############################################################################
 # Fixtures
-# ---------------------------------------------------------------------------
+
 
 @pytest.fixture(params=[
     "numpy",
@@ -104,7 +104,7 @@ def get_mats(rndstate, backend):
             Xflat = make_matrices(n_total, n_dim, kind, rndstate,
                                   return_params=False)
             X = Xflat.reshape(*n_matrices, n_dim, n_dim)
-        return _to_backend(X, backend)
+        return to_backend(X, backend)
 
     return _gen_mat
 
@@ -112,14 +112,14 @@ def get_mats(rndstate, backend):
 @pytest.fixture
 def get_mats_params(rndstate, backend):
     def _gen_mat_params(n_matrices, n_dim, kind):
-        mats, evals, evecs = make_matrices(
+        X, evals, evecs = make_matrices(
             n_matrices, n_dim, kind, rndstate,
             return_params=True, eigvecs_same=True,
         )
         return (
-            _to_backend(mats, backend),
-            _to_backend(evals, backend),
-            _to_backend(evecs, backend),
+            to_backend(X, backend),
+            to_backend(evals, backend),
+            to_backend(evecs, backend),
         )
 
     return _gen_mat_params
@@ -129,7 +129,7 @@ def get_mats_params(rndstate, backend):
 def get_weights(rndstate, backend):
     def _gen_weight(n_matrices):
         w = 1 + rndstate.rand(n_matrices)
-        return _to_backend(w, backend)
+        return to_backend(w, backend)
 
     return _gen_weight
 
@@ -152,7 +152,7 @@ def get_masks(rndstate, backend):
     def _gen_masks(n_matrices, n_channels):
         masks = make_masks(n_matrices, n_channels, n_channels // 2, rndstate)
         if backend == "torch":
-            return [_to_backend(m, backend) for m in masks]
+            return [to_backend(m, backend) for m in masks]
         return masks
 
     return _gen_masks

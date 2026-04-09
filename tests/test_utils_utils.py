@@ -12,17 +12,17 @@ from pyriemann.utils.utils import (
 
 @pytest.mark.parametrize("n_matrices", [3, 4, 5])
 def test_check_weights_none(n_matrices):
-    like = np.ones(n_matrices)
-    w = check_weights(None, n_matrices, like=like)
-    assert np.sum(w) == pytest.approx(1.0, abs=1e-10)
+    weights = check_weights(None, n_matrices)
+    xp = get_namespace(weights)
+    assert xp.sum(weights) == pytest.approx(1.0, abs=1e-10)
 
 
 @pytest.mark.parametrize("n_matrices", [3, 4, 5])
 def test_check_weights_vals(get_weights, n_matrices):
     weights = get_weights(n_matrices) + 1
-    xp = get_namespace(weights)
     weights = check_weights(weights, n_matrices, like=weights)
-    assert float(xp.sum(weights)) == pytest.approx(1.0, abs=1e-10)
+    xp = get_namespace(weights)
+    assert xp.sum(weights) == pytest.approx(1.0, abs=1e-10)
 
 
 def test_check_weights_error_length(get_weights):
@@ -37,8 +37,7 @@ def test_check_weights_error_positivity(get_weights):
     weights = get_weights(n_matrices)
     weights[0] = 0
     with pytest.raises(ValueError):  # not strictly positive weight
-        check_weights(weights, n_matrices,
-                      check_positivity=True, like=weights)
+        check_weights(weights, n_matrices, check_positivity=True, like=weights)
 
 
 def test_check_metric_str():

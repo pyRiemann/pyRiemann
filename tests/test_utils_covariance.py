@@ -45,15 +45,13 @@ def test_covariances(estimator, get_mats):
         assert is_sym_pos_def(cov)
 
         if estimator == "corr":
-            cov_np = to_numpy(cov)
             assert_array_almost_equal(
-                np.diagonal(cov_np, axis1=-2, axis2=-1),
+                np.diagonal(to_numpy(cov), axis1=-2, axis2=-1),
                 np.ones((n_matrices, n_channels))
             )
         elif estimator == "tyl":
-            cov_np = to_numpy(cov)
             assert_array_almost_equal(
-                np.trace(cov_np, axis1=-2, axis2=-1),
+                np.trace(to_numpy(cov), axis1=-2, axis2=-1),
                 np.full(n_matrices, n_channels)
             )
 

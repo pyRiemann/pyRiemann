@@ -3,9 +3,9 @@ from functools import partial
 import numpy as np
 import pytest
 from scipy.linalg import eigvalsh
-from scipy.spatial.distance import euclidean, mahalanobis
+from scipy.spatial.distance import mahalanobis
 
-from conftest import _to_backend, approx, assert_array_almost_equal, to_numpy
+from conftest import to_backend, approx, assert_array_almost_equal, to_numpy
 from pyriemann.utils._backend import get_namespace, xpd as device
 from pyriemann.utils.distance import (
     distance_chol,
@@ -48,7 +48,7 @@ dists = [
 
 def callable_euclidean(A, B, squared=False):
     xp = get_namespace(A, B)
-    return float(xp.linalg.matrix_norm(A - B))
+    return xp.linalg.matrix_norm(A - B)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -192,7 +192,6 @@ def test_distance_property_triangle_inequality(kind, dist, get_mats):
     distance_thompson,  # Eq(4.7a) in [Sra2015]
 ])
 def test_distance_property_invariance_under_inversion(kind, dist, get_mats):
-    """Test invariance under inversion"""
     n_channels = 4
     A, B = get_mats(2, n_channels, kind)
     xp = get_namespace(A)
@@ -258,7 +257,8 @@ def test_distance_property_invariance_congruence(kind, kindW, dist, get_mats):
 def test_distance_euclid(n_dim1, n_dim2, kind, get_mats):
     """Euclidean distance between non-square matrices"""
     A, B = get_mats(2, [n_dim1, n_dim2], kind)
-    assert distance_euclid(A, B) == approx(euclidean(A.flatten(), B.flatten()))
+    xp = get_namespace(A)
+    assert distance_euclid(A, B) == approx(xp.linalg.matrix_norm(A - B))
 
 
 @pytest.mark.parametrize("kind", ["inv", "cinv"])
@@ -325,12 +325,12 @@ def test_distance_riemann_properties(kind, get_mats, rndstate):
     dist_AB = distance_riemann(A, B)
 
     # exponential metric increasing property, Eq(6.8) in [Bhatia2007]
-    assert float(dist_AB) >= float(xp.linalg.norm(logm(A) - logm(B)))
+    assert dist_AB >= xp.linalg.norm(logm(A) - logm(B))
 
     # proportionality, Eq(6.12) in [Bhatia2007]
     alpha = rndstate.uniform(0.01, 10.0)
     dist_1 = distance_riemann(A, geodesic(A, B, alpha, metric="riemann"))
-    dist_2 = alpha * distance_riemann(A, B)
+    dist_2 = alpha * dist_AB
     assert dist_1 == approx(dist_2)
 
 
@@ -434,13 +434,13 @@ def test_distance_mahalanobis_scipy(mean, get_mats):
 def test_distance_mahalanobis_broadcasting(mean, get_mats, rndstate, backend):
     n_dim5, n_dim4, n_dim3, n_channels, n_vectors = 2, 5, 3, 4, 10
     cov = get_mats([n_dim5, n_dim4, n_dim3], n_channels, "spd")
-    X = _to_backend(
+    X = to_backend(
         rndstate.randn(n_dim5, n_dim4, n_dim3, n_channels, n_vectors),
         backend,
     )
 
     if mean is True:
-        m = _to_backend(
+        m = to_backend(
             rndstate.randn(n_dim5, n_dim4, n_dim3, n_channels, 1),
             backend,
         )

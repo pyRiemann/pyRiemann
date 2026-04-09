@@ -71,19 +71,17 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
                 Iq = list(range(q, n_matrices_x_n, n))
 
                 # computation of Givens rotations
-                g = xp.stack([A[p, Ip] - A[q, Iq],
-                              A[p, Iq] + A[q, Ip]])
+                g = xp.stack([A[p, Ip] - A[q, Iq], A[p, Iq] + A[q, Ip]])
                 gg = g @ g.mT
                 ton = gg[0, 0] - gg[1, 1]
                 toff = gg[0, 1] + gg[1, 0]
-                theta = 0.5 * xp.atan2(
-                    toff, ton + xp.sqrt(ton**2 + toff**2))
+                theta = 0.5 * xp.atan2(toff, ton + xp.sqrt(ton**2 + toff**2))
                 c = xp.cos(theta)
                 s = xp.sin(theta)
-                crit = crit | (float(xp.abs(s)) > eps)
+                crit = crit | (xp.abs(s) > eps)
 
                 # update of A and V matrices
-                if (float(xp.abs(s)) > eps):
+                if xp.abs(s) > eps:
                     tmp = A[:, Ip]
                     A[:, Ip] = c * A[:, Ip] + s * A[:, Iq]
                     A[:, Iq] = c * A[:, Iq] - s * tmp
@@ -191,15 +189,15 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
                 tmp = xp.sqrt(omega21 / omega12)
                 tmp1 = (tmp * g12 + g21) / (omega + 1)
                 if is_real:
-                    omega = max(float(omega) - 1, 1e-9)
+                    omega = max(omega - 1, 1e-9)
                 tmp2 = (tmp * g12 - g21) / omega
 
                 h12 = tmp1 + tmp2
                 h21 = xp.conj((tmp1 - tmp2) / tmp)
 
-                crit += float(xp.real(
-                    n_matrices * (g12 * xp.conj(h12) + g21 * h21)
-                    / 2.0))
+                crit += xp.real(
+                    n_matrices * (g12 * xp.conj(h12) + g21 * h21) / 2.0
+                )
 
                 if is_real:
                     tmp = 1 + xp.sqrt(1 - h12 * h21)
@@ -306,12 +304,11 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
         B = Rs @ Rs.mT
         C1 = xp.zeros((n, n), dtype=X.dtype, device=xpd(X))
         for i in range(n):
-            C1[:, i] = xp.sum(
-                Ms[:, i:n_matrices_x_n:n] * Rs, axis=1)
+            C1[:, i] = xp.sum(Ms[:, i:n_matrices_x_n:n] * Rs, axis=1)
 
-        diag_b = xp.linalg.diagonal(B)
-        D0 = B * B.mT - xp.linalg.outer(diag_b, diag_b)
-        A0 = (C1 * B - diag_b[:, np.newaxis] * C1.mT) \
+        Bdiag = xp.linalg.diagonal(B)
+        D0 = B * B.mT - xp.linalg.outer(Bdiag, Bdiag)
+        A0 = (C1 * B - Bdiag[:, np.newaxis] * C1.mT) \
             / (D0 + eye_n)
         A0 += eye_n
         V = xp.linalg.solve(A0, V)

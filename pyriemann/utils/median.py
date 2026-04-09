@@ -77,11 +77,11 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
         if n_zeros > 0:
             wc = xp.asarray(w, dtype=X.dtype, device=xpd(X))
             R = xp.einsum("a,abc->bc", wc, X[~is_zero] - M)  # Eq(2.7)
-            r = float(xp.linalg.matrix_norm(R, ord="fro"))
+            r = xp.linalg.matrix_norm(R, ord="fro")
             rinv = 0 if r == 0 else float(xp.mean(weights[is_zero])) / r
             Mnew = max(0, 1 - rinv) * Mnew + min(1, rinv) * M  # Eq(2.6)
 
-        crit = float(xp.linalg.matrix_norm(Mnew - M, ord="fro"))
+        crit = xp.linalg.matrix_norm(Mnew - M, ord="fro")
         M = Mnew
         if crit <= tol:
             break
@@ -173,7 +173,7 @@ def median_riemann(
         J = xp.einsum("a,abc->bc", wn, tangvecs)
         M = M12 @ expm(step_size * J) @ M12
 
-        crit = float(xp.linalg.matrix_norm(J, ord="fro"))
+        crit = xp.linalg.matrix_norm(J, ord="fro")
         if crit <= tol:
             break
     else:

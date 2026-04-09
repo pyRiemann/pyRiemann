@@ -2,7 +2,6 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 from pytest import approx
-from scipy.spatial.distance import euclidean
 from scipy.stats import combine_pvalues
 
 from pyriemann.clustering import (
@@ -521,7 +520,7 @@ def test_potato_specific_labels(get_mats):
 
 def callable_diageuclid(A, B, squared=False):
     """Euclidean distance between diagonals of square matrices"""
-    return euclidean(np.diag(A), np.diag(B))
+    return np.linalg.norm(np.diag(A) - np.diag(B))
 
 
 @pytest.mark.parametrize(

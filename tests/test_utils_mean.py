@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 from scipy.stats import hmean, gmean as gmean_sp
 
-from conftest import _to_backend, approx, to_numpy
+from conftest import to_backend, approx, to_numpy
 from pyriemann.utils._backend import get_namespace, xpd as device
 from pyriemann.utils.base import invsqrtm, logm, sqrtm
 from pyriemann.utils.geodesic import geodesic_riemann
@@ -253,7 +253,7 @@ def test_mean_property_joint_homogeneity(kind, mean, get_mats, rndstate,
 
     # P2 in [Nakamura2009]
     a = rndstate.uniform(low=1.0, high=2.0, size=n_matrices)
-    a_ = _to_backend(a, backend)
+    a_ = to_backend(a, backend)
     assert mean(a_[:, None, None] * X) == approx(gmean_sp(a) * mean(X))
 
     # P2' in [Nakamura2009]
@@ -467,7 +467,6 @@ def test_mean_riemann_check_raise():
 
 @pytest.mark.parametrize("init", [True, False])
 def test_mean_masked_riemann(init, get_mats, get_masks):
-    """Test the masked Riemannian mean"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "spd")
     xp = get_namespace(X)

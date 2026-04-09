@@ -4,7 +4,6 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 from pytest import approx
-from scipy.spatial.distance import euclidean
 from scipy.stats import mode
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.linear_model import LogisticRegression
@@ -230,7 +229,7 @@ def call_mean(X, sample_weight=None):
 
 
 def call_dist(A, B, squared=False):
-    return euclidean(A.flatten(), B.flatten())
+    return np.linalg.norm(A - B)
 
 
 @pytest.mark.parametrize("metric_mean", [
