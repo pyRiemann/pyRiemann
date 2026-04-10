@@ -5,6 +5,11 @@ from pyriemann.stats import PermutationDistance, PermutationModel
 from pyriemann.spatialfilters import CSP
 
 
+# pyriemann.stats is not array-API compatible (mixes numpy ops with input X),
+# so all tests that pass matrices must run under the numpy backend only.
+pytestmark = pytest.mark.numpy_only
+
+
 def test_permutation_badmode():
     """Test one way permutation test"""
     with pytest.raises(ValueError):
@@ -12,7 +17,6 @@ def test_permutation_badmode():
 
 
 @pytest.mark.parametrize("mode", ["ttest", "ftest"])
-@pytest.mark.numpy_only
 def test_permutation_mode(mode, get_mats, get_labels):
     """Test one way permutation test"""
     n_matrices, n_channels, n_classes = 6, 3, 2
@@ -35,7 +39,6 @@ def test_permutation_pairwise(get_mats, get_labels):
     p.test(X, y, groups=groups)
 
 
-@pytest.mark.numpy_only
 def test_permutation_pairwise_estimator(get_mats, get_labels):
     """Test one way permutation with estimator"""
     n_matrices, n_channels, n_classes = 6, 3, 2

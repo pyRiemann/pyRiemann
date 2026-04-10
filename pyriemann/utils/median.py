@@ -2,7 +2,7 @@
 
 import warnings
 
-from ._backend import get_namespace, xpd
+from ._backend import get_namespace
 from .base import sqrtm, invsqrtm, logm, expm
 from .distance import distance
 from .mean import mean_euclid
@@ -75,8 +75,7 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
 
         n_zeros = int(xp.sum(is_zero))
         if n_zeros > 0:
-            wc = xp.asarray(w, dtype=X.dtype, device=xpd(X))
-            R = xp.einsum("a,abc->bc", wc, X[~is_zero] - M)  # Eq(2.7)
+            R = xp.tensordot(w, X[~is_zero] - M, axes=([0], [0]))  # Eq(2.7)
             r = xp.linalg.matrix_norm(R, ord="fro")
             rinv = 0 if r == 0 else float(xp.mean(weights[is_zero])) / r
             Mnew = max(0, 1 - rinv) * Mnew + min(1, rinv) * M  # Eq(2.6)
@@ -169,8 +168,8 @@ def median_riemann(
         # Eq(11) of [1]
         M12, Mm12 = sqrtm(M), invsqrtm(M)
         tangvecs = logm(Mm12 @ X[~is_zero] @ Mm12)
-        wn = xp.asarray(w / xp.sum(w), dtype=X.dtype, device=xpd(X))
-        J = xp.einsum("a,abc->bc", wn, tangvecs)
+        wn = w / xp.sum(w)
+        J = xp.tensordot(wn, tangvecs, axes=([0], [0]))
         M = M12 @ expm(step_size * J) @ M12
 
         crit = xp.linalg.matrix_norm(J, ord="fro")

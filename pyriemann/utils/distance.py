@@ -4,7 +4,7 @@ import numpy as np
 from scipy.linalg import solve
 
 from ._backend import (
-    joint_eigvalsh,
+    eigvalsh,
     pairwise_euclidean,
     check_matrix_pair,
     diag_indices,
@@ -297,12 +297,12 @@ def distance_logchol(A, B, squared=False):
     xp = check_matrix_pair(A, B)
     A_chol, B_chol = xp.linalg.cholesky(A), xp.linalg.cholesky(B)
 
-    tri0, tri1 = tril_indices(A_chol.shape[-1], -1, xp=xp, like=A_chol)
+    tri0, tri1 = tril_indices(A_chol.shape[-1], -1, like=A_chol)
     triangular_part = xp.linalg.vector_norm(
         A_chol[..., tri0, tri1] - B_chol[..., tri0, tri1], axis=-1,
     ) ** 2
 
-    diag0, diag1 = diag_indices(A_chol.shape[-1], xp=xp, like=A_chol)
+    diag0, diag1 = diag_indices(A_chol.shape[-1], like=A_chol)
     diagonal_part = xp.linalg.vector_norm(
         xp.log(A_chol[..., diag0, diag1]) -
         xp.log(B_chol[..., diag0, diag1]), axis=-1,
@@ -500,7 +500,7 @@ def distance_riemann(A, B, squared=False):
         Geodesy-the Challenge of the 3rd Millennium, 2003
     """
     xp = check_matrix_pair(A, B)
-    eigvals = joint_eigvalsh(A, B, xp=xp)
+    eigvals = eigvalsh(A, B)
     d2 = xp.sum(xp.log(eigvals) ** 2, axis=-1)
     return d2 if squared else xp.sqrt(d2)
 
@@ -548,7 +548,7 @@ def distance_thompson(A, B, squared=False):
         A.C.Thompson. Proceedings of the American Mathematical Society, 1963.
     """
     xp = check_matrix_pair(A, B, require_square=True)
-    eigvals = joint_eigvalsh(A, B, xp=xp)
+    eigvals = eigvalsh(A, B)
     d = xp.max(xp.abs(xp.log(eigvals)), axis=-1)
     return d ** 2 if squared else d
 
@@ -702,7 +702,7 @@ def _euclidean_distances(X, Y=None, squared=False):
     """Function to extend euclidean_distances of sklearn to complex data."""
     xp = get_namespace(X, Y)
     if is_real_type(X):
-        dist = pairwise_euclidean(X, X if Y is None else Y, xp=xp)
+        dist = pairwise_euclidean(X, X if Y is None else Y)
         return dist ** 2 if squared else dist
 
     if Y is None:
@@ -815,8 +815,8 @@ def _pairwise_distance_logchol(X, Y=None, squared=False):
     """
     xp = get_namespace(X, Y)
     X_chol = xp.linalg.cholesky(X)
-    tri0, tri1 = tril_indices(X_chol.shape[-1], -1, xp=xp, like=X_chol)
-    diag0, diag1 = diag_indices(X_chol.shape[-1], xp=xp, like=X_chol)
+    tri0, tri1 = tril_indices(X_chol.shape[-1], -1, like=X_chol)
+    diag0, diag1 = diag_indices(X_chol.shape[-1], like=X_chol)
 
     if Y is None:
         triagular_part = _euclidean_distances(

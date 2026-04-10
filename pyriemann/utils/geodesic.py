@@ -3,8 +3,8 @@
 from ._backend import (
     check_matrix_pair,
     diag_indices,
+    eigvalsh,
     get_namespace,
-    joint_eigvalsh,
     tril_indices,
     xpd,
 )
@@ -137,11 +137,11 @@ def geodesic_logchol(A, B, alpha=0.5):
     geo = xp.zeros(batch_shape + A_chol.shape[-2:], dtype=A_chol.dtype,
                    device=xpd(A_chol))
 
-    tri0, tri1 = tril_indices(A_chol.shape[-1], -1, xp=xp, like=A_chol)
+    tri0, tri1 = tril_indices(A_chol.shape[-1], -1, like=A_chol)
     geo[..., tri0, tri1] = (1 - alpha) * A_chol[..., tri0, tri1] + \
         alpha * B_chol[..., tri0, tri1]
 
-    diag0, diag1 = diag_indices(A_chol.shape[-1], xp=xp, like=A_chol)
+    diag0, diag1 = diag_indices(A_chol.shape[-1], like=A_chol)
     geo[..., diag0, diag1] = A_chol[..., diag0, diag1] ** (1 - alpha) * \
         B_chol[..., diag0, diag1] ** alpha
 
@@ -276,7 +276,7 @@ def geodesic_thompson(A, B, alpha=0.5):
     """
     # the whole check is done in the check_matrix_pair function
     xp = check_matrix_pair(A, B, require_square=True)
-    E = joint_eigvalsh(B, A, xp=xp)
+    E = eigvalsh(B, A)
     Emin, Emax = xp.min(E, axis=-1), xp.max(E, axis=-1)
 
     Emin_a, Emax_a = Emin ** alpha, Emax ** alpha

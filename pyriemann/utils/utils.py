@@ -18,6 +18,9 @@ def check_weights(weights, n_weights, *, check_positivity=False, like=None):
         Number of weights to provide if None, or to check.
     check_positivity : bool, default=False
         Choose if strict positivity of weights is checked.
+    like : None | ndarray, default=None
+        Reference array used to infer the array-API namespace and device of
+        the returned weights. If None, NumPy is used.
 
     Returns
     -------
@@ -130,6 +133,9 @@ def check_init(init, n, *, like=None):
         A square matrix used to initialize the algorithm.
     n : int
         Expected dimension of the matrix.
+    like : None | ndarray, default=None
+        Reference array used to infer the array-API namespace and device of
+        the returned matrix. If None, NumPy is used.
 
     Returns
     -------

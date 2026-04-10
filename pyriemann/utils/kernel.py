@@ -245,7 +245,7 @@ def _apply_matrix_kernel(Xt, Y, are_xy_equal, reg):
     # regularization to mitigate numerical errors
     if are_xy_equal:
         n_matrices_X = K.shape[0]
-        diag0, diag1 = diag_indices(n_matrices_X, xp=xp, like=K)
+        diag0, diag1 = diag_indices(n_matrices_X, like=K)
         K[diag0, diag1] += reg
 
     return K

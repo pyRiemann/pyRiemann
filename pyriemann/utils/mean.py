@@ -61,7 +61,6 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     xp = get_namespace(X)
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
-    sample_weight = xp.asarray(sample_weight, dtype=X.dtype, device=xpd(X))
     if init is None:
         B = ajd_pham(X)[0]
     else:
@@ -69,17 +68,21 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
 
     eye_n = xp.eye(n, dtype=X.real.dtype, device=xpd(X))
     for _ in range(maxiter):
-        J = xp.einsum("a,abc->bc", sample_weight, logm(B @ X @ ctranspose(B)))
+        J = xp.tensordot(
+            sample_weight, logm(B @ X @ ctranspose(B)), axes=([0], [0]),
+        )
         delta = xp.real(xp.linalg.diagonal(expm(J)))
         B = (xp.abs(delta) ** -.5)[:, None] * B
 
         crit = distance_riemann(eye_n, create_diagonal(delta))
-        if float(crit) <= tol:
+        if crit <= tol:
             break
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
 
-    J = xp.einsum("a,abc->bc", sample_weight, logm(B @ X @ ctranspose(B)))
+    J = xp.tensordot(
+        sample_weight, logm(B @ X @ ctranspose(B)), axes=([0], [0]),
+    )
     A = xp.linalg.solve(B, eye_n)
     M = A @ expm(J) @ ctranspose(A)
     return M
@@ -231,8 +234,7 @@ def mean_euclid(X, sample_weight=None, **kwargs):
     --------
     gmean
     """
-    xp = get_namespace(X)
-    return weighted_average(X, weights=sample_weight, axis=-3, xp=xp)
+    return weighted_average(X, weights=sample_weight, axis=-3)
 
 
 def mean_harmonic(X, sample_weight=None, **kwargs):
@@ -351,20 +353,18 @@ def mean_logchol(X, sample_weight=None, **kwargs):
     X_chol = xp.linalg.cholesky(X)
     L = xp.zeros(X.shape[:-3] + X.shape[-2:], dtype=X.dtype, device=xpd(X))
 
-    tri0, tri1 = tril_indices(n, -1, xp=xp, like=X)
+    tri0, tri1 = tril_indices(n, -1, like=X)
     L[..., tri0, tri1] = weighted_average(
         X_chol[..., tri0, tri1],
         weights=sample_weight,
         axis=-2,
-        xp=xp,
     )
 
-    diag0, diag1 = diag_indices(n, xp=xp, like=X)
+    diag0, diag1 = diag_indices(n, like=X)
     L[..., diag0, diag1] = xp.exp(weighted_average(
         xp.log(X_chol[..., diag0, diag1]),
         weights=sample_weight,
         axis=-2,
-        xp=xp,
     ))
 
     return L @ ctranspose(L)
@@ -408,7 +408,6 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     xp = get_namespace(X)
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
-    sample_weight = xp.asarray(sample_weight, dtype=X.dtype, device=xpd(X))
     if init is None:
         M = mean_euclid(X, sample_weight=sample_weight)
     else:
@@ -417,7 +416,7 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
 
     for _ in range(maxiter):
         X_inv = xp.linalg.solve(0.5 * X + 0.5 * M, eye_n)
-        J = xp.einsum("a,abc->bc", sample_weight, X_inv)
+        J = xp.tensordot(sample_weight, X_inv, axes=([0], [0]))
         Mnew = xp.linalg.solve(J, eye_n)
 
         crit = xp.linalg.matrix_norm(Mnew - M, ord="fro")
@@ -545,10 +544,11 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
 
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
-    sample_weight = xp.asarray(sample_weight, dtype=X.dtype, device=xpd(X))
     phi = 0.375 / np.abs(p)
     if init is None:
-        G = powm(xp.einsum("a,abc->bc", sample_weight, powm(X, p)), 1/p)
+        G = powm(
+            xp.tensordot(sample_weight, powm(X, p), axes=([0], [0])), 1/p,
+        )
     else:
         G = check_init(init, n, like=X)
     if p > 0:
@@ -558,10 +558,10 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
 
     eye_n, sqrt_n = xp.eye(n, dtype=X.dtype, device=xpd(X)), np.sqrt(n)
     for _ in range(maxiter):
-        H = xp.einsum(
-            "a,abc->bc",
+        H = xp.tensordot(
             sample_weight,
-            powm(K @ powm(X, np.sign(p)) @ ctranspose(K), np.abs(p))
+            powm(K @ powm(X, np.sign(p)) @ ctranspose(K), np.abs(p)),
+            axes=([0], [0]),
         )
         K = powm(H, -phi) @ K
 
@@ -680,7 +680,6 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     xp = get_namespace(X)
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
-    sample_weight = xp.asarray(sample_weight, dtype=X.dtype, device=xpd(X))
     if init is None:
         M = mean_euclid(X, sample_weight=sample_weight)
     else:
@@ -690,7 +689,9 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     tau = np.finfo(np.float64).max
     for _ in range(maxiter):
         M12, Mm12 = sqrtm(M), invsqrtm(M)
-        J = xp.einsum("a,abc->bc", sample_weight, logm(Mm12 @ X @ Mm12))
+        J = xp.tensordot(
+            sample_weight, logm(Mm12 @ X @ Mm12), axes=([0], [0]),
+        )
         M = M12 @ expm(nu * J) @ M12
 
         crit = xp.linalg.matrix_norm(J, ord="fro")
@@ -812,7 +813,6 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     xp = get_namespace(X)
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
-    sample_weight = xp.asarray(sample_weight, dtype=X.dtype, device=xpd(X))
     if init is None:
         init = mean_euclid(X, sample_weight=sample_weight)
     else:
@@ -821,7 +821,7 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 
     for _ in range(maxiter):
         X_ts = log_map_wasserstein(X, M)
-        J = xp.einsum("a,abc->bc", sample_weight, X_ts)
+        J = xp.tensordot(sample_weight, X_ts, axes=([0], [0]))
         M = exp_map_wasserstein(J, M)
         crit = xp.linalg.matrix_norm(J)
         if crit <= tol:

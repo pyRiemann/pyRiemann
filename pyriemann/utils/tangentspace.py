@@ -80,8 +80,8 @@ def exp_map_logchol(X, Cref):
     eye_n = xp.eye(Cref.shape[-1], dtype=Cref.dtype, device=xpd(Cref))
     Cref_invchol = xp.linalg.solve(Cref_chol, eye_n)
 
-    tri0, tri1 = tril_indices(X.shape[-1], -1, xp=xp, like=X)
-    diag0, diag1 = diag_indices(X.shape[-1], xp=xp, like=X)
+    tri0, tri1 = tril_indices(X.shape[-1], -1, like=X)
+    diag0, diag1 = diag_indices(X.shape[-1], like=X)
 
     diff_bracket = Cref_invchol @ X @ ctranspose(Cref_invchol)
     diff_bracket[..., tri1, tri0] = 0
@@ -352,10 +352,10 @@ def log_map_logchol(X, Cref):
 
     res = xp.zeros_like(X)
 
-    tri0, tri1 = tril_indices(X.shape[-1], -1, xp=xp, like=X)
+    tri0, tri1 = tril_indices(X.shape[-1], -1, like=X)
     res[..., tri0, tri1] = X_chol[..., tri0, tri1] - Cref_chol[..., tri0, tri1]
 
-    diag0, diag1 = diag_indices(X.shape[-1], xp=xp, like=X)
+    diag0, diag1 = diag_indices(X.shape[-1], like=X)
     res[..., diag0, diag1] = Cref_chol[..., diag0, diag1] * \
         xp.log(X_chol[..., diag0, diag1] / Cref_chol[..., diag0, diag1])
 
@@ -588,7 +588,7 @@ def upper(X):
     n = X.shape[-1]
     if X.shape[-2] != n:
         raise ValueError("Matrices must be square")
-    idx = triu_indices(n, xp=xp, like=X)
+    idx = triu_indices(n, like=X)
     coeffs = (math.sqrt(2) * xp.triu(xp.ones((n, n), dtype=X.real.dtype,
               device=xpd(X)), k=1) + xp.eye(n, dtype=X.real.dtype,
               device=xpd(X)))[idx[0], idx[1]]
@@ -624,9 +624,9 @@ def unupper(T):
     dims = T.shape
     n = int((math.sqrt(1 + 8 * dims[-1]) - 1) / 2)
     X = xp.zeros((*dims[:-1], n, n), dtype=T.dtype, device=xpd(T))
-    idx = triu_indices(n, xp=xp, like=T)
+    idx = triu_indices(n, like=T)
     X[..., idx[0], idx[1]] = T
-    idx = triu_indices(n, k=1, xp=xp, like=T)
+    idx = triu_indices(n, k=1, like=T)
     X[..., idx[0], idx[1]] /= math.sqrt(2.0)
     X[..., idx[1], idx[0]] = xp.conj(X[..., idx[0], idx[1]])
     return X
@@ -1010,8 +1010,8 @@ def transport_logchol(X, A, B):
     eye_n = xp.eye(A.shape[-1], dtype=A.dtype, device=xpd(A))
     A_invchol = xp.linalg.solve(A_chol, eye_n)
 
-    tri0, tri1 = tril_indices(X.shape[-1], -1, xp=xp, like=X)
-    diag0, diag1 = diag_indices(X.shape[-1], xp=xp, like=X)
+    tri0, tri1 = tril_indices(X.shape[-1], -1, like=X)
+    diag0, diag1 = diag_indices(X.shape[-1], like=X)
 
     P = A_invchol @ X @ ctranspose(A_invchol)
     P12 = xp.zeros_like(P)

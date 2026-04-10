@@ -36,6 +36,11 @@ and processing them using the Riemannian geometry of
 SPD matrices for [hyperspectral](https://en.wikipedia.org/wiki/Hyperspectral_imaging) images,
 or HPD matrices for [synthetic-aperture radar](https://en.wikipedia.org/wiki/Synthetic-aperture_radar) (SAR) images.
 
+pyRiemann's core utility functions support both NumPy and PyTorch backends
+transparently through the [Python Array API](https://data-apis.org/array-api/),
+enabling optional GPU acceleration and autograd when PyTorch tensors are
+passed in directly.
+
 # Installation
 
 #### Using PyPI

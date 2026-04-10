@@ -39,6 +39,12 @@ v0.11.dev
 
 - Enhance :func:`pyriemann.utils.covariance.covariance_scm` to estimate weighted sample covariance matrices. :pr:`434` by :user:`qbarthelemy`
 
+- Add `Python Array API <https://data-apis.org/array-api/>`_ support for NumPy/PyTorch
+  backend transparency in core utility modules (``base``, ``covariance``, ``distance``,
+  ``mean``, ``geodesic``, ``tangentspace``, ``ajd``, ``kernel``, ``median``), enabling
+  execution on both NumPy arrays and PyTorch tensors with optional GPU acceleration
+  and autograd support. :pr:`433` by :user:`bruAristimunha`
+
 v0.10 (January 2026)
 --------------------
 

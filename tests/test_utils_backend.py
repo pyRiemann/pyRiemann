@@ -9,7 +9,7 @@ from pyriemann.utils._backend import (
     to_numpy as backend_to_numpy,
     from_numpy,
     weighted_average,
-    joint_eigvalsh,
+    eigvalsh,
     pairwise_euclidean,
     diag_indices,
     tril_indices,
@@ -65,10 +65,10 @@ def test_weighted_average(backend):
     xp = get_namespace(X)
     w = to_backend(np.array([0.1, 0.2, 0.3, 0.2, 0.2]), backend)
 
-    avg = weighted_average(X, weights=w, axis=0, xp=xp)
+    avg = weighted_average(X, weights=w, axis=0)
     assert avg.shape == (3, 3)
 
-    avg_none = weighted_average(X, weights=None, axis=0, xp=xp)
+    avg_none = weighted_average(X, weights=None, axis=0)
     np.testing.assert_allclose(
         to_numpy(avg_none), to_numpy(xp.mean(X, axis=0)), atol=1e-10,
     )
@@ -76,29 +76,26 @@ def test_weighted_average(backend):
 
 def test_diag_indices(backend):
     like = to_backend(np.eye(3), backend)
-    xp = get_namespace(like)
-    idx0, idx1 = diag_indices(3, xp=xp, like=like)
+    idx0, idx1 = diag_indices(3, like=like)
     assert len(to_numpy(idx0)) == 3
     assert len(to_numpy(idx1)) == 3
 
 
 def test_tril_indices(backend):
     like = to_backend(np.eye(4), backend)
-    xp = get_namespace(like)
-    idx0, idx1 = tril_indices(4, -1, xp=xp, like=like)
+    idx0, idx1 = tril_indices(4, -1, like=like)
     n_expected = 4 * 3 // 2  # n*(n-1)/2 for strict lower
     assert len(to_numpy(idx0)) == n_expected
 
 
 def test_triu_indices(backend):
     like = to_backend(np.eye(4), backend)
-    xp = get_namespace(like)
-    idx0, idx1 = triu_indices(4, 1, xp=xp, like=like)
+    idx0, idx1 = triu_indices(4, 1, like=like)
     n_expected = 4 * 3 // 2  # n*(n-1)/2 for strict upper
     assert len(to_numpy(idx0)) == n_expected
 
 
-def test_joint_eigvalsh(backend):
+def test_eigvalsh(backend):
     rng = np.random.RandomState(42)
     A_np = rng.rand(3, 3)
     A_np = A_np @ A_np.T + np.eye(3)
@@ -106,8 +103,7 @@ def test_joint_eigvalsh(backend):
     B_np = B_np @ B_np.T + np.eye(3)
     A = to_backend(A_np, backend)
     B = to_backend(B_np, backend)
-    xp = get_namespace(A)
-    ev = joint_eigvalsh(A, B, xp=xp)
+    ev = eigvalsh(A, B)
     assert to_numpy(ev).shape == (3,)
 
     from scipy.linalg import eigvalsh as sp_eigvalsh
@@ -115,7 +111,7 @@ def test_joint_eigvalsh(backend):
     np.testing.assert_allclose(to_numpy(ev), ev_ref, atol=1e-10)
 
 
-def test_joint_eigvalsh_batched(backend):
+def test_eigvalsh_batched(backend):
     rng = np.random.RandomState(42)
     A_np = rng.rand(2, 3, 3)
     A_np = A_np @ np.swapaxes(A_np, -2, -1) + np.eye(3)
@@ -123,8 +119,7 @@ def test_joint_eigvalsh_batched(backend):
     B_np = B_np @ np.swapaxes(B_np, -2, -1) + np.eye(3)
     A = to_backend(A_np, backend)
     B = to_backend(B_np, backend)
-    xp = get_namespace(A)
-    ev = joint_eigvalsh(A, B, xp=xp)
+    ev = eigvalsh(A, B)
     assert to_numpy(ev).shape == (2, 3)
 
 
@@ -134,8 +129,7 @@ def test_pairwise_euclidean(backend):
     Y_np = rng.rand(3, 4)
     X = to_backend(X_np, backend)
     Y = to_backend(Y_np, backend)
-    xp = get_namespace(X)
-    D = pairwise_euclidean(X, Y, xp=xp)
+    D = pairwise_euclidean(X, Y)
     assert to_numpy(D).shape == (5, 3)
 
     from scipy.spatial.distance import cdist

@@ -5,45 +5,14 @@ import numpy as np
 from scipy.stats import chi2
 
 from ._backend import (
-    get_namespace, is_numpy_namespace,
-    diag_indices, xpd,
+    get_namespace,
+    diag_indices, xpd, _apply_xp,
 )
 from ._fixes import ledoit_wolf, oas, fast_mcd
 from .base import ctranspose, _vectorize_nd
 from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
 from .utils import check_function, check_init, check_weights
-
-
-def _numpy_to_xp_kwargs(kwds):
-    """Map numpy cov/corrcoef kwargs to torch-compatible kwargs.
-
-    numpy uses ``bias`` and ``ddof``, torch uses ``correction``.
-    ``fweights`` and ``aweights`` have the same name in both.
-    """
-    out = {}
-    if "bias" in kwds:
-        out["correction"] = 0 if kwds.pop("bias") else 1
-    if "ddof" in kwds:
-        out["correction"] = kwds.pop("ddof")
-    # fweights/aweights: same name
-    for k in ("fweights", "aweights"):
-        if k in kwds:
-            out[k] = kwds.pop(k)
-    # rowvar, dtype, y: numpy-only, drop silently
-    return out
-
-
-def _apply_xp(func, X, **kwds):
-    """Call an array-api function, translating kwargs across backends."""
-    xp = get_namespace(X)
-    if is_numpy_namespace(xp):
-        C = func(X, **kwds)
-    else:
-        C = func(X, **_numpy_to_xp_kwargs(kwds))
-    if C.ndim < 2:
-        C = xp.reshape(C, (1, 1))
-    return C
 
 
 def _cov(X, **kwds):
@@ -331,7 +300,7 @@ def covariance_sch(X):
     var_R *= n_times / ((n_times - 1) ** 3 * var_outer)
 
     # Zero out diagonal
-    diag_idx = diag_indices(R.shape[-1], xp=xp, like=R)
+    diag_idx = diag_indices(R.shape[-1], like=R)
     R[..., diag_idx[0], diag_idx[1]] = 0
     var_R[..., diag_idx[0], diag_idx[1]] = 0
     R2_sum = xp.sum(R ** 2, axis=(-2, -1))
