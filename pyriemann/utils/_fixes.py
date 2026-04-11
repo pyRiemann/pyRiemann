@@ -37,13 +37,22 @@ def _add_to_diagonal(X, value, xp):
 # --------------------------------------------------------------------------
 
 def _empirical_covariance(X, assume_centered=False, xp=None):
-    """Empirical covariance, array-API compatible."""
+    """Empirical covariance, array-API compatible.
+
+    Uses post-hoc centering to avoid allocating a centered copy of X:
+    ``cov = (X.T @ X - n * outer(mean, mean)) / n``. This matches the
+    approach taken by sklearn PR #33573 for non-numpy backends. Cancellation
+    error is negligible for signals with mean close to zero (e.g. bandpass-
+    filtered EEG/MEG).
+    """
     if xp is None:
         xp = get_namespace(X)
     n_samples = X.shape[0]
+    cov = X.mT @ X
     if not assume_centered:
-        X = X - xp.mean(X, axis=0)
-    return X.mT @ X / n_samples
+        mean = xp.mean(X, axis=0)
+        cov = cov - n_samples * (mean[:, None] * mean[None, :])
+    return cov / n_samples
 
 
 # --------------------------------------------------------------------------
@@ -69,8 +78,10 @@ def _ledoit_wolf_shrinkage(X, assume_centered=False, xp=None):
     emp_cov_trace = xp.sum(X2, axis=0) / n_samples
     mu = float(xp.sum(emp_cov_trace)) / n_features
 
-    # GPU-friendly: single matmul instead of blocked loop
-    beta_ = float(xp.sum(X2.mT @ X2))
+    # GPU-friendly: single matmul for delta_ and a row-sum identity for beta_.
+    # Identity: sum(X2.T @ X2) == sum(sum(X2, axis=1) ** 2), which avoids
+    # allocating the (n_features, n_features) intermediate.
+    beta_ = float(xp.sum(xp.sum(X2, axis=1) ** 2))
     delta_ = float(xp.sum((X.mT @ X) ** 2)) / n_samples ** 2
 
     beta = 1.0 / (n_features * n_samples) * (beta_ / n_samples - delta_)
