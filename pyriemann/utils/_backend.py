@@ -7,6 +7,7 @@ from array_api_compat import (
     is_torch_namespace,
 )
 from array_api_extra import (
+    atleast_nd,
     create_diagonal,
     expand_dims,
 )
@@ -87,9 +88,7 @@ def _apply_xp(func, X, **kwds):
         C = func(X, **kwds)
     else:
         C = func(X, **_numpy_to_xp_kwargs(kwds))
-    if C.ndim < 2:
-        C = xp.reshape(C, (1, 1))
-    return C
+    return atleast_nd(C, ndim=2)
 
 
 def check_matrix_pair(A, B, *, require_square=False):

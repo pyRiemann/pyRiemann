@@ -289,13 +289,13 @@ def covariance_sch(X):
     C_scm = X_c @ X_c.mT / n_times
 
     # Compute optimal gamma, the weighting between SCM and shrinkage estimator
-    std = xp.std(X, axis=-1, correction=0)
+    std = xp.std(X, axis=-1)
     std_outer = std[..., :, xp.newaxis] * std[..., xp.newaxis, :]
     R = (n_times / ((n_times - 1.) * std_outer)) * C_scm
 
     X_c2 = X_c ** 2
     var_R = X_c2 @ X_c2.mT - n_times * C_scm ** 2
-    var = xp.var(X, axis=-1, correction=0)
+    var = xp.var(X, axis=-1)
     var_outer = var[..., :, xp.newaxis] * var[..., xp.newaxis, :]
     var_R *= n_times / ((n_times - 1) ** 3 * var_outer)
 
