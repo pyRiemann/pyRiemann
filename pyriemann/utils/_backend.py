@@ -8,6 +8,7 @@ from array_api_compat import (
 )
 from array_api_extra import (
     create_diagonal,
+    expand_dims,
 )
 import numpy as np
 from scipy.linalg import eigvalsh as _scipy_eigvalsh
@@ -21,6 +22,7 @@ __all__ = [
     "is_torch_namespace",
     # Re-exported from array-api-extra
     "create_diagonal",
+    "expand_dims",
     # Custom
     "check_matrix_pair",
     "to_numpy",

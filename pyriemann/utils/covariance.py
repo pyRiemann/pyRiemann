@@ -6,7 +6,7 @@ from scipy.stats import chi2
 
 from ._backend import (
     get_namespace,
-    diag_indices, xpd, _apply_xp,
+    diag_indices, expand_dims, xpd, _apply_xp,
 )
 from ._fixes import ledoit_wolf, oas, fast_mcd
 from .base import ctranspose, _vectorize_nd
@@ -304,11 +304,12 @@ def covariance_sch(X):
     R[..., diag_idx[0], diag_idx[1]] = 0
     var_R[..., diag_idx[0], diag_idx[1]] = 0
     R2_sum = xp.sum(R ** 2, axis=(-2, -1))
-    gamma = xp.where(
-        R2_sum == 0, 0.0,
-        xp.sum(var_R, axis=(-2, -1)) / R2_sum,
+    gamma = xp.clip(
+        xp.where(R2_sum == 0, 0.0,
+                 xp.sum(var_R, axis=(-2, -1)) / R2_sum),
+        0, 1,
     )
-    gamma = xp.clip(gamma, 0, 1)[..., xp.newaxis, xp.newaxis]
+    gamma = expand_dims(gamma, axis=(-2, -1))
 
     sigma = (1. - gamma) * (n_times / (n_times - 1.)) * C_scm
 
@@ -908,8 +909,7 @@ def normalize(X, norm):
     else:
         raise ValueError(f"{norm} is not a supported normalization")
 
-    for _ in range(X.ndim - denom.ndim):
-        denom = xp.expand_dims(denom, axis=-1)
+    denom = expand_dims(denom, axis=tuple(range(denom.ndim, X.ndim)))
     Xn = X / denom
 
     if norm == "corr":
