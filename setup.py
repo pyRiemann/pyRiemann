@@ -49,9 +49,7 @@ setup(
         "tests": [
             "pytest",
             "seaborn",
-            "flake8"
-        ],
-        "tests_torch": [
+            "flake8",
             "torch",
         ],
     },
