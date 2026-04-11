@@ -3,7 +3,6 @@
 import warnings
 
 import numpy as np
-from einops import rearrange
 
 from ._backend import get_namespace, xpd
 from .utils import check_weights, check_function, check_init
@@ -99,8 +98,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     else:
         warnings.warn("Convergence not reached")
 
-    D = rearrange(A, 'n1 (matrices n2) -> matrices n1 n2',
-                  matrices=n_matrices)
+    D = xp.permute_dims(xp.reshape(A, (n, n_matrices, n)), (1, 0, 2))
     return V, D
 
 
@@ -220,10 +218,9 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     else:
         warnings.warn("Convergence not reached")
 
-    D = xp.conj(rearrange(
-        A, 'n1 (matrices n2) -> matrices n1 n2',
-        matrices=n_matrices,
-    ))
+    D = xp.conj(
+        xp.permute_dims(xp.reshape(A, (n, n_matrices, n)), (1, 0, 2))
+    )
     return V, D
 
 
@@ -330,8 +327,7 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
     else:
         warnings.warn("Convergence not reached")
 
-    D = rearrange(Ms, 'n1 (matrices n2) -> matrices n1 n2',
-                  matrices=n_matrices)
+    D = xp.permute_dims(xp.reshape(Ms, (n, n_matrices, n)), (1, 0, 2))
     return V, D
 
 
