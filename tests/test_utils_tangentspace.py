@@ -6,6 +6,7 @@ from conftest import approx, to_numpy
 from pyriemann.spatialfilters import Whitening
 from pyriemann.utils._backend import get_namespace
 from pyriemann.utils.distance import distance_riemann
+from pyriemann.utils.geodesic import geodesic
 from pyriemann.utils.mean import mean_riemann
 from pyriemann.utils.tangentspace import (
     exp_map,
@@ -451,7 +452,7 @@ def test_transport_broadcasting(ftransport, get_mats):
 def test_transport_properties(kindX, kindAB, metric, get_mats, rndstate):
     n_matrices, n_channels = 10, 3
     X = get_mats(n_matrices, n_channels, kindX)
-    A, B = get_mats(2, n_channels, kindAB)
+    A, B, C = get_mats(3, n_channels, kindAB)
 
     Xt = transport(X, A, B, metric=metric)
 
@@ -470,6 +471,17 @@ def test_transport_properties(kindX, kindAB, metric, get_mats, rndstate):
     Yt = transport(Y, A, B, metric=metric)
     aXtpbYt = transport(a * X + b * Y, A, B, metric=metric)
     assert aXtpbYt == approx(a * Xt + b * Yt)
+
+    # consistency wrt composition of geodesics
+    Xt_ABBC = transport(transport(X, A, B, metric), B, C, metric)
+    alphas = np.linspace(0, 1, 5)
+    G_AB = [geodesic(A, B, alpha) for alpha in alphas]
+    G_BC = [geodesic(B, C, alpha) for alpha in alphas]
+    G = np.array(G_AB + G_BC)
+    Xt_AC = X.copy()
+    for i in range(len(G)-1):
+        Xt_AC = transport(Xt_AC, G[i], G[i+1], metric)
+    assert Xt_AC == approx(Xt_ABBC)
 
     if metric == "logchol":
         return
