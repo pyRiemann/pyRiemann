@@ -473,12 +473,13 @@ def test_transport_properties(kindX, kindAB, metric, get_mats, rndstate):
     assert aXtpbYt == approx(a * Xt + b * Yt)
 
     # consistency wrt composition of geodesics
+    xp = get_namespace(X)
     Xt_ABBC = transport(transport(X, A, B, metric), B, C, metric)
     alphas = np.linspace(0, 1, 5)
     G_AB = [geodesic(A, B, alpha) for alpha in alphas]
     G_BC = [geodesic(B, C, alpha) for alpha in alphas]
-    G = np.array(G_AB + G_BC)
-    Xt_AC = X.copy()
+    G = xp.stack(G_AB + G_BC)
+    Xt_AC = xp.asarray(X, copy=True)
     for i in range(len(G)-1):
         Xt_AC = transport(Xt_AC, G[i], G[i+1], metric)
     assert Xt_AC == approx(Xt_ABBC)
