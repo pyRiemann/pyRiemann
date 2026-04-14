@@ -6,6 +6,18 @@ from ._backend import get_namespace, xpd
 from .utils import check_weights, check_function, check_init
 
 
+def _arange(*args):
+    return list(range(*args))
+
+
+def _reshape_input(X, xp):
+    return xp.asarray(xp.reshape(X, (-1, X.shape[-1])).mT, copy=True)
+
+
+def _reshape_output(X, n1, n2, xp):
+    return xp.permute_dims(xp.reshape(X, (n1, n2, n1)), (1, 0, 2))
+
+
 def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     """Approximate joint diagonalization based on JADE.
 
@@ -50,8 +62,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     """
     xp = get_namespace(X, init)
     n_matrices, _, _ = X.shape
-    # reshape input matrix
-    A = xp.asarray(xp.reshape(X, (-1, X.shape[-1])).mT, copy=True)
+    A = _reshape_input(X, xp)
     n, n_matrices_x_n = A.shape
 
     # init variables
@@ -64,8 +75,8 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
         crit = False
         for p in range(n):
             for q in range(p + 1, n):
-                Ip = list(range(p, n_matrices_x_n, n))
-                Iq = list(range(q, n_matrices_x_n, n))
+                Ip = _arange(p, n_matrices_x_n, n)
+                Iq = _arange(q, n_matrices_x_n, n)
 
                 # computation of Givens rotations
                 g = xp.stack([A[p, Ip] - A[q, Iq], A[p, Iq] + A[q, Ip]])
@@ -96,7 +107,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     else:
         warnings.warn("Convergence not reached")
 
-    D = xp.permute_dims(xp.reshape(A, (n, n_matrices, n)), (1, 0, 2))
+    D = _reshape_output(A, n, n_matrices, xp)
     return V, D
 
 
@@ -152,8 +163,7 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
         like=X,
     )  # sum = 1
 
-    # reshape input matrix
-    A = xp.asarray(xp.reshape(X, (-1, X.shape[-1])).mT, copy=True)
+    A = _reshape_input(X, xp)
     n, n_matrices_x_n = A.shape
 
     # init variables
@@ -161,7 +171,6 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
         V = xp.eye(n, dtype=X.dtype, device=xpd(X))
     else:
         V = check_init(init, n, like=X)
-    V = xp.asarray(V, dtype=X.dtype, device=xpd(X))
     epsilon = n * (n - 1) * eps
     is_real = xp.isdtype(X.dtype, "real floating")
 
@@ -169,8 +178,8 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
         crit = 0
         for ii in range(1, n):
             for jj in range(ii):
-                Ii = list(range(ii, n_matrices_x_n, n))
-                Ij = list(range(jj, n_matrices_x_n, n))
+                Ii = _arange(ii, n_matrices_x_n, n)
+                Ij = _arange(jj, n_matrices_x_n, n)
 
                 c1 = A[ii, Ii]
                 c2 = A[jj, Ij]
@@ -216,9 +225,7 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     else:
         warnings.warn("Convergence not reached")
 
-    D = xp.conj(
-        xp.permute_dims(xp.reshape(A, (n, n_matrices, n)), (1, 0, 2))
-    )
+    D = xp.conj(_reshape_output(A, n, n_matrices, xp))
     return V, D
 
 
@@ -270,15 +277,14 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
     """
     xp = get_namespace(X, init)
     n_matrices, _, _ = X.shape
-    # reshape input matrix
-    M = xp.asarray(xp.reshape(X, (-1, X.shape[-1])).mT, copy=True)
+    M = _reshape_input(X, xp)
     n, n_matrices_x_n = M.shape
 
     # init variables
     if init is None:
         E, H = xp.linalg.eig(M[:, 0:n])
         if xp.isdtype(X.dtype, "real floating"):
-            E, H = xp.real(E), xp.real(H)
+            H = xp.real(H)
         V = H.mT / xp.sqrt(xp.abs(E))[:, None]
     else:
         V = check_init(init, n, like=X)
@@ -289,11 +295,11 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
 
     for k in range(n_matrices):
         ini = k * n
-        Il = list(range(ini, ini + n))
+        Il = _arange(ini, ini + n)
         M[:, Il] = 0.5 * (M[:, Il] + M[:, Il].mT)
         Ms[:, Il] = V @ M[:, Il] @ V.mT
         Rs[:, k] = xp.linalg.diagonal(Ms[:, Il])
-    crit = float(xp.sum(Ms ** 2) - xp.sum(Rs ** 2))
+    crit = xp.sum(Ms ** 2) - xp.sum(Rs ** 2)
 
     for _ in range(n_iter_max):
         B = Rs @ Rs.mT
@@ -303,8 +309,7 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
 
         Bdiag = xp.linalg.diagonal(B)
         D0 = B * B.mT - xp.linalg.outer(Bdiag, Bdiag)
-        A0 = (C1 * B - Bdiag[:, None] * C1.mT) \
-            / (D0 + eye_n)
+        A0 = (C1 * B - Bdiag[:, None] * C1.mT) / (D0 + eye_n)
         A0 += eye_n
         V = xp.linalg.solve(A0, V)
 
@@ -314,18 +319,18 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
 
         for k in range(n_matrices):
             ini = k * n
-            Il = list(range(ini, ini + n))
+            Il = _arange(ini, ini + n)
             Ms[:, Il] = V @ M[:, Il] @ V.mT
             Rs[:, k] = xp.linalg.diagonal(Ms[:, Il])
-        crit_new = float(xp.sum(Ms ** 2) - xp.sum(Rs ** 2))
+        crit_new = xp.sum(Ms ** 2) - xp.sum(Rs ** 2)
 
-        if abs(crit_new - crit) < eps:
+        if xp.abs(crit_new - crit) < eps:
             break
         crit = crit_new
     else:
         warnings.warn("Convergence not reached")
 
-    D = xp.permute_dims(xp.reshape(Ms, (n, n_matrices, n)), (1, 0, 2))
+    D = _reshape_output(Ms, n, n_matrices, xp)
     return V, D
 
 

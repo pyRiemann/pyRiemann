@@ -88,7 +88,7 @@ def exp_map_logchol(X, Cref):
     diff_bracket[..., diag0, diag1] /= 2
     diff = Cref_chol @ diff_bracket
 
-    exp_map = xp.zeros(diff.shape, dtype=diff.dtype, device=xpd(diff))
+    exp_map = xp.zeros_like(X)
 
     exp_map[..., tri0, tri1] = Cref_chol[..., tri0, tri1] + \
         diff[..., tri0, tri1]
@@ -231,13 +231,13 @@ def exp_map_wasserstein(X, Cref):
     """
     xp = check_matrix_pair(X, Cref, require_square=True)
     d, V = xp.linalg.eigh(Cref)
+    Vh = ctranspose(V)
     C = 1 / (d[:, None] + d[None, :])
-    d = xp.asarray(d, dtype=Cref.dtype, device=xpd(Cref))
 
-    X_rotated = ctranspose(V) @ X @ V
+    X_rotated = Vh @ X @ V
     X_tmp = C * X_rotated
-    X_tmp = X_tmp @ create_diagonal(d) @ X_tmp
-    X_tmp = V @ X_tmp @ ctranspose(V)
+    X_tmp = X_tmp @ (d[..., None] * X_tmp)
+    X_tmp = V @ X_tmp @ Vh
 
     return Cref + X + X_tmp
 
