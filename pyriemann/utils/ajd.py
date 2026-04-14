@@ -2,8 +2,6 @@
 
 import warnings
 
-import numpy as np
-
 from ._backend import get_namespace, xpd
 from .utils import check_weights, check_function, check_init
 
@@ -281,7 +279,7 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
         E, H = xp.linalg.eig(M[:, 0:n])
         if xp.isdtype(X.dtype, "real floating"):
             E, H = xp.real(E), xp.real(H)
-        V = H.mT / xp.sqrt(xp.abs(E))[:, np.newaxis]
+        V = H.mT / xp.sqrt(xp.abs(E))[:, None]
     else:
         V = check_init(init, n, like=X)
 
@@ -305,14 +303,14 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
 
         Bdiag = xp.linalg.diagonal(B)
         D0 = B * B.mT - xp.linalg.outer(Bdiag, Bdiag)
-        A0 = (C1 * B - Bdiag[:, np.newaxis] * C1.mT) \
+        A0 = (C1 * B - Bdiag[:, None] * C1.mT) \
             / (D0 + eye_n)
         A0 += eye_n
         V = xp.linalg.solve(A0, V)
 
         Raux = V @ M[:, 0:n] @ V.mT
         aux = 1. / xp.sqrt(xp.abs(xp.linalg.diagonal(Raux)))
-        V = aux[:, np.newaxis] * V
+        V = aux[:, None] * V
 
         for k in range(n_matrices):
             ini = k * n

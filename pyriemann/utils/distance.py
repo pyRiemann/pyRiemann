@@ -354,7 +354,7 @@ def distance_logdet(A, B, squared=False):
     logdet_ApB = xp.linalg.slogdet((A + B) / 2.0)[1]
     logdet_AxB = xp.linalg.slogdet(A @ B)[1]
     d2 = logdet_ApB - 0.5 * logdet_AxB
-    d2 = xp.maximum(xp.real(d2), xp.asarray(0, dtype=d2.dtype, device=xpd(d2)))
+    d2 = xp.maximum(xp.zeros_like(d2), d2)
     return d2 if squared else xp.sqrt(d2)
 
 
@@ -596,10 +596,8 @@ def distance_wasserstein(A, B, squared=False):
     """  # noqa
     xp = check_matrix_pair(A, B)
     B12 = sqrtm(B)
-    d2 = xp.linalg.trace(A + B - 2 * sqrtm(B12 @ A @ B12))
-    real_d2 = xp.real(d2)
-    d2 = xp.maximum(real_d2, xp.asarray(0, dtype=real_d2.dtype,
-                                        device=xpd(d2)))
+    d2 = xp.real(xp.linalg.trace(A + B - 2 * sqrtm(B12 @ A @ B12)))
+    d2 = xp.maximum(xp.zeros_like(d2), d2)
     return d2 if squared else xp.sqrt(d2)
 
 

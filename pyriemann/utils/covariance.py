@@ -225,7 +225,7 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
 
     for _ in range(n_iter_max):
         dist2 = distance_mahalanobis(X, cov, squared=True)
-        Xw = xp.sqrt(weight_func(dist2))[np.newaxis, :] * X
+        Xw = xp.sqrt(weight_func(dist2))[None, :] * X
         cov_new = Xw @ ctranspose(Xw) / n_times
 
         norm_delta = xp.linalg.matrix_norm(cov_new - cov)
@@ -901,7 +901,7 @@ def normalize(X, norm):
 
     if norm == "corr":
         stddev = xp.sqrt(xp.abs(xp.linalg.diagonal(X)))
-        denom = xp.expand_dims(stddev, axis=-2) * stddev[..., np.newaxis]
+        denom = xp.expand_dims(stddev, axis=-2) * stddev[..., None]
     elif norm == "trace":
         denom = xp.linalg.trace(X)
     elif norm == "determinant":
