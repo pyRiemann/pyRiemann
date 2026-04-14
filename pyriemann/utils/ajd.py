@@ -79,17 +79,17 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
 
                 # update of A and V matrices
                 if xp.abs(s) > eps:
-                    tmp = A[:, Ip]
+                    tmp = xp.asarray(A[:, Ip], copy=True)
                     A[:, Ip] = c * A[:, Ip] + s * A[:, Iq]
                     A[:, Iq] = c * A[:, Iq] - s * tmp
 
-                    tmp = c * A[p, :] + s * A[q, :]
-                    A[q, :] = c * A[q, :] - s * A[p, :]
-                    A[p, :] = tmp
+                    tmp = xp.asarray(A[p, :], copy=True)
+                    A[p, :] = c * A[p, :] + s * A[q, :]
+                    A[q, :] = c * A[q, :] - s * tmp
 
-                    tmp = c * V[:, p] + s * V[:, q]
-                    V[:, q] = c * V[:, q] - s * V[:, p]
-                    V[:, p] = tmp
+                    tmp = xp.asarray(V[:, p], copy=True)
+                    V[:, p] = c * V[:, p] + s * V[:, q]
+                    V[:, q] = c * V[:, q] - s * tmp
 
         if not crit:
             break
