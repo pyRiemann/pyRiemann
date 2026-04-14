@@ -6,7 +6,6 @@ import numpy as np
 
 from ._backend import (
     check_matrix_pair,
-    create_diagonal,
     diag_indices,
     get_namespace,
     tril_indices,
