@@ -5,12 +5,12 @@ import warnings
 import numpy as np
 
 from . import deprecated
-from .ajd import ajd_pham
-from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd
 from ._backend import (
     get_namespace, create_diagonal, diag_indices, tril_indices,
     weighted_average, xpd, to_numpy, from_numpy,
 )
+from .ajd import ajd_pham
+from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann, geodesic_thompson
 from .tangentspace import log_map_wasserstein, exp_map_wasserstein

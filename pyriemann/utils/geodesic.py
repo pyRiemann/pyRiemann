@@ -6,7 +6,6 @@ from ._backend import (
     eigvalsh,
     get_namespace,
     tril_indices,
-    xpd,
 )
 from .base import ctranspose, sqrtm, invsqrtm, powm, logm, expm
 from .utils import check_function
