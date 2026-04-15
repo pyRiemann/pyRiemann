@@ -153,8 +153,8 @@ def test_distance_property_separability(kind, dist, get_mats):
     A = get_mats(1, n_channels, kind)[0]
     xp = get_namespace(A)
     assert dist(A, A) == approx(0, abs=2e-7)
-    Id = xp.eye(n_channels, dtype=A.dtype, device=device(A))
-    assert dist(Id, Id) == approx(0)
+    eye = xp.eye(n_channels, dtype=A.dtype, device=device(A))
+    assert dist(eye, eye) == approx(0)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -274,8 +274,8 @@ def test_distance_kullback_implementation(kind, get_mats):
     n_channels = 6
     A, B = get_mats(2, n_channels, kind)
     xp = get_namespace(A)
-    d = 0.5*(xp.linalg.trace(xp.linalg.inv(B) @ A) - n_channels
-             + xp.log(xp.linalg.det(B) / xp.linalg.det(A)))
+    d = 0.5 * (xp.linalg.trace(xp.linalg.inv(B) @ A) - n_channels
+               + xp.log(xp.linalg.det(B) / xp.linalg.det(A)))
     assert distance_kullback(A, B) == approx(d)
 
 

@@ -7,8 +7,6 @@ def _get_eigenvals(X):
     """Private function to compute all eigen values."""
     xp = get_namespace(X)
     n = X.shape[-1]
-    # np.linalg.eigvals(X) returns eigenvalues directly...
-    # xp.linalg.eig which returns (values, vectors)
     return xp.linalg.eig(X.reshape((-1, n, n)))[0]
 
 

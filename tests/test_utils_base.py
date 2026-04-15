@@ -1,5 +1,6 @@
 from functools import partial
 import math
+
 import numpy as np
 from conftest import assert_array_almost_equal, to_numpy
 import pytest
@@ -87,7 +88,6 @@ def test_funm_all(kind, funm, get_mats):
 
 
 def test_funm_error():
-    # the TypeError is needed for Torch Tensor.
     with pytest.raises((ValueError, TypeError)):
         sqrtm(np.ones(5))
     with pytest.raises((ValueError, TypeError)):

@@ -588,9 +588,11 @@ def upper(X):
     if X.shape[-2] != n:
         raise ValueError("Matrices must be square")
     idx = triu_indices(n, like=X)
-    coeffs = (math.sqrt(2) * xp.triu(xp.ones((n, n), dtype=X.real.dtype,
-              device=xpd(X)), k=1) + xp.eye(n, dtype=X.real.dtype,
-              device=xpd(X)))[idx[0], idx[1]]
+    coeffs = (
+        math.sqrt(2) \
+        * xp.triu(xp.ones((n, n), dtype=X.real.dtype, device=xpd(X)), k=1) \
+        + xp.eye(n, dtype=X.real.dtype, device=xpd(X))
+    )[idx[0], idx[1]]
     T = coeffs * X[..., idx[0], idx[1]]
     return T
 

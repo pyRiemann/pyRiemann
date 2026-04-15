@@ -558,7 +558,6 @@ def test_gmean_arguments(get_mats):
     """Test gmean with different args and kwargs"""
     n_matrices, n_channels = 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
-    xp = get_namespace(X)
 
     gmean(X)
     gmean(X, 0.2, metric="power", zeta=10e-3)
@@ -566,8 +565,7 @@ def test_gmean_arguments(get_mats):
 
     gmean(X, metric="ale", maxiter=5)
     gmean(X, metric="logdet", tol=10e-3)
-    gmean(X, metric="riemann",
-          init=xp.eye(n_channels, dtype=X.dtype, device=device(X)))
+    gmean(X, metric="riemann", init=X[0])
 
 
 def test_mean_covariance_deprecation(get_mats):

@@ -133,9 +133,7 @@ def geodesic_logchol(A, B, alpha=0.5):
     xp = get_namespace(A, B)
     A_chol, B_chol = xp.linalg.cholesky(A), xp.linalg.cholesky(B)
 
-    batch_shape = xp.broadcast_shapes(A_chol.shape[:-2], B_chol.shape[:-2])
-    geo = xp.zeros(batch_shape + A_chol.shape[-2:], dtype=A_chol.dtype,
-                   device=xpd(A_chol))
+    geo = xp.zeros_like(A)
 
     tri0, tri1 = tril_indices(A_chol.shape[-1], -1, like=A_chol)
     geo[..., tri0, tri1] = (1 - alpha) * A_chol[..., tri0, tri1] + \
