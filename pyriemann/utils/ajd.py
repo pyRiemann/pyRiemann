@@ -200,9 +200,8 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
                 h12 = tmp1 + tmp2
                 h21 = xp.conj((tmp1 - tmp2) / tmp)
 
-                crit += xp.real(
-                    n_matrices * (g12 * xp.conj(h12) + g21 * h21) / 2.0
-                )
+                crit += n_matrices * xp.real(g12 * xp.conj(h12) + g21 * h21) \
+                    / 2.0
 
                 if is_real:
                     tmp = 1 + xp.sqrt(1 - h12 * h21)

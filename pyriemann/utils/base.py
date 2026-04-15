@@ -278,7 +278,7 @@ def nearest_sym_pos_def(X, reg=1e-6):
     A = (X + X.mT) / 2
 
     _, s, Vh = xp.linalg.svd(A)
-    H = Vh.mT @ (s[..., :, xp.newaxis] * Vh)
+    H = Vh.mT @ (s[..., None] * Vh)
     B = (A + H) / 2
     P = (B + B.mT) / 2
 
@@ -293,10 +293,8 @@ def nearest_sym_pos_def(X, reg=1e-6):
         k = 1
         while bool(xp.any(neg_ev)) and k < 100:
             mineig = xp.min(xp.linalg.eigvalsh(P), axis=-1)
-            shift = xp.where(
-                neg_ev, -mineig * k**2 + spacing, 0.0,
-            )
-            P = P + shift[..., xp.newaxis, xp.newaxis] * eye_n
+            shift = xp.where(neg_ev, -mineig * k**2 + spacing, 0.0)
+            P = P + shift[..., None, None] * eye_n
             eigvals = xp.linalg.eigvalsh(P)
             neg_ev = xp.any(eigvals <= 0, axis=-1)
             k += 1
@@ -307,10 +305,8 @@ def nearest_sym_pos_def(X, reg=1e-6):
     needs_reg = ratio < reg  # (...,)
     if bool(xp.any(needs_reg)):
         ei_reg = ei + reg
-        P_reg = ev @ (ei_reg[..., :, xp.newaxis] * ev.mT)
-        P = xp.where(
-            needs_reg[..., xp.newaxis, xp.newaxis], P_reg, P,
-        )
+        P_reg = ev @ (ei_reg[..., None] * ev.mT)
+        P = xp.where(needs_reg[..., None, None], P_reg, P)
 
     return P
 
@@ -363,7 +359,7 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
         R. Bhatia, Springer, 1997
     """
     xp = get_namespace(d)
-    di = d[..., :, None]
+    di = d[..., None]
     dj = d[..., None, :]
     close_ = xp.isclose(di, dj, atol=atol, rtol=rtol)
     safe_diff = xp.where(close_, xp.ones_like(di - dj), di - dj)
@@ -410,7 +406,6 @@ def ddexpm(X, Cref):
     """
     xp = get_namespace(X, Cref)
     d, V = xp.linalg.eigh(Cref)
-
     Vh = ctranspose(V)
     expfdd = _first_divided_difference(d, xp.exp, xp.exp)
     return V @ (expfdd * (Vh @ X @ V)) @ Vh
@@ -456,7 +451,6 @@ def ddlogm(X, Cref):
     """
     xp = get_namespace(X, Cref)
     d, V = xp.linalg.eigh(Cref)
-
     Vh = ctranspose(V)
     logfdd = _first_divided_difference(d, xp.log, lambda x: 1 / x)
     return V @ (logfdd * (Vh @ X @ V)) @ Vh
