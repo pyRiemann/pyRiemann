@@ -35,9 +35,10 @@ def ctranspose(X):
 
 
 def _eigvalsh(A, B):
-    r"""Generalized eigenvalues of SPD/HPD matrix pencils via Cholesky reduction.
+    r"""Generalized eigenvalues via Cholesky reduction.
 
-    Compute eigenvalues of the generalized Hermitian eigenproblem
+    Compute eigenvalues of the generalized Hermitian eigenproblem on
+    SPD/HPD matrix pencils,
 
     .. math::
         \mathbf{A} \mathbf{v} = \lambda \mathbf{B} \mathbf{v}
@@ -70,7 +71,8 @@ def _eigvalsh(A, B):
 
     References
     ----------
-    .. [1] `Matrix Computations <https://jhupbooks.press.jhu.edu/title/matrix-computations>`_
+    .. [1] `Matrix Computations
+        <https://jhupbooks.press.jhu.edu/title/matrix-computations>`_
         G. H. Golub and C. F. Van Loan, 4th ed., Johns Hopkins University
         Press, 2013, Section 8.7.
     """

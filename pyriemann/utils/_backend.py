@@ -3,7 +3,6 @@
 from array_api_compat import (
     array_namespace as get_namespace,
     device as xpd,
-    is_numpy_namespace,
     is_torch_namespace,
 )
 import numpy as np
