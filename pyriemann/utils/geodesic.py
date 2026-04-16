@@ -3,7 +3,6 @@
 from ._backend import (
     check_matrix_pair,
     diag_indices,
-    eigvalsh,
     get_namespace,
     tril_indices,
 )
@@ -273,7 +272,12 @@ def geodesic_thompson(A, B, alpha=0.5):
     """
     # the whole check is done in the check_matrix_pair function
     xp = check_matrix_pair(A, B, require_square=True)
-    E = eigvalsh(B, A)
+    # Generalized eigvalsh(B, A) via Cholesky reduction.
+    # Uses ctranspose for HPD support.
+    L = xp.linalg.cholesky(A)
+    Y = xp.linalg.solve(L, B)
+    Z = ctranspose(xp.linalg.solve(L, ctranspose(Y)))
+    E = xp.linalg.eigvalsh(Z)
     Emin, Emax = xp.min(E, axis=-1), xp.max(E, axis=-1)
 
     Emin_a, Emax_a = Emin ** alpha, Emax ** alpha

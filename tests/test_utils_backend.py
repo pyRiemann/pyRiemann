@@ -8,7 +8,6 @@ from pyriemann.utils._backend import (
     check_matrix_pair,
     to_numpy as backend_to_numpy,
     from_numpy,
-    eigvalsh,
     pairwise_euclidean,
     diag_indices,
     tril_indices,
@@ -78,34 +77,6 @@ def test_triu_indices(backend):
     idx0, idx1 = triu_indices(4, 1, like=like)
     n_expected = 4 * 3 // 2  # n*(n-1)/2 for strict upper
     assert len(to_numpy(idx0)) == n_expected
-
-
-def test_eigvalsh(backend):
-    rng = np.random.RandomState(42)
-    A_np = rng.rand(3, 3)
-    A_np = A_np @ A_np.T + np.eye(3)
-    B_np = rng.rand(3, 3)
-    B_np = B_np @ B_np.T + np.eye(3)
-    A = to_backend(A_np, backend)
-    B = to_backend(B_np, backend)
-    ev = eigvalsh(A, B)
-    assert to_numpy(ev).shape == (3,)
-
-    from scipy.linalg import eigvalsh as sp_eigvalsh
-    ev_ref = sp_eigvalsh(A_np, B_np)
-    np.testing.assert_allclose(to_numpy(ev), ev_ref, atol=1e-10)
-
-
-def test_eigvalsh_batched(backend):
-    rng = np.random.RandomState(42)
-    A_np = rng.rand(2, 3, 3)
-    A_np = A_np @ np.swapaxes(A_np, -2, -1) + np.eye(3)
-    B_np = rng.rand(2, 3, 3)
-    B_np = B_np @ np.swapaxes(B_np, -2, -1) + np.eye(3)
-    A = to_backend(A_np, backend)
-    B = to_backend(B_np, backend)
-    ev = eigvalsh(A, B)
-    assert to_numpy(ev).shape == (2, 3)
 
 
 def test_pairwise_euclidean(backend):

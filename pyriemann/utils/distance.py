@@ -4,7 +4,6 @@ import numpy as np
 from scipy.linalg import solve
 
 from ._backend import (
-    eigvalsh,
     pairwise_euclidean,
     check_matrix_pair,
     diag_indices,
@@ -13,7 +12,7 @@ from ._backend import (
     tril_indices,
     xpd,
 )
-from .base import _recursive, invsqrtm, logm, powm, sqrtm
+from .base import _recursive, ctranspose, invsqrtm, logm, powm, sqrtm
 from .test import is_real_type
 from .utils import check_function
 
@@ -500,7 +499,12 @@ def distance_riemann(A, B, squared=False):
         Geodesy-the Challenge of the 3rd Millennium, 2003
     """
     xp = check_matrix_pair(A, B)
-    eigvals = eigvalsh(A, B)
+    # Generalized eigvalsh via Cholesky reduction: L = chol(B),
+    # eigvalsh(L^{-1} A L^{-H}). Uses ctranspose for HPD support.
+    L = xp.linalg.cholesky(B)
+    Y = xp.linalg.solve(L, A)
+    Z = ctranspose(xp.linalg.solve(L, ctranspose(Y)))
+    eigvals = xp.linalg.eigvalsh(Z)
     d2 = xp.sum(xp.log(eigvals) ** 2, axis=-1)
     return d2 if squared else xp.sqrt(d2)
 
@@ -548,7 +552,12 @@ def distance_thompson(A, B, squared=False):
         A.C.Thompson. Proceedings of the American Mathematical Society, 1963.
     """
     xp = check_matrix_pair(A, B, require_square=True)
-    eigvals = eigvalsh(A, B)
+    # Generalized eigvalsh via Cholesky reduction.
+    # Uses ctranspose for HPD support.
+    L = xp.linalg.cholesky(B)
+    Y = xp.linalg.solve(L, A)
+    Z = ctranspose(xp.linalg.solve(L, ctranspose(Y)))
+    eigvals = xp.linalg.eigvalsh(Z)
     d = xp.max(xp.abs(xp.log(eigvals)), axis=-1)
     return d ** 2 if squared else d
 

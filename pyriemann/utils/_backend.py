@@ -12,7 +12,6 @@ from array_api_extra import (
     expand_dims,
 )
 import numpy as np
-from scipy.linalg import eigvalsh as _scipy_eigvalsh
 
 
 __all__ = [
@@ -29,7 +28,6 @@ __all__ = [
     "to_numpy",
     "from_numpy",
     "check_like",
-    "eigvalsh",
     "pairwise_euclidean",
     "diag_indices",
     "tril_indices",
@@ -107,25 +105,6 @@ def check_matrix_pair(A, B, *, require_square=False):
 
 
 # --- Custom extensions not in Array API or array-api-extra ---
-
-
-def eigvalsh(A, B):
-    """Joint eigenvalues of A and B, ie generalized eigvalsh(A, B).
-
-    Uses scipy for numpy (direct generalized eigvalsh), Cholesky reduction
-    for torch: L = chol(B), eigvalsh(L^{-1} A L^{-H}).
-    """
-    xp = get_namespace(A, B)
-    if is_numpy_namespace(xp) and A.shape == B.shape:
-        # local import to avoid circular dependency (_backend <- base)
-        from .base import _recursive
-        return _recursive(_scipy_eigvalsh, A, B)
-    # local import to avoid circular dependency (_backend <- base)
-    from .base import ctranspose
-    L = xp.linalg.cholesky(B)
-    Y = xp.linalg.solve(L, A)
-    Z = ctranspose(xp.linalg.solve(L, ctranspose(Y)))
-    return xp.linalg.eigvalsh(Z)
 
 
 def pairwise_euclidean(X, Y):
