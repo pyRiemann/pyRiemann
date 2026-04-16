@@ -112,6 +112,8 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
         Set of SPD/HPD matrices to diagonalize.
     init : None | ndarray, shape (n, n), default=None
         Initialization for the diagonalizer.
+
+        .. versionadded:: 0.4
     eps : float, default=1e-6
         Tolerance for stoping criterion.
     n_iter_max : int, default=20
@@ -119,6 +121,8 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix, strictly positive.
         If None, it uses equal weights.
+
+        .. versionadded:: 0.2.7
 
     Returns
     -------
@@ -130,6 +134,8 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     Notes
     -----
     .. versionadded:: 0.2.4
+    .. versionchanged:: 0.7
+        Add support for HPD matrices.
 
     See Also
     --------

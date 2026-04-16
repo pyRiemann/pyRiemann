@@ -765,7 +765,7 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
           [2]_.
 
         .. versionchanged:: 0.10
-            Rename method_label into method_combination.
+            Rename method_label into method_combination, and add None option.
     metric : string, default="riemann"
         Metric used for distance estimation during prediction.
         For the list of supported metrics,
