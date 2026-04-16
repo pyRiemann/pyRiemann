@@ -35,6 +35,36 @@ def ctranspose(X):
     return xp.conj(X).mT
 
 
+def eigvalsh(A, B):
+    """Generalized eigenvalues of A and B via Cholesky reduction.
+
+    Compute eigenvalues of the generalized problem A v = λ B v,
+    using only standard Array API functions:
+    L = chol(B), eigvalsh(L⁻¹ A L⁻ᴴ).
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices.
+
+    Returns
+    -------
+    eigvals : ndarray, shape (..., n)
+        Generalized eigenvalues, sorted in ascending order.
+
+    Notes
+    -----
+    .. versionadded:: 0.11
+    """
+    xp = get_namespace(A, B)
+    L = xp.linalg.cholesky(B)
+    Y = xp.linalg.solve(L, A)
+    Z = ctranspose(xp.linalg.solve(L, ctranspose(Y)))
+    return xp.linalg.eigvalsh(Z)
+
+
 def _vectorize_nd(n_axes=2):
     """Decorator to vectorize a function over leading batch dimensions.
 

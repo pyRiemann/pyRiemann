@@ -520,7 +520,9 @@ def test_potato_specific_labels(get_mats):
 
 def callable_diageuclid(A, B, squared=False):
     """Euclidean distance between diagonals of square matrices"""
-    return np.linalg.norm(np.diag(A) - np.diag(B))
+    dA = np.diagonal(A, axis1=-2, axis2=-1)
+    dB = np.diagonal(B, axis1=-2, axis2=-1)
+    return np.linalg.norm(dA - dB, axis=-1)
 
 
 @pytest.mark.parametrize(

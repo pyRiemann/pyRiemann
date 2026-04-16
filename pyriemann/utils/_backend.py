@@ -28,7 +28,6 @@ __all__ = [
     "to_numpy",
     "from_numpy",
     "check_like",
-    "pairwise_euclidean",
     "diag_indices",
     "tril_indices",
     "triu_indices",
@@ -102,21 +101,6 @@ def check_matrix_pair(A, B, *, require_square=False):
         except Exception as exc:
             raise ValueError("Inputs have incompatible dimensions.") from exc
     return xp
-
-
-# --- Custom extensions not in Array API or array-api-extra ---
-
-
-def pairwise_euclidean(X, Y):
-    """Pairwise Euclidean distance matrix, array-API compatible.
-
-    Uses sklearn for numpy (optimized BLAS), torch.cdist for torch (GPU).
-    """
-    xp = get_namespace(X, Y)
-    if is_numpy_namespace(xp):
-        from sklearn.metrics import euclidean_distances
-        return euclidean_distances(X, Y)
-    return torch.cdist(X, Y, p=2)
 
 
 def diag_indices(n, *, like=None):

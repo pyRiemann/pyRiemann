@@ -8,7 +8,6 @@ from pyriemann.utils._backend import (
     check_matrix_pair,
     to_numpy as backend_to_numpy,
     from_numpy,
-    pairwise_euclidean,
     diag_indices,
     tril_indices,
     triu_indices,
@@ -77,17 +76,3 @@ def test_triu_indices(backend):
     idx0, idx1 = triu_indices(4, 1, like=like)
     n_expected = 4 * 3 // 2  # n*(n-1)/2 for strict upper
     assert len(to_numpy(idx0)) == n_expected
-
-
-def test_pairwise_euclidean(backend):
-    rng = np.random.RandomState(42)
-    X_np = rng.rand(5, 4)
-    Y_np = rng.rand(3, 4)
-    X = to_backend(X_np, backend)
-    Y = to_backend(Y_np, backend)
-    D = pairwise_euclidean(X, Y)
-    assert to_numpy(D).shape == (5, 3)
-
-    from scipy.spatial.distance import cdist
-    D_ref = cdist(X_np, Y_np, metric='euclidean')
-    np.testing.assert_allclose(to_numpy(D), D_ref, atol=1e-10)

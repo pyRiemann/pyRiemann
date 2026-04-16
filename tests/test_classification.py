@@ -229,7 +229,7 @@ def call_mean(X, sample_weight=None):
 
 
 def call_dist(A, B, squared=False):
-    return np.linalg.norm(A - B)
+    return np.linalg.norm(A - B, axis=(-2, -1))
 
 
 @pytest.mark.parametrize("metric_mean", [

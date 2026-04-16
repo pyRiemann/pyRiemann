@@ -912,6 +912,8 @@ def normalize(X, norm):
     if norm == "corr":
         if is_real_type(Xn):
             Xn = xp.clip(Xn, -1, 1)
+        else:
+            Xn = xp.clip(xp.real(Xn), -1, 1) + 1j * xp.imag(Xn)
 
     return Xn
 

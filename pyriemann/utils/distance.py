@@ -1,14 +1,14 @@
 """Distances between SPD/HPD matrices."""
 
 from ._backend import (
-    pairwise_euclidean,
     check_matrix_pair,
     diag_indices,
     get_namespace,
+    is_numpy_namespace,
     tril_indices,
     xpd,
 )
-from .base import ctranspose, invsqrtm, logm, powm, sqrtm
+from .base import eigvalsh, invsqrtm, logm, powm, sqrtm
 from .test import is_real_type
 from .utils import check_function
 
@@ -479,12 +479,7 @@ def distance_riemann(A, B, squared=False):
         Geodesy-the Challenge of the 3rd Millennium, 2003
     """
     xp = check_matrix_pair(A, B)
-    # Generalized eigvalsh via Cholesky reduction: L = chol(B),
-    # eigvalsh(L^{-1} A L^{-H}). Uses ctranspose for HPD support.
-    L = xp.linalg.cholesky(B)
-    Y = xp.linalg.solve(L, A)
-    Z = ctranspose(xp.linalg.solve(L, ctranspose(Y)))
-    eigvals = xp.linalg.eigvalsh(Z)
+    eigvals = eigvalsh(A, B)
     d2 = xp.sum(xp.log(eigvals) ** 2, axis=-1)
     return d2 if squared else xp.sqrt(d2)
 
@@ -532,12 +527,7 @@ def distance_thompson(A, B, squared=False):
         A.C.Thompson. Proceedings of the American Mathematical Society, 1963.
     """
     xp = check_matrix_pair(A, B, require_square=True)
-    # Generalized eigvalsh via Cholesky reduction.
-    # Uses ctranspose for HPD support.
-    L = xp.linalg.cholesky(B)
-    Y = xp.linalg.solve(L, A)
-    Z = ctranspose(xp.linalg.solve(L, ctranspose(Y)))
-    eigvals = xp.linalg.eigvalsh(Z)
+    eigvals = eigvalsh(A, B)
     d = xp.max(xp.abs(xp.log(eigvals)), axis=-1)
     return d ** 2 if squared else d
 
@@ -659,23 +649,12 @@ def distance(A, B, metric="riemann", squared=False):
     """
     distance_function = check_function(metric, distance_functions)
 
-    xp = get_namespace(A)
     shape_A, shape_B = A.shape, B.shape
     if shape_A == shape_B:
         d = distance_function(A, B, squared=squared)
     elif len(shape_A) == 3 and len(shape_B) == 2:
-        # Built-in distance functions handle 3D broadcasting natively;
-        # user-defined callables may not, so loop element-wise.
-        if distance_function in distance_functions.values():
-            d = distance_function(A, B, squared=squared)
-            d = d[..., None]
-        else:
-            d = xp.empty((shape_A[0], 1), dtype=A.real.dtype,
-                         device=xpd(A))
-            for i in range(shape_A[0]):
-                d[i] = distance_function(
-                    A[i], B, squared=squared
-                )
+        d = distance_function(A, B, squared=squared)
+        d = d[..., None]
     else:
         raise ValueError("Inputs have incompatible dimensions.")
 
@@ -689,7 +668,12 @@ def _euclidean_distances(X, Y=None, squared=False):
     """Function to extend euclidean_distances of sklearn to complex data."""
     xp = get_namespace(X, Y)
     if is_real_type(X):
-        dist = pairwise_euclidean(X, X if Y is None else Y)
+        if is_numpy_namespace(xp):
+            from sklearn.metrics import euclidean_distances
+            dist = euclidean_distances(X, X if Y is None else Y)
+        else:
+            import torch
+            dist = torch.cdist(X, X if Y is None else Y, p=2)
         return dist ** 2 if squared else dist
 
     if Y is None:
