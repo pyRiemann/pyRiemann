@@ -1,10 +1,13 @@
 """Distances between SPD/HPD matrices."""
 
+from sklearn.metrics import euclidean_distances
+
 from ._backend import (
     check_matrix_pair,
     diag_indices,
     get_namespace,
     is_numpy_namespace,
+    torch,
     tril_indices,
     xpd,
 )
@@ -669,10 +672,8 @@ def _euclidean_distances(X, Y=None, squared=False):
     xp = get_namespace(X, Y)
     if is_real_type(X):
         if is_numpy_namespace(xp):
-            from sklearn.metrics import euclidean_distances
             dist = euclidean_distances(X, X if Y is None else Y)
         else:
-            import torch
             dist = torch.cdist(X, X if Y is None else Y, p=2)
         return dist ** 2 if squared else dist
 

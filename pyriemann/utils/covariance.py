@@ -910,10 +910,7 @@ def normalize(X, norm):
     Xn = X / denom
 
     if norm == "corr":
-        if is_real_type(Xn):
-            Xn = xp.clip(Xn, -1, 1)
-        else:
-            Xn = xp.clip(xp.real(Xn), -1, 1) + 1j * xp.imag(Xn)
+        Xn.real = xp.clip(Xn.real, -1, 1)
 
     return Xn
 

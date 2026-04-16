@@ -31,6 +31,7 @@ __all__ = [
     "diag_indices",
     "tril_indices",
     "triu_indices",
+    "torch",
 ]
 
 try:
