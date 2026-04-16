@@ -470,7 +470,6 @@ def covariances_EP(X, P, estimator="cov", **kwds):
     return est(PX, **kwds)
 
 
-
 @deprecated(
     "covariances_X() is deprecated and will be removed in 0.14.0."
 )
