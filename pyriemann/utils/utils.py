@@ -22,7 +22,7 @@ def check_weights(weights, n_weights, *, check_positivity=False, like=None):
         Reference array used to infer the array-API namespace and device of
         the returned weights. If None, NumPy is used.
 
-        .. versionadded:: 0.11
+        .. versionadded:: 0.12
 
     Returns
     -------
@@ -139,7 +139,7 @@ def check_init(init, n, *, like=None):
         Reference array used to infer the array-API namespace and device of
         the returned matrix. If None, NumPy is used.
 
-        .. versionadded:: 0.11
+        .. versionadded:: 0.12
 
     Returns
     -------

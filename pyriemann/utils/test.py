@@ -112,7 +112,7 @@ def is_real(X):
         return True
     xp = get_namespace(X)
     X_imag = xp.imag(X)
-    return bool(xp.all(xp.isclose(X_imag, xp.zeros_like(X_imag))))
+    return bool(xp.all(xp.isclose(X_imag, xp.zeros_like(xp.imag(X)))))
 
 
 def is_real_type(X):

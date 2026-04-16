@@ -48,7 +48,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     Notes
     -----
     .. versionadded:: 0.2.4
-    .. versionchanged:: 0.11
+    .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
 
     See Also
@@ -149,6 +149,8 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     .. versionadded:: 0.2.4
     .. versionchanged:: 0.7
         Add support for HPD matrices.
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -264,6 +266,8 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
     Notes
     -----
     .. versionadded:: 0.2.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------

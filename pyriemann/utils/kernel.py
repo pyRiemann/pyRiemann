@@ -237,7 +237,7 @@ def _check_cref(X, Cref):
 def _apply_matrix_kernel(Xt, Y, are_xy_equal, reg):
     # products K[i,j] = trace(Xt[i] @ Y[j])
     xp = get_namespace(Xt, Y)
-    K = xp.einsum("i m n, j n m -> i j", Xt, Y)
+    K = xp.einsum("imn,jnm->ij", Xt, Y)
 
     # regularization to mitigate numerical errors
     if are_xy_equal:
