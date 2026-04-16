@@ -36,7 +36,7 @@ def ctranspose(X):
 
 
 def eigvalsh(A, B):
-    """Generalized eigenvalues of A and B via Cholesky reduction.
+    """Generalized eigenvalues via Cholesky reduction.
 
     Compute eigenvalues of the generalized problem A v = λ B v,
     using only standard Array API functions:
@@ -96,18 +96,6 @@ def _vectorize_nd(n_axes=2):
 
 
 ###############################################################################
-
-
-def _recursive(fun, A, B, *args, **kwargs):
-    """Recursive function with two inputs."""
-    if A.ndim == 2:
-        return fun(A, B, *args, **kwargs)
-    else:
-        xp = get_namespace(A)
-        return xp.stack(
-            [_recursive(fun, a, b, *args, **kwargs) for a, b in zip(A, B)],
-            axis=0,
-        )
 
 
 def _matrix_operator(X, operator):

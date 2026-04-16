@@ -10,6 +10,12 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.12.dev
 ---------
 
+- Add `Python Array API <https://data-apis.org/array-api/>`_ support for NumPy/PyTorch
+  backend transparency in core utility modules (``base``, ``covariance``, ``distance``,
+  ``mean``, ``geodesic``, ``tangentspace``, ``ajd``, ``kernel``, ``median``), enabling
+  execution on both NumPy arrays and PyTorch tensors with optional GPU acceleration
+  and autograd support. :pr:`433` by :user:`bruAristimunha`
+
 v0.11 (April 2026)
 ------------------
 
@@ -41,12 +47,6 @@ v0.11 (April 2026)
 - Complete example on artifact detection by Riemannian potato field, adding a metric by potato. :pr:`431` by :user:`DavoudYneuro`
 
 - Enhance :func:`pyriemann.utils.covariance.covariance_scm` to estimate weighted sample covariance matrices. :pr:`434` by :user:`qbarthelemy`
-
-- Add `Python Array API <https://data-apis.org/array-api/>`_ support for NumPy/PyTorch
-  backend transparency in core utility modules (``base``, ``covariance``, ``distance``,
-  ``mean``, ``geodesic``, ``tangentspace``, ``ajd``, ``kernel``, ``median``), enabling
-  execution on both NumPy arrays and PyTorch tensors with optional GPU acceleration
-  and autograd support. :pr:`433` by :user:`bruAristimunha`
 
 v0.10 (January 2026)
 --------------------

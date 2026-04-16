@@ -945,7 +945,7 @@ def get_nondiag_weight(X):
 
     X2 = X**2
     # sum of squared diagonal elements
-    denom = xp.sum(xp.linalg.diagonal(X2), axis=-1)
+    denom = xp.linalg.trace(X2)
     # sum of squared off-diagonal elements
     num = xp.sum(X2, axis=(-2, -1)) - denom
     weights = (1.0 / (X.shape[-1] - 1)) * (num / denom)

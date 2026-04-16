@@ -281,13 +281,15 @@ def distance_logchol(A, B, squared=False):
 
     tri0, tri1 = tril_indices(A_chol.shape[-1], -1, like=A_chol)
     triangular_part = xp.linalg.vector_norm(
-        A_chol[..., tri0, tri1] - B_chol[..., tri0, tri1], axis=-1,
+        A_chol[..., tri0, tri1] - B_chol[..., tri0, tri1],
+        axis=-1,
     ) ** 2
 
     diag0, diag1 = diag_indices(A_chol.shape[-1], like=A_chol)
     diagonal_part = xp.linalg.vector_norm(
         xp.log(A_chol[..., diag0, diag1]) -
-        xp.log(B_chol[..., diag0, diag1]), axis=-1,
+        xp.log(B_chol[..., diag0, diag1]),
+        axis=-1,
     ) ** 2
 
     d2 = triangular_part + diagonal_part
@@ -482,8 +484,7 @@ def distance_riemann(A, B, squared=False):
         Geodesy-the Challenge of the 3rd Millennium, 2003
     """
     xp = check_matrix_pair(A, B)
-    eigvals = eigvalsh(A, B)
-    d2 = xp.sum(xp.log(eigvals) ** 2, axis=-1)
+    d2 = xp.sum(xp.log(eigvalsh(A, B)) ** 2, axis=-1)
     return d2 if squared else xp.sqrt(d2)
 
 
@@ -530,8 +531,7 @@ def distance_thompson(A, B, squared=False):
         A.C.Thompson. Proceedings of the American Mathematical Society, 1963.
     """
     xp = check_matrix_pair(A, B, require_square=True)
-    eigvals = eigvalsh(A, B)
-    d = xp.max(xp.abs(xp.log(eigvals)), axis=-1)
+    d = xp.max(xp.abs(xp.log(eigvalsh(A, B))), axis=-1)
     return d ** 2 if squared else d
 
 
