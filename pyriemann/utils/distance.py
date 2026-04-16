@@ -1,29 +1,16 @@
 """Distances between SPD/HPD matrices."""
 
-import numpy as np
-from scipy.linalg import solve
-
 from ._backend import (
     pairwise_euclidean,
     check_matrix_pair,
     diag_indices,
     get_namespace,
-    is_numpy_namespace,
     tril_indices,
     xpd,
 )
-from .base import _recursive, ctranspose, invsqrtm, logm, powm, sqrtm
+from .base import ctranspose, invsqrtm, logm, powm, sqrtm
 from .test import is_real_type
 from .utils import check_function
-
-
-def _check_inputs(A, B):
-    if not isinstance(A, np.ndarray) or not isinstance(B, np.ndarray):
-        raise ValueError("Inputs must be ndarrays")
-    if not A.shape == B.shape:
-        raise ValueError("Inputs must have equal dimensions")
-    if A.ndim < 2:
-        raise ValueError("Inputs must be at least a 2D ndarray")
 
 
 ###############################################################################
@@ -192,14 +179,7 @@ def distance_kullback(A, B, squared=False):
     """
     xp = check_matrix_pair(A, B, require_square=True)
     n = A.shape[-1]
-    if is_numpy_namespace(xp) and A.shape == B.shape:
-        tr = np.trace(
-            _recursive(solve, B, A, assume_a='pos'), axis1=-2, axis2=-1,
-        )
-    else:
-        # trace of solve(B, A) without computing the full solution
-        # is not straightforward; open to suggestions.
-        tr = xp.sum(xp.linalg.diagonal(xp.linalg.solve(B, A)), axis=-1)
+    tr = xp.linalg.trace(xp.linalg.solve(B, A))
     logdet = xp.linalg.slogdet(B)[1] - xp.linalg.slogdet(A)[1]
     d = 0.5 * xp.real(tr - n + logdet)
     return d ** 2 if squared else d

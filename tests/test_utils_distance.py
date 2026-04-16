@@ -92,7 +92,9 @@ def test_distance_metric_error(get_mats):
 def test_distance_squared(kind, dist, get_mats):
     n_channels = 5
     A, B = get_mats(2, n_channels, kind)
-    assert dist(A, B, squared=True) == approx(dist(A, B) ** 2)
+    d = dist(A, B, squared=True)
+    assert d == approx(dist(A, B) ** 2)
+    assert np.isreal(to_numpy(d))
 
 
 @pytest.mark.parametrize("dist", dists)

@@ -48,6 +48,8 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     Notes
     -----
     .. versionadded:: 0.2.4
+    .. versionchanged:: 0.11
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
