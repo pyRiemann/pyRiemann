@@ -5,6 +5,7 @@ import numpy as np
 from scipy.stats import chi2
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
+from . import deprecated
 from .base import ctranspose, _vectorize_nd
 from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
@@ -469,6 +470,10 @@ def covariances_EP(X, P, estimator="cov", **kwds):
     return est(PX, **kwds)
 
 
+
+@deprecated(
+    "covariances_X() is deprecated and will be removed in 0.14.0."
+)
 def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
     """Special form covariance matrix, embedding input X.
 
@@ -686,6 +691,10 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     return S, freqs
 
 
+@deprecated(
+    "cospectrum() is deprecated and will be removed in 0.14.0; "
+    "please use cross_spectrum() and take the real part of first output."
+)
 def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     """Compute co-spectral matrices, the real part of cross-spectra.
 
