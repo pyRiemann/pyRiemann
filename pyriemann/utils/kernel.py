@@ -1,8 +1,7 @@
 """Kernels for SPD matrices."""
 
 
-from ._backend import get_namespace
-from ._fixes import _add_to_diagonal
+from ._backend import diag_indices, get_namespace
 from .base import ctranspose, invsqrtm, logm
 from .mean import mean_riemann
 from .utils import check_function
@@ -242,7 +241,8 @@ def _apply_matrix_kernel(Xt, Y, are_xy_equal, reg):
 
     # regularization to mitigate numerical errors
     if are_xy_equal:
-        _add_to_diagonal(K, reg, xp)
+        idx = diag_indices(K.shape[-1], like=K)
+        K[..., idx[0], idx[1]] += reg
 
     return K
 
