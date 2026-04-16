@@ -1,7 +1,8 @@
 """Kernels for SPD matrices."""
 
 
-from ._backend import get_namespace, diag_indices
+from ._backend import get_namespace
+from ._fixes import _add_to_diagonal
 from .base import ctranspose, invsqrtm, logm
 from .mean import mean_riemann
 from .utils import check_function
@@ -64,7 +65,6 @@ def kernel_euclid(X, Y=None, *, Cref=None, reg=1e-10):
         <https://doi.org/10.1016/j.neunet.2009.06.035>`_
         J. Farquhar. Neural Networks, 2009
     """
-    get_namespace(X, Y, Cref)
     X, Y, are_xy_equal = _check_xy(X, Y)
     if Cref is None:
         Xt_, Y_ = ctranspose(X), Y
@@ -138,7 +138,6 @@ def kernel_logeuclid(X, Y=None, *, Cref=None, reg=1e-10):
         <https://ieeexplore.ieee.org/abstract/document/5684490>`_
         E. Wang, W. Guo, L. Dai, K. Lee, B. Ma and H. Li. IEEE ISCSLP, 2010
     """
-    get_namespace(X, Y, Cref)
     X, Y, are_xy_equal = _check_xy(X, Y)
     if Cref is None:
         X_, Y_ = logm(X), logm(Y)
@@ -202,7 +201,6 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
         A. Barachant, S. Bonnet, M. Congedo and C. Jutten. Neurocomputing,
         Elsevier, 2013, 112, pp.172-178.
     """
-    get_namespace(X, Y, Cref)
     X, Y, are_xy_equal = _check_xy(X, Y)
     if Cref is None:
         Cref = mean_riemann(X)
@@ -244,9 +242,7 @@ def _apply_matrix_kernel(Xt, Y, are_xy_equal, reg):
 
     # regularization to mitigate numerical errors
     if are_xy_equal:
-        n_matrices_X = K.shape[0]
-        diag0, diag1 = diag_indices(n_matrices_X, like=K)
-        K[diag0, diag1] += reg
+        _add_to_diagonal(K, reg, xp)
 
     return K
 

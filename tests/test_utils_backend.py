@@ -8,7 +8,6 @@ from pyriemann.utils._backend import (
     check_matrix_pair,
     to_numpy as backend_to_numpy,
     from_numpy,
-    weighted_average,
     eigvalsh,
     pairwise_euclidean,
     diag_indices,
@@ -58,20 +57,6 @@ def test_check_matrix_pair_square(backend):
     B = to_backend(np.random.rand(3, 4), backend)
     with pytest.raises(ValueError):
         check_matrix_pair(A, B, require_square=True)
-
-
-def test_weighted_average(backend):
-    X = to_backend(np.random.rand(5, 3, 3), backend)
-    xp = get_namespace(X)
-    w = to_backend(np.array([0.1, 0.2, 0.3, 0.2, 0.2]), backend)
-
-    avg = weighted_average(X, weights=w, axis=0)
-    assert avg.shape == (3, 3)
-
-    avg_none = weighted_average(X, weights=None, axis=0)
-    np.testing.assert_allclose(
-        to_numpy(avg_none), to_numpy(xp.mean(X, axis=0)), atol=1e-10,
-    )
 
 
 def test_diag_indices(backend):

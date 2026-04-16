@@ -31,7 +31,6 @@ __all__ = [
     "check_like",
     "eigvalsh",
     "pairwise_euclidean",
-    "weighted_average",
     "diag_indices",
     "tril_indices",
     "triu_indices",
@@ -139,17 +138,6 @@ def pairwise_euclidean(X, Y):
         from sklearn.metrics import euclidean_distances
         return euclidean_distances(X, Y)
     return torch.cdist(X, Y, p=2)
-
-
-def weighted_average(x, weights=None, axis=0):
-    """Weighted average along an axis, matching np.average behavior."""
-    xp = get_namespace(x)
-    if weights is None:
-        return xp.mean(x, axis=axis)
-    # local import to avoid circular dependency (_backend <- utils)
-    from .utils import check_weights
-    weights = check_weights(weights, x.shape[axis], like=x)
-    return xp.tensordot(weights, x, axes=([0], [axis]))
 
 
 def diag_indices(n, *, like=None):

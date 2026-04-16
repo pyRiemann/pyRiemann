@@ -7,7 +7,7 @@ import numpy as np
 from . import deprecated
 from ._backend import (
     get_namespace, create_diagonal, diag_indices, tril_indices,
-    weighted_average, xpd, to_numpy, from_numpy,
+    xpd, to_numpy, from_numpy,
 )
 from .ajd import ajd_pham
 from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd
@@ -234,7 +234,12 @@ def mean_euclid(X, sample_weight=None, **kwargs):
     --------
     gmean
     """
-    return weighted_average(X, weights=sample_weight, axis=-3)
+    xp = get_namespace(X)
+    n_matrices = X.shape[-3]
+    if sample_weight is None:
+        return xp.mean(X, axis=-3)
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
+    return xp.tensordot(sample_weight, X, axes=([0], [-3]))
 
 
 def mean_harmonic(X, sample_weight=None, **kwargs):
@@ -354,17 +359,13 @@ def mean_logchol(X, sample_weight=None, **kwargs):
     L = xp.zeros(X.shape[:-3] + X.shape[-2:], dtype=X.dtype, device=xpd(X))
 
     tri0, tri1 = tril_indices(n, -1, like=X)
-    L[..., tri0, tri1] = weighted_average(
-        X_chol[..., tri0, tri1],
-        weights=sample_weight,
-        axis=-2,
+    L[..., tri0, tri1] = xp.tensordot(
+        sample_weight, X_chol[..., tri0, tri1], axes=([0], [-2]),
     )
 
     diag0, diag1 = diag_indices(n, like=X)
-    L[..., diag0, diag1] = xp.exp(weighted_average(
-        xp.log(X_chol[..., diag0, diag1]),
-        weights=sample_weight,
-        axis=-2,
+    L[..., diag0, diag1] = xp.exp(xp.tensordot(
+        sample_weight, xp.log(X_chol[..., diag0, diag1]), axes=([0], [-2]),
     ))
 
     return L @ ctranspose(L)

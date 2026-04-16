@@ -141,10 +141,7 @@ def test_funm_properties(get_mats, kind):
     assert_array_almost_equal(eX.conj(), expm(X.conj()), decimal=10)
     assert_array_almost_equal(
         to_numpy(xp.linalg.det(eX)),
-        to_numpy(xp.exp(xp.sum(
-            X * xp.eye(n_dim, dtype=X.dtype, device=device(X)),
-            axis=(-2, -1),
-        ))),
+        to_numpy(xp.exp(xp.linalg.trace(X))),
         decimal=10,
     )
     assert_array_almost_equal(logm(eX), X, decimal=10)

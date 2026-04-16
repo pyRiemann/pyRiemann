@@ -30,11 +30,11 @@ def test_ajd(kind, method, algo, get_mats):
 
     xp = get_namespace(X)
     if method == "rjd":
-        assert D == approx(V.T @ X @ V)
+        assert D == approx(V.mT @ X @ V)
         eye = xp.eye(n_channels, dtype=X.dtype, device=xpd(X))
-        assert V.T @ V == approx(eye)  # check orthogonality
+        assert V.mT @ V == approx(eye)  # check orthogonality
     else:
-        assert D == approx(V @ X @ V.T)
+        assert D == approx(V @ X @ V.mT)
 
     V_, D_ = algo(X, eps=eps, n_iter_max=n_iter_max)
     assert_array_equal(V, V_)
