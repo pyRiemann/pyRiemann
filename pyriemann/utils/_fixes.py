@@ -22,9 +22,14 @@ from sklearn.covariance import (
     oas as _sklearn_oas,
 )
 
-from ._backend import (
-    diag_indices, get_namespace, is_numpy_namespace, to_numpy, from_numpy,
-)
+from ._backend import get_namespace, is_numpy_namespace, to_numpy, from_numpy
+
+
+def _add_to_diagonal(X, value, xp):
+    """Add a scalar value to the diagonal of a matrix."""
+    n = X.shape[-1]
+    idx = xp.arange(n, device=getattr(X, 'device', None))
+    X[..., idx, idx] += value
 
 
 # --------------------------------------------------------------------------
@@ -127,8 +132,7 @@ def ledoit_wolf(X, assume_centered=False, block_size=1000):
     emp_cov = _empirical_covariance(X, assume_centered=assume_centered, xp=xp)
     mu = float(xp.linalg.trace(emp_cov)) / n_features
     shrunk_cov = (1.0 - shrinkage) * emp_cov
-    idx = diag_indices(n_features, like=shrunk_cov)
-    shrunk_cov[..., idx[0], idx[1]] += shrinkage * mu
+    _add_to_diagonal(shrunk_cov, shrinkage * mu, xp)
     return shrunk_cov, shrinkage
 
 
@@ -177,8 +181,7 @@ def oas(X, assume_centered=False):
     shrinkage = 1.0 if den == 0 else min(num / den, 1.0)
 
     shrunk_cov = (1.0 - shrinkage) * emp_cov
-    idx = diag_indices(n_features, like=shrunk_cov)
-    shrunk_cov[..., idx[0], idx[1]] += shrinkage * mu
+    _add_to_diagonal(shrunk_cov, shrinkage * mu, xp)
     return shrunk_cov, shrinkage
 
 
