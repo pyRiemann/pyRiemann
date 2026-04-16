@@ -3,8 +3,7 @@
 from functools import wraps
 
 import numpy as np
-
-from ._backend import get_namespace, xpd
+from array_api_compat import array_namespace as get_namespace, device as xpd
 
 
 def ctranspose(X):

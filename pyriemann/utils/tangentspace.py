@@ -3,14 +3,13 @@
 import math
 
 import numpy as np
+from array_api_compat import array_namespace as get_namespace, device as xpd
 
 from ._backend import (
     check_matrix_pair,
     diag_indices,
-    get_namespace,
     tril_indices,
     triu_indices,
-    xpd,
 )
 from .base import ctranspose, expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
 from .utils import check_function

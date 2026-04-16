@@ -4,7 +4,7 @@ import pytest
 from conftest import approx, to_numpy
 
 from pyriemann.spatialfilters import Whitening
-from pyriemann.utils._backend import get_namespace
+from array_api_compat import array_namespace as get_namespace
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.geodesic import geodesic
 from pyriemann.utils.mean import mean_riemann

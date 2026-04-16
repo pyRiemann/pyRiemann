@@ -1,15 +1,17 @@
 """Distances between SPD/HPD matrices."""
 
+from array_api_compat import (
+    array_namespace as get_namespace,
+    device as xpd,
+    is_numpy_namespace,
+)
 from sklearn.metrics import euclidean_distances
 
 from ._backend import (
     check_matrix_pair,
     diag_indices,
-    get_namespace,
-    is_numpy_namespace,
     torch,
     tril_indices,
-    xpd,
 )
 from .base import _eigvalsh, invsqrtm, logm, powm, sqrtm
 from .test import is_real_type

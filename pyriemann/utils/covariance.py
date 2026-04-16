@@ -2,12 +2,15 @@ from functools import wraps
 import warnings
 
 import numpy as np
+from array_api_compat import (
+    array_namespace as get_namespace,
+    device as xpd,
+    is_numpy_namespace,
+)
+from array_api_extra import atleast_nd, expand_dims
 from scipy.stats import chi2
 
-from ._backend import (
-    get_namespace,
-    diag_indices, expand_dims, xpd, _apply_xp,
-)
+from ._backend import diag_indices
 from ._fixes import ledoit_wolf, oas, fast_mcd
 from .base import ctranspose, _vectorize_nd
 from .distance import distance_mahalanobis
@@ -18,6 +21,29 @@ from .utils import check_function, check_init, check_weights
 # `np.cov` / `np.corrcoef` use `bias`/`ddof`; `torch.cov` / `torch.corrcoef`
 # use `correction`. These wrappers dispatch via the array-API namespace and
 # translate kwargs so downstream estimators need not care about the backend.
+def _numpy_to_xp_kwargs(kwds):
+    """Map numpy cov/corrcoef kwargs to torch-compatible kwargs."""
+    out = {}
+    if "bias" in kwds:
+        out["correction"] = 0 if kwds.pop("bias") else 1
+    if "ddof" in kwds:
+        out["correction"] = kwds.pop("ddof")
+    for k in ("fweights", "aweights"):
+        if k in kwds:
+            out[k] = kwds.pop(k)
+    return out
+
+
+def _apply_xp(func, X, **kwds):
+    """Call an array-api function, translating kwargs across backends."""
+    xp = get_namespace(X)
+    if is_numpy_namespace(xp):
+        C = func(X, **kwds)
+    else:
+        C = func(X, **_numpy_to_xp_kwargs(kwds))
+    return atleast_nd(C, ndim=2)
+
+
 def _cov(X, **kwds):
     """Covariance matrix estimator."""
     xp = get_namespace(X)

@@ -1,9 +1,10 @@
 """Geodesics for SPD/HPD matrices."""
 
+from array_api_compat import array_namespace as get_namespace
+
 from ._backend import (
     check_matrix_pair,
     diag_indices,
-    get_namespace,
     tril_indices,
 )
 from .base import ctranspose, _eigvalsh, sqrtm, invsqrtm, powm, logm, expm

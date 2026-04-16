@@ -2,7 +2,8 @@
 
 import warnings
 
-from ._backend import get_namespace
+from array_api_compat import array_namespace as get_namespace
+
 from .base import sqrtm, invsqrtm, logm, expm
 from .distance import distance
 from .mean import mean_euclid

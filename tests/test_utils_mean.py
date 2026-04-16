@@ -5,7 +5,7 @@ import pytest
 from scipy.stats import hmean, gmean as gmean_sp
 
 from conftest import to_backend, approx, to_numpy
-from pyriemann.utils._backend import get_namespace, xpd as device
+from array_api_compat import array_namespace as get_namespace, device
 from pyriemann.utils.base import invsqrtm, logm, sqrtm
 from pyriemann.utils.geodesic import geodesic_riemann
 from pyriemann.utils.mean import (

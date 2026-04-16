@@ -3,7 +3,7 @@ from numpy.testing import assert_raises
 import pytest
 
 from conftest import assert_array_equal, assert_array_almost_equal
-from pyriemann.utils._backend import get_namespace, xpd as device
+from array_api_compat import array_namespace as get_namespace, device
 from pyriemann.utils.base import logm
 from pyriemann.utils.kernel import (
     kernel,

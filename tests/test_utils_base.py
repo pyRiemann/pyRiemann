@@ -6,9 +6,8 @@ from conftest import assert_array_almost_equal, to_numpy
 import pytest
 from pytest import approx
 
-from pyriemann.utils._backend import (
-    get_namespace, create_diagonal, xpd as device,
-)
+from array_api_compat import array_namespace as get_namespace, device
+from array_api_extra import create_diagonal
 from pyriemann.utils.base import (
     ctranspose,
     _eigvalsh,

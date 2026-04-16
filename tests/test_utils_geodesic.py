@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 from conftest import approx
 
-from pyriemann.utils._backend import get_namespace, xpd as device
+from array_api_compat import array_namespace as get_namespace, device
 from pyriemann.utils.geodesic import (
     geodesic,
     geodesic_chol,

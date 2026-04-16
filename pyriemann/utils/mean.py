@@ -3,11 +3,12 @@
 import warnings
 
 import numpy as np
+from array_api_compat import array_namespace as get_namespace, device as xpd
+from array_api_extra import create_diagonal
 
 from . import deprecated
 from ._backend import (
-    get_namespace, create_diagonal, diag_indices, tril_indices,
-    xpd, to_numpy, from_numpy,
+    diag_indices, tril_indices, to_numpy, from_numpy,
 )
 from .ajd import ajd_pham
 from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd

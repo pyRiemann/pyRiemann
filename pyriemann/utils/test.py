@@ -1,6 +1,8 @@
 import numpy as np
-
-from ._backend import get_namespace, is_torch_namespace
+from array_api_compat import (
+    array_namespace as get_namespace,
+    is_torch_namespace,
+)
 
 
 def _get_eigenvals(X):

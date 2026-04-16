@@ -6,7 +6,7 @@ from scipy.linalg import eigvalsh
 from scipy.spatial.distance import mahalanobis
 
 from conftest import to_backend, approx, assert_array_almost_equal, to_numpy
-from pyriemann.utils._backend import get_namespace, xpd as device
+from array_api_compat import array_namespace as get_namespace, device
 from pyriemann.utils.distance import (
     distance_chol,
     distance_euclid,

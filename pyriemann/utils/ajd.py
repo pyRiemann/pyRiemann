@@ -2,7 +2,8 @@
 
 import warnings
 
-from ._backend import get_namespace, xpd
+from array_api_compat import array_namespace as get_namespace, device as xpd
+
 from ._fixes import _add_to_diagonal
 from .utils import check_weights, check_function, check_init
 

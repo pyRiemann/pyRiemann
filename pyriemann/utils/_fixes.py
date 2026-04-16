@@ -16,13 +16,17 @@ at which the fix is no longer needed.
 # Authors: pyRiemann developers
 # License: BSD-3-Clause
 
+from array_api_compat import (
+    array_namespace as get_namespace,
+    is_numpy_namespace,
+)
 from sklearn.covariance import (
     fast_mcd as _sklearn_mcd,
     ledoit_wolf as _sklearn_lw,
     oas as _sklearn_oas,
 )
 
-from ._backend import get_namespace, is_numpy_namespace, to_numpy, from_numpy
+from ._backend import to_numpy, from_numpy
 
 
 def _add_to_diagonal(X, value, xp):
