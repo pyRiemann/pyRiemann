@@ -11,6 +11,7 @@ from pyriemann.utils._backend import (
 )
 from pyriemann.utils.base import (
     ctranspose,
+    _eigvalsh,
     expm,
     invsqrtm,
     logm,
@@ -36,6 +37,31 @@ def test_ctranspose(get_mats):
 
     X = get_mats(10, n_channels, "herm")
     assert_array_almost_equal(ctranspose(X), X, decimal=10)
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_eigvalsh_matches_scipy(get_mats, kind):
+    """_eigvalsh matches scipy.linalg.eigh on 2D matrix pencils."""
+    from scipy.linalg import eigh
+
+    A = get_mats(1, n_channels, kind)[0]
+    B = get_mats(1, n_channels, kind)[0]
+    expected = eigh(to_numpy(A), to_numpy(B), eigvals_only=True)
+    assert_array_almost_equal(_eigvalsh(A, B), expected, decimal=8)
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_eigvalsh_broadcasting(get_mats, kind):
+    """_eigvalsh broadcasts over leading batch dimensions."""
+    n_matrices = 4
+    A = get_mats(n_matrices, n_channels, kind)
+    B = get_mats(n_matrices, n_channels, kind)
+    batched = _eigvalsh(A, B)
+    assert batched.shape == (n_matrices, n_channels)
+    for i in range(n_matrices):
+        assert_array_almost_equal(
+            batched[i], _eigvalsh(A[i], B[i]), decimal=8,
+        )
 
 
 def test_expm():

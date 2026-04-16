@@ -6,7 +6,7 @@ from ._backend import (
     get_namespace,
     tril_indices,
 )
-from .base import ctranspose, eigvalsh, sqrtm, invsqrtm, powm, logm, expm
+from .base import ctranspose, _eigvalsh, sqrtm, invsqrtm, powm, logm, expm
 from .utils import check_function
 
 
@@ -272,7 +272,7 @@ def geodesic_thompson(A, B, alpha=0.5):
     """
     # the whole check is done in the check_matrix_pair function
     xp = check_matrix_pair(A, B, require_square=True)
-    E = eigvalsh(B, A)
+    E = _eigvalsh(B, A)
     Emin, Emax = xp.min(E, axis=-1), xp.max(E, axis=-1)
 
     Emin_a, Emax_a = Emin ** alpha, Emax ** alpha

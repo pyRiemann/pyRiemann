@@ -11,7 +11,7 @@ from ._backend import (
     tril_indices,
     xpd,
 )
-from .base import eigvalsh, invsqrtm, logm, powm, sqrtm
+from .base import _eigvalsh, invsqrtm, logm, powm, sqrtm
 from .test import is_real_type
 from .utils import check_function
 
@@ -484,7 +484,7 @@ def distance_riemann(A, B, squared=False):
         Geodesy-the Challenge of the 3rd Millennium, 2003
     """
     xp = check_matrix_pair(A, B)
-    d2 = xp.sum(xp.log(eigvalsh(A, B)) ** 2, axis=-1)
+    d2 = xp.sum(xp.log(_eigvalsh(A, B)) ** 2, axis=-1)
     return d2 if squared else xp.sqrt(d2)
 
 
@@ -531,7 +531,7 @@ def distance_thompson(A, B, squared=False):
         A.C.Thompson. Proceedings of the American Mathematical Society, 1963.
     """
     xp = check_matrix_pair(A, B, require_square=True)
-    d = xp.max(xp.abs(xp.log(eigvalsh(A, B))), axis=-1)
+    d = xp.max(xp.abs(xp.log(_eigvalsh(A, B))), axis=-1)
     return d ** 2 if squared else d
 
 

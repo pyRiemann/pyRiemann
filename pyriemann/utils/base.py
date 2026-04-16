@@ -35,12 +35,23 @@ def ctranspose(X):
     return xp.conj(X).mT
 
 
-def eigvalsh(A, B):
-    """Generalized eigenvalues via Cholesky reduction.
+def _eigvalsh(A, B):
+    r"""Generalized eigenvalues of SPD/HPD matrix pencils via Cholesky reduction.
 
-    Compute eigenvalues of the generalized problem A v = λ B v,
-    using only standard Array API functions:
-    L = chol(B), eigvalsh(L⁻¹ A L⁻ᴴ).
+    Compute eigenvalues of the generalized Hermitian eigenproblem
+
+    .. math::
+        \mathbf{A} \mathbf{v} = \lambda \mathbf{B} \mathbf{v}
+
+    where :math:`\mathbf{B}` is SPD/HPD, using only standard Array API
+    primitives [1]_. Writing :math:`\mathbf{B} = \mathbf{L} \mathbf{L}^H`
+    (Cholesky), the problem reduces to the symmetric/Hermitian eigenproblem
+
+    .. math::
+        \mathbf{Z} \mathbf{u} = \lambda \mathbf{u}, \quad
+        \mathbf{Z} = \mathbf{L}^{-1} \mathbf{A} \mathbf{L}^{-H}
+
+    whose eigenvalues coincide with those of the original pencil.
 
     Parameters
     ----------
@@ -56,7 +67,13 @@ def eigvalsh(A, B):
 
     Notes
     -----
-    .. versionadded:: 0.11
+    .. versionadded:: 0.12
+
+    References
+    ----------
+    .. [1] `Matrix Computations <https://jhupbooks.press.jhu.edu/title/matrix-computations>`_
+        G. H. Golub and C. F. Van Loan, 4th ed., Johns Hopkins University
+        Press, 2013, Section 8.7.
     """
     xp = get_namespace(A, B)
     L = xp.linalg.cholesky(B)
