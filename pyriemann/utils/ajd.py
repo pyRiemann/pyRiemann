@@ -3,6 +3,7 @@
 import warnings
 
 from ._backend import get_namespace, xpd
+from ._fixes import _add_to_diagonal
 from .utils import check_weights, check_function, check_init
 
 
@@ -321,7 +322,7 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
         Bdiag = xp.linalg.diagonal(B)
         D0 = B * B.mT - xp.linalg.outer(Bdiag, Bdiag)
         A0 = (C1 * B - Bdiag[:, None] * C1.mT) / (D0 + eye_n)
-        A0 += eye_n
+        _add_to_diagonal(A0, 1, xp)
         V = xp.linalg.solve(A0, V)
 
         Raux = V @ M[:, 0:n] @ V.mT

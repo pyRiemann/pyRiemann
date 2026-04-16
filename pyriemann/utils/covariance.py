@@ -15,6 +15,9 @@ from .test import is_square, is_real_type
 from .utils import check_function, check_init, check_weights
 
 
+# `np.cov` / `np.corrcoef` use `bias`/`ddof`; `torch.cov` / `torch.corrcoef`
+# use `correction`. These wrappers dispatch via the array-API namespace and
+# translate kwargs so downstream estimators need not care about the backend.
 def _cov(X, **kwds):
     """Covariance matrix estimator."""
     xp = get_namespace(X)
@@ -898,7 +901,7 @@ def normalize(X, norm):
 
     if norm == "corr":
         stddev = xp.sqrt(xp.abs(xp.linalg.diagonal(X)))
-        denom = xp.expand_dims(stddev, axis=-2) * stddev[..., None]
+        denom = expand_dims(stddev, axis=-2) * stddev[..., None]
     elif norm == "trace":
         denom = xp.linalg.trace(X)
     elif norm == "determinant":
