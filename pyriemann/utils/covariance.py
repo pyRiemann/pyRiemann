@@ -418,7 +418,8 @@ cov_est_functions = {
 
 def _check_cov_estimator(estimator):
     est = check_function(estimator, cov_est_functions)
-    est = _vectorize_nd()(est)
+    if est not in [covariance_sch, covariance_scm]:
+        est = _vectorize_nd()(est)
     return est
 
 

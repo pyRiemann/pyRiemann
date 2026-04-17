@@ -5,6 +5,12 @@ from array_api_compat import (
 )
 
 
+def _allclose(A, B):
+    """Array-API equivalent of ``numpy.allclose``."""
+    xp = get_namespace(A, B)
+    return bool(xp.all(xp.isclose(A, B)))
+
+
 def _get_eigenvals(X):
     """Private function to compute all eigen values."""
     xp = get_namespace(X)
@@ -43,8 +49,7 @@ def is_sym(X):
     """
     if not is_square(X):
         return False
-    xp = get_namespace(X)
-    return bool(xp.all(xp.isclose(X, X.mT)))
+    return _allclose(X, X.mT)
 
 
 def is_skew_sym(X):
@@ -62,8 +67,7 @@ def is_skew_sym(X):
     """
     if not is_square(X):
         return False
-    xp = get_namespace(X)
-    return bool(xp.all(xp.isclose(X, -X.mT)))
+    return _allclose(X, -X.mT)
 
 
 def is_hankel(X):
@@ -114,7 +118,7 @@ def is_real(X):
         return True
     xp = get_namespace(X)
     X_imag = xp.imag(X)
-    return bool(xp.all(xp.isclose(X_imag, xp.zeros_like(xp.imag(X)))))
+    return _allclose(X_imag, xp.zeros_like(X_imag))
 
 
 def is_real_type(X):
