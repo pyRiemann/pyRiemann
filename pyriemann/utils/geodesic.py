@@ -2,11 +2,7 @@
 
 from array_api_compat import array_namespace as get_namespace
 
-from ._backend import (
-    check_matrix_pair,
-    diag_indices,
-    tril_indices,
-)
+from ._backend import check_matrix_pair, diag_indices, tril_indices
 from .base import ctranspose, _eigvalsh, sqrtm, invsqrtm, powm, logm, expm
 from .utils import check_function
 
@@ -42,7 +38,9 @@ def geodesic_chol(A, B, alpha=0.5):
 
     Notes
     -----
-    ..versionadded:: 0.10
+    .. versionadded:: 0.10
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -87,6 +85,11 @@ def geodesic_euclid(A, B, alpha=0.5):
     C : ndarray, shape (..., n, m)
         Matrices on the Euclidean geodesic.
 
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
     See Also
     --------
     geodesic
@@ -116,7 +119,9 @@ def geodesic_logchol(A, B, alpha=0.5):
 
     Notes
     -----
-    ..versionadded:: 0.7
+    .. versionadded:: 0.7
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -172,6 +177,11 @@ def geodesic_logeuclid(A, B, alpha=0.5):
     C : ndarray, shape (..., n, n)
         SPD/HPD matrices on the log-Euclidean geodesic.
 
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
     See Also
     --------
     geodesic
@@ -215,6 +225,11 @@ def geodesic_riemann(A, B, alpha=0.5):
     C : ndarray, shape (..., n, n)
         SPD/HPD matrices on the affine-invariant Riemannian geodesic.
 
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
     See Also
     --------
     geodesic
@@ -257,7 +272,9 @@ def geodesic_thompson(A, B, alpha=0.5):
 
     Notes
     -----
-    ..versionadded:: 0.10
+    .. versionadded:: 0.10
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -271,20 +288,19 @@ def geodesic_thompson(A, B, alpha=0.5):
         C. Mostajeran, N. Da Costa, G. Van Goffrier and R. Sepulchre.
         SIAM Journal on Matrix Analysis and Applications, 2024
     """
-    # the whole check is done in the check_matrix_pair function
     xp = check_matrix_pair(A, B, require_square=True)
     E = _eigvalsh(B, A)
     Emin, Emax = xp.min(E, axis=-1), xp.max(E, axis=-1)
-
     Emin_a, Emax_a = Emin ** alpha, Emax ** alpha
-    # safe denominator to avoid division by zero when Emin ≈ Emax
+
     equal = xp.isclose(Emin, Emax)
+    # safe denominator to avoid division by zero when Emin ≈ Emax
     den = xp.where(equal, xp.ones_like(Emin), Emax - Emin)
     b = (Emax_a - Emin_a)[..., None, None]
     a = (Emax * Emin_a - Emin * Emax_a)[..., None, None]
     c = b * B + a * A
-
     C = c / den[..., None, None]
+
     # when Emin ≈ Emax, geodesic simplifies to scaling
     C = xp.where(equal[..., None, None], Emin_a[..., None, None] * A, C)
     return C
@@ -320,7 +336,9 @@ def geodesic_wasserstein(A, B, alpha=0.5):
 
     Notes
     -----
-    ..versionadded:: 0.8
+    .. versionadded:: 0.8
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -381,6 +399,11 @@ def geodesic(A, B, alpha, metric="riemann"):
     -------
     C : ndarray, shape (..., n, n)
         Matrices on the geodesic.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------

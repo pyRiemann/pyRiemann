@@ -1005,28 +1005,27 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
     elif metric == "riemann":
         return _pairwise_distance_riemann(X, Y=Y, squared=squared)
 
-    n_matrices_X, _, _ = X.shape
-
     # compute full pairwise matrix for non-symmetric metrics
     if Y is None and metric in ["kullback", "kullback_right"]:
         Y = X
 
+    n_matrices_X, _, _ = X.shape
     if Y is None:
-        dist = xp.zeros(
-            (n_matrices_X, n_matrices_X),
-            dtype=X.real.dtype,
-            device=xpd(X)
-        )
+        n_matrices_Y = n_matrices_X
+    else:
+        n_matrices_Y, _, _ = Y.shape
+    dist = xp.zeros(
+        (n_matrices_X, n_matrices_Y),
+        dtype=X.real.dtype,
+        device=xpd(X),
+    )
+
+    if Y is None:
         for i in range(n_matrices_X):
             for j in range(i + 1, n_matrices_X):
                 dist[i, j] = distance(X[i], X[j], metric, squared=squared)
         dist = dist + dist.mT
     else:
-
-        n_matrices_Y, _, _ = Y.shape
-
-        dist = xp.empty((n_matrices_X, n_matrices_Y), dtype=X.real.dtype,
-                        device=xpd(X))
         for i in range(n_matrices_X):
             for j in range(n_matrices_Y):
                 dist[i, j] = distance(X[i], Y[j], metric, squared=squared)
