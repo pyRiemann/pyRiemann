@@ -47,6 +47,8 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     Notes
     -----
     .. versionadded:: 0.2.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -121,6 +123,8 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -191,6 +195,8 @@ def mean_chol(X, sample_weight=None, **kwargs):
     Notes
     -----
     .. versionadded:: 0.10
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -231,6 +237,11 @@ def mean_euclid(X, sample_weight=None, **kwargs):
     M : ndarray, shape (..., n, m)
         Euclidean mean.
 
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
     See Also
     --------
     gmean
@@ -263,6 +274,11 @@ def mean_harmonic(X, sample_weight=None, **kwargs):
     M : ndarray, shape (..., n, n)
         Harmonic mean.
 
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
     See Also
     --------
     gmean
@@ -292,6 +308,11 @@ def mean_kullback_sym(X, sample_weight=None, **kwargs):
     -------
     M : ndarray, shape (..., n, n)
         Symmetrized Kullback-Leibler mean.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -340,6 +361,8 @@ def mean_logchol(X, sample_weight=None, **kwargs):
     Notes
     -----
     .. versionadded:: 0.7
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -403,6 +426,11 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     M : ndarray, shape (..., n, n)
         Log-det mean.
 
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
     See Also
     --------
     gmean
@@ -452,6 +480,11 @@ def mean_logeuclid(X, sample_weight=None, **kwargs):
     -------
     M : ndarray, shape (..., n, n)
         Log-Euclidean mean.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -508,6 +541,8 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -604,6 +639,11 @@ def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     M : ndarray, shape (..., n, n)
         Power Euclidean mean.
 
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
     See Also
     --------
     gmean
@@ -662,6 +702,11 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     -------
     M : ndarray, shape (..., n, n)
         Affine-invariant Riemannian mean.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -739,6 +784,8 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     Notes
     -----
     .. versionadded:: 0.10
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -797,6 +844,11 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     -------
     M : ndarray, shape (..., n, n)
         Wasserstein mean.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -973,6 +1025,8 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------

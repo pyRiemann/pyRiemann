@@ -25,6 +25,8 @@ def ctranspose(X):
     Notes
     -----
     .. versionadded:: 0.9
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -35,23 +37,24 @@ def ctranspose(X):
 
 
 def _eigvalsh(A, B):
-    r"""Generalized eigenvalues via Cholesky reduction.
+    r"""Generalized eigenvalues of SPD/HPD matrices via Cholesky reduction.
 
     Compute eigenvalues of the generalized Hermitian eigenproblem on
-    SPD/HPD matrix pencils,
+    SPD/HPD matrix pencils [1]_
 
     .. math::
         \mathbf{A} \mathbf{v} = \lambda \mathbf{B} \mathbf{v}
 
-    where :math:`\mathbf{B}` is SPD/HPD, using only standard Array API
-    primitives [1]_. Writing :math:`\mathbf{B} = \mathbf{L} \mathbf{L}^H`
-    (Cholesky), the problem reduces to the symmetric/Hermitian eigenproblem
+    where :math:`\mathbf{B}` is SPD/HPD.
+    Writing :math:`\mathbf{B} = \mathbf{L} \mathbf{L}^H` (Cholesky),
+    the problem reduces to the symmetric/Hermitian eigenproblem
 
     .. math::
         \mathbf{Z} \mathbf{u} = \lambda \mathbf{u}, \quad
         \mathbf{Z} = \mathbf{L}^{-1} \mathbf{A} \mathbf{L}^{-H}
 
-    whose eigenvalues coincide with those of the original pencil.
+    whose eigenvalues :math:`\lambda` coincide with those of the original
+    pencil.
 
     Parameters
     ----------
@@ -157,6 +160,11 @@ def expm(C):
     -------
     D : ndarray, shape (..., n, n)
         Matrix exponential of C.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
     xp = get_namespace(C)
     return _matrix_operator(C, xp.exp)
@@ -184,6 +192,11 @@ def invsqrtm(C):
     -------
     D : ndarray, shape (..., n, n)
         Matrix inverse square root of C.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
     xp = get_namespace(C)
     def isqrt(x): return 1. / xp.sqrt(x)
@@ -211,6 +224,11 @@ def logm(C):
     -------
     D : ndarray, shape (..., n, n)
         Matrix logarithm of C.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
     xp = get_namespace(C)
     return _matrix_operator(C, xp.log)
@@ -240,6 +258,11 @@ def powm(C, alpha):
     -------
     D : ndarray, shape (..., n, n)
         Matrix power of C.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
     def power(x): return x**alpha
     return _matrix_operator(C, power)
@@ -267,6 +290,11 @@ def sqrtm(C):
     -------
     D : ndarray, shape (..., n, n)
         Matrix square root of C.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
     xp = get_namespace(C)
     return _matrix_operator(C, xp.sqrt)
@@ -296,6 +324,10 @@ def nearest_sym_pos_def(X, reg=1e-6):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.11
+        Add broadcasting.
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -388,6 +420,8 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
     Notes
     -----
     .. versionadded:: 0.8
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -434,6 +468,8 @@ def ddexpm(X, Cref):
     Notes
     -----
     .. versionadded:: 0.8
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -479,6 +515,8 @@ def ddlogm(X, Cref):
     Notes
     -----
     .. versionadded:: 0.8
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
