@@ -1,13 +1,14 @@
 from functools import partial
 import math
 
-import numpy as np
-from conftest import assert_array_almost_equal, to_numpy
-import pytest
-from pytest import approx
-
 from array_api_compat import array_namespace as get_namespace, device
 from array_api_extra import create_diagonal
+import numpy as np
+import pytest
+from pytest import approx
+from scipy.linalg import eigvalsh
+
+from conftest import assert_array_almost_equal, to_numpy
 from pyriemann.utils.base import (
     ctranspose,
     _eigvalsh,
@@ -39,24 +40,21 @@ def test_ctranspose(get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_eigvalsh_matches_scipy(get_mats, kind):
-    """_eigvalsh matches scipy.linalg.eigh on 2D matrix pencils."""
-    from scipy.linalg import eigh
-
-    A = get_mats(1, n_channels, kind)[0]
-    B = get_mats(1, n_channels, kind)[0]
-    expected = eigh(to_numpy(A), to_numpy(B), eigvals_only=True)
-    assert_array_almost_equal(_eigvalsh(A, B), expected, decimal=8)
+@pytest.mark.numpy_only
+def test_eigvalsh_scipy(get_mats, kind):
+    """Test equivalence between pyriemann and scipy eigvalsh"""
+    A, B = get_mats(2, n_channels, kind)
+    assert_array_almost_equal(_eigvalsh(A, B), eigvalsh(A, B), decimal=8)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_eigvalsh_broadcasting(get_mats, kind):
-    """_eigvalsh broadcasts over leading batch dimensions."""
     n_matrices = 4
     A = get_mats(n_matrices, n_channels, kind)
     B = get_mats(n_matrices, n_channels, kind)
     batched = _eigvalsh(A, B)
     assert batched.shape == (n_matrices, n_channels)
+
     for i in range(n_matrices):
         assert_array_almost_equal(
             batched[i], _eigvalsh(A[i], B[i]), decimal=8,
