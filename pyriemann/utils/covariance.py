@@ -600,7 +600,9 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator="cov"):
 
 
 def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
-    """Compute the complex cross-spectral matrices of a real signal X.
+    """Compute the complex cross-spectral matrices of a real signal.
+
+    Note that co-spectral matrices are the real part of cross-spectra.
 
     Parameters
     ----------
