@@ -624,6 +624,10 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     freqs : ndarray, shape (n_freqs,)
         Frequencies associated to cross-spectra.
 
+    Notes
+    -----
+    .. versionadded:: 0.2.7
+
     References
     ----------
     .. [1] https://en.wikipedia.org/wiki/Cross-spectrum
@@ -772,6 +776,12 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         Squared coherence matrices, for each frequency bin.
     freqs : ndarray, shape (n_freqs,)
         Frequencies associated to coherence.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.4
+    .. versionchanged:: 0.3
+        Add support for lagged and imaginary coherences.
 
     References
     ----------
