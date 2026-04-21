@@ -10,6 +10,9 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.12.dev
 ---------
 
+- Deprecate ``covariances_X`` and ``cospectrum``.
+  :pr:`442` by :user:`qbarthelemy`
+
 v0.11 (April 2026)
 ------------------
 

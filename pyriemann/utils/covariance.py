@@ -5,6 +5,7 @@ import numpy as np
 from scipy.stats import chi2
 from sklearn.covariance import oas, ledoit_wolf, fast_mcd
 
+from . import deprecated
 from .base import ctranspose, _vectorize_nd
 from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
@@ -469,6 +470,9 @@ def covariances_EP(X, P, estimator="cov", **kwds):
     return est(PX, **kwds)
 
 
+@deprecated(
+    "covariances_X() is deprecated and will be removed in 0.14.0."
+)
 def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
     """Special form covariance matrix, embedding input X.
 
@@ -596,7 +600,9 @@ def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator="cov"):
 
 
 def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
-    """Compute the complex cross-spectral matrices of a real signal X.
+    """Compute the complex cross-spectral matrices of a real signal.
+
+    Note that co-spectral matrices are the real part of cross-spectra.
 
     Parameters
     ----------
@@ -619,6 +625,10 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         Cross-spectral matrices, for each frequency bin.
     freqs : ndarray, shape (n_freqs,)
         Frequencies associated to cross-spectra.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.7
 
     References
     ----------
@@ -686,6 +696,10 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     return S, freqs
 
 
+@deprecated(
+    "cospectrum() is deprecated and will be removed in 0.14.0; "
+    "please use cross_spectrum() and take the real part of first output."
+)
 def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     """Compute co-spectral matrices, the real part of cross-spectra.
 
@@ -764,6 +778,12 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         Squared coherence matrices, for each frequency bin.
     freqs : ndarray, shape (n_freqs,)
         Frequencies associated to coherence.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.4
+    .. versionchanged:: 0.3
+        Add support for lagged and imaginary coherences.
 
     References
     ----------
