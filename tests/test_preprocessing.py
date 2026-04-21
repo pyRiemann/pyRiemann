@@ -5,6 +5,10 @@ import pytest
 from pyriemann.spatialfilters import Whitening
 from pyriemann.utils.mean import gmean
 
+
+pytestmark = pytest.mark.numpy_only
+
+
 n_components = 3
 expl_var = 0.9
 max_cond = 10
@@ -137,7 +141,6 @@ def test_whitening_transform(dim_red, metric, get_mats):
 
 @pytest.mark.parametrize("dim_red", dim_red)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-@pytest.mark.numpy_only
 def test_whitening_inverse_transform(dim_red, metric, get_mats):
     """Test Whitening inverse transform"""
     n_matrices, n_channels = 20, 6

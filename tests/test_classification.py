@@ -26,6 +26,10 @@ from pyriemann.classification import (
 )
 from pyriemann.datasets import make_gaussian_blobs
 
+
+pytestmark = pytest.mark.numpy_only
+
+
 classifs = [
     MDM,
     FgMDM,
@@ -69,7 +73,6 @@ def test_mode(X, axis, expected):
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("n_classes", [2, 3])
 @pytest.mark.parametrize("classif", classifs)
-@pytest.mark.numpy_only
 def test_classifier(kind, n_classes, classif,
                     get_mats, get_labels, get_weights):
     if kind == "hpd" and \
@@ -213,7 +216,6 @@ def test_metric_errors(classif, metric, get_mats, get_labels):
 
 @pytest.mark.parametrize("classif", classifs)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-@pytest.mark.numpy_only
 def test_metric_str(classif, metric, get_mats, get_labels):
     if classif is NearestConvexHull and metric in ["euclid", "riemann"]:
         pytest.skip()
@@ -239,7 +241,6 @@ def call_dist(A, B, squared=False):
     "euclid", "logeuclid", "riemann", call_dist
 ])
 @pytest.mark.parametrize("n_classes", [2, 3, 4])
-@pytest.mark.numpy_only
 def test_mdm(metric_mean, metric_dist, n_classes, get_mats, get_labels):
     n_matrices, n_channels = 4 * n_classes, 3
     X = get_mats(n_matrices, n_channels, "spd")
@@ -254,7 +255,6 @@ def test_mdm(metric_mean, metric_dist, n_classes, get_mats, get_labels):
 @pytest.mark.parametrize("metric", [
     "euclid", "logchol", "logeuclid", "riemann"
 ])
-@pytest.mark.numpy_only
 def test_mdm_hpd(kind, metric, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 4, 2
     X = get_mats(n_matrices, n_channels, kind)
@@ -269,7 +269,6 @@ def test_mdm_hpd(kind, metric, get_mats, get_labels):
 @pytest.mark.parametrize("metric_map", [
     "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
 ])
-@pytest.mark.numpy_only
 def test_fgmdm(metric_mean, metric_dist, metric_map, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 4, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
@@ -356,7 +355,6 @@ def test_svc_params_error(get_mats, get_labels):
 
 
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-@pytest.mark.numpy_only
 def test_svc_cref_metric(get_mats, get_labels, metric):
     n_matrices, n_channels, n_classes = 6, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
@@ -452,7 +450,6 @@ def test_svc_kernel_error(get_mats, get_labels):
     "sum_means", "inf_means", None
 ])
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-@pytest.mark.numpy_only
 def test_meanfield(get_mats, get_labels,
                    power_list, method_combination, metric):
     n_powers = len(power_list)
@@ -480,7 +477,6 @@ def test_meanfield(get_mats, get_labels,
 
 
 @pytest.mark.parametrize("power_list", [[-1, 0, 1], [0, 0.1]])
-@pytest.mark.numpy_only
 def test_meanfield_transformer(get_mats, get_labels, power_list):
     n_matrices, n_channels, n_classes = 8, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
@@ -524,7 +520,6 @@ def test_nch(metric, rndstate):
 @pytest.mark.parametrize("metric_mean", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("metric_dist", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("exponent", [1, 2])
-@pytest.mark.numpy_only
 def test_class_distinctiveness(kind, n_classes, metric_mean, metric_dist,
                                exponent, get_mats, get_labels):
     """Test function for class distinctiveness measure for two class problem"""

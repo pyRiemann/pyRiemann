@@ -4,6 +4,9 @@ import pytest
 from pyriemann.channelselection import ElectrodeSelection, FlatChannelRemover
 
 
+pytestmark = pytest.mark.numpy_only
+
+
 @pytest.mark.parametrize("use_label", [True, False])
 @pytest.mark.parametrize("use_weight", [True, False])
 def test_electrodeselection(use_label, use_weight,
@@ -35,7 +38,6 @@ def test_electrodeselection(use_label, use_weight,
     assert_array_equal(Xt, Xt2)
 
 
-@pytest.mark.numpy_only
 def test_flatchannelremover(get_mats):
     n_matrices, n_channels, n_times = 10, 10, 3
     X = get_mats(n_matrices, [n_channels, n_times], "real")

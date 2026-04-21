@@ -12,13 +12,16 @@ from pyriemann.embedding import (
 )
 from pyriemann.utils.kernel import kernel, kernel_functions
 
+
+pytestmark = pytest.mark.numpy_only
+
+
 embds = [SpectralEmbedding, LocallyLinearEmbedding, TSNE]
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("embd", embds)
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-@pytest.mark.numpy_only
 def test_embedding(kind, embd, metric, get_mats):
     if kind == "hpd" and embd is LocallyLinearEmbedding:
         pytest.skip()
@@ -107,7 +110,6 @@ def embd_result(embedding, metric):
 
 @pytest.mark.parametrize("n_components", [2, 4, 100])
 @pytest.mark.parametrize("embd", embds)
-@pytest.mark.numpy_only
 def test_embd_n_comp(n_components, embd, get_mats):
     if n_components == 100 and embd is TSNE:
         # t-SNE would take too long with 100 components
@@ -133,7 +135,6 @@ def test_embd_metric_error(embd, get_mats):
 
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("eps", [None, 0.1])
-@pytest.mark.numpy_only
 def test_spectral_embedding_parameters(metric, eps, get_mats):
     """Test SpectralEmbedding."""
     n_matrices, n_channels, n_comps = 6, 3, 2
@@ -147,7 +148,6 @@ def test_spectral_embedding_parameters(metric, eps, get_mats):
 @pytest.mark.parametrize("n_neighbors", [2, 4, 8, 16])
 @pytest.mark.parametrize("reg", [1e-3, 0])
 @pytest.mark.parametrize("kernel_fct", [kernel, None])
-@pytest.mark.numpy_only
 def test_locally_linear_embedding_parameters(metric, n_neighbors, reg,
                                              kernel_fct, get_mats):
     """Test LocallyLinearEmbedding."""
@@ -164,7 +164,6 @@ def test_locally_linear_embedding_parameters(metric, n_neighbors, reg,
 
 
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-@pytest.mark.numpy_only
 def test_locally_linear_embedding_kernel(metric, get_mats):
     """Test LocallyLinearEmbedding, kernel parameter."""
     n_matrices, n_channels, n_components = 6, 3, 2
@@ -190,7 +189,6 @@ def test_locally_linear_embedding_kernel(metric, get_mats):
     assert np.array_equal(Xt, Xt2)
 
 
-@pytest.mark.numpy_only
 def test_barycenter_weights_func(get_mats):
     """Test barycenter_weights helper function."""
     n_matrices, n_channels = 4, 3
@@ -203,7 +201,6 @@ def test_barycenter_weights_func(get_mats):
     assert weights.shape == (n_matrices, 2)
 
 
-@pytest.mark.numpy_only
 def test_locally_linear_embedding_func(get_mats):
     """Test locally_linear_embedding helper function."""
     n_matrices, n_channels, n_comps, n_neighbors = 4, 3, 2, 2

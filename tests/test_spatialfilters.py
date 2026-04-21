@@ -4,13 +4,16 @@ import pytest
 
 from pyriemann.spatialfilters import Xdawn, CSP, SPoC, BilinearFilter, AJDC
 
+
+pytestmark = pytest.mark.numpy_only
+
+
 spfilts = [Xdawn, CSP, SPoC, BilinearFilter, AJDC]
 
 
 @pytest.mark.parametrize("spfilt", spfilts)
 @pytest.mark.parametrize("n_channels", [3, 5, 7])
 @pytest.mark.parametrize("n_classes", [2, 3])
-@pytest.mark.numpy_only
 def test_spatial_filters(spfilt, n_channels, n_classes, get_mats, get_labels):
     if n_classes == 2:
         n_matrices, n_times = 10, 256
@@ -151,7 +154,6 @@ def sf_fit_independence(spfilt, X, y, n_channels):
 
 @pytest.mark.parametrize("n_channels", [3, 4, 5])
 @pytest.mark.parametrize("use_baseline_cov", [True, False])
-@pytest.mark.numpy_only
 def test_xdawn_baselinecov(n_channels, use_baseline_cov, get_mats, get_labels):
     n_classes, n_matrices, n_times = 2, 6, 100
     X = get_mats(n_matrices, [n_channels, n_times], "real")
@@ -170,7 +172,6 @@ def test_xdawn_baselinecov(n_channels, use_baseline_cov, get_mats, get_labels):
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("log", [True, False])
 @pytest.mark.parametrize("ajd_method", ["ajd_pham", "rjd", "uwedge"])
-@pytest.mark.numpy_only
 def test_csp(n_filters, metric, log, ajd_method, get_mats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 4
     X = get_mats(n_matrices, n_channels, "spd")
@@ -202,7 +203,6 @@ def test_bilinearfilter_errors(get_mats, get_labels):
 
 @pytest.mark.parametrize("n_filters", [3, 4])
 @pytest.mark.parametrize("log", [True, False])
-@pytest.mark.numpy_only
 def test_bilinearfilter(n_filters, log, get_mats, get_labels):
     n_classes, n_matrices, n_channels = 2, 6, 4
     X = get_mats(n_matrices, n_channels, "spd")

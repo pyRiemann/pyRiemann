@@ -5,10 +5,13 @@ from pytest import approx
 
 from pyriemann.tangentspace import TangentSpace, FGDA
 
+
+pytestmark = pytest.mark.numpy_only
+
+
 metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("tspace", [TangentSpace, FGDA])
 def test_tangentspace(kind, tspace, get_mats, get_labels, get_weights):
@@ -94,7 +97,6 @@ def test_tangentspaces_metric_wrong_keys(tspace, metric, get_mats, get_labels):
         ts.fit(X, y).transform(X)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("fit", [True, False])
 @pytest.mark.parametrize("tsupdate", [True, False])
 @pytest.mark.parametrize("metric_mean", ["euclid", "logeuclid", "riemann"])

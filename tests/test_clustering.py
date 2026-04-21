@@ -15,6 +15,10 @@ from pyriemann.clustering import (
 )
 from pyriemann.utils.tangentspace import tangent_space
 
+
+pytestmark = pytest.mark.numpy_only
+
+
 clusts = [
     Kmeans,
     KmeansPerClassTransform,
@@ -27,7 +31,6 @@ clusts = [
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("clust", clusts)
-@pytest.mark.numpy_only
 def test_clustering_two_clusters(kind, clust,
                                  get_mats, get_labels, get_weights):
     if kind == "hpd" and clust in [GaussianMixture]:
@@ -96,7 +99,6 @@ def test_clustering_two_clusters(kind, clust,
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("clust", clusts)
-@pytest.mark.numpy_only
 def test_clustering_three_clusters(kind, clust, get_mats, get_labels):
     if kind == "hpd" and clust in [GaussianMixture]:
         pytest.skip()
@@ -320,7 +322,6 @@ def clt_score(clust, X, y=None):
 @pytest.mark.parametrize("init", ["random", "ndarray"])
 @pytest.mark.parametrize("n_init", [1, 5])
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-@pytest.mark.numpy_only
 def test_kmeans(clust, init, n_init, metric, get_mats, get_labels):
     n_clusters, n_classes, n_matrices, n_channels = 2, 3, 9, 5
     X = get_mats(n_matrices, n_channels, "spd")
@@ -360,7 +361,6 @@ def callable_kernel(x):
 @pytest.mark.parametrize("metric", [
     "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
 ])
-@pytest.mark.numpy_only
 def test_meanshift(kernel, metric, get_mats, get_labels):
     n_matrices, n_channels = 10, 3
     X = get_mats(n_matrices, n_channels, "spd")
@@ -398,7 +398,6 @@ def test_gaussian(get_mats, get_weights):
 
 
 @pytest.mark.parametrize("n_components", [2, 4])
-@pytest.mark.numpy_only
 def test_gmm(n_components, get_mats, get_weights):
     n_matrices, n_channels = 50, 2
     X = get_mats(n_matrices, n_channels, "spd")
@@ -422,7 +421,6 @@ def test_gmm(n_components, get_mats, get_weights):
 
 
 @pytest.mark.parametrize("use_weight", [True, False])
-@pytest.mark.numpy_only
 def test_potato_fit(use_weight, get_mats, get_weights):
     n_matrices, n_channels = 6, 3
     X = get_mats(n_matrices, n_channels, "spd")
@@ -457,7 +455,6 @@ def test_potato_partialfit_not_fitted(get_mats):
         Potato().partial_fit(X)
 
 
-@pytest.mark.numpy_only
 def test_potato_partialfit_diff_channels(get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
@@ -467,7 +464,6 @@ def test_potato_partialfit_diff_channels(get_mats, get_labels):
         pt.partial_fit(get_mats(2, n_channels + 1, "spd"))
 
 
-@pytest.mark.numpy_only
 def test_potato_partialfit_no_poslabel(get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
@@ -478,7 +474,6 @@ def test_potato_partialfit_no_poslabel(get_mats, get_labels):
 
 
 @pytest.mark.parametrize("alpha", [-0.1, 1.1])
-@pytest.mark.numpy_only
 def test_potato_partialfit_alpha(alpha, get_mats, get_labels):
     n_matrices, n_channels, n_classes = 6, 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
@@ -488,7 +483,6 @@ def test_potato_partialfit_alpha(alpha, get_mats, get_labels):
         pt.partial_fit(X, y, alpha=alpha)
 
 
-@pytest.mark.numpy_only
 def test_potato_1channel(get_mats):
     n_matrices, n_channels = 6, 1
     X_1chan = get_mats(n_matrices, n_channels, "spd")
@@ -498,7 +492,6 @@ def test_potato_1channel(get_mats):
     pt.predict_proba(X_1chan)
 
 
-@pytest.mark.numpy_only
 def test_potato_threshold(get_mats):
     n_matrices, n_channels = 6, 3
     X = get_mats(n_matrices, n_channels, "spd")
@@ -506,7 +499,6 @@ def test_potato_threshold(get_mats):
     pt.fit(X)
 
 
-@pytest.mark.numpy_only
 def test_potato_specific_labels(get_mats):
     n_matrices, n_channels = 10, 3
     X = get_mats(n_matrices, n_channels, "spd")
@@ -545,7 +537,6 @@ def callable_diageuclid(A, B, squared=False):
         ],
     ]
 )
-@pytest.mark.numpy_only
 def test_potatofield_fit_metric(metric, get_mats):
     n_potatoes, n_matrices, n_channels = 2, 6, 3
     X1 = get_mats(n_matrices, n_channels, "hpd")
@@ -570,7 +561,6 @@ def callable_combination(X, axis):
         callable_combination,
     ]
 )
-@pytest.mark.numpy_only
 def test_potatofield_fit_combination(method_combination, get_mats):
     n_potatoes, n_matrices, n_channels = 3, 3, 4
     X1 = get_mats(n_matrices, n_channels, "hpd")
@@ -585,7 +575,6 @@ def test_potatofield_fit_combination(method_combination, get_mats):
     pf.predict_proba(X)
 
 
-@pytest.mark.numpy_only
 def test_potatofield_fit_errors(get_mats):
     n_potatoes, n_matrices, n_channels = 2, 6, 3
     X1 = get_mats(n_matrices, n_channels, "spd")
@@ -611,7 +600,6 @@ def test_potatofield_fit_errors(get_mats):
 @pytest.mark.parametrize(
     "method", ["partial_fit", "transform", "predict_proba"]
 )
-@pytest.mark.numpy_only
 def test_potatofield_method(get_mats, method):
     n_potatoes, n_matrices, n_channels = 2, 6, 3
     X1 = get_mats(n_matrices, n_channels, "spd")
