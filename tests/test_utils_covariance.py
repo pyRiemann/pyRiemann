@@ -1,10 +1,10 @@
+from array_api_compat import array_namespace as get_namespace
 import numpy as np
 import pytest
-from conftest import assert_array_almost_equal, to_numpy, approx
 from scipy.linalg import block_diag
 from scipy.signal import welch, csd, coherence as coherence_sp
 
-from array_api_compat import array_namespace as get_namespace
+from conftest import assert_array_almost_equal, to_numpy, approx
 from pyriemann.utils.covariance import (
     covariances, covariance_scm, covariances_EP, covariances_X, eegtocov,
     cross_spectrum, cospectrum, coherence,

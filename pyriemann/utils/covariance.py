@@ -76,6 +76,8 @@ def _complex_estimator(func):
     Notes
     -----
     .. versionadded:: 0.6
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -200,6 +202,8 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -300,6 +304,8 @@ def covariance_sch(X):
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -384,6 +390,10 @@ def covariance_scm(X, *, assume_centered=False, weights=None):
     Notes
     -----
     .. versionadded:: 0.6
+    .. versionchanged:: 0.11
+        Add weights.
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -462,6 +472,11 @@ def covariances(X, estimator="cov", **kwds):
     covmats : ndarray, shape (..., n_channels, n_channels)
         Covariance matrices.
 
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
     References
     ----------
     .. [est] https://scikit-learn.org/stable/modules/covariance.html
@@ -496,6 +511,11 @@ def covariances_EP(X, P, estimator="cov", **kwds):
         :func:`pyriemann.utils.covariance.covariances`.
     **kwds : optional keyword parameters
         Any further parameters are passed directly to the covariance estimator.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     Returns
     -------
@@ -538,6 +558,11 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
     covmats : ndarray, shape (..., n_channels + n_times, n_channels + \
             n_times)
         Covariance matrices.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -599,6 +624,11 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
     **kwds : optional keyword parameters
         Any further parameters are passed directly to the covariance estimator.
 
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
     Returns
     -------
     covmats : ndarray, shape (..., n_channels, n_channels)
@@ -633,7 +663,13 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
 
 
 def eegtocov(sig, window=128, overlapp=0.5, padding=True, estimator="cov"):
-    """Convert EEG signal to covariance using sliding window."""
+    """Convert EEG signal to covariance using sliding window.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+    """
     est = check_function(estimator, cov_est_functions)
     xp = get_namespace(sig)
     X = []
@@ -782,7 +818,7 @@ def cospectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
         fs=fs,
     )
 
-    return get_namespace(S).real(S), freqs
+    return S.real, freqs
 
 
 def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
@@ -917,6 +953,12 @@ def normalize(X, norm):
         * "trace": trace of normalized matrices is 1;
         * "determinant": determinant of normalized matrices is +/- 1.
 
+    Notes
+    -----
+    .. versionadded:: 0.2.7
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
     Returns
     -------
     Xn : ndarray, shape (..., n, n)
@@ -960,6 +1002,12 @@ def get_nondiag_weight(X):
     -------
     weights : ndarray, shape (...,)
         Non-diagonality weights for matrices.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.7
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------

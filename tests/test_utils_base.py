@@ -8,7 +8,7 @@ import pytest
 from pytest import approx
 from scipy.linalg import eigvalsh
 
-from conftest import assert_array_almost_equal, to_numpy
+from conftest import assert_array_almost_equal
 from pyriemann.utils.base import (
     ctranspose,
     _eigvalsh,
@@ -163,8 +163,8 @@ def test_funm_properties(get_mats, kind):
     eX, lX = expm(X), logm(X)
     assert_array_almost_equal(eX.conj(), expm(X.conj()), decimal=10)
     assert_array_almost_equal(
-        to_numpy(xp.linalg.det(eX)),
-        to_numpy(xp.exp(xp.linalg.trace(X))),
+        xp.linalg.det(eX),
+        xp.exp(xp.linalg.trace(X)),
         decimal=10,
     )
     assert_array_almost_equal(logm(eX), X, decimal=10)

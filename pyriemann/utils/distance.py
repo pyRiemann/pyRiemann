@@ -846,7 +846,7 @@ def _pairwise_distance_logchol(X, Y=None, squared=False):
     if Y is None:
         tri_part = _euclidean_distances(
             X_chol[..., tri0, tri1],
-            squared=True
+            squared=True,
         )
         diag_part = _euclidean_distances(
             xp.log(X_chol[..., diag0, diag1]),

@@ -15,7 +15,7 @@ def _get_eigenvals(X):
     """Private function to compute all eigen values."""
     xp = get_namespace(X)
     n = X.shape[-1]
-    return xp.linalg.eig(X.reshape((-1, n, n)))[0]
+    return xp.linalg.eigvals(X.reshape((-1, n, n)))
 
 
 def is_square(X):
@@ -47,9 +47,7 @@ def is_sym(X):
     ret : bool
         True if all matrices are symmetric.
     """
-    if not is_square(X):
-        return False
-    return _allclose(X, X.mT)
+    return is_square(X) and _allclose(X, X.mT)
 
 
 def is_skew_sym(X):
@@ -65,9 +63,7 @@ def is_skew_sym(X):
     ret : bool
         True if all matrices are skew-symmetric.
     """
-    if not is_square(X):
-        return False
-    return _allclose(X, -X.mT)
+    return is_square(X) and _allclose(X, -X.mT)
 
 
 def is_hankel(X):
@@ -197,8 +193,7 @@ def is_pos_def(X, tol=0.0, fast_mode=False):
     else:
         if not is_square(X):
             return False
-        eigvals = _get_eigenvals(X)
-        return bool(xp.all(xp.real(eigvals) > tol))
+        return bool(xp.all(xp.real(_get_eigenvals(X)) > tol))
 
 
 def is_pos_semi_def(X):
@@ -217,8 +212,7 @@ def is_pos_semi_def(X):
     xp = get_namespace(X)
     if not is_square(X):
         return False
-    eigvals = _get_eigenvals(X)
-    return bool(xp.all(xp.real(eigvals) >= 0.0))
+    return bool(xp.all(xp.real(_get_eigenvals(X)) >= 0.0))
 
 
 def is_sym_pos_def(X, tol=0.0):

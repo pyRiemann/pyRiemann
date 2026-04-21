@@ -32,6 +32,8 @@ def check_weights(weights, n_weights, *, check_positivity=False, like=None):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
     xp, dev = check_like(like)
 
@@ -149,6 +151,8 @@ def check_init(init, n, *, like=None):
     Notes
     -----
     .. versionadded:: 0.8
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
     xp, dev = check_like(like)
     init = xp.asarray(init, dtype=init.dtype, device=dev)

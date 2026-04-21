@@ -5,8 +5,6 @@ from pyriemann.stats import PermutationDistance, PermutationModel
 from pyriemann.spatialfilters import CSP
 
 
-# pyriemann.stats is not array-API compatible (mixes numpy ops with input X),
-# so all tests that pass matrices must run under the numpy backend only.
 pytestmark = pytest.mark.numpy_only
 
 

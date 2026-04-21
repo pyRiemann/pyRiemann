@@ -40,6 +40,8 @@ def exp_map_euclid(X, Cref):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
     return X + Cref
 
@@ -65,6 +67,8 @@ def exp_map_logchol(X, Cref):
     Notes
     -----
     .. versionadded:: 0.7
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -129,6 +133,8 @@ def exp_map_logeuclid(X, Cref):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -181,6 +187,8 @@ def exp_map_riemann(X, Cref, Cm12=False):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -219,6 +227,8 @@ def exp_map_wasserstein(X, Cref):
     Notes
     -----
     .. versionadded:: 0.8
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -271,6 +281,8 @@ def exp_map(X, Cref, *, metric="riemann"):
     Notes
     -----
     .. versionadded:: 0.9
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -312,6 +324,8 @@ def log_map_euclid(X, Cref):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
     return X - Cref
 
@@ -337,6 +351,8 @@ def log_map_logchol(X, Cref):
     Notes
     -----
     .. versionadded:: 0.7
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -393,6 +409,8 @@ def log_map_logeuclid(X, Cref):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -447,6 +465,8 @@ def log_map_riemann(X, Cref, C12=False):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -490,6 +510,8 @@ def log_map_wasserstein(X, Cref):
     Notes
     -----
     .. versionadded:: 0.8
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -537,6 +559,8 @@ def log_map(X, Cref, *, metric="riemann"):
     Notes
     -----
     .. versionadded:: 0.9
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -574,6 +598,8 @@ def upper(X):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -619,6 +645,8 @@ def unupper(T):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
     xp = get_namespace(T)
     dims = T.shape
@@ -654,6 +682,10 @@ def tangent_space(X, Cref, *, metric="riemann"):
     T : ndarray, shape (..., n * (n + 1) / 2)
         Tangent vectors.
 
+    Notes
+    -----
+    .. versionchanged:: 0.12
+
     See Also
     --------
     log_map
@@ -685,6 +717,10 @@ def untangent_space(T, Cref, *, metric="riemann"):
     -------
     X : ndarray, shape (..., n, n)
         Matrices in manifold.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
 
     See Also
     --------
@@ -724,6 +760,8 @@ def innerproduct_euclid(X, Y, *args):
     Notes
     -----
     .. versionadded:: 0.11
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -767,6 +805,8 @@ def innerproduct_logeuclid(X, Y, Cref):
     Notes
     -----
     .. versionadded:: 0.11
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -820,6 +860,8 @@ def innerproduct_riemann(X, Y, Cref):
     Notes
     -----
     .. versionadded:: 0.11
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -885,6 +927,8 @@ def innerproduct(X, Y, Cref, metric="riemann"):
     Notes
     -----
     .. versionadded:: 0.11
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -922,6 +966,8 @@ def norm(X, Cref, metric="riemann"):
     Notes
     -----
     .. versionadded:: 0.11
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -954,6 +1000,8 @@ def transport_euclid(X, A=None, B=None):
     Notes
     -----
     .. versionadded:: 0.10
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -993,6 +1041,8 @@ def transport_logchol(X, A, B):
     .. versionadded:: 0.10
     .. versionchanged:: 0.11
         Correct formula for HPD matrices.
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -1064,6 +1114,8 @@ def transport_logeuclid(X, A, B):
     .. versionadded:: 0.10
     .. versionchanged:: 0.11
         Correct formula.
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -1116,6 +1168,8 @@ def transport_riemann(X, A, B):
         Change input arguments and calculation of the function.
     .. versionchanged:: 0.10
         Rename function and add to API.
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -1177,6 +1231,8 @@ def transport(X, A, B, metric="riemann"):
     Notes
     -----
     .. versionadded:: 0.10
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
