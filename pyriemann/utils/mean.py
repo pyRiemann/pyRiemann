@@ -8,7 +8,7 @@ import numpy as np
 
 from . import deprecated
 from ._backend import (
-    diag_indices, tril_indices, to_numpy, from_numpy,
+    diag_indices, tril_indices, as_numpy, from_numpy,
 )
 from .ajd import ajd_pham
 from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd
@@ -160,8 +160,7 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
         norm_c = xp.linalg.matrix_norm(M[0], ord=2)
         if norm_iter / norm_c < tol:
             break
-        M = xp.zeros_like(M_iter)
-        M[...] = M_iter
+        M = xp.asarray(M_iter, copy=True)
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
 
@@ -1120,12 +1119,12 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
         F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
         Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
-    X_np = to_numpy(X)
+    X_np = as_numpy(X)
     n_matrices, n, _ = X_np.shape
     if init is None:
         init = np.nanmean(X_np, axis=0) + 1e-6 * np.eye(n)
     else:
-        init = np.asarray(check_init(to_numpy(init), n, like=X_np))
+        init = np.asarray(check_init(as_numpy(init), n, like=X_np))
 
     M = maskedmean_riemann(
         np.nan_to_num(X_np),  # avoid nan contamination in matmul

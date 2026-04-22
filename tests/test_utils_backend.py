@@ -5,8 +5,7 @@ import pytest
 
 from conftest import to_backend, to_numpy
 from pyriemann.utils._backend import (
-    check_matrix_pair,
-    to_numpy as backend_to_numpy,
+    as_numpy,
     from_numpy,
     diag_indices,
     tril_indices,
@@ -14,14 +13,15 @@ from pyriemann.utils._backend import (
     get_namespace,
     xpd,
 )
+from pyriemann.utils.utils import check_matrix_pair
 
 
 n_channels = 3
 
 
-def test_to_numpy():
+def test_as_numpy():
     X = np.random.rand(3, 3)
-    assert np.array_equal(backend_to_numpy(X), X)
+    assert np.array_equal(as_numpy(X), X)
 
 
 def test_from_numpy(backend):

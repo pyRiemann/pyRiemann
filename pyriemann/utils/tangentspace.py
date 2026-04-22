@@ -9,13 +9,12 @@ from array_api_compat import (
 )
 
 from ._backend import (
-    check_matrix_pair,
     diag_indices,
     tril_indices,
     triu_indices,
 )
 from .base import ctranspose, expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
-from .utils import check_function
+from .utils import check_function, check_matrix_pair
 
 
 def exp_map_euclid(X, Cref):

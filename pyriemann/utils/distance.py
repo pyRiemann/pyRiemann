@@ -8,14 +8,13 @@ from array_api_compat import (
 from sklearn.metrics import euclidean_distances
 
 from ._backend import (
-    check_matrix_pair,
     diag_indices,
     torch,
     tril_indices,
 )
 from .base import _eigvalsh, invsqrtm, logm, powm, sqrtm
 from .test import is_real_type
-from .utils import check_function
+from .utils import check_function, check_matrix_pair
 
 
 ###############################################################################

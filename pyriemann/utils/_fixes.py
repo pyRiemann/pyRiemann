@@ -26,7 +26,7 @@ from sklearn.covariance import (
     oas as _sklearn_oas,
 )
 
-from ._backend import to_numpy, from_numpy
+from ._backend import as_numpy, from_numpy
 
 
 def _add_to_diagonal(X, value, xp):
@@ -80,16 +80,16 @@ def _ledoit_wolf_shrinkage(X, assume_centered=False, xp=None):
 
     X2 = X ** 2
     emp_cov_trace = xp.sum(X2, axis=0) / n_samples
-    mu = float(xp.sum(emp_cov_trace)) / n_features
+    mu = xp.sum(emp_cov_trace) / n_features
 
     # GPU-friendly: single matmul for delta_ and a row-sum identity for beta_.
     # Identity: sum(X2.T @ X2) == sum(sum(X2, axis=1) ** 2), which avoids
     # allocating the (n_features, n_features) intermediate.
-    beta_ = float(xp.sum(xp.sum(X2, axis=1) ** 2))
-    delta_ = float(xp.sum((X.mT @ X) ** 2)) / n_samples ** 2
+    beta_ = xp.sum(xp.sum(X2, axis=1) ** 2)
+    delta_ = xp.sum((X.mT @ X) ** 2) / n_samples ** 2
 
     beta = 1.0 / (n_features * n_samples) * (beta_ / n_samples - delta_)
-    delta = delta_ - 2.0 * mu * float(xp.sum(emp_cov_trace)) + \
+    delta = delta_ - 2.0 * mu * xp.sum(emp_cov_trace) + \
         n_features * mu ** 2
     delta /= n_features
 
@@ -134,7 +134,7 @@ def ledoit_wolf(X, assume_centered=False, block_size=1000):
     shrinkage = _ledoit_wolf_shrinkage(
         X, assume_centered=assume_centered, xp=xp)
     emp_cov = _empirical_covariance(X, assume_centered=assume_centered, xp=xp)
-    mu = float(xp.linalg.trace(emp_cov)) / n_features
+    mu = xp.linalg.trace(emp_cov) / n_features
     shrunk_cov = (1.0 - shrinkage) * emp_cov
     _add_to_diagonal(shrunk_cov, shrinkage * mu, xp)
     return shrunk_cov, shrinkage
@@ -176,8 +176,8 @@ def oas(X, assume_centered=False):
 
     emp_cov = _empirical_covariance(X, assume_centered=assume_centered, xp=xp)
 
-    alpha = float(xp.mean(emp_cov ** 2))
-    mu = float(xp.linalg.trace(emp_cov)) / n_features
+    alpha = xp.mean(emp_cov ** 2)
+    mu = xp.linalg.trace(emp_cov) / n_features
     mu_squared = mu ** 2
 
     num = alpha + mu_squared
@@ -222,7 +222,7 @@ def fast_mcd(X, **kwds):
         return _sklearn_mcd(X, **kwds)
 
     # No torch MCD exists — convert to numpy and back
-    X_np = to_numpy(X)
+    X_np = as_numpy(X)
     result = _sklearn_mcd(X_np, **kwds)
     return tuple(
         from_numpy(r, like=X) if hasattr(r, 'shape') else r

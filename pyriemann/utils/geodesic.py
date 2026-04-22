@@ -2,9 +2,9 @@
 
 from array_api_compat import array_namespace as get_namespace
 
-from ._backend import check_matrix_pair, diag_indices, tril_indices
+from ._backend import diag_indices, tril_indices
 from .base import ctranspose, _eigvalsh, sqrtm, invsqrtm, powm, logm, expm
-from .utils import check_function
+from .utils import check_function, check_matrix_pair
 
 
 def geodesic_chol(A, B, alpha=0.5):

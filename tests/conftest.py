@@ -9,6 +9,7 @@ except ImportError:
     HAS_TORCH = False
 
 from pyriemann.datasets import make_masks, make_matrices
+from pyriemann.utils._backend import as_numpy
 
 
 ###############################################################################
@@ -24,18 +25,23 @@ def to_backend(x, backend):
 
 
 def to_numpy(x):
-    """Convert any array-like to numpy for assertions."""
+    """Convert any array-like (including nested containers) to numpy.
+
+    Wraps :func:`pyriemann.utils._backend.as_numpy` with extra handling for
+    ``None``, Python/NumPy scalars, and tuple/list containers used in tests.
+    """
     if x is None:
         return None
-    if isinstance(x, (bool, int, float, np.bool_, np.integer, np.floating)):
+    if isinstance(x, (
+        bool, int, float, complex,
+        np.bool_, np.integer, np.floating, np.complexfloating,
+    )):
         return x
     if isinstance(x, tuple):
         return tuple(to_numpy(v) for v in x)
     if isinstance(x, list):
         return [to_numpy(v) for v in x]
-    if HAS_TORCH and isinstance(x, torch.Tensor):
-        return x.resolve_conj().resolve_neg().detach().cpu().numpy()
-    return x
+    return as_numpy(x)
 
 
 def approx(expected, *args, **kwargs):

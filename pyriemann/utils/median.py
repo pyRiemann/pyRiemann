@@ -80,7 +80,7 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
         if n_zeros > 0:
             R = xp.tensordot(w, X[~is_zero] - M, axes=([0], [0]))  # Eq(2.7)
             r = xp.linalg.matrix_norm(R, ord="fro")
-            rinv = 0 if r == 0 else float(xp.mean(weights[is_zero])) / r
+            rinv = 0 if r == 0 else xp.mean(weights[is_zero]) / r
             Mnew = max(0, 1 - rinv) * Mnew + min(1, rinv) * M  # Eq(2.6)
 
         crit = xp.linalg.matrix_norm(Mnew - M, ord="fro")

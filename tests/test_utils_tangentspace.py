@@ -1,7 +1,4 @@
-from array_api_compat import (
-    array_namespace as get_namespace,
-    is_numpy_namespace,
-)
+from array_api_compat import array_namespace as get_namespace
 import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
@@ -292,14 +289,14 @@ def test_innerproduct_x_y(kindX, kindC, metric, get_mats):
         innerproduct_riemann,
     ],
 )
-def test_innerproduct_broadcasting(finnerproduct, get_mats):
+def test_innerproduct_broadcasting(finnerproduct, backend, get_mats):
     n_matrices, n_channels = 5, 3
     A = get_mats(n_matrices, n_channels, "sym")
     B = get_mats(n_matrices, n_channels, "sym")
     Cref = get_mats(1, n_channels, "spd")[0]
     xp = get_namespace(A)
 
-    if is_numpy_namespace(xp):
+    if backend == "numpy":
         assert isinstance(finnerproduct(A[0], B[0], Cref), float)  # 2D arrays
 
     assert finnerproduct(A, B, Cref).shape == (n_matrices,)  # 3D arrays
@@ -397,14 +394,14 @@ def test_innerproduct_riemann(kindX, kindC, get_mats):
 
 @pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
 @pytest.mark.parametrize("metric", metrics)
-def test_norm_properties(kindX, kindC, metric, get_mats):
+def test_norm_properties(kindX, kindC, metric, backend, get_mats):
     n_channels = 4
     X, Y = get_mats(2, n_channels, kindX)
     Cref = get_mats(1, n_channels, kindC)[0]
 
     nx = norm(X, Cref, metric=metric)
 
-    if is_numpy_namespace(get_namespace(X)):
+    if backend == "numpy":
         assert isinstance(nx, float)
 
     # positivity

@@ -3,7 +3,6 @@ from functools import partial
 from array_api_compat import (
     array_namespace as get_namespace,
     device,
-    is_numpy_namespace,
 )
 import numpy as np
 import pytest
@@ -74,12 +73,12 @@ def callable_euclidean(A, B, squared=False):
         (callable_euclidean, distance_euclid),
     ],
 )
-def test_distance_metric(kind, metric, dist, get_mats):
+def test_distance_metric(kind, metric, dist, backend, get_mats):
     n_channels = 3
     A, B = get_mats(2, n_channels, kind)
     d = distance(A, B, metric=metric)
     assert d == approx(dist(A, B))
-    if is_numpy_namespace(get_namespace(A)):
+    if backend == "numpy":
         assert isinstance(d, float)
 
 
@@ -94,12 +93,12 @@ def test_distance_metric_error(get_mats):
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("dist", dists)
-def test_distance_squared(kind, dist, get_mats):
+def test_distance_squared(kind, dist, backend, get_mats):
     n_channels = 5
     A, B = get_mats(2, n_channels, kind)
     d = dist(A, B, squared=True)
     assert d == approx(dist(A, B) ** 2)
-    if is_numpy_namespace(get_namespace(A)):
+    if backend == "numpy":
         assert isinstance(d, float)
 
 

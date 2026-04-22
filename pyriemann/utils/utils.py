@@ -1,6 +1,69 @@
 import inspect
 
-from ._backend import check_like
+import array_api_compat.numpy as _xpnp
+from array_api_compat import (
+    array_namespace as get_namespace,
+    device as xpd,
+)
+
+
+def check_like(like):
+    """Resolve array-API namespace and device from a reference array.
+
+    Parameters
+    ----------
+    like : None | ndarray
+        Reference array. If None, returns the array-API NumPy namespace
+        and a ``None`` device.
+
+    Returns
+    -------
+    xp : module
+        The array-API namespace (NumPy or PyTorch).
+    dev : object | None
+        The device of ``like`` if provided, else ``None``.
+
+    Notes
+    -----
+    .. versionadded:: 0.12
+    """
+    if like is None:
+        return _xpnp, None
+    return get_namespace(like), xpd(like)
+
+
+def check_matrix_pair(A, B, *, require_square=False):
+    """Validate two matrix arrays share compatible matrix dimensions.
+
+    Parameters
+    ----------
+    A, B : ndarray, shape (..., n, m)
+        Input matrix arrays.
+    require_square : bool, default=False
+        If True, also require the matrix dimensions to be square.
+
+    Returns
+    -------
+    xp : module
+        The shared array-API namespace of ``A`` and ``B``.
+
+    Notes
+    -----
+    .. versionadded:: 0.12
+    """
+    xp = get_namespace(A, B)
+    if A.ndim < 2 or B.ndim < 2:
+        raise ValueError("Inputs must be at least 2D arrays")
+    if A.shape[-2:] != B.shape[-2:]:
+        raise ValueError("Inputs must have equal matrix dimensions")
+    if require_square and A.shape[-2] != A.shape[-1]:
+        raise ValueError("Inputs must contain square matrices")
+    if A.shape != B.shape:
+        try:
+            xp.broadcast_shapes(A.shape[:-2], B.shape[:-2])
+        except (ValueError, RuntimeError) as exc:
+            raise ValueError("Inputs have incompatible dimensions.") from exc
+    return xp
 
 
 def check_weights(weights, n_weights, *, check_positivity=False, like=None):

@@ -12,10 +12,15 @@ def _allclose(A, B):
 
 
 def _get_eigenvals(X):
-    """Private function to compute all eigen values."""
+    """Real part of eigenvalues for the trailing matrix dimension.
+
+    ``xp.linalg.eigvals`` always returns complex dtype on torch (even for
+    real inputs), and complex tensors cannot be compared against a float
+    tolerance — so the real part is taken here once for all callers.
+    """
     xp = get_namespace(X)
     n = X.shape[-1]
-    return xp.linalg.eigvals(X.reshape((-1, n, n)))
+    return xp.real(xp.linalg.eigvals(X.reshape((-1, n, n))))
 
 
 def is_square(X):
@@ -193,7 +198,7 @@ def is_pos_def(X, tol=0.0, fast_mode=False):
     else:
         if not is_square(X):
             return False
-        return bool(xp.all(xp.real(_get_eigenvals(X)) > tol))
+        return bool(xp.all(_get_eigenvals(X) > tol))
 
 
 def is_pos_semi_def(X):
@@ -212,7 +217,7 @@ def is_pos_semi_def(X):
     xp = get_namespace(X)
     if not is_square(X):
         return False
-    return bool(xp.all(xp.real(_get_eigenvals(X)) >= 0.0))
+    return bool(xp.all(_get_eigenvals(X) >= 0.0))
 
 
 def is_sym_pos_def(X, tol=0.0):
