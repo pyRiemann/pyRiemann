@@ -87,9 +87,41 @@ def _matrix_operator(X, operator):
             "You should add regularization to avoid this error."
         )
 
-    eigvals, eigvecs = np.linalg.eigh(X)
-    eigvals = operator(eigvals)
-    X_new = eigvecs @ (np.expand_dims(eigvals, -1) * ctranspose(eigvecs))
+    if X.shape[-1] == 2:
+        # Fast computation for 2x2 matrices
+        # Start by computing the eigenvalues using a
+        # stable closed-form solution
+        a, b, c = X[..., 0, 0], X[..., 0, 1], X[..., 1, 1]
+        trace = a + c
+        det = a * c - np.abs(b)**2
+
+        disc = np.sqrt((a - c)**2 + 4 * np.abs(b)**2)
+        lam1 = (trace + disc) / 2
+        # Stable small eigenvalue: uses lam1*lam2 = det to avoid cancellation
+        # in (trace - disc) when trace ≈ disc (near-singular matrices).
+        with np.errstate(invalid="ignore", divide="ignore"):
+            lam2 = np.where(disc > 0, det / lam1, lam1)
+        eigvals = np.array([lam1, lam2])
+
+        # Apply the operator to the eigenvalues,
+        # handling degeneracy (lam1 ≈ lam2)
+        diff = eigvals[0] - eigvals[1]
+        degenerate = np.isclose(eigvals[0], eigvals[1])
+        with np.errstate(invalid="ignore", divide="ignore"):
+            alpha_1 = (operator(eigvals[0]) - operator(eigvals[1])) / diff
+            alpha_2 = (
+                eigvals[0] * operator(eigvals[1])
+                - eigvals[1] * operator(eigvals[0])
+            ) / diff
+        alpha_1 = np.where(degenerate, 0, alpha_1)
+        alpha_2 = np.where(degenerate, operator(eigvals[0]), alpha_2)
+        alpha_1 = np.asarray(alpha_1)[..., np.newaxis, np.newaxis]
+        alpha_2 = np.asarray(alpha_2)[..., np.newaxis, np.newaxis]
+        X_new = alpha_1 * X + alpha_2 * np.eye(2)
+    else:
+        eigvals, eigvecs = np.linalg.eigh(X)
+        eigvals = operator(eigvals)
+        X_new = eigvecs @ (np.expand_dims(eigvals, -1) * ctranspose(eigvecs))
     return X_new
 
 
