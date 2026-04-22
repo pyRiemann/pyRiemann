@@ -258,7 +258,6 @@ def test_distance_property_invariance_congruence(kind, kindW, dist, get_mats):
     assert dist(A, B) == approx(dist(WAW, WBW))
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("n_dim1, n_dim2", [(4, 5), (5, 4)])
 @pytest.mark.parametrize("kind", ["real", "comp"])
 def test_distance_euclid(n_dim1, n_dim2, kind, get_mats):

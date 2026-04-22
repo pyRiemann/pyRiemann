@@ -40,7 +40,6 @@ def test_ctranspose(get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.numpy_only
 def test_eigvalsh_scipy(get_mats, kind):
     """Test equivalence between pyriemann and scipy eigvalsh"""
     A, B = get_mats(2, n_channels, kind)

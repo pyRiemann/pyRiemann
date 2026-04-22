@@ -55,7 +55,6 @@ metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
         log_map_wasserstein
     ]
 )
-@pytest.mark.numpy_only
 def test_maps_broadcasting(fmap, get_mats):
     n_dim5, n_dim4, n_matrices, n_channels = 2, 6, 5, 3
     X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")

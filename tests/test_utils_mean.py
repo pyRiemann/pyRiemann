@@ -199,7 +199,6 @@ def test_mean_of_single_matrix(mean, get_mats):
     assert M == approx(X[0])
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize(
     "mean",
     [
@@ -261,7 +260,6 @@ def test_mean_property_joint_homogeneity(kind, mean, get_mats, rndstate,
     assert mean(a * X) == approx(a * mean(X))
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("mean", [
     mean_logchol,  # Corollary 13 in [Lin2019]
@@ -272,7 +270,8 @@ def test_mean_property_determinant_identity(kind, mean, get_mats, rndstate):
     """Test determinant identity, P9 in [Nakamura2009]"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
-    assert np.linalg.det(mean(X)) == approx(gmean_sp(np.linalg.det(X)))
+    xp = get_namespace(X)
+    assert xp.linalg.det(mean(X)) == approx(gmean_sp(xp.linalg.det(X)))
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -362,7 +361,7 @@ def test_mean_harmonic_scalars(n_values, rndstate):
     """Compare harmonic mean to scipy.hmean for scalars"""
     values = rndstate.uniform(0.1, 10, size=n_values)
     sp_hmean = hmean(values)
-    py_hmean = mean_harmonic(values[..., np.newaxis, np.newaxis])[0, 0]
+    py_hmean = mean_harmonic(values[..., None, None])[0, 0]
     assert sp_hmean == approx(py_hmean)
 
 
@@ -372,7 +371,7 @@ def test_mean_logeuclid_scalars(n_values, rndstate):
     """Compare log-Euclidean mean to scipy.gmean for scalars"""
     values = rndstate.uniform(0.1, 10, size=n_values)
     sp_mean = gmean_sp(values)
-    py_mean = mean_logeuclid(values[..., np.newaxis, np.newaxis])[0, 0]
+    py_mean = mean_logeuclid(values[..., None, None])[0, 0]
     assert sp_mean == approx(py_mean)
 
 

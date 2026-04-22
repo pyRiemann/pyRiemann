@@ -47,7 +47,6 @@ def assert_geodesics(metric, A, B, M):
         geodesic_wasserstein,
     ],
 )
-@pytest.mark.numpy_only
 def test_geodesic_broadcasting(geo, get_mats):
     n_dim5, n_dim4, n_matrices, n_channels = 2, 6, 5, 3
     A = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")
