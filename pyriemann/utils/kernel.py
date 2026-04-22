@@ -1,6 +1,5 @@
 """Kernels for SPD matrices."""
 
-
 from array_api_compat import array_namespace as get_namespace
 
 from ._fixes import _add_to_diagonal

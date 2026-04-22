@@ -354,7 +354,8 @@ def test_innerproduct_property_pos_def(kindX, kindC, metric, get_mats):
     X = get_mats(n_matrices, n_channels, kindX)
     Cref = get_mats(1, n_channels, kindC)[0]
     G = innerproduct(X, None, Cref, metric=metric)
-    assert bool(get_namespace(G).all(G > 0))
+    xp = get_namespace(G)
+    assert bool(xp.all(G > 0))
 
 
 @pytest.mark.parametrize("kind", ["real", "comp"])
@@ -374,7 +375,7 @@ def test_innerproduct_euclid(kind, n_dim1, n_dim2, get_mats):
         G1[i] = xp.real(xp.linalg.trace(xp.conj(X[i]).mT @ Y[i]))
         # vec(X)^H . vec(Y)
         G2[i] = xp.real(
-            xp.sum(xp.conj(xp.reshape(X[i], (-1,))) * xp.reshape(Y[i], (-1,)))
+            xp.vecdot(xp.reshape(X[i], (-1,)), xp.reshape(Y[i], (-1,)))
         )
     assert_array_almost_equal(G, G1)
     assert_array_almost_equal(G, G2)

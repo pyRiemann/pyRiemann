@@ -1,9 +1,9 @@
 """Base functions for SPD/HPD matrices."""
 
 from functools import wraps
+import math
 
 from array_api_compat import array_namespace as get_namespace, device as xpd
-import numpy as np
 
 
 def ctranspose(X):
@@ -103,7 +103,7 @@ def _vectorize_nd(n_axes=2):
             batch_shape = X.shape[:-n_axes]
             if len(batch_shape) == 0:
                 return func(X, *args, **kwargs)
-            n_batch = np.prod(batch_shape, dtype=int)
+            n_batch = math.prod(batch_shape)
             core_shape = X.shape[-n_axes:]
             xp = get_namespace(X)
             X_flat = xp.reshape(X, (n_batch, *core_shape))

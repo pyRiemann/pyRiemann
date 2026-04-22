@@ -246,9 +246,9 @@ def mean_euclid(X, sample_weight=None, **kwargs):
     gmean
     """
     xp = get_namespace(X)
-    n_matrices = X.shape[-3]
     if sample_weight is None:
         return xp.mean(X, axis=-3)
+    n_matrices = X.shape[-3]
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
     return xp.tensordot(sample_weight, X, axes=([0], [-3]))
 
