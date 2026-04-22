@@ -117,31 +117,31 @@ def test_distance_between_set_and_matrix(dist, get_mats):
         distance(X_4d, X, metric=dist)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("dist", dists)
-def test_distance_broadcasting(dist, get_mats):
+def test_distance_broadcasting(dist, backend, get_mats):
     n_dim5, n_dim4, n_matrices, n_channels = 7, 5, 3, 4
     A = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")
     B = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "spd")
 
     # 2D array
     d2 = dist(A[0, 0, 0], B[0, 0, 0])
-    assert isinstance(d2, float)
+    if backend == "numpy":
+        assert isinstance(d2, float)
 
     # 3D array
     D3 = dist(A[0, 0], B[0, 0])
     assert D3.shape == (n_matrices,)
-    assert D3[0] == d2
+    assert D3[0] == approx(d2)
 
     # 4D array
     D4 = dist(A[0], B[0])
     assert D4.shape == (n_dim4, n_matrices)
-    assert D4[0, 0] == d2
+    assert D4[0, 0] == approx(d2)
 
     # 5D array
     D5 = dist(A, B)
     assert D5.shape == (n_dim5, n_dim4, n_matrices)
-    assert D5[0, 0, 0] == d2
+    assert D5[0, 0, 0] == approx(d2)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])

@@ -119,7 +119,6 @@ def test_kernel_property_positive_semi_definite(metric, get_mats):
     assert is_spsd(K)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("n_dim1, n_dim2", [(4, 5), (5, 4)])
 def test_kernel_euclid(n_dim1, n_dim2, get_mats):
     """Euclidean kernel for non-square matrices"""
@@ -128,12 +127,15 @@ def test_kernel_euclid(n_dim1, n_dim2, get_mats):
     Y = get_mats(n_matrices_Y, [n_dim1, n_dim2], "real")
     K = kernel_euclid(X, Y)
 
+    xp = get_namespace(X)
     K1 = np.empty((n_matrices_X, n_matrices_Y))
     K2 = np.empty((n_matrices_X, n_matrices_Y))
     for i in range(n_matrices_X):
         for j in range(n_matrices_Y):
-            K1[i, j] = np.trace(X[i].T @ Y[j])
-            K2[i, j] = np.dot(X[i].flatten(), Y[j].flatten())
+            K1[i, j] = xp.trace(X[i].mT @ Y[j])
+            K2[i, j] = xp.vecdot(
+                xp.reshape(X[i], (-1,)), xp.reshape(Y[j], (-1,))
+            )
     assert_array_almost_equal(K, K1)
     assert_array_almost_equal(K, K2)
 
