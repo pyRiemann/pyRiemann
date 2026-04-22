@@ -1,8 +1,8 @@
+from array_api_compat import array_namespace as get_namespace, device as xpd
 import numpy as np
 import pytest
 
 from conftest import approx, assert_array_equal
-from array_api_compat import array_namespace as get_namespace, device as xpd
 from pyriemann.utils.ajd import ajd, rjd, ajd_pham, uwedge
 
 

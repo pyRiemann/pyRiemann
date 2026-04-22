@@ -1,9 +1,9 @@
+from array_api_compat import array_namespace as get_namespace, device
 import numpy as np
 from numpy.testing import assert_raises
 import pytest
 
 from conftest import assert_array_equal, assert_array_almost_equal
-from array_api_compat import array_namespace as get_namespace, device
 from pyriemann.utils.base import logm
 from pyriemann.utils.kernel import (
     kernel,

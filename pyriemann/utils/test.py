@@ -1,8 +1,8 @@
-import numpy as np
 from array_api_compat import (
     array_namespace as get_namespace,
     is_torch_namespace,
 )
+import numpy as np
 
 
 def _allclose(A, B):

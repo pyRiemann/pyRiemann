@@ -2,8 +2,8 @@
 
 from functools import wraps
 
-import numpy as np
 from array_api_compat import array_namespace as get_namespace, device as xpd
+import numpy as np
 
 
 def ctranspose(X):
@@ -355,7 +355,6 @@ def nearest_sym_pos_def(X, reg=1e-6):
     neg_ev = xp.any(eigvals <= 0, axis=-1)  # (...,)
 
     if bool(xp.any(neg_ev)):
-        # we don't have spacing in the api array.
         spacing = xp.abs(xp.linalg.matrix_norm(A)) * eps
         eye_n = xp.eye(n, dtype=X.dtype, device=xpd(X))
         k = 1

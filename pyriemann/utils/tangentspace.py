@@ -2,8 +2,11 @@
 
 import math
 
-import numpy as np
-from array_api_compat import array_namespace as get_namespace, device as xpd
+from array_api_compat import (
+    array_namespace as get_namespace,
+    device as xpd,
+    is_numpy_namespace,
+)
 
 from ._backend import (
     check_matrix_pair,
@@ -886,7 +889,7 @@ def _apply_inner_product(X, Y):
     xp = get_namespace(X, Y)
     G = xp.einsum("...nm,...nm->...", xp.conj(X), Y).real
 
-    if G.ndim == 0:
+    if is_numpy_namespace(xp) and G.ndim == 0:
         return float(G)
     else:
         return G
@@ -974,7 +977,8 @@ def norm(X, Cref, metric="riemann"):
     innerproduct
     """
     N2 = innerproduct(X, None, Cref, metric=metric)
-    return np.sqrt(N2)
+    xp = get_namespace(X)
+    return xp.sqrt(N2)
 
 
 ###############################################################################

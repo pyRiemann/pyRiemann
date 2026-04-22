@@ -1,7 +1,7 @@
+from array_api_compat import array_namespace as get_namespace
 import numpy as np
 import pytest
 
-from array_api_compat import array_namespace as get_namespace
 from pyriemann.utils.utils import (
     check_weights,
     check_metric,

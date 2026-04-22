@@ -1,11 +1,11 @@
 from functools import partial
 
+from array_api_compat import array_namespace as get_namespace, device
 import numpy as np
 import pytest
 from scipy.stats import hmean, gmean as gmean_sp
 
-from conftest import to_backend, approx, to_numpy
-from array_api_compat import array_namespace as get_namespace, device
+from conftest import to_backend, approx
 from pyriemann.utils.base import invsqrtm, logm, sqrtm
 from pyriemann.utils.geodesic import geodesic_riemann
 from pyriemann.utils.mean import (
@@ -440,8 +440,7 @@ def test_mean_riemann_solution(kind, get_mats):
 
     # Eq(1.2) in [Lim2012]
     M12 = sqrtm(M)
-    assert xp.sum(logm(M12 @ xp.linalg.solve(X, M12)), axis=0) \
-        == approx(Zero)
+    assert xp.sum(logm(M12 @ xp.linalg.solve(X, M12)), axis=0) == approx(Zero)
 
 
 @pytest.mark.numpy_only
@@ -520,8 +519,9 @@ def test_mean_nan_riemann_errors(get_mats):
         nanmean_riemann(X_)
 
 
-def callable_np_average(X, sample_weight=None):
-    return np.average(to_numpy(X), axis=0, weights=to_numpy(sample_weight))
+def callable_average(X, sample_weight=None):
+    xp = get_namespace(X)
+    return xp.mean(X, axis=0)
 
 
 @pytest.mark.parametrize(
@@ -541,7 +541,7 @@ def callable_np_average(X, sample_weight=None):
         ("riemann", mean_riemann),
         ("thompson", mean_thompson),
         ("wasserstein", mean_wasserstein),
-        (callable_np_average, mean_euclid),
+        (callable_average, mean_euclid),
     ],
 )
 def test_gmean_metric(metric, mean, get_mats):

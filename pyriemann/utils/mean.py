@@ -2,9 +2,9 @@
 
 import warnings
 
-import numpy as np
 from array_api_compat import array_namespace as get_namespace, device as xpd
 from array_api_extra import create_diagonal
+import numpy as np
 
 from . import deprecated
 from ._backend import (

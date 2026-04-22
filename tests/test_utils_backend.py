@@ -2,8 +2,8 @@
 
 import numpy as np
 import pytest
-from conftest import to_backend, to_numpy
 
+from conftest import to_backend, to_numpy
 from pyriemann.utils._backend import (
     check_matrix_pair,
     to_numpy as backend_to_numpy,

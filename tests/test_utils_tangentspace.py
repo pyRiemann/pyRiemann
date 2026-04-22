@@ -1,10 +1,13 @@
+from array_api_compat import (
+    array_namespace as get_namespace,
+    is_numpy_namespace,
+)
 import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
-from conftest import approx, to_numpy
 
+from conftest import approx, to_numpy
 from pyriemann.spatialfilters import Whitening
-from array_api_compat import array_namespace as get_namespace
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.geodesic import geodesic
 from pyriemann.utils.mean import mean_riemann
@@ -289,17 +292,18 @@ def test_innerproduct_x_y(kindX, kindC, metric, get_mats):
         innerproduct_riemann,
     ],
 )
-def test_innerproduct_ndarray(finnerproduct, get_mats):
+def test_innerproduct_broadcasting(finnerproduct, get_mats):
     n_matrices, n_channels = 5, 3
     A = get_mats(n_matrices, n_channels, "sym")
     B = get_mats(n_matrices, n_channels, "sym")
     Cref = get_mats(1, n_channels, "spd")[0]
+    xp = get_namespace(A)
 
-    assert isinstance(finnerproduct(A[0], B[0], Cref), float)  # 2D arrays
+    if is_numpy_namespace(xp):
+        assert isinstance(finnerproduct(A[0], B[0], Cref), float)  # 2D arrays
 
     assert finnerproduct(A, B, Cref).shape == (n_matrices,)  # 3D arrays
 
-    xp = get_namespace(A)
     n_sets = 4
     C = xp.stack([A for _ in range(n_sets)])
     D = xp.stack([B for _ in range(n_sets)])
@@ -399,7 +403,9 @@ def test_norm_properties(kindX, kindC, metric, get_mats):
     Cref = get_mats(1, n_channels, kindC)[0]
 
     nx = norm(X, Cref, metric=metric)
-    assert isinstance(nx, float)
+
+    if is_numpy_namespace(get_namespace(X)):
+        assert isinstance(nx, float)
 
     # positivity
     assert nx >= 0

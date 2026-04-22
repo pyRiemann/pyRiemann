@@ -186,9 +186,8 @@ def test_geodesic_riemann(kind, get_mats, rndstate):
     G = geodesic_riemann(A, B, alpha)
 
     # WG9 in [Nakamura2009]
-    det = (xp.real(xp.linalg.det(A)) ** (1 - alpha)) \
-        * (xp.real(xp.linalg.det(B)) ** alpha)
-    assert xp.real(xp.linalg.det(G)) == approx(det)
+    det = (xp.linalg.det(A) ** (1 - alpha)) * (xp.linalg.det(B) ** alpha)
+    assert xp.linalg.det(G) == approx(det)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])

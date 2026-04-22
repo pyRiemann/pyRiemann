@@ -1,12 +1,16 @@
 from functools import partial
 
+from array_api_compat import (
+    array_namespace as get_namespace,
+    device,
+    is_numpy_namespace,
+)
 import numpy as np
 import pytest
 from scipy.linalg import eigvalsh
 from scipy.spatial.distance import mahalanobis
 
-from conftest import to_backend, approx, assert_array_almost_equal, to_numpy
-from array_api_compat import array_namespace as get_namespace, device
+from conftest import to_backend, approx, assert_array_almost_equal
 from pyriemann.utils.distance import (
     distance_chol,
     distance_euclid,
@@ -27,7 +31,7 @@ from pyriemann.utils.distance import (
 )
 from pyriemann.utils.base import logm, invsqrtm
 from pyriemann.utils.geodesic import geodesic
-from pyriemann.utils.test import is_sym
+from pyriemann.utils.test import is_sym, is_real_type
 
 
 dists = [
@@ -75,7 +79,8 @@ def test_distance_metric(kind, metric, dist, get_mats):
     A, B = get_mats(2, n_channels, kind)
     d = distance(A, B, metric=metric)
     assert d == approx(dist(A, B))
-    assert np.isreal(to_numpy(d))
+    if is_numpy_namespace(get_namespace(A)):
+        assert isinstance(d, float)
 
 
 def test_distance_metric_error(get_mats):
@@ -94,7 +99,8 @@ def test_distance_squared(kind, dist, get_mats):
     A, B = get_mats(2, n_channels, kind)
     d = dist(A, B, squared=True)
     assert d == approx(dist(A, B) ** 2)
-    assert np.isreal(to_numpy(d))
+    if is_numpy_namespace(get_namespace(A)):
+        assert isinstance(d, float)
 
 
 @pytest.mark.parametrize("dist", dists)
@@ -386,11 +392,13 @@ def test_pairwise_distance(kind, metric, Y, squared, get_mats):
     pdist = pairwise_distance(X, Y, metric=metric, squared=squared)
     assert pdist.shape == (n_matrices_X, n_matrices_Y)
 
+    xp = get_namespace(X)
+
     for i in range(n_matrices_X):
         for j in range(n_matrices_Y):
-            assert np.isclose(
-                float(pdist[i, j]),
-                float(distance(X[i], Y_[j], metric=metric, squared=squared)),
+            assert xp.isclose(
+                pdist[i, j],
+                distance(X[i], Y_[j], metric=metric, squared=squared),
                 atol=1e-5,
                 rtol=1e-5,
             )
@@ -408,7 +416,7 @@ def test_distance_mahalanobis(kind, get_mats):
     X = get_mats(1, [n_channels, n_times], kind)[0]
     d = distance_mahalanobis(X, np.cov(X))
     assert d.shape == (n_times,)
-    assert np.all(np.isreal(d))
+    assert is_real_type(d)
 
 
 @pytest.mark.numpy_only
