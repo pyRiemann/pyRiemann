@@ -35,6 +35,10 @@ def as_numpy(X):
     Notes
     -----
     .. versionadded:: 0.12
+
+    Notes
+    -----
+    .. versionadded:: 0.12
     """
     if is_numpy_array(X):
         return X
