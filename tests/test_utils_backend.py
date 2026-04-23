@@ -30,10 +30,11 @@ def test_from_numpy(backend):
 
 
 def test_diag_indices(backend):
-    like = to_backend(np.eye(3), backend)
-    idx0, idx1 = diag_indices(3, like=like)
-    assert len(to_numpy(idx0)) == 3
-    assert len(to_numpy(idx1)) == 3
+    n = 3
+    like = to_backend(np.eye(n), backend)
+    idx0, idx1 = diag_indices(n, like=like)
+    assert len(to_numpy(idx0)) == n
+    assert len(to_numpy(idx1)) == n
 
 
 def test_tril_indices(backend):
@@ -44,9 +45,10 @@ def test_tril_indices(backend):
 
 
 def test_triu_indices(backend):
-    like = to_backend(np.eye(4), backend)
-    idx0, idx1 = triu_indices(4, 1, like=like)
-    n_expected = 4 * 3 // 2  # n*(n-1)/2 for strict upper
+    n = 4
+    like = to_backend(np.eye(n), backend)
+    idx0, idx1 = triu_indices(n, 1, like=like)
+    n_expected = n * (n - 1) // 2
     assert len(to_numpy(idx0)) == n_expected
 
 
@@ -61,10 +63,11 @@ def test_hann_window(backend):
 
 
 def test_nanmean(backend):
-    # With no NaN, equivalent to xp.mean
     X_np = np.arange(12, dtype=np.float64).reshape(3, 4)
     X = to_backend(X_np, backend)
     xp = get_namespace(X)
+
+    # With no NaN, equivalent to xp.mean
     np.testing.assert_array_almost_equal(
         to_numpy(nanmean(X, axis=0)), to_numpy(xp.mean(X, axis=0)),
     )

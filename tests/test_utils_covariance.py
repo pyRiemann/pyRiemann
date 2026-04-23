@@ -6,7 +6,7 @@ import pytest
 from scipy.linalg import block_diag
 from scipy.signal import welch, csd, coherence as coherence_sp
 
-from conftest import assert_array_almost_equal, to_numpy, approx
+from conftest import approx, assert_array_almost_equal, to_backend, to_numpy
 from pyriemann.utils.covariance import (
     covariances, covariance_scm, covariances_EP, covariances_X, eegtocov,
     cross_spectrum, cospectrum, coherence,
@@ -390,7 +390,6 @@ def test_cross_spectrum_broadcasting(rndstate):
 
 def test_cross_spectrum_backend(rndstate, backend):
     """cross_spectrum agrees across NumPy and PyTorch backends."""
-    from conftest import to_backend
     n_channels, n_times = 3, 1000
     X_np = rndstate.randn(n_channels, n_times)
     X = to_backend(X_np, backend)
@@ -447,7 +446,6 @@ def test_cospectrum_broadcasting(rndstate):
     "coh", ["ordinary", "instantaneous", "lagged", "imaginary"]
 )
 def test_coherence(coh, rndstate, backend):
-    from conftest import to_backend
     n_channels, n_times = 3, 2048
     X_np = rndstate.randn(n_channels, n_times)
     X = to_backend(X_np, backend)
@@ -492,7 +490,6 @@ def test_coherence(coh, rndstate, backend):
 )
 def test_coherence_properties(coh, rndstate, backend):
     """Test statistical properties of coherence btw phase shifted channels"""
-    from conftest import to_backend
     fs, ft, n_periods = 16, 4, 20
     t = np.arange(0, n_periods, 1 / fs)
     n_times = t.shape[0]
@@ -573,7 +570,6 @@ def test_coherence_error(rndstate):
 )
 def test_coherence_backend(coh, rndstate, backend):
     """coherence agrees across NumPy and PyTorch backends."""
-    from conftest import to_backend
     n_channels, n_times = 3, 200
     X_np = rndstate.randn(n_channels, n_times)
     X = to_backend(X_np, backend)
