@@ -374,7 +374,6 @@ def test_cross_spectrum_scipy_cross(rndstate):
     assert_array_almost_equal(cross_pr, cross_sp, 6)
 
 
-@pytest.mark.numpy_only
 def test_cross_spectrum_broadcasting(rndstate):
     n_dim4, n_matrices, n_channels, n_times = 4, 6, 3, 1000
     X = rndstate.randn(n_dim4, n_matrices, n_channels, n_times)
@@ -418,7 +417,6 @@ def test_cospectrum(rndstate):
     assert_array_almost_equal(cosp_pr, cosp_sp, 6)
 
 
-@pytest.mark.numpy_only
 def test_cospectrum_broadcasting(rndstate):
     n_dim4, n_matrices, n_channels, n_times = 5, 4, 3, 100
     X = rndstate.randn(n_dim4, n_matrices, n_channels, n_times)
@@ -531,7 +529,6 @@ def test_coherence_properties(coh, rndstate):
         assert c[0, 3, foi] == pytest.approx(0.0)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize(
     "coh", ["ordinary", "instantaneous", "lagged", "imaginary"]
 )

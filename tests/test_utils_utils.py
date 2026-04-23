@@ -2,11 +2,13 @@ from array_api_compat import array_namespace as get_namespace
 import numpy as np
 import pytest
 
+from conftest import to_backend
 from pyriemann.utils.utils import (
-    check_weights,
-    check_metric,
     check_function,
     check_init,
+    check_matrix_pair,
+    check_metric,
+    check_weights,
 )
 
 
@@ -94,3 +96,28 @@ def test_check_init():
         check_init(init=np.ones((3, 2)), n=3, like=like)
     with pytest.raises(ValueError):  # shape not equal to n
         check_init(init=np.ones((2, 2)), n=3, like=like)
+
+
+def test_check_matrix_pair(backend):
+    A = to_backend(np.random.rand(4, 3, 3), backend)
+    B = to_backend(np.random.rand(4, 3, 3), backend)
+    xp = check_matrix_pair(A, B)
+    assert xp is get_namespace(A)
+
+
+def test_check_matrix_pair_errors(backend):
+    A = to_backend(np.random.rand(3, 3), backend)
+    B = to_backend(np.random.rand(3, 4), backend)
+    with pytest.raises(ValueError):
+        check_matrix_pair(A, B)
+
+    A1d = to_backend(np.random.rand(3), backend)
+    with pytest.raises(ValueError):
+        check_matrix_pair(A1d, A)
+
+
+def test_check_matrix_pair_square(backend):
+    A = to_backend(np.random.rand(3, 4), backend)
+    B = to_backend(np.random.rand(3, 4), backend)
+    with pytest.raises(ValueError):
+        check_matrix_pair(A, B, require_square=True)

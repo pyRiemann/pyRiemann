@@ -3,7 +3,7 @@
 import warnings
 
 from array_api_compat import array_namespace as get_namespace, device as xpd
-from array_api_extra import create_diagonal
+from array_api_extra import create_diagonal, nan_to_num
 import numpy as np
 
 from . import deprecated
@@ -994,8 +994,7 @@ def _nanmean(X, axis=0):
     xp = get_namespace(X)
     isnan = xp.isnan(X)
     X_clean = xp.where(isnan, xp.zeros_like(X), X)
-    not_nan = xp.where(isnan, xp.zeros_like(X), xp.ones_like(X))
-    return xp.sum(X_clean, axis=axis) / xp.sum(not_nan, axis=axis)
+    return xp.sum(X_clean, axis=axis) / xp.sum(~isnan, axis=axis)
 
 
 @_vectorize_nd(n_axes=3)
@@ -1138,9 +1137,8 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
     else:
         init = check_init(init, n, like=X)
 
-    X_clean = xp.where(xp.isnan(X), xp.zeros_like(X), X)
     return maskedmean_riemann(
-        X_clean,  # avoid nan contamination in matmul
+        nan_to_num(X),  # avoid nan contamination in matmul
         _get_masks_from_nan(X),
         tol=tol,
         maxiter=maxiter,

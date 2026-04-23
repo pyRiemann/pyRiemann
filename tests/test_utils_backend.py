@@ -13,7 +13,6 @@ from pyriemann.utils._backend import (
     get_namespace,
     xpd,
 )
-from pyriemann.utils.utils import check_matrix_pair
 
 
 n_channels = 3
@@ -30,31 +29,6 @@ def test_from_numpy(backend):
     X = from_numpy(X_np, like=like)
     xp = get_namespace(X)
     assert xp.all(X == xp.asarray(X_np, dtype=like.dtype, device=xpd(like)))
-
-
-def test_check_matrix_pair(backend):
-    A = to_backend(np.random.rand(4, 3, 3), backend)
-    B = to_backend(np.random.rand(4, 3, 3), backend)
-    xp = check_matrix_pair(A, B)
-    assert xp is get_namespace(A)
-
-
-def test_check_matrix_pair_errors(backend):
-    A = to_backend(np.random.rand(3, 3), backend)
-    B = to_backend(np.random.rand(3, 4), backend)
-    with pytest.raises(ValueError):
-        check_matrix_pair(A, B)
-
-    A1d = to_backend(np.random.rand(3), backend)
-    with pytest.raises(ValueError):
-        check_matrix_pair(A1d, A)
-
-
-def test_check_matrix_pair_square(backend):
-    A = to_backend(np.random.rand(3, 4), backend)
-    B = to_backend(np.random.rand(3, 4), backend)
-    with pytest.raises(ValueError):
-        check_matrix_pair(A, B, require_square=True)
 
 
 def test_diag_indices(backend):
