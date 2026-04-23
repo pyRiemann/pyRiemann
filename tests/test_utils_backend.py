@@ -1,7 +1,6 @@
 """Tests for pyriemann.utils._backend module."""
 
 import numpy as np
-import pytest
 
 from conftest import to_backend, to_numpy
 from pyriemann.utils._backend import (
@@ -13,9 +12,6 @@ from pyriemann.utils._backend import (
     get_namespace,
     xpd,
 )
-
-
-n_channels = 3
 
 
 def test_as_numpy():
