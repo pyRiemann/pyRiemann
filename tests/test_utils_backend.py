@@ -7,6 +7,7 @@ from pyriemann.utils._backend import (
     as_numpy,
     from_numpy,
     diag_indices,
+    hann_window,
     tril_indices,
     triu_indices,
     get_namespace,
@@ -46,3 +47,13 @@ def test_triu_indices(backend):
     idx0, idx1 = triu_indices(4, 1, like=like)
     n_expected = 4 * 3 // 2  # n*(n-1)/2 for strict upper
     assert len(to_numpy(idx0)) == n_expected
+
+
+def test_hann_window(backend):
+    like = to_backend(np.zeros(1, dtype=np.float64), backend)
+    win = hann_window(8, like=like)
+    np.testing.assert_array_almost_equal(to_numpy(win), np.hanning(8))
+    # n=1 edge case returns ones
+    win1 = hann_window(1, like=like)
+    assert win1.shape == (1,)
+    np.testing.assert_array_equal(to_numpy(win1), np.array([1.0]))

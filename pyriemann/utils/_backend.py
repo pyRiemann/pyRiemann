@@ -15,6 +15,7 @@ __all__ = [
     "as_numpy",
     "from_numpy",
     "diag_indices",
+    "hann_window",
     "tril_indices",
     "triu_indices",
     "apply_xp_cov",
@@ -95,6 +96,37 @@ def triu_indices(n, k=0, *, like=None):
     if is_torch_array(like):
         return torch.triu_indices(n, n, offset=k, device=xpd(like))
     return np.triu_indices(n, k)
+
+
+def hann_window(n, *, like):
+    """Symmetric Hann window of length ``n`` in the namespace of ``like``.
+
+    Matches ``numpy.hanning(n)`` element-wise but inherits backend, dtype
+    and device from ``like``. Used internally by spectral estimators.
+
+    Parameters
+    ----------
+    n : int
+        Window length.
+    like : ndarray
+        Reference array used to infer the array-API namespace, dtype and
+        device of the returned window.
+
+    Returns
+    -------
+    win : ndarray, shape (n,)
+        Hann window.
+
+    Notes
+    -----
+    .. versionadded:: 0.12
+    """
+    xp = get_namespace(like)
+    dev = xpd(like)
+    if n == 1:
+        return xp.ones(1, dtype=like.dtype, device=dev)
+    k = xp.arange(n, dtype=like.dtype, device=dev)
+    return 0.5 - 0.5 * xp.cos(2 * np.pi * k / (n - 1))
 
 
 # ``np.cov`` / ``np.corrcoef`` use ``bias``/``ddof``; ``torch.cov`` /
