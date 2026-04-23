@@ -973,12 +973,12 @@ def _get_mask_from_nan(X):
     nan_row = xp.all(isnan, axis=1)
     if not bool(xp.all(nan_col == nan_row)):
         raise ValueError("NaN values are not symmetric.")
-    keep = ~nan_col
-    subX = X[keep, :][:, keep]
-    if bool(xp.any(xp.isnan(subX))):
+    keep_col = ~nan_col
+    maskedX = X[keep_col, :][:, keep_col]
+    if bool(xp.any(xp.isnan(maskedX))):
         raise ValueError("NaN values must fill rows and columns.")
     eye = xp.eye(X.shape[0], dtype=X.dtype, device=xpd(X))
-    return eye[:, keep]
+    return eye[:, keep_col]
 
 
 def _get_masks_from_nan(X):
@@ -1122,14 +1122,14 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
         Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
     xp = get_namespace(X)
-    n_matrices, n, _ = X.shape
+    _, n, _ = X.shape
     if init is None:
         eye = xp.eye(n, dtype=X.dtype, device=xpd(X))
         init = nanmean(X, axis=0) + 1e-6 * eye
     else:
         init = check_init(init, n, like=X)
 
-    return maskedmean_riemann(
+    M = maskedmean_riemann(
         nan_to_num(X),  # avoid nan contamination in matmul
         _get_masks_from_nan(X),
         tol=tol,
@@ -1137,3 +1137,4 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
         init=init,
         sample_weight=sample_weight,
     )
+    return M
