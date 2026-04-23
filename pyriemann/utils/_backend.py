@@ -31,6 +31,10 @@ def as_numpy(X):
     to materialize lazy conjugate/negative-stride views (no array-API
     equivalent: ``xp.conj`` computes a new conjugate, it does not resolve
     an existing conjugate bit).
+
+    Notes
+    -----
+    .. versionadded:: 0.12
     """
     if is_numpy_array(X):
         return X
