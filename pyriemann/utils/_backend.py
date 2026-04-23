@@ -4,8 +4,10 @@ from array_api_compat import (
     array_namespace as get_namespace,
     device as xpd,
     is_numpy_array,
+    is_numpy_namespace,
     is_torch_array,
 )
+from array_api_extra import atleast_nd
 import numpy as np
 
 
@@ -15,6 +17,7 @@ __all__ = [
     "diag_indices",
     "tril_indices",
     "triu_indices",
+    "apply_xp_cov",
     "torch",
 ]
 
@@ -92,3 +95,37 @@ def triu_indices(n, k=0, *, like=None):
     if is_torch_array(like):
         return torch.triu_indices(n, n, offset=k, device=xpd(like))
     return np.triu_indices(n, k)
+
+
+# ``np.cov`` / ``np.corrcoef`` use ``bias``/``ddof``; ``torch.cov`` /
+# ``torch.corrcoef`` use ``correction``. Translate the kwargs so callers
+# need not care about the backend.
+def _cov_kwargs_to_xp(kwds):
+    out = {}
+    if "bias" in kwds:
+        out["correction"] = 0 if kwds.pop("bias") else 1
+    if "ddof" in kwds:
+        out["correction"] = kwds.pop("ddof")
+    for k in ("fweights", "aweights"):
+        if k in kwds:
+            out[k] = kwds.pop(k)
+    return out
+
+
+def apply_xp_cov(func, X, **kwds):
+    """Call an array-API ``cov``/``corrcoef``, translating numpy kwargs.
+
+    Numpy and torch use different keyword names for the unbiased correction
+    (``bias``/``ddof`` vs ``correction``); this dispatches to ``func`` with
+    the right kwargs and ensures the result is at least 2D.
+
+    Notes
+    -----
+    .. versionadded:: 0.12
+    """
+    xp = get_namespace(X)
+    if is_numpy_namespace(xp):
+        C = func(X, **kwds)
+    else:
+        C = func(X, **_cov_kwargs_to_xp(kwds))
+    return atleast_nd(C, ndim=2)
