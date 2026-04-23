@@ -47,7 +47,12 @@ def as_numpy(X):
 
 
 def from_numpy(X, *, like):
-    """Convert numpy array to the same backend/device as ``like``."""
+    """Convert numpy array to the same backend/device as ``like``.
+    
+    Notes
+    -----
+    .. versionadded:: 0.12
+    """
     xp = get_namespace(like)
     return xp.asarray(X, dtype=like.dtype, device=xpd(like))
 
