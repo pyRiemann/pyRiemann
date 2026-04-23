@@ -484,18 +484,18 @@ def test_mean_masked_riemann(init, get_mats, get_masks):
         assert M5[0, 0] == approx(M)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("init", [True, False])
 def test_mean_nan_riemann(init, get_mats, rndstate):
     n_matrices, n_channels = 10, 6
     X = get_mats(n_matrices, n_channels, "spd")
-    emean = np.mean(X, axis=0)
+    xp = get_namespace(X)
+    emean = xp.mean(X, axis=0)
     for i in range(n_matrices):
         corrup_channels = rndstate.choice(
             np.arange(0, n_channels), size=n_channels // 3, replace=False)
         for j in corrup_channels:
-            X[i, j] = np.nan
-            X[i, :, j] = np.nan
+            X[i, j] = float("nan")
+            X[i, :, j] = float("nan")
     if init:
         M = nanmean_riemann(X, tol=10e-3, init=emean)
     else:
@@ -503,18 +503,18 @@ def test_mean_nan_riemann(init, get_mats, rndstate):
     assert M.shape == (n_channels, n_channels)
 
 
-@pytest.mark.numpy_only
 def test_mean_nan_riemann_errors(get_mats):
     n_matrices, n_channels = 5, 4
     X = get_mats(n_matrices, n_channels, "spd")
+    xp = get_namespace(X)
 
     with pytest.raises(ValueError):  # not symmetric NaN values
-        X_ = X.copy()
-        X_[0, 0] = np.nan  # corrup only a row, not its corresp column
+        X_ = xp.asarray(X, copy=True)
+        X_[0, 0] = float("nan")  # corrup only a row, not its corresp column
         nanmean_riemann(X_)
     with pytest.raises(ValueError):  # not rows and columns NaN values
-        X_ = X.copy()
-        X_[1, 0, 1] = np.nan  # corrup an off-diagonal value
+        X_ = xp.asarray(X, copy=True)
+        X_[1, 0, 1] = float("nan")  # corrup an off-diagonal value
         nanmean_riemann(X_)
 
 

@@ -35,10 +35,6 @@ def as_numpy(X):
     Notes
     -----
     .. versionadded:: 0.12
-
-    Notes
-    -----
-    .. versionadded:: 0.12
     """
     if is_numpy_array(X):
         return X
@@ -52,7 +48,7 @@ def as_numpy(X):
 
 def from_numpy(X, *, like):
     """Convert numpy array to the same backend/device as ``like``.
-    
+
     Notes
     -----
     .. versionadded:: 0.12
@@ -62,6 +58,12 @@ def from_numpy(X, *, like):
 
 
 def diag_indices(n, *, like=None):
+    """Indices of the main diagonal of an n-by-n array.
+
+    Notes
+    -----
+    .. versionadded:: 0.12
+    """
     if is_torch_array(like):
         idx = torch.arange(n, device=xpd(like))
         return idx, idx
@@ -69,12 +71,24 @@ def diag_indices(n, *, like=None):
 
 
 def tril_indices(n, k=0, *, like=None):
+    """Indices of the lower triangle of an n-by-n array.
+
+    Notes
+    -----
+    .. versionadded:: 0.12
+    """
     if is_torch_array(like):
         return torch.tril_indices(n, n, offset=k, device=xpd(like))
     return np.tril_indices(n, k)
 
 
 def triu_indices(n, k=0, *, like=None):
+    """Indices of the upper triangle of an n-by-n array.
+
+    Notes
+    -----
+    .. versionadded:: 0.12
+    """
     if is_torch_array(like):
         return torch.triu_indices(n, n, offset=k, device=xpd(like))
     return np.triu_indices(n, k)

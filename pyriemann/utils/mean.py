@@ -7,9 +7,7 @@ from array_api_extra import create_diagonal
 import numpy as np
 
 from . import deprecated
-from ._backend import (
-    diag_indices, tril_indices, as_numpy, from_numpy,
-)
+from ._backend import diag_indices, tril_indices
 from .ajd import ajd_pham
 from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd
 from .distance import distance_riemann
@@ -160,7 +158,8 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
         norm_c = xp.linalg.matrix_norm(M[0], ord=2)
         if norm_iter / norm_c < tol:
             break
-        M = xp.asarray(M_iter, copy=True)
+        M = M_iter
+        M_iter = xp.zeros_like(M)
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
 
@@ -968,17 +967,18 @@ def mean_covariance(X, *args, metric="riemann", sample_weight=None, **kwargs):
 
 
 def _get_mask_from_nan(X):
-    nan_col = np.all(np.isnan(X), axis=0)
-    nan_row = np.all(np.isnan(X), axis=1)
-    if not np.array_equal(nan_col, nan_row):
+    xp = get_namespace(X)
+    isnan = xp.isnan(X)
+    nan_col = xp.all(isnan, axis=0)
+    nan_row = xp.all(isnan, axis=1)
+    if not bool(xp.all(nan_col == nan_row)):
         raise ValueError("NaN values are not symmetric.")
-    nan_inds = np.where(nan_col)
-    subX_ = np.delete(X, nan_inds, axis=0)
-    subX = np.delete(subX_, nan_inds, axis=1)
-    if np.any(np.isnan(subX)):
+    keep = ~nan_col
+    subX = X[keep, :][:, keep]
+    if bool(xp.any(xp.isnan(subX))):
         raise ValueError("NaN values must fill rows and columns.")
-    mask = np.delete(np.eye(X.shape[0]), nan_inds, axis=1)
-    return mask
+    eye = xp.eye(X.shape[0], dtype=X.dtype, device=xpd(X))
+    return eye[:, keep]
 
 
 def _get_masks_from_nan(X):
@@ -986,7 +986,16 @@ def _get_masks_from_nan(X):
 
 
 def _apply_masks(X, masks):
-    return [m.T @ x @ m for x, m in zip(X, masks)]
+    return [m.mT @ x @ m for x, m in zip(X, masks)]
+
+
+def _nanmean(X, axis=0):
+    """Mean along ``axis`` ignoring NaN values; backend-agnostic."""
+    xp = get_namespace(X)
+    isnan = xp.isnan(X)
+    X_clean = xp.where(isnan, xp.zeros_like(X), X)
+    not_nan = xp.where(isnan, xp.zeros_like(X), xp.ones_like(X))
+    return xp.sum(X_clean, axis=axis) / xp.sum(not_nan, axis=axis)
 
 
 @_vectorize_nd(n_axes=3)
@@ -1105,6 +1114,8 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -1119,19 +1130,20 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
         F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
         Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
-    X_np = as_numpy(X)
-    n_matrices, n, _ = X_np.shape
+    xp = get_namespace(X)
+    n_matrices, n, _ = X.shape
     if init is None:
-        init = np.nanmean(X_np, axis=0) + 1e-6 * np.eye(n)
+        eye = xp.eye(n, dtype=X.dtype, device=xpd(X))
+        init = _nanmean(X, axis=0) + 1e-6 * eye
     else:
-        init = np.asarray(check_init(as_numpy(init), n, like=X_np))
+        init = check_init(init, n, like=X)
 
-    M = maskedmean_riemann(
-        np.nan_to_num(X_np),  # avoid nan contamination in matmul
-        _get_masks_from_nan(X_np),
+    X_clean = xp.where(xp.isnan(X), xp.zeros_like(X), X)
+    return maskedmean_riemann(
+        X_clean,  # avoid nan contamination in matmul
+        _get_masks_from_nan(X),
         tol=tol,
         maxiter=maxiter,
         init=init,
-        sample_weight=sample_weight
+        sample_weight=sample_weight,
     )
-    return from_numpy(M, like=X)
