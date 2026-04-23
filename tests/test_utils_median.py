@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from conftest import approx
+from conftest import approx, to_backend
 from pyriemann.utils.median import (
     median_euclid,
     median_riemann,
@@ -51,13 +51,13 @@ def test_median_warning_convergence(median, get_mats):
         median(X, maxiter=0)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("n_values", [3, 5, 7])
-def test_median_euclid_scalars(n_values, rndstate):
+def test_median_euclid_scalars(n_values, rndstate, backend):
     """Compare geometric Euclidean median to marginal median for scalars"""
-    values = 100 * rndstate.randn(n_values)
-    np_med = np.median(values)
-    py_med = median_euclid(values[..., np.newaxis, np.newaxis])[0, 0]
+    values_np = 100 * rndstate.randn(n_values)
+    np_med = np.median(values_np)
+    values = to_backend(values_np, backend)
+    py_med = median_euclid(values[..., None, None])[0, 0]
     assert np_med == approx(py_med)
 
 

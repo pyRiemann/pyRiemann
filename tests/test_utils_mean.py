@@ -355,22 +355,22 @@ def test_mean_harmonic(kind, get_mats):
     mean_harmonic(X)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("n_values", [3, 5, 7])
-def test_mean_harmonic_scalars(n_values, rndstate):
+def test_mean_harmonic_scalars(n_values, rndstate, backend):
     """Compare harmonic mean to scipy.hmean for scalars"""
-    values = rndstate.uniform(0.1, 10, size=n_values)
-    sp_hmean = hmean(values)
+    values_np = rndstate.uniform(0.1, 10, size=n_values)
+    sp_hmean = hmean(values_np)
+    values = to_backend(values_np, backend)
     py_hmean = mean_harmonic(values[..., None, None])[0, 0]
     assert sp_hmean == approx(py_hmean)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("n_values", [4, 6, 8])
-def test_mean_logeuclid_scalars(n_values, rndstate):
+def test_mean_logeuclid_scalars(n_values, rndstate, backend):
     """Compare log-Euclidean mean to scipy.gmean for scalars"""
-    values = rndstate.uniform(0.1, 10, size=n_values)
-    sp_mean = gmean_sp(values)
+    values_np = rndstate.uniform(0.1, 10, size=n_values)
+    sp_mean = gmean_sp(values_np)
+    values = to_backend(values_np, backend)
     py_mean = mean_logeuclid(values[..., None, None])[0, 0]
     assert sp_mean == approx(py_mean)
 
