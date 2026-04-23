@@ -7,7 +7,7 @@ from array_api_extra import create_diagonal, nan_to_num
 import numpy as np
 
 from . import deprecated
-from ._backend import diag_indices, tril_indices
+from ._backend import diag_indices, nanmean, tril_indices
 from .ajd import ajd_pham
 from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd
 from .distance import distance_riemann
@@ -989,14 +989,6 @@ def _apply_masks(X, masks):
     return [m.mT @ x @ m for x, m in zip(X, masks)]
 
 
-def _nanmean(X, axis=0):
-    """Mean along ``axis`` ignoring NaN values; backend-agnostic."""
-    xp = get_namespace(X)
-    isnan = xp.isnan(X)
-    X_clean = xp.where(isnan, xp.zeros_like(X), X)
-    return xp.sum(X_clean, axis=axis) / xp.sum(~isnan, axis=axis)
-
-
 @_vectorize_nd(n_axes=3)
 def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
                        sample_weight=None):
@@ -1133,7 +1125,7 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
     n_matrices, n, _ = X.shape
     if init is None:
         eye = xp.eye(n, dtype=X.dtype, device=xpd(X))
-        init = _nanmean(X, axis=0) + 1e-6 * eye
+        init = nanmean(X, axis=0) + 1e-6 * eye
     else:
         init = check_init(init, n, like=X)
 

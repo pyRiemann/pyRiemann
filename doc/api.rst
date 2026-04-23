@@ -390,20 +390,6 @@ Riemannian geometry operations.
        <div class="api-card-footer">12 functions</div>
      </a>
 
-     <a class="api-card card-utils" href="#check-api">
-       <div class="api-card-header">
-         <div class="api-card-icon">
-           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
-             <path d="M5 13 L9 17 L19 7" stroke="currentColor" stroke-width="2.5" fill="none"/>
-           </svg>
-         </div>
-         <span class="api-card-tag tag-utils">Utils</span>
-       </div>
-       <div class="api-card-title">Validation Helpers</div>
-       <div class="api-card-desc">Argument checkers for weights, init matrices, metrics, and array-API namespaces.</div>
-       <div class="api-card-footer">7 functions</div>
-     </a>
-
      <a class="api-card card-utils" href="#viz-api">
        <div class="api-card-header">
          <div class="api-card-icon">
@@ -843,23 +829,6 @@ Matrix Tests
     is_sym_pos_semi_def
     is_herm_pos_def
     is_herm_pos_semi_def
-
-.. _check_api:
-
-Validation Helpers
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. currentmodule:: pyriemann.utils.utils
-
-.. autosummary::
-    :toctree: generated/
-
-    check_function
-    check_init
-    check_like
-    check_matrix_pair
-    check_metric
-    check_param_in_func
-    check_weights
 
 .. _viz_api:
 

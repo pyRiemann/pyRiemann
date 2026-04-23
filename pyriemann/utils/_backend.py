@@ -16,6 +16,7 @@ __all__ = [
     "from_numpy",
     "diag_indices",
     "hann_window",
+    "nanmean",
     "tril_indices",
     "triu_indices",
     "apply_xp_cov",
@@ -127,6 +128,30 @@ def hann_window(n, *, like):
         return xp.ones(1, dtype=like.dtype, device=dev)
     k = xp.arange(n, dtype=like.dtype, device=dev)
     return 0.5 - 0.5 * xp.cos(2 * np.pi * k / (n - 1))
+
+
+def nanmean(X, axis=0):
+    """Mean along ``axis`` ignoring NaN values; backend-agnostic.
+
+    Equivalent to ``numpy.nanmean(X, axis=axis)`` but works for any
+    array-API namespace. When the input contains no NaN, the result
+    matches ``xp.mean(X, axis=axis)``.
+
+    Parameters
+    ----------
+    X : ndarray
+        Input array.
+    axis : int, default=0
+        Axis along which to compute the mean.
+
+    Notes
+    -----
+    .. versionadded:: 0.12
+    """
+    xp = get_namespace(X)
+    isnan = xp.isnan(X)
+    X_clean = xp.where(isnan, xp.zeros_like(X), X)
+    return xp.sum(X_clean, axis=axis) / xp.sum(~isnan, axis=axis)
 
 
 # ``np.cov`` / ``np.corrcoef`` use ``bias``/``ddof``; ``torch.cov`` /

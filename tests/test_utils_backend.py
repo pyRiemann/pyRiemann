@@ -8,6 +8,7 @@ from pyriemann.utils._backend import (
     from_numpy,
     diag_indices,
     hann_window,
+    nanmean,
     tril_indices,
     triu_indices,
     get_namespace,
@@ -57,3 +58,24 @@ def test_hann_window(backend):
     win1 = hann_window(1, like=like)
     assert win1.shape == (1,)
     np.testing.assert_array_equal(to_numpy(win1), np.array([1.0]))
+
+
+def test_nanmean(backend):
+    # With no NaN, equivalent to xp.mean
+    X_np = np.arange(12, dtype=np.float64).reshape(3, 4)
+    X = to_backend(X_np, backend)
+    xp = get_namespace(X)
+    np.testing.assert_array_almost_equal(
+        to_numpy(nanmean(X, axis=0)), to_numpy(xp.mean(X, axis=0)),
+    )
+    np.testing.assert_array_almost_equal(
+        to_numpy(nanmean(X, axis=1)), to_numpy(xp.mean(X, axis=1)),
+    )
+    # With NaN, equivalent to np.nanmean
+    X_nan_np = X_np.copy()
+    X_nan_np[0, 1] = np.nan
+    X_nan_np[2, 3] = np.nan
+    X_nan = to_backend(X_nan_np, backend)
+    np.testing.assert_array_almost_equal(
+        to_numpy(nanmean(X_nan, axis=0)), np.nanmean(X_nan_np, axis=0),
+    )
