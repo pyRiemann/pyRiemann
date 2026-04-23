@@ -1,8 +1,8 @@
+from array_api_compat import array_namespace as get_namespace, device
 import numpy as np
 import pytest
-from conftest import approx
 
-from array_api_compat import array_namespace as get_namespace, device
+from conftest import approx
 from pyriemann.utils.geodesic import (
     geodesic,
     geodesic_chol,

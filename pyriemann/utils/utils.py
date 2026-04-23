@@ -1,10 +1,7 @@
 import inspect
 
 import array_api_compat.numpy as _xpnp
-from array_api_compat import (
-    array_namespace as get_namespace,
-    device as xpd,
-)
+from array_api_compat import array_namespace as get_namespace, device as xpd
 
 
 def check_like(like):
