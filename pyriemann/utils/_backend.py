@@ -9,6 +9,11 @@ from array_api_compat import (
 )
 from array_api_extra import atleast_nd
 import numpy as np
+from sklearn.covariance import (
+    fast_mcd as _sklearn_mcd,
+    ledoit_wolf as _sklearn_lw,
+    oas as _sklearn_oas,
+)
 
 
 __all__ = [
@@ -205,13 +210,6 @@ can be removed. Check sklearn tags with:
 If you add content to this file, please give the version of the package
 at which the fix is no longer needed.
 """
-
-from sklearn.covariance import (
-    fast_mcd as _sklearn_mcd,
-    ledoit_wolf as _sklearn_lw,
-    oas as _sklearn_oas,
-)
-
 
 def _add_to_diagonal(X, value, xp):
     """Add a scalar value to the diagonal of a matrix."""
