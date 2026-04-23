@@ -1,3 +1,5 @@
+import warnings
+
 from array_api_compat import array_namespace as get_namespace
 import numpy as np
 import pytest
@@ -266,7 +268,6 @@ def test_eegtocov(rndstate):
     assert cov.shape[1:] == (n_channels, n_channels)
 
 
-@pytest.mark.numpy_only
 def test_cross_spectrum_errors(rndstate):
     n_channels, n_times = 3, 1000
     X = rndstate.randn(n_channels, n_times)
@@ -290,7 +291,6 @@ def test_cross_spectrum_errors(rndstate):
         cross_spectrum(X, fmax=12)
 
 
-@pytest.mark.numpy_only
 def test_cross_spectrum(rndstate):
     n_channels, n_times = 3, 1000
     X = rndstate.randn(n_channels, n_times)
@@ -309,7 +309,6 @@ def test_cross_spectrum(rndstate):
     assert is_real(c.diagonal())
 
 
-@pytest.mark.numpy_only
 def test_cross_spectrum_scipy_auto(rndstate):
     """"Test equivalence between pyriemann and scipy for (auto-)spectra"""
     n_times = 1000
@@ -342,7 +341,6 @@ def test_cross_spectrum_scipy_auto(rndstate):
     assert_array_almost_equal(spect_pr, spect_sp, 6)
 
 
-@pytest.mark.numpy_only
 def test_cross_spectrum_scipy_cross(rndstate):
     """"Test equivalence between pyriemann and scipy for cross-spectra"""
     n_times = 1000
@@ -390,7 +388,19 @@ def test_cross_spectrum_broadcasting(rndstate):
     assert C4[0, 0] == approx(C2)
 
 
-@pytest.mark.numpy_only
+def test_cross_spectrum_backend(rndstate, backend):
+    """cross_spectrum agrees across NumPy and PyTorch backends."""
+    from conftest import to_backend
+    n_channels, n_times = 3, 1000
+    X_np = rndstate.randn(n_channels, n_times)
+    X = to_backend(X_np, backend)
+
+    S, freqs = cross_spectrum(X, fs=128, window=64)
+    S_ref, _ = cross_spectrum(X_np, fs=128, window=64)
+    assert_array_almost_equal(S, S_ref)
+    assert_array_almost_equal(freqs, np.arange(33) * 2.0)
+
+
 def test_cospectrum(rndstate):
     X = rndstate.randn(3, 1000)
     cospectrum(X)
@@ -548,12 +558,28 @@ def test_coherence_broadcasting(coh, rndstate):
     assert C4[0, 0] == approx(C2)
 
 
-@pytest.mark.numpy_only
 def test_coherence_error(rndstate):
     n_channels, n_times = 3, 50
     X = rndstate.randn(n_channels, n_times)
     with pytest.raises(ValueError):  # unknown coh
         coherence(X, coh="foobar")
+
+
+@pytest.mark.parametrize(
+    "coh", ["ordinary", "instantaneous", "lagged", "imaginary"]
+)
+def test_coherence_backend(coh, rndstate, backend):
+    """coherence agrees across NumPy and PyTorch backends."""
+    from conftest import to_backend
+    n_channels, n_times = 3, 200
+    X_np = rndstate.randn(n_channels, n_times)
+    X = to_backend(X_np, backend)
+
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")  # silence DC/Nyquist (lagged)
+        C, _ = coherence(X, window=64, coh=coh)
+        C_ref, _ = coherence(X_np, window=64, coh=coh)
+    assert_array_almost_equal(C, C_ref)
 
 
 @pytest.mark.parametrize("norm", ["corr", "trace", "determinant"])

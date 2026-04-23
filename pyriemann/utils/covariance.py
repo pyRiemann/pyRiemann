@@ -6,11 +6,10 @@ from array_api_compat import (
     device as xpd,
 )
 from array_api_extra import expand_dims
-import numpy as np
 from scipy.stats import chi2
 
 from . import deprecated
-from ._backend import apply_xp_cov, diag_indices
+from ._backend import apply_xp_cov, diag_indices, hann_window
 from ._fixes import ledoit_wolf, oas, fast_mcd
 from .base import ctranspose, _vectorize_nd
 from .distance import distance_mahalanobis
@@ -700,6 +699,8 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
     Notes
     -----
     .. versionadded:: 0.2.7
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -715,19 +716,20 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             f"Value overlap must be included in (0, 1) (Got {overlap})"
         )
 
+    xp, dev = get_namespace(X), xpd(X)
     n_times = X.shape[-1]
     n_freqs = int(window / 2) + 1  # X real signal => compute half-spectrum
     step = int((1.0 - overlap) * window)
     n_windows = int((n_times - window) / step + 1)
-    win = np.hanning(window)
+    win = hann_window(window, like=X)
 
-    # Sliding window view handles any batch dims
+    # Sliding window via advanced indexing handles any batch dims
     # (..., n_channels, n_times) -> (..., n_channels, n_windows, window)
-    Xs = np.lib.stride_tricks.sliding_window_view(
-        X, window, axis=-1
-    )[..., ::step, :]
+    starts = xp.arange(n_windows, device=dev) * step
+    offsets = xp.arange(window, device=dev)
+    Xs = X[..., starts[:, None] + offsets[None, :]]
     # FFT: (..., n_channels, n_windows, n_freqs)
-    fdata = np.fft.rfft(Xs * win, n=window)
+    fdata = xp.fft.rfft(Xs * win, n=window)
 
     # adjust frequency range to specified range
     if fs is not None:
@@ -739,7 +741,8 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
             raise ValueError("Parameter fmax must be superior to fmin")
         if 2.0 * fmax > fs:  # check Nyquist-Shannon
             raise ValueError("Parameter fmax must be inferior to fs/2")
-        f = np.arange(0, n_freqs, dtype=int) * float(fs / window)
+        f = xp.arange(0, n_freqs, dtype=X.dtype, device=dev) \
+            * float(fs / window)
         fix = (f >= fmin) & (f <= fmax)
         fdata = fdata[..., fix]
         freqs = f[fix]
@@ -754,8 +757,8 @@ def cross_spectrum(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None):
 
     # Cross-spectral matrix via einsum over windows
     # (..., n_channels, n_channels, n_freqs)
-    S = np.einsum('...cwf,...dwf->...cdf', fdata.conj(), fdata)
-    S /= n_windows * np.linalg.norm(win)**2
+    S = xp.einsum('...cwf,...dwf->...cdf', xp.conj(fdata), fdata)
+    S /= n_windows * xp.linalg.vector_norm(win)**2
 
     # normalization to respect Parseval's theorem with the half-spectrum
     # excepted DC bin (always), and Nyquist bin (when window is even)
@@ -883,43 +886,45 @@ def coherence(X, window=128, overlap=0.75, fmin=None, fmax=None, fs=None,
         fs=fs,
     )
     # S: (..., n_channels, n_channels, n_freqs)
-    S2 = np.abs(S)**2  # squared cross-spectral modulus
+    xp, dev = get_namespace(S), xpd(S)
+    S2 = xp.abs(S)**2  # squared cross-spectral modulus
 
     n_channels = S.shape[-3]
-    C = np.zeros_like(S2)
-    f_inds = np.arange(0, C.shape[-1], dtype=int)
+    C = xp.zeros_like(S2)
+    f_inds = xp.arange(0, C.shape[-1], device=dev)
 
     # lagged coh not defined for DC and Nyquist bins, because S is real
     if coh == "lagged":
         if freqs is None:
-            f_inds = np.arange(1, C.shape[-1] - 1, dtype=int)
+            f_inds = xp.arange(1, C.shape[-1] - 1, device=dev)
             warnings.warn("DC and Nyquist bins are not defined for lagged-"
                           "coherence: filled with zeros", stacklevel=2)
         else:
-            f_inds_ = f_inds[(freqs > 0) & (freqs < fs / 2)]
-            if not np.array_equal(f_inds_, f_inds):
+            keep = (freqs > 0) & (freqs < fs / 2)
+            f_inds_ = f_inds[keep]
+            if not bool(xp.all(keep)):
                 warnings.warn("DC and Nyquist bins are not defined for lagged-"
                               "coherence: filled with zeros", stacklevel=2)
             f_inds = f_inds_
 
     # Vectorized PSD: diagonal of S2 across channels
-    diag_idx = np.arange(n_channels)
-    psd = np.sqrt(S2[..., diag_idx, diag_idx, :])  # (..., n_ch, n_freqs)
-    psd_prod = psd[..., :, np.newaxis, :] * psd[..., np.newaxis, :, :]
+    diag_idx = xp.arange(n_channels, device=dev)
+    psd = xp.sqrt(S2[..., diag_idx, diag_idx, :])  # (..., n_ch, n_freqs)
+    psd_prod = psd[..., :, None, :] * psd[..., None, :, :]
     # psd_prod: (..., n_ch, n_ch, n_freqs)
 
     if coh == "ordinary":
         C[..., f_inds] = S2[..., f_inds] / psd_prod[..., f_inds]
     elif coh == "instantaneous":
-        C[..., f_inds] = (S[..., f_inds].real)**2 / psd_prod[..., f_inds]
+        C[..., f_inds] = xp.real(S[..., f_inds])**2 / psd_prod[..., f_inds]
     elif coh == "lagged":
-        S_real = S.real.copy()
+        S_real = xp.asarray(xp.real(S), copy=True)
         S_real[..., diag_idx, diag_idx, :] = 0.0  # zero diagonal
         denom = psd_prod[..., f_inds] - S_real[..., f_inds]**2
-        denom = np.where(np.abs(denom) < 1e-10, 1e-10, denom)
-        C[..., f_inds] = (S[..., f_inds].imag)**2 / denom
+        denom = xp.where(xp.abs(denom) < 1e-10, 1e-10, denom)
+        C[..., f_inds] = xp.imag(S[..., f_inds])**2 / denom
     elif coh == "imaginary":
-        C[..., f_inds] = (S[..., f_inds].imag)**2 / psd_prod[..., f_inds]
+        C[..., f_inds] = xp.imag(S[..., f_inds])**2 / psd_prod[..., f_inds]
     else:
         raise ValueError(f"{coh} is not a supported coherence")
 
