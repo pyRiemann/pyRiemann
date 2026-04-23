@@ -8,11 +8,7 @@ from array_api_compat import (
     is_numpy_namespace,
 )
 
-from ._backend import (
-    diag_indices,
-    tril_indices,
-    triu_indices,
-)
+from ._backend import diag_indices, tril_indices, triu_indices
 from .base import ctranspose, expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
 from .utils import check_function, check_matrix_pair
 

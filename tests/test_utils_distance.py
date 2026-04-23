@@ -4,9 +4,9 @@ from array_api_compat import (
     array_namespace as get_namespace,
     device,
 )
+from array_api_extra import cov as xpx_cov
 import numpy as np
 import pytest
-from scipy.linalg import eigvalsh
 from scipy.spatial.distance import mahalanobis
 
 from conftest import to_backend, approx, assert_array_almost_equal
@@ -28,7 +28,7 @@ from pyriemann.utils.distance import (
     pairwise_distance,
     distance_mahalanobis,
 )
-from pyriemann.utils.base import logm, invsqrtm
+from pyriemann.utils.base import logm, invsqrtm, _eigvalsh
 from pyriemann.utils.geodesic import geodesic
 from pyriemann.utils.test import is_sym, is_real_type
 
@@ -340,23 +340,23 @@ def test_distance_riemann_properties(kind, get_mats, rndstate):
     assert dist_1 == approx(dist_2)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_distance_thompson_implementation(kind, get_mats):
     n_channels = 5
     A, B = get_mats(2, n_channels, kind)
+    xp = get_namespace(A)
     d = distance_thompson(A, B)
 
     # Eq(4.6) in [Sra2015]
     Bm12 = invsqrtm(B)
-    assert d == approx(np.linalg.norm(logm(Bm12 @ A @ Bm12), ord=2))
+    assert d == approx(xp.linalg.matrix_norm(logm(Bm12 @ A @ Bm12), ord=2))
 
     # Eq(1.2) in [Mostajeran2024]
-    d2 = np.log(max(eigvalsh(A, B).max(), 1 / eigvalsh(A, B).min()))
+    d2 = xp.log(max(xp.max(_eigvalsh(A, B)), 1 / xp.min(_eigvalsh(A, B))))
     assert d == approx(d2)
 
     # Eq(1.4) in [Mostajeran2024]
-    d2 = np.log(max(eigvalsh(A, B).max(), eigvalsh(B, A).max()))
+    d2 = xp.log(max(xp.max(_eigvalsh(A, B)), xp.max(_eigvalsh(B, A))))
     assert d == approx(d2)
 
 
@@ -407,12 +407,11 @@ def test_pairwise_distance(kind, metric, Y, squared, get_mats):
         assert not is_sym(pdist)
 
 
-@pytest.mark.numpy_only
 @pytest.mark.parametrize("kind", ["real", "comp"])
 def test_distance_mahalanobis(kind, get_mats):
     n_channels, n_times = 2, 50
     X = get_mats(1, [n_channels, n_times], kind)[0]
-    d = distance_mahalanobis(X, np.cov(X))
+    d = distance_mahalanobis(X, xpx_cov(X))
     assert d.shape == (n_times,)
     assert is_real_type(d)
 
@@ -441,7 +440,7 @@ def test_distance_mahalanobis_scipy(mean, get_mats):
 @pytest.mark.parametrize("mean", [True, None])
 def test_distance_mahalanobis_broadcasting(mean, get_mats, rndstate, backend):
     n_dim5, n_dim4, n_dim3, n_channels, n_vectors = 2, 5, 3, 4, 10
-    cov = get_mats([n_dim5, n_dim4, n_dim3], n_channels, "spd")
+    Cov = get_mats([n_dim5, n_dim4, n_dim3], n_channels, "spd")
     X = to_backend(
         rndstate.randn(n_dim5, n_dim4, n_dim3, n_channels, n_vectors),
         backend,
@@ -457,14 +456,14 @@ def test_distance_mahalanobis_broadcasting(mean, get_mats, rndstate, backend):
 
     # 2D array
     d2 = distance_mahalanobis(
-        X[0, 0, 0], cov[0, 0, 0],
+        X[0, 0, 0], Cov[0, 0, 0],
         mean=m[0, 0, 0] if m is not None else None,
     )
     assert d2.shape == (n_vectors,)
 
     # 3D array
     D3 = distance_mahalanobis(
-        X[0, 0], cov[0, 0],
+        X[0, 0], Cov[0, 0],
         mean=m[0, 0] if m is not None else None,
     )
     assert D3.shape == (n_dim3, n_vectors)
@@ -472,16 +471,13 @@ def test_distance_mahalanobis_broadcasting(mean, get_mats, rndstate, backend):
 
     # 4D array
     D4 = distance_mahalanobis(
-        X[0], cov[0],
+        X[0], Cov[0],
         mean=m[0] if m is not None else None,
     )
     assert D4.shape == (n_dim4, n_dim3, n_vectors)
     assert_array_almost_equal(D4[0, 0], d2)
 
     # 5D array
-    D5 = distance_mahalanobis(
-        X, cov,
-        mean=m,
-    )
+    D5 = distance_mahalanobis(X, Cov, mean=m)
     assert D5.shape == (n_dim5, n_dim4, n_dim3, n_vectors)
     assert_array_almost_equal(D5[0, 0, 0], d2)

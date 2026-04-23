@@ -2,7 +2,7 @@
 
 from array_api_compat import array_namespace as get_namespace
 
-from ._fixes import _add_to_diagonal
+from ._backend import _add_to_diagonal
 from .base import ctranspose, invsqrtm, logm
 from .mean import mean_riemann
 from .utils import check_function

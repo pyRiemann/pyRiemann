@@ -1,16 +1,19 @@
 from functools import wraps
 import warnings
 
-from array_api_compat import (
-    array_namespace as get_namespace,
-    device as xpd,
-)
+from array_api_compat import array_namespace as get_namespace, device as xpd
 from array_api_extra import expand_dims
 from scipy.stats import chi2
 
 from . import deprecated
-from ._backend import apply_xp_cov, diag_indices, hann_window
-from ._fixes import ledoit_wolf, oas, fast_mcd
+from ._backend import (
+    apply_xp_cov,
+    diag_indices,
+    hann_window,
+    fast_mcd,
+    ledoit_wolf,
+    oas,
+)
 from .base import ctranspose, _vectorize_nd
 from .distance import distance_mahalanobis
 from .test import is_square, is_real_type
