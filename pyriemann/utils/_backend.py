@@ -211,6 +211,7 @@ If you add content to this file, please give the version of the package
 at which the fix is no longer needed.
 """
 
+
 def _add_to_diagonal(X, value, xp):
     """Add a scalar value to the diagonal of a matrix."""
     n = X.shape[-1]
