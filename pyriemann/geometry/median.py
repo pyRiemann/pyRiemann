@@ -7,7 +7,7 @@ from array_api_compat import array_namespace as get_namespace
 from .base import sqrtm, invsqrtm, logm, expm
 from .distance import distance
 from .mean import mean_euclid
-from .utils import check_weights
+from pyriemann.utils.utils import check_weights
 
 
 def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):

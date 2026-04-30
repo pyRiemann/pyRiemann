@@ -4,8 +4,8 @@ import warnings
 
 from array_api_compat import array_namespace as get_namespace, device as xpd
 
-from ._backend import _add_to_diagonal
-from .utils import check_weights, check_function, check_init
+from pyriemann.utils._backend import _add_to_diagonal
+from pyriemann.utils.utils import check_weights, check_function, check_init
 
 
 def _arange(*args):
