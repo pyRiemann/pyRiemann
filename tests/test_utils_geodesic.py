@@ -1,7 +1,8 @@
+from array_api_compat import array_namespace as get_namespace, device
 import numpy as np
 import pytest
-from pytest import approx
 
+from conftest import approx
 from pyriemann.utils.geodesic import (
     geodesic,
     geodesic_chol,
@@ -141,12 +142,13 @@ def test_geodesic_property_invariance_inversion(kind, gfun,
     """Test invariance under inversion, also called self-duality """
     n_channels = 4
     A, B = get_mats(2, n_channels, kind)
+    xp = get_namespace(A)
     alpha = rndstate.uniform(0.01, 0.99)
     G = gfun(A, B, alpha)
-    eye_n = np.eye(n_channels)
-    A_inv = np.linalg.solve(A, eye_n)
-    B_inv = np.linalg.solve(B, eye_n)
-    G_inv = np.linalg.solve(gfun(A_inv, B_inv, alpha), eye_n)
+    eye_n = xp.eye(n_channels, dtype=A.dtype, device=device(A))
+    A_inv = xp.linalg.solve(A, eye_n)
+    B_inv = xp.linalg.solve(B, eye_n)
+    G_inv = xp.linalg.solve(gfun(A_inv, B_inv, alpha), eye_n)
     assert G == approx(G_inv)
 
 
@@ -178,12 +180,13 @@ def test_geodesic_euclid(n_dim1, n_dim2, kind, get_mats):
 def test_geodesic_riemann(kind, get_mats, rndstate):
     n_channels = 4
     A, B = get_mats(2, n_channels, kind)
+    xp = get_namespace(A)
     alpha = rndstate.uniform(0.01, 0.99)
     G = geodesic_riemann(A, B, alpha)
 
     # WG9 in [Nakamura2009]
-    det = (np.linalg.det(A) ** (1 - alpha)) * (np.linalg.det(B) ** alpha)
-    assert np.linalg.det(G) == approx(det)
+    det = (xp.linalg.det(A) ** (1 - alpha)) * (xp.linalg.det(B) ** alpha)
+    assert xp.linalg.det(G) == approx(det)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])

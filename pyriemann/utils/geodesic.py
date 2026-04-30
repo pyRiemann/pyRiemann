@@ -1,9 +1,10 @@
 """Geodesics for SPD/HPD matrices."""
-import numpy as np
-from scipy.linalg import eigvalsh
 
-from .base import _recursive, ctranspose, sqrtm, invsqrtm, powm, logm, expm
-from .utils import check_function
+from array_api_compat import array_namespace as get_namespace
+
+from ._backend import diag_indices, tril_indices
+from .base import ctranspose, _eigvalsh, sqrtm, invsqrtm, powm, logm, expm
+from .utils import check_function, check_matrix_pair
 
 
 def geodesic_chol(A, B, alpha=0.5):
@@ -37,7 +38,9 @@ def geodesic_chol(A, B, alpha=0.5):
 
     Notes
     -----
-    ..versionadded:: 0.10
+    .. versionadded:: 0.10
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -51,7 +54,8 @@ def geodesic_chol(A, B, alpha=0.5):
         I.L. Dryden, A. Koloydenko, D. Zhou.
         Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
     """
-    geo = (1 - alpha) * np.linalg.cholesky(A) + alpha * np.linalg.cholesky(B)
+    xp = get_namespace(A, B)
+    geo = (1 - alpha) * xp.linalg.cholesky(A) + alpha * xp.linalg.cholesky(B)
     return geo @ ctranspose(geo)
 
 
@@ -80,6 +84,11 @@ def geodesic_euclid(A, B, alpha=0.5):
     -------
     C : ndarray, shape (..., n, m)
         Matrices on the Euclidean geodesic.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -110,7 +119,9 @@ def geodesic_logchol(A, B, alpha=0.5):
 
     Notes
     -----
-    ..versionadded:: 0.7
+    .. versionadded:: 0.7
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -123,15 +134,16 @@ def geodesic_logchol(A, B, alpha=0.5):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    A_chol, B_chol = np.linalg.cholesky(A), np.linalg.cholesky(B)
+    xp = get_namespace(A, B)
+    A_chol, B_chol = xp.linalg.cholesky(A), xp.linalg.cholesky(B)
 
-    geo = np.zeros_like(A)
+    geo = xp.zeros_like(A)
 
-    tri0, tri1 = np.tril_indices(A_chol.shape[-1], -1)
+    tri0, tri1 = tril_indices(A_chol.shape[-1], -1, like=A_chol)
     geo[..., tri0, tri1] = (1 - alpha) * A_chol[..., tri0, tri1] + \
         alpha * B_chol[..., tri0, tri1]
 
-    diag0, diag1 = np.diag_indices(A_chol.shape[-1])
+    diag0, diag1 = diag_indices(A_chol.shape[-1], like=A_chol)
     geo[..., diag0, diag1] = A_chol[..., diag0, diag1] ** (1 - alpha) * \
         B_chol[..., diag0, diag1] ** alpha
 
@@ -164,6 +176,11 @@ def geodesic_logeuclid(A, B, alpha=0.5):
     -------
     C : ndarray, shape (..., n, n)
         SPD/HPD matrices on the log-Euclidean geodesic.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -208,6 +225,11 @@ def geodesic_riemann(A, B, alpha=0.5):
     C : ndarray, shape (..., n, n)
         SPD/HPD matrices on the affine-invariant Riemannian geodesic.
 
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
     See Also
     --------
     geodesic
@@ -250,7 +272,9 @@ def geodesic_thompson(A, B, alpha=0.5):
 
     Notes
     -----
-    ..versionadded:: 0.10
+    .. versionadded:: 0.10
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -264,26 +288,21 @@ def geodesic_thompson(A, B, alpha=0.5):
         C. Mostajeran, N. Da Costa, G. Van Goffrier and R. Sepulchre.
         SIAM Journal on Matrix Analysis and Applications, 2024
     """
-    A_ndim = A.ndim
-    while A.ndim < 3:
-        A, B = A[np.newaxis, ...], B[np.newaxis, ...]
-    E = _recursive(eigvalsh, B, A)
-    Emin, Emax = E.min(axis=-1), E.max(axis=-1)
-
-    C = np.zeros_like(A)
-
-    mask = (Emin == Emax)
-    C[mask] = (Emin[mask][..., np.newaxis, np.newaxis] ** alpha) * A[mask]
-
+    xp = check_matrix_pair(A, B, require_square=True)
+    E = _eigvalsh(B, A)
+    Emin, Emax = xp.min(E, axis=-1), xp.max(E, axis=-1)
     Emin_a, Emax_a = Emin ** alpha, Emax ** alpha
-    b = (Emax_a - Emin_a)[~mask][..., np.newaxis, np.newaxis]
-    a = (Emax * Emin_a - Emin * Emax_a)[~mask][..., np.newaxis, np.newaxis]
-    c = b * B[~mask] + a * A[~mask]
-    C[~mask] = c / (Emax - Emin)[~mask][..., np.newaxis, np.newaxis]
 
-    if A_ndim < 3:
-        C = C[0]
+    equal = xp.isclose(Emin, Emax)
+    # safe denominator to avoid division by zero when Emin ≈ Emax
+    den = xp.where(equal, xp.ones_like(Emin), Emax - Emin)
+    b = (Emax_a - Emin_a)[..., None, None]
+    a = (Emax * Emin_a - Emin * Emax_a)[..., None, None]
+    c = b * B + a * A
+    C = c / den[..., None, None]
 
+    # when Emin ≈ Emax, geodesic simplifies to scaling
+    C = xp.where(equal[..., None, None], Emin_a[..., None, None] * A, C)
     return C
 
 
@@ -317,7 +336,9 @@ def geodesic_wasserstein(A, B, alpha=0.5):
 
     Notes
     -----
-    ..versionadded:: 0.8
+    .. versionadded:: 0.8
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -378,6 +399,11 @@ def geodesic(A, B, alpha, metric="riemann"):
     -------
     C : ndarray, shape (..., n, n)
         Matrices on the geodesic.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------

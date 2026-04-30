@@ -2,9 +2,22 @@
 
 import warnings
 
-import numpy as np
+from array_api_compat import array_namespace as get_namespace, device as xpd
 
+from ._backend import _add_to_diagonal
 from .utils import check_weights, check_function, check_init
+
+
+def _arange(*args):
+    return list(range(*args))
+
+
+def _reshape_input(X, xp):
+    return xp.asarray(xp.reshape(X, (-1, X.shape[-1])).mT, copy=True)
+
+
+def _reshape_output(X, n1, n2, xp):
+    return xp.permute_dims(xp.reshape(X, (n1, n2, n1)), (1, 0, 2))
 
 
 def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
@@ -37,6 +50,8 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     Notes
     -----
     .. versionadded:: 0.2.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -47,47 +62,47 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     .. [1] `Jacobi angles for simultaneous diagonalization
         <https://epubs.siam.org/doi/abs/10.1137/S0895479893259546>`_
         J.-F. Cardoso and A. Souloumiac, SIAM Journal on Matrix Analysis and
-        Applications, 17(1), pp. 161–164, 1996.
+        Applications, 17(1), pp. 161-164, 1996.
     """
+    xp = get_namespace(X, init)
     n_matrices, _, _ = X.shape
-    # reshape input matrix
-    A = np.concatenate(X, 0).T
+    A = _reshape_input(X, xp)
     n, n_matrices_x_n = A.shape
 
     # init variables
     if init is None:
-        V = np.eye(n)
+        V = xp.eye(n, dtype=X.dtype, device=xpd(X))
     else:
-        V = check_init(init, n)
+        V = check_init(init, n, like=X)
 
     for _ in range(n_iter_max):
         crit = False
         for p in range(n):
             for q in range(p + 1, n):
-                Ip = np.arange(p, n_matrices_x_n, n)
-                Iq = np.arange(q, n_matrices_x_n, n)
+                Ip = _arange(p, n_matrices_x_n, n)
+                Iq = _arange(q, n_matrices_x_n, n)
 
                 # computation of Givens rotations
-                g = np.array([A[p, Ip] - A[q, Iq], A[p, Iq] + A[q, Ip]])
-                gg = g @ g.T
+                g = xp.stack([A[p, Ip] - A[q, Iq], A[p, Iq] + A[q, Ip]])
+                gg = g @ g.mT
                 ton = gg[0, 0] - gg[1, 1]
                 toff = gg[0, 1] + gg[1, 0]
-                theta = 0.5 * np.arctan2(toff, ton + np.sqrt(ton**2 + toff**2))
-                c = np.cos(theta)
-                s = np.sin(theta)
-                crit = crit | (np.abs(s) > eps)
+                theta = 0.5 * xp.atan2(toff, ton + xp.sqrt(ton**2 + toff**2))
+                c = xp.cos(theta)
+                s = xp.sin(theta)
+                crit = crit | (xp.abs(s) > eps)
 
                 # update of A and V matrices
-                if (np.abs(s) > eps):
-                    tmp = A[:, Ip].copy()
+                if xp.abs(s) > eps:
+                    tmp = xp.asarray(A[:, Ip], copy=True)
                     A[:, Ip] = c * A[:, Ip] + s * A[:, Iq]
                     A[:, Iq] = c * A[:, Iq] - s * tmp
 
-                    tmp = A[p, :].copy()
+                    tmp = xp.asarray(A[p, :], copy=True)
                     A[p, :] = c * A[p, :] + s * A[q, :]
                     A[q, :] = c * A[q, :] - s * tmp
 
-                    tmp = V[:, p].copy()
+                    tmp = xp.asarray(V[:, p], copy=True)
                     V[:, p] = c * V[:, p] + s * V[:, q]
                     V[:, q] = c * V[:, q] - s * tmp
 
@@ -96,7 +111,7 @@ def rjd(X, *, init=None, eps=1e-8, n_iter_max=100):
     else:
         warnings.warn("Convergence not reached")
 
-    D = np.reshape(A, (n, n_matrices, n)).transpose(1, 0, 2)
+    D = _reshape_output(A, n, n_matrices, xp)
     return V, D
 
 
@@ -136,6 +151,8 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     .. versionadded:: 0.2.4
     .. versionchanged:: 0.7
         Add support for HPD matrices.
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -149,68 +166,69 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
         D.-T. Pham. SIAM Journal on Matrix Analysis and Applications, 22(4),
         pp. 1136-1152, 2000.
     """
+    xp = get_namespace(X)
     n_matrices, _, _ = X.shape
     normalized_weight = check_weights(
         sample_weight,
         n_matrices,
         check_positivity=True,
+        like=X,
     )  # sum = 1
 
-    # reshape input matrix
-    A = np.concatenate(X, axis=0).T
+    A = _reshape_input(X, xp)
     n, n_matrices_x_n = A.shape
 
     # init variables
     if init is None:
-        V = np.eye(n)
+        V = xp.eye(n, dtype=X.dtype, device=xpd(X))
     else:
-        V = check_init(init, n)
-    V = V.astype(X.dtype)
+        V = check_init(init, n, like=X)
     epsilon = n * (n - 1) * eps
+    is_real = xp.isdtype(X.dtype, "real floating")
 
     for _ in range(n_iter_max):
         crit = 0
         for ii in range(1, n):
             for jj in range(ii):
-                Ii = np.arange(ii, n_matrices_x_n, n)
-                Ij = np.arange(jj, n_matrices_x_n, n)
+                Ii = _arange(ii, n_matrices_x_n, n)
+                Ij = _arange(jj, n_matrices_x_n, n)
 
                 c1 = A[ii, Ii]
                 c2 = A[jj, Ij]
 
-                g12 = np.average(A[ii, Ij] / c1, weights=normalized_weight)
-                g21 = np.average(A[ii, Ij] / c2, weights=normalized_weight)
+                g12 = xp.sum(normalized_weight * (A[ii, Ij] / c1))
+                g21 = xp.sum(normalized_weight * (A[ii, Ij] / c2))
 
-                omega21 = np.average(c1 / c2, weights=normalized_weight)
-                omega12 = np.average(c2 / c1, weights=normalized_weight)
-                omega = np.sqrt(omega12 * omega21)
+                omega21 = xp.sum(normalized_weight * (c1 / c2))
+                omega12 = xp.sum(normalized_weight * (c2 / c1))
+                omega = xp.sqrt(omega12 * omega21)
 
-                tmp = np.sqrt(omega21 / omega12)
+                tmp = xp.sqrt(omega21 / omega12)
                 tmp1 = (tmp * g12 + g21) / (omega + 1)
-                if np.isrealobj(X):
+                if is_real:
                     omega = max(omega - 1, 1e-9)
                 tmp2 = (tmp * g12 - g21) / omega
 
                 h12 = tmp1 + tmp2
-                h21 = np.conj((tmp1 - tmp2) / tmp)
+                h21 = xp.conj((tmp1 - tmp2) / tmp)
 
-                crit += n_matrices * (g12 * np.conj(h12) + g21 * h21) / 2.0
+                crit += n_matrices * xp.real(g12 * xp.conj(h12) + g21 * h21) \
+                    / 2.0
 
-                tmp = 1 + 0.5j * np.imag(h12 * h21)
-                tmp = tmp + np.sqrt(tmp ** 2 - h12 * h21)
-                if np.isrealobj(X):
-                    tmp = np.real(tmp)
-                tau = np.array([[1, np.conj(-h12 / tmp)],
-                                [np.conj(-h21 / tmp), 1]])
+                if is_real:
+                    tmp = 1 + xp.sqrt(1 - h12 * h21)
+                else:
+                    tmp = 1 + 0.5j * xp.imag(h12 * h21)
+                    tmp = tmp + xp.sqrt(tmp ** 2 - h12 * h21)
+                tau = xp.eye(2, dtype=X.dtype, device=xpd(X))
+                tau[0, 1] = xp.conj(-h12 / tmp)
+                tau[1, 0] = xp.conj(-h21 / tmp)
 
-                A[[ii, jj], :] = tau.conj() @ A[[ii, jj], :]
-                tmp = np.c_[A[:, Ii], A[:, Ij]]
-                tmp = np.reshape(tmp, (n * n_matrices, 2), order="F")
-                tmp = tmp @ tau.T
-
-                tmp = np.reshape(tmp, (n, n_matrices * 2), order="F")
-                A[:, Ii] = tmp[:, :n_matrices]
-                A[:, Ij] = tmp[:, n_matrices:]
+                A[[ii, jj], :] = xp.conj(tau) @ A[[ii, jj], :]
+                tmp = xp.stack((A[:, Ii], A[:, Ij]), axis=-1)
+                tmp = tmp @ tau.mT
+                A[:, Ii] = tmp[..., 0]
+                A[:, Ij] = tmp[..., 1]
                 V[[ii, jj], :] = tau @ V[[ii, jj], :]
 
         if crit < epsilon:
@@ -218,8 +236,8 @@ def ajd_pham(X, *, init=None, eps=1e-6, n_iter_max=20, sample_weight=None):
     else:
         warnings.warn("Convergence not reached")
 
-    D = np.reshape(A, (n, -1, n)).transpose(1, 0, 2).conj()
-    return V.astype(X.dtype), D.astype(X.dtype)
+    D = xp.conj(_reshape_output(A, n, n_matrices, xp))
+    return V, D
 
 
 def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
@@ -250,6 +268,8 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
     Notes
     -----
     .. versionadded:: 0.2.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -268,58 +288,62 @@ def uwedge(X, *, init=None, eps=1e-7, n_iter_max=100):
         P. Tichavsky and A. Yeredor. IEEE Trans Signal Process, 57(3), pp.
         878 - 891, 2009.
     """
+    xp = get_namespace(X, init)
     n_matrices, _, _ = X.shape
-    # reshape input matrix
-    M = np.concatenate(X, 0).T
+    M = _reshape_input(X, xp)
     n, n_matrices_x_n = M.shape
 
     # init variables
     if init is None:
-        E, H = np.linalg.eig(M[:, 0:n])
-        V = H.T / np.sqrt(np.abs(E))[:, np.newaxis]
+        E, H = xp.linalg.eig(M[:, 0:n])
+        if xp.isdtype(X.dtype, "real floating"):
+            H = xp.real(H)
+        V = H.mT / xp.sqrt(xp.abs(E))[:, None]
     else:
-        V = check_init(init, n)
+        V = check_init(init, n, like=X)
 
-    Ms = np.array(M)
-    Rs = np.zeros((n, n_matrices))
+    Ms = xp.asarray(M, copy=True)
+    Rs = xp.zeros((n, n_matrices), dtype=X.dtype, device=xpd(X))
+    eye_n = xp.eye(n, dtype=X.dtype, device=xpd(X))
 
     for k in range(n_matrices):
         ini = k * n
-        Il = np.arange(ini, ini + n)
-        M[:, Il] = 0.5 * (M[:, Il] + M[:, Il].T)
-        Ms[:, Il] = V @ M[:, Il] @ V.T
-        Rs[:, k] = np.diag(Ms[:, Il])
-    crit = np.sum(Ms ** 2) - np.sum(Rs ** 2)
+        Il = _arange(ini, ini + n)
+        M[:, Il] = 0.5 * (M[:, Il] + M[:, Il].mT)
+        Ms[:, Il] = V @ M[:, Il] @ V.mT
+        Rs[:, k] = xp.linalg.diagonal(Ms[:, Il])
+    crit = xp.sum(Ms ** 2) - xp.sum(Rs ** 2)
 
     for _ in range(n_iter_max):
-        B = Rs @ Rs.T
-        C1 = np.zeros((n, n))
+        B = Rs @ Rs.mT
+        C1 = xp.zeros((n, n), dtype=X.dtype, device=xpd(X))
         for i in range(n):
-            C1[:, i] = np.sum(Ms[:, i:n_matrices_x_n:n] * Rs, axis=1)
+            C1[:, i] = xp.sum(Ms[:, i:n_matrices_x_n:n] * Rs, axis=1)
 
-        D0 = B * B.T - np.outer(np.diag(B), np.diag(B))
-        A0 = (C1 * B - np.diag(B)[:, np.newaxis] * C1.T) / (D0 + np.eye(n))
-        A0.flat[:: n + 1] += 1
-        V = np.linalg.solve(A0, V)
+        Bdiag = xp.linalg.diagonal(B)
+        D0 = B * B.mT - xp.linalg.outer(Bdiag, Bdiag)
+        A0 = (C1 * B - Bdiag[:, None] * C1.mT) / (D0 + eye_n)
+        _add_to_diagonal(A0, 1, xp)
+        V = xp.linalg.solve(A0, V)
 
-        Raux = V @ M[:, 0:n] @ V.T
-        aux = 1. / np.sqrt(np.abs(np.diag(Raux)))
-        V = aux[:, np.newaxis] * V
+        Raux = V @ M[:, 0:n] @ V.mT
+        aux = 1. / xp.sqrt(xp.abs(xp.linalg.diagonal(Raux)))
+        V = aux[:, None] * V
 
         for k in range(n_matrices):
             ini = k * n
-            Il = np.arange(ini, ini + n)
-            Ms[:, Il] = V @ M[:, Il] @ V.T
-            Rs[:, k] = np.diag(Ms[:, Il])
-        crit_new = np.sum(Ms ** 2) - np.sum(Rs ** 2)
+            Il = _arange(ini, ini + n)
+            Ms[:, Il] = V @ M[:, Il] @ V.mT
+            Rs[:, k] = xp.linalg.diagonal(Ms[:, Il])
+        crit_new = xp.sum(Ms ** 2) - xp.sum(Rs ** 2)
 
-        if np.abs(crit_new - crit) < eps:
+        if xp.abs(crit_new - crit) < eps:
             break
         crit = crit_new
     else:
         warnings.warn("Convergence not reached")
 
-    D = np.reshape(Ms, (n, n_matrices, n)).transpose(1, 0, 2)
+    D = _reshape_output(Ms, n, n_matrices, xp)
     return V, D
 
 

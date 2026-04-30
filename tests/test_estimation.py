@@ -27,6 +27,10 @@ from pyriemann.utils.test import (
     is_hankel
 )
 
+
+pytestmark = pytest.mark.numpy_only
+
+
 estim = ["corr", "cov", "lwf", "mcd", "oas", "sch", "scm"]
 m_estim = ["hub", "stu", "tyl"]
 coh = ["ordinary", "instantaneous", "lagged", "imaginary"]

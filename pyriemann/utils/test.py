@@ -1,10 +1,26 @@
+from array_api_compat import (
+    array_namespace as get_namespace,
+    is_torch_namespace,
+)
 import numpy as np
 
 
+def _allclose(A, B):
+    """Array-API equivalent of ``numpy.allclose``."""
+    xp = get_namespace(A, B)
+    return bool(xp.all(xp.isclose(A, B)))
+
+
 def _get_eigenvals(X):
-    """Private function to compute all eigen values."""
+    """Real part of eigenvalues for the trailing matrix dimension.
+
+    ``xp.linalg.eigvals`` always returns complex dtype on torch (even for
+    real inputs), and complex tensors cannot be compared against a float
+    tolerance — so the real part is taken here once for all callers.
+    """
+    xp = get_namespace(X)
     n = X.shape[-1]
-    return np.linalg.eigvals(X.reshape((-1, n, n)))
+    return xp.real(xp.linalg.eigvals(X.reshape((-1, n, n))))
 
 
 def is_square(X):
@@ -36,7 +52,7 @@ def is_sym(X):
     ret : bool
         True if all matrices are symmetric.
     """
-    return is_square(X) and np.allclose(X, np.swapaxes(X, -2, -1))
+    return is_square(X) and _allclose(X, X.mT)
 
 
 def is_skew_sym(X):
@@ -52,7 +68,7 @@ def is_skew_sym(X):
     ret : bool
         True if all matrices are skew-symmetric.
     """
-    return is_square(X) and np.allclose(X, -np.swapaxes(X, -2, -1))
+    return is_square(X) and _allclose(X, -X.mT)
 
 
 def is_hankel(X):
@@ -75,10 +91,10 @@ def is_hankel(X):
     for i in range(n):
         for j in range(n):
             if (i + j < n):
-                if (X[i, j] != X[i + j, 0]):
+                if bool((X[i, j] != X[i + j, 0]).item()):
                     return False
             else:
-                if (X[i, j] != X[i + j - n + 1, n - 1]):
+                if bool((X[i, j] != X[i + j - n + 1, n - 1]).item()):
                     return False
 
     return True
@@ -99,7 +115,11 @@ def is_real(X):
     ret : bool
         True if all matrices are strictly real.
     """
-    return np.allclose(X.imag, np.zeros_like(X.imag))
+    if is_real_type(X):
+        return True
+    xp = get_namespace(X)
+    X_imag = xp.imag(X)
+    return _allclose(X_imag, xp.zeros_like(X_imag))
 
 
 def is_real_type(X):
@@ -119,6 +139,9 @@ def is_real_type(X):
     -----
     .. versionadded:: 0.6
     """
+    xp = get_namespace(X)
+    if is_torch_namespace(xp):
+        return not X.dtype.is_complex
     return np.isrealobj(X)
 
 
@@ -138,7 +161,10 @@ def is_hermitian(X):
     ret : bool
         True if all matrices are Hermitian.
     """
-    return is_sym(X.real) and is_skew_sym(X.imag)
+    if is_real_type(X):
+        return is_sym(X)
+    xp = get_namespace(X)
+    return is_sym(xp.real(X)) and is_skew_sym(xp.imag(X))
 
 
 def is_pos_def(X, tol=0.0, fast_mode=False):
@@ -162,14 +188,17 @@ def is_pos_def(X, tol=0.0, fast_mode=False):
     ret : bool
         True if all matrices are positive definite.
     """
+    xp = get_namespace(X)
     if fast_mode:
         try:
-            np.linalg.cholesky(X)
+            xp.linalg.cholesky(X)
             return True
-        except np.linalg.LinAlgError:
+        except (np.linalg.LinAlgError, RuntimeError):
             return False
     else:
-        return is_square(X) and np.all(_get_eigenvals(X) > tol)
+        if not is_square(X):
+            return False
+        return bool(xp.all(_get_eigenvals(X) > tol))
 
 
 def is_pos_semi_def(X):
@@ -185,7 +214,10 @@ def is_pos_semi_def(X):
     ret : bool
         True if all matrices are positive semi-definite.
     """
-    return is_square(X) and np.all(_get_eigenvals(X) >= 0.0)
+    xp = get_namespace(X)
+    if not is_square(X):
+        return False
+    return bool(xp.all(_get_eigenvals(X) >= 0.0))
 
 
 def is_sym_pos_def(X, tol=0.0):

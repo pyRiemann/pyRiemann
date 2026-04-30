@@ -1,7 +1,8 @@
 """Kernels for SPD matrices."""
 
-import numpy as np
+from array_api_compat import array_namespace as get_namespace
 
+from ._backend import _add_to_diagonal
 from .base import ctranspose, invsqrtm, logm
 from .mean import mean_riemann
 from .utils import check_function
@@ -52,6 +53,8 @@ def kernel_euclid(X, Y=None, *, Cref=None, reg=1e-10):
     .. versionadded:: 0.3
     .. versionchanged:: 0.8
         Add parameter Cref to use a reference matrix.
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -120,6 +123,8 @@ def kernel_logeuclid(X, Y=None, *, Cref=None, reg=1e-10):
     .. versionadded:: 0.3
     .. versionchanged:: 0.8
         Add parameter Cref to use a reference matrix.
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -187,6 +192,8 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -236,12 +243,12 @@ def _check_cref(X, Cref):
 
 def _apply_matrix_kernel(Xt, Y, are_xy_equal, reg):
     # products K[i,j] = trace(Xt[i] @ Y[j])
-    K = np.einsum("imn,jnm->ij", Xt, Y, optimize=True)
+    xp = get_namespace(Xt, Y)
+    K = xp.einsum("imn,jnm->ij", Xt, Y)
 
     # regularization to mitigate numerical errors
     if are_xy_equal:
-        n_matrices_X = K.shape[0]
-        K.flat[:: n_matrices_X + 1] += reg
+        _add_to_diagonal(K, reg, xp)
 
     return K
 
@@ -285,6 +292,8 @@ def kernel(X, Y=None, *, Cref=None, metric="riemann", reg=1e-10):
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------

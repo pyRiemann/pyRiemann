@@ -12,6 +12,10 @@ from pyriemann.embedding import (
 )
 from pyriemann.utils.kernel import kernel, kernel_functions
 
+
+pytestmark = pytest.mark.numpy_only
+
+
 embds = [SpectralEmbedding, LocallyLinearEmbedding, TSNE]
 
 

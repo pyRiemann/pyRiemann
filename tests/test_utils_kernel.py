@@ -1,11 +1,9 @@
+from array_api_compat import array_namespace as get_namespace, device
 import numpy as np
-from numpy.testing import (
-    assert_array_equal,
-    assert_array_almost_equal,
-    assert_raises,
-)
+from numpy.testing import assert_raises
 import pytest
 
+from conftest import assert_array_equal, assert_array_almost_equal
 from pyriemann.utils.base import logm
 from pyriemann.utils.kernel import (
     kernel,
@@ -86,10 +84,13 @@ def test_kernel_cref(n_channels, metric, get_mats):
     Y = get_mats(n_matrices_Y, n_channels, "spd")
     K = kernel(X, Y, metric=metric)
 
+    xp = get_namespace(X)
     if metric == "euclid":
-        Cref = np.zeros((n_channels, n_channels))
+        Cref = xp.zeros(
+            (n_channels, n_channels), dtype=X.dtype, device=device(X)
+        )
     elif metric == "logeuclid":
-        Cref = np.eye(n_channels)
+        Cref = xp.eye(n_channels, dtype=X.dtype, device=device(X))
     elif metric == "riemann":
         Cref = gmean(X)
     K1 = kernel(X, Y, Cref=Cref, metric=metric)
@@ -126,12 +127,15 @@ def test_kernel_euclid(n_dim1, n_dim2, get_mats):
     Y = get_mats(n_matrices_Y, [n_dim1, n_dim2], "real")
     K = kernel_euclid(X, Y)
 
+    xp = get_namespace(X)
     K1 = np.empty((n_matrices_X, n_matrices_Y))
     K2 = np.empty((n_matrices_X, n_matrices_Y))
     for i in range(n_matrices_X):
         for j in range(n_matrices_Y):
-            K1[i, j] = np.trace(X[i].T @ Y[j])
-            K2[i, j] = np.dot(X[i].flatten(), Y[j].flatten())
+            K1[i, j] = xp.trace(X[i].mT @ Y[j])
+            K2[i, j] = xp.vecdot(
+                xp.reshape(X[i], (-1,)), xp.reshape(Y[j], (-1,))
+            )
     assert_array_almost_equal(K, K1)
     assert_array_almost_equal(K, K2)
 
@@ -145,11 +149,14 @@ def test_kernel_logeuclid(get_mats):
     X = get_mats(n_matrices_X, n_channels, "spd")
     Y = get_mats(n_matrices_Y, n_channels, "spd")
 
+    xp = get_namespace(X)
+    Cref = xp.eye(n_channels, dtype=X.dtype, device=device(X))
     Kle = kernel_logeuclid(X, Y)
-    Kr = kernel_riemann(X, Y, Cref=np.eye(n_channels))
+    Kr = kernel_riemann(X, Y, Cref=Cref)
     assert_array_almost_equal(Kle, Kr)
 
 
+@pytest.mark.numpy_only
 def test_kernel_riemann(get_mats):
     """Test correctness"""
     n_matrices, n_channels = 5, 3

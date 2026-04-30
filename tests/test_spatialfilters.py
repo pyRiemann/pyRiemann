@@ -4,6 +4,10 @@ import pytest
 
 from pyriemann.spatialfilters import Xdawn, CSP, SPoC, BilinearFilter, AJDC
 
+
+pytestmark = pytest.mark.numpy_only
+
+
 spfilts = [Xdawn, CSP, SPoC, BilinearFilter, AJDC]
 
 

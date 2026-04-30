@@ -11,6 +11,10 @@ from pyriemann.regression import SVR, KNearestNeighborRegressor
 from pyriemann.utils.kernel import kernel
 from pyriemann.utils.mean import gmean
 
+
+pytestmark = pytest.mark.numpy_only
+
+
 regress = [SVR, KNearestNeighborRegressor]
 
 

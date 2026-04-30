@@ -4,6 +4,9 @@ import pytest
 from pyriemann.channelselection import ElectrodeSelection, FlatChannelRemover
 
 
+pytestmark = pytest.mark.numpy_only
+
+
 @pytest.mark.parametrize("use_label", [True, False])
 @pytest.mark.parametrize("use_weight", [True, False])
 def test_electrodeselection(use_label, use_weight,

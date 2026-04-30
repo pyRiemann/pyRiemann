@@ -1,9 +1,69 @@
 import inspect
 
-import numpy as np
+import array_api_compat.numpy as _xpnp
+from array_api_compat import array_namespace as get_namespace, device as xpd
 
 
-def check_weights(weights, n_weights, *, check_positivity=False):
+def check_like(like):
+    """Resolve array-API namespace and device from a reference array.
+
+    Parameters
+    ----------
+    like : None | ndarray
+        Reference array. If None, returns the array-API NumPy namespace
+        and a ``None`` device.
+
+    Returns
+    -------
+    xp : module
+        The array-API namespace (NumPy or PyTorch).
+    dev : object | None
+        The device of ``like`` if provided, else ``None``.
+
+    Notes
+    -----
+    .. versionadded:: 0.12
+    """
+    if like is None:
+        return _xpnp, None
+    return get_namespace(like), xpd(like)
+
+
+def check_matrix_pair(A, B, *, require_square=False):
+    """Validate two matrix arrays share compatible matrix dimensions.
+
+    Parameters
+    ----------
+    A, B : ndarray, shape (..., n, m)
+        Input matrix arrays.
+    require_square : bool, default=False
+        If True, also require the matrix dimensions to be square.
+
+    Returns
+    -------
+    xp : module
+        The shared array-API namespace of ``A`` and ``B``.
+
+    Notes
+    -----
+    .. versionadded:: 0.12
+    """
+    xp = get_namespace(A, B)
+    if A.ndim < 2 or B.ndim < 2:
+        raise ValueError("Inputs must be at least 2D arrays")
+    if A.shape[-2:] != B.shape[-2:]:
+        raise ValueError("Inputs must have equal matrix dimensions")
+    if require_square and A.shape[-2] != A.shape[-1]:
+        raise ValueError("Inputs must contain square matrices")
+    if A.shape != B.shape:
+        try:
+            xp.broadcast_shapes(A.shape[:-2], B.shape[:-2])
+        except (ValueError, RuntimeError) as exc:
+            raise ValueError("Inputs have incompatible dimensions.") from exc
+    return xp
+
+
+def check_weights(weights, n_weights, *, check_positivity=False, like=None):
     """Check weights.
 
     If input is None, output weights are equal.
@@ -18,6 +78,11 @@ def check_weights(weights, n_weights, *, check_positivity=False):
         Number of weights to provide if None, or to check.
     check_positivity : bool, default=False
         Choose if strict positivity of weights is checked.
+    like : None | ndarray, default=None
+        Reference array used to infer the array-API namespace and device of
+        the returned weights. If None, NumPy is used.
+
+        .. versionadded:: 0.12
 
     Returns
     -------
@@ -27,21 +92,25 @@ def check_weights(weights, n_weights, *, check_positivity=False):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
+    xp, dev = check_like(like)
+
     if weights is None:
-        weights = np.ones(n_weights)
+        weights = xp.ones(n_weights, dtype=float, device=dev)
 
     else:
-        weights = np.asarray(weights)
+        weights = xp.asarray(weights, device=dev)
         if weights.shape != (n_weights,):
             raise ValueError(
                 "Weights do not have the good shape. Should be (%d,) but got "
                 "%s." % (n_weights, weights.shape,)
             )
-        if check_positivity and any(weights <= 0):
+        if check_positivity and bool(xp.any(weights <= 0)):
             raise ValueError("Weights must be strictly positive.")
 
-    weights /= np.sum(weights)
+    weights = weights / xp.sum(weights)
     return weights
 
 
@@ -119,7 +188,7 @@ def check_function(fun, functions):
     return fun
 
 
-def check_init(init, n):
+def check_init(init, n, *, like=None):
     """Check the initial matrix.
 
     Parameters
@@ -128,6 +197,11 @@ def check_init(init, n):
         A square matrix used to initialize the algorithm.
     n : int
         Expected dimension of the matrix.
+    like : None | ndarray, default=None
+        Reference array used to infer the array-API namespace and device of
+        the returned matrix. If None, NumPy is used.
+
+        .. versionadded:: 0.12
 
     Returns
     -------
@@ -137,8 +211,11 @@ def check_init(init, n):
     Notes
     -----
     .. versionadded:: 0.8
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
-    init = np.asarray(init)
+    xp, dev = check_like(like)
+    init = xp.asarray(init, dtype=init.dtype, device=dev)
     if init.shape != (n, n):
         raise ValueError(
             "Init matrix does not have the good shape. "

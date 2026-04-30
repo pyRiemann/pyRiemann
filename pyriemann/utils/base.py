@@ -1,8 +1,9 @@
 """Base functions for SPD/HPD matrices."""
 
 from functools import wraps
+import math
 
-import numpy as np
+from array_api_compat import array_namespace as get_namespace, device as xpd
 
 
 def ctranspose(X):
@@ -24,12 +25,65 @@ def ctranspose(X):
     Notes
     -----
     .. versionadded:: 0.9
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
     .. [1] https://en.wikipedia.org/wiki/Conjugate_transpose
     """
-    return np.swapaxes(X.conj(), -2, -1)
+    xp = get_namespace(X)
+    return xp.conj(X).mT
+
+
+def _eigvalsh(A, B):
+    r"""Generalized eigenvalues of SPD/HPD matrices via Cholesky reduction.
+
+    Compute eigenvalues of the generalized Hermitian eigenproblem on
+    SPD/HPD matrix pencils [1]_
+
+    .. math::
+        \mathbf{A} \mathbf{v} = \lambda \mathbf{B} \mathbf{v}
+
+    where :math:`\mathbf{B}` is SPD/HPD.
+    Writing :math:`\mathbf{B} = \mathbf{L} \mathbf{L}^H` (Cholesky),
+    the problem reduces to the symmetric/Hermitian eigenproblem
+
+    .. math::
+        \mathbf{Z} \mathbf{u} = \lambda \mathbf{u}, \quad
+        \mathbf{Z} = \mathbf{L}^{-1} \mathbf{A} \mathbf{L}^{-H}
+
+    whose eigenvalues :math:`\lambda` coincide with those of the original
+    pencil.
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices.
+
+    Returns
+    -------
+    eigvals : ndarray, shape (..., n)
+        Generalized eigenvalues, sorted in ascending order.
+
+    Notes
+    -----
+    .. versionadded:: 0.12
+
+    References
+    ----------
+    .. [1] `Matrix Computations
+        <https://jhupbooks.press.jhu.edu/title/matrix-computations>`_
+        G. H. Golub and C. F. Van Loan, 4th ed., Johns Hopkins University
+        Press, 2013, Section 8.7.
+    """
+    xp = get_namespace(A, B)
+    L = xp.linalg.cholesky(B)
+    Y = xp.linalg.solve(L, A)
+    Z = ctranspose(xp.linalg.solve(L, ctranspose(Y)))
+    return xp.linalg.eigvalsh(Z)
 
 
 def _vectorize_nd(n_axes=2):
@@ -49,16 +103,15 @@ def _vectorize_nd(n_axes=2):
             batch_shape = X.shape[:-n_axes]
             if len(batch_shape) == 0:
                 return func(X, *args, **kwargs)
-            n_batch = np.prod(batch_shape, dtype=int)
+            n_batch = math.prod(batch_shape)
             core_shape = X.shape[-n_axes:]
-            X_flat = X.reshape(n_batch, *core_shape)
-            X_new = []
-            for b in range(n_batch):
-                X_new.append(
-                    np.atleast_2d(func(X_flat[b], *args, **kwargs))
-                )
-            X_new = np.asarray(X_new)
-            return X_new.reshape(*batch_shape, *X_new.shape[1:])
+            xp = get_namespace(X)
+            X_flat = xp.reshape(X, (n_batch, *core_shape))
+            X_new = xp.stack(
+                [func(X_flat[b], *args, **kwargs) for b in range(n_batch)],
+                axis=0,
+            )
+            return xp.reshape(X_new, (*batch_shape, *X_new.shape[1:]))
         return wrapper
     return decorator
 
@@ -66,30 +119,23 @@ def _vectorize_nd(n_axes=2):
 ###############################################################################
 
 
-def _recursive(fun, A, B, *args, **kwargs):
-    """Recursive function with two inputs."""
-    if A.ndim == 2:
-        return fun(A, B, *args, **kwargs)
-    else:
-        return np.asarray(
-            [_recursive(fun, a, b, *args, **kwargs) for a, b in zip(A, B)]
-        )
-
-
 def _matrix_operator(X, operator):
     """Matrix function for SPD/HPD matrices."""
-    if not isinstance(X, np.ndarray) or X.ndim < 2:
+    xp = get_namespace(X)
+    if not hasattr(X, "ndim") or X.ndim < 2:
         raise ValueError("Input must be at least a 2D ndarray")
-    if X.dtype.char in np.typecodes['AllFloat'] and (
-            np.isinf(X).any() or np.isnan(X).any()):
+    if X.shape[-2] != X.shape[-1]:
+        raise ValueError("Input must contain square matrices")
+    if xp.isdtype(X.dtype, ("real floating", "complex floating")) \
+            and not bool(xp.all(xp.isfinite(X))):
         raise ValueError(
             "Matrices must be positive definite. "
             "You should add regularization to avoid this error."
         )
 
-    eigvals, eigvecs = np.linalg.eigh(X)
+    eigvals, eigvecs = xp.linalg.eigh(X)
     eigvals = operator(eigvals)
-    X_new = eigvecs @ (np.expand_dims(eigvals, -1) * ctranspose(eigvecs))
+    X_new = eigvecs @ (eigvals[..., None] * ctranspose(eigvecs))
     return X_new
 
 
@@ -114,8 +160,14 @@ def expm(C):
     -------
     D : ndarray, shape (..., n, n)
         Matrix exponential of C.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
-    return _matrix_operator(C, np.exp)
+    xp = get_namespace(C)
+    return _matrix_operator(C, xp.exp)
 
 
 def invsqrtm(C):
@@ -140,8 +192,14 @@ def invsqrtm(C):
     -------
     D : ndarray, shape (..., n, n)
         Matrix inverse square root of C.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
-    def isqrt(x): return 1. / np.sqrt(x)
+    xp = get_namespace(C)
+    def isqrt(x): return 1. / xp.sqrt(x)
     return _matrix_operator(C, isqrt)
 
 
@@ -166,8 +224,14 @@ def logm(C):
     -------
     D : ndarray, shape (..., n, n)
         Matrix logarithm of C.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
-    return _matrix_operator(C, np.log)
+    xp = get_namespace(C)
+    return _matrix_operator(C, xp.log)
 
 
 def powm(C, alpha):
@@ -194,6 +258,11 @@ def powm(C, alpha):
     -------
     D : ndarray, shape (..., n, n)
         Matrix power of C.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
     def power(x): return x**alpha
     return _matrix_operator(C, power)
@@ -221,8 +290,14 @@ def sqrtm(C):
     -------
     D : ndarray, shape (..., n, n)
         Matrix square root of C.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
-    return _matrix_operator(C, np.sqrt)
+    xp = get_namespace(C)
+    return _matrix_operator(C, xp.sqrt)
 
 
 ###############################################################################
@@ -249,6 +324,10 @@ def nearest_sym_pos_def(X, reg=1e-6):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.11
+        Add broadcasting.
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -259,40 +338,42 @@ def nearest_sym_pos_def(X, reg=1e-6):
         <https://www.sciencedirect.com/science/article/pii/0024379588902236>`_
         N.J. Higham, Linear Algebra and its Applications, vol 103, 1988
     """
+    xp = get_namespace(X)
     n = X.shape[-1]
+    eps = xp.finfo(X.dtype).eps
 
     # Symmetrize
-    A = (X + np.swapaxes(X, -2, -1)) / 2
+    A = (X + X.mT) / 2
 
-    _, s, Vh = np.linalg.svd(A)
-    H = np.swapaxes(Vh, -2, -1) @ (s[..., :, np.newaxis] * Vh)
+    _, s, Vh = xp.linalg.svd(A)
+    H = Vh.mT @ (s[..., None] * Vh)
     B = (A + H) / 2
-    P = (B + np.swapaxes(B, -2, -1)) / 2
+    P = (B + B.mT) / 2
 
     # PD fix: iteratively shift non-PD matrices
-    eigvals = np.linalg.eigvalsh(P)
-    neg_ev = np.any(eigvals <= 0, axis=-1)  # (...,)
+    eigvals = xp.linalg.eigvalsh(P)
+    neg_ev = xp.any(eigvals <= 0, axis=-1)  # (...,)
 
-    if np.any(neg_ev):
-        spacing = np.spacing(np.linalg.norm(A, axis=(-2, -1)))
-        I = np.eye(n)  # noqa
+    if bool(xp.any(neg_ev)):
+        spacing = xp.abs(xp.linalg.matrix_norm(A)) * eps
+        eye_n = xp.eye(n, dtype=X.dtype, device=xpd(X))
         k = 1
-        while np.any(neg_ev) and k < 100:
-            mineig = np.min(np.linalg.eigvalsh(P), axis=-1)
-            shift = np.where(neg_ev, -mineig * k**2 + spacing, 0.0)
-            P = P + shift[..., np.newaxis, np.newaxis] * I
-            eigvals = np.linalg.eigvalsh(P)
-            neg_ev = np.any(eigvals <= 0, axis=-1)
+        while bool(xp.any(neg_ev)) and k < 100:
+            mineig = xp.min(xp.linalg.eigvalsh(P), axis=-1)
+            shift = xp.where(neg_ev, -mineig * k**2 + spacing, 0.0)
+            P = P + shift[..., None, None] * eye_n
+            eigvals = xp.linalg.eigvalsh(P)
+            neg_ev = xp.any(eigvals <= 0, axis=-1)
             k += 1
 
     # Regularize
-    ei, ev = np.linalg.eigh(P)
-    ratio = np.min(ei, axis=-1) / np.max(ei, axis=-1)
+    ei, ev = xp.linalg.eigh(P)
+    ratio = xp.min(ei, axis=-1) / xp.max(ei, axis=-1)
     needs_reg = ratio < reg  # (...,)
-    if np.any(needs_reg):
+    if bool(xp.any(needs_reg)):
         ei_reg = ei + reg
-        P_reg = ev @ (ei_reg[..., :, np.newaxis] * np.swapaxes(ev, -2, -1))
-        P = np.where(needs_reg[..., np.newaxis, np.newaxis], P_reg, P)
+        P_reg = ev @ (ei_reg[..., None] * ev.mT)
+        P = xp.where(needs_reg[..., None, None], P_reg, P)
 
     return P
 
@@ -338,18 +419,20 @@ def _first_divided_difference(d, fct, fctder, atol=1e-12, rtol=1e-12):
     Notes
     -----
     .. versionadded:: 0.8
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
     .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
         R. Bhatia, Springer, 1997
     """
-    di = d[..., :, np.newaxis]
-    dj = d[..., np.newaxis, :]
-
-    close_ = np.isclose(di, dj, atol=atol, rtol=rtol)
-    safe_diff = np.where(close_, np.ones_like(di - dj), di - dj)
-    return np.where(close_, fctder(di), (fct(di) - fct(dj)) / safe_diff)
+    xp = get_namespace(d)
+    di = d[..., None]
+    dj = d[..., None, :]
+    close_ = xp.isclose(di, dj, atol=atol, rtol=rtol)
+    safe_diff = xp.where(close_, xp.ones_like(di - dj), di - dj)
+    return xp.where(close_, fctder(di), (fct(di) - fct(dj)) / safe_diff)
 
 
 def ddexpm(X, Cref):
@@ -384,16 +467,18 @@ def ddexpm(X, Cref):
     Notes
     -----
     .. versionadded:: 0.8
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
     .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
         R. Bhatia, Springer, 1997
     """
-
-    d, V = np.linalg.eigh(Cref)
+    xp = get_namespace(X, Cref)
+    d, V = xp.linalg.eigh(Cref)
     Vh = ctranspose(V)
-    expfdd = _first_divided_difference(d, np.exp, np.exp)
+    expfdd = _first_divided_difference(d, xp.exp, xp.exp)
     return V @ (expfdd * (Vh @ X @ V)) @ Vh
 
 
@@ -429,14 +514,16 @@ def ddlogm(X, Cref):
     Notes
     -----
     .. versionadded:: 0.8
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
     .. [1] `Matrix  Analysis <https://doi.org/10.1007/978-1-4612-0653-8>`_
         R. Bhatia, Springer, 1997
     """
-
-    d, V = np.linalg.eigh(Cref)
+    xp = get_namespace(X, Cref)
+    d, V = xp.linalg.eigh(Cref)
     Vh = ctranspose(V)
-    logfdd = _first_divided_difference(d, np.log, lambda x: 1 / x)
+    logfdd = _first_divided_difference(d, xp.log, lambda x: 1 / x)
     return V @ (logfdd * (Vh @ X @ V)) @ Vh

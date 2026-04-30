@@ -81,6 +81,10 @@ classification, regression, and clustering.
 - **Remote Sensing** -- Apply Riemannian methods to SAR image classification.
 - **Transfer Learning** -- Domain adaptation tools for cross-session and
   cross-subject generalization.
+- **NumPy and PyTorch Backends** -- Core utility functions support both
+  backends transparently through the
+  `Python Array API <https://data-apis.org/array-api/>`_, enabling optional
+  GPU acceleration and autograd when PyTorch tensors are passed in.
 
 Example
 -------

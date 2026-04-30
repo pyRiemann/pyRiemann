@@ -5,6 +5,9 @@ from pyriemann.stats import PermutationDistance, PermutationModel
 from pyriemann.spatialfilters import CSP
 
 
+pytestmark = pytest.mark.numpy_only
+
+
 def test_permutation_badmode():
     """Test one way permutation test"""
     with pytest.raises(ValueError):

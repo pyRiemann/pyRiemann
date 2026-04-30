@@ -5,6 +5,10 @@ import pytest
 from pyriemann.spatialfilters import Whitening
 from pyriemann.utils.mean import gmean
 
+
+pytestmark = pytest.mark.numpy_only
+
+
 n_components = 3
 expl_var = 0.9
 max_cond = 10

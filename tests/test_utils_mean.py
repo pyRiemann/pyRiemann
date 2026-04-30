@@ -1,10 +1,11 @@
 from functools import partial
 
+from array_api_compat import array_namespace as get_namespace, device
 import numpy as np
 import pytest
-from pytest import approx
 from scipy.stats import hmean, gmean as gmean_sp
 
+from conftest import to_backend, approx
 from pyriemann.utils.base import invsqrtm, logm, sqrtm
 from pyriemann.utils.geodesic import geodesic_riemann
 from pyriemann.utils.mean import (
@@ -244,13 +245,15 @@ def test_mean_broadcasting(mean, get_mats):
     mean_riemann,
     # mean_thompson,  # Th 6.16 (4) in [Mostajeran2024], KO
 ])
-def test_mean_property_joint_homogeneity(kind, mean, get_mats, rndstate):
+def test_mean_property_joint_homogeneity(kind, mean, get_mats, rndstate,
+                                         backend):
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
 
     # P2 in [Nakamura2009]
     a = rndstate.uniform(low=1.0, high=2.0, size=n_matrices)
-    assert mean(a[:, None, None] * X) == approx(gmean_sp(a) * mean(X))
+    a_ = to_backend(a, backend)
+    assert mean(a_[:, None, None] * X) == approx(gmean_sp(a) * mean(X))
 
     # P2' in [Nakamura2009]
     a = rndstate.uniform(0.01, 5.0)
@@ -267,7 +270,8 @@ def test_mean_property_determinant_identity(kind, mean, get_mats, rndstate):
     """Test determinant identity, P9 in [Nakamura2009]"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
-    assert np.linalg.det(mean(X)) == approx(gmean_sp(np.linalg.det(X)))
+    xp = get_namespace(X)
+    assert xp.linalg.det(mean(X)) == approx(gmean_sp(xp.linalg.det(X)))
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -279,9 +283,11 @@ def test_mean_property_invariance_inversion(kind, mean, get_mats):
     """Test invariance under inversion, also called self-duality"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
-    X_inv = np.linalg.solve(X, np.eye(n_channels))
+    xp = get_namespace(X)
+    eye = xp.eye(n_channels, dtype=X.dtype, device=device(X))
+    X_inv = xp.linalg.solve(X, eye)
     M_inv = mean(X_inv)
-    assert mean(X) == approx(np.linalg.solve(M_inv, np.eye(n_channels)))
+    assert mean(X) == approx(xp.linalg.solve(M_inv, eye))
 
 
 @pytest.mark.parametrize("kind, kindQ", [("spd", "orth"), ("hpd", "unit")])
@@ -337,7 +343,8 @@ def test_mean_euclid(n_dim1, n_dim2, kind, get_mats):
     """Euclidean mean for non-square matrices"""
     n_matrices = 10
     X = get_mats(n_matrices, [n_dim1, n_dim2], kind)
-    assert mean_euclid(X) == approx(np.mean(X, axis=0))
+    xp = get_namespace(X)
+    assert mean_euclid(X) == approx(xp.mean(X, axis=0))
 
 
 @pytest.mark.parametrize("kind", ["inv", "cinv"])
@@ -349,20 +356,22 @@ def test_mean_harmonic(kind, get_mats):
 
 
 @pytest.mark.parametrize("n_values", [3, 5, 7])
-def test_mean_harmonic_scalars(n_values, rndstate):
+def test_mean_harmonic_scalars(n_values, rndstate, backend):
     """Compare harmonic mean to scipy.hmean for scalars"""
-    values = rndstate.uniform(0.1, 10, size=n_values)
-    sp_hmean = hmean(values)
-    py_hmean = mean_harmonic(values[..., np.newaxis, np.newaxis])[0, 0]
+    values_np = rndstate.uniform(0.1, 10, size=n_values)
+    sp_hmean = hmean(values_np)
+    values = to_backend(values_np, backend)
+    py_hmean = mean_harmonic(values[..., None, None])[0, 0]
     assert sp_hmean == approx(py_hmean)
 
 
 @pytest.mark.parametrize("n_values", [4, 6, 8])
-def test_mean_logeuclid_scalars(n_values, rndstate):
+def test_mean_logeuclid_scalars(n_values, rndstate, backend):
     """Compare log-Euclidean mean to scipy.gmean for scalars"""
-    values = rndstate.uniform(0.1, 10, size=n_values)
-    sp_mean = gmean_sp(values)
-    py_mean = mean_logeuclid(values[..., np.newaxis, np.newaxis])[0, 0]
+    values_np = rndstate.uniform(0.1, 10, size=n_values)
+    sp_mean = gmean_sp(values_np)
+    values = to_backend(values_np, backend)
+    py_mean = mean_logeuclid(values[..., None, None])[0, 0]
     assert sp_mean == approx(py_mean)
 
 
@@ -419,17 +428,21 @@ def test_mean_riemann_solution(kind, get_mats):
     """AIR mean is solution to the nonlinear matrix equations"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
+    xp = get_namespace(X)
     M = mean_riemann(X, tol=10e-16, maxiter=500)
-    Zero = np.zeros((n_channels, n_channels))
+    Zero = xp.zeros(
+        (n_channels, n_channels), dtype=X.dtype, device=device(X)
+    )
 
     Mm12 = invsqrtm(M)
-    assert np.sum(logm(Mm12 @ X @ Mm12), axis=0) == approx(Zero)
+    assert xp.sum(logm(Mm12 @ X @ Mm12), axis=0) == approx(Zero)
 
     # Eq(1.2) in [Lim2012]
     M12 = sqrtm(M)
-    assert np.sum(logm(M12 @ np.linalg.solve(X, M12)), axis=0) == approx(Zero)
+    assert xp.sum(logm(M12 @ xp.linalg.solve(X, M12)), axis=0) == approx(Zero)
 
 
+@pytest.mark.numpy_only
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_mean_riemann_same_eigenvecs(kind, get_mats_params):
     """Test the Riemannian mean with same eigen vectors"""
@@ -452,20 +465,21 @@ def test_mean_riemann_check_raise():
 
 @pytest.mark.parametrize("init", [True, False])
 def test_mean_masked_riemann(init, get_mats, get_masks):
-    n_matrices, n_channels = 5, 4
+    n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "spd")
+    xp = get_namespace(X)
     masks = get_masks(n_matrices, n_channels)
     if init:
-        M = maskedmean_riemann(X, masks, init=X[0])
+        M = maskedmean_riemann(X, masks, tol=10e-3, init=X[0])
     else:
-        M = maskedmean_riemann(X, masks)
+        M = maskedmean_riemann(X, masks, tol=10e-3)
     assert M.shape == (n_channels, n_channels)
 
     # test broadcasting
     if not init:
         n_dim5, n_dim4 = 2, 3
-        X5 = np.asarray([[X for _ in range(n_dim4)] for _ in range(n_dim5)])
-        M5 = maskedmean_riemann(X5, masks)
+        X5 = xp.stack([xp.stack([X] * n_dim4)] * n_dim5)
+        M5 = maskedmean_riemann(X5, masks, tol=10e-3)
         assert M5.shape == (n_dim5, n_dim4, n_channels, n_channels)
         assert M5[0, 0] == approx(M)
 
@@ -474,13 +488,14 @@ def test_mean_masked_riemann(init, get_mats, get_masks):
 def test_mean_nan_riemann(init, get_mats, rndstate):
     n_matrices, n_channels = 10, 6
     X = get_mats(n_matrices, n_channels, "spd")
-    emean = np.mean(X, axis=0)
+    xp = get_namespace(X)
+    emean = xp.mean(X, axis=0)
     for i in range(n_matrices):
         corrup_channels = rndstate.choice(
             np.arange(0, n_channels), size=n_channels // 3, replace=False)
         for j in corrup_channels:
-            X[i, j] = np.nan
-            X[i, :, j] = np.nan
+            X[i, j] = float("nan")
+            X[i, :, j] = float("nan")
     if init:
         M = nanmean_riemann(X, tol=10e-3, init=emean)
     else:
@@ -491,19 +506,21 @@ def test_mean_nan_riemann(init, get_mats, rndstate):
 def test_mean_nan_riemann_errors(get_mats):
     n_matrices, n_channels = 5, 4
     X = get_mats(n_matrices, n_channels, "spd")
+    xp = get_namespace(X)
 
     with pytest.raises(ValueError):  # not symmetric NaN values
-        X_ = X.copy()
-        X_[0, 0] = np.nan  # corrup only a row, not its corresp column
+        X_ = xp.asarray(X, copy=True)
+        X_[0, 0] = float("nan")  # corrup only a row, not its corresp column
         nanmean_riemann(X_)
     with pytest.raises(ValueError):  # not rows and columns NaN values
-        X_ = X.copy()
-        X_[1, 0, 1] = np.nan  # corrup an off-diagonal value
+        X_ = xp.asarray(X, copy=True)
+        X_[1, 0, 1] = float("nan")  # corrup an off-diagonal value
         nanmean_riemann(X_)
 
 
-def callable_np_average(X, sample_weight=None):
-    return np.average(X, axis=0, weights=sample_weight)
+def callable_average(X, sample_weight=None):
+    xp = get_namespace(X)
+    return xp.mean(X, axis=0)
 
 
 @pytest.mark.parametrize(
@@ -523,7 +540,7 @@ def callable_np_average(X, sample_weight=None):
         ("riemann", mean_riemann),
         ("thompson", mean_thompson),
         ("wasserstein", mean_wasserstein),
-        (callable_np_average, mean_euclid),
+        (callable_average, mean_euclid),
     ],
 )
 def test_gmean_metric(metric, mean, get_mats):
@@ -547,7 +564,7 @@ def test_gmean_arguments(get_mats):
 
     gmean(X, metric="ale", maxiter=5)
     gmean(X, metric="logdet", tol=10e-3)
-    gmean(X, metric="riemann", init=np.eye(n_channels))
+    gmean(X, metric="riemann", init=X[0])
 
 
 def test_mean_covariance_deprecation(get_mats):

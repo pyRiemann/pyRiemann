@@ -1,8 +1,9 @@
+from array_api_compat import array_namespace as get_namespace
 import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
-from pytest import approx
 
+from conftest import approx, to_numpy
 from pyriemann.spatialfilters import Whitening
 from pyriemann.utils.distance import distance_riemann
 from pyriemann.utils.geodesic import geodesic
@@ -177,7 +178,7 @@ def test_tangent_space_riemann_properties(kind, get_mats):
     # equivalent definitions of Riemannian distance, Eq(7) in [Barachant2012]
     dist = distance_riemann(A, B)
     s = tangent_space(A, B, metric="riemann")
-    assert dist == approx(np.linalg.norm(s))
+    assert dist == approx(np.linalg.norm(to_numpy(s)))
 
 
 @pytest.mark.parametrize("metric", metrics)
@@ -247,7 +248,7 @@ def test_innerproduct_input_dimension_error(metric, get_mats):
     X = get_mats(n_matrices, n_channels, "sym")
     Y = get_mats(n_matrices, n_channels + 1, "sym")
     Cref = get_mats(1, n_channels + 2, "spd")[0]
-    with pytest.raises(ValueError):
+    with pytest.raises((ValueError, RuntimeError)):
         innerproduct(X, Y, Cref, metric=metric)
 
 
@@ -287,19 +288,21 @@ def test_innerproduct_x_y(kindX, kindC, metric, get_mats):
         innerproduct_riemann,
     ],
 )
-def test_innerproduct_ndarray(finnerproduct, get_mats):
+def test_innerproduct_broadcasting(finnerproduct, backend, get_mats):
     n_matrices, n_channels = 5, 3
     A = get_mats(n_matrices, n_channels, "sym")
     B = get_mats(n_matrices, n_channels, "sym")
     Cref = get_mats(1, n_channels, "spd")[0]
+    xp = get_namespace(A)
 
-    assert isinstance(finnerproduct(A[0], B[0], Cref), float)  # 2D arrays
+    if backend == "numpy":
+        assert isinstance(finnerproduct(A[0], B[0], Cref), float)  # 2D arrays
 
     assert finnerproduct(A, B, Cref).shape == (n_matrices,)  # 3D arrays
 
     n_sets = 4
-    C = np.asarray([A for _ in range(n_sets)])
-    D = np.asarray([B for _ in range(n_sets)])
+    C = xp.stack([A for _ in range(n_sets)])
+    D = xp.stack([B for _ in range(n_sets)])
     assert finnerproduct(C, D, Cref).shape == (n_sets, n_matrices)  # 4D arrays
 
 
@@ -350,7 +353,8 @@ def test_innerproduct_property_pos_def(kindX, kindC, metric, get_mats):
     X = get_mats(n_matrices, n_channels, kindX)
     Cref = get_mats(1, n_channels, kindC)[0]
     G = innerproduct(X, None, Cref, metric=metric)
-    assert np.all(G > 0)
+    xp = get_namespace(G)
+    assert bool(xp.all(G > 0))
 
 
 @pytest.mark.parametrize("kind", ["real", "comp"])
@@ -362,11 +366,16 @@ def test_innerproduct_euclid(kind, n_dim1, n_dim2, get_mats):
     Y = get_mats(n_matrices, [n_dim1, n_dim2], kind)
     G = innerproduct_euclid(X, Y)
 
+    xp = get_namespace(X)
     G1 = np.empty((n_matrices,))
     G2 = np.empty((n_matrices,))
     for i in range(n_matrices):
-        G1[i] = np.trace(X[i].conj().T @ Y[i]).real
-        G2[i] = np.dot(X[i].conj().flatten(), Y[i].flatten()).real
+        # tr(X^H @ Y)
+        G1[i] = xp.real(xp.linalg.trace(xp.conj(X[i]).mT @ Y[i]))
+        # vec(X)^H . vec(Y)
+        G2[i] = xp.real(
+            xp.vecdot(xp.reshape(X[i], (-1,)), xp.reshape(Y[i], (-1,)))
+        )
     assert_array_almost_equal(G, G1)
     assert_array_almost_equal(G, G2)
 
@@ -385,13 +394,15 @@ def test_innerproduct_riemann(kindX, kindC, get_mats):
 
 @pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
 @pytest.mark.parametrize("metric", metrics)
-def test_norm_properties(kindX, kindC, metric, get_mats):
+def test_norm_properties(kindX, kindC, metric, backend, get_mats):
     n_channels = 4
     X, Y = get_mats(2, n_channels, kindX)
     Cref = get_mats(1, n_channels, kindC)[0]
 
     nx = norm(X, Cref, metric=metric)
-    assert isinstance(nx, float)
+
+    if backend == "numpy":
+        assert isinstance(nx, float)
 
     # positivity
     assert nx >= 0
@@ -465,12 +476,13 @@ def test_transport_properties(kindX, kindAB, metric, get_mats, rndstate):
     assert aXtpbYt == approx(a * Xt + b * Yt)
 
     # consistency wrt composition of geodesics
+    xp = get_namespace(X)
     Xt_ABBC = transport(transport(X, A, B, metric), B, C, metric)
     alphas = np.linspace(0, 1, 5)
     G_AB = [geodesic(A, B, alpha) for alpha in alphas]
     G_BC = [geodesic(B, C, alpha) for alpha in alphas]
-    G = np.array(G_AB + G_BC)
-    Xt_AC = X.copy()
+    G = xp.stack(G_AB + G_BC)
+    Xt_AC = xp.asarray(X, copy=True)
     for i in range(len(G)-1):
         Xt_AC = transport(Xt_AC, G[i], G[i+1], metric)
     assert Xt_AC == approx(Xt_ABBC)
@@ -485,6 +497,7 @@ def test_transport_properties(kindX, kindAB, metric, get_mats, rndstate):
     assert norm(X, A, metric=metric) == approx(norm(Xt, B, metric=metric))
 
 
+@pytest.mark.numpy_only
 def test_transport_riemann_vs_whitening(get_mats):
     """AIR PT from mean to identity is equivalent to a whitening"""
     n_matrices, n_channels = 15, 2

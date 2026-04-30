@@ -2,9 +2,12 @@
 
 import warnings
 
+from array_api_compat import array_namespace as get_namespace, device as xpd
+from array_api_extra import create_diagonal, nan_to_num
 import numpy as np
 
 from . import deprecated
+from ._backend import diag_indices, nanmean, tril_indices
 from .ajd import ajd_pham
 from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd
 from .distance import distance_riemann
@@ -42,6 +45,8 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
     Notes
     -----
     .. versionadded:: 0.2.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -54,28 +59,33 @@ def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
         <https://arxiv.org/abs/1505.07343>`_
         M. Congedo, B. Afsari, A. Barachant, M. Moakher. PLOS ONE, 2015
     """
+    xp = get_namespace(X)
     n_matrices, n, _ = X.shape
-    sample_weight = check_weights(sample_weight, n_matrices)
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
     if init is None:
         B = ajd_pham(X)[0]
     else:
-        B = check_init(init, n)
+        B = check_init(init, n, like=X)
 
-    eye_n = np.eye(n)
+    eye_n = xp.eye(n, dtype=X.real.dtype, device=xpd(X))
     for _ in range(maxiter):
-        J = np.einsum("a,abc->bc", sample_weight, logm(B @ X @ B.conj().T))
-        delta = np.real(np.diag(expm(J)))
-        B = (np.abs(delta) ** -.5)[:, np.newaxis] * B
+        J = xp.tensordot(
+            sample_weight, logm(B @ X @ ctranspose(B)), axes=([0], [0]),
+        )
+        delta = xp.real(xp.linalg.diagonal(expm(J)))
+        B = (xp.abs(delta) ** -.5)[:, None] * B
 
-        crit = distance_riemann(eye_n, np.diag(delta))
+        crit = distance_riemann(eye_n, create_diagonal(delta))
         if crit <= tol:
             break
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
 
-    J = np.einsum("a,abc->bc", sample_weight, logm(B @ X @ B.conj().T))
-    A = np.linalg.solve(B, eye_n)
-    M = A @ expm(J) @ A.conj().T
+    J = xp.tensordot(
+        sample_weight, logm(B @ X @ ctranspose(B)), axes=([0], [0]),
+    )
+    A = xp.linalg.solve(B, eye_n)
+    M = A @ expm(J) @ ctranspose(A)
     return M
 
 
@@ -111,6 +121,8 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -123,8 +135,9 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
         T. Ando, C.-K. Li, and R. Mathias. Linear Algebra and its Applications.
         Volume 385, July 2004, Pages 305-334.
     """
+    xp = get_namespace(X)
     n_matrices, _, _ = X.shape
-    sample_weight = check_weights(sample_weight, n_matrices)
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
 
     if n_matrices == 1:
         return X[0]
@@ -135,21 +148,22 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
         return M
 
     M = X
-    M_iter = np.zeros_like(M)
+    M_iter = xp.zeros_like(M)
     for _ in range(maxiter):
         for h in range(n_matrices):
             s = np.mod(np.arange(h, h + n_matrices - 1) + 1, n_matrices)
             M_iter[h] = mean_alm(M[s], sample_weight=sample_weight[s])
 
-        norm_iter = np.linalg.norm(M_iter[0] - M[0], ord=2)
-        norm_c = np.linalg.norm(M[0], ord=2)
-        if (norm_iter / norm_c) < tol:
+        norm_iter = xp.linalg.matrix_norm(M_iter[0] - M[0], ord=2)
+        norm_c = xp.linalg.matrix_norm(M[0], ord=2)
+        if norm_iter / norm_c < tol:
             break
-        M = M_iter.copy()
+        M = M_iter
+        M_iter = xp.zeros_like(M)
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
 
-    return np.mean(M_iter, axis=0)
+    return xp.mean(M_iter, axis=0)
 
 
 def mean_chol(X, sample_weight=None, **kwargs):
@@ -179,6 +193,8 @@ def mean_chol(X, sample_weight=None, **kwargs):
     Notes
     -----
     .. versionadded:: 0.10
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -192,7 +208,8 @@ def mean_chol(X, sample_weight=None, **kwargs):
         I.L. Dryden, A. Koloydenko, D. Zhou.
         Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
     """
-    L = mean_euclid(np.linalg.cholesky(X), sample_weight=sample_weight)
+    xp = get_namespace(X)
+    L = mean_euclid(xp.linalg.cholesky(X), sample_weight=sample_weight)
     return L @ ctranspose(L)
 
 
@@ -218,11 +235,21 @@ def mean_euclid(X, sample_weight=None, **kwargs):
     M : ndarray, shape (..., n, m)
         Euclidean mean.
 
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
     See Also
     --------
     gmean
     """
-    return np.average(X, axis=-3, weights=sample_weight)
+    xp = get_namespace(X)
+    if sample_weight is None:
+        return xp.mean(X, axis=-3)
+    n_matrices = X.shape[-3]
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
+    return xp.tensordot(sample_weight, X, axes=([0], [-3]))
 
 
 def mean_harmonic(X, sample_weight=None, **kwargs):
@@ -245,14 +272,20 @@ def mean_harmonic(X, sample_weight=None, **kwargs):
     M : ndarray, shape (..., n, n)
         Harmonic mean.
 
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
     See Also
     --------
     gmean
     """
-    eye_n = np.eye(X.shape[-1])
-    X_inv = np.linalg.solve(X, eye_n)
+    xp = get_namespace(X)
+    eye_n = xp.eye(X.shape[-1], dtype=X.dtype, device=xpd(X))
+    X_inv = xp.linalg.solve(X, eye_n)
     M_inv = mean_euclid(X_inv, sample_weight=sample_weight)
-    M = np.linalg.solve(M_inv, eye_n)
+    M = xp.linalg.solve(M_inv, eye_n)
     return M
 
 
@@ -273,6 +306,11 @@ def mean_kullback_sym(X, sample_weight=None, **kwargs):
     -------
     M : ndarray, shape (..., n, n)
         Symmetrized Kullback-Leibler mean.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -321,6 +359,8 @@ def mean_logchol(X, sample_weight=None, **kwargs):
     Notes
     -----
     .. versionadded:: 0.7
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -333,24 +373,21 @@ def mean_logchol(X, sample_weight=None, **kwargs):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
+    xp = get_namespace(X)
     n_matrices, n = X.shape[-3], X.shape[-1]
-    sample_weight = check_weights(sample_weight, n_matrices)
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
 
-    X_chol = np.linalg.cholesky(X)
-    L = np.zeros(X.shape[:-3] + X.shape[-2:], dtype=X.dtype)
+    X_chol = xp.linalg.cholesky(X)
+    L = xp.zeros(X.shape[:-3] + X.shape[-2:], dtype=X.dtype, device=xpd(X))
 
-    tri0, tri1 = np.tril_indices(n, -1)
-    L[..., tri0, tri1] = np.average(
-        X_chol[..., tri0, tri1],
-        axis=-2,
-        weights=sample_weight,
+    tri0, tri1 = tril_indices(n, -1, like=X)
+    L[..., tri0, tri1] = xp.tensordot(
+        sample_weight, X_chol[..., tri0, tri1], axes=([0], [-2]),
     )
 
-    diag0, diag1 = np.diag_indices(n)
-    L[..., diag0, diag1] = np.exp(np.average(
-        np.log(X_chol[..., diag0, diag1]),
-        axis=-2,
-        weights=sample_weight,
+    diag0, diag1 = diag_indices(n, like=X)
+    L[..., diag0, diag1] = xp.exp(xp.tensordot(
+        sample_weight, xp.log(X_chol[..., diag0, diag1]), axes=([0], [-2]),
     ))
 
     return L @ ctranspose(L)
@@ -387,24 +424,30 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     M : ndarray, shape (..., n, n)
         Log-det mean.
 
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
     See Also
     --------
     gmean
     """
+    xp = get_namespace(X)
     n_matrices, n, _ = X.shape
-    sample_weight = check_weights(sample_weight, n_matrices)
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
     if init is None:
         M = mean_euclid(X, sample_weight=sample_weight)
     else:
-        M = check_init(init, n)
-    eye_n = np.eye(n)
+        M = check_init(init, n, like=X)
+    eye_n = xp.eye(n, dtype=X.dtype, device=xpd(X))
 
     for _ in range(maxiter):
-        X_inv = np.linalg.solve(0.5 * X + 0.5 * M, eye_n)
-        J = np.einsum("a,abc->bc", sample_weight, X_inv)
-        Mnew = np.linalg.solve(J, eye_n)
+        X_inv = xp.linalg.solve(0.5 * X + 0.5 * M, eye_n)
+        J = xp.tensordot(sample_weight, X_inv, axes=([0], [0]))
+        Mnew = xp.linalg.solve(J, eye_n)
 
-        crit = np.linalg.norm(Mnew - M, ord="fro")
+        crit = xp.linalg.matrix_norm(Mnew - M, ord="fro")
         M = Mnew
         if crit <= tol:
             break
@@ -435,6 +478,11 @@ def mean_logeuclid(X, sample_weight=None, **kwargs):
     -------
     M : ndarray, shape (..., n, n)
         Log-Euclidean mean.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -491,6 +539,8 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -508,6 +558,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
         M. Congedo, A. Barachant, and R. Bhatia. IEEE Transactions on Signal
         Processing, Volume 65, Issue 9, pp.2211-2220, May 2017
     """
+    xp = get_namespace(X)
     if not isinstance(p, (int, float)):
         raise ValueError(f"Exponent p must be a scalar (Got {type(p)})")
     if p < -1 or 1 < p:
@@ -527,27 +578,29 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
         return mean_harmonic(X, sample_weight=sample_weight)
 
     n_matrices, n, _ = X.shape
-    sample_weight = check_weights(sample_weight, n_matrices)
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
     phi = 0.375 / np.abs(p)
     if init is None:
-        G = powm(np.einsum("a,abc->bc", sample_weight, powm(X, p)), 1/p)
+        G = powm(
+            xp.tensordot(sample_weight, powm(X, p), axes=([0], [0])), 1/p,
+        )
     else:
-        G = check_init(init, n)
+        G = check_init(init, n, like=X)
     if p > 0:
         K = invsqrtm(G)
     else:
         K = sqrtm(G)
 
-    eye_n, sqrt_n = np.eye(n), np.sqrt(n)
+    eye_n, sqrt_n = xp.eye(n, dtype=X.dtype, device=xpd(X)), np.sqrt(n)
     for _ in range(maxiter):
-        H = np.einsum(
-            "a,abc->bc",
+        H = xp.tensordot(
             sample_weight,
-            powm(K @ powm(X, np.sign(p)) @ K.conj().T, np.abs(p))
+            powm(K @ powm(X, np.sign(p)) @ ctranspose(K), np.abs(p)),
+            axes=([0], [0]),
         )
         K = powm(H, -phi) @ K
 
-        crit = np.linalg.norm(H - eye_n) / sqrt_n
+        crit = xp.linalg.matrix_norm(H - eye_n) / sqrt_n
         if crit <= zeta:
             break
     else:
@@ -555,12 +608,11 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
 
     M = ctranspose(K) @ K
     if p > 0:
-        M = np.linalg.solve(M, eye_n)
+        M = xp.linalg.solve(M, eye_n)
 
     return M
 
 
-@_vectorize_nd(n_axes=3)
 def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the power Euclidean metric.
 
@@ -584,6 +636,11 @@ def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
     -------
     M : ndarray, shape (..., n, n)
         Power Euclidean mean.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -644,6 +701,11 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     M : ndarray, shape (..., n, n)
         Affine-invariant Riemannian mean.
 
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
     See Also
     --------
     gmean
@@ -660,21 +722,24 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         <https://arxiv.org/abs/1505.07343>`_
         M. Congedo, B. Afsari, A. Barachant, M. Moakher. PLOS ONE, 2015
     """
+    xp = get_namespace(X)
     n_matrices, n, _ = X.shape
-    sample_weight = check_weights(sample_weight, n_matrices)
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
     if init is None:
         M = mean_euclid(X, sample_weight=sample_weight)
     else:
-        M = check_init(init, n)
+        M = check_init(init, n, like=X)
 
     nu = 1.0
     tau = np.finfo(np.float64).max
     for _ in range(maxiter):
         M12, Mm12 = sqrtm(M), invsqrtm(M)
-        J = np.einsum("a,abc->bc", sample_weight, logm(Mm12 @ X @ Mm12))
+        J = xp.tensordot(
+            sample_weight, logm(Mm12 @ X @ Mm12), axes=([0], [0]),
+        )
         M = M12 @ expm(nu * J) @ M12
 
-        crit = np.linalg.norm(J, ord="fro")
+        crit = xp.linalg.matrix_norm(J, ord="fro")
         h = nu * crit
         if h < tau:
             nu = 0.95 * nu
@@ -717,6 +782,8 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     Notes
     -----
     .. versionadded:: 0.10
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -730,16 +797,17 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
         C. Mostajeran, N. Da Costa, G. Van Goffrier and R. Sepulchre.
         SIAM Journal on Matrix Analysis and Applications, 2024
     """
+    xp = get_namespace(X)
     n_matrices, n, _ = X.shape
     if init is None:
         M = mean_euclid(X)
     else:
-        M = check_init(init, n)
+        M = check_init(init, n, like=X)
 
     for i in range(maxiter):
         Mnew = geodesic_thompson(M, X[i % n_matrices], 1 / (i + 2))
 
-        crit = np.linalg.norm(Mnew - M, ord="fro")
+        crit = xp.linalg.matrix_norm(Mnew - M, ord="fro")
         M = Mnew
         if crit <= tol:
             break
@@ -775,6 +843,11 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
     M : ndarray, shape (..., n, n)
         Wasserstein mean.
 
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
     See Also
     --------
     gmean
@@ -789,19 +862,20 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
         <https://arxiv.org/abs/2302.14618>`_
         J. Zheng, H. Huang, Y. Yi, Y. Li, S.-C. Lin, ArXiv, 2023
     """
+    xp = get_namespace(X)
     n_matrices, n, _ = X.shape
-    sample_weight = check_weights(sample_weight, n_matrices)
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
     if init is None:
         init = mean_euclid(X, sample_weight=sample_weight)
     else:
-        init = check_init(init, n)
+        init = check_init(init, n, like=X)
     M = init
 
     for _ in range(maxiter):
         X_ts = log_map_wasserstein(X, M)
-        J = np.einsum("a,abc->bc", sample_weight, X_ts)
+        J = xp.tensordot(sample_weight, X_ts, axes=([0], [0]))
         M = exp_map_wasserstein(J, M)
-        crit = np.linalg.norm(J)
+        crit = xp.linalg.matrix_norm(J)
         if crit <= tol:
             break
     else:
@@ -893,17 +967,18 @@ def mean_covariance(X, *args, metric="riemann", sample_weight=None, **kwargs):
 
 
 def _get_mask_from_nan(X):
-    nan_col = np.all(np.isnan(X), axis=0)
-    nan_row = np.all(np.isnan(X), axis=1)
-    if not np.array_equal(nan_col, nan_row):
+    xp = get_namespace(X)
+    isnan = xp.isnan(X)
+    nan_col = xp.all(isnan, axis=0)
+    nan_row = xp.all(isnan, axis=1)
+    if not bool(xp.all(nan_col == nan_row)):
         raise ValueError("NaN values are not symmetric.")
-    nan_inds = np.where(nan_col)
-    subX_ = np.delete(X, nan_inds, axis=0)
-    subX = np.delete(subX_, nan_inds, axis=1)
-    if np.any(np.isnan(subX)):
+    keep_col = ~nan_col
+    maskedX = X[keep_col, :][:, keep_col]
+    if bool(xp.any(xp.isnan(maskedX))):
         raise ValueError("NaN values must fill rows and columns.")
-    mask = np.delete(np.eye(X.shape[0]), nan_inds, axis=1)
-    return mask
+    eye = xp.eye(X.shape[0], dtype=X.dtype, device=xpd(X))
+    return eye[:, keep_col]
 
 
 def _get_masks_from_nan(X):
@@ -911,7 +986,7 @@ def _get_masks_from_nan(X):
 
 
 def _apply_masks(X, masks):
-    return [m.T @ x @ m for x, m in zip(X, masks)]
+    return [m.mT @ x @ m for x, m in zip(X, masks)]
 
 
 @_vectorize_nd(n_axes=3)
@@ -949,6 +1024,8 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -963,19 +1040,20 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
         F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
         Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
+    xp = get_namespace(X)
     n_matrices, n, _ = X.shape
-    sample_weight = check_weights(sample_weight, n_matrices)
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
     maskedX = _apply_masks(X, masks)
     if init is None:
-        M = np.eye(n)
+        M = xp.eye(n, dtype=X.dtype, device=xpd(X))
     else:
-        M = check_init(init, n)
+        M = check_init(init, n, like=X)
 
     nu = 1.0
     tau = np.finfo(np.float64).max
     for _ in range(maxiter):
-        maskedM = _apply_masks(np.tile(M, (n_matrices, 1, 1)), masks)
-        J = np.zeros((n, n), dtype=X.dtype)
+        maskedM = _apply_masks(xp.broadcast_to(M, (n_matrices, n, n)), masks)
+        J = xp.zeros((n, n), dtype=X.dtype, device=xpd(X))
         for i in range(n_matrices):
             M12, Mm12 = sqrtm(maskedM[i]), invsqrtm(maskedM[i])
             tmp = M12 @ logm(Mm12 @ maskedX[i] @ Mm12) @ M12
@@ -983,7 +1061,7 @@ def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
         M12, Mm12 = sqrtm(M), invsqrtm(M)
         M = M12 @ expm(Mm12 @ (nu * J) @ Mm12) @ M12
 
-        crit = np.linalg.norm(J, ord="fro")
+        crit = xp.linalg.matrix_norm(J, ord="fro")
         h = nu * crit
         if h < tau:
             nu = 0.95 * nu
@@ -1027,6 +1105,8 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -1041,18 +1121,20 @@ def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
         F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
         Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
     """
-    n_matrices, n, _ = X.shape
+    xp = get_namespace(X)
+    _, n, _ = X.shape
     if init is None:
-        init = np.nanmean(X, axis=0) + 1e-6 * np.eye(n)
+        eye = xp.eye(n, dtype=X.dtype, device=xpd(X))
+        init = nanmean(X, axis=0) + 1e-6 * eye
     else:
-        init = check_init(init, n)
+        init = check_init(init, n, like=X)
 
     M = maskedmean_riemann(
-        np.nan_to_num(X),  # avoid nan contamination in matmul
+        nan_to_num(X),  # avoid nan contamination in matmul
         _get_masks_from_nan(X),
         tol=tol,
         maxiter=maxiter,
         init=init,
-        sample_weight=sample_weight
+        sample_weight=sample_weight,
     )
     return M

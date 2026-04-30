@@ -1,19 +1,16 @@
 """Tangent space for SPD/HPD matrices."""
 
-import numpy as np
+import math
 
+from array_api_compat import (
+    array_namespace as get_namespace,
+    device as xpd,
+    is_numpy_namespace,
+)
+
+from ._backend import diag_indices, tril_indices, triu_indices
 from .base import ctranspose, expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
-from .utils import check_function
-
-
-def _check_dimensions(X, Cref):
-    n_1, n_2 = X.shape[-2:]
-    n_3, n_4 = Cref.shape
-    if not (n_1 == n_2 == n_3 == n_4):
-        raise ValueError("Inputs have incompatible dimensions.")
-
-
-###############################################################################
+from .utils import check_function, check_matrix_pair
 
 
 def exp_map_euclid(X, Cref):
@@ -41,6 +38,8 @@ def exp_map_euclid(X, Cref):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
     return X + Cref
 
@@ -66,6 +65,8 @@ def exp_map_logchol(X, Cref):
     Notes
     -----
     .. versionadded:: 0.7
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -74,23 +75,25 @@ def exp_map_logchol(X, Cref):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    Cref_chol = np.linalg.cholesky(Cref)
-    Cref_invchol = np.linalg.solve(Cref_chol, np.eye(Cref.shape[-1]))
+    xp = check_matrix_pair(X, Cref, require_square=True)
+    Cref_chol = xp.linalg.cholesky(Cref)
+    eye_n = xp.eye(Cref.shape[-1], dtype=Cref.dtype, device=xpd(Cref))
+    Cref_invchol = xp.linalg.solve(Cref_chol, eye_n)
 
-    tri0, tri1 = np.tril_indices(X.shape[-1], -1)
-    diag0, diag1 = np.diag_indices(X.shape[-1])
+    tri0, tri1 = tril_indices(X.shape[-1], -1, like=X)
+    diag0, diag1 = diag_indices(X.shape[-1], like=X)
 
-    diff_bracket = Cref_invchol @ X @ Cref_invchol.conj().T
+    diff_bracket = Cref_invchol @ X @ ctranspose(Cref_invchol)
     diff_bracket[..., tri1, tri0] = 0
     diff_bracket[..., diag0, diag1] /= 2
     diff = Cref_chol @ diff_bracket
 
-    exp_map = np.zeros_like(X)
+    exp_map = xp.zeros_like(X)
 
     exp_map[..., tri0, tri1] = Cref_chol[..., tri0, tri1] + \
         diff[..., tri0, tri1]
 
-    exp_map[..., diag0, diag1] = np.exp(diff_bracket[..., diag0, diag1]) \
+    exp_map[..., diag0, diag1] = xp.exp(diff_bracket[..., diag0, diag1]) \
         * Cref_chol[..., diag0, diag1]
 
     return exp_map @ ctranspose(exp_map)
@@ -128,6 +131,8 @@ def exp_map_logeuclid(X, Cref):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -180,6 +185,8 @@ def exp_map_riemann(X, Cref, Cm12=False):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -187,6 +194,7 @@ def exp_map_riemann(X, Cref, Cm12=False):
         <https://link.springer.com/article/10.1007/s11263-005-3222-z>`_
         X. Pennec, P. Fillard, N. Ayache. IJCV, 2006, 66(1), pp. 41-66.
     """
+    check_matrix_pair(X, Cref, require_square=True)
     if Cm12:
         Cm12 = invsqrtm(Cref)
         X = Cm12 @ X @ Cm12
@@ -217,6 +225,8 @@ def exp_map_wasserstein(X, Cref):
     Notes
     -----
     .. versionadded:: 0.8
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -225,13 +235,14 @@ def exp_map_wasserstein(X, Cref):
         L. Malagò, L. Montrucchio, G. Pistone. Information Geometry, 2018, 1,
         pp. 137–179.
     """
-    d, V = np.linalg.eigh(Cref)
+    xp = check_matrix_pair(X, Cref, require_square=True)
+    d, V = xp.linalg.eigh(Cref)
     Vh = ctranspose(V)
-    C = 1 / (d[..., :, np.newaxis] + d[..., np.newaxis, :])
+    C = 1 / (d[:, None] + d[None, :])
 
     X_rotated = Vh @ X @ V
     X_tmp = C * X_rotated
-    X_tmp = X_tmp @ (d[..., :, np.newaxis] * X_tmp)
+    X_tmp = X_tmp @ (d[..., None] * X_tmp)
     X_tmp = V @ X_tmp @ Vh
 
     return Cref + X + X_tmp
@@ -268,6 +279,8 @@ def exp_map(X, Cref, *, metric="riemann"):
     Notes
     -----
     .. versionadded:: 0.9
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -309,6 +322,8 @@ def log_map_euclid(X, Cref):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
     return X - Cref
 
@@ -334,6 +349,8 @@ def log_map_logchol(X, Cref):
     Notes
     -----
     .. versionadded:: 0.7
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -342,19 +359,19 @@ def log_map_logchol(X, Cref):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    X_chol, Cref_chol = np.linalg.cholesky(X), np.linalg.cholesky(Cref)
+    xp = check_matrix_pair(X, Cref, require_square=True)
+    X_chol, Cref_chol = xp.linalg.cholesky(X), xp.linalg.cholesky(Cref)
 
-    res = np.zeros_like(X)
+    res = xp.zeros_like(X)
 
-    tri0, tri1 = np.tril_indices(X.shape[-1], -1)
+    tri0, tri1 = tril_indices(X.shape[-1], -1, like=X)
     res[..., tri0, tri1] = X_chol[..., tri0, tri1] - Cref_chol[..., tri0, tri1]
 
-    diag0, diag1 = np.diag_indices(X.shape[-1])
+    diag0, diag1 = diag_indices(X.shape[-1], like=X)
     res[..., diag0, diag1] = Cref_chol[..., diag0, diag1] * \
-        np.log(X_chol[..., diag0, diag1] / Cref_chol[..., diag0, diag1])
+        xp.log(X_chol[..., diag0, diag1] / Cref_chol[..., diag0, diag1])
 
-    X_new = Cref_chol @ ctranspose(res) + res @ Cref_chol.conj().T
-
+    X_new = Cref_chol @ ctranspose(res) + res @ ctranspose(Cref_chol)
     return X_new
 
 
@@ -390,6 +407,8 @@ def log_map_logeuclid(X, Cref):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -403,7 +422,6 @@ def log_map_logeuclid(X, Cref):
         <https://ieeexplore.ieee.org/document/10735221>`_
         G. Wagner vom Berg, V. Röhr, D. Platt, B. Blankertz. IEEE TBME, 2024.
     """
-    _check_dimensions(X, Cref)
     logCref = logm(Cref)
     X_new = ddexpm(logm(X) - logCref, logCref)
     return X_new
@@ -445,6 +463,8 @@ def log_map_riemann(X, Cref, C12=False):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -452,7 +472,7 @@ def log_map_riemann(X, Cref, C12=False):
         <https://link.springer.com/article/10.1007/s11263-005-3222-z>`_
         X. Pennec, P. Fillard, N. Ayache. IJCV, 2006, 66(1), pp. 41-66.
     """
-    _check_dimensions(X, Cref)
+    check_matrix_pair(X, Cref, require_square=True)
     Cm12 = invsqrtm(Cref)
     X_new = logm(Cm12 @ X @ Cm12)
     if C12:
@@ -488,6 +508,8 @@ def log_map_wasserstein(X, Cref):
     Notes
     -----
     .. versionadded:: 0.8
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -496,7 +518,7 @@ def log_map_wasserstein(X, Cref):
         L. Malagò, L. Montrucchio, G. Pistone. Information Geometry, 2018, 1,
         pp. 137–179.
     """
-    _check_dimensions(X, Cref)
+    check_matrix_pair(X, Cref, require_square=True)
     P12 = sqrtm(Cref)
     P12inv = invsqrtm(Cref)
     sqrt_bracket = sqrtm(P12 @ X @ P12)
@@ -535,6 +557,8 @@ def log_map(X, Cref, *, metric="riemann"):
     Notes
     -----
     .. versionadded:: 0.9
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -572,6 +596,8 @@ def upper(X):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     References
     ----------
@@ -580,11 +606,16 @@ def upper(X):
         O. Tuzel, F. Porikli, and P. Meer. IEEE Transactions on Pattern
         Analysis and Machine Intelligence, Volume 30, Issue 10, October 2008.
     """
+    xp = get_namespace(X)
     n = X.shape[-1]
     if X.shape[-2] != n:
         raise ValueError("Matrices must be square")
-    idx = np.triu_indices_from(np.empty((n, n)))
-    coeffs = (np.sqrt(2) * np.triu(np.ones((n, n)), 1) + np.eye(n))[idx]
+    idx = triu_indices(n, like=X)
+    coeffs = (
+        math.sqrt(2)
+        * xp.triu(xp.ones((n, n), dtype=X.real.dtype, device=xpd(X)), k=1)
+        + xp.eye(n, dtype=X.real.dtype, device=xpd(X))
+    )[idx[0], idx[1]]
     T = coeffs * X[..., idx[0], idx[1]]
     return T
 
@@ -612,15 +643,18 @@ def unupper(T):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
+    xp = get_namespace(T)
     dims = T.shape
-    n = int((np.sqrt(1 + 8 * dims[-1]) - 1) / 2)
-    X = np.empty((*dims[:-1], n, n), dtype=T.dtype)
-    idx = np.triu_indices_from(np.empty((n, n)))
+    n = int((math.sqrt(1 + 8 * dims[-1]) - 1) / 2)
+    X = xp.zeros((*dims[:-1], n, n), dtype=T.dtype, device=xpd(T))
+    idx = triu_indices(n, like=T)
     X[..., idx[0], idx[1]] = T
-    idx = np.triu_indices_from(np.empty((n, n)), k=1)
-    X[..., idx[0], idx[1]] /= np.sqrt(2)
-    X[..., idx[1], idx[0]] = X[..., idx[0], idx[1]].conj()
+    idx = triu_indices(n, k=1, like=T)
+    X[..., idx[0], idx[1]] /= math.sqrt(2.0)
+    X[..., idx[1], idx[0]] = xp.conj(X[..., idx[0], idx[1]])
     return X
 
 
@@ -645,6 +679,10 @@ def tangent_space(X, Cref, *, metric="riemann"):
     -------
     T : ndarray, shape (..., n * (n + 1) / 2)
         Tangent vectors.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
 
     See Also
     --------
@@ -677,6 +715,10 @@ def untangent_space(T, Cref, *, metric="riemann"):
     -------
     X : ndarray, shape (..., n, n)
         Matrices in manifold.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
 
     See Also
     --------
@@ -716,6 +758,8 @@ def innerproduct_euclid(X, Y, *args):
     Notes
     -----
     .. versionadded:: 0.11
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -759,6 +803,8 @@ def innerproduct_logeuclid(X, Y, Cref):
     Notes
     -----
     .. versionadded:: 0.11
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -812,6 +858,8 @@ def innerproduct_riemann(X, Y, Cref):
     Notes
     -----
     .. versionadded:: 0.11
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -833,10 +881,11 @@ def innerproduct_riemann(X, Y, Cref):
 
 def _apply_inner_product(X, Y):
     # product G = trace(X^H @ Y)
-    G = np.einsum("...nm,...nm->...", X.conj(), Y, optimize=True).real
+    xp = get_namespace(X, Y)
+    G = xp.einsum("...nm,...nm->...", xp.conj(X), Y).real
 
-    if G.size == 1:
-        return G.item()
+    if is_numpy_namespace(xp) and G.ndim == 0:
+        return float(G)
     else:
         return G
 
@@ -876,6 +925,8 @@ def innerproduct(X, Y, Cref, metric="riemann"):
     Notes
     -----
     .. versionadded:: 0.11
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -913,13 +964,16 @@ def norm(X, Cref, metric="riemann"):
     Notes
     -----
     .. versionadded:: 0.11
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
     innerproduct
     """
     N2 = innerproduct(X, None, Cref, metric=metric)
-    return np.sqrt(N2)
+    xp = get_namespace(X)
+    return xp.sqrt(N2)
 
 
 ###############################################################################
@@ -945,6 +999,8 @@ def transport_euclid(X, A=None, B=None):
     Notes
     -----
     .. versionadded:: 0.10
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -984,6 +1040,8 @@ def transport_logchol(X, A, B):
     .. versionadded:: 0.10
     .. versionchanged:: 0.11
         Correct formula for HPD matrices.
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -996,24 +1054,26 @@ def transport_logchol(X, A, B):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    A_chol, B_chol = np.linalg.cholesky(A), np.linalg.cholesky(B)
-    A_invchol = np.linalg.solve(A_chol, np.eye(A.shape[-1]))
+    xp = get_namespace(X, A, B)
+    A_chol, B_chol = xp.linalg.cholesky(A), xp.linalg.cholesky(B)
+    eye_n = xp.eye(A.shape[-1], dtype=A.dtype, device=xpd(A))
+    A_invchol = xp.linalg.solve(A_chol, eye_n)
 
-    tri0, tri1 = np.tril_indices(X.shape[-1], -1)
-    diag0, diag1 = np.diag_indices(X.shape[-1])
+    tri0, tri1 = tril_indices(X.shape[-1], -1, like=X)
+    diag0, diag1 = diag_indices(X.shape[-1], like=X)
 
-    P = A_invchol @ X @ A_invchol.conj().T
-    P12 = np.zeros_like(P)
+    P = A_invchol @ X @ ctranspose(A_invchol)
+    P12 = xp.zeros_like(P)
     P12[..., tri0, tri1] = P[..., tri0, tri1]
     P12[..., diag0, diag1] = P[..., diag0, diag1] / 2
     X_ = A_chol @ P12
 
-    T = np.zeros_like(X)
+    T = xp.zeros_like(X)
     T[..., tri0, tri1] = X_[..., tri0, tri1]
     T[..., diag0, diag1] = B_chol[..., diag0, diag1] \
         / A_chol[..., diag0, diag1] * X_[..., diag0, diag1]
 
-    X_new = B_chol @ ctranspose(T) + T @ B_chol.conj().T
+    X_new = B_chol @ ctranspose(T) + T @ ctranspose(B_chol)
     return X_new
 
 
@@ -1053,6 +1113,8 @@ def transport_logeuclid(X, A, B):
     .. versionadded:: 0.10
     .. versionchanged:: 0.11
         Correct formula.
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -1105,6 +1167,8 @@ def transport_riemann(X, A, B):
         Change input arguments and calculation of the function.
     .. versionchanged:: 0.10
         Rename function and add to API.
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -1122,7 +1186,7 @@ def transport_riemann(X, A, B):
     # But (BA^{-1})^{1/2} = A^{1/2} (A^{-1/2}BA^{-1/2})^{1/2} A^{-1/2}
     A12, A12inv = sqrtm(A), invsqrtm(A)
     E = A12 @ sqrtm(A12inv @ B @ A12inv) @ A12inv
-    X_new = E @ X @ E.conj().T
+    X_new = E @ X @ ctranspose(E)
     return X_new
 
 
@@ -1166,6 +1230,8 @@ def transport(X, A, B, metric="riemann"):
     Notes
     -----
     .. versionadded:: 0.10
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------

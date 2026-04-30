@@ -41,6 +41,8 @@ setup(
         "numpy>=1.25.0",
         "scipy",
         "scikit-learn>=0.24",
+        "array-api-compat>=1.11",
+        "array-api-extra>=0.6",
         "joblib",
         "matplotlib",
     ],
@@ -61,7 +63,8 @@ setup(
         "tests": [
             "pytest",
             "seaborn",
-            "flake8"
+            "flake8",
+            "torch",
         ],
     },
     zip_safe=False,

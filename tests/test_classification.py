@@ -4,7 +4,6 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 from pytest import approx
-from scipy.spatial.distance import euclidean
 from scipy.stats import mode
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.linear_model import LogisticRegression
@@ -26,6 +25,10 @@ from pyriemann.classification import (
     class_distinctiveness,
 )
 from pyriemann.datasets import make_gaussian_blobs
+
+
+pytestmark = pytest.mark.numpy_only
+
 
 classifs = [
     MDM,
@@ -228,7 +231,7 @@ def call_mean(X, sample_weight=None):
 
 
 def call_dist(A, B, squared=False):
-    return euclidean(A.flatten(), B.flatten())
+    return np.linalg.norm(A - B, axis=(-2, -1))
 
 
 @pytest.mark.parametrize("metric_mean", [
