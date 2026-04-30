@@ -6,14 +6,18 @@ from array_api_compat import array_namespace as get_namespace, device as xpd
 from array_api_extra import create_diagonal, nan_to_num
 import numpy as np
 
-from pyriemann.utils.docs import deprecated
+from pyriemann._helpers import (
+    check_function,
+    check_init,
+    check_weights,
+    deprecated,
+)
 from pyriemann.utils._backend import diag_indices, nanmean, tril_indices
 from .ajd import ajd_pham
 from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd
 from .distance import distance_riemann
 from .geodesic import geodesic_riemann, geodesic_thompson
 from .tangentspace import log_map_wasserstein, exp_map_wasserstein
-from pyriemann.utils.utils import check_weights, check_function, check_init
 
 
 @_vectorize_nd(n_axes=3)

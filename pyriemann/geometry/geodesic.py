@@ -2,9 +2,9 @@
 
 from array_api_compat import array_namespace as get_namespace
 
+from pyriemann._helpers import check_function, check_matrix_pair
 from pyriemann.utils._backend import diag_indices, tril_indices
 from .base import ctranspose, _eigvalsh, sqrtm, invsqrtm, powm, logm, expm
-from pyriemann.utils.utils import check_function, check_matrix_pair
 
 
 def geodesic_chol(A, B, alpha=0.5):
