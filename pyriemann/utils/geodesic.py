@@ -387,8 +387,9 @@ def geodesic(A, B, alpha, metric="riemann"):
         First matrices.
     B : ndarray, shape (..., n, n)
         Second matrices.
-    alpha : float
-        Position on the geodesic.
+    alpha : float | ndarray, shape (..., 1)
+        Position on the geodesic. If an ndarray is provided, each pair of
+        stacked input matrices is associated with one value of ``alpha``.
     metric : string | callable, default="riemann"
         Metric used for geodesic, can be:
         "chol", "euclid", "logchol", "logeuclid", "riemann", "thompson",
@@ -416,5 +417,28 @@ def geodesic(A, B, alpha, metric="riemann"):
     geodesic_wasserstein
     """
     geodesic_function = check_function(metric, geodesic_functions)
+
+    if hasattr(alpha, "ndim") and alpha.ndim > 0:
+        xp = check_matrix_pair(A, B)
+        expected_shape = (*A.shape[:-2], 1)
+        if alpha.shape != expected_shape:
+            raise ValueError(
+                "alpha must have shape (..., 1) matching the stacked shape of "
+                f"input matrices. Expected {expected_shape} but got "
+                f"{alpha.shape}."
+            )
+
+        A_flat = xp.reshape(A, (-1, *A.shape[-2:]))
+        B_flat = xp.reshape(B, (-1, *B.shape[-2:]))
+        alpha_flat = xp.reshape(alpha, (-1,))
+        C_flat = xp.stack(
+            [
+                geodesic_function(A_flat[i], B_flat[i], alpha_flat[i])
+                for i in range(A_flat.shape[0])
+            ],
+            axis=0,
+        )
+        return xp.reshape(C_flat, (*A.shape[:-2], *A.shape[-2:]))
+
     C = geodesic_function(A, B, alpha)
     return C
