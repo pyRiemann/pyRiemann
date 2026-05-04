@@ -1,6 +1,9 @@
 """Geodesics for SPD/HPD matrices."""
 
-from array_api_compat import array_namespace as get_namespace
+from array_api_compat import (
+    array_namespace as get_namespace,
+    device as xpd,
+)
 
 from ._backend import diag_indices, tril_indices
 from .base import ctranspose, _eigvalsh, sqrtm, invsqrtm, powm, logm, expm
@@ -420,6 +423,7 @@ def geodesic(A, B, alpha, metric="riemann"):
 
     if hasattr(alpha, "ndim") and alpha.ndim > 0:
         xp = check_matrix_pair(A, B)
+        alpha = xp.asarray(alpha, device=xpd(A))
         expected_shape = (*A.shape[:-2], 1)
         if alpha.shape != expected_shape:
             raise ValueError(
