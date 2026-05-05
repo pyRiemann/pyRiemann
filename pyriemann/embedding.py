@@ -9,7 +9,7 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.manifold import spectral_embedding
 from sklearn.manifold._utils import _binary_search_perplexity
 
-from .utils.distance import pairwise_distance
+from .geometry.distance import pairwise_distance
 from .utils.kernel import kernel as kernel_fct
 from .optimization.positive_definite import _get_tsne_embedding
 
@@ -32,7 +32,7 @@ class SpectralEmbedding(BaseEstimator):
     metric : string, default="riemann"
         Metric used for defining pairwise distance between SPD/HPD matrices.
         For the list of supported metrics,
-        see :func:`pyriemann.utils.distance.pairwise_distance`.
+        see :func:`pyriemann.geometry.distance.pairwise_distance`.
     eps : None | float, default=None
         The scaling of the Gaussian kernel. If none is given it will use the
         square of the median of pairwise distances between matrices.

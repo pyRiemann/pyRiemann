@@ -430,7 +430,7 @@ def distance_poweuclid(A, B, p, squared=False):
         Second SPD/HPD matrices, same dimensions as A.
     p : float
         Exponent. For p=0, it returns
-        :func:`pyriemann.utils.distance.distance_logeuclid`.
+        :func:`pyriemann.geometry.distance.distance_logeuclid`.
     squared : bool, default=False
         Return squared distance.
 
@@ -963,7 +963,7 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
         Second set of matrices. If None, Y is set to X.
     metric : string, default="riemann"
         Metric for pairwise distance. For the list of supported metrics,
-        see :func:`pyriemann.utils.distance.distance`.
+        see :func:`pyriemann.geometry.distance.distance`.
     squared : bool, default=False
         Return squared distances.
 

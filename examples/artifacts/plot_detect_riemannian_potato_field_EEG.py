@@ -21,7 +21,7 @@ import numpy as np
 
 from pyriemann.clustering import Potato, PotatoField
 from pyriemann.estimation import Covariances
-from pyriemann.utils.covariance import normalize
+from pyriemann.geometry.covariance import normalize
 
 
 ###############################################################################

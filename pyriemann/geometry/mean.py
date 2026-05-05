@@ -524,7 +524,7 @@ def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
         Set of SPD/HPD matrices.
     p : float
         Exponent, in [-1,+1]. For p=0, it returns
-        :func:`pyriemann.utils.mean.mean_riemann`.
+        :func:`pyriemann.geometry.mean.mean_riemann`.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
     zeta : float, default=10e-10

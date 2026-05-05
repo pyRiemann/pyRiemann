@@ -1,6 +1,14 @@
 """Backward-compatibility shim. Module moved to pyriemann.geometry.geodesic."""
 import sys
+import warnings
 
-from pyriemann.geometry import geodesic as _moved
+from ..geometry import geodesic as _moved
+
+warnings.warn(
+    "pyriemann.utils.geodesic is deprecated and will be removed in a "
+    "future release; use pyriemann.geometry.geodesic instead.",
+    DeprecationWarning,
+    stacklevel=2,
+)
 
 sys.modules[__name__] = _moved

@@ -13,13 +13,13 @@ from sklearn.utils.validation import check_random_state
 from ._base import SpdClassifMixin, SpdClustMixin, SpdTransfMixin
 from .classification import MDM
 from .datasets import sample_gaussian_spd
-from .utils.covariance import covariance_scm
-from .utils.distance import distance, pairwise_distance, distance_mahalanobis
-from .utils.mean import gmean
-from .utils.geodesic import geodesic
-from .utils.tangentspace import exp_map, log_map
-from .utils.utils import check_metric, check_function, check_weights
-from .utils.tangentspace import tangent_space
+from .geometry.covariance import covariance_scm
+from .geometry.distance import distance, pairwise_distance, distance_mahalanobis
+from .geometry.mean import gmean
+from .geometry.geodesic import geodesic
+from .geometry.tangentspace import exp_map, log_map
+from .utils._check import check_metric, check_function, check_weights
+from .geometry.tangentspace import tangent_space
 
 
 def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
@@ -93,8 +93,8 @@ class Kmeans(SpdClassifMixin, SpdClustMixin, SpdTransfMixin, BaseEstimator):
         Maximum number of iteration to reach convergence.
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
-        (see :func:`pyriemann.utils.distance.distance`).
+        see :func:`pyriemann.geometry.mean.gmean`) and for distance estimation
+        (see :func:`pyriemann.geometry.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
     random_state : None | integer | np.RandomState, default=None
@@ -380,9 +380,9 @@ class MeanShift(SpdClustMixin, BaseEstimator):
         Bandwidth of the kernel.
     metric : string | dict, default="riemann"
         Metric used for map estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.tangentspace.log_map`) and
+        see :func:`pyriemann.geometry.tangentspace.log_map`) and
         for distance estimation
-        (see :func:`pyriemann.utils.distance.distance`).
+        (see :func:`pyriemann.geometry.distance.distance`).
         The metric can be a dict with two keys, "map" and "distance"
         in order to pass different metrics.
     tol : float, default=1e-4
@@ -554,7 +554,7 @@ class Gaussian():
         If None, it uses identity matrix.
     metric : string | dict, default="riemann"
         Metric used for mean update (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`) and for tangent space map
+        see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
         (see :func:`pyriemann.utils.tangent_space.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
@@ -661,7 +661,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
         Number of mixture components.
     metric : string | dict, default="riemann"
         Metric used for mean update (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`) and for tangent space map
+        see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
         (see :func:`pyriemann.utils.tangent_space.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
@@ -957,8 +957,8 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
     ----------
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
-        (see :func:`pyriemann.utils.distance.distance`).
+        see :func:`pyriemann.geometry.mean.gmean`) and for distance estimation
+        (see :func:`pyriemann.geometry.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
     threshold : float, default=3
@@ -1285,8 +1285,8 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
         of standard deviations from the mean of distances to the centroid.
     metric : string | dict | list, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
-        (see :func:`pyriemann.utils.distance.distance`).
+        see :func:`pyriemann.geometry.mean.gmean`) and for distance estimation
+        (see :func:`pyriemann.geometry.distance.distance`).
         The metric can be a single str;
         or a dict with two keys, "mean" and "distance",
         in order to pass different metrics for mean and distance;

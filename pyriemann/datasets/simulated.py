@@ -3,9 +3,9 @@ from sklearn.utils.validation import check_random_state
 
 from .sampling import sample_gaussian_spd
 from ..transfer import encode_domains
-from ..utils.mean import mean_riemann
-from ..utils.distance import distance_riemann
-from ..utils.base import ctranspose, invsqrtm, powm, sqrtm, expm
+from ..geometry.mean import mean_riemann
+from ..geometry.distance import distance_riemann
+from ..geometry.base import ctranspose, invsqrtm, powm, sqrtm, expm
 
 
 def _make_eyes(n_matrices, n_dim):

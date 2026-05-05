@@ -7,10 +7,10 @@ from scipy.stats import multivariate_normal
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_random_state
 
-from ..utils.base import sqrtm
-from ..utils.geodesic import geodesic
+from ..geometry.base import sqrtm
+from ..geometry.geodesic import geodesic
 from ..utils.test import is_sym_pos_semi_def as is_spsd
-from ..utils.tangentspace import exp_map_riemann, unupper
+from ..geometry.tangentspace import exp_map_riemann, unupper
 
 
 def _pdf_r(r, sigma):
@@ -597,7 +597,7 @@ class RandomOverSampler(BaseEstimator):
     ----------
     metric : string, default="riemann"
         Metric used for SPD/HPD matrices interpolation
-        (see :func:`pyriemann.utils.geodesic.geodesic`).
+        (see :func:`pyriemann.geometry.geodesic.geodesic`).
     sampling_strategy : str, default="auto"
         Specify the class targeted by the resampling. The number of matrices in
         the different classes will be equalized. Possible choices are:

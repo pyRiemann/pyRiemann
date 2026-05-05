@@ -623,7 +623,7 @@ Utils functions are low level functions that implement most base components of R
 
 Covariance processing
 ~~~~~~~~~~~~~~~~~~~~~
-.. currentmodule:: pyriemann.utils.covariance
+.. currentmodule:: pyriemann.geometry.covariance
 
 .. autosummary::
     :toctree: generated/
@@ -645,7 +645,7 @@ Covariance processing
 
 Distances
 ~~~~~~~~~~~~~~~~~~~~~~
-.. currentmodule:: pyriemann.utils.distance
+.. currentmodule:: pyriemann.geometry.distance
 
 .. autosummary::
     :toctree: generated/
@@ -671,7 +671,7 @@ Distances
 
 Means
 ~~~~~~~~~~~~~~~~~~~~~~
-.. currentmodule:: pyriemann.utils.mean
+.. currentmodule:: pyriemann.geometry.mean
 
 .. autosummary::
     :toctree: generated/
@@ -711,7 +711,7 @@ Medians
 
 Geodesics
 ~~~~~~~~~~~~~~~~~~~~~~
-.. currentmodule:: pyriemann.utils.geodesic
+.. currentmodule:: pyriemann.geometry.geodesic
 
 .. autosummary::
     :toctree: generated/
@@ -743,7 +743,7 @@ Kernels
 
 Tangent Space
 ~~~~~~~~~~~~~~~~~~~~~~
-.. currentmodule:: pyriemann.utils.tangentspace
+.. currentmodule:: pyriemann.geometry.tangentspace
 
 .. autosummary::
     :toctree: generated/
@@ -779,7 +779,7 @@ Tangent Space
 
 Base
 ~~~~~~~~~~~~~~~~~~~~~~
-.. currentmodule:: pyriemann.utils.base
+.. currentmodule:: pyriemann.geometry.base
 
 .. autosummary::
     :toctree: generated/
@@ -798,7 +798,7 @@ Base
 
 Aproximate Joint Diagonalization
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. currentmodule:: pyriemann.utils.ajd
+.. currentmodule:: pyriemann.geometry.ajd
 
 .. autosummary::
     :toctree: generated/

@@ -4,7 +4,7 @@ import warnings
 
 import numpy as np
 
-from ..utils.base import ctranspose, sqrtm, invsqrtm, logm, ddlogm
+from ..geometry.base import ctranspose, sqrtm, invsqrtm, logm, ddlogm
 from ..datasets import sample_gaussian_spd
 
 

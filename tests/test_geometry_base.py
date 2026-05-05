@@ -9,7 +9,7 @@ from pytest import approx
 from scipy.linalg import eigvalsh
 
 from conftest import assert_array_almost_equal
-from pyriemann.utils.base import (
+from pyriemann.geometry.base import (
     ctranspose,
     _eigvalsh,
     expm,

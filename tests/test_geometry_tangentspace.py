@@ -5,10 +5,10 @@ import pytest
 
 from conftest import approx, to_numpy
 from pyriemann.spatialfilters import Whitening
-from pyriemann.utils.distance import distance_riemann
-from pyriemann.utils.geodesic import geodesic
-from pyriemann.utils.mean import mean_riemann
-from pyriemann.utils.tangentspace import (
+from pyriemann.geometry.distance import distance_riemann
+from pyriemann.geometry.geodesic import geodesic
+from pyriemann.geometry.mean import mean_riemann
+from pyriemann.geometry.tangentspace import (
     exp_map,
     exp_map_euclid,
     exp_map_logchol,

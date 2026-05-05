@@ -3,9 +3,9 @@
 from array_api_compat import array_namespace as get_namespace
 
 from ._backend import _add_to_diagonal
-from .base import ctranspose, invsqrtm, logm
-from .mean import mean_riemann
-from .utils import check_function
+from ..geometry.base import ctranspose, invsqrtm, logm
+from ..geometry.mean import mean_riemann
+from ._check import check_function
 
 
 def kernel_euclid(X, Y=None, *, Cref=None, reg=1e-10):
@@ -178,7 +178,7 @@ def kernel_riemann(X, Y=None, *, Cref=None, reg=1e-10):
     Cref : None | ndarray, shape (n, n), default=None
         Reference SPD matrix.
         If None, Cref is calculated as the Riemannian mean of X, see
-        :func:`pyriemann.utils.mean.mean_riemann`.
+        :func:`pyriemann.geometry.mean.mean_riemann`.
     reg : float, default=1e-10
         When Y is None, regularization parameter to mitigate numerical errors
         in kernel matrix estimation, to provide a positive-definite kernel

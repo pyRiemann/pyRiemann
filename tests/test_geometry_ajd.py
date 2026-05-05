@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from conftest import approx, assert_array_equal
-from pyriemann.utils.ajd import ajd, rjd, ajd_pham, uwedge
+from pyriemann.geometry.ajd import ajd, rjd, ajd_pham, uwedge
 
 
 @pytest.mark.parametrize("kind", ["sym", "spd"])

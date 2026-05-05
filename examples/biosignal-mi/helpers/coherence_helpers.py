@@ -12,7 +12,7 @@ from sklearn.metrics import balanced_accuracy_score
 from sklearn.model_selection import StratifiedKFold
 from sklearn.preprocessing import LabelEncoder
 
-from pyriemann.utils.base import nearest_sym_pos_def
+from pyriemann.geometry.base import nearest_sym_pos_def
 
 
 class NearestSPD(TransformerMixin, BaseEstimator):

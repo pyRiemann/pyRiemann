@@ -12,7 +12,7 @@ from sklearn.pipeline import make_pipeline
 
 from pyriemann.estimation import Covariances
 from pyriemann.utils.kernel import kernel
-from pyriemann.utils.mean import gmean
+from pyriemann.geometry.mean import gmean
 from pyriemann.classification import (
     _mode_2d,
     MDM,

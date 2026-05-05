@@ -3,7 +3,7 @@ from numpy.testing import assert_array_equal
 import pytest
 
 from pyriemann.datasets import sample_gaussian_spd, RandomOverSampler
-from pyriemann.utils.distance import distance_riemann
+from pyriemann.geometry.distance import distance_riemann
 from pyriemann.utils.test import is_sym_pos_def as is_spd
 
 

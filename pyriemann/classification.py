@@ -12,11 +12,11 @@ from sklearn.pipeline import make_pipeline
 
 from ._base import SpdClassifMixin, SpdTransfMixin
 from .tangentspace import FGDA, TangentSpace
-from .utils.base import logm
+from .geometry.base import logm
 from .utils.kernel import kernel
-from .utils.mean import gmean
-from .utils.distance import distance
-from .utils.utils import check_metric, check_param_in_func
+from .geometry.mean import gmean
+from .geometry.distance import distance
+from .utils._check import check_metric, check_param_in_func
 
 
 def _mode_1d(X):
@@ -46,8 +46,8 @@ class MDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     ----------
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
-        (see :func:`pyriemann.utils.distance.distance`).
+        see :func:`pyriemann.geometry.mean.gmean`) and for distance estimation
+        (see :func:`pyriemann.geometry.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
         Typical usecase is to pass "logeuclid" metric for the "mean" in order
@@ -199,8 +199,8 @@ class FgMDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     ----------
     metric : string | dict, default="riemann"
         Metric used for reference matrix estimation (for the list of supported
-        metrics, see :func:`pyriemann.utils.mean.gmean`),
-        for distance estimation (see :func:`pyriemann.utils.distance.distance`)
+        metrics, see :func:`pyriemann.geometry.mean.gmean`),
+        for distance estimation (see :func:`pyriemann.geometry.distance.distance`)
         and for tangent space map
         (see :func:`pyriemann.utils.tangent_space.tangent_space`).
         The metric can be a dict with three keys, "mean", "dist" and "map" in
@@ -334,7 +334,7 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
     metric : string | dict, default="riemann"
         The type of metric used
         for reference matrix estimation (for the list of supported metrics
-        see :func:`pyriemann.utils.mean.gmean`) and for tangent space map
+        see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
         (see :func:`pyriemann.utils.tangent_space.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
@@ -452,8 +452,8 @@ class KNearestNeighbor(MDM):
         Number of neighbors.
     metric : string | dict, default="riemann"
         Metric used for means estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
-        (see :func:`pyriemann.utils.distance.distance`).
+        see :func:`pyriemann.geometry.mean.gmean`) and for distance estimation
+        (see :func:`pyriemann.geometry.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
     n_jobs : int, default=1
@@ -769,7 +769,7 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     metric : string, default="riemann"
         Metric used for distance estimation during prediction.
         For the list of supported metrics,
-        see :func:`pyriemann.utils.distance.distance`.
+        see :func:`pyriemann.geometry.distance.distance`.
 
     Attributes
     ----------
@@ -1228,8 +1228,8 @@ def class_distinctiveness(X, y, exponent=1, metric="riemann",
           within the classes.
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
-        (see :func:`pyriemann.utils.distance.distance`).
+        see :func:`pyriemann.geometry.mean.gmean`) and for distance estimation
+        (see :func:`pyriemann.geometry.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
     return_num_denom : bool, default=False

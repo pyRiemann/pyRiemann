@@ -465,10 +465,10 @@ def covariances(X, estimator="cov", **kwds):
     .. [cov] https://numpy.org/doc/stable/reference/generated/numpy.cov.html
     .. [lwf] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.ledoit_wolf.html
     .. [mcd] https://scikit-learn.org/stable/modules/generated/sklearn.covariance.MinCovDet.html
-    .. [mest] :func:`pyriemann.utils.covariance.covariance_mest`
+    .. [mest] :func:`pyriemann.geometry.covariance.covariance_mest`
     .. [oas] https://scikit-learn.org/stable/modules/generated/oas-function.html
-    .. [sch] :func:`pyriemann.utils.covariance.covariance_sch`
-    .. [scm] :func:`pyriemann.utils.covariance.covariance_scm`
+    .. [sch] :func:`pyriemann.geometry.covariance.covariance_sch`
+    .. [scm] :func:`pyriemann.geometry.covariance.covariance_scm`
     .. [comp] `Enhanced Covariance Matrix Estimators in Adaptive Beamforming
         <https://doi.org/10.1109/ICASSP.2007.366399>`_
         R. Abrahamsson, Y. Selen and P. Stoica. 2007 IEEE International
@@ -489,7 +489,7 @@ def covariances_EP(X, P, estimator="cov", **kwds):
         Multi-channel prototype.
     estimator : string | callable, default="cov"
         Covariance matrix estimator, see
-        :func:`pyriemann.utils.covariance.covariances`.
+        :func:`pyriemann.geometry.covariance.covariances`.
     **kwds : optional keyword parameters
         Any further parameters are passed directly to the covariance estimator.
 
@@ -531,7 +531,7 @@ def covariances_X(X, estimator="cov", alpha=0.2, **kwds):
         Multi-channel time-series.
     estimator : string | callable, default="cov"
         Covariance matrix estimator, see
-        :func:`pyriemann.utils.covariance.covariances`.
+        :func:`pyriemann.geometry.covariance.covariances`.
     alpha : float, default=0.2
         Regularization parameter (strictly positive).
     **kwds : optional keyword parameters
@@ -604,7 +604,7 @@ def block_covariances(X, blocks, estimator="cov", **kwds):
         List of block sizes.
     estimator : string | callable, default="cov"
         Covariance matrix estimator, see
-        :func:`pyriemann.utils.covariance.covariances`.
+        :func:`pyriemann.geometry.covariance.covariances`.
     **kwds : optional keyword parameters
         Any further parameters are passed directly to the covariance estimator.
 

@@ -9,8 +9,8 @@ from sklearn.utils.extmath import softmax
 
 from .utils.kernel import kernel
 from .classification import MDM
-from .utils.mean import gmean
-from .utils.utils import check_metric
+from .geometry.mean import gmean
+from .utils._check import check_metric
 
 
 class SVR(sklearnSVR):
@@ -177,8 +177,8 @@ class KNearestNeighborRegressor(RegressorMixin, MDM):
         Number of neighbors.
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
-        (see :func:`pyriemann.utils.distance.distance`).
+        see :func:`pyriemann.geometry.mean.gmean`) and for distance estimation
+        (see :func:`pyriemann.geometry.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
 
