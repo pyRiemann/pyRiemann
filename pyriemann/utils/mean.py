@@ -5,8 +5,8 @@ import warnings
 from ..geometry import mean as _moved
 
 warnings.warn(
-    "pyriemann.utils.mean is deprecated and will be removed in a future "
-    "release; use pyriemann.geometry.mean instead.",
+    "pyriemann.utils.mean is deprecated and will be removed in 0.14.0; "
+    "use pyriemann.geometry.mean instead.",
     DeprecationWarning,
     stacklevel=2,
 )

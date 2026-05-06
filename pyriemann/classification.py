@@ -11,12 +11,12 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 
 from ._base import SpdClassifMixin, SpdTransfMixin
-from .tangentspace import FGDA, TangentSpace
 from .geometry.base import logm
-from .utils.kernel import kernel
-from .geometry.mean import gmean
 from .geometry.distance import distance
+from .geometry.mean import gmean
+from .tangentspace import FGDA, TangentSpace
 from .utils._check import check_metric, check_param_in_func
+from .utils.kernel import kernel
 
 
 def _mode_1d(X):
@@ -200,7 +200,8 @@ class FgMDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     metric : string | dict, default="riemann"
         Metric used for reference matrix estimation (for the list of supported
         metrics, see :func:`pyriemann.geometry.mean.gmean`),
-        for distance estimation (see :func:`pyriemann.geometry.distance.distance`)
+        for distance estimation
+        (see :func:`pyriemann.geometry.distance.distance`)
         and for tangent space map
         (see :func:`pyriemann.utils.tangent_space.tangent_space`).
         The metric can be a dict with three keys, "mean", "dist" and "map" in

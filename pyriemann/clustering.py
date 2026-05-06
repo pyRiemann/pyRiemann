@@ -14,12 +14,15 @@ from ._base import SpdClassifMixin, SpdClustMixin, SpdTransfMixin
 from .classification import MDM
 from .datasets import sample_gaussian_spd
 from .geometry.covariance import covariance_scm
-from .geometry.distance import distance, pairwise_distance, distance_mahalanobis
-from .geometry.mean import gmean
+from .geometry.distance import (
+    distance,
+    pairwise_distance,
+    distance_mahalanobis,
+)
 from .geometry.geodesic import geodesic
-from .geometry.tangentspace import exp_map, log_map
+from .geometry.mean import gmean
+from .geometry.tangentspace import exp_map, log_map, tangent_space
 from .utils._check import check_metric, check_function, check_weights
-from .geometry.tangentspace import tangent_space
 
 
 def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):

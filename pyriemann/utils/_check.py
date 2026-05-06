@@ -1,6 +1,6 @@
 import inspect
 
-from pyriemann._helpers import (  # noqa: F401
+from .._helpers import (  # noqa: F401
     check_function,
     check_init,
     check_like,

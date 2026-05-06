@@ -5,8 +5,8 @@ import warnings
 from ..geometry import geodesic as _moved
 
 warnings.warn(
-    "pyriemann.utils.geodesic is deprecated and will be removed in a "
-    "future release; use pyriemann.geometry.geodesic instead.",
+    "pyriemann.utils.geodesic is deprecated and will be removed in "
+    "0.14.0; use pyriemann.geometry.geodesic instead.",
     DeprecationWarning,
     stacklevel=2,
 )
