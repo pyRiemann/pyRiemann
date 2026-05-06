@@ -39,9 +39,8 @@ _LAZY_MAP = {
 
 
 def __getattr__(name):
-    # Lazy re-exports from pyriemann.geometry to avoid a circular import:
-    # geometry.mean depends on pyriemann.utils._backend, which would otherwise
-    # require this __init__ to finish loading before geometry.mean does.
+    # Lazy re-exports from pyriemann.geometry to avoid eagerly loading the
+    # geometry subpackage when pyriemann.utils is imported.
     target = _LAZY_MAP.get(name)
     if target is None:
         raise AttributeError(

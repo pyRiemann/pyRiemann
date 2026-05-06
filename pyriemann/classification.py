@@ -13,9 +13,9 @@ from sklearn.pipeline import make_pipeline
 from ._base import SpdClassifMixin, SpdTransfMixin
 from .tangentspace import FGDA, TangentSpace
 from .geometry.base import logm
-from .utils.kernel import kernel
-from .geometry.mean import gmean
 from .geometry.distance import distance
+from .geometry.kernel import kernel
+from .geometry.mean import gmean
 from .utils._check import check_metric, check_param_in_func
 
 
@@ -200,7 +200,8 @@ class FgMDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     metric : string | dict, default="riemann"
         Metric used for reference matrix estimation (for the list of supported
         metrics, see :func:`pyriemann.geometry.mean.gmean`),
-        for distance estimation (see :func:`pyriemann.geometry.distance.distance`)
+        for distance estimation
+        (see :func:`pyriemann.geometry.distance.distance`)
         and for tangent space map
         (see :func:`pyriemann.utils.tangent_space.tangent_space`).
         The metric can be a dict with three keys, "mean", "dist" and "map" in
@@ -571,7 +572,7 @@ class SVC(sklearnSVC):
     ----------
     metric : string, default="riemann"
         Metric for kernel matrix computation. For the list of supported metrics
-        see :func:`pyriemann.utils.kernel.kernel`.
+        see :func:`pyriemann.geometry.kernel.kernel`.
     Cref : None | callable | ndarray, shape (n_channels, n_channels), \
             default=None
         Reference matrix for kernel matrix computation.
@@ -581,7 +582,8 @@ class SVC(sklearnSVC):
         calculate Cref.
     kernel_fct : None | "precomputed" | callable, default=None
         If None or "precomputed", the kernel matrix for datasets X and Y is
-        estimated according to ``pyriemann.utils.kernel(X, Y, Cref, metric)``.
+        estimated according to
+        ``pyriemann.geometry.kernel(X, Y, Cref, metric)``.
         If callable, the callable is passed as the kernel parameter to
         ``sklearn.svm.SVC()`` [2]_. The callable has to be of the form
         ``kernel(X, Y, Cref, metric)``.

@@ -7,8 +7,8 @@ from sklearn.metrics import r2_score
 from sklearn.svm import SVR as sklearnSVR
 from sklearn.utils.extmath import softmax
 
-from .utils.kernel import kernel
 from .classification import MDM
+from .geometry.kernel import kernel
 from .geometry.mean import gmean
 from .utils._check import check_metric
 
@@ -24,14 +24,14 @@ class SVR(sklearnSVR):
     ----------
     metric : string, default="riemann"
         Metric for kernel matrix computation. For the list of supported metrics
-        see :func:`pyriemann.utils.kernel.kernel`.
+        see :func:`pyriemann.geometry.kernel.kernel`.
     Cref : None | ndarray, shape (n_channels, n_channels), default=None
         Reference matrix for kernel matrix computation.
         If None, the mean of the training matrices according to the metric is
         used.
     kernel_fct : None | "precomputed" | callable, default=None
         If "precomputed", the kernel matrix for datasets X and Y is estimated
-        according to ``pyriemann.utils.kernel(X, Y, Cref, metric)``.
+        according to ``pyriemann.geometry.kernel(X, Y, Cref, metric)``.
         If callable, the callable is passed as the kernel parameter to
         ``sklearn.svm.SVC()`` [2]_. The callable has to be of the form
         ``kernel(X, Y, Cref, metric)``.

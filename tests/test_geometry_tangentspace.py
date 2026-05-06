@@ -36,7 +36,7 @@ from pyriemann.geometry.tangentspace import (
     transport_logeuclid,
     transport_riemann,
 )
-from pyriemann.utils.test import is_hermitian, is_real
+from pyriemann.geometry.test import is_hermitian, is_real
 
 metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
 

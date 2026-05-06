@@ -12,7 +12,7 @@ from pyriemann.geometry.covariance import (
     cross_spectrum, cospectrum, coherence,
     normalize, get_nondiag_weight, block_covariances, _complex_estimator
 )
-from pyriemann.utils.test import (
+from pyriemann.geometry.test import (
     is_real,
     is_hermitian,
     is_sym_pos_def,

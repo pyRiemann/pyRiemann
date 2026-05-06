@@ -11,7 +11,7 @@ from pyriemann.datasets.simulated import (
     make_outliers,
 )
 from pyriemann.geometry.base import ctranspose
-from pyriemann.utils.test import (
+from pyriemann.geometry.test import (
     is_real, is_sym, is_hermitian,
     is_sym_pos_def as is_spd,
     is_sym_pos_semi_def as is_spsd,

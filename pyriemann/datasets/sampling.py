@@ -9,8 +9,8 @@ from sklearn.utils import check_random_state
 
 from ..geometry.base import sqrtm
 from ..geometry.geodesic import geodesic
-from ..utils.test import is_sym_pos_semi_def as is_spsd
 from ..geometry.tangentspace import exp_map_riemann, unupper
+from ..geometry.test import is_sym_pos_semi_def as is_spsd
 
 
 def _pdf_r(r, sigma):

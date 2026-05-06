@@ -4,10 +4,10 @@ import warnings
 
 from array_api_compat import array_namespace as get_namespace
 
+from ._helpers import check_weights
 from .base import sqrtm, invsqrtm, logm, expm
 from .distance import distance
 from .mean import mean_euclid
-from pyriemann._helpers import check_weights
 
 
 def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):

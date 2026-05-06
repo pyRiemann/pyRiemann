@@ -30,7 +30,7 @@ from pyriemann.geometry.distance import (
 )
 from pyriemann.geometry.base import logm, invsqrtm, _eigvalsh
 from pyriemann.geometry.geodesic import geodesic
-from pyriemann.utils.test import is_sym, is_real_type
+from pyriemann.geometry.test import is_sym, is_real_type
 
 
 dists = [

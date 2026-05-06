@@ -8,7 +8,7 @@ from sklearn.pipeline import make_pipeline
 
 from pyriemann.estimation import Covariances
 from pyriemann.regression import SVR, KNearestNeighborRegressor
-from pyriemann.utils.kernel import kernel
+from pyriemann.geometry.kernel import kernel
 from pyriemann.geometry.mean import gmean
 
 

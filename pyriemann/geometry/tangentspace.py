@@ -8,8 +8,8 @@ from array_api_compat import (
     is_numpy_namespace,
 )
 
-from pyriemann._helpers import check_function, check_matrix_pair
-from pyriemann.utils._backend import diag_indices, tril_indices, triu_indices
+from ._backend import diag_indices, tril_indices, triu_indices
+from ._helpers import check_function, check_matrix_pair
 from .base import ctranspose, expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
 
 

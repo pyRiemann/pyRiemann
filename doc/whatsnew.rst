@@ -11,13 +11,17 @@ v0.12.dev
 ---------
 
 - Move geometry modules (``ajd``, ``base``, ``covariance``, ``distance``,
-  ``geodesic``, ``mean``, ``median``, ``tangentspace``) from ``pyriemann.utils``
-  to a new standalone ``pyriemann.geometry`` package. The old import paths
-  (e.g. ``pyriemann.utils.mean``) still work as backward-compatibility shims
-  but emit a ``DeprecationWarning``; rename to ``pyriemann.geometry.mean``.
-  Module ``pyriemann.utils.utils`` is also renamed to ``pyriemann.utils._check``
-  with the same shim+warning. Tests for moved modules are renamed
-  ``test_utils_*`` → ``test_geometry_*``.
+  ``geodesic``, ``kernel``, ``mean``, ``median``, ``tangentspace``, ``test``)
+  from ``pyriemann.utils`` to a new standalone ``pyriemann.geometry``
+  subpackage. The old import paths (e.g. ``pyriemann.utils.mean``,
+  ``pyriemann.utils.kernel``, ``pyriemann.utils.test``) still work as
+  backward-compatibility shims but emit a ``DeprecationWarning``; rename to
+  ``pyriemann.geometry.<module>``. The private ``pyriemann.utils._backend``
+  and ``pyriemann._helpers`` modules also moved into ``pyriemann.geometry``
+  so that the subpackage is fully standalone (no internal pyriemann
+  imports outside of itself). Module ``pyriemann.utils.utils`` is renamed to
+  ``pyriemann.utils._check`` with the same shim+warning. Tests for moved
+  modules are renamed ``test_utils_*`` → ``test_geometry_*``.
   :pr:`445` by :user:`bruAristimunha`
 
 - Deprecate ``covariances_X`` and ``cospectrum``.

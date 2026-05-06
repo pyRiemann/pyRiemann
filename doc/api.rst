@@ -4,9 +4,10 @@
 API reference
 =============
 
-pyRiemann provides two levels of API: **Modules** with scikit-learn compatible
-estimators and transformers, and **Utility Functions** implementing low-level
-Riemannian geometry operations.
+pyRiemann provides three levels of API: **Modules** with scikit-learn
+compatible estimators and transformers, **Geometry Functions** implementing
+low-level Riemannian geometry operations on SPD/HPD matrices, and **Utility
+Functions** for visualization and miscellaneous helpers.
 
 .. raw:: html
 
@@ -221,8 +222,8 @@ Riemannian geometry operations.
    </div>
 
    <div class="api-section-header">
-     <h2>Utility Functions</h2>
-     <p>Low-level Riemannian geometry functions for distances, means, geodesics, and matrix operations.</p>
+     <h2>Geometry Functions</h2>
+     <p>Low-level Riemannian geometry functions for distances, means, geodesics, kernels, and matrix operations on SPD/HPD matrices.</p>
    </div>
 
    <div class="api-card-grid">
@@ -389,6 +390,15 @@ Riemannian geometry operations.
        <div class="api-card-desc">Tests for symmetry, positive definiteness, and Hermitian properties.</div>
        <div class="api-card-footer">12 functions</div>
      </a>
+
+   </div>
+
+   <div class="api-section-header">
+     <h2>Utility Functions</h2>
+     <p>Visualization and miscellaneous helpers.</p>
+   </div>
+
+   <div class="api-card-grid">
 
      <a class="api-card card-utils" href="#viz-api">
        <div class="api-card-header">
@@ -614,10 +624,14 @@ Datasets
 
     RandomOverSampler
 
-Utils function
---------------
+Geometry Functions
+------------------
 
-Utils functions are low level functions that implement most base components of Riemannian geometry.
+Geometry functions are low-level building blocks that implement the core
+Riemannian geometry operations on SPD/HPD matrices (covariance estimation,
+distances, means, medians, geodesics, kernels, tangent space mappings, base
+matrix functions, approximate joint diagonalization, and matrix property
+predicates). They live in the standalone ``pyriemann.geometry`` subpackage.
 
 .. _covariance_api:
 
@@ -699,7 +713,7 @@ Means
 
 Medians
 ~~~~~~~~~~~~~~~~~~~~~~
-.. currentmodule:: pyriemann.utils
+.. currentmodule:: pyriemann.geometry.median
 
 .. autosummary::
     :toctree: generated/
@@ -729,7 +743,7 @@ Geodesics
 
 Kernels
 ~~~~~~~~~~~~~~~~~~~~~~
-.. currentmodule:: pyriemann.utils.kernel
+.. currentmodule:: pyriemann.geometry.kernel
 
 .. autosummary::
     :toctree: generated/
@@ -812,7 +826,7 @@ Aproximate Joint Diagonalization
 
 Matrix Tests
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-.. currentmodule:: pyriemann.utils.test
+.. currentmodule:: pyriemann.geometry.test
 
 .. autosummary::
     :toctree: generated/
@@ -829,6 +843,11 @@ Matrix Tests
     is_sym_pos_semi_def
     is_herm_pos_def
     is_herm_pos_semi_def
+
+Utility Functions
+-----------------
+
+Visualization and miscellaneous helpers.
 
 .. _viz_api:
 
