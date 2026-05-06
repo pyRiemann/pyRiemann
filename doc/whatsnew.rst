@@ -10,6 +10,16 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.12.dev
 ---------
 
+- Deprecate ``covariances_X`` and ``cospectrum``.
+  :pr:`442` by :user:`qbarthelemy`
+
+- Add `Python Array API <https://data-apis.org/array-api/>`_ support for NumPy/PyTorch
+  backend transparency in core utility modules (``base``, ``covariance``, ``distance``,
+  ``mean``, ``geodesic``, ``tangentspace``, ``ajd``, ``kernel``, ``median``), enabling
+  execution on both NumPy arrays and PyTorch tensors with optional GPU acceleration
+  and autograd support.
+  :pr:`433` by :user:`bruAristimunha`
+
 - Move geometry modules (``ajd``, ``base``, ``covariance``, ``distance``,
   ``geodesic``, ``kernel``, ``mean``, ``median``, ``tangentspace``, ``test``)
   from ``pyriemann.utils`` to a new standalone ``pyriemann.geometry``
@@ -23,16 +33,6 @@ v0.12.dev
   ``pyriemann.utils._check`` with the same shim+warning. Tests for moved
   modules are renamed ``test_utils_*`` → ``test_geometry_*``.
   :pr:`445` by :user:`bruAristimunha`
-
-- Deprecate ``covariances_X`` and ``cospectrum``.
-  :pr:`442` by :user:`qbarthelemy`
-
-- Add `Python Array API <https://data-apis.org/array-api/>`_ support for NumPy/PyTorch
-  backend transparency in core utility modules (``base``, ``covariance``, ``distance``,
-  ``mean``, ``geodesic``, ``tangentspace``, ``ajd``, ``kernel``, ``median``), enabling
-  execution on both NumPy arrays and PyTorch tensors with optional GPU acceleration
-  and autograd support.
-  :pr:`433` by :user:`bruAristimunha`
 
 v0.11 (April 2026)
 ------------------
