@@ -4,7 +4,6 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
 
 from conftest import approx, to_numpy
-from pyriemann.spatialfilters import Whitening
 from pyriemann.geometry.distance import distance_riemann
 from pyriemann.geometry.geodesic import geodesic
 from pyriemann.geometry.mean import mean_riemann
@@ -37,6 +36,7 @@ from pyriemann.geometry.tangentspace import (
     transport_riemann,
 )
 from pyriemann.geometry.test import is_hermitian, is_real
+from pyriemann.spatialfilters import Whitening
 
 metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
 

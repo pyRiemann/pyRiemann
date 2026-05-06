@@ -2,8 +2,8 @@ import numpy as np
 from numpy.testing import assert_array_almost_equal
 import pytest
 
-from pyriemann.spatialfilters import Whitening
 from pyriemann.geometry.mean import gmean
+from pyriemann.spatialfilters import Whitening
 
 
 pytestmark = pytest.mark.numpy_only

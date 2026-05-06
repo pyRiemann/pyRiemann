@@ -11,11 +11,11 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 
 from ._base import SpdClassifMixin, SpdTransfMixin
-from .tangentspace import FGDA, TangentSpace
 from .geometry.base import logm
 from .geometry.distance import distance
 from .geometry.kernel import kernel
 from .geometry.mean import gmean
+from .tangentspace import FGDA, TangentSpace
 from .utils._check import check_metric, check_param_in_func
 
 

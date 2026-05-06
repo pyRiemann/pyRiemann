@@ -1,11 +1,11 @@
 import numpy as np
 from sklearn.utils.validation import check_random_state
 
-from .sampling import sample_gaussian_spd
-from ..transfer import encode_domains
-from ..geometry.mean import mean_riemann
-from ..geometry.distance import distance_riemann
 from ..geometry.base import ctranspose, invsqrtm, powm, sqrtm, expm
+from ..geometry.distance import distance_riemann
+from ..geometry.mean import mean_riemann
+from ..transfer import encode_domains
+from .sampling import sample_gaussian_spd
 
 
 def _make_eyes(n_matrices, n_dim):

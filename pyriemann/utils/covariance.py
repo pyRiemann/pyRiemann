@@ -5,8 +5,8 @@ import warnings
 from ..geometry import covariance as _moved
 
 warnings.warn(
-    "pyriemann.utils.covariance is deprecated and will be removed in a "
-    "future release; use pyriemann.geometry.covariance instead.",
+    "pyriemann.utils.covariance is deprecated and will be removed in 0.14.0; "
+    "use pyriemann.geometry.covariance instead.",
     DeprecationWarning,
     stacklevel=2,
 )

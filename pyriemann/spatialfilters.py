@@ -5,12 +5,16 @@ import numpy as np
 from scipy.linalg import eigh, inv
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from .geometry.covariance import normalize, get_nondiag_weight, cov_est_functions
-from .geometry.mean import gmean
-from .utils._check import check_function
-from .geometry.ajd import ajd, ajd_pham
 from . import estimation as est
+from .geometry.ajd import ajd, ajd_pham
+from .geometry.covariance import (
+    normalize,
+    get_nondiag_weight,
+    cov_est_functions,
+)
+from .geometry.mean import gmean
 from .preprocessing import Whitening
+from .utils._check import check_function
 
 
 class Xdawn(TransformerMixin, BaseEstimator):

@@ -4,9 +4,14 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.covariance import shrunk_covariance
 from sklearn.metrics.pairwise import pairwise_kernels
 
+from .geometry.covariance import (
+    covariances,
+    covariances_EP,
+    cross_spectrum,
+    coherence,
+    block_covariances,
+)
 from .spatialfilters import Xdawn
-from .geometry.covariance import (covariances, covariances_EP, cross_spectrum,
-                                  coherence, block_covariances)
 
 
 def _nextpow2(i):

@@ -5,8 +5,8 @@ import warnings
 from ..geometry import ajd as _moved
 
 warnings.warn(
-    "pyriemann.utils.ajd is deprecated and will be removed in a future "
-    "release; use pyriemann.geometry.ajd instead.",
+    "pyriemann.utils.ajd is deprecated and will be removed in 0.14.0; "
+    "use pyriemann.geometry.ajd instead.",
     DeprecationWarning,
     stacklevel=2,
 )

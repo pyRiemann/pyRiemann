@@ -5,8 +5,8 @@ import warnings
 from ..geometry import tangentspace as _moved
 
 warnings.warn(
-    "pyriemann.utils.tangentspace is deprecated and will be removed in a "
-    "future release; use pyriemann.geometry.tangentspace instead.",
+    "pyriemann.utils.tangentspace is deprecated and will be removed in 0.14.0;"
+    " use pyriemann.geometry.tangentspace instead.",
     DeprecationWarning,
     stacklevel=2,
 )

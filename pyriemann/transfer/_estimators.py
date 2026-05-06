@@ -12,17 +12,17 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score, r2_score
 from sklearn.pipeline import Pipeline
 
-from ..optimization.grassmann import (
-    _get_rotation_manifold, _get_rotation_tangentspace
-)
-from ._tools import decode_domains
 from ..classification import MDM
-from ..preprocessing import Whitening
 from ..geometry.base import invsqrtm, powm, sqrtm
 from ..geometry.distance import distance
 from ..geometry.geodesic import geodesic
 from ..geometry.mean import gmean
+from ..optimization.grassmann import (
+    _get_rotation_manifold, _get_rotation_tangentspace
+)
+from ..preprocessing import Whitening
 from ..utils._check import check_weights, check_metric, check_param_in_func
+from ._tools import decode_domains
 
 
 ###############################################################################

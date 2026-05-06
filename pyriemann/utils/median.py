@@ -5,8 +5,8 @@ import warnings
 from ..geometry import median as _moved
 
 warnings.warn(
-    "pyriemann.utils.median is deprecated and will be removed in a future "
-    "release; use pyriemann.geometry.median instead.",
+    "pyriemann.utils.median is deprecated and will be removed in 0.14.0; "
+    "use pyriemann.geometry.median instead.",
     DeprecationWarning,
     stacklevel=2,
 )

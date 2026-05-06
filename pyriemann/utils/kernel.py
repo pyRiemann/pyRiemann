@@ -5,8 +5,8 @@ import warnings
 from ..geometry import kernel as _moved
 
 warnings.warn(
-    "pyriemann.utils.kernel is deprecated and will be removed in a future "
-    "release; use pyriemann.geometry.kernel instead.",
+    "pyriemann.utils.kernel is deprecated and will be removed in 0.14.0; "
+    "use pyriemann.geometry.kernel instead.",
     DeprecationWarning,
     stacklevel=2,
 )
