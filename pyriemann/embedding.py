@@ -10,8 +10,8 @@ from sklearn.manifold import spectral_embedding
 from sklearn.manifold._utils import _binary_search_perplexity
 
 from .geometry.distance import pairwise_distance
-from .utils.kernel import kernel as kernel_fct
 from .optimization.positive_definite import _get_tsne_embedding
+from .utils.kernel import kernel as kernel_fct
 
 
 class SpectralEmbedding(BaseEstimator):

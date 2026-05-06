@@ -2,8 +2,8 @@
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from .geometry.distance import distance
 from .classification import MDM
+from .geometry.distance import distance
 
 
 class ElectrodeSelection(TransformerMixin, BaseEstimator):

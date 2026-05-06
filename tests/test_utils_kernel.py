@@ -5,13 +5,13 @@ import pytest
 
 from conftest import assert_array_equal, assert_array_almost_equal
 from pyriemann.geometry.base import logm
+from pyriemann.geometry.mean import gmean
 from pyriemann.utils.kernel import (
     kernel,
     kernel_euclid,
     kernel_logeuclid,
     kernel_riemann
 )
-from pyriemann.geometry.mean import gmean
 from pyriemann.utils.test import is_sym_pos_semi_def as is_spsd
 
 metrics = ["euclid", "logeuclid", "riemann"]

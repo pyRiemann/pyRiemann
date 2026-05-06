@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.model_selection import cross_val_score
 
+from .classification import MDM
 from .geometry.distance import distance, pairwise_distance
 from .geometry.mean import gmean
 from .utils._check import check_metric
-from .classification import MDM
 
 
 def multiset_perm_number(y):

@@ -4,8 +4,8 @@ import warnings
 
 import numpy as np
 
-from ..geometry.base import ctranspose, sqrtm, invsqrtm, logm, ddlogm
 from ..datasets import sample_gaussian_spd
+from ..geometry.base import ctranspose, sqrtm, invsqrtm, logm, ddlogm
 
 
 def _symmetrize(X):

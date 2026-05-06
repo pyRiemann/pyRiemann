@@ -5,7 +5,7 @@ from array_api_compat import array_namespace as get_namespace, device as xpd
 from array_api_extra import expand_dims
 from scipy.stats import chi2
 
-from pyriemann._helpers import (
+from .._helpers import (
     check_function,
     check_init,
     check_weights,
@@ -13,7 +13,7 @@ from pyriemann._helpers import (
     is_real_type,
     is_square,
 )
-from pyriemann.utils._backend import (
+from ..utils._backend import (
     apply_xp_cov,
     diag_indices,
     hann_window,

@@ -2,9 +2,9 @@
 
 from array_api_compat import array_namespace as get_namespace
 
-from ._backend import _add_to_diagonal
 from ..geometry.base import ctranspose, invsqrtm, logm
 from ..geometry.mean import mean_riemann
+from ._backend import _add_to_diagonal
 from ._check import check_function
 
 

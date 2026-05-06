@@ -7,8 +7,8 @@ from array_api_compat import (
 )
 from sklearn.metrics import euclidean_distances
 
-from pyriemann._helpers import check_function, check_matrix_pair, is_real_type
-from pyriemann.utils._backend import diag_indices, torch, tril_indices
+from .._helpers import check_function, check_matrix_pair, is_real_type
+from ..utils._backend import diag_indices, torch, tril_indices
 from .base import _eigvalsh, invsqrtm, logm, powm, sqrtm
 
 

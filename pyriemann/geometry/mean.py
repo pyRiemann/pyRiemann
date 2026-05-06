@@ -6,13 +6,13 @@ from array_api_compat import array_namespace as get_namespace, device as xpd
 from array_api_extra import create_diagonal, nan_to_num
 import numpy as np
 
-from pyriemann._helpers import (
+from .._helpers import (
     check_function,
     check_init,
     check_weights,
     deprecated,
 )
-from pyriemann.utils._backend import diag_indices, nanmean, tril_indices
+from ..utils._backend import diag_indices, nanmean, tril_indices
 from .ajd import ajd_pham
 from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd
 from .distance import distance_riemann

@@ -13,8 +13,8 @@ from .geometry.covariance import (
     cov_est_functions,
 )
 from .geometry.mean import gmean
-from .utils._check import check_function
 from .preprocessing import Whitening
+from .utils._check import check_function
 
 
 class Xdawn(TransformerMixin, BaseEstimator):

@@ -10,9 +10,6 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.pipeline import make_pipeline
 
-from pyriemann.estimation import Covariances
-from pyriemann.utils.kernel import kernel
-from pyriemann.geometry.mean import gmean
 from pyriemann.classification import (
     _mode_2d,
     MDM,
@@ -25,6 +22,9 @@ from pyriemann.classification import (
     class_distinctiveness,
 )
 from pyriemann.datasets import make_gaussian_blobs
+from pyriemann.estimation import Covariances
+from pyriemann.geometry.mean import gmean
+from pyriemann.utils.kernel import kernel
 
 
 pytestmark = pytest.mark.numpy_only

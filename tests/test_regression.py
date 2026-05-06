@@ -7,9 +7,9 @@ from sklearn.model_selection import cross_val_score, KFold
 from sklearn.pipeline import make_pipeline
 
 from pyriemann.estimation import Covariances
+from pyriemann.geometry.mean import gmean
 from pyriemann.regression import SVR, KNearestNeighborRegressor
 from pyriemann.utils.kernel import kernel
-from pyriemann.geometry.mean import gmean
 
 
 pytestmark = pytest.mark.numpy_only

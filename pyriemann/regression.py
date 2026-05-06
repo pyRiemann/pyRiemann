@@ -7,10 +7,10 @@ from sklearn.metrics import r2_score
 from sklearn.svm import SVR as sklearnSVR
 from sklearn.utils.extmath import softmax
 
-from .utils.kernel import kernel
 from .classification import MDM
 from .geometry.mean import gmean
 from .utils._check import check_metric
+from .utils.kernel import kernel
 
 
 class SVR(sklearnSVR):
