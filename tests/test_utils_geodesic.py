@@ -189,6 +189,34 @@ def test_geodesic_riemann(kind, get_mats, rndstate):
     assert xp.linalg.det(G) == approx(det)
 
 
+@pytest.mark.parametrize("metric", metrics)
+def test_geodesic_alpha_array(metric, get_mats):
+    n_matrices, n_channels = 4, 3
+    A = get_mats(n_matrices, n_channels, "spd")
+    B = get_mats(n_matrices, n_channels, "spd")
+    alpha = np.array([[0.0], [0.3], [0.6], [1.0]])
+
+    G = geodesic(A, B, alpha, metric=metric)
+    G_ref = np.stack(
+        [
+            geodesic(A[i], B[i], alpha[i, 0], metric=metric)
+            for i in range(n_matrices)
+        ],
+        axis=0,
+    )
+    assert G == approx(G_ref)
+
+
+def test_geodesic_alpha_array_bad_shape(get_mats):
+    n_matrices, n_channels = 4, 3
+    A = get_mats(n_matrices, n_channels, "spd")
+    B = get_mats(n_matrices, n_channels, "spd")
+    alpha = np.array([0.0, 0.3, 0.6, 1.0])
+
+    with pytest.raises(ValueError, match=r"alpha must have shape"):
+        geodesic(A, B, alpha, metric="riemann")
+
+
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_geodesic_thompson(kind, get_mats, rndstate):
     """Equivalence with AIR geodesic for 2x2 matrices"""

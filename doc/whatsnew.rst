@@ -10,6 +10,10 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.12.dev
 ---------
 
+- Enhance :func:`pyriemann.utils.geodesic.geodesic` to accept ``alpha`` as an ndarray of shape ``(..., 1)``,
+  allowing a different geodesic position per stacked matrix pair.
+  :pr:`396` by :user:`Fashad-Ahmed`
+
 - Deprecate ``covariances_X`` and ``cospectrum``.
   :pr:`442` by :user:`qbarthelemy`
 
