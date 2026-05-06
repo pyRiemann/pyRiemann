@@ -432,17 +432,25 @@ def geodesic(A, B, alpha, metric="riemann"):
                 f"{alpha.shape}."
             )
 
-        A_flat = xp.reshape(A, (-1, *A.shape[-2:]))
-        B_flat = xp.reshape(B, (-1, *B.shape[-2:]))
-        alpha_flat = xp.reshape(alpha, (-1,))
-        C_flat = xp.stack(
-            [
-                geodesic_function(A_flat[i], B_flat[i], alpha_flat[i])
-                for i in range(A_flat.shape[0])
-            ],
-            axis=0,
-        )
-        return xp.reshape(C_flat, (*A.shape[:-2], *A.shape[-2:]))
+        metric_name = metric if isinstance(metric, str) else None
+        if metric_name in ("chol", "euclid", "logeuclid", "wasserstein"):
+            alpha = alpha[..., None]
+        elif metric_name in ("logchol", "riemann"):
+            pass
+        elif metric_name == "thompson":
+            alpha = alpha[..., 0]
+        else:
+            A_flat = xp.reshape(A, (-1, *A.shape[-2:]))
+            B_flat = xp.reshape(B, (-1, *B.shape[-2:]))
+            alpha_flat = xp.reshape(alpha, (-1,))
+            C_flat = xp.stack(
+                [
+                    geodesic_function(A_flat[i], B_flat[i], alpha_flat[i])
+                    for i in range(A_flat.shape[0])
+                ],
+                axis=0,
+            )
+            return xp.reshape(C_flat, (*A.shape[:-2], *A.shape[-2:]))
 
     C = geodesic_function(A, B, alpha)
     return C
