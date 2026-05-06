@@ -228,7 +228,7 @@ Functions** for visualization and miscellaneous helpers.
 
    <div class="api-card-grid">
 
-     <a class="api-card card-utils" href="#covariance-api">
+     <a class="api-card card-geometry" href="#covariance-api">
        <div class="api-card-header">
          <div class="api-card-icon">
            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
@@ -239,14 +239,14 @@ Functions** for visualization and miscellaneous helpers.
              <line x1="15" y1="3" x2="15" y2="21" stroke="currentColor" opacity="0.3"/>
            </svg>
          </div>
-         <span class="api-card-tag tag-utils">Utils</span>
+         <span class="api-card-tag tag-geometry">Geometry</span>
        </div>
        <div class="api-card-title">Covariance</div>
        <div class="api-card-desc">Covariance estimation, cross-spectrum, normalization, and processing.</div>
        <div class="api-card-footer">11 functions</div>
      </a>
 
-     <a class="api-card card-utils" href="#distance-api">
+     <a class="api-card card-geometry" href="#distance-api">
        <div class="api-card-header">
          <div class="api-card-icon">
            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
@@ -255,14 +255,14 @@ Functions** for visualization and miscellaneous helpers.
              <line x1="7.5" y1="12" x2="16.5" y2="12" stroke="currentColor" stroke-dasharray="3"/>
            </svg>
          </div>
-         <span class="api-card-tag tag-utils">Utils</span>
+         <span class="api-card-tag tag-geometry">Geometry</span>
        </div>
        <div class="api-card-title">Distances</div>
        <div class="api-card-desc">Riemann, LogEuclid, Wasserstein, and other SPD distance functions.</div>
        <div class="api-card-footer">14 functions</div>
      </a>
 
-     <a class="api-card card-utils" href="#mean-api">
+     <a class="api-card card-geometry" href="#mean-api">
        <div class="api-card-header">
          <div class="api-card-icon">
            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
@@ -273,14 +273,14 @@ Functions** for visualization and miscellaneous helpers.
              <circle cx="12" cy="13" r="3" stroke="currentColor" fill="currentColor" opacity="0.3"/>
            </svg>
          </div>
-         <span class="api-card-tag tag-utils">Utils</span>
+         <span class="api-card-tag tag-geometry">Geometry</span>
        </div>
        <div class="api-card-title">Means</div>
        <div class="api-card-desc">Riemannian, Euclidean, log-Euclidean, harmonic, and other mean estimators.</div>
        <div class="api-card-footer">16 functions</div>
      </a>
 
-     <a class="api-card card-utils" href="#median-api">
+     <a class="api-card card-geometry" href="#median-api">
        <div class="api-card-header">
          <div class="api-card-icon">
            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
@@ -291,14 +291,14 @@ Functions** for visualization and miscellaneous helpers.
              <circle cx="18" cy="16" r="1.5" fill="currentColor" opacity="0.4"/>
            </svg>
          </div>
-         <span class="api-card-tag tag-utils">Utils</span>
+         <span class="api-card-tag tag-geometry">Geometry</span>
        </div>
        <div class="api-card-title">Medians</div>
        <div class="api-card-desc">Euclidean and Riemannian geometric median estimators.</div>
        <div class="api-card-footer">2 functions</div>
      </a>
 
-     <a class="api-card card-utils" href="#geodesic-api">
+     <a class="api-card card-geometry" href="#geodesic-api">
        <div class="api-card-header">
          <div class="api-card-icon">
            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
@@ -307,14 +307,14 @@ Functions** for visualization and miscellaneous helpers.
              <circle cx="20" cy="6" r="2" fill="currentColor" opacity="0.5"/>
            </svg>
          </div>
-         <span class="api-card-tag tag-utils">Utils</span>
+         <span class="api-card-tag tag-geometry">Geometry</span>
        </div>
        <div class="api-card-title">Geodesics</div>
        <div class="api-card-desc">Shortest paths on the SPD manifold for various metrics.</div>
        <div class="api-card-footer">8 functions</div>
      </a>
 
-     <a class="api-card card-utils" href="#kernel-api">
+     <a class="api-card card-geometry" href="#kernel-api">
        <div class="api-card-header">
          <div class="api-card-icon">
            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
@@ -323,14 +323,14 @@ Functions** for visualization and miscellaneous helpers.
              <circle cx="12" cy="12" r="1" fill="currentColor"/>
            </svg>
          </div>
-         <span class="api-card-tag tag-utils">Utils</span>
+         <span class="api-card-tag tag-geometry">Geometry</span>
        </div>
        <div class="api-card-title">Kernels</div>
        <div class="api-card-desc">Riemannian, Euclidean, and log-Euclidean kernel functions.</div>
        <div class="api-card-footer">4 functions</div>
      </a>
 
-     <a class="api-card card-utils" href="#ts-base-api">
+     <a class="api-card card-geometry" href="#ts-base-api">
        <div class="api-card-header">
          <div class="api-card-icon">
            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
@@ -339,28 +339,28 @@ Functions** for visualization and miscellaneous helpers.
              <path d="M10 10 L14 10" stroke="currentColor" stroke-width="3"/>
            </svg>
          </div>
-         <span class="api-card-tag tag-utils">Utils</span>
+         <span class="api-card-tag tag-geometry">Geometry</span>
        </div>
        <div class="api-card-title">Tangent Space</div>
        <div class="api-card-desc">Exponential, logarithmic maps, and parallel transport operations.</div>
        <div class="api-card-footer">19 functions</div>
      </a>
 
-     <a class="api-card card-utils" href="#base-api">
+     <a class="api-card card-geometry" href="#base-api">
        <div class="api-card-header">
          <div class="api-card-icon">
            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
              <text x="4" y="17" font-size="14" font-weight="bold" fill="currentColor" font-family="serif" opacity="0.7">fx</text>
            </svg>
          </div>
-         <span class="api-card-tag tag-utils">Utils</span>
+         <span class="api-card-tag tag-geometry">Geometry</span>
        </div>
        <div class="api-card-title">Base</div>
        <div class="api-card-desc">Matrix exponential, logarithm, square root, and power functions.</div>
        <div class="api-card-footer">9 functions</div>
      </a>
 
-     <a class="api-card card-utils" href="#ajd-api">
+     <a class="api-card card-geometry" href="#ajd-api">
        <div class="api-card-header">
          <div class="api-card-icon">
            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
@@ -369,14 +369,14 @@ Functions** for visualization and miscellaneous helpers.
              <rect x="13" y="10" width="7" height="7" rx="1" stroke="currentColor" fill="currentColor" opacity="0.35"/>
            </svg>
          </div>
-         <span class="api-card-tag tag-utils">Utils</span>
+         <span class="api-card-tag tag-geometry">Geometry</span>
        </div>
        <div class="api-card-title">Approx. Joint Diag.</div>
        <div class="api-card-desc">Pham, RJD, and UWEDGE algorithms for joint diagonalization.</div>
        <div class="api-card-footer">4 functions</div>
      </a>
 
-     <a class="api-card card-utils" href="#mat-test-api">
+     <a class="api-card card-geometry" href="#mat-test-api">
        <div class="api-card-header">
          <div class="api-card-icon">
            <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
@@ -384,7 +384,7 @@ Functions** for visualization and miscellaneous helpers.
              <rect x="4" y="4" width="16" height="16" rx="2" stroke="currentColor" fill="none"/>
            </svg>
          </div>
-         <span class="api-card-tag tag-utils">Utils</span>
+         <span class="api-card-tag tag-geometry">Geometry</span>
        </div>
        <div class="api-card-title">Matrix Tests</div>
        <div class="api-card-desc">Tests for symmetry, positive definiteness, and Hermitian properties.</div>
