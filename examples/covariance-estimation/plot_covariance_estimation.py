@@ -23,7 +23,7 @@ from sklearn.pipeline import make_pipeline
 
 from pyriemann.classification import MDM
 from pyriemann.estimation import Covariances, Kernels
-from pyriemann.utils.distance import distance
+from pyriemann.geometry.distance import distance
 
 
 ###############################################################################

@@ -6,9 +6,9 @@ import pytest
 from scipy.stats import hmean, gmean as gmean_sp
 
 from conftest import to_backend, approx
-from pyriemann.utils.base import invsqrtm, logm, sqrtm
-from pyriemann.utils.geodesic import geodesic_riemann
-from pyriemann.utils.mean import (
+from pyriemann.geometry.base import invsqrtm, logm, sqrtm
+from pyriemann.geometry.geodesic import geodesic_riemann
+from pyriemann.geometry.mean import (
     mean_covariance,
     gmean,
     mean_ale,

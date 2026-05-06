@@ -2,8 +2,8 @@
 import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from .utils.distance import distance
 from .classification import MDM
+from .geometry.distance import distance
 
 
 class ElectrodeSelection(TransformerMixin, BaseEstimator):
@@ -21,8 +21,8 @@ class ElectrodeSelection(TransformerMixin, BaseEstimator):
         The number of electrode to keep in the final subset.
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
-        (see :func:`pyriemann.utils.distance.distance`).
+        see :func:`pyriemann.geometry.mean.gmean`) and for distance estimation
+        (see :func:`pyriemann.geometry.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
     n_jobs : int, default=1

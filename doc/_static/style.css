@@ -457,6 +457,10 @@ html {
     border-color: var(--pyriemann-teal);
 }
 
+.api-card.card-geometry:hover {
+    border-color: var(--pyriemann-gold);
+}
+
 .api-card-header {
     display: flex;
     align-items: center;
@@ -499,6 +503,16 @@ html {
     stroke: var(--pyriemann-teal);
 }
 
+.card-geometry .api-card-icon {
+    background: rgba(212, 168, 44, 0.14);
+    color: var(--pyriemann-gold);
+}
+
+.card-geometry .api-card-icon svg {
+    fill: var(--pyriemann-gold);
+    stroke: var(--pyriemann-gold);
+}
+
 .api-card-tag {
     font-size: 0.65rem;
     font-weight: 700;
@@ -518,6 +532,11 @@ html {
     color: var(--pyriemann-teal);
 }
 
+.tag-geometry {
+    background: rgba(212, 168, 44, 0.16);
+    color: #a07c1a;
+}
+
 .api-card-title {
     font-size: 1.05rem;
     font-weight: 600;
@@ -533,6 +552,10 @@ html {
 
 .card-utils:hover .api-card-title {
     color: var(--pyriemann-teal);
+}
+
+.card-geometry:hover .api-card-title {
+    color: var(--pyriemann-gold);
 }
 
 .api-card-desc {
@@ -570,6 +593,15 @@ html {
     border-color: var(--pyriemann-teal);
 }
 
+[data-theme="dark"] .api-card.card-geometry:hover {
+    border-color: var(--pyriemann-gold);
+}
+
+[data-theme="dark"] .tag-geometry {
+    background: rgba(212, 168, 44, 0.2);
+    color: var(--pyriemann-gold);
+}
+
 [data-theme="dark"] .api-card-title {
     color: #e0e0e0;
 }
@@ -589,6 +621,14 @@ html {
 
 [data-theme="dark"] .api-section-header p {
     color: #999;
+}
+
+/* When a card grid contains a single card (e.g. the lone Visualization
+   card under Utility Functions), constrain the grid to a single sized
+   column so the card doesn't sit orphaned in a 3-column layout. */
+.api-card-grid:has(> a.api-card:only-child) {
+    grid-template-columns: minmax(280px, 360px);
+    justify-content: start;
 }
 
 /* ---- Responsive ---- */

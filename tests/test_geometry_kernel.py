@@ -4,15 +4,15 @@ from numpy.testing import assert_raises
 import pytest
 
 from conftest import assert_array_equal, assert_array_almost_equal
-from pyriemann.utils.base import logm
-from pyriemann.utils.kernel import (
+from pyriemann.geometry.base import logm
+from pyriemann.geometry.kernel import (
     kernel,
     kernel_euclid,
     kernel_logeuclid,
     kernel_riemann
 )
-from pyriemann.utils.mean import gmean
-from pyriemann.utils.test import is_sym_pos_semi_def as is_spsd
+from pyriemann.geometry.mean import gmean
+from pyriemann.geometry.test import is_sym_pos_semi_def as is_spsd
 
 metrics = ["euclid", "logeuclid", "riemann"]
 

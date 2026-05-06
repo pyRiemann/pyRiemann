@@ -1,0 +1,1144 @@
+"""Means of SPD/HPD matrices."""
+
+import warnings
+
+from array_api_compat import array_namespace as get_namespace, device as xpd
+from array_api_extra import create_diagonal, nan_to_num
+import numpy as np
+
+from ._backend import diag_indices, nanmean, tril_indices
+from ._helpers import (
+    check_function,
+    check_init,
+    check_weights,
+    deprecated,
+)
+from .ajd import ajd_pham
+from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd
+from .distance import distance_riemann
+from .geodesic import geodesic_riemann, geodesic_thompson
+from .tangentspace import log_map_wasserstein, exp_map_wasserstein
+
+
+@_vectorize_nd(n_axes=3)
+def mean_ale(X, *, tol=10e-7, maxiter=50, sample_weight=None, init=None):
+    """AJD-based log-Euclidean (ALE) mean of SPD/HPD matrices.
+
+    Approximate joint diagonalization (AJD) based log-Euclidean (ALE) mean of
+    SPD/HPD matrices [1]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    tol : float, default=10e-7
+        Tolerance to stop the gradient descent.
+    maxiter : int, default=50
+        Maximum number of iterations.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+    init : None | ndarray, shape (n, n), default=None
+        A SPD/HPD matrix used to initialize the gradient descent.
+        If None, the joint diagonalizer of input matrices is used.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, n)
+        ALE mean.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.4
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    gmean
+
+    References
+    ----------
+    .. [1] `Approximate Joint Diagonalization and Geometric Mean of Symmetric
+        Positive Definite Matrices
+        <https://arxiv.org/abs/1505.07343>`_
+        M. Congedo, B. Afsari, A. Barachant, M. Moakher. PLOS ONE, 2015
+    """
+    xp = get_namespace(X)
+    n_matrices, n, _ = X.shape
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
+    if init is None:
+        B = ajd_pham(X)[0]
+    else:
+        B = check_init(init, n, like=X)
+
+    eye_n = xp.eye(n, dtype=X.real.dtype, device=xpd(X))
+    for _ in range(maxiter):
+        J = xp.tensordot(
+            sample_weight, logm(B @ X @ ctranspose(B)), axes=([0], [0]),
+        )
+        delta = xp.real(xp.linalg.diagonal(expm(J)))
+        B = (xp.abs(delta) ** -.5)[:, None] * B
+
+        crit = distance_riemann(eye_n, create_diagonal(delta))
+        if crit <= tol:
+            break
+    else:
+        warnings.warn("Convergence not reached", stacklevel=2)
+
+    J = xp.tensordot(
+        sample_weight, logm(B @ X @ ctranspose(B)), axes=([0], [0]),
+    )
+    A = xp.linalg.solve(B, eye_n)
+    M = A @ expm(J) @ ctranspose(A)
+    return M
+
+
+@_vectorize_nd(n_axes=3)
+def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
+    r"""Ando-Li-Mathias (ALM) mean of SPD/HPD matrices.
+
+    Ando-Li-Mathias (ALM) mean is computed recursively, generalizing from [1]_:
+
+    .. math::
+        \mathbf{M} = X_1^{\frac{1}{2}} (X_1^{-\frac{1}{2}}X_2^{\frac{1}{2}}
+                     X_1^{-\frac{1}{2}})^{\frac{1}{2}} X_1^{\frac{1}{2}}
+
+    and requiring a high number of iterations.
+    Extremely slow, due to the recursive formulation.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    tol : float, default=1e-14
+        Tolerance to stop the gradient descent.
+    maxiter : int, default=100
+        Maximum number of iterations.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, n)
+        ALM mean.
+
+    Notes
+    -----
+    .. versionadded:: 0.3
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    gmean
+
+    References
+    ----------
+    .. [1] `Geometric Means
+        <https://www.sciencedirect.com/science/article/pii/S0024379503008693>`_
+        T. Ando, C.-K. Li, and R. Mathias. Linear Algebra and its Applications.
+        Volume 385, July 2004, Pages 305-334.
+    """
+    xp = get_namespace(X)
+    n_matrices, _, _ = X.shape
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
+
+    if n_matrices == 1:
+        return X[0]
+
+    if n_matrices == 2:
+        alpha = sample_weight[1] / sample_weight[0] / 2
+        M = geodesic_riemann(X[0], X[1], alpha=alpha)
+        return M
+
+    M = X
+    M_iter = xp.zeros_like(M)
+    for _ in range(maxiter):
+        for h in range(n_matrices):
+            s = np.mod(np.arange(h, h + n_matrices - 1) + 1, n_matrices)
+            M_iter[h] = mean_alm(M[s], sample_weight=sample_weight[s])
+
+        norm_iter = xp.linalg.matrix_norm(M_iter[0] - M[0], ord=2)
+        norm_c = xp.linalg.matrix_norm(M[0], ord=2)
+        if norm_iter / norm_c < tol:
+            break
+        M = M_iter
+        M_iter = xp.zeros_like(M)
+    else:
+        warnings.warn("Convergence not reached", stacklevel=2)
+
+    return xp.mean(M_iter, axis=0)
+
+
+def mean_chol(X, sample_weight=None, **kwargs):
+    r"""Mean of SPD/HPD matrices according to the Cholesky metric.
+
+    Cholesky mean :math:`\mathbf{M}` is
+    :math:`\mathbf{M} = \mathbf{L} \mathbf{L}^H`,
+    where :math:`\mathbf{L}` is computed as [1]_:
+
+    .. math::
+        \mathbf{L} = \sum_i w_i \text{chol}(\mathbf{X}_i)
+
+    with :math:`w` being the weights which sum to 1.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, n)
+        Cholesky mean.
+
+    Notes
+    -----
+    .. versionadded:: 0.10
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    gmean
+
+    References
+    ----------
+    .. [1] `Non-Euclidean statistics for covariance matrices, with applications
+        to diffusion tensor imaging
+        <https://doi.org/10.1214/09-AOAS249>`_
+        I.L. Dryden, A. Koloydenko, D. Zhou.
+        Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
+    """
+    xp = get_namespace(X)
+    L = mean_euclid(xp.linalg.cholesky(X), sample_weight=sample_weight)
+    return L @ ctranspose(L)
+
+
+def mean_euclid(X, sample_weight=None, **kwargs):
+    r"""Mean of matrices according to the Euclidean metric.
+
+    Euclidean mean is also called arithmetic:
+
+    .. math::
+        \mathbf{M} = \sum_i w_i \ \mathbf{X}_i
+
+    with :math:`w` being the weights which sum to 1.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, m)
+        Set of matrices.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, m)
+        Euclidean mean.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    gmean
+    """
+    xp = get_namespace(X)
+    if sample_weight is None:
+        return xp.mean(X, axis=-3)
+    n_matrices = X.shape[-3]
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
+    return xp.tensordot(sample_weight, X, axes=([0], [-3]))
+
+
+def mean_harmonic(X, sample_weight=None, **kwargs):
+    r"""Harmonic mean of invertible matrices.
+
+    .. math::
+        \mathbf{M} = \left( \sum_i w_i \ {\mathbf{X}_i}^{-1} \right)^{-1}
+
+    with :math:`w` being the weights which sum to 1.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of invertible matrices.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, n)
+        Harmonic mean.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    gmean
+    """
+    xp = get_namespace(X)
+    eye_n = xp.eye(X.shape[-1], dtype=X.dtype, device=xpd(X))
+    X_inv = xp.linalg.solve(X, eye_n)
+    M_inv = mean_euclid(X_inv, sample_weight=sample_weight)
+    M = xp.linalg.solve(M_inv, eye_n)
+    return M
+
+
+def mean_kullback_sym(X, sample_weight=None, **kwargs):
+    """Mean of SPD/HPD matrices according to Kullback-Leibler divergence.
+
+    Symmetrized Kullback-Leibler mean is the geometric mean between the
+    Euclidean and the harmonic means [1]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, n)
+        Symmetrized Kullback-Leibler mean.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    gmean
+
+    References
+    ----------
+    .. [1] `Symmetric positive-definite matrices: From geometry to applications
+        and visualization
+        <https://link.springer.com/chapter/10.1007/3-540-31272-2_17>`_
+        M. Moakher and P. Batchelor. Visualization and Processing of Tensor
+        Fields, pp. 285-298, 2006
+    """
+    M_euclid = mean_euclid(X, sample_weight=sample_weight)
+    M_harmonic = mean_harmonic(X, sample_weight=sample_weight)
+    M = geodesic_riemann(M_euclid, M_harmonic, 0.5)
+    return M
+
+
+def mean_logchol(X, sample_weight=None, **kwargs):
+    r"""Mean of SPD/HPD matrices according to the log-Cholesky metric.
+
+    Log-Cholesky mean :math:`\mathbf{M}` is
+    :math:`\mathbf{M} = \mathbf{L} \mathbf{L}^H`,
+    where :math:`\mathbf{L}` is computed as Eq(4.3) in [1]_:
+
+    .. math::
+        \mathbf{L} = \sum_i w_i \text{lower}(\text{chol}(\mathbf{X}_i)) +
+        \exp \left( \sum_i w_i \log(\text{diag}(\text{chol}(\mathbf{X}_i)))
+        \right)
+
+    with :math:`w` being the weights which sum to 1.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, n)
+        Log-Cholesky mean.
+
+    Notes
+    -----
+    .. versionadded:: 0.7
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    gmean
+
+    References
+    ----------
+    .. [1] `Riemannian geometry of symmetric positive definite matrices via
+        Cholesky decomposition
+        <https://arxiv.org/pdf/1908.09326>`_
+        Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
+    """
+    xp = get_namespace(X)
+    n_matrices, n = X.shape[-3], X.shape[-1]
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
+
+    X_chol = xp.linalg.cholesky(X)
+    L = xp.zeros(X.shape[:-3] + X.shape[-2:], dtype=X.dtype, device=xpd(X))
+
+    tri0, tri1 = tril_indices(n, -1, like=X)
+    L[..., tri0, tri1] = xp.tensordot(
+        sample_weight, X_chol[..., tri0, tri1], axes=([0], [-2]),
+    )
+
+    diag0, diag1 = diag_indices(n, like=X)
+    L[..., diag0, diag1] = xp.exp(xp.tensordot(
+        sample_weight, xp.log(X_chol[..., diag0, diag1]), axes=([0], [-2]),
+    ))
+
+    return L @ ctranspose(L)
+
+
+@_vectorize_nd(n_axes=3)
+def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
+    r"""Mean of SPD/HPD matrices according to the log-det metric.
+
+    Log-det mean is obtained by an iterative procedure where the update is:
+
+    .. math::
+        \mathbf{M} = \left( \sum_i w_i \ \left( 0.5 \mathbf{M}
+                     + 0.5 \mathbf{X}_i \right)^{-1} \right)^{-1}
+
+    with :math:`w` being the weights which sum to 1.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    tol : float, default=10e-5
+        Tolerance to stop the gradient descent.
+    maxiter : int, default=50
+        Maximum number of iterations.
+    init : None | ndarray, shape (n, n), default=None
+        A SPD/HPD matrix used to initialize the gradient descent.
+        If None, the weighted Euclidean mean is used.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, n)
+        Log-det mean.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    gmean
+    """
+    xp = get_namespace(X)
+    n_matrices, n, _ = X.shape
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
+    if init is None:
+        M = mean_euclid(X, sample_weight=sample_weight)
+    else:
+        M = check_init(init, n, like=X)
+    eye_n = xp.eye(n, dtype=X.dtype, device=xpd(X))
+
+    for _ in range(maxiter):
+        X_inv = xp.linalg.solve(0.5 * X + 0.5 * M, eye_n)
+        J = xp.tensordot(sample_weight, X_inv, axes=([0], [0]))
+        Mnew = xp.linalg.solve(J, eye_n)
+
+        crit = xp.linalg.matrix_norm(Mnew - M, ord="fro")
+        M = Mnew
+        if crit <= tol:
+            break
+    else:
+        warnings.warn("Convergence not reached", stacklevel=2)
+
+    return M
+
+
+def mean_logeuclid(X, sample_weight=None, **kwargs):
+    r"""Mean of SPD/HPD matrices according to the log-Euclidean metric.
+
+    Log-Euclidean mean is [1]_:
+
+    .. math::
+        \mathbf{M} = \exp{ \left( \sum_i w_i \ \log{\mathbf{X}_i} \right) }
+
+    with :math:`w` being the weights which sum to 1.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, n)
+        Log-Euclidean mean.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    gmean
+
+    References
+    ----------
+    .. [1] `Geometric means in a novel vector space structure on symmetric
+        positive-definite matrices
+        <https://epubs.siam.org/doi/abs/10.1137/050637996?journalCode=sjmael>`_
+        V. Arsigny, P. Fillard, X. Pennec, and N. Ayache. SIAM Journal on
+        Matrix Analysis and Applications. Volume 29, Issue 1 (2007).
+    """
+    M = expm(mean_euclid(logm(X), sample_weight=sample_weight))
+    return M
+
+
+@_vectorize_nd(n_axes=3)
+def mean_power(X, p, *, sample_weight=None, zeta=10e-10, maxiter=100,
+               init=None):
+    r"""Power mean of SPD/HPD matrices.
+
+    Power mean of order :math:`p` is the solution of [1]_ [2]_:
+
+    .. math::
+        \mathbf{M} = \sum_i w_i \ \mathbf{M} \sharp_p \mathbf{X}_i
+
+    with :math:`\mathbf{w}` being the weights which sum to 1, and
+    :math:`\mathbf{A} \sharp_p \mathbf{B}` being the geodesic between
+    matrices :math:`\mathbf{A}` and :math:`\mathbf{B}`.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    p : float
+        Exponent, in [-1,+1]. For p=0, it returns
+        :func:`pyriemann.geometry.mean.mean_riemann`.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+    zeta : float, default=10e-10
+        Stopping criterion.
+    maxiter : int, default=100
+        Maximum number of iterations.
+    init : None | ndarray, shape (n, n), default=None
+        A SPD/HPD matrix used to initialize the gradient descent.
+        If None, the weighted power Euclidean mean is used.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, n)
+        Power mean.
+
+    Notes
+    -----
+    .. versionadded:: 0.3
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    gmean
+
+    References
+    ----------
+    .. [1] `Matrix Power means and the Karcher mean
+        <https://www.sciencedirect.com/science/article/pii/S0022123611004101>`_
+        Y. Lim and M. Palfia. Journal of Functional Analysis, Volume 262,
+        Issue 4, 15 February 2012, Pages 1498-1514.
+    .. [2] `Fixed Point Algorithms for Estimating Power Means of Positive
+        Definite Matrices
+        <https://hal.archives-ouvertes.fr/hal-01500514>`_
+        M. Congedo, A. Barachant, and R. Bhatia. IEEE Transactions on Signal
+        Processing, Volume 65, Issue 9, pp.2211-2220, May 2017
+    """
+    xp = get_namespace(X)
+    if not isinstance(p, (int, float)):
+        raise ValueError(f"Exponent p must be a scalar (Got {type(p)})")
+    if p < -1 or 1 < p:
+        raise ValueError("Exponent p must be in [-1,+1]")
+
+    if p == 1:
+        return mean_euclid(X, sample_weight=sample_weight)
+    if p == 0:
+        return mean_riemann(
+            X,
+            sample_weight=sample_weight,
+            init=init,
+            tol=zeta,
+            maxiter=maxiter,
+        )
+    if p == -1:
+        return mean_harmonic(X, sample_weight=sample_weight)
+
+    n_matrices, n, _ = X.shape
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
+    phi = 0.375 / np.abs(p)
+    if init is None:
+        G = powm(
+            xp.tensordot(sample_weight, powm(X, p), axes=([0], [0])), 1/p,
+        )
+    else:
+        G = check_init(init, n, like=X)
+    if p > 0:
+        K = invsqrtm(G)
+    else:
+        K = sqrtm(G)
+
+    eye_n, sqrt_n = xp.eye(n, dtype=X.dtype, device=xpd(X)), np.sqrt(n)
+    for _ in range(maxiter):
+        H = xp.tensordot(
+            sample_weight,
+            powm(K @ powm(X, np.sign(p)) @ ctranspose(K), np.abs(p)),
+            axes=([0], [0]),
+        )
+        K = powm(H, -phi) @ K
+
+        crit = xp.linalg.matrix_norm(H - eye_n) / sqrt_n
+        if crit <= zeta:
+            break
+    else:
+        warnings.warn("Convergence not reached", stacklevel=2)
+
+    M = ctranspose(K) @ K
+    if p > 0:
+        M = xp.linalg.solve(M, eye_n)
+
+    return M
+
+
+def mean_poweuclid(X, p, *, sample_weight=None, **kwargs):
+    r"""Mean of SPD/HPD matrices according to the power Euclidean metric.
+
+    Power Euclidean mean of order :math:`p` is [1]_:
+
+    .. math::
+        \mathbf{M} = \left( \sum_i w_i \ \mathbf{X}_i^p \right)^{1/p}
+
+    with :math:`w` being the weights which sum to 1.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    p : float
+        Exponent.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, n)
+        Power Euclidean mean.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    gmean
+
+    References
+    ----------
+    .. [1] `Power Euclidean metrics for covariance matrices with application to
+        diffusion tensor imaging
+        <https://arxiv.org/abs/1009.3045>`_
+        I.L. Dryden, X. Pennec, & J.M. Peyrat. arXiv, 2010.
+    """
+    if not isinstance(p, (int, float)):
+        raise ValueError(f"Exponent p must be a scalar (Got {type(p)})")
+
+    if p == 1:
+        return mean_euclid(X, sample_weight=sample_weight)
+    if p == 0:
+        return mean_logeuclid(X, sample_weight=sample_weight)
+    if p == -1:
+        return mean_harmonic(X, sample_weight=sample_weight)
+
+    M = powm(mean_euclid(powm(X, p), sample_weight=sample_weight), 1/p)
+    return M
+
+
+@_vectorize_nd(n_axes=3)
+def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
+    r"""Mean of SPD/HPD matrices according to the Riemannian metric.
+
+    The affine-invariant Riemannian mean minimizes the sum of squared
+    affine-invariant Riemannian distances :math:`d_R` to all SPD/HPD matrices
+    [1]_:
+
+    .. math::
+         \arg \min_{\mathbf{M}} \sum_i w_i \ d_R (\mathbf{M}, \mathbf{X}_i)^2
+
+    with :math:`w` being the weights which sum to 1.
+
+    For the convergence, the implemented stopping criterion comes from [2]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    tol : float, default=10e-9
+        Tolerance to stop the gradient descent.
+    maxiter : int, default=50
+        Maximum number of iterations.
+    init : None | ndarray, shape (n, n), default=None
+        A SPD/HPD matrix used to initialize the gradient descent.
+        If None, the weighted Euclidean mean is used.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, n)
+        Affine-invariant Riemannian mean.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    gmean
+
+    References
+    ----------
+    .. [1] `Principal geodesic analysis for the study of nonlinear statistics
+        of shape
+        <https://ieeexplore.ieee.org/document/1318725>`_
+        P.T. Fletcher, C. Lu, S. M. Pizer, S. Joshi.
+        IEEE Trans Med Imaging, 2004, 23(8), pp. 995-1005
+    .. [2] `Approximate Joint Diagonalization and Geometric Mean of Symmetric
+        Positive Definite Matrices
+        <https://arxiv.org/abs/1505.07343>`_
+        M. Congedo, B. Afsari, A. Barachant, M. Moakher. PLOS ONE, 2015
+    """
+    xp = get_namespace(X)
+    n_matrices, n, _ = X.shape
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
+    if init is None:
+        M = mean_euclid(X, sample_weight=sample_weight)
+    else:
+        M = check_init(init, n, like=X)
+
+    nu = 1.0
+    tau = np.finfo(np.float64).max
+    for _ in range(maxiter):
+        M12, Mm12 = sqrtm(M), invsqrtm(M)
+        J = xp.tensordot(
+            sample_weight, logm(Mm12 @ X @ Mm12), axes=([0], [0]),
+        )
+        M = M12 @ expm(nu * J) @ M12
+
+        crit = xp.linalg.matrix_norm(J, ord="fro")
+        h = nu * crit
+        if h < tau:
+            nu = 0.95 * nu
+            tau = h
+        else:
+            nu = 0.5 * nu
+        if crit <= tol or nu <= tol:
+            break
+    else:
+        warnings.warn("Convergence not reached", stacklevel=2)
+
+    return M
+
+
+@_vectorize_nd(n_axes=3)
+def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
+    """Mean of SPD/HPD matrices according to the Thompson metric.
+
+    The Thompson mean of SPD/HPD matrices is described in [1]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    tol : float, default=1e-6
+        Tolerance to stop the gradient descent.
+    maxiter : int, default=50
+        Maximum number of iterations.
+    init : None | ndarray, shape (n, n), default=None
+        A SPD/HPD matrix used to initialize the gradient descent.
+        If None, the weighted Euclidean mean is used.
+    sample_weight : None
+        Not used.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, n)
+        Thompson mean.
+
+    Notes
+    -----
+    .. versionadded:: 0.10
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    gmean
+
+    References
+    ----------
+    .. [1] `Differential geometry with extreme eigenvalues in the positive
+        semidefinite cone
+        <https://arxiv.org/pdf/2304.07347>`_
+        C. Mostajeran, N. Da Costa, G. Van Goffrier and R. Sepulchre.
+        SIAM Journal on Matrix Analysis and Applications, 2024
+    """
+    xp = get_namespace(X)
+    n_matrices, n, _ = X.shape
+    if init is None:
+        M = mean_euclid(X)
+    else:
+        M = check_init(init, n, like=X)
+
+    for i in range(maxiter):
+        Mnew = geodesic_thompson(M, X[i % n_matrices], 1 / (i + 2))
+
+        crit = xp.linalg.matrix_norm(Mnew - M, ord="fro")
+        M = Mnew
+        if crit <= tol:
+            break
+    else:
+        warnings.warn("Convergence not reached", stacklevel=2)
+
+    return M
+
+
+@_vectorize_nd(n_axes=3)
+def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
+    r"""Mean of SPD/HPD matrices according to the Wasserstein metric.
+
+    Wasserstein mean [1]_ is implemented as the inductive mean [2]_,
+    adapted to the same convergence criterion as the Riemannian mean.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    tol : float, default=10e-9
+        Tolerance to stop the gradient descent.
+    maxiter : int, default=50
+        Maximum number of iterations.
+    init : None | ndarray, shape (n, n), default=None
+        A SPD/HPD matrix used to initialize the gradient descent.
+        If None the weighted Euclidean mean is used.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, n)
+        Wasserstein mean.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    gmean
+
+    References
+    ----------
+    .. [1] `Barycenters in the Wasserstein space
+        <https://hal.science/hal-00637399/file/AC_bary_revis.pdf>`_
+        M. Agueh and G. Carlier. SIAM Journal on Mathematical Analysis, 2011
+    .. [2] `Barycenter Estimation of Positive Semi-Definite Matrices with
+        Bures-Wasserstein Distance
+        <https://arxiv.org/abs/2302.14618>`_
+        J. Zheng, H. Huang, Y. Yi, Y. Li, S.-C. Lin, ArXiv, 2023
+    """
+    xp = get_namespace(X)
+    n_matrices, n, _ = X.shape
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
+    if init is None:
+        init = mean_euclid(X, sample_weight=sample_weight)
+    else:
+        init = check_init(init, n, like=X)
+    M = init
+
+    for _ in range(maxiter):
+        X_ts = log_map_wasserstein(X, M)
+        J = xp.tensordot(sample_weight, X_ts, axes=([0], [0]))
+        M = exp_map_wasserstein(J, M)
+        crit = xp.linalg.matrix_norm(J)
+        if crit <= tol:
+            break
+    else:
+        warnings.warn("Convergence not reached", stacklevel=2)
+
+    return M
+
+
+###############################################################################
+
+
+mean_functions = {
+    "ale": mean_ale,
+    "alm": mean_alm,
+    "chol": mean_chol,
+    "euclid": mean_euclid,
+    "harmonic": mean_harmonic,
+    "kullback_sym": mean_kullback_sym,
+    "logdet": mean_logdet,
+    "logchol": mean_logchol,
+    "logeuclid": mean_logeuclid,
+    "power": mean_power,
+    "poweuclid": mean_poweuclid,
+    "riemann": mean_riemann,
+    "thompson": mean_thompson,
+    "wasserstein": mean_wasserstein,
+}
+
+
+def gmean(X, *args, metric="riemann", sample_weight=None, **kwargs):
+    """Mean of matrices according to a metric.
+
+    Compute the mean of a set of matrices according to a metric [1]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of matrices.
+    *args : tuple
+        The arguments passed to the sub function.
+    metric : string | callable, default="riemann"
+        Metric for mean estimation, can be:
+        "ale", "alm", "chol", "euclid", "harmonic", "identity", "kullback_sym",
+        "logchol", "logdet", "logeuclid", "riemann", "thompson", "wasserstein",
+        or a callable function.
+        If an exponent is given in args, it can be "power", "poweuclid".
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+    **kwargs : dict
+        The keyword arguments passed to the sub function.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, n)
+        Mean of matrices.
+
+    Notes
+    -----
+    .. versionchanged:: 0.11
+        Rename mean_covariance into gmean.
+
+    References
+    ----------
+    .. [1] `Review of Riemannian distances and divergences, applied to
+        SSVEP-based BCI
+        <https://hal.archives-ouvertes.fr/LISV/hal-03015762v1>`_
+        S. Chevallier, E. K. Kalunga, Q. Barthélemy, E. Monacelli.
+        Neuroinformatics, Springer, 2021, 19 (1), pp.93-106
+    """
+    mean_function = check_function(metric, mean_functions)
+    M = mean_function(
+        X,
+        *args,
+        sample_weight=sample_weight,
+        **kwargs,
+    )
+    return M
+
+
+@deprecated(
+    "mean_covariance() is deprecated and will be removed in 0.13.0; "
+    "please use gmean()."
+)
+def mean_covariance(X, *args, metric="riemann", sample_weight=None, **kwargs):
+    return gmean(X, *args, metric="riemann", sample_weight=None, **kwargs)
+
+
+###############################################################################
+
+
+def _get_mask_from_nan(X):
+    xp = get_namespace(X)
+    isnan = xp.isnan(X)
+    nan_col = xp.all(isnan, axis=0)
+    nan_row = xp.all(isnan, axis=1)
+    if not bool(xp.all(nan_col == nan_row)):
+        raise ValueError("NaN values are not symmetric.")
+    keep_col = ~nan_col
+    maskedX = X[keep_col, :][:, keep_col]
+    if bool(xp.any(xp.isnan(maskedX))):
+        raise ValueError("NaN values must fill rows and columns.")
+    eye = xp.eye(X.shape[0], dtype=X.dtype, device=xpd(X))
+    return eye[:, keep_col]
+
+
+def _get_masks_from_nan(X):
+    return [_get_mask_from_nan(x) for x in X]
+
+
+def _apply_masks(X, masks):
+    return [m.mT @ x @ m for x, m in zip(X, masks)]
+
+
+@_vectorize_nd(n_axes=3)
+def maskedmean_riemann(X, masks, *, tol=10e-9, maxiter=100, init=None,
+                       sample_weight=None):
+    """Masked Riemannian mean of SPD/HPD matrices.
+
+    Given masks defined as semi-orthogonal matrices, the masked Riemannian mean
+    of SPD/HPD matrices is obtained with a gradient descent minimizing the sum
+    of affine-invariant Riemannian distances between masked SPD/HPD matrices
+    and the masked mean [1]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    masks : list of n_matrices ndarray of shape (n, n_i), \
+            with different n_i, such that n_i <= n
+        Masks, defined as semi-orthogonal matrices. See [1]_.
+    tol : float, default=10e-9
+        Tolerance to stop the gradient descent.
+    maxiter : int, default=100
+        Maximum number of iterations.
+    init : None | ndarray, shape (n, n), default=None
+        A SPD/HPD matrix used to initialize the gradient descent.
+        If None, the Identity is used.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, n)
+        Masked Riemannian mean.
+
+    Notes
+    -----
+    .. versionadded:: 0.3
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    mean_riemann
+    gmean
+
+    References
+    ----------
+    .. [1] `Geodesically-convex optimization for averaging partially observed
+        covariance matrices
+        <https://hal.archives-ouvertes.fr/hal-02984423>`_
+        F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
+        Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
+    """
+    xp = get_namespace(X)
+    n_matrices, n, _ = X.shape
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
+    maskedX = _apply_masks(X, masks)
+    if init is None:
+        M = xp.eye(n, dtype=X.dtype, device=xpd(X))
+    else:
+        M = check_init(init, n, like=X)
+
+    nu = 1.0
+    tau = np.finfo(np.float64).max
+    for _ in range(maxiter):
+        maskedM = _apply_masks(xp.broadcast_to(M, (n_matrices, n, n)), masks)
+        J = xp.zeros((n, n), dtype=X.dtype, device=xpd(X))
+        for i in range(n_matrices):
+            M12, Mm12 = sqrtm(maskedM[i]), invsqrtm(maskedM[i])
+            tmp = M12 @ logm(Mm12 @ maskedX[i] @ Mm12) @ M12
+            J += sample_weight[i] * masks[i] @ tmp @ masks[i].T
+        M12, Mm12 = sqrtm(M), invsqrtm(M)
+        M = M12 @ expm(Mm12 @ (nu * J) @ Mm12) @ M12
+
+        crit = xp.linalg.matrix_norm(J, ord="fro")
+        h = nu * crit
+        if h < tau:
+            nu = 0.95 * nu
+            tau = h
+        else:
+            nu = 0.5 * nu
+        if crit <= tol or nu <= tol:
+            break
+    else:
+        warnings.warn("Convergence not reached", stacklevel=2)
+
+    return M
+
+
+@_vectorize_nd(n_axes=3)
+def nanmean_riemann(X, tol=10e-9, maxiter=100, init=None, sample_weight=None):
+    """Riemannian NaN-mean of SPD/HPD matrices.
+
+    The Riemannian NaN-mean is the masked Riemannian mean applied to SPD/HPD
+    matrices potentially corrupted by symmetric NaN values [1]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of SPD/HPD matrices, corrupted by symmetric NaN values [1]_.
+    tol : float, default=10e-9
+        Tolerance to stop the gradient descent.
+    maxiter : int, default=100
+        Maximum number of iterations.
+    init : None | ndarray, shape (n, n), default=None
+        A SPD/HPD matrix used to initialize the gradient descent.
+        If None, a regularized Euclidean NaN-mean is used.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (..., n, n)
+        Riemannian NaN-mean.
+
+    Notes
+    -----
+    .. versionadded:: 0.3
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    maskedmean_riemann
+    gmean
+
+    References
+    ----------
+    .. [1] `Geodesically-convex optimization for averaging partially observed
+        covariance matrices
+        <https://hal.archives-ouvertes.fr/hal-02984423>`_
+        F. Yger, S. Chevallier, Q. Barthélemy, and S. Sra. Asian Conference on
+        Machine Learning (ACML), Nov 2020, Bangkok, Thailand. pp.417 - 432.
+    """
+    xp = get_namespace(X)
+    _, n, _ = X.shape
+    if init is None:
+        eye = xp.eye(n, dtype=X.dtype, device=xpd(X))
+        init = nanmean(X, axis=0) + 1e-6 * eye
+    else:
+        init = check_init(init, n, like=X)
+
+    M = maskedmean_riemann(
+        nan_to_num(X),  # avoid nan contamination in matmul
+        _get_masks_from_nan(X),
+        tol=tol,
+        maxiter=maxiter,
+        init=init,
+        sample_weight=sample_weight,
+    )
+    return M

@@ -33,10 +33,10 @@ from pyriemann.transfer import (
     TLRegressor,
     MDWM,
 )
-from pyriemann.utils.distance import distance, distance_riemann
-from pyriemann.utils.mean import gmean, mean_riemann
-from pyriemann.utils.tangentspace import tangent_space
-from pyriemann.utils.utils import check_weights
+from pyriemann.geometry.distance import distance, distance_riemann
+from pyriemann.geometry.mean import gmean, mean_riemann
+from pyriemann.geometry.tangentspace import tangent_space
+from pyriemann.utils._check import check_weights
 
 rndstate = 1234
 

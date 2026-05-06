@@ -5,12 +5,16 @@ import numpy as np
 from scipy.linalg import eigh, inv
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from .utils.covariance import normalize, get_nondiag_weight, cov_est_functions
-from .utils.mean import gmean
-from .utils.utils import check_function
-from .utils.ajd import ajd, ajd_pham
 from . import estimation as est
+from .geometry.ajd import ajd, ajd_pham
+from .geometry.covariance import (
+    normalize,
+    get_nondiag_weight,
+    cov_est_functions,
+)
+from .geometry.mean import gmean
 from .preprocessing import Whitening
+from .utils._check import check_function
 
 
 class Xdawn(TransformerMixin, BaseEstimator):
@@ -31,7 +35,7 @@ class Xdawn(TransformerMixin, BaseEstimator):
         If None, all classes will be accounted.
     estimator : string, default="scm"
         Covariance matrix estimator, see
-        :func:`pyriemann.utils.covariance.covariances`.
+        :func:`pyriemann.geometry.covariance.covariances`.
     baseline_cov : None | ndarray, shape(n_channels, n_channels), default=None
         Covariance matrix to which the average signals are compared. If None,
         the baseline covariance is computed across all trials and time samples.
@@ -298,7 +302,7 @@ class CSP(BilinearFilter):
     metric : str, default="euclid"
         Metric used for the estimation of mean covariance matrices.
         For the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`.
+        see :func:`pyriemann.geometry.mean.gmean`.
     log : bool, default=True
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.
@@ -458,7 +462,7 @@ class SPoC(CSP):
     metric : str, default="euclid"
         Metric used for the estimation of mean covariance matrices.
         For the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`.
+        see :func:`pyriemann.geometry.mean.gmean`.
     log : bool, default=True
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.

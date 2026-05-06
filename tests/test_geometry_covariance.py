@@ -7,12 +7,12 @@ from scipy.linalg import block_diag
 from scipy.signal import welch, csd, coherence as coherence_sp
 
 from conftest import approx, assert_array_almost_equal, to_backend, to_numpy
-from pyriemann.utils.covariance import (
+from pyriemann.geometry.covariance import (
     covariances, covariance_scm, covariances_EP, covariances_X, eegtocov,
     cross_spectrum, cospectrum, coherence,
     normalize, get_nondiag_weight, block_covariances, _complex_estimator
 )
-from pyriemann.utils.test import (
+from pyriemann.geometry.test import (
     is_real,
     is_hermitian,
     is_sym_pos_def,

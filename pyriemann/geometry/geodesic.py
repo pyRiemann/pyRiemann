@@ -1,0 +1,420 @@
+"""Geodesics for SPD/HPD matrices."""
+
+from array_api_compat import array_namespace as get_namespace
+
+from ._backend import diag_indices, tril_indices
+from ._helpers import check_function, check_matrix_pair
+from .base import ctranspose, _eigvalsh, sqrtm, invsqrtm, powm, logm, expm
+
+
+def geodesic_chol(A, B, alpha=0.5):
+    r"""Cholesky geodesic between SPD/HPD matrices.
+
+    The matrix at position :math:`\alpha` on the Cholesky geodesic
+    between two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is
+    :math:`\mathbf{C} = \mathbf{L} \mathbf{L}^H`,
+    where :math:`\mathbf{L}` is computed as [1]_:
+
+    .. math::
+        \mathbf{L} = (1-\alpha) \text{chol}(\mathbf{A}) +
+                     \alpha \text{chol}(\mathbf{B})
+
+    :math:`\mathbf{C}` is equal to :math:`\mathbf{A}` if :math:`\alpha` = 0,
+    and :math:`\mathbf{B}` if :math:`\alpha` = 1.
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices.
+    alpha : float, default=0.5
+        Position on the geodesic.
+
+    Returns
+    -------
+    C : ndarray, shape (..., n, n)
+        SPD/HPD matrices on the Cholesky geodesic.
+
+    Notes
+    -----
+    .. versionadded:: 0.10
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    geodesic
+
+    References
+    ----------
+    .. [1] `Non-Euclidean statistics for covariance matrices, with applications
+        to diffusion tensor imaging
+        <https://doi.org/10.1214/09-AOAS249>`_
+        I.L. Dryden, A. Koloydenko, D. Zhou.
+        Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
+    """
+    xp = get_namespace(A, B)
+    geo = (1 - alpha) * xp.linalg.cholesky(A) + alpha * xp.linalg.cholesky(B)
+    return geo @ ctranspose(geo)
+
+
+def geodesic_euclid(A, B, alpha=0.5):
+    r"""Euclidean geodesic between matrices.
+
+    The matrix at position :math:`\alpha` on the Euclidean geodesic
+    between two matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is:
+
+    .. math::
+        \mathbf{C} = (1-\alpha) \mathbf{A} + \alpha \mathbf{B}
+
+    :math:`\mathbf{C}` is equal to :math:`\mathbf{A}` if :math:`\alpha` = 0,
+    and :math:`\mathbf{B}` if :math:`\alpha` = 1.
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, m)
+        First matrices.
+    B : ndarray, shape (..., n, m)
+        Second matrices.
+    alpha : float, default=0.5
+        Position on the geodesic.
+
+    Returns
+    -------
+    C : ndarray, shape (..., n, m)
+        Matrices on the Euclidean geodesic.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    geodesic
+    """
+    return (1 - alpha) * A + alpha * B
+
+
+def geodesic_logchol(A, B, alpha=0.5):
+    r"""Log-Cholesky geodesic between SPD/HPD matrices.
+
+    The matrix at position :math:`\alpha` on the log-Cholesky geodesic
+    between two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is:
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices.
+    alpha : float, default=0.5
+        Position on the geodesic.
+
+    Returns
+    -------
+    C : ndarray, shape (..., n, n)
+        SPD/HPD matrices on the log-Cholesky geodesic.
+
+    Notes
+    -----
+    .. versionadded:: 0.7
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    geodesic
+
+    References
+    ----------
+    .. [1] `Riemannian geometry of symmetric positive definite matrices via
+        Cholesky decomposition
+        <https://arxiv.org/pdf/1908.09326>`_
+        Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
+    """
+    xp = get_namespace(A, B)
+    A_chol, B_chol = xp.linalg.cholesky(A), xp.linalg.cholesky(B)
+
+    geo = xp.zeros_like(A)
+
+    tri0, tri1 = tril_indices(A_chol.shape[-1], -1, like=A_chol)
+    geo[..., tri0, tri1] = (1 - alpha) * A_chol[..., tri0, tri1] + \
+        alpha * B_chol[..., tri0, tri1]
+
+    diag0, diag1 = diag_indices(A_chol.shape[-1], like=A_chol)
+    geo[..., diag0, diag1] = A_chol[..., diag0, diag1] ** (1 - alpha) * \
+        B_chol[..., diag0, diag1] ** alpha
+
+    return geo @ ctranspose(geo)
+
+
+def geodesic_logeuclid(A, B, alpha=0.5):
+    r"""Log-Euclidean geodesic between SPD/HPD matrices.
+
+    The matrix at position :math:`\alpha` on the log-Euclidean geodesic
+    between two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is:
+
+    .. math::
+        \mathbf{C} = \exp \left( (1-\alpha) \log(\mathbf{A})
+                     + \alpha \log(\mathbf{B}) \right)
+
+    :math:`\mathbf{C}` is equal to :math:`\mathbf{A}` if :math:`\alpha` = 0,
+    and :math:`\mathbf{B}` if :math:`\alpha` = 1.
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices.
+    alpha : float, default=0.5
+        Position on the geodesic.
+
+    Returns
+    -------
+    C : ndarray, shape (..., n, n)
+        SPD/HPD matrices on the log-Euclidean geodesic.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    geodesic
+
+    References
+    ----------
+    .. [1] `Geometric means in a novel vector space structure on symmetric
+        positive-definite matrices
+        <https://epubs.siam.org/doi/abs/10.1137/050637996>`_
+        V. Arsigny, P. Fillard, X. Pennec, N. Ayache.
+        SIAM J Matrix Anal Appl, 2007, 29 (1), pp. 328-347
+    """
+    return expm((1 - alpha) * logm(A) + alpha * logm(B))
+
+
+def geodesic_riemann(A, B, alpha=0.5):
+    r"""Affine-invariant Riemannian geodesic between SPD/HPD matrices.
+
+    The matrix at position :math:`\alpha` on the affine-invariant Riemannian
+    geodesic between two SPD/HPD matrices :math:`\mathbf{A}` and
+    :math:`\mathbf{B}` is:
+
+    .. math::
+        \mathbf{C} = \mathbf{A}^{1/2} \left( \mathbf{A}^{-1/2} \mathbf{B}
+                     \mathbf{A}^{-1/2} \right)^\alpha \mathbf{A}^{1/2}
+
+    :math:`\mathbf{C}` is equal to :math:`\mathbf{A}` if :math:`\alpha` = 0,
+    and :math:`\mathbf{B}` if :math:`\alpha` = 1.
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices.
+    alpha : float, default=0.5
+        Position on the geodesic.
+
+    Returns
+    -------
+    C : ndarray, shape (..., n, n)
+        SPD/HPD matrices on the affine-invariant Riemannian geodesic.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    geodesic
+
+    References
+    ----------
+    .. [1] `Riemannian geometry and matrix geometric means
+        <https://www.sciencedirect.com/science/article/pii/S0024379505004350>`_
+        R. Bhatia and J. Holbrook.
+        Linear Algebra and its Applications, 2006
+    """
+    sA, isA = sqrtm(A), invsqrtm(A)
+    C = sA @ powm(isA @ B @ isA, alpha) @ sA
+    return C
+
+
+def geodesic_thompson(A, B, alpha=0.5):
+    r"""Thompson geodesic between SPD/HPD matrices.
+
+    The matrix at position :math:`\alpha` on a possible Thompson geodesic
+    between two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is
+    given in [1]_.
+
+    :math:`\mathbf{C}` is equal to :math:`\mathbf{A}` if :math:`\alpha` = 0,
+    and :math:`\mathbf{B}` if :math:`\alpha` = 1.
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices.
+    alpha : float, default=0.5
+        Position on the geodesic.
+
+    Returns
+    -------
+    C : ndarray, shape (..., n, n)
+        SPD/HPD matrices on the Thompson geodesic.
+
+    Notes
+    -----
+    .. versionadded:: 0.10
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    geodesic
+
+    References
+    ----------
+    .. [1] `Differential geometry with extreme eigenvalues in the positive
+        semidefinite cone
+        <https://arxiv.org/pdf/2304.07347>`_
+        C. Mostajeran, N. Da Costa, G. Van Goffrier and R. Sepulchre.
+        SIAM Journal on Matrix Analysis and Applications, 2024
+    """
+    xp = check_matrix_pair(A, B, require_square=True)
+    E = _eigvalsh(B, A)
+    Emin, Emax = xp.min(E, axis=-1), xp.max(E, axis=-1)
+    Emin_a, Emax_a = Emin ** alpha, Emax ** alpha
+
+    equal = xp.isclose(Emin, Emax)
+    # safe denominator to avoid division by zero when Emin ≈ Emax
+    den = xp.where(equal, xp.ones_like(Emin), Emax - Emin)
+    b = (Emax_a - Emin_a)[..., None, None]
+    a = (Emax * Emin_a - Emin * Emax_a)[..., None, None]
+    c = b * B + a * A
+    C = c / den[..., None, None]
+
+    # when Emin ≈ Emax, geodesic simplifies to scaling
+    C = xp.where(equal[..., None, None], Emin_a[..., None, None] * A, C)
+    return C
+
+
+def geodesic_wasserstein(A, B, alpha=0.5):
+    r"""Wasserstein geodesic between SPD/HPD matrices.
+
+    The matrix at position :math:`\alpha` on the Wasserstein geodesic between
+    two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is
+    given in [1]_:
+
+    .. math::
+        \mathbf{C} = (1-\alpha)^2\mathbf{A} + \alpha^2\mathbf{B} +
+          \alpha(1-\alpha)((\mathbf{AB})^{1/2} + (\mathbf{BA})^{1/2})
+
+    :math:`\mathbf{C}` is equal to :math:`\mathbf{A}` if :math:`\alpha` = 0,
+    and :math:`\mathbf{B}` if :math:`\alpha` = 1.
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First SPD/HPD matrices.
+    B : ndarray, shape (..., n, n)
+        Second SPD/HPD matrices.
+    alpha : float, default=0.5
+        Position on the geodesic.
+
+    Returns
+    -------
+    C : ndarray, shape (..., n, n)
+        SPD/HPD matrices on the Wasserstein geodesic.
+
+    Notes
+    -----
+    .. versionadded:: 0.8
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    geodesic
+
+    References
+    ----------
+    .. [1] `Wasserstein Riemannian geometry of Gaussian densities
+        <https://link.springer.com/article/10.1007/s41884-018-0014-4>`_
+        L. Malagò, L. Montrucchio, G. Pistone.
+        Information Geometry, 2018, 1, pp. 137–179.
+    """
+    A12 = sqrtm(A)
+    A12inv = invsqrtm(A)
+    AB12 = A12 @ sqrtm(A12 @ B @ A12) @ A12inv
+    return (1-alpha)**2 * A + alpha**2 * B + \
+        alpha*(1-alpha) * (AB12 + ctranspose(AB12))
+
+
+###############################################################################
+
+
+geodesic_functions = {
+    "chol": geodesic_chol,
+    "euclid": geodesic_euclid,
+    "logchol": geodesic_logchol,
+    "logeuclid": geodesic_logeuclid,
+    "riemann": geodesic_riemann,
+    "thompson": geodesic_thompson,
+    "wasserstein": geodesic_wasserstein,
+}
+
+
+def geodesic(A, B, alpha, metric="riemann"):
+    r"""Geodesic between matrices according to a metric.
+
+    Return the matrix at the position alpha on the geodesic between matrices
+    A and B according to a metric.
+
+    :math:`\mathbf{C}` is equal to :math:`\mathbf{A}` if :math:`\alpha` = 0,
+    and :math:`\mathbf{B}` if :math:`\alpha` = 1.
+
+    Parameters
+    ----------
+    A : ndarray, shape (..., n, n)
+        First matrices.
+    B : ndarray, shape (..., n, n)
+        Second matrices.
+    alpha : float
+        Position on the geodesic.
+    metric : string | callable, default="riemann"
+        Metric used for geodesic, can be:
+        "chol", "euclid", "logchol", "logeuclid", "riemann", "thompson",
+        "wasserstein",
+        or a callable function.
+
+    Returns
+    -------
+    C : ndarray, shape (..., n, n)
+        Matrices on the geodesic.
+
+    Notes
+    -----
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
+
+    See Also
+    --------
+    geodesic_chol
+    geodesic_euclid
+    geodesic_logchol
+    geodesic_logeuclid
+    geodesic_riemann
+    geodesic_thompson
+    geodesic_wasserstein
+    """
+    geodesic_function = check_function(metric, geodesic_functions)
+    C = geodesic_function(A, B, alpha)
+    return C

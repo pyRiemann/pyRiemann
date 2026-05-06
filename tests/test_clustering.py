@@ -13,7 +13,7 @@ from pyriemann.clustering import (
     Potato,
     PotatoField,
 )
-from pyriemann.utils.tangentspace import tangent_space
+from pyriemann.geometry.tangentspace import tangent_space
 
 
 pytestmark = pytest.mark.numpy_only

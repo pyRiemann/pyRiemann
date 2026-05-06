@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 from conftest import approx, to_backend
-from pyriemann.utils.median import (
+from pyriemann.geometry.median import (
     median_euclid,
     median_riemann,
 )

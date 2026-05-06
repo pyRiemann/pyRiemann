@@ -1,9 +1,9 @@
-"""Tests for pyriemann.utils._backend module."""
+"""Tests for pyriemann.geometry._backend module."""
 
 import numpy as np
 
 from conftest import to_backend, to_numpy
-from pyriemann.utils._backend import (
+from pyriemann.geometry._backend import (
     as_numpy,
     from_numpy,
     diag_indices,
