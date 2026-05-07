@@ -42,7 +42,7 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         The type of metric used
         for reference matrix estimation (for the list of supported metrics
         see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
-        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
     tsupdate : bool, default=False
@@ -224,7 +224,7 @@ class FGDA(TransformerMixin, BaseEstimator):
         The type of metric used
         for reference matrix estimation (for the list of supported metrics
         see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
-        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
     tsupdate : bool, default=False

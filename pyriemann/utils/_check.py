@@ -1,6 +1,6 @@
 import inspect
 
-from ..geometry._helpers import (  # noqa: F401
+from ..geometry._check import (  # noqa: F401
     check_function,
     check_init,
     check_like,

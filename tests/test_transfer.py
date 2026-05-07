@@ -20,6 +20,9 @@ from pyriemann.classification import (
     SVC,
     MeanField,
 )
+from pyriemann.geometry.distance import distance, distance_riemann
+from pyriemann.geometry.mean import gmean, mean_riemann
+from pyriemann.geometry.tangentspace import tangent_space
 from pyriemann.regression import KNearestNeighborRegressor, SVR
 from pyriemann.transfer import (
     decode_domains,
@@ -33,9 +36,6 @@ from pyriemann.transfer import (
     TLRegressor,
     MDWM,
 )
-from pyriemann.geometry.distance import distance, distance_riemann
-from pyriemann.geometry.mean import gmean, mean_riemann
-from pyriemann.geometry.tangentspace import tangent_space
 from pyriemann.utils._check import check_weights
 
 rndstate = 1234

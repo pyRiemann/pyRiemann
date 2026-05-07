@@ -1,6 +1,3 @@
-from .docs import deprecated  # noqa: F401
-
-
 __all__ = [
     "gmean",
     "mean_ale",

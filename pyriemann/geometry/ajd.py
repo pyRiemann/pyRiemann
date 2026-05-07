@@ -5,7 +5,7 @@ import warnings
 from array_api_compat import array_namespace as get_namespace, device as xpd
 
 from ._backend import _add_to_diagonal
-from ._helpers import check_function, check_init, check_weights
+from ._check import check_function, check_init, check_weights
 
 
 def _arange(*args):

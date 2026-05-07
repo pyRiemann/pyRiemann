@@ -10,12 +10,12 @@ from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 
-from ._base import SpdClassifMixin, SpdTransfMixin
 from .geometry.base import logm
 from .geometry.distance import distance
 from .geometry.kernel import kernel
 from .geometry.mean import gmean
 from .tangentspace import FGDA, TangentSpace
+from .utils._base import SpdClassifMixin, SpdTransfMixin
 from .utils._check import check_metric, check_param_in_func
 
 
@@ -203,7 +203,7 @@ class FgMDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         for distance estimation
         (see :func:`pyriemann.geometry.distance.distance`)
         and for tangent space map
-        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
         The metric can be a dict with three keys, "mean", "dist" and "map" in
         order to pass different metrics.
     tsupdate : bool, default=False
@@ -336,7 +336,7 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
         The type of metric used
         for reference matrix estimation (for the list of supported metrics
         see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
-        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
     tsupdate : bool, default=False

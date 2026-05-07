@@ -11,9 +11,7 @@ import array_api_compat.numpy as _xpnp
 from array_api_compat import (
     array_namespace as get_namespace,
     device as xpd,
-    is_torch_namespace,
 )
-import numpy as np
 
 
 # ---------------------------------------------------------------------------
@@ -204,49 +202,6 @@ def check_init(init, n, *, like=None):
             f"Should be ({n},{n}) but got {init.shape}."
         )
     return init
-
-
-# ---------------------------------------------------------------------------
-# Matrix property predicates
-# ---------------------------------------------------------------------------
-
-def is_square(X):
-    """Check if matrices are square.
-
-    Parameters
-    ----------
-    X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
-
-    Returns
-    -------
-    ret : bool
-        True if matrices are square.
-    """
-    return X.ndim >= 2 and X.shape[-2] == X.shape[-1]
-
-
-def is_real_type(X):
-    """Check if matrices are real type.
-
-    Parameters
-    ----------
-    X : ndarray, shape (..., n, m)
-        The set of matrices.
-
-    Returns
-    -------
-    ret : bool
-        True if matrices are real type.
-
-    Notes
-    -----
-    .. versionadded:: 0.6
-    """
-    xp = get_namespace(X)
-    if is_torch_namespace(xp):
-        return not X.dtype.is_complex
-    return np.isrealobj(X)
 
 
 # ---------------------------------------------------------------------------

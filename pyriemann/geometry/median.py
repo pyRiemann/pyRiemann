@@ -4,7 +4,7 @@ import warnings
 
 from array_api_compat import array_namespace as get_namespace
 
-from ._helpers import check_weights
+from ._check import check_weights
 from .base import sqrtm, invsqrtm, logm, expm
 from .distance import distance
 from .mean import mean_euclid

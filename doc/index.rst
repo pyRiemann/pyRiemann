@@ -9,7 +9,7 @@ Riemannian Geometry for Machine Learning
 -----------------------------------------
 
 Machine learning for multivariate data through the Riemannian geometry
-of symmetric positive definite matrices.
+of positive definite matrices.
 
 .. raw:: html
 
@@ -73,15 +73,15 @@ classification, regression, and clustering.
 **Key features:**
 
 - **Riemannian Geometry** -- Leverage distances, means, and tangent space
-  projections on the SPD manifold.
+  projections on the manifold of SPD/HPD matrices.
 - **scikit-learn Compatible** -- All estimators follow the scikit-learn API.
   Build pipelines, use cross-validation, and grid search out of the box.
 - **Brain-Computer Interfaces** -- State-of-the-art processing and
   classification of EEG, MEG, and fNIRS signals.
-- **Remote Sensing** -- Apply Riemannian methods to SAR image classification.
+- **Remote Sensing** -- Apply Riemannian clustering to radar image segmentation.
 - **Transfer Learning** -- Domain adaptation tools for cross-session and
   cross-subject generalization.
-- **NumPy and PyTorch Backends** -- Core utility functions support both
+- **NumPy and PyTorch Backends** -- Core geometry functions support both
   backends transparently through the
   `Python Array API <https://data-apis.org/array-api/>`_, enabling optional
   GPU acceleration and autograd when PyTorch tensors are passed in.

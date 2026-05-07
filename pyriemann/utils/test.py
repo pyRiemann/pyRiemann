@@ -5,8 +5,8 @@ import warnings
 from ..geometry import test as _moved
 
 warnings.warn(
-    "pyriemann.utils.test is deprecated and will be removed in a future "
-    "release; use pyriemann.geometry.test instead.",
+    "pyriemann.utils.test is deprecated and will be removed in 0.14.0; "
+    "use pyriemann.geometry.test instead.",
     DeprecationWarning,
     stacklevel=2,
 )

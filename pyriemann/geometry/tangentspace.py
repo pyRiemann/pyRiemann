@@ -9,7 +9,7 @@ from array_api_compat import (
 )
 
 from ._backend import diag_indices, tril_indices, triu_indices
-from ._helpers import check_function, check_matrix_pair
+from ._check import check_function, check_matrix_pair
 from .base import ctranspose, expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
 
 

@@ -13,16 +13,11 @@ from ._backend import (
     ledoit_wolf,
     oas,
 )
-from ._helpers import (
-    check_function,
-    check_init,
-    check_weights,
-    deprecated,
-    is_real_type,
-    is_square,
-)
+from ._check import check_function, check_init, check_weights
+from ._docs import deprecated
 from .base import ctranspose, _vectorize_nd
 from .distance import distance_mahalanobis
+from .test import is_real_type, is_square
 
 
 def _cov(X, **kwds):

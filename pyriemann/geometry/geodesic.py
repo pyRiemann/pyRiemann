@@ -3,7 +3,7 @@
 from array_api_compat import array_namespace as get_namespace
 
 from ._backend import diag_indices, tril_indices
-from ._helpers import check_function, check_matrix_pair
+from ._check import check_function, check_matrix_pair
 from .base import ctranspose, _eigvalsh, sqrtm, invsqrtm, powm, logm, expm
 
 

@@ -4,10 +4,11 @@
 API reference
 =============
 
-pyRiemann provides three levels of API: **Modules** with scikit-learn
-compatible estimators and transformers, **Geometry Functions** implementing
-low-level Riemannian geometry operations on SPD/HPD matrices, and **Utility
-Functions** for visualization and miscellaneous helpers.
+pyRiemann provides a three-part API:
+**Modules** with scikit-learn compatible estimators and transformers,
+**Geometry Functions** implementing low-level Riemannian geometry operations
+on SPD/HPD matrices, and 
+**Utility Functions** for visualization and miscellaneous helpers.
 
 .. raw:: html
 
@@ -342,7 +343,7 @@ Functions** for visualization and miscellaneous helpers.
          <span class="api-card-tag tag-geometry">Geometry</span>
        </div>
        <div class="api-card-title">Tangent Space</div>
-       <div class="api-card-desc">Exponential, logarithmic maps, and parallel transport operations.</div>
+       <div class="api-card-desc">Exponential, logarithmic maps, inner products and parallel transports.</div>
        <div class="api-card-footer">19 functions</div>
      </a>
 

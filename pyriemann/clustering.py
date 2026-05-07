@@ -10,7 +10,6 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.cluster import KMeans as sklearnKMeans
 from sklearn.utils.validation import check_random_state
 
-from ._base import SpdClassifMixin, SpdClustMixin, SpdTransfMixin
 from .classification import MDM
 from .datasets import sample_gaussian_spd
 from .geometry.covariance import covariance_scm
@@ -22,6 +21,7 @@ from .geometry.distance import (
 from .geometry.geodesic import geodesic
 from .geometry.mean import gmean
 from .geometry.tangentspace import exp_map, log_map, tangent_space
+from .utils._base import SpdClassifMixin, SpdClustMixin, SpdTransfMixin
 from .utils._check import check_metric, check_function, check_weights
 
 
@@ -558,7 +558,7 @@ class Gaussian():
     metric : string | dict, default="riemann"
         Metric used for mean update (for the list of supported metrics,
         see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
-        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
 
@@ -665,7 +665,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
     metric : string | dict, default="riemann"
         Metric used for mean update (for the list of supported metrics,
         see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
-        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
     weights_init : None | ndarray, shape (n_components,), defaut=None

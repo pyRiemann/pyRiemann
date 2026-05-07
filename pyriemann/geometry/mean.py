@@ -7,12 +7,8 @@ from array_api_extra import create_diagonal, nan_to_num
 import numpy as np
 
 from ._backend import diag_indices, nanmean, tril_indices
-from ._helpers import (
-    check_function,
-    check_init,
-    check_weights,
-    deprecated,
-)
+from ._check import check_function, check_init, check_weights
+from ._docs import deprecated
 from .ajd import ajd_pham
 from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd
 from .distance import distance_riemann
