@@ -217,6 +217,39 @@ def test_geodesic_alpha_array_bad_shape(get_mats):
         geodesic(A, B, alpha, metric="riemann")
 
 
+@pytest.mark.parametrize(
+    "geo",
+    [
+        geodesic_chol,
+        geodesic_euclid,
+        geodesic_logchol,
+        geodesic_logeuclid,
+        geodesic_riemann,
+        geodesic_thompson,
+        geodesic_wasserstein,
+    ],
+)
+def test_geodesic_alpha_array_direct(geo, get_mats):
+    """Direct geodesic calls must accept ndarray-valued alpha.
+
+    This mirrors the `geodesic(...)` API contract where alpha has shape
+    (..., 1), i.e. one alpha per stacked input matrix.
+    """
+    n_matrices, n_channels = 4, 3
+    A = get_mats(n_matrices, n_channels, "spd")
+    B = get_mats(n_matrices, n_channels, "spd")
+    alpha = np.array([[0.0], [0.3], [0.6], [1.0]])
+
+    G = geo(A, B, alpha)
+    xp = get_namespace(A, B)
+
+    G_ref = xp.stack(
+        [geo(A[i], B[i], alpha[i, 0]) for i in range(n_matrices)],
+        axis=0,
+    )
+    assert G == approx(G_ref)
+
+
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_geodesic_thompson(kind, get_mats, rndstate):
     """Equivalence with AIR geodesic for 2x2 matrices"""

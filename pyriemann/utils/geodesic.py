@@ -58,6 +58,12 @@ def geodesic_chol(A, B, alpha=0.5):
         Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
     """
     xp = get_namespace(A, B)
+    if hasattr(alpha, "ndim"):
+        alpha = xp.asarray(alpha, device=xpd(A))
+        # API contract: alpha is expected as shape (..., 1)
+        # Expand to (..., 1, 1) so it broadcasts over matrix dims.
+        if alpha.ndim == A.ndim - 1 and alpha.shape[-1] == 1:
+            alpha = alpha[..., None]
     geo = (1 - alpha) * xp.linalg.cholesky(A) + alpha * xp.linalg.cholesky(B)
     return geo @ ctranspose(geo)
 
@@ -97,6 +103,13 @@ def geodesic_euclid(A, B, alpha=0.5):
     --------
     geodesic
     """
+    xp = get_namespace(A, B)
+    if hasattr(alpha, "ndim"):
+        alpha = xp.asarray(alpha, device=xpd(A))
+        # API contract: alpha is expected as shape (..., 1)
+        # Expand to (..., 1, 1) so it broadcasts over the last two dims.
+        if alpha.ndim == A.ndim - 1 and alpha.shape[-1] == 1:
+            alpha = alpha[..., None]
     return (1 - alpha) * A + alpha * B
 
 
@@ -138,6 +151,8 @@ def geodesic_logchol(A, B, alpha=0.5):
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
     xp = get_namespace(A, B)
+    if hasattr(alpha, "ndim"):
+        alpha = xp.asarray(alpha, device=xpd(A))
     A_chol, B_chol = xp.linalg.cholesky(A), xp.linalg.cholesky(B)
 
     geo = xp.zeros_like(A)
@@ -197,6 +212,13 @@ def geodesic_logeuclid(A, B, alpha=0.5):
         V. Arsigny, P. Fillard, X. Pennec, N. Ayache.
         SIAM J Matrix Anal Appl, 2007, 29 (1), pp. 328-347
     """
+    xp = get_namespace(A, B)
+    if hasattr(alpha, "ndim"):
+        alpha = xp.asarray(alpha, device=xpd(A))
+        # API contract: alpha is expected as shape (..., 1)
+        # Expand to (..., 1, 1) so it broadcasts over matrix dims.
+        if alpha.ndim == A.ndim - 1 and alpha.shape[-1] == 1:
+            alpha = alpha[..., None]
     return expm((1 - alpha) * logm(A) + alpha * logm(B))
 
 
@@ -244,6 +266,9 @@ def geodesic_riemann(A, B, alpha=0.5):
         R. Bhatia and J. Holbrook.
         Linear Algebra and its Applications, 2006
     """
+    xp = get_namespace(A, B)
+    if hasattr(alpha, "ndim"):
+        alpha = xp.asarray(alpha, device=xpd(A))
     sA, isA = sqrtm(A), invsqrtm(A)
     C = sA @ powm(isA @ B @ isA, alpha) @ sA
     return C
@@ -292,6 +317,12 @@ def geodesic_thompson(A, B, alpha=0.5):
         SIAM Journal on Matrix Analysis and Applications, 2024
     """
     xp = check_matrix_pair(A, B, require_square=True)
+    if hasattr(alpha, "ndim"):
+        alpha = xp.asarray(alpha, device=xpd(A))
+        # API contract: alpha is expected as shape (..., 1), but
+        # Thompson geodesic uses eigenvalues of shape (...), so squeeze.
+        if alpha.ndim == A.ndim - 1 and alpha.shape[-1] == 1:
+            alpha = alpha[..., 0]
     E = _eigvalsh(B, A)
     Emin, Emax = xp.min(E, axis=-1), xp.max(E, axis=-1)
     Emin_a, Emax_a = Emin ** alpha, Emax ** alpha
@@ -354,6 +385,13 @@ def geodesic_wasserstein(A, B, alpha=0.5):
         L. Malagò, L. Montrucchio, G. Pistone.
         Information Geometry, 2018, 1, pp. 137–179.
     """
+    xp = get_namespace(A, B)
+    if hasattr(alpha, "ndim"):
+        alpha = xp.asarray(alpha, device=xpd(A))
+        # API contract: alpha is expected as shape (..., 1)
+        # Expand to (..., 1, 1) so it broadcasts over matrix dims.
+        if alpha.ndim == A.ndim - 1 and alpha.shape[-1] == 1:
+            alpha = alpha[..., None]
     A12 = sqrtm(A)
     A12inv = invsqrtm(A)
     AB12 = A12 @ sqrtm(A12 @ B @ A12) @ A12inv
