@@ -7,8 +7,9 @@ from scipy.stats import multivariate_normal
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_random_state
 
-from ..utils.base import sqrtm
+from ..utils.base import ctranspose, sqrtm
 from ..utils.geodesic import geodesic
+from ..utils.test import is_herm_pos_def as is_hpd
 from ..utils.test import is_sym_pos_semi_def as is_spsd
 from ..utils.tangentspace import exp_map_riemann, unupper
 
@@ -342,7 +343,7 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
         positive definite matrices
         <https://hal.archives-ouvertes.fr/hal-01710191>`_
         S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton. IEEE Trans Inf
-        Theory, vol. 63, pp. 2153–2170, 2017.
+        Theory, vol. 63, pp. 2153-2170, 2017.
     """
     if sampling_method not in ["slice", "rejection", "auto"]:
         raise ValueError(f"Unknown sampling method {sampling_method}, "
@@ -368,11 +369,12 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
     return r_samples
 
 
-def _sample_parameter_U(n_samples, n_dim, random_state=None):
+def _sample_parameter_U(n_samples, n_dim, random_state=None,
+                        is_complex=False):
     """Sample the U parameters of a Riemannian Gaussian distribution.
 
-    Sample the eigenvectors of a SPD matrix following a Riemannian Gaussian
-    distribution.
+    Sample the eigenvectors of a SPD or HPD matrix following a Riemannian
+    Gaussian distribution.
 
     See https://arxiv.org/pdf/1507.01760.pdf for the mathematical details.
 
@@ -381,20 +383,26 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
     n_samples : int
         Number of samples to generate.
     n_dim : int
-        Dimensionality of the SPD matrices to be sampled.
+        Dimensionality of the matrices to be sampled.
     random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
+    is_complex : bool, default=False
+        If True, generate complex-valued unitary matrices for HPD sampling.
 
     Returns
     -------
-    u_samples : ndarray, shape (n_samples, n_dim)
+    u_samples : ndarray, shape (n_samples, n_dim, n_dim)
         Samples of the U parameters of the Riemannian Gaussian distribution.
     """
 
     rs = check_random_state(random_state)
-    u_samples = np.zeros((n_samples, n_dim, n_dim))
+    dtype = np.complex128 if is_complex else np.float64
+    u_samples = np.zeros((n_samples, n_dim, n_dim), dtype=dtype)
     for i in range(n_samples):
-        A = rs.randn(n_dim, n_dim)
+        if is_complex:
+            A = rs.randn(n_dim, n_dim) + 1j * rs.randn(n_dim, n_dim)
+        else:
+            A = rs.randn(n_dim, n_dim)
         Q, _ = np.linalg.qr(A)
         u_samples[i] = Q
 
@@ -402,19 +410,21 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None):
 
 
 def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
-                                  n_jobs=1, sampling_method="auto"):
+                                  n_jobs=1, sampling_method="auto",
+                                  is_complex=False):
     """Sample a Riemannian Gaussian distribution centered at the Identity.
 
-    Sample SPD matrices from a Riemannian Gaussian distribution centered at the
-    Identity, which has the role of the origin in the SPD manifold, and
-    dispersion parametrized by sigma. See [1]_ for the mathematical details.
+    Sample SPD or HPD matrices from a Riemannian Gaussian distribution
+    centered at the Identity, which has the role of the origin in the manifold,
+    and dispersion parametrized by sigma. See [1]_ for the mathematical
+    details.
 
     Parameters
     ----------
     n_matrices : int
         Number of matrices to generate.
     n_dim : int
-        Dimensionality of the SPD matrices to be sampled.
+        Dimensionality of the matrices to be sampled.
     sigma : float
         Dispersion of the Riemannian Gaussian distribution.
     random_state : int | RandomState instance | None, default=None
@@ -428,6 +438,10 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
         equal to "rejection" for n_dim = 2.
 
         .. versionadded:: 0.4
+    is_complex : bool, default=False
+        If True, generate complex-valued HPD matrices instead of real SPD.
+
+        .. versionadded:: 0.13
 
     Returns
     -------
@@ -444,7 +458,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
         positive definite matrices
         <https://hal.archives-ouvertes.fr/hal-01710191>`_
         S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton. IEEE Trans Inf
-        Theory, vol. 63, pp. 2153–2170, 2017.
+        Theory, vol. 63, pp. 2153-2170, 2017.
     """
 
     samples_r = _sample_parameter_r(
@@ -459,14 +473,19 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
         n_samples=n_matrices,
         n_dim=n_dim,
         random_state=random_state,
+        is_complex=is_complex,
     )
 
-    samples = np.zeros((n_matrices, n_dim, n_dim))
+    dtype = np.complex128 if is_complex else np.float64
+    samples = np.zeros((n_matrices, n_dim, n_dim), dtype=dtype)
     for i in range(n_matrices):
         Ui = samples_U[i]
         ri = samples_r[i]
-        samples[i] = Ui.T @ np.diag(np.exp(ri)) @ Ui
-        samples[i] = 0.5 * (samples[i] + samples[i].T)
+        mat = Ui.conj().T @ np.diag(np.exp(ri)) @ Ui
+        if is_complex:
+            samples[i] = 0.5 * (mat + mat.conj().T)
+        else:
+            samples[i] = 0.5 * (mat + mat.T)
 
     return samples
 
@@ -475,12 +494,15 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
                         n_jobs=1, sampling_method="auto"):
     """Sample a Riemannian Gaussian distribution.
 
-    Sample SPD matrices from a Riemannian Gaussian distribution centered at
-    mean and with dispersion parametrized by sigma.
+    Sample SPD or HPD matrices from a Riemannian Gaussian distribution
+    centered at mean and with dispersion parametrized by sigma.
+
+    If ``mean`` has a complex dtype, Hermitian positive-definite (HPD)
+    matrices are generated instead of symmetric positive-definite (SPD).
 
     If sigma is a float, it samples from the distribution defined in [1]_ that
-    generalizes the notion of a Gaussian distribution to the space of SPD
-    matrices. This sampling is based on a spectral factorization of SPD
+    generalizes the notion of a Gaussian distribution to the space of SPD/HPD
+    matrices. This sampling is based on a spectral factorization of SPD/HPD
     matrices in terms of their eigenvectors (U-parameters) and the log of the
     eigenvalues (r-parameters).
 
@@ -492,7 +514,8 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
     n_matrices : int
         Number of matrices to generate.
     mean : ndarray, shape (n_dim, n_dim)
-        Center of the Riemannian Gaussian distribution.
+        Center of the Riemannian Gaussian distribution. If complex, HPD
+        matrices are generated; if real, SPD matrices are generated.
     sigma : float | ndarray, shape (n_dim * (n_dim + 1) / 2, \
             n_dim * (n_dim + 1) / 2)
         If float, dispersion of the Riemannian Gaussian distribution [1]_.
@@ -522,6 +545,8 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
     .. versionadded:: 0.3
     .. versionchanged:: 0.11
         Add support for dispersion defined as a covariance matrix.
+    .. versionchanged:: 0.13
+        Add support for HPD matrices.
 
     References
     ----------
@@ -529,7 +554,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
         positive definite matrices
         <https://hal.archives-ouvertes.fr/hal-01710191>`_
         S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton. IEEE Trans Inf
-        Theory, vol. 63, pp. 2153–2170, 2017.
+        Theory, vol. 63, pp. 2153-2170, 2017.
     .. [2] `Wrapped gaussian on the manifold of symmetric positive
         definite matrices
         <https://openreview.net/pdf?id=EhStXG4dCS>`_
@@ -538,6 +563,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
     """
 
     n_dim, _ = mean.shape
+    is_complex = np.iscomplexobj(mean)
 
     if isinstance(sigma, (int, float)):
         # generate samples centered at identity
@@ -548,13 +574,19 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
             random_state=random_state,
             n_jobs=n_jobs,
             sampling_method=sampling_method,
+            is_complex=is_complex,
         )
 
         # apply the parallel transport from identity to mean on samples
         mean_sqrt = sqrtm(mean)
-        samples = mean_sqrt @ samples_centered @ mean_sqrt
+        samples = mean_sqrt @ samples_centered @ ctranspose(mean_sqrt)
 
     elif isinstance(sigma, np.ndarray):
+        if is_complex:
+            raise NotImplementedError(
+                "Wrapped Gaussian sampling (ndarray sigma) is not yet "
+                "supported for HPD matrices. Use a float sigma instead."
+            )
         n_ts = n_dim * (n_dim + 1) // 2
         if sigma.shape != (n_ts, n_ts):
             raise ValueError(
@@ -571,18 +603,28 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
 
         # send the tangent space at mean
         mean_sqrt = sqrtm(mean)
-        samples_ts = mean_sqrt @ unupper(samples_ts_norm) @ mean_sqrt
+        samples_ts = mean_sqrt @ unupper(samples_ts_norm)
+        samples_ts = samples_ts @ ctranspose(mean_sqrt)
         # map back to the manifold
         samples = exp_map_riemann(samples_ts, mean, Cm12=True)
 
     else:
         raise ValueError("sigma must be either a float or a ndarray.")
 
-    if not is_spsd(samples):
-        msg = "Some of the sampled matrices are very badly conditioned and \
-               may not behave numerically as a SPD matrix. Try sampling again \
-               or reducing the dimensionality of the matrix."
-        warnings.warn(msg)
+    if is_complex:
+        if not is_hpd(samples):
+            msg = "Some of the sampled matrices are very badly conditioned " \
+                  "and may not behave numerically as a HPD matrix. Try " \
+                  "sampling again or reducing the dimensionality of the " \
+                  "matrix."
+            warnings.warn(msg)
+    else:
+        if not is_spsd(samples):
+            msg = "Some of the sampled matrices are very badly conditioned " \
+                  "and may not behave numerically as a SPD matrix. Try " \
+                  "sampling again or reducing the dimensionality of the " \
+                  "matrix."
+            warnings.warn(msg)
 
     return samples
 

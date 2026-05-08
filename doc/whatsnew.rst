@@ -20,6 +20,10 @@ v0.12.dev
   and autograd support.
   :pr:`433` by :user:`bruAristimunha`
 
+- Generalize :func:`pyriemann.datasets.sample_gaussian_spd` to generate HPD matrices
+  from complex-typed mean, for Riemannian Gaussian distribution.
+  :issue:`413` by :user:`robrui`
+
 v0.11 (April 2026)
 ------------------
 
