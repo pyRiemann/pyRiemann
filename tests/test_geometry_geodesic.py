@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from conftest import approx
-from pyriemann.utils.geodesic import (
+from pyriemann.geometry.geodesic import (
     geodesic,
     geodesic_chol,
     geodesic_euclid,
@@ -13,7 +13,7 @@ from pyriemann.utils.geodesic import (
     geodesic_thompson,
     geodesic_wasserstein
 )
-from pyriemann.utils.mean import gmean
+from pyriemann.geometry.mean import gmean
 
 
 metrics = [

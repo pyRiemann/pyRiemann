@@ -3,7 +3,7 @@ import numpy as np
 import pytest
 
 from conftest import to_backend
-from pyriemann.utils.utils import (
+from pyriemann.utils._check import (
     check_function,
     check_init,
     check_matrix_pair,

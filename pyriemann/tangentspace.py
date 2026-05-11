@@ -3,9 +3,9 @@ import numpy as np
 from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 
-from .utils.mean import gmean
-from .utils.tangentspace import tangent_space, untangent_space
-from .utils.utils import check_metric
+from .geometry.mean import gmean
+from .geometry.tangentspace import tangent_space, untangent_space
+from .utils._check import check_metric
 
 
 class TangentSpace(TransformerMixin, BaseEstimator):
@@ -41,8 +41,8 @@ class TangentSpace(TransformerMixin, BaseEstimator):
     metric : string | dict, default="riemann"
         The type of metric used
         for reference matrix estimation (for the list of supported metrics
-        see :func:`pyriemann.utils.mean.gmean`) and for tangent space map
-        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
+        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
     tsupdate : bool, default=False
@@ -223,8 +223,8 @@ class FGDA(TransformerMixin, BaseEstimator):
     metric : string | dict, default="riemann"
         The type of metric used
         for reference matrix estimation (for the list of supported metrics
-        see :func:`pyriemann.utils.mean.gmean`) and for tangent space map
-        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
+        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
     tsupdate : bool, default=False

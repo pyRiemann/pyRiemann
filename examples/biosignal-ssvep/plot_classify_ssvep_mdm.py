@@ -20,7 +20,7 @@ from sklearn.model_selection import cross_val_score, RepeatedKFold
 
 from pyriemann.classification import MDM
 from pyriemann.estimation import BlockCovariances
-from pyriemann.utils.mean import mean_riemann
+from pyriemann.geometry.mean import mean_riemann
 from helpers.ssvep_helpers import download_data, extend_signal
 
 

@@ -12,17 +12,17 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import accuracy_score, r2_score
 from sklearn.pipeline import Pipeline
 
+from ..classification import MDM
+from ..geometry.base import invsqrtm, powm, sqrtm
+from ..geometry.distance import distance
+from ..geometry.geodesic import geodesic
+from ..geometry.mean import gmean
 from ..optimization.grassmann import (
     _get_rotation_manifold, _get_rotation_tangentspace
 )
-from ._tools import decode_domains
-from ..classification import MDM
 from ..preprocessing import Whitening
-from ..utils.base import invsqrtm, powm, sqrtm
-from ..utils.distance import distance
-from ..utils.geodesic import geodesic
-from ..utils.mean import gmean
-from ..utils.utils import check_weights, check_metric, check_param_in_func
+from ..utils._check import check_weights, check_metric, check_param_in_func
+from ._tools import decode_domains
 
 
 ###############################################################################
@@ -128,7 +128,7 @@ class TLCenter(TransformerMixin, BaseEstimator):
     metric : str, default="riemann"
         For inputs in manifold,
         metric used for mean estimation. For the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`.
+        see :func:`pyriemann.geometry.mean.gmean`.
         Note, however, that only when using the "riemann" metric that we are
         ensured to re-center the matrices precisely to the identity.
 
@@ -315,7 +315,7 @@ class TLScale(TransformerMixin, BaseEstimator):
     metric : str, default="riemann"
         For inputs in manifold, metric used for calculating the dispersion.
         For the list of supported metrics,
-        see :func:`pyriemann.utils.distance.distance`.
+        see :func:`pyriemann.geometry.distance.distance`.
         The stretching operation in manifold is properly defined only for the
         "riemann" metric.
 
@@ -1145,8 +1145,8 @@ class MDWM(MDM):
         Name of the target domain in extended labels.
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
-        (see :func:`pyriemann.utils.distance.distance`).
+        see :func:`pyriemann.geometry.mean.gmean`) and for distance estimation
+        (see :func:`pyriemann.geometry.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
     n_jobs : int, default=1
