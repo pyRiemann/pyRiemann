@@ -9,7 +9,7 @@ from pytest import approx
 from scipy.linalg import eigvalsh
 
 from conftest import assert_array_almost_equal
-from pyriemann.utils.base import (
+from pyriemann.geometry.base import (
     ctranspose,
     _eigvalsh,
     expm,
@@ -22,7 +22,7 @@ from pyriemann.utils.base import (
     ddexpm,
     ddlogm,
 )
-from pyriemann.utils.test import is_pos_def, is_sym_pos_def, is_hermitian
+from pyriemann.geometry.test import is_pos_def, is_sym_pos_def, is_hermitian
 
 
 n_channels = 3

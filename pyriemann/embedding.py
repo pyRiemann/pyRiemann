@@ -9,8 +9,8 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.manifold import spectral_embedding
 from sklearn.manifold._utils import _binary_search_perplexity
 
-from .utils.distance import pairwise_distance
-from .utils.kernel import kernel as kernel_fct
+from .geometry.distance import pairwise_distance
+from .geometry.kernel import kernel as kernel_fct
 from .optimization.positive_definite import _get_tsne_embedding
 
 
@@ -32,7 +32,7 @@ class SpectralEmbedding(BaseEstimator):
     metric : string, default="riemann"
         Metric used for defining pairwise distance between SPD/HPD matrices.
         For the list of supported metrics,
-        see :func:`pyriemann.utils.distance.pairwise_distance`.
+        see :func:`pyriemann.geometry.distance.pairwise_distance`.
     eps : None | float, default=None
         The scaling of the Gaussian kernel. If none is given it will use the
         square of the median of pairwise distances between matrices.
@@ -151,7 +151,7 @@ class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
         n_matrices - 1.
     metric : string, default="riemann"
         Metric used for k-NN and kernel estimation. For the list of supported
-        metrics, see :func:`pyriemann.utils.kernel.kernel`.
+        metrics, see :func:`pyriemann.geometry.kernel.kernel`.
     kernel : callable | None, default=None
         Kernel function to use for the embedding. If None, the canonical
         kernel specified by the metric is used. Must be a function that
@@ -414,7 +414,7 @@ def barycenter_weights(X, Y, indices, metric="riemann", kernel=None, reg=1e-3):
         Indices of matrices in Y used to compute the barycenter.
     metric : string, default="riemann"
         Kernel metric. For the list of supported metrics, see
-        :func:`pyriemann.utils.kernel.kernel`.
+        :func:`pyriemann.geometry.kernel.kernel`.
     kernel : callable | None, default=None
         Kernel function to use for the embedding. If None, the canonical
         kernel specified by the metric is used. Must be a function that
@@ -492,7 +492,7 @@ def locally_linear_embedding(
         ``n_matrices - 1``.
     metric : string, default="riemann"
         Metric used for k-NN and kernel estimation. For the list of supported
-        metrics, see :func:`pyriemann.utils.kernel.kernel`.
+        metrics, see :func:`pyriemann.geometry.kernel.kernel`.
     kernel : callable | None, default=None
         Kernel function to use for the embedding. If None, the canonical
         kernel specified by the metric is used. Must be a function that

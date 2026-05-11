@@ -11,7 +11,9 @@ from pyriemann.utils.viz import (
 matplotlib.use("Agg")
 
 
-@pytest.mark.numpy_only
+pytestmark = pytest.mark.numpy_only
+
+
 def test_embedding(get_mats):
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, "spd")

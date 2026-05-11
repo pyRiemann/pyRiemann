@@ -41,7 +41,7 @@ from pyriemann.estimation import (
     ker_est_functions,
 )
 from pyriemann.utils._data import get_data_path
-from pyriemann.utils.covariance import cov_est_functions
+from pyriemann.geometry.covariance import cov_est_functions
 from pyriemann.utils._logging import logger
 
 

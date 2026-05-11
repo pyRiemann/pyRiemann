@@ -13,7 +13,7 @@ class deprecated(object):
 
         >>> from pyriemann.utils import deprecated
         >>> deprecated()
-        <pyriemann.utils.docs.deprecated object at ...>
+        <pyriemann.geometry._docs.deprecated object at ...>
         >>> @deprecated()
         ... def some_function(): pass
 

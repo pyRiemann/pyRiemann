@@ -9,7 +9,7 @@ except ImportError:
     HAS_TORCH = False
 
 from pyriemann.datasets import make_masks, make_matrices
-from pyriemann.utils._backend import as_numpy
+from pyriemann.geometry._backend import as_numpy
 
 
 ###############################################################################
@@ -27,7 +27,7 @@ def to_backend(x, backend):
 def to_numpy(x):
     """Convert any array-like (including nested containers) to numpy.
 
-    Wraps :func:`pyriemann.utils._backend.as_numpy` with extra handling for
+    Wraps :func:`pyriemann.geometry._backend.as_numpy` with extra handling for
     ``None``, Python/NumPy scalars, and tuple/list containers used in tests.
     """
     if x is None:
