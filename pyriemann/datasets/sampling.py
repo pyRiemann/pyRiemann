@@ -481,10 +481,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
         Ui = samples_U[i]
         ri = samples_r[i]
         mat = Ui.conj().T @ np.diag(np.exp(ri)) @ Ui
-        if is_complex:
-            samples[i] = 0.5 * (mat + mat.conj().T)
-        else:
-            samples[i] = 0.5 * (mat + mat.T)
+        samples[i] = 0.5 * (mat + ctranspose(mat))
 
     return samples
 
