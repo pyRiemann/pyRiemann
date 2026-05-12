@@ -34,6 +34,10 @@ v0.12.dev
   modules are renamed ``test_utils_*`` → ``test_geometry_*``.
   :pr:`445` by :user:`bruAristimunha`
 
+- Generalize :func:`pyriemann.datasets.sample_gaussian_spd` to generate HPD matrices
+  from complex-typed mean, for Riemannian Gaussian distribution.
+  :issue:`413` by :user:`robrui`
+
 v0.11 (April 2026)
 ------------------
 

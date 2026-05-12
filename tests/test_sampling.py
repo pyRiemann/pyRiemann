@@ -4,6 +4,7 @@ import pytest
 
 from pyriemann.datasets import sample_gaussian_spd, RandomOverSampler
 from pyriemann.geometry.distance import distance_riemann
+from pyriemann.geometry.test import is_herm_pos_def as is_hpd
 from pyriemann.geometry.test import is_sym_pos_def as is_spd
 
 
@@ -65,6 +66,45 @@ def test_sample_gaussian_spd_sigma(n_jobs):
     avg_d1 = np.mean([distance_riemann(X1_i, mean) for X1_i in X1])
     avg_d2 = np.mean([distance_riemann(X2_i, mean) for X2_i in X2])
     assert avg_d1 < avg_d2
+
+
+@pytest.mark.parametrize("sampling_method", ["auto", "slice"])
+@pytest.mark.parametrize("n_dim", [2, 3])
+def test_sample_gaussian_hpd(n_dim, sampling_method):
+    """Test HPD matrix sampling with complex mean."""
+    n_matrices = 5
+    mean = np.eye(n_dim, dtype=np.complex128)
+    sigma = 2.0
+    X = sample_gaussian_spd(n_matrices, mean, sigma, random_state=42,
+                            sampling_method=sampling_method)
+    assert X.shape == (n_matrices, n_dim, n_dim)
+    assert np.iscomplexobj(X)
+    assert is_hpd(X)
+
+
+def test_sample_gaussian_hpd_sigma():
+    """Test that larger sigma produces larger dispersion for HPD."""
+    n_matrices, n_dim = 5, 2
+    mean = np.eye(n_dim, dtype=np.complex128)
+    X1 = sample_gaussian_spd(
+        n_matrices, mean, 0.5, random_state=42
+    )
+    X2 = sample_gaussian_spd(
+        n_matrices, mean, 2.0, random_state=66
+    )
+    avg_d1 = np.mean([distance_riemann(X1_i, mean) for X1_i in X1])
+    avg_d2 = np.mean([distance_riemann(X2_i, mean) for X2_i in X2])
+    assert avg_d1 < avg_d2
+
+
+def test_sample_gaussian_hpd_ndarray_error():
+    """Test that ndarray sigma raises NotImplementedError for HPD."""
+    n_dim = 3
+    n_ts = n_dim * (n_dim + 1) // 2
+    mean = np.eye(n_dim, dtype=np.complex128)
+    sigma = np.eye(n_ts)
+    with pytest.raises(NotImplementedError):
+        sample_gaussian_spd(3, mean, sigma, random_state=42)
 
 
 def test_sample_gaussian_spd_sigma_errors():
