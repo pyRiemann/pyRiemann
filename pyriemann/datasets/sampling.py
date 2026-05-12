@@ -399,10 +399,9 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None,
     dtype = np.complex128 if is_complex else np.float64
     u_samples = np.zeros((n_samples, n_dim, n_dim), dtype=dtype)
     for i in range(n_samples):
+        A = rs.randn(n_dim, n_dim)
         if is_complex:
-            A = rs.randn(n_dim, n_dim) + 1j * rs.randn(n_dim, n_dim)
-        else:
-            A = rs.randn(n_dim, n_dim)
+            A = A + 1j * rs.randn(n_dim, n_dim)
         Q, _ = np.linalg.qr(A)
         u_samples[i] = Q
 
