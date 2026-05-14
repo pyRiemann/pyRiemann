@@ -2,6 +2,7 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 from pytest import approx
+from scipy.stats import combine_pvalues
 
 from pyriemann.clustering import (
     Kmeans,
@@ -12,7 +13,11 @@ from pyriemann.clustering import (
     Potato,
     PotatoField,
 )
-from pyriemann.utils.tangentspace import tangent_space
+from pyriemann.geometry.tangentspace import tangent_space
+
+
+pytestmark = pytest.mark.numpy_only
+
 
 clusts = [
     Kmeans,
@@ -235,8 +240,6 @@ def clt_fitpredict(clust, X, n_clusters=None):
     if hasattr(clt, "random_state"):
         clt.set_params(**{"random_state": 42})
     pred = clt.fit(X).predict(X)
-    if hasattr(clt, "random_state"):
-        clt.set_params(**{"random_state": 42})
     pred2 = clt.fit_predict(X)
     assert_array_equal(pred, pred2)
 
@@ -387,7 +390,7 @@ def test_gaussian(get_mats, get_weights):
     assert pdf.shape == (n_matrices,)
 
     tv = tangent_space(X, gm.mu, metric="riemann")[0]
-    dist = tv.T @ np.linalg.inv(gm.sigma) @ tv
+    dist = tv.T @ np.linalg.solve(gm.sigma, tv)
     num = np.exp(-0.5 * dist)
     denom = np.sqrt(((2 * np.pi) ** n) * np.linalg.det(gm.sigma))
     pdf_ = num / (denom + 1e-16)
@@ -507,7 +510,72 @@ def test_potato_specific_labels(get_mats):
     pt.fit(X, y=[2] * n_matrices)
 
 
-def test_potatofield_fit(get_mats):
+def callable_diageuclid(A, B, squared=False):
+    """Euclidean distance between diagonals of square matrices"""
+    dA = np.diagonal(A, axis1=-2, axis2=-1)
+    dB = np.diagonal(B, axis1=-2, axis2=-1)
+    return np.linalg.norm(dA - dB, axis=-1)
+
+
+@pytest.mark.parametrize(
+    "metric",
+    [
+        "riemann",
+        {"mean": "logeuclid", "distance": "riemann"},
+        ["riemann", "logeuclid"],
+        [
+            {"mean": "riemann", "distance": "riemann"},
+            {"mean": "logeuclid", "distance": "riemann"},
+        ],
+        [
+            "riemann",
+            {"mean": "logeuclid", "distance": "riemann"},
+        ],
+        [
+            "riemann",
+            {"mean": "riemann", "distance": callable_diageuclid},
+        ],
+    ]
+)
+def test_potatofield_fit_metric(metric, get_mats):
+    n_potatoes, n_matrices, n_channels = 2, 6, 3
+    X1 = get_mats(n_matrices, n_channels, "hpd")
+    X2 = get_mats(n_matrices, n_channels + 1, "hpd")
+    X = [X1, X2]
+
+    pf = PotatoField(n_potatoes=n_potatoes, metric=metric).fit(X)
+    pf.partial_fit(X)
+
+
+def callable_combination(X, axis):
+    _, p_fisher = combine_pvalues(X, method="fisher", axis=axis)
+    _, p_stouffer = combine_pvalues(X, method="stouffer", axis=axis)
+    return np.minimum(p_fisher, p_stouffer)
+
+
+@pytest.mark.parametrize(
+    "method_combination",
+    [
+        "fisher",
+        "stouffer",
+        callable_combination,
+    ]
+)
+def test_potatofield_fit_combination(method_combination, get_mats):
+    n_potatoes, n_matrices, n_channels = 3, 3, 4
+    X1 = get_mats(n_matrices, n_channels, "hpd")
+    X2 = get_mats(n_matrices, n_channels + 1, "hpd")
+    X3 = get_mats(n_matrices, n_channels + 2, "hpd")
+    X = [X1, X2, X3]
+
+    pf = PotatoField(
+        n_potatoes=n_potatoes,
+        method_combination=method_combination,
+    ).fit(X)
+    pf.predict_proba(X)
+
+
+def test_potatofield_fit_errors(get_mats):
     n_potatoes, n_matrices, n_channels = 2, 6, 3
     X1 = get_mats(n_matrices, n_channels, "spd")
     X2 = get_mats(n_matrices, n_channels + 1, "spd")
@@ -523,6 +591,10 @@ def test_potatofield_fit(get_mats):
         pf.fit([X1, X1, X2])
     with pytest.raises(ValueError):  # n_matrices not equal
         pf.fit([X1, X2[:1]])
+    with pytest.raises(ValueError):  # metric not str, dict or list
+        PotatoField(metric=42).fit(X)
+    with pytest.raises(ValueError):  # method_combination not str or callable
+        PotatoField(method_combination=42).fit(X)
 
 
 @pytest.mark.parametrize(

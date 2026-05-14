@@ -133,7 +133,7 @@ def plot_cospectra(X, freqs, *, ylabels=None, title="Cospectra"):
     for f in range(n_freqs):
         ax = plt.subplot((n_freqs - 1) // 8 + 1, 8, f + 1)
         plt.imshow(X[f], cmap=plt.get_cmap("Reds"))
-        plt.title("{} Hz".format(freqs[f]))
+        plt.title(f"{freqs[f]} Hz")
         plt.xticks([])
         if ylabels and f == 0:
             plt.yticks(np.arange(0, len(ylabels), 2), ylabels[::2])

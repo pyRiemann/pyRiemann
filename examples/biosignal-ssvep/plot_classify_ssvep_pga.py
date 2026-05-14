@@ -92,7 +92,7 @@ x_test = BlockCovariances(
 #
 # Classification for a 4-class SSVEP BCI, including resting-state class.
 
-print("Number of training trials: {}".format(len(x_train)))
+print(f"Number of training trials: {len(x_train)}")
 
 mdm = MDM(metric=dict(mean="riemann", distance="riemann"))
 mdm.fit(x_train, y_train)

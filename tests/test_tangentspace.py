@@ -5,6 +5,10 @@ from pytest import approx
 
 from pyriemann.tangentspace import TangentSpace, FGDA
 
+
+pytestmark = pytest.mark.numpy_only
+
+
 metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
 
 

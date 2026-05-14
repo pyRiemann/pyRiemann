@@ -4,9 +4,14 @@ from sklearn.base import BaseEstimator, TransformerMixin
 from sklearn.covariance import shrunk_covariance
 from sklearn.metrics.pairwise import pairwise_kernels
 
+from .geometry.covariance import (
+    covariances,
+    covariances_EP,
+    cross_spectrum,
+    coherence,
+    block_covariances,
+)
 from .spatialfilters import Xdawn
-from .utils.covariance import (covariances, covariances_EP, cross_spectrum,
-                               coherence, block_covariances)
 
 
 def _nextpow2(i):
@@ -26,7 +31,7 @@ class Covariances(TransformerMixin, BaseEstimator):
     ----------
     estimator : string, default="scm"
         Covariance matrix estimator, see
-        :func:`pyriemann.utils.covariance.covariances`.
+        :func:`pyriemann.geometry.covariance.covariances`.
     **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
 
@@ -123,7 +128,7 @@ class ERPCovariances(TransformerMixin, BaseEstimator):
         If None, all classes will be accounted.
     estimator : string, default="scm"
         Covariance matrix estimator, see
-        :func:`pyriemann.utils.covariance.covariances`.
+        :func:`pyriemann.geometry.covariance.covariances`.
     svd : int | None, default=None
         If not None, number of components of SVD used to reduce prototype
         responses.
@@ -277,12 +282,12 @@ class XdawnCovariances(TransformerMixin, BaseEstimator):
         If None, all classes will be accounted.
     estimator : string, default="scm"
         Covariance matrix estimator, see
-        :func:`pyriemann.utils.covariance.covariances`.
+        :func:`pyriemann.geometry.covariance.covariances`.
     xdawn_estimator : string, default="scm"
         Covariance matrix estimator for :class:`pyriemann.spatialfilters.Xdawn`
         spatial filtering.
         Should be regularized using "lwf" or "oas", see
-        :func:`pyriemann.utils.covariance.covariances`.
+        :func:`pyriemann.geometry.covariance.covariances`.
     baseline_cov : ndarray, shape (n_channels, n_channels) | None, default=None
         Baseline covariance for :class:`pyriemann.spatialfilters.Xdawn`
         spatial filtering.
@@ -421,7 +426,7 @@ class BlockCovariances(Covariances):
         for varying block sizes.
     estimator : string, default="scm"
         Covariance matrix estimator, see
-        :func:`pyriemann.utils.covariance.covariances`.
+        :func:`pyriemann.geometry.covariance.covariances`.
     **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
 
@@ -637,6 +642,11 @@ class CoSpectra(CrossSpectra):
         If transformed, the frequencies associated to cospectra.
         None if ``fs`` is None.
 
+    Notes
+    -----
+    .. versionchanged:: 0.6
+        Rename CospCovariances into CoSpectra.
+
     See Also
     --------
     CrossSpectra
@@ -682,7 +692,7 @@ class Coherences(CoSpectra):
     coh : {"ordinary", "instantaneous", "lagged", "imaginary"}, \
             default="ordinary"
         Coherence type, see
-        :func:`pyriemann.utils.covariance.coherence`.
+        :func:`pyriemann.geometry.covariance.coherence`.
 
     Attributes
     ----------
@@ -771,7 +781,7 @@ class TimeDelayCovariances(TransformerMixin, BaseEstimator):
         of delays up to the given value. A list of int can be given.
     estimator : string, default="scm"
         Covariance matrix estimator, see
-        :func:`pyriemann.utils.covariance.covariances`.
+        :func:`pyriemann.geometry.covariance.covariances`.
     **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
 
@@ -780,6 +790,12 @@ class TimeDelayCovariances(TransformerMixin, BaseEstimator):
     Xtd_ : ndarray, shape (n_matrices, n_channels x n_delays, n_times)
         Time delay multi-channel time-series, where n_delays is equal to:
         ``delays`` when it is a int, and 1 + len(``delays``) when it is a list.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.4
+    .. versionchanged:: 0.6
+        Rename HankelCovariances into TimeDelayCovariances.
 
     See Also
     --------

@@ -1,8 +1,11 @@
 import numpy as np
 import pytest
 
-from pyriemann.stats import PermutationDistance, PermutationModel
 from pyriemann.spatialfilters import CSP
+from pyriemann.stats import PermutationDistance, PermutationModel
+
+
+pytestmark = pytest.mark.numpy_only
 
 
 def test_permutation_badmode():

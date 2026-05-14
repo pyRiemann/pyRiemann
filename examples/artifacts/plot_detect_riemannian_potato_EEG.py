@@ -134,8 +134,8 @@ ep_zscores = get_zscores(X, np.full_like(X, ep_center[0, 1]), Y,
                          potato=epotato)
 
 # Plot calibration
-xlabel = "Cov({},{})".format(ch_names[0], ch_names[0])
-ylabel = "Cov({},{})".format(ch_names[1], ch_names[1])
+xlabel = f"Cov({ch_names[0]},{ch_names[0]})"
+ylabel = f"Cov({ch_names[1]},{ch_names[1]})"
 
 fig, axs = plt.subplots(figsize=(12, 5), nrows=1, ncols=2)
 fig.suptitle("Offline calibration of potatoes", fontsize=16)

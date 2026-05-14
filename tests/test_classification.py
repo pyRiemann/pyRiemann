@@ -4,16 +4,12 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 from pytest import approx
-from scipy.spatial.distance import euclidean
 from scipy.stats import mode
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
-from sklearn.dummy import DummyClassifier
+from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import cross_val_score, KFold
 from sklearn.pipeline import make_pipeline
 
-from pyriemann.estimation import Covariances
-from pyriemann.utils.kernel import kernel
-from pyriemann.utils.mean import gmean
 from pyriemann.classification import (
     _mode_2d,
     MDM,
@@ -26,6 +22,13 @@ from pyriemann.classification import (
     class_distinctiveness,
 )
 from pyriemann.datasets import make_gaussian_blobs
+from pyriemann.estimation import Covariances
+from pyriemann.geometry.kernel import kernel
+from pyriemann.geometry.mean import gmean
+
+
+pytestmark = pytest.mark.numpy_only
+
 
 classifs = [
     MDM,
@@ -228,7 +231,7 @@ def call_mean(X, sample_weight=None):
 
 
 def call_dist(A, B, squared=False):
-    return euclidean(A.flatten(), B.flatten())
+    return np.linalg.norm(A - B, axis=(-2, -1))
 
 
 @pytest.mark.parametrize("metric_mean", [
@@ -308,13 +311,15 @@ def test_tsclassifier_metrics(metric_mean, metric_map, get_mats, get_labels):
     clf.fit(X, y).predict(X)
 
 
-def test_tsclassifier_fit(get_mats, get_labels):
+@pytest.mark.parametrize("clf", [LDA(), LogisticRegression()])
+def test_tsclassifier_fit(clf, get_mats, get_labels, get_weights):
     n_matrices, n_channels, n_classes = 6, 3, 3
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_labels(n_matrices, n_classes)
+    weights = get_weights(n_matrices)
 
-    clf = TSClassifier(clf=DummyClassifier())
-    clf.fit(X, y).predict(X)
+    tsclf = TSClassifier(clf=clf)
+    tsclf.fit(X, y, sample_weight=weights).predict(X)
 
 
 def test_tsclassifier_clf_error(get_mats, get_labels):

@@ -2,6 +2,7 @@ import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
 from pytest import approx
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.model_selection import KFold, StratifiedShuffleSplit
 from sklearn.pipeline import make_pipeline, Pipeline
@@ -19,6 +20,9 @@ from pyriemann.classification import (
     SVC,
     MeanField,
 )
+from pyriemann.geometry.distance import distance, distance_riemann
+from pyriemann.geometry.mean import gmean, mean_riemann
+from pyriemann.geometry.tangentspace import tangent_space
 from pyriemann.regression import KNearestNeighborRegressor, SVR
 from pyriemann.transfer import (
     decode_domains,
@@ -32,10 +36,7 @@ from pyriemann.transfer import (
     TLRegressor,
     MDWM,
 )
-from pyriemann.utils.distance import distance, distance_riemann
-from pyriemann.utils.mean import gmean, mean_riemann
-from pyriemann.utils.tangentspace import tangent_space
-from pyriemann.utils.utils import check_weights
+from pyriemann.utils._check import check_weights
 
 rndstate = 1234
 
@@ -152,7 +153,7 @@ def test_tlcenter_manifold(rndstate, get_weights,
         idx = domain == d
         Xd = X_rct[idx]
         if use_weight:
-            weights_d = check_weights(weights[idx], np.sum(idx))
+            weights_d = check_weights(weights[idx], np.sum(idx), like=Xd)
             Md = gmean(Xd, metric=metric, sample_weight=weights_d)
         else:
             Md = gmean(Xd, metric=metric)
@@ -195,7 +196,7 @@ def test_tlcenter_manifold_fit_transf(rndstate, get_weights,
         Xd = X_rct[idx]
         if use_weight:
             weights = np.concatenate((weights_1, weights_2))
-            weights_d = check_weights(weights[idx], np.sum(idx))
+            weights_d = check_weights(weights[idx], np.sum(idx), like=Xd)
             Md = gmean(Xd, metric=metric, sample_weight=weights_d)
         else:
             Md = gmean(Xd, metric=metric)
@@ -270,7 +271,7 @@ def test_tlscale_manifold(rndstate, get_weights,
         idx = domain == d
         Xd = X_str[idx]
         if use_weight:
-            weights_d = check_weights(weights[idx], np.sum(idx))
+            weights_d = check_weights(weights[idx], np.sum(idx), like=Xd)
             Md = mean_riemann(Xd, sample_weight=weights_d)
             dist = distance(Xd, Md, metric=metric, squared=True)
             disp = np.sum(weights_d * np.squeeze(dist))
@@ -350,7 +351,7 @@ def test_tlrotate_manifold(rndstate, get_weights, metric, use_weight):
         X_rct[domain == "target_domain"],
     )
 
-    matrix_weight = check_weights(matrix_weight, len(y_enc))
+    matrix_weight = check_weights(matrix_weight, len(y_enc), like=X_rct)
 
     # check if the distance between the classes of each domain is reduced
     for label in np.unique(y):
@@ -504,7 +505,15 @@ def test_tlclassifier_manifold(rndstate, clf, domains_weight):
     tlclassifier(clf, X, y_enc, domains_weight)
 
 
-@pytest.mark.parametrize("clf", [LinearSVC(), LogisticRegression()])
+@pytest.mark.parametrize(
+    "clf",
+    [
+        LinearSVC(),
+        LogisticRegression(),
+        LDA(),
+        make_pipeline(LDA()),
+    ]
+)
 @pytest.mark.parametrize("domains_weight", [(1, 0), (0, 1), (1, 1)])
 def test_tlclassifier_tangentspace(rndstate, clf, domains_weight):
     """Test wrapper for classifiers in tangent space"""

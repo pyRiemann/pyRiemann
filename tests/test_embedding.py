@@ -10,7 +10,11 @@ from pyriemann.embedding import (
     barycenter_weights,
     locally_linear_embedding,
 )
-from pyriemann.utils.kernel import kernel, kernel_functions
+from pyriemann.geometry.kernel import kernel, kernel_functions
+
+
+pytestmark = pytest.mark.numpy_only
+
 
 embds = [SpectralEmbedding, LocallyLinearEmbedding, TSNE]
 

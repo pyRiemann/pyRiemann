@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.model_selection import cross_val_score
 
-from .utils.distance import distance, pairwise_distance
-from .utils.mean import gmean
-from .utils.utils import check_metric
 from .classification import MDM
+from .geometry.distance import distance, pairwise_distance
+from .geometry.mean import gmean
+from .utils._check import check_metric
 
 
 def multiset_perm_number(y):
@@ -261,9 +261,9 @@ class PermutationDistance(BasePermutation):
         0.05 p-value.
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`) and
+        see :func:`pyriemann.geometry.mean.gmean`) and
         for distance estimation
-        (see :func:`pyriemann.utils.distance.distance`).
+        (see :func:`pyriemann.geometry.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
     mode : string, default="pairwise"

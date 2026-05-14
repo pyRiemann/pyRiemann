@@ -19,13 +19,17 @@ from pyriemann.estimation import (
     BlockCovariances,
     Kernels,
 )
-from pyriemann.utils.test import (
+from pyriemann.geometry.test import (
     is_sym_pos_def as is_spd,
     is_sym_pos_semi_def as is_spsd,
     is_herm_pos_def as is_hpd,
     is_herm_pos_semi_def as is_hpsd,
     is_hankel
 )
+
+
+pytestmark = pytest.mark.numpy_only
+
 
 estim = ["corr", "cov", "lwf", "mcd", "oas", "sch", "scm"]
 m_estim = ["hub", "stu", "tyl"]

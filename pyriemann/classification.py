@@ -10,13 +10,13 @@ from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import make_pipeline
 
-from ._base import SpdClassifMixin, SpdTransfMixin
+from .geometry.base import logm
+from .geometry.distance import distance
+from .geometry.kernel import kernel
+from .geometry.mean import gmean
 from .tangentspace import FGDA, TangentSpace
-from .utils.base import logm
-from .utils.kernel import kernel
-from .utils.mean import gmean
-from .utils.distance import distance
-from .utils.utils import check_metric
+from .utils._base import SpdClassifMixin, SpdTransfMixin
+from .utils._check import check_metric, check_param_in_func
 
 
 def _mode_1d(X):
@@ -46,8 +46,8 @@ class MDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     ----------
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
-        (see :func:`pyriemann.utils.distance.distance`).
+        see :func:`pyriemann.geometry.mean.gmean`) and for distance estimation
+        (see :func:`pyriemann.geometry.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
         Typical usecase is to pass "logeuclid" metric for the "mean" in order
@@ -199,10 +199,11 @@ class FgMDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     ----------
     metric : string | dict, default="riemann"
         Metric used for reference matrix estimation (for the list of supported
-        metrics, see :func:`pyriemann.utils.mean.gmean`),
-        for distance estimation (see :func:`pyriemann.utils.distance.distance`)
+        metrics, see :func:`pyriemann.geometry.mean.gmean`),
+        for distance estimation
+        (see :func:`pyriemann.geometry.distance.distance`)
         and for tangent space map
-        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
         The metric can be a dict with three keys, "mean", "dist" and "map" in
         order to pass different metrics.
     tsupdate : bool, default=False
@@ -334,8 +335,8 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
     metric : string | dict, default="riemann"
         The type of metric used
         for reference matrix estimation (for the list of supported metrics
-        see :func:`pyriemann.utils.mean.gmean`) and for tangent space map
-        (see :func:`pyriemann.utils.tangent_space.tangent_space`).
+        see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
+        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
     tsupdate : bool, default=False
@@ -358,6 +359,8 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.2.4
+    .. versionchanged:: 0.8
+        Rename TSclassifier into TSClassifier.
 
     References
     ----------
@@ -398,11 +401,11 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
 
         ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
         self._pipe = make_pipeline(ts, self.clf)
-        sample_weight_dict = {}
-        for step in self._pipe.steps:
-            step_name = step[0]
-            sample_weight_dict[step_name + "__sample_weight"] = sample_weight
-        self._pipe.fit(X, y, **sample_weight_dict)
+        param_weight = {}
+        for (step_name, step_estimator) in self._pipe.steps:
+            if check_param_in_func("sample_weight", step_estimator.fit):
+                param_weight[step_name + "__sample_weight"] = sample_weight
+        self._pipe.fit(X, y, **param_weight)
         return self
 
     def predict(self, X):
@@ -450,8 +453,8 @@ class KNearestNeighbor(MDM):
         Number of neighbors.
     metric : string | dict, default="riemann"
         Metric used for means estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
-        (see :func:`pyriemann.utils.distance.distance`).
+        see :func:`pyriemann.geometry.mean.gmean`) and for distance estimation
+        (see :func:`pyriemann.geometry.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
     n_jobs : int, default=1
@@ -471,11 +474,14 @@ class KNearestNeighbor(MDM):
     classmeans_ : ndarray, shape (n_matrices,)
         Labels of training set.
 
+    Notes
+    -----
+    .. versionadded:: 0.2.4
+
     See Also
     --------
     Kmeans
     MDM
-
     """
 
     def __init__(self, n_neighbors=5, metric="riemann", n_jobs=1):
@@ -566,7 +572,7 @@ class SVC(sklearnSVC):
     ----------
     metric : string, default="riemann"
         Metric for kernel matrix computation. For the list of supported metrics
-        see :func:`pyriemann.utils.kernel.kernel`.
+        see :func:`pyriemann.geometry.kernel.kernel`.
     Cref : None | callable | ndarray, shape (n_channels, n_channels), \
             default=None
         Reference matrix for kernel matrix computation.
@@ -576,7 +582,8 @@ class SVC(sklearnSVC):
         calculate Cref.
     kernel_fct : None | "precomputed" | callable, default=None
         If None or "precomputed", the kernel matrix for datasets X and Y is
-        estimated according to ``pyriemann.utils.kernel(X, Y, Cref, metric)``.
+        estimated according to
+        ``pyriemann.geometry.kernel(X, Y, Cref, metric)``.
         If callable, the callable is passed as the kernel parameter to
         ``sklearn.svm.SVC()`` [2]_. The callable has to be of the form
         ``kernel(X, Y, Cref, metric)``.
@@ -760,10 +767,11 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
           [2]_.
 
         .. versionchanged:: 0.10
+            Rename method_label into method_combination, and add None option.
     metric : string, default="riemann"
         Metric used for distance estimation during prediction.
         For the list of supported metrics,
-        see :func:`pyriemann.utils.distance.distance`.
+        see :func:`pyriemann.geometry.distance.distance`.
 
     Attributes
     ----------
@@ -773,6 +781,7 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         Centroids for each class and each power.
 
         .. versionchanged:: 0.10
+            Change dict of dicts of ndarrays into a ndarray.
 
     See Also
     --------
@@ -1221,8 +1230,8 @@ def class_distinctiveness(X, y, exponent=1, metric="riemann",
           within the classes.
     metric : string | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`) and for distance estimation
-        (see :func:`pyriemann.utils.distance.distance`).
+        see :func:`pyriemann.geometry.mean.gmean`) and for distance estimation
+        (see :func:`pyriemann.geometry.distance.distance`).
         The metric can be a dict with two keys, "mean" and "distance"
         in order to pass different metrics.
     return_num_denom : bool, default=False
