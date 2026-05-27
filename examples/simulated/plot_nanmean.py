@@ -15,8 +15,8 @@ import pandas as pd
 import seaborn as sns
 
 from pyriemann.datasets import make_matrices
-from pyriemann.utils.mean import mean_riemann, nanmean_riemann
-from pyriemann.utils.distance import distance_riemann
+from pyriemann.geometry.mean import mean_riemann, nanmean_riemann
+from pyriemann.geometry.distance import distance_riemann
 
 
 ###############################################################################

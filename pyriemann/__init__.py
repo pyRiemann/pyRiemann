@@ -1,5 +1,4 @@
 from ._version import __version__
-from . import _base
 from . import classification
 from . import tangentspace
 from . import channelselection
@@ -14,7 +13,6 @@ from . import datasets
 
 __all__ = [
     "__version__",
-    "_base",
     "classification",
     "tangentspace",
     "channelselection",

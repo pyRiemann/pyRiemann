@@ -4,8 +4,8 @@ import warnings
 
 import numpy as np
 
-from ..utils.distance import distance
-from ..utils.utils import check_weights
+from ..geometry.distance import distance
+from ..utils._check import check_weights
 
 
 def _project(X, U):

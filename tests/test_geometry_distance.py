@@ -10,7 +10,8 @@ import pytest
 from scipy.spatial.distance import mahalanobis
 
 from conftest import to_backend, approx, assert_array_almost_equal
-from pyriemann.utils.distance import (
+from pyriemann.geometry.base import logm, invsqrtm, _eigvalsh
+from pyriemann.geometry.distance import (
     distance_chol,
     distance_euclid,
     distance_harmonic,
@@ -28,9 +29,8 @@ from pyriemann.utils.distance import (
     pairwise_distance,
     distance_mahalanobis,
 )
-from pyriemann.utils.base import logm, invsqrtm, _eigvalsh
-from pyriemann.utils.geodesic import geodesic
-from pyriemann.utils.test import is_sym, is_real_type
+from pyriemann.geometry.geodesic import geodesic
+from pyriemann.geometry.test import is_sym, is_real_type
 
 
 dists = [

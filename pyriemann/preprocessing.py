@@ -4,9 +4,9 @@ import numpy as np
 from scipy.linalg import eigh
 from sklearn.base import BaseEstimator, TransformerMixin
 
-from .utils.base import sqrtm, invsqrtm
-from .utils.geodesic import geodesic
-from .utils.mean import gmean
+from .geometry.base import sqrtm, invsqrtm
+from .geometry.geodesic import geodesic
+from .geometry.mean import gmean
 
 
 class Whitening(TransformerMixin, BaseEstimator):
@@ -21,7 +21,7 @@ class Whitening(TransformerMixin, BaseEstimator):
         Metric for the estimation of mean matrix used for whitening and
         dimension reduction.
         For the list of supported metrics,
-        see :func:`pyriemann.utils.mean.gmean`.
+        see :func:`pyriemann.geometry.mean.gmean`.
     dim_red : None | dict, default=None
         If ``None`` :
             no dimension reduction during whitening.
