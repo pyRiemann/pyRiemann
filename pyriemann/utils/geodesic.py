@@ -1,9 +1,6 @@
 """Geodesics for SPD/HPD matrices."""
 
-from array_api_compat import (
-    array_namespace as get_namespace,
-    device as xpd,
-)
+from array_api_compat import array_namespace as get_namespace
 
 from ._backend import diag_indices, tril_indices
 from .base import ctranspose, _eigvalsh, sqrtm, invsqrtm, powm, logm, expm
@@ -31,8 +28,9 @@ def geodesic_chol(A, B, alpha=0.5):
         First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices.
-    alpha : float, default=0.5
-        Position on the geodesic.
+    alpha : float | ndarray, shape (...,), default=0.5
+        Position on the geodesic. If ndarray, one value per stacked matrix
+        pair.
 
     Returns
     -------
@@ -58,12 +56,8 @@ def geodesic_chol(A, B, alpha=0.5):
         Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
     """
     xp = get_namespace(A, B)
-    if hasattr(alpha, "ndim"):
-        alpha = xp.asarray(alpha, device=xpd(A))
-        # API contract: alpha is expected as shape (..., 1)
-        # Expand to (..., 1, 1) so it broadcasts over matrix dims.
-        if alpha.ndim == A.ndim - 1 and alpha.shape[-1] == 1:
-            alpha = alpha[..., None]
+    if hasattr(alpha, "ndim") and alpha.ndim >= 1:
+        alpha = alpha[..., None, None]
     geo = (1 - alpha) * xp.linalg.cholesky(A) + alpha * xp.linalg.cholesky(B)
     return geo @ ctranspose(geo)
 
@@ -86,8 +80,9 @@ def geodesic_euclid(A, B, alpha=0.5):
         First matrices.
     B : ndarray, shape (..., n, m)
         Second matrices.
-    alpha : float, default=0.5
-        Position on the geodesic.
+    alpha : float | ndarray, shape (...,), default=0.5
+        Position on the geodesic. If ndarray, one value per stacked matrix
+        pair.
 
     Returns
     -------
@@ -103,13 +98,8 @@ def geodesic_euclid(A, B, alpha=0.5):
     --------
     geodesic
     """
-    xp = get_namespace(A, B)
-    if hasattr(alpha, "ndim"):
-        alpha = xp.asarray(alpha, device=xpd(A))
-        # API contract: alpha is expected as shape (..., 1)
-        # Expand to (..., 1, 1) so it broadcasts over the last two dims.
-        if alpha.ndim == A.ndim - 1 and alpha.shape[-1] == 1:
-            alpha = alpha[..., None]
+    if hasattr(alpha, "ndim") and alpha.ndim >= 1:
+        alpha = alpha[..., None, None]
     return (1 - alpha) * A + alpha * B
 
 
@@ -125,8 +115,9 @@ def geodesic_logchol(A, B, alpha=0.5):
         First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices.
-    alpha : float, default=0.5
-        Position on the geodesic.
+    alpha : float | ndarray, shape (...,), default=0.5
+        Position on the geodesic. If ndarray, one value per stacked matrix
+        pair.
 
     Returns
     -------
@@ -151,8 +142,8 @@ def geodesic_logchol(A, B, alpha=0.5):
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
     xp = get_namespace(A, B)
-    if hasattr(alpha, "ndim"):
-        alpha = xp.asarray(alpha, device=xpd(A))
+    if hasattr(alpha, "ndim") and alpha.ndim >= 1:
+        alpha = alpha[..., None]
     A_chol, B_chol = xp.linalg.cholesky(A), xp.linalg.cholesky(B)
 
     geo = xp.zeros_like(A)
@@ -187,8 +178,9 @@ def geodesic_logeuclid(A, B, alpha=0.5):
         First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices.
-    alpha : float, default=0.5
-        Position on the geodesic.
+    alpha : float | ndarray, shape (...,), default=0.5
+        Position on the geodesic. If ndarray, one value per stacked matrix
+        pair.
 
     Returns
     -------
@@ -212,13 +204,8 @@ def geodesic_logeuclid(A, B, alpha=0.5):
         V. Arsigny, P. Fillard, X. Pennec, N. Ayache.
         SIAM J Matrix Anal Appl, 2007, 29 (1), pp. 328-347
     """
-    xp = get_namespace(A, B)
-    if hasattr(alpha, "ndim"):
-        alpha = xp.asarray(alpha, device=xpd(A))
-        # API contract: alpha is expected as shape (..., 1)
-        # Expand to (..., 1, 1) so it broadcasts over matrix dims.
-        if alpha.ndim == A.ndim - 1 and alpha.shape[-1] == 1:
-            alpha = alpha[..., None]
+    if hasattr(alpha, "ndim") and alpha.ndim >= 1:
+        alpha = alpha[..., None, None]
     return expm((1 - alpha) * logm(A) + alpha * logm(B))
 
 
@@ -242,8 +229,9 @@ def geodesic_riemann(A, B, alpha=0.5):
         First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices.
-    alpha : float, default=0.5
-        Position on the geodesic.
+    alpha : float | ndarray, shape (...,), default=0.5
+        Position on the geodesic. If ndarray, one value per stacked matrix
+        pair.
 
     Returns
     -------
@@ -266,9 +254,8 @@ def geodesic_riemann(A, B, alpha=0.5):
         R. Bhatia and J. Holbrook.
         Linear Algebra and its Applications, 2006
     """
-    xp = get_namespace(A, B)
-    if hasattr(alpha, "ndim"):
-        alpha = xp.asarray(alpha, device=xpd(A))
+    if hasattr(alpha, "ndim") and alpha.ndim >= 1:
+        alpha = alpha[..., None]
     sA, isA = sqrtm(A), invsqrtm(A)
     C = sA @ powm(isA @ B @ isA, alpha) @ sA
     return C
@@ -290,8 +277,9 @@ def geodesic_thompson(A, B, alpha=0.5):
         First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices.
-    alpha : float, default=0.5
-        Position on the geodesic.
+    alpha : float | ndarray, shape (...,), default=0.5
+        Position on the geodesic. If ndarray, one value per stacked matrix
+        pair.
 
     Returns
     -------
@@ -317,12 +305,6 @@ def geodesic_thompson(A, B, alpha=0.5):
         SIAM Journal on Matrix Analysis and Applications, 2024
     """
     xp = check_matrix_pair(A, B, require_square=True)
-    if hasattr(alpha, "ndim"):
-        alpha = xp.asarray(alpha, device=xpd(A))
-        # API contract: alpha is expected as shape (..., 1), but
-        # Thompson geodesic uses eigenvalues of shape (...), so squeeze.
-        if alpha.ndim == A.ndim - 1 and alpha.shape[-1] == 1:
-            alpha = alpha[..., 0]
     E = _eigvalsh(B, A)
     Emin, Emax = xp.min(E, axis=-1), xp.max(E, axis=-1)
     Emin_a, Emax_a = Emin ** alpha, Emax ** alpha
@@ -360,8 +342,9 @@ def geodesic_wasserstein(A, B, alpha=0.5):
         First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices.
-    alpha : float, default=0.5
-        Position on the geodesic.
+    alpha : float | ndarray, shape (...,), default=0.5
+        Position on the geodesic. If ndarray, one value per stacked matrix
+        pair.
 
     Returns
     -------
@@ -385,13 +368,8 @@ def geodesic_wasserstein(A, B, alpha=0.5):
         L. Malagò, L. Montrucchio, G. Pistone.
         Information Geometry, 2018, 1, pp. 137–179.
     """
-    xp = get_namespace(A, B)
-    if hasattr(alpha, "ndim"):
-        alpha = xp.asarray(alpha, device=xpd(A))
-        # API contract: alpha is expected as shape (..., 1)
-        # Expand to (..., 1, 1) so it broadcasts over matrix dims.
-        if alpha.ndim == A.ndim - 1 and alpha.shape[-1] == 1:
-            alpha = alpha[..., None]
+    if hasattr(alpha, "ndim") and alpha.ndim >= 1:
+        alpha = alpha[..., None, None]
     A12 = sqrtm(A)
     A12inv = invsqrtm(A)
     AB12 = A12 @ sqrtm(A12 @ B @ A12) @ A12inv
@@ -428,7 +406,7 @@ def geodesic(A, B, alpha, metric="riemann"):
         First matrices.
     B : ndarray, shape (..., n, n)
         Second matrices.
-    alpha : float | ndarray, shape (..., 1)
+    alpha : float | ndarray, shape (...,)
         Position on the geodesic. If an ndarray is provided, each pair of
         stacked input matrices is associated with one value of ``alpha``.
     metric : string | callable, default="riemann"
@@ -460,35 +438,12 @@ def geodesic(A, B, alpha, metric="riemann"):
     geodesic_function = check_function(metric, geodesic_functions)
 
     if hasattr(alpha, "ndim") and alpha.ndim > 0:
-        xp = check_matrix_pair(A, B)
-        alpha = xp.asarray(alpha, device=xpd(A))
-        expected_shape = (*A.shape[:-2], 1)
+        expected_shape = A.shape[:-2]
         if alpha.shape != expected_shape:
             raise ValueError(
-                "alpha must have shape (..., 1) matching the stacked shape of "
+                "alpha must have shape (...,) matching the batch shape of "
                 f"input matrices. Expected {expected_shape} but got "
                 f"{alpha.shape}."
             )
 
-        metric_name = metric if isinstance(metric, str) else None
-        if metric_name in ("chol", "euclid", "logeuclid", "wasserstein"):
-            alpha = alpha[..., None]
-        elif metric_name in ("logchol", "riemann"):
-            pass
-        elif metric_name == "thompson":
-            alpha = alpha[..., 0]
-        else:
-            A_flat = xp.reshape(A, (-1, *A.shape[-2:]))
-            B_flat = xp.reshape(B, (-1, *B.shape[-2:]))
-            alpha_flat = xp.reshape(alpha, (-1,))
-            C_flat = xp.stack(
-                [
-                    geodesic_function(A_flat[i], B_flat[i], alpha_flat[i])
-                    for i in range(A_flat.shape[0])
-                ],
-                axis=0,
-            )
-            return xp.reshape(C_flat, (*A.shape[:-2], *A.shape[-2:]))
-
-    C = geodesic_function(A, B, alpha)
-    return C
+    return geodesic_function(A, B, alpha)

@@ -194,12 +194,12 @@ def test_geodesic_alpha_array(metric, get_mats):
     n_matrices, n_channels = 4, 3
     A = get_mats(n_matrices, n_channels, "spd")
     B = get_mats(n_matrices, n_channels, "spd")
-    alpha = np.array([[0.0], [0.3], [0.6], [1.0]])
+    alpha = np.array([0.0, 0.3, 0.6, 1.0])
 
     G = geodesic(A, B, alpha, metric=metric)
     G_ref = np.stack(
         [
-            geodesic(A[i], B[i], alpha[i, 0], metric=metric)
+            geodesic(A[i], B[i], alpha[i], metric=metric)
             for i in range(n_matrices)
         ],
         axis=0,
@@ -211,7 +211,7 @@ def test_geodesic_alpha_array_bad_shape(get_mats):
     n_matrices, n_channels = 4, 3
     A = get_mats(n_matrices, n_channels, "spd")
     B = get_mats(n_matrices, n_channels, "spd")
-    alpha = np.array([0.0, 0.3, 0.6, 1.0])
+    alpha = np.array([[0.0], [0.3], [0.6], [1.0]])
 
     with pytest.raises(ValueError, match=r"alpha must have shape"):
         geodesic(A, B, alpha, metric="riemann")
@@ -230,21 +230,20 @@ def test_geodesic_alpha_array_bad_shape(get_mats):
     ],
 )
 def test_geodesic_alpha_array_direct(geo, get_mats):
-    """Direct geodesic calls must accept ndarray-valued alpha.
+    """Direct geodesic calls must accept ndarray-valued alpha of shape (...,).
 
-    This mirrors the `geodesic(...)` API contract where alpha has shape
-    (..., 1), i.e. one alpha per stacked input matrix.
+    One alpha per stacked input matrix pair.
     """
     n_matrices, n_channels = 4, 3
     A = get_mats(n_matrices, n_channels, "spd")
     B = get_mats(n_matrices, n_channels, "spd")
-    alpha = np.array([[0.0], [0.3], [0.6], [1.0]])
+    alpha = np.array([0.0, 0.3, 0.6, 1.0])
 
     G = geo(A, B, alpha)
     xp = get_namespace(A, B)
 
     G_ref = xp.stack(
-        [geo(A[i], B[i], alpha[i, 0]) for i in range(n_matrices)],
+        [geo(A[i], B[i], alpha[i]) for i in range(n_matrices)],
         axis=0,
     )
     assert G == approx(G_ref)
