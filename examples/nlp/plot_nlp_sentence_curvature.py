@@ -5,7 +5,8 @@ Riemannian Curvature of Sentence Trajectories
 
 Each sentence ("I love Alice", "I hate Bob", ...) is a trajectory of token
 embeddings in a shared latent space. Motivated by the observation that curved
-regions in LLM residual streams encode distinct semantic concerns [1]_ [2]_,
+regions in large language model (LLM)
+residual streams encode distinct semantic concerns [1]_ [2]_,
 we ask: do love/hate sentences trace geometrically distinguishable
 trajectories?
 
@@ -521,6 +522,7 @@ ax2.view_init(elev=25, azim=45)
 ax2.grid(True, alpha=0.3)
 ax2.set_facecolor("#f8f9fa")
 ax2.legend(loc='upper left', fontsize=8, framealpha=0.9)
+ax2.view_init(elev=25, azim=-50)
 
 plt.tight_layout()
 plt.show()
@@ -530,10 +532,10 @@ plt.show()
 # References
 # ----------
 # .. [1] `Poincaré GloVe: Hyperbolic Word Embeddings
-#    <https://arxiv.org/abs/1810.06546>`_
-#    A. Tifrea, G. Bécigneul, and O.-E. Ganea, 2018.
+#    <https://openreview.net/pdf?id=Ske5r3AqK7>`_
+#    A. Tifrea, G. Bécigneul, and O.-E. Ganea, ICLR, 2019.
 # .. [2] `Emergence of a High-Dimensional Abstraction Phase in Language
 #    Transformers
-#    <https://arxiv.org/abs/2405.15471>`_
+#    <https://proceedings.iclr.cc/paper_files/paper/2025/file/57568e093cbe0a222de0334b36e83cf5-Paper-Conference.pdf>`_
 #    E. Cheng, D. Doimo, C. Kervadec, I. Macocco, J. Yu, A. Laio, and
-#    M. Baroni, 2025.
+#    M. Baroni, ICLR, 2025.

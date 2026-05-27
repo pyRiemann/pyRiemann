@@ -97,6 +97,7 @@ sphinx_gallery_conf = {
         '../examples/artifacts',
         '../examples/fnirs',
         '../examples/image-radar',
+        '../examples/nlp',
         '../examples/transfer',
         '../examples/stats',
     ]),
