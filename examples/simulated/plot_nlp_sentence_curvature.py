@@ -282,13 +282,258 @@ handles, labels = ax.get_legend_handles_labels()
 ax.legend(handles=[*handles, error_love, error_hate], fontsize=8)
 
 plt.tight_layout()
+
+
+###############################################################################
+# 3D Manifold Visualization
+# --------------------------
+#
+# Separate figure showing the curved (sphere-like) and flat (plane-like)
+# manifolds in 3D space. Love tokens lie on a positively curved surface
+# (K > 0), while hate tokens lie on a flat plane (K = 0).
+
+# Compute 3D embeddings for surface visualization
+all_3d = PCA(n_components=3, random_state=0).fit_transform(all_tokens)
+token_cls_3d = np.repeat(y, N_TOKENS)
+
+# Separate love and hate tokens in 3D
+love_mask = token_cls_3d == 0
+hate_mask = token_cls_3d == 1
+love_3d = all_3d[love_mask]
+hate_3d = all_3d[hate_mask]
+
+# Create new figure for 3D visualizations
+fig_3d = plt.figure(figsize=(16, 7))
+fig_3d.suptitle(
+    "3D Manifold Geometry: Curved vs Flat",
+    fontsize=13, fontweight="bold", y=0.98,
+)
+
+# Panel 1: Curved manifold (love tokens)
+ax1 = fig_3d.add_subplot(1, 2, 1, projection='3d')
+
+# Fit sphere for love tokens first
+love_center = love_3d.mean(axis=0)
+love_centered = love_3d - love_center
+radius = np.mean(np.linalg.norm(love_centered, axis=1))
+
+# Project love tokens onto sphere surface
+love_3d_projected = np.zeros_like(love_3d)
+for i in range(len(love_3d)):
+    direction = love_3d[i] - love_center
+    norm = np.linalg.norm(direction)
+    if norm > 1e-10:
+        love_3d_projected[i] = love_center + (direction / norm) * radius
+    else:
+        love_3d_projected[i] = love_3d[i]
+
+# Plot love tokens on sphere surface with different markers and shades
+# per token type. Token order: [I, verb, name] for each sentence
+token_markers = ['o', 's', '^']  # circle, square, triangle
+token_labels = ['Token: "I"', 'Token: verb', 'Token: name']
+token_sizes = [120, 140, 120]
+# Different shades of blue for each token type
+token_colors = ['#5DADE2', '#3498DB', '#2874A6']  # light, medium, dark blue
+
+for token_idx in range(N_TOKENS):
+    # Get all tokens of this type (every N_TOKENS-th token)
+    indices = np.arange(token_idx, len(love_3d_projected), N_TOKENS)
+    ax1.scatter(
+        love_3d_projected[indices, 0],
+        love_3d_projected[indices, 1],
+        love_3d_projected[indices, 2],
+        c=token_colors[token_idx], s=token_sizes[token_idx], alpha=0.95,
+        edgecolors='#1B4F72', linewidths=1.5,
+        marker=token_markers[token_idx],
+        label=token_labels[token_idx],
+        depthshade=True,
+    )
+
+# Draw love sentence trajectories as geodesics on sphere surface
+traj_3d = all_3d.reshape(-1, N_TOKENS, 3)
+for traj, cls in zip(traj_3d, y):
+    if cls == 0:  # love sentences only
+        # Project trajectory points onto sphere
+        traj_proj = np.zeros_like(traj)
+        for i in range(len(traj)):
+            direction = traj[i] - love_center
+            norm = np.linalg.norm(direction)
+            if norm > 1e-10:
+                traj_proj[i] = love_center + (direction / norm) * radius
+            else:
+                traj_proj[i] = traj[i]
+        # Draw geodesics (great circles) between consecutive points
+        for i in range(len(traj_proj) - 1):
+            p1 = traj_proj[i] - love_center
+            p2 = traj_proj[i + 1] - love_center
+
+            # Normalize to unit sphere
+            p1_norm = p1 / np.linalg.norm(p1)
+            p2_norm = p2 / np.linalg.norm(p2)
+
+            # Calculate angle between points
+            cos_angle = np.clip(np.dot(p1_norm, p2_norm), -1.0, 1.0)
+            angle = np.arccos(cos_angle)
+
+            # Generate points along the geodesic (great circle arc)
+            n_points = max(20, int(angle * 50))
+            t = np.linspace(0, 1, n_points)
+
+            # Slerp (Spherical Linear Interpolation) for geodesic
+            if angle > 1e-6:  # Avoid division by zero
+                geodesic = np.zeros((n_points, 3))
+                for j, t_val in enumerate(t):
+                    # Slerp formula
+                    interp = (np.sin((1 - t_val) * angle) * p1_norm +
+                              np.sin(t_val * angle) * p2_norm) / \
+                        np.sin(angle)
+                    geodesic[j] = love_center + interp * radius
+
+                # Draw geodesic with outline
+                ax1.plot(
+                    geodesic[:, 0], geodesic[:, 1], geodesic[:, 2],
+                    color='#1B4F72', alpha=0.8, lw=4.0,  # Dark outline
+                )
+                ax1.plot(
+                    geodesic[:, 0], geodesic[:, 1], geodesic[:, 2],
+                    color=palette["love"], alpha=0.7, lw=2.5,  # Main line
+                )
+            else:
+                # Points are very close, just draw straight line with outline
+                ax1.plot(
+                    [traj_proj[i, 0], traj_proj[i + 1, 0]],
+                    [traj_proj[i, 1], traj_proj[i + 1, 1]],
+                    [traj_proj[i, 2], traj_proj[i + 1, 2]],
+                    color='#1B4F72', alpha=0.8, lw=4.0,  # Dark outline
+                )
+                ax1.plot(
+                    [traj_proj[i, 0], traj_proj[i + 1, 0]],
+                    [traj_proj[i, 1], traj_proj[i + 1, 1]],
+                    [traj_proj[i, 2], traj_proj[i + 1, 2]],
+                    color=palette["love"], alpha=0.7, lw=2.5,  # Main line
+                )
+
+# Plot sphere surface in grey with stretched z-dimension
+u = np.linspace(0, 2 * np.pi, 40)
+v = np.linspace(0, np.pi, 40)
+x_sphere = radius * np.outer(np.cos(u), np.sin(v)) + love_center[0]
+y_sphere = radius * np.outer(np.sin(u), np.sin(v)) + love_center[1]
+z_sphere = radius * np.outer(np.ones(np.size(u)), np.cos(v)) + love_center[2]
+
+ax1.plot_surface(
+    x_sphere, y_sphere, z_sphere,
+    color='#D5D8DC', alpha=0.3, edgecolor="none",
+    antialiased=True, shade=True,
+)
+
+# Add wireframe for better depth perception
+ax1.plot_wireframe(
+    x_sphere, y_sphere, z_sphere, color='#85929E', alpha=0.15,
+    linewidth=0.3, rstride=4, cstride=4,
+)
+
+ax1.set_title(
+    '"I love [name]" tokens\nCurved Manifold (K > 0)',
+    fontsize=11, fontweight="bold", pad=15,
+)
+ax1.set_xlabel("PC 1", fontsize=10, labelpad=10)
+ax1.set_ylabel("PC 2", fontsize=10, labelpad=10)
+ax1.set_zlabel("PC 3", fontsize=10, labelpad=10)
+ax1.view_init(elev=25, azim=45)
+ax1.grid(True, alpha=0.3)
+ax1.set_facecolor("#f8f9fa")
+ax1.legend(loc='upper left', fontsize=8, framealpha=0.9)
+
+# Panel 2: Flat manifold (hate tokens)
+ax2 = fig_3d.add_subplot(1, 2, 2, projection='3d')
+
+# Different shades of red for each token type
+token_colors_hate = ['#F1948A', '#E74C3C', '#A93226']
+
+# Plot hate tokens with different markers and shades per token type
+for token_idx in range(N_TOKENS):
+    # Get all tokens of this type
+    indices = np.arange(token_idx, len(hate_3d), N_TOKENS)
+    ax2.scatter(
+        hate_3d[indices, 0], hate_3d[indices, 1], hate_3d[indices, 2],
+        c=token_colors_hate[token_idx], s=token_sizes[token_idx],
+        alpha=0.95, edgecolors='#641E16', linewidths=1.5,
+        marker=token_markers[token_idx],
+        label=token_labels[token_idx],
+        depthshade=True,
+    )
+
+# Draw hate sentence trajectories in 3D with outlines
+for traj, cls in zip(traj_3d, y):
+    if cls == 1:  # hate sentences only
+        # Draw outline
+        ax2.plot(
+            traj[:, 0], traj[:, 1], traj[:, 2],
+            color='#641E16', alpha=0.8, lw=4.0,  # Dark outline
+        )
+        # Draw main line
+        ax2.plot(
+            traj[:, 0], traj[:, 1], traj[:, 2],
+            color=palette["hate"], alpha=0.7, lw=2.5,  # Main line
+        )
+
+# Fit and plot plane surface for hate tokens
+if len(hate_3d) > 2:
+    hate_center = hate_3d.mean(axis=0)
+    hate_centered = hate_3d - hate_center
+    _, _, Vt = np.linalg.svd(hate_centered)
+
+    # Use first two principal components to define plane
+    normal = Vt[2]
+
+    # Create extended plane surface
+    extent = 1.5  # Extend plane beyond data points
+    xlim = [hate_3d[:, 0].min() - extent, hate_3d[:, 0].max() + extent]
+    ylim = [hate_3d[:, 1].min() - extent, hate_3d[:, 1].max() + extent]
+    xx, yy = np.meshgrid(
+        np.linspace(xlim[0], xlim[1], 30),
+        np.linspace(ylim[0], ylim[1], 30),
+    )
+
+    # Calculate z for the plane
+    d = -hate_center.dot(normal)
+    zz = (-normal[0] * xx - normal[1] * yy - d) / (normal[2] + 1e-10)
+
+    ax2.plot_surface(
+        xx, yy, zz,
+        color='#D5D8DC', alpha=0.35, edgecolor="none",
+        antialiased=True, shade=True,
+    )
+    # Add grid lines on the plane for flatness emphasis
+    ax2.plot_wireframe(
+        xx, yy, zz,
+        color='#85929E', alpha=0.2, linewidth=0.3, rstride=3, cstride=3,
+    )
+
+ax2.set_title(
+    '"I hate [name]" tokens\nFlat Manifold (K = 0)',
+    fontsize=11, fontweight="bold", pad=15,
+)
+ax2.set_xlabel("PC 1", fontsize=10, labelpad=10)
+ax2.set_ylabel("PC 2", fontsize=10, labelpad=10)
+ax2.set_zlabel("PC 3", fontsize=10, labelpad=10)
+ax2.view_init(elev=25, azim=45)
+ax2.grid(True, alpha=0.3)
+ax2.set_facecolor("#f8f9fa")
+ax2.legend(loc='upper left', fontsize=8, framealpha=0.9)
+
+plt.tight_layout()
 plt.show()
 
 
 ###############################################################################
 # References
 # ----------
-# .. [1] `Curved Inference: Concern-Sensitive Geometry in Large Language Model
-#    Residual Streams
-#    <https://arxiv.org/abs/2507.21107v1>`_
-#    R. Manson, Jul. 08, 2025.
+# .. [1] `Poincaré GloVe: Hyperbolic Word Embeddings
+#    <https://arxiv.org/abs/1810.06546>`_
+#    A. Tifrea, G. Bécigneul, and O.-E. Ganea, 2018.
+# .. [2] `Emergence of a High-Dimensional Abstraction Phase in Language
+#    Transformers
+#    <https://arxiv.org/abs/2405.15471>`_
+#    E. Cheng, D. Doimo, C. Kervadec, I. Macocco, J. Yu, A. Laio, and
+#    M. Baroni, 2025.
