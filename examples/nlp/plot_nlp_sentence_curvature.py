@@ -167,7 +167,7 @@ x_global = np.vstack(x_list)
 # The pipeline standardises embeddings, extracts neighbourhood tangent patches,
 # estimates a local metric tensor (SPD matrix) per token with Covariances,
 # aggregates token tensors into one SPD matrix per sentence via the Riemannian
-# mean (SentenceAggregator), and classifies with MDM [2]_.
+# mean (SentenceAggregator), and classifies with MDM.
 
 pipeline = make_pipeline(
     StandardScaler(),
@@ -192,21 +192,20 @@ for _, step in pipeline.steps[:-1]:
 # Visualise results
 # -----------------
 #
-# Three panels show (1) token trajectories in PCA space, (2) the Riemannian
-# mean metric tensor per class, and (3) the MDM decision space with the
-# Riemannian distance to each class centroid.
+# Two panels show (1) the Riemannian mean metric tensor per class, and
+# (2) the MDM decision space with the Riemannian distance to each class
+# centroid.
 
 palette = {"love": "#3498DB", "hate": "#E84C3D"}
 mdm = pipeline[-1]
 
 all_tokens = np.vstack(x_list)
-all_2d = PCA(n_components=2, random_state=0).fit_transform(all_tokens)
 dist_love = np.array(
     [distance_riemann(m, mdm.covmeans_[0]) for m in sentence_spd])
 dist_hate = np.array(
     [distance_riemann(m, mdm.covmeans_[1]) for m in sentence_spd])
 
-fig, axes = plt.subplots(1, 3, figsize=(16, 5))
+fig, axes = plt.subplots(1, 2, figsize=(12, 5))
 fig.suptitle(
     'Sentence trajectories: "I love/hate [name]"\n'
     "local metric tensor (SPD) per token → Riemannian mean per sentence → MDM",
@@ -214,25 +213,6 @@ fig.suptitle(
 )
 
 ax = axes[0]
-token_cls = np.repeat(y, N_TOKENS)
-for cls, verb in enumerate(["love", "hate"]):
-    mask = token_cls == cls
-    ax.scatter(
-        all_2d[mask, 0], all_2d[mask, 1],
-        c=palette[verb], label=verb,
-        s=60, edgecolors="k", linewidths=0.3, alpha=0.85,
-    )
-traj_2d = all_2d.reshape(-1, N_TOKENS, 2)
-for traj, cls in zip(traj_2d, y):
-    verb = ["love", "hate"][cls]
-    ax.plot(traj[:, 0], traj[:, 1], "-",
-            color=palette[verb], alpha=0.25, lw=1.2)
-ax.set_title("Token embeddings (PCA)\neach line = one sentence trajectory")
-ax.set_xlabel("PC 1")
-ax.set_ylabel("PC 2")
-ax.legend(title="class")
-
-ax = axes[1]
 mean_love = mean_riemann(sentence_spd[y == 0])
 mean_hate = mean_riemann(sentence_spd[y == 1])
 combined = np.block([
@@ -252,7 +232,7 @@ ax.set_xticks([])
 ax.set_yticks([])
 plt.colorbar(im, ax=ax)
 
-ax = axes[2]
+ax = axes[1]
 correct = y_pred == y
 for cls, verb in enumerate(["love", "hate"]):
     mask = y == cls
@@ -289,9 +269,15 @@ plt.tight_layout()
 # 3D Manifold Visualization
 # --------------------------
 #
-# Separate figure showing the curved (sphere-like) and flat (plane-like)
-# manifolds in 3D space. Love tokens lie on a positively curved surface
-# (K > 0), while hate tokens lie on a flat plane (K = 0).
+# This figure shows an example of how Riemannian geometry can help us with
+# understanding Language Models: "love" and "hate" sentences trace different
+# geometric structures. Love tokens lie on a positively curved sphere
+# (K > 0) with geodesic arcs, while hate tokens lie on a flat plane (K = 0)
+# with straight trajectories. This curvature difference—captured by local
+# metric tensors enables MDM classification, thanks to treating LLMs latent
+# space as a Riemannian Manifold we can extract many geometric features that
+# may be benefitial in understanding and classification of sentences produced
+# by LLMs.
 
 # Compute 3D embeddings for surface visualization
 all_3d = PCA(n_components=3, random_state=0).fit_transform(all_tokens)
@@ -518,7 +504,6 @@ ax2.set_title(
 ax2.set_xlabel("PC 1", fontsize=10, labelpad=10)
 ax2.set_ylabel("PC 2", fontsize=10, labelpad=10)
 ax2.set_zlabel("PC 3", fontsize=10, labelpad=10)
-ax2.view_init(elev=25, azim=45)
 ax2.grid(True, alpha=0.3)
 ax2.set_facecolor("#f8f9fa")
 ax2.legend(loc='upper left', fontsize=8, framealpha=0.9)
