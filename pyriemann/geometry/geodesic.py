@@ -57,6 +57,7 @@ def geodesic_chol(A, B, alpha=0.5):
     """
     xp = get_namespace(A, B)
     if hasattr(alpha, "ndim") and alpha.ndim >= 1:
+        alpha = xp.asarray(alpha)
         alpha = alpha[..., None, None]
     geo = (1 - alpha) * xp.linalg.cholesky(A) + alpha * xp.linalg.cholesky(B)
     return geo @ ctranspose(geo)
@@ -99,6 +100,8 @@ def geodesic_euclid(A, B, alpha=0.5):
     geodesic
     """
     if hasattr(alpha, "ndim") and alpha.ndim >= 1:
+        xp = get_namespace(A, B)
+        alpha = xp.asarray(alpha)
         alpha = alpha[..., None, None]
     return (1 - alpha) * A + alpha * B
 
@@ -143,6 +146,7 @@ def geodesic_logchol(A, B, alpha=0.5):
     """
     xp = get_namespace(A, B)
     if hasattr(alpha, "ndim") and alpha.ndim >= 1:
+        alpha = xp.asarray(alpha)
         alpha = alpha[..., None]
     A_chol, B_chol = xp.linalg.cholesky(A), xp.linalg.cholesky(B)
 
@@ -205,6 +209,8 @@ def geodesic_logeuclid(A, B, alpha=0.5):
         SIAM J Matrix Anal Appl, 2007, 29 (1), pp. 328-347
     """
     if hasattr(alpha, "ndim") and alpha.ndim >= 1:
+        xp = get_namespace(A, B)
+        alpha = xp.asarray(alpha)
         alpha = alpha[..., None, None]
     return expm((1 - alpha) * logm(A) + alpha * logm(B))
 
@@ -369,6 +375,8 @@ def geodesic_wasserstein(A, B, alpha=0.5):
         Information Geometry, 2018, 1, pp. 137–179.
     """
     if hasattr(alpha, "ndim") and alpha.ndim >= 1:
+        xp = get_namespace(A, B)
+        alpha = xp.asarray(alpha)
         alpha = alpha[..., None, None]
     A12 = sqrtm(A)
     A12inv = invsqrtm(A)
