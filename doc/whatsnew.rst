@@ -10,11 +10,6 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.12.dev
 ---------
 
-- Add example on Riemannian curvature analysis of sentence trajectories in language model embeddings,
-  demonstrating how local metric tensors (SPD matrices) capture geometric structure in LLM latent spaces
-  and enable classification of semantically distinct sentences using MDM.
-  :pr:`448` by :user:`SzczepanK112` and :user:`gcattan`
-
 - Deprecate ``covariances_X`` and ``cospectrum``.
   :pr:`442` by :user:`qbarthelemy`
 
@@ -38,6 +33,10 @@ v0.12.dev
   ``pyriemann.utils._check`` with the same shim+warning. Tests for moved
   modules are renamed ``test_utils_*`` → ``test_geometry_*``.
   :pr:`445` by :user:`bruAristimunha`
+- Add example on Riemannian curvature analysis of sentence trajectories in language model embeddings,
+  demonstrating how local metric tensors (SPD matrices) capture geometric structure in LLM latent spaces
+  and enable classification of semantically distinct sentences using MDM.
+  :pr:`448` by :user:`SzczepanK112` and :user:`gcattan`
 
 v0.11 (April 2026)
 ------------------
