@@ -38,6 +38,9 @@ v0.12.dev
   allowing a different geodesic position per stacked matrix pair.
   :pr:`396` by :user:`Fashad-Ahmed`
 
+- Add example on simulated 2x2 SPD matrices to compare metrics.
+  :pr:`451` by :user:`qbarthelemy`
+
 v0.11 (April 2026)
 ------------------
 
