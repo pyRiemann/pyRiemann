@@ -772,7 +772,7 @@ def innerproduct_euclid(X, Y, *args):
 
 
 def innerproduct_logchol(X, Y, Cref):
-    """Log-Cholesky inner product.
+    r"""Log-Cholesky inner product.
 
     Log-Cholesky inner product :math:`\mathbf{g}` between
     symmetric matrices in tangent space :math:`\mathbf{X}`

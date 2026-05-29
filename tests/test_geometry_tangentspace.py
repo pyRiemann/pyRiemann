@@ -26,7 +26,6 @@ from pyriemann.geometry.tangentspace import (
     untangent_space,
     innerproduct,
     innerproduct_euclid,
-    innerproduct_logchol,
     innerproduct_logeuclid,
     innerproduct_riemann,
     norm,
