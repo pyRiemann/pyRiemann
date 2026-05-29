@@ -38,6 +38,9 @@ v0.12.dev
   allowing a different geodesic position per stacked matrix pair.
   :pr:`396` by :user:`Fashad-Ahmed`
 
+- Add log-Cholesky inner product for SPD matrices :func:`pyriemann.geometry.tangentspace.innerproduct_logchol`.
+  :pr:`450` by :user:`qbarthelemy`
+
 v0.11 (April 2026)
 ------------------
 
