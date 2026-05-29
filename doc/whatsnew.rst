@@ -34,6 +34,10 @@ v0.12.dev
   modules are renamed ``test_utils_*`` → ``test_geometry_*``.
   :pr:`445` by :user:`bruAristimunha`
 
+- Enhance :func:`pyriemann.geometry.geodesic.geodesic` to accept ``alpha`` as an ndarray of shape ``(...,)``,
+  allowing a different geodesic position per stacked matrix pair.
+  :pr:`396` by :user:`Fashad-Ahmed`
+
 v0.11 (April 2026)
 ------------------
 
