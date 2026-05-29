@@ -771,6 +771,75 @@ def innerproduct_euclid(X, Y, *args):
     return G
 
 
+def innerproduct_logchol(X, Y, Cref):
+    """Log-Cholesky inner product.
+
+    Log-Cholesky inner product :math:`\mathbf{g}` between
+    symmetric matrices in tangent space :math:`\mathbf{X}`
+    and :math:`\mathbf{Y}` at :math:`\mathbf{C}_\text{ref}` is given in [1]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        First symmetric matrices in tangent space at Cref.
+    Y : ndarray, shape (..., n, n) | None
+        Second symmetric matrices in tangent space at Cref.
+        If None, Y is set to X, giving the squared norm of X.
+    Cref : ndarray, shape (n, n)
+        Reference SPD matrix.
+
+    Returns
+    -------
+    G : float or ndarray, shape (...,)
+        Log-Cholesky inner product between X and Y.
+
+    Notes
+    -----
+    .. versionadded:: 0.12
+
+    See Also
+    --------
+    innerproduct
+
+    References
+    ----------
+    .. [1] `Riemannian geometry of symmetric positive definite matrices via
+        Cholesky decomposition
+        <https://arxiv.org/pdf/1908.09326>`_
+        Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
+    """
+    if Y is None:
+        Y = X
+
+    xp = check_matrix_pair(X, Cref, require_square=True)
+    C_chol = xp.linalg.cholesky(Cref)
+    eye_n = xp.eye(Cref.shape[-1], dtype=Cref.dtype, device=xpd(Cref))
+    C_invchol = xp.linalg.solve(C_chol, eye_n)
+
+    tri0, tri1 = tril_indices(X.shape[-1], -1)
+    diag0, diag1 = diag_indices(X.shape[-1])
+
+    diffX_ = C_invchol @ X @ C_invchol.T
+    diff12 = xp.zeros_like(diffX_)
+    diff12[..., tri0, tri1] = diffX_[..., tri0, tri1]
+    diff12[..., diag0, diag1] = diffX_[..., diag0, diag1] / 2
+    diffX = C_chol @ diff12
+
+    diffY_ = C_invchol @ Y @ C_invchol.T
+    diff12 = xp.zeros_like(diffY_)
+    diff12[..., tri0, tri1] = diffY_[..., tri0, tri1]
+    diff12[..., diag0, diag1] = diffY_[..., diag0, diag1] / 2
+    diffY = C_chol @ diff12
+
+    def _prod(X, Y, Cref):
+        """Table 1 of [1]"""
+        M = xp.tril(xp.ones_like(X), k=-1)  # mask i>j
+        return xp.einsum("...ij,...ij,...ij->...", X, Y, M) + \
+            xp.einsum("...jj,...jj,...jj->...", X, Y, Cref**-2)
+
+    return _prod(diffX.conj(), diffY, C_chol)
+
+
 def innerproduct_logeuclid(X, Y, Cref):
     r"""Log-Euclidean inner product.
 
@@ -892,6 +961,7 @@ def _apply_inner_product(X, Y):
 
 innerproduct_functions = {
     "euclid": innerproduct_euclid,
+    "logchol": innerproduct_logchol,
     "logeuclid": innerproduct_logeuclid,
     "riemann": innerproduct_riemann,
 }
@@ -915,7 +985,7 @@ def innerproduct(X, Y, Cref, metric="riemann"):
         Reference matrix.
     metric : string | callable, default="riemann"
         Metric used for inner product, can be:
-        "euclid", "logeuclid", "riemann", or a callable function.
+        "euclid", "logchol", "logeuclid", "riemann", or a callable function.
 
     Returns
     -------
@@ -931,6 +1001,7 @@ def innerproduct(X, Y, Cref, metric="riemann"):
     See Also
     --------
     innerproduct_euclid
+    innerproduct_logchol
     innerproduct_logeuclid
     innerproduct_riemann
     """

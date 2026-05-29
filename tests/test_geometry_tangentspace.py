@@ -26,6 +26,7 @@ from pyriemann.geometry.tangentspace import (
     untangent_space,
     innerproduct,
     innerproduct_euclid,
+    innerproduct_logchol,
     innerproduct_logeuclid,
     innerproduct_riemann,
     norm,
@@ -222,7 +223,7 @@ def test_tangent_and_untangent_space(kind, metric, get_mats):
 
 ###############################################################################
 
-metrics = ["euclid", "logeuclid", "riemann"]
+metrics = ["euclid", "logchol", "logeuclid", "riemann"]
 
 
 @pytest.mark.parametrize("metric", metrics)
@@ -256,6 +257,8 @@ def test_innerproduct_input_dimension_error(metric, get_mats):
 @pytest.mark.parametrize("metric", metrics)
 def test_innerproduct_x_x(kindX, kindC, metric, get_mats):
     """Test innerproduct for X = Y"""
+    if kindC == "hpd" and metric == "logchol":
+        pytest.skip()
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kindX)
     Cref = get_mats(1, n_channels, kindC)[0]
@@ -271,6 +274,8 @@ def test_innerproduct_x_x(kindX, kindC, metric, get_mats):
 @pytest.mark.parametrize("metric", metrics)
 def test_innerproduct_x_y(kindX, kindC, metric, get_mats):
     """Test innerproduct for different X and Y"""
+    if kindC == "hpd" and metric == "logchol":
+        pytest.skip()
     n_matrices, n_channels = 4, 3
     X = get_mats(n_matrices, n_channels, kindX)
     Y = get_mats(n_matrices, n_channels, kindX)
@@ -309,6 +314,8 @@ def test_innerproduct_broadcasting(finnerproduct, backend, get_mats):
 @pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
 @pytest.mark.parametrize("metric", metrics)
 def test_innerproduct_property_conjsymmetry(kindX, kindC, metric, get_mats):
+    if kindC == "hpd" and metric == "logchol":
+        pytest.skip()
     n_matrices, n_channels = 5, 2
     X = get_mats(n_matrices, n_channels, kindX)
     Y = get_mats(n_matrices, n_channels, kindX)
@@ -322,6 +329,8 @@ def test_innerproduct_property_conjsymmetry(kindX, kindC, metric, get_mats):
 @pytest.mark.parametrize("metric", metrics)
 def test_innerproduct_property_linearity(kindX, kindC, metric,
                                          get_mats, rndstate):
+    if kindC == "hpd" and metric == "logchol":
+        pytest.skip()
     n_matrices, n_channels = 4, 3
     X = get_mats(n_matrices, n_channels, kindX)
     Y = get_mats(n_matrices, n_channels, kindX)
@@ -349,6 +358,8 @@ def test_innerproduct_property_linearity(kindX, kindC, metric,
 @pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
 @pytest.mark.parametrize("metric", metrics)
 def test_innerproduct_property_pos_def(kindX, kindC, metric, get_mats):
+    if kindC == "hpd" and metric == "logchol":
+        pytest.skip()
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kindX)
     Cref = get_mats(1, n_channels, kindC)[0]
@@ -395,6 +406,8 @@ def test_innerproduct_riemann(kindX, kindC, get_mats):
 @pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
 @pytest.mark.parametrize("metric", metrics)
 def test_norm_properties(kindX, kindC, metric, backend, get_mats):
+    if kindC == "hpd" and metric == "logchol":
+        pytest.skip()
     n_channels = 4
     X, Y = get_mats(2, n_channels, kindX)
     Cref = get_mats(1, n_channels, kindC)[0]

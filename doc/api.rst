@@ -781,6 +781,7 @@ Tangent Space
     untangent_space
     innerproduct
     innerproduct_euclid
+    innerproduct_logchol
     innerproduct_logeuclid
     innerproduct_riemann
     norm
