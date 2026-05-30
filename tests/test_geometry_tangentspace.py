@@ -26,6 +26,7 @@ from pyriemann.geometry.tangentspace import (
     untangent_space,
     innerproduct,
     innerproduct_euclid,
+    innerproduct_logchol,
     innerproduct_logeuclid,
     innerproduct_riemann,
     norm,
@@ -288,6 +289,7 @@ def test_innerproduct_x_y(kindX, kindC, metric, get_mats):
     "finnerproduct",
     [
         innerproduct_euclid,
+        innerproduct_logchol,
         innerproduct_logeuclid,
         innerproduct_riemann,
     ],
