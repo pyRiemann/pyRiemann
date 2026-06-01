@@ -29,7 +29,7 @@ from sklearn.preprocessing import StandardScaler
 
 from pyriemann.classification import MDM
 from pyriemann.estimation import Covariances
-from pyriemann.geometry.distance import distance_riemann
+from pyriemann.geometry.distance import distance
 from pyriemann.geometry.mean import mean_riemann
 
 
@@ -67,6 +67,35 @@ def _name_token(name, rng):
     emb[6] = 1.0 if name in FEMALE_NAMES else -1.0
     emb += rng.standard_normal(D) * 0.04
     return emb
+
+
+def project_to_sphere(points, center, radius, eps=1e-10):
+    """Project points radially onto a sphere."""
+    directions = points - center
+    norms = np.linalg.norm(directions, axis=-1, keepdims=True)
+    return np.where(
+        norms > eps, center + (directions / norms) * radius, points
+    )
+
+
+def plot_outlined_3d(ax, xyz, color, outline="#1B4F72"):
+    """Plot a 3D line with a darker outline underneath."""
+    ax.plot(*xyz.T, color=outline, alpha=0.8, lw=4.0)
+    ax.plot(*xyz.T, color=color, alpha=0.7, lw=2.5)
+
+
+def scatter_token_groups(
+        ax, points, colors, edgecolor, markers, labels, sizes):
+    """Scatter token groups with one style per token position."""
+    for token_idx in range(len(markers)):
+        pts = points[token_idx::len(markers)]
+        ax.scatter(
+            pts[:, 0], pts[:, 1], pts[:, 2],
+            c=colors[token_idx], s=sizes[token_idx], alpha=0.95,
+            edgecolors=edgecolor, linewidths=1.5,
+            marker=markers[token_idx], label=labels[token_idx],
+            depthshade=True,
+        )
 
 
 class NeighborhoodPatchExtractor(BaseEstimator, TransformerMixin):
@@ -129,7 +158,7 @@ class SentenceAggregator(BaseEstimator, TransformerMixin):
 
 N_NAMES = 6    # sentences per class
 N_TOKENS = 3   # [I, verb, name]
-K = 6          # neighbours for local metric estimation
+N_NEIGHOBURS = 6          # neighbours for local metric estimation
 
 rng = np.random.default_rng(0)
 i_base = np.zeros(D)
@@ -171,7 +200,7 @@ x_global = np.vstack(x_list)
 
 pipeline = make_pipeline(
     StandardScaler(),
-    NeighborhoodPatchExtractor(k=K),
+    NeighborhoodPatchExtractor(k=N_NEIGHOBURS),
     Covariances(estimator="lwf"),
     SentenceAggregator(n_tokens=N_TOKENS),
     MDM(metric="riemann"),
@@ -200,39 +229,33 @@ palette = {"love": "#3498DB", "hate": "#E84C3D"}
 mdm = pipeline[-1]
 
 all_tokens = np.vstack(x_list)
-dist_love = np.array(
-    [distance_riemann(m, mdm.covmeans_[0]) for m in sentence_spd])
-dist_hate = np.array(
-    [distance_riemann(m, mdm.covmeans_[1]) for m in sentence_spd])
+dist_love = distance(sentence_spd, mdm.covmeans_[0], metric="riemann")[:, 0]
+dist_hate = distance(sentence_spd, mdm.covmeans_[1], metric="riemann")[:, 0]
 
-fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+fig, axes = plt.subplots(1, 3, figsize=(14, 5))
 fig.suptitle(
     'Sentence trajectories: "I love/hate [name]"\n'
-    "local metric tensor (SPD) per token → Riemannian mean per sentence → MDM",
+    "sentence-level SPD geometry and MDM decision space "
+    "from the Riemannian mean of token metrics",
     fontsize=11, fontweight="bold",
 )
 
-ax = axes[0]
 mean_love = mean_riemann(sentence_spd[y == 0])
 mean_hate = mean_riemann(sentence_spd[y == 1])
-combined = np.block([
-    [mean_love, np.full_like(mean_love, np.nan)],
-    [np.full_like(mean_hate, np.nan), mean_hate],
-])
-cmap = plt.cm.RdBu_r.copy()
-cmap.set_bad("white")
-im = ax.imshow(combined, cmap=cmap, aspect="auto")
-d = mean_love.shape[0]
-ax.axhline(d - 0.5, color="k", lw=2)
-ax.axvline(d - 0.5, color="k", lw=2)
+vmax = max(mean_love.max(), mean_hate.max())
+vmin = min(mean_love.min(), mean_hate.min())
+for ax, mat, title in zip(
+    axes[:2],
+    [mean_love, mean_hate],
+    ["Love mean metric tensor", "Hate mean metric tensor"],
+):
+    im = ax.imshow(mat, cmap="RdBu_r", aspect="auto", vmin=vmin, vmax=vmax)
+    ax.set_title(title)
+    ax.set_xticks([])
+    ax.set_yticks([])
 
-ax.set_title(
-    "Riemannian mean metric tensor\nper class (top-left vs bottom-right)")
-ax.set_xticks([])
-ax.set_yticks([])
-plt.colorbar(im, ax=ax)
-
-ax = axes[1]
+ax = axes[2]
 correct = y_pred == y
 for cls, verb in enumerate(["love", "hate"]):
     mask = y == cls
@@ -275,7 +298,7 @@ plt.tight_layout()
 # (K > 0) with geodesic arcs, while hate tokens lie on a flat plane (K = 0)
 # with straight trajectories. This curvature difference—captured by local
 # metric tensors enables MDM classification, thanks to treating LLMs latent
-# space as a Riemannian Manifold we can extract many geometric features that
+# space as a Riemannian manifold we can extract many geometric features that
 # may be benefitial in understanding and classification of sentences produced
 # by LLMs.
 
@@ -284,15 +307,13 @@ all_3d = PCA(n_components=3, random_state=0).fit_transform(all_tokens)
 token_cls_3d = np.repeat(y, N_TOKENS)
 
 # Separate love and hate tokens in 3D
-love_mask = token_cls_3d == 0
-hate_mask = token_cls_3d == 1
-love_3d = all_3d[love_mask]
-hate_3d = all_3d[hate_mask]
+love_3d = all_3d[token_cls_3d == 0]
+hate_3d = all_3d[token_cls_3d == 1]
 
 # Create new figure for 3D visualizations
 fig_3d = plt.figure(figsize=(16, 7))
 fig_3d.suptitle(
-    "3D Manifold Geometry: Curved vs Flat",
+    "3D manifold geometry: curved vs flat",
     fontsize=13, fontweight="bold", y=0.98,
 )
 
@@ -301,104 +322,54 @@ ax1 = fig_3d.add_subplot(1, 2, 1, projection='3d')
 
 # Fit sphere for love tokens first
 love_center = love_3d.mean(axis=0)
-love_centered = love_3d - love_center
-radius = np.mean(np.linalg.norm(love_centered, axis=1))
+radius = np.mean(np.linalg.norm(love_3d - love_center, axis=1))
 
 # Project love tokens onto sphere surface
-love_3d_projected = np.zeros_like(love_3d)
-for i in range(len(love_3d)):
-    direction = love_3d[i] - love_center
-    norm = np.linalg.norm(direction)
-    if norm > 1e-10:
-        love_3d_projected[i] = love_center + (direction / norm) * radius
-    else:
-        love_3d_projected[i] = love_3d[i]
+love_3d_projected = project_to_sphere(love_3d, love_center, radius)
 
 # Plot love tokens on sphere surface with different markers and shades
 # per token type. Token order: [I, verb, name] for each sentence
 token_markers = ['o', 's', '^']  # circle, square, triangle
 token_labels = ['Token: "I"', 'Token: verb', 'Token: name']
 token_sizes = [120, 140, 120]
-# Different shades of blue for each token type
 token_colors = ['#5DADE2', '#3498DB', '#2874A6']  # light, medium, dark blue
 
-for token_idx in range(N_TOKENS):
-    # Get all tokens of this type (every N_TOKENS-th token)
-    indices = np.arange(token_idx, len(love_3d_projected), N_TOKENS)
-    ax1.scatter(
-        love_3d_projected[indices, 0],
-        love_3d_projected[indices, 1],
-        love_3d_projected[indices, 2],
-        c=token_colors[token_idx], s=token_sizes[token_idx], alpha=0.95,
-        edgecolors='#1B4F72', linewidths=1.5,
-        marker=token_markers[token_idx],
-        label=token_labels[token_idx],
-        depthshade=True,
-    )
+scatter_token_groups(
+    ax1, love_3d_projected, token_colors, '#1B4F72',
+    token_markers, token_labels, token_sizes,
+)
 
 # Draw love sentence trajectories as geodesics on sphere surface
 traj_3d = all_3d.reshape(-1, N_TOKENS, 3)
-for traj, cls in zip(traj_3d, y):
-    if cls == 0:  # love sentences only
-        # Project trajectory points onto sphere
-        traj_proj = np.zeros_like(traj)
-        for i in range(len(traj)):
-            direction = traj[i] - love_center
-            norm = np.linalg.norm(direction)
-            if norm > 1e-10:
-                traj_proj[i] = love_center + (direction / norm) * radius
-            else:
-                traj_proj[i] = traj[i]
-        # Draw geodesics (great circles) between consecutive points
-        for i in range(len(traj_proj) - 1):
-            p1 = traj_proj[i] - love_center
-            p2 = traj_proj[i + 1] - love_center
+for traj in traj_3d[y == 0]:
+    # Project trajectory points onto sphere
+    traj_proj = project_to_sphere(traj, love_center, radius)
 
-            # Normalize to unit sphere
-            p1_norm = p1 / np.linalg.norm(p1)
-            p2_norm = p2 / np.linalg.norm(p2)
+    # Draw geodesics (great circles) between consecutive points
+    for i in range(len(traj_proj) - 1):
+        p1 = traj_proj[i] - love_center
+        p2 = traj_proj[i + 1] - love_center
 
-            # Calculate angle between points
-            cos_angle = np.clip(np.dot(p1_norm, p2_norm), -1.0, 1.0)
-            angle = np.arccos(cos_angle)
+        # Normalize to unit sphere
+        p1_norm = p1 / np.linalg.norm(p1)
+        p2_norm = p2 / np.linalg.norm(p2)
 
-            # Generate points along the geodesic (great circle arc)
-            n_points = max(20, int(angle * 50))
-            t = np.linspace(0, 1, n_points)
+        # Calculate angle between points
+        cos_angle = np.clip(np.dot(p1_norm, p2_norm), -1.0, 1.0)
+        angle = np.arccos(cos_angle)
 
-            # Slerp (Spherical Linear Interpolation) for geodesic
-            if angle > 1e-6:  # Avoid division by zero
-                geodesic = np.zeros((n_points, 3))
-                for j, t_val in enumerate(t):
-                    # Slerp formula
-                    interp = (np.sin((1 - t_val) * angle) * p1_norm +
-                              np.sin(t_val * angle) * p2_norm) / \
-                        np.sin(angle)
-                    geodesic[j] = love_center + interp * radius
+        # Generate points along the geodesic (great circle arc)
+        n_points = max(20, int(angle * 50))
 
-                # Draw geodesic with outline
-                ax1.plot(
-                    geodesic[:, 0], geodesic[:, 1], geodesic[:, 2],
-                    color='#1B4F72', alpha=0.8, lw=4.0,  # Dark outline
-                )
-                ax1.plot(
-                    geodesic[:, 0], geodesic[:, 1], geodesic[:, 2],
-                    color=palette["love"], alpha=0.7, lw=2.5,  # Main line
-                )
-            else:
-                # Points are very close, just draw straight line with outline
-                ax1.plot(
-                    [traj_proj[i, 0], traj_proj[i + 1, 0]],
-                    [traj_proj[i, 1], traj_proj[i + 1, 1]],
-                    [traj_proj[i, 2], traj_proj[i + 1, 2]],
-                    color='#1B4F72', alpha=0.8, lw=4.0,  # Dark outline
-                )
-                ax1.plot(
-                    [traj_proj[i, 0], traj_proj[i + 1, 0]],
-                    [traj_proj[i, 1], traj_proj[i + 1, 1]],
-                    [traj_proj[i, 2], traj_proj[i + 1, 2]],
-                    color=palette["love"], alpha=0.7, lw=2.5,  # Main line
-                )
+        # Slerp (Spherical Linear Interpolation) for geodesic
+        if angle > 1e-6:  # Avoid division by zero
+            t = np.linspace(0, 1, n_points)[:, None]
+            geodesic = (
+                np.sin((1 - t) * angle) * p1_norm
+                + np.sin(t * angle) * p2_norm
+            ) / np.sin(angle)
+            geodesic = love_center + radius * geodesic
+            plot_outlined_3d(ax1, geodesic, palette["love"])
 
 # Plot sphere surface in grey with stretched z-dimension
 u = np.linspace(0, 2 * np.pi, 40)
@@ -420,7 +391,7 @@ ax1.plot_wireframe(
 )
 
 ax1.set_title(
-    '"I love [name]" tokens\nCurved Manifold (K > 0)',
+    '"I love [name]" tokens\nCurved manifold (K > 0)',
     fontsize=11, fontweight="bold", pad=15,
 )
 ax1.set_xlabel("PC 1", fontsize=10, labelpad=10)
@@ -438,31 +409,14 @@ ax2 = fig_3d.add_subplot(1, 2, 2, projection='3d')
 token_colors_hate = ['#F1948A', '#E74C3C', '#A93226']
 
 # Plot hate tokens with different markers and shades per token type
-for token_idx in range(N_TOKENS):
-    # Get all tokens of this type
-    indices = np.arange(token_idx, len(hate_3d), N_TOKENS)
-    ax2.scatter(
-        hate_3d[indices, 0], hate_3d[indices, 1], hate_3d[indices, 2],
-        c=token_colors_hate[token_idx], s=token_sizes[token_idx],
-        alpha=0.95, edgecolors='#641E16', linewidths=1.5,
-        marker=token_markers[token_idx],
-        label=token_labels[token_idx],
-        depthshade=True,
-    )
+scatter_token_groups(
+    ax2, hate_3d, token_colors_hate, '#641E16',
+    token_markers, token_labels, token_sizes,
+)
 
 # Draw hate sentence trajectories in 3D with outlines
-for traj, cls in zip(traj_3d, y):
-    if cls == 1:  # hate sentences only
-        # Draw outline
-        ax2.plot(
-            traj[:, 0], traj[:, 1], traj[:, 2],
-            color='#641E16', alpha=0.8, lw=4.0,  # Dark outline
-        )
-        # Draw main line
-        ax2.plot(
-            traj[:, 0], traj[:, 1], traj[:, 2],
-            color=palette["hate"], alpha=0.7, lw=2.5,  # Main line
-        )
+for traj in traj_3d[y == 1]:
+    plot_outlined_3d(ax2, traj, palette["hate"], outline="#641E16")
 
 # Fit and plot plane surface for hate tokens
 if len(hate_3d) > 2:
@@ -491,14 +445,9 @@ if len(hate_3d) > 2:
         color='#D5D8DC', alpha=0.35, edgecolor="none",
         antialiased=True, shade=True,
     )
-    # Add grid lines on the plane for flatness emphasis
-    ax2.plot_wireframe(
-        xx, yy, zz,
-        color='#85929E', alpha=0.2, linewidth=0.3, rstride=3, cstride=3,
-    )
 
 ax2.set_title(
-    '"I hate [name]" tokens\nFlat Manifold (K = 0)',
+    '"I hate [name]" tokens\nFlat manifold (K = 0)',
     fontsize=11, fontweight="bold", pad=15,
 )
 ax2.set_xlabel("PC 1", fontsize=10, labelpad=10)
