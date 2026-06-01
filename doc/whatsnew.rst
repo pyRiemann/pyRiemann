@@ -34,6 +34,10 @@ v0.12.dev
   modules are renamed ``test_utils_*`` → ``test_geometry_*``.
   :pr:`445` by :user:`bruAristimunha`
 
+- Enhance :func:`pyriemann.geometry.geodesic.geodesic` to accept ``alpha`` as an ndarray of shape ``(...,)``,
+  allowing a different geodesic position per stacked matrix pair.
+  :pr:`396` by :user:`Fashad-Ahmed`
+
 - Add example on Riemannian curvature analysis of sentence trajectories in language model embeddings,
   demonstrating how local metric tensors (SPD matrices) capture geometric structure in LLM latent spaces
   and enable classification of semantically distinct sentences using MDM.

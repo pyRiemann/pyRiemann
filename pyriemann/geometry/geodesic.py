@@ -1,10 +1,38 @@
 """Geodesics for SPD/HPD matrices."""
 
 from array_api_compat import array_namespace as get_namespace
+from array_api_extra import expand_dims
 
 from ._backend import diag_indices, tril_indices
 from ._check import check_function, check_matrix_pair
 from .base import ctranspose, _eigvalsh, sqrtm, invsqrtm, powm, logm, expm
+
+
+def _check_alpha(alpha, X, axis=(-2, -1)):
+    if isinstance(alpha, (float, int)):
+        pass
+    elif hasattr(alpha, "ndim"):
+        xpa, xpx = get_namespace(alpha), get_namespace(X)
+        if xpa is not xpx:
+            raise ValueError(
+                f"alpha must be on backend {xpx}, got {xpa}."
+            )
+        if alpha.ndim != X.ndim - 2:
+            raise ValueError(
+                f"alpha must have dimension {X.ndim - 2}, got {alpha.ndim}."
+            )
+        expected_shape = X.shape[:-2]
+        if alpha.shape != expected_shape:
+            raise ValueError(
+                f"alpha must have shape {expected_shape}, got {alpha.shape}."
+            )
+        alpha = expand_dims(alpha, axis=axis)
+    else:
+        raise ValueError(
+            f"alpha must be a float or an array, got {type(alpha)}."
+        )
+
+    return alpha
 
 
 def geodesic_chol(A, B, alpha=0.5):
@@ -28,8 +56,10 @@ def geodesic_chol(A, B, alpha=0.5):
         First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices.
-    alpha : float, default=0.5
-        Position on the geodesic.
+    alpha : float | ndarray, shape (...,), default=0.5
+        Position on the geodesic. If ndarray, one value per matrix pair.
+
+        .. versionchanged:: 0.12
 
     Returns
     -------
@@ -41,6 +71,7 @@ def geodesic_chol(A, B, alpha=0.5):
     .. versionadded:: 0.10
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+        Add support for array-valued alpha.
 
     See Also
     --------
@@ -55,6 +86,7 @@ def geodesic_chol(A, B, alpha=0.5):
         Ann Appl Stat, 2009, 3(3), pp. 1102-1123.
     """
     xp = get_namespace(A, B)
+    alpha = _check_alpha(alpha, A)
     geo = (1 - alpha) * xp.linalg.cholesky(A) + alpha * xp.linalg.cholesky(B)
     return geo @ ctranspose(geo)
 
@@ -77,8 +109,10 @@ def geodesic_euclid(A, B, alpha=0.5):
         First matrices.
     B : ndarray, shape (..., n, m)
         Second matrices.
-    alpha : float, default=0.5
-        Position on the geodesic.
+    alpha : float | ndarray, shape (...,), default=0.5
+        Position on the geodesic. If ndarray, one value per matrix pair.
+
+        .. versionchanged:: 0.12
 
     Returns
     -------
@@ -89,11 +123,13 @@ def geodesic_euclid(A, B, alpha=0.5):
     -----
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+        Add support for array-valued alpha.
 
     See Also
     --------
     geodesic
     """
+    alpha = _check_alpha(alpha, A)
     return (1 - alpha) * A + alpha * B
 
 
@@ -109,8 +145,10 @@ def geodesic_logchol(A, B, alpha=0.5):
         First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices.
-    alpha : float, default=0.5
-        Position on the geodesic.
+    alpha : float | ndarray, shape (...,), default=0.5
+        Position on the geodesic. If ndarray, one value per matrix pair.
+
+        .. versionchanged:: 0.12
 
     Returns
     -------
@@ -122,6 +160,7 @@ def geodesic_logchol(A, B, alpha=0.5):
     .. versionadded:: 0.7
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+        Add support for array-valued alpha.
 
     See Also
     --------
@@ -135,6 +174,7 @@ def geodesic_logchol(A, B, alpha=0.5):
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
     xp = get_namespace(A, B)
+    alpha = _check_alpha(alpha, A, axis=(-1))
     A_chol, B_chol = xp.linalg.cholesky(A), xp.linalg.cholesky(B)
 
     geo = xp.zeros_like(A)
@@ -169,8 +209,10 @@ def geodesic_logeuclid(A, B, alpha=0.5):
         First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices.
-    alpha : float, default=0.5
-        Position on the geodesic.
+    alpha : float | ndarray, shape (...,), default=0.5
+        Position on the geodesic. If ndarray, one value per matrix pair.
+
+        .. versionchanged:: 0.12
 
     Returns
     -------
@@ -181,6 +223,7 @@ def geodesic_logeuclid(A, B, alpha=0.5):
     -----
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+        Add support for array-valued alpha.
 
     See Also
     --------
@@ -194,6 +237,7 @@ def geodesic_logeuclid(A, B, alpha=0.5):
         V. Arsigny, P. Fillard, X. Pennec, N. Ayache.
         SIAM J Matrix Anal Appl, 2007, 29 (1), pp. 328-347
     """
+    alpha = _check_alpha(alpha, A)
     return expm((1 - alpha) * logm(A) + alpha * logm(B))
 
 
@@ -217,8 +261,10 @@ def geodesic_riemann(A, B, alpha=0.5):
         First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices.
-    alpha : float, default=0.5
-        Position on the geodesic.
+    alpha : float | ndarray, shape (...,), default=0.5
+        Position on the geodesic. If ndarray, one value per matrix pair.
+
+        .. versionchanged:: 0.12
 
     Returns
     -------
@@ -229,6 +275,7 @@ def geodesic_riemann(A, B, alpha=0.5):
     -----
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+        Add support for array-valued alpha.
 
     See Also
     --------
@@ -241,6 +288,7 @@ def geodesic_riemann(A, B, alpha=0.5):
         R. Bhatia and J. Holbrook.
         Linear Algebra and its Applications, 2006
     """
+    alpha = _check_alpha(alpha, A, axis=(-1))
     sA, isA = sqrtm(A), invsqrtm(A)
     C = sA @ powm(isA @ B @ isA, alpha) @ sA
     return C
@@ -262,8 +310,10 @@ def geodesic_thompson(A, B, alpha=0.5):
         First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices.
-    alpha : float, default=0.5
-        Position on the geodesic.
+    alpha : float | ndarray, shape (...,), default=0.5
+        Position on the geodesic. If ndarray, one value per matrix pair.
+
+        .. versionchanged:: 0.12
 
     Returns
     -------
@@ -275,6 +325,7 @@ def geodesic_thompson(A, B, alpha=0.5):
     .. versionadded:: 0.10
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+        Add support for array-valued alpha.
 
     See Also
     --------
@@ -326,8 +377,10 @@ def geodesic_wasserstein(A, B, alpha=0.5):
         First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices.
-    alpha : float, default=0.5
-        Position on the geodesic.
+    alpha : float | ndarray, shape (...,), default=0.5
+        Position on the geodesic. If ndarray, one value per matrix pair.
+
+        .. versionchanged:: 0.12
 
     Returns
     -------
@@ -339,6 +392,7 @@ def geodesic_wasserstein(A, B, alpha=0.5):
     .. versionadded:: 0.8
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+        Add support for array-valued alpha.
 
     See Also
     --------
@@ -351,6 +405,7 @@ def geodesic_wasserstein(A, B, alpha=0.5):
         L. Malagò, L. Montrucchio, G. Pistone.
         Information Geometry, 2018, 1, pp. 137–179.
     """
+    alpha = _check_alpha(alpha, A)
     A12 = sqrtm(A)
     A12inv = invsqrtm(A)
     AB12 = A12 @ sqrtm(A12 @ B @ A12) @ A12inv
@@ -387,8 +442,10 @@ def geodesic(A, B, alpha, metric="riemann"):
         First matrices.
     B : ndarray, shape (..., n, n)
         Second matrices.
-    alpha : float
-        Position on the geodesic.
+    alpha : float | ndarray, shape (...,)
+        Position on the geodesic. If ndarray, one value per matrix pair.
+
+        .. versionchanged:: 0.12
     metric : string | callable, default="riemann"
         Metric used for geodesic, can be:
         "chol", "euclid", "logchol", "logeuclid", "riemann", "thompson",
@@ -404,6 +461,7 @@ def geodesic(A, B, alpha, metric="riemann"):
     -----
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+        Add support for array-valued alpha.
 
     See Also
     --------
@@ -416,5 +474,4 @@ def geodesic(A, B, alpha, metric="riemann"):
     geodesic_wasserstein
     """
     geodesic_function = check_function(metric, geodesic_functions)
-    C = geodesic_function(A, B, alpha)
-    return C
+    return geodesic_function(A, B, alpha)

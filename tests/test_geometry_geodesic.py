@@ -2,7 +2,7 @@ from array_api_compat import array_namespace as get_namespace, device
 import numpy as np
 import pytest
 
-from conftest import approx
+from conftest import approx, to_backend
 from pyriemann.geometry.geodesic import (
     geodesic,
     geodesic_chol,
@@ -128,6 +128,7 @@ def test_geodesic_property_joint_homogeneity(kind, gfun, get_mats, rndstate):
     n_channels = 3
     A, B = get_mats(2, n_channels, kind)
     alpha, s1, s2 = rndstate.uniform(0.01, 0.99, size=3)
+    alpha = float(alpha)
     s = (s1 ** (1 - alpha)) * (s2 ** alpha)
     assert gfun(s1 * A, s2 * B, alpha) == approx(s * gfun(A, B, alpha))
 
@@ -200,3 +201,71 @@ def test_geodesic_thompson(kind, get_mats, rndstate):
     Gt = geodesic_thompson(A, B, alpha)
     Gr = geodesic_riemann(A, B, alpha)
     assert Gt == approx(Gr)
+
+
+def test_geodesic_alpha_error_type(get_mats):
+    n_matrices, n_channels = 3, 2
+    A = get_mats(n_matrices, n_channels, "spd")
+    B = get_mats(n_matrices, n_channels, "spd")
+
+    with pytest.raises(ValueError, match=r"alpha must be a float or an array"):
+        geodesic(A, B, "abc", metric="chol")
+
+
+def test_geodesic_alpha_array_error_backend(get_mats, rndstate, backend):
+    n_matrices, n_channels = 2, 3
+    A = get_mats(n_matrices, n_channels, "spd")
+    B = get_mats(n_matrices, n_channels, "spd")
+
+    alpha = rndstate.uniform(0, 1, size=n_matrices)
+    if backend == "numpy":
+        alpha = to_backend(alpha, "torch")
+
+    with pytest.raises(ValueError, match=r"alpha must be on backend"):
+        geodesic(A, B, alpha, metric="euclid")
+
+
+def test_geodesic_alpha_array_error_shape(get_mats, rndstate):
+    n_matrices, n_channels = 3, 4
+    A = get_mats(n_matrices, n_channels, "spd")
+    B = get_mats(n_matrices, n_channels, "spd")
+    xp = get_namespace(A, B)
+    alpha = xp.asarray(rndstate.uniform(0, 1, size=n_matrices))
+
+    geodesic(A, B, alpha, metric="logchol")
+
+    with pytest.raises(ValueError, match=r"alpha must have dimension"):
+        geodesic(A[0], B[0], alpha, metric="logeuclid")
+
+    with pytest.raises(ValueError, match=r"alpha must have shape"):
+        geodesic(A, B, alpha[:-1], metric="riemann")
+
+
+@pytest.mark.parametrize(
+    "geo",
+    [
+        geodesic_chol,
+        geodesic_euclid,
+        geodesic_logchol,
+        geodesic_logeuclid,
+        geodesic_riemann,
+        geodesic_thompson,
+        geodesic_wasserstein,
+    ],
+)
+def test_geodesic_alpha_array(geo, get_mats, rndstate):
+    n_matrices, n_channels = 4, 3
+    A = get_mats(n_matrices, n_channels, "spd")
+    B = get_mats(n_matrices, n_channels, "spd")
+    xp = get_namespace(A, B)
+    alpha = xp.asarray(rndstate.uniform(0, 1, size=n_matrices))
+
+    # 2D array
+    geo(A[0], B[0], alpha[0])
+
+    # 3D array
+    G = xp.stack(
+        [geo(A[i], B[i], alpha[i]) for i in range(n_matrices)],
+        axis=0,
+    )
+    assert geo(A, B, alpha) == approx(G)
