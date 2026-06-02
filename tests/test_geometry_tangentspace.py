@@ -493,9 +493,6 @@ def test_transport_properties(kindX, kindAB, metric, get_mats, rndstate):
         Xt_AC = transport(Xt_AC, G[i], G[i+1], metric)
     assert Xt_AC == approx(Xt_ABBC)
 
-    if metric == "logchol":
-        return
-
     # isometry, ie keep inner product and norm
     ia = innerproduct(X, Y, A, metric=metric)
     ib = innerproduct(Xt, Yt, B, metric=metric)

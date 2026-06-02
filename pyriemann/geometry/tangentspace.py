@@ -775,8 +775,7 @@ def innerproduct_euclid(X, Y, *args):
     """
     if Y is None:
         Y = X
-    G = _apply_inner_product(X, Y)
-    return G
+    return _apply_inner_product(X, Y)
 
 
 def innerproduct_logchol(X, Y, Cref):
@@ -794,7 +793,7 @@ def innerproduct_logchol(X, Y, Cref):
         Second symmetric/Hermitian matrices in tangent space at Cref.
         If None, Y is set to X, giving the squared norm of X.
     Cref : ndarray, shape (n, n)
-        Reference SPD matrix.
+        Reference SPD/HPD matrix.
 
     Returns
     -------
@@ -824,20 +823,24 @@ def innerproduct_logchol(X, Y, Cref):
     tri0, tri1 = tril_indices(X.shape[-1], -1)
     diag0, diag1 = diag_indices(X.shape[-1])
 
-    def _diff(W):
-        S = C_invchol @ W @ C_invchol.conj().T
-        Z = xp.zeros_like(S)
-        Z[..., tri0, tri1] = S[..., tri0, tri1]
-        Z[..., diag0, diag1] = S[..., diag0, diag1] / 2
-        dL = C_chol @ Z
-        return dL[..., tri0, tri1], S[..., diag0, diag1]
+    def _inv_diff(W, L, Linv):
+        """Prop 4, Section 3.2 in [1]"""
+        S = Linv @ W @ ctranspose(Linv)
+        S12 = xp.zeros_like(S)
+        S12[..., tri0, tri1] = S[..., tri0, tri1]
+        S12[..., diag0, diag1] = S[..., diag0, diag1] / 2
+        dL = L @ S12
+        return dL[..., tri0, tri1], S12[..., diag0, diag1]
 
-    triX, diagX = _diff(X)
-    triY, diagY = (triX, diagX) if Y is None else _diff(Y)
+    triX, diagX = _inv_diff(X, C_chol, C_invchol)
+    if Y is None:
+        triY, diagY = (triX, diagX)
+    else:
+        triY, diagY = _inv_diff(Y, C_chol, C_invchol)
 
-    off = xp.sum(triX.conj() * triY, axis=-1)
-    diag = xp.sum(diagX.conj() * diagY, axis=-1) / 4
-    return (off + diag).real
+    tri = xp.sum(triX.conj() * triY, axis=-1)
+    diag = xp.sum(diagX.conj() * diagY, axis=-1)
+    return (tri + diag).real
 
 
 def innerproduct_logeuclid(X, Y, Cref):
@@ -887,10 +890,9 @@ def innerproduct_logeuclid(X, Y, Cref):
         V. Arsigny, P. Fillard, X. Pennec, N. Ayache.
         SIAM J Matrix Anal Appl, 2007, 29 (1), pp. 328-347
     """
-    if Y is None:
-        Y = X
-    G = _apply_inner_product(ddlogm(X, Cref), ddlogm(Y, Cref))
-    return G
+    X_ = ddlogm(X, Cref)
+    Y_ = X_ if Y is None else ddlogm(Y, Cref)
+    return _apply_inner_product(X_, Y_)
 
 
 def innerproduct_riemann(X, Y, Cref):
@@ -941,11 +943,10 @@ def innerproduct_riemann(X, Y, Cref):
         W. Förstner & B. Moonen.
         Geodesy-the Challenge of the 3rd Millennium, 2003
     """
-    if Y is None:
-        Y = X
     Cm12 = invsqrtm(Cref)
-    G = _apply_inner_product(Cm12 @ X @ Cm12, Cm12 @ Y @ Cm12)
-    return G
+    X_ = Cm12 @ X @ Cm12
+    Y_ = X_ if Y is None else Cm12 @ Y @ Cm12
+    return _apply_inner_product(X_, Y_)
 
 
 def _apply_inner_product(X, Y):
