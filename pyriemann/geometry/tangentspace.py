@@ -816,9 +816,6 @@ def innerproduct_logchol(X, Y, Cref):
         <https://arxiv.org/pdf/1908.09326>`_
         Z. Lin. SIAM J Matrix Anal Appl, 2019, 40(4), pp. 1353-1370.
     """
-    if Y is None:
-        Y = X
-
     xp = check_matrix_pair(X, Cref, require_square=True)
     C_chol = xp.linalg.cholesky(Cref)
     eye_n = xp.eye(Cref.shape[-1], dtype=Cref.dtype, device=xpd(Cref))
@@ -827,25 +824,20 @@ def innerproduct_logchol(X, Y, Cref):
     tri0, tri1 = tril_indices(X.shape[-1], -1)
     diag0, diag1 = diag_indices(X.shape[-1])
 
-    diffX_ = C_invchol @ X @ C_invchol.T
-    diff12 = xp.zeros_like(diffX_)
-    diff12[..., tri0, tri1] = diffX_[..., tri0, tri1]
-    diff12[..., diag0, diag1] = diffX_[..., diag0, diag1] / 2
-    diffX = C_chol @ diff12
+    def _diff(W):
+        S = C_invchol @ W @ C_invchol.conj().T
+        Z = xp.zeros_like(S)
+        Z[..., tri0, tri1] = S[..., tri0, tri1]
+        Z[..., diag0, diag1] = S[..., diag0, diag1] / 2
+        dL = C_chol @ Z
+        return dL[..., tri0, tri1], S[..., diag0, diag1]
 
-    diffY_ = C_invchol @ Y @ C_invchol.T
-    diff12 = xp.zeros_like(diffY_)
-    diff12[..., tri0, tri1] = diffY_[..., tri0, tri1]
-    diff12[..., diag0, diag1] = diffY_[..., diag0, diag1] / 2
-    diffY = C_chol @ diff12
+    triX, diagX = _diff(X)
+    triY, diagY = (triX, diagX) if Y is None else _diff(Y)
 
-    def _prod(X, Y, Cref):
-        """Table 1 of [1]"""
-        M = xp.tril(xp.ones_like(X), k=-1)  # mask i>j
-        return xp.einsum("...ij,...ij,...ij->...", X, Y, M) + \
-            xp.einsum("...jj,...jj,...jj->...", X, Y, Cref**-2)
-
-    return _prod(diffX.conj(), diffY, C_chol).real
+    off = xp.sum(triX.conj() * triY, axis=-1)
+    diag = xp.sum(diagX.conj() * diagY, axis=-1) / 4
+    return (off + diag).real
 
 
 def innerproduct_logeuclid(X, Y, Cref):
