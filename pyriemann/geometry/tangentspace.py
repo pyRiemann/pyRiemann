@@ -13,7 +13,7 @@ from ._check import check_function, check_matrix_pair
 from .base import ctranspose, expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
 
 
-def exp_map_euclid(X, Cref):
+def exp_map_euclid(X, Cref, **kwargs):
     r"""Project matrices back to manifold by Euclidean exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
@@ -44,7 +44,7 @@ def exp_map_euclid(X, Cref):
     return X + Cref
 
 
-def exp_map_logchol(X, Cref):
+def exp_map_logchol(X, Cref, **kwargs):
     r"""Project matrices back to manifold by log-Cholesky exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
@@ -99,7 +99,7 @@ def exp_map_logchol(X, Cref):
     return exp_map @ ctranspose(exp_map)
 
 
-def exp_map_logeuclid(X, Cref):
+def exp_map_logeuclid(X, Cref, **kwargs):
     r"""Project matrices back to manifold by log-Euclidean exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
@@ -149,7 +149,7 @@ def exp_map_logeuclid(X, Cref):
     return expm(logm(Cref) + ddlogm(X, Cref))
 
 
-def exp_map_riemann(X, Cref, Cm12=False):
+def exp_map_riemann(X, Cref, *, Cm12=False):
     r"""Project matrices back to manifold by Riemannian exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
@@ -202,7 +202,7 @@ def exp_map_riemann(X, Cref, Cm12=False):
     return C12 @ expm(X) @ C12
 
 
-def exp_map_wasserstein(X, Cref):
+def exp_map_wasserstein(X, Cref, **kwargs):
     r"""Project matrices back to manifold by Wasserstein exponential map.
 
     The projection of a matrix :math:`\mathbf{X}` from tangent space
@@ -257,7 +257,7 @@ exp_map_functions = {
 }
 
 
-def exp_map(X, Cref, *, metric="riemann"):
+def exp_map(X, Cref, *, metric="riemann", **kwargs):
     """Project matrices back to manifold by exponential map.
 
     Parameters
@@ -270,6 +270,10 @@ def exp_map(X, Cref, *, metric="riemann"):
         Metric used for exponential map, can be:
         "euclid", "logchol", "logeuclid", "riemann", "wasserstein",
         or a callable function.
+    **kwargs : dict
+        The keyword arguments passed to the sub function.
+
+        .. versionadded:: 0.12
 
     Returns
     -------
@@ -291,13 +295,13 @@ def exp_map(X, Cref, *, metric="riemann"):
     exp_map_wasserstein
     """
     exp_map_function = check_function(metric, exp_map_functions)
-    return exp_map_function(X, Cref)
+    return exp_map_function(X, Cref, **kwargs)
 
 
 ###############################################################################
 
 
-def log_map_euclid(X, Cref):
+def log_map_euclid(X, Cref, **kwargs):
     r"""Project matrices in tangent space by Euclidean logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from manifold
@@ -328,7 +332,7 @@ def log_map_euclid(X, Cref):
     return X - Cref
 
 
-def log_map_logchol(X, Cref):
+def log_map_logchol(X, Cref, **kwargs):
     r"""Project matrices in tangent space by log-Cholesky logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
@@ -375,7 +379,7 @@ def log_map_logchol(X, Cref):
     return X_new
 
 
-def log_map_logeuclid(X, Cref):
+def log_map_logeuclid(X, Cref, **kwargs):
     r"""Project matrices in tangent space by log-Euclidean logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
@@ -427,7 +431,7 @@ def log_map_logeuclid(X, Cref):
     return X_new
 
 
-def log_map_riemann(X, Cref, C12=False):
+def log_map_riemann(X, Cref, *, C12=False):
     r"""Project matrices in tangent space by Riemannian logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
@@ -481,7 +485,7 @@ def log_map_riemann(X, Cref, C12=False):
     return X_new
 
 
-def log_map_wasserstein(X, Cref):
+def log_map_wasserstein(X, Cref, **kwargs):
     r"""Project matrices in tangent space by Wasserstein logarithmic map.
 
     The projection of a matrix :math:`\mathbf{X}` from SPD/HPD manifold
@@ -535,7 +539,7 @@ log_map_functions = {
 }
 
 
-def log_map(X, Cref, *, metric="riemann"):
+def log_map(X, Cref, *, metric="riemann", **kwargs):
     """Project matrices in tangent space by logarithmic map.
 
     Parameters
@@ -548,6 +552,10 @@ def log_map(X, Cref, *, metric="riemann"):
         Metric used for logarithmic map, can be:
         "euclid", "logchol", "logeuclid", "riemann", "wasserstein",
         or a callable function.
+    **kwargs : dict
+        The keyword arguments passed to the sub function.
+
+        .. versionadded:: 0.12
 
     Returns
     -------
@@ -569,7 +577,7 @@ def log_map(X, Cref, *, metric="riemann"):
     log_map_wasserstein
     """
     log_map_function = check_function(metric, log_map_functions)
-    return log_map_function(X, Cref)
+    return log_map_function(X, Cref, **kwargs)
 
 
 ###############################################################################
@@ -775,15 +783,15 @@ def innerproduct_logchol(X, Y, Cref):
     r"""Log-Cholesky inner product.
 
     Log-Cholesky inner product :math:`\mathbf{g}` between
-    symmetric matrices in tangent space :math:`\mathbf{X}`
+    symmetric/Hermitian matrices in tangent space :math:`\mathbf{X}`
     and :math:`\mathbf{Y}` at :math:`\mathbf{C}_\text{ref}` is given in [1]_.
 
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        First symmetric matrices in tangent space at Cref.
+        First symmetric/Hermitian matrices in tangent space at Cref.
     Y : ndarray, shape (..., n, n) | None
-        Second symmetric matrices in tangent space at Cref.
+        Second symmetric/Hermitian matrices in tangent space at Cref.
         If None, Y is set to X, giving the squared norm of X.
     Cref : ndarray, shape (n, n)
         Reference SPD matrix.
@@ -837,7 +845,7 @@ def innerproduct_logchol(X, Y, Cref):
         return xp.einsum("...ij,...ij,...ij->...", X, Y, M) + \
             xp.einsum("...jj,...jj,...jj->...", X, Y, Cref**-2)
 
-    return _prod(diffX.conj(), diffY, C_chol)
+    return _prod(diffX.conj(), diffY, C_chol).real
 
 
 def innerproduct_logeuclid(X, Y, Cref):
@@ -1006,8 +1014,7 @@ def innerproduct(X, Y, Cref, metric="riemann"):
     innerproduct_riemann
     """
     innerproduct_function = check_function(metric, innerproduct_functions)
-    G = innerproduct_function(X, Y, Cref)
-    return G
+    return innerproduct_function(X, Y, Cref)
 
 
 def norm(X, Cref, metric="riemann"):
