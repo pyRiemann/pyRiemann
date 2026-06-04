@@ -38,6 +38,11 @@ v0.12.dev
   allowing a different geodesic position per stacked matrix pair.
   :pr:`396` by :user:`Fashad-Ahmed`
 
+- Add example on Riemannian curvature analysis of sentence trajectories in language model embeddings,
+  demonstrating how local metric tensors (SPD matrices) capture geometric structure in LLM latent spaces
+  and enable classification of semantically distinct sentences using MDM.
+  :pr:`448` by :user:`SzczepanK112` and :user:`gcattan`
+
 v0.11 (April 2026)
 ------------------
 
