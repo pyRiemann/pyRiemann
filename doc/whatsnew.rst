@@ -43,6 +43,9 @@ v0.12.dev
   and enable classification of semantically distinct sentences using MDM.
   :pr:`448` by :user:`SzczepanK112` and :user:`gcattan`
 
+- Add example on simulated SPD matrices to compare metrics.
+  :pr:`451` by :user:`qbarthelemy`
+
 v0.11 (April 2026)
 ------------------
 
