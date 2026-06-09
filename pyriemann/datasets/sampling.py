@@ -549,9 +549,9 @@ def sample_gaussian(n_matrices, mean, sigma, random_state=None,
     -----
     .. versionadded:: 0.3
     .. versionchanged:: 0.11
-        Add support for dispersion defined as a covariance matrix.
+        Add support for dispersion ``sigma`` defined as a covariance matrix.
     .. versionchanged:: 0.12
-        Add support for HPD matrices for float sigma.
+        Add support for HPD matrices for float ``sigma``.
         Rename sample_gaussian_spd into sample_gaussian.
 
     References
@@ -639,7 +639,7 @@ def sample_gaussian(n_matrices, mean, sigma, random_state=None,
     "please use sample_gaussian()."
 )
 def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
-                    n_jobs=1, sampling_method="auto"):
+                        n_jobs=1, sampling_method="auto"):
     return sample_gaussian(n_matrices, mean, sigma, random_state=random_state,
                            n_jobs=n_jobs, sampling_method=sampling_method)
 
