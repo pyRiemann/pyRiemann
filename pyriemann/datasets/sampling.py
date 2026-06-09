@@ -389,6 +389,7 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None,
     is_complex : bool, default=False
         If True, generate complex-valued unitary matrices for HPD sampling.
 
+       .. versionadded:: 0.13
     Returns
     -------
     u_samples : ndarray, shape (n_samples, n_dim, n_dim)
@@ -440,7 +441,7 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
     is_complex : bool, default=False
         If True, generate complex-valued HPD matrices instead of real SPD.
 
-        .. versionadded:: 0.13
+        .. versionadded:: 0.12
 
     Returns
     -------
@@ -496,13 +497,13 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
     If ``mean`` has a complex dtype, Hermitian positive-definite (HPD)
     matrices are generated instead of symmetric positive-definite (SPD).
 
-    If sigma is a float, it samples from the distribution defined in [1]_ that
+    If ``sigma`` is a float, it samples from the distribution defined in [1]_ that
     generalizes the notion of a Gaussian distribution to the space of SPD/HPD
     matrices. This sampling is based on a spectral factorization of SPD/HPD
     matrices in terms of their eigenvectors (U-parameters) and the log of the
     eigenvalues (r-parameters).
 
-    If sigma is a covariance matrix, it samples from the wrapped Gaussian
+    If ``sigma`` is a covariance matrix, it samples from the wrapped Gaussian
     distribution defined in [2]_.
 
     Parameters
@@ -599,10 +600,9 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
 
         # send the tangent space at mean
         mean_sqrt = sqrtm(mean)
-        samples_ts = mean_sqrt @ unupper(samples_ts_norm)
-        samples_ts = samples_ts @ ctranspose(mean_sqrt)
+        samples_ = mean_sqrt @ unupper(samples_ts_norm) @ ctranspose(mean_sqrt)
         # map back to the manifold
-        samples = exp_map_riemann(samples_ts, mean, Cm12=True)
+        samples = exp_map_riemann(samples_, mean, Cm12=True)
 
     else:
         raise ValueError("sigma must be either a float or a ndarray.")
