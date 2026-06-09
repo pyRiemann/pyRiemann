@@ -46,8 +46,9 @@ v0.12.dev
 - Add example on simulated SPD matrices to compare metrics.
   :pr:`451` by :user:`qbarthelemy`
 
-- Generalize :func:`pyriemann.datasets.sample_gaussian_spd` to generate HPD matrices
-  from complex-typed mean, for Riemannian Gaussian distribution.
+- Generalize :func:`pyriemann.datasets.sample_gaussian` to generate HPD matrices
+  from complex-typed mean for float ``sigma``.
+  ``sample_gaussian_spd`` is deprecated and renamed into :func:`pyriemann.datasets.sample_gaussian`.
   :issue:`413` by :user:`robrui`
 
 v0.11 (April 2026)

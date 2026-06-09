@@ -618,7 +618,7 @@ Datasets
     make_outliers
     make_matrices
     make_masks
-    sample_gaussian_spd
+    sample_gaussian
     make_classification_transfer
 
     :template: class.rst

@@ -7,6 +7,7 @@ from scipy.stats import multivariate_normal
 from sklearn.base import BaseEstimator
 from sklearn.utils import check_random_state
 
+from ..geometry._docs import deprecated
 from ..geometry.base import ctranspose, sqrtm
 from ..geometry.geodesic import geodesic
 from ..geometry.tangentspace import exp_map_riemann, unupper
@@ -389,7 +390,8 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None,
     is_complex : bool, default=False
         If True, generate complex-valued unitary matrices for HPD sampling.
 
-       .. versionadded:: 0.13
+       .. versionadded:: 0.12
+
     Returns
     -------
     u_samples : ndarray, shape (n_samples, n_dim, n_dim)
@@ -409,9 +411,9 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None,
     return u_samples
 
 
-def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
-                                  n_jobs=1, sampling_method="auto",
-                                  is_complex=False):
+def _sample_gaussian_centered(n_matrices, n_dim, sigma, random_state=None,
+                              n_jobs=1, sampling_method="auto",
+                              is_complex=False):
     """Sample a Riemannian Gaussian distribution centered at the Identity.
 
     Sample SPD or HPD matrices from a Riemannian Gaussian distribution
@@ -439,7 +441,8 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
 
         .. versionadded:: 0.4
     is_complex : bool, default=False
-        If True, generate complex-valued HPD matrices instead of real SPD.
+        If True, generate complex-valued HPD matrices
+        instead of real-valued SPD matrices.
 
         .. versionadded:: 0.12
 
@@ -487,21 +490,21 @@ def _sample_gaussian_spd_centered(n_matrices, n_dim, sigma, random_state=None,
     return samples
 
 
-def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
-                        n_jobs=1, sampling_method="auto"):
+def sample_gaussian(n_matrices, mean, sigma, random_state=None,
+                    n_jobs=1, sampling_method="auto"):
     """Sample a Riemannian Gaussian distribution.
 
     Sample SPD or HPD matrices from a Riemannian Gaussian distribution
-    centered at mean and with dispersion parametrized by sigma.
+    centered at ``mean`` and with dispersion parametrized by ``sigma``.
 
     If ``mean`` has a complex dtype, Hermitian positive-definite (HPD)
     matrices are generated instead of symmetric positive-definite (SPD).
 
-    If ``sigma`` is a float, it samples from the distribution defined in [1]_ that
-    generalizes the notion of a Gaussian distribution to the space of SPD/HPD
-    matrices. This sampling is based on a spectral factorization of SPD/HPD
-    matrices in terms of their eigenvectors (U-parameters) and the log of the
-    eigenvalues (r-parameters).
+    If ``sigma`` is a float, it samples from the distribution defined in [1]_
+    that generalizes the notion of a Gaussian distribution to the space of
+    SPD/HPD matrices. This sampling is based on a spectral factorization of
+    SPD/HPD matrices in terms of their eigenvectors (U-parameters) and the log
+    of the eigenvalues (r-parameters).
 
     If ``sigma`` is a covariance matrix, it samples from the wrapped Gaussian
     distribution defined in [2]_.
@@ -511,13 +514,18 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
     n_matrices : int
         Number of matrices to generate.
     mean : ndarray, shape (n_dim, n_dim)
-        Center of the Riemannian Gaussian distribution. If complex, HPD
-        matrices are generated; if real, SPD matrices are generated.
+        Center of the Riemannian Gaussian distribution.
+        If complex, HPD matrices are generated;
+        if real, SPD matrices are generated.
+
+        .. versionchanged:: 0.12
     sigma : float | ndarray, shape (n_dim * (n_dim + 1) / 2, \
             n_dim * (n_dim + 1) / 2)
         If float, dispersion of the Riemannian Gaussian distribution [1]_.
         If ndarray, covariance matrix of the wrapped Gaussian
         distribution [2]_.
+
+        .. versionchanged:: 0.11
     random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
@@ -542,8 +550,9 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
     .. versionadded:: 0.3
     .. versionchanged:: 0.11
         Add support for dispersion defined as a covariance matrix.
-    .. versionchanged:: 0.13
-        Add support for HPD matrices.
+    .. versionchanged:: 0.12
+        Add support for HPD matrices for float sigma.
+        Rename sample_gaussian_spd into sample_gaussian.
 
     References
     ----------
@@ -564,7 +573,7 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
 
     if isinstance(sigma, (int, float)):
         # generate samples centered at identity
-        samples_centered = _sample_gaussian_spd_centered(
+        samples_centered = _sample_gaussian_centered(
             n_matrices=n_matrices,
             n_dim=n_dim,
             sigma=sigma / np.sqrt(n_dim),  # dispersion corrected w.r.t. dim
@@ -623,6 +632,19 @@ def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
             warnings.warn(msg)
 
     return samples
+
+
+@deprecated(
+    "sample_gaussian_spd() is deprecated and will be removed in 0.14.0."
+    "please use sample_gaussian()."
+)
+def sample_gaussian_spd(n_matrices, mean, sigma, random_state=None,
+                    n_jobs=1, sampling_method="auto"):
+    return sample_gaussian(n_matrices, mean, sigma, random_state=random_state,
+                           n_jobs=n_jobs, sampling_method=sampling_method)
+
+
+###############################################################################
 
 
 class RandomOverSampler(BaseEstimator):
