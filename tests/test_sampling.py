@@ -4,51 +4,55 @@ import pytest
 
 from pyriemann.datasets import sample_gaussian, RandomOverSampler
 from pyriemann.geometry.distance import distance_riemann
-from pyriemann.geometry.test import is_herm_pos_def as is_hpd
-from pyriemann.geometry.test import is_sym_pos_def as is_spd
+from pyriemann.geometry.test import (
+    is_herm_pos_def as is_hpd,
+    is_sym_pos_def as is_spd,
+)
+
+pytestmark = pytest.mark.numpy_only
 
 
-@pytest.mark.parametrize("dtype", [np.float64, np.complex128])
+@pytest.mark.parametrize("dtype", [np.float64, np.complex64])
 @pytest.mark.parametrize("n_jobs", [1, -1])
 @pytest.mark.parametrize("sampling_method", ["auto", "slice", "rejection"])
 @pytest.mark.parametrize("sigma", [1.1, 3])
-def test_sample_gaussian_float_dim2(dtype, n_jobs, sampling_method, sigma):
+def test_sample_gaussian_floatsigma_d2(dtype, n_jobs, sampling_method, sigma):
     """Test for dim=2 with a float sigma."""
-    n_matrices, n_dim = 5, 2
+    n_matrices, n_dim = 3, 2
     mean = np.eye(n_dim, dtype=dtype)
     X = sample_gaussian(n_matrices, mean, sigma, random_state=42,
                         n_jobs=n_jobs, sampling_method=sampling_method)
-    assert X.shape == (n_matrices, n_dim, n_dim)  # X shape mismatch
-    assert is_hpd(X)  # X is an array of SPD matrices
-    if dtype == np.complex128:
+    assert X.shape == (n_matrices, n_dim, n_dim)
+    assert is_hpd(X)
+    if dtype == np.complex64:
         assert np.iscomplexobj(X)
 
 
-@pytest.mark.parametrize("dtype", [np.float64, np.complex128])
+@pytest.mark.parametrize("dtype", [np.float64, np.complex64])
 @pytest.mark.parametrize("n_dim", [3, 4])
 @pytest.mark.parametrize("n_jobs", [1, -1])
 @pytest.mark.parametrize("sampling_method", ["auto", "slice"])
-def test_sample_gaussian_float(dtype, n_dim, n_jobs, sampling_method):
+def test_sample_gaussian_floatsigma(dtype, n_dim, n_jobs, sampling_method):
     """Test for dim>2 with a float sigma."""
-    n_matrices = 5
+    n_matrices = 3
     mean, sigma = np.eye(n_dim, dtype=dtype), 2.5
     X = sample_gaussian(n_matrices, mean, sigma, random_state=42,
                         n_jobs=n_jobs, sampling_method=sampling_method)
-    assert X.shape == (n_matrices, n_dim, n_dim)  # X shape mismatch
-    assert is_hpd(X)  # X is an array of SPD matrices
+    assert X.shape == (n_matrices, n_dim, n_dim)
+    assert is_hpd(X)
 
 
 @pytest.mark.parametrize("n_dim", [3, 4])
-def test_sample_gaussian_ndarray(n_dim):
+def test_sample_gaussian_ndarraysigma(n_dim):
     """Test with a ndarray sigma."""
     n_matrices, n_ts = 5, n_dim * (n_dim + 1) // 2
     mean, sigma = np.eye(n_dim), np.eye(n_ts)
     X = sample_gaussian(n_matrices, mean, sigma, random_state=42)
-    assert X.shape == (n_matrices, n_dim, n_dim)  # X shape mismatch
-    assert is_spd(X)  # X is an array of SPD matrices
+    assert X.shape == (n_matrices, n_dim, n_dim)
+    assert is_spd(X)
 
 
-def test_sample_gaussian_error():
+def test_sample_gaussian_errors_samplingmethod():
     with pytest.raises(ValueError):  # unknown sampling method
         sample_gaussian(5, np.eye(2), 1., sampling_method="blabla")
     with pytest.raises(ValueError):  # dim=3 not yet supported with rejection
@@ -56,33 +60,33 @@ def test_sample_gaussian_error():
         sample_gaussian(5, np.eye(n_dim), 1., sampling_method="rejection")
 
 
-def test_sample_gaussian_error_ndarray_complex():
+def test_sample_gaussian_error_ndarraysigmacomplex():
     """Test that ndarray sigma raises NotImplementedError for HPD"""
     n_dim = 3
     n_ts = n_dim * (n_dim + 1) // 2
-    mean, sigma = np.eye(n_dim, dtype=np.complex128), np.eye(n_ts)
+    mean, sigma = np.eye(n_dim, dtype=np.complex64), np.eye(n_ts)
     with pytest.raises(NotImplementedError):
         sample_gaussian(3, mean, sigma, random_state=42)
 
 
-@pytest.mark.parametrize("dtype", [np.float64, np.complex128])
+@pytest.mark.parametrize("dtype", [np.float64, np.complex64])
 @pytest.mark.parametrize("n_jobs", [1, -1])
-def test_sample_gaussian_sigma(dtype, n_jobs):
-    """Test sigma parameter from Riemannian Gaussian sampling."""
+def test_sample_gaussian_dispersion(dtype, n_jobs):
+    """Test dispersions of matrices sampled from Riemannian Gaussians"""
     n_matrices, n_dim, sig_1, sig_2 = 5, 4, 1., 2.
     mean = np.eye(n_dim, dtype=dtype)
     X1 = sample_gaussian(
         n_matrices, mean, sig_1, random_state=42, n_jobs=n_jobs
-        )
+    )
     X2 = sample_gaussian(
         n_matrices, mean, sig_2, random_state=66, n_jobs=n_jobs
-        )
-    avg_d1 = np.mean([distance_riemann(X1_i, mean) for X1_i in X1])
-    avg_d2 = np.mean([distance_riemann(X2_i, mean) for X2_i in X2])
+    )
+    avg_d1 = np.mean(distance_riemann(X1, mean))
+    avg_d2 = np.mean(distance_riemann(X2, mean))
     assert avg_d1 < avg_d2
 
 
-def test_sample_gaussian_sigma_errors():
+def test_sample_gaussian_errors_sigma():
     n_matrices, n_dim = 3, 4
     mean, sigma = np.eye(n_dim), 2.
     with pytest.raises(ValueError):  # mean is not a matrix

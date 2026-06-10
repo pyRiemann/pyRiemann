@@ -19,9 +19,8 @@ def _pdf_r(r, sigma):
     """Pdf for the log of eigenvalues of a SPD matrix.
 
     Probability density function for the logarithm of the eigenvalues of a SPD
-    matrix samples from the Riemannian Gaussian distribution. See Said et al.
-    "Riemannian Gaussian distributions on the space of symmetric positive
-    definite matrices" (2017) for the mathematical details.
+    matrix samples from the Riemannian Gaussian distribution.
+    See Said2017 for the mathematical details.
 
     Parameters
     ----------
@@ -69,7 +68,6 @@ def _rejection_sampling_2D_gfunction_plus(sigma, r_sample):
     Notes
     -----
     .. versionadded:: 0.4
-
     """
     mu_a = np.array([-sigma**2 / 2, (sigma**2) / 2])
     cov_matrix = (sigma**2) * np.eye(2)
@@ -101,7 +99,6 @@ def _rejection_sampling_2D_gfunction_minus(sigma, r_sample):
     Notes
     -----
     .. versionadded:: 0.4
-
     """
     mu_b = np.array([(sigma**2) / 2, -sigma**2 / 2])
     cov_matrix = (sigma**2) * np.eye(2)
@@ -117,9 +114,9 @@ def _rejection_sampling_2D(n_samples, sigma, random_state=None,
                            return_acceptance_rate=False):
     """Rejection sampling algorithm for the 2D case.
 
-    Implementation of a rejection sampling algorithm. The implementation
-    follows the description given in page 528 of Christopher Bishop's book
-    "Pattern recognition and Machine Learning" (2006).
+    Implementation of a rejection sampling algorithm.
+    The implementation follows the description given in p528 of Christopher
+    Bishop's book "Pattern recognition and Machine Learning" (2006).
 
     Parameters
     ----------
@@ -147,7 +144,6 @@ def _rejection_sampling_2D(n_samples, sigma, random_state=None,
     Notes
     -----
     .. versionadded:: 0.4
-
     """
     mu_a = np.array([-sigma**2 / 2, (sigma**2) / 2])
     mu_b = np.array([(sigma**2) / 2, -sigma**2 / 2])
@@ -243,9 +239,9 @@ def _slice_sampling(ptarget, n_samples, x0, n_burnin=20, thin=10,
     """Slice sampling procedure.
 
     Implementation of a slice sampling algorithm for sampling from any target
-    pdf or a multiple of it. The implementation follows the description given
-    in page 375 of David McKay's book "Information Theory, Inference, and
-    Learning Algorithms" (2003).
+    pdf or a multiple of it.
+    The implementation follows the description given in p375 of David McKay's
+    book "Information Theory, Inference, and Learning Algorithms" (2003).
 
     Parameters
     ----------
@@ -310,8 +306,7 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
 
     Sample the logarithm of the eigenvalues of a SPD matrix following a
     Riemannian Gaussian distribution.
-
-    See [1]_ for the mathematical details.
+    See Said2017 for the mathematical details.
 
     Parameters
     ----------
@@ -337,14 +332,6 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
     -------
     r_samples : ndarray, shape (n_samples, n_dim)
         Samples of the r parameters of the Riemannian Gaussian distribution.
-
-    References
-    ----------
-    .. [1] `Riemannian Gaussian distributions on the space of symmetric
-        positive definite matrices
-        <https://hal.archives-ouvertes.fr/hal-01710191>`_
-        S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton. IEEE Trans Inf
-        Theory, vol. 63, pp. 2153-2170, 2017.
     """
     if sampling_method not in ["slice", "rejection", "auto"]:
         raise ValueError(f"Unknown sampling method {sampling_method}, "
@@ -376,8 +363,7 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None,
 
     Sample the eigenvectors of a SPD or HPD matrix following a Riemannian
     Gaussian distribution.
-
-    See https://arxiv.org/pdf/1507.01760.pdf for the mathematical details.
+    See Said2017 for the mathematical details.
 
     Parameters
     ----------
@@ -418,8 +404,8 @@ def _sample_gaussian_centered(n_matrices, n_dim, sigma, random_state=None,
 
     Sample SPD or HPD matrices from a Riemannian Gaussian distribution
     centered at the Identity, which has the role of the origin in the manifold,
-    and dispersion parametrized by sigma. See [1]_ for the mathematical
-    details.
+    and dispersion parametrized by sigma.
+    See Said2017 for the mathematical details.
 
     Parameters
     ----------
@@ -454,14 +440,6 @@ def _sample_gaussian_centered(n_matrices, n_dim, sigma, random_state=None,
     Notes
     -----
     .. versionadded:: 0.3
-
-    References
-    ----------
-    .. [1] `Riemannian Gaussian distributions on the space of symmetric
-        positive definite matrices
-        <https://hal.archives-ouvertes.fr/hal-01710191>`_
-        S. Said, L. Bombrun, Y. Berthoumieu, and J. Manton. IEEE Trans Inf
-        Theory, vol. 63, pp. 2153-2170, 2017.
     """
 
     samples_r = _sample_parameter_r(
@@ -484,8 +462,8 @@ def _sample_gaussian_centered(n_matrices, n_dim, sigma, random_state=None,
     for i in range(n_matrices):
         Ui = samples_U[i]
         ri = samples_r[i]
-        mat = Ui.conj().T @ np.diag(np.exp(ri)) @ Ui
-        samples[i] = 0.5 * (mat + ctranspose(mat))
+        sample = (Ui.conj().T * np.exp(ri)) @ Ui
+        samples[i] = 0.5 * (sample + ctranspose(sample))
 
     return samples
 
@@ -549,10 +527,10 @@ def sample_gaussian(n_matrices, mean, sigma, random_state=None,
     -----
     .. versionadded:: 0.3
     .. versionchanged:: 0.11
-        Add support for dispersion ``sigma`` defined as a covariance matrix.
+        Add support for ``sigma`` defined as a covariance matrix.
     .. versionchanged:: 0.12
-        Add support for HPD matrices for float ``sigma``.
         Rename sample_gaussian_spd into sample_gaussian.
+        Add support for HPD matrices for float ``sigma``.
 
     References
     ----------
@@ -616,19 +594,14 @@ def sample_gaussian(n_matrices, mean, sigma, random_state=None,
     else:
         raise ValueError("sigma must be either a float or a ndarray.")
 
+    msg = "Some of the sampled matrices are very badly conditioned and may " \
+          "not behave numerically as positive definite matrices. " \
+          "Try sampling again or reducing the dimensionality of matrices."
     if is_complex:
         if not is_hpd(samples):
-            msg = "Some of the sampled matrices are very badly conditioned " \
-                  "and may not behave numerically as a HPD matrix. Try " \
-                  "sampling again or reducing the dimensionality of the " \
-                  "matrix."
             warnings.warn(msg)
     else:
         if not is_spsd(samples):
-            msg = "Some of the sampled matrices are very badly conditioned " \
-                  "and may not behave numerically as a SPD matrix. Try " \
-                  "sampling again or reducing the dimensionality of the " \
-                  "matrix."
             warnings.warn(msg)
 
     return samples

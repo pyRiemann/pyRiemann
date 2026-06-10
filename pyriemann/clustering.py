@@ -11,7 +11,7 @@ from sklearn.cluster import KMeans as sklearnKMeans
 from sklearn.utils.validation import check_random_state
 
 from .classification import MDM
-from .datasets import sample_gaussian_spd
+from .datasets import sample_gaussian
 from .geometry.covariance import covariance_scm
 from .geometry.distance import (
     distance,
@@ -935,7 +935,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
 
         X = np.zeros((n_matrices, means.shape[-1], n_channels))
         for i in np.unique(y):
-            X[y == i] = sample_gaussian_spd(
+            X[y == i] = sample_gaussian(
                 np.count_nonzero(y == i),
                 mean=means[i],
                 sigma=covariances[i],
