@@ -13,6 +13,7 @@ from pyriemann.geometry.kernel import (
 )
 from pyriemann.geometry.mean import gmean
 from pyriemann.geometry.test import is_sym_pos_semi_def as is_spsd
+from pyriemann.spatialfilters import Whitening
 
 metrics = ["euclid", "logeuclid", "riemann"]
 
@@ -167,3 +168,18 @@ def test_kernel_riemann(get_mats):
     tensor = np.tensordot(log_X, log_X.T, axes=1)
     K1 = np.trace(tensor, axis1=1, axis2=2)
     assert_array_almost_equal(K, K1)
+
+
+@pytest.mark.numpy_only
+def test_kernel_riemann_vs_whitening(get_mats):
+    """Eq(14) of [Barachant2013]: Riemannian kernel on native matrices with
+    Cref equivalent to Riemannian kernel on whitened matrices with Cref equal
+    to identity"""
+    n_matrices, n_channels = 5, 2
+    X = get_mats(n_matrices, n_channels, "spd")
+    Cref = gmean(X)
+    K = kernel_riemann(X, Cref=Cref)
+
+    Xw = Whitening(dim_red=None, metric="riemann").fit_transform(X)
+    Kw = kernel_riemann(Xw, Cref=np.eye(n_channels))
+    assert_array_almost_equal(K, Kw)

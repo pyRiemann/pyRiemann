@@ -441,6 +441,9 @@ def test_mean_riemann_solution(kind, get_mats):
     M12 = sqrtm(M)
     assert xp.sum(logm(M12 @ xp.linalg.solve(X, M12)), axis=0) == approx(Zero)
 
+    # Eq(3.3) in [Moakher2005] is FALSE
+    assert xp.sum(logm(xp.linalg.solve(X, M)), axis=0) != approx(Zero)
+
 
 @pytest.mark.numpy_only
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
