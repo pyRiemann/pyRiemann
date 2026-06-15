@@ -195,7 +195,6 @@ def test_geodesic_riemann(kind, get_mats, rndstate):
 def test_geodesic_thompson(kind, get_mats, rndstate):
     n_channels = 2
     A, B = get_mats(2, n_channels, kind)
-    alpha = rndstate.uniform(0.01, 0.99)
 
     # Equivalence with AIR geodesic for 2x2 matrices
     # Prop 4.2 in [Mostajeran2024]
