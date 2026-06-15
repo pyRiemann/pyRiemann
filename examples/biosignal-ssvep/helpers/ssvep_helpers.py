@@ -8,6 +8,8 @@ from mne.io import RawArray
 import numpy as np
 
 
+DATASET_URL = "https://zenodo.org/record/2392979/files/"
+
 SSVEP_HASHES = {
     "subject01_run1_raw.fif": "md5:e33a589abce842bf676dd881d9f4a9b0",
     "subject01_run2_raw.fif": "md5:2e75762abc30b832ad3d3d60f09accd4",
@@ -63,15 +65,13 @@ def download_data(subject=1, session=1):
     destination : str
         Path to downloaded data
     """
-    DATASET_URL = "https://zenodo.org/record/2392979/files/"
     fname = f"subject{subject:02d}_run{session + 1}_raw.fif"
     url = f"{DATASET_URL}{fname}"
-    dhash = SSVEP_HASHES[fname]
     archive_name = url.split("/")[-4:]
     dataset_params = {
         "dataset_name": "ssvep",
         "archive_name": "/".join(archive_name),
-        "hash": dhash,
+        "hash": SSVEP_HASHES[fname],
         "url": url,
         "folder_name": "MNE-ssvepexo-data",
         "config_key": "MNE_DATASETS_SSVEPEXO_PATH"

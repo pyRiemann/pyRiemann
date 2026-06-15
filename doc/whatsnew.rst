@@ -38,6 +38,14 @@ v0.12.dev
   allowing a different geodesic position per stacked matrix pair.
   :pr:`396` by :user:`Fashad-Ahmed`
 
+- Add example on Riemannian curvature analysis of sentence trajectories in language model embeddings,
+  demonstrating how local metric tensors (SPD matrices) capture geometric structure in LLM latent spaces
+  and enable classification of semantically distinct sentences using MDM.
+  :pr:`448` by :user:`SzczepanK112` and :user:`gcattan`
+
+- Add example on simulated SPD matrices to compare metrics.
+  :pr:`451` by :user:`qbarthelemy`
+
 - Add Bini-Meini-Poloni (BMP) mean :func:`pyriemann.geometry.mean.mean_bmp`,
   and Cheap mean :func:`pyriemann.geometry.mean.mean_cheap`.
   :pr:`449` by :user:`qbarthelemy`

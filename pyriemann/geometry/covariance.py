@@ -943,7 +943,7 @@ def normalize(X, norm):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        Set of square matrices, at least 2D ndarray.
+        Set of square matrices.
         Matrices must be invertible for determinant-normalization.
 
     norm : {"corr", "trace", "determinant"}
@@ -997,7 +997,7 @@ def get_nondiag_weight(X):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        Set of square matrices, at least 2D ndarray.
+        Set of square matrices.
 
     Returns
     -------
