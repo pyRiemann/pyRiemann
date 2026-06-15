@@ -19,7 +19,7 @@ from mne.datasets import eegbci
 from mne.io import read_raw_edf
 import numpy as np
 
-from pyriemann.clustering import Potato, PotatoField
+from pyriemann.artifactdetection import Potato, PotatoField
 from pyriemann.estimation import Covariances
 from pyriemann.geometry.covariance import normalize
 

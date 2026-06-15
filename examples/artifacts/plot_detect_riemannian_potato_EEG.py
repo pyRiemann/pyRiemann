@@ -22,7 +22,7 @@ from mne.datasets import sample
 from mne.io import read_raw_fif
 import numpy as np
 
-from pyriemann.clustering import Potato
+from pyriemann.artifactdetection import Potato
 from pyriemann.estimation import Covariances
 from pyriemann.utils.viz import _add_alpha
 

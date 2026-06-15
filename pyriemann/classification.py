@@ -1,4 +1,4 @@
-"""Module for classification function."""
+"""Classification."""
 import functools
 
 from joblib import Parallel, delayed
