@@ -13,6 +13,8 @@ from pyriemann.geometry.mean import (
     gmean,
     mean_ale,
     mean_alm,
+    mean_bmp,
+    mean_cheap,
     mean_chol,
     mean_euclid,
     mean_harmonic,
@@ -127,6 +129,8 @@ def test_mean_weight_error(mean, get_mats, get_weights):
     "mean", [
         mean_ale,
         mean_alm,
+        mean_bmp,
+        mean_cheap,
         mean_logdet,
         pytest.param(partial(mean_power, p=0.3), id="mean_power"),
         mean_riemann,
@@ -176,6 +180,8 @@ def test_mean_of_means(kind, mean, get_mats):
     [
         mean_ale,
         mean_alm,
+        mean_bmp,
+        mean_cheap,
         mean_chol,
         mean_euclid,
         mean_harmonic,
@@ -204,6 +210,8 @@ def test_mean_of_single_matrix(mean, get_mats):
     [
         mean_ale,
         mean_alm,
+        mean_bmp,
+        mean_cheap,
         mean_chol,
         mean_euclid,
         mean_harmonic,
@@ -322,19 +330,30 @@ def test_mean_property_invariance_congruence(kind, kindW, mean, get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_mean_alm(kind, get_mats):
-    n_matrices, n_channels = 3, 3
+@pytest.mark.parametrize("mean", [
+    mean_alm,
+    mean_bmp,
+    mean_cheap,
+    mean_riemann,
+])
+def test_mean_geometric_2mats(kind, mean, get_mats):
+    """Geometric mean of 2 matrices is the middle of the AIR geodesic"""
+    n_matrices, n_channels = 2, 3
     X = get_mats(n_matrices, n_channels, kind)
-    M = mean_alm(X)
-    assert M.shape == (n_channels, n_channels)
-    assert M == approx(mean_riemann(X), abs=1e-6, rel=1e-3)
+    assert mean(X) == approx(geodesic_riemann(X[0], X[1], alpha=0.5))
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_mean_alm_2matrices(kind, get_mats):
-    n_matrices, n_channels = 2, 3
+@pytest.mark.parametrize("mean", [mean_alm, mean_bmp, mean_cheap])
+def test_mean_geometric_3mats(kind, mean, get_mats):
+    """Geometric mean of 3 matrices is the AIR mean"""
+    n_matrices, n_channels = 3, 3
     X = get_mats(n_matrices, n_channels, kind)
-    assert mean_alm(X) == approx(geodesic_riemann(X[0], X[1], alpha=0.5))
+    M = mean(X)
+    assert M.shape == (n_channels, n_channels)
+    if mean is mean_cheap:
+        pytest.skip()
+    assert M == approx(mean_riemann(X), abs=1e-6, rel=1e-3)
 
 
 @pytest.mark.parametrize("n_dim1, n_dim2", [(4, 5), (5, 4)])
@@ -531,6 +550,8 @@ def callable_average(X, sample_weight=None):
     [
         ("ale", mean_ale),
         ("alm", mean_alm),
+        ("bmp", mean_bmp),
+        ("cheap", mean_cheap),
         ("chol", mean_chol),
         ("euclid", mean_euclid),
         ("harmonic", mean_harmonic),

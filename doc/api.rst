@@ -694,6 +694,8 @@ Means
     gmean
     mean_ale
     mean_alm
+    mean_bmp
+    mean_cheap
     mean_chol
     mean_covariance
     mean_euclid
