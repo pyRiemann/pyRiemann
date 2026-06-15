@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 from conftest import approx, to_backend
+from pyriemann.geometry.distance import distance_thompson
 from pyriemann.geometry.geodesic import (
     geodesic,
     geodesic_chol,
@@ -192,15 +193,22 @@ def test_geodesic_riemann(kind, get_mats, rndstate):
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_geodesic_thompson(kind, get_mats, rndstate):
-    """Equivalence with AIR geodesic for 2x2 matrices"""
     n_channels = 2
     A, B = get_mats(2, n_channels, kind)
     alpha = rndstate.uniform(0.01, 0.99)
 
+    # Equivalence with AIR geodesic for 2x2 matrices
     # Prop 4.2 in [Mostajeran2024]
-    Gt = geodesic_thompson(A, B, alpha)
-    Gr = geodesic_riemann(A, B, alpha)
-    assert Gt == approx(Gr)
+    def assert_equiv_to_air_geodesic(A, B, alpha):
+        Gt = geodesic_thompson(A, B, alpha)
+        Gr = geodesic_riemann(A, B, alpha)
+        assert Gt == approx(Gr)
+    for alpha in np.linspace(0, 1, 10):
+        assert_equiv_to_air_geodesic(A, B, alpha)
+
+    # Lemma 2.2 (ii) of [Lim2012]
+    Gt = geodesic_thompson(A, B, alpha=0.5)
+    assert distance_thompson(Gt, A) == approx(distance_thompson(Gt, B))
 
 
 def test_geodesic_alpha_error_type(get_mats):
