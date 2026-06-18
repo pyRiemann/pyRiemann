@@ -589,7 +589,7 @@ Channel selection
 
 Artifact detection
 ------------------
-.. currentmodule:: pyriemann.artifactdetection
+.. currentmodule:: pyriemann.artifact_detection
 
 .. autosummary::
     :toctree: generated/

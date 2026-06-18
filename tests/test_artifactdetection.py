@@ -4,7 +4,7 @@ import pytest
 from pytest import approx
 from scipy.stats import combine_pvalues
 
-from pyriemann.artifactdetection import Potato, PotatoField
+from pyriemann.artifact_detection import Potato, PotatoField
 
 
 pytestmark = pytest.mark.numpy_only

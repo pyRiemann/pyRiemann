@@ -15,7 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.datasets import make_blobs
 
-from pyriemann.artifactdetection import Potato
+from pyriemann.artifact_detection import Potato
 from pyriemann.datasets import make_outliers
 from pyriemann.utils import (
     mean_euclid,
