@@ -2,16 +2,13 @@ import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
 from pytest import approx
-from scipy.stats import combine_pvalues
 
 from pyriemann.clustering import (
     Kmeans,
     KmeansPerClassTransform,
     MeanShift,
     Gaussian,
-    GaussianMixture,
-    Potato,
-    PotatoField,
+    GaussianMixture
 )
 from pyriemann.geometry.tangentspace import tangent_space
 
@@ -23,22 +20,18 @@ clusts = [
     Kmeans,
     KmeansPerClassTransform,
     MeanShift,
-    GaussianMixture,
-    Potato,
-    PotatoField,
+    GaussianMixture
 ]
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("clust", clusts)
-def test_clustering_two_clusters(kind, clust,
-                                 get_mats, get_labels, get_weights):
+def test_clustering_two_clusters(kind, clust, get_mats, get_labels):
     if kind == "hpd" and clust in [GaussianMixture]:
         pytest.skip()
 
     n_clusters, n_matrices, n_channels = 2, 40, 3
     X = get_mats(n_matrices, n_channels, kind)
-    weights = get_weights(n_matrices)
 
     if clust is Kmeans:
         clt_fit(clust, X, n_clusters, None)
@@ -70,31 +63,6 @@ def test_clustering_two_clusters(kind, clust,
         clt_fitpredict(clust, X)
         clt_predict_proba(clust, X)
         clt_score(clust, X)
-
-    if clust is Potato:
-        clt_fit(clust, X, n_clusters, None)
-        clt_fit_weights(clust, X, weights)
-        clt_transform(clust, X)
-        clt_predict(clust, X)
-        clt_predict_proba(clust, X)
-        clt_partial_fit(clust, X)
-        clt_fit_independence(clust, X)
-        clt_fittransform(clust, X)
-
-    if clust is PotatoField:
-        n_potatoes = 3
-        X = [
-            get_mats(n_matrices, n_channels, kind),
-            get_mats(n_matrices, n_channels + 2, kind),
-            get_mats(n_matrices, n_channels + 1, kind),
-        ]
-        clt_fit_weights(clust, X, weights)
-        clt_transform(clust, X, n_potatoes)
-        clt_predict(clust, X, n_potatoes)
-        clt_predict_proba(clust, X, n_potatoes)
-        clt_partial_fit(clust, X, n_potatoes)
-        clt_fit_independence(clust, X, n_potatoes)
-        clt_fittransform(clust, X, n_potatoes)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
@@ -163,15 +131,10 @@ def clt_fit(clust, X, n_clusters, labels):
         n_ts = n_channels * (n_channels + 1) // 2
         assert clt.covariances_.shape == (clt.n_components, n_ts, n_ts)
         return
-    if clust is Potato:
-        assert clt.covmean_.shape == (n_channels, n_channels)
 
 
 def clt_fit_weights(clust, X, weights):
-    if clust is PotatoField:
-        clt = clust(n_potatoes=len(X))
-    else:
-        clt = clust()
+    clt = clust()
     clt.fit(X, sample_weight=weights)
 
 
@@ -179,9 +142,6 @@ def clt_transform(clust, X, n_clusters=None):
     n_matrices = len(X)
     if n_clusters is None:
         clt = clust()
-    elif clust is PotatoField:
-        n_matrices = len(X[0])
-        clt = clust(n_potatoes=n_clusters)
     else:
         clt = clust(n_clusters=n_clusters)
     transf = clt.fit(X).transform(X)
@@ -223,9 +183,6 @@ def clt_predict(clust, X, n_clusters=None):
     n_matrices = len(X)
     if n_clusters is None:
         clt = clust()
-    elif clust is PotatoField:
-        n_matrices = len(X[0])
-        clt = clust(n_potatoes=n_clusters)
     else:
         clt = clust(n_clusters=n_clusters)
     pred = clt.fit(X).predict(X)
@@ -296,8 +253,6 @@ def clt_fit_labels_independence(clust, X, labels):
 def clt_fittransform(clust, X, n_clusters=None):
     if n_clusters is None:
         clt = clust()
-    elif clust is PotatoField:
-        clt = clust(n_potatoes=n_clusters)
     if hasattr(clt, "random_state"):
         clt.set_params(**{"random_state": 42})
     Xt = clt.fit(X).transform(X)
@@ -316,6 +271,9 @@ def clt_score(clust, X, y=None):
     clt = clust()
     score = clt.fit(X, y).score(X, y)
     assert isinstance(score, float)
+
+
+###############################################################################
 
 
 @pytest.mark.parametrize("clust", [Kmeans, KmeansPerClassTransform])
@@ -415,198 +373,3 @@ def test_gmm(n_components, get_mats, get_weights):
     X, y = gmm.sample(n_sampled_matrices)
     assert X.shape == (n_sampled_matrices, n_channels, n_channels)
     assert y.shape == (n_sampled_matrices,)
-
-
-###############################################################################
-
-
-@pytest.mark.parametrize("use_weight", [True, False])
-def test_potato_fit(use_weight, get_mats, get_weights):
-    n_matrices, n_channels = 6, 3
-    X = get_mats(n_matrices, n_channels, "spd")
-    y = np.ones(n_matrices)
-    y[0] = 0
-    if use_weight:
-        weights = get_weights(n_matrices)
-    else:
-        weights = None
-    Potato().fit(X, y, sample_weight=weights)
-
-
-def test_potato_fit_equal_labels(get_mats):
-    n_matrices, n_channels = 6, 3
-    X = get_mats(n_matrices, n_channels, "spd")
-    with pytest.raises(ValueError):
-        Potato(pos_label=0).fit(X)
-
-
-@pytest.mark.parametrize("y_fail", [[1], [0] * 6, [0] * 7, [0, 1, 2] * 2])
-def test_potato_fit_error(y_fail, get_mats):
-    n_matrices, n_channels = 6, 3
-    X = get_mats(n_matrices, n_channels, "spd")
-    with pytest.raises(ValueError):
-        Potato().fit(X, y=y_fail)
-
-
-def test_potato_partialfit_not_fitted(get_mats):
-    n_matrices, n_channels = 6, 3
-    X = get_mats(n_matrices, n_channels, "spd")
-    with pytest.raises(ValueError):  # potato not fitted
-        Potato().partial_fit(X)
-
-
-def test_potato_partialfit_diff_channels(get_mats, get_labels):
-    n_matrices, n_channels, n_classes = 6, 3, 2
-    X = get_mats(n_matrices, n_channels, "spd")
-    y = get_labels(n_matrices, n_classes)
-    pt = Potato().fit(X, y)
-    with pytest.raises(ValueError):  # unequal # of chans
-        pt.partial_fit(get_mats(2, n_channels + 1, "spd"))
-
-
-def test_potato_partialfit_no_poslabel(get_mats, get_labels):
-    n_matrices, n_channels, n_classes = 6, 3, 2
-    X = get_mats(n_matrices, n_channels, "spd")
-    y = get_labels(n_matrices, n_classes)
-    pt = Potato().fit(X, y)
-    with pytest.raises(ValueError):  # no positive labels
-        pt.partial_fit(X, [0] * n_matrices)
-
-
-@pytest.mark.parametrize("alpha", [-0.1, 1.1])
-def test_potato_partialfit_alpha(alpha, get_mats, get_labels):
-    n_matrices, n_channels, n_classes = 6, 3, 2
-    X = get_mats(n_matrices, n_channels, "spd")
-    y = get_labels(n_matrices, n_classes)
-    pt = Potato().fit(X, y)
-    with pytest.raises(ValueError):
-        pt.partial_fit(X, y, alpha=alpha)
-
-
-def test_potato_1channel(get_mats):
-    n_matrices, n_channels = 6, 1
-    X_1chan = get_mats(n_matrices, n_channels, "spd")
-    pt = Potato()
-    pt.fit_transform(X_1chan)
-    pt.predict(X_1chan)
-    pt.predict_proba(X_1chan)
-
-
-def test_potato_threshold(get_mats):
-    n_matrices, n_channels = 6, 3
-    X = get_mats(n_matrices, n_channels, "spd")
-    pt = Potato(threshold=2.5)
-    pt.fit(X)
-
-
-def test_potato_specific_labels(get_mats):
-    n_matrices, n_channels = 10, 3
-    X = get_mats(n_matrices, n_channels, "spd")
-    X[-1] = 10 * np.eye(n_channels)
-    pt = Potato(threshold=2.0, pos_label=2, neg_label=7)
-    pt.fit(X)
-    assert_array_equal(np.unique(pt.predict(X)), [2, 7])
-    # fit with custom positive label
-    pt.fit(X, y=[2] * n_matrices)
-
-
-def callable_diageuclid(A, B, squared=False):
-    """Euclidean distance between diagonals of square matrices"""
-    dA = np.diagonal(A, axis1=-2, axis2=-1)
-    dB = np.diagonal(B, axis1=-2, axis2=-1)
-    return np.linalg.norm(dA - dB, axis=-1)
-
-
-@pytest.mark.parametrize(
-    "metric",
-    [
-        "riemann",
-        {"mean": "logeuclid", "distance": "riemann"},
-        ["riemann", "logeuclid"],
-        [
-            {"mean": "riemann", "distance": "riemann"},
-            {"mean": "logeuclid", "distance": "riemann"},
-        ],
-        [
-            "riemann",
-            {"mean": "logeuclid", "distance": "riemann"},
-        ],
-        [
-            "riemann",
-            {"mean": "riemann", "distance": callable_diageuclid},
-        ],
-    ]
-)
-def test_potatofield_fit_metric(metric, get_mats):
-    n_potatoes, n_matrices, n_channels = 2, 6, 3
-    X1 = get_mats(n_matrices, n_channels, "hpd")
-    X2 = get_mats(n_matrices, n_channels + 1, "hpd")
-    X = [X1, X2]
-
-    pf = PotatoField(n_potatoes=n_potatoes, metric=metric).fit(X)
-    pf.partial_fit(X)
-
-
-def callable_combination(X, axis):
-    _, p_fisher = combine_pvalues(X, method="fisher", axis=axis)
-    _, p_stouffer = combine_pvalues(X, method="stouffer", axis=axis)
-    return np.minimum(p_fisher, p_stouffer)
-
-
-@pytest.mark.parametrize(
-    "method_combination",
-    [
-        "fisher",
-        "stouffer",
-        callable_combination,
-    ]
-)
-def test_potatofield_fit_combination(method_combination, get_mats):
-    n_potatoes, n_matrices, n_channels = 3, 3, 4
-    X1 = get_mats(n_matrices, n_channels, "hpd")
-    X2 = get_mats(n_matrices, n_channels + 1, "hpd")
-    X3 = get_mats(n_matrices, n_channels + 2, "hpd")
-    X = [X1, X2, X3]
-
-    pf = PotatoField(
-        n_potatoes=n_potatoes,
-        method_combination=method_combination,
-    ).fit(X)
-    pf.predict_proba(X)
-
-
-def test_potatofield_fit_errors(get_mats):
-    n_potatoes, n_matrices, n_channels = 2, 6, 3
-    X1 = get_mats(n_matrices, n_channels, "spd")
-    X2 = get_mats(n_matrices, n_channels + 1, "spd")
-    X = [X1, X2]
-    with pytest.raises(ValueError):  # n_potatoes too low
-        PotatoField(n_potatoes=0).fit(X)
-    with pytest.raises(ValueError):   # p_threshold out of bounds
-        PotatoField(p_threshold=0).fit(X)
-    with pytest.raises(ValueError):  # p_threshold out of bounds
-        PotatoField(p_threshold=1).fit(X)
-    pf = PotatoField(n_potatoes=n_potatoes)
-    with pytest.raises(ValueError):  # n_potatoes not equal to input length
-        pf.fit([X1, X1, X2])
-    with pytest.raises(ValueError):  # n_matrices not equal
-        pf.fit([X1, X2[:1]])
-    with pytest.raises(ValueError):  # metric not str, dict or list
-        PotatoField(metric=42).fit(X)
-    with pytest.raises(ValueError):  # method_combination not str or callable
-        PotatoField(method_combination=42).fit(X)
-
-
-@pytest.mark.parametrize(
-    "method", ["partial_fit", "transform", "predict_proba"]
-)
-def test_potatofield_method(get_mats, method):
-    n_potatoes, n_matrices, n_channels = 2, 6, 3
-    X1 = get_mats(n_matrices, n_channels, "spd")
-    X2 = get_mats(n_matrices, n_channels + 1, "spd")
-    X = [X1, X2]
-    pf = PotatoField(n_potatoes=n_potatoes).fit(X)
-    with pytest.raises(ValueError):  # n_potatoes not equal to input length
-        getattr(pf, method)([X1, X1, X2])
-    with pytest.raises(ValueError):  # n_matrices not equal
-        getattr(pf, method)([X1, X2[:1]])

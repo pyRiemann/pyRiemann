@@ -50,6 +50,9 @@ v0.12.dev
   and Cheap mean :func:`pyriemann.geometry.mean.mean_cheap`.
   :pr:`449` by :user:`qbarthelemy`
 
+- Move :class:`pyriemann.artifact_detection.Potato` and :class:`pyriemann.artifact_detection.PotatoField` from ``clustering`` to ``artifact_detection``.
+  :pr:`453` by :user:`qbarthelemy`
+
 v0.11 (April 2026)
 ------------------
 
@@ -75,7 +78,7 @@ v0.11 (April 2026)
   to support classifiers without sample weights.
   :pr:`422` by :user:`qbarthelemy`
 
-- Enhance :class:`pyriemann.clustering.PotatoField`, allowing a different metric per potato and adding a parameter ``method_combination``.
+- Enhance :class:`pyriemann.artifact_detection.PotatoField`, allowing a different metric per potato and adding a parameter ``method_combination``.
   :pr:`423` by :user:`qbarthelemy`
 
 - Modernize documentation: migrate from Bootstrap to Furo theme, add card-based API navigation with sphinx-design,
@@ -440,7 +443,7 @@ v0.3 (July 2022)
   and :class:`pyriemann.estimation.Coherences`.
   :pr:`132` by :user:`qbarthelemy`
 
-- Add ``partial_fit`` in :class:`pyriemann.clustering.Potato`, useful for an online update; and update example on artifact detection.
+- Add ``partial_fit`` in :class:`pyriemann.artifact_detection.Potato`, useful for an online update; and update example on artifact detection.
   :pr:`133` by :user:`qbarthelemy`
 
 - Deprecate ``pyriemann.utils.viz.plot_confusion_matrix`` as sklearn integrate its own version.
@@ -455,7 +458,7 @@ v0.3 (July 2022)
 - Refactor tests + fix refit of :class:`pyriemann.tangentspace.TangentSpace`.
   :pr:`136` by :user:`sylvchev`
 
-- Add :class:`pyriemann.clustering.PotatoField`, and an example on artifact detection.
+- Add :class:`pyriemann.artifact_detection.PotatoField`, and an example on artifact detection.
   :pr:`142` by :user:`qbarthelemy`
 
 - Add sampling SPD matrices from a Riemannian Gaussian distribution in :func:`pyriemann.datasets.sample_gaussian_spd`.
@@ -542,7 +545,7 @@ v0.2.7 (June 2021)
 - Correct probas of :class:`pyriemann.classification.MDM`.
   :pr:`100` by :user:`qbarthelemy`
 
-- Add ``predict_proba`` for :class:`pyriemann.clustering.Potato`, and an example on artifact detection.
+- Add ``predict_proba`` for :class:`pyriemann.artifact_detection.Potato`, and an example on artifact detection.
   :pr:`105` by :user:`qbarthelemy`
 
 - Add a normalization function for covariance matrices, :func:`pyriemann.geometry.covariance.normalize`.
