@@ -103,7 +103,9 @@ def test_is_sym_pos_def(rndstate, is_xxx_pos_def):
     assert is_xxx_pos_def(Q @ A @ A.T @ Q.T + 1e-6 * np.eye(n))
 
 
-@pytest.mark.parametrize("is_xxx_pos_semi_def", [is_sym_pos_semi_def, is_herm_pos_semi_def])
+@pytest.mark.parametrize(
+    "is_xxx_pos_semi_def", [is_sym_pos_semi_def, is_herm_pos_semi_def]
+)
 def test_is_sym_pos_semi_def(rndstate, is_xxx_pos_semi_def):
     assert is_xxx_pos_semi_def(np.eye(n))
 
