@@ -57,7 +57,6 @@ v0.12.dev
   to generate HPD matrices from complex-typed mean for float ``sigma``.
   :issue:`413` by :user:`robrui`
 
-
 v0.11 (April 2026)
 ------------------
 

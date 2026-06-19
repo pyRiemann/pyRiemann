@@ -11,8 +11,7 @@ from ..geometry._docs import deprecated
 from ..geometry.base import ctranspose, sqrtm
 from ..geometry.geodesic import geodesic
 from ..geometry.tangentspace import exp_map_riemann, unupper
-from ..geometry.test import is_herm_pos_def as is_hpd
-from ..geometry.test import is_sym_pos_semi_def as is_spsd
+from ..geometry.test import is_herm_pos_semi_def as is_hpsd
 
 
 def _pdf_r(r, sigma):
@@ -385,7 +384,7 @@ def _sample_parameter_U(n_samples, n_dim, random_state=None,
     """
 
     rs = check_random_state(random_state)
-    dtype = np.complex128 if is_complex else np.float64
+    dtype = np.complex64 if is_complex else np.float64
     u_samples = np.zeros((n_samples, n_dim, n_dim), dtype=dtype)
     for i in range(n_samples):
         A = rs.randn(n_dim, n_dim)
@@ -457,7 +456,7 @@ def _sample_gaussian_centered(n_matrices, n_dim, sigma, random_state=None,
         is_complex=is_complex,
     )
 
-    dtype = np.complex128 if is_complex else np.float64
+    dtype = np.complex64 if is_complex else np.float64
     samples = np.zeros((n_matrices, n_dim, n_dim), dtype=dtype)
     for i in range(n_matrices):
         Ui = samples_U[i]
@@ -594,15 +593,11 @@ def sample_gaussian(n_matrices, mean, sigma, random_state=None,
     else:
         raise ValueError("sigma must be either a float or a ndarray.")
 
-    msg = "Some of the sampled matrices are very badly conditioned and may " \
-          "not behave numerically as positive definite matrices. " \
-          "Try sampling again or reducing the dimensionality of matrices."
-    if is_complex:
-        if not is_hpd(samples):
-            warnings.warn(msg)
-    else:
-        if not is_spsd(samples):
-            warnings.warn(msg)
+    if not is_hpsd(samples):
+        msg = "Some of the sampled matrices are very badly conditioned and " \
+              "may not behave numerically as positive definite matrices. " \
+              "Try sampling again or reducing the dimensionality of matrices."
+        warnings.warn(msg)
 
     return samples
 
