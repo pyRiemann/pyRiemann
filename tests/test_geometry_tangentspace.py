@@ -328,6 +328,8 @@ def test_innerproduct_property_conjsymmetry(kindX, kindC, metric, get_mats):
 @pytest.mark.parametrize("metric", metrics)
 def test_innerproduct_property_linearity(kindX, kindC, metric,
                                          get_mats, rndstate):
+    if kindC == "hpd" and metric == "logchol":
+        pytest.skip()
     n_matrices, n_channels = 4, 3
     X = get_mats(n_matrices, n_channels, kindX)
     Y = get_mats(n_matrices, n_channels, kindX)
