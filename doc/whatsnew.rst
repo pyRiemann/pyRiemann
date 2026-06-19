@@ -57,6 +57,10 @@ v0.12.dev
   to generate HPD matrices from complex-typed mean for float ``sigma``.
   :issue:`413` by :user:`robrui`
 
+- Add log-Cholesky inner product for SPD matrices :func:`pyriemann.geometry.tangentspace.innerproduct_logchol`,
+  and improve other inner products.
+  :pr:`450` by :user:`qbarthelemy`
+
 v0.11 (April 2026)
 ------------------
 

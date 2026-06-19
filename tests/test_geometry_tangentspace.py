@@ -4,7 +4,7 @@ from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
 
 from conftest import approx, to_numpy
-from pyriemann.geometry.distance import distance_riemann
+from pyriemann.geometry.distance import distance, distance_riemann
 from pyriemann.geometry.geodesic import geodesic
 from pyriemann.geometry.mean import mean_riemann
 from pyriemann.geometry.tangentspace import (
@@ -26,6 +26,7 @@ from pyriemann.geometry.tangentspace import (
     untangent_space,
     innerproduct,
     innerproduct_euclid,
+    innerproduct_logchol,
     innerproduct_logeuclid,
     innerproduct_riemann,
     norm,
@@ -222,7 +223,7 @@ def test_tangent_and_untangent_space(kind, metric, get_mats):
 
 ###############################################################################
 
-metrics = ["euclid", "logeuclid", "riemann"]
+metrics = ["euclid", "logchol", "logeuclid", "riemann"]
 
 
 @pytest.mark.parametrize("metric", metrics)
@@ -266,6 +267,10 @@ def test_innerproduct_x_x(kindX, kindC, metric, get_mats):
     G1 = innerproduct(X, None, Cref, metric=metric)
     assert_array_equal(G, G1)
 
+    Xexp = exp_map(X, Cref, metric=metric, Cm12=True)
+    G2 = distance(Xexp, Cref, metric=metric, squared=True)
+    assert_array_almost_equal(G, G2.flatten())
+
 
 @pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
 @pytest.mark.parametrize("metric", metrics)
@@ -284,6 +289,7 @@ def test_innerproduct_x_y(kindX, kindC, metric, get_mats):
     "finnerproduct",
     [
         innerproduct_euclid,
+        innerproduct_logchol,
         innerproduct_logeuclid,
         innerproduct_riemann,
     ],
@@ -322,6 +328,8 @@ def test_innerproduct_property_conjsymmetry(kindX, kindC, metric, get_mats):
 @pytest.mark.parametrize("metric", metrics)
 def test_innerproduct_property_linearity(kindX, kindC, metric,
                                          get_mats, rndstate):
+    if kindC == "hpd" and metric == "logchol":
+        pytest.skip()
     n_matrices, n_channels = 4, 3
     X = get_mats(n_matrices, n_channels, kindX)
     Y = get_mats(n_matrices, n_channels, kindX)
@@ -486,9 +494,6 @@ def test_transport_properties(kindX, kindAB, metric, get_mats, rndstate):
     for i in range(len(G)-1):
         Xt_AC = transport(Xt_AC, G[i], G[i+1], metric)
     assert Xt_AC == approx(Xt_ABBC)
-
-    if metric == "logchol":
-        return
 
     # isometry, ie keep inner product and norm
     ia = innerproduct(X, Y, A, metric=metric)
