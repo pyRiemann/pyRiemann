@@ -14,8 +14,8 @@ with different centerings and dispersions.
 import numpy as np
 import matplotlib.pyplot as plt
 
+from pyriemann.datasets import make_matrices, sample_gaussian
 from pyriemann.embedding import SpectralEmbedding
-from pyriemann.datasets import make_matrices, sample_gaussian_spd
 
 
 print(__doc__)
@@ -32,18 +32,18 @@ random_state = 42  # ensure reproducibility
 # Generate the samples on three different conditions
 mean = make_matrices(1, n_dim, "spd")[0]  # random reference point
 
-samples_1 = sample_gaussian_spd(n_matrices=n_matrices,
-                                mean=mean,
-                                sigma=sigma,
-                                random_state=random_state)
-samples_2 = sample_gaussian_spd(n_matrices=n_matrices,
-                                mean=mean,
-                                sigma=sigma/2,
-                                random_state=random_state)
-samples_3 = sample_gaussian_spd(n_matrices=n_matrices,
-                                mean=epsilon*mean,
-                                sigma=sigma,
-                                random_state=random_state)
+samples_1 = sample_gaussian(n_matrices=n_matrices,
+                            mean=mean,
+                            sigma=sigma,
+                            random_state=random_state)
+samples_2 = sample_gaussian(n_matrices=n_matrices,
+                            mean=mean,
+                            sigma=sigma/2,
+                            random_state=random_state)
+samples_3 = sample_gaussian(n_matrices=n_matrices,
+                            mean=epsilon*mean,
+                            sigma=sigma,
+                            random_state=random_state)
 
 # Stack all of the samples into one data array for the embedding
 samples = np.concatenate([samples_1, samples_2, samples_3])

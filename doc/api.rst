@@ -103,8 +103,8 @@ on SPD/HPD matrices, and
          <span class="api-card-tag tag-module">Module</span>
        </div>
        <div class="api-card-title">Clustering</div>
-       <div class="api-card-desc">K-means, mean shift, Gaussian mixture, and Potato artifact detection.</div>
-       <div class="api-card-footer">6 classes</div>
+       <div class="api-card-desc">K-means, mean shift and Gaussian mixture.</div>
+       <div class="api-card-footer">4 classes</div>
      </a>
 
      <a class="api-card card-module" href="#tangentspace-api">
@@ -168,6 +168,25 @@ on SPD/HPD matrices, and
        </div>
        <div class="api-card-title">Channel Selection</div>
        <div class="api-card-desc">Electrode selection and flat channel removal for EEG.</div>
+       <div class="api-card-footer">2 classes</div>
+     </a>
+
+     <a class="api-card card-module" href="#artifact-api">
+       <div class="api-card-header">
+         <div class="api-card-icon">
+           <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round">
+             <circle cx="7" cy="7" r="2" fill="currentColor" opacity="0.4"/>
+             <circle cx="10" cy="9" r="1.5" fill="currentColor" opacity="0.4"/>
+             <circle cx="17" cy="8" r="2" fill="currentColor" opacity="0.6"/>
+             <circle cx="15" cy="10" r="1.5" fill="currentColor" opacity="0.6"/>
+             <circle cx="9" cy="17" r="2" fill="currentColor" opacity="0.8"/>
+             <circle cx="12" cy="16" r="1.5" fill="currentColor" opacity="0.8"/>
+           </svg>
+         </div>
+         <span class="api-card-tag tag-module">Module</span>
+       </div>
+       <div class="api-card-title">Artifact detection</div>
+       <div class="api-card-desc">Potato and PotatoField.</div>
        <div class="api-card-footer">2 classes</div>
      </a>
 
@@ -511,8 +530,6 @@ Clustering
     KmeansPerClassTransform
     MeanShift
     GaussianMixture
-    Potato
-    PotatoField
 
 .. _tangentspace_api:
 
@@ -568,6 +585,19 @@ Channel selection
     ElectrodeSelection
     FlatChannelRemover
 
+.. _artifact_api:
+
+Artifact detection
+------------------
+.. currentmodule:: pyriemann.artifact_detection
+
+.. autosummary::
+    :toctree: generated/
+    :template: class.rst
+
+    Potato
+    PotatoField
+
 .. _transfer_api:
 
 Transfer Learning
@@ -618,7 +648,7 @@ Datasets
     make_outliers
     make_matrices
     make_masks
-    sample_gaussian_spd
+    sample_gaussian
     make_classification_transfer
 
     :template: class.rst
@@ -694,6 +724,8 @@ Means
     gmean
     mean_ale
     mean_alm
+    mean_bmp
+    mean_cheap
     mean_chol
     mean_covariance
     mean_euclid

@@ -30,7 +30,7 @@ def distance_chol(A, B, squared=False):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First SPD/HPD matrices, at least 2D ndarray.
+        First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices, same dimensions as A.
     squared : bool, default=False
@@ -80,7 +80,7 @@ def distance_euclid(A, B, squared=False):
     Parameters
     ----------
     A : ndarray, shape (..., n, m)
-        First matrices, at least 2D ndarray.
+        First matrices.
     B : ndarray, shape (..., n, m)
         Second matrices, same dimensions as A.
     squared : bool, default=False
@@ -120,7 +120,7 @@ def distance_harmonic(A, B, squared=False):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First invertible matrices, at least 2D ndarray.
+        First invertible matrices.
     B : ndarray, shape (..., n, n)
         Second invertible matrices, same dimensions as A.
     squared : bool, default=False
@@ -165,7 +165,7 @@ def distance_kullback(A, B, squared=False):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First SPD/HPD matrices, at least 2D ndarray.
+        First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices, same dimensions as A.
     squared : bool, default=False
@@ -218,7 +218,7 @@ def distance_kullback_sym(A, B, squared=False):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First SPD/HPD matrices, at least 2D ndarray.
+        First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices, same dimensions as A.
     squared : bool, default=False
@@ -269,7 +269,7 @@ def distance_logchol(A, B, squared=False):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First SPD/HPD matrices, at least 2D ndarray.
+        First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices, same dimensions as A.
     squared : bool, default=False
@@ -330,7 +330,7 @@ def distance_logdet(A, B, squared=False):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First SPD/HPD matrices, at least 2D ndarray.
+        First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices, same dimensions as A.
     squared : bool, default=False
@@ -380,7 +380,7 @@ def distance_logeuclid(A, B, squared=False):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First SPD/HPD matrices, at least 2D ndarray.
+        First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices, same dimensions as A.
     squared : bool, default=False
@@ -426,7 +426,7 @@ def distance_poweuclid(A, B, p, squared=False):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First SPD/HPD matrices, at least 2D ndarray.
+        First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices, same dimensions as A.
     p : float
@@ -491,7 +491,7 @@ def distance_riemann(A, B, squared=False):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First SPD/HPD matrices, at least 2D ndarray.
+        First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices, same dimensions as A.
     squared : bool, default=False
@@ -542,7 +542,7 @@ def distance_thompson(A, B, squared=False):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First SPD/HPD matrices, at least 2D ndarray.
+        First SPD/HPD matrices.
     B : ndarray, shape (..., n, n)
         Second SPD/HPD matrices, same dimensions as A.
     squared : bool, default=False
@@ -588,7 +588,7 @@ def distance_wasserstein(A, B, squared=False):
     Parameters
     ----------
     A : ndarray, shape (..., n, n)
-        First SPSD/HPSD matrices, at least 2D ndarray.
+        First SPSD/HPSD matrices.
     B : ndarray, shape (..., n, n)
         Second SPSD/HPSD matrices, same dimensions as A.
     squared : bool, default=False

@@ -1,4 +1,4 @@
-from .sampling import sample_gaussian_spd, RandomOverSampler
+from .sampling import sample_gaussian, sample_gaussian_spd, RandomOverSampler
 from .simulated import (
     make_matrices,
     make_masks,
@@ -9,6 +9,7 @@ from .simulated import (
 
 
 __all__ = [
+    "sample_gaussian",
     "sample_gaussian_spd",
     "make_matrices",
     "make_masks",

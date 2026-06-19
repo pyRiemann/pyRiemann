@@ -19,6 +19,8 @@ from pyriemann.geometry.test import (
     is_herm_pos_semi_def as is_hpsd,
 )
 
+pytestmark = pytest.mark.numpy_only
+
 
 @pytest.mark.parametrize("kind", mat_kinds)
 def test_make_matrices_square(rndstate, kind):
