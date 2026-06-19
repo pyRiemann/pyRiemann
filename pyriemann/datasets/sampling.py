@@ -771,7 +771,7 @@ class RandomOverSampler(BaseEstimator):
         X_resampled = np.empty((n_mats, self._channels, self._channels))
 
         for n in range(n_mats):
-            i, j = np.random.choice(len(X), size=2, replace=False)
+            i, j = self._rs.choice(len(X), size=2, replace=False)
             alpha = self._rs.uniform(0, 1)
             X_resampled[n] = geodesic(X[i], X[j], alpha, metric=self.metric)
 

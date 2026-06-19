@@ -98,6 +98,9 @@ def test_is_sym_pos_def(rndstate):
     B = A - np.mean(A, axis=0)
     assert not is_sym_pos_def(B @ B.T, tol=1e-9)
 
+    Q = np.linalg.qr(rndstate.randn(n, n))[0]
+    assert is_sym_pos_def(Q @ A @ A.T @ Q.T + 1e-6 * np.eye(n))
+
 
 def test_is_sym_pos_semi_def(rndstate):
     assert is_sym_pos_semi_def(np.eye(n))
@@ -122,6 +125,9 @@ def test_is_herm_pos_def(rndstate):
 
     B = A - np.mean(A, axis=0)
     assert not is_herm_pos_def(B @ B.conj().T, tol=1e-9)
+
+    Q = np.linalg.qr(rndstate.randn(n, n) + 1j * rndstate.randn(n, n))[0]
+    assert is_herm_pos_def(Q @ A @ A.conj().T @ Q.conj().T + 1e-6 * np.eye(n))
 
 
 def test_is_herm_pos_semi_def(rndstate):

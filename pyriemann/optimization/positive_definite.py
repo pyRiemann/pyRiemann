@@ -14,7 +14,7 @@ def _symmetrize(X):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        Square matrices, at least 2D ndarray.
+        Square matrices.
 
     Returns
     -------

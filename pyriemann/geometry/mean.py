@@ -166,6 +166,147 @@ def mean_alm(X, *, tol=1e-14, maxiter=100, sample_weight=None, **kwargs):
     return xp.mean(M_iter, axis=0)
 
 
+@_vectorize_nd(n_axes=3)
+def mean_bmp(X, *, tol=1e-7, maxiter=50, sample_weight=None):
+    """Bini-Meini-Poloni (BMP) mean of SPD/HPD matrices.
+
+    Bini-Meini-Poloni (BMP) mean is computed recursively [1]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    tol : float, default=1e-7
+        Tolerance to stop the gradient descent.
+    maxiter : int, default=50
+        Maximum number of iterations.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (n, n)
+        BMP mean.
+
+    Notes
+    -----
+    .. versionadded:: 0.12
+
+    See Also
+    --------
+    gmean
+
+    References
+    ----------
+    .. [1] `An effective matrix geometric mean satisfying the Ando–Li–Mathias
+        properties
+        <https://pages.di.unipi.it/fpoloni/publications/files2/BinMP10_means_final.pdf>`_
+        D. Bini, B. Meini and F. Poloni. Mathematics of Computation. 2010
+    """
+    xp = get_namespace(X)
+    n_matrices, _, _ = X.shape
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
+
+    if n_matrices == 1:
+        return X[0]
+
+    if n_matrices == 2:
+        alpha = sample_weight[1] / sample_weight[0] / 2
+        M = geodesic_riemann(X[0], X[1], alpha=alpha)
+        return M
+
+    M = X
+    M_iter = xp.zeros_like(M)
+    for _ in range(maxiter):
+        for h in range(n_matrices):
+            s = np.mod(np.arange(h, h + n_matrices - 1) + 1, n_matrices)
+            M_iter[h] = geodesic_riemann(
+                M[h],
+                mean_bmp(M[s], sample_weight=sample_weight[s]),
+                alpha=(n_matrices - 1) / n_matrices,
+            )
+
+        norm_iter = xp.linalg.matrix_norm(M_iter[0] - M[0], ord=2)
+        norm_c = xp.linalg.matrix_norm(M[0], ord=2)
+        if norm_iter / norm_c < tol:
+            break
+        M = M_iter
+        M_iter = xp.zeros_like(M)
+    else:
+        warnings.warn("Convergence not reached")
+
+    return xp.mean(M_iter, axis=0)
+
+
+@_vectorize_nd(n_axes=3)
+def mean_cheap(X, *, tol=1e-7, maxiter=50, sample_weight=None):
+    """Cheap mean of SPD/HPD matrices.
+
+    Cheap mean is computed as described in [1]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n_matrices, n, n)
+        Set of SPD/HPD matrices.
+    tol : float, default=1e-7
+        Tolerance to stop the gradient descent.
+    maxiter : int, default=50
+        Maximum number of iterations.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
+
+    Returns
+    -------
+    M : ndarray, shape (n, n)
+        Cheap mean.
+
+    Notes
+    -----
+    .. versionadded:: 0.12
+
+    See Also
+    --------
+    gmean
+
+    References
+    ----------
+    .. [1] `A note on computing matrix geometric means
+        <https://poisson.phc.dm.unipi.it/~maxreen/bruno/pdf/D.%20Bini%20and%20B.%20Iannazzo%20-%20A%20note%20on%20computing%20Matrix%20Geometric%20Means.pdf>`_
+        D. Bini and B. Iannazzo. Advances in Computational Mathematics. 2011
+    """  # noqa
+    xp = get_namespace(X)
+    n_matrices, _, _ = X.shape
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
+
+    if n_matrices == 1:
+        return X[0]
+
+    if n_matrices == 2:
+        alpha = sample_weight[1] / sample_weight[0] / 2
+        M = geodesic_riemann(X[0], X[1], alpha=alpha)
+        return M
+
+    M = X
+    M_iter = xp.zeros_like(M)
+    for _ in range(maxiter):
+        for h in range(n_matrices):
+            M_ = xp.concatenate((M[:h], M[h+1:]), axis=0)
+            M_iter[h] = M[h] @ expm(
+                xp.sum(logm(xp.linalg.solve(M[h], M_)), axis=0) / n_matrices
+            )
+
+        norm_iter = xp.linalg.matrix_norm(M_iter[0] - M[0], ord=2)
+        norm_c = xp.linalg.matrix_norm(M[0], ord=2)
+        if norm_iter / norm_c < tol:
+            break
+        M = M_iter
+        M_iter = xp.zeros_like(M)
+    else:
+        warnings.warn("Convergence not reached")
+
+    return xp.mean(M_iter, axis=0)
+
+
 def mean_chol(X, sample_weight=None, **kwargs):
     r"""Mean of SPD/HPD matrices according to the Cholesky metric.
 
@@ -432,7 +573,14 @@ def mean_logdet(X, *, tol=10e-5, maxiter=50, init=None, sample_weight=None):
     See Also
     --------
     gmean
-    """
+
+    References
+    ----------
+    .. [1] `A new metric on the manifold of kernel matrices with application to
+        matrix geometric means
+        <https://proceedings.neurips.cc/paper/2012/file/98dce83da57b0395e163467c9dae521b-Paper.pdf>`_
+        S. Sra. NeurIPS, 2012
+    """  # noqa
     xp = get_namespace(X)
     n_matrices, n, _ = X.shape
     sample_weight = check_weights(sample_weight, n_matrices, like=X)
@@ -890,6 +1038,8 @@ def mean_wasserstein(X, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 mean_functions = {
     "ale": mean_ale,
     "alm": mean_alm,
+    "bmp": mean_bmp,
+    "cheap": mean_cheap,
     "chol": mean_chol,
     "euclid": mean_euclid,
     "harmonic": mean_harmonic,
@@ -918,8 +1068,9 @@ def gmean(X, *args, metric="riemann", sample_weight=None, **kwargs):
         The arguments passed to the sub function.
     metric : string | callable, default="riemann"
         Metric for mean estimation, can be:
-        "ale", "alm", "chol", "euclid", "harmonic", "identity", "kullback_sym",
-        "logchol", "logdet", "logeuclid", "riemann", "thompson", "wasserstein",
+        "ale", "alm", "bmp", "cheap", "chol", "euclid", "harmonic",
+        "kullback_sym", "logchol", "logdet", "logeuclid", "riemann",
+        "thompson", "wasserstein",
         or a callable function.
         If an exponent is given in args, it can be "power", "poweuclid".
     sample_weight : None | ndarray, shape (n_matrices,), default=None

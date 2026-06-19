@@ -29,7 +29,7 @@ def is_square(X):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
+        The set of square matrices.
 
     Returns
     -------
@@ -45,7 +45,7 @@ def is_sym(X):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
+        The set of square matrices.
 
     Returns
     -------
@@ -61,7 +61,7 @@ def is_skew_sym(X):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
+        The set of square matrices.
 
     Returns
     -------
@@ -154,7 +154,7 @@ def is_hermitian(X):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
+        The set of square matrices.
 
     Returns
     -------
@@ -177,7 +177,7 @@ def is_pos_def(X, tol=0.0, fast_mode=False):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
+        The set of square matrices.
     tol : float, default=0.0
         Threshold below which eigen values are considered zero.
     fast_mode : bool, default=False
@@ -207,7 +207,7 @@ def is_pos_semi_def(X):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
+        The set of square matrices.
 
     Returns
     -------
@@ -226,7 +226,7 @@ def is_sym_pos_def(X, tol=0.0):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
+        The set of square matrices.
     tol : float, default=0.0
         Threshold below which eigen values are considered zero.
 
@@ -244,7 +244,7 @@ def is_sym_pos_semi_def(X):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
+        The set of square matrices.
 
     Returns
     -------
@@ -260,7 +260,7 @@ def is_herm_pos_def(X, tol=0.0):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
+        The set of square matrices.
     tol : float, default=0.0
         Threshold below which eigen values are considered zero.
 
@@ -278,7 +278,7 @@ def is_herm_pos_semi_def(X):
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        The set of square matrices, at least 2D ndarray.
+        The set of square matrices.
 
     Returns
     -------
