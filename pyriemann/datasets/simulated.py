@@ -5,7 +5,7 @@ from ..geometry.base import ctranspose, invsqrtm, powm, sqrtm, expm
 from ..geometry.distance import distance_riemann
 from ..geometry.mean import mean_riemann
 from ..transfer import encode_domains
-from .sampling import sample_gaussian_spd
+from .sampling import sample_gaussian
 
 
 def _make_eyes(n_matrices, n_dim):
@@ -296,7 +296,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         C0_in, C1_in = centers
 
     # sample matrices from class 0
-    X0 = sample_gaussian_spd(
+    X0 = sample_gaussian(
         n_matrices=n_matrices,
         mean=C0_in,
         sigma=class_disp,
@@ -307,7 +307,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     y0 = np.zeros(n_matrices)
 
     # sample matrices from class 1
-    X1 = sample_gaussian_spd(
+    X1 = sample_gaussian(
         n_matrices=n_matrices,
         mean=C1_in,
         sigma=class_disp,
@@ -467,7 +467,7 @@ def make_classification_transfer(
 
     # create a source domain with two classes and global mean at identity
     M1_source = np.eye(n_dim)  # first class mean at Identity at first
-    X1_source = sample_gaussian_spd(
+    X1_source = sample_gaussian(
         n_matrices=n_matrices,
         mean=M1_source,
         sigma=class_disp,
@@ -479,7 +479,7 @@ def make_classification_transfer(
     Pv /= np.linalg.norm(Pv)  # normalize
     P = expm(Pv)  # take it back to the SPD manifold
     M2_source = powm(P, alpha=class_sep)  # control distance to identity
-    X2_source = sample_gaussian_spd(
+    X2_source = sample_gaussian(
         n_matrices=n_matrices,
         mean=M2_source,
         sigma=class_disp,
@@ -494,13 +494,13 @@ def make_classification_transfer(
     y_source = np.concatenate([y1_source, y2_source])
 
     # create target domain based on the source domain
-    X1_target = sample_gaussian_spd(
+    X1_target = sample_gaussian(
         n_matrices=n_matrices,
         mean=M1_source,
         sigma=class_disp,
         random_state=seeds[2],
     )
-    X2_target = sample_gaussian_spd(
+    X2_target = sample_gaussian(
         n_matrices=n_matrices,
         mean=M2_source,
         sigma=class_disp,

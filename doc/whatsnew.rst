@@ -53,10 +53,14 @@ v0.12.dev
 - Move :class:`pyriemann.artifact_detection.Potato` and :class:`pyriemann.artifact_detection.PotatoField` from ``clustering`` to ``artifact_detection``.
   :pr:`453` by :user:`qbarthelemy`
 
+- Rename and enhance ``sample_gaussian_spd`` into :func:`pyriemann.datasets.sample_gaussian`
+  to generate HPD matrices from complex-typed mean for float ``sigma``.
+  :issue:`413` by :user:`robrui`
+
 v0.11 (April 2026)
 ------------------
 
-- Enhance :func:`pyriemann.datasets.sample_gaussian_spd` adding support for dispersion defined as a covariance matrix.
+- Enhance :func:`pyriemann.datasets.sample_gaussian` adding support for dispersion defined as a covariance matrix.
   :pr:`412` by :user:`thibaultdesurrel`
 
 - Add :class:`pyriemann.clustering.GaussianMixture`.
@@ -377,7 +381,7 @@ v0.5 (Jun 2023)
 - Correct :func:`pyriemann.geometry.distance.distance_mahalanobis`, keeping only real part.
   :pr:`249` by :user:`qbarthelemy`
 
-- Fix :func:`pyriemann.datasets.sample_gaussian_spd` used with ``sampling_method=rejection`` on 2D matrices.
+- Fix :func:`pyriemann.datasets.sample_gaussian` used with ``sampling_method=rejection`` on 2D matrices.
   :pr:`250` by :user:`mhurte`
 
 v0.4 (Feb 2023)
@@ -397,7 +401,7 @@ v0.4 (Feb 2023)
   add ``warm_restart`` to :class:`pyriemann.spatialfilters.AJDC`.
   :pr:`196` by :user:`qbarthelemy`
 
-- Add parameter ``sampling_method`` to :func:`pyriemann.datasets.sample_gaussian_spd`,
+- Add parameter ``sampling_method`` to :func:`pyriemann.datasets.sample_gaussian`,
   with ``rejection`` accelerating 2x2 matrices generation.
   :pr:`198` by :user:`Artim436`
 
@@ -461,7 +465,7 @@ v0.3 (July 2022)
 - Add :class:`pyriemann.artifact_detection.PotatoField`, and an example on artifact detection.
   :pr:`142` by :user:`qbarthelemy`
 
-- Add sampling SPD matrices from a Riemannian Gaussian distribution in :func:`pyriemann.datasets.sample_gaussian_spd`.
+- Add sampling SPD matrices from a Riemannian Gaussian distribution in :func:`pyriemann.datasets.sample_gaussian`.
   :pr:`140` by :user:`plcrodrigues`
 
 - Add new function :func:`pyriemann.datasets.make_gaussian_blobs` for generating random datasets with SPD matrices.
@@ -522,7 +526,7 @@ v0.3 (July 2022)
 - Parallelize functions for dataset generation: :func:`pyriemann.datasets.make_gaussian_blobs`.
   :pr:`179` by :user:`sylvchev`
 
-- Fix dispersion when generating datasets: :func:`pyriemann.datasets.sample_gaussian_spd`.
+- Fix dispersion when generating datasets: :func:`pyriemann.datasets.sample_gaussian`.
   :pr:`179` by :user:`sylvchev`
 
 - Enhance base and distance functions, to process ndarrays of SPD matrices.

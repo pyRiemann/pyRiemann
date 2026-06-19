@@ -87,31 +87,35 @@ def test_is_pos_semi_def(rndstate):
     assert not is_pos_semi_def(np.ones((n, n + 1)))
 
 
-def test_is_sym_pos_def(rndstate):
-    assert is_sym_pos_def(np.eye(n))
+@pytest.mark.parametrize("is_xxx_pos_def", [is_sym_pos_def, is_herm_pos_def])
+def test_is_sym_pos_def(rndstate, is_xxx_pos_def):
+    assert is_xxx_pos_def(np.eye(n))
 
     A = rndstate.randn(n, 100)
-    assert is_sym_pos_def(A @ A.T + 1e-6 * np.eye(n))
-    assert not is_sym_pos_def(-A @ A.T)
-    assert not is_sym_pos_def(np.ones((n, n + 1)))
+    assert is_xxx_pos_def(A @ A.T + 1e-6 * np.eye(n))
+    assert not is_xxx_pos_def(-A @ A.T)
+    assert not is_xxx_pos_def(np.ones((n, n + 1)))
 
     B = A - np.mean(A, axis=0)
-    assert not is_sym_pos_def(B @ B.T, tol=1e-9)
+    assert not is_xxx_pos_def(B @ B.T, tol=1e-9)
 
     Q = np.linalg.qr(rndstate.randn(n, n))[0]
-    assert is_sym_pos_def(Q @ A @ A.T @ Q.T + 1e-6 * np.eye(n))
+    assert is_xxx_pos_def(Q @ A @ A.T @ Q.T + 1e-6 * np.eye(n))
 
 
-def test_is_sym_pos_semi_def(rndstate):
-    assert is_sym_pos_semi_def(np.eye(n))
+@pytest.mark.parametrize(
+    "is_xxx_pos_semi_def", [is_sym_pos_semi_def, is_herm_pos_semi_def]
+)
+def test_is_sym_pos_semi_def(rndstate, is_xxx_pos_semi_def):
+    assert is_xxx_pos_semi_def(np.eye(n))
 
     A = rndstate.randn(n, 100)
-    assert is_sym_pos_semi_def(A @ A.T)
-    assert not is_sym_pos_semi_def(-A @ A.T)
-    assert not is_sym_pos_semi_def(np.ones((n, n + 1)))
+    assert is_xxx_pos_semi_def(A @ A.T)
+    assert not is_xxx_pos_semi_def(-A @ A.T)
+    assert not is_xxx_pos_semi_def(np.ones((n, n + 1)))
 
     B = A - np.mean(A, axis=0)
-    assert is_sym_pos_semi_def(B @ B.T)
+    assert is_xxx_pos_semi_def(B @ B.T)
 
 
 def test_is_herm_pos_def(rndstate):
