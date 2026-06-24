@@ -29,6 +29,7 @@ from pyriemann.geometry.tangentspace import (
     innerproduct_logchol,
     innerproduct_logeuclid,
     innerproduct_riemann,
+    innerproduct_wasserstein,
     norm,
     transport,
     transport_euclid,
@@ -223,7 +224,7 @@ def test_tangent_and_untangent_space(kind, metric, get_mats):
 
 ###############################################################################
 
-metrics = ["euclid", "logchol", "logeuclid", "riemann"]
+metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
 
 
 @pytest.mark.parametrize("metric", metrics)
@@ -292,6 +293,7 @@ def test_innerproduct_x_y(kindX, kindC, metric, get_mats):
         innerproduct_logchol,
         innerproduct_logeuclid,
         innerproduct_riemann,
+        innerproduct_wasserstein,
     ],
 )
 def test_innerproduct_broadcasting(finnerproduct, backend, get_mats):

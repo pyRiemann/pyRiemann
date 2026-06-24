@@ -815,6 +815,7 @@ Tangent Space
     innerproduct_logchol
     innerproduct_logeuclid
     innerproduct_riemann
+    innerproduct_wasserstein
     norm
     transport
     transport_euclid

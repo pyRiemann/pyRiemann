@@ -949,6 +949,66 @@ def innerproduct_riemann(X, Y, Cref):
     return _apply_inner_product(X_, Y_)
 
 
+def innerproduct_wasserstein(X, Y, Cref):
+    r"""Wasserstein inner product.
+
+    Wasserstein inner product :math:`\mathbf{g}` between
+    symmetric/Hermitian matrices in tangent space :math:`\mathbf{X}`
+    and :math:`\mathbf{Y}` at :math:`\mathbf{C}_\text{ref}` is given in [1]_.
+    Implementation comes from Eq.(32) in [2]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        First symmetric/Hermitian matrices in tangent space at Cref.
+    Y : ndarray, shape (..., n, n) | None
+        Second symmetric/Hermitian matrices in tangent space at Cref.
+        If None, Y is set to X, giving the squared norm of X.
+    Cref : ndarray, shape (n, n)
+        Reference SPD/HPD matrix.
+
+    Returns
+    -------
+    G : float or ndarray, shape (...,)
+        Wasserstein inner product between X and Y.
+
+    Notes
+    -----
+    .. versionadded:: 0.12
+
+    See Also
+    --------
+    innerproduct
+
+    References
+    ----------
+    .. [1] `Wasserstein Riemannian geometry of Gaussian densities
+        <https://link.springer.com/article/10.1007/s41884-018-0014-4>`_
+        L. Malagò, L. Montrucchio, G. Pistone. Information Geometry, 2018, 1,
+        pp. 137–179.
+    .. [2] `On the Bures–Wasserstein distance between positive definite
+        matrices
+        <https://www.sciencedirect.com/science/article/pii/S0723086918300021>`_
+        R. Bhatia, T. Jain, Y. Lim. Expositiones mathematicae, 2019, 37,
+        pp. 165-191.
+    """
+    xp = check_matrix_pair(X, Cref, require_square=True)
+    eigvals, eigvecs = xp.linalg.eigh(Cref)
+
+    if Y is None:
+        Y = X
+
+    alpha = eigvals[:, None] / (eigvals[:, None] + eigvals[None, :]) ** 2
+    X_ = eigvecs.T @ xp.conj(X) @ eigvecs
+    Y_ = eigvecs.T @ Y @ eigvecs
+    G = xp.einsum("ij,...ij,...ji->...", alpha, X_, Y_).real
+
+    if is_numpy_namespace(xp) and G.ndim == 0:
+        return float(G)
+    else:
+        return G
+
+
 def _apply_inner_product(X, Y):
     # product G = trace(X^H @ Y)
     xp = get_namespace(X, Y)
@@ -965,6 +1025,7 @@ innerproduct_functions = {
     "logchol": innerproduct_logchol,
     "logeuclid": innerproduct_logeuclid,
     "riemann": innerproduct_riemann,
+    "wasserstein": innerproduct_wasserstein,
 }
 
 
@@ -986,7 +1047,8 @@ def innerproduct(X, Y, Cref, metric="riemann"):
         Reference matrix.
     metric : string | callable, default="riemann"
         Metric used for inner product, can be:
-        "euclid", "logchol", "logeuclid", "riemann", or a callable function.
+        "euclid", "logchol", "logeuclid", "riemann", "wasserstein",
+        or a callable function.
 
     Returns
     -------
@@ -1005,6 +1067,7 @@ def innerproduct(X, Y, Cref, metric="riemann"):
     innerproduct_logchol
     innerproduct_logeuclid
     innerproduct_riemann
+    innerproduct_wasserstein
     """
     innerproduct_function = check_function(metric, innerproduct_functions)
     return innerproduct_function(X, Y, Cref)
