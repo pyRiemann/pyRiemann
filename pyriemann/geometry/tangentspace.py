@@ -7,6 +7,7 @@ from array_api_compat import (
     device as xpd,
     is_numpy_namespace,
 )
+from scipy.linalg import solve_continuous_lyapunov
 
 from ._backend import diag_indices, tril_indices, triu_indices
 from ._check import check_function, check_matrix_pair
@@ -954,8 +955,8 @@ def innerproduct_wasserstein(X, Y, Cref):
 
     Wasserstein inner product :math:`\mathbf{g}` between
     symmetric/Hermitian matrices in tangent space :math:`\mathbf{X}`
-    and :math:`\mathbf{Y}` at :math:`\mathbf{C}_\text{ref}` is given in [1]_.
-    Implementation comes from Eq.(32) in [2]_.
+    and :math:`\mathbf{Y}` at :math:`\mathbf{C}_\text{ref}` is given in Eq(6)
+    of [1]_. See also [2]_.
 
     Parameters
     ----------
@@ -993,16 +994,14 @@ def innerproduct_wasserstein(X, Y, Cref):
         pp. 165-191.
     """
     xp = check_matrix_pair(X, Cref, require_square=True)
-    eigvals, eigvecs = xp.linalg.eigh(Cref)
-
+    LX = xp.asarray(solve_continuous_lyapunov(Cref, xp.conj(X)))
     if Y is None:
         Y = X
+    G = 0.5 * xp.einsum("...ij,...ij->...", LX, Y).real
+    return _prepare_output(G, xp)
 
-    alpha = eigvals[:, None] / (eigvals[:, None] + eigvals[None, :]) ** 2
-    X_ = eigvecs.T @ xp.conj(X) @ eigvecs
-    Y_ = eigvecs.T @ Y @ eigvecs
-    G = xp.einsum("ij,...ij,...ji->...", alpha, X_, Y_).real
 
+def _prepare_output(G, xp):
     if is_numpy_namespace(xp) and G.ndim == 0:
         return float(G)
     else:
@@ -1013,11 +1012,7 @@ def _apply_inner_product(X, Y):
     # product G = trace(X^H @ Y)
     xp = get_namespace(X, Y)
     G = xp.einsum("...nm,...nm->...", xp.conj(X), Y).real
-
-    if is_numpy_namespace(xp) and G.ndim == 0:
-        return float(G)
-    else:
-        return G
+    return _prepare_output(G, xp)
 
 
 innerproduct_functions = {
@@ -1087,8 +1082,8 @@ def norm(X, Cref, metric="riemann"):
     Cref : ndarray, shape (n, n) | None
         Reference matrix.
     metric : string | callable, default="riemann"
-        Metric used for norm, can be:
-        "euclid", "logeuclid", "riemann", or a callable function.
+        Metric used for norm, see
+        :func:`pyriemann.geometry.tangentspace.innerproduct`.
 
     Returns
     -------

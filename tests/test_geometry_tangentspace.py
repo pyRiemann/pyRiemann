@@ -2,6 +2,7 @@ from array_api_compat import array_namespace as get_namespace
 import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
+from scipy.linalg import solve_continuous_lyapunov
 
 from conftest import approx, to_numpy
 from pyriemann.geometry.distance import distance, distance_riemann
@@ -268,6 +269,15 @@ def test_innerproduct_x_x(kindX, kindC, metric, get_mats):
     G1 = innerproduct(X, None, Cref, metric=metric)
     assert_array_equal(G, G1)
 
+
+@pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
+@pytest.mark.parametrize("metric", metrics)
+def test_innerproduct_distance(kindX, kindC, metric, get_mats):
+    n_matrices, n_channels = 3, 2
+    X = get_mats(n_matrices, n_channels, kindX)
+    Cref = get_mats(1, n_channels, kindC)[0]
+    G = innerproduct(X, X, Cref, metric=metric)
+
     Xexp = exp_map(X, Cref, metric=metric, Cm12=True)
     G2 = distance(Xexp, Cref, metric=metric, squared=True)
     assert_array_almost_equal(G, G2.flatten())
@@ -393,6 +403,20 @@ def test_innerproduct_riemann(kindX, kindC, get_mats):
 
     # Eq(2.6) in [Moakher2005]
     G1 = np.trace(np.linalg.solve(Cref, X) @ np.linalg.solve(Cref, Y))
+    assert_array_almost_equal(G, G1)
+
+
+def test_innerproduct_wasserstein(get_mats):
+    n_channels = 4
+    X, Y = get_mats(2, n_channels, "sym")
+    Cref = get_mats(1, n_channels, "spd")[0]
+    G = innerproduct_wasserstein(X, Y, Cref)
+    xp = get_namespace(X)
+
+    # Eq(6) in [Malago2018]
+    LX = xp.asarray(solve_continuous_lyapunov(Cref, X))
+    LY = xp.asarray(solve_continuous_lyapunov(Cref, Y))
+    G1 = xp.trace(LX @ Cref @ LY)
     assert_array_almost_equal(G, G1)
 
 
