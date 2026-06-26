@@ -7,6 +7,7 @@ from sklearn.linear_model import LogisticRegression, LinearRegression
 from sklearn.model_selection import KFold, StratifiedShuffleSplit
 from sklearn.pipeline import make_pipeline, Pipeline
 from sklearn.svm import LinearSVC, LinearSVR
+from sklearn.utils.validation import check_is_fitted
 
 from pyriemann.datasets.simulated import (
     make_classification_transfer,
@@ -121,6 +122,7 @@ def test_tldummy(rndstate, space):
 
     dum = TLDummy()
     dum.fit(X, y_enc)
+    check_is_fitted(dum)  # issue #456: stateless step must report as fitted
     dum.fit_transform(X, y_enc)
     dum.transform(X)
 

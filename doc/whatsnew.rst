@@ -10,6 +10,11 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.12.dev
 ---------
 
+- Add ``__sklearn_is_fitted__`` to stateless transformers, so they pass
+  scikit-learn's ``check_is_fitted`` after ``fit`` and can be used inside
+  ``Pipeline(transform_input=...)`` (introduced in scikit-learn 1.6).
+  :pr:`457` by :user:`bruAristimunha`
+
 - Deprecate ``covariances_X`` and ``cospectrum``.
   :pr:`442` by :user:`qbarthelemy`
 

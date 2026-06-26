@@ -61,6 +61,9 @@ class TLDummy(TransformerMixin, BaseEstimator):
         """
         return self
 
+    def __sklearn_is_fitted__(self):
+        return True
+
     def transform(self, X):
         """Do nothing.
 
