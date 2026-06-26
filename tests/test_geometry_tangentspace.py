@@ -272,19 +272,6 @@ def test_innerproduct_x_x(kindX, kindC, metric, get_mats):
 
 @pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
 @pytest.mark.parametrize("metric", metrics)
-def test_innerproduct_distance(kindX, kindC, metric, get_mats):
-    n_matrices, n_channels = 3, 2
-    X = get_mats(n_matrices, n_channels, kindX)
-    Cref = get_mats(1, n_channels, kindC)[0]
-    G = innerproduct(X, X, Cref, metric=metric)
-
-    Xexp = exp_map(X, Cref, metric=metric, Cm12=True)
-    G2 = distance(Xexp, Cref, metric=metric, squared=True)
-    assert_array_almost_equal(G, G2.flatten())
-
-
-@pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
-@pytest.mark.parametrize("metric", metrics)
 def test_innerproduct_x_y(kindX, kindC, metric, get_mats):
     """Test innerproduct for different X and Y"""
     n_matrices, n_channels = 4, 3
@@ -322,6 +309,20 @@ def test_innerproduct_broadcasting(finnerproduct, backend, get_mats):
     C = xp.stack([A for _ in range(n_sets)])
     D = xp.stack([B for _ in range(n_sets)])
     assert finnerproduct(C, D, Cref).shape == (n_sets, n_matrices)  # 4D arrays
+
+
+@pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
+@pytest.mark.parametrize("metric", metrics)
+def test_innerproduct_property_distance(kindX, kindC, metric, get_mats):
+    """Test d(C,exp_C(X))^2 = g_C(X,X) locally"""
+    n_matrices, n_channels = 5, 3
+    X = get_mats(n_matrices, n_channels, kindX)
+    Cref = get_mats(1, n_channels, kindC)[0]
+    G = innerproduct(X, X, Cref, metric=metric)
+
+    Xexp = exp_map(X, Cref, metric=metric, Cm12=True)
+    G2 = distance(Xexp, Cref, metric=metric, squared=True)
+    assert_array_almost_equal(G, G2.flatten())
 
 
 @pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])

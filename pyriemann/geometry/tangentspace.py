@@ -237,16 +237,8 @@ def exp_map_wasserstein(X, Cref, **kwargs):
         pp. 137–179.
     """
     xp = check_matrix_pair(X, Cref, require_square=True)
-    d, V = xp.linalg.eigh(Cref)
-    Vh = ctranspose(V)
-    C = 1 / (d[:, None] + d[None, :])
-
-    X_rotated = Vh @ X @ V
-    X_tmp = C * X_rotated
-    X_tmp = X_tmp @ (d[..., None] * X_tmp)
-    X_tmp = V @ X_tmp @ Vh
-
-    return Cref + X + X_tmp
+    LX = xp.asarray(solve_continuous_lyapunov(Cref, X))
+    return Cref + X + LX @ Cref @ LX
 
 
 exp_map_functions = {
@@ -955,7 +947,7 @@ def innerproduct_wasserstein(X, Y, Cref):
 
     Wasserstein inner product :math:`\mathbf{g}` between
     symmetric/Hermitian matrices in tangent space :math:`\mathbf{X}`
-    and :math:`\mathbf{Y}` at :math:`\mathbf{C}_\text{ref}` is given in Eq(6)
+    and :math:`\mathbf{Y}` at :math:`\mathbf{C}_\text{ref}` is given in Eq.(7)
     of [1]_. See also [2]_.
 
     Parameters
