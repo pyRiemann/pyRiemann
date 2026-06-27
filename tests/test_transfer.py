@@ -122,7 +122,7 @@ def test_tldummy(rndstate, space):
 
     dum = TLDummy()
     dum.fit(X, y_enc)
-    check_is_fitted(dum)  # issue #456: stateless step must report as fitted
+    check_is_fitted(dum)
     dum.fit_transform(X, y_enc)
     dum.transform(X)
 

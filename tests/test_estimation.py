@@ -404,7 +404,7 @@ def test_shrinkage(shrinkage, kind, get_mats):
     ],
 )
 def test_stateless_check_is_fitted(estimator, n_dim, kind, get_mats):
-    """Stateless transformers report as fitted after ``fit`` (issue #456).
+    """Stateless transformers report as fitted after ``fit``.
 
     They have a no-op ``fit`` and set no fitted attribute, so without
     ``__sklearn_is_fitted__`` scikit-learn's ``check_is_fitted`` raised
