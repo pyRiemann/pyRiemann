@@ -65,6 +65,9 @@ class Covariances(TransformerMixin, BaseEstimator):
         """
         return self
 
+    def __sklearn_is_fitted__(self):
+        return True
+
     def transform(self, X):
         """Estimate covariance matrices.
 
@@ -568,6 +571,9 @@ class CrossSpectra(TransformerMixin, BaseEstimator):
         """
         return self
 
+    def __sklearn_is_fitted__(self):
+        return True
+
     def transform(self, X):
         """Estimate cross-spectral matrices.
 
@@ -837,6 +843,9 @@ class TimeDelayCovariances(TransformerMixin, BaseEstimator):
         """
         return self
 
+    def __sklearn_is_fitted__(self):
+        return True
+
     def transform(self, X):
         """Estimate the time delay covariance matrices.
 
@@ -970,6 +979,9 @@ class Kernels(TransformerMixin, BaseEstimator):
         """
         return self
 
+    def __sklearn_is_fitted__(self):
+        return True
+
     def transform(self, X):
         """Estimate kernel matrices from time series.
 
@@ -1064,6 +1076,9 @@ class Shrinkage(TransformerMixin, BaseEstimator):
             The Shrinkage instance.
         """
         return self
+
+    def __sklearn_is_fitted__(self):
+        return True
 
     def transform(self, X):
         """Shrink the SPD/HPD matrices.

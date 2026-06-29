@@ -61,6 +61,11 @@ v0.12.dev
   and improve other inner products.
   :pr:`450` by :user:`qbarthelemy`
 
+- Add ``__sklearn_is_fitted__`` to stateless transformers, so they pass
+  scikit-learn's ``check_is_fitted`` after ``fit`` and can be used inside
+  ``Pipeline(transform_input=...)`` (introduced in scikit-learn 1.6).
+  :pr:`457` by :user:`bruAristimunha`
+
 v0.11 (April 2026)
 ------------------
 
