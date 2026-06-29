@@ -321,8 +321,8 @@ def test_innerproduct_property_distance(kindX, kindC, metric, get_mats):
     G = innerproduct(X, X, Cref, metric=metric)
 
     Xexp = exp_map(X, Cref, metric=metric, Cm12=True)
-    G2 = distance(Xexp, Cref, metric=metric, squared=True)
-    assert_array_almost_equal(G, G2.flatten())
+    D2 = distance(Xexp, Cref, metric=metric, squared=True)
+    assert_array_almost_equal(D2.flatten(), G)
 
 
 @pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
