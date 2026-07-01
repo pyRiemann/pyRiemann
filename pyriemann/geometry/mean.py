@@ -8,7 +8,6 @@ import numpy as np
 
 from ._backend import diag_indices, nanmean, tril_indices
 from ._check import check_function, check_init, check_weights
-from ._docs import deprecated
 from .ajd import ajd_pham
 from .base import ctranspose, sqrtm, invsqrtm, logm, expm, powm, _vectorize_nd
 from .distance import distance_riemann
@@ -1104,14 +1103,6 @@ def gmean(X, *args, metric="riemann", sample_weight=None, **kwargs):
         **kwargs,
     )
     return M
-
-
-@deprecated(
-    "mean_covariance() is deprecated and will be removed in 0.13.0; "
-    "please use gmean()."
-)
-def mean_covariance(X, *args, metric="riemann", sample_weight=None, **kwargs):
-    return gmean(X, *args, metric="riemann", sample_weight=None, **kwargs)
 
 
 ###############################################################################
