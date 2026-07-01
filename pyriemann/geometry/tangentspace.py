@@ -782,18 +782,18 @@ def innerproduct_logchol(X, Y, Cref):
     r"""Log-Cholesky inner product.
 
     Log-Cholesky inner product :math:`\mathbf{g}` between
-    symmetric matrices in tangent space :math:`\mathbf{X}`
+    symmetric/Hermitian matrices in tangent space :math:`\mathbf{X}`
     and :math:`\mathbf{Y}` at :math:`\mathbf{C}_\text{ref}` is given in [1]_.
 
     Parameters
     ----------
     X : ndarray, shape (..., n, n)
-        First symmetric matrices in tangent space at Cref.
+        First symmetric/Hermitian matrices in tangent space at Cref.
     Y : ndarray, shape (..., n, n) | None
-        Second symmetric matrices in tangent space at Cref.
+        Second symmetric/Hermitian matrices in tangent space at Cref.
         If None, Y is set to X, giving the squared norm of X.
     Cref : ndarray, shape (n, n)
-        Reference SPD matrix.
+        Reference SPD/HPD matrix.
 
     Returns
     -------
