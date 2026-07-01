@@ -9,7 +9,6 @@ from conftest import to_backend, approx
 from pyriemann.geometry.base import invsqrtm, logm, sqrtm
 from pyriemann.geometry.geodesic import geodesic_riemann
 from pyriemann.geometry.mean import (
-    mean_covariance,
     gmean,
     mean_ale,
     mean_alm,
@@ -589,12 +588,3 @@ def test_gmean_arguments(get_mats):
     gmean(X, metric="ale", maxiter=5)
     gmean(X, metric="logdet", tol=10e-3)
     gmean(X, metric="riemann", init=X[0])
-
-
-def test_mean_covariance_deprecation(get_mats):
-    import warnings
-    with warnings.catch_warnings(record=True) as w:
-        warnings.simplefilter("always")
-        mean_covariance(get_mats(3, 2, "spd"))
-        assert len(w) >= 1
-        assert issubclass(w[-1].category, DeprecationWarning)
