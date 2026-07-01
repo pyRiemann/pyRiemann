@@ -7,8 +7,11 @@ What's new in the package
 
 A catalog of new features, improvements, and bug-fixes in each release.
 
-v0.12.dev
+v0.13.dev
 ---------
+
+v0.12 (July 2026)
+-----------------
 
 - Deprecate ``covariances_X`` and ``cospectrum``.
   :pr:`442` by :user:`qbarthelemy`
