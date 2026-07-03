@@ -342,6 +342,7 @@ def test_innerproduct_property_linearity(kindX, kindC, metric,
     Gaxpbz = innerproduct(a * X + b * Y, Z, Cref, metric=metric)
     aGxzpbGyz = a * Gxz + b * Gyz
     assert_array_almost_equal(Gaxpbz, aGxzpbGyz.real)
+
     Gxaypbz = innerproduct(X, a * Y + b * Z, Cref, metric=metric)
     aGxypbGxz = a * Gxy + b * Gxz
     assert_array_almost_equal(Gxaypbz, aGxypbGxz.real)
