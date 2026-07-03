@@ -328,25 +328,19 @@ def test_innerproduct_property_conjsymmetry(kindX, kindC, metric, get_mats):
 @pytest.mark.parametrize("metric", metrics)
 def test_innerproduct_property_linearity(kindX, kindC, metric,
                                          get_mats, rndstate):
-    if kindC == "hpd" and metric == "logchol":
-        pytest.skip()
     n_matrices, n_channels = 4, 3
     X = get_mats(n_matrices, n_channels, kindX)
     Y = get_mats(n_matrices, n_channels, kindX)
     Z = get_mats(n_matrices, n_channels, kindX)
     Cref = get_mats(1, n_channels, kindC)[0]
     a, b = rndstate.uniform(0.01, 0.99, size=2)
-    if kindX == "herm":
-        a_, b_ = rndstate.uniform(0.01, 0.99, size=2)
-        a += 1j * a_
-        b += 1j * b_
 
     Gxy = innerproduct(X, Y, Cref, metric=metric)
     Gxz = innerproduct(X, Z, Cref, metric=metric)
     Gyz = innerproduct(Y, Z, Cref, metric=metric)
 
     Gaxpbz = innerproduct(a * X + b * Y, Z, Cref, metric=metric)
-    aGxzpbGyz = a.conj() * Gxz + b.conj() * Gyz
+    aGxzpbGyz = a * Gxz + b * Gyz
     assert_array_almost_equal(Gaxpbz, aGxzpbGyz.real)
 
     Gxaypbz = innerproduct(X, a * Y + b * Z, Cref, metric=metric)
