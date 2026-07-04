@@ -727,7 +727,6 @@ Means
     mean_bmp
     mean_cheap
     mean_chol
-    mean_covariance
     mean_euclid
     mean_harmonic
     mean_kullback_sym
