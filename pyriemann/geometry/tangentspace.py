@@ -967,7 +967,7 @@ def innerproduct_wasserstein(X, Y, Cref):
 
     Notes
     -----
-    .. versionadded:: 0.12
+    .. versionadded:: 0.13
 
     See Also
     --------

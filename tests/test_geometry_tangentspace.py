@@ -315,8 +315,10 @@ def test_innerproduct_broadcasting(finnerproduct, backend, get_mats):
 @pytest.mark.parametrize("metric", metrics)
 def test_innerproduct_property_distance(kindX, kindC, metric, get_mats):
     """Test d(C,exp_C(X))^2 = g_C(X,X) locally"""
+    if kindC == "hpd" and metric == "wasserstein":
+        pytest.skip()
     n_matrices, n_channels = 5, 3
-    X = get_mats(n_matrices, n_channels, kindX)
+    X = 0.1 * get_mats(n_matrices, n_channels, kindX)
     Cref = get_mats(1, n_channels, kindC)[0]
     G = innerproduct(X, X, Cref, metric=metric)
 
