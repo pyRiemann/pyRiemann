@@ -10,6 +10,9 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.13.dev
 ---------
 
+- Update pyRiemann from Python 3.10 - 3.12 to 3.11 - 3.13.
+  :pr:`462` by :user:`qbarthelemy`
+
 v0.12 (July 2026)
 -----------------
 
