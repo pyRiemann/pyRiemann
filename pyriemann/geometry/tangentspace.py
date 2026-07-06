@@ -7,6 +7,7 @@ from array_api_compat import (
     device as xpd,
     is_numpy_namespace,
 )
+from scipy.linalg import solve_continuous_lyapunov
 
 from ._backend import diag_indices, tril_indices, triu_indices
 from ._check import check_function, check_matrix_pair
@@ -236,16 +237,8 @@ def exp_map_wasserstein(X, Cref, **kwargs):
         pp. 137–179.
     """
     xp = check_matrix_pair(X, Cref, require_square=True)
-    d, V = xp.linalg.eigh(Cref)
-    Vh = ctranspose(V)
-    C = 1 / (d[:, None] + d[None, :])
-
-    X_rotated = Vh @ X @ V
-    X_tmp = C * X_rotated
-    X_tmp = X_tmp @ (d[..., None] * X_tmp)
-    X_tmp = V @ X_tmp @ Vh
-
-    return Cref + X + X_tmp
+    LX = xp.asarray(solve_continuous_lyapunov(Cref, X))
+    return Cref + X + LX @ Cref @ LX
 
 
 exp_map_functions = {
@@ -949,15 +942,69 @@ def innerproduct_riemann(X, Y, Cref):
     return _apply_inner_product(X_, Y_)
 
 
-def _apply_inner_product(X, Y):
-    # product G = trace(X^H @ Y)
-    xp = get_namespace(X, Y)
-    G = xp.einsum("...nm,...nm->...", xp.conj(X), Y).real
+def innerproduct_wasserstein(X, Y, Cref):
+    r"""Wasserstein inner product.
 
+    Wasserstein inner product :math:`\mathbf{g}` between
+    symmetric/Hermitian matrices in tangent space :math:`\mathbf{X}`
+    and :math:`\mathbf{Y}` at :math:`\mathbf{C}_\text{ref}` is given in Eq.(7)
+    of [1]_. See also [2]_.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        First symmetric/Hermitian matrices in tangent space at Cref.
+    Y : ndarray, shape (..., n, n) | None
+        Second symmetric/Hermitian matrices in tangent space at Cref.
+        If None, Y is set to X, giving the squared norm of X.
+    Cref : ndarray, shape (n, n)
+        Reference SPD/HPD matrix.
+
+    Returns
+    -------
+    G : float or ndarray, shape (...,)
+        Wasserstein inner product between X and Y.
+
+    Notes
+    -----
+    .. versionadded:: 0.13
+
+    See Also
+    --------
+    innerproduct
+
+    References
+    ----------
+    .. [1] `Wasserstein Riemannian geometry of Gaussian densities
+        <https://link.springer.com/article/10.1007/s41884-018-0014-4>`_
+        L. Malagò, L. Montrucchio, G. Pistone. Information Geometry, 2018, 1,
+        pp. 137–179.
+    .. [2] `On the Bures–Wasserstein distance between positive definite
+        matrices
+        <https://www.sciencedirect.com/science/article/pii/S0723086918300021>`_
+        R. Bhatia, T. Jain, Y. Lim. Expositiones mathematicae, 2019, 37,
+        pp. 165-191.
+    """
+    xp = check_matrix_pair(X, Cref, require_square=True)
+    LX = xp.asarray(solve_continuous_lyapunov(Cref, xp.conj(X)))
+    if Y is None:
+        Y = X
+    G = 0.5 * xp.einsum("...ij,...ij->...", LX, Y).real
+    return _prepare_output(G, xp)
+
+
+def _prepare_output(G, xp):
     if is_numpy_namespace(xp) and G.ndim == 0:
         return float(G)
     else:
         return G
+
+
+def _apply_inner_product(X, Y):
+    # product G = trace(X^H @ Y)
+    xp = get_namespace(X, Y)
+    G = xp.einsum("...nm,...nm->...", xp.conj(X), Y).real
+    return _prepare_output(G, xp)
 
 
 innerproduct_functions = {
@@ -965,6 +1012,7 @@ innerproduct_functions = {
     "logchol": innerproduct_logchol,
     "logeuclid": innerproduct_logeuclid,
     "riemann": innerproduct_riemann,
+    "wasserstein": innerproduct_wasserstein,
 }
 
 
@@ -986,7 +1034,8 @@ def innerproduct(X, Y, Cref, metric="riemann"):
         Reference matrix.
     metric : string | callable, default="riemann"
         Metric used for inner product, can be:
-        "euclid", "logchol", "logeuclid", "riemann", or a callable function.
+        "euclid", "logchol", "logeuclid", "riemann", "wasserstein",
+        or a callable function.
 
     Returns
     -------
@@ -1005,6 +1054,7 @@ def innerproduct(X, Y, Cref, metric="riemann"):
     innerproduct_logchol
     innerproduct_logeuclid
     innerproduct_riemann
+    innerproduct_wasserstein
     """
     innerproduct_function = check_function(metric, innerproduct_functions)
     return innerproduct_function(X, Y, Cref)
@@ -1024,8 +1074,8 @@ def norm(X, Cref, metric="riemann"):
     Cref : ndarray, shape (n, n) | None
         Reference matrix.
     metric : string | callable, default="riemann"
-        Metric used for norm, can be:
-        "euclid", "logeuclid", "riemann", or a callable function.
+        Metric used for norm, see
+        :func:`pyriemann.geometry.tangentspace.innerproduct`.
 
     Returns
     -------

@@ -362,7 +362,7 @@ def geodesic_wasserstein(A, B, alpha=0.5):
 
     The matrix at position :math:`\alpha` on the Wasserstein geodesic between
     two SPD/HPD matrices :math:`\mathbf{A}` and :math:`\mathbf{B}` is
-    given in [1]_:
+    given in Proposition 4 of [1]_:
 
     .. math::
         \mathbf{C} = (1-\alpha)^2\mathbf{A} + \alpha^2\mathbf{B} +

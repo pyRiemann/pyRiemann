@@ -13,6 +13,9 @@ v0.13.dev
 - Update pyRiemann from Python 3.10 - 3.12 to 3.11 - 3.13.
   :pr:`462` by :user:`qbarthelemy`
 
+- Add Wasserstein inner product for Hermitian matrices :func:`pyriemann.geometry.tangentspace.innerproduct_wasserstein`.
+  :pr:`455` by :user:`qbarthelemy`
+
 v0.12 (July 2026)
 -----------------
 

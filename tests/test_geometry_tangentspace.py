@@ -2,6 +2,7 @@ from array_api_compat import array_namespace as get_namespace
 import numpy as np
 from numpy.testing import assert_array_equal, assert_array_almost_equal
 import pytest
+from scipy.linalg import solve_continuous_lyapunov
 
 from conftest import approx, to_numpy
 from pyriemann.geometry.distance import distance, distance_riemann
@@ -29,6 +30,7 @@ from pyriemann.geometry.tangentspace import (
     innerproduct_logchol,
     innerproduct_logeuclid,
     innerproduct_riemann,
+    innerproduct_wasserstein,
     norm,
     transport,
     transport_euclid,
@@ -223,7 +225,7 @@ def test_tangent_and_untangent_space(kind, metric, get_mats):
 
 ###############################################################################
 
-metrics = ["euclid", "logchol", "logeuclid", "riemann"]
+metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
 
 
 @pytest.mark.parametrize("metric", metrics)
@@ -267,10 +269,6 @@ def test_innerproduct_x_x(kindX, kindC, metric, get_mats):
     G1 = innerproduct(X, None, Cref, metric=metric)
     assert_array_equal(G, G1)
 
-    Xexp = exp_map(X, Cref, metric=metric, Cm12=True)
-    G2 = distance(Xexp, Cref, metric=metric, squared=True)
-    assert_array_almost_equal(G, G2.flatten())
-
 
 @pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
 @pytest.mark.parametrize("metric", metrics)
@@ -292,6 +290,7 @@ def test_innerproduct_x_y(kindX, kindC, metric, get_mats):
         innerproduct_logchol,
         innerproduct_logeuclid,
         innerproduct_riemann,
+        innerproduct_wasserstein,
     ],
 )
 def test_innerproduct_broadcasting(finnerproduct, backend, get_mats):
@@ -310,6 +309,22 @@ def test_innerproduct_broadcasting(finnerproduct, backend, get_mats):
     C = xp.stack([A for _ in range(n_sets)])
     D = xp.stack([B for _ in range(n_sets)])
     assert finnerproduct(C, D, Cref).shape == (n_sets, n_matrices)  # 4D arrays
+
+
+@pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
+@pytest.mark.parametrize("metric", metrics)
+def test_innerproduct_property_distance(kindX, kindC, metric, get_mats):
+    """Test d(C,exp_C(X))^2 = g_C(X,X) locally"""
+    if kindC == "hpd" and metric == "wasserstein":
+        pytest.skip()
+    n_matrices, n_channels = 5, 3
+    X = 0.1 * get_mats(n_matrices, n_channels, kindX)
+    Cref = get_mats(1, n_channels, kindC)[0]
+    G = innerproduct(X, X, Cref, metric=metric)
+
+    Xexp = exp_map(X, Cref, metric=metric, Cm12=True)
+    D2 = distance(Xexp, Cref, metric=metric, squared=True)
+    assert_array_almost_equal(D2.flatten(), G)
 
 
 @pytest.mark.parametrize("kindX, kindC", [("sym", "spd"), ("herm", "hpd")])
@@ -391,6 +406,20 @@ def test_innerproduct_riemann(kindX, kindC, get_mats):
 
     # Eq(2.6) in [Moakher2005]
     G1 = np.trace(np.linalg.solve(Cref, X) @ np.linalg.solve(Cref, Y))
+    assert_array_almost_equal(G, G1)
+
+
+def test_innerproduct_wasserstein(get_mats):
+    n_channels = 4
+    X, Y = get_mats(2, n_channels, "sym")
+    Cref = get_mats(1, n_channels, "spd")[0]
+    G = innerproduct_wasserstein(X, Y, Cref)
+    xp = get_namespace(X)
+
+    # Eq(6) in [Malago2018]
+    LX = xp.asarray(solve_continuous_lyapunov(Cref, X))
+    LY = xp.asarray(solve_continuous_lyapunov(Cref, Y))
+    G1 = xp.trace(LX @ Cref @ LY)
     assert_array_almost_equal(G, G1)
 
 
