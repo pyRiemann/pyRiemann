@@ -13,6 +13,10 @@ v0.13.dev
 - Update pyRiemann from Python 3.10 - 3.12 to 3.11 - 3.13.
   :pr:`462` by :user:`qbarthelemy`
 
+- Enhance :func:`pyriemann.datasets.sample_gaussian`
+  to generate HPD matrices from complex-typed ``mean`` for array ``sigma``.
+  :issue:`463` by :user:`qbarthelemy`
+
 v0.12 (July 2026)
 -----------------
 
@@ -60,7 +64,7 @@ v0.12 (July 2026)
   :pr:`453` by :user:`qbarthelemy`
 
 - Rename and enhance ``sample_gaussian_spd`` into :func:`pyriemann.datasets.sample_gaussian`
-  to generate HPD matrices from complex-typed mean for float ``sigma``.
+  to generate HPD matrices from complex-typed ``mean`` for float ``sigma``.
   :issue:`413` by :user:`robrui`
 
 - Add log-Cholesky inner product for Hermitian matrices :func:`pyriemann.geometry.tangentspace.innerproduct_logchol`,
