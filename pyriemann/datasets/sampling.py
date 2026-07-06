@@ -530,6 +530,8 @@ def sample_gaussian(n_matrices, mean, sigma, random_state=None,
     .. versionchanged:: 0.12
         Rename sample_gaussian_spd into sample_gaussian.
         Add support for HPD matrices for float ``sigma``.
+    .. versionchanged:: 0.13
+        Add support for HPD matrices for array ``sigma``.
 
     References
     ----------
@@ -565,24 +567,28 @@ def sample_gaussian(n_matrices, mean, sigma, random_state=None,
         samples = mean_sqrt @ samples_centered @ ctranspose(mean_sqrt)
 
     elif isinstance(sigma, np.ndarray):
-        if is_complex:
-            raise NotImplementedError(
-                "Wrapped Gaussian sampling (ndarray sigma) is not yet "
-                "supported for HPD matrices. Use a float sigma instead."
-            )
         n_ts = n_dim * (n_dim + 1) // 2
         if sigma.shape != (n_ts, n_ts):
             raise ValueError(
                 f"sigma must be a covariance matrix of shape ({n_ts}, {n_ts})."
             )
 
-        # generate samples from the multivariate normal distribution
+        dtype = np.complex64 if is_complex else np.float64
+        samples_ts_norm = np.zeros((n_matrices, n_ts), dtype=dtype)
         rs = check_random_state(random_state)
-        samples_ts_norm = rs.multivariate_normal(
+
+        # generate samples from the multivariate normal distribution
+        samples_ts_norm.real = rs.multivariate_normal(
             size=n_matrices,
             mean=np.zeros(n_ts),
             cov=sigma,
         )
+        if is_complex:
+            samples_ts_norm.imag = rs.multivariate_normal(
+                size=n_matrices,
+                mean=np.zeros(n_ts),
+                cov=sigma,
+            )
 
         # send the tangent space at mean
         mean_sqrt = sqrtm(mean)
