@@ -130,6 +130,8 @@ class TLCenter(TransformerMixin, BaseEstimator):
         * else, ``transform()`` recenters matrices to the last fitted domain.
 
         Ignored when ``transductive=True``.
+
+        .. versionchanged:: 0.7
     metric : str, default="riemann"
         For inputs in manifold,
         metric used for mean estimation. For the list of supported metrics,
