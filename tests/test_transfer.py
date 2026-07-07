@@ -205,6 +205,29 @@ def test_tlcenter_manifold_fit_transf(rndstate, get_weights,
         assert Md == pytest.approx(np.eye(2))
 
 
+@pytest.mark.parametrize("metric", ["riemann", "euclid"])
+def test_tlcenter_manifold_transductive(rndstate, metric):
+    """Test transductive transform on an unseen domain"""
+    X, y_enc = make_classification_transfer(
+        n_matrices=25,
+        random_state=rndstate,
+    )
+    _, _, domain = decode_domains(X, y_enc)
+    heldout = domain == np.unique(domain)[0]
+    X_fit, X_heldout = X[~heldout], X[heldout]
+
+    rct = TLCenter(target_domain="", metric=metric, transductive=True)
+    # fitted on domains that do NOT include the held-out one
+    rct.fit(X_fit, y_enc[~heldout])
+    assert np.unique(domain)[0] not in rct.centers_
+
+    # transform() must still work and recenter the held-out batch to its own
+    # mean, without ever looking up a stored center for it
+    X_new = rct.transform(X_heldout)
+    Md = gmean(X_new, metric=metric)
+    assert Md == pytest.approx(np.eye(2))
+
+
 @pytest.mark.parametrize("use_weight", [True, False])
 def test_tlcenter_tangentspace(rndstate, get_weights, use_weight):
     """Test centering tangent vectors to origin"""
@@ -237,6 +260,28 @@ def test_tlcenter_tangentspace(rndstate, get_weights, use_weight):
 
     X_rct = tlctr.transform(X)
     assert X_rct.shape == X.shape
+
+
+def test_tlcenter_tangentspace_transductive(rndstate):
+    """Test transductive transform on tangent vectors of an unseen domain"""
+    n_ts = 10
+    X, y_enc = make_classification_transfer_tangspace(
+        rndstate,
+        ["tgt", "src1", "src2"],
+        n_vectors_d=50,
+        n_ts=n_ts,
+    )
+    _, _, domain = decode_domains(X, y_enc)
+    heldout = domain == "tgt"
+    X_fit, X_heldout = X[~heldout], X[heldout]
+
+    tlctr = TLCenter(target_domain="", transductive=True)
+    tlctr.fit(X_fit, y_enc[~heldout])
+    assert "tgt" not in tlctr.centers_
+
+    X_new = tlctr.transform(X_heldout)
+    assert X_new.shape == X_heldout.shape
+    assert_array_almost_equal(np.mean(X_new, axis=0), np.zeros(n_ts))
 
 
 @pytest.mark.parametrize("use_centered_data", [True, False])
