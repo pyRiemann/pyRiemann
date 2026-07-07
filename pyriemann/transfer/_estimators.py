@@ -125,9 +125,9 @@ class TLCenter(TransformerMixin, BaseEstimator):
     target_domain : str
         Domain to consider as target in ``transform()`` function:
 
-        * if not empty, ``transform()`` recenters matrices to the specified
-          target domain;
-        * else, ``transform()`` recenters matrices to the last fitted domain.
+       * if not empty, ``transform()`` recenters inputs to the specified
+         target domain;
+       * else, ``transform()`` recenters inputs to the last fitted domain.
 
         Ignored when ``transductive=True``.
 
