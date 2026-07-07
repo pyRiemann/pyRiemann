@@ -140,7 +140,7 @@ class TLCenter(TransformerMixin, BaseEstimator):
         If True, ``transform()`` ignores ``target_domain`` and ``centers_``,
         and instead recenters its input to its own mean, recomputed from the
         matrices or vectors passed to ``transform()``. This is useful at test
-        time in a leave-one-subject-out (or leave-one-session-out) setting,
+        time in a leave-one-subject/session-out setting,
         when the test domain was never seen during ``fit()`` and therefore
         has no stored center in ``centers_``. This unsupervised re-estimation
         of the reference point on unseen data was originally proposed, for
