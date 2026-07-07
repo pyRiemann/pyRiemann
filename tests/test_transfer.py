@@ -216,7 +216,7 @@ def test_tlcenter_manifold_transductive(rndstate, metric):
     heldout = domain == np.unique(domain)[0]
     X_fit, X_heldout = X[~heldout], X[heldout]
 
-    rct = TLCenter(target_domain="", metric=metric, transductive=True)
+    rct = TLCenter(target_domain="transductive", metric=metric)
     # fitted on domains that do NOT include the held-out one
     rct.fit(X_fit, y_enc[~heldout])
     assert np.unique(domain)[0] not in rct.centers_
@@ -275,7 +275,7 @@ def test_tlcenter_tangentspace_transductive(rndstate):
     heldout = domain == "tgt"
     X_fit, X_heldout = X[~heldout], X[heldout]
 
-    tlctr = TLCenter(target_domain="", transductive=True)
+    tlctr = TLCenter(target_domain="transductive")
     tlctr.fit(X_fit, y_enc[~heldout])
     assert "tgt" not in tlctr.centers_
 

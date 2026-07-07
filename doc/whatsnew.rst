@@ -13,11 +13,11 @@ v0.13.dev
 - Update pyRiemann from Python 3.10 - 3.12 to 3.11 - 3.13.
 :pr:`462` by :user:`qbarthelemy`
 
-- Add ``transductive`` parameter to :class:`pyriemann.transfer.TLCenter`, so
-  that ``transform()`` can recenter a set of inputs to its own recomputed mean
-  instead of a stored per-domain center. This supports leave-one-subject-out
-  (or leave-one-session-out) evaluation, where the test domain is never seen
-  during ``fit()``.
+- Add ``"transductive"`` as a special value for ``target_domain`` in
+  :class:`pyriemann.transfer.TLCenter`, so that ``transform()`` can recenter a
+  set of inputs to its own recomputed mean instead of a stored per-domain
+  center. This supports leave-one-subject-out (or leave-one-session-out)
+  evaluation, where the test domain is never seen during ``fit()``.
 
 v0.12 (July 2026)
 -----------------
