@@ -159,6 +159,8 @@ class TLCenter(TransformerMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.7
+        Add possibility for ``target_domain`` to be empty.
     .. versionchanged:: 0.8
         Add support for tangent space centering.
     .. versionchanged:: 0.13
