@@ -125,36 +125,37 @@ class TLCenter(TransformerMixin, BaseEstimator):
     target_domain : str
         Domain to consider as target in ``transform()`` function:
 
-       * if not empty, ``transform()`` recenters inputs to the specified
-         target domain;
-       * else, ``transform()`` recenters inputs to the last fitted domain.
-
-        Ignored when ``transductive=True``.
+       * if ``"transductive"``, ``transform()`` ignores ``centers_`` and
+         instead recenters its input to its own mean, recomputed from the
+         matrices or vectors passed to ``transform()``. This is useful at
+         test time in a leave-one-subject/session-out setting, when the
+         test domain was never seen during ``fit()`` and therefore has no
+         stored center in ``centers_``. This unsupervised re-estimation of
+         the center on unseen data was originally proposed for
+         inter-session adaptation [3]_.
+       * elif ``"last"``, ``transform()`` recenters inputs to the last
+         fitted domain;
+       * else, ``transform()`` recenters inputs to the specified target
+         domain.
 
         .. versionchanged:: 0.7
+        .. versionchanged:: 0.13
+            Add ``"transductive"`` as a special value.
+            Add ``"last"`` as a special value, deprecating the empty string
+            ``""`` (which had the same meaning); ``""`` will be removed in
+            0.14.0.
     metric : str, default="riemann"
         For inputs in manifold,
         metric used for mean estimation. For the list of supported metrics,
         see :func:`pyriemann.geometry.mean.gmean`.
         Note, however, that only when using the "riemann" metric that we are
         ensured to re-center the matrices precisely to the identity.
-    transductive : bool, default=False
-        If True, ``transform()`` ignores ``target_domain`` and ``centers_``,
-        and instead recenters its input to its own mean, recomputed from the
-        matrices or vectors passed to ``transform()``. This is useful at test
-        time in a leave-one-subject/session-out setting,
-        when the test domain was never seen during ``fit()`` and therefore
-        has no stored center in ``centers_``. This unsupervised re-estimation
-        of the center on unseen data was originally proposed for
-        inter-session adaptation [3]_.
-
-        .. versionadded:: 0.13
 
     Attributes
     ----------
     centers_ : dict
         Dictionary with key=domain_name and value=domain_center.
-        Not used by ``transform()`` when ``transductive=True``.
+        Not used by ``transform()`` when ``target_domain="transductive"``.
 
     Notes
     -----
@@ -164,7 +165,9 @@ class TLCenter(TransformerMixin, BaseEstimator):
     .. versionchanged:: 0.8
         Add support for tangent space centering.
     .. versionchanged:: 0.13
-        Add ``transductive`` parameter.
+        Add ``"transductive"`` and ``"last"`` as special values for
+        ``target_domain``; deprecate the empty string ``""``, which had the
+        same meaning as ``"last"``.
 
     References
     ----------
@@ -184,11 +187,10 @@ class TLCenter(TransformerMixin, BaseEstimator):
         pp. 172-178, 2013
     """
 
-    def __init__(self, target_domain, metric="riemann", transductive=False):
+    def __init__(self, target_domain, metric="riemann"):
         """Init"""
         self.target_domain = target_domain
         self.metric = metric
-        self.transductive = transductive
 
     def fit(self, X, y_enc, sample_weight=None):
         """Fit TLCenter.
@@ -243,8 +245,9 @@ class TLCenter(TransformerMixin, BaseEstimator):
            This method is designed for using at test time,
            recentering all inputs in target domain, or in the last fitted
            domain.
-           When ``transductive=True``, it instead recenters ``X`` to
-           its own mean, recomputed from ``X`` and ignoring ``centers_``.
+           When ``target_domain="transductive"``, it instead recenters
+           ``X`` to its own mean, recomputed from ``X`` and ignoring
+           ``centers_``.
 
         Parameters
         ----------
@@ -260,13 +263,21 @@ class TLCenter(TransformerMixin, BaseEstimator):
         """
         _check_inputs(X)
 
-        if self.transductive:
+        if self.target_domain == "transductive":
             if X.ndim == 3:
                 return Whitening(metric=self.metric).fit_transform(X)
             return X - np.mean(X, axis=0)
 
+        if self.target_domain == "":
+            warnings.warn(
+                "Empty string for target_domain is deprecated and will be "
+                "removed in 0.14.0; use target_domain=\"last\" instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         # if target domain is specified, use it
-        if self.target_domain != "":
+        if self.target_domain not in ("", "last"):
             target_domain = self.target_domain
         # else, use last calibrated domain as target domain
         else:
