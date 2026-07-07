@@ -144,7 +144,9 @@ class TLCenter(TransformerMixin, BaseEstimator):
         when the test domain was never seen during ``fit()`` and therefore
         has no stored center in ``centers_``. This unsupervised re-estimation
         of the reference point on unseen data was originally proposed, for
-        inter-session adaptation, in [3]_.
+        inter-session adaptation [3]_.
+
+        .. versionadded:: 0.13
 
     Attributes
     ----------
