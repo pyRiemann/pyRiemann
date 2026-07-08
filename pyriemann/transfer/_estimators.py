@@ -139,6 +139,7 @@ class TLCenter(TransformerMixin, BaseEstimator):
          domain.
 
         .. versionchanged:: 0.7
+            Add ``""`` as a special value.
         .. versionchanged:: 0.13
             Add ``"transductive"`` as a special value.
             Add ``"last"`` as a special value, deprecating the empty string
