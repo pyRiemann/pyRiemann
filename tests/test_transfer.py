@@ -164,14 +164,21 @@ def test_tlcenter_manifold(rndstate, get_weights,
         assert Md == pytest.approx(np.eye(2))
 
     # Test transform: "transductive" recenters the whole input to its own
-    # recomputed mean, while "target_domain"/"last" only guarantee that the
-    # target domain's own slice is centered
+    # recomputed (unweighted) mean, while "target_domain"/"last" only
+    # guarantee that the target domain's own slice is centered, weighted as
+    # it was when centers_ was fitted
     X_new = rct.transform(X)
     if target_domain == "transductive":
         assert gmean(X_new, metric=metric) == pytest.approx(np.eye(2))
     else:
         idx = domain == "target_domain"
-        assert gmean(X_new[idx], metric=metric) == pytest.approx(np.eye(2))
+        Xd = X_new[idx]
+        if use_weight:
+            weights_d = check_weights(weights[idx], np.sum(idx), like=Xd)
+            Md = gmean(Xd, metric=metric, sample_weight=weights_d)
+        else:
+            Md = gmean(Xd, metric=metric)
+        assert Md == pytest.approx(np.eye(2))
 
 
 @pytest.mark.parametrize("metric", ["riemann", "euclid"])
