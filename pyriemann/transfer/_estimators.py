@@ -126,7 +126,7 @@ class TLCenter(TransformerMixin, BaseEstimator):
         Domain to consider as target in ``transform()`` function:
 
        * if ``"transductive"``, ``transform()`` ignores ``centers_`` and
-         instead recenters its input to its own mean, recomputed from the
+         instead recenters inputs to their own mean, recomputed from the
          matrices or vectors passed to ``transform()``. This is useful at
          test time in a leave-one-subject/session-out setting, when the
          test domain was never seen during ``fit()`` and therefore has no
