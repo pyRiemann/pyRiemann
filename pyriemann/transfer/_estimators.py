@@ -241,12 +241,9 @@ class TLCenter(TransformerMixin, BaseEstimator):
 
         .. note::
            This method is designed for using at test time,
-           recentering all inputs in target domain, or in the last fitted
-           domain.
-           When ``target_domain="transductive"``, it instead recenters
-           ``X`` to its own mean, recomputed from ``X`` and ignoring
-           ``centers_``.
-
+          recentering all inputs in target domain;
+          or in the last fitted domain when ``target_domain="last"``;
+          or to their own mean when ``target_domain="transductive"``.
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels) or \
