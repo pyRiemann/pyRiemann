@@ -161,7 +161,7 @@ class TLCenter(TransformerMixin, BaseEstimator):
     -----
     .. versionadded:: 0.4
     .. versionchanged:: 0.7
-        Add possibility for ``target_domain`` to be empty.
+        Add possibility to recenter inputs to the last fitted domain.
     .. versionchanged:: 0.8
         Add support for tangent space centering.
     .. versionchanged:: 0.13
