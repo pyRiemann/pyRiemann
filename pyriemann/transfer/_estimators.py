@@ -143,9 +143,7 @@ class TLCenter(TransformerMixin, BaseEstimator):
             Add ``""`` as a special value.
         .. versionchanged:: 0.13
             Add ``"transductive"`` as a special value.
-            Add ``"last"`` as a special value, deprecating the empty string
-            ``""`` (which had the same meaning); ``""`` will be removed in
-            0.14.0.
+            Replace special value ``""`` by ``"last"``.
     metric : str, default="riemann"
         For inputs in manifold,
         metric used for mean estimation. For the list of supported metrics,
