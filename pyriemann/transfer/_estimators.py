@@ -243,6 +243,7 @@ class TLCenter(TransformerMixin, BaseEstimator):
           recentering all inputs in target domain;
           or in the last fitted domain when ``target_domain="last"``;
           or to their own mean when ``target_domain="transductive"``.
+
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels) or \
