@@ -11,7 +11,7 @@ v0.13.dev
 ---------
 
 - Update pyRiemann from Python 3.10 - 3.12 to 3.11 - 3.13.
-:pr:`462` by :user:`qbarthelemy`
+  :pr:`462` by :user:`qbarthelemy`
 
 - Add ``"transductive"`` as a special value for ``target_domain`` in
   :class:`pyriemann.transfer.TLCenter`, so that ``transform()`` can recenter a
