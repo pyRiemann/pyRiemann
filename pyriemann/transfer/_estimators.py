@@ -165,9 +165,7 @@ class TLCenter(TransformerMixin, BaseEstimator):
     .. versionchanged:: 0.8
         Add support for tangent space centering.
     .. versionchanged:: 0.13
-        Add ``"transductive"`` and ``"last"`` as special values for
-        ``target_domain``; deprecate the empty string ``""``, which had the
-        same meaning as ``"last"``.
+        Add transductive estimation of centers.
 
     References
     ----------
