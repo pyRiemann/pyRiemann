@@ -271,7 +271,7 @@ class TLCenter(TransformerMixin, BaseEstimator):
         if self.target_domain == "":
             warnings.warn(
                 "Empty string for target_domain is deprecated and will be "
-                "removed in 0.14.0; use target_domain=\"last\" instead.",
+                "removed in 0.15.0; use target_domain=\"last\" instead.",
                 DeprecationWarning,
                 stacklevel=2,
             )
