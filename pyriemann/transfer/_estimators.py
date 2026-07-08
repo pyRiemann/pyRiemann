@@ -141,6 +141,7 @@ class TLCenter(TransformerMixin, BaseEstimator):
         .. versionchanged:: 0.7
             Add ``""`` as a special value.
             Add ``""`` as a special value.
+            Add ``""`` as a special value.
         .. versionchanged:: 0.13
             Add ``"transductive"`` as a special value.
             Replace special value ``""`` by ``"last"``.
