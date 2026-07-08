@@ -20,7 +20,7 @@ v0.13.dev
   evaluation, where the test domain is never seen during ``fit()``.
   Also add ``"last"`` as a clearer spelling for the existing "recenter to the
   last fitted domain" behavior, deprecating the empty string ``""`` (which
-  had the same meaning); ``""`` will be removed in 0.14.0.
+  had the same meaning).
 
 v0.12 (July 2026)
 -----------------
