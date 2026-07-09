@@ -93,22 +93,13 @@ def test_map_log_exp(kind, metric, get_mats):
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize(
-    "log_map_, exp_map_", zip(
-        [
-            log_map_euclid,
-            log_map_logchol,
-            log_map_logeuclid,
-            log_map_riemann,
-            log_map_wasserstein,
-        ],
-        [
-            exp_map_euclid,
-            exp_map_logchol,
-            exp_map_logeuclid,
-            exp_map_riemann,
-            exp_map_wasserstein,
-        ]
-    )
+    "log_map_, exp_map_", [
+        (log_map_euclid, exp_map_euclid),
+        (log_map_logchol, exp_map_logchol),
+        (log_map_logeuclid, exp_map_logeuclid),
+        (log_map_riemann, exp_map_riemann),
+        (log_map_wasserstein, exp_map_wasserstein),
+    ]
 )
 def test_maps_log_exp(kind, log_map_, exp_map_, get_mats):
     """Test log then exp maps should be identity"""
