@@ -125,9 +125,24 @@ class TLCenter(TransformerMixin, BaseEstimator):
     target_domain : str
         Domain to consider as target in ``transform()`` function:
 
-        * if not empty, ``transform()`` recenters matrices to the specified
-          target domain;
-        * else, ``transform()`` recenters matrices to the last fitted domain.
+       * if ``"transductive"``, ``transform()`` ignores ``centers_`` and
+         instead recenters inputs to their own mean, recomputed from the
+         matrices or vectors passed to ``transform()``. This is useful at
+         test time in a leave-one-subject/session-out setting, when the
+         test domain was never seen during ``fit()`` and therefore has no
+         stored center in ``centers_``. This unsupervised re-estimation of
+         the center on unseen data was originally proposed for
+         inter-session adaptation [3]_.
+       * elif ``"last"``, ``transform()`` recenters inputs to the last
+         fitted domain;
+       * else, ``transform()`` recenters inputs to the specified target
+         domain.
+
+        .. versionchanged:: 0.7
+            Add ``""`` as a special value.
+        .. versionchanged:: 0.13
+            Add ``"transductive"`` as a special value.
+            Replace special value ``""`` by ``"last"``.
     metric : str, default="riemann"
         For inputs in manifold,
         metric used for mean estimation. For the list of supported metrics,
@@ -139,12 +154,17 @@ class TLCenter(TransformerMixin, BaseEstimator):
     ----------
     centers_ : dict
         Dictionary with key=domain_name and value=domain_center.
+        Not used by ``transform()`` when ``target_domain="transductive"``.
 
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.7
+        Add possibility to recenter inputs to the last fitted domain.
     .. versionchanged:: 0.8
         Add support for tangent space centering.
+    .. versionchanged:: 0.13
+        Add transductive estimation of centers.
 
     References
     ----------
@@ -157,6 +177,11 @@ class TLCenter(TransformerMixin, BaseEstimator):
         A Euclidean Space Data Alignment Approach
         <https://arxiv.org/abs/1808.05464>`_
         He He and Dongrui Wu, IEEE Transactions on Biomedical Engineering, 2019
+    .. [3] `Classification of covariance matrices using a Riemannian-based
+        kernel for BCI applications
+        <https://hal.science/hal-00820475>`_
+        A Barachant, S Bonnet, M Congedo, C Jutten, Neurocomputing, vol. 112,
+        pp. 172-178, 2013
     """
 
     def __init__(self, target_domain, metric="riemann"):
@@ -215,8 +240,9 @@ class TLCenter(TransformerMixin, BaseEstimator):
 
         .. note::
            This method is designed for using at test time,
-           recentering all inputs in target domain, or in the last fitted
-           domain.
+          recentering all inputs in target domain;
+          or in the last fitted domain when ``target_domain="last"``;
+          or to their own mean when ``target_domain="transductive"``.
 
         Parameters
         ----------
@@ -232,8 +258,21 @@ class TLCenter(TransformerMixin, BaseEstimator):
         """
         _check_inputs(X)
 
+        if self.target_domain == "transductive":
+            if X.ndim == 3:
+                return Whitening(metric=self.metric).fit_transform(X)
+            return X - np.mean(X, axis=0)
+
+        if self.target_domain == "":
+            warnings.warn(
+                "Empty string for target_domain is deprecated and will be "
+                "removed in 0.15.0; use target_domain=\"last\" instead.",
+                DeprecationWarning,
+                stacklevel=2,
+            )
+
         # if target domain is specified, use it
-        if self.target_domain != "":
+        if self.target_domain not in ("", "last"):
             target_domain = self.target_domain
         # else, use last calibrated domain as target domain
         else:
@@ -242,7 +281,7 @@ class TLCenter(TransformerMixin, BaseEstimator):
         if X.ndim == 3:
             X_new = self.centers_[target_domain].transform(X)
         else:
-            X_new = X - self.centers_[self.target_domain]
+            X_new = X - self.centers_[target_domain]
 
         return X_new
 
