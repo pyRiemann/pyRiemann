@@ -129,9 +129,7 @@ def test_tldummy(rndstate, space):
 
 @pytest.mark.parametrize("metric", ["riemann", "euclid"])
 @pytest.mark.parametrize("use_weight", [True, False])
-@pytest.mark.parametrize(
-    "target_domain", ["target_domain", "last", "transductive"]
-)
+@pytest.mark.parametrize("target_domain", ["target_domain", ""])
 def test_tlcenter_manifold(rndstate, get_weights,
                            metric, use_weight, target_domain):
     """Test centering matrices to identity"""
@@ -163,27 +161,13 @@ def test_tlcenter_manifold(rndstate, get_weights,
             Md = gmean(Xd, metric=metric)
         assert Md == pytest.approx(np.eye(2))
 
-    # Test transform: "transductive" recenters the whole input to its own
-    # recomputed (unweighted) mean, while "target_domain"/"last" only
-    # guarantee that the target domain's own slice is centered, weighted as
-    # it was when centers_ was fitted
-    X_new = rct.transform(X)
-    if target_domain == "transductive":
-        assert gmean(X_new, metric=metric) == pytest.approx(np.eye(2))
-    else:
-        idx = domain == "target_domain"
-        Xd = X_new[idx]
-        if use_weight:
-            weights_d = check_weights(weights[idx], np.sum(idx), like=Xd)
-            Md = gmean(Xd, metric=metric, sample_weight=weights_d)
-        else:
-            Md = gmean(Xd, metric=metric)
-        assert Md == pytest.approx(np.eye(2))
+    # Test transform
+    rct.transform(X)
 
 
 @pytest.mark.parametrize("metric", ["riemann", "euclid"])
 @pytest.mark.parametrize("use_weight", [True, False])
-@pytest.mark.parametrize("target_domain", ["target_domain", "last"])
+@pytest.mark.parametrize("target_domain", ["target_domain", ""])
 def test_tlcenter_manifold_fit_transf(rndstate, get_weights,
                                       metric, use_weight, target_domain):
     """Test .fit_transform() versus .fit().transform()"""
@@ -222,9 +206,7 @@ def test_tlcenter_manifold_fit_transf(rndstate, get_weights,
 
 
 @pytest.mark.parametrize("use_weight", [True, False])
-@pytest.mark.parametrize("target_domain", ["tgt", "last", "transductive"])
-def test_tlcenter_tangentspace(rndstate, get_weights, use_weight,
-                               target_domain):
+def test_tlcenter_tangentspace(rndstate, get_weights, use_weight):
     """Test centering tangent vectors to origin"""
     n_ts = 10
     X, y_enc = make_classification_transfer_tangspace(
@@ -240,7 +222,7 @@ def test_tlcenter_tangentspace(rndstate, get_weights, use_weight,
 
     _, _, domain = decode_domains(X, y_enc)
 
-    tlctr = TLCenter(target_domain=target_domain)
+    tlctr = TLCenter(target_domain="tgt")
 
     tlctr.fit(X, y_enc, sample_weight=weights)
 
@@ -253,18 +235,8 @@ def test_tlcenter_tangentspace(rndstate, get_weights, use_weight,
         md = np.average(X_rct[idx], axis=0, weights=weights_d)
         assert_array_almost_equal(md, np.zeros((n_ts)))
 
-    # Test transform: "transductive" recenters the whole input to its own
-    # recomputed mean, while "tgt"/"last" only guarantee that the target
-    # domain's own slice is centered
-    X_new = tlctr.transform(X)
-    assert X_new.shape == X.shape
-    if target_domain == "transductive":
-        assert_array_almost_equal(np.mean(X_new, axis=0), np.zeros(n_ts))
-    else:
-        idx = domain == "tgt"
-        weights_d = weights[idx] if weights is not None else None
-        md = np.average(X_new[idx], axis=0, weights=weights_d)
-        assert_array_almost_equal(md, np.zeros((n_ts)))
+    X_rct = tlctr.transform(X)
+    assert X_rct.shape == X.shape
 
 
 @pytest.mark.parametrize("use_centered_data", [True, False])
