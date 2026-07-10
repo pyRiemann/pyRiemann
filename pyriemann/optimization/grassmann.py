@@ -45,7 +45,7 @@ def _grad(Q, X, Y, weights, metric="euclid"):
 
     elif metric == "riemann":
         M = np.linalg.solve(X, Q) @ Y @ Q.T
-        eigvals, eigvecs = np.linalg.eig(M)
+        eigvals, eigvecs = np.linalg.eigh(M)
         logeigvals = np.expand_dims(np.log(eigvals), -2)
         inveigvecs = np.linalg.solve(eigvecs, np.eye(eigvecs.shape[-1]))
         logM = (eigvecs * logeigvals) @ inveigvecs
@@ -81,10 +81,10 @@ def _warm_start(X, Y, weights, metric="euclid"):
 
     # obtain the solution of the local loss function
     def _get_local_solution(Xi, Yi):
-        wX, qX = np.linalg.eig(Xi)
+        wX, qX = np.linalg.eigh(Xi)
         idx = wX.argsort()[::-1]
         qX = qX[:, idx]
-        wY, qY = np.linalg.eig(Yi)
+        wY, qY = np.linalg.eigh(Yi)
         idx = wY.argsort()[::-1]
         qY = qY[:, idx]
         Qstar = qX @ qY.T
