@@ -950,18 +950,18 @@ def __getattr__(name):
     if name == "Potato":
         warnings.warn(
             "clustering.Potato is deprecated and will be removed in 0.14.0; "
-            "use artifactdetection.Potato instead.",
+            "use artifact_detection.Potato instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        from .artifactdetection import Potato
+        from .artifact_detection import Potato
         return Potato
     elif name == "PotatoField":
         warnings.warn(
             "clustering.PotatoField is deprecated and will be removed in "
-            "0.14.0; use artifactdetection.PotatoField instead.",
+            "0.14.0; use artifact_detection.PotatoField instead.",
             DeprecationWarning,
             stacklevel=2
         )
-        from .artifactdetection import PotatoField
+        from .artifact_detection import PotatoField
         return PotatoField
