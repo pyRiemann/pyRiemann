@@ -123,20 +123,21 @@ class TLCenter(TransformerMixin, BaseEstimator):
     Parameters
     ----------
     target_domain : str
-        Domain to consider as target in ``transform()`` function:
+        Domain to consider as target in ``transform()`` function.
 
-       * if ``"transductive"``, ``transform()`` ignores ``centers_`` and
-         instead recenters inputs to their own mean, recomputed from the
-         matrices or vectors passed to ``transform()``. This is useful at
-         test time in a leave-one-subject/session-out setting, when the
-         test domain was never seen during ``fit()`` and therefore has no
-         stored center in ``centers_``. This unsupervised re-estimation of
-         the center on unseen data was originally proposed for
-         inter-session adaptation [3]_.
-       * elif ``"last"``, ``transform()`` recenters inputs to the last
-         fitted domain;
-       * else, ``transform()`` recenters inputs to the specified target
-         domain.
+        If ``"transductive"``:
+            ``transform()`` ignores ``centers_`` and instead recenters inputs
+            to their own mean, recomputed from the matrices or vectors passed
+            to ``transform()``.
+            This is useful at test time in a leave-one-subject/session-out
+            setting, when the test domain was never seen during ``fit()`` and
+            therefore has no stored center in ``centers_``.
+            This unsupervised re-estimation of the center on unseen data was
+            originally proposed for inter-session adaptation [3]_.
+        Elif ``"last"``:
+            ``transform()`` recenters inputs to the last fitted domain.
+        Else:
+            ``transform()`` recenters inputs to the specified target domain.
 
         .. versionchanged:: 0.7
             Add ``""`` as a special value.
@@ -240,9 +241,9 @@ class TLCenter(TransformerMixin, BaseEstimator):
 
         .. note::
            This method is designed for using at test time,
-          recentering all inputs in target domain;
-          or in the last fitted domain when ``target_domain="last"``;
-          or to their own mean when ``target_domain="transductive"``.
+           recentering all inputs in target domain;
+           or in the last fitted domain when ``target_domain="last"``;
+           or to their own mean when ``target_domain="transductive"``.
 
         Parameters
         ----------
