@@ -43,7 +43,10 @@ def get_proba(cov_00, cov_01, cov_11, clf):
     cov = np.array([[cov_00, cov_01], [cov_01, cov_11]])
     with warnings.catch_warnings():
         warnings.simplefilter("ignore", category=RuntimeWarning)
-        return clf.predict_proba(cov[np.newaxis, ...])[0, 1]
+        try:
+            return clf.predict_proba(cov[np.newaxis, ...])[0, 1]
+        except ValueError:
+            return np.nan
 
 
 def plot_classifiers(metric):
@@ -187,7 +190,7 @@ names = [
 classifs = [
     MDM(),
     KNearestNeighbor(n_neighbors=3),
-    SVC(probability=True),
+    SVC(),
 ]
 n_classifs = len(classifs)
 
