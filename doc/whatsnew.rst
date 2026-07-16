@@ -37,6 +37,10 @@ v0.13.dev
   ``array_api_extra.expand_dims`` by the namespace-native ``expand_dims``.
   :pr:`478` by :user:`AmitSubhash`
 
+- Deprecate ``probability`` parameter :class:`pyriemann.classification.SVC`.
+  Add ``predict_proba()`` which now works without this parameter.
+  :pr:`472` by :user:`qbarthelemy`
+
 v0.12 (July 2026)
 -----------------
 
