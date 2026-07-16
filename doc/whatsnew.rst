@@ -21,6 +21,7 @@ v0.13.dev
   Also add ``"last"`` as a clearer spelling for the existing "recenter to the
   last fitted domain" behavior, deprecating the empty string ``""`` (which
   had the same meaning).
+  :pr:`464` by :user:`gcattan` and :user:`aquemy`
 
 v0.12 (July 2026)
 -----------------
