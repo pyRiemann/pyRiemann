@@ -1,5 +1,6 @@
 """Classification."""
 import functools
+import warnings
 
 from joblib import Parallel, delayed
 import numpy as np
@@ -565,8 +566,8 @@ class KNearestNeighbor(MDM):
 class SVC(sklearnSVC):
     """Classification by support-vector machine.
 
-    Support-vector machine (SVM) classification with precomputed Riemannian
-    kernel matrix according to different metrics as described in [1]_.
+    Support-vector machine (SVM) classification with a precomputed
+    kernel matrix [1]_, according to different metrics.
 
     Parameters
     ----------
@@ -593,11 +594,14 @@ class SVC(sklearnSVC):
         is a squared l2 penalty.
     shrinking : bool, default=True
         Whether to use the shrinking heuristic.
-    probability : bool, default=False
+    probability : bool, default="deprecated"
         Whether to enable probability estimates. This must be enabled prior
         to calling ``fit``, will slow down that method as it internally uses
         5-fold cross-validation, and ``predict_proba`` may be inconsistent with
         ``predict``.
+
+        .. deprecated:: 0.13
+            This parameter is deprecated and will be removed in version 0.15.0.
     tol : float, default=1e-3
         Tolerance for stopping criterion.
     cache_size : float, default=200
@@ -636,6 +640,8 @@ class SVC(sklearnSVC):
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.13
+        Deprecate ``probability`` parameter and add ``predict_proba()``.
 
     References
     ----------
@@ -656,7 +662,7 @@ class SVC(sklearnSVC):
         Cref=None,
         C=1.0,
         shrinking=True,
-        probability=False,
+        probability="deprecated",
         tol=1e-3,
         cache_size=200,
         class_weight=None,
@@ -667,6 +673,15 @@ class SVC(sklearnSVC):
         random_state=None
     ):
         """Init."""
+        if probability != "deprecated":
+            warnings.warn(
+                "probability parameter is deprecated and will be removed in "
+                "version 0.15.0. Use predict_proba() directly instead, "
+                "which now works without this parameter.",
+                FutureWarning,
+                stacklevel=2
+            )
+
         self.Cref = Cref
         self.metric = metric
         self.Cref_ = None
@@ -675,7 +690,7 @@ class SVC(sklearnSVC):
             kernel="precomputed",
             C=C,
             shrinking=shrinking,
-            probability=probability,
+            probability="deprecated",
             tol=tol,
             cache_size=cache_size,
             class_weight=class_weight,
@@ -741,6 +756,28 @@ class SVC(sklearnSVC):
                 "kernel_fct must be None, 'precomputed' or callable, is "
                 f"{self.kernel}."
             )
+
+    def predict_proba(self, X):
+        """Predict class probabilities using decision function.
+
+        This method computes probability estimates using the decision function
+        and applying softmax calibration.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD matrices.
+
+        Returns
+        -------
+        prob : ndarray, shape (n_matrices, n_classes)
+            Class probabilities for each matrix.
+        """
+        decision = self.decision_function(X)
+        if len(decision.shape) == 1:
+            decision = np.vstack([-decision, decision]).T
+        prob = softmax(decision)
+        return prob
 
 
 class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
