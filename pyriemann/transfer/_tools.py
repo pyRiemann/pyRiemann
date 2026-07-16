@@ -100,7 +100,7 @@ class TLSplitter():
     target_domain : str
         Domain considered as target.
     cv : None | BaseCrossValidator | BaseShuffleSplit, default=None
-        An instance of a cross-validation iterator from sklearn.
+        An instance of a cross-validation iterator from sklearn [1]_.
 
     Notes
     -----
@@ -127,9 +127,9 @@ class TLSplitter():
 
         Yields
         ------
-        train : ndarray
+        train : ndarray, shape (n_training_data,)
             The training set indices for that split.
-        test : ndarray
+        test : ndarray, shape (n_testing_data,)
             The testing set indices for that split.
         """
 
