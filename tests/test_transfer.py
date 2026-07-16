@@ -561,8 +561,6 @@ def test_tlclassifier_tangentspace(rndstate, clf, domains_weight):
 def tlclassifier(clf, X, y_enc, domains_weight, n_classes=2):
     n_inputs = X.shape[0]
 
-    if hasattr(clf, "probability"):
-        clf.set_params(**{"probability": True})
     tlclf = TLClassifier(
         target_domain="target_domain",
         estimator=clf,
