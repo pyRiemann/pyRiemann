@@ -103,8 +103,8 @@ def test_tlsplitter(rndstate, cv):
     cv = TLSplitter(target_domain="target_domain", cv=cv)
     train_idx, test_idx = next(cv.split(X, y_enc))
 
-    assert len(train_idx) == 90  # 50 from source and 4/5*100 from target
-    assert len(test_idx) == 10  # 1/5*100 from target
+    assert train_idx.shape == (90,)  # 50 from source and 4/5*100 from target
+    assert test_idx.shape == (10,)  # 1/5*100 from target
     assert cv.get_n_splits() == 5
 
 
