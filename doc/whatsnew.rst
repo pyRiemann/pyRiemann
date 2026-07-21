@@ -10,6 +10,13 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.13.dev
 ---------
 
+- Fix multiclass :class:`pyriemann.spatialfilters.CSP` with
+  ``ajd_method="rjd"``: ``rjd`` returns its diagonalizer in the transposed
+  convention of ``ajd_pham`` and ``uwedge``, so ``fit`` transposed it the wrong
+  way and produced spatial filters that did not jointly diagonalize the class
+  covariances.
+  :pr:`474` by :user:`gaoflow`
+
 - Update pyRiemann from Python 3.10 - 3.12 to 3.11 - 3.13.
   :pr:`462` by :user:`qbarthelemy`
 

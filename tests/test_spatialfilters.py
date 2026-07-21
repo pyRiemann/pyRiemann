@@ -3,6 +3,7 @@ from numpy.testing import assert_array_equal
 import pytest
 
 from pyriemann.spatialfilters import Xdawn, CSP, SPoC, BilinearFilter, AJDC
+from pyriemann.geometry.ajd import rjd
 
 
 pytestmark = pytest.mark.numpy_only
@@ -188,6 +189,32 @@ def test_csp(n_filters, metric, log, ajd_method, get_mats, get_labels):
         assert Xtr.shape == (n_matrices, n_components)
     else:
         assert Xtr.shape == (n_matrices, n_components, n_components)
+
+
+@pytest.mark.parametrize("ajd_method", ["ajd_pham", "rjd", "uwedge", rjd])
+def test_csp_multiclass_diagonalization(
+    ajd_method, get_mats_params, get_labels
+):
+    """Multiclass CSP filters must jointly diagonalize the class covariances,
+    whatever the ajd_method (rjd returns a transposed diagonalizer)."""
+    n_classes, n_matrices, n_channels = 3, 30, 4
+    # matrices sharing a common eigenbasis are exactly jointly diagonalizable,
+    # so any off-diagonal residual is a convention error, not an approximation
+    X, _, _ = get_mats_params(n_matrices, n_channels, "spd")
+    y = get_labels(n_matrices, n_classes)
+
+    csp = CSP(
+        nfilter=n_channels, metric="euclid", log=False, ajd_method=ajd_method
+    ).fit(X, y)
+    filters = csp.filters_
+    assert filters.shape == (n_channels, n_channels)
+
+    for c in np.unique(y):
+        cov = np.mean(X[y == c], axis=0)  # euclidean class mean
+        filt_cov = filters @ cov @ filters.T
+        offdiag = filt_cov - np.diag(np.diag(filt_cov))
+        ratio = np.sqrt(np.sum(offdiag ** 2) / np.sum(np.diag(filt_cov) ** 2))
+        assert ratio < 1e-4
 
 
 def test_bilinearfilter_errors(get_mats, get_labels):

@@ -6,7 +6,7 @@ from scipy.linalg import eigh, inv
 from sklearn.base import BaseEstimator, TransformerMixin
 
 from . import estimation as est
-from .geometry.ajd import ajd, ajd_pham
+from .geometry.ajd import ajd, ajd_pham, rjd
 from .geometry.covariance import (
     normalize,
     get_nondiag_weight,
@@ -406,7 +406,10 @@ class CSP(BilinearFilter):
         elif len(classes) > 2:
             evecs, D = ajd(C, method=self.ajd_method)
             Ctot = gmean(C, metric=self.metric)
-            evecs = evecs.T
+            # rjd diagonalizes as D = V.T C V (filters are columns of V), while
+            # ajd_pham and uwedge use D = V C V.T (filters are rows of V)
+            if self.ajd_method not in ("rjd", rjd):
+                evecs = evecs.T
 
             # normalize
             for i in range(evecs.shape[1]):
