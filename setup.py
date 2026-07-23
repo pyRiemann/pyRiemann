@@ -42,7 +42,10 @@ setup(
         "scipy",
         "scikit-learn>=0.24",
         "array-api-compat>=1.11",
-        "array-api-extra>=0.6",
+        # array-api-extra PR #690 adds axis/correction/fweights/aweights to
+        # cov (used by pyriemann.geometry.covariance._cov). Revert to a
+        # released ">=" floor once merged and published.
+        "array-api-extra @ git+https://github.com/bruAristimunha/array-api-extra@cov_parameters",  # noqa: E501
         "joblib",
         "matplotlib",
     ],
