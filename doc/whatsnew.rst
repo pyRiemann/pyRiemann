@@ -10,6 +10,10 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.13.dev
 ---------
 
+- Add :func:`pyriemann.geometry.tangentspace.transport_wasserstein` for parallel
+  transport with the Bures-Wasserstein metric.
+  :pr:`476` by :user:`AmitSubhash`
+
 - Update pyRiemann from Python 3.10 - 3.12 to 3.11 - 3.13.
   :pr:`462` by :user:`qbarthelemy`
 
