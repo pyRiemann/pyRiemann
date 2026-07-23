@@ -35,6 +35,7 @@ from pyriemann.geometry.tangentspace import (
     transport_logchol,
     transport_logeuclid,
     transport_riemann,
+    transport_wasserstein,
 )
 from pyriemann.geometry.test import is_hermitian, is_real
 from pyriemann.spatialfilters import Whitening
@@ -413,6 +414,7 @@ def test_norm_properties(kindX, kindC, metric, backend, get_mats):
     transport_logchol,
     transport_logeuclid,
     transport_riemann,
+    transport_wasserstein,
 ])
 def test_transport_broadcasting(ftransport, get_mats):
     n_dim5, n_dim4, n_matrices, n_channels = 2, 4, 7, 3
@@ -500,3 +502,119 @@ def test_transport_riemann_vs_whitening(get_mats):
     Tt = transport(T, M, np.eye(n_channels), metric="riemann")
     Xt = exp_map_riemann(Tt, np.eye(n_channels), Cm12=True)
     assert Xw == approx(Xt)
+
+
+@pytest.mark.numpy_only
+@pytest.mark.parametrize("kindX, kindAB", [("sym", "spd"), ("herm", "hpd")])
+def test_transport_wasserstein_properties(kindX, kindAB, get_mats, rndstate):
+    """Wasserstein parallel transport properties (issue #418).
+
+    Symmetry, trivial/reverse transport, linearity, geodesic composition and
+    isometry, checked with a test-local Bures-Wasserstein inner product.
+    """
+    from scipy.linalg import solve_continuous_lyapunov
+
+    def bw_inner(U, V, C):
+        # g_C(U, V) = 1/2 tr(L_C(U) V), with L_C(U) solving S C + C S = U
+        S = solve_continuous_lyapunov(C, U)
+        return 0.5 * np.real(np.trace(S @ V))
+
+    n_matrices, n_channels = 6, 3
+    X = get_mats(n_matrices, n_channels, kindX)
+    A, B, C = get_mats(3, n_channels, kindAB)
+
+    Xt = transport_wasserstein(X, A, B)
+
+    # trivial transport A -> A is the identity
+    assert transport_wasserstein(X, A, A) == approx(X)
+
+    # keeps symmetry/hermitianity
+    assert is_hermitian(Xt)
+
+    # reversibility: transporting back recovers the input
+    assert transport_wasserstein(Xt, B, A) == approx(X)
+
+    # linearity
+    Y = get_mats(n_matrices, n_channels, kindX)
+    a, b = rndstate.uniform(0.01, 0.99, size=2)
+    Yt = transport_wasserstein(Y, A, B)
+    Zt = transport_wasserstein(a * X + b * Y, A, B)
+    assert Zt == approx(a * Xt + b * Yt)
+
+    # consistency with composition of Wasserstein geodesics
+    Xt_ABBC = transport_wasserstein(transport_wasserstein(X, A, B), B, C)
+    alphas = np.linspace(0, 1, 5)
+    G = ([geodesic(A, B, alpha, metric="wasserstein") for alpha in alphas]
+         + [geodesic(B, C, alpha, metric="wasserstein") for alpha in alphas])
+    Xt_AC = np.array(X, copy=True)
+    for i in range(len(G) - 1):
+        Xt_AC = transport_wasserstein(Xt_AC, G[i], G[i + 1])
+    assert Xt_AC == approx(Xt_ABBC)
+
+    # isometry: the Bures-Wasserstein inner product is preserved
+    for k in range(n_matrices):
+        assert bw_inner(Xt[k], Yt[k], B) == approx(bw_inner(X[k], Y[k], A))
+
+
+@pytest.mark.numpy_only
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_transport_wasserstein_commuting(kind, get_mats, rndstate):
+    """BW transport has a closed form for commuting endpoints."""
+    n_channels = 4
+    if kind == "spd":
+        Q = np.linalg.qr(rndstate.randn(n_channels, n_channels))[0]
+    else:
+        Q = np.linalg.qr(
+            rndstate.randn(n_channels, n_channels)
+            + 1j * rndstate.randn(n_channels, n_channels)
+        )[0]
+    d = rndstate.uniform(0.5, 3, n_channels)
+    delta = rndstate.uniform(0.5, 3, n_channels)
+    A = Q @ np.diag(d) @ Q.conj().T
+    B = Q @ np.diag(delta) @ Q.conj().T
+    X = get_mats(6, n_channels, "sym" if kind == "spd" else "herm")
+
+    Xt = transport(X, A, B, metric="wasserstein")
+
+    Xr = Q.conj().T @ X @ Q
+    fac = np.sqrt(np.add.outer(delta, delta) / np.add.outer(d, d))
+    expected = Q @ (fac * Xr) @ Q.conj().T
+    assert Xt == approx(expected)
+
+
+@pytest.mark.numpy_only
+@pytest.mark.parametrize("n_steps", [0, -1, 1.5, True])
+def test_transport_wasserstein_invalid_n_steps(n_steps, get_mats):
+    """transport_wasserstein rejects non-positive-integer n_steps (#418)."""
+    A, B = get_mats(2, 3, "spd")
+    X = get_mats(1, 3, "sym")[0]
+    with pytest.raises(ValueError):
+        transport_wasserstein(X, A, B, n_steps=n_steps)
+
+
+@pytest.mark.numpy_only
+def test_transport_wasserstein_accepts_numpy_int(get_mats):
+    """n_steps accepts integer-like scalars such as NumPy integers."""
+    A, B = get_mats(2, 3, "spd")
+    X = get_mats(1, 3, "sym")[0]
+    out_np = transport_wasserstein(X, A, B, n_steps=np.int64(20))
+    out_py = transport_wasserstein(X, A, B, n_steps=20)
+    assert out_np == approx(out_py)
+
+
+@pytest.mark.numpy_only
+def test_transport_wasserstein_dispatch_forwards_n_steps(get_mats):
+    """transport(metric='wasserstein') forwards n_steps (#418)."""
+    A, B = get_mats(2, 3, "spd")
+    X = get_mats(1, 3, "sym")[0]
+    coarse = transport(X, A, B, metric="wasserstein", n_steps=1)
+    assert coarse == approx(transport_wasserstein(X, A, B, n_steps=1))
+    # n_steps is actually used: a single RK4 step differs from the default
+    assert not np.allclose(
+        to_numpy(coarse),
+        to_numpy(transport(X, A, B, metric="wasserstein")),
+        atol=1e-6,
+    )
+    # integer-like kwargs (e.g. NumPy int) survive the dispatcher too
+    got = transport(X, A, B, metric="wasserstein", n_steps=np.int64(20))
+    assert got == approx(transport_wasserstein(X, A, B, n_steps=20))

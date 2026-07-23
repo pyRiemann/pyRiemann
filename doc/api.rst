@@ -821,6 +821,7 @@ Tangent Space
     transport_logchol
     transport_logeuclid
     transport_riemann
+    transport_wasserstein
 
 .. _base_api:
 
