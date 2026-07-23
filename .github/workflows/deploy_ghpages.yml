@@ -118,6 +118,7 @@ jobs:
           docs-folder: "doc/"
           pre-build-command: |
             apt-get update
+            apt-get install -y git
             pip install -e .
             pip install -r doc/requirements.txt
         env:
