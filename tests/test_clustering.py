@@ -373,3 +373,20 @@ def test_gmm(n_components, get_mats, get_weights):
     X, y = gmm.sample(n_sampled_matrices)
     assert X.shape == (n_sampled_matrices, n_channels, n_channels)
     assert y.shape == (n_sampled_matrices,)
+
+
+def test_deprecation():
+    import warnings
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        from pyriemann.clustering import Potato
+        Potato()
+        assert len(w) >= 1
+        assert issubclass(w[-1].category, DeprecationWarning)
+
+    with warnings.catch_warnings(record=True) as w:
+        warnings.simplefilter("always")
+        from pyriemann.clustering import PotatoField
+        PotatoField()
+        assert len(w) >= 1
+        assert issubclass(w[-1].category, DeprecationWarning)
