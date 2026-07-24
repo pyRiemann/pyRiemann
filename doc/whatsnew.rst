@@ -23,6 +23,10 @@ v0.13.dev
   had the same meaning).
   :pr:`464` by :user:`gcattan` and :user:`aquemy`
 
+- Deprecate ``probability`` parameter :class:`pyriemann.classification.SVC`.
+  Add ``predict_proba()`` which now works without this parameter.
+  :pr:`472` by :user:`qbarthelemy`
+
 v0.12 (July 2026)
 -----------------
 

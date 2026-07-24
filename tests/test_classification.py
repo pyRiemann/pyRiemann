@@ -79,10 +79,10 @@ def test_classifier(kind, n_classes, classif,
             classif in [FgMDM, TSClassifier, SVC, NearestConvexHull]:
         pytest.skip()
     if n_classes == 2:
-        n_matrices, n_channels = 6, 3
+        n_matrices, n_channels = 10, 3
     else:
         assert n_classes == 3
-        n_matrices, n_channels = 9, 3
+        n_matrices, n_channels = 15, 3
     X = get_mats(n_matrices, n_channels, kind)
     y = get_labels(n_matrices, n_classes)
     weights = get_weights(n_matrices)
@@ -108,7 +108,6 @@ def clf_fit(classif, X, y, weights):
     clf = classif().fit(X, y)
     assert clf.classes_.shape == (n_classes,)
     assert_array_equal(clf.classes_, np.unique(y))
-
     clf.fit(X, y, sample_weight=weights)
 
 
@@ -122,8 +121,6 @@ def clf_predict(classif, X, y):
 def clf_predict_proba(classif, X, y):
     n_matrices, n_classes = len(y), len(np.unique(y))
     clf = classif()
-    if hasattr(clf, "probability"):
-        clf.set_params(**{"probability": True})
     prob = clf.fit(X, y).predict_proba(X)
     assert prob.shape == (n_matrices, n_classes)
     assert prob.sum(axis=1) == approx(np.ones(n_matrices))
@@ -176,12 +173,7 @@ def clf_tsupdate(classif, X, y):
 def clf_pipeline(classif, labels, get_mats):
     n_matrices, n_channels, n_times = len(labels), 3, 100
     X = get_mats(n_matrices, [n_channels, n_times], "real")
-
-    clf = classif()
-    if hasattr(clf, "probability"):
-        clf.set_params(**{"probability": True})
-
-    pip = make_pipeline(Covariances(estimator="scm"), clf)
+    pip = make_pipeline(Covariances(estimator="scm"), classif())
     pip.fit(X, labels)
     pip.predict(X)
     pip.predict_proba(X)
