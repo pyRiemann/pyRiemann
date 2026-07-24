@@ -641,7 +641,7 @@ class SVC(sklearnSVC):
     -----
     .. versionadded:: 0.3
     .. versionchanged:: 0.13
-        Deprecate ``probability`` parameter and add ``predict_proba()``.
+        Deprecate parameter ``probability`` and add ``predict_proba()``.
 
     References
     ----------
