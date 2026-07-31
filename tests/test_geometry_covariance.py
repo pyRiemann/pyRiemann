@@ -86,6 +86,19 @@ def test_covariances_broadcasting(estimator, get_mats):
     assert C5[0, 0, 0] == approx(C2)
 
 
+@pytest.mark.parametrize("estimator", ["cov", "scm"])
+def test_covariances_single_channel(estimator, get_mats):
+    """Single-channel input keeps the (..., 1, 1) matrix axes."""
+    n_matrices, n_channels, n_times = 3, 1, 50
+    X = get_mats(n_matrices, [n_channels, n_times], "real")
+
+    cov = covariances(X, estimator=estimator)
+    assert cov.shape == (n_matrices, n_channels, n_channels)
+
+    cov2 = covariances(X[0], estimator=estimator)
+    assert cov2.shape == (n_channels, n_channels)
+
+
 @pytest.mark.numpy_only
 @pytest.mark.parametrize("assume_centered", [True, False])
 def test_covariance_scm_real(assume_centered, get_mats):

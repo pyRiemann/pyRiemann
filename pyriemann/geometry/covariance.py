@@ -2,10 +2,11 @@ from functools import wraps
 import warnings
 
 from array_api_compat import array_namespace as get_namespace, device as xpd
-from array_api_extra import expand_dims
+from array_api_extra import cov as xpx_cov, expand_dims
 from scipy.stats import chi2
 
 from ._backend import (
+    _cov_kwargs_to_xp,
     apply_xp_cov,
     diag_indices,
     hann_window,
@@ -21,9 +22,17 @@ from .test import is_real_type, is_square
 
 
 def _cov(X, **kwds):
-    """Covariance matrix estimator."""
+    """Covariance matrix estimator, batched over leading dimensions.
+
+    Delegates to :func:`array_api_extra.cov`, which estimates covariances for
+    all leading batch dimensions in a single call, across array-API backends.
+    Time samples are the observations, hence ``axis=-1``.
+    """
     xp = get_namespace(X)
-    return apply_xp_cov(xp.cov, X, **kwds)
+    cov = xpx_cov(X, axis=-1, **_cov_kwargs_to_xp(kwds))
+    # array_api_extra.cov drops the two matrix axes when n_channels == 1;
+    # restore them so the output is always (..., n_channels, n_channels).
+    return xp.reshape(cov, (*X.shape[:-2], X.shape[-2], X.shape[-2]))
 
 
 def _corr(X, **kwds):
@@ -404,7 +413,8 @@ cov_est_functions = {
 
 def _check_cov_estimator(estimator):
     est = check_function(estimator, cov_est_functions)
-    if est not in [covariance_sch, covariance_scm]:
+    # _cov, covariance_sch and covariance_scm are natively batched.
+    if est not in [_cov, covariance_sch, covariance_scm]:
         est = _vectorize_nd()(est)
     return est
 
