@@ -56,6 +56,8 @@ def test_clustering_two_clusters(kind, clust, get_mats, get_labels):
         clt_fit(clust, X, n_clusters, None)
         clt_predict(clust, X)
         clt_fitpredict(clust, X)
+        clt_transform(clust, X)
+        clt_fittransform(clust, X)
 
     if clust is GaussianMixture:
         clt_fit(clust, X, n_clusters, None)
@@ -92,6 +94,8 @@ def test_clustering_three_clusters(kind, clust, get_mats, get_labels):
     if clust is MeanShift:
         clt_fit(clust, X, n_clusters, None)
         clt_predict(clust, X)
+        clt_transform(clust, X)
+        clt_fittransform(clust, X)
 
     if clust is GaussianMixture:
         clt_fit(clust, X, n_clusters, None)
@@ -146,10 +150,12 @@ def clt_transform(clust, X, n_clusters=None):
         clt = clust(n_clusters=n_clusters)
     transf = clt.fit(X).transform(X)
 
-    if n_clusters is None:
-        assert transf.shape == (n_matrices,)
-    else:
-        assert transf.shape == (n_matrices, n_clusters)
+    assert transf.shape[0] == n_matrices
+
+    if clust is Kmeans:
+        assert transf.shape[1] == len(clt.mdm_.covmeans_)
+    elif clust is MeanShift:
+        assert transf.shape[1] == len(clt.modes_)
 
 
 def clt_jobs(clust, X, n_clusters, labels=None):

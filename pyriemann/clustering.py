@@ -366,7 +366,7 @@ ker_clust_functions = {
 }
 
 
-class MeanShift(SpdClustMixin, BaseEstimator):
+class MeanShift(SpdClustMixin, SpdTransfMixin, BaseEstimator):
     """Clustering by mean shift with SPD/HPD matrices as inputs.
 
     The mean shift is a non-parametric clustering method used to find clusters
@@ -409,6 +409,8 @@ class MeanShift(SpdClustMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.9
+    .. versionchanged:: 0.13
+        Add ``transform()``.
 
     See Also
     --------
@@ -513,6 +515,30 @@ class MeanShift(SpdClustMixin, BaseEstimator):
 
         return out_modes
 
+    def transform(self, X):
+        """Get the distance to each mode.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD/HPD matrices.
+
+        Returns
+        -------
+        dist : ndarray, shape (n_matrices, n_modes)
+            Distance to each mode.
+
+        Notes
+        -----
+        .. versionadded:: 0.13
+        """
+        dist = Parallel(n_jobs=self.n_jobs)(
+            delayed(distance)(X, mode, self._metric_dist)
+            for mode in self.modes_
+        )
+        dist = np.concatenate(dist, axis=1)
+        return dist
+
     def predict(self, X):
         """Get the predictions.
 
@@ -526,11 +552,7 @@ class MeanShift(SpdClustMixin, BaseEstimator):
         pred : ndarray of int, shape (n_matrices,)
             Prediction for each matrix according to the closest mode.
         """
-        dist = Parallel(n_jobs=self.n_jobs)(
-            delayed(distance)(X, mode, self._metric_dist)
-            for mode in self.modes_
-        )
-        dist = np.concatenate(dist, axis=1)
+        dist = self.transform(X)
         return dist.argmin(axis=1)
 
 
