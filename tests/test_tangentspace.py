@@ -3,6 +3,10 @@ from numpy.testing import assert_array_equal
 import pytest
 from pytest import approx
 
+from sklearn.pipeline import make_pipeline
+from sklearn.svm import SVC
+
+from pyriemann.classification import MDM
 from pyriemann.tangentspace import TangentSpace, FGDA
 
 
@@ -26,6 +30,8 @@ def test_tangentspace(kind, tspace, get_mats, get_labels, get_weights):
     ts_transform(tspace, X, y)
     ts_fit_transform(tspace, X, y)
     ts_fit_independence(tspace, X, y)
+    if kind == "spd":
+        ts_pipeline(tspace, X, y)
     if tspace is TangentSpace:
         ts_transform_wo_fit(tspace, X)
         ts_inversetransform(tspace, X)
@@ -84,6 +90,16 @@ def ts_transform_wo_fit(tspace, X):
 def ts_inversetransform(tspace, X):
     ts = tspace().fit(X)
     assert ts.inverse_transform(ts.transform(X)) == approx(X)
+
+
+def ts_pipeline(tspace, X, y):
+    if tspace is TangentSpace:
+        pip = make_pipeline(tspace(), SVC(kernel="linear"))
+    elif tspace is FGDA:
+        pip = make_pipeline(tspace(), MDM())
+    pip.fit(X, y)
+    pred = pip.predict(X)
+    assert pred.shape == (X.shape[0],)
 
 
 @pytest.mark.parametrize("tspace", [TangentSpace, FGDA])

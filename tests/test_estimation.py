@@ -37,10 +37,11 @@ m_estim = ["hub", "stu", "tyl"]
 coh = ["ordinary", "instantaneous", "lagged", "imaginary"]
 
 
+@pytest.mark.parametrize("n_matrices", [1, 2, 5])
 @pytest.mark.parametrize("estimator", estim + m_estim)
-def test_covariances(estimator, get_mats):
+def test_covariances(n_matrices, estimator, get_mats):
     """Test Covariances"""
-    n_matrices, n_channels, n_times = 2, 3, 100
+    n_channels, n_times = 3, 100
     X = get_mats(n_matrices, [n_channels, n_times], "real")
 
     covest = Covariances(estimator=estimator).fit(X)

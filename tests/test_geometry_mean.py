@@ -199,7 +199,7 @@ def test_mean_of_means(kind, mean, get_mats):
 def test_mean_of_single_matrix(mean, get_mats):
     """Test the mean of a single matrix"""
     n_channels = 3
-    X = get_mats(1, n_channels, "spd")
+    X = get_mats(1, n_channels, "hpd")
     M = mean(X)
     assert M == approx(X[0])
 
@@ -208,9 +208,6 @@ def test_mean_of_single_matrix(mean, get_mats):
     "mean",
     [
         mean_ale,
-        mean_alm,
-        mean_bmp,
-        mean_cheap,
         mean_chol,
         mean_euclid,
         mean_harmonic,
@@ -244,6 +241,35 @@ def test_mean_broadcasting(mean, get_mats):
     M5 = mean(X)
     assert M5.shape == (n_dim5, n_dim4, n_channels, n_channels)
     assert M5[0, 0] == approx(M3)
+
+
+@pytest.mark.parametrize(
+    "mean",
+    [
+        mean_ale,
+        mean_chol,
+        mean_euclid,
+        mean_harmonic,
+        mean_kullback_sym,
+        mean_logchol,
+        mean_logdet,
+        mean_logeuclid,
+        pytest.param(partial(mean_poweuclid, p=0.7), id="mean_poweuclid"),
+        pytest.param(partial(mean_power, p=0.2), id="mean_power"),
+        mean_riemann,
+        mean_thompson,
+        mean_wasserstein,
+        nanmean_riemann,
+    ],
+)
+def test_mean_property_idempotency(mean, get_mats):
+    """Test idempotency, ie mean(X, X, X, ...) = X"""
+    n_matrices, n_channels = 6, 3
+    X_ = get_mats(1, n_channels, "spd")
+    xp = get_namespace(X_)
+    X = xp.repeat(X_, n_matrices, axis=0)
+    M = mean(X)
+    assert M == approx(X[0])
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])

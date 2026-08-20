@@ -408,10 +408,11 @@ def test_tlrotate_manifold(rndstate, get_weights, metric, use_weight):
     assert_array_equal(X_rot, X_rct)
 
 
+@pytest.mark.parametrize("expl_var", [0.97, 1, 3])
 @pytest.mark.parametrize("n_components", [1, 3, "max"])
 @pytest.mark.parametrize("n_clusters", [1, 2, 5])
 @pytest.mark.parametrize("use_weight", [True, False])
-def test_tlrotate_tangentspace(rndstate, get_weights,
+def test_tlrotate_tangentspace(rndstate, get_weights, expl_var,
                                n_components, n_clusters, use_weight):
     """Test rotating vectors"""
     n_ts = 10
@@ -430,6 +431,7 @@ def test_tlrotate_tangentspace(rndstate, get_weights,
 
     tlrot = TLRotate(
         target_domain="tgt",
+        expl_var=expl_var,
         n_components=n_components,
         n_clusters=n_clusters,
     )
