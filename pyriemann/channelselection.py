@@ -7,7 +7,6 @@ from .geometry.distance import distance
 
 
 class ElectrodeSelection(TransformerMixin, BaseEstimator):
-
     """Channel selection based on a Riemannian geometry criterion.
 
     For each class, a centroid is estimated, and the channel selection is based
@@ -42,6 +41,14 @@ class ElectrodeSelection(TransformerMixin, BaseEstimator):
     self.subelec_ : list
         Indices of selected channels.
 
+    Notes
+    -----
+    .. versionadded:: 0.1
+    .. versionchanged:: 0.2.3
+        Add parameter ``sample_weight`` to ``fit()``.
+    .. versionchanged:: 0.8
+        Add ``fit_transform()``.
+
     See Also
     --------
     Kmeans
@@ -73,6 +80,8 @@ class ElectrodeSelection(TransformerMixin, BaseEstimator):
             Labels for each matrix.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
             Weights for each matrix. If None, it uses equal weights.
+
+            .. versionadded:: 0.2.3
 
         Returns
         -------
@@ -140,6 +149,10 @@ class ElectrodeSelection(TransformerMixin, BaseEstimator):
         -------
         X_new : ndarray, shape (n_matrices, n_elec, n_elec)
             Set of SPD matrices after reduction of the number of channels.
+
+        Notes
+        -----
+        .. versionadded:: 0.8
         """
         return self.fit(X, y, sample_weight=sample_weight).transform(X)
 
@@ -151,6 +164,10 @@ class FlatChannelRemover(TransformerMixin, BaseEstimator):
     ----------
     channels_ : ndarray, shape (n_good_channels,)
         Indices of the non-flat channels.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.5
     """
 
     def fit(self, X, y=None):

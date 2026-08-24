@@ -56,7 +56,9 @@ class Whitening(TransformerMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.2.7
-
+    .. versionchanged:: 0.7
+        Add ``partial_fit()``.
+        Add parameter ``sample_weight`` to ``partial_fit()``.
     """
 
     def __init__(self, metric="euclid", dim_red=None, verbose=False):
@@ -188,6 +190,8 @@ class Whitening(TransformerMixin, BaseEstimator):
             Ignored as unsupervised.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
             Weights for each matrix. If None, it uses equal weights.
+
+            .. versionadded:: 0.7
         alpha : float | None, default=None
             Update rate in [0, 1] for the mean: 0 for no update, 1 for full
             update.

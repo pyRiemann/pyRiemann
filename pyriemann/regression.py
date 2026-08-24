@@ -192,7 +192,8 @@ class KNearestNeighborRegressor(RegressorMixin, MDM):
     Notes
     -----
     .. versionadded:: 0.3
-
+    .. versionchanged:: 0.4
+        Add ``score()``.
     """
 
     def __init__(self, n_neighbors=5, metric="riemann"):

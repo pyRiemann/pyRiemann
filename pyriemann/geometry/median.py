@@ -46,6 +46,8 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.5
+        Add support for complex matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
 
@@ -137,6 +139,8 @@ def median_riemann(
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
 

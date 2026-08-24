@@ -163,6 +163,11 @@ def expm(C):
 
     Notes
     -----
+    .. versionadded:: 0.1
+    .. versionchanged:: 0.3
+        Add broadcasting.
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
     """
@@ -195,6 +200,11 @@ def invsqrtm(C):
 
     Notes
     -----
+    .. versionadded:: 0.1
+    .. versionchanged:: 0.3
+        Add broadcasting.
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
     """
@@ -227,6 +237,11 @@ def logm(C):
 
     Notes
     -----
+    .. versionadded:: 0.1
+    .. versionchanged:: 0.3
+        Add broadcasting.
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
     """
@@ -261,6 +276,11 @@ def powm(C, alpha):
 
     Notes
     -----
+    .. versionadded:: 0.1
+    .. versionchanged:: 0.3
+        Add broadcasting.
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
     """
@@ -293,6 +313,11 @@ def sqrtm(C):
 
     Notes
     -----
+    .. versionadded:: 0.1
+    .. versionchanged:: 0.3
+        Add broadcasting.
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
     """

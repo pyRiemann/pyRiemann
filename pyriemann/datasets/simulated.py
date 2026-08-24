@@ -22,6 +22,10 @@ def _make_eyes(n_matrices, n_dim):
     -------
     X : ndarray, shape (n_matrices, n_dim, n_dim)
         Set of np.eye matrices.
+
+    Notes
+    -----
+    .. versionadded:: 0.10
     """
     return np.repeat(np.eye(n_dim)[np.newaxis, :, :], n_matrices, axis=0)
 
@@ -54,6 +58,9 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
     n_dim : int | list of int
         If int, dimension of square matrices to generate.
         If list, dimensions of "real" or "comp" matrices to generate.
+
+        .. versionchanged:: 0.10
+            Add support for list of ints.
     kind : {"real", "comp", "inv", "orth, "sym", "spd", "spsd", "cinv", \
             "unit", "herm", "hpd", "hpsd"}
         Kind of matrices to generate:
@@ -105,12 +112,14 @@ def make_matrices(n_matrices, n_dim, kind, rs=None, return_params=False,
 
     Notes
     -----
-    .. versionadded:: 0.5
+    .. versionadded:: 0.3
+    .. versionchanged:: 0.5
+        Rename ``make_covariances`` into ``make_matrices``.
     .. versionchanged:: 0.8
-        Add support for kinds "sym" and "herm".
+        Add ``"sym"`` and ``"herm"`` options to parameter ``kind``.
     .. versionchanged:: 0.10
-        Add support for non-square matrices, and for kinds "inv" and "cinv",
-        "orth", and "unit".
+        Add options to parameter ``kind``: non-square matrices ``"real"`` and
+        ``"comp"``; ``"inv"``, ``"cinv"``, ``"orth"`` and ``"unit"`` .
     """
     rs = check_random_state(rs)
 
@@ -247,16 +256,22 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     centers : None | ndarray, shape (2, n_dim, n_dim), default=None
         Centers for each class.
         If None, the centers are drawn randomly based on class_sep.
+
+        .. versionadded:: 0.4
     return_centers : bool, default=False
         If True, return the centers of each class.
     center_dataset : bool, default=False
         If True, re-center dataset to the Identity.
         If False, dataset is centered around a random SPD matrix.
+
+        .. versionadded:: 0.4
     random_state : int, RandomState instance or None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
         The number of jobs to use for the computation. This works by computing
         each of the class centroid in parallel. If -1 all CPUs are used.
+
+        .. versionadded:: 0.3
     sampling_method : {"auto", "slice", "rejection"}, default="auto"
         Method used to sample eigenvalues: "auto", "slice" or "rejection".
         If "auto", sampling_method will be equal to "slice" for n_dim != 2 and
@@ -276,7 +291,10 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     Notes
     -----
     .. versionadded:: 0.3
-
+    .. versionchanged:: 0.3
+        Add parameter ``n_jobs``.
+    .. versionchanged:: 0.4
+        Add parameter ``sampling_method``.
     """
     if not isinstance(class_sep, float):
         raise ValueError(f"class_sep must be a float (Got {class_sep})")
@@ -454,6 +472,8 @@ def make_classification_transfer(
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.8
+        Add parameter ``domain_names``.
     """
 
     rs = check_random_state(random_state)

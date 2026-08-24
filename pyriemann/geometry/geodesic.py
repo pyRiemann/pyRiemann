@@ -120,6 +120,11 @@ def geodesic_euclid(A, B, alpha=0.5):
 
     Notes
     -----
+    .. versionadded:: 0.2
+    .. versionchanged:: 0.3
+        Add broadcasting.
+    .. versionchanged:: 0.5
+        Add support for complex matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
         Add support for array-valued alpha.
@@ -220,6 +225,11 @@ def geodesic_logeuclid(A, B, alpha=0.5):
 
     Notes
     -----
+    .. versionadded:: 0.2
+    .. versionchanged:: 0.3
+        Add broadcasting.
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
         Add support for array-valued alpha.
@@ -272,6 +282,11 @@ def geodesic_riemann(A, B, alpha=0.5):
 
     Notes
     -----
+    .. versionadded:: 0.1
+    .. versionchanged:: 0.3
+        Add broadcasting.
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
         Add support for array-valued alpha.
@@ -458,6 +473,11 @@ def geodesic(A, B, alpha, metric="riemann"):
 
     Notes
     -----
+    .. versionadded:: 0.2
+    .. versionchanged:: 0.3
+        Add broadcasting.
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
         Add support for array-valued alpha.

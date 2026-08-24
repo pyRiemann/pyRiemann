@@ -40,6 +40,8 @@ def exp_map_euclid(X, Cref, **kwargs):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.5
+        Add support for complex matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
     """
@@ -133,6 +135,10 @@ def exp_map_logeuclid(X, Cref, **kwargs):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
+    .. versionchanged:: 0.8
+        Correct formula.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
 
@@ -187,6 +193,8 @@ def exp_map_riemann(X, Cref, *, Cm12=False):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
 
@@ -320,6 +328,8 @@ def log_map_euclid(X, Cref, **kwargs):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.5
+        Add support for complex matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
     """
@@ -395,7 +405,7 @@ def log_map_logeuclid(X, Cref, **kwargs):
     X : ndarray, shape (..., n, n)
         Matrices in SPD/HPD manifold.
     Cref : ndarray, shape (n, n)
-        Reference SPD matrix.
+        Reference SPD/HPD matrix.
 
     Returns
     -------
@@ -405,6 +415,10 @@ def log_map_logeuclid(X, Cref, **kwargs):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
+    .. versionchanged:: 0.8
+        Correct formula.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
 
@@ -461,6 +475,8 @@ def log_map_riemann(X, Cref, *, C12=False):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
 
@@ -598,6 +614,8 @@ def upper(X):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
 
@@ -645,6 +663,8 @@ def unupper(T):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
     """
@@ -684,7 +704,13 @@ def tangent_space(X, Cref, *, metric="riemann"):
 
     Notes
     -----
+    .. versionadded:: 0.1
+    .. versionchanged:: 0.3
+        Add broadcasting.
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
     .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -720,7 +746,12 @@ def untangent_space(T, Cref, *, metric="riemann"):
 
     Notes
     -----
+    .. versionchanged:: 0.3
+        Add broadcasting.
+    .. versionchanged:: 0.5
+        Add support for HPD matrices.
     .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
 
     See Also
     --------
@@ -1285,6 +1316,7 @@ def transport_riemann(X, A, B):
 
     Notes
     -----
+    .. versionadded:: 0.2.6
     .. versionchanged:: 0.8
         Change input arguments and calculation of the function.
     .. versionchanged:: 0.10

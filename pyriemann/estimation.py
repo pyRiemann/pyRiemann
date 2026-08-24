@@ -35,6 +35,12 @@ class Covariances(TransformerMixin, BaseEstimator):
     **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
 
+    Notes
+    -----
+    .. versionadded:: 0.1
+    .. versionchanged:: 0.8
+        Add ``fit_transform()``.
+
     See Also
     --------
     ERPCovariances
@@ -98,6 +104,10 @@ class Covariances(TransformerMixin, BaseEstimator):
         -------
         X_new : ndarray, shape (n_matrices, n_channels, n_channels)
             Covariance matrices.
+
+        Notes
+        -----
+        .. versionadded:: 0.8
         """
         return self.fit(X, y).transform(X)
 
@@ -135,6 +145,8 @@ class ERPCovariances(TransformerMixin, BaseEstimator):
     svd : int | None, default=None
         If not None, number of components of SVD used to reduce prototype
         responses.
+
+        .. versionadded:: 0.2.2
     **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
 
@@ -144,6 +156,14 @@ class ERPCovariances(TransformerMixin, BaseEstimator):
         If fit, prototyped responses for each class, where n_components is
         equal to n_classes x n_channels if ``svd`` is None,
         and to n_classes x min(``svd``, n_channels) otherwise.
+
+    Notes
+    -----
+    .. versionadded:: 0.1
+    .. versionchanged:: 0.2.2
+        Add parameter ``svd``.
+    .. versionchanged:: 0.8
+        Add ``fit_transform()``.
 
     See Also
     --------
@@ -254,6 +274,10 @@ class ERPCovariances(TransformerMixin, BaseEstimator):
             n_components is equal to (1 + n_classes) x n_channels if ``svd``
             is None, and to n_channels + n_classes x min(``svd``, n_channels)
             otherwise.
+
+        Notes
+        -----
+        .. versionadded:: 0.8
         """
         return self.fit(X, y).transform(X)
 
@@ -291,9 +315,13 @@ class XdawnCovariances(TransformerMixin, BaseEstimator):
         spatial filtering.
         Should be regularized using "lwf" or "oas", see
         :func:`pyriemann.geometry.covariance.covariances`.
+
+        .. versionadded:: 0.2.4
     baseline_cov : ndarray, shape (n_channels, n_channels) | None, default=None
         Baseline covariance for :class:`pyriemann.spatialfilters.Xdawn`
         spatial filtering.
+
+        .. versionadded:: 0.2.5
     **kwds : dict
         Any further parameters are passed directly to the covariance estimator.
 
@@ -301,6 +329,16 @@ class XdawnCovariances(TransformerMixin, BaseEstimator):
     ----------
     P_ : ndarray, shape (n_classes x min(n_channels, n_filters), n_times)
         If fit, the evoked response for each event type, concatenated.
+
+    Notes
+    -----
+    .. versionadded:: 0.1
+    .. versionchanged:: 0.2.4
+        Add parameter ``xdawn_estimator``.
+    .. versionchanged:: 0.2.5
+        Add parameter ``baseline_cov``.
+    .. versionchanged:: 0.8
+        Add ``fit_transform()``.
 
     See Also
     --------
@@ -406,6 +444,10 @@ class XdawnCovariances(TransformerMixin, BaseEstimator):
             to 2 x n_classes x min(n_channels, ``nfilter``)
             if ``applyfilters`` is True, and
             to n_channels + n_classes x min(n_channels, ``nfilter``) otherwise.
+
+        Notes
+        -----
+        .. versionadded:: 0.8
         """
         return self.fit(X, y).transform(X)
 
@@ -526,6 +568,8 @@ class CrossSpectra(TransformerMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.6
+    .. versionchanged:: 0.8
+        Add ``fit_transform()``.
 
     See Also
     --------
@@ -617,6 +661,10 @@ class CrossSpectra(TransformerMixin, BaseEstimator):
         -------
         X_new : ndarray, shape (n_matrices, n_channels, n_channels, n_freqs)
             Cross-spectral matrices for each input and for each frequency bin.
+
+        Notes
+        -----
+        .. versionadded:: 0.8
         """
         return self.fit(X, y).transform(X)
 
@@ -650,8 +698,9 @@ class CoSpectra(CrossSpectra):
 
     Notes
     -----
+    .. versionadded:: 0.1
     .. versionchanged:: 0.6
-        Rename CospCovariances into CoSpectra.
+        Rename ``CospCovariances`` into ``CoSpectra``.
 
     See Also
     --------
@@ -700,6 +749,8 @@ class Coherences(CoSpectra):
         Coherence type, see
         :func:`pyriemann.geometry.covariance.coherence`.
 
+        .. versionadded:: 0.3
+
     Attributes
     ----------
     freqs_ : ndarray, shape (n_freqs,)
@@ -708,7 +759,10 @@ class Coherences(CoSpectra):
 
     Notes
     -----
-    .. versionadded:: 0.3
+    .. versionadded:: 0.2.5
+    .. versionchanged:: 0.3
+        Add parameter ``coh`` for instantaneous, lagged and imaginary
+        coherences.
 
     See Also
     --------
@@ -801,7 +855,9 @@ class TimeDelayCovariances(TransformerMixin, BaseEstimator):
     -----
     .. versionadded:: 0.2.4
     .. versionchanged:: 0.6
-        Rename HankelCovariances into TimeDelayCovariances.
+        Rename ``HankelCovariances`` into ``TimeDelayCovariances``.
+    .. versionchanged:: 0.8
+        Add ``fit_transform()``.
 
     See Also
     --------
@@ -895,6 +951,10 @@ class TimeDelayCovariances(TransformerMixin, BaseEstimator):
             Time delay covariance matrices, where n_delays is equal to:
             ``delays`` when it is a int, and 1 + len(``delays``) when it is a
             list.
+
+        Notes
+        -----
+        .. versionadded:: 0.8
         """
         return self.fit(X, y).transform(X)
 
@@ -936,13 +996,15 @@ class Kernels(TransformerMixin, BaseEstimator):
     **kwds : dict
         Any further parameters are passed directly to the kernel function [2]_.
 
-    See Also
-    --------
-    Covariances
-
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.8
+        Add ``fit_transform()``.
+
+    See Also
+    --------
+    Covariances
 
     References
     ----------
@@ -1026,6 +1088,10 @@ class Kernels(TransformerMixin, BaseEstimator):
         -------
         X_new : ndarray, shape (n_matrices, n_channels, n_channels)
             Kernel matrices.
+
+        Notes
+        -----
+        .. versionadded:: 0.8
         """
         return self.fit(X, y).transform(X)
 
@@ -1048,6 +1114,10 @@ class Shrinkage(TransformerMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.2.5
+    .. versionchanged:: 0.7
+        Add support for HPD matrices.
+    .. versionchanged:: 0.8
+        Add ``fit_transform()``.
 
     References
     ----------
@@ -1114,5 +1184,9 @@ class Shrinkage(TransformerMixin, BaseEstimator):
         -------
         X_new : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of shrunk SPD/HPD matrices.
+
+        Notes
+        -----
+        .. versionadded:: 0.8
         """
         return self.fit(X, y).transform(X)

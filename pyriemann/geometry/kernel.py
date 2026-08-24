@@ -52,7 +52,7 @@ def kernel_euclid(X, Y=None, *, Cref=None, reg=1e-10):
     -----
     .. versionadded:: 0.3
     .. versionchanged:: 0.8
-        Add parameter Cref to use a reference matrix.
+        Add parameter ``Cref`` to use a reference matrix.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
 
@@ -122,7 +122,7 @@ def kernel_logeuclid(X, Y=None, *, Cref=None, reg=1e-10):
     -----
     .. versionadded:: 0.3
     .. versionchanged:: 0.8
-        Add parameter Cref to use a reference matrix.
+        Add parameter ``Cref`` to use a reference matrix.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
 

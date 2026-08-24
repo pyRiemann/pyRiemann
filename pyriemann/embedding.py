@@ -42,6 +42,12 @@ class SpectralEmbedding(BaseEstimator):
     embedding_ : ndarray, shape (n_matrices, n_components)
         Embedding vectors of the training set.
 
+    Notes
+    -----
+    .. versionadded:: 0.2.5
+    .. versionchanged:: 0.3
+        Rename ``Embedding`` into ``SpectralEmbedding``.
+
     References
     ----------
     .. [1] `Laplacian Eigenmaps for dimensionality

@@ -40,6 +40,8 @@ class Xdawn(TransformerMixin, BaseEstimator):
         Covariance matrix to which the average signals are compared. If None,
         the baseline covariance is computed across all trials and time samples.
 
+        .. versionadded:: 0.2.5
+
     Attributes
     ----------
     classes_ : ndarray, shape (n_classes,)
@@ -54,6 +56,14 @@ class Xdawn(TransformerMixin, BaseEstimator):
         type, concatenated.
     evokeds_ : ndarray, shape (n_classes x min(n_channels, n_filters), n_times)
         If fit, the evoked response for each event type, concatenated.
+
+    Notes
+    -----
+    .. versionadded:: 0.1
+    .. versionchanged:: 0.2.5
+        Add parameter ``baseline_cov``.
+    .. versionchanged:: 0.8
+        Add ``fit_transform()``.
 
     See Also
     --------
@@ -170,6 +180,10 @@ class Xdawn(TransformerMixin, BaseEstimator):
         X_new : ndarray, shape (n_trials, n_classes x min(n_channels, \
                 n_filters), n_times)
             Set of spatially filtered trials.
+
+        Notes
+        -----
+        .. versionadded:: 0.8
         """
         return self.fit(X, y).transform(X)
 
@@ -202,6 +216,12 @@ class BilinearFilter(TransformerMixin, BaseEstimator):
     filters_ : ndarray, shape (n_filters, n_channels)
         If fit, the filter components used to decompose the data for each event
         type, concatenated.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.5
+    .. versionchanged:: 0.8
+        Add ``fit_transform()``.
     """
 
     def __init__(self, filters, log=False):
@@ -279,6 +299,10 @@ class BilinearFilter(TransformerMixin, BaseEstimator):
                 ndarray, shape (n_trials, n_filters, n_filters)
             Set of spatially filtered log-variance or covariance, depending on
             the ``log`` input parameter.
+
+        Notes
+        -----
+        .. versionadded:: 0.8
         """
         return self.fit(X, y).transform(X)
 
@@ -306,6 +330,8 @@ class CSP(BilinearFilter):
     log : bool, default=True
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.
+
+        .. versionadded:: 0.2.4
     ajd_method : string | callable, default="ajd_pham"
         Method for AJD for multiclass CSP, can be:
         "ajd_pham", "jade", "uwedge", or a callable function.
@@ -318,6 +344,14 @@ class CSP(BilinearFilter):
         If fit, the CSP spatial filters.
     patterns_ : ndarray, shape (min(n_channels, n_filters), n_channels)
         If fit, the CSP spatial patterns.
+
+    Notes
+    -----
+    .. versionadded:: 0.2.4
+    .. versionchanged:: 0.2.4
+        Add parameter ``log``.
+    .. versionchanged:: 0.7
+        Add parameter ``ajd_method``.
 
     See Also
     --------
@@ -599,6 +633,11 @@ class AJDC(BaseEstimator):
             dimension reduction defining the number of components from an
             initial joint diagonalizer, and then run AJD from this solution.
             ``val`` must be a square ndarray.
+
+            .. versionchanged:: 0.2.7
+                Rename ``expl_var`` into ``dim_red``.
+            .. versionchanged:: 0.4
+                Add ``"warm_restart"`` option.
     verbose : bool, default=True
         Verbose flag.
 
@@ -622,6 +661,8 @@ class AJDC(BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.2.7
+    .. versionchanged:: 0.4
+        Add ``"warm_restart"`` option to parameter ``dim_red``.
 
     See Also
     --------

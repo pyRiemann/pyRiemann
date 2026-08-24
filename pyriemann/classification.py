@@ -69,6 +69,19 @@ class MDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     covmeans_ : ndarray, shape (n_classes, n_channels, n_channels)
         Centroids for each class.
 
+        .. versionchanged:: 0.6
+            Change list of ndarrays into a ndarray.
+
+    Notes
+    -----
+    .. versionadded:: 0.1
+    .. versionchanged:: 0.2.3
+        Add parameter ``sample_weight`` to ``fit()``.
+    .. versionchanged:: 0.2.4
+        Add ``predict_proba()``.
+    .. versionchanged:: 0.6
+        Add support for HPD matrices.
+
     See Also
     --------
     Kmeans
@@ -105,6 +118,8 @@ class MDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
             Labels for each matrix.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
             Weights for each matrix. If None, it uses equal weights.
+
+            .. versionadded:: 0.2.3
 
         Returns
         -------
@@ -183,6 +198,10 @@ class MDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         -------
         prob : ndarray, shape (n_matrices, n_classes)
             Probabilities for each class.
+
+        Notes
+        -----
+        .. versionadded:: 0.2.4
         """
         return softmax(-self._predict_distances(X) ** 2)
 
@@ -225,6 +244,14 @@ class FgMDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     classes_ : ndarray, shape (n_classes,)
         Labels for each class.
 
+    Notes
+    -----
+    .. versionadded:: 0.1
+    .. versionchanged:: 0.2.6
+        Add ``predict_proba()``.
+    .. versionchanged:: 0.4
+        Add parameter ``sample_weight`` to ``fit()``.
+
     See Also
     --------
     MDM
@@ -262,6 +289,8 @@ class FgMDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
             Labels for each matrix.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
             Weights for each matrix. If None, it uses equal weights.
+
+            .. versionadded:: 0.4
 
         Returns
         -------
@@ -303,6 +332,10 @@ class FgMDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         -------
         prob : ndarray, shape (n_matrices, n_classes)
             The softmax probabilities for each class.
+
+        Notes
+        -----
+        .. versionadded:: 0.2.6
         """
         cov = self._fgda.transform(X)
         return self._mdm.predict_proba(cov)
@@ -360,8 +393,10 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.2.4
+    .. versionchanged:: 0.4
+        Add parameter ``sample_weight`` to ``fit()``.
     .. versionchanged:: 0.8
-        Rename TSclassifier into TSClassifier.
+        Rename ``TSclassifier`` into ``TSClassifier``.
 
     References
     ----------
@@ -390,6 +425,8 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
             Labels for each matrix.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
             Weights for each matrix. If None, it uses equal weights.
+
+            .. versionadded:: 0.4
 
         Returns
         -------
@@ -478,6 +515,8 @@ class KNearestNeighbor(MDM):
     Notes
     -----
     .. versionadded:: 0.2.4
+    .. versionchanged:: 0.3
+        Add ``predict_proba()``.
 
     See Also
     --------
@@ -544,6 +583,10 @@ class KNearestNeighbor(MDM):
         -------
         prob : ndarray, shape (n_matrices, n_classes)
             Probabilities for each class.
+
+        Notes
+        -----
+        .. versionadded:: 0.3
         """
         n_matrices, _, _ = X.shape
 
@@ -640,6 +683,8 @@ class SVC(sklearnSVC):
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.4
+        Use parameter ``sample_weight`` in ``fit()``.
     .. versionchanged:: 0.13
         Deprecate parameter ``probability`` and add ``predict_proba()``.
 
@@ -804,7 +849,8 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
           [2]_.
 
         .. versionchanged:: 0.10
-            Rename method_label into method_combination, and add None option.
+            Rename ``method_label`` into ``method_combination``,
+            and add ``None`` option.
     metric : string, default="riemann"
         Metric used for distance estimation during prediction.
         For the list of supported metrics,
@@ -820,13 +866,16 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         .. versionchanged:: 0.10
             Change dict of dicts of ndarrays into a ndarray.
 
-    See Also
-    --------
-    MDM
-
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.10
+        Rename parameter ``method_label`` into ``method_combination``,
+        and add ``None`` option.
+
+    See Also
+    --------
+    MDM
 
     References
     ----------
@@ -1030,15 +1079,15 @@ class NearestConvexHull(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     classmats_ : ndarray, shape (n_matrices,)
         Labels of training set.
 
-    See Also
-    --------
-    MDM
-
     Notes
     -----
     .. versionadded:: 0.10
     .. versionchanged:: 0.11
         Add support for Euclidean metric.
+
+    See Also
+    --------
+    MDM
 
     References
     ----------

@@ -134,7 +134,7 @@ class Kmeans(SpdClassifMixin, SpdClustMixin, SpdTransfMixin, BaseEstimator):
 
     Notes
     -----
-    .. versionadded:: 0.2.2
+    .. versionadded:: 0.2
 
     See Also
     --------
@@ -290,6 +290,10 @@ class KmeansPerClassTransform(SpdTransfMixin, BaseEstimator):
     covmeans_ : ndarray, shape (n_centroids, n_channels, n_channels)
         Centroids of each cluster of each class, with n_centroids <=
         n_clusters x n_classes.
+
+    Notes
+    -----
+    .. versionadded:: 0.2
 
     See Also
     --------

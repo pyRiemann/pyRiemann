@@ -140,10 +140,10 @@ class TLCenter(TransformerMixin, BaseEstimator):
             ``transform()`` recenters inputs to the specified target domain.
 
         .. versionchanged:: 0.7
-            Add ``""`` as a special value.
+            Add ``""`` option to recenter inputs to the last fitted domain.
         .. versionchanged:: 0.13
-            Add ``"transductive"`` as a special value.
-            Replace special value ``""`` by ``"last"``.
+            Add ``"transductive"`` option for transductive estimation of
+            centers. Replace option ``""`` by ``"last"``.
     metric : str, default="riemann"
         For inputs in manifold,
         metric used for mean estimation. For the list of supported metrics,
@@ -160,12 +160,16 @@ class TLCenter(TransformerMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.6
+        Add parameter ``sample_weight`` to ``fit()`` and ``fit_transform()``.
     .. versionchanged:: 0.7
-        Add possibility to recenter inputs to the last fitted domain.
+        Add ``""`` option to parameter ``target_domain``,
+        to recenter inputs to the last fitted domain.
     .. versionchanged:: 0.8
         Add support for tangent space centering.
     .. versionchanged:: 0.13
-        Add transductive estimation of centers.
+        Add ``"transductive"`` option to parameter ``target_domain``,
+        for transductive estimation of centers.
 
     References
     ----------
@@ -206,6 +210,8 @@ class TLCenter(TransformerMixin, BaseEstimator):
         sample_weight : None | ndarray, shape (n_matrices,) or \
                 shape (n_vectors,), default=None
             Weights for each matrix or vector. If None, it uses equal weights.
+
+            .. versionadded:: 0.6
 
         Returns
         -------
@@ -308,6 +314,8 @@ class TLCenter(TransformerMixin, BaseEstimator):
                 shape (n_vectors,), default=None
             Weights for each matrix or vector. If None, it uses equal weights.
 
+            .. versionadded:: 0.6
+
         Returns
         -------
         X_new : ndarray, shape (n_matrices, n_channels, n_channels) or \
@@ -374,7 +382,10 @@ class TLScale(TransformerMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.6
+        Add parameter ``sample_weight`` to ``fit()`` and ``fit_transform()``.
     .. versionchanged:: 0.8
+        Rename ``TLStretch`` into ``TLScale``.
         Add support for tangent space scaling.
 
     References
@@ -416,6 +427,8 @@ class TLScale(TransformerMixin, BaseEstimator):
         sample_weight : None | ndarray, shape (n_matrices,) or \
                 shape (n_vectors,), default=None
             Weights for each matrix or vector. If None, it uses equal weights.
+
+            .. versionadded:: 0.6
 
         Returns
         -------
@@ -528,6 +541,8 @@ class TLScale(TransformerMixin, BaseEstimator):
                 shape (n_vectors,), default=None
             Weights for each matrix or vector. If None, it uses equal weights.
 
+            .. versionadded:: 0.6
+
         Returns
         -------
         X_new : ndarray, shape (n_matrices, n_channels, n_channels) or \
@@ -609,9 +624,13 @@ class TLRotate(TransformerMixin, BaseEstimator):
     tol_step : float, default=1e-9
         For inputs in manifold, stopping criterion based on the norm of
         the descent direction.
+
+        .. versionadded:: 0.11
     maxiter : int, default=10_000
         For inputs in manifold, maximum number of iterations in the
         optimization procedure.
+
+        .. versionadded:: 0.11
 
     Attributes
     ----------
@@ -625,8 +644,13 @@ class TLRotate(TransformerMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.6
+        Add parameter ``sample_weight`` to ``fit()`` and ``fit_transform()``.
     .. versionchanged:: 0.8
         Add support for tangent space rotation.
+        Add support for multisource domains in tangent space.
+    .. versionchanged:: 0.11
+        Add parameters ``tol_step`` and ``maxiter``.
 
     References
     ----------
@@ -684,6 +708,8 @@ class TLRotate(TransformerMixin, BaseEstimator):
         sample_weight : None | ndarray, shape (n_matrices,) or \
                 shape (n_vectors,), default=None
             Weights for each matrix or vector. If None, it uses equal weights.
+
+            .. versionadded:: 0.6
 
         Returns
         -------
@@ -879,6 +905,8 @@ class TLRotate(TransformerMixin, BaseEstimator):
                 shape (n_vectors,), default=None
             Weights for each matrix or vector. If None, it uses equal weights.
 
+            .. versionadded:: 0.6
+
         Returns
         -------
         X_new : ndarray, shape (n_matrices, n_classes)
@@ -933,6 +961,8 @@ class TLEstimator(BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.8
+        Add support for tangent space estimation.
     """
 
     def __init__(self, target_domain, estimator, domain_weight=None):
@@ -1033,6 +1063,8 @@ class TLClassifier(TLEstimator):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.8
+        Add support for tangent space classification.
     """
 
     def fit(self, X, y_enc):
@@ -1118,6 +1150,8 @@ class TLRegressor(TLEstimator):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.8
+        Add support for tangent space regression.
     """
 
     def fit(self, X, y_enc):
@@ -1206,6 +1240,9 @@ class MDWM(MDM):
         Labels for each class.
     covmeans_ : ndarray, shape (n_classes, n_channels, n_channels)
         Centroids for each class.
+
+        .. versionchanged:: 0.6
+            Change list of ndarrays into a ndarray.
 
     See Also
     --------

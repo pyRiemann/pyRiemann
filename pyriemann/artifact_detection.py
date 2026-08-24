@@ -33,8 +33,12 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         The maximum number of iteration to reach convergence.
     pos_label : int, default=1
         The positive label corresponding to clean data.
+
+        .. versionadded:: 0.2.5
     neg_label : int, default=0
         The negative label corresponding to artifact data.
+
+        .. versionadded:: 0.2.5
 
     Attributes
     ----------
@@ -44,8 +48,16 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.2.3
+    .. versionchanged:: 0.2.5
+        Add parameters ``pos_label`` and ``neg_label``.
+    .. versionchanged:: 0.2.7
+        Add ``predict_proba()``.
+    .. versionchanged:: 0.3
+        Add ``partial_fit()``.
+    .. versionchanged:: 0.7
+        Add parameter ``sample_weight`` to ``fit()`` and ``partial_fit()``.
     .. versionchanged:: 0.12
-        Move from clustering to artifactdetection.
+        Move from ``clustering`` to ``artifact_detection``.
 
     See Also
     --------
@@ -97,6 +109,8 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
             If None, all matrices are considered as clean.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
             Weights for each matrix. If None, it uses equal weights.
+
+            .. versionadded:: 0.7
 
         Returns
         -------
@@ -151,6 +165,8 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
             If None, all matrices are considered as clean.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
             Weights for each matrix. If None, it uses equal weights.
+
+            .. versionadded:: 0.7
         alpha : float, default=0.1
             Update rate in [0, 1] for the centroid, and mean and standard
             deviation of log-distances: 0 for no update, 1 for full update.
@@ -380,8 +396,13 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.7
+        Add parameter ``sample_weight`` to ``fit()`` and ``partial_fit()``.
+    .. versionchanged:: 0.11
+        Add parameter ``method_combination``, and allow a different ``metric``
+        per potato.
     .. versionchanged:: 0.12
-        Move from clustering to artifactdetection.
+        Move from ``clustering`` to ``artifact_detection``.
 
     See Also
     --------
@@ -441,6 +462,8 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
             If None, all matrices are considered as clean.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
             Weights for each matrix. If None, it uses equal weights.
+
+            .. versionadded:: 0.7
 
         Returns
         -------
@@ -503,6 +526,8 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
             If None, all matrices are considered as clean.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
             Weights for each matrix. If None, it uses equal weights.
+
+            .. versionadded:: 0.7
         alpha : float, default=0.1
             Update rate in [0, 1] for the centroid, and mean and standard
             deviation of log-distances: 0 for no update, 1 for full update.

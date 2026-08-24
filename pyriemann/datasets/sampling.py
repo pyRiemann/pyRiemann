@@ -509,6 +509,8 @@ def sample_gaussian(n_matrices, mean, sigma, random_state=None,
         When sigma is a float,
         the number of jobs to use for the computation. This works by computing
         each sample in parallel. If -1 all CPUs are used.
+
+        .. versionadded:: 0.3
     sampling_method : {"auto", "slice", "rejection"}, default="auto"
         When sigma is a float,
         method used to sample eigenvalues: "auto", "slice" or "rejection".
@@ -525,10 +527,14 @@ def sample_gaussian(n_matrices, mean, sigma, random_state=None,
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.3
+        Add parameter ``n_jobs``.
+    .. versionchanged:: 0.4
+        Add parameter ``sampling_method``.
     .. versionchanged:: 0.11
         Add support for ``sigma`` defined as a covariance matrix.
     .. versionchanged:: 0.12
-        Rename sample_gaussian_spd into sample_gaussian.
+        Rename ``sample_gaussian_spd`` into ``sample_gaussian``.
         Add support for HPD matrices for float ``sigma``.
 
     References

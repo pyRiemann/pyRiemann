@@ -51,6 +51,10 @@ def is_sym(X):
     -------
     ret : bool
         True if all matrices are symmetric.
+
+    Notes
+    -----
+    .. versionadded:: 0.3
     """
     return is_square(X) and _allclose(X, X.mT)
 
@@ -83,6 +87,10 @@ def is_hankel(X):
     -------
     ret : bool
         True if Hankel matrix.
+
+    Notes
+    -----
+    .. versionadded:: 0.6
     """
     if not is_square(X) or X.ndim != 2:
         return False
@@ -180,6 +188,8 @@ def is_pos_def(X, tol=0.0, fast_mode=False):
         The set of square matrices.
     tol : float, default=0.0
         Threshold below which eigen values are considered zero.
+
+        .. versionadded:: 0.5
     fast_mode : bool, default=False
         Use Cholesky decomposition to avoid computing all eigenvalues.
 
@@ -187,6 +197,12 @@ def is_pos_def(X, tol=0.0, fast_mode=False):
     -------
     ret : bool
         True if all matrices are positive definite.
+
+    Notes
+    -----
+    .. versionadded:: 0.3
+    .. versionchanged:: 0.5
+        Add parameter ``tol``.
     """
     xp = get_namespace(X)
     if fast_mode:
@@ -213,6 +229,10 @@ def is_pos_semi_def(X):
     -------
     ret : bool
         True if all matrices are positive semi-definite.
+
+    Notes
+    -----
+    .. versionadded:: 0.3
     """
     xp = get_namespace(X)
     if not is_square(X):
@@ -230,10 +250,18 @@ def is_sym_pos_def(X, tol=0.0):
     tol : float, default=0.0
         Threshold below which eigen values are considered zero.
 
+        .. versionadded:: 0.5
+
     Returns
     -------
     ret : bool
         True if all matrices are symmetric positive-definite.
+
+    Notes
+    -----
+    .. versionadded:: 0.3
+    .. versionchanged:: 0.5
+        Add parameter ``tol``.
     """
     return is_sym(X) and is_pos_def(X, tol=tol)
 
@@ -264,10 +292,18 @@ def is_herm_pos_def(X, tol=0.0):
     tol : float, default=0.0
         Threshold below which eigen values are considered zero.
 
+        .. versionadded:: 0.5
+
     Returns
     -------
     ret : bool
         True if all matrices are Hermitian positive-definite.
+
+    Notes
+    -----
+    .. versionadded:: 0.4
+    .. versionchanged:: 0.5
+        Add parameter ``tol``.
     """
     return is_hermitian(X) and is_pos_def(X, tol=tol)
 
@@ -284,5 +320,9 @@ def is_herm_pos_semi_def(X):
     -------
     ret : bool
         True if all matrices are Hermitian positive semi-definite.
+
+    Notes
+    -----
+    .. versionadded:: 0.5
     """
     return is_hermitian(X) and is_pos_semi_def(X)
