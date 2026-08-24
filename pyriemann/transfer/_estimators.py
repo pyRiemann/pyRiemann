@@ -157,6 +157,9 @@ class TLCenter(TransformerMixin, BaseEstimator):
         Dictionary with key=domain_name and value=domain_center.
         Not used by ``transform()`` when ``target_domain="transductive"``.
 
+        .. versionchanged:: 0.8
+            Rename ``recenter_`` into ``centers_``.
+
     Notes
     -----
     .. versionadded:: 0.4
@@ -374,6 +377,9 @@ class TLScale(TransformerMixin, BaseEstimator):
     ----------
     scales_ : dict
         Dictionary with key=domain_name and value=domain_scale.
+
+        .. versionchanged:: 0.8
+            Rename ``dispersions_`` into ``scales_``.
 
     See Also
     --------

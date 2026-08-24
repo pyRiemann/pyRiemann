@@ -974,7 +974,7 @@ def normalize(X, norm):
 
     Returns
     -------
-    Xn : ndarray, shape (..., n, n)
+    X_new : ndarray, shape (..., n, n)
         Set of normalized matrices, same dimensions as X.
 
     Notes
@@ -1000,12 +1000,12 @@ def normalize(X, norm):
         raise ValueError(f"{norm} is not a supported normalization")
 
     denom = xp.expand_dims(denom, axis=tuple(range(denom.ndim, X.ndim)))
-    Xn = X / denom
+    X_new = X / denom
 
     if norm == "corr":
-        Xn.real = xp.clip(Xn.real, -1, 1)
+        X_new.real = xp.clip(X_new.real, -1, 1)
 
-    return Xn
+    return X_new
 
 
 def get_nondiag_weight(X):

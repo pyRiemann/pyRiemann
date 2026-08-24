@@ -294,7 +294,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
     .. versionchanged:: 0.3
         Add parameter ``n_jobs``.
     .. versionchanged:: 0.4
-        Add parameter ``sampling_method``.
+        Add parameters ``centers``, ``center_dataset`` and ``sampling_method``.
     """
     if not isinstance(class_sep, float):
         raise ValueError(f"class_sep must be a float (Got {class_sep})")
