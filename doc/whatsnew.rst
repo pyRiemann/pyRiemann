@@ -696,7 +696,7 @@ v0.2.4 (June 2016)
 v0.2.3 (November 2015)
 ----------------------
 
-- Enhance ``MDM`` adding multiprocessing with joblib.
+- Enhance ``MDM`` adding parameter ``n_jobs`` for multiprocessing with joblib.
 
 - Add Kullback-Leibler divergences ``distance_kullback()``, ``distance_kullback_right()``, ``distance_kullback_sym()``.
 

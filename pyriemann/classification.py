@@ -62,6 +62,8 @@ class MDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         (n_cpus + 1 + n_jobs) are used. Thus for n_jobs = -2, all CPUs but one
         are used.
 
+        .. versionadded:: 0.2.3
+
     Attributes
     ----------
     classes_ : ndarray, shape (n_classes,)
@@ -76,6 +78,7 @@ class MDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     -----
     .. versionadded:: 0.1
     .. versionchanged:: 0.2.3
+        Add parameter ``n_jobs``.
         Add parameter ``sample_weight`` to ``fit()``.
     .. versionchanged:: 0.2.4
         Add ``predict_proba()``.
