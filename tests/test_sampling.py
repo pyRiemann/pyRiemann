@@ -4,10 +4,7 @@ import pytest
 
 from pyriemann.datasets import sample_gaussian, RandomOverSampler
 from pyriemann.geometry.distance import distance_riemann
-from pyriemann.geometry.test import (
-    is_herm_pos_def as is_hpd,
-    is_sym_pos_def as is_spd,
-)
+from pyriemann.geometry.test import is_herm_pos_def as is_hpd
 
 pytestmark = pytest.mark.numpy_only
 
@@ -42,14 +39,16 @@ def test_sample_gaussian_floatsigma(dtype, n_dim, n_jobs, sampling_method):
     assert is_hpd(X)
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("n_dim", [3, 4])
-def test_sample_gaussian_ndarraysigma(n_dim):
+def test_sample_gaussian_ndarraysigma(kind, n_dim, get_mats):
     """Test with a ndarray sigma."""
     n_matrices, n_ts = 5, n_dim * (n_dim + 1) // 2
-    mean, sigma = np.eye(n_dim), np.eye(n_ts)
+    mean = get_mats(1, n_dim, kind)[0]
+    sigma = np.eye(n_ts)
     X = sample_gaussian(n_matrices, mean, sigma, random_state=42)
     assert X.shape == (n_matrices, n_dim, n_dim)
-    assert is_spd(X)
+    assert is_hpd(X)
 
 
 def test_sample_gaussian_errors_samplingmethod():
@@ -58,15 +57,6 @@ def test_sample_gaussian_errors_samplingmethod():
     with pytest.raises(ValueError):  # dim=3 not yet supported with rejection
         n_dim = 3
         sample_gaussian(5, np.eye(n_dim), 1., sampling_method="rejection")
-
-
-def test_sample_gaussian_error_ndarraysigmacomplex():
-    """Test that ndarray sigma raises NotImplementedError for HPD"""
-    n_dim = 3
-    n_ts = n_dim * (n_dim + 1) // 2
-    mean, sigma = np.eye(n_dim, dtype=np.complex64), np.eye(n_ts)
-    with pytest.raises(NotImplementedError):
-        sample_gaussian(3, mean, sigma, random_state=42)
 
 
 @pytest.mark.parametrize("dtype", [np.float64, np.complex64])
