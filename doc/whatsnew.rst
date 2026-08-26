@@ -44,6 +44,9 @@ v0.13.dev
 - Enhance :class:`pyriemann.clustering.MeanShift` adding ``transform()``.
   :pr:`485` by :user:`qbarthelemy`
 
+- Enhance :class:`pyriemann.transfer.MDWM` to support HPD matrices.
+  :pr:`488` by :user:`qbarthelemy`
+
 v0.12 (July 2026)
 -----------------
 
