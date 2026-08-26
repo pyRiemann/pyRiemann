@@ -723,7 +723,7 @@ v0.2.3 (November 2015)
 v0.2.2 (June 2015)
 ------------------
 
-- Rename parameter ``est`` into ``estimator`` for ``covariances()`` and ``covariances_EP()``.
+- Deprecate parameter ``est`` of ``covariances()`` and ``covariances_EP()``, renamed into ``estimator``.
 
 - Enhance ``MDM`` adding the possibility to use a dictionary to define parameter ``metric``.
 
