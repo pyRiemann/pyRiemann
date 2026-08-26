@@ -1206,8 +1206,8 @@ class MDWM(MDM):
 
     Classification by nearest centroid. For each of the given classes, a
     centroid is estimated, according to the chosen metric, as a weighted mean
-    of SPD matrices from the source domain, combined with the class centroid of
-    the target domain [1]_ [2]_.
+    of SPD/HPD matrices from the source domain, combined with the class
+    centroid of the target domain [1]_ [2]_.
     For classification, a given new matrix is attibuted to the class whose
     centroid is the nearest according to the chosen metric.
 
@@ -1220,9 +1220,9 @@ class MDWM(MDM):
         domain are used.
         At 1, this is a calibration-free system as no matrices are required
         from the source domain.
-    target_domain : string
+    target_domain : str
         Name of the target domain in extended labels.
-    metric : string | dict, default="riemann"
+    metric : str | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
         see :func:`pyriemann.geometry.mean.gmean`) and for distance estimation
         (see :func:`pyriemann.geometry.distance.distance`).
@@ -1249,6 +1249,8 @@ class MDWM(MDM):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.13
+        Add support for HPD matrices.
 
     See Also
     --------
@@ -1288,7 +1290,7 @@ class MDWM(MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices from source and target domain.
+            Set of SPD/HPD matrices from source and target domain.
         y_enc : ndarray, shape (n_matrices,)
             Extended labels for each matrix.
         sample_weight : None | ndarray, shape (n_matrices_source,), \
@@ -1360,7 +1362,7 @@ class MDWM(MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Test set of SPD matrices.
+            Test set of SPD/HPD matrices.
         y_enc : ndarray, shape (n_matrices,)
             Extended true labels for each matrix.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
