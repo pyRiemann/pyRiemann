@@ -343,7 +343,7 @@ class XdawnCovariances(TransformerMixin, BaseEstimator):
     See Also
     --------
     ERPCovariances
-    Xdawn
+    :class:`pyriemann.spatialfilters.Xdawn`
 
     References
     ----------

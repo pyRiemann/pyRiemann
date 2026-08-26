@@ -135,11 +135,14 @@ class Kmeans(SpdClassifMixin, SpdClustMixin, SpdTransfMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.2
+    .. versionchanged:: 0.8
+        Add support for HPD matrices.
 
     See Also
     --------
-    Kmeans
-    MDM
+    :class:`pyriemann.classification.MDM`
+    MeanShift
+    GaussianMixture
 
     References
     ----------
@@ -294,6 +297,8 @@ class KmeansPerClassTransform(SpdTransfMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.2
+    .. versionchanged:: 0.8
+        Add support for HPD matrices.
 
     See Also
     --------
@@ -419,6 +424,7 @@ class MeanShift(SpdClustMixin, SpdTransfMixin, BaseEstimator):
     See Also
     --------
     Kmeans
+    GaussianMixture
 
     References
     ----------
@@ -720,6 +726,11 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.11
+
+    See Also
+    --------
+    Kmeans
+    MeanShift
 
     References
     ----------

@@ -38,7 +38,7 @@ class ElectrodeSelection(TransformerMixin, BaseEstimator):
         Centroids for each class.
     dist_ : list
         Distance at each iteration.
-    self.subelec_ : list
+    subelec_ : list of len nelec
         Indices of selected channels.
 
     Notes
@@ -51,8 +51,8 @@ class ElectrodeSelection(TransformerMixin, BaseEstimator):
 
     See Also
     --------
-    Kmeans
-    FgMDM
+    :class:`pyriemann.clustering.Kmeans`
+    :class:`pyriemann.classification.FgMDM`
 
     References
     ----------

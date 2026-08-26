@@ -47,6 +47,8 @@ class SpectralEmbedding(BaseEstimator):
     .. versionadded:: 0.2.5
     .. versionchanged:: 0.3
         Rename ``Embedding`` into ``SpectralEmbedding``.
+    .. versionchanged:: 0.8
+        Add support for HPD matrices.
 
     References
     ----------

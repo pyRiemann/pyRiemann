@@ -60,10 +60,12 @@ class TangentSpace(TransformerMixin, BaseEstimator):
     .. versionadded:: 0.1
     .. versionchanged:: 0.2.3
         Add parameter ``sample_weight`` to ``fit()`` and ``fit_transform()``.
+    .. versionchanged:: 0.10
+        Add support for HPD matrices.
 
     See Also
     --------
-    FgMDM
+    :class:`pyriemann.classification.FgMDM`
     FGDA
 
     References
@@ -254,7 +256,7 @@ class FGDA(TransformerMixin, BaseEstimator):
 
     See Also
     --------
-    FgMDM
+    :class:`pyriemann.classification.FgMDM`
     TangentSpace
 
     References

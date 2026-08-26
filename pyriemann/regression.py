@@ -194,6 +194,8 @@ class KNearestNeighborRegressor(RegressorMixin, MDM):
     .. versionadded:: 0.3
     .. versionchanged:: 0.4
         Add ``score()``.
+    .. versionchanged:: 0.8
+        Add support for HPD matrices.
     """
 
     def __init__(self, n_neighbors=5, metric="riemann"):

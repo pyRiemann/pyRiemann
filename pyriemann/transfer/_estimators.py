@@ -1064,7 +1064,7 @@ class TLClassifier(TLEstimator):
 
     See Also
     --------
-    TLRegressor
+    MDWM
 
     Notes
     -----
@@ -1148,10 +1148,6 @@ class TLRegressor(TLEstimator):
         Weights to combine data from each domain to train the regressor.
         The dict contains key=domain_name and value=weight_to_assign.
         If None, it uses equal weights.
-
-    See Also
-    --------
-    TLClassifier
 
     Notes
     -----
@@ -1252,7 +1248,7 @@ class MDWM(MDM):
 
     See Also
     --------
-    MDM
+    :class:`pyriemann.classification.MDM`
 
     References
     ----------

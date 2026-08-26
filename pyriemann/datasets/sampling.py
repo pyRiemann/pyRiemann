@@ -321,7 +321,7 @@ def _sample_parameter_r(n_samples, n_dim, sigma,
         Number of jobs to use for the computation. This works by computing
         each sample in parallel. If -1 all CPUs are used.
     sampling_method : {"auto", "slice", "rejection"}, default="auto"
-        Method used to sample parameter r: "auto", "slice" or "rejection".
+        Method used to sample parameter r.
         If "auto", sampling_method will be equal to "slice" for n_dim != 2 and
         equal to "rejection" for n_dim = 2.
 
@@ -420,7 +420,7 @@ def _sample_gaussian_centered(n_matrices, n_dim, sigma, random_state=None,
         Number of jobs to use for the computation. This works by computing
         each sample in parallel. If -1 all CPUs are used.
     sampling_method : {"auto", "slice", "rejection"}, default="auto"
-        Method used to sample parameter r: "auto", "slice" or "rejection".
+        Method used to sample parameter r.
         If "auto", sampling_method will be equal to "slice" for n_dim != 2 and
         equal to "rejection" for n_dim = 2.
 
@@ -506,14 +506,13 @@ def sample_gaussian(n_matrices, mean, sigma, random_state=None,
     random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1
-        When sigma is a float,
-        the number of jobs to use for the computation. This works by computing
-        each sample in parallel. If -1 all CPUs are used.
+        When ``sigma`` is a float, number of jobs to use for the computation.
+        This works by computing each sample in parallel.
+        If -1 all CPUs are used.
 
         .. versionadded:: 0.3
     sampling_method : {"auto", "slice", "rejection"}, default="auto"
-        When sigma is a float,
-        method used to sample eigenvalues: "auto", "slice" or "rejection".
+        When ``sigma`` is a float, method used to sample eigenvalues.
         If "auto", sampling_method will be equal to "slice" for n_dim != 2 and
         equal to "rejection" for n_dim = 2.
 
@@ -636,11 +635,11 @@ class RandomOverSampler(BaseEstimator):
         Specify the class targeted by the resampling. The number of matrices in
         the different classes will be equalized. Possible choices are:
 
-        - "minority": resample only the minority class;
-        - "not minority": resample all classes but the minority class;
-        - "not majority": resample all classes but the majority class;
-        - "all": resample all classes;
-        - "auto": equivalent to "not majority".
+        * "minority": resample only the minority class;
+        * "not minority": resample all classes but the minority class;
+        * "not majority": resample all classes but the majority class;
+        * "all": resample all classes;
+        * "auto": equivalent to "not majority".
     random_state : int | RandomState instance | None, default=None
         Pass an int for reproducible output across multiple function calls.
     n_jobs : int, default=1

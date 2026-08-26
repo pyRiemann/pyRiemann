@@ -82,12 +82,11 @@ class MDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         Add parameter ``sample_weight`` to ``fit()``.
     .. versionchanged:: 0.2.4
         Add ``predict_proba()``.
-    .. versionchanged:: 0.6
+    .. versionchanged:: 0.7
         Add support for HPD matrices.
 
     See Also
     --------
-    Kmeans
     FgMDM
     KNearestNeighbor
 
@@ -257,9 +256,8 @@ class FgMDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
 
     See Also
     --------
+    :class:`pyriemann.tangentspace.FGDA`
     MDM
-    FGDA
-    TangentSpace
 
     References
     ----------
@@ -391,7 +389,7 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
 
     See Also
     --------
-    TangentSpace
+    :class:`pyriemann.tangentspace.TangentSpace`
 
     Notes
     -----
@@ -520,10 +518,11 @@ class KNearestNeighbor(MDM):
     .. versionadded:: 0.2.4
     .. versionchanged:: 0.3
         Add ``predict_proba()``.
+    .. versionchanged:: 0.8
+        Add support for HPD matrices.
 
     See Also
     --------
-    Kmeans
     MDM
     """
 
@@ -844,9 +843,9 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     method_combination : {"sum_means", "inf_means", None}, default="sum_means"
         Method to combine distances from the different means of the field:
 
-        * sum_means: the classifier assigns the matrix to the class whom the
+        * "sum_means": the classifier assigns the matrix to the class whom the
           sum of distances to means of the field is the lowest [1]_;
-        * inf_means: the classifier assigns the matrix to the class of the
+        * "inf_means": the classifier assigns the matrix to the class of the
           nearest mean of the field [1]_;
         * None: the transformer extracts all distances, without combination
           [2]_.
@@ -872,6 +871,8 @@ class MeanField(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.8
+        Add support for HPD matrices.
     .. versionchanged:: 0.10
         Rename parameter ``method_label`` into ``method_combination``,
         and add ``None`` option.
@@ -1313,11 +1314,11 @@ def class_distinctiveness(X, y, exponent=1, metric="riemann",
         Parameter for exponentiation of distances, corresponding to p in the
         above equations:
 
-        - exponent = 1 gives the formula originally defined in [1]_;
-        - exponent = 2 gives the Fisher criterion generalized on the manifold,
+        * exponent = 1 gives the formula originally defined in [1]_;
+        * exponent = 2 gives the Fisher criterion generalized on the manifold,
           ie the ratio of the variance between the classes to the variance
           within the classes.
-    metric : string | dict, default="riemann"
+    metric : str | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
         see :func:`pyriemann.geometry.mean.gmean`) and for distance estimation
         (see :func:`pyriemann.geometry.distance.distance`).
@@ -1340,6 +1341,8 @@ def class_distinctiveness(X, y, exponent=1, metric="riemann",
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.8
+        Add support for HPD matrices.
 
     References
     ----------

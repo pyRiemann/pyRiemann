@@ -212,7 +212,7 @@ v0.9 (July 2025)
 - Fix matplotlib warning.
   :pr:`351` by :user:`qbarthelemy`
 
-- Enhance :func:`pyriemann.geometry.mean.mean_power` using ``init``, ``tol`` and ``maxiter`` parameters when ``p``=0.
+- Enhance :func:`pyriemann.geometry.mean.mean_power` using ``init``, ``tol`` and ``maxiter`` parameters when ``p=0``.
   :pr:`353` by :user:`toncho11`
 
 - Enhance :func:`pyriemann.geometry.distance.pairwise_distance` to support HPD matrices for ``"euclid"``,
@@ -260,6 +260,13 @@ v0.8 (February 2025)
   and :func:`pyriemann.geometry.geodesic.geodesic_wasserstein`.
   :pr:`331` by :user:`gabelstein`
 
+- Enhance :class:`pyriemann.classification.KNearestNeighbor`, :class:`pyriemann.classification.MeanField`, :func:`pyriemann.classification.class_distinctiveness`,
+  :class:`pyriemann.artifact_detection.Potato`, :class:`pyriemann.artifact_detection.PotatoField`
+  :class:`pyriemann.clustering.Kmeans`, :class:`pyriemann.clustering.KmeansPerClassTransform`,
+  :class:`pyriemann.embedding.SpectralEmbedding`, and :class:`pyriemann.regression.KNearestNeighborRegressor`
+  to process HPD matrices.
+  :pr:`336` by :user:`qbarthelemy`
+
 - Enhance :func:`pyriemann.datasets.make_matrices`, to generate symmetric and Hermitian matrices,
   and add parameters defining the normal distribution to draw eigen vectors.
   Deprecate ``pyriemann.datasets.generate_random_spd_matrix()``.
@@ -287,6 +294,9 @@ v0.7 (October 2024)
 - Enhance :class:`pyriemann.transfer.TLCenter`, adding possibility for parameter ``target_domain`` to be empty,
   forcing ``transform()`` to recenter matrices to the last fitted domain.
   :pr:`292` by :user:`brunaafl`
+
+- Enhance :class:`pyriemann.classification.MDM` to process HPD matrices.
+  :pr:`297` by :user:`qbarthelemy`
 
 - Enhance :func:`pyriemann.geometry.ajd.ajd_pham` and :func:`pyriemann.geometry.mean.mean_ale` functions to process HPD matrices.
   :pr:`299` by :user:`qbarthelemy`
@@ -349,7 +359,7 @@ v0.6 (April 2024)
   keeping only real part.
   :pr:`267` by :user:`qbarthelemy`
 
-- Deprecate input ``covmats`` for mean functions, renamed into ``X``.
+- Deprecate input ``covmats`` for ``mean`` functions, renamed into ``X``.
   :pr:`252` by :user:`qbarthelemy`
 
 - Add support for complex covariance estimation for ``"lwf"``, ``"mcd"``, ``"oas"`` and ``"sch"`` estimators.
@@ -426,16 +436,16 @@ v0.5 (Jun 2023)
 - Enhance module ``mean`` to process HPD matrices.
   :pr:`243` by :user:`qbarthelemy`
 
-- Correct :func:`pyriemann.geometry.distance.distance_mahalanobis`, keeping only real part.
+- Correct :func:`pyriemann.geometry.distance.distance_mahalanobis` keeping only real part.
   :pr:`249` by :user:`qbarthelemy`
 
-- Fix ``pyriemann.datasets.sample_gaussian_spd()`` used with ``sampling_method=rejection`` on 2D matrices.
+- Fix ``pyriemann.datasets.sample_gaussian_spd()`` used with ``sampling_method="rejection"`` on 2x2 matrices.
   :pr:`250` by :user:`mhurte`
 
 v0.4 (Feb 2023)
 ---------------
 
-- Add exponential and logarithmic maps for three main metrics: 'euclid', 'logeuclid' and 'riemann'.
+- Add exponential and logarithmic maps for three main metrics: ``"euclid"``, ``"logeuclid"`` and ``"riemann"``.
   :func:`pyriemann.geometry.tangentspace.tangent_space` is splitted in two steps:
   (i) ``log_map_*()`` projecting SPD matrices into tangent space depending on the metric; and
   (ii) :func:`pyriemann.geometry.tangentspace.upper` taking the upper triangular part of matrices.
@@ -450,7 +460,7 @@ v0.4 (Feb 2023)
   :pr:`196` by :user:`qbarthelemy`
 
 - Enhance ``pyriemann.datasets.sample_gaussian_spd()`` adding parameter ``sampling_method``,
-  with ``rejection`` accelerating 2x2 matrices generation.
+  with ``"rejection"`` accelerating 2x2 matrices generation.
   :pr:`198` by :user:`Artim436`
 
 - Add geometric medians for Euclidean and Riemannian metrics: :func:`pyriemann.geometry.median.median_euclid`,
@@ -573,7 +583,7 @@ v0.3 (July 2022)
 - Add :func:`pyriemann.geometry.distance.distance_harmonic`, and sort functions by their names in code, doc and tests.
   :pr:`183` by :user:`qbarthelemy`
 
-- Enhance :func:`pyriemann.datasets.make_gaussian_blobs` adding parameter ``n_jobs`` to parallelizing code.
+- Enhance :func:`pyriemann.datasets.make_gaussian_blobs` adding parameter ``n_jobs`` for multiprocessing with joblib.
   :pr:`179` by :user:`sylvchev`
 
 - Fix dispersion when generating datasets with ``pyriemann.datasets.sample_gaussian_spd()``.
@@ -615,7 +625,8 @@ v0.2.7 (June 2021)
 - Add :func:`pyriemann.geometry.covariance.get_nondiag_weight` to compute non-diagonality weights of matrices.
   :pr:`119` by :user:`qbarthelemy`
 
-- Add :class:`pyriemann.spatialfilters.AJDC` for BSS and gBSS, with an example on artifact correction.
+- Add :class:`pyriemann.spatialfilters.AJDC` for blind source separation (BSS) and group BSS (gBSS),
+  with an example on artifact correction.
   :pr:`120` by :user:`qbarthelemy`
 
 - Add :class:`pyriemann.preprocessing.Whitening`, with optional dimension reduction.
@@ -645,8 +656,7 @@ v0.2.5 (January 2018)
 
 - Add ``BilinearFilter`` transformer.
 
-- Add ``Embedding`` for spectral embedding with Laplacian eigenmaps
-  and :func:`pyriemann.geometry.distance.pairwise_distance`.
+- Add ``Embedding`` for spectral embedding with Laplacian eigenmaps and ``pairwise_distance``.
   :pr:`54` by :user:`plcrodrigues`
 
 - Add a permutation test for generic scikit-learn estimator.

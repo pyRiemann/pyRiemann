@@ -138,9 +138,9 @@ def covariance_mest(X, m_estimator, *, init=None, tol=10e-3, n_iter_max=50,
     m_estimator : {"hub", "stu", "tyl"}
         Type of M-estimator:
 
-        - "hub" for Huber's M-estimator [2]_;
-        - "stu" for Student-t's M-estimator [3]_;
-        - "tyl" for Tyler's M-estimator [4]_.
+        * "hub" for Huber's M-estimator [2]_;
+        * "stu" for Student-t's M-estimator [3]_;
+        * "tyl" for Tyler's M-estimator [4]_.
     init : None | ndarray, shape (n_channels, n_channels), default=None
         A matrix used to initialize the algorithm.
         If None, the sample covariance matrix is used.
@@ -418,7 +418,7 @@ def covariances(X, estimator="cov", **kwds):
     ----------
     X : ndarray, shape (..., n_channels, n_times)
         Multi-channel time-series, real or complex-valued.
-    estimator : string | callable, default="cov"
+    estimator : str | callable, default="cov"
         Covariance matrix estimator [est]_:
 
         * "corr" for correlation coefficient matrix [corr]_,

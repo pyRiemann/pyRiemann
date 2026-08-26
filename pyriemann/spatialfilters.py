@@ -67,7 +67,7 @@ class Xdawn(TransformerMixin, BaseEstimator):
 
     See Also
     --------
-    XdawnCovariances
+    :class:`pyriemann.estimation.XdawnCovariances`
 
     References
     ----------
@@ -609,35 +609,35 @@ class AJDC(BaseEstimator):
         The sampling frequency of the signal.
     dim_red : None | dict, default=None
         Parameter for dimension reduction of cospectra, because Pham's AJD is
-        sensitive to matrices conditioning.
+        sensitive to matrices conditioning:
 
-        If ``None`` :
-            no dimension reduction during whitening.
-        If ``{"n_components": val}`` :
-            dimension reduction defining the number of components;
-            ``val`` must be an integer superior to 1.
-        If ``{"expl_var": val}`` :
-            dimension reduction selecting the number of components such that
-            the amount of variance that needs to be explained is greater than
-            the percentage specified by ``val``.
-            ``val`` must be a float in (0,1], typically ``0.99``.
-        If ``{"max_cond": val}`` :
-            dimension reduction selecting the number of components such that
-            the condition number of the mean matrix is lower than ``val``.
-            This threshold has a physiological interpretation, because it can
-            be viewed as the ratio between the power of the strongest component
-            (usually, eye-blink source) and the power of the lowest component
-            you don't want to keep (acquisition sensor noise).
-            ``val`` must be a float strictly superior to 1, typically 100.
-        If ``{"warm_restart": val}`` :
-            dimension reduction defining the number of components from an
-            initial joint diagonalizer, and then run AJD from this solution.
-            ``val`` must be a square ndarray.
+        * ``None``:
+          no dimension reduction during whitening.
+        * ``{"n_components": val}``:
+          dimension reduction defining the number of components;
+          ``val`` must be an integer superior to 1.
+        * ``{"expl_var": val}``:
+          dimension reduction selecting the number of components such that
+          the amount of variance that needs to be explained is greater than
+          the percentage specified by ``val``.
+          ``val`` must be a float in (0,1], typically ``0.99``.
+        * ``{"max_cond": val}``:
+          dimension reduction selecting the number of components such that
+          the condition number of the mean matrix is lower than ``val``.
+          This threshold has a physiological interpretation, because it can
+          be viewed as the ratio between the power of the strongest component
+          (usually, eye-blink source) and the power of the lowest component
+          you don't want to keep (acquisition sensor noise).
+          ``val`` must be a float strictly superior to 1, typically 100.
+        * ``{"warm_restart": val}``:
+          dimension reduction defining the number of components from an
+          initial joint diagonalizer, and then run AJD from this solution.
+          ``val`` must be a square ndarray.
 
-            .. versionchanged:: 0.2.7
-                Rename ``expl_var`` into ``dim_red``.
-            .. versionchanged:: 0.4
-                Add ``"warm_restart"`` option.
+        .. versionchanged:: 0.2.7
+            Rename ``expl_var`` into ``dim_red``.
+        .. versionchanged:: 0.4
+            Add ``"warm_restart"`` option.
     verbose : bool, default=True
         Verbose flag.
 
@@ -666,7 +666,8 @@ class AJDC(BaseEstimator):
 
     See Also
     --------
-    CoSpectra
+    :class:`pyriemann.estimation.CoSpectra`
+    :class:`pyriemann.preprocessing.Whitening`
 
     References
     ----------

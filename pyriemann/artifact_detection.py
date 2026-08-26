@@ -56,6 +56,8 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         Add ``partial_fit()``.
     .. versionchanged:: 0.7
         Add parameter ``sample_weight`` to ``fit()`` and ``partial_fit()``.
+    .. versionchanged:: 0.8
+        Add support for HPD matrices.
     .. versionchanged:: 0.12
         Move from ``clustering`` to ``artifact_detection``.
 
@@ -398,6 +400,8 @@ class PotatoField(TransformerMixin, SpdClassifMixin, BaseEstimator):
     .. versionadded:: 0.3
     .. versionchanged:: 0.7
         Add parameter ``sample_weight`` to ``fit()`` and ``partial_fit()``.
+    .. versionchanged:: 0.8
+        Add support for HPD matrices.
     .. versionchanged:: 0.11
         Add parameter ``method_combination``, and allow a different ``metric``
         per potato.
