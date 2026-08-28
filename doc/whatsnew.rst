@@ -47,6 +47,9 @@ v0.13.dev
 - Enhance :class:`pyriemann.transfer.MDWM` to support HPD matrices.
   :pr:`488` by :user:`qbarthelemy`
 
+- Enhance :class:`pyriemann.channelselection.ElectrodeSelection` to support HPD matrices.
+  :pr:`489` by :user:`qbarthelemy`
+
 v0.12 (July 2026)
 -----------------
 
