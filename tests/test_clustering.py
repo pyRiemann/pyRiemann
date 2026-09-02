@@ -368,15 +368,15 @@ def test_gmm(n_components, get_mats, get_weights):
     means_init = get_mats(n_components, n_channels, "spd")
     weights_init = get_weights(n_components)
 
-    gmm = GaussianMixture(
+    clt = GaussianMixture(
         n_components=n_components,
         means_init=means_init,
         weights_init=weights_init,
     )
-    gmm.fit(X)
+    clt.fit(X)
 
     n_sampled_matrices = 20
-    X, y = gmm.sample(n_sampled_matrices)
+    X, y = clt.sample(n_sampled_matrices)
     assert X.shape == (n_sampled_matrices, n_channels, n_channels)
     assert y.shape == (n_sampled_matrices,)
 
