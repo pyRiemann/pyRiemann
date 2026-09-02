@@ -8,6 +8,7 @@ from sklearn.svm import SVR as sklearnSVR
 from sklearn.utils.extmath import softmax
 
 from .classification import MDM
+from .geometry._docs import deprecated
 from .geometry.kernel import kernel
 from .geometry.mean import gmean
 from .utils._check import check_metric
@@ -56,11 +57,6 @@ class SVR(sklearnSVR):
         properly in a multithreaded context.
     max_iter : int, default=-1
         Hard limit on iterations within solver, or -1 for no limit.
-
-    Attributes
-    ----------
-    data_ : ndarray, shape (n_matrices, n_channels, n_channels)
-        If fitted, training matrices.
 
     Notes
     -----
@@ -186,6 +182,9 @@ class KNearestNeighborRegressor(RegressorMixin, MDM):
     ----------
     values_ : ndarray, shape (n_matrices,)
         Training target values.
+
+        .. deprecated:: 0.13
+            This attribute is deprecated and will be removed in version 0.15.0.
     covmeans_ : ndarray, shape (n_matrices, n_channels, n_channels)
         Training matrices.
 
@@ -196,6 +195,8 @@ class KNearestNeighborRegressor(RegressorMixin, MDM):
         Add ``score()``.
     .. versionchanged:: 0.8
         Add support for HPD matrices.
+    .. versionchanged:: 0.13
+        Deprecate attribute ``values_``.
     """
 
     def __init__(self, n_neighbors=5, metric="riemann"):
@@ -221,7 +222,7 @@ class KNearestNeighborRegressor(RegressorMixin, MDM):
             The KNearestNeighborRegressor instance.
         """
         self._metric_mean, self._metric_dist = check_metric(self.metric)
-        self.values_ = y
+        self._values = y
         self.covmeans_ = X
 
         return self
@@ -242,7 +243,7 @@ class KNearestNeighborRegressor(RegressorMixin, MDM):
         dist = self._predict_distances(X)
         idx = np.argsort(dist)
         dist_sorted = np.take_along_axis(dist, idx, axis=1)
-        neighbors_values = self.values_[idx]
+        neighbors_values = self._values[idx]
         softmax_dist = softmax(-dist_sorted[:, 0:self.n_neighbors]**2)
         knn_values = neighbors_values[:, 0:self.n_neighbors]
         out = np.sum(knn_values*softmax_dist, axis=1)
@@ -269,3 +270,10 @@ class KNearestNeighborRegressor(RegressorMixin, MDM):
         """
         y_pred = self.predict(X)
         return r2_score(y, y_pred)
+
+    @property
+    @deprecated(
+        "Attribute `values_` is deprecated and will be removed in 0.15.0."
+    )
+    def values_(self):
+        return self._values
