@@ -1,8 +1,20 @@
+[run]
+branch = True
+source =
+    pyriemann
+
 [report]
-include = */pyriemann/*
 omit =
     */python?.?/*
-    */site-packages/pytest/*
+    */site-packages/*
     */setup.py
     */tests/*
     */examples/*
+    */.venv/*
+show_missing = True
+
+[html]
+directory = htmlcov
+
+[xml]
+output = coverage.xml
