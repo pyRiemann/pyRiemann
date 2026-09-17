@@ -11,6 +11,8 @@ from pyriemann.datasets.simulated import (
     make_gaussian_blobs,
     make_outliers,
     make_classification_transfer,
+    _make_equidistant_matrices,
+    _make_simplex,
 )
 from pyriemann.geometry.base import ctranspose
 from pyriemann.geometry.distance import distance_riemann
@@ -196,9 +198,54 @@ def test_make_outliers(rndstate, get_mats, n_matrices, n_dim):
     assert X.shape == (n_matrices, n_dim, n_dim)
 
 
-@pytest.mark.parametrize("n_classes", [2, 3, 4])
-@pytest.mark.parametrize("n_domains", [2, 3])
-@pytest.mark.parametrize("n_dim", [2, 3])
+@pytest.mark.parametrize("n_vertices", [1, 2, 3, 5])
+def test_make_simplex(n_vertices):
+    """Test that simplex vertices are pairwise at unit distance."""
+    simplex = _make_simplex(n_vertices)
+    assert simplex.shape == (n_vertices, n_vertices - 1)
+    assert_array_equal(simplex[0], np.zeros(n_vertices - 1))
+    for i in range(n_vertices):
+        for j in range(i + 1, n_vertices):
+            assert np.linalg.norm(simplex[i] - simplex[j]) == approx(1)
+
+
+@pytest.mark.parametrize("n_matrices", [2, 3, 4])
+@pytest.mark.parametrize("n_dim", [3, 4])
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_make_equidistant_matrices(rndstate, n_matrices, n_dim, kind):
+    """Test that matrices are pairwise at the requested distance."""
+    sep = 2.5
+    mats = np.array(_make_equidistant_matrices(
+        rndstate, np.full(n_matrices - 1, sep), n_dim, kind == "hpd"
+    ))
+    assert mats.shape == (n_matrices, n_dim, n_dim)
+    assert_array_equal(mats[0], np.eye(n_dim))
+    if kind == "spd":
+        assert is_spd(mats)
+    else:
+        assert is_hpd(mats)
+    for i in range(n_matrices):
+        for j in range(i + 1, n_matrices):
+            assert distance_riemann(mats[i], mats[j]) == approx(sep)
+
+
+def test_make_equidistant_matrices_seps(rndstate):
+    """Test matrices at different distances from identity."""
+    seps = np.array([1.0, 2.0, 4.0])
+    mats = _make_equidistant_matrices(rndstate, seps, 4, False)
+    for i, sep in enumerate(seps):
+        assert distance_riemann(mats[0], mats[i + 1]) == approx(sep)
+    for i in range(3):
+        for j in range(i + 1, 3):
+            expected = np.sqrt(seps[i]**2 + seps[j]**2 - seps[i] * seps[j])
+            assert distance_riemann(mats[i + 1], mats[j + 1]) \
+                == approx(expected)
+
+
+@pytest.mark.parametrize(
+    "n_classes, n_domains, n_dim",
+    [(2, 2, 2), (3, 3, 2), (4, 2, 3), (2, 4, 3), (3, 4, 3)],
+)
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_make_classification_transfer(n_classes, n_domains, n_dim, kind):
     """Test classification transfer for several classes and domains."""
@@ -233,23 +280,46 @@ def test_make_classification_transfer(n_classes, n_domains, n_dim, kind):
 
 @pytest.mark.parametrize("n_dim", [2, 3, 4])
 def test_make_classification_transfer_domain_sep(n_dim):
-    """Test that domains are separated by the requested distance."""
+    """Test that domains are separated by the requested distances."""
     domain_seps = [2.0, 5.0]
     X, y_enc = make_classification_transfer(
         n_matrices=10,
         domain_sep=domain_seps,
         theta=[0.0, np.pi / 4],
         random_state=42,
-        domain_names=["src", "tgt_0", "tgt_1"],
+        domain_names=["ref", "dom_0", "dom_1"],
         n_dim=n_dim,
     )
     _, _, domains = decode_domains(X, y_enc)
 
-    mean_src = mean_riemann(X[domains == "src"])
-    assert distance_riemann(mean_src, np.eye(n_dim)) == approx(0, abs=1e-6)
-    for i, domain in enumerate(["tgt_0", "tgt_1"]):
-        mean_tgt = mean_riemann(X[domains == domain])
-        assert distance_riemann(mean_src, mean_tgt) == approx(domain_seps[i])
+    means = {d: mean_riemann(X[domains == d]) for d in np.unique(domains)}
+    assert distance_riemann(means["ref"], np.eye(n_dim)) == approx(0, abs=1e-6)
+    for i, domain in enumerate(["dom_0", "dom_1"]):
+        assert distance_riemann(means["ref"], means[domain]) \
+            == approx(domain_seps[i])
+    expected = np.sqrt(
+        domain_seps[0]**2 + domain_seps[1]**2 - domain_seps[0] * domain_seps[1]
+    )
+    assert distance_riemann(means["dom_0"], means["dom_1"]) == approx(expected)
+
+
+def test_make_classification_transfer_domain_sep_scalar():
+    """Test that all domains are pairwise at the same distance."""
+    domain_sep = 3.0
+    domain_names = ["ref", "dom_0", "dom_1", "dom_2"]
+    X, y_enc = make_classification_transfer(
+        n_matrices=10,
+        domain_sep=domain_sep,
+        random_state=1,
+        domain_names=domain_names,
+        n_dim=3,
+    )
+    _, _, domains = decode_domains(X, y_enc)
+
+    means = [mean_riemann(X[domains == d]) for d in domain_names]
+    for i in range(len(domain_names)):
+        for j in range(i + 1, len(domain_names)):
+            assert distance_riemann(means[i], means[j]) == approx(domain_sep)
 
 
 def test_make_classification_transfer_default_is_unchanged():
@@ -276,7 +346,15 @@ def test_make_classification_transfer_errors():
         make_classification_transfer(n_matrices=2, n_dim=1)
     with pytest.raises(ValueError):  # n_dim is not an integer
         make_classification_transfer(n_matrices=2, n_dim=2.0)
+    with pytest.raises(ValueError):  # too many classes for n_dim
+        make_classification_transfer(
+            n_matrices=2, class_names=[1, 2, 3, 4], n_dim=2
+        )
+    with pytest.raises(ValueError):  # too many domains for n_dim
+        make_classification_transfer(
+            n_matrices=2, domain_names=["a", "b", "c", "d"], n_dim=2
+        )
     with pytest.raises(ValueError):  # unsupported kind
         make_classification_transfer(n_matrices=2, kind="spsd")
-    with pytest.raises(ValueError):  # not one theta per target domain
+    with pytest.raises(ValueError):  # not one theta per other domain
         make_classification_transfer(n_matrices=2, theta=[0.0, 1.0])

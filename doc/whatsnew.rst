@@ -87,10 +87,11 @@ v0.13.dev
   :pr:`496` by :user:`SashaMIT`
 
 - Generalize :func:`pyriemann.datasets.make_classification_transfer` to more
-  than two classes, to more than two domains, to matrices of dimension higher
-  than two with the new parameter ``n_dim``, and to HPD matrices with the new
-  parameter ``kind``. Parameters ``domain_sep``, ``theta`` and ``stretch`` can
-  now be defined for each target domain.
+  than two classes, pairwise at the same distance, to more than two domains
+  built from a reference domain, to matrices of dimension higher than two with
+  the new parameter ``n_dim``, and to HPD matrices with the new parameter
+  ``kind``. Parameters ``domain_sep``, ``theta`` and ``stretch`` can now be
+  defined for each domain other than the reference one.
   :pr:`479` by :user:`adityasingh2400`
 
 v0.12 (July 2026)
