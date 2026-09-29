@@ -494,11 +494,13 @@ def distance_poweuclid(A, B, p, squared=False):
     if p == -1:
         return distance_harmonic(A, B, squared=squared)
 
-    return distance_euclid(
+    # d = ||A^p - B^p||_F / |p|, so the squared distance divides by p^2.
+    d = distance_euclid(
         powm(A, p),
         powm(B, p),
         squared=squared,
-    ) / abs(p)
+    )
+    return d / abs(p) ** (2 if squared else 1)
 
 
 def distance_riemann(A, B, squared=False):

@@ -306,6 +306,22 @@ def test_distance_poweuclid(kind, get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("p", [-2, 0.5, 2])
+def test_distance_poweuclid_squared(kind, p, get_mats):
+    n_channels = 3
+    A, B = get_mats(2, n_channels, kind)
+    d2 = distance_poweuclid(A, B, p, squared=True)
+    assert d2 == approx(distance_poweuclid(A, B, p) ** 2)
+
+
+def test_distance_poweuclid_squared_known():
+    # ||I - 4I||_F^2 / 2^2 = 18 / 4. Dividing by |p| instead returns 9.
+    A = np.eye(2)
+    B = 2 * np.eye(2)
+    assert distance_poweuclid(A, B, 2, squared=True) == approx(4.5)
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_distance_riemann_implementations(kind, get_mats):
     n_channels = 6
     A, B = get_mats(2, n_channels, kind)
