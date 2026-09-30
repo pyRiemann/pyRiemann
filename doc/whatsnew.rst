@@ -82,7 +82,7 @@ v0.13.dev
   ``cross_val_score()`` raised an ``AttributeError``.
   :pr:`493` by :user:`adityasingh2400`
 
-- Fix ``squared=True`` of :func:`pyriemann.geometry.distance.distance_poweuclid`,
+- Fix :func:`pyriemann.geometry.distance.distance_poweuclid` with ``squared=True``,
   which divided the squared Frobenius norm by ``|p|`` instead of ``p^2``.
   :pr:`496` by :user:`SashaMIT`
 
