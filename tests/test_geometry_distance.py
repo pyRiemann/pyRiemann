@@ -92,7 +92,23 @@ def test_distance_metric_error(get_mats):
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize("dist", dists)
+@pytest.mark.parametrize("dist", [
+    distance_chol,
+    distance_euclid,
+    distance_harmonic,
+    distance_kullback,
+    distance_kullback_right,
+    distance_kullback_sym,
+    distance_logchol,
+    distance_logdet,
+    distance_logeuclid,
+    pytest.param(partial(distance_poweuclid, p=-2), id="distance_poweuclid"),
+    pytest.param(partial(distance_poweuclid, p=0.5), id="distance_poweuclid"),
+    pytest.param(partial(distance_poweuclid, p=2), id="distance_poweuclid"),
+    distance_riemann,
+    distance_thompson,
+    distance_wasserstein,
+])
 def test_distance_squared(kind, dist, backend, get_mats):
     n_channels = 5
     A, B = get_mats(2, n_channels, kind)
@@ -303,6 +319,12 @@ def test_distance_poweuclid(kind, get_mats):
     assert distance_poweuclid(A, B, 0) == approx(distance_logeuclid(A, B))
     assert distance_poweuclid(A, B, -1) == approx(distance_harmonic(A, B))
     distance_poweuclid(A, B, 0.42)
+
+
+def test_distance_poweuclid_squared_known():
+    # ||I - 4I||_F^2 / 2^2 = 18 / 4 = 4.5
+    A, B = np.eye(2), 2 * np.eye(2)
+    assert distance_poweuclid(A, B, 2, squared=True) == approx(4.5)
 
 
 @pytest.mark.parametrize("kind", ["spd", "hpd"])

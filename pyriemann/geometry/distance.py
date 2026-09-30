@@ -472,6 +472,8 @@ def distance_poweuclid(A, B, p, squared=False):
     .. versionadded:: 0.7
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+    .. versionchanged:: 0.13
+        Correct formula when ``squared`` is true.
 
     See Also
     --------
@@ -498,7 +500,7 @@ def distance_poweuclid(A, B, p, squared=False):
         powm(A, p),
         powm(B, p),
         squared=squared,
-    ) / abs(p)
+    ) / abs(p) ** (2 if squared else 1)
 
 
 def distance_riemann(A, B, squared=False):
