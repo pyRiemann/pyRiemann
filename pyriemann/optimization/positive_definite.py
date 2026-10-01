@@ -5,24 +5,14 @@ import warnings
 import numpy as np
 
 from ..datasets import sample_gaussian
-from ..geometry.base import ctranspose, sqrtm, invsqrtm, logm, ddlogm
-
-
-def _symmetrize(X):
-    """Symmetrize an array.
-
-    Parameters
-    ----------
-    X : ndarray, shape (..., n, n)
-        Square matrices.
-
-    Returns
-    -------
-    X_new : ndarray, shape (..., n, n)
-        Symmetrized square matrices.
-    """
-
-    return (X + ctranspose(X)) / 2
+from ..geometry.base import (
+    _symmetrize,
+    ctranspose,
+    sqrtm,
+    invsqrtm,
+    logm,
+    ddlogm,
+)
 
 
 def _retraction(point, tangent_vector, metric):
