@@ -14,6 +14,7 @@ from ..geometry.base import (
     ddlogm,
 )
 
+
 def _retraction(point, tangent_vector, metric):
     """Retract tangent vectors back to the manifold.
 

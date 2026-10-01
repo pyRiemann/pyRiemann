@@ -91,13 +91,13 @@ def _symmetrize(X):
 
     Parameters
     ----------
-    X : ndarray, shape (..., n, m)
-        Matrices.
+    X : ndarray, shape (..., n, n)
+        Square matrices.
 
     Returns
     -------
-    X_new : ndarray, shape (..., m, n)
-        Symmetrized matrices.
+    X_new : ndarray, shape (..., n, n)
+        Symmetrized square matrices.
 
     Notes
     -----
