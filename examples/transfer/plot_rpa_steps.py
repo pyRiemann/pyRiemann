@@ -11,7 +11,7 @@ Analysis [1]_ to match their statistics.
 import matplotlib.pyplot as plt
 import numpy as np
 
-from pyriemann.datasets.simulated import make_classification_transfer
+from pyriemann.datasets.simulated import make_classification
 from pyriemann.embedding import SpectralEmbedding
 from pyriemann.transfer import decode_domains, TLCenter, TLRotate
 
@@ -23,7 +23,7 @@ seed = 66
 
 # create source and target datasets
 n_matrices = 50
-X_enc, y_enc = make_classification_transfer(
+X_enc, y_enc = make_classification(
     n_matrices=n_matrices,
     class_sep=2.0,
     class_disp=0.25,

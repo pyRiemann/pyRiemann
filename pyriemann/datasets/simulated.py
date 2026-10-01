@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.utils.validation import check_random_state
 
+from ..geometry._docs import deprecated
 from ..geometry.base import ctranspose, invsqrtm, powm, sqrtm, expm
 from ..geometry.distance import distance_riemann
 from ..geometry.mean import mean_riemann
@@ -436,8 +437,8 @@ def _make_simplex(n_vertices):
     return simplex
 
 
-def _make_equidistant_matrices(rs, seps, n_dim, is_complex):
-    """Generate random commuting SPD/HPD matrices at controlled distances.
+def _make_equidistant_matrices(n_dim, seps, is_complex, rs):
+    """Generate random equidistant SPD/HPD matrices.
 
     The first matrix is the identity, and the other ones are the exponentials
     of commuting tangent vectors at identity. Their coefficients in a random
@@ -449,21 +450,27 @@ def _make_equidistant_matrices(rs, seps, n_dim, is_complex):
 
     Parameters
     ----------
-    rs : RandomState instance
-        Random state.
-    seps : ndarray, shape (n_matrices - 1,)
-        Distance between identity and each other matrix.
     n_dim : int
         Dimension of the matrices, at least n_matrices - 1.
+    seps : ndarray, shape (n_matrices - 1,)
+        Distance between identity and each other matrix.
     is_complex : bool
         Whether to generate HPD matrices rather than SPD matrices.
+    rs : RandomState instance
+        Random state.
 
     Returns
     -------
-    mats : list of n_matrices ndarray, shape (n_dim, n_dim)
+    X : ndarray, shape (n_matrices, n_dim, n_dim)
         Commuting SPD or HPD matrices, the first one being identity.
     """
     n_matrices = len(seps) + 1
+    if n_dim < n_matrices - 1:
+        raise ValueError(
+            f"n_dim must be at least {n_matrices - 1} to place {n_matrices} "
+            f"matrices at the same pairwise distance (Got {n_dim})"
+        )
+
     Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
     if is_complex:
         Pv = Pv + 1j * rs.randn(n_dim, n_dim)
@@ -480,10 +487,10 @@ def _make_equidistant_matrices(rs, seps, n_dim, is_complex):
     mats = [np.eye(n_dim, dtype=eigvecs.dtype)]
     for coeff in coeffs:
         mats.append(eigvecs @ (np.exp(coeff)[:, None] * ctranspose(eigvecs)))
-    return mats
+    return np.asarray(mats)
 
 
-def _make_rotation(theta, n_dim):
+def _make_rotation(n_dim, theta):
     """Rotation of angle theta in the plane of the two first axes."""
     Q = np.eye(n_dim)
     Q[0, 0], Q[0, 1] = np.cos(theta), -np.sin(theta)
@@ -506,7 +513,7 @@ def _check_domain_param(param, n_others, name):
     return param
 
 
-def make_classification_transfer(
+def make_classification(
     n_matrices,
     class_sep=3.0,
     class_disp=1.0,
@@ -519,7 +526,7 @@ def make_classification_transfer(
     n_dim=2,
     kind="spd",
 ):
-    r"""Generate SPD or HPD matrices for several classes and domains.
+    r"""Generate a random classification problem.
 
     Generate a set of SPD or HPD matrices drawn from Riemannian Gaussian
     distributions, one per class and per domain.
@@ -560,7 +567,7 @@ def make_classification_transfer(
     class_names : list, default=[1, 2]
         Names of classes, at least two.
     domain_names : list, default=["source_domain", "target_domain"]
-        Names of domains, at least two. The first one is the reference domain,
+        Names of domains, at least one. The first one is the reference domain,
         the other ones are built from it.
 
         .. versionadded:: 0.8
@@ -603,7 +610,8 @@ def make_classification_transfer(
     .. versionchanged:: 0.8
         Add parameter ``domain_names``.
     .. versionchanged:: 0.13
-        Add support for more than two classes, for more than two domains, for
+        Rename ``make_classification_transfer`` into ``make_classification``.
+        Add support for more than two classes, for one or more domains, for
         matrices of dimension higher than two, and for HPD matrices.
         Parameters ``domain_sep``, ``theta`` and ``stretch`` can be defined for
         each domain other than the reference one.
@@ -614,23 +622,13 @@ def make_classification_transfer(
         raise ValueError(
             f"class_names must contain at least 2 elements (Got {n_classes})"
         )
-    if n_domains < 2:
+    if n_domains < 1:
         raise ValueError(
-            f"domain_names must contain at least 2 elements (Got {n_domains})"
+            f"domain_names must contain at least 1 element (Got {n_domains})"
         )
     if not isinstance(n_dim, (int, np.integer)) or n_dim < 2:
         raise ValueError(
             f"n_dim must be an integer at least equal to 2 (Got {n_dim})"
-        )
-    if n_dim < n_classes - 1:
-        raise ValueError(
-            f"n_dim must be at least {n_classes - 1} to place {n_classes} "
-            f"classes at the same pairwise distance (Got {n_dim})"
-        )
-    if n_dim < n_domains - 1:
-        raise ValueError(
-            f"n_dim must be at least {n_domains - 1} to place {n_domains} "
-            f"domains at the same pairwise distance (Got {n_dim})"
         )
     if kind not in ("spd", "hpd"):
         raise ValueError(f"Unsupported matrix kind: {kind}")
@@ -647,7 +645,7 @@ def make_classification_transfer(
     # create the class means, the first one at identity, pairwise at distance
     # class_sep
     means = _make_equidistant_matrices(
-        rs, np.full(n_classes - 1, class_sep), n_dim, is_complex
+        n_dim, np.full(n_classes - 1, class_sep), is_complex, rs
     )
 
     # create the transformations from the reference domain to each other
@@ -655,13 +653,13 @@ def make_classification_transfer(
     # P is the transport matrix, square root of the SPD/HPD matrix moving the
     # global mean of the domain at distance domain_sep from identity
     translations = _make_equidistant_matrices(
-        rs, domain_seps, n_dim, is_complex
+        n_dim, domain_seps, is_complex, rs
     )
     transfos = []
     for i in range(n_others):
         P = sqrtm(translations[i + 1])
         # Q is the orthogonal matrix for the rotation part
-        Q = _make_rotation(thetas[i], n_dim)
+        Q = _make_rotation(n_dim, thetas[i])
         transfos.append(P @ Q)
 
     X, y, domains = [], [], []
@@ -697,3 +695,35 @@ def make_classification_transfer(
     )
 
     return X_enc, y_enc
+
+
+@deprecated(
+    "make_classification_transfer() is deprecated and will be removed in "
+    "0.15.0. Please use make_classification()."
+)
+def make_classification_transfer(
+    n_matrices,
+    class_sep=3.0,
+    class_disp=1.0,
+    domain_sep=5.0,
+    theta=0.0,
+    stretch=1.0,
+    random_state=None,
+    class_names=[1, 2],
+    domain_names=["source_domain", "target_domain"],
+    n_dim=2,
+    kind="spd",
+):
+    return make_classification(
+        n_matrices,
+        class_sep=class_sep,
+        class_disp=class_disp,
+        domain_sep=domain_sep,
+        theta=theta,
+        stretch=stretch,
+        random_state=random_state,
+        class_names=class_names,
+        domain_names=domain_names,
+        n_dim=n_dim,
+        kind=kind,
+    )

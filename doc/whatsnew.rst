@@ -86,12 +86,13 @@ v0.13.dev
   which divided the squared Frobenius norm by ``|p|`` instead of ``p^2``.
   :pr:`496` by :user:`SashaMIT`
 
-- Generalize :func:`pyriemann.datasets.make_classification_transfer` to more
-  than two classes, pairwise at the same distance, to more than two domains
-  built from a reference domain, to matrices of dimension higher than two with
-  the new parameter ``n_dim``, and to HPD matrices with the new parameter
-  ``kind``. Parameters ``domain_sep``, ``theta`` and ``stretch`` can now be
-  defined for each domain other than the reference one.
+- Deprecate ``pyriemann.datasets.make_classification_transfer()`` renamed into
+  :func:`pyriemann.datasets.make_classification`, and generalize it to more
+  than two classes, pairwise at the same distance, to one or more domains built
+  from a reference domain, to matrices of dimension higher than two with the
+  new parameter ``n_dim``, and to HPD matrices with the new parameter ``kind``.
+  Parameters ``domain_sep``, ``theta`` and ``stretch`` can now be defined for
+  each domain other than the reference one.
   :pr:`479` by :user:`adityasingh2400`
 
 v0.12 (July 2026)
@@ -523,7 +524,7 @@ v0.4 (Feb 2023)
 
 - Add a new transfer learning module ``transfer`` and examples,
   including Riemannian Procrustes Analysis (RPA) and :class:`pyriemann.transfer.MDWM`.
-  Add new function :func:`pyriemann.datasets.make_classification_transfer` to generate a dataset with 2x2 SPD matrices for transfer learning.
+  Add new function ``pyriemann.datasets.make_classification_transfer()`` to generate a dataset with 2x2 SPD matrices for transfer learning.
   :pr:`189` by :user:`plcrodrigues`, :user:`qbarthelemy` and :user:`sylvchev`
 
 - Add class distinctiveness function to measure the distinctiveness between classes on the manifold,

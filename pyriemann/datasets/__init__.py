@@ -4,6 +4,7 @@ from .simulated import (
     make_masks,
     make_gaussian_blobs,
     make_outliers,
+    make_classification,
     make_classification_transfer,
 )
 
@@ -15,6 +16,7 @@ __all__ = [
     "make_masks",
     "make_gaussian_blobs",
     "make_outliers",
+    "make_classification",
     "make_classification_transfer",
     "RandomOverSampler",
 ]

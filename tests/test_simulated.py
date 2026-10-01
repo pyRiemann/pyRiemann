@@ -10,6 +10,7 @@ from pyriemann.datasets.simulated import (
     make_masks,
     make_gaussian_blobs,
     make_outliers,
+    make_classification,
     make_classification_transfer,
     _make_equidistant_matrices,
     _make_simplex,
@@ -215,15 +216,12 @@ def test_make_simplex(n_vertices):
 def test_make_equidistant_matrices(rndstate, n_matrices, n_dim, kind):
     """Test that matrices are pairwise at the requested distance."""
     sep = 2.5
-    mats = np.array(_make_equidistant_matrices(
-        rndstate, np.full(n_matrices - 1, sep), n_dim, kind == "hpd"
-    ))
+    mats = _make_equidistant_matrices(
+        n_dim, np.full(n_matrices - 1, sep), kind == "hpd", rndstate
+    )
     assert mats.shape == (n_matrices, n_dim, n_dim)
     assert_array_equal(mats[0], np.eye(n_dim))
-    if kind == "spd":
-        assert is_spd(mats)
-    else:
-        assert is_hpd(mats)
+    assert is_hpd(mats)
     for i in range(n_matrices):
         for j in range(i + 1, n_matrices):
             assert distance_riemann(mats[i], mats[j]) == approx(sep)
@@ -232,7 +230,7 @@ def test_make_equidistant_matrices(rndstate, n_matrices, n_dim, kind):
 def test_make_equidistant_matrices_seps(rndstate):
     """Test matrices at different distances from identity."""
     seps = np.array([1.0, 2.0, 4.0])
-    mats = _make_equidistant_matrices(rndstate, seps, 4, False)
+    mats = _make_equidistant_matrices(4, seps, False, rndstate)
     for i, sep in enumerate(seps):
         assert distance_riemann(mats[0], mats[i + 1]) == approx(sep)
     for i in range(3):
@@ -242,17 +240,22 @@ def test_make_equidistant_matrices_seps(rndstate):
                 == approx(expected)
 
 
+def test_make_equidistant_matrices_errors(rndstate):
+    with pytest.raises(ValueError):  # too many matrices for n_dim
+        _make_equidistant_matrices(2, np.ones(3), False, rndstate)
+
+
 @pytest.mark.parametrize(
     "n_classes, n_domains, n_dim",
-    [(2, 2, 2), (3, 3, 2), (4, 2, 3), (2, 4, 3), (3, 4, 3)],
+    [(2, 1, 3), (2, 2, 2), (3, 3, 2), (4, 2, 3), (2, 4, 3), (3, 4, 3)],
 )
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_make_classification_transfer(n_classes, n_domains, n_dim, kind):
-    """Test classification transfer for several classes and domains."""
+def test_make_classification(n_classes, n_domains, n_dim, kind):
+    """Test classification problem for several classes and domains."""
     n_matrices = 5
     class_names = [f"class_{i}" for i in range(n_classes)]
     domain_names = [f"domain_{i}" for i in range(n_domains)]
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=n_matrices,
         random_state=17,
         class_names=class_names,
@@ -279,10 +282,10 @@ def test_make_classification_transfer(n_classes, n_domains, n_dim, kind):
 
 
 @pytest.mark.parametrize("n_dim", [2, 3, 4])
-def test_make_classification_transfer_domain_sep(n_dim):
+def test_make_classification_domain_sep(n_dim):
     """Test that domains are separated by the requested distances."""
     domain_seps = [2.0, 5.0]
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=10,
         domain_sep=domain_seps,
         theta=[0.0, np.pi / 4],
@@ -303,11 +306,11 @@ def test_make_classification_transfer_domain_sep(n_dim):
     assert distance_riemann(means["dom_0"], means["dom_1"]) == approx(expected)
 
 
-def test_make_classification_transfer_domain_sep_scalar():
+def test_make_classification_domain_sep_scalar():
     """Test that all domains are pairwise at the same distance."""
     domain_sep = 3.0
     domain_names = ["ref", "dom_0", "dom_1", "dom_2"]
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=10,
         domain_sep=domain_sep,
         random_state=1,
@@ -322,10 +325,10 @@ def test_make_classification_transfer_domain_sep_scalar():
             assert distance_riemann(means[i], means[j]) == approx(domain_sep)
 
 
-def test_make_classification_transfer_default_is_unchanged():
+def test_make_classification_default_is_unchanged():
     """Test that default parameters give 2x2 SPD matrices, 2 classes."""
     n_matrices = 6
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=n_matrices, random_state=3
     )
     assert X.shape == (4 * n_matrices, 2, 2)
@@ -337,24 +340,35 @@ def test_make_classification_transfer_default_is_unchanged():
     )
 
 
-def test_make_classification_transfer_errors():
+def test_make_classification_errors():
     with pytest.raises(ValueError):  # only one class
-        make_classification_transfer(n_matrices=2, class_names=[1])
-    with pytest.raises(ValueError):  # only one domain
-        make_classification_transfer(n_matrices=2, domain_names=["src"])
+        make_classification(n_matrices=2, class_names=[1])
+    with pytest.raises(ValueError):  # no domain
+        make_classification(n_matrices=2, domain_names=[])
     with pytest.raises(ValueError):  # n_dim is too low
-        make_classification_transfer(n_matrices=2, n_dim=1)
+        make_classification(n_matrices=2, n_dim=1)
     with pytest.raises(ValueError):  # n_dim is not an integer
-        make_classification_transfer(n_matrices=2, n_dim=2.0)
+        make_classification(n_matrices=2, n_dim=2.0)
     with pytest.raises(ValueError):  # too many classes for n_dim
-        make_classification_transfer(
+        make_classification(
             n_matrices=2, class_names=[1, 2, 3, 4], n_dim=2
         )
     with pytest.raises(ValueError):  # too many domains for n_dim
-        make_classification_transfer(
+        make_classification(
             n_matrices=2, domain_names=["a", "b", "c", "d"], n_dim=2
         )
     with pytest.raises(ValueError):  # unsupported kind
-        make_classification_transfer(n_matrices=2, kind="spsd")
+        make_classification(n_matrices=2, kind="spsd")
     with pytest.raises(ValueError):  # not one theta per other domain
-        make_classification_transfer(n_matrices=2, theta=[0.0, 1.0])
+        make_classification(n_matrices=2, theta=[0.0, 1.0])
+
+
+def test_make_classification_transfer_deprecated():
+    """Test that the deprecated name warns and gives the same output."""
+    X, y_enc = make_classification(n_matrices=4, random_state=5)
+    with pytest.warns(DeprecationWarning):
+        X_dep, y_enc_dep = make_classification_transfer(
+            n_matrices=4, random_state=5
+        )
+    assert_array_equal(X_dep, X)
+    assert_array_equal(y_enc_dep, y_enc)
