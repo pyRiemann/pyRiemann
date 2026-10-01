@@ -1,6 +1,7 @@
 import numpy as np
 from sklearn.utils.validation import check_random_state
 
+from ..geometry._docs import deprecated
 from ..geometry.base import ctranspose, invsqrtm, powm, sqrtm, expm
 from ..geometry.distance import distance_riemann
 from ..geometry.mean import mean_riemann
@@ -415,6 +416,291 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
     return outliers
 
 
+def _make_simplex(n_vertices):
+    """Vertices of a regular simplex with unit edge, the first one at origin.
+
+    Parameters
+    ----------
+    n_vertices : int
+        Number of vertices, at least one.
+
+    Returns
+    -------
+    simplex : ndarray, shape (n_vertices, n_vertices - 1)
+        Coordinates of the vertices, pairwise at unit distance.
+    """
+    simplex = np.zeros((n_vertices, n_vertices - 1))
+    for k in range(1, n_vertices):
+        # new vertex above the centroid of the previous ones
+        simplex[k] = simplex[:k].mean(axis=0)
+        simplex[k, k - 1] += np.sqrt((k + 1) / (2 * k))
+    return simplex
+
+
+def _make_equidistant_matrices(n_dim, seps, is_complex, rs):
+    """Generate random equidistant SPD/HPD matrices.
+
+    The first matrix is the identity, and the other ones are the exponentials
+    of commuting tangent vectors at identity. Their coefficients in a random
+    common eigenbasis are the vertices of a regular simplex, scaled by
+    ``seps``. Since the Riemannian distance between commuting matrices is
+    the Euclidean distance between their tangent vectors, the i-th matrix is
+    at distance ``seps[i - 1]`` from identity, and all matrices are pairwise
+    at the same distance when ``seps`` is constant.
+
+    Parameters
+    ----------
+    n_dim : int
+        Dimension of the matrices, at least n_matrices - 1.
+    seps : ndarray, shape (n_matrices - 1,)
+        Distance between identity and each other matrix.
+    is_complex : bool
+        Whether to generate HPD matrices rather than SPD matrices.
+    rs : RandomState instance
+        Random state.
+
+    Returns
+    -------
+    X : ndarray, shape (n_matrices, n_dim, n_dim)
+        Commuting SPD or HPD matrices, the first one being identity.
+    """
+    n_matrices = len(seps) + 1
+    if n_dim < n_matrices - 1:
+        raise ValueError(
+            f"n_dim must be at least {n_matrices - 1} to place {n_matrices} "
+            f"matrices at the same pairwise distance (Got {n_dim})"
+        )
+
+    Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
+    if is_complex:
+        Pv = Pv + 1j * rs.randn(n_dim, n_dim)
+    Pv = (Pv + ctranspose(Pv)) / 2  # symmetrize
+    Pv /= np.linalg.norm(Pv)  # normalize
+
+    # its eigenvectors give the common eigenbasis, and its eigenvalues, of
+    # unit norm, give the first vertex of the simplex in this eigenbasis
+    eigvals, eigvecs = np.linalg.eigh(Pv)
+    basis, _ = np.linalg.qr(np.column_stack([eigvals, np.eye(n_dim)]))
+    basis = basis[:, :n_matrices - 1] * np.sign(basis[:, 0] @ eigvals)
+    coeffs = (seps[:, None] * _make_simplex(n_matrices)[1:]) @ basis.T
+
+    mats = [np.eye(n_dim, dtype=eigvecs.dtype)]
+    for coeff in coeffs:
+        mats.append(eigvecs @ (np.exp(coeff)[:, None] * ctranspose(eigvecs)))
+    return np.asarray(mats)
+
+
+def _make_rotation(n_dim, theta):
+    """Rotation of angle theta in the plane of the two first axes."""
+    Q = np.eye(n_dim)
+    Q[0, 0], Q[0, 1] = np.cos(theta), -np.sin(theta)
+    Q[1, 0], Q[1, 1] = np.sin(theta), np.cos(theta)
+    return Q
+
+
+def _check_domain_param(param, n_others, name):
+    """Check a parameter defined as a scalar or for each other domain."""
+    param = np.atleast_1d(param)
+    if param.ndim != 1:
+        raise ValueError(f"{name} must be a scalar or a 1d array")
+    if param.size == 1:
+        return np.repeat(param, n_others)
+    if param.size != n_others:
+        raise ValueError(
+            f"{name} must be a scalar, or contain {n_others} elements, one "
+            f"for each domain other than the reference one (Got {param.size})"
+        )
+    return param
+
+
+def make_classification(
+    n_matrices,
+    class_sep=3.0,
+    class_disp=1.0,
+    domain_sep=5.0,
+    theta=0.0,
+    stretch=1.0,
+    random_state=None,
+    class_names=[1, 2],
+    domain_names=["source_domain", "target_domain"],
+    n_dim=2,
+    kind="spd",
+):
+    r"""Generate a random classification problem.
+
+    Generate a set of SPD or HPD matrices drawn from Riemannian Gaussian
+    distributions, one per class and per domain.
+    The distributions have the same dispersions, and the centers of the
+    classes are pairwise at the same distance.
+    The first domain is the reference domain, and its global mean is the
+    identity matrix. Each other domain is built from the reference domain,
+    by stretching the matrices and by applying a transformation controlling
+    its distance and its rotation with respect to the reference domain. It is
+    up to the user to consider these domains as source or target domains.
+    Useful for testing classification or clustering methods on transfer
+    learning applications.
+
+    Parameters
+    ----------
+    n_matrices : int
+        Number of matrices to generate for each class on each domain.
+    class_sep : float, default=3.0
+        Distance between the centers of each pair of classes.
+    class_disp : float, default=1.0
+        Dispersion of the matrices for each class.
+    domain_sep : float | array-like, default=5.0
+        Distance between the global means of the domains. If a scalar, all
+        domains are pairwise at this distance. If an array-like, it contains
+        the distance between the reference domain and each other domain, see
+        Notes for the distance between two other domains.
+    theta : float | array-like, default=0.0
+        Angle of the rotation matrix from the reference domain to each other
+        domain, in the plane spanned by the two first axes. If a scalar, the
+        same angle is used for all other domains.
+    stretch : float | array-like, default=1.0
+        Factor to stretch the matrices in each other domain. Note that when it
+        is != 1.0 the class dispersions in other domains will be different than
+        those in the reference domain (fixed at class_disp). If a scalar, the
+        same factor is used for all other domains.
+    random_state : None | int | RandomState instance, default=None
+        Pass an int for reproducible output across multiple function calls.
+    class_names : list, default=[1, 2]
+        Names of classes, at least two.
+    domain_names : list, default=["source_domain", "target_domain"]
+        Names of domains, at least one. The first one is the reference domain,
+        the other ones are built from it.
+
+        .. versionadded:: 0.8
+    n_dim : int, default=2
+        Dimension of the generated matrices, at least two, and at least the
+        number of classes minus one and the number of domains minus one.
+
+        .. versionadded:: 0.13
+    kind : {"spd", "hpd"}, default="spd"
+        Kind of matrices to generate: symmetric positive-definite, or Hermitian
+        positive-definite.
+
+        .. versionadded:: 0.13
+
+    Returns
+    -------
+    X_enc : ndarray, shape (n_matrices_tot, n_dim, n_dim)
+        Set of SPD or HPD matrices, where n_matrices_tot is equal to
+        n_matrices x len(class_names) x len(domain_names).
+    y_enc : ndarray, shape (n_matrices_tot,)
+        Extended labels for each matrix.
+
+    Notes
+    -----
+    The centers of the classes are commuting matrices: they share a random
+    eigenbasis, in which the logarithms of their eigenvalues are the vertices
+    of a regular simplex. Since the Riemannian distance between commuting
+    matrices is the Euclidean distance between the logarithms of their
+    eigenvalues, the centers of the classes are pairwise at distance
+    ``class_sep``. The global means of the domains are built the same way:
+    the global mean of the other domain :math:`i` is at distance :math:`s_i`,
+    the :math:`i`-th element of ``domain_sep``, from the global mean of the
+    reference domain, and the global means of two other domains :math:`i` and
+    :math:`j` are at distance :math:`\sqrt{s_i^2 + s_j^2 - s_i s_j}`, equal to
+    ``domain_sep`` when it is a scalar. A regular simplex with :math:`n`
+    vertices spans :math:`n - 1` dimensions, hence the constraint on
+    ``n_dim``.
+
+    .. versionadded:: 0.4
+    .. versionchanged:: 0.8
+        Add parameter ``domain_names``.
+    .. versionchanged:: 0.13
+        Rename ``make_classification_transfer`` into ``make_classification``.
+        Add support for more than two classes, for one or more domains, for
+        matrices of dimension higher than two, and for HPD matrices.
+        Parameters ``domain_sep``, ``theta`` and ``stretch`` can be defined for
+        each domain other than the reference one.
+    """
+
+    n_classes, n_domains = len(class_names), len(domain_names)
+    if n_classes < 2:
+        raise ValueError(
+            f"class_names must contain at least 2 elements (Got {n_classes})"
+        )
+    if n_domains < 1:
+        raise ValueError(
+            f"domain_names must contain at least 1 element (Got {n_domains})"
+        )
+    if not isinstance(n_dim, (int, np.integer)) or n_dim < 2:
+        raise ValueError(
+            f"n_dim must be an integer at least equal to 2 (Got {n_dim})"
+        )
+    if kind not in ("spd", "hpd"):
+        raise ValueError(f"Unsupported matrix kind: {kind}")
+
+    n_others = n_domains - 1
+    domain_seps = _check_domain_param(domain_sep, n_others, "domain_sep")
+    thetas = _check_domain_param(theta, n_others, "theta")
+    stretches = _check_domain_param(stretch, n_others, "stretch")
+
+    is_complex = kind == "hpd"
+    rs = check_random_state(random_state)
+    seeds = rs.randint(100, size=n_classes * n_domains)
+
+    # create the class means, the first one at identity, pairwise at distance
+    # class_sep
+    means = _make_equidistant_matrices(
+        n_dim, np.full(n_classes - 1, class_sep), is_complex, rs
+    )
+
+    # create the transformations from the reference domain to each other
+    # domain, as a matrix A = P * Q
+    # P is the transport matrix, square root of the SPD/HPD matrix moving the
+    # global mean of the domain at distance domain_sep from identity
+    translations = _make_equidistant_matrices(
+        n_dim, domain_seps, is_complex, rs
+    )
+    transfos = []
+    for i in range(n_others):
+        P = sqrtm(translations[i + 1])
+        # Q is the orthogonal matrix for the rotation part
+        Q = _make_rotation(n_dim, thetas[i])
+        transfos.append(P @ Q)
+
+    X, y, domains = [], [], []
+    for d in range(n_domains):
+        X_d = np.concatenate([
+            sample_gaussian(
+                n_matrices=n_matrices,
+                mean=means[k],
+                sigma=class_disp,
+                random_state=seeds[d * n_classes + k],
+            )
+            for k in range(n_classes)
+        ])
+        # center the domain to identity
+        M_invsqrt = invsqrtm(mean_riemann(X_d))
+        X_d = M_invsqrt @ X_d @ M_invsqrt
+
+        if d > 0:
+            # stretch the matrices in the other domain if needed
+            if stretches[d - 1] != 1.0:
+                X_d = powm(X_d, alpha=stretches[d - 1])
+            # move the matrices with the matrix A
+            A = transfos[d - 1]
+            X_d = A @ X_d @ ctranspose(A)
+
+        X.append(X_d)
+        y.append(np.repeat(class_names, n_matrices))
+        domains.append(np.repeat(domain_names[d], len(X_d)))
+
+    # encode the labels and domains together
+    X_enc, y_enc = encode_domains(
+        np.concatenate(X), np.concatenate(y), np.concatenate(domains)
+    )
+
+    return X_enc, y_enc
+
+
+@deprecated(
+    "make_classification_transfer() is deprecated and will be removed in "
+    "0.15.0. Please use make_classification()."
+)
 def make_classification_transfer(
     n_matrices,
     class_sep=3.0,
@@ -425,144 +711,19 @@ def make_classification_transfer(
     random_state=None,
     class_names=[1, 2],
     domain_names=["source_domain", "target_domain"],
+    n_dim=2,
+    kind="spd",
 ):
-    """Generate 2x2 SPD matrices for two classes in source and target domains.
-
-    Generate a set of 2x2 SPD matrices drawn from Riemannian Gaussian
-    distributions, one per class and per domain.
-    Currently, it supports two classes and two domains.
-    The distributions have the same dispersions.
-    You can stretch the target domain and control a rotation matrix that maps
-    the source domain to the target domain.
-    Useful for testing classification or clustering methods on transfer
-    learning applications.
-
-    Parameters
-    ----------
-    n_matrices : int
-        Number of 2x2 matrices to generate for each class on each domain.
-    class_sep : float, default=3.0
-        Distance between the centers of the classes.
-    class_disp : float, default=1.0
-        Dispersion of the matrices for each class.
-    domain_sep : float, default=5.0
-        Distance between the global means of each source and target domains.
-    theta : float, default=0.0
-        Angle of the 2x2 rotation matrix from source to target domain.
-    stretch : float, default=1.0
-        Factor to stretch the matrices in target domain. Note that when it
-        is != 1.0 the class dispersions in target domain will be different than
-        those in source domain (fixed at class_disp).
-    random_state : None | int | RandomState instance, default=None
-        Pass an int for reproducible output across multiple function calls.
-    class_names : list, default=[1, 2]
-        Names of classes.
-    domain_names : list, default=["source_domain", "target_domain"]
-        Names of domains, source and target.
-
-        .. versionadded:: 0.8
-
-    Returns
-    -------
-    X_enc : ndarray, shape (4*n_matrices, 2, 2)
-        Set of 2x2 SPD matrices, for two classes and two domains.
-    y_enc : ndarray, shape (4*n_matrices,)
-        Extended labels for each matrix.
-
-    Notes
-    -----
-    .. versionadded:: 0.4
-    .. versionchanged:: 0.8
-        Add parameter ``domain_names``.
-    """
-
-    rs = check_random_state(random_state)
-    seeds = rs.randint(100, size=4)
-
-    n_dim = 2
-    if len(class_names) != 2:
-        raise ValueError("class_names must contain 2 elements")
-    if len(domain_names) != 2:
-        raise ValueError("domain_names must contain 2 elements")
-
-    # create a source domain with two classes and global mean at identity
-    M1_source = np.eye(n_dim)  # first class mean at Identity at first
-    X1_source = sample_gaussian(
-        n_matrices=n_matrices,
-        mean=M1_source,
-        sigma=class_disp,
-        random_state=seeds[0],
+    return make_classification(
+        n_matrices,
+        class_sep=class_sep,
+        class_disp=class_disp,
+        domain_sep=domain_sep,
+        theta=theta,
+        stretch=stretch,
+        random_state=random_state,
+        class_names=class_names,
+        domain_names=domain_names,
+        n_dim=n_dim,
+        kind=kind,
     )
-    y1_source = [class_names[0]] * n_matrices
-    Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
-    Pv = (Pv + Pv.T)/2  # symmetrize
-    Pv /= np.linalg.norm(Pv)  # normalize
-    P = expm(Pv)  # take it back to the SPD manifold
-    M2_source = powm(P, alpha=class_sep)  # control distance to identity
-    X2_source = sample_gaussian(
-        n_matrices=n_matrices,
-        mean=M2_source,
-        sigma=class_disp,
-        random_state=seeds[1],
-    )
-    y2_source = [class_names[1]] * n_matrices
-    X_source = np.concatenate([X1_source, X2_source])
-    M_source = mean_riemann(X_source)
-    M_source_invsqrt = invsqrtm(M_source)
-    # center the domain to Identity
-    X_source = M_source_invsqrt @ X_source @ M_source_invsqrt
-    y_source = np.concatenate([y1_source, y2_source])
-
-    # create target domain based on the source domain
-    X1_target = sample_gaussian(
-        n_matrices=n_matrices,
-        mean=M1_source,
-        sigma=class_disp,
-        random_state=seeds[2],
-    )
-    X2_target = sample_gaussian(
-        n_matrices=n_matrices,
-        mean=M2_source,
-        sigma=class_disp,
-        random_state=seeds[3],
-    )
-    X_target = np.concatenate([X1_target, X2_target])
-    M_target = mean_riemann(X_target)
-    M_target_invsqrt = invsqrtm(M_target)
-    # center the domain to Identity
-    X_target = M_target_invsqrt @ X_target @ M_target_invsqrt
-    y_target = np.copy(y_source)
-
-    # stretch the matrices in target domain if needed
-    if stretch != 1.0:
-        X_target = powm(X_target, alpha=stretch)
-
-    # move the matrices in X_target with a random matrix A = P * Q
-
-    # create SPD matrix for the translation between domains
-    Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
-    Pv = (Pv + Pv.T)/2  # symmetrize
-    Pv /= np.linalg.norm(Pv)  # normalize
-    P = expm(Pv)  # take it to the manifold
-    P = powm(P, alpha=domain_sep)  # control distance to identity
-    P = sqrtm(P)  # transport matrix
-
-    # create orthogonal matrix for the rotation part
-    Q = np.array([[np.cos(theta), -np.sin(theta)],
-                  [np.sin(theta), np.cos(theta)]])
-
-    # transform the matrices from the target domain
-    A = P @ Q
-    X_target = A @ X_target @ A.T
-
-    # create array specifying the domain for each matrix
-    domains = np.array(
-        len(X_source) * [domain_names[0]] + len(X_target) * [domain_names[1]]
-    )
-
-    # encode the labels and domains together
-    X = np.concatenate([X_source, X_target])
-    y = np.concatenate([y_source, y_target])
-    X_enc, y_enc = encode_domains(X, y, domains)
-
-    return X_enc, y_enc

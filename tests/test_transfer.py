@@ -10,7 +10,7 @@ from sklearn.svm import LinearSVC, LinearSVR
 from sklearn.utils.validation import check_is_fitted
 
 from pyriemann.datasets.simulated import (
-    make_classification_transfer,
+    make_classification,
     make_matrices,
 )
 from pyriemann.classification import (
@@ -94,7 +94,7 @@ def test_encode_decode_domains(rndstate):
 )
 def test_tlsplitter(rndstate, cv):
     """Test wrapper for cross-validation"""
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=25,
         class_sep=5,
         class_disp=1.0,
@@ -121,7 +121,7 @@ def test_tltransformer_fittransform(estimator, use_vectors, rndstate):
             rndstate, ["tgt", "src"], n_vectors_d=20, n_ts=4,
         )
     else:
-        X, y_enc = make_classification_transfer(
+        X, y_enc = make_classification(
             n_matrices=20, random_state=rndstate,
             domain_names=["tgt", "src"]
         )
@@ -138,7 +138,7 @@ def test_tltransformer_fittransform(estimator, use_vectors, rndstate):
 
 @pytest.mark.parametrize("space", ["manifold", "tangentspace"])
 def test_tldummy(rndstate, space):
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=5,
         random_state=rndstate,
     )
@@ -160,7 +160,7 @@ def test_tldummy(rndstate, space):
 def test_tlcenter_manifold(rndstate, get_weights,
                            metric, use_weight, target_domain):
     """Test centering matrices to identity"""
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=25,
         random_state=rndstate,
     )
@@ -208,7 +208,7 @@ def test_tlcenter_manifold(rndstate, get_weights,
 def test_tlcenter_manifold_fit_transf(rndstate, get_weights,
                                       metric, use_weight, target_domain):
     """Test .fit_transform() versus .fit().transform()"""
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=25,
         random_state=rndstate,
     )
@@ -295,7 +295,7 @@ def test_tlcenter_tangentspace(rndstate, get_weights, use_weight,
 def test_tlscale_manifold(rndstate, get_weights,
                           use_centered_data, metric, use_weight):
     """Test scaling matrices to a target dispersion"""
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=25,
         class_disp=2.0,
         random_state=rndstate,
@@ -374,7 +374,7 @@ def test_tlscale_tangentspace(rndstate, get_weights, use_weight):
 @pytest.mark.parametrize("use_weight", [True, False])
 def test_tlrotate_manifold(rndstate, get_weights, metric, use_weight):
     """Test rotating matrices"""
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=50,
         class_sep=3,
         class_disp=1.0,
@@ -516,7 +516,7 @@ def test_tlrotate_tangentspace_recovers_rotation(rndstate):
 )
 def test_tlclassifier_mdm(rndstate, clf, source_weight, target_weight):
     """Test wrapper for MDM classifier"""
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=10,
         class_sep=5,
         class_disp=1.0,
@@ -574,7 +574,7 @@ def test_tlclassifier_mdm(rndstate, clf, source_weight, target_weight):
 @pytest.mark.parametrize("domains_weight", [(1, 0), (0, 1), (1, 1)])
 def test_tlclassifier_manifold(rndstate, clf, domains_weight):
     """Test wrapper for classifiers in manifold"""
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=10,
         class_sep=5,
         class_disp=1.0,
@@ -596,7 +596,7 @@ def test_tlclassifier_manifold(rndstate, clf, domains_weight):
 @pytest.mark.parametrize("domains_weight", [(1, 0), (0, 1), (1, 1)])
 def test_tlclassifier_tangentspace(rndstate, clf, domains_weight):
     """Test wrapper for classifiers in tangent space"""
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=10,
         class_sep=5,
         class_disp=1.0,
@@ -707,7 +707,7 @@ def tlregressor(reg, X, y_enc, domains_weights):
 @pytest.mark.parametrize("n_jobs", [-1, 2])
 def test_mdwm(kind, domain_tradeoff, metric, n_jobs, rndstate, get_mats):
     n_classes, n_matrices = 2, 40
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=n_matrices // 4,
         class_sep=5,
         class_disp=1.0,
@@ -770,7 +770,7 @@ def test_mdwm(kind, domain_tradeoff, metric, n_jobs, rndstate, get_mats):
 
 def test_mdwm_weights(rndstate, get_weights):
     n_matrices = 40
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=n_matrices // 4,
         class_sep=5,
         class_disp=1.0,
