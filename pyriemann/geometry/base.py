@@ -86,6 +86,28 @@ def _eigvalsh(A, B):
     return xp.linalg.eigvalsh(Z)
 
 
+def _symmetrize(X):
+    """Symmetry operator.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, m)
+        Matrices.
+
+    Returns
+    -------
+    X_new : ndarray, shape (..., m, n)
+        Symmetrized matrices.
+
+    Notes
+    -----
+    .. versionadded:: 0.9
+    .. versionchanged:: 0.13
+        Move from ``optimization`` to ``geometry``.
+    """
+    return (X + ctranspose(X)) / 2
+
+
 def _vectorize_nd(n_axes=2):
     """Decorator to vectorize a function over leading batch dimensions.
 
@@ -96,6 +118,12 @@ def _vectorize_nd(n_axes=2):
 
         - n_axes=2: (..., n1, n2) -> func(n1, n2) -> (..., m1, m2)
         - n_axes=3: (..., n1, n2, n3) -> func(n1, n2, n3) -> (..., m1, m2)
+
+    Notes
+    -----
+    .. versionadded:: 0.11
+    .. versionchanged:: 0.12
+        Add support for NumPy and PyTorch.
     """
     def decorator(func):
         @wraps(func)
@@ -367,13 +395,12 @@ def nearest_sym_pos_def(X, reg=1e-6):
     n = X.shape[-1]
     eps = xp.finfo(X.dtype).eps
 
-    # Symmetrize
-    A = (X + X.mT) / 2
+    A = _symmetrize(X)
 
     _, s, Vh = xp.linalg.svd(A)
     H = Vh.mT @ (s[..., None] * Vh)
     B = (A + H) / 2
-    P = (B + B.mT) / 2
+    P = _symmetrize(B)
 
     # PD fix: iteratively shift non-PD matrices
     eigvals = xp.linalg.eigvalsh(P)
