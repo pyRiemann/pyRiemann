@@ -82,7 +82,7 @@ v0.13.dev
   ``cross_val_score()`` raised an ``AttributeError``.
   :pr:`493` by :user:`adityasingh2400`
 
-- Fix :func:`pyriemann.geometry.distance.distance_poweuclid` with ``squared=True``,
+- Correct :func:`pyriemann.geometry.distance.distance_poweuclid` with ``squared=True``,
   which divided the squared Frobenius norm by ``|p|`` instead of ``p^2``.
   :pr:`496` by :user:`SashaMIT`
 
@@ -515,6 +515,7 @@ v0.4 (Feb 2023)
 
 - Add a new transfer learning module ``transfer`` and examples,
   including Riemannian Procrustes Analysis (RPA) and :class:`pyriemann.transfer.MDWM`.
+  Add new function :func:`pyriemann.datasets.make_classification_transfer` to generate a dataset with 2x2 SPD matrices for transfer learning.
   :pr:`189` by :user:`plcrodrigues`, :user:`qbarthelemy` and :user:`sylvchev`
 
 - Add class distinctiveness function to measure the distinctiveness between classes on the manifold,
@@ -566,10 +567,8 @@ v0.3 (July 2022)
 - Add :class:`pyriemann.artifact_detection.PotatoField`, and an example on artifact detection.
   :pr:`142` by :user:`qbarthelemy`
 
-- Add sampling SPD matrices from a Riemannian Gaussian distribution in ``pyriemann.datasets.sample_gaussian_spd()``.
-  :pr:`140` by :user:`plcrodrigues`
-
-- Add new function :func:`pyriemann.datasets.make_gaussian_blobs` for generating random datasets with SPD matrices.
+- Add new functions: ``pyriemann.datasets.sample_gaussian_spd()`` for sampling SPD matrices from a Riemannian Gaussian distribution, and
+  :func:`pyriemann.datasets.make_gaussian_blobs` for generating random datasets with SPD matrices.
   :pr:`140` by :user:`plcrodrigues`
 
 - Add module ``pyriemann.utils.viz`` in API, add :func:`pyriemann.utils.viz.plot_waveforms`, and add an example on ERP visualization.
