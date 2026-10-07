@@ -1001,23 +1001,22 @@ def mean_thompson(
     else:
         M = check_init(init, n, like=X)
 
-    # Inductive mean, where the current estimate counts as one matrix of
-    # average weight: with equal weights, the step is 1 / (i + 2)
-    weight_sum = 1 / n_matrices
-    M_prev = M
-    for i in range(maxiter):
-        weight = sample_weight[i % n_matrices]
-        if weight > 0:
-            weight_sum += weight
-            M = geodesic_thompson(M, X[i % n_matrices], weight / weight_sum)
+    # Inductive mean, where the current estimate counts as one matrix of the
+    # largest weight: with equal weights, the k-th step is 1 / (k + 1).
+    # Each iteration is a full pass over the matrices, so that matrices with
+    # a negligible weight do not use up iterations.
+    weight_sum = xp.max(sample_weight)
+    for _ in range(maxiter):
+        M_prev = M
+        for j in range(n_matrices):
+            weight = sample_weight[j]
+            if weight > 0:
+                weight_sum += weight
+                M = geodesic_thompson(M, X[j], weight / weight_sum)
 
-        # Check convergence over a full pass, since a single step towards a
-        # matrix with a small weight barely moves the estimate
-        if i % n_matrices == n_matrices - 1:
-            crit = xp.linalg.matrix_norm(M - M_prev, ord="fro")
-            M_prev = M
-            if crit <= tol:
-                break
+        crit = xp.linalg.matrix_norm(M - M_prev, ord="fro")
+        if crit <= tol:
+            break
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
 
