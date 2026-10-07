@@ -947,7 +947,9 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 
 
 @_vectorize_nd(n_axes=3)
-def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, **kwargs):
+def mean_thompson(
+    X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None, **kwargs
+):
     """Mean of SPD/HPD matrices according to the Thompson metric.
 
     The Thompson mean of SPD/HPD matrices is described in [1]_.
@@ -963,6 +965,8 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, **kwargs):
     init : None | ndarray, shape (n, n), default=None
         A SPD/HPD matrix used to initialize the gradient descent.
         If None, the weighted Euclidean mean is used.
+    sample_weight : None | ndarray, shape (n_matrices,), default=None
+        Weights for each matrix. If None, it uses equal weights.
 
     Returns
     -------
@@ -974,6 +978,8 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, **kwargs):
     .. versionadded:: 0.10
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+    .. versionchanged:: 0.13
+        Add parameter ``sample_weight``.
 
     See Also
     --------
@@ -989,18 +995,29 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, **kwargs):
     """
     xp = get_namespace(X)
     n_matrices, n, _ = X.shape
+    sample_weight = check_weights(sample_weight, n_matrices, like=X)
     if init is None:
-        M = mean_euclid(X)
+        M = mean_euclid(X, sample_weight=sample_weight)
     else:
         M = check_init(init, n, like=X)
 
+    # Inductive mean, where the current estimate counts as one matrix of
+    # average weight: with equal weights, the step is 1 / (i + 2)
+    weight_sum = 1 / n_matrices
+    M_prev = M
     for i in range(maxiter):
-        Mnew = geodesic_thompson(M, X[i % n_matrices], 1 / (i + 2))
+        weight = float(sample_weight[i % n_matrices])
+        if weight > 0:
+            weight_sum += weight
+            M = geodesic_thompson(M, X[i % n_matrices], weight / weight_sum)
 
-        crit = xp.linalg.matrix_norm(Mnew - M, ord="fro")
-        M = Mnew
-        if crit <= tol:
-            break
+        # Check convergence over a full pass, since a single step towards a
+        # matrix with a small weight barely moves the estimate
+        if i % n_matrices == n_matrices - 1:
+            crit = xp.linalg.matrix_norm(M - M_prev, ord="fro")
+            M_prev = M
+            if crit <= tol:
+                break
     else:
         warnings.warn("Convergence not reached", stacklevel=2)
 

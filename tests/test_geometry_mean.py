@@ -112,6 +112,7 @@ def test_mean_weight_zero(kind, mean, get_mats, get_weights):
         mean_logchol,
         mean_logeuclid,
         mean_riemann,
+        mean_thompson,
         mean_wasserstein,
         nanmean_riemann,
     ],
@@ -122,6 +123,21 @@ def test_mean_weight_error(mean, get_mats, get_weights):
     weights = get_weights(n_matrices + 1)
     with pytest.raises(ValueError):
         mean(X, sample_weight=weights)
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_mean_thompson_weights(kind, get_mats):
+    """Thompson mean uses sample weights, also when called through gmean"""
+    n_matrices, n_channels = 4, 3
+    X = get_mats(n_matrices, n_channels, kind)
+
+    onehot = np.zeros(n_matrices)
+    onehot[2] = 1
+    assert mean_thompson(X, sample_weight=onehot) == approx(X[2])
+    assert gmean(X, metric="thompson", sample_weight=onehot) == approx(X[2])
+
+    equal = np.full(n_matrices, 2.0)
+    assert mean_thompson(X, sample_weight=equal) == approx(mean_thompson(X))
 
 
 @pytest.mark.parametrize(
