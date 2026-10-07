@@ -86,9 +86,7 @@ v0.13.dev
   which divided the squared Frobenius norm by ``|p|`` instead of ``p^2``.
   :pr:`496` by :user:`SashaMIT`
 
-- Fix :func:`pyriemann.geometry.mean.mean_thompson`, which silently ignored
-  ``sample_weight``, so that weighted means computed through
-  :func:`pyriemann.geometry.mean.gmean` with ``metric="thompson"`` were unweighted.
+- Enhance :func:`pyriemann.geometry.mean.mean_thompson` actually using parameter ``sample_weight``.
   :pr:`499` by :user:`raashish1601`
 
 v0.12 (July 2026)

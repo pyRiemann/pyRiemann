@@ -979,7 +979,7 @@ def mean_thompson(
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
     .. versionchanged:: 0.13
-        Add parameter ``sample_weight``.
+        Use parameter ``sample_weight``.
 
     See Also
     --------
@@ -1006,7 +1006,7 @@ def mean_thompson(
     weight_sum = 1 / n_matrices
     M_prev = M
     for i in range(maxiter):
-        weight = float(sample_weight[i % n_matrices])
+        weight = sample_weight[i % n_matrices]
         if weight > 0:
             weight_sum += weight
             M = geodesic_thompson(M, X[i % n_matrices], weight / weight_sum)
