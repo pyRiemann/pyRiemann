@@ -25,7 +25,7 @@ from .utils._check import check_metric, check_function, check_weights
 
 def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
     if random_state is not None:
-        random_state = np.random.RandomState(random_state)
+        random_state = check_random_state(random_state)
     if sklearn.__version__ < "1.3.0":
         return sklearnKMeans(n_clusters=n_clusters, init=init)._init_centroids(
             X,
@@ -137,6 +137,8 @@ class Kmeans(SpdClassifMixin, SpdClustMixin, SpdTransfMixin, BaseEstimator):
     .. versionadded:: 0.2
     .. versionchanged:: 0.8
         Add support for HPD matrices.
+    .. versionchanged:: 0.13
+        Fix ``random_state`` used with np.RandomState.
 
     See Also
     --------
@@ -189,8 +191,8 @@ class Kmeans(SpdClassifMixin, SpdClustMixin, SpdTransfMixin, BaseEstimator):
             The Kmeans instance.
         """
         if isinstance(self.init, str) and self.init == "random":
-            np.random.seed(self.random_state)
-            seeds = np.random.randint(
+            random_state = check_random_state(self.random_state)
+            seeds = random_state.randint(
                 np.iinfo(np.int32).max,
                 size=self.n_init,
             )

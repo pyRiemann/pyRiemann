@@ -36,6 +36,7 @@ def test_clustering_two_clusters(kind, clust, get_mats, get_labels):
 
     if clust is Kmeans:
         clt_fit(clust, X, n_clusters, None)
+        clt_fit_random(clust, X, n_clusters, None)
         clt_predict(clust, X, n_clusters)
         clt_fitpredict(clust, X, n_clusters)
         clt_transform(clust, X, n_clusters)
@@ -62,6 +63,7 @@ def test_clustering_two_clusters(kind, clust, get_mats, get_labels):
 
     if clust is GaussianMixture:
         clt_fit(clust, X, n_clusters, None)
+        clt_fit_random(clust, X, n_clusters, None)
         clt_predict(clust, X)
         clt_fitpredict(clust, X)
         clt_predict_proba(clust, X)
@@ -136,6 +138,13 @@ def clt_fit(clust, X, n_clusters, labels):
         n_ts = n_channels * (n_channels + 1) // 2
         assert clt.covariances_.shape == (clt.n_components, n_ts, n_ts)
         return
+
+
+def clt_fit_random(clust, X, n_clusters, labels):
+    random_states = [None, 17, np.random.RandomState(2026)]
+    for random_state in random_states:
+        clt = clust(random_state=random_state)
+        clt.fit(X, labels)
 
 
 def clt_fit_weights(clust, X, weights):
