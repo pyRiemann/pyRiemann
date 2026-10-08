@@ -947,9 +947,7 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 
 
 @_vectorize_nd(n_axes=3)
-def mean_thompson(
-    X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None, **kwargs
-):
+def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     """Mean of SPD/HPD matrices according to the Thompson metric.
 
     The Thompson mean of SPD/HPD matrices is described in [1]_.
