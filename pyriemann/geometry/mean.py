@@ -948,20 +948,28 @@ def mean_riemann(X, *, tol=10e-9, maxiter=50, init=None, sample_weight=None):
 
 @_vectorize_nd(n_axes=3)
 def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
-    """Mean of SPD/HPD matrices according to the Thompson metric.
+    r"""Mean of SPD/HPD matrices according to the Thompson metric.
 
-    The Thompson mean of SPD/HPD matrices is described in [1]_.
+    The Thompson mean of SPD/HPD matrices is the inductive mean described
+    in [1]_.
+
+    In current implementation, matrices are visited cyclically, and the
+    :math:`k`-th step moves the current estimate along the Thompson geodesic
+    towards the current matrix, with a step size :math:`1/(k+1)`.
+    Each iteration is a full pass over all matrices, and the stopping
+    criterion is evaluated after each pass.
 
     Parameters
     ----------
     X : ndarray, shape (..., n_matrices, n, n)
         Set of SPD/HPD matrices.
     tol : float, default=1e-6
-        Tolerance to stop the gradient descent.
+        Tolerance to stop the iterative algorithm, evaluated after each pass
+        over all matrices.
     maxiter : int, default=50
         Maximum number of iterations.
     init : None | ndarray, shape (n, n), default=None
-        A SPD/HPD matrix used to initialize the gradient descent.
+        A SPD/HPD matrix used to initialize the iterative algorithm.
         If None, the weighted Euclidean mean is used.
     sample_weight : None | ndarray, shape (n_matrices,), default=None
         Weights for each matrix. If None, it uses equal weights.
@@ -999,18 +1007,12 @@ def mean_thompson(X, *, tol=1e-6, maxiter=50, init=None, sample_weight=None):
     else:
         M = check_init(init, n, like=X)
 
-    # Inductive mean, where the current estimate counts as one matrix of the
-    # largest weight: with equal weights, the k-th step is 1 / (k + 1).
-    # Each iteration is a full pass over the matrices, so that matrices with
-    # a negligible weight do not use up iterations.
-    weight_sum = xp.max(sample_weight)
+    weight_cum = xp.max(sample_weight)
     for _ in range(maxiter):
         M_prev = M
         for j in range(n_matrices):
-            weight = sample_weight[j]
-            if weight > 0:
-                weight_sum += weight
-                M = geodesic_thompson(M, X[j], weight / weight_sum)
+            weight_cum += sample_weight[j]
+            M = geodesic_thompson(M, X[j], sample_weight[j] / weight_cum)
 
         crit = xp.linalg.matrix_norm(M - M_prev, ord="fro")
         if crit <= tol:
