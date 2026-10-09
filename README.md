@@ -6,7 +6,7 @@
 [![codecov](https://codecov.io/gh/pyRiemann/pyRiemann/branch/master/graph/badge.svg)](https://codecov.io/gh/pyRiemann/pyRiemann)
 [![Documentation Status](https://readthedocs.org/projects/pyriemann/badge/?version=latest)](http://pyriemann.readthedocs.io/en/latest/?badge=latest)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.593816.svg)](https://doi.org/10.5281/zenodo.593816)
-[![Downloads](https://pepy.tech/badge/pot)](https://pepy.tech/project/pyriemann)
+[![Downloads](https://pepy.tech/badge/pyriemann)](https://pepy.tech/project/pyriemann)
 
 pyRiemann is a Python machine learning package based on [scikit-learn](http://scikit-learn.org/stable/modules/classes.html) API.
 It provides a high-level interface for processing and classification of real (*resp*. complex)-valued multivariate data
@@ -172,8 +172,7 @@ pytest
                   Brent Gaisford and
                   Ammar Mian and
                   Anton Andreev and
-                  Gregoire Cattan and
-                  Arthur Lebeurrier},
+                  Gregoire Cattan},
   title        = {pyRiemann},
   month        = july,
   year         = 2026,
@@ -204,8 +203,8 @@ Research report, 2014. [link](http://arxiv.org/abs/1409.0107)
 
 <a id="5">[5]</a>
 EK. Kalunga, S. Chevallier, Q. Barthélemy, K. Djouani, E. Monacelli and Y. Hamam, "Online SSVEP-based BCI using Riemannian geometry".
-Neurocomputing, 191, pp. 55-68, 2014. [link](https://hal.science/hal-01351623/file/Kalunga-Chevallier-Barthelemy-Online%20SSVEP-based%20BCI%20using%20Riemannian%20Geometry-Neurocomputing-16.pdf)
+Neurocomputing, 191, pp. 55-68, 2016. [link](https://hal.science/hal-01351623/file/Kalunga-Chevallier-Barthelemy-Online%20SSVEP-based%20BCI%20using%20Riemannian%20Geometry-Neurocomputing-16.pdf)
 
 <a id="6">[6]</a>
 PLC. Rodrigues, C. Jutten and M. Congedo, "Riemannian Procrustes analysis: transfer learning for brain-computer interfaces".
-IEEE Transactions on Biomedical Engineering, vol. 66, no. 8, pp. 2390-2401, 2018. [link](https://hal.archives-ouvertes.fr/hal-01971856)
+IEEE Transactions on Biomedical Engineering, vol. 66, no. 8, pp. 2390-2401, 2019. [link](https://hal.archives-ouvertes.fr/hal-01971856)

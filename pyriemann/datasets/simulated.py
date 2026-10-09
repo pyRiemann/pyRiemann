@@ -300,7 +300,6 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         raise ValueError(f"class_sep must be a float (Got {class_sep})")
 
     rs = check_random_state(random_state)
-    seeds = rs.randint(100, size=2)
 
     if centers is None:
         C0_in = np.eye(n_dim)  # first class mean at Identity at first
@@ -318,7 +317,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         n_matrices=n_matrices,
         mean=C0_in,
         sigma=class_disp,
-        random_state=seeds[0],
+        random_state=rs,
         n_jobs=n_jobs,
         sampling_method=sampling_method
     )
@@ -329,7 +328,7 @@ def make_gaussian_blobs(n_matrices=100, n_dim=2, class_sep=1.0, class_disp=1.0,
         n_matrices=n_matrices,
         mean=C1_in,
         sigma=class_disp,
-        random_state=seeds[1],
+        random_state=rs,
         n_jobs=n_jobs,
         sampling_method=sampling_method
     )
@@ -401,12 +400,13 @@ def make_outliers(n_matrices, mean, sigma, outlier_coeff=10,
     .. versionadded:: 0.3
     """
 
+    rs = check_random_state(random_state)
     n_dim = mean.shape[1]
     mean_sqrt = sqrtm(mean)
 
     outliers = np.zeros((n_matrices, n_dim, n_dim))
     for i in range(n_matrices):
-        Oi = make_matrices(1, n_dim=n_dim, kind="spd", rs=random_state)[0]
+        Oi = make_matrices(1, n_dim=n_dim, kind="spd", rs=rs)[0]
         epsilon_num = outlier_coeff * sigma * n_dim
         epsilon_den = distance_riemann(Oi, np.eye(n_dim), squared=True)
         epsilon = np.sqrt(epsilon_num / epsilon_den)
