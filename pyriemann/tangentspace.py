@@ -41,7 +41,7 @@ class TangentSpace(TransformerMixin, BaseEstimator):
         The type of metric used
         for reference matrix estimation (for the list of supported metrics
         see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
-        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
+        (see :func:`pyriemann.geometry.tangentspace.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
     tsupdate : bool, default=False
@@ -234,7 +234,7 @@ class FGDA(TransformerMixin, BaseEstimator):
         The type of metric used
         for reference matrix estimation (for the list of supported metrics
         see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
-        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
+        (see :func:`pyriemann.geometry.tangentspace.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
     tsupdate : bool, default=False
@@ -299,15 +299,15 @@ class FGDA(TransformerMixin, BaseEstimator):
         ts = ts @ self._W
         return self._ts.inverse_transform(ts)
 
-    def fit(self, X, y=None, sample_weight=None):
+    def fit(self, X, y, sample_weight=None):
         """Fit (estimates) the reference matrix and the FLDA.
 
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
             Set of SPD matrices.
-        y : None
-            Not used, here for compatibility with sklearn API.
+        y : ndarray, shape (n_matrices,)
+            Labels for each matrix.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
             Weights for each matrix. If None, it uses equal weights.
 

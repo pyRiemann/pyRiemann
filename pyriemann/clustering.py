@@ -438,7 +438,7 @@ class MeanShift(SpdClustMixin, SpdTransfMixin, BaseEstimator):
         (see :func:`pyriemann.geometry.distance.distance`).
         The metric can be a dict with two keys, "map" and "distance"
         in order to pass different metrics.
-    tol : float, default=1e-4
+    tol : float, default=1e-3
         Stopping criterion to stop convergence, representing the norm of
         gradient.
     max_iter : int, default=100
@@ -511,7 +511,7 @@ class MeanShift(SpdClustMixin, SpdTransfMixin, BaseEstimator):
         """
         self._kernel_fun = check_function(self.kernel, ker_clust_functions)
         self._metric_map, self._metric_dist = check_metric(
-            self.metric, ["map", "dist"]
+            self.metric, ["map", "distance"]
         )
         if self.bandwidth is None:
             self._bandwidth = self._estimate_bandwidth(X, quantile=0.3)
@@ -631,7 +631,7 @@ class Gaussian():
     metric : string | dict, default="riemann"
         Metric used for mean update (for the list of supported metrics,
         see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
-        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
+        (see :func:`pyriemann.geometry.tangentspace.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
 
@@ -738,12 +738,13 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
     metric : string | dict, default="riemann"
         Metric used for mean update (for the list of supported metrics,
         see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
-        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
+        (see :func:`pyriemann.geometry.tangentspace.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
     weights_init : None | ndarray, shape (n_components,), defaut=None
         Initial weights. If None, it uses equal weights.
-    means_init : None | ndarray, shape (n_components,), defaut=None
+    means_init : None | ndarray, shape (n_components, n_channels, n_channels),\
+            defaut=None
         Initial means of Gaussians. If None, it randomly selects training
         matrices.
     tol : float, default=1e-5
