@@ -112,6 +112,8 @@ def plot_clusterers(metric):
 # Clustering and Datasets
 # -----------------------
 
+rs = np.random.RandomState(2025)
+
 names = [
     "k-means\n2 clusters",
     "k-means\n3 clusters",
@@ -121,15 +123,14 @@ names = [
 ]
 n_jobs = 4
 clusts = [
-    Kmeans(n_clusters=2, n_jobs=n_jobs),
-    Kmeans(n_clusters=3, n_jobs=n_jobs),
+    Kmeans(n_clusters=2, n_jobs=n_jobs, random_state=rs),
+    Kmeans(n_clusters=3, n_jobs=n_jobs, random_state=rs),
     MeanShift(kernel="uniform", n_jobs=n_jobs),
     MeanShift(kernel="normal", n_jobs=n_jobs),
-    GaussianMixture(n_components=3),
+    GaussianMixture(n_components=3, random_state=rs),
 ]
 n_clusts = len(clusts)
 
-rs = np.random.RandomState(2025)
 n_matrices, n_channels = 50, 2
 
 datasets = [

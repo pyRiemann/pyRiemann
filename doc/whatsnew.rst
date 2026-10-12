@@ -86,6 +86,13 @@ v0.13.dev
   which divided the squared Frobenius norm by ``|p|`` instead of ``p^2``.
   :pr:`496` by :user:`SashaMIT`
 
+- Fix :class:`pyriemann.clustering.Kmeans` used with ``random_state=np.random.RandomState()``.
+  :pr:`500` by :user:`qbarthelemy`
+
+- Correct :class:`pyriemann.classification.TSClassifier` which fitted its parameter
+  ``clf`` in place, shared by all instances using default value.
+  :pr:`503` by :user:`qbarthelemy`
+
 - Enhance :func:`pyriemann.geometry.mean.mean_thompson` actually using parameter ``sample_weight``.
   :pr:`499` by :user:`raashish1601`
 
