@@ -96,6 +96,10 @@ v0.13.dev
 - Enhance :func:`pyriemann.geometry.mean.mean_thompson` actually using parameter ``sample_weight``.
   :pr:`499` by :user:`raashish1601`
 
+- Correct ``partial_fit()`` of :class:`pyriemann.artifact_detection.Potato`
+  with ``pos_label`` different from 1.
+  :pr:`505` by :user:`qbarthelemy`
+
 v0.12 (July 2026)
 -----------------
 

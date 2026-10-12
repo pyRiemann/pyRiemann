@@ -296,6 +296,29 @@ def test_potato_specific_labels(get_mats):
     pt.fit(X, y=[2] * n_matrices)
 
 
+@pytest.mark.parametrize("pos_label, neg_label", [(0, 1), (2, 0), (2, 7)])
+def test_potato_partialfit_specific_labels(pos_label, neg_label, get_mats):
+    n_matrices, n_channels = 10, 3
+    X = get_mats(n_matrices, n_channels, "spd")
+    pt = Potato(pos_label=pos_label, neg_label=neg_label).fit(X)
+    pt_ref = Potato().fit(X)
+
+    # without labels, all matrices are considered as clean
+    pt.partial_fit(X[:5], alpha=0.5)
+    pt_ref.partial_fit(X[:5], alpha=0.5)
+    assert pt.covmean_ == approx(pt_ref.covmean_)
+    assert pt._mean == approx(pt_ref._mean)
+    assert pt._std == approx(pt_ref._std)
+
+    # with labels, only matrices with positive label are used
+    y = np.array([pos_label, neg_label, pos_label, neg_label, neg_label])
+    pt.partial_fit(X[5:], y, alpha=0.5)
+    pt_ref.partial_fit(X[5:], np.int32(y == pos_label), alpha=0.5)
+    assert pt.covmean_ == approx(pt_ref.covmean_)
+    assert pt._mean == approx(pt_ref._mean)
+    assert pt._std == approx(pt_ref._std)
+
+
 def callable_diageuclid(A, B, squared=False):
     """Euclidean distance between diagonals of square matrices"""
     dA = np.diagonal(A, axis1=-2, axis2=-1)
