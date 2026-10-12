@@ -61,7 +61,7 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
     .. versionchanged:: 0.12
         Move from ``clustering`` to ``artifact_detection``.
     .. versionchanged:: 0.13
-        Correct ``partial_fit()`` used with ``pos_label`` different from 1.
+        Correct ``partial_fit()`` when ``pos_label`` different from 1.
 
     See Also
     --------
@@ -184,7 +184,7 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         -----
         .. versionadded:: 0.3
         .. versionchanged:: 0.13
-            Correct when used with ``pos_label`` different from 1.
+            Correct when ``pos_label`` different from 1.
         """
         if not hasattr(self, "_mdm"):
             raise ValueError(
