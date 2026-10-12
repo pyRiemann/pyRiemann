@@ -5,7 +5,7 @@ import warnings
 from joblib import Parallel, delayed
 import numpy as np
 from scipy.optimize import minimize
-from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.base import BaseEstimator, ClassifierMixin, clone
 from sklearn.svm import SVC as sklearnSVC
 from sklearn.utils.extmath import softmax
 from sklearn.linear_model import LogisticRegression
@@ -225,9 +225,9 @@ class FgMDM(SpdClassifMixin, SpdTransfMixin, BaseEstimator):
         for distance estimation
         (see :func:`pyriemann.geometry.distance.distance`)
         and for tangent space map
-        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
-        The metric can be a dict with three keys, "mean", "dist" and "map" in
-        order to pass different metrics.
+        (see :func:`pyriemann.geometry.tangentspace.tangent_space`).
+        The metric can be a dict with three keys, "mean", "distance" and "map"
+        in order to pass different metrics.
     tsupdate : bool, default=False
         Activate tangent space update for covariante shift correction between
         training and test, as described in [2]_. This is not compatible with
@@ -371,7 +371,7 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
         The type of metric used
         for reference matrix estimation (for the list of supported metrics
         see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
-        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
+        (see :func:`pyriemann.geometry.tangentspace.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
     tsupdate : bool, default=False
@@ -398,6 +398,8 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
         Add parameter ``sample_weight`` to ``fit()``.
     .. versionchanged:: 0.8
         Rename ``TSclassifier`` into ``TSClassifier``.
+    .. versionchanged:: 0.13
+        Correct ``clf``, cloned before fitting so that not modified.
 
     References
     ----------
@@ -439,7 +441,7 @@ class TSClassifier(SpdClassifMixin, BaseEstimator):
         self.classes_ = np.unique(y)
 
         ts = TangentSpace(metric=self.metric, tsupdate=self.tsupdate)
-        self._pipe = make_pipeline(ts, self.clf)
+        self._pipe = make_pipeline(ts, clone(self.clf))
         param_weight = {}
         for (step_name, step_estimator) in self._pipe.steps:
             if check_param_in_func("sample_weight", step_estimator.fit):
