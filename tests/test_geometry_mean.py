@@ -75,53 +75,70 @@ def test_mean_init(kind, mean, get_mats):
     assert M.shape == (n_channels, n_channels)
 
 
+###############################################################################
+
+means_weighted = [
+    mean_chol,
+    mean_euclid,
+    mean_harmonic,
+    mean_kullback_sym,
+    mean_logdet,
+    mean_logchol,
+    mean_logeuclid,
+    pytest.param(partial(mean_power, p=0.42), id="mean_power"),
+    mean_riemann,
+    mean_thompson,
+    mean_wasserstein,
+    nanmean_riemann,
+]
+
+
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
-@pytest.mark.parametrize(
-    "mean",
-    [
-        mean_euclid,
-        mean_harmonic,
-        mean_kullback_sym,
-        mean_logdet,
-        mean_logchol,
-        mean_logeuclid,
-        mean_riemann,
-        mean_wasserstein,
-        nanmean_riemann,
-    ],
-)
+@pytest.mark.parametrize("mean", means_weighted)
+def test_mean_weight_uniform(kind, mean, get_mats):
+    n_matrices, n_channels = 4, 3
+    X = get_mats(n_matrices, n_channels, kind)
+    weights = np.ones(n_matrices)
+
+    assert mean(X, sample_weight=weights) == approx(mean(X))
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("mean", means_weighted)
 def test_mean_weight_zero(kind, mean, get_mats, get_weights):
     """Setting one weight to almost 0 it's almost like not passing the mat"""
     n_matrices, n_channels = 5, 3
     X = get_mats(n_matrices, n_channels, kind)
     weights = get_weights(n_matrices)
-
-    M = mean(X[1:], sample_weight=weights[1:])
     weights[0] = 1e-12
-    Mw = mean(X, sample_weight=weights)
-    assert M == approx(Mw, rel=1e-6, abs=1e-8)
+
+    M1 = mean(X[1:], sample_weight=weights[1:])
+    M2 = mean(X, sample_weight=weights)
+    assert M1 == approx(M2, rel=1e-6, abs=1e-8)
 
 
-@pytest.mark.parametrize(
-    "mean",
-    [
-        mean_euclid,
-        mean_harmonic,
-        mean_kullback_sym,
-        mean_logdet,
-        mean_logchol,
-        mean_logeuclid,
-        mean_riemann,
-        mean_wasserstein,
-        nanmean_riemann,
-    ],
-)
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("mean", means_weighted)
+def test_mean_weight_one(kind, mean, get_mats):
+    """Setting one weight to 1 it's like the mat"""
+    n_matrices, n_channels = 4, 3
+    X = get_mats(n_matrices, n_channels, kind)
+    weights = np.zeros(n_matrices)
+    weights[0] = 1
+
+    assert mean(X, sample_weight=weights) == approx(X[0])
+
+
+@pytest.mark.parametrize("mean", means_weighted)
 def test_mean_weight_error(mean, get_mats, get_weights):
     n_matrices, n_channels = 3, 2
     X = get_mats(n_matrices, n_channels, "spd")
     weights = get_weights(n_matrices + 1)
     with pytest.raises(ValueError):
         mean(X, sample_weight=weights)
+
+
+###############################################################################
 
 
 @pytest.mark.parametrize(
@@ -241,6 +258,9 @@ def test_mean_broadcasting(mean, get_mats):
     M5 = mean(X)
     assert M5.shape == (n_dim5, n_dim4, n_channels, n_channels)
     assert M5[0, 0] == approx(M3)
+
+
+###############################################################################
 
 
 @pytest.mark.parametrize(
@@ -399,6 +419,9 @@ def test_mean_geometric_3mats(kind, mean, get_mats):
     assert M == approx(mean_riemann(X), abs=1e-6, rel=1e-3)
 
 
+###############################################################################
+
+
 @pytest.mark.parametrize("n_dim1, n_dim2", [(4, 5), (5, 4)])
 @pytest.mark.parametrize("kind", ["real", "comp"])
 def test_mean_euclid(n_dim1, n_dim2, kind, get_mats):
@@ -528,6 +551,9 @@ def test_mean_riemann_check_raise():
             mean_riemann(X)
 
 
+###############################################################################
+
+
 @pytest.mark.parametrize("init", [True, False])
 def test_mean_masked_riemann(init, get_mats, get_masks):
     n_matrices, n_channels = 5, 3
@@ -581,6 +607,9 @@ def test_mean_nan_riemann_errors(get_mats):
         X_ = xp.asarray(X, copy=True)
         X_[1, 0, 1] = float("nan")  # corrup an off-diagonal value
         nanmean_riemann(X_)
+
+
+###############################################################################
 
 
 def callable_average(X, sample_weight=None):

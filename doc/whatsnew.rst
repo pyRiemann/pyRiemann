@@ -93,6 +93,9 @@ v0.13.dev
   ``clf`` in place, shared by all instances using default value.
   :pr:`503` by :user:`qbarthelemy`
 
+- Enhance :func:`pyriemann.geometry.mean.mean_thompson` actually using parameter ``sample_weight``.
+  :pr:`499` by :user:`raashish1601`
+
 v0.12 (July 2026)
 -----------------
 
