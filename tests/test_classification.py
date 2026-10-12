@@ -301,6 +301,23 @@ def test_tsclassifier_fit(clf, get_mats, get_labels, get_weights):
     clf.fit(X, y, sample_weight=weights).predict(X)
 
 
+def test_tsclassifier_clf_not_fitted_inplace(get_mats, get_labels):
+    """Test that default clf is not shared and fitted between instances"""
+    n_matrices, n_channels, n_classes = 10, 3, 2
+    X1 = get_mats(n_matrices, n_channels, "spd")
+    X2 = get_mats(n_matrices, n_channels, "spd")
+    y = get_labels(n_matrices, n_classes)
+
+    clf1, clf2 = TSClassifier(), TSClassifier()
+    pred1 = clf1.fit(X1, y).predict_proba(X1)
+    clf2.fit(X2, y[::-1])
+    assert_array_equal(clf1.predict_proba(X1), pred1)
+
+    for clf in (clf1, clf2):
+        assert not hasattr(clf.clf, "classes_")
+        assert clf._pipe.steps[-1][1] is not clf.clf
+
+
 def test_tsclassifier_clf_error(get_mats, get_labels):
     """Test TS if not Classifier"""
     n_matrices, n_channels, n_classes = 6, 3, 2
