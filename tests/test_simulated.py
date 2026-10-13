@@ -267,10 +267,8 @@ def test_make_classification(n_classes, n_domains, n_dim, kind):
     n_matrices_tot = n_matrices * n_classes * n_domains
     assert X.shape == (n_matrices_tot, n_dim, n_dim)
     assert y_enc.shape == (n_matrices_tot,)
-    if kind == "spd":
-        assert is_spd(X)
-    else:
-        assert is_hpd(X)
+    assert is_hpd(X)
+    if kind == "hpd":
         assert not is_real(X)
 
     _, y, domains = decode_domains(X, y_enc)
@@ -282,7 +280,8 @@ def test_make_classification(n_classes, n_domains, n_dim, kind):
 
 
 @pytest.mark.parametrize("n_dim", [2, 3, 4])
-def test_make_classification_domain_sep(n_dim):
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+def test_make_classification_domain_sep_array(n_dim, kind):
     """Test that domains are separated by the requested distances."""
     domain_seps = [2.0, 5.0]
     X, y_enc = make_classification(
@@ -292,6 +291,7 @@ def test_make_classification_domain_sep(n_dim):
         random_state=42,
         domain_names=["ref", "dom_0", "dom_1"],
         n_dim=n_dim,
+        kind=kind
     )
     _, _, domains = decode_domains(X, y_enc)
 
@@ -323,6 +323,38 @@ def test_make_classification_domain_sep_scalar():
     for i in range(len(domain_names)):
         for j in range(i + 1, len(domain_names)):
             assert distance_riemann(means[i], means[j]) == approx(domain_sep)
+
+
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("n_dim", [2, 3, 4])
+def test_make_classification_stretch_array(n_dim, kind):
+    """Test that stretch scales the dispersion of each other domain."""
+    stretch = [2.0, 5.0]
+    domain_names = ["ref", "dom_0", "dom_1"]
+    params = dict(
+        n_matrices=10,
+        random_state=42,
+        domain_names=domain_names,
+        n_dim=n_dim,
+        kind=kind,
+    )
+    X, y_enc = make_classification(stretch=stretch, **params)
+    X1, y1_enc = make_classification(stretch=1.0, **params)
+    _, _, domains = decode_domains(X, y_enc)
+    _, _, domains1 = decode_domains(X1, y1_enc)
+
+    # reference domain is not stretched
+    assert_array_almost_equal(X[domains == "ref"], X1[domains1 == "ref"])
+
+    for i, domain in enumerate(domain_names[1:]):
+        X_d, X1_d = X[domains == domain], X1[domains1 == domain]
+        M_d = mean_riemann(X_d, maxiter=1000)
+        M1_d = mean_riemann(X1_d, maxiter=1000)
+        # stretch does not move the global mean of the domain
+        assert distance_riemann(M_d, M1_d) == approx(0, abs=1e-3)
+        # distances to the mean are multiplied by the stretch factor
+        assert distance_riemann(X_d, M_d) \
+            == approx(stretch[i] * distance_riemann(X1_d, M1_d), rel=1e-3)
 
 
 def test_make_classification_default_is_unchanged():

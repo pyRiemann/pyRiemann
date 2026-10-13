@@ -2,7 +2,9 @@ import numpy as np
 from sklearn.utils.validation import check_random_state
 
 from ..geometry._docs import deprecated
-from ..geometry.base import ctranspose, invsqrtm, powm, sqrtm, expm
+from ..geometry.base import (
+    _symmetrize, ctranspose, invsqrtm, powm, sqrtm, expm
+)
 from ..geometry.distance import distance_riemann
 from ..geometry.mean import mean_riemann
 from ..transfer import encode_domains
@@ -474,7 +476,7 @@ def _make_equidistant_matrices(n_dim, seps, is_complex, rs):
     Pv = rs.randn(n_dim, n_dim)  # create random tangent vector
     if is_complex:
         Pv = Pv + 1j * rs.randn(n_dim, n_dim)
-    Pv = (Pv + ctranspose(Pv)) / 2  # symmetrize
+    Pv = _symmetrize(Pv)
     Pv /= np.linalg.norm(Pv)  # normalize
 
     # its eigenvectors give the common eigenbasis, and its eigenvalues, of
@@ -540,6 +542,20 @@ def make_classification(
     Useful for testing classification or clustering methods on transfer
     learning applications.
 
+    The centers of the classes are commuting matrices: they share a random
+    eigenbasis, in which the logarithms of their eigenvalues are the vertices
+    of a regular simplex. Since the Riemannian distance between commuting
+    matrices is the Euclidean distance between the logarithms of their
+    eigenvalues, the centers of the classes are pairwise at distance
+    ``class_sep``. The global means of the domains are built the same way:
+    the global mean of the other domain :math:`i` is at distance :math:`s_i`,
+    the :math:`i`-th element of ``domain_sep``, from the global mean of the
+    reference domain, and the global means of two other domains :math:`i` and
+    :math:`j` are at distance :math:`\sqrt{s_i^2 + s_j^2 - s_i s_j}`, equal to
+    ``domain_sep`` when it is a scalar. A regular simplex with :math:`n`
+    vertices spans :math:`n - 1` dimensions, hence the constraint on
+    ``n_dim``.
+
     Parameters
     ----------
     n_matrices : int
@@ -585,27 +601,13 @@ def make_classification(
     Returns
     -------
     X_enc : ndarray, shape (n_matrices_tot, n_dim, n_dim)
-        Set of SPD or HPD matrices, where n_matrices_tot is equal to
+        Set of matrices, where n_matrices_tot is equal to
         n_matrices x len(class_names) x len(domain_names).
     y_enc : ndarray, shape (n_matrices_tot,)
         Extended labels for each matrix.
 
     Notes
     -----
-    The centers of the classes are commuting matrices: they share a random
-    eigenbasis, in which the logarithms of their eigenvalues are the vertices
-    of a regular simplex. Since the Riemannian distance between commuting
-    matrices is the Euclidean distance between the logarithms of their
-    eigenvalues, the centers of the classes are pairwise at distance
-    ``class_sep``. The global means of the domains are built the same way:
-    the global mean of the other domain :math:`i` is at distance :math:`s_i`,
-    the :math:`i`-th element of ``domain_sep``, from the global mean of the
-    reference domain, and the global means of two other domains :math:`i` and
-    :math:`j` are at distance :math:`\sqrt{s_i^2 + s_j^2 - s_i s_j}`, equal to
-    ``domain_sep`` when it is a scalar. A regular simplex with :math:`n`
-    vertices spans :math:`n - 1` dimensions, hence the constraint on
-    ``n_dim``.
-
     .. versionadded:: 0.4
     .. versionchanged:: 0.8
         Add parameter ``domain_names``.
