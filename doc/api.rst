@@ -649,7 +649,7 @@ Datasets
     make_matrices
     make_masks
     sample_gaussian
-    make_classification_transfer
+    make_classification
 
     :template: class.rst
 
