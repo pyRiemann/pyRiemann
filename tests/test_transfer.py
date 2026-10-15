@@ -154,15 +154,15 @@ def test_tldummy(rndstate, space):
 
 @pytest.mark.parametrize("metric", ["riemann", "euclid"])
 @pytest.mark.parametrize("use_weight", [True, False])
-@pytest.mark.parametrize(
-    "target_domain", ["target_domain", "last", "transductive"]
-)
+@pytest.mark.parametrize("target_domain", ["tgt", "last", "transductive"])
 def test_tlcenter_manifold(rndstate, get_weights,
                            metric, use_weight, target_domain):
     """Test centering matrices to identity"""
+    domain_names = ["tgt", "src2", "src1"]
     X, y_enc = make_classification(
         n_matrices=25,
         random_state=rndstate,
+        domain_names=domain_names
     )
     if use_weight:
         weights = get_weights(len(y_enc))
@@ -191,15 +191,18 @@ def test_tlcenter_manifold(rndstate, get_weights,
     for d in np.unique(domain):
         assert_transform(d)
 
-    # Test transform: "transductive" recenters the whole input to its own
-    # recomputed (unweighted) mean, while "target_domain"/"last" only
-    # guarantee that the target domain's own slice is centered, weighted as
-    # it was when centers_ was fitted
+    # Test transform:
+    # "transductive" recenters the whole input to its own recomputed
+    # (unweighted) mean, while
+    # "target_domain"/"last" only guarantee that the target domain's own slice
+    # is centered, weighted as it was when centers_ was fitted
     X_new = rct.transform(X)
     if target_domain == "transductive":
         assert gmean(X_new, metric=metric) == pytest.approx(np.eye(2))
+    elif target_domain == "last":
+        assert_transform("src1")  # last fitted domain is src1
     else:
-        assert_transform("target_domain")
+        assert_transform("tgt")
 
 
 @pytest.mark.parametrize("metric", ["riemann", "euclid"])
@@ -250,7 +253,7 @@ def test_tlcenter_tangentspace(rndstate, get_weights, use_weight,
     n_ts = 10
     X, y_enc = make_classification_transfer_tangspace(
         rndstate,
-        ["tgt", "src1", "src2"],
+        ["tgt", "src2", "src1"],
         n_vectors_d=50,
         n_ts=n_ts,
     )
@@ -278,13 +281,15 @@ def test_tlcenter_tangentspace(rndstate, get_weights, use_weight,
     for d in np.unique(domain):
         assert_transform(d)
 
-    # Test transform: "transductive" recenters the whole input to its own
-    # recomputed mean, while "tgt"/"last" only guarantee that the target
-    # domain's own slice is centered
+    # Test transform:
+    # "transductive" recenters the whole input to its own recomputed mean,
+    # "tgt"/"last" only guarantee that target domain's own slice is centered
     X_new = tlctr.transform(X)
     assert X_new.shape == X.shape
     if target_domain == "transductive":
         assert_array_almost_equal(np.mean(X_new, axis=0), np.zeros(n_ts))
+    elif target_domain == "last":
+        assert_transform("src1")  # last fitted domain is src1
     else:
         assert_transform("tgt")
 
