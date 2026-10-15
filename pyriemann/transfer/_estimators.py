@@ -135,7 +135,9 @@ class TLCenter(TransformerMixin, BaseEstimator):
             This unsupervised re-estimation of the center on unseen data was
             originally proposed for inter-session adaptation [3]_.
         Elif ``"last"``:
-            ``transform()`` recenters inputs to the last fitted domain.
+            ``transform()`` recenters inputs to the last fitted domain, ie
+            the domain appearing last (by order of first appearance) in the
+            inputs given to ``fit()``.
         Else:
             ``transform()`` recenters inputs to the specified target domain.
 
@@ -159,6 +161,8 @@ class TLCenter(TransformerMixin, BaseEstimator):
 
         .. versionchanged:: 0.8
             Rename ``recenter_`` into ``centers_``.
+        .. versionchanged:: 0.13
+            Order domains by first appearance in the inputs given to ``fit()``.
 
     Notes
     -----
@@ -173,6 +177,8 @@ class TLCenter(TransformerMixin, BaseEstimator):
     .. versionchanged:: 0.13
         Add ``"transductive"`` option to parameter ``target_domain``,
         for transductive estimation of centers.
+        Replace option ``""`` by ``"last"``.
+        Correct option ``"last"`` sorting domains by order of fitting.
 
     References
     ----------
@@ -227,7 +233,10 @@ class TLCenter(TransformerMixin, BaseEstimator):
 
         self.centers_ = {}
 
-        for d in np.unique(domains):
+        # domains are processed in order of first appearance, so that the
+        # last key of centers_ is the last fitted domain
+        idx_first = np.unique(domains, return_index=True)[1]
+        for d in domains[np.sort(idx_first)]:
             idx = domains == d
 
             if X.ndim == 3:
@@ -360,7 +369,7 @@ class TLScale(TransformerMixin, BaseEstimator):
     ----------
     target_domain : str
         Domain to consider as target.
-    dispersion : float, default=1.0
+    final_dispersion : float, default=1.0
         For inputs in manifold, target value for the dispersion of the
         matrices.
     centered_data : bool, default=False

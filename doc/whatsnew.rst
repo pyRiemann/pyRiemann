@@ -109,6 +109,10 @@ v0.13.dev
   each domain other than the reference one.
   :pr:`479` by :user:`adityasingh2400`
 
+- Correct ``transform()`` of :class:`pyriemann.transfer.TLCenter` used with
+  ``target_domain="last"`` sorting domains by order of fitting.
+  :pr:`506` by :user:`qbarthelemy`
+
 v0.12 (July 2026)
 -----------------
 
