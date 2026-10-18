@@ -74,6 +74,8 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
     for _ in range(maxiter):
         dists = distance(X, M, metric="euclid")[:, 0]
         is_zero = (dists == 0)
+        if bool(xp.all(is_zero)):
+            return M
 
         w = weights[~is_zero] / dists[~is_zero]
         Mnew = mean_euclid(X[~is_zero], sample_weight=w)  # Eq(2.4) of [2]
