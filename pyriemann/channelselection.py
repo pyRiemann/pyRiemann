@@ -48,6 +48,8 @@ class ElectrodeSelection(TransformerMixin, BaseEstimator):
         Add parameter ``sample_weight`` to ``fit()``.
     .. versionchanged:: 0.8
         Add ``fit_transform()``.
+    .. versionchanged:: 0.13
+        Add support for HPD matrices.
 
     See Also
     --------
@@ -75,7 +77,7 @@ class ElectrodeSelection(TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None | ndarray, shape (n_matrices,), default=None
             Labels for each matrix.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
@@ -124,12 +126,12 @@ class ElectrodeSelection(TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
 
         Returns
         -------
         X_new : ndarray, shape (n_matrices, n_elec, n_elec)
-            Set of SPD matrices after reduction of the number of channels.
+            Set of SPD/HPD matrices after reduction of the number of channels.
         """
         return X[:, self.subelec_, :][:, :, self.subelec_]
 
@@ -139,7 +141,7 @@ class ElectrodeSelection(TransformerMixin, BaseEstimator):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices.
+            Set of SPD/HPD matrices.
         y : None | ndarray, shape (n_matrices,), default=None
             Labels for each matrix.
         sample_weight : None | ndarray, shape (n_matrices,), default=None
@@ -148,7 +150,7 @@ class ElectrodeSelection(TransformerMixin, BaseEstimator):
         Returns
         -------
         X_new : ndarray, shape (n_matrices, n_elec, n_elec)
-            Set of SPD matrices after reduction of the number of channels.
+            Set of SPD/HPD matrices after reduction of the number of channels.
 
         Notes
         -----

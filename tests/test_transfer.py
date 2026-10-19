@@ -10,7 +10,7 @@ from sklearn.svm import LinearSVC, LinearSVR
 from sklearn.utils.validation import check_is_fitted
 
 from pyriemann.datasets.simulated import (
-    make_classification_transfer,
+    make_classification,
     make_matrices,
 )
 from pyriemann.classification import (
@@ -22,6 +22,7 @@ from pyriemann.classification import (
     MeanField,
 )
 from pyriemann.geometry.distance import distance, distance_riemann
+from pyriemann.geometry.geodesic import geodesic
 from pyriemann.geometry.mean import gmean, mean_riemann
 from pyriemann.geometry.tangentspace import tangent_space
 from pyriemann.regression import KNearestNeighborRegressor, SVR
@@ -39,7 +40,7 @@ from pyriemann.transfer import (
 )
 from pyriemann.utils._check import check_weights
 
-rndstate = 1234
+pytestmark = pytest.mark.numpy_only
 
 
 ###############################################################################
@@ -93,7 +94,7 @@ def test_encode_decode_domains(rndstate):
 )
 def test_tlsplitter(rndstate, cv):
     """Test wrapper for cross-validation"""
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=25,
         class_sep=5,
         class_disp=1.0,
@@ -111,9 +112,33 @@ def test_tlsplitter(rndstate, cv):
 ###############################################################################
 
 
+@pytest.mark.parametrize("estimator", [TLCenter, TLScale, TLRotate])
+@pytest.mark.parametrize("use_vectors", [True, False])
+def test_tltransformer_fittransform(estimator, use_vectors, rndstate):
+    """Test that fit_transform does not modify the inputs"""
+    if use_vectors:
+        X, y_enc = make_classification_transfer_tangspace(
+            rndstate, ["tgt", "src"], n_vectors_d=20, n_ts=4,
+        )
+    else:
+        X, y_enc = make_classification(
+            n_matrices=20, random_state=rndstate,
+            domain_names=["tgt", "src"]
+        )
+    X_copy = X.copy()
+
+    # calling fit_transform does not modify inputs
+    X_new = estimator(target_domain="tgt").fit_transform(X, y_enc)
+    assert_array_equal(X, X_copy)
+
+    # calling fit_transform twice on the same inputs gives the same outputs
+    X_new2 = estimator(target_domain="tgt").fit_transform(X, y_enc)
+    assert_array_equal(X_new, X_new2)
+
+
 @pytest.mark.parametrize("space", ["manifold", "tangentspace"])
 def test_tldummy(rndstate, space):
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=5,
         random_state=rndstate,
     )
@@ -129,15 +154,15 @@ def test_tldummy(rndstate, space):
 
 @pytest.mark.parametrize("metric", ["riemann", "euclid"])
 @pytest.mark.parametrize("use_weight", [True, False])
-@pytest.mark.parametrize(
-    "target_domain", ["target_domain", "last", "transductive"]
-)
+@pytest.mark.parametrize("target_domain", ["tgt", "last", "transductive"])
 def test_tlcenter_manifold(rndstate, get_weights,
                            metric, use_weight, target_domain):
     """Test centering matrices to identity"""
-    X, y_enc = make_classification_transfer(
+    domain_names = ["tgt", "src2", "src1"]
+    X, y_enc = make_classification(
         n_matrices=25,
         random_state=rndstate,
+        domain_names=domain_names
     )
     if use_weight:
         weights = get_weights(len(y_enc))
@@ -166,15 +191,18 @@ def test_tlcenter_manifold(rndstate, get_weights,
     for d in np.unique(domain):
         assert_transform(d)
 
-    # Test transform: "transductive" recenters the whole input to its own
-    # recomputed (unweighted) mean, while "target_domain"/"last" only
-    # guarantee that the target domain's own slice is centered, weighted as
-    # it was when centers_ was fitted
+    # Test transform:
+    # "transductive" recenters the whole input to its own recomputed
+    # (unweighted) mean, while
+    # "target_domain"/"last" only guarantee that the target domain's own slice
+    # is centered, weighted as it was when centers_ was fitted
     X_new = rct.transform(X)
     if target_domain == "transductive":
         assert gmean(X_new, metric=metric) == pytest.approx(np.eye(2))
+    elif target_domain == "last":
+        assert_transform("src1")  # last fitted domain is src1
     else:
-        assert_transform("target_domain")
+        assert_transform("tgt")
 
 
 @pytest.mark.parametrize("metric", ["riemann", "euclid"])
@@ -183,7 +211,7 @@ def test_tlcenter_manifold(rndstate, get_weights,
 def test_tlcenter_manifold_fit_transf(rndstate, get_weights,
                                       metric, use_weight, target_domain):
     """Test .fit_transform() versus .fit().transform()"""
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=25,
         random_state=rndstate,
     )
@@ -225,7 +253,7 @@ def test_tlcenter_tangentspace(rndstate, get_weights, use_weight,
     n_ts = 10
     X, y_enc = make_classification_transfer_tangspace(
         rndstate,
-        ["tgt", "src1", "src2"],
+        ["tgt", "src2", "src1"],
         n_vectors_d=50,
         n_ts=n_ts,
     )
@@ -253,13 +281,15 @@ def test_tlcenter_tangentspace(rndstate, get_weights, use_weight,
     for d in np.unique(domain):
         assert_transform(d)
 
-    # Test transform: "transductive" recenters the whole input to its own
-    # recomputed mean, while "tgt"/"last" only guarantee that the target
-    # domain's own slice is centered
+    # Test transform:
+    # "transductive" recenters the whole input to its own recomputed mean,
+    # "tgt"/"last" only guarantee that target domain's own slice is centered
     X_new = tlctr.transform(X)
     assert X_new.shape == X.shape
     if target_domain == "transductive":
         assert_array_almost_equal(np.mean(X_new, axis=0), np.zeros(n_ts))
+    elif target_domain == "last":
+        assert_transform("src1")  # last fitted domain is src1
     else:
         assert_transform("tgt")
 
@@ -270,7 +300,7 @@ def test_tlcenter_tangentspace(rndstate, get_weights, use_weight,
 def test_tlscale_manifold(rndstate, get_weights,
                           use_centered_data, metric, use_weight):
     """Test scaling matrices to a target dispersion"""
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=25,
         class_disp=2.0,
         random_state=rndstate,
@@ -349,7 +379,7 @@ def test_tlscale_tangentspace(rndstate, get_weights, use_weight):
 @pytest.mark.parametrize("use_weight", [True, False])
 def test_tlrotate_manifold(rndstate, get_weights, metric, use_weight):
     """Test rotating matrices"""
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=50,
         class_sep=3,
         class_disp=1.0,
@@ -442,13 +472,38 @@ def test_tlrotate_tangentspace(rndstate, get_weights, expl_var,
 
     X_rot = tlrot.fit_transform(X, y_enc, sample_weight=weights)
     assert X_rot.shape == X.shape
-    assert_array_equal(
-        X_rot[domain == "target_domain"],
-        X[domain == "target_domain"],
-    )
+    assert_array_equal(X_rot[domain == "tgt"], X[domain == "tgt"])
 
     X_rot = tlrot.transform(X)
     assert_array_equal(X_rot, X)
+
+
+def test_tlrotate_tangentspace_recovers_rotation(rndstate):
+    """Test that rotating vectors brings source domain onto target domain"""
+    n_ts, n_vectors_d = 4, 60
+    X_src = rndstate.randn(n_vectors_d, n_ts)
+    y = rndstate.randint(0, 2, size=n_vectors_d)
+    X_src += 3 * np.take(np.eye(n_ts)[:2], y, axis=0)  # separate classes
+    rotation = np.linalg.qr(rndstate.randn(n_ts, n_ts))[0]
+    X_tgt = X_src @ rotation
+
+    X = np.concatenate([X_tgt, X_src])
+    domain = np.array(n_vectors_d * ["tgt"] + n_vectors_d * ["src"])
+    _, y_enc = encode_domains(X, np.concatenate([y, y]), domain)
+
+    tlrot = TLRotate(target_domain="tgt", n_components=1, n_clusters=2)
+    X_rot = tlrot.fit_transform(X, y_enc)
+
+    # the rotation must map the source domain onto the target domain
+    for label in np.unique(y):
+        m_tgt = np.mean(X_tgt[y == label], axis=0)
+        dist_before = np.linalg.norm(
+            np.mean(X_src[y == label], axis=0) - m_tgt
+        )
+        dist_after = np.linalg.norm(
+            np.mean(X_rot[domain == "src"][y == label], axis=0) - m_tgt
+        )
+        assert dist_after < dist_before / 10
 
 
 ###############################################################################
@@ -466,7 +521,7 @@ def test_tlrotate_tangentspace(rndstate, get_weights, expl_var,
 )
 def test_tlclassifier_mdm(rndstate, clf, source_weight, target_weight):
     """Test wrapper for MDM classifier"""
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=10,
         class_sep=5,
         class_disp=1.0,
@@ -524,7 +579,7 @@ def test_tlclassifier_mdm(rndstate, clf, source_weight, target_weight):
 @pytest.mark.parametrize("domains_weight", [(1, 0), (0, 1), (1, 1)])
 def test_tlclassifier_manifold(rndstate, clf, domains_weight):
     """Test wrapper for classifiers in manifold"""
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=10,
         class_sep=5,
         class_disp=1.0,
@@ -546,7 +601,7 @@ def test_tlclassifier_manifold(rndstate, clf, domains_weight):
 @pytest.mark.parametrize("domains_weight", [(1, 0), (0, 1), (1, 1)])
 def test_tlclassifier_tangentspace(rndstate, clf, domains_weight):
     """Test wrapper for classifiers in tangent space"""
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=10,
         class_sep=5,
         class_disp=1.0,
@@ -651,18 +706,20 @@ def tlregressor(reg, X, y_enc, domains_weights):
 ###############################################################################
 
 
-@pytest.mark.parametrize("domain_tradeoff", [0, 1])  # 0.5
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("domain_tradeoff", [0, 0.5, 1])
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-@pytest.mark.parametrize("n_jobs", [-1, 1, 2])
-def test_mdwm(rndstate, domain_tradeoff, metric, n_jobs):
-    """Test for MDWM"""
+@pytest.mark.parametrize("n_jobs", [-1, 2])
+def test_mdwm(kind, domain_tradeoff, metric, n_jobs, rndstate, get_mats):
     n_classes, n_matrices = 2, 40
-    X, y_enc = make_classification_transfer(
+    X, y_enc = make_classification(
         n_matrices=n_matrices // 4,
         class_sep=5,
         class_disp=1.0,
         random_state=rndstate,
     )
+    if kind == "hpd":
+        X = get_mats(n_matrices, 2, "hpd")
 
     clf = MDWM(
         domain_tradeoff=domain_tradeoff,
@@ -683,39 +740,42 @@ def test_mdwm(rndstate, domain_tradeoff, metric, n_jobs):
     y_target = y[domain == "target_domain"]
 
     if domain_tradeoff == 0.0:
-        X_0 = X_source[y_source == clf.classes_[0]]
-        X_1 = X_source[y_source == clf.classes_[1]]
+        R_0 = gmean(X_source[y_source == clf.classes_[0]], metric=metric)
+        R_1 = gmean(X_source[y_source == clf.classes_[1]], metric=metric)
     elif domain_tradeoff == 1.0:
-        X_0 = X_target[y_target == clf.classes_[0]]
-        X_1 = X_target[y_target == clf.classes_[1]]
+        R_0 = gmean(X_target[y_target == clf.classes_[0]], metric=metric)
+        R_1 = gmean(X_target[y_target == clf.classes_[1]], metric=metric)
     elif domain_tradeoff == 0.5:
-        X_0 = X[y == clf.classes_[0]]
-        X_1 = X[y == clf.classes_[1]]
-    M_0 = gmean(X_0, metric=metric)
-    assert clf.covmeans_[0] == pytest.approx(M_0)
-    M_1 = gmean(X_1, metric=metric)
-    assert clf.covmeans_[1] == pytest.approx(M_1)
-
-    # test predict
-    predicted = clf.predict(X)
-    assert predicted.shape == (n_matrices,)
-
-    # test predict_proba
-    probabilities = clf.predict_proba(X)
-    assert probabilities.shape == (n_matrices, n_classes)
-    assert probabilities.sum(axis=1) == approx(np.ones(n_matrices))
+        Ms_0 = gmean(X_source[y_source == clf.classes_[0]], metric=metric)
+        Ms_1 = gmean(X_source[y_source == clf.classes_[1]], metric=metric)
+        Mt_0 = gmean(X_target[y_target == clf.classes_[0]], metric=metric)
+        Mt_1 = gmean(X_target[y_target == clf.classes_[1]], metric=metric)
+        R_0 = geodesic(Ms_0, Mt_0, 0.5, metric=metric)
+        R_1 = geodesic(Ms_1, Mt_1, 0.5, metric=metric)
+    assert clf.covmeans_[0] == pytest.approx(R_0)
+    assert clf.covmeans_[1] == pytest.approx(R_1)
 
     # test transform
     dists = clf.transform(X)
     assert dists.shape == (n_matrices, n_classes)
 
+    # test predict_proba
+    prob = clf.predict_proba(X)
+    assert prob.shape == (n_matrices, n_classes)
+    assert prob.sum(axis=1) == approx(np.ones(n_matrices))
+
+    # test predict
+    predicted = clf.predict(X)
+    assert predicted.shape == (n_matrices,)
+
     # test score
-    clf.score(X, y_enc)
+    score = clf.score(X, y_enc)
+    assert isinstance(score, float)
 
 
 def test_mdwm_weights(rndstate, get_weights):
-    n_classes, n_matrices = 2, 40
-    X, y_enc = make_classification_transfer(
+    n_matrices = 40
+    X, y_enc = make_classification(
         n_matrices=n_matrices // 4,
         class_sep=5,
         class_disp=1.0,
@@ -728,6 +788,6 @@ def test_mdwm_weights(rndstate, get_weights):
         metric="riemann",
     )
 
-    clf.fit(X, y_enc, sample_weight=get_weights(n_matrices // n_classes))
+    clf.fit(X, y_enc, sample_weight=get_weights(n_matrices // 2))
 
     clf.score(X, y_enc, sample_weight=get_weights(n_matrices))

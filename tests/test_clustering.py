@@ -1,6 +1,7 @@
 import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
+from sklearn.base import clone
 from pytest import approx
 
 from pyriemann.clustering import (
@@ -35,6 +36,7 @@ def test_clustering_two_clusters(kind, clust, get_mats, get_labels):
 
     if clust is Kmeans:
         clt_fit(clust, X, n_clusters, None)
+        clt_fit_random(clust, X, n_clusters, None)
         clt_predict(clust, X, n_clusters)
         clt_fitpredict(clust, X, n_clusters)
         clt_transform(clust, X, n_clusters)
@@ -61,6 +63,7 @@ def test_clustering_two_clusters(kind, clust, get_mats, get_labels):
 
     if clust is GaussianMixture:
         clt_fit(clust, X, n_clusters, None)
+        clt_fit_random(clust, X, n_clusters, None)
         clt_predict(clust, X)
         clt_fitpredict(clust, X)
         clt_predict_proba(clust, X)
@@ -135,6 +138,13 @@ def clt_fit(clust, X, n_clusters, labels):
         n_ts = n_channels * (n_channels + 1) // 2
         assert clt.covariances_.shape == (clt.n_components, n_ts, n_ts)
         return
+
+
+def clt_fit_random(clust, X, n_clusters, labels):
+    random_states = [None, 17, np.random.RandomState(2026)]
+    for random_state in random_states:
+        clt = clust(random_state=random_state)
+        clt.fit(X, labels)
 
 
 def clt_fit_weights(clust, X, weights):
@@ -279,6 +289,18 @@ def clt_score(clust, X, y=None):
     assert isinstance(score, float)
 
 
+@pytest.mark.parametrize("clust", clusts)
+def test_clustering_get_params(clust):
+    """Test sklearn compliance of get_params, set_params and clone"""
+    clt = clust()
+
+    params = clt.get_params()
+    assert clone(clt).get_params() == params
+
+    clt.set_params(metric="logeuclid")
+    assert clone(clt).get_params()["metric"] == "logeuclid"
+
+
 ###############################################################################
 
 
@@ -314,26 +336,38 @@ def test_kmeans(clust, init, n_init, metric, get_mats, get_labels):
         assert dists.shape == (n_matrices, clt.covmeans_.shape[0])
 
 
+def test_kmeansperclasstransform_get_params():
+    """Test that KmeansPerClassTransform exposes all Kmeans parameters"""
+    assert (
+        KmeansPerClassTransform().get_params().keys()
+        == Kmeans().get_params().keys()
+    )
+
+
 @np.vectorize
 def callable_kernel(x):
     return np.exp(- np.abs(x))
 
 
-@pytest.mark.parametrize("kernel", [
-    "normal", "uniform", callable_kernel,
-])
-@pytest.mark.parametrize("metric", [
-    "euclid", "logchol", "logeuclid", "riemann", "wasserstein"
-])
-def test_meanshift(kernel, metric, get_mats, get_labels):
+@pytest.mark.parametrize("kernel", ["normal", "uniform", callable_kernel])
+@pytest.mark.parametrize("bandwidth", [None, 0.1])
+@pytest.mark.parametrize("metric", ["euclid", "logeuclid"])
+def test_meanshift(kernel, bandwidth, metric, get_mats, capsys):
     n_matrices, n_channels = 10, 3
     X = get_mats(n_matrices, n_channels, "spd")
 
     clt = MeanShift(
         kernel=kernel,
+        bandwidth=bandwidth,
         metric=metric,
     )
     clt.fit(X)
+
+    if bandwidth is not None:
+        assert clt._bandwidth == bandwidth
+    assert clt.modes_.shape[1:] == (n_channels, n_channels)
+    assert clt.labels_.shape == (n_matrices,)
+    assert capsys.readouterr().out == ""
 
 
 def test_gaussian(get_mats, get_weights):
@@ -368,15 +402,15 @@ def test_gmm(n_components, get_mats, get_weights):
     means_init = get_mats(n_components, n_channels, "spd")
     weights_init = get_weights(n_components)
 
-    gmm = GaussianMixture(
+    clt = GaussianMixture(
         n_components=n_components,
         means_init=means_init,
         weights_init=weights_init,
     )
-    gmm.fit(X)
+    clt.fit(X)
 
     n_sampled_matrices = 20
-    X, y = gmm.sample(n_sampled_matrices)
+    X, y = clt.sample(n_sampled_matrices)
     assert X.shape == (n_sampled_matrices, n_channels, n_channels)
     assert y.shape == (n_sampled_matrices,)
 

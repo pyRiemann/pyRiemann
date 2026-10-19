@@ -12,7 +12,16 @@ from scipy.linalg import solve_continuous_lyapunov
 
 from ._backend import diag_indices, tril_indices, triu_indices
 from ._check import check_function, check_matrix_pair
-from .base import ctranspose, expm, invsqrtm, logm, sqrtm, ddexpm, ddlogm
+from .base import (
+    _symmetrize,
+    ctranspose,
+    expm,
+    invsqrtm,
+    logm,
+    sqrtm,
+    ddexpm,
+    ddlogm,
+)
 
 
 def exp_map_euclid(X, Cref, **kwargs):
@@ -1408,7 +1417,7 @@ def transport_wasserstein(X, A, B, n_steps=50):
 
     A12, A12inv = sqrtm(A), invsqrtm(A)
     T = A12inv @ sqrtm(A12 @ B @ A12) @ A12inv
-    T = (T + ctranspose(T)) / 2
+    T = _symmetrize(T)
     K = T - eye
     AK, KA = A @ K, K @ A
 
@@ -1419,7 +1428,7 @@ def transport_wasserstein(X, A, B, n_steps=50):
         Mt = (1 - t) * eye + t * T
         gamma = Mt @ A @ Mt
         rhs = Mt @ AK @ X0 + X0 @ KA @ Mt
-        rhs = (rhs + ctranspose(rhs)) / 2
+        rhs = _symmetrize(rhs)
         return -xp.asarray(solve_continuous_lyapunov(gamma, rhs))
 
     h = 1 / n_steps
@@ -1432,7 +1441,7 @@ def transport_wasserstein(X, A, B, n_steps=50):
         X0 = X0 + (h / 6) * (k1 + 2 * k2 + 2 * k3 + k4)
 
     X_new = B @ X0 + X0 @ B
-    return (X_new + ctranspose(X_new)) / 2
+    return _symmetrize(X_new)
 
 
 transport_functions = {

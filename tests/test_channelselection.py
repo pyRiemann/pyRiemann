@@ -7,13 +7,13 @@ from pyriemann.channelselection import ElectrodeSelection, FlatChannelRemover
 pytestmark = pytest.mark.numpy_only
 
 
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
 @pytest.mark.parametrize("use_label", [True, False])
 @pytest.mark.parametrize("use_weight", [True, False])
-def test_electrodeselection(use_label, use_weight,
+def test_electrodeselection(kind, use_label, use_weight,
                             get_mats, get_labels, get_weights):
-    """Test ElectrodeSelection"""
     n_matrices, n_channels, n_classes = 10, 30, 2
-    X = get_mats(n_matrices, n_channels, "spd")
+    X = get_mats(n_matrices, n_channels, kind)
     if use_label:
         y = get_labels(n_matrices, n_classes)
     else:

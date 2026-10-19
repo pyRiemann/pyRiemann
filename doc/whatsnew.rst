@@ -44,6 +44,75 @@ v0.13.dev
 - Enhance :class:`pyriemann.clustering.MeanShift` adding ``transform()``.
   :pr:`485` by :user:`qbarthelemy`
 
+- Enhance :class:`pyriemann.transfer.MDWM` to support HPD matrices.
+  :pr:`488` by :user:`qbarthelemy`
+
+- Enhance :class:`pyriemann.channelselection.ElectrodeSelection` to support HPD matrices.
+  :pr:`489` by :user:`qbarthelemy`
+
+- Fix ``fit_transform()`` of :class:`pyriemann.transfer.TLScale`, which
+  modified the input matrices in-place, so that two identical calls on the
+  same array returned different outputs.
+  :pr:`482` by :user:`adityasingh2400`
+
+- Correct :func:`pyriemann.geometry.mean.mean_alm` and :func:`pyriemann.geometry.mean.mean_bmp`
+  for two matrices, which were using a wrong position on the geodesic when ``sample_weight`` is not uniform.
+  :pr:`480` by :user:`adityasingh2400`
+
+- Fix parameter ``bandwidth`` of :class:`pyriemann.clustering.MeanShift`,
+  which raised an ``AttributeError`` when set to a value, and remove a
+  leftover ``print()`` in its bandwidth estimation.
+  :pr:`483` by :user:`adityasingh2400`
+
+- Correct the loss and the gradient minimized by
+  :class:`pyriemann.transfer.TLRotate` in manifold: the loss now returns the
+  sum of squared distances it is documented to minimize and that the gradient
+  is derived from, and the gradient for ``metric="riemann"`` no longer
+  diagonalizes a non-symmetric matrix with ``numpy.linalg.eigh``.
+  :pr:`492` by :user:`adityasingh2400`
+
+- Correct rotation estimation of :class:`pyriemann.transfer.TLRotate` in tangent space, which applied the
+  transpose of the Procrustes rotation, ie the inverse of the rotation mapping
+  each source domain onto the target domain.
+  :pr:`481` by :user:`adityasingh2400`
+
+- Fix ``__init__`` of
+  :class:`pyriemann.clustering.KmeansPerClassTransform`, which did not store
+  its parameters, so that ``get_params()``, ``set_params()``, ``clone()`` and
+  ``cross_val_score()`` raised an ``AttributeError``.
+  :pr:`493` by :user:`adityasingh2400`
+
+- Correct :func:`pyriemann.geometry.distance.distance_poweuclid` with ``squared=True``,
+  which divided the squared Frobenius norm by ``|p|`` instead of ``p^2``.
+  :pr:`496` by :user:`SashaMIT`
+
+- Fix :class:`pyriemann.clustering.Kmeans` used with ``random_state=np.random.RandomState()``.
+  :pr:`500` by :user:`qbarthelemy`
+
+- Correct :class:`pyriemann.classification.TSClassifier` which fitted its parameter
+  ``clf`` in place, shared by all instances using default value.
+  :pr:`503` by :user:`qbarthelemy`
+
+- Enhance :func:`pyriemann.geometry.mean.mean_thompson` actually using parameter ``sample_weight``.
+  :pr:`499` by :user:`raashish1601`
+
+- Correct ``partial_fit()`` of :class:`pyriemann.artifact_detection.Potato`
+  with ``pos_label`` different from 1.
+  :pr:`505` by :user:`qbarthelemy`
+
+- Deprecate ``pyriemann.datasets.make_classification_transfer()`` renamed into
+  :func:`pyriemann.datasets.make_classification`, and generalize it to more
+  than two classes, pairwise at the same distance, to one or more domains built
+  from a reference domain, to matrices of dimension higher than two with the
+  new parameter ``n_dim``, and to HPD matrices with the new parameter ``kind``.
+  Parameters ``domain_sep``, ``theta`` and ``stretch`` can now be defined for
+  each domain other than the reference one.
+  :pr:`479` by :user:`adityasingh2400`
+
+- Correct ``transform()`` of :class:`pyriemann.transfer.TLCenter` used with
+  ``target_domain="last"`` sorting domains by order of fitting.
+  :pr:`506` by :user:`qbarthelemy`
+
 - Enhance :func:`pyriemann.datasets.sample_gaussian`
   to generate HPD matrices from complex-typed ``mean`` for array ``sigma``.
   :issue:`463` by :user:`qbarthelemy`
@@ -477,6 +546,7 @@ v0.4 (Feb 2023)
 
 - Add a new transfer learning module ``transfer`` and examples,
   including Riemannian Procrustes Analysis (RPA) and :class:`pyriemann.transfer.MDWM`.
+  Add new function ``pyriemann.datasets.make_classification_transfer()`` to generate a dataset with 2x2 SPD matrices for transfer learning.
   :pr:`189` by :user:`plcrodrigues`, :user:`qbarthelemy` and :user:`sylvchev`
 
 - Add class distinctiveness function to measure the distinctiveness between classes on the manifold,
@@ -528,10 +598,8 @@ v0.3 (July 2022)
 - Add :class:`pyriemann.artifact_detection.PotatoField`, and an example on artifact detection.
   :pr:`142` by :user:`qbarthelemy`
 
-- Add sampling SPD matrices from a Riemannian Gaussian distribution in ``pyriemann.datasets.sample_gaussian_spd()``.
-  :pr:`140` by :user:`plcrodrigues`
-
-- Add new function :func:`pyriemann.datasets.make_gaussian_blobs` for generating random datasets with SPD matrices.
+- Add new functions: ``pyriemann.datasets.sample_gaussian_spd()`` for sampling SPD matrices from a Riemannian Gaussian distribution, and
+  :func:`pyriemann.datasets.make_gaussian_blobs` for generating random datasets with SPD matrices.
   :pr:`140` by :user:`plcrodrigues`
 
 - Add module ``pyriemann.utils.viz`` in API, add :func:`pyriemann.utils.viz.plot_waveforms`, and add an example on ERP visualization.

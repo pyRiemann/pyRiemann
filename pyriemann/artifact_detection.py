@@ -60,6 +60,8 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         Add support for HPD matrices.
     .. versionchanged:: 0.12
         Move from ``clustering`` to ``artifact_detection``.
+    .. versionchanged:: 0.13
+        Correct ``partial_fit()`` when ``pos_label`` different from 1.
 
     See Also
     --------
@@ -181,6 +183,8 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         Notes
         -----
         .. versionadded:: 0.3
+        .. versionchanged:: 0.13
+            Correct when ``pos_label`` different from 1.
         """
         if not hasattr(self, "_mdm"):
             raise ValueError(
@@ -204,10 +208,11 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
         if alpha == 0:
             return self
 
+        # labels have been converted by _check_labels: 1 for clean matrices
         Xm = gmean(
-            X[y == self.pos_label],
+            X[y == 1],
             metric=self._metric_mean,
-            sample_weight=sample_weight[y == self.pos_label],
+            sample_weight=sample_weight[y == 1],
         )
         self._mdm.covmeans_[0] = geodesic(
             self._mdm.covmeans_[0], Xm, alpha, metric=self._metric_mean
@@ -317,7 +322,7 @@ class Potato(TransformerMixin, SpdClassifMixin, BaseEstimator):
             classes = np.int32(np.unique(y))
 
             if len(classes) > 2:
-                raise ValueError("number of classes must be maximum 2")
+                raise ValueError("Number of classes must be maximum 2")
 
             if self.pos_label not in classes:
                 raise ValueError("y must contain a positive class")

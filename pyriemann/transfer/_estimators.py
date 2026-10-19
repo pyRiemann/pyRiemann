@@ -135,7 +135,9 @@ class TLCenter(TransformerMixin, BaseEstimator):
             This unsupervised re-estimation of the center on unseen data was
             originally proposed for inter-session adaptation [3]_.
         Elif ``"last"``:
-            ``transform()`` recenters inputs to the last fitted domain.
+            ``transform()`` recenters inputs to the last fitted domain, ie
+            the domain appearing last (by order of first appearance) in the
+            inputs given to ``fit()``.
         Else:
             ``transform()`` recenters inputs to the specified target domain.
 
@@ -159,6 +161,8 @@ class TLCenter(TransformerMixin, BaseEstimator):
 
         .. versionchanged:: 0.8
             Rename ``recenter_`` into ``centers_``.
+        .. versionchanged:: 0.13
+            Order domains by first appearance in the inputs given to ``fit()``.
 
     Notes
     -----
@@ -173,6 +177,8 @@ class TLCenter(TransformerMixin, BaseEstimator):
     .. versionchanged:: 0.13
         Add ``"transductive"`` option to parameter ``target_domain``,
         for transductive estimation of centers.
+        Replace option ``""`` by ``"last"``.
+        Correct option ``"last"`` sorting domains by order of fitting.
 
     References
     ----------
@@ -227,7 +233,10 @@ class TLCenter(TransformerMixin, BaseEstimator):
 
         self.centers_ = {}
 
-        for d in np.unique(domains):
+        # domains are processed in order of first appearance, so that the
+        # last key of centers_ is the last fitted domain
+        idx_first = np.unique(domains, return_index=True)[1]
+        for d in domains[np.sort(idx_first)]:
             idx = domains == d
 
             if X.ndim == 3:
@@ -360,7 +369,7 @@ class TLScale(TransformerMixin, BaseEstimator):
     ----------
     target_domain : str
         Domain to consider as target.
-    dispersion : float, default=1.0
+    final_dispersion : float, default=1.0
         For inputs in manifold, target value for the dispersion of the
         matrices.
     centered_data : bool, default=False
@@ -563,12 +572,13 @@ class TLScale(TransformerMixin, BaseEstimator):
             idx = domains == d
 
             if X.ndim == 3:
+                X_d = X[idx]
                 if not self.centered_data:  # re-center matrices to identity
-                    X[idx] = self._center(X[idx], self._means[d])
+                    X_d = self._center(X_d, self._means[d])
 
                 # stretch
                 X_new[idx] = self._strech(
-                    X[idx], self.scales_[d], self.final_dispersion
+                    X_d, self.scales_[d], self.final_dispersion
                 )
 
                 if not self.centered_data:  # re-center back to previous mean
@@ -653,6 +663,9 @@ class TLRotate(TransformerMixin, BaseEstimator):
         Add support for multisource domains in tangent space.
     .. versionchanged:: 0.11
         Add parameters ``tol_step`` and ``maxiter``.
+    .. versionchanged:: 0.13
+        Correct loss and gradient for rotation in manifold.
+        Correct estimation of rotation in tangent space.
 
     See Also
     --------
@@ -1206,8 +1219,8 @@ class MDWM(MDM):
 
     Classification by nearest centroid. For each of the given classes, a
     centroid is estimated, according to the chosen metric, as a weighted mean
-    of SPD matrices from the source domain, combined with the class centroid of
-    the target domain [1]_ [2]_.
+    of SPD/HPD matrices from the source domain, combined with the class
+    centroid of the target domain [1]_ [2]_.
     For classification, a given new matrix is attibuted to the class whose
     centroid is the nearest according to the chosen metric.
 
@@ -1220,9 +1233,9 @@ class MDWM(MDM):
         domain are used.
         At 1, this is a calibration-free system as no matrices are required
         from the source domain.
-    target_domain : string
+    target_domain : str
         Name of the target domain in extended labels.
-    metric : string | dict, default="riemann"
+    metric : str | dict, default="riemann"
         Metric used for mean estimation (for the list of supported metrics,
         see :func:`pyriemann.geometry.mean.gmean`) and for distance estimation
         (see :func:`pyriemann.geometry.distance.distance`).
@@ -1249,6 +1262,8 @@ class MDWM(MDM):
     Notes
     -----
     .. versionadded:: 0.4
+    .. versionchanged:: 0.13
+        Add support for HPD matrices.
 
     See Also
     --------
@@ -1288,7 +1303,7 @@ class MDWM(MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Set of SPD matrices from source and target domain.
+            Set of SPD/HPD matrices from source and target domain.
         y_enc : ndarray, shape (n_matrices,)
             Extended labels for each matrix.
         sample_weight : None | ndarray, shape (n_matrices_source,), \
@@ -1360,7 +1375,7 @@ class MDWM(MDM):
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
-            Test set of SPD matrices.
+            Test set of SPD/HPD matrices.
         y_enc : ndarray, shape (n_matrices,)
             Extended true labels for each matrix.
         sample_weight : None | ndarray, shape (n_matrices,), default=None

@@ -25,7 +25,7 @@ from .utils._check import check_metric, check_function, check_weights
 
 def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
     if random_state is not None:
-        random_state = np.random.RandomState(random_state)
+        random_state = check_random_state(random_state)
     if sklearn.__version__ < "1.3.0":
         return sklearnKMeans(n_clusters=n_clusters, init=init)._init_centroids(
             X,
@@ -137,6 +137,8 @@ class Kmeans(SpdClassifMixin, SpdClustMixin, SpdTransfMixin, BaseEstimator):
     .. versionadded:: 0.2
     .. versionchanged:: 0.8
         Add support for HPD matrices.
+    .. versionchanged:: 0.13
+        Fix ``random_state`` used with np.RandomState.
 
     See Also
     --------
@@ -189,8 +191,8 @@ class Kmeans(SpdClassifMixin, SpdClustMixin, SpdTransfMixin, BaseEstimator):
             The Kmeans instance.
         """
         if isinstance(self.init, str) and self.init == "random":
-            np.random.seed(self.random_state)
-            seeds = np.random.randint(
+            random_state = check_random_state(self.random_state)
+            seeds = random_state.randint(
                 np.iinfo(np.int32).max,
                 size=self.n_init,
             )
@@ -281,10 +283,11 @@ class KmeansPerClassTransform(SpdTransfMixin, BaseEstimator):
 
     Parameters
     ----------
-    n_clusters : int, default=2
-        Number of clusters.
     **params : dict
         The keyword arguments passed to :class:`pyriemann.clustering.Kmeans`.
+        They default to the defaults of :class:`pyriemann.clustering.Kmeans`,
+        and are exposed by ``get_params()`` and ``set_params()`` so that the
+        estimator can be cloned and used in a scikit-learn search.
 
     Attributes
     ----------
@@ -299,17 +302,55 @@ class KmeansPerClassTransform(SpdTransfMixin, BaseEstimator):
     .. versionadded:: 0.2
     .. versionchanged:: 0.8
         Add support for HPD matrices.
+    .. versionchanged:: 0.13
+        Store the parameters so that ``get_params()``, ``set_params()`` and
+        ``clone()`` work.
 
     See Also
     --------
     Kmeans
     """
 
-    def __init__(self, n_clusters=2, **params):
+    def __init__(self, **params):
         """Init."""
-        params["n_clusters"] = n_clusters
-        self._km = Kmeans(**params)
-        self.metric = self._km.metric
+        defaults = Kmeans().get_params()
+        defaults.update(params)
+        self.params = defaults
+        for name, value in defaults.items():
+            setattr(self, name, value)
+
+    def get_params(self, deep=True):
+        """Get the parameters passed to :class:`pyriemann.clustering.Kmeans`.
+
+        Parameters
+        ----------
+        deep : bool, default=True
+            Unused, kept for scikit-learn compatibility.
+
+        Returns
+        -------
+        params : dict
+            Parameter names mapped to their values.
+        """
+        return self.params.copy()
+
+    def set_params(self, **params):
+        """Set the parameters passed to :class:`pyriemann.clustering.Kmeans`.
+
+        Parameters
+        ----------
+        **params : dict
+            Parameters to set.
+
+        Returns
+        -------
+        self : KmeansPerClassTransform instance
+            The KmeansPerClassTransform instance.
+        """
+        for name, value in params.items():
+            self.params[name] = value
+            setattr(self, name, value)
+        return self
 
     def fit(self, X, y):
         """Fit the clusters for each class.
@@ -327,6 +368,8 @@ class KmeansPerClassTransform(SpdTransfMixin, BaseEstimator):
             The KmeansPerClassTransform instance.
         """
         self.classes_ = np.unique(y)
+        self._km = Kmeans(**self.params)
+        self.metric = self._km.metric
 
         covmeans = []
         for c in self.classes_:
@@ -395,7 +438,7 @@ class MeanShift(SpdClustMixin, SpdTransfMixin, BaseEstimator):
         (see :func:`pyriemann.geometry.distance.distance`).
         The metric can be a dict with two keys, "map" and "distance"
         in order to pass different metrics.
-    tol : float, default=1e-4
+    tol : float, default=1e-3
         Stopping criterion to stop convergence, representing the norm of
         gradient.
     max_iter : int, default=100
@@ -468,10 +511,12 @@ class MeanShift(SpdClustMixin, SpdTransfMixin, BaseEstimator):
         """
         self._kernel_fun = check_function(self.kernel, ker_clust_functions)
         self._metric_map, self._metric_dist = check_metric(
-            self.metric, ["map", "dist"]
+            self.metric, ["map", "distance"]
         )
         if self.bandwidth is None:
             self._bandwidth = self._estimate_bandwidth(X, quantile=0.3)
+        else:
+            self._bandwidth = self.bandwidth
         self._bandwidth2 = self._bandwidth ** 2
 
         modes = Parallel(n_jobs=self.n_jobs)(
@@ -489,9 +534,7 @@ class MeanShift(SpdClustMixin, SpdTransfMixin, BaseEstimator):
         dist = pairwise_distance(X, None, metric=self._metric_dist)
         dist = np.triu(dist, 1)
         dist_sorted = np.sort(dist[dist > 0])
-        bandwidth = dist_sorted[floor(quantile * len(dist_sorted))]
-        print(f"MeanShift bandwidth={bandwidth:.3f}")
-        return bandwidth
+        return dist_sorted[floor(quantile * len(dist_sorted))]
 
     def _seek_mode(self, X, mean):
         for _ in range(self.max_iter):
@@ -588,7 +631,7 @@ class Gaussian():
     metric : string | dict, default="riemann"
         Metric used for mean update (for the list of supported metrics,
         see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
-        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
+        (see :func:`pyriemann.geometry.tangentspace.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
 
@@ -695,12 +738,13 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
     metric : string | dict, default="riemann"
         Metric used for mean update (for the list of supported metrics,
         see :func:`pyriemann.geometry.mean.gmean`) and for tangent space map
-        (see :func:`pyriemann.geometry.tangent_space.tangent_space`).
+        (see :func:`pyriemann.geometry.tangentspace.tangent_space`).
         The metric can be a dict with two keys, "mean" and "map"
         in order to pass different metrics.
     weights_init : None | ndarray, shape (n_components,), defaut=None
         Initial weights. If None, it uses equal weights.
-    means_init : None | ndarray, shape (n_components,), defaut=None
+    means_init : None | ndarray, shape (n_components, n_channels, n_channels),\
+            defaut=None
         Initial means of Gaussians. If None, it randomly selects training
         matrices.
     tol : float, default=1e-5

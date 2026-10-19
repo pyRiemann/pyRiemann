@@ -39,9 +39,7 @@ def reg_fit(regres, X, y, weights):
     n_matrices, n_channels, _ = X.shape
     reg = regres().fit(X, y)
 
-    if reg is SVR:
-        assert reg.data_.shape == (n_matrices, n_channels, n_channels)
-    elif reg is KNearestNeighborRegressor:
+    if regres is KNearestNeighborRegressor:
         assert reg.covmeans_.shape == (n_matrices, n_channels, n_channels)
         assert reg.values_.shape == (n_matrices,)
 
@@ -132,8 +130,8 @@ def test_knn_dict_dist(dist, get_mats, get_targets):
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_targets(n_matrices)
     with pytest.raises(KeyError):
-        knn = KNearestNeighborRegressor(metric={"distance": dist})
-        knn.fit(X, y).predict(X)
+        reg = KNearestNeighborRegressor(metric={"distance": dist})
+        reg.fit(X, y).predict(X)
 
 
 def test_1nn(get_mats, get_targets):
@@ -142,21 +140,21 @@ def test_1nn(get_mats, get_targets):
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_targets(n_matrices)
 
-    knn = KNearestNeighborRegressor(1, metric="riemann")
-    knn.fit(X, y)
-    preds = knn.predict(X[:-1])
+    reg = KNearestNeighborRegressor(1, metric="riemann")
+    reg.fit(X, y)
+    preds = reg.predict(X[:-1])
     assert_array_equal(y[:-1], preds)
 
 
 def test_svr_params():
-    rsvr = SVR()
-    assert rsvr.metric == "riemann"
+    reg = SVR()
+    assert reg.metric == "riemann"
 
-    rsvr.set_params(**{"metric": "logeuclid"})
-    assert rsvr.metric == "logeuclid"
+    reg.set_params(**{"metric": "logeuclid"})
+    assert reg.metric == "logeuclid"
 
-    rsvr.set_params(**{"max_iter": 501})
-    assert rsvr.max_iter == 501
+    reg.set_params(**{"max_iter": 501})
+    assert reg.max_iter == 501
 
 
 def test_svr_params_error(get_mats, get_targets):
@@ -178,31 +176,29 @@ def test_svr_cref_metric(get_mats, get_targets, metric):
     y = get_targets(n_matrices)
     Cref = gmean(X, metric=metric)
 
-    rsvc = SVR(Cref=Cref).fit(X, y)
-    rsvc_1 = SVR(Cref=None, metric=metric).fit(X, y)
-    assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
+    reg = SVR(Cref=Cref).fit(X, y)
+    reg_1 = SVR(Cref=None, metric=metric).fit(X, y)
+    assert np.array_equal(reg.Cref_, reg_1.Cref_)
 
 
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-def test_svc_cref_callable(get_mats, get_targets, metric):
+def test_svr_cref_callable(get_mats, get_targets, metric):
     n_matrices, n_channels = 6, 3
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_targets(n_matrices)
     def Cref(X): return gmean(X, metric=metric)
 
-    rsvc = SVR(Cref=Cref).fit(X, y)
-    rsvc_1 = SVR(metric=metric).fit(X, y)
-    assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
+    reg = SVR(Cref=Cref).fit(X, y)
+    reg_1 = SVR(metric=metric).fit(X, y)
+    assert np.array_equal(reg.Cref_, reg_1.Cref_)
 
-    rsvc = SVR(Cref=Cref).fit(X, y)
-    rsvc.predict(X)
-    rsvc_1 = SVR(metric=metric).fit(X, y)
-    rsvc_1.predict(X)
-    assert np.array_equal(rsvc.Cref_, rsvc_1.Cref_)
+    reg.predict(X)
+    reg_1.predict(X)
+    assert np.array_equal(reg.Cref_, reg_1.Cref_)
 
 
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-def test_svc_cref_error(get_mats, get_targets, metric):
+def test_svr_cref_error(get_mats, get_targets, metric):
     n_matrices, n_channels = 6, 3
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_targets(n_matrices)
@@ -217,15 +213,15 @@ def test_svc_cref_error(get_mats, get_targets, metric):
 
 
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
-def test_svc_kernel_callable(get_mats, get_targets, metric):
+def test_svr_kernel_callable(get_mats, get_targets, metric):
     n_matrices, n_channels = 6, 3
     X = get_mats(n_matrices, n_channels, "spd")
     y = get_targets(n_matrices)
 
-    rsvc = SVR(kernel_fct=kernel, metric=metric).fit(X, y)
-    rsvc_1 = SVR(metric=metric).fit(X, y)
-    p1 = rsvc.predict(X[:-1])
-    p2 = rsvc_1.predict(X[:-1])
+    reg = SVR(kernel_fct=kernel, metric=metric).fit(X, y)
+    reg_1 = SVR(metric=metric).fit(X, y)
+    p1 = reg.predict(X[:-1])
+    p2 = reg_1.predict(X[:-1])
     assert np.array_equal(p1, p2)
 
     def custom_kernel(X, Y, Cref, metric):
@@ -242,5 +238,5 @@ def test_svc_kernel_callable(get_mats, get_targets, metric):
         SVR(kernel_fct=custom_kernel, metric=metric).fit(X, y)
 
     # check if pickleable
-    pickle.dumps(rsvc)
-    pickle.dumps(rsvc_1)
+    pickle.dumps(reg)
+    pickle.dumps(reg_1)
