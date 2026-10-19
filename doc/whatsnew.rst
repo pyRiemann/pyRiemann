@@ -113,6 +113,10 @@ v0.13.dev
   ``target_domain="last"`` sorting domains by order of fitting.
   :pr:`506` by :user:`qbarthelemy`
 
+- Enhance :func:`pyriemann.datasets.sample_gaussian`
+  to generate HPD matrices from complex-typed ``mean`` for array ``sigma``.
+  :issue:`463` by :user:`qbarthelemy`
+
 v0.12 (July 2026)
 -----------------
 
@@ -160,7 +164,7 @@ v0.12 (July 2026)
   :pr:`453` by :user:`qbarthelemy`
 
 - Deprecate ``pyriemann.datasets.sample_gaussian_spd()`` renamed into :func:`pyriemann.datasets.sample_gaussian`,
-  and enhance it to generate HPD matrices from complex-typed mean for float ``sigma``.
+  and enhance it to generate HPD matrices from complex-typed ``mean`` for float ``sigma``.
   :issue:`413` by :user:`robrui`
 
 - Add log-Cholesky inner product for Hermitian matrices :func:`pyriemann.geometry.tangentspace.innerproduct_logchol`,
