@@ -77,8 +77,10 @@ def test_median_euclid(n_dim1, n_dim2, kind, get_mats):
 @pytest.mark.parametrize("with_init", [False, True])
 @pytest.mark.parametrize("with_weights", [False, True])
 @pytest.mark.parametrize("maxiter", [1, 50])
-def test_median_euclid_identical(
-    n_matrices, kind, with_init, with_weights, maxiter, backend,
+@pytest.mark.parametrize("tol", [0., 10e-6])
+@pytest.mark.parametrize("median", [median_euclid, median_riemann])
+def test_median_identical(
+    n_matrices, kind, with_init, with_weights, maxiter, tol, backend, median,
 ):
     M_np = np.array([[2., 1.], [1., 3.]])
     if kind == "comp":
@@ -92,7 +94,7 @@ def test_median_euclid_identical(
 
     with warnings.catch_warnings(record=True) as caught:
         warnings.simplefilter("always")
-        M = median_euclid(X, init=init, weights=weights, maxiter=maxiter)
+        M = median(X, init=init, weights=weights, maxiter=maxiter, tol=tol)
 
     assert M == approx(X[0])
     assert not caught
