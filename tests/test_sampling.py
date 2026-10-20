@@ -4,7 +4,10 @@ import pytest
 
 from pyriemann.datasets import sample_gaussian, RandomOverSampler
 from pyriemann.geometry.distance import distance_riemann
-from pyriemann.geometry.test import is_herm_pos_def as is_hpd
+from pyriemann.geometry.test import (
+    is_herm_pos_def as is_hpd,
+    is_real,
+)
 
 pytestmark = pytest.mark.numpy_only
 
@@ -93,17 +96,23 @@ def test_sample_gaussian_errors_sigma():
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 @pytest.mark.parametrize("n_jobs", [1, -1])
 def test_random_over_sampler(kind, metric, n_jobs, get_mats):
-    n_matrices_by_class, n_dim = 6, 2
-    X = get_mats(2 * n_matrices_by_class, n_dim, kind)
-    y = np.array([0] * n_matrices_by_class + [1] * n_matrices_by_class)
+    n_dim = 2
+    X = get_mats(10, n_dim, kind)
+    y = np.array([0] * 7 + [1] * 3)
 
     ros = RandomOverSampler(metric=metric, n_jobs=n_jobs)
     ros.fit(X, y)
     Xr, yr = ros.fit_resample(X, y)
 
-    assert Xr.ndim == 3
+    assert Xr.dtype == X.dtype
     assert Xr.shape[0] == yr.shape[0]
     assert Xr.shape[1:] == (n_dim, n_dim)
+    assert is_hpd(Xr)
+    X_new = Xr[len(X):]
+    assert len(X_new) == 4
+    if kind == "hpd":
+        assert not is_real(Xr)
+        assert np.all(np.abs(np.imag(X_new)).max(axis=(-2, -1)) > 0)
 
 
 @pytest.mark.parametrize(

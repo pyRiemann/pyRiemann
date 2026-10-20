@@ -117,6 +117,9 @@ v0.13.dev
   to generate HPD matrices from complex-typed ``mean`` for array ``sigma``.
   :issue:`463` by :user:`qbarthelemy`
 
+- Correct :class:`pyriemann.datasets.RandomOverSampler` when sampling HPD matrices.
+  :pr:`508` by :user:`qbarthelemy`
+
 v0.12 (July 2026)
 -----------------
 

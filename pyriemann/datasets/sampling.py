@@ -659,6 +659,8 @@ class RandomOverSampler(BaseEstimator):
     Notes
     -----
     .. versionadded:: 0.10
+    .. versionchanged:: 0.13
+        Correct sampling for HPD matrices.
 
     References
     ----------
@@ -774,7 +776,10 @@ class RandomOverSampler(BaseEstimator):
         )
 
     def _resample(self, X, y, n_mats):
-        X_resampled = np.empty((n_mats, self._channels, self._channels))
+        X_resampled = np.empty(
+            (n_mats, self._channels, self._channels),
+            dtype=X.dtype,
+        )
 
         for n in range(n_mats):
             i, j = self._rs.choice(len(X), size=2, replace=False)
