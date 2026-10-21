@@ -50,6 +50,8 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
         Add support for complex matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+    .. versionchanged:: 0.13
+        Enhance estimation for identical matrices.
 
     References
     ----------
@@ -145,6 +147,8 @@ def median_riemann(
         Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+    .. versionchanged:: 0.13
+        Correct estimation for identical matrices.
 
     References
     ----------
