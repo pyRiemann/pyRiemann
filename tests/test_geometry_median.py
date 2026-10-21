@@ -73,23 +73,24 @@ def test_median_euclid(n_dim1, n_dim2, kind, get_mats):
 
 
 @pytest.mark.parametrize("n_matrices", [1, 4])
-@pytest.mark.parametrize("kind", ["real", "comp"])
-@pytest.mark.parametrize("with_init", [False, True])
-@pytest.mark.parametrize("with_weights", [False, True])
-@pytest.mark.parametrize("maxiter", [1, 50])
-@pytest.mark.parametrize("tol", [0., 10e-6])
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("use_init", [False, True])
+@pytest.mark.parametrize("use_weights", [False, True])
+@pytest.mark.parametrize("maxiter", [1, 10])
+@pytest.mark.parametrize("tol", [0, 10e-3])
 @pytest.mark.parametrize("median", [median_euclid, median_riemann])
-def test_median_identical(
-    n_matrices, kind, with_init, with_weights, maxiter, tol, backend, median,
+def test_median_identical_matrices(
+    n_matrices, kind, use_init, use_weights, maxiter, tol, median, backend
 ):
-    M_np = np.array([[2., 1.], [1., 3.]])
-    if kind == "comp":
-        M_np = M_np.astype(complex)
-        M_np[0, 1], M_np[1, 0] = 1j, -1j
-    X = to_backend(np.repeat(M_np[None], n_matrices, axis=0), backend)
-    init = X[0] if with_init else None
-    weights = None
-    if with_weights:
+    X_ = np.array([[2., 1.], [1., 2.]])
+    if kind == "hpd":
+        X_ = X_.astype(complex)
+        X_[0, 1], X_[1, 0] = 1j, -1j
+    X = to_backend(np.repeat(X_[None], n_matrices, axis=0), backend)
+    init, weights = None, None
+    if use_init:
+        init = X[0]
+    if use_weights:
         weights = to_backend(np.array([1., 1., 2., 4.])[:n_matrices], backend)
 
     with warnings.catch_warnings(record=True) as caught:
