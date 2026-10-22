@@ -51,7 +51,7 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
     .. versionchanged:: 0.13
-        Enhance estimation for identical matrices.
+        Correct estimation for identical matrices.
 
     References
     ----------
