@@ -33,7 +33,7 @@ class Whitening(TransformerMixin, BaseEstimator):
         * ``{'expl_var': val}``:
           dimension reduction selecting the number of components such that
           the amount of variance that needs to be explained is greater than
-          the percentage specified by ``val``.
+          or equal to the percentage specified by ``val``.
           ``val`` must be a float in (0,1], typically ``0.99``.
         * ``{'max_cond': val}``:
           dimension reduction selecting the number of components such that
@@ -61,6 +61,9 @@ class Whitening(TransformerMixin, BaseEstimator):
     .. versionchanged:: 0.7
         Add ``partial_fit()``.
         Add parameter ``sample_weight`` to ``partial_fit()``.
+    .. versionchanged:: 0.13
+        Correct dimension reduction with ``'expl_var'``,
+        and ``partial_fit()`` on an unfitted instance.
     """
 
     def __init__(self, metric="euclid", dim_red=None, verbose=False):
@@ -94,7 +97,14 @@ class Whitening(TransformerMixin, BaseEstimator):
             metric=self.metric,
             sample_weight=sample_weight
         )
+        self._get_filters(X)
 
+        self._n_matrices_cum = X.shape[0]
+
+        return self
+
+    def _get_filters(self, X, update_n_components=True):
+        """Compute spatial filters from the mean matrix."""
         # whitening without dimension reduction
         if self.dim_red is None:
             self.n_components_ = X.shape[-1]
@@ -104,16 +114,13 @@ class Whitening(TransformerMixin, BaseEstimator):
         # whitening with dimension reduction
         elif isinstance(self.dim_red, dict):
             self._get_eig()
-            self._get_n_components(X)
+            if update_n_components:
+                self._get_n_components(X)
             self._reduce_and_whiten()
 
         else:
             raise ValueError("Unknown type for parameter dim_red: %r"
                              % type(self.dim_red))
-
-        self._n_matrices_cum = X.shape[0]
-
-        return self
 
     def _get_eig(self):
         """Compute eigen values and eigen vectors."""
@@ -150,8 +157,11 @@ class Whitening(TransformerMixin, BaseEstimator):
             if self.verbose:
                 print("Cumulative explained variance: \n %r"
                       % cum_expl_var)
-            self.n_components_ = np.searchsorted(
-                cum_expl_var, dim_red_val, side="right") + 1
+            self.n_components_ = min(
+                int(np.searchsorted(cum_expl_var, dim_red_val, side="left"))
+                + 1,
+                X.shape[-1],
+            )
 
         elif dim_red_key == "max_cond":
             if dim_red_val <= 1:
@@ -184,6 +194,9 @@ class Whitening(TransformerMixin, BaseEstimator):
     def partial_fit(self, X, y=None, *, sample_weight=None, alpha=None):
         """Partially fit whitening spatial filters.
 
+        The number of components ``n_components_`` is computed using
+        ``dim_red`` at the first fit, and then kept during the next updates.
+
         Parameters
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels)
@@ -208,6 +221,9 @@ class Whitening(TransformerMixin, BaseEstimator):
         Notes
         -----
         .. versionadded:: 0.7
+        .. versionchanged:: 0.13
+            Use ``dim_red`` when ``partial_fit()`` is called on an unfitted
+            instance, and compute the same filters as ``fit()``.
         """
         n_matrices, n_channels, _ = X.shape
         self._n_matrices_cum += n_matrices
@@ -225,7 +241,8 @@ class Whitening(TransformerMixin, BaseEstimator):
                 metric=self.metric,
                 sample_weight=sample_weight,
             )
-            self.n_components_ = n_channels
+            self._get_filters(X)
+            return self
         elif n_channels != self._mean.shape[-1]:
             raise ValueError(
                 "X does not have the good number of channels. Should be %d but"
@@ -238,8 +255,8 @@ class Whitening(TransformerMixin, BaseEstimator):
             )
             self._mean = geodesic(self._mean, Xm, alpha, metric=self.metric)
 
-        self._get_eig()
-        self._reduce_and_whiten()
+        # number of components is kept, to keep the dimension of outputs
+        self._get_filters(X, update_n_components=False)
 
         return self
 
