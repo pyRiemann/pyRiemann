@@ -120,6 +120,11 @@ v0.13.dev
 - Correct :class:`pyriemann.datasets.RandomOverSampler` when sampling HPD matrices.
   :pr:`508` by :user:`qbarthelemy`
 
+- Correct :class:`pyriemann.preprocessing.Whitening` with ``dim_red={"expl_var": val}``,
+  which could select one component too many, and ``partial_fit()`` on an unfitted
+  instance, which ignored ``dim_red`` and computed filters different from ``fit()``.
+  :pr:`510` by :user:`qbarthelemy`
+
 v0.12 (July 2026)
 -----------------
 
