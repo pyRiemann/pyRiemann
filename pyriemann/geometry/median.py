@@ -50,6 +50,8 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
         Add support for complex matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+    .. versionchanged:: 0.13
+        Correct estimation for identical matrices.
 
     References
     ----------
@@ -73,7 +75,9 @@ def median_euclid(X, *, tol=10e-6, maxiter=50, init=None, weights=None):
 
     for _ in range(maxiter):
         dists = distance(X, M, metric="euclid")[:, 0]
-        is_zero = (dists == 0)
+        is_zero = dists <= xp.finfo(dists.dtype).eps ** 0.5
+        if xp.all(is_zero):
+            break
 
         w = weights[~is_zero] / dists[~is_zero]
         Mnew = mean_euclid(X[~is_zero], sample_weight=w)  # Eq(2.4) of [2]
@@ -143,6 +147,8 @@ def median_riemann(
         Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+    .. versionchanged:: 0.13
+        Correct estimation for identical matrices.
 
     References
     ----------
@@ -171,7 +177,9 @@ def median_riemann(
 
     for _ in range(maxiter):
         dists = distance(X, M, metric="riemann")[:, 0]
-        is_zero = (dists == 0)
+        is_zero = dists <= xp.finfo(dists.dtype).eps ** 0.5
+        if xp.all(is_zero):
+            break
         w = weights[~is_zero] / dists[~is_zero]
 
         # Eq(11) of [1]

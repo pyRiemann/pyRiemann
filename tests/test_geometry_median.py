@@ -1,3 +1,5 @@
+import warnings
+
 import numpy as np
 import pytest
 
@@ -68,6 +70,35 @@ def test_median_euclid(n_dim1, n_dim2, kind, get_mats):
     n_matrices = 10
     X = get_mats(n_matrices, [n_dim1, n_dim2], kind)
     assert median_euclid(X).shape == (n_dim1, n_dim2)
+
+
+@pytest.mark.parametrize("n_matrices", [1, 4])
+@pytest.mark.parametrize("kind", ["spd", "hpd"])
+@pytest.mark.parametrize("use_init", [False, True])
+@pytest.mark.parametrize("use_weights", [False, True])
+@pytest.mark.parametrize("maxiter", [1, 10])
+@pytest.mark.parametrize("tol", [0, 10e-3])
+@pytest.mark.parametrize("median", [median_euclid, median_riemann])
+def test_median_identical_matrices(
+    n_matrices, kind, use_init, use_weights, maxiter, tol, median, backend
+):
+    X_ = np.array([[2., 1.], [1., 2.]])
+    if kind == "hpd":
+        X_ = X_.astype(complex)
+        X_[0, 1], X_[1, 0] = 1j, -1j
+    X = to_backend(np.repeat(X_[None], n_matrices, axis=0), backend)
+    init, weights = None, None
+    if use_init:
+        init = X[0]
+    if use_weights:
+        weights = to_backend(np.array([1., 1., 2., 4.])[:n_matrices], backend)
+
+    with warnings.catch_warnings(record=True) as caught:
+        warnings.simplefilter("always")
+        M = median(X, init=init, weights=weights, maxiter=maxiter, tol=tol)
+
+    assert M == approx(X[0])
+    assert not caught
 
 
 @pytest.mark.parametrize("step_size", [0, 2.5])

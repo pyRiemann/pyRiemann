@@ -10,6 +10,9 @@ A catalog of new features, improvements, and bug-fixes in each release.
 v0.13.dev
 ---------
 
+- Correct medians for identical matrices.
+  :pr:`507` by :user:`ktz03`
+
 - Update pyRiemann from Python 3.10 - 3.12 to 3.11 - 3.13.
   :pr:`462` by :user:`qbarthelemy`
 
