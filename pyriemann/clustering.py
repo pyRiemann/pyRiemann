@@ -4,7 +4,6 @@ import warnings
 
 from joblib import Parallel, delayed
 import numpy as np
-import sklearn
 from sklearn.base import BaseEstimator
 from sklearn.cluster import KMeans as sklearnKMeans
 from sklearn.utils.validation import check_random_state
@@ -26,22 +25,14 @@ from .utils._check import check_metric, check_function, check_weights
 def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
     if random_state is not None:
         random_state = check_random_state(random_state)
-    if sklearn.__version__ < "1.3.0":
-        return sklearnKMeans(n_clusters=n_clusters, init=init)._init_centroids(
-            X,
-            x_squared_norms,
-            init,
-            random_state,
-        )
-    else:
-        n_matrices = X.shape[0]
-        return sklearnKMeans(n_clusters=n_clusters, init=init)._init_centroids(
-            X,
-            x_squared_norms,
-            init,
-            random_state,
-            sample_weight=np.ones(n_matrices) / n_matrices,
-        )
+    n_matrices = X.shape[0]
+    return sklearnKMeans(n_clusters=n_clusters, init=init)._init_centroids(
+        X,
+        x_squared_norms,
+        init,
+        random_state,
+        sample_weight=np.ones(n_matrices) / n_matrices,
+    )
 
 
 def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,

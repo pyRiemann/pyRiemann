@@ -123,6 +123,9 @@ v0.13.dev
 - Correct :class:`pyriemann.datasets.RandomOverSampler` when sampling HPD matrices.
   :pr:`508` by :user:`qbarthelemy`
 
+- Correct :class:`pyriemann.estimation.Shrinkage` when shrinking HPD matrices.
+  :pr:`510` by :user:`qbarthelemy`
+
 v0.12 (July 2026)
 -----------------
 
