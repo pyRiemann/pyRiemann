@@ -369,7 +369,6 @@ def test_kernels_kwds(metric, kwds, get_mats):
 @pytest.mark.parametrize("shrinkage", [0.1, 0.9])
 @pytest.mark.parametrize("kind", ["spd", "hpd"])
 def test_shrinkage(shrinkage, kind, get_mats):
-    """Test Shrinkage"""
     n_matrices, n_channels = 4, 3
     X = get_mats(n_matrices, n_channels, kind)
 
@@ -380,12 +379,13 @@ def test_shrinkage(shrinkage, kind, get_mats):
     assert Xt.shape == X.shape
     assert is_hpd(Xt)
 
-    assert_array_equal(
-        shrunk_covariance(X[0].real, shrinkage),
-        Xt[0].real
-    )
-    assert_raises(AssertionError, assert_array_equal, X.real, Xt.real)
-    assert_array_equal(X.imag, Xt.imag)
+    assert_array_equal(shrunk_covariance(X.real, shrinkage), Xt.real)
+
+    # closed-form convex combination (1 - a) X + a mu I, mu = tr(X) / n
+    mu = np.trace(X, axis1=-2, axis2=-1).real / n_channels
+    Xt_ref = (1 - shrinkage) * X \
+        + shrinkage * mu[:, np.newaxis, np.newaxis] * np.eye(n_channels)
+    assert_array_almost_equal(Xt, Xt_ref)
 
     Xt2 = sh.fit_transform(X)
     assert_array_almost_equal(Xt, Xt2)

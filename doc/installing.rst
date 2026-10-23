@@ -25,27 +25,31 @@ If you use a zsh shell, you need to write `pip install -e .\[docs,tests\]`. If y
 Dependencies
 ~~~~~~~~~~~~
 
--  Python >= 3.11
+- Python >= 3.11
 
 Mandatory dependencies
 ^^^^^^^^^^^^^^^^^^^^^^
 
--  `numpy <http://www.numpy.org/>`__
+- `numpy >=1.25 <http://www.numpy.org/>`__
 
--  `scipy <http://www.scipy.org/>`__
+- `scipy <http://www.scipy.org/>`__
 
--  `scikit-learn >=0.24 <http://scikit-learn.org/>`__
+- `scikit-learn >=1.4 <http://scikit-learn.org/>`__
 
--  `joblib <https://joblib.readthedocs.io/>`__
+- `array-api-compat <https://data-apis.org/array-api-compat/>`__
 
-Recommended dependencies
+- `array-api-extra <https://data-apis.org/array-api-extra/>`__
+
+- `joblib <https://joblib.readthedocs.io/>`__
+
+- `matplotlib <https://matplotlib.org/>`__
+
+Recommanded dependencies
 ^^^^^^^^^^^^^^^^^^^^^^^^
 These dependencies are recommanded to use the plotting functions of pyRiemann or to run examples and tutorials, but they are not mandatory:
 
 - `mne-python <http://mne-tools.github.io/>`__
 
--  `matplotlib <https://matplotlib.org/>`__
+- `seaborn <https://seaborn.pydata.org>`__
 
--  `seaborn <https://seaborn.pydata.org>`__
-
--  `pandas <http://pandas.pydata.org/>`__
+- `pandas <http://pandas.pydata.org/>`__

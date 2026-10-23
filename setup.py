@@ -40,7 +40,7 @@ setup(
     install_requires=[
         "numpy>=1.25.0",
         "scipy",
-        "scikit-learn>=0.24",
+        "scikit-learn>=1.4",
         "array-api-compat>=1.14",
         "array-api-extra>=0.6",
         "joblib",
