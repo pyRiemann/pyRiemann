@@ -222,7 +222,7 @@ class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
             The LocallyLinearEmbedding instance.
         """
         self.data_ = X
-        self.n_components, self.n_neighbors = _check_dimensions(
+        self._n_components, self._n_neighbors = _check_dimensions(
             X,
             n_components=self.n_components,
             n_neighbors=self.n_neighbors,
@@ -230,8 +230,8 @@ class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
 
         self.embedding_, self.error_ = locally_linear_embedding(
             X,
-            n_components=self.n_components,
-            n_neighbors=self.n_neighbors,
+            n_components=self._n_components,
+            n_neighbors=self._n_neighbors,
             metric=self.metric,
             reg=self.reg,
             kernel=self.kernel,
@@ -260,7 +260,7 @@ class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
         _check_dimensions(self.data_, X)
         pairwise_dists = pairwise_distance(X, self.data_, metric=self.metric)
         ind = np.array(
-            [np.argsort(dist)[1: self.n_neighbors + 1]
+            [np.argsort(dist)[1: self._n_neighbors + 1]
              for dist in pairwise_dists]
         )
 
@@ -273,7 +273,7 @@ class LocallyLinearEmbedding(TransformerMixin, BaseEstimator):
             kernel=self.kernel,
         )
 
-        X_new = np.empty((X.shape[0], self.n_components))
+        X_new = np.empty((X.shape[0], self._n_components))
         for i in range(X.shape[0]):
             X_new[i] = self.embedding_[ind[i]].T @ weights[i]
         return X_new
@@ -367,11 +367,12 @@ class TSNE(BaseEstimator):
         """
 
         n_matrices, _, _ = X.shape
+        perplexity = self.perplexity
         if self.perplexity is None:
-            self.perplexity = int(0.75 * n_matrices)
+            perplexity = int(0.75 * n_matrices)
 
         # Compute similarities between high-dimensional matrices
-        P = _compute_condprob_gaussian(X, self.metric, self.perplexity)
+        P = _compute_condprob_gaussian(X, self.metric, perplexity)
 
         self.embedding_ = _get_tsne_embedding(
             P,

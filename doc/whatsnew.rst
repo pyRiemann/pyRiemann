@@ -33,7 +33,7 @@ v0.13.dev
   transport with the Bures-Wasserstein metric.
   :pr:`476` by :user:`AmitSubhash`
 
-- Deprecate ``pyriemann.geometry.ajd.rjd()`` renamed into :func:`pyriemann.geometry.ajd.jade`, and transpose outputed diagonalizer.
+- Deprecate ``pyriemann.geometry.ajd.rjd()`` renamed into :func:`pyriemann.geometry.ajd.jade`, and transpose output diagonalizer.
   :pr:`474` by :user:`gaoflow`
 
 - Update ``array-api-compat`` from >=1.11 to >=1.14, and replace the deprecated
@@ -188,7 +188,7 @@ v0.12 (July 2026)
 v0.11 (April 2026)
 ------------------
 
-- Enhance ``pyriemann.datasets.sample_gaussian_spd()`` adding support for dispersion defined as a covariance matrix.
+- Enhance ``pyriemann.datasets.sample_gaussian_spd()`` adding support for covariance matrix ``sigma``.
   :pr:`412` by :user:`thibaultdesurrel`
 
 - Add :class:`pyriemann.clustering.GaussianMixture`.

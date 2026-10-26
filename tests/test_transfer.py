@@ -4,7 +4,9 @@ import pytest
 from pytest import approx
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis as LDA
 from sklearn.linear_model import LogisticRegression, LinearRegression
-from sklearn.model_selection import KFold, StratifiedShuffleSplit
+from sklearn.model_selection import (
+    KFold, LeaveOneOut, StratifiedShuffleSplit
+)
 from sklearn.pipeline import make_pipeline, Pipeline
 from sklearn.svm import LinearSVC, LinearSVR
 from sklearn.utils.validation import check_is_fitted
@@ -89,6 +91,7 @@ def test_encode_decode_domains(rndstate):
     "cv",
     [
         KFold(n_splits=5, shuffle=True),
+        LeaveOneOut(),
         StratifiedShuffleSplit(n_splits=5, train_size=0.80),
     ]
 )
@@ -101,12 +104,19 @@ def test_tlsplitter(rndstate, cv):
         random_state=rndstate,
     )
 
-    cv = TLSplitter(target_domain="target_domain", cv=cv)
-    train_idx, test_idx = next(cv.split(X, y_enc))
+    tls = TLSplitter(target_domain="target_domain", cv=cv)
+    train_idx, test_idx = next(tls.split(X, y_enc))
 
-    assert train_idx.shape == (90,)  # 50 from source and 4/5*100 from target
-    assert test_idx.shape == (10,)  # 1/5*100 from target
-    assert cv.get_n_splits() == 5
+    if isinstance(cv, LeaveOneOut):
+        trn, tst, n = 99, 1, 100
+    else:
+        # trn: 50 from source and 4/5*100 from target
+        # tst: 1/5*100 from target
+        trn, tst, n = 90, 10, 5
+
+    assert train_idx.shape == (trn,)
+    assert test_idx.shape == (tst,)
+    assert tls.get_n_splits(X) == n
 
 
 ###############################################################################
@@ -545,19 +555,19 @@ def test_tlclassifier_mdm(rndstate, clf, source_weight, target_weight):
     y_target = y[domain == "target_domain"]
 
     if source_weight == 1.0 and target_weight == 0.0:
-        X_0 = X_source[y_source == tlclf.estimator.classes_[0]]
-        X_1 = X_source[y_source == tlclf.estimator.classes_[1]]
+        X_0 = X_source[y_source == tlclf._estimator.classes_[0]]
+        X_1 = X_source[y_source == tlclf._estimator.classes_[1]]
     elif source_weight == 0.0 and target_weight == 1.0:
-        X_0 = X_target[y_target == tlclf.estimator.classes_[0]]
-        X_1 = X_target[y_target == tlclf.estimator.classes_[1]]
+        X_0 = X_target[y_target == tlclf._estimator.classes_[0]]
+        X_1 = X_target[y_target == tlclf._estimator.classes_[1]]
     elif source_weight == 1.0 and target_weight == 1.0:
-        X_0 = X[y == tlclf.estimator.classes_[0]]
-        X_1 = X[y == tlclf.estimator.classes_[1]]
+        X_0 = X[y == tlclf._estimator.classes_[0]]
+        X_1 = X[y == tlclf._estimator.classes_[1]]
 
     if isinstance(clf, MDM):
-        est = tlclf.estimator
+        est = tlclf._estimator
     elif isinstance(clf, Pipeline):
-        est = tlclf.estimator.steps[0][1]
+        est = tlclf._estimator.steps[0][1]
 
     # test class centroids
     assert est.covmeans_[0] == pytest.approx(mean_riemann(X_0))
@@ -626,7 +636,7 @@ def tlclassifier(clf, X, y_enc, domains_weight, n_classes=2):
 
     # test fit
     tlclf.fit(X, y_enc)
-    assert_array_equal(tlclf.estimator.classes_, ["1", "2"])
+    assert_array_equal(tlclf._estimator.classes_, ["1", "2"])
 
     # test predict
     predicted = tlclf.predict(X)
