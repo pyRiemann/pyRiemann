@@ -1100,10 +1100,16 @@ class Kernels(TransformerMixin, BaseEstimator):
 
 
 class Shrinkage(TransformerMixin, BaseEstimator):
-    """Regularization of SPD/HPD matrices by shrinkage.
+    r"""Regularization of SPD/HPD matrices by shrinkage.
 
-    This transformer applies a shrinkage regularization to SPD/HPD matrices.
-    It directly uses the ``shrunk_covariance`` function from scikit-learn [1]_.
+    This transformer applies a shrinkage regularization to SPD/HPD matrices:
+
+    .. math::
+        \mathbf{X}_\text{new} = (1 - \alpha) \mathbf{X} + \alpha \mu \mathbf{I}
+
+    where :math:`\alpha` is the shrinkage coefficient and
+    :math:`\mu = \text{tr}(\mathbf{X}) / n`.
+    It is based on the ``shrunk_covariance`` function from scikit-learn [1]_.
 
     Parameters
     ----------
@@ -1118,6 +1124,8 @@ class Shrinkage(TransformerMixin, BaseEstimator):
         Add support for HPD matrices.
     .. versionchanged:: 0.8
         Add ``fit_transform()``.
+    .. versionchanged:: 0.13
+        Correct shrinkage for HPD matrices.
 
     References
     ----------
@@ -1165,8 +1173,9 @@ class Shrinkage(TransformerMixin, BaseEstimator):
         """
         Xnew = X.copy()
 
-        for i, x in enumerate(X):
-            Xnew[i].real = shrunk_covariance(x.real, self.shrinkage)
+        Xnew.real = shrunk_covariance(X.real, self.shrinkage)
+        if np.iscomplexobj(X):
+            Xnew.imag = (1 - self.shrinkage) * X.imag
 
         return Xnew
 
