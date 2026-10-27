@@ -368,7 +368,7 @@ class TSNE(BaseEstimator):
 
         n_matrices, _, _ = X.shape
         perplexity = self.perplexity
-        if self.perplexity is None:
+        if perplexity is None:
             perplexity = int(0.75 * n_matrices)
 
         # Compute similarities between high-dimensional matrices
