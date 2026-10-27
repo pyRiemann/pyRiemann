@@ -52,6 +52,8 @@ def test_sample_gaussian_ndarraysigma(kind, n_dim, get_mats):
     X = sample_gaussian(n_matrices, mean, sigma, random_state=42)
     assert X.shape == (n_matrices, n_dim, n_dim)
     assert is_hpd(X)
+    if kind == "hpd":
+        assert np.iscomplexobj(X)
 
 
 def test_sample_gaussian_errors_samplingmethod():

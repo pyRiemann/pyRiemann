@@ -869,13 +869,13 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
             raise ValueError("Not enough matrices for training GMM.")
 
         # initialization
-        self.random_state = check_random_state(self.random_state)
+        self._random_state = check_random_state(self.random_state)
 
         if isinstance(self.means_init, np.ndarray) and self.means_init.shape \
                 == (self.n_components, n_channels, n_channels):
             means_init = self.means_init
         else:
-            inds = self.random_state.randint(
+            inds = self._random_state.randint(
                 n_matrices,
                 size=(self.n_components,)
             )
@@ -998,7 +998,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
             <https://openreview.net/pdf?id=EhStXG4dCS>`_
             T. de Surrel, F. Lotte, S. Chevallier, and F. Yger. ICML, 2025
         """  # noqa
-        y = self.random_state.randint(self.n_components, size=(n_matrices,))
+        y = self._random_state.randint(self.n_components, size=(n_matrices,))
 
         means, covariances = self.means_, self.covariances_
         n_channels = means.shape[-1]
@@ -1009,7 +1009,7 @@ class GaussianMixture(SpdClustMixin, BaseEstimator):
                 np.count_nonzero(y == i),
                 mean=means[i],
                 sigma=covariances[i],
-                random_state=self.random_state
+                random_state=self._random_state
             )
 
         return X, y

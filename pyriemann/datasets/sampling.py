@@ -572,6 +572,8 @@ def sample_gaussian(n_matrices, mean, sigma, random_state=None,
         samples = mean_sqrt @ samples_centered @ ctranspose(mean_sqrt)
 
     elif isinstance(sigma, np.ndarray):
+        if np.iscomplexobj(sigma):
+            raise ValueError("sigma must be a real-valued covariance matrix.")
         n_ts = n_dim * (n_dim + 1) // 2
         if sigma.shape != (n_ts, n_ts):
             raise ValueError(

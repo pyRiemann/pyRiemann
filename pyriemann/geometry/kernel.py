@@ -228,7 +228,7 @@ def _check_xy(X, Y):
         if Y.shape[1:] != X.shape[1:]:
             raise ValueError(
                 "Dimension of matrices in Y must match dimension of matrices "
-                "in X. Expected {X.shape[1:]}, got {Y.shape[1:]}."
+                f"in X. Expected {X.shape[1:]}, got {Y.shape[1:]}."
             )
         return X, Y, False
 
