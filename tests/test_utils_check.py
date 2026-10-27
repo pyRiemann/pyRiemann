@@ -1,6 +1,7 @@
 from array_api_compat import array_namespace as get_namespace
 import numpy as np
 import pytest
+from pytest import approx
 
 from conftest import to_backend
 from pyriemann.utils._check import (
@@ -16,6 +17,8 @@ from pyriemann.utils._check import (
 def test_check_weights_none(n_matrices):
     weights = check_weights(None, n_matrices)
     xp = get_namespace(weights)
+    assert weights.dtype == float
+    assert weights.shape == (n_matrices,)
     assert xp.sum(weights) == pytest.approx(1.0, abs=1e-10)
 
 
@@ -24,6 +27,7 @@ def test_check_weights_vals(get_weights, n_matrices):
     weights = get_weights(n_matrices) + 1
     weights = check_weights(weights, n_matrices, like=weights)
     xp = get_namespace(weights)
+    assert weights.shape == (n_matrices,)
     assert xp.sum(weights) == pytest.approx(1.0, abs=1e-10)
 
 
@@ -96,6 +100,19 @@ def test_check_init():
         check_init(init=np.ones((3, 2)), n=3, like=like)
     with pytest.raises(ValueError):  # shape not equal to n
         check_init(init=np.ones((2, 2)), n=3, like=like)
+
+
+@pytest.mark.parametrize("kind", ["real", "comp"])
+def test_check_init_copy(kind, get_mats):
+    """Test that output is a copy of input"""
+    n = 3
+    init = get_mats(1, n, kind=kind)[0]
+    init_checked = check_init(init, n, like=init)
+
+    assert init_checked.dtype == init.dtype
+    assert init_checked == approx(init)
+    init_checked[0, 0] = 42  # modifying output does not modify input
+    assert init[0, 0] != 42
 
 
 def test_check_matrix_pair(backend):

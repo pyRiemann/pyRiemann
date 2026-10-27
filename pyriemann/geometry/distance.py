@@ -1048,8 +1048,9 @@ def pairwise_distance(X, Y=None, metric="riemann", squared=False):
     elif metric == "riemann":
         return _pairwise_distance_riemann(X, Y=Y, squared=squared)
 
-    # compute full pairwise matrix for non-symmetric metrics
-    if Y is None and metric in ["kullback", "kullback_right"]:
+    # compute full pairwise matrix for non-symmetric or callable metrics
+    if Y is None and (metric in ["kullback", "kullback_right"] or
+                      hasattr(metric, '__call__')):
         Y = X
 
     n_matrices_X, _, _ = X.shape

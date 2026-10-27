@@ -11,7 +11,7 @@ class deprecated(object):
     and the docstring. Note: to use this with the default value for extra, put
     in an empty of parentheses::
 
-        >>> from pyriemann.utils import deprecated
+        >>> from pyriemann.geometry._docs import deprecated
         >>> deprecated()
         <pyriemann.geometry._docs.deprecated object at ...>
         >>> @deprecated()

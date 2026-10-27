@@ -199,6 +199,16 @@ def test_make_outliers(rndstate, get_mats, n_matrices, n_dim):
     assert X.shape == (n_matrices, n_dim, n_dim)
 
 
+def test_make_outliers_random_state(get_mats):
+    """Test that outliers are distinct and reproducible with an int seed."""
+    n_matrices, n_dim = 5, 3
+    mean, sigma = get_mats(1, n_dim, "spd")[0], 0.5
+    X1 = make_outliers(n_matrices, mean, sigma, random_state=42)
+    assert len(np.unique(X1, axis=0)) == n_matrices
+    X2 = make_outliers(n_matrices, mean, sigma, random_state=42)
+    assert_array_almost_equal(X1, X2)
+
+
 @pytest.mark.parametrize("n_vertices", [1, 2, 3, 5])
 def test_make_simplex(n_vertices):
     """Test that simplex vertices are pairwise at unit distance."""

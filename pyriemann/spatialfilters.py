@@ -493,10 +493,8 @@ class SPoC(CSP):
     ----------
     nfilter : int, default=4
         The number of components to decompose M/EEG signals.
-    metric : str, default="euclid"
+    metric : "euclid"
         Metric used for the estimation of mean covariance matrices.
-        For the list of supported metrics,
-        see :func:`pyriemann.geometry.mean.gmean`.
     log : bool, default=True
         If true, return the log variance, otherwise return the spatially
         filtered covariance matrices.
@@ -540,6 +538,8 @@ class SPoC(CSP):
         self : SPoC instance
             The SPoC instance.
         """
+        if self.metric != "euclid":
+            raise ValueError("SPoC supports only 'euclid' metric.")
 
         # Normalize target variable
         target = np.float64(y.copy())
@@ -757,6 +757,7 @@ class AJDC(BaseEstimator):
 
         # initial diagonalizer: if warm restart, dimension reduction defined by
         # the size of the initial diag filters
+        self._dim_red = self.dim_red
         init = None
         if self.dim_red is None:
             warnings.warn("Parameter dim_red should not be let to None")
@@ -768,13 +769,13 @@ class AJDC(BaseEstimator):
                     "Initial diagonalizer defined in dim_red is not a 2D "
                     "square matrix (Got shape = %s)." % (init.shape,)
                 )
-            self.dim_red = {"n_components": init.shape[0]}
+            self._dim_red = {"n_components": init.shape[0]}
 
         # dimension reduction and whitening, Eq.(8) in [2], computed on the
         # weighted mean of cospectra across frequencies (and conditions)
         whit = Whitening(
             metric="euclid",
-            dim_red=self.dim_red,
+            dim_red=self._dim_red,
             verbose=self.verbose,
         )
         cosp_rw = whit.fit_transform(self._cosp_channels, weights)

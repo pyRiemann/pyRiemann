@@ -10,12 +10,13 @@ def encode_domains(X, y, domain):
     ``domain_01`` then its extended label will be ``domain_01/left_hand``.
     Note that if the classes were integers at first, they will be converted to
     strings.
+    Domain names can contain the character ``/``, but labels can not.
 
     Parameters
     ----------
     X : ndarray, shape (n_matrices, n_channels, n_channels) or \
             shape (n_vectors, n_ts)
-        Set of SPD matrices or tangent vectors.
+        Set of matrices or tangent vectors.
     y : ndarray, shape (n_matrices,) or shape (n_vectors,)
         Labels for each matrix or vector.
     domain : ndarray, shape (n_matrices,) or shape (n_vectors,)
@@ -56,7 +57,7 @@ def decode_domains(X_enc, y_enc):
     ----------
     X_enc : ndarray, shape (n_matrices, n_channels, n_channels) or \
             shape (n_vectors, n_ts)
-        Set of SPD matrices or tangent vectors.
+        Set of matrices or tangent vectors.
     y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
         Extended labels for each matrix or vector.
 
@@ -121,7 +122,7 @@ class TLSplitter():
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels) or \
                 shape (n_vectors, n_ts)
-            Set of SPD matrices or tangent vectors.
+            Set of matrices or tangent vectors.
         y : ndarray, shape (n_matrices,) or shape (n_vectors,)
             Extended labels for each matrix or vector.
 
@@ -155,14 +156,20 @@ class TLSplitter():
 
         Parameters
         ----------
-        X : object
-            Ignored, exists for compatibility.
-        y : object
+        X : ndarray, shape (n_matrices, n_channels, n_channels) or \
+                shape (n_vectors, n_ts)
+            Set of matrices or tangent vectors.
+        y : ndarray, shape (n_matrices,) or shape (n_vectors,)
             Ignored, exists for compatibility.
 
         Returns
         -------
         n_splits : int
             Number of splitting iterations in the cross-validator.
+
+        Notes
+        -----
+        .. versionchanged:: 0.13
+            Use ``cv.get_n_splits`` instead of ``cv.n_splits``.
         """
-        return self.cv.n_splits
+        return self.cv.get_n_splits(X, y)

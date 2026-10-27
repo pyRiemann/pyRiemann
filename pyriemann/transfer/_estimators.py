@@ -5,6 +5,7 @@ import numpy as np
 from sklearn.base import (
     BaseEstimator,
     TransformerMixin,
+    clone,
     is_classifier,
     is_regressor
 )
@@ -352,7 +353,7 @@ class TLCenter(TransformerMixin, BaseEstimator):
 class TLScale(TransformerMixin, BaseEstimator):
     """Scaling for transfer learning.
 
-    For inputs in matrix manifold, it stretches the matrices from each domain
+    For inputs in matrix manifold, it scales the matrices from each domain
     around their mean so that the dispersion of the matrices of each domain is
     equal to one [1]_.
 
@@ -379,7 +380,7 @@ class TLScale(TransformerMixin, BaseEstimator):
         For inputs in manifold, metric used for calculating the dispersion.
         For the list of supported metrics,
         see :func:`pyriemann.geometry.distance.distance`.
-        The stretching operation in manifold is properly defined only for the
+        The scaling operation in manifold is properly defined only for the
         "riemann" metric.
 
     Attributes
@@ -801,9 +802,11 @@ class TLRotate(TransformerMixin, BaseEstimator):
         n_classes = len(np.unique(y_tgt))
 
         if self.n_components == "max":
-            self.n_components = X.shape[1]
+            self._n_components = X.shape[1]
+        else:
+            self._n_components = self.n_components
         self._src_pca = [
-            PCA(n_components=self.n_components) for _ in range(n_classes)
+            PCA(n_components=self._n_components) for _ in range(n_classes)
         ]
 
         self.rotations_ = {}
@@ -870,7 +873,7 @@ class TLRotate(TransformerMixin, BaseEstimator):
             r = n_vectors_c / self.n_clusters
 
             Xc_pca = self._src_pca[i].transform(Xc)
-            for j in range(self.n_components):
+            for j in range(self._n_components):
                 inds = np.argsort(Xc_pca[:, j], axis=0)
                 anchor = [
                     np.mean(Xc[inds[round(k*r):round((k+1)*r)]], axis=0)
@@ -982,6 +985,8 @@ class TLEstimator(BaseEstimator):
     .. versionadded:: 0.4
     .. versionchanged:: 0.8
         Add support for tangent space estimation.
+    .. versionchanged:: 0.13
+        Correct ``estimator``, cloned before fitting so that not modified.
     """
 
     def __init__(self, target_domain, estimator, domain_weight=None):
@@ -997,7 +1002,7 @@ class TLEstimator(BaseEstimator):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels) or \
                 shape (n_vectors, n_ts)
-            Set of SPD matrices or tangent vectors.
+            Set of matrices or tangent vectors.
         y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
             Extended labels for each matrix or vector.
 
@@ -1011,9 +1016,10 @@ class TLEstimator(BaseEstimator):
                 "Estimator has to be either a classifier or a regressor."
             )
 
+        self._estimator = clone(self.estimator)
         X_dec, y_dec, domains = decode_domains(X, y_enc)
 
-        if is_regressor(self.estimator):
+        if is_regressor(self._estimator):
             y_dec = y_dec.astype(float)
 
         if self.domain_weight is not None:
@@ -1023,17 +1029,17 @@ class TLEstimator(BaseEstimator):
         else:
             weights = None
 
-        if isinstance(self.estimator, Pipeline):
+        if isinstance(self._estimator, Pipeline):
             param_weight = {}
-            for (step_name, step_estimator) in self.estimator.steps:
+            for (step_name, step_estimator) in self._estimator.steps:
                 if check_param_in_func("sample_weight", step_estimator.fit):
                     param_weight[step_name + "__sample_weight"] = weights
-            self.estimator.fit(X_dec, y_dec, **param_weight)
+            self._estimator.fit(X_dec, y_dec, **param_weight)
         else:
-            if check_param_in_func("sample_weight", self.estimator.fit):
-                self.estimator.fit(X_dec, y_dec, sample_weight=weights)
+            if check_param_in_func("sample_weight", self._estimator.fit):
+                self._estimator.fit(X_dec, y_dec, sample_weight=weights)
             else:
-                self.estimator.fit(X_dec, y_dec)
+                self._estimator.fit(X_dec, y_dec)
 
         self._is_fitted = True
         return self
@@ -1048,14 +1054,14 @@ class TLEstimator(BaseEstimator):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels) or \
                 shape (n_vectors, n_ts)
-            Set of SPD matrices or tangent vectors.
+            Set of matrices or tangent vectors.
 
         Returns
         -------
         pred : ndarray, shape (n_matrices,) or shape (n_vectors,)
             Predictions according to the estimator.
         """
-        return self.estimator.predict(X)
+        return self._estimator.predict(X)
 
 
 class TLClassifier(TLEstimator):
@@ -1093,7 +1099,7 @@ class TLClassifier(TLEstimator):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels) or \
                 shape (n_vectors, n_ts)
-            Set of SPD matrices or tangent vectors.
+            Set of matrices or tangent vectors.
         y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
             Extended labels for each matrix or vector.
 
@@ -1114,7 +1120,7 @@ class TLClassifier(TLEstimator):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels) or \
                 shape (n_vectors, n_ts)
-            Set of SPD matrices or tangent vectors.
+            Set of matrices or tangent vectors.
 
         Returns
         -------
@@ -1122,7 +1128,7 @@ class TLClassifier(TLEstimator):
                 shape (n_vectors, n_classes)
             Predictions for each matrix or vector.
         """
-        return self.estimator.predict_proba(X)
+        return self._estimator.predict_proba(X)
 
     def score(self, X, y_enc):
         """Return the mean accuracy on the given test data and labels.
@@ -1131,7 +1137,7 @@ class TLClassifier(TLEstimator):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels) or \
                 shape (n_vectors, n_ts)
-            Set of SPD matrices or tangent vectors.
+            Set of matrices or tangent vectors.
         y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
             Extended labels for each matrix or vector.
 
@@ -1176,7 +1182,7 @@ class TLRegressor(TLEstimator):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels) or \
                 shape (n_vectors, n_ts)
-            Set of SPD matrices or tangent vectors.
+            Set of matrices or tangent vectors.
         y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
             Extended labels for each matrix or vector.
 
@@ -1197,7 +1203,7 @@ class TLRegressor(TLEstimator):
         ----------
         X : ndarray, shape (n_matrices, n_channels, n_channels) or \
                 shape (n_vectors, n_ts)
-            Set of SPD matrices or tangent vectors.
+            Set of matrices or tangent vectors.
         y_enc : ndarray, shape (n_matrices,) or shape (n_vectors,)
             Extended labels for each matrix or vector.
 

@@ -122,7 +122,7 @@ def check_weights(weights, n_weights, *, check_positivity=False, like=None):
                 "Weights do not have the good shape. Should be (%d,) but got "
                 "%s." % (n_weights, weights.shape,)
             )
-        if check_positivity and bool(xp.any(weights <= 0)):
+        if check_positivity and xp.any(weights <= 0):
             raise ValueError("Weights must be strictly positive.")
 
     weights = weights / xp.sum(weights)
@@ -190,9 +190,11 @@ def check_init(init, n, *, like=None):
     .. versionadded:: 0.8
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+    .. versionchanged:: 0.13
+        Return a copy of input.
     """
     xp, dev = check_like(like)
-    init = xp.asarray(init, dtype=init.dtype, device=dev)
+    init = xp.asarray(init, dtype=init.dtype, device=dev, copy=True)
     if init.shape != (n, n):
         raise ValueError(
             "Init matrix does not have the good shape. "
