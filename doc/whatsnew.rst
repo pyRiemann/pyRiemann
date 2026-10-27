@@ -130,6 +130,12 @@ v0.13.dev
   ``estimator`` in place.
   :pr:`511` by :user:`qbarthelemy`
 
+- Add example on Riemannian Mean Pooling of language model token metrics,
+  classifying CoLA sentences from SPD matrices with
+  :class:`pyriemann.preprocessing.Whitening` and
+  :class:`pyriemann.tangentspace.TangentSpace`.
+  :pr:`512` by :user:`SzczepanK112` and :user:`gcattan`
+
 v0.12 (July 2026)
 -----------------
 
