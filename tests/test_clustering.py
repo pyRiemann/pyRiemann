@@ -1,7 +1,8 @@
 import numpy as np
 from numpy.testing import assert_array_equal
 import pytest
-from sklearn.base import clone
+from sklearn.base import clone, is_clusterer
+from sklearn.model_selection import cross_val_score
 from pytest import approx
 
 from pyriemann.clustering import (
@@ -44,6 +45,7 @@ def test_clustering_two_clusters(kind, clust, get_mats, get_labels):
         clt_jobs(clust, X, n_clusters)
         clt_centroids(clust, X, n_clusters)
         clt_fit_independence(clust, X)
+        clt_score(clust, X)
 
     if clust is KmeansPerClassTransform:
         n_classes = n_clusters
@@ -332,8 +334,22 @@ def test_kmeans(clust, init, n_init, metric, get_mats, get_labels):
     dists = clt.transform(X)
     if clust is Kmeans:
         assert dists.shape == (n_matrices, n_clusters)
+        inertia = np.sum(np.min(dists, axis=1) ** 2)
+        assert clt.inertia_ == approx(inertia)
+        assert clt.score(X) == approx(-inertia_)
     elif clust is KmeansPerClassTransform:
         assert dists.shape == (n_matrices, clt.covmeans_.shape[0])
+
+
+def test_kmeans_score(get_mats, get_labels):
+    n_matrices, n_classes = 20, 2
+    X = get_mats(n_matrices, 3, "spd")
+    y = get_labels(n_matrices, n_classes)
+
+    clt = Kmeans(n_clusters=2)
+    assert is_clusterer(clt)
+    scores = cross_val_score(clt, X, y, cv=5)
+    assert np.all(scores <= 0)
 
 
 def test_kmeansperclasstransform_get_params():
