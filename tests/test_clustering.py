@@ -336,7 +336,7 @@ def test_kmeans(clust, init, n_init, metric, get_mats, get_labels):
         assert dists.shape == (n_matrices, n_clusters)
         inertia = np.sum(np.min(dists, axis=1) ** 2)
         assert clt.inertia_ == approx(inertia)
-        assert clt.score(X) == approx(-inertia_)
+        assert clt.score(X) == approx(-inertia)
     elif clust is KmeansPerClassTransform:
         assert dists.shape == (n_matrices, clt.covmeans_.shape[0])
 
