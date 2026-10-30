@@ -1,5 +1,4 @@
 """Classification."""
-import functools
 import warnings
 
 from joblib import Parallel, delayed
@@ -16,7 +15,7 @@ from .geometry.distance import distance
 from .geometry.kernel import kernel
 from .geometry.mean import gmean
 from .tangentspace import FGDA, TangentSpace
-from .utils._base import SpdClassifMixin, SpdTransfMixin
+from .utils._base import SpdClassifMixin, SpdTransfMixin, SpdSvmMixin
 from .utils._check import check_metric, check_param_in_func
 
 
@@ -610,7 +609,7 @@ class KNearestNeighbor(MDM):
         return prob
 
 
-class SVC(sklearnSVC):
+class SVC(sklearnSVC, SpdSvmMixin):
     """Classification by support-vector machine.
 
     Support-vector machine (SVM) classification with a precomputed
@@ -770,41 +769,9 @@ class SVC(sklearnSVC):
             The SVC instance.
         """
         self._set_cref(X)
-        self._set_kernel()
+        self._set_kernel(kernel)
         super().fit(X, y, sample_weight)
         return self
-
-    def _set_cref(self, X):
-        if self.Cref is None:
-            self.Cref_ = gmean(X, metric=self.metric)
-        elif callable(self.Cref):
-            self.Cref_ = self.Cref(X)
-        elif isinstance(self.Cref, np.ndarray):
-            self.Cref_ = self.Cref
-        else:
-            raise TypeError(
-                f"Cref must be np.ndarray, callable or None, is {self.Cref}."
-            )
-
-    def _set_kernel(self):
-        if callable(self.kernel_fct):
-            self.kernel = functools.partial(
-                self.kernel_fct,
-                Cref=self.Cref_,
-                metric=self.metric
-            )
-        elif self.kernel_fct is None or (isinstance(self.kernel_fct, str) and
-                                         self.kernel_fct == "precomputed"):
-            self.kernel = functools.partial(
-                kernel,
-                Cref=self.Cref_,
-                metric=self.metric
-            )
-        else:
-            raise TypeError(
-                "kernel_fct must be None, 'precomputed' or callable, is "
-                f"{self.kernel}."
-            )
 
     def predict_proba(self, X):
         """Predict class probabilities using decision function.
