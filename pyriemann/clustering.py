@@ -18,7 +18,7 @@ from .geometry.distance import (
 )
 from .geometry.mean import gmean
 from .geometry.tangentspace import exp_map, log_map, tangent_space
-from .utils._base import SpdClassifMixin, SpdClustMixin, SpdTransfMixin
+from .utils._base import SpdClustMixin, SpdTransfMixin
 from .utils._check import check_metric, check_function, check_weights
 
 
@@ -33,6 +33,11 @@ def _init_centroids(X, n_clusters, init, random_state, x_squared_norms):
         random_state,
         sample_weight=np.ones(n_matrices) / n_matrices,
     )
+
+
+def _inertia(dist):
+    """Sum of squared distances of matrices to their closest centroids."""
+    return float(np.sum(np.min(dist, axis=1) ** 2))
 
 
 def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,
@@ -61,14 +66,11 @@ def _fit_single(X, y=None, n_clusters=2, init="random", random_state=None,
         k += 1
         if (k > max_iter) | (np.mean(labels == old_labels) > (1 - tol)):
             break
-    inertia = sum([
-        sum(dist[labels == mdm.classes_[i], i])
-        for i in range(len(mdm.classes_))
-    ])
+    inertia = _inertia(dist)
     return labels, inertia, mdm
 
 
-class Kmeans(SpdClassifMixin, SpdClustMixin, SpdTransfMixin, BaseEstimator):
+class Kmeans(SpdClustMixin, SpdTransfMixin, BaseEstimator):
     """Clustering by k-means with SPD/HPD matrices as inputs.
 
     The k-means is a clustering method used to find clusters that minimize the
@@ -121,7 +123,8 @@ class Kmeans(SpdClassifMixin, SpdClustMixin, SpdTransfMixin, BaseEstimator):
     labels_ : ndarray, shape (n_matrices,)
         Labels, ie centroid indices, of each matrix of training set.
     inertia_ : float
-        Sum of distances of matrices to their closest cluster centroids.
+        Sum of squared distances of matrices to their closest cluster
+        centroids.
 
     Notes
     -----
@@ -130,6 +133,9 @@ class Kmeans(SpdClassifMixin, SpdClustMixin, SpdTransfMixin, BaseEstimator):
         Add support for HPD matrices.
     .. versionchanged:: 0.13
         Fix ``random_state`` used with np.RandomState.
+        Correct ``fit()`` and ``score()`` using inertia defined with squared
+        distances.
+        ``Kmeans`` is no longer seen as a classifier by scikit-learn.
 
     See Also
     --------
@@ -267,6 +273,29 @@ class Kmeans(SpdClassifMixin, SpdClustMixin, SpdTransfMixin, BaseEstimator):
             Centroids of each cluster.
         """
         return self.mdm_.covmeans_
+
+    def score(self, X, y=None):
+        """Opposite of the inertia of matrices.
+
+        Parameters
+        ----------
+        X : ndarray, shape (n_matrices, n_channels, n_channels)
+            Set of SPD/HPD matrices.
+        y : None
+            Not used, here for compatibility with sklearn API.
+
+        Returns
+        -------
+        score : float
+            Opposite of the sum of squared distances of matrices to their
+            closest centroids.
+
+        Notes
+        -----
+        .. versionchanged:: 0.13
+            Return the opposite of inertia defined with squared distances.
+        """
+        return -_inertia(self.transform(X))
 
 
 class KmeansPerClassTransform(SpdTransfMixin, BaseEstimator):

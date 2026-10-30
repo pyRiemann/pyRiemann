@@ -130,7 +130,12 @@ v0.13.dev
   ``estimator`` in place.
   :pr:`511` by :user:`qbarthelemy`
 
-- Fix :class:`pyriemann.regression.SVR` used with ``kernel_fct="precomputed"``.
+- Correct :class:`pyriemann.clustering.Kmeans` which was seen as a classifier by scikit-learn,
+  and align it on scikit-learn: inertia is now the sum of squared distances,
+  and ``score()`` returns the opposite of inertia instead of an accuracy.
+  :pr:`513` by :user:`qbarthelemy`
+  
+  - Fix :class:`pyriemann.regression.SVR` used with ``kernel_fct="precomputed"``.
   :pr:`514` by :user:`qbarthelemy`
 
 v0.12 (July 2026)
