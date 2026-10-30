@@ -212,6 +212,13 @@ def test_svr_cref_error(get_mats, get_targets, metric):
         SVR(Cref=Cref).fit(X, y)
 
 
+def test_svr_kernel_precomputed(get_mats, get_targets):
+    n_matrices, n_channels = 6, 3
+    X = get_mats(n_matrices, n_channels, "spd")
+    y = get_targets(n_matrices)
+    SVR(kernel_fct="precomputed", metric="logeuclid").fit(X, y)
+
+
 @pytest.mark.parametrize("metric", ["euclid", "logeuclid", "riemann"])
 def test_svr_kernel_callable(get_mats, get_targets, metric):
     n_matrices, n_channels = 6, 3

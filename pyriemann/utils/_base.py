@@ -1,4 +1,9 @@
+import functools
+
+import numpy as np
 from sklearn.base import ClassifierMixin, ClusterMixin, TransformerMixin
+
+from ..geometry.mean import gmean
 
 
 class SpdTransfMixin(TransformerMixin):
@@ -69,3 +74,39 @@ class SpdClustMixin(ClusterMixin):
             Prediction for each matrix according to the closest cluster.
         """
         return self.fit(X, y).predict(X)
+
+
+class SpdSvmMixin():
+    """SvmMixin for SPD matrices"""
+
+    def _set_cref(self, X):
+        if self.Cref is None:
+            self.Cref_ = gmean(X, metric=self.metric)
+        elif callable(self.Cref):
+            self.Cref_ = self.Cref(X)
+        elif isinstance(self.Cref, np.ndarray):
+            self.Cref_ = self.Cref
+        else:
+            raise TypeError(
+                f"Cref must be np.ndarray, callable or None, is {self.Cref}."
+            )
+
+    def _set_kernel(self, kernel):
+        if callable(self.kernel_fct):
+            self.kernel = functools.partial(
+                self.kernel_fct,
+                Cref=self.Cref_,
+                metric=self.metric
+            )
+        elif self.kernel_fct is None or (isinstance(self.kernel_fct, str) and
+                                         self.kernel_fct == "precomputed"):
+            self.kernel = functools.partial(
+                kernel,
+                Cref=self.Cref_,
+                metric=self.metric
+            )
+        else:
+            raise TypeError(
+                "kernel_fct must be None, 'precomputed' or callable, is "
+                f"{self.kernel}."
+            )
