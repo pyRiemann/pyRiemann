@@ -1,6 +1,4 @@
-"""Module for regression functions."""
-import functools
-
+"""Regression."""
 import numpy as np
 from sklearn.base import RegressorMixin
 from sklearn.metrics import r2_score
@@ -10,11 +8,11 @@ from sklearn.utils.extmath import softmax
 from .classification import MDM
 from .geometry._docs import deprecated
 from .geometry.kernel import kernel
-from .geometry.mean import gmean
+from .utils._base import SpdSvmMixin
 from .utils._check import check_metric
 
 
-class SVR(sklearnSVR):
+class SVR(sklearnSVR, SpdSvmMixin):
     """Regression by support-vector machine.
 
     Support-vector machine (SVM) regression with a precomputed kernel matrix
@@ -61,6 +59,8 @@ class SVR(sklearnSVR):
     Notes
     -----
     .. versionadded:: 0.3
+    .. versionchanged:: 0.13
+        Fix parameter ``kernel_fct="precomputed"``.
 
     References
     ----------
@@ -123,37 +123,9 @@ class SVR(sklearnSVR):
             The SVR instance.
         """
         self._set_cref(X)
-        self._set_kernel()
+        self._set_kernel(kernel)
         super().fit(X, y, sample_weight)
         return self
-
-    def _set_cref(self, X):
-        if self.Cref is None:
-            self.Cref_ = gmean(X, metric=self.metric)
-        elif callable(self.Cref):
-            self.Cref_ = self.Cref(X)
-        elif isinstance(self.Cref, np.ndarray):
-            self.Cref_ = self.Cref
-        else:
-            raise TypeError("Cref has to be np.ndarray, callable or None. But "
-                            f"has type {type(self.Cref)}.")
-
-    def _set_kernel(self):
-        if callable(self.kernel_fct):
-            self.kernel = functools.partial(
-                self.kernel_fct,
-                Cref=self.Cref_,
-                metric=self.metric,
-            )
-        elif self.kernel_fct is None:
-            self.kernel = functools.partial(
-                kernel,
-                Cref=self.Cref_,
-                metric=self.metric,
-            )
-        else:
-            raise TypeError(f"kernel must be 'precomputed' or callable, is "
-                            f"{self.kernel}.")
 
 
 class KNearestNeighborRegressor(RegressorMixin, MDM):
