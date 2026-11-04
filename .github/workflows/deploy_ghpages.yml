@@ -22,7 +22,7 @@ jobs:
           path: |
             pyriemann_data
             mne_data
-          key: docs-${{ runner.os }}-pyriemann-data-v4
+          key: docs-${{ runner.os }}-pyriemann-data-v5
 
       # Pre-download datasets when cache is cold
       - name: Pre-download datasets (cold cache)
@@ -59,11 +59,19 @@ jobs:
               ('https://zenodo.org/records/10625505/files/scene2.npy?download=1', 'scene2.npy'),
           ]
 
+          # nlp data
+          rmp_cola_path = get_data_path('rmp_cola')
+          os.makedirs(rmp_cola_path, exist_ok=True)
+          rmp_cola_files = [
+              ('https://huggingface.co/datasets/szczepank112/rmp-cola-demo/resolve/408e37b8313103ebf96fa8d7727f75d0addd8932/rmp_cola.npz', 'rmp_cola.npz'),
+          ]
+
           # Download all files with delays
           for path, files in [
               (fnirs_path, fnirs_files),
               (salinas_path, salinas_files),
               (uavsar_path, uavsar_files),
+              (rmp_cola_path, rmp_cola_files),
           ]:
               for url, filename in files:
                   dst = os.path.join(path, filename)
@@ -110,7 +118,7 @@ jobs:
           path: |
             pyriemann_data
             mne_data
-          key: docs-${{ runner.os }}-pyriemann-data-v4
+          key: docs-${{ runner.os }}-pyriemann-data-v5
 
       - name: Generate HTML docs
         uses: gcattan/sphinx-action@master
