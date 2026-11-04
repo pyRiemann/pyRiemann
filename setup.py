@@ -62,6 +62,7 @@ setup(
         ],
         "tests": [
             "pytest",
+            "pytest-cov",
             "seaborn",
             "flake8",
             "torch",
