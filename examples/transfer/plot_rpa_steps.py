@@ -6,14 +6,22 @@ Data transformations in the Riemannian Procrustes Analysis
 Use the SpectralEmbedding module to plot in 2D the transformations on the
 matrices from source and target domains when applying the Riemannian Procrustes
 Analysis [1]_ to match their statistics.
+It also shows how recentering is biased when the target domain is
+class-imbalanced, and how sample weights correct this bias.
 """
 
 import matplotlib.pyplot as plt
 import numpy as np
 
+from pyriemann.classification import MDM
 from pyriemann.datasets.simulated import make_classification
 from pyriemann.embedding import SpectralEmbedding
-from pyriemann.transfer import decode_domains, TLCenter, TLRotate
+from pyriemann.transfer import (
+    decode_domains,
+    encode_domains,
+    TLCenter,
+    TLRotate,
+)
 
 
 ###############################################################################
@@ -108,6 +116,111 @@ ax[0].scatter([], [], marker="^", c="C0", label="target - class 0")
 ax[0].scatter([], [], marker="^", c="C1", label="target - class 1")
 ax[0].legend(loc="upper right")
 plt.show()
+
+
+###############################################################################
+# Recentering with a class-imbalanced target domain
+# -------------------------------------------------
+#
+# Recentering estimates the center of each domain as the mean of its matrices,
+# giving the same weight to all matrices. It implicitly assumes that classes
+# have similar proportions in source and target domains.
+# When the target domain is class-imbalanced, its center is pulled towards the
+# majority class, and recentering no longer matches the two domains.
+#
+# Here, the target domain keeps all matrices of the first class (blue), but
+# only five matrices of the second class (orange). Class-balanced weights,
+# inversely proportional to class sizes and given to parameter
+# ``sample_weight``, correct this bias.
+
+# keep the source domain, and an imbalanced subset of the target domain
+rs = np.random.RandomState(seed)
+is_target = domain == "target_domain"
+idx = np.concatenate([
+    np.where(~is_target)[0],
+    np.where(is_target & (y == "1"))[0],
+    rs.choice(np.where(is_target & (y == "2"))[0], 5, replace=False),
+])
+X_imb, y_imb, domain_imb = X_org[idx], y[idx], domain[idx]
+_, y_enc_imb = encode_domains(X_imb, y_imb, domain_imb)
+is_target_imb = domain_imb == "target_domain"
+
+# class-balanced weights: each class of target domain has the same total weight
+weights = np.ones(len(X_imb))
+for label in np.unique(y_imb[is_target_imb]):
+    mask = is_target_imb & (y_imb == label)
+    weights[mask] = 1 / np.sum(mask)
+
+# recenter with and without weights, and evaluate a classifier trained on the
+# source domain on the whole (balanced) target domain
+mdm = MDM()
+mdm.fit(X_org[~is_target], y[~is_target])
+print("Accuracy on the whole target domain")
+score = mdm.score(X_org[is_target], y[is_target])
+print(f"  without recentering: {score:.2f}")
+X_rct_imb = {}
+for name, sample_weight in [("unweighted", None), ("weighted", weights)]:
+    rct = TLCenter(target_domain="target_domain")
+    X_rct_imb[name] = rct.fit_transform(
+        X_imb, y_enc_imb, sample_weight=sample_weight
+    )
+    mdm.fit(X_rct_imb[name][~is_target_imb], y_imb[~is_target_imb])
+    score = mdm.score(rct.transform(X_org[is_target]), y[is_target])
+    print(f"  after {name} recentering: {score:.2f}")
+
+
+###############################################################################
+# Plot the imbalanced target domain before and after recentering.
+
+n_imb = len(X_imb)
+points = np.concatenate([
+    X_imb,
+    X_rct_imb["unweighted"],
+    X_rct_imb["weighted"],
+    np.eye(2)[None, :, :],
+])
+S = emb.fit_transform(points)
+S = S - S[-1]
+
+fig, ax = plt.subplots(figsize=(13.5, 4.4), ncols=3, sharey=True)
+plt.subplots_adjust(wspace=0.10)
+titles = ["original", "after recentering", "after weighted recentering"]
+for i, (axi, title) in enumerate(zip(ax, titles)):
+    S_step = S[i * n_imb:(i + 1) * n_imb]
+    for dom, marker, alpha in [
+        ("source_domain", "o", 0.50),
+        ("target_domain", "^", 0.30),
+    ]:
+        for label, color in [("1", "C0"), ("2", "C1")]:
+            mask = (domain_imb == dom) & (y_imb == label)
+            axi.scatter(
+                S_step[mask, 0],
+                S_step[mask, 1],
+                c=color, s=50, alpha=alpha, marker=marker,
+            )
+    axi.scatter(0, 0, c="k", s=80, marker="*")
+    axi.set_title(title, fontsize=14)
+ax[0].scatter([], [], c="C0", label="source - class 0")
+ax[0].scatter([], [], c="C1", label="source - class 1")
+ax[0].scatter([], [], marker="^", c="C0", label="target - class 0")
+ax[0].scatter([], [], marker="^", c="C1", label="target - class 1")
+ax[0].legend(loc="lower right")
+plt.show()
+
+###############################################################################
+# Unweighted recentering moves the majority class of the target domain onto
+# the identity, between the two classes of the source domain, which decreases
+# accuracy. Weighted recentering brings each class of the target domain closer
+# to the same class of the source domain.
+#
+# Here, weights are computed from target labels, which are available in RPA
+# since :class:`pyriemann.transfer.TLRotate` needs them.
+# In online use, the target domain is often a buffer of recent unlabeled
+# matrices, whose class proportions are not controlled.
+# Its labels can then be estimated by a classifier trained on the source
+# domain, applied to target matrices recentered with the source center, ie
+# before target recentering. However, these estimated labels are not reliable
+# when the shift between domains is large.
 
 
 ###############################################################################
