@@ -13,7 +13,7 @@ v0.13.dev
 - Complete documentation of :class:`pyriemann.transfer.TLCenter` about
   class-imbalanced domains, and correction of this bias with class-balanced
   sample weights. Enhance example on RPA steps accordingly.
-  :pr:`XXX` by :user:`Fexar123`
+  :pr:`515` by :user:`Fexar123`
 
 - Correct medians for identical matrices.
   :pr:`507` by :user:`ktz03`
