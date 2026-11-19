@@ -5,7 +5,7 @@ Data transformations in the Riemannian Procrustes Analysis
 
 Use the SpectralEmbedding module to plot in 2D the transformations on the
 matrices from source and target domains when applying the Riemannian Procrustes
-Analysis [1]_ to match their statistics.
+Analysis (RPA) [1]_ to match their statistics.
 It also shows how recentering is biased when the target domain is
 class-imbalanced, and how sample weights correct this bias.
 """
@@ -25,6 +25,8 @@ from pyriemann.transfer import (
 
 
 ###############################################################################
+# Generate matrices
+# -----------------
 
 # Fix seed for reproducible results
 seed = 66
@@ -72,6 +74,9 @@ embedded_points["rot"] = S[8*n_matrices:-1]
 
 
 ###############################################################################
+# Plot recentering and rotation
+# -----------------------------
+#
 # Plot the results, reproducing the Figure 1 of [1]_.
 
 fig, ax = plt.subplots(figsize=(13.5, 4.4), ncols=3, sharey=True)
@@ -119,8 +124,8 @@ plt.show()
 
 
 ###############################################################################
-# Recentering with a class-imbalanced target domain
-# -------------------------------------------------
+# Generate matrices with a class-imbalanced target domain
+# -------------------------------------------------------
 #
 # Recentering estimates the center of each domain as the mean of its matrices,
 # giving the same weight to all matrices. It implicitly assumes that classes
@@ -170,6 +175,9 @@ for name, sample_weight in [("unweighted", None), ("weighted", weights)]:
 
 
 ###############################################################################
+# Plot recentering
+# ----------------
+#
 # Plot the imbalanced target domain before and after recentering.
 
 n_imb = len(X_imb)
