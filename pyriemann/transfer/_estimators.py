@@ -121,24 +121,6 @@ class TLCenter(TransformerMixin, BaseEstimator):
        training set (target and source domains),
        and .transform() on the target domain of the test set.
 
-    .. note::
-       The center of each domain is the mean of its matrices or vectors,
-       which gives the same weight to all of them. It implicitly assumes that
-       classes have similar proportions in all domains. When a domain is
-       class-imbalanced, its center is pulled towards the majority class, and
-       recentering can decrease classification accuracy, especially when the
-       shift between domains is small. This can occur in online use, when the
-       target domain is a buffer of recent unlabeled inputs, whose class
-       proportions are not controlled.
-       This bias can be corrected by parameter ``sample_weight`` of
-       ``fit()``, giving class-balanced weights, ie inversely proportional to
-       class sizes.
-       When target labels are unknown, they can be estimated by a classifier
-       trained on the source domain, applied to target inputs recentered with
-       the source center. However, these estimated labels are not reliable
-       when the shift between domains is large.
-       See :ref:`sphx_glr_auto_examples_transfer_plot_rpa_steps.py`.
-
     Parameters
     ----------
     target_domain : str
@@ -227,6 +209,27 @@ class TLCenter(TransformerMixin, BaseEstimator):
 
         For each domain, it calculates the mean of matrices or vectors of this
         domain.
+
+        .. note::
+           By default, the center of each domain is the mean of its matrices
+           or vectors, which gives the same weight to all of them. It
+           implicitly assumes that classes have similar proportions in all
+           domains. When a domain is class-imbalanced, its center is pulled
+           towards the majority class, and recentering can decrease
+           classification accuracy, especially when the shift between domains
+           is small. This can occur in online use, when the target domain is a
+           buffer of recent unlabeled inputs, whose class proportions are not
+           controlled.
+           This bias can be corrected by parameter ``sample_weight``, giving
+           class-balanced weights, ie inversely proportional to class sizes.
+           However, when only one class is observed in a domain, these weights
+           are constant, so the weighted center is the same as the unweighted
+           one: reweighting cannot restore the missing class.
+           When target labels are unknown, they can be estimated by a
+           classifier trained on the source domain, applied to target inputs
+           recentered with the source center. However, these estimated labels
+           are not reliable when the shift between domains is large.
+           See :ref:`sphx_glr_auto_examples_transfer_plot_rpa_steps.py`.
 
         Parameters
         ----------
