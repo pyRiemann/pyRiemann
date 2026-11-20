@@ -144,6 +144,11 @@ v0.13.dev
   :class:`pyriemann.tangentspace.TangentSpace`.
   :pr:`512` by :user:`SzczepanK112` and :user:`gcattan`
 
+- Complete documentation of :class:`pyriemann.transfer.TLCenter` about
+  class-imbalanced domains, and correction of this bias with class-balanced
+  sample weights. Enhance example on RPA steps accordingly.
+  :pr:`515` by :user:`Fexar123`
+
 v0.12 (July 2026)
 -----------------
 
