@@ -163,7 +163,7 @@ def plot_waveforms(X, display, *, times=None, color="gray", alpha=0.5,
         * "mean" for the mean of the repetitions;
         * "mean+/-std" for the mean +/- standard deviation of the repetitions;
         * "hist" for the 2D histogram of the repetitions.
-    time : None | ndarray, shape (n_times,), default=None
+    times : None | ndarray, shape (n_times,), default=None
         Values to display on x-axis.
     color : matplotlib color, optional
         Color of the lines, when ``display=all``.
