@@ -806,8 +806,10 @@ Tangent Space
     log_map_logeuclid
     log_map_riemann
     log_map_wasserstein
-    upper
-    unupper
+    vec_upper
+    unvec_upper
+    vec_herm
+    unvec_herm
     tangent_space
     untangent_space
     innerproduct
