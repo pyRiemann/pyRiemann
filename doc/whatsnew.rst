@@ -149,6 +149,11 @@ v0.13.dev
   sample weights. Enhance example on RPA steps accordingly.
   :pr:`515` by :user:`Fexar123`
 
+- Add :func:`pyriemann.geometry.tangentspace.vec_herm` and :func:`pyriemann.geometry.tangentspace.unvec_herm`,
+  and deprecate ``pyriemann.geometry.tangentspace.upper`` renamed into :func:`pyriemann.geometry.tangentspace.vec_upper`,
+  and ``pyriemann.geometry.tangentspace.unupper`` into :func:`pyriemann.geometry.tangentspace.unvec_upper`.
+  :pr:`518` by :user:`qbarthelemy`
+
 v0.12 (July 2026)
 -----------------
 
@@ -553,9 +558,9 @@ v0.4 (Feb 2023)
 - Add exponential and logarithmic maps for three main metrics: ``"euclid"``, ``"logeuclid"`` and ``"riemann"``.
   :func:`pyriemann.geometry.tangentspace.tangent_space` is splitted in two steps:
   (i) ``log_map_*()`` projecting SPD matrices into tangent space depending on the metric; and
-  (ii) :func:`pyriemann.geometry.tangentspace.upper` taking the upper triangular part of matrices.
+  (ii) ``pyriemann.geometry.tangentspace.upper`` taking the upper triangular part of matrices.
   Similarly, :func:`pyriemann.geometry.tangentspace.untangent_space` is splitted into
-  (i) :func:`pyriemann.geometry.tangentspace.unupper` and (ii) ``exp_map_*()``.
+  (i) ``pyriemann.geometry.tangentspace.unupper` and (ii) ``exp_map_*()``.
   The different metrics for tangent space mapping can now be defined into :class:`pyriemann.tangentspace.TangentSpace`,
   then used for ``transform()`` as well as for ``inverse_transform()``.
   :pr:`195` by :user:`qbarthelemy`
