@@ -995,12 +995,15 @@ def normalize(X, norm):
     elif norm == "trace":
         denom = xp.linalg.trace(X)
     elif norm == "determinant":
-        denom = xp.abs(xp.linalg.det(X)) ** (1 / X.shape[-1])
+        _, logabsdet = xp.linalg.slogdet(X)
+        denom = xp.exp(logabsdet / (2 * X.shape[-1]))
     else:
         raise ValueError(f"{norm} is not a supported normalization")
 
     denom = xp.expand_dims(denom, axis=tuple(range(denom.ndim, X.ndim)))
     X_new = X / denom
+    if norm == "determinant":
+        X_new = X_new / denom
 
     if norm == "corr":
         X_new.real = xp.clip(X_new.real, -1, 1)
