@@ -667,8 +667,7 @@ def upper(X):
 def unvec_upper(T):
     """Inverse vec_upper function.
 
-    This function is the inverse of
-    :func:`pyriemann.geometry.tangentspace.vec_upper`: it reconstructs
+    This function is the inverse of :func:`vec_upper`: it reconstructs
     symmetric/Hermitian matrices from their weighted upper triangular parts.
 
     Parameters
@@ -767,8 +766,7 @@ def vec_herm(X):
 def unvec_herm(T):
     """Inverse vec_herm function.
 
-    This function is the inverse of
-    :func:`pyriemann.geometry.tangentspace.vec_herm`: it reconstructs Hermitian
+    This function is the inverse of :func:`vec_herm`: it reconstructs Hermitian
     matrices from their representation in a real vector space.
 
     Parameters
