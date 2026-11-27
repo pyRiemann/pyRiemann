@@ -642,55 +642,48 @@ def test_normalize_errors(rndstate):
         normalize(rndstate.randn(n_matrices, n_channels, n_channels), "abc")
 
 
-def test_normalize_determinant_extreme_scales(backend, get_mats):
-    # High-dimensional EEG-scale matrices (det underflows/overflows float64)
+@pytest.mark.parametrize("norm", ["trace", "determinant"])
+def test_normalize_extreme_scales(norm, backend, get_mats):
+    # High-dimensional scaled matrices (det underflows/overflows float64)
     n_channels = 32
     eye = np.eye(n_channels)
     for scale in (1e-12, 1e12):
         X = to_backend(eye * scale, backend)
-        Xdn = normalize(X, "determinant")
-        assert_array_almost_equal(Xdn, eye)
+        Xdn = normalize(X, norm)
+        assert_array_almost_equal(
+            Xdn, eye if norm == "determinant" else eye / n_channels
+        )
 
     # Scale invariance for SPD and complex HPD matrices at extreme scales
     for kind in ("spd", "hpd"):
         X_base = get_mats(4, n_channels, kind)
-        X_ref = normalize(X_base, "determinant")
+        X_ref = normalize(X_base, norm)
         for scale in (1e-12, 1e12):
-            X_scaled = normalize(X_base * scale, "determinant")
+            X_scaled = normalize(X_base * scale, norm)
             assert_array_almost_equal(X_scaled, X_ref)
 
-    # Extreme float32 values where 1-step exp(logabsdet / n) overflows
-    finfo32 = np.finfo(np.float32)
-    for scale in (finfo32.tiny, finfo32.max):
-        X32_np = (np.eye(4, dtype=np.float32) * scale)
-        X32 = to_backend(X32_np, backend)
-        xp = get_namespace(X32)
-        X32 = xp.astype(X32, xp.float32)
-        Xdn32 = normalize(X32, "determinant")
-        assert_array_almost_equal(Xdn32, np.eye(4), decimal=5)
+    if norm == "determinant":
+        # Extreme float32 values where 1-step exp(logabsdet / n) overflows
+        finfo32 = np.finfo(np.float32)
+        for scale in (finfo32.tiny, finfo32.max):
+            X32_np = (np.eye(4, dtype=np.float32) * scale)
+            X32 = to_backend(X32_np, backend)
+            xp = get_namespace(X32)
+            X32 = xp.astype(X32, xp.float32)
+            Xdn32 = normalize(X32, "determinant")
+            assert_array_almost_equal(Xdn32, np.eye(4), decimal=5)
 
 
-def test_normalize_determinant_equivalence(rndstate, backend, get_mats):
+@pytest.mark.parametrize("kind", ["real", "inv", "spd", "hpd"])
+def test_normalize_determinant_equivalence(kind, get_mats):
     def _prev_det_norm(X):
         xp = get_namespace(X)
         denom = xp.abs(xp.linalg.det(X)) ** (1 / X.shape[-1])
         denom = xp.expand_dims(denom, axis=tuple(range(denom.ndim, X.ndim)))
         return X / denom
 
-    # Real general square matrices (2D and 3D, including negative determinants)
-    X_np = rndstate.randn(10, 4, 4)
-    for X_in in (X_np[0], X_np):
-        X = to_backend(X_in, backend)
-        assert_array_almost_equal(
-            normalize(X, "determinant"), _prev_det_norm(X)
-        )
-
-    # SPD and complex HPD matrices
-    for kind in ("spd", "hpd"):
-        X = get_mats(5, 4, kind)
-        assert_array_almost_equal(
-            normalize(X, "determinant"), _prev_det_norm(X)
-        )
+    X = get_mats(5, 4, kind)
+    assert_array_almost_equal(normalize(X, "determinant"), _prev_det_norm(X))
 
 
 def test_get_nondiag_weight_broadcasting(rndstate):
