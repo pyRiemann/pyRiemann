@@ -2,6 +2,7 @@
 
 import math
 import numbers
+import warnings
 
 from array_api_compat import (
     array_namespace as get_namespace,
@@ -12,6 +13,7 @@ from scipy.linalg import solve_continuous_lyapunov
 
 from ._backend import diag_indices, tril_indices, triu_indices
 from ._check import check_function, check_matrix_pair
+from ._docs import deprecated
 from .base import (
     _symmetrize,
     ctranspose,
@@ -602,13 +604,15 @@ def log_map(X, Cref, *, metric="riemann", **kwargs):
 ###############################################################################
 
 
-def upper(X):
-    r"""Return the weighted upper triangular part of matrices.
+def vec_upper(X):
+    r"""Vectorization taking upper triangular part of matrices.
 
-    This function computes the minimal representation of a matrix in tangent
-    space [1]_: it keeps the upper triangular part of the symmetric/Hermitian
-    matrix and vectorizes it by applying unity weight for diagonal elements and
-    :math:`\sqrt{2}` weight for out-of-diagonal elements.
+    This function computes the minimal representation of :math:`n \times n`
+    symmetric/Hermitian matrices in a tangent space of size
+    :math:`n \times (n + 1) / 2` [1]_:
+    it keeps the upper triangular part of matrices and vectorizes them
+    by applying unity weight for diagonal elements and :math:`\sqrt{2}` weight
+    for out-of-diagonal elements, to preserve the Frobenius inner product.
 
     Parameters
     ----------
@@ -618,7 +622,8 @@ def upper(X):
     Returns
     -------
     T : ndarray, shape (..., n * (n + 1) / 2)
-        Weighted upper triangular parts of symmetric/Hermitian matrices.
+        Vectors containing the weighted upper triangular parts of
+        symmetric/Hermitian matrices.
 
     Notes
     -----
@@ -627,6 +632,8 @@ def upper(X):
         Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+    .. versionchanged:: 0.13
+        Rename ``upper`` into ``vec_upper``.
 
     References
     ----------
@@ -649,25 +656,30 @@ def upper(X):
     return T
 
 
-def unupper(T):
-    """Inverse upper function.
+@deprecated(
+    "upper() is deprecated and will be removed in 0.15.0."
+    "please use vec_upper()."
+)
+def upper(X):
+    return vec_upper(X)
 
-    This function is the inverse of upper function: it reconstructs symmetric/
-    Hermitian matrices from their weighted upper triangular parts.
+
+def unvec_upper(T):
+    """Inverse vec_upper function.
+
+    This function is the inverse of :func:`vec_upper`: it reconstructs
+    symmetric/Hermitian matrices from their weighted upper triangular parts.
 
     Parameters
     ----------
     T : ndarray, shape (..., n * (n + 1) / 2)
-        Weighted upper triangular parts of symmetric/Hermitian matrices.
+        Vectors containing the weighted upper triangular parts of
+        symmetric/Hermitian matrices.
 
     Returns
     -------
     X : ndarray, shape (..., n, n)
         Symmetric/Hermitian matrices.
-
-    See Also
-    --------
-    upper
 
     Notes
     -----
@@ -676,6 +688,12 @@ def unupper(T):
         Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+    .. versionchanged:: 0.13
+        Rename ``unupper`` into ``unvec_upper``.
+
+    See Also
+    --------
+    vec_upper
     """
     xp = get_namespace(T)
     dims = T.shape
@@ -689,11 +707,104 @@ def unupper(T):
     return X
 
 
-def tangent_space(X, Cref, *, metric="riemann"):
+@deprecated(
+    "unupper() is deprecated and will be removed in 0.15.0."
+    "please use unvec_upper()."
+)
+def unupper(X):
+    return unvec_upper(X)
+
+
+def _offdiag_upper_indices(n, like):
+    """Positions of off-diagonal coefficients in the output of vec_upper."""
+    xp = get_namespace(like)
+    idx = triu_indices(n, like=like)
+    return xp.nonzero(idx[0] != idx[1])[0]
+
+
+def vec_herm(X):
+    r"""Vectorization of Hermitian matrices.
+
+    This function returns the representation of Hermitian matrices in a real
+    vector space of dimension :math:`n^2` [1]_:
+    it vectorizes them by applying unity weight for diagonal elements and
+    :math:`\sqrt{2}` weight for out-of-diagonal elements, which are splitted
+    into real parts and imaginary parts.
+
+    Parameters
+    ----------
+    X : ndarray, shape (..., n, n)
+        Hermitian matrices.
+
+    Returns
+    -------
+    T : ndarray of float, shape (..., n ** 2)
+        Vectors containing the representation of Hermitian matrices.
+
+    Notes
+    -----
+    .. versionadded:: 0.13
+
+    References
+    ----------
+    .. [1] `The geometry of the Hermitian matrix space and the Schrieffer–Wolff
+        transformation <https://arxiv.org/pdf/2407.10478>`_
+        G. Pinter, G. Frank, D. Varjas, & A. Pályi. Quantum, 10, 2026.
+    """
+    xp = get_namespace(X)
+    T = vec_upper(X)
+    off = _offdiag_upper_indices(X.shape[-1], X)
+    if xp.isdtype(X.dtype, "complex floating"):
+        T_imag = xp.imag(T[..., off])
+    else:
+        warnings.warn("This function should be applied only on complex-valued "
+                      "Hermitian matrices.")
+        T_imag = xp.zeros_like(T[..., off])
+    return xp.concat((xp.real(T), T_imag), axis=-1)
+
+
+def unvec_herm(T):
+    """Inverse vec_herm function.
+
+    This function is the inverse of :func:`vec_herm`: it reconstructs Hermitian
+    matrices from their representation in a real vector space.
+
+    Parameters
+    ----------
+    T : ndarray, shape (..., n ** 2)
+        Vectors containing the representation of Hermitian matrices.
+
+    Returns
+    -------
+    X : ndarray, shape (..., n, n)
+        Hermitian matrices, with a complex dtype.
+
+    Notes
+    -----
+    .. versionadded:: 0.13
+
+    See Also
+    --------
+    vec_herm
+    """
+    xp = get_namespace(T)
+    n = math.isqrt(T.shape[-1])
+    if n * n != T.shape[-1]:
+        raise ValueError(
+            f"Last dimension of T must be a square number (Got {T.shape[-1]})"
+        )
+    n_upper = n * (n + 1) // 2
+    dtype = xp.result_type(T.dtype, xp.complex64)
+    T_upper = xp.astype(T[..., :n_upper], dtype)
+    T_upper[..., _offdiag_upper_indices(n, T)] += 1j * T[..., n_upper:]
+    return unvec_upper(T_upper)
+
+
+def tangent_space(X, Cref, *, metric="riemann", vec=vec_upper):
     """Transform matrices into tangent vectors.
 
     Transform matrices into tangent vectors, according to a reference
-    matrix Cref and to a specific logarithmic map.
+    matrix Cref, a specific logarithmic map and a vectorization.
 
     Parameters
     ----------
@@ -705,10 +816,14 @@ def tangent_space(X, Cref, *, metric="riemann"):
         Metric used for logarithmic map, can be:
         "euclid", "logchol", "logeuclid", "riemann", "wasserstein",
         or a callable function.
+    vec : {vec_upper, vec_herm}, default=vec_upper
+        Function to vectorize matrices in tangent space.
+
+        .. versionadded:: 0.13
 
     Returns
     -------
-    T : ndarray, shape (..., n * (n + 1) / 2)
+    T : ndarray, shape (..., n * (n + 1) / 2) or shape (..., n ** 2)
         Tangent vectors.
 
     Notes
@@ -720,26 +835,29 @@ def tangent_space(X, Cref, *, metric="riemann"):
         Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+    .. versionchanged:: 0.13
+        Add parameter ``vec``.
 
     See Also
     --------
     log_map
-    upper
+    vec_upper
+    vec_herm
     """
     X_ = log_map(X, Cref, metric=metric)
-    T = upper(X_)
+    T = vec(X_)
     return T
 
 
-def untangent_space(T, Cref, *, metric="riemann"):
+def untangent_space(T, Cref, *, metric="riemann", unvec=unvec_upper):
     """Transform tangent vectors back to matrices.
 
     Transform tangent vectors back to matrices, according to a reference
-    matrix Cref and to a specific exponential map.
+    matrix Cref, a specific exponential map and an inverse vectorization.
 
     Parameters
     ----------
-    T : ndarray, shape (..., n * (n + 1) / 2)
+    T : ndarray, shape (..., n * (n + 1) / 2) or shape (..., n ** 2)
         Tangent vectors.
     Cref : ndarray, shape (n, n)
         Reference matrix.
@@ -747,6 +865,10 @@ def untangent_space(T, Cref, *, metric="riemann"):
         Metric used for exponential map, can be:
         "euclid", "logchol", "logeuclid", "riemann", "wasserstein",
         or a callable function.
+    unvec : {unvec_upper, unvec_herm}, default=unvec_upper
+        Function to inverse vectorization of vectors.
+
+        .. versionadded:: 0.13
 
     Returns
     -------
@@ -761,13 +883,16 @@ def untangent_space(T, Cref, *, metric="riemann"):
         Add support for HPD matrices.
     .. versionchanged:: 0.12
         Add support for NumPy and PyTorch.
+    .. versionchanged:: 0.13
+        Add parameter ``unvec``.
 
     See Also
     --------
-    unupper
+    unvec_upper
+    unvec_herm
     exp_map
     """
-    X_ = unupper(T)
+    X_ = unvec(T)
     X = exp_map(X_, Cref, metric=metric)
     return X
 

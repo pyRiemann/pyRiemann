@@ -21,8 +21,10 @@ from pyriemann.geometry.tangentspace import (
     log_map_logeuclid,
     log_map_riemann,
     log_map_wasserstein,
-    upper,
-    unupper,
+    vec_upper,
+    vec_herm,
+    unvec_upper,
+    unvec_herm,
     tangent_space,
     untangent_space,
     innerproduct,
@@ -39,7 +41,7 @@ from pyriemann.geometry.tangentspace import (
     transport_riemann,
     transport_wasserstein,
 )
-from pyriemann.geometry.test import is_hermitian, is_real
+from pyriemann.geometry.test import is_hermitian, is_real, is_real_type
 from pyriemann.spatialfilters import Whitening
 
 metrics = ["euclid", "logchol", "logeuclid", "riemann", "wasserstein"]
@@ -122,20 +124,60 @@ def test_map_euclid(n_dim1, n_dim2, kind, get_mats):
     assert exp_map_euclid(log_map_euclid(X, C), C) == approx(X)
 
 
-@pytest.mark.parametrize("kind", ["spd", "hpd"])
-def test_upper_and_unupper(kind, get_mats):
-    """Test upper then unupper should be identity"""
+@pytest.mark.parametrize("kind", ["sym", "herm"])
+@pytest.mark.parametrize("n_channels", [3, 6, 9])
+@pytest.mark.parametrize("vec", [vec_upper, vec_herm])
+def test_vec(kind, n_channels, vec, get_mats):
+    if vec == vec_herm and kind == "sym":
+        return
+    n_matrices = 5
+    X = get_mats(n_matrices, n_channels, kind)
+    T = vec(X)
+
+    if vec == vec_herm:
+        assert T.shape == (n_matrices, n_channels * n_channels)
+        assert is_real_type(T)
+    else:
+        assert T.shape == (n_matrices, n_channels * (n_channels + 1) // 2)
+        assert T.dtype == X.dtype
+
+    # vec is an isometry preserving the Frobenius inner product Re(tr(X0^H X1))
+    xp = get_namespace(X)
+    prod1 = xp.real(xp.einsum("...nm,...nm->...", xp.conj(X[0]), X[1]))
+    prod2 = xp.real(xp.conj(T[0]) @ T[1])
+    assert prod1 == approx(prod2)
+
+
+@pytest.mark.parametrize(
+    "vec, unvec", [(vec_upper, unvec_upper), (vec_herm, unvec_herm)]
+)
+def test_vec_and_unvec_equal_identity(vec, unvec, get_mats):
     n_dim5, n_dim4, n_matrices, n_channels = 7, 6, 5, 4
-    X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, kind)
+    X = get_mats([n_dim5, n_dim4, n_matrices], n_channels, "herm")
 
     # 2D array
-    U2 = unupper(upper(X[0, 0, 0]))
+    U2 = unvec(vec(X[0, 0, 0]))
     assert U2 == approx(X[0, 0, 0])
 
     # 5D array
-    U5 = unupper(upper(X))
+    U5 = unvec(vec(X))
     assert U5 == approx(X)
     assert U5[0, 0, 0] == approx(U2)
+
+
+@pytest.mark.parametrize("vec", [vec_upper, vec_herm])
+@pytest.mark.parametrize("metric", metrics)
+def test_tangent_space(vec, metric, get_mats):
+    n_matrices, n_channels = 5, 4
+    X = get_mats(n_matrices, n_channels, "spd")
+    Cref = get_mats(1, n_channels, "spd")[0]
+
+    T = tangent_space(X, Cref, metric=metric, vec=vec)
+    if vec == vec_upper:
+        n_ts = (n_channels * (n_channels + 1)) // 2
+    else:
+        n_ts = n_channels * n_channels
+    assert T.shape == (n_matrices, n_ts)
 
 
 @pytest.mark.parametrize("metric", metrics)
